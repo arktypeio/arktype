@@ -160,17 +160,24 @@ export namespace Scanner {
         InvertTerminatorComparison extends boolean = false,
         Scanned extends string = ""
     > = Unscanned extends Scanner.shift<infer Lookahead, infer NextUnscanned>
-        ? DoneShifting<
-              Lookahead,
-              Terminator,
-              InvertTerminatorComparison
-          > extends true
+        ? Scanned extends `${infer preEscape}${EscapeToken}`
+            ? shiftUntil<
+                  NextUnscanned,
+                  Terminator,
+                  InvertTerminatorComparison,
+                  `${preEscape}${Lookahead}`
+              >
+            : DoneShifting<
+                  Lookahead,
+                  Terminator,
+                  InvertTerminatorComparison
+              > extends true
             ? [Scanned, Unscanned]
             : shiftUntil<
                   NextUnscanned,
                   Terminator,
                   InvertTerminatorComparison,
-                  `${Scanned}${Lookahead extends EscapeToken ? "" : Lookahead}`
+                  `${Scanned}${Lookahead}`
               >
         : [Scanned, ""]
 
