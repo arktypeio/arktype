@@ -1,6 +1,5 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
-import { stringSerialize } from "../dev/attest/src/common.js"
 import { type } from "../exports.js"
 import { buildUnterminatedEnclosedMessage } from "../src/parse/shift/operand/enclosed.js"
 
@@ -68,19 +67,7 @@ describe("parse enclosed", () => {
                 string: { value: "don't" }
             })
         })
-        test("escape", () => {
-            const t = type("'C:\\\\Shawn'")
-            attest(t.infer).typed as "C:\\Shawn"
-            attest(t.root).equals({
-                string: { value: "C:\\Shawn" }
-            })
-        })
-        test("space", () => {
-            const t = type("\\ boolean")
-            attest(t.infer).typed as boolean
-            attest(t.root).equals("boolean")
-        })
-        test("escape optional key", () => {
+        test("optional key", () => {
             const t = type({ "a\\?": "string" })
             attest(t.infer).typed as { "a?": string }
             attest(t.root).equals({
