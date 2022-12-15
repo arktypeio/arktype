@@ -3,6 +3,7 @@ import type { Dictionary } from "../../utils/generics.js"
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]
     private i: number
+    private escapeToken = "~"
     finalized = false
 
     constructor(def: string) {
@@ -18,11 +19,11 @@ export class Scanner<Lookahead extends string = string> {
     get lookahead() {
         return (this.chars[this.i] ?? "") as Lookahead
     }
-
+    //shawn fix
     shiftUntil(condition: Scanner.UntilCondition): string {
         let shifted = ""
         while (!condition(this, shifted) && this.lookahead) {
-            if (this.lookahead === "~") {
+            if (this.lookahead === this.escapeToken) {
                 this.shift()
                 continue
             }
@@ -142,6 +143,8 @@ export namespace Scanner {
 
     export type OperatorToken = InfixToken | PostfixToken
 
+    export type EscapeToken = "~"
+
     export type finalized = "{done}"
 
     export type shift<
@@ -167,7 +170,7 @@ export namespace Scanner {
                   NextUnscanned,
                   Terminator,
                   InvertTerminatorComparison,
-                  `${Scanned}${Lookahead extends "~" ? "" : Lookahead}`
+                  `${Scanned}${Lookahead extends EscapeToken ? "" : Lookahead}`
               >
         : [Scanned, ""]
 

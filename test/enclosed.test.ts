@@ -62,23 +62,14 @@ describe("parse enclosed", () => {
     })
     describe("escape characters", () => {
         test("skips over escape character", () => {
-            attest(type("'http:~/~/abc.com'").root).snap({
+            attest(type("'http:~~abc.com'").root).equals({
                 string: { value: "http://abc.com" }
-            })
-        })
-        test("multiple escape chars in a row", () => {
-            attest(type("'ab~~~cd'").root).snap({ string: { value: "abcd" } })
-        })
-        test("tuple", () => {
-            attest(type(["number", "|", "'~abc~'"]).root).snap({
-                number: true,
-                string: { value: "abc" }
             })
         })
         test("escape optional key", () => {
             attest(
-                type([{ "a~?": "'a~b~c'" }, "|", { "b?": "string" }]).root
-            ).snap({
+                type([{ "a~?": "'a~'bc'" }, "|", { "b?": "string" }]).root
+            ).equals({
                 object: [
                     {
                         props: { "a?": { string: { value: "abc" } } },

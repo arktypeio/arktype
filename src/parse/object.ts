@@ -42,6 +42,8 @@ export const parseDict = (def: Dictionary, scope: ScopeRoot): TypeNode => {
     }
 }
 
+type withEscapeCharacter<k> = k extends `${infer name}?` ? `${name}~?` : k
+
 export type inferRecord<
     def extends Dictionary,
     scope extends Dictionary,
@@ -49,7 +51,7 @@ export type inferRecord<
 > = evaluate<
     {
         [requiredKeyName in requiredKeyOf<def>]: inferDefinition<
-            def[requiredKeyName],
+            def[withEscapeCharacter<requiredKeyName>],
             scope,
             aliases
         >
@@ -108,13 +110,8 @@ type optionalKeyOf<def> = {
 }[keyof def]
 
 type requiredKeyOf<def> = {
-    [k in keyof def]: parseKey<k> extends KeyParseResult<
-        infer name,
-        infer optional
-    >
-        ? optional extends false
-            ? name
-            : never
+    [k in keyof def]: parseKey<k> extends KeyParseResult<infer name, false>
+        ? name
         : never
 }[keyof def]
 
