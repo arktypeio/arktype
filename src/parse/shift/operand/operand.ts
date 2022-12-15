@@ -13,8 +13,6 @@ export const parseOperand = (s: DynamicState): void =>
         ? s.shiftedByOne().reduceGroupOpen()
         : s.scanner.lookaheadIsIn(enclosingChar)
         ? parseEnclosed(s, s.scanner.shift())
-        : s.scanner.lookahead === " "
-        ? parseOperand(s.shiftedByOne())
         : parseUnenclosed(s)
 
 export type parseOperand<
@@ -25,7 +23,5 @@ export type parseOperand<
         ? state.reduceGroupOpen<s, unscanned>
         : lookahead extends EnclosingChar
         ? parseEnclosed<s, lookahead, unscanned>
-        : lookahead extends " "
-        ? parseOperand<state.scanTo<s, unscanned>, alias>
         : parseUnenclosed<s, alias>
     : error<buildMissingOperandMessage<s>>

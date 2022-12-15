@@ -8,13 +8,17 @@ import type {
 } from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
+import { Scanner } from "./reduce/scanner.js"
 
 export const parseRecord = (def: Dictionary, scope: ScopeRoot): TypeNode => {
     const props: mutable<Dictionary<TypeNode>> = {}
     const requiredKeys: mutable<keySet> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
-        if (definitionKey.endsWith("?")) {
+        if (definitionKey.endsWith(`${Scanner.escapeToken}?`)) {
+            keyName = `${definitionKey.slice(0, -2)}?`
+            requiredKeys[keyName] = true
+        } else if (definitionKey.endsWith("?")) {
             keyName = definitionKey.slice(0, -1)
         } else {
             requiredKeys[definitionKey] = true
@@ -29,6 +33,10 @@ export const parseRecord = (def: Dictionary, scope: ScopeRoot): TypeNode => {
     }
 }
 
+type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`
+    ? `${name}${Scanner.EscapeToken}?`
+    : k
+
 export type inferRecord<
     def extends Dictionary,
     scope extends Dictionary,
@@ -36,7 +44,7 @@ export type inferRecord<
 > = evaluate<
     {
         [requiredKeyName in requiredKeyOf<def>]: inferDefinition<
-            def[requiredKeyName],
+            def[withPossiblePreviousEscapeCharacter<requiredKeyName>],
             scope,
             aliases
         >
@@ -49,12 +57,27 @@ export type inferRecord<
     }
 >
 
+type KeyParseResult<name extends string, isOptional extends boolean> = [
+    name: name,
+    isOptional: isOptional
+]
+
+type parseKey<k> = k extends optionalKeyWithName<infer name>
+    ? name extends `${infer baseName}${Scanner.EscapeToken}`
+        ? [`${baseName}?`, false]
+        : [name, true]
+    : [k, false]
+
 type optionalKeyWithName<name extends string = string> = `${name}?`
 
 type optionalKeyOf<def> = {
-    [k in keyof def]: k extends optionalKeyWithName<infer name> ? name : never
+    [k in keyof def]: parseKey<k> extends KeyParseResult<infer name, true>
+        ? name
+        : never
 }[keyof def]
 
 type requiredKeyOf<def> = {
-    [k in keyof def]: k extends optionalKeyWithName ? never : k
+    [k in keyof def]: parseKey<k> extends KeyParseResult<infer name, false>
+        ? name
+        : never
 }[keyof def]
