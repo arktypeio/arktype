@@ -42,7 +42,7 @@ export const comparePredicates = (
     scope: ScopeRoot
 ): PredicateComparison => {
     const lResolution = resolvePredicateIfIdentifier(domain, l, scope)
-    const rResolution = resolvePredicateIfIdentifier(domain, l, scope)
+    const rResolution = resolvePredicateIfIdentifier(domain, r, scope)
     if (lResolution === true) {
         return rResolution === true ? equal : r
     }

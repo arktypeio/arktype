@@ -145,15 +145,19 @@ export type xor<a, b> =
     | evaluate<a & { [k in keyof b]?: never }>
     | evaluate<b & { [k in keyof a]?: never }>
 
-export const listFrom = <t>(data: t) =>
-    (Array.isArray(data) ? data : [data]) as t extends List ? t : [t]
-
 export type autocompleteString<suggestions extends string> =
     | suggestions
     | (string & {})
 
-export type List<of = unknown> = readonly of[]
-
 export type Dictionary<of = unknown> = { readonly [k in string]: of }
 
+export type List<of = unknown> = readonly of[]
+
+export const listFrom = <t>(data: t) =>
+    (Array.isArray(data) ? data : [data]) as t extends List ? t : [t]
+
 export type CollapsibleList<t> = t | List<t>
+
+export const collapsibleIfSingleton = <list extends List>(
+    list: list
+): list | list[number] => (list.length === 1 ? list[0] : list)

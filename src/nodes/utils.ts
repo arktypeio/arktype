@@ -28,9 +28,13 @@ export const isExactValue = (
     node: TypeNode,
     domain: Domain,
     scope: ScopeRoot
-): node is { [domain in Domain]: { value: inferDomain<domain> } } =>
-    nodeExtendsDomain(node, domain, scope) &&
-    (node[domain] as ExactValue).value !== undefined
+): node is { [domain in Domain]: { value: inferDomain<domain> } } => {
+    const resolution = resolveIfIdentifier(node, scope)
+    return (
+        nodeExtendsDomain(resolution, domain, scope) &&
+        (resolution[domain] as ExactValue).value !== undefined
+    )
+}
 
 export const domainOfNode = (
     node: TypeNode,
@@ -50,32 +54,3 @@ export const nodeExtendsDomain = <domain extends Domain>(
     domain: domain,
     scope: ScopeRoot
 ): node is DomainSubtypeNode<domain> => domainOfNode(node, scope) === domain
-
-// // TODO: string?
-// export const resolvePredicate = (
-//     domain: Domain,
-//     predicate: Predicate,
-//     scope: ScopeRoot
-// ): true | Condition[] => {
-//     if (predicate === true) {
-//         return true
-//     }
-//     const [unresolved, resolved] = filterSplit(
-//         listFrom(predicate),
-//         (branch): branch is string => typeof branch === "string"
-//     )
-//     while (unresolved.length) {
-//         const typeResolution = scope.resolveToDomain(unresolved.pop()!, domain)
-//         if (typeResolution === true) {
-//             return true
-//         }
-//         for (const resolutionBranch of listFrom(typeResolution)) {
-//             if (typeof resolutionBranch === "string") {
-//                 unresolved.push(resolutionBranch)
-//             } else {
-//                 resolved.push(resolutionBranch)
-//             }
-//         }
-//     }
-//     return resolved
-// }

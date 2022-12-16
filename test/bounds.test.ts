@@ -114,9 +114,7 @@ describe("bound", () => {
                 })
             })
             test("non-overlapping", () => {
-                const expected: TypeNode = {
-                    number: []
-                }
+                const expected: TypeNode = {}
                 attest(type("number>3&number<=3").root).equals(expected)
                 attest(type("-2<number<-1&1<number<2").root).equals(expected)
             })

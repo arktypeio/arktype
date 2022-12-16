@@ -127,10 +127,10 @@ export const composeNodeOperation = (
     domainSetOperation: SetOperation<TypeSet, ScopeRoot>
 ) =>
     composeIntersection<TypeNode, ScopeRoot>((l, r, scope) => {
-        const lDomains = resolveIfIdentifier(l, scope)
-        const rDomains = resolveIfIdentifier(r, scope)
-        const result = domainSetOperation(lDomains, rDomains, scope)
-        return result === lDomains ? l : result === rDomains ? r : result
+        const lResolution = resolveIfIdentifier(l, scope)
+        const rResolution = resolveIfIdentifier(r, scope)
+        const result = domainSetOperation(lResolution, rResolution, scope)
+        return result === lResolution ? l : result === rResolution ? r : result
     })
 
 export const finalizeNodeOperation = (
@@ -138,25 +138,3 @@ export const finalizeNodeOperation = (
     result: SetOperationResult<TypeNode>
 ): TypeNode =>
     result === empty ? keywords.never : result === equal ? l : result
-
-// TODO: Add aliases back if no subtype indices
-export const coalesceBranches = (
-    domain: Domain,
-    branches: Condition[]
-): Predicate => {
-    switch (branches.length) {
-        case 0:
-            // TODO: type is never, anything else that can be done?
-            return []
-        case 1:
-            return branches[0]
-        default:
-            if (domain === "boolean") {
-                // If a boolean has multiple branches, neither of which is a
-                // subtype of the other, it consists of two opposite literals
-                // and can be simplified to a non-literal boolean.
-                return true
-            }
-            return branches
-    }
-}

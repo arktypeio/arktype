@@ -1,7 +1,7 @@
 import type { ScopeRoot } from "../scope.js"
+import { collapsibleIfSingleton } from "../utils/generics.js"
 import type { KeyReducerFn } from "./compose.js"
 import {
-    coalesceBranches,
     composeKeyedOperation,
     composeNodeOperation,
     equal,
@@ -26,9 +26,14 @@ export const predicateUnion: KeyReducerFn<Required<TypeSet>, ScopeRoot> = (
             ? r
             : comparison === r
             ? l
+            : // If a boolean has multiple branches, neither of which is a
+            // subtype of the other, it consists of two opposite literals
+            // and can be simplified to a non-literal boolean.
+            domain === "boolean"
+            ? true
             : ([l, r] as Condition[])
     }
-    const finalBranches = [
+    return collapsibleIfSingleton([
         ...comparison.lConditions.filter(
             (_, lIndex) =>
                 !comparison.lSubconditionsOfR.includes(lIndex) &&
@@ -43,8 +48,7 @@ export const predicateUnion: KeyReducerFn<Required<TypeSet>, ScopeRoot> = (
                     (indexPair) => indexPair[1] === rIndex
                 )
         )
-    ]
-    return coalesceBranches(domain, finalBranches)
+    ])
 }
 
 export const typeSetUnion = composeKeyedOperation<TypeSet, ScopeRoot>(
