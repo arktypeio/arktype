@@ -1,4 +1,3 @@
-/* eslint-disable max-lines-per-function */
 import { Box, Stack, SvgIcon, Typography } from "@mui/material"
 import One from "@site/static/img/features/1.svg"
 import Two from "@site/static/img/features/2.svg"

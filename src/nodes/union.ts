@@ -8,13 +8,11 @@ import {
     finalizeNodeOperation
 } from "./compose.js"
 import type { TypeNode, TypeSet } from "./node.js"
+import type { Condition } from "./predicate.js"
 import { comparePredicates, isBranchComparison } from "./predicate.js"
 
 export const union = (l: TypeNode, r: TypeNode, scope: ScopeRoot) =>
     finalizeNodeOperation(l, nodeUnion(l, r, scope))
-
-// TODO: Add reduce branches of union function that acts on branch comparison result
-// E.g. coalesceUnion(comparison). Similar for intersection
 
 export const predicateUnion: KeyReducerFn<Required<TypeSet>, ScopeRoot> = (
     domain,
@@ -24,8 +22,11 @@ export const predicateUnion: KeyReducerFn<Required<TypeSet>, ScopeRoot> = (
 ) => {
     const comparison = comparePredicates(domain, l, r, scope)
     if (!isBranchComparison(comparison)) {
-        // Unequal?
-        return comparison === l ? r : l
+        return comparison === l
+            ? r
+            : comparison === r
+            ? l
+            : ([l, r] as Condition[])
     }
     const finalBranches = [
         ...comparison.lConditions.filter(

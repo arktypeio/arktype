@@ -25,7 +25,7 @@ export const predicateIntersection: KeyReducerFn<
         return comparison
     }
     const finalBranches = [
-        ...comparison.intersections,
+        ...comparison.codependentIntersections,
         ...comparison.equalPairs.map(
             (indices) => comparison.lConditions[indices[0]]
         ),
