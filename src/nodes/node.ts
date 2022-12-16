@@ -7,8 +7,11 @@ export type TypeNode<scope extends Dictionary = Dictionary> =
     | Identifier<scope>
     | TypeSet<scope>
 
+/** If scope is provided, we also narrow each predicate to match its domain.
+ * Otherwise, we use a base predicate for all types, which is easier to
+ * manipulate.*/
 export type TypeSet<scope extends Dictionary = Dictionary> = {
-    readonly [domain in Domain]?: Dictionary extends scope
+    readonly [domain in Domain]?: string extends keyof scope
         ? Predicate
         : Predicate<domain, scope>
 }

@@ -31,14 +31,14 @@ export const typeSetUnion = composeKeyedOperation<TypeSet, ScopeRoot>(
             ...comparison.lConditions.filter(
                 (_, lIndex) =>
                     !comparison.lSubconditionsOfR.includes(lIndex) &&
-                    !comparison.equal.some(
+                    !comparison.equalPairs.some(
                         (indexPair) => indexPair[0] === lIndex
                     )
             ),
             ...comparison.rConditions.filter(
                 (_, rIndex) =>
                     !comparison.rSubconditionsOfL.includes(rIndex) &&
-                    !comparison.equal.some(
+                    !comparison.equalPairs.some(
                         (indexPair) => indexPair[1] === rIndex
                     )
             )

@@ -5,13 +5,22 @@ import { keysOf, listFrom } from "../utils/generics.js"
 import { filterSplit } from "../utils/objectUtils.js"
 import { intersection } from "./intersection.js"
 import type { TypeNode, TypeSet } from "./node.js"
-import type { Condition, ExactValue, Predicate } from "./predicate.js"
+import type { ExactValue, Predicate } from "./predicate.js"
 
 export const resolveIfIdentifier = (
     node: TypeNode,
     scope: ScopeRoot
 ): TypeSet =>
     typeof node === "string" ? (scope.resolve(node) as TypeSet) : node
+
+export const resolvePredicateIfIdentifier = (
+    domain: Domain,
+    predicate: Predicate,
+    scope: ScopeRoot
+): Exclude<Predicate, string> =>
+    typeof predicate === "string"
+        ? scope.resolveToDomain(predicate, domain)
+        : predicate
 
 export const nodeExtends = (node: TypeNode, base: TypeNode, scope: ScopeRoot) =>
     intersection(node, base, scope) === node
@@ -43,31 +52,31 @@ export const nodeExtendsDomain = <domain extends Domain>(
     scope: ScopeRoot
 ): node is DomainSubtypeNode<domain> => domainOfNode(node, scope) === domain
 
-// TODO: string?
-export const resolvePredicate = (
-    domain: Domain,
-    predicate: Predicate,
-    scope: ScopeRoot
-): true | Condition[] => {
-    if (predicate === true) {
-        return true
-    }
-    const [unresolved, resolved] = filterSplit(
-        listFrom(predicate),
-        (branch): branch is string => typeof branch === "string"
-    )
-    while (unresolved.length) {
-        const typeResolution = scope.resolveToDomain(unresolved.pop()!, domain)
-        if (typeResolution === true) {
-            return true
-        }
-        for (const resolutionBranch of listFrom(typeResolution)) {
-            if (typeof resolutionBranch === "string") {
-                unresolved.push(resolutionBranch)
-            } else {
-                resolved.push(resolutionBranch)
-            }
-        }
-    }
-    return resolved
-}
+// // TODO: string?
+// export const resolvePredicate = (
+//     domain: Domain,
+//     predicate: Predicate,
+//     scope: ScopeRoot
+// ): true | Condition[] => {
+//     if (predicate === true) {
+//         return true
+//     }
+//     const [unresolved, resolved] = filterSplit(
+//         listFrom(predicate),
+//         (branch): branch is string => typeof branch === "string"
+//     )
+//     while (unresolved.length) {
+//         const typeResolution = scope.resolveToDomain(unresolved.pop()!, domain)
+//         if (typeResolution === true) {
+//             return true
+//         }
+//         for (const resolutionBranch of listFrom(typeResolution)) {
+//             if (typeof resolutionBranch === "string") {
+//                 unresolved.push(resolutionBranch)
+//             } else {
+//                 resolved.push(resolutionBranch)
+//             }
+//         }
+//     }
+//     return resolved
+// }

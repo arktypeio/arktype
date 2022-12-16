@@ -10,8 +10,21 @@ import type {
     evaluate,
     keySet
 } from "../../utils/generics.js"
+import {
+    composeKeyedOperation,
+    composeNodeOperation,
+    composeRuleIntersection,
+    empty,
+    equal
+} from "../compose.js"
 import type { TypeNode } from "../node.js"
+import type { PredicateContext } from "../predicate.js"
+import { propsIntersection, requiredKeysIntersection } from "../props.js"
+import { collapsibleListUnion } from "./collapsibleSet.js"
+import { divisorIntersection } from "./divisor.js"
 import type { Range } from "./range.js"
+import { rangeIntersection } from "./range.js"
+import { regexIntersection } from "./regex.js"
 
 export type Rules<
     domain extends Domain = Domain,
@@ -67,3 +80,24 @@ type defineRuleSet<
     keys extends keyof Rules,
     scope extends Dictionary
 > = Pick<Rules<domain, scope>, keys>
+
+export const objectKindIntersection = composeRuleIntersection<ObjectDomain>(
+    (l, r) => (l === r ? equal : empty)
+)
+
+const validatorIntersection =
+    composeRuleIntersection<CollapsibleList<Validator>>(collapsibleListUnion)
+
+export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
+    {
+        kind: objectKindIntersection,
+        divisor: divisorIntersection,
+        regex: regexIntersection,
+        props: propsIntersection,
+        requiredKeys: requiredKeysIntersection,
+        propTypes: propsIntersection,
+        range: rangeIntersection,
+        validator: validatorIntersection
+    },
+    { propagateEmpty: true }
+)

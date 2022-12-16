@@ -11,15 +11,15 @@ import {
 } from "./compose.js"
 import { nodeIntersection } from "./intersection.js"
 import type { TypeNode } from "./node.js"
-import type { DynamicDomainContext } from "./predicate.js"
+import type { PredicateContext } from "./predicate.js"
 import type { RuleSet } from "./rules/rules.js"
 
 // TODO: Never propagation
 export const propsIntersection = composeRuleIntersection<
     Dictionary<TypeNode>,
-    DynamicDomainContext
+    PredicateContext
 >(
-    composeKeyedOperation<Dictionary<TypeNode>, DynamicDomainContext>(
+    composeKeyedOperation<Dictionary<TypeNode>, PredicateContext>(
         (propKey, l, r, context) => nodeIntersection(l, r, context.scope),
         { propagateEmpty: true }
     )
