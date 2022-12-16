@@ -35,7 +35,7 @@ type allowUndefinedOperands<f extends SetOperation<any, any>> =
           >
         : never
 
-export const composeRuleIntersection = <
+export const composeIntersection = <
     t,
     context = undefined,
     reducer extends SetOperation<t, context> = SetOperation<t, context>
@@ -45,13 +45,14 @@ export const composeRuleIntersection = <
     ((l, r, context) =>
         l === undefined
             ? r === undefined
-                ? throwInternalError(
-                      `Unexpected intersection of two undefined predicates`
-                  )
+                ? throwUndefinedOperandsError()
                 : r
             : r === undefined
             ? l
             : reducer(l, r, context)) as allowUndefinedOperands<reducer>
+
+const throwUndefinedOperandsError = () =>
+    throwInternalError(`Unexpected intersection of two undefined operands`)
 
 export type SetOperationResult<t> = t | empty | equal
 
@@ -125,7 +126,7 @@ export const composeKeyedOperation =
 export const composeNodeOperation = (
     domainSetOperation: SetOperation<TypeSet, ScopeRoot>
 ) =>
-    composeRuleIntersection<TypeNode, ScopeRoot>((l, r, scope) => {
+    composeIntersection<TypeNode, ScopeRoot>((l, r, scope) => {
         const lDomains = resolveIfIdentifier(l, scope)
         const rDomains = resolveIfIdentifier(r, scope)
         const result = domainSetOperation(lDomains, rDomains, scope)

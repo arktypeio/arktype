@@ -1,9 +1,9 @@
-import { composeRuleIntersection, equal } from "../compose.js"
+import { composeIntersection, equal } from "../compose.js"
 
 export const checkDivisor = (data: number, divisor: number) =>
     data % divisor === 0
 
-export const divisorIntersection = composeRuleIntersection<number>(
+export const divisorIntersection = composeIntersection<number>(
     (l: number, r: number) =>
         l === r ? equal : Math.abs((l * r) / greatestCommonDivisor(l, r))
 )

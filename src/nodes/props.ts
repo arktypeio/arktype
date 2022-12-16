@@ -4,18 +4,14 @@ import { hasObjectDomain } from "../utils/classify.js"
 import type { Dictionary, keySet, mutable } from "../utils/generics.js"
 import { hasKeys, keyCount } from "../utils/generics.js"
 import { tryParseWellFormedNumber } from "../utils/numericLiterals.js"
-import {
-    composeKeyedOperation,
-    composeRuleIntersection,
-    equal
-} from "./compose.js"
+import { composeIntersection, composeKeyedOperation, equal } from "./compose.js"
 import { nodeIntersection } from "./intersection.js"
 import type { TypeNode } from "./node.js"
 import type { PredicateContext } from "./predicate.js"
 import type { RuleSet } from "./rules/rules.js"
 
 // TODO: Never propagation
-export const propsIntersection = composeRuleIntersection<
+export const propsIntersection = composeIntersection<
     Dictionary<TypeNode>,
     PredicateContext
 >(
@@ -25,19 +21,17 @@ export const propsIntersection = composeRuleIntersection<
     )
 )
 
-export const requiredKeysIntersection = composeRuleIntersection<keySet>(
-    (l, r) => {
-        const result = { ...l, ...r }
-        const resultSize = keyCount(result)
-        return resultSize === keyCount(l)
-            ? resultSize === keyCount(r)
-                ? equal
-                : l
-            : resultSize === keyCount(r)
-            ? r
-            : result
-    }
-)
+export const requiredKeysIntersection = composeIntersection<keySet>((l, r) => {
+    const result = { ...l, ...r }
+    const resultSize = keyCount(result)
+    return resultSize === keyCount(l)
+        ? resultSize === keyCount(r)
+            ? equal
+            : l
+        : resultSize === keyCount(r)
+        ? r
+        : result
+})
 
 export const checkObject = (
     data: object,

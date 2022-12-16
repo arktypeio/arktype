@@ -51,7 +51,8 @@ describe("tuple expression", () => {
         const isOdd = (n: number) => n % 2 === 1
         const t = type(["number", ":", isOdd])
         attest(t.infer).typed as number
-        attest(t.root).equals({ number: { constrain: isOdd } })
+        // TODO: Have some way to represent external type node with unknown scope here?
+        attest(t.root).equals({ number: { validator: isOdd as any } })
     })
     test("contraint parameter inference", () => {
         type Expected = number | string[]

@@ -34,7 +34,9 @@ describe("intersection", () => {
             })
         })
         describe("string & literal", () => {
-            attest(type("string&'a'").root).snap({ string: { value: "a" } })
+            test("string", () => {
+                attest(type("string&'a'").root).snap({ string: { value: "a" } })
+            })
         })
 
         describe("errors", () => {

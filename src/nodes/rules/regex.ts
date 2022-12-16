@@ -1,5 +1,5 @@
 import type { CollapsibleList } from "../../utils/generics.js"
-import { composeRuleIntersection } from "../compose.js"
+import { composeIntersection } from "../compose.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
 
 const regexCache: Record<string, RegExp> = {}
@@ -35,9 +35,9 @@ export const checkRegexRule = (data: string, rule: CollapsibleList<string>) =>
 const checkRegex = (data: string, regexSource: string) =>
     getRegex(regexSource).test(data)
 
-export const regexIntersection = composeRuleIntersection<
-    CollapsibleList<string>
->(collapsibleListUnion<string>)
+export const regexIntersection = composeIntersection<CollapsibleList<string>>(
+    collapsibleListUnion<string>
+)
 
 // https://github.com/validatorjs/validator.js
 export const isLuhnValid = (creditCardInput: string) => {

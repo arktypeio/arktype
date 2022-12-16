@@ -11,9 +11,8 @@ import type {
     keySet
 } from "../../utils/generics.js"
 import {
+    composeIntersection,
     composeKeyedOperation,
-    composeNodeOperation,
-    composeRuleIntersection,
     empty,
     equal
 } from "../compose.js"
@@ -81,12 +80,12 @@ type defineRuleSet<
     scope extends Dictionary
 > = Pick<Rules<domain, scope>, keys>
 
-export const objectKindIntersection = composeRuleIntersection<ObjectDomain>(
+export const objectKindIntersection = composeIntersection<ObjectDomain>(
     (l, r) => (l === r ? equal : empty)
 )
 
 const validatorIntersection =
-    composeRuleIntersection<CollapsibleList<Validator>>(collapsibleListUnion)
+    composeIntersection<CollapsibleList<Validator>>(collapsibleListUnion)
 
 export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
     {

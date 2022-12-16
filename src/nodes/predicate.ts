@@ -6,6 +6,7 @@ import type { CollapsibleList, Dictionary, List } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
 import type { SetOperationResult } from "./compose.js"
 import { empty, equal } from "./compose.js"
+import { predicateIntersection } from "./intersection.js"
 import type { Identifier } from "./node.js"
 import type { RuleSet } from "./rules/rules.js"
 import { rulesIntersection } from "./rules/rules.js"
@@ -14,12 +15,12 @@ import { resolvePredicateIfIdentifier } from "./utils.js"
 export type Predicate<
     domain extends Domain = Domain,
     scope extends Dictionary = Dictionary
-> = CollapsibleList<Condition<domain, scope>>
+> = true | CollapsibleList<Condition<domain, scope>>
 
 export type Condition<
     domain extends Domain = Domain,
     scope extends Dictionary = Dictionary
-> = true | RuleSet<domain, scope> | ExactValue<domain> | Identifier<scope>
+> = RuleSet<domain, scope> | ExactValue<domain> | Identifier<scope>
 
 export type ExactValue<domain extends Domain = Domain> = {
     readonly value: inferDomain<domain>
@@ -34,20 +35,13 @@ export type PredicateContext = {
 }
 
 export const comparePredicates = (
+    domain: Domain,
     l: Predicate,
     r: Predicate,
-    context: PredicateContext
+    scope: ScopeRoot
 ): PredicateComparison => {
-    const lResolution = resolvePredicateIfIdentifier(
-        context.domain,
-        l,
-        context.scope
-    )
-    const rResolution = resolvePredicateIfIdentifier(
-        context.domain,
-        l,
-        context.scope
-    )
+    const lResolution = resolvePredicateIfIdentifier(domain, l, scope)
+    const rResolution = resolvePredicateIfIdentifier(domain, l, scope)
     if (lResolution === true) {
         return rResolution === true ? equal : r
     }
@@ -58,10 +52,29 @@ export const comparePredicates = (
         hasObjectDomain(lResolution, "Object") &&
         hasObjectDomain(rResolution, "Object")
     ) {
+        return isExactValue(lResolution)
+            ? isExactValue(rResolution)
+                ? lResolution.value === rResolution.value
+                    ? equal
+                    : empty
+                : checkRules(domain, lResolution.value, rResolution, scope)
+                ? l
+                : empty
+            : isExactValue(rResolution)
+            ? checkRules(domain, rResolution.value, lResolution, scope)
+                ? r
+                : empty
+            : rulesIntersection(lResolution, rResolution, { domain, scope })
     }
-    const lComparisons = listFrom(l)
-    const rComparisons = listFrom(r)
-    const comparison = compareConditions(listFrom(l), listFrom(r), context)
+    const lComparisons = listFrom(lResolution)
+    const rComparisons = listFrom(rResolution)
+    const comparison = compareBranches(
+        domain,
+        lComparisons,
+        rComparisons,
+        scope
+    )
+    // TODO: Abstract these into comparison functions, clarify meaning across union/intersection
     if (
         comparison.equalPairs.length === lComparisons.length &&
         comparison.equalPairs.length === rComparisons.length
@@ -83,30 +96,39 @@ export const comparePredicates = (
     return comparison
 }
 
-type PredicateComparison = SetOperationResult<Predicate> | ConditionsComparison
+type PredicateComparison = SetOperationResult<Predicate> | BranchComparison
 
-export const isConditionsComparison = (
+export type PredicateComparisonReducer = (
     comparison: PredicateComparison
-): comparison is ConditionsComparison =>
-    (comparison as ConditionsComparison)?.intersections !== undefined
+) => SetOperationResult<Predicate>
 
-type ConditionsComparison = {
+export const isBranchComparison = (
+    comparison: PredicateComparison
+): comparison is BranchComparison =>
+    (comparison as BranchComparison)?.intersections !== undefined
+
+type BranchComparison = {
+    lConditions: List<Condition>
+    rConditions: List<Condition>
     lSubconditionsOfR: number[]
     rSubconditionsOfL: number[]
     equalPairs: [lIndex: number, rIndex: number][]
     intersections: List<Condition>
 }
 
-const compareConditions = (
+const compareBranches = (
+    domain: Domain,
     lConditions: List<Condition>,
     rConditions: List<Condition>,
-    context: PredicateContext
-): ConditionsComparison => {
-    const result: ConditionsComparison = {
-        intersections: [],
+    scope: ScopeRoot
+): BranchComparison => {
+    const result: BranchComparison = {
+        lConditions,
+        rConditions,
         lSubconditionsOfR: [],
         rSubconditionsOfL: [],
-        equalPairs: []
+        equalPairs: [],
+        intersections: []
     }
     const pairs = rConditions.map((condition) => ({
         condition,
@@ -119,8 +141,8 @@ const compareConditions = (
                 return null
             }
             const r = rPairs.condition
-            const keyResult = conditionIntersection(l, r, context)
-            switch (keyResult) {
+            const keyIntersection = predicateIntersection(domain, l, r, scope)
+            switch (keyIntersection) {
                 case empty:
                     // doesn't tell us about any redundancies or add a distinct pair
                     return null
@@ -148,7 +170,9 @@ const compareConditions = (
                     // Neither branch is a subtype of the other, return
                     // the result of the intersection as a candidate
                     // branch for the final union
-                    return keyResult
+                    // TODO: Fix type here, should be able to handle lists etc. as well.
+                    // Should maybe add all branches from list result?
+                    return keyIntersection as any
             }
         })
         if (!lImpliesR) {
@@ -161,32 +185,4 @@ const compareConditions = (
     })
     result.intersections = pairs.flatMap((pairs) => pairs.distinct ?? [])
     return result
-}
-
-export const compareConditions = (
-    l: Condition,
-    r: Condition,
-    context: PredicateContext
-) => {
-    const lResolution =
-        typeof l === "string"
-            ? context.scope.resolveToDomain(l, context.domain)
-            : l
-    const rResolution =
-        typeof r === "string"
-            ? context.scope.resolveToDomain(r, context.domain)
-            : r
-    return isExactValue(lResolution)
-        ? isExactValue(rResolution)
-            ? lResolution.value === rResolution.value
-                ? equal
-                : empty
-            : checkRules(lResolution.value, rResolution, context)
-            ? l
-            : empty
-        : isExactValue(rResolution)
-        ? checkRules(rResolution.value, lResolution, context)
-            ? r
-            : empty
-        : rulesIntersection(lResolution, rResolution, context)
 }
