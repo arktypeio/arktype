@@ -48,4 +48,14 @@ describe("struct", () => {
             }
         })
     })
+    test("escaped optional token", () => {
+        const t = type({ "a\\?": "string" })
+        attest(t.infer).typed as { "a?": string }
+        attest(t.root).equals({
+            object: {
+                props: { "a?": "string" },
+                requiredKeys: { "a?": true }
+            }
+        })
+    })
 })

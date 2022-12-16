@@ -59,23 +59,11 @@ describe("parse enclosed", () => {
             | "yes|no"
             | "true|false"
     })
-    describe("escape characters", () => {
-        test("enclosed", () => {
-            const t = type("'don\\'t'")
-            attest(t.infer).typed as "don't"
-            attest(type("'don\\'t'").root).equals({
-                string: { value: "don't" }
-            })
-        })
-        test("optional key", () => {
-            const t = type({ "a\\?": "string" })
-            attest(t.infer).typed as { "a?": string }
-            attest(t.root).equals({
-                object: {
-                    props: { "a?": "string" },
-                    requiredKeys: { "a?": true }
-                }
-            })
+    test("escaped enclosing", () => {
+        const t = type("'don\\'t'")
+        attest(t.infer).typed as "don't"
+        attest(type("'don\\'t'").root).equals({
+            string: { value: "don't" }
         })
     })
 })
