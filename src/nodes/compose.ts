@@ -1,10 +1,8 @@
 import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/classify.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dictionary, mutable, stringKeyOf } from "../utils/generics.js"
 import { keywords } from "./keywords.js"
 import type { TypeNode, TypeSet } from "./node.js"
-import type { Condition, Predicate } from "./predicate.js"
 import { resolveIfIdentifier } from "./utils.js"
 
 type ContextFreeSetOperation<t, result extends t> = (

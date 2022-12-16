@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type { Domain, inferDomain } from "../utils/classify.js"
+import type { Domain } from "../utils/classify.js"
 import type { defined } from "../utils/generics.js"
 import { keysOf } from "../utils/generics.js"
 import { intersection } from "./intersection.js"
@@ -24,17 +24,22 @@ export const resolvePredicateIfIdentifier = (
 export const nodeExtends = (node: TypeNode, base: TypeNode, scope: ScopeRoot) =>
     intersection(node, base, scope) === node
 
-export const isExactValue = (
+export const isExactValue = <domain extends Domain>(
     node: TypeNode,
-    domain: Domain,
+    domain: domain,
     scope: ScopeRoot
-): node is { [domain in Domain]: { value: inferDomain<domain> } } => {
+): node is { [_ in domain]: ExactValue<domain> } => {
     const resolution = resolveIfIdentifier(node, scope)
     return (
         nodeExtendsDomain(resolution, domain, scope) &&
-        (resolution[domain] as ExactValue).value !== undefined
+        isExactValuePredicate(resolution[domain])
     )
 }
+
+export const isExactValuePredicate = (
+    predicate: Predicate
+): predicate is ExactValue =>
+    typeof predicate === "object" && "value" in predicate
 
 export const domainOfNode = (
     node: TypeNode,

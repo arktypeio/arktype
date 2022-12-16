@@ -1,14 +1,18 @@
-import type { ScopeRoot } from "../scope.js"
-import { checkNode } from "../traverse/check.js"
-import { hasObjectDomain } from "../utils/classify.js"
-import type { Dictionary, keySet, mutable } from "../utils/generics.js"
-import { hasKeys, keyCount } from "../utils/generics.js"
-import { tryParseWellFormedNumber } from "../utils/numericLiterals.js"
-import { composeIntersection, composeKeyedOperation, equal } from "./compose.js"
-import { nodeIntersection } from "./intersection.js"
-import type { TypeNode } from "./node.js"
-import type { PredicateContext } from "./predicate.js"
-import type { RuleSet } from "./rules/rules.js"
+import type { ScopeRoot } from "../../scope.js"
+import { checkNode } from "../../traverse/check.js"
+import { hasObjectDomain } from "../../utils/classify.js"
+import type { Dictionary, keySet, mutable } from "../../utils/generics.js"
+import { hasKeys, keyCount } from "../../utils/generics.js"
+import { tryParseWellFormedNumber } from "../../utils/numericLiterals.js"
+import {
+    composeIntersection,
+    composeKeyedOperation,
+    equal
+} from "../compose.js"
+import { nodeIntersection } from "../intersection.js"
+import type { TypeNode } from "../node.js"
+import type { PredicateContext } from "../predicate.js"
+import type { RuleSet } from "./rules.js"
 
 // TODO: Never propagation
 export const propsIntersection = composeIntersection<

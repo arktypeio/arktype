@@ -18,7 +18,7 @@ import {
 } from "../compose.js"
 import type { TypeNode } from "../node.js"
 import type { PredicateContext } from "../predicate.js"
-import { propsIntersection, requiredKeysIntersection } from "../props.js"
+import { propsIntersection, requiredKeysIntersection } from "./props.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
 import { divisorIntersection } from "./divisor.js"
 import type { Range } from "./range.js"
