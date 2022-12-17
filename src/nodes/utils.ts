@@ -16,7 +16,7 @@ export const resolvePredicateIfIdentifier = (
     domain: Domain,
     predicate: Predicate,
     scope: ScopeRoot
-): Exclude<Predicate, string> =>
+) =>
     typeof predicate === "string"
         ? scope.resolveToDomain(predicate, domain)
         : predicate

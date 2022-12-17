@@ -7,9 +7,9 @@ import type { error } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
-import { Scanner } from "../scanner.js"
 import { buildUnpairableComparatorMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
+import { Scanner } from "../scanner.js"
 
 export const parseBound = (
     s: DynamicState,

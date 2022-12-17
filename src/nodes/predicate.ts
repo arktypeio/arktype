@@ -32,6 +32,11 @@ export type PredicateContext = {
     scope: ScopeRoot
 }
 
+export type ResolvedPredicate<
+    domain extends Domain = Domain,
+    scope extends Dictionary = Dictionary
+> = Exclude<Predicate<domain, scope>, string>
+
 export type PredicateComparison =
     | SetOperationResult<Predicate>
     | BranchComparison

@@ -1,6 +1,6 @@
 import { keywords } from "./nodes/keywords.js"
 import type { TypeNode, TypeSet } from "./nodes/node.js"
-import type { Predicate } from "./nodes/predicate.js"
+import type { ResolvedPredicate } from "./nodes/predicate.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
@@ -126,7 +126,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
         name: string,
         domain: domain,
         seen: string[]
-    ): Exclude<Predicate<domain>, string> {
+    ): ResolvedPredicate<domain, inferred> {
         const resolution = this.resolve(name)[domain]
         if (resolution === undefined) {
             return throwInternalError(

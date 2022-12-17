@@ -8,8 +8,8 @@ import type {
     RegexLiteral
 } from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"
-import type { Scanner } from "./shift/scanner.js"
 import type { StringLiteral } from "./shift/operand/enclosed.js"
+import type { Scanner } from "./shift/scanner.js"
 
 export type inferAst<
     ast,

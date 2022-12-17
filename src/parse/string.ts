@@ -4,11 +4,11 @@ import type { ScopeRoot } from "../scope.js"
 import type { Dictionary, error, stringKeyOf } from "../utils/generics.js"
 import type { inferAst, validateAstSemantics } from "./ast.js"
 import { DynamicState } from "./reduce/dynamic.js"
-import type { Scanner } from "./shift/scanner.js"
 import type { state, StaticState } from "./reduce/static.js"
 import { parseOperand } from "./shift/operand/operand.js"
 import type { isResolvableIdentifier } from "./shift/operand/unenclosed.js"
 import { parseOperator } from "./shift/operator/operator.js"
+import type { Scanner } from "./shift/scanner.js"
 
 export const parseString = (def: string, scope: ScopeRoot) =>
     scope.memoizedParse(def)

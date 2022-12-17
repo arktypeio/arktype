@@ -1,8 +1,8 @@
 import type { error } from "../../../utils/generics.js"
 import { tryParseWellFormedInteger } from "../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
-import type { Scanner } from "../scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"
+import type { Scanner } from "../scanner.js"
 
 export const parseDivisor = (s: DynamicState) => {
     const divisorToken = s.scanner.shiftUntilNextTerminator()

@@ -1,7 +1,7 @@
 import type { error } from "../../../utils/generics.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
-import type { Scanner } from "../scanner.js"
 import type { state, StaticState } from "../../reduce/static.js"
+import type { Scanner } from "../scanner.js"
 import type { EnclosingChar } from "./enclosed.js"
 import { enclosingChar, parseEnclosed } from "./enclosed.js"
 import { buildMissingOperandMessage, parseUnenclosed } from "./unenclosed.js"
