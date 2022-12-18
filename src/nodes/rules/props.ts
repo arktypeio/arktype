@@ -14,6 +14,31 @@ import type { TypeNode } from "../node.js"
 import type { PredicateContext } from "../predicate.js"
 import type { RuleSet } from "./rules.js"
 
+// export type PropSet<scope extends Dictionary = Dictionary> = Dictionary<
+//     TypeNode<scope>
+// >
+
+// export type PropsAttribute<scope extends Dictionary = Dictionary> = {
+//     required: PropSet<scope>
+//     optional: PropSet<scope>
+//     mapped: PropSet<scope>
+// }
+
+// export const propsAttributeIntersection = composeIntersection<
+//     PropsAttribute,
+//     PredicateContext
+// >((l) => l)
+
+// export const propSetIntersection = composeIntersection<
+//     Dictionary<TypeNode>,
+//     PredicateContext
+// >(
+//     composeKeyedOperation<Dictionary<TypeNode>, PredicateContext>(
+//         (propKey, l, r, context) => nodeIntersection(l, r, context.scope),
+//         { onEmpty: "never" }
+//     )
+// )
+
 // TODO: Never propagation
 export const propsIntersection = composeIntersection<
     Dictionary<TypeNode>,
