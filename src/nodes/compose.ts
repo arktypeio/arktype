@@ -80,13 +80,13 @@ export type KeyReducer<root extends Dictionary, context> =
     | KeyReducerMap<root, context>
 
 export type KeyedOperationConfig = {
-    propagateEmpty?: true
+    onEmpty: "delete" | "never" | "bubble" | "throw"
 }
 
 export const composeKeyedOperation =
     <root extends Dictionary, context>(
         reducer: KeyReducer<root, context>,
-        config?: KeyedOperationConfig
+        config: KeyedOperationConfig
     ): ContextualSetOperation<root, context, root> =>
     (l, r, context) => {
         const result = {} as mutable<root>
@@ -103,13 +103,19 @@ export const composeKeyedOperation =
                     result[k] = l[k]
                 }
             } else if (keyResult === empty) {
-                if (config?.propagateEmpty) {
-                    // TODO: Figure out a final solution for this
+                if (config.onEmpty === "never") {
+                    result[k] = keywords.never as any
+                } else if (config.onEmpty === "delete") {
+                    delete result[k]
+                    lImpliesR = false
+                    rImpliesL = false
+                } else if (config.onEmpty === "bubble") {
                     return empty
+                } else {
+                    return throwInternalError(
+                        `Unexpected empty operation result at key '${k}'`
+                    )
                 }
-                delete result[k]
-                lImpliesR = false
-                rImpliesL = false
             } else {
                 if (keyResult !== undefined) {
                     result[k] = keyResult

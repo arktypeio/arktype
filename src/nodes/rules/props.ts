@@ -21,7 +21,7 @@ export const propsIntersection = composeIntersection<
 >(
     composeKeyedOperation<Dictionary<TypeNode>, PredicateContext>(
         (propKey, l, r, context) => nodeIntersection(l, r, context.scope),
-        { propagateEmpty: true }
+        { onEmpty: "never" }
     )
 )
 

@@ -158,6 +158,6 @@ export const listFrom = <t>(data: t) =>
 
 export type CollapsibleList<t> = t | List<t>
 
-export const collapsibleIfSingleton = <list extends List>(
+export const collapseIfSingleton = <list extends List>(
     list: list
 ): list | list[number] => (list.length === 1 ? list[0] : list)

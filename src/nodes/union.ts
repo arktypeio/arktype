@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import { collapsibleIfSingleton } from "../utils/generics.js"
+import { collapseIfSingleton } from "../utils/generics.js"
 import { isBranchComparison } from "./branches.js"
 import type { KeyReducerFn } from "./compose.js"
 import {
@@ -34,7 +34,7 @@ export const predicateUnion: KeyReducerFn<Required<TypeSet>, ScopeRoot> = (
             ? true
             : ([l, r] as Condition[])
     }
-    return collapsibleIfSingleton([
+    return collapseIfSingleton([
         ...comparison.lConditions.filter(
             (_, lIndex) =>
                 !comparison.lSubconditionsOfR.includes(lIndex) &&
@@ -61,7 +61,8 @@ export const typeSetUnion = composeKeyedOperation<TypeSet, ScopeRoot>(
             return l
         }
         return predicateUnion(domain, l, r, scope)
-    }
+    },
+    { onEmpty: "throw" }
 )
 
 export const nodeUnion = composeNodeOperation(typeSetUnion)

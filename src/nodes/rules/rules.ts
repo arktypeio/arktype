@@ -98,5 +98,5 @@ export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
         range: rangeIntersection,
         validator: validatorIntersection
     },
-    { propagateEmpty: true }
+    { onEmpty: "bubble" }
 )
