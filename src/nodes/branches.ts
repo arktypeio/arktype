@@ -1,6 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/classify.js"
-import { classify, hasDomain } from "../utils/classify.js"
+import type { Domain } from "../utils/domains.js"
+import { domainOf, hasDomain } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { List } from "../utils/generics.js"
 import { empty, equal } from "./compose.js"
@@ -85,7 +85,7 @@ export const compareBranches = (
                             return keyIntersection
                         }
                         return throwInternalError(
-                            `Unexpected predicate intersection result of type '${classify(
+                            `Unexpected predicate intersection result of type '${domainOf(
                                 keyIntersection
                             )}'`
                         )

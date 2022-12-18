@@ -6,8 +6,8 @@ import type { Validator } from "../nodes/rules/rules.js"
 import { union } from "../nodes/union.js"
 import { resolveIfIdentifier } from "../nodes/utils.js"
 import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/classify.js"
-import { hasObjectDomain, subclassify } from "../utils/classify.js"
+import type { Domain } from "../utils/domains.js"
+import { domainOf, hasKind } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
     Dictionary,
@@ -117,12 +117,12 @@ const parseBranchTuple: TupleExpressionParser<"|" | "&"> = (def, scope) => {
 }
 
 const buildMalformedConstraintMessage = (constraint: unknown) =>
-    `Constraint tuple must include a functional right operand (got ${subclassify(
+    `Constraint tuple must include a functional right operand (got ${domainOf(
         constraint
     )})`
 
 const parseConstraintTuple: TupleExpressionParser<":"> = (def, scope) => {
-    if (!hasObjectDomain(def[2], "Function")) {
+    if (!hasKind(def[2], "Function")) {
         return throwParseError(buildMalformedConstraintMessage(":"))
     }
     const constrained = parseDefinition(def[0], scope)

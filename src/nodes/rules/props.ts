@@ -1,6 +1,6 @@
 import type { ScopeRoot } from "../../scope.js"
 import { checkNode } from "../../traverse/check.js"
-import { hasObjectDomain } from "../../utils/classify.js"
+import { hasKind } from "../../utils/domains.js"
 import type { Dictionary, keySet, mutable } from "../../utils/generics.js"
 import { hasKeys, keyCount } from "../../utils/generics.js"
 import { tryParseWellFormedNumber } from "../../utils/numericLiterals.js"
@@ -42,7 +42,7 @@ export const checkObject = (
     rules: RuleSet<"object", Dictionary>,
     scope: ScopeRoot
 ) => {
-    if (hasObjectDomain(data, "Array") && isSimpleArray(rules)) {
+    if (hasKind(data, "Array") && isSimpleArray(rules)) {
         return data.every((elementData) =>
             checkNode(elementData, rules.propTypes.number, scope)
         )

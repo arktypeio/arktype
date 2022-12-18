@@ -1,4 +1,4 @@
-import { classify } from "../utils/classify.js"
+import { domainOf } from "../utils/domains.js"
 
 export type BaseProblemConfig = {
     omitActual?: boolean
@@ -44,7 +44,7 @@ export class Stringifiable<Data = unknown> {
     constructor(public raw: Data) {}
 
     get typeOf() {
-        return classify(this.raw)
+        return domainOf(this.raw)
     }
 
     // TODO: Fix

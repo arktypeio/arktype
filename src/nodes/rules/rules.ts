@@ -1,9 +1,9 @@
 import type {
-    classify,
     Domain,
+    domainOf,
     inferDomain,
-    ObjectDomain
-} from "../../utils/classify.js"
+    ObjectKind
+} from "../../utils/domains.js"
 import type {
     CollapsibleList,
     Dictionary,
@@ -37,7 +37,7 @@ export type Rules<
         readonly number?: TypeNode<scope>
         readonly string?: TypeNode<scope>
     }
-    readonly kind?: ObjectDomain
+    readonly kind?: ObjectKind
     readonly range?: Range
     readonly validator?: ValidatorRule<domain>
 }
@@ -49,7 +49,7 @@ export type ValidatorRule<domain extends Domain = Domain> = CollapsibleList<
 export type Validator<data = unknown> = (data: data) => boolean
 
 export type DistributedValidator<data = unknown> = evaluate<{
-    [domain in classify<data>]?: Validator<Extract<data, inferDomain<domain>>>
+    [domain in domainOf<data>]?: Validator<Extract<data, inferDomain<domain>>>
 }>
 
 export type RuleSet<
@@ -68,9 +68,9 @@ export type RuleSet<
           | "validator",
           scope
       >
-    : domain extends string
+    : domain extends "string"
     ? defineRuleSet<"string", "regex" | "range" | "validator", scope>
-    : domain extends number
+    : domain extends "number"
     ? defineRuleSet<"number", "divisor" | "range" | "validator", scope>
     : defineRuleSet<domain, "validator", scope>
 
@@ -80,8 +80,8 @@ type defineRuleSet<
     scope extends Dictionary
 > = Pick<Rules<domain, scope>, keys>
 
-export const objectKindIntersection = composeIntersection<ObjectDomain>(
-    (l, r) => (l === r ? equal : empty)
+export const kindIntersection = composeIntersection<ObjectKind>((l, r) =>
+    l === r ? equal : empty
 )
 
 const validatorIntersection =
@@ -89,7 +89,7 @@ const validatorIntersection =
 
 export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
     {
-        kind: objectKindIntersection,
+        kind: kindIntersection,
         divisor: divisorIntersection,
         regex: regexIntersection,
         props: propsIntersection,

@@ -1,4 +1,4 @@
-import type { Domain } from "../utils/classify.js"
+import type { Domain } from "../utils/domains.js"
 import type { Dictionary, stringKeyOf } from "../utils/generics.js"
 import type { Keyword } from "./keywords.js"
 import type { Predicate } from "./predicate.js"

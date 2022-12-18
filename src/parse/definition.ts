@@ -1,7 +1,7 @@
 import type { TypeNode } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
-import type { Domain, ObjectDomain, Primitive } from "../utils/classify.js"
-import { classify, classifyObject } from "../utils/classify.js"
+import type { Domain, ObjectKind, Primitive } from "../utils/domains.js"
+import { domainOf, kindOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
     Dictionary,
@@ -18,12 +18,12 @@ import type { inferTuple, validateTuple } from "./tuple.js"
 import { parseTuple } from "./tuple.js"
 
 export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
-    const domain = classify(def)
+    const domain = domainOf(def)
     if (domain === "string") {
         return parseString(def as string, scope)
     }
     if (domain === "object") {
-        const objectDomain = classifyObject(def as object)
+        const objectDomain = kindOf(def as object)
         if (objectDomain === "Object") {
             return parseRecord(def as Dictionary, scope)
         } else if (objectDomain === "Array") {
@@ -62,7 +62,7 @@ export type validateDefinition<
     : def extends List
     ? validateTuple<def, scope>
     : def extends Primitive
-    ? buildBadDefinitionTypeMessage<classify<def>>
+    ? buildBadDefinitionTypeMessage<domainOf<def>>
     : // At runtime we implicitly check for other invalid object domains, so that,
     // for example, if an Error or Map were passed as a definition, we would not
     // try and parse it. However, that seems too niche a case to incur the type
@@ -81,12 +81,11 @@ export type buildUninferableDefinitionMessage<
     `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
 
 export const buildBadDefinitionTypeMessage = <
-    actual extends Domain | ObjectDomain
+    actual extends Domain | ObjectKind
 >(
     actual: actual
 ): buildBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
-export type buildBadDefinitionTypeMessage<
-    actual extends Domain | ObjectDomain
-> = `Type definitions must be strings or objects (was ${actual})`
+export type buildBadDefinitionTypeMessage<actual extends Domain | ObjectKind> =
+    `Type definitions must be strings or objects (was ${actual})`

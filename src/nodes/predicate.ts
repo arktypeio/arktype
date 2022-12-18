@@ -1,7 +1,7 @@
 import type { ScopeRoot } from "../scope.js"
 import { checkRules } from "../traverse/check.js"
-import type { Domain, inferDomain } from "../utils/classify.js"
-import { hasObjectDomain } from "../utils/classify.js"
+import type { Domain, inferDomain } from "../utils/domains.js"
+import { hasKind } from "../utils/domains.js"
 import type { CollapsibleList, Dictionary } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
 import type { BranchComparison } from "./branches.js"
@@ -55,10 +55,7 @@ export const comparePredicates = (
     if (rResolution === true) {
         return l
     }
-    if (
-        hasObjectDomain(lResolution, "Object") &&
-        hasObjectDomain(rResolution, "Object")
-    ) {
+    if (hasKind(lResolution, "Object") && hasKind(rResolution, "Object")) {
         return isExactValuePredicate(lResolution)
             ? isExactValuePredicate(rResolution)
                 ? lResolution.value === rResolution.value

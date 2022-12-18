@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/classify.js"
+import type { Domain } from "../utils/domains.js"
 import type { defined } from "../utils/generics.js"
 import { keysOf } from "../utils/generics.js"
 import { intersection } from "./intersection.js"
