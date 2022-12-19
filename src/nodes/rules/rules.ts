@@ -26,12 +26,8 @@ export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
     readonly props?: PropSet<scope>
     readonly kind?: ObjectKind
     readonly range?: Range
-    readonly validator?: ValidatorRule<domain>
+    readonly validator?: CollapsibleTuple<Validator<inferDomain<domain>>>
 }
-
-export type ValidatorRule<domain extends Domain = Domain> = CollapsibleTuple<
-    Validator<inferDomain<domain>>
->
 
 export type Validator<data = unknown> = (data: data) => boolean
 
