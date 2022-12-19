@@ -1,6 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError } from "../utils/errors.js"
-import type { Dictionary, mutable, stringKeyOf } from "../utils/generics.js"
+import type { Dict, mutable, stringKeyOf } from "../utils/generics.js"
 import { keywords } from "./keywords.js"
 import type { TypeNode, TypeSet } from "./node.js"
 import { resolveIfIdentifier } from "./utils.js"
@@ -62,20 +62,18 @@ export const equal = Symbol("equal")
 
 export type equal = typeof equal
 
-export type KeyReducerMap<root extends Dictionary, context> = {
+export type KeyReducerMap<root extends Dict, context> = {
     [k in keyof root]-?: SetOperation<root[k], context>
 }
 
-export type KeyReducerFn<root extends Dictionary, context> = <
-    key extends keyof root
->(
+export type KeyReducerFn<root extends Dict, context> = <key extends keyof root>(
     key: key,
     l: root[key],
     r: root[key],
     context: context
 ) => SetOperationResult<root[key]>
 
-export type KeyReducer<root extends Dictionary, context> =
+export type KeyReducer<root extends Dict, context> =
     | KeyReducerFn<root, context>
     | KeyReducerMap<root, context>
 
@@ -84,7 +82,7 @@ export type KeyedOperationConfig = {
 }
 
 export const composeKeyedOperation =
-    <root extends Dictionary, context>(
+    <root extends Dict, context>(
         reducer: KeyReducer<root, context>,
         config: KeyedOperationConfig
     ): ContextualSetOperation<root, context, root> =>

@@ -4,11 +4,7 @@ import type {
     inferDomain,
     ObjectKind
 } from "../../utils/domains.js"
-import type {
-    CollapsibleList,
-    Dictionary,
-    evaluate
-} from "../../utils/generics.js"
+import type { CollapsibleTuple, Dict, evaluate } from "../../utils/generics.js"
 import {
     composeIntersection,
     composeKeyedOperation,
@@ -24,11 +20,8 @@ import type { Range } from "./range.js"
 import { rangeIntersection } from "./range.js"
 import { regexIntersection } from "./regex.js"
 
-export type Rules<
-    domain extends Domain = Domain,
-    scope extends Dictionary = Dictionary
-> = {
-    readonly regex?: CollapsibleList<string>
+export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
+    readonly regex?: CollapsibleTuple<string>
     readonly divisor?: number
     readonly props?: PropSet<scope>
     readonly kind?: ObjectKind
@@ -36,7 +29,7 @@ export type Rules<
     readonly validator?: ValidatorRule<domain>
 }
 
-export type ValidatorRule<domain extends Domain = Domain> = CollapsibleList<
+export type ValidatorRule<domain extends Domain = Domain> = CollapsibleTuple<
     Validator<inferDomain<domain>>
 >
 
@@ -48,7 +41,7 @@ export type DistributedValidator<data = unknown> = evaluate<{
 
 export type RuleSet<
     domain extends Domain,
-    scope extends Dictionary
+    scope extends Dict
 > = Domain extends domain
     ? Rules
     : domain extends "object"
@@ -62,7 +55,7 @@ export type RuleSet<
 type defineRuleSet<
     domain extends Domain,
     keys extends keyof Rules,
-    scope extends Dictionary
+    scope extends Dict
 > = Pick<Rules<domain, scope>, keys>
 
 export const kindIntersection = composeIntersection<ObjectKind>((l, r) =>
@@ -70,7 +63,7 @@ export const kindIntersection = composeIntersection<ObjectKind>((l, r) =>
 )
 
 const validatorIntersection =
-    composeIntersection<CollapsibleList<Validator>>(collapsibleListUnion)
+    composeIntersection<CollapsibleTuple<Validator>>(collapsibleListUnion)
 
 export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
     {

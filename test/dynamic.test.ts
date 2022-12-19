@@ -3,7 +3,7 @@ import { attest } from "../dev/attest/exports.js"
 import { buildUnresolvableMessage } from "../src/parse/shift/operand/unenclosed.js"
 import { scope } from "../src/scope.js"
 import { type } from "../src/type.js"
-import type { Dictionary } from "../src/utils/generics.js"
+import type { Dict } from "../src/utils/generics.js"
 
 describe("dynamic", () => {
     test("uninferred types", () => {
@@ -25,7 +25,7 @@ describe("dynamic", () => {
         }).throwsAndHasTypeError(buildUnresolvableMessage("nonexistent"))
     })
     test("uninferred scope", () => {
-        const unknownScope = scope.dynamic({ a: "string" } as Dictionary)
+        const unknownScope = scope.dynamic({ a: "string" } as Dict)
         attest(unknownScope.a.infer).typed as unknown
         // Allows any references but will throw at runtime
         attest(() => unknownScope.b.infer).throws.snap(

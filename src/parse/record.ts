@@ -1,12 +1,12 @@
 import type { TypeNode } from "../nodes/node.js"
 import type { PropSet } from "../nodes/rules/props.js"
 import type { ScopeRoot } from "../scope.js"
-import type { Dictionary, evaluate, mutable } from "../utils/generics.js"
+import type { Dict, evaluate, mutable } from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
 import { Scanner } from "./shift/scanner.js"
 
-export const parseRecord = (def: Dictionary, scope: ScopeRoot): TypeNode => {
+export const parseRecord = (def: Dict, scope: ScopeRoot): TypeNode => {
     const props: mutable<PropSet> = {}
     for (const definitionKey in def) {
         const propNode = parseDefinition(def[definitionKey], scope)
@@ -30,8 +30,8 @@ type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`
     : k
 
 export type inferRecord<
-    def extends Dictionary,
-    scope extends Dictionary,
+    def extends Dict,
+    scope extends Dict,
     aliases
 > = evaluate<
     {

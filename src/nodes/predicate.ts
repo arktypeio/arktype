@@ -2,8 +2,8 @@ import type { ScopeRoot } from "../scope.js"
 import { checkRules } from "../traverse/check.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { hasKind } from "../utils/domains.js"
-import type { CollapsibleList, Dictionary } from "../utils/generics.js"
-import { listFrom } from "../utils/generics.js"
+import type { CollapsibleTuple, Dict } from "../utils/generics.js"
+import { toArray } from "../utils/generics.js"
 import type { BranchComparison } from "./branches.js"
 import { compareBranches } from "./branches.js"
 import type { SetOperationResult } from "./compose.js"
@@ -15,12 +15,12 @@ import { isExactValuePredicate, resolvePredicateIfIdentifier } from "./utils.js"
 
 export type Predicate<
     domain extends Domain = Domain,
-    scope extends Dictionary = Dictionary
-> = true | CollapsibleList<Condition<domain, scope>>
+    scope extends Dict = Dict
+> = true | CollapsibleTuple<Condition<domain, scope>>
 
 export type Condition<
     domain extends Domain = Domain,
-    scope extends Dictionary = Dictionary
+    scope extends Dict = Dict
 > = RuleSet<domain, scope> | ExactValue<domain> | Identifier<scope>
 
 export type ExactValue<domain extends Domain = Domain> = {
@@ -34,7 +34,7 @@ export type PredicateContext = {
 
 export type ResolvedPredicate<
     domain extends Domain = Domain,
-    scope extends Dictionary = Dictionary
+    scope extends Dict = Dict
 > = Exclude<Predicate<domain, scope>, string>
 
 export type PredicateComparison =
@@ -70,8 +70,8 @@ export const comparePredicates = (
                 : empty
             : rulesIntersection(lResolution, rResolution, { domain, scope })
     }
-    const lComparisons = listFrom(lResolution)
-    const rComparisons = listFrom(rResolution)
+    const lComparisons = toArray(lResolution)
+    const rComparisons = toArray(rResolution)
     const comparison = compareBranches(
         domain,
         lComparisons,

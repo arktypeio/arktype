@@ -1,4 +1,4 @@
-import type { Dictionary } from "../../utils/generics.js"
+import type { Dict } from "../../utils/generics.js"
 import {
     composeIntersection,
     composeKeyedOperation,
@@ -9,18 +9,15 @@ import { nodeIntersection } from "../intersection.js"
 import type { TypeNode } from "../node.js"
 import type { PredicateContext } from "../predicate.js"
 
-export type PropSet<scope extends Dictionary = Dictionary> = Dictionary<
-    Prop<scope>
->
+export type PropSet<scope extends Dict = Dict> = {
+    readonly [propKey in string]: Prop<scope>
+}
 
-export type Prop<scope extends Dictionary = Dictionary> =
+export type Prop<scope extends Dict = Dict> =
     | TypeNode<scope>
     | OptionalProp<scope>
 
-export type OptionalProp<scope extends Dictionary = Dictionary> = [
-    "?",
-    TypeNode<scope>
-]
+export type OptionalProp<scope extends Dict = Dict> = ["?", TypeNode<scope>]
 
 const isOptional = (prop: Prop): prop is OptionalProp =>
     (prop as OptionalProp)[0] === "?"

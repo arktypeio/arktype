@@ -46,7 +46,6 @@ export const domainOfNode = (
     scope: ScopeRoot
 ): Domain | Domain[] => {
     const domains = keysOf(resolveIfIdentifier(node, scope))
-    // TODO: Handle never here
     return domains.length === 1 ? domains[0] : domains
 }
 

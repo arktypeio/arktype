@@ -1,4 +1,3 @@
-import type { Dictionary } from "../utils/generics.js"
 import type { TypeNode, TypeSet } from "./node.js"
 
 export const morph = (name: MorphName, type: TypeNode) => morphs[name](type)
@@ -14,4 +13,4 @@ const morphs = {
             }
         }
     })
-} satisfies Dictionary<(input: TypeNode) => TypeNode>
+} satisfies { [morphName: string]: (input: TypeNode) => TypeNode }

@@ -9,13 +9,7 @@ import type { ScopeRoot } from "../scope.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf, hasKind } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
-import type {
-    Dictionary,
-    error,
-    evaluate,
-    List,
-    mutable
-} from "../utils/generics.js"
+import type { Dict, error, evaluate, List, mutable } from "../utils/generics.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
 import { buildMissingRightOperandMessage } from "./shift/operand/unenclosed.js"
@@ -39,7 +33,7 @@ export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
 
 export type inferTuple<
     def extends List,
-    scope extends Dictionary,
+    scope extends Dict,
     aliases
 > = def extends UnknownTupleExpression
     ? inferTupleExpression<def, scope, aliases>
@@ -49,7 +43,7 @@ export type inferTuple<
 
 export type validateTuple<
     def extends List,
-    scope extends Dictionary
+    scope extends Dict
 > = def extends UnknownTupleExpression
     ? validateTupleExpression<def, scope>
     : {
@@ -58,7 +52,7 @@ export type validateTuple<
 
 type validateTupleExpression<
     def extends UnknownTupleExpression,
-    scope extends Dictionary
+    scope extends Dict
 > = def[1] extends ":"
     ? validateNarrowTuple<def[0], scope>
     : def[1] extends Scanner.BranchToken
@@ -73,7 +67,7 @@ type validateTupleExpression<
     ? [validateDefinition<def[0], scope>, "[]"]
     : never
 
-type validateNarrowTuple<constrainedDef, scope extends Dictionary> = [
+type validateNarrowTuple<constrainedDef, scope extends Dict> = [
     validateDefinition<constrainedDef, scope>,
     ":",
     Validator<inferDefinition<constrainedDef, scope, scope>>
@@ -81,7 +75,7 @@ type validateNarrowTuple<constrainedDef, scope extends Dictionary> = [
 
 type inferTupleExpression<
     def extends UnknownTupleExpression,
-    scope extends Dictionary,
+    scope extends Dict,
     aliases
 > = def[1] extends ":"
     ? inferDefinition<def[0], scope, aliases>

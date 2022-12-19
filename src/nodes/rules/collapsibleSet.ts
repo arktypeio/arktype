@@ -1,11 +1,11 @@
 import { hasKind } from "../../utils/domains.js"
-import type { CollapsibleList, List } from "../../utils/generics.js"
+import type { CollapsibleTuple, List } from "../../utils/generics.js"
 import { equal } from "../compose.js"
 
 export const collapsibleListUnion = <t>(
-    l: CollapsibleList<t>,
-    r: CollapsibleList<t>
-): CollapsibleList<t> | equal => {
+    l: CollapsibleTuple<t>,
+    r: CollapsibleTuple<t>
+): CollapsibleTuple<t> | equal => {
     if (hasKind(l, "Array")) {
         if (hasKind(r, "Array")) {
             const result = listUnion(l, r)

@@ -1,10 +1,4 @@
-import type {
-    classOf,
-    Dictionary,
-    evaluate,
-    isTopType,
-    List
-} from "./generics.js"
+import type { classOf, Dict, evaluate, isTopType, List } from "./generics.js"
 import { isKeyOf } from "./generics.js"
 
 export const hasDomain = <data, domain extends Domain>(
@@ -80,7 +74,7 @@ export type ObjectKinds = {
     Error: Error
     Function: Function
     Map: Map<unknown, unknown>
-    Object: Dictionary
+    Object: Dict
     RegExp: RegExp
     Set: Set<unknown>
 }
@@ -93,7 +87,7 @@ const objectKinds = {
     Error,
     Function,
     Map,
-    Object: Object as unknown as classOf<Dictionary>,
+    Object: Object as unknown as classOf<Dict>,
     RegExp,
     Set
 } satisfies {
@@ -127,7 +121,7 @@ export const kindOf = <data extends object>(data: data) => {
     if (isKeyOf(prototypeName, objectKinds)) {
         return data instanceof objectKinds[prototypeName]
             ? prototypeName
-            : // If the prototype has the same name as one of the builtin types but isn't an instance of it, fall back to Object
+            : // If the prototype has the same name as one of the builtin types but isn't an instance of it, fall back to Record
               "Object"
     }
     if (prototypeName.endsWith("Error")) {
@@ -138,6 +132,6 @@ export const kindOf = <data extends object>(data: data) => {
 
 export const hasKind = <kind extends ObjectKind>(
     data: unknown,
-    domain: kind
+    kind: kind
 ): data is ObjectKinds[kind] =>
-    hasDomain(data, "object") && kindOf(data) === domain
+    hasDomain(data, "object") && kindOf(data) === kind

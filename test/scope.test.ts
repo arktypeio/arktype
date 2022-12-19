@@ -76,7 +76,7 @@ describe("scope", () => {
             b: string[][]
             d: boolean
         }
-        attest(s.$.attributes).snap({
+        attest(s.$.roots).snap({
             a: {
                 object: {
                     kind: "Array",
