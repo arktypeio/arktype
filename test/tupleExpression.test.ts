@@ -20,7 +20,7 @@ describe("tuple expression", () => {
         }
         attest(t.root).snap({
             object: {
-                props: { required: { a: "string", b: "number" } }
+                props: { a: "string", b: "number" }
             }
         })
     })
@@ -31,9 +31,7 @@ describe("tuple expression", () => {
             object: {
                 kind: "Array",
                 props: {
-                    mapped: {
-                        number: "string"
-                    }
+                    "[number]": "string"
                 }
             }
         })

@@ -11,9 +11,7 @@ describe("parse array", () => {
             object: {
                 kind: "Array",
                 props: {
-                    mapped: {
-                        number: "string"
-                    }
+                    "[number]": "string"
                 }
             }
         })

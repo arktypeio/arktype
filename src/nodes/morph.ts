@@ -10,9 +10,7 @@ const morphs = {
         object: {
             kind: "Array",
             props: {
-                mapped: {
-                    number: node
-                }
+                "[number]": node
             }
         }
     })

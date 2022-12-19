@@ -18,8 +18,8 @@ import {
 import type { PredicateContext } from "../predicate.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
 import { divisorIntersection } from "./divisor.js"
-import type { PropsAttribute } from "./props.js"
-import { propsAttributeIntersection } from "./props.js"
+import type { PropSet } from "./props.js"
+import { propsIntersection } from "./props.js"
 import type { Range } from "./range.js"
 import { rangeIntersection } from "./range.js"
 import { regexIntersection } from "./regex.js"
@@ -30,7 +30,7 @@ export type Rules<
 > = {
     readonly regex?: CollapsibleList<string>
     readonly divisor?: number
-    readonly props?: PropsAttribute<scope>
+    readonly props?: PropSet<scope>
     readonly kind?: ObjectKind
     readonly range?: Range
     readonly validator?: ValidatorRule<domain>
@@ -77,7 +77,7 @@ export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
         kind: kindIntersection,
         divisor: divisorIntersection,
         regex: regexIntersection,
-        props: propsAttributeIntersection,
+        props: propsIntersection,
         range: rangeIntersection,
         validator: validatorIntersection
     },

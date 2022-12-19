@@ -9,16 +9,12 @@ describe("struct", () => {
         attest(o.root).snap({
             object: {
                 props: {
-                    required: {
-                        a: "string",
-                        b: {
-                            object: {
-                                kind: "Array",
-                                props: {
-                                    mapped: {
-                                        number: "boolean"
-                                    }
-                                }
+                    a: "string",
+                    b: {
+                        object: {
+                            kind: "Array",
+                            props: {
+                                "[number]": "boolean"
                             }
                         }
                     }
@@ -32,20 +28,14 @@ describe("struct", () => {
         attest(o.root).snap({
             object: {
                 props: {
-                    required: {
-                        b: {
-                            object: {
-                                kind: "Array",
-                                props: {
-                                    mapped: {
-                                        number: "boolean"
-                                    }
-                                }
+                    a: ["?", "string"],
+                    b: {
+                        object: {
+                            kind: "Array",
+                            props: {
+                                "[number]": "boolean"
                             }
                         }
-                    },
-                    optional: {
-                        a: "string"
                     }
                 }
             }
@@ -56,7 +46,7 @@ describe("struct", () => {
         attest(t.infer).typed as { "a?": string }
         attest(t.root).equals({
             object: {
-                props: { required: { "a?": "string" } }
+                props: { "a?": "string" }
             }
         })
     })

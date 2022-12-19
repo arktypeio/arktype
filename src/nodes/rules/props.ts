@@ -1,8 +1,8 @@
-import type { ScopeRoot } from "../../scope.js"
 import type { Dictionary } from "../../utils/generics.js"
 import {
     composeIntersection,
     composeKeyedOperation,
+    empty,
     equal
 } from "../compose.js"
 import { nodeIntersection } from "../intersection.js"
@@ -10,82 +10,57 @@ import type { TypeNode } from "../node.js"
 import type { PredicateContext } from "../predicate.js"
 
 export type PropSet<scope extends Dictionary = Dictionary> = Dictionary<
-    TypeNode<scope>
+    Prop<scope>
 >
 
-export type PropsAttribute<scope extends Dictionary = Dictionary> = {
-    required?: PropSet<scope>
-    optional?: PropSet<scope>
-    mapped?: PropSet<scope>
-}
+export type Prop<scope extends Dictionary = Dictionary> =
+    | TypeNode<scope>
+    | OptionalProp<scope>
 
-export const propsAttributeIntersection = composeIntersection<
-    PropsAttribute,
-    PredicateContext
->((l, r, context) => {
-    const lCompiled = requireOppositeKeys(l, r)
-    const rCompiled = requireOppositeKeys(r, l)
-    const result = rawPropsAttributeIntersection(
-        lCompiled,
-        rCompiled,
-        context.scope
-    )
-    // If the two prop attributes appear equal, check to make sure neither had
-    // required props the other was missing. All other cases are handled
-    // correctly by default since requireOppositeKeys returns the original
-    // reference if it doesn't need to modify its input.
-    return result === equal && l === lCompiled && r === rCompiled
-        ? equal
-        : result
-})
+export type OptionalProp<scope extends Dictionary = Dictionary> = [
+    "?",
+    TypeNode<scope>
+]
 
-// If a key is optional on one side and required on the other, the result should
-// be required. Returns props with the necessary changes if any, otherwise returns
-// the original reference to props.
-const requireOppositeKeys = (
-    props: PropsAttribute,
-    opposite: PropsAttribute
-) => {
-    if (!props.optional || !opposite.required) {
-        return props
-    }
-    let modifiedProps
-    for (const k in props.optional) {
-        if (k in opposite.required) {
-            modifiedProps ??= {
-                ...props,
-                required: { ...props.required },
-                optional: { ...props.optional }
+const isOptional = (prop: Prop): prop is OptionalProp =>
+    (prop as OptionalProp)[0] === "?"
+
+const nodeFrom = (prop: Prop) => (isOptional(prop) ? prop[1] : prop)
+
+const mappedKeyRegex = /^\[.*\]$/
+
+const isMappedKey = (propKey: string) => mappedKeyRegex.test(propKey)
+
+export const propsIntersection = composeIntersection<PropSet, PredicateContext>(
+    composeKeyedOperation<PropSet, PredicateContext>(
+        (propKey, l, r, context) => {
+            if (l === undefined) {
+                return r === undefined ? equal : r
             }
-            modifiedProps.required[k] = modifiedProps.optional[k]
-            delete modifiedProps.optional[k]
+            if (r === undefined) {
+                return l
+            }
+            const result = nodeIntersection(
+                nodeFrom(l),
+                nodeFrom(r),
+                context.scope
+            )
+            const resultIsOptional = isOptional(l) && isOptional(r)
+            if (
+                result === empty &&
+                (resultIsOptional || isMappedKey(propKey))
+            ) {
+                // If an optional or mapped key has an empty intersection, the
+                // type can still be satisfied as long as the key is not included.
+                // Set the node to "never" rather than invalidating the type.
+                return "never"
+            }
+            return result
+        },
+        {
+            onEmpty: "bubble"
         }
-    }
-    return modifiedProps ?? props
-}
-
-const composePropSetIntersection = (isRequired: boolean) =>
-    composeIntersection<PropSet, ScopeRoot>(
-        composeKeyedOperation<PropSet, ScopeRoot>(
-            (propKey, l, r, scope) => nodeIntersection(l, r, scope),
-            {
-                onEmpty: isRequired ? "bubble" : "never"
-            }
-        )
     )
-
-const rawPropsAttributeIntersection = composeKeyedOperation<
-    PropsAttribute,
-    ScopeRoot
->(
-    {
-        required: composePropSetIntersection(true),
-        optional: composePropSetIntersection(false),
-        mapped: composePropSetIntersection(false)
-    },
-    {
-        onEmpty: "bubble"
-    }
 )
 
 // export const requiredKeysIntersection = composeIntersection<keySet>((l, r) => {

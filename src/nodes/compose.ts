@@ -80,7 +80,7 @@ export type KeyReducer<root extends Dictionary, context> =
     | KeyReducerMap<root, context>
 
 export type KeyedOperationConfig = {
-    onEmpty: "delete" | "never" | "bubble" | "throw"
+    onEmpty: "delete" | "bubble" | "throw"
 }
 
 export const composeKeyedOperation =
@@ -103,9 +103,7 @@ export const composeKeyedOperation =
                     result[k] = l[k]
                 }
             } else if (keyResult === empty) {
-                if (config.onEmpty === "never") {
-                    result[k] = keywords.never as any
-                } else if (config.onEmpty === "delete") {
+                if (config.onEmpty === "delete") {
                     delete result[k]
                     lImpliesR = false
                     rImpliesL = false
@@ -127,15 +125,16 @@ export const composeKeyedOperation =
         return lImpliesR ? (rImpliesL ? equal : l) : rImpliesL ? r : result
     }
 
-export const composeNodeOperation = (
-    domainSetOperation: SetOperation<TypeSet, ScopeRoot>
-) =>
-    composeIntersection<TypeNode, ScopeRoot>((l, r, scope) => {
+export const composeNodeOperation =
+    (
+        typeSetOperation: SetOperation<TypeSet, ScopeRoot>
+    ): SetOperation<TypeNode, ScopeRoot> =>
+    (l, r, scope) => {
         const lResolution = resolveIfIdentifier(l, scope)
         const rResolution = resolveIfIdentifier(r, scope)
-        const result = domainSetOperation(lResolution, rResolution, scope)
+        const result = typeSetOperation(lResolution, rResolution, scope)
         return result === lResolution ? l : result === rResolution ? r : result
-    })
+    }
 
 export const finalizeNodeOperation = (
     l: TypeNode,
