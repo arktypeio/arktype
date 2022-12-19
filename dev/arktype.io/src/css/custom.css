@@ -84,10 +84,14 @@ header {
     padding-bottom: 10px;
 }
 @media only screen and (max-width: 900px) {
-    #featuresComponent {
+    #featuresComponent,
+    #introContainer {
         flex-direction: column;
     }
     #feature {
         width: 90vw;
+    }
+    #introContainer > * {
+        width: 100%;
     }
 }

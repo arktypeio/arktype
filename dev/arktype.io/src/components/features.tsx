@@ -43,7 +43,7 @@ const Feature = ({ image, title, description }: FeatureProps) => (
         >
             {image}
         </SvgIcon>
-        <Box sx={{ border: "1px solid red", padding: "0 5px" }}>
+        <Box sx={{ padding: "0 5px" }}>
             <Typography component="h3" variant="h5" id="title">
                 {title}
             </Typography>

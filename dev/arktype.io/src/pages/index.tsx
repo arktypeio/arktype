@@ -6,6 +6,7 @@ import { StackBlitzDemo } from "../../docs/demos/index"
 import { Ark } from "../components/ark"
 import { Features } from "../components/features"
 import { getTheme } from "../components/index"
+import { IntroContainer } from "../components/introContainer"
 import { LogoCloud } from "../components/logoCloud"
 
 const Contents = () => {
@@ -13,10 +14,16 @@ const Contents = () => {
     return (
         <ThemeProvider theme={getTheme()}>
             <Header title={siteConfig.title} tagline={siteConfig.tagline} />
-            <main style={{ maxWidth: "100vw" }}>
-                {/* TODOSHAWN add room for intro gif */}
-                <StackBlitzDemo embedId="type" />
+            <main
+                style={{
+                    maxWidth: "90vw",
+                    margin: "0 auto",
+                    position: "relative"
+                }}
+            >
+                <IntroContainer />
                 <Features />
+                <StackBlitzDemo embedId="type" />
             </main>
         </ThemeProvider>
     )
