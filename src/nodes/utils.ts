@@ -1,4 +1,4 @@
-import type { ScopeRoot } from "../scope.js"
+import type { ScopeRoot } from "../scopes/scope.js"
 import type { Domain } from "../utils/domains.js"
 import type { defined } from "../utils/generics.js"
 import { keysOf } from "../utils/generics.js"
@@ -18,7 +18,7 @@ export const resolvePredicateIfIdentifier = (
     scope: ScopeRoot
 ) =>
     typeof predicate === "string"
-        ? scope.resolveToDomain(predicate, domain)
+        ? scope.resolvePredicate(predicate, domain)
         : predicate
 
 export const nodeExtends = (node: TypeNode, base: TypeNode, scope: ScopeRoot) =>

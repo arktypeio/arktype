@@ -1,4 +1,4 @@
-import type { ScopeRoot } from "../scope.js"
+import type { ScopeRoot } from "../scopes/scope.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf, hasDomain } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"

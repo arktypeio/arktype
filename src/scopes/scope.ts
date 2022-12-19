@@ -1,19 +1,22 @@
-import { keywords } from "./nodes/keywords.js"
-import type { TypeNode, TypeSet } from "./nodes/node.js"
-import type { ResolvedPredicate } from "./nodes/predicate.js"
-import type { inferDefinition, validateDefinition } from "./parse/definition.js"
-import { parseDefinition } from "./parse/definition.js"
-import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
-import type { Config } from "./type.js"
-import { ArkType } from "./type.js"
-import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { Domain } from "./utils/domains.js"
-import { throwInternalError, throwParseError } from "./utils/errors.js"
-import { deepFreeze } from "./utils/freeze.js"
-import type { Dict, evaluate } from "./utils/generics.js"
-import { isKeyOf } from "./utils/generics.js"
-import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
-import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
+import type { TypeNode, TypeSet } from "../nodes/node.js"
+import type { ResolvedPredicate } from "../nodes/predicate.js"
+import type {
+    inferDefinition,
+    validateDefinition
+} from "../parse/definition.js"
+import { parseDefinition } from "../parse/definition.js"
+import { fullStringParse, maybeNaiveParse } from "../parse/string.js"
+import type { Config } from "../type.js"
+import { ArkType } from "../type.js"
+import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.js"
+import type { Domain } from "../utils/domains.js"
+import { throwInternalError, throwParseError } from "../utils/errors.js"
+import { deepFreeze } from "../utils/freeze.js"
+import type { Dict, evaluate } from "../utils/generics.js"
+import { isKeyOf } from "../utils/generics.js"
+import type { LazyDynamicWrap } from "../utils/lazyDynamicWrap.js"
+import { lazyDynamicWrap } from "../utils/lazyDynamicWrap.js"
+import { keywords } from "./keywords.js"
 
 const rawScope = (aliases: Dict, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
@@ -118,11 +121,11 @@ export class ScopeRoot<inferred extends Dict = Dict> {
         return root
     }
 
-    resolveToDomain<domain extends Domain>(name: string, domain: domain) {
-        return this.resolveToDomainRecurse(name, domain, [])
+    resolvePredicate<domain extends Domain>(name: string, domain: domain) {
+        return this.resolvePredicateRecurse(name, domain, [])
     }
 
-    private resolveToDomainRecurse<domain extends Domain>(
+    private resolvePredicateRecurse<domain extends Domain>(
         name: string,
         domain: domain,
         seen: string[]
@@ -142,7 +145,7 @@ export class ScopeRoot<inferred extends Dict = Dict> {
             )
         }
         seen.push(resolution)
-        return this.resolveToDomainRecurse(resolution, domain, seen)
+        return this.resolvePredicateRecurse(resolution, domain, seen)
     }
 
     memoizedParse(def: string): TypeNode {

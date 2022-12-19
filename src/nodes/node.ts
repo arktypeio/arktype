@@ -1,7 +1,8 @@
-import type { Domain } from "../utils/domains.js"
+import type { Keyword } from "../scopes/keywords.js"
+import type { Domain, inferDomain } from "../utils/domains.js"
 import type { Dict, stringKeyOf } from "../utils/generics.js"
-import type { Keyword } from "./keywords.js"
-import type { Predicate } from "./predicate.js"
+import type { Condition, ExactValue, Predicate } from "./predicate.js"
+import { Rules } from "./rules/rules.js"
 
 export type TypeNode<scope extends Dict = Dict> =
     | Identifier<scope>

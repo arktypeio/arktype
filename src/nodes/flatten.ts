@@ -10,11 +10,9 @@ export const flatten = (node: TypeNode): FlatNode => {
     return {}
 }
 
-export type FlatNode =
-    | string
-    | {
-          readonly [domain in Domain]?: true | readonly FlatCondition[]
-      }
+export type FlatNode = {
+    readonly [domain in Domain]?: true | readonly FlatCondition[]
+}
 
 type FlatCondition = string | readonly FlatRule[]
 

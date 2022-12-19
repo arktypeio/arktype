@@ -1,7 +1,7 @@
-import type { ScopeRoot } from "../scope.js"
+import { keywords } from "../scopes/keywords.js"
+import type { ScopeRoot } from "../scopes/scope.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dict, mutable, stringKeyOf } from "../utils/generics.js"
-import { keywords } from "./keywords.js"
 import type { TypeNode, TypeSet } from "./node.js"
 import { resolveIfIdentifier } from "./utils.js"
 

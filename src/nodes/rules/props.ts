@@ -1,4 +1,4 @@
-import type { ScopeRoot } from "../../scope.js"
+import type { ScopeRoot } from "../../scopes/scope.js"
 import type { Dict } from "../../utils/generics.js"
 import {
     composeIntersection,

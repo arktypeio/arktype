@@ -1,6 +1,6 @@
+import type { TypeSet } from "../nodes/node.js"
 import type { Domain } from "../utils/domains.js"
 import { deepFreeze } from "../utils/freeze.js"
-import type { TypeSet } from "./node.js"
 
 const always: Record<Domain, true> = {
     bigint: true,
