@@ -23,14 +23,15 @@ import { regexIntersection } from "./regex.js"
 export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
     readonly regex?: CollapsibleTuple<string>
     readonly divisor?: number
-    readonly props?: PropsRule<scope>
     readonly kind?: ObjectKind
+    readonly props?: PropsRule<scope>
     readonly range?: Range
     readonly validator?: CollapsibleTuple<Validator<inferDomain<domain>>>
 }
 
 export type Validator<data = unknown> = (data: data) => boolean
 
+// TODO: Allow as input
 export type DistributedValidator<data = unknown> = evaluate<{
     [domain in domainOf<data>]?: Validator<Extract<data, inferDomain<domain>>>
 }>
