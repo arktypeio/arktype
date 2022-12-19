@@ -14,6 +14,7 @@ const Contents = () => {
         <ThemeProvider theme={getTheme()}>
             <Header title={siteConfig.title} tagline={siteConfig.tagline} />
             <main style={{ maxWidth: "100vw" }}>
+                {/* TODOSHAWN add room for intro gif */}
                 <StackBlitzDemo embedId="type" />
                 <Features />
             </main>
