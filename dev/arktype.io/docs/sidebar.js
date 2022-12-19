@@ -12,15 +12,15 @@ module.exports = {
                     id: "constraints"
                 }
             ]
+        },
+        {
+            type: "category",
+            label: "API",
+            items: [
+                { type: "doc", label: "Type", id: "api/type" },
+                { type: "doc", label: "Scope", id: "api/scope" },
+                { type: "doc", label: "Node", id: "api/Node" }
+            ]
         }
-        // {
-        //     type: "category",
-        //     label: "API",
-        //     items: [
-        //         { type: "doc", label: "model", id: "api/model" },
-        //         { type: "doc", label: "compile", id: "api/compile" },
-        //         { type: "doc", label: "declare", id: "api/declare" }
-        //     ]
-        // }
     ]
 }

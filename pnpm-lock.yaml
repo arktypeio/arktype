@@ -20,7 +20,7 @@ specifiers:
   fast-check: 3.3.0
   get-current-line: 6.6.0
   husky: 8.0.2
-  mocha: 10.1.0
+  mocha: 10.2.0
   prettier: 2.8.0
   prettier-plugin-jsdoc: 0.4.2
   pretty-quick: 3.1.3
@@ -48,7 +48,7 @@ devDependencies:
   fast-check: 3.3.0
   get-current-line: 6.6.0
   husky: 8.0.2
-  mocha: 10.1.0
+  mocha: 10.2.0
   prettier: 2.8.0
   prettier-plugin-jsdoc: 0.4.2_prettier@2.8.0
   pretty-quick: 3.1.3_prettier@2.8.0
@@ -2727,8 +2727,8 @@ packages:
     hasBin: true
     dev: true
 
-  /mocha/10.1.0:
-    resolution: {integrity: sha512-vUF7IYxEoN7XhQpFLxQAEMtE4W91acW4B6En9l97MwE9stL1A9gusXfoHZCLVHDUJ/7V5+lbCM6yMqzo5vNymg==}
+  /mocha/10.2.0:
+    resolution: {integrity: sha512-IDY7fl/BecMwFHzoqF2sg/SHHANeBoMMXFlS9r0OXKDssYE1M5O43wUY/9BVPeIvfH2zmEbBfseqN9gBQZzXkg==}
     engines: {node: '>= 14.0.0'}
     hasBin: true
     dependencies:
@@ -2761,7 +2761,7 @@ packages:
     dev: true
 
   /ms/2.0.0:
-    resolution: {integrity: sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==}
+    resolution: {integrity: sha1-VgiurfwAvmwpAd9fmGF4jeDVl8g=}
     dev: true
 
   /ms/2.1.2:
