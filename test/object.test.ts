@@ -9,19 +9,19 @@ describe("struct", () => {
         attest(o.root).snap({
             object: {
                 props: {
-                    a: "string",
-                    b: {
-                        object: {
-                            kind: "Array",
-                            propTypes: {
-                                number: "boolean"
+                    required: {
+                        a: "string",
+                        b: {
+                            object: {
+                                kind: "Array",
+                                props: {
+                                    mapped: {
+                                        number: "boolean"
+                                    }
+                                }
                             }
                         }
                     }
-                },
-                requiredKeys: {
-                    a: true,
-                    b: true
                 }
             }
         })
@@ -32,18 +32,21 @@ describe("struct", () => {
         attest(o.root).snap({
             object: {
                 props: {
-                    a: "string",
-                    b: {
-                        object: {
-                            kind: "Array",
-                            propTypes: {
-                                number: "boolean"
+                    required: {
+                        b: {
+                            object: {
+                                kind: "Array",
+                                props: {
+                                    mapped: {
+                                        number: "boolean"
+                                    }
+                                }
                             }
                         }
+                    },
+                    optional: {
+                        a: "string"
                     }
-                },
-                requiredKeys: {
-                    b: true
                 }
             }
         })
@@ -53,8 +56,7 @@ describe("struct", () => {
         attest(t.infer).typed as { "a?": string }
         attest(t.root).equals({
             object: {
-                props: { "a?": "string" },
-                requiredKeys: { "a?": true }
+                props: { required: { "a?": "string" } }
             }
         })
     })

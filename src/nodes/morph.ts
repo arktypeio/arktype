@@ -9,8 +9,10 @@ const morphs = {
     array: (node): TypeSet => ({
         object: {
             kind: "Array",
-            propTypes: {
-                number: node
+            props: {
+                mapped: {
+                    number: node
+                }
             }
         }
     })

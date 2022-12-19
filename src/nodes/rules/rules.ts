@@ -7,8 +7,7 @@ import type {
 import type {
     CollapsibleList,
     Dictionary,
-    evaluate,
-    keySet
+    evaluate
 } from "../../utils/generics.js"
 import {
     composeIntersection,
@@ -16,11 +15,11 @@ import {
     empty,
     equal
 } from "../compose.js"
-import type { TypeNode } from "../node.js"
 import type { PredicateContext } from "../predicate.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
 import { divisorIntersection } from "./divisor.js"
-import { propsIntersection, requiredKeysIntersection } from "./props.js"
+import type { PropsAttribute } from "./props.js"
+import { propsAttributeIntersection } from "./props.js"
 import type { Range } from "./range.js"
 import { rangeIntersection } from "./range.js"
 import { regexIntersection } from "./regex.js"
@@ -31,12 +30,7 @@ export type Rules<
 > = {
     readonly regex?: CollapsibleList<string>
     readonly divisor?: number
-    readonly requiredKeys?: keySet
-    readonly props?: Dictionary<TypeNode<scope>>
-    readonly propTypes?: {
-        readonly number?: TypeNode<scope>
-        readonly string?: TypeNode<scope>
-    }
+    readonly props?: PropsAttribute<scope>
     readonly kind?: ObjectKind
     readonly range?: Range
     readonly validator?: ValidatorRule<domain>
@@ -58,16 +52,7 @@ export type RuleSet<
 > = Domain extends domain
     ? Rules
     : domain extends "object"
-    ? defineRuleSet<
-          "object",
-          | "kind"
-          | "props"
-          | "requiredKeys"
-          | "propTypes"
-          | "range"
-          | "validator",
-          scope
-      >
+    ? defineRuleSet<"object", "kind" | "props" | "range" | "validator", scope>
     : domain extends "string"
     ? defineRuleSet<"string", "regex" | "range" | "validator", scope>
     : domain extends "number"
@@ -92,9 +77,7 @@ export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
         kind: kindIntersection,
         divisor: divisorIntersection,
         regex: regexIntersection,
-        props: propsIntersection,
-        requiredKeys: requiredKeysIntersection,
-        propTypes: propsIntersection,
+        props: propsAttributeIntersection,
         range: rangeIntersection,
         validator: validatorIntersection
     },

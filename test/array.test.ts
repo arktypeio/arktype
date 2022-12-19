@@ -10,8 +10,10 @@ describe("parse array", () => {
         attest(stringArray.root).snap({
             object: {
                 kind: "Array",
-                propTypes: {
-                    number: "string"
+                props: {
+                    mapped: {
+                        number: "string"
+                    }
                 }
             }
         })
