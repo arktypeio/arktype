@@ -14,7 +14,7 @@ import {
 import type { PredicateContext } from "../predicate.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
 import { divisorIntersection } from "./divisor.js"
-import type { PropSet } from "./props.js"
+import type { PropsRule } from "./props.js"
 import { propsIntersection } from "./props.js"
 import type { Range } from "./range.js"
 import { rangeIntersection } from "./range.js"
@@ -23,7 +23,7 @@ import { regexIntersection } from "./regex.js"
 export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
     readonly regex?: CollapsibleTuple<string>
     readonly divisor?: number
-    readonly props?: PropSet<scope>
+    readonly props?: PropsRule<scope>
     readonly kind?: ObjectKind
     readonly range?: Range
     readonly validator?: CollapsibleTuple<Validator<inferDomain<domain>>>

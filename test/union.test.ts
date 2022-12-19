@@ -43,7 +43,7 @@ describe("union/parse", () => {
             { a: "false" }
         ])
         attest(t.root).snap({
-            object: { props: { a: "boolean" } }
+            object: { props: { required: { a: "boolean" } } }
         })
     })
     describe("errors", () => {

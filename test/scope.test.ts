@@ -32,7 +32,7 @@ describe("scope", () => {
     test("cyclic", () => {
         const s = scope({ a: { b: "b" }, b: { a: "a" } })
         attest(s.a.root).snap({
-            object: { props: { b: "b" } }
+            object: { props: { required: { b: "b" } } }
         })
         // Type hint displays as any on hitting cycle
         attest(s.$.infer.a).typed as {
@@ -80,18 +80,11 @@ describe("scope", () => {
             a: {
                 object: {
                     kind: "Array",
-                    props: {
-                        "[number]": "string"
-                    }
+                    props: { mapped: { number: "string" } }
                 }
             },
             b: {
-                object: {
-                    kind: "Array",
-                    props: {
-                        "[number]": "a"
-                    }
-                }
+                object: { kind: "Array", props: { mapped: { number: "a" } } }
             },
             d: { boolean: true }
         })

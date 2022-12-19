@@ -19,21 +19,14 @@ describe("tuple expression", () => {
             b: number
         }
         attest(t.root).snap({
-            object: {
-                props: { a: "string", b: "number" }
-            }
+            object: { props: { required: { a: "string", b: "number" } } }
         })
     })
     test("list", () => {
         const t = type(["string", "[]"])
         attest(t.infer).typed as string[]
         attest(t.root).snap({
-            object: {
-                kind: "Array",
-                props: {
-                    "[number]": "string"
-                }
-            }
+            object: { kind: "Array", props: { mapped: { number: "string" } } }
         })
     })
     test("nested union", () => {

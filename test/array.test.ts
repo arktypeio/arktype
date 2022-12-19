@@ -8,12 +8,7 @@ describe("parse array", () => {
         const stringArray = type("string[]")
         attest(stringArray.infer).typed as string[]
         attest(stringArray.root).snap({
-            object: {
-                kind: "Array",
-                props: {
-                    "[number]": "string"
-                }
-            }
+            object: { kind: "Array", props: { mapped: { number: "string" } } }
         })
     })
     describe("errors", () => {

@@ -9,12 +9,12 @@ describe("struct", () => {
         attest(o.root).snap({
             object: {
                 props: {
-                    a: "string",
-                    b: {
-                        object: {
-                            kind: "Array",
-                            props: {
-                                "[number]": "boolean"
+                    required: {
+                        a: "string",
+                        b: {
+                            object: {
+                                kind: "Array",
+                                props: { mapped: { number: "boolean" } }
                             }
                         }
                     }
@@ -28,12 +28,12 @@ describe("struct", () => {
         attest(o.root).snap({
             object: {
                 props: {
-                    a: ["?", "string"],
-                    b: {
-                        object: {
-                            kind: "Array",
-                            props: {
-                                "[number]": "boolean"
+                    optional: { a: "string" },
+                    required: {
+                        b: {
+                            object: {
+                                kind: "Array",
+                                props: { mapped: { number: "boolean" } }
                             }
                         }
                     }
@@ -46,7 +46,7 @@ describe("struct", () => {
         attest(t.infer).typed as { "a?": string }
         attest(t.root).equals({
             object: {
-                props: { "a?": "string" }
+                props: { required: { "a?": "string" } }
             }
         })
     })
