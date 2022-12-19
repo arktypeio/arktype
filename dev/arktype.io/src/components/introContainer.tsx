@@ -3,13 +3,14 @@ import React from "react"
 
 export const IntroContainer = () => {
     return (
-        <Box
+        <Stack
             sx={{
                 display: "inline-flex",
                 alignContent: "space-between",
                 flexDirection: "row",
                 width: "100%",
-                height: "100%"
+                height: "100%",
+                marginTop: "10px"
             }}
             id="introContainer"
         >
@@ -39,6 +40,6 @@ export const IntroContainer = () => {
             >
                 <img src="https://via.placeholder.com/800x400?text=Arktype.io+is+super+POOGERS" />
             </Box>
-        </Box>
+        </Stack>
     )
 }
