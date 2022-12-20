@@ -1,7 +1,7 @@
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import { Stack, ThemeProvider, Typography } from "@mui/material"
 import Layout from "@theme/Layout"
-import React, { useState, useRef } from "react"
+import React from "react"
 import { Ark } from "../components/ark"
 import { Features } from "../components/features"
 import { Demo } from "../components/homepageDemo"

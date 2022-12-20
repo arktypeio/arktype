@@ -1,25 +1,26 @@
-import { Box, Stack, ThemeProvider, Typography, Button } from "@mui/material"
-import Terminal from "@mui/icons-material/Terminal"
 import Collapse from "@mui/icons-material/ExpandLess"
 import Expand from "@mui/icons-material/ExpandMore"
+import Terminal from "@mui/icons-material/Terminal"
+import { Button, Stack, Typography } from "@mui/material"
+import CircularProgress from "@mui/material/CircularProgress"
+import React, { useRef, useState } from "react"
 import { StackBlitzDemo } from "../../docs/demos/index"
-import React, { useState, useRef } from "react"
 
 export const Demo = () => {
     const [activeDemo, setActiveDemo] = useState<boolean>(false)
     const [loading, setLoading] = useState<boolean>(false)
     const ref = useRef<null | HTMLSpanElement>(null)
     return (
-        <Stack spacing={2} direction="column" justifyContent="center">
-            <Typography
-                component="h4"
-                variant="h2"
-                color="secondary"
-                align="center"
-            >
-                Take it for a spin
+        <Stack
+            spacing={2}
+            direction="column"
+            justifyContent="center"
+            position="relative"
+        >
+            <Typography component="h4" variant="h2" align="center">
+                Experience Greatness!
             </Typography>
-            <Typography component="p" color="secondary" align="center">
+            <Typography component="p" align="center">
                 Don't just take our word for it, experience it yourself!
             </Typography>
             <HomepageDemo
@@ -30,6 +31,16 @@ export const Demo = () => {
                 demoRef={ref}
                 sx={{ margin: "0 auto", width: "100%", position: "relative" }}
             />
+            {loading && (
+                <CircularProgress
+                    color="secondary"
+                    sx={{
+                        position: "absolute",
+                        left: "49%",
+                        top: "49%"
+                    }}
+                />
+            )}
             <span ref={ref} style={{ opacity: loading ? 0 : 100 }}>
                 {activeDemo}
             </span>

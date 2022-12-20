@@ -19,7 +19,7 @@ module.exports = {
             items: [
                 { type: "doc", label: "Type", id: "api/type" },
                 { type: "doc", label: "Scope", id: "api/scope" },
-                { type: "doc", label: "Node", id: "api/Node" }
+                { type: "doc", label: "Node", id: "api/TypeNode" }
             ]
         }
     ]
