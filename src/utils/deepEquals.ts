@@ -1,5 +1,5 @@
-import { classifyObject, hasDomain } from "./classify.js"
-import type { Dictionary, List } from "./generics.js"
+import { hasDomain, kindOf } from "./domains.js"
+import type { Dict, List } from "./generics.js"
 
 /**
  * Simple check for deep strict equality. Recurses into dictionaries and arrays,
@@ -12,17 +12,17 @@ export const deepEquals = (a: unknown, b: unknown) => {
     if (!hasDomain(a, "object") || !hasDomain(b, "object")) {
         return false
     }
-    const aObjectDomain = classifyObject(a)
-    const bObjectDomain = classifyObject(b)
+    const aObjectDomain = kindOf(a)
+    const bObjectDomain = kindOf(b)
     if (aObjectDomain !== bObjectDomain) {
         return false
     }
     return aObjectDomain === "Array"
         ? deepEqualsArray(a as List, b as List)
-        : deepEqualsDict(a as Dictionary, b as Dictionary)
+        : deepEqualsDict(a as Dict, b as Dict)
 }
 
-const deepEqualsDict = (a: Dictionary, b: Dictionary) => {
+const deepEqualsDict = (a: Dict, b: Dict) => {
     const unseenBKeys = { ...b }
     for (const k in a) {
         if (k in b && deepEquals(a[k], b[k])) {

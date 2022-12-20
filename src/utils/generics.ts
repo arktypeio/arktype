@@ -1,4 +1,4 @@
-import { hasDomain } from "./classify.js"
+import { hasDomain } from "./domains.js"
 
 export type downcast<t> = castWithExclusion<t, downcastRecurse<t>, []>
 
@@ -74,7 +74,7 @@ export type classOf<instanceType> = new (
 export type instanceOf<classType extends classOf<any>> =
     classType extends classOf<infer Instance> ? Instance : never
 
-export type entryOf<o> = { [k in keyof o]: [k, o[k]] }[o extends List
+export type entryOf<o> = { [k in keyof o]-?: [k, o[k] & {}] }[o extends List
     ? keyof o & number
     : keyof o]
 
@@ -127,9 +127,6 @@ export type requireKeys<o, key extends keyof o> = o & {
     [requiredKey in key]-?: o[requiredKey]
 }
 
-// TODO: All dictionaries are records?
-export type PartialDictionary<k extends string, v> = { [_ in k]?: v }
-
 export type error<message extends string = string> = `!${message}`
 
 export type stringKeyOf<t> = keyof t & string
@@ -137,9 +134,9 @@ export type stringKeyOf<t> = keyof t & string
 export type RegexLiteral<expression extends string = string> = `/${expression}/`
 
 /** Either:
- * A, with all properties of B as undefined
+ * A, with all properties of B as never
  * OR
- * B, with all properties of A as undefined
+ * B, with all properties of A as never
  **/
 export type xor<a, b> =
     | evaluate<a & { [k in keyof b]?: never }>
@@ -149,15 +146,16 @@ export type autocompleteString<suggestions extends string> =
     | suggestions
     | (string & {})
 
-export type Dictionary<of = unknown> = { readonly [k in string]: of }
+export type Dict = {
+    readonly [key in string]: unknown
+}
 
-export type List<of = unknown> = readonly of[]
+export type List = readonly unknown[]
 
 export const listFrom = <t>(data: t) =>
     (Array.isArray(data) ? data : [data]) as t extends List ? t : [t]
 
-export type CollapsibleList<t> = t | List<t>
+export type CollapsibleTuple<t> = t | readonly t[]
 
-export const collapsibleIfSingleton = <list extends List>(
-    list: list
-): list | list[number] => (list.length === 1 ? list[0] : list)
+export const collapseIfSingleton = <t extends List>(array: t): t | t[number] =>
+    array.length === 1 ? array[0] : array

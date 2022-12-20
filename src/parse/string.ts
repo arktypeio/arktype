@@ -1,7 +1,7 @@
 import { morph } from "../nodes/morph.js"
 import type { TypeNode } from "../nodes/node.js"
-import type { ScopeRoot } from "../scope.js"
-import type { Dictionary, error, stringKeyOf } from "../utils/generics.js"
+import type { ScopeRoot } from "../scopes/scope.js"
+import type { Dict, error, stringKeyOf } from "../utils/generics.js"
 import type { inferAst, validateAstSemantics } from "./ast.js"
 import { DynamicState } from "./reduce/dynamic.js"
 import type { state, StaticState } from "./reduce/static.js"
@@ -20,7 +20,7 @@ export type parseString<
 
 export type inferString<
     def extends string,
-    scope extends Dictionary,
+    scope extends Dict,
     aliases
 > = inferAst<
     parseString<def, stringKeyOf<aliases> | stringKeyOf<scope>>,
@@ -30,7 +30,7 @@ export type inferString<
 
 export type validateString<
     def extends string,
-    scope extends Dictionary
+    scope extends Dict
 > = parseString<def, stringKeyOf<scope>> extends infer astOrError
     ? astOrError extends error<infer message>
         ? message

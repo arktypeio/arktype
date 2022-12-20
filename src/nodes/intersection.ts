@@ -1,5 +1,5 @@
-import type { ScopeRoot } from "../scope.js"
-import { collapsibleIfSingleton } from "../utils/generics.js"
+import type { ScopeRoot } from "../scopes/scope.js"
+import { collapseIfSingleton } from "../utils/generics.js"
 import { isBranchComparison } from "./branches.js"
 import type { KeyReducerFn } from "./compose.js"
 import {
@@ -25,7 +25,7 @@ export const predicateIntersection: KeyReducerFn<
     if (!isBranchComparison(comparison)) {
         return comparison
     }
-    return collapsibleIfSingleton([
+    return collapseIfSingleton([
         ...comparison.codependentIntersections,
         ...comparison.equalPairs.map(
             (indices) => comparison.lConditions[indices[0]]
@@ -48,7 +48,8 @@ const typeSetIntersection = composeKeyedOperation<TypeSet, ScopeRoot>(
             return undefined
         }
         return predicateIntersection(domain, l, r, scope)
-    }
+    },
+    { onEmpty: "delete" }
 )
 
 export const nodeIntersection = composeNodeOperation(typeSetIntersection)

@@ -1,102 +1,75 @@
 import type {
-    classify,
     Domain,
+    domainOf,
     inferDomain,
-    ObjectDomain
-} from "../../utils/classify.js"
-import type {
-    CollapsibleList,
-    Dictionary,
-    evaluate,
-    keySet
-} from "../../utils/generics.js"
+    ObjectKind
+} from "../../utils/domains.js"
+import type { CollapsibleTuple, Dict, evaluate } from "../../utils/generics.js"
 import {
     composeIntersection,
     composeKeyedOperation,
     empty,
     equal
 } from "../compose.js"
-import type { TypeNode } from "../node.js"
 import type { PredicateContext } from "../predicate.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
 import { divisorIntersection } from "./divisor.js"
-import { propsIntersection, requiredKeysIntersection } from "./props.js"
+import type { PropsRule } from "./props.js"
+import { propsIntersection } from "./props.js"
 import type { Range } from "./range.js"
 import { rangeIntersection } from "./range.js"
 import { regexIntersection } from "./regex.js"
 
-export type Rules<
-    domain extends Domain = Domain,
-    scope extends Dictionary = Dictionary
-> = {
-    readonly regex?: CollapsibleList<string>
+export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
+    readonly regex?: CollapsibleTuple<string>
     readonly divisor?: number
-    readonly requiredKeys?: keySet
-    readonly props?: Dictionary<TypeNode<scope>>
-    readonly propTypes?: {
-        readonly number?: TypeNode<scope>
-        readonly string?: TypeNode<scope>
-    }
-    readonly kind?: ObjectDomain
+    readonly kind?: ObjectKind
+    readonly props?: PropsRule<scope>
     readonly range?: Range
-    readonly validator?: ValidatorRule<domain>
+    readonly validator?: CollapsibleTuple<Validator<inferDomain<domain>>>
 }
-
-export type ValidatorRule<domain extends Domain = Domain> = CollapsibleList<
-    Validator<inferDomain<domain>>
->
 
 export type Validator<data = unknown> = (data: data) => boolean
 
+// TODO: Allow as input
 export type DistributedValidator<data = unknown> = evaluate<{
-    [domain in classify<data>]?: Validator<Extract<data, inferDomain<domain>>>
+    [domain in domainOf<data>]?: Validator<Extract<data, inferDomain<domain>>>
 }>
 
 export type RuleSet<
     domain extends Domain,
-    scope extends Dictionary
+    scope extends Dict
 > = Domain extends domain
     ? Rules
     : domain extends "object"
-    ? defineRuleSet<
-          "object",
-          | "kind"
-          | "props"
-          | "requiredKeys"
-          | "propTypes"
-          | "range"
-          | "validator",
-          scope
-      >
-    : domain extends string
+    ? defineRuleSet<"object", "kind" | "props" | "range" | "validator", scope>
+    : domain extends "string"
     ? defineRuleSet<"string", "regex" | "range" | "validator", scope>
-    : domain extends number
+    : domain extends "number"
     ? defineRuleSet<"number", "divisor" | "range" | "validator", scope>
     : defineRuleSet<domain, "validator", scope>
 
 type defineRuleSet<
     domain extends Domain,
     keys extends keyof Rules,
-    scope extends Dictionary
+    scope extends Dict
 > = Pick<Rules<domain, scope>, keys>
 
-export const objectKindIntersection = composeIntersection<ObjectDomain>(
-    (l, r) => (l === r ? equal : empty)
+export const kindIntersection = composeIntersection<ObjectKind>((l, r) =>
+    l === r ? equal : empty
 )
 
 const validatorIntersection =
-    composeIntersection<CollapsibleList<Validator>>(collapsibleListUnion)
+    composeIntersection<CollapsibleTuple<Validator>>(collapsibleListUnion)
 
 export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
     {
-        kind: objectKindIntersection,
+        kind: kindIntersection,
         divisor: divisorIntersection,
         regex: regexIntersection,
         props: propsIntersection,
-        requiredKeys: requiredKeysIntersection,
-        propTypes: propsIntersection,
         range: rangeIntersection,
         validator: validatorIntersection
     },
-    { propagateEmpty: true }
+    { onEmpty: "bubble" }
 )
