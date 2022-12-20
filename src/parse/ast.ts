@@ -1,6 +1,6 @@
-import type { Keyword, Keywords } from "../nodes/keywords.js"
+import type { Keyword, Keywords } from "../scopes/keywords.js"
 import type {
-    Dictionary,
+    Dict,
     Downcastable,
     error,
     evaluate,
@@ -13,7 +13,7 @@ import type { Scanner } from "./shift/scanner.js"
 
 export type inferAst<
     ast,
-    scope extends Dictionary,
+    scope extends Dict,
     aliases
 > = ast extends readonly unknown[]
     ? ast[1] extends "[]"
@@ -34,10 +34,7 @@ export type inferAst<
         : never
     : inferTerminal<ast, scope, aliases>
 
-export type validateAstSemantics<
-    ast,
-    scope extends Dictionary
-> = ast extends string
+export type validateAstSemantics<ast, scope extends Dict> = ast extends string
     ? undefined
     : ast extends [infer child, unknown]
     ? validateAstSemantics<child, scope>
@@ -89,11 +86,7 @@ type isBoundable<inferred> = isAny<inferred> extends true
     ? true
     : false
 
-type inferTerminal<
-    token,
-    scope extends Dictionary,
-    aliases
-> = token extends Keyword
+type inferTerminal<token, scope extends Dict, aliases> = token extends Keyword
     ? Keywords[token]
     : token extends keyof scope
     ? scope[token]

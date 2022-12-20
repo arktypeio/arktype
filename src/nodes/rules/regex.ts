@@ -1,4 +1,4 @@
-import type { CollapsibleList } from "../../utils/generics.js"
+import type { CollapsibleTuple } from "../../utils/generics.js"
 import { composeIntersection } from "../compose.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
 
@@ -27,7 +27,7 @@ export const getRegex = (source: string) => {
     return regexCache[source]
 }
 
-export const checkRegexRule = (data: string, rule: CollapsibleList<string>) =>
+export const checkRegexRule = (data: string, rule: CollapsibleTuple<string>) =>
     typeof rule === "string"
         ? checkRegex(data, rule)
         : rule.every((regexSource) => checkRegex(data, regexSource))
@@ -35,7 +35,7 @@ export const checkRegexRule = (data: string, rule: CollapsibleList<string>) =>
 const checkRegex = (data: string, regexSource: string) =>
     getRegex(regexSource).test(data)
 
-export const regexIntersection = composeIntersection<CollapsibleList<string>>(
+export const regexIntersection = composeIntersection<CollapsibleTuple<string>>(
     collapsibleListUnion<string>
 )
 

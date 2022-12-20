@@ -1,23 +1,26 @@
-import { keywords } from "./nodes/keywords.js"
-import type { TypeNode, TypeSet } from "./nodes/node.js"
-import type { ResolvedPredicate } from "./nodes/predicate.js"
-import type { inferDefinition, validateDefinition } from "./parse/definition.js"
-import { parseDefinition } from "./parse/definition.js"
-import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
-import type { Config } from "./type.js"
-import { ArkType } from "./type.js"
-import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { Domain } from "./utils/classify.js"
-import { throwInternalError, throwParseError } from "./utils/errors.js"
-import { deepFreeze } from "./utils/freeze.js"
-import type { Dictionary, evaluate, mutable } from "./utils/generics.js"
-import { isKeyOf } from "./utils/generics.js"
-import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
-import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
+import type { TypeNode, TypeSet } from "../nodes/node.js"
+import type { ResolvedPredicate } from "../nodes/predicate.js"
+import type {
+    inferDefinition,
+    validateDefinition
+} from "../parse/definition.js"
+import { parseDefinition } from "../parse/definition.js"
+import { fullStringParse, maybeNaiveParse } from "../parse/string.js"
+import type { Config } from "../type.js"
+import { ArkType } from "../type.js"
+import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.js"
+import type { Domain } from "../utils/domains.js"
+import { throwInternalError, throwParseError } from "../utils/errors.js"
+import { deepFreeze } from "../utils/freeze.js"
+import type { Dict, evaluate } from "../utils/generics.js"
+import { isKeyOf } from "../utils/generics.js"
+import type { LazyDynamicWrap } from "../utils/lazyDynamicWrap.js"
+import { lazyDynamicWrap } from "../utils/lazyDynamicWrap.js"
+import { keywords } from "./keywords.js"
 
-const rawScope = (aliases: Dictionary, config: Config = {}) => {
+const rawScope = (aliases: Dict, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
-    const types: Scope<Dictionary> = { $: root as any }
+    const types: Scope<Dict> = { $: root as any }
     for (const name in aliases) {
         types[name] = new ArkType(root.resolve(name), config, types)
     }
@@ -38,7 +41,7 @@ export const getRootScope = () => {
     return rootScope!
 }
 
-type InferredScopeFn = <aliases, inferredParent extends Dictionary = {}>(
+type InferredScopeFn = <aliases, inferredParent extends Dict = {}>(
     aliases: validateAliases<
         aliases,
         inferScopeContext<aliases, inferredParent>
@@ -46,16 +49,16 @@ type InferredScopeFn = <aliases, inferredParent extends Dictionary = {}>(
     config?: Config<inferredParent>
 ) => Scope<inferAliases<aliases, inferredParent>>
 
-type DynamicScopeFn = <aliases extends Dictionary>(
+type DynamicScopeFn = <aliases extends Dict>(
     aliases: aliases,
     config?: Config
 ) => Scope<{ [name in keyof aliases]: unknown }>
 
-export type Scope<inferred extends Dictionary> = {
+export type Scope<inferred extends Dict> = {
     $: ScopeRoot<inferred>
 } & inferredScopeToArktypes<inferred>
 
-export type DynamicScope = Scope<Dictionary>
+export type DynamicScope = Scope<Dict>
 
 type inferredScopeToArktypes<inferred> = {
     [name in keyof inferred]: ArkType<inferred[name]>
@@ -63,14 +66,14 @@ type inferredScopeToArktypes<inferred> = {
 
 // TODO: decide if parsing primarily managed through scope or only resolution/caching
 
-export class ScopeRoot<inferred extends Dictionary = Dictionary> {
-    attributes = {} as { [k in keyof inferred]: TypeSet<inferred> }
+export class ScopeRoot<inferred extends Dict = Dict> {
+    roots = {} as { [k in keyof inferred]: TypeSet<inferred> }
     // TODO: Add intersection cache
-    private cache: mutable<Dictionary<TypeNode>> = {}
+    private cache: { [def: string]: TypeNode } = {}
 
     constructor(
-        public aliases: Record<keyof inferred, unknown>,
-        public config: Config<Dictionary>
+        public aliases: { readonly [name in keyof inferred]: unknown },
+        public config: Config<Dict>
     ) {}
 
     get infer(): inferred {
@@ -80,7 +83,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
     isResolvable(name: string) {
         return isKeyOf(name, keywords) ||
             this.aliases[name] ||
-            this.config.scope?.$.attributes[name]
+            this.config.scope?.$.roots[name]
             ? true
             : false
     }
@@ -93,12 +96,12 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
         if (isKeyOf(name, keywords)) {
             return keywords[name] as any
         }
-        if (isKeyOf(name, this.attributes)) {
-            return this.attributes[name] as TypeSet
+        if (isKeyOf(name, this.roots)) {
+            return this.roots[name] as TypeSet
         }
         if (!this.aliases[name]) {
             return (
-                this.config.scope?.$.attributes[name] ??
+                this.config.scope?.$.roots[name] ??
                 throwInternalError(
                     `Unexpectedly failed to resolve alias '${name}'`
                 )
@@ -114,15 +117,15 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
             seen.push(root)
             root = this.resolveRecurse(root, seen)
         }
-        this.attributes[name as keyof inferred] = root as TypeSet<inferred>
+        this.roots[name as keyof inferred] = root as TypeSet<inferred>
         return root
     }
 
-    resolveToDomain<domain extends Domain>(name: string, domain: domain) {
-        return this.resolveToDomainRecurse(name, domain, [])
+    resolvePredicate<domain extends Domain>(name: string, domain: domain) {
+        return this.resolvePredicateRecurse(name, domain, [])
     }
 
-    private resolveToDomainRecurse<domain extends Domain>(
+    private resolvePredicateRecurse<domain extends Domain>(
         name: string,
         domain: domain,
         seen: string[]
@@ -142,7 +145,7 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
             )
         }
         seen.push(resolution)
-        return this.resolveToDomainRecurse(resolution, domain, seen)
+        return this.resolvePredicateRecurse(resolution, domain, seen)
     }
 
     memoizedParse(def: string): TypeNode {
@@ -157,15 +160,15 @@ export class ScopeRoot<inferred extends Dictionary = Dictionary> {
     }
 }
 
-type validateAliases<aliases, scope extends Dictionary> = evaluate<{
+type validateAliases<aliases, scope extends Dict> = evaluate<{
     [name in keyof aliases]: validateDefinition<aliases[name], scope>
 }>
 
-type inferAliases<aliases, scope extends Dictionary> = evaluate<{
+type inferAliases<aliases, scope extends Dict> = evaluate<{
     [name in keyof aliases]: inferDefinition<aliases[name], scope, aliases>
 }>
 
-type inferScopeContext<aliases, scope extends Dictionary> = inferAliases<
+type inferScopeContext<aliases, scope extends Dict> = inferAliases<
     aliases,
     scope
 > &

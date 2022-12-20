@@ -1,17 +1,11 @@
-import type {
-    classOf,
-    Dictionary,
-    evaluate,
-    isTopType,
-    List
-} from "./generics.js"
+import type { classOf, Dict, evaluate, isTopType, List } from "./generics.js"
 import { isKeyOf } from "./generics.js"
 
 export const hasDomain = <data, domain extends Domain>(
     data: data,
     domain: domain
 ): data is Extract<data, inferDomain<domain>> =>
-    classify(data as any) === domain
+    domainOf(data as any) === domain
 
 type DomainTypes = {
     bigint: bigint
@@ -38,7 +32,7 @@ export type PrimitiveDomain = Exclude<Domain, "object">
 
 export type Primitive = inferDomain<PrimitiveDomain>
 
-export type classify<data> = isTopType<data> extends true
+export type domainOf<data> = isTopType<data> extends true
     ? Domain
     : data extends object
     ? "object"
@@ -58,7 +52,7 @@ export type classify<data> = isTopType<data> extends true
     ? "symbol"
     : never
 
-export const classify = <data>(data: data) => {
+export const domainOf = <data>(data: data) => {
     const builtinType = typeof data
     return (
         builtinType === "object"
@@ -68,40 +62,40 @@ export const classify = <data>(data: data) => {
             : builtinType === "function"
             ? "object"
             : builtinType
-    ) as classify<data>
+    ) as domainOf<data>
 }
 
 // Built-in objects that can be returned from
 // Object.prototype.toString.call(<value>). Based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-export type ObjectDomains = {
+export type ObjectKinds = {
     Array: readonly unknown[]
     Date: Date
     Error: Error
     Function: Function
     Map: Map<unknown, unknown>
-    Object: Dictionary
+    Object: Dict
     RegExp: RegExp
     Set: Set<unknown>
 }
 
-export type ObjectDomain = keyof ObjectDomains
+export type ObjectKind = keyof ObjectKinds
 
-const objectDomains = {
+const objectKinds = {
     Array,
     Date,
     Error,
     Function,
     Map,
-    Object: Object as unknown as classOf<Dictionary>,
+    Object: Object as unknown as classOf<Dict>,
     RegExp,
     Set
 } satisfies {
-    [k in ObjectDomain]: classOf<ObjectDomains[k]>
+    [k in ObjectKind]: classOf<ObjectKinds[k]>
 }
 
-export type classifyObject<data extends object> = object extends data
-    ? ObjectDomain
+export type kindOf<data extends object> = object extends data
+    ? ObjectKind
     : data extends List
     ? "Array"
     : data extends Date
@@ -118,16 +112,16 @@ export type classifyObject<data extends object> = object extends data
     ? "Set"
     : "Object"
 
-export const classifyObject = <data extends object>(data: data) => {
+export const kindOf = <data extends object>(data: data) => {
     if (Array.isArray(data)) {
         return "Array"
     }
     // The raw result will be something like [object Date]
     const prototypeName = Object.prototype.toString.call(data).slice(8, -1)
-    if (isKeyOf(prototypeName, objectDomains)) {
-        return data instanceof objectDomains[prototypeName]
+    if (isKeyOf(prototypeName, objectKinds)) {
+        return data instanceof objectKinds[prototypeName]
             ? prototypeName
-            : // If the prototype has the same name as one of the builtin types but isn't an instance of it, fall back to Object
+            : // If the prototype has the same name as one of the builtin types but isn't an instance of it, fall back to Record
               "Object"
     }
     if (prototypeName.endsWith("Error")) {
@@ -136,13 +130,8 @@ export const classifyObject = <data extends object>(data: data) => {
     return "Object"
 }
 
-export const hasObjectDomain = <domain extends ObjectDomain>(
+export const hasKind = <kind extends ObjectKind>(
     data: unknown,
-    domain: domain
-): data is ObjectDomains[domain] =>
-    hasDomain(data, "object") && classifyObject(data) === domain
-
-export const subclassify = (data: unknown) => {
-    const domain = classify(data)
-    return domain === "object" ? classifyObject(data as object) : domain
-}
+    kind: kind
+): data is ObjectKinds[kind] =>
+    hasDomain(data, "object") && kindOf(data) === kind

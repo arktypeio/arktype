@@ -1,10 +1,10 @@
 import type { TypeNode } from "./nodes/node.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
-import type { DynamicScope, Scope } from "./scope.js"
-import { getRootScope } from "./scope.js"
+import type { DynamicScope, Scope } from "./scopes/scope.js"
+import { getRootScope } from "./scopes/scope.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { Dictionary, isTopType } from "./utils/generics.js"
+import type { Dict, isTopType } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
@@ -17,7 +17,7 @@ export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
-export type InferredTypeFn = <definition, scope extends Dictionary = {}>(
+export type InferredTypeFn = <definition, scope extends Dict = {}>(
     definition: validateDefinition<definition, scope>,
     options?: Config<scope>
 ) => isTopType<definition> extends true
@@ -26,10 +26,7 @@ export type InferredTypeFn = <definition, scope extends Dictionary = {}>(
     ? ArkType<inferDefinition<definition, scope, {}>>
     : never
 
-type DynamicTypeFn = (
-    definition: unknown,
-    options?: Config<Dictionary>
-) => ArkType
+type DynamicTypeFn = (definition: unknown, options?: Config<Dict>) => ArkType
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
@@ -60,6 +57,6 @@ export class ArkType<inferred = unknown> {
     }
 }
 
-export type Config<scope extends Dictionary = {}> = {
+export type Config<scope extends Dict = {}> = {
     scope?: Scope<scope>
 }

@@ -1,34 +1,29 @@
 import type { TypeNode } from "../nodes/node.js"
-import type { ScopeRoot } from "../scope.js"
-import type {
-    Dictionary,
-    evaluate,
-    keySet,
-    mutable
-} from "../utils/generics.js"
+import type { PropsRule } from "../nodes/rules/props.js"
+import type { ScopeRoot } from "../scopes/scope.js"
+import type { Dict, evaluate, mutable } from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
 import { Scanner } from "./shift/scanner.js"
 
-export const parseRecord = (def: Dictionary, scope: ScopeRoot): TypeNode => {
-    const props: mutable<Dictionary<TypeNode>> = {}
-    const requiredKeys: mutable<keySet> = {}
+export const parseRecord = (def: Dict, scope: ScopeRoot): TypeNode => {
+    const props: MutableProps = {}
     for (const definitionKey in def) {
-        let keyName = definitionKey
+        const propNode = parseDefinition(def[definitionKey], scope)
         if (definitionKey.endsWith(`${Scanner.escapeToken}?`)) {
-            keyName = `${definitionKey.slice(0, -2)}?`
-            requiredKeys[keyName] = true
+            props.required ??= {}
+            props.required[`${definitionKey.slice(0, -2)}?`] = propNode
         } else if (definitionKey.endsWith("?")) {
-            keyName = definitionKey.slice(0, -1)
+            props.optional ??= {}
+            props.optional[definitionKey.slice(0, -1)] = propNode
         } else {
-            requiredKeys[definitionKey] = true
+            props.required ??= {}
+            props.required[definitionKey] = propNode
         }
-        props[keyName] = parseDefinition(def[definitionKey], scope)
     }
     return {
         object: {
-            props,
-            requiredKeys
+            props
         }
     }
 }
@@ -38,8 +33,8 @@ type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`
     : k
 
 export type inferRecord<
-    def extends Dictionary,
-    scope extends Dictionary,
+    def extends Dict,
+    scope extends Dict,
     aliases
 > = evaluate<
     {
@@ -81,3 +76,7 @@ type requiredKeyOf<def> = {
         ? name
         : never
 }[keyof def]
+
+type MutableProps = {
+    -readonly [k in keyof PropsRule]: mutable<PropsRule[k]>
+}

@@ -1,8 +1,8 @@
-import type { ScopeRoot } from "../scope.js"
+import type { ScopeRoot } from "../scopes/scope.js"
 import { checkRules } from "../traverse/check.js"
-import type { Domain, inferDomain } from "../utils/classify.js"
-import { hasObjectDomain } from "../utils/classify.js"
-import type { CollapsibleList, Dictionary } from "../utils/generics.js"
+import type { Domain, inferDomain } from "../utils/domains.js"
+import { hasKind } from "../utils/domains.js"
+import type { CollapsibleTuple, Dict } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
 import type { BranchComparison } from "./branches.js"
 import { compareBranches } from "./branches.js"
@@ -15,12 +15,12 @@ import { isExactValuePredicate, resolvePredicateIfIdentifier } from "./utils.js"
 
 export type Predicate<
     domain extends Domain = Domain,
-    scope extends Dictionary = Dictionary
-> = true | CollapsibleList<Condition<domain, scope>>
+    scope extends Dict = Dict
+> = true | CollapsibleTuple<Condition<domain, scope>>
 
 export type Condition<
     domain extends Domain = Domain,
-    scope extends Dictionary = Dictionary
+    scope extends Dict = Dict
 > = RuleSet<domain, scope> | ExactValue<domain> | Identifier<scope>
 
 export type ExactValue<domain extends Domain = Domain> = {
@@ -34,7 +34,7 @@ export type PredicateContext = {
 
 export type ResolvedPredicate<
     domain extends Domain = Domain,
-    scope extends Dictionary = Dictionary
+    scope extends Dict = Dict
 > = Exclude<Predicate<domain, scope>, string>
 
 export type PredicateComparison =
@@ -55,10 +55,7 @@ export const comparePredicates = (
     if (rResolution === true) {
         return l
     }
-    if (
-        hasObjectDomain(lResolution, "Object") &&
-        hasObjectDomain(rResolution, "Object")
-    ) {
+    if (hasKind(lResolution, "Object") && hasKind(rResolution, "Object")) {
         return isExactValuePredicate(lResolution)
             ? isExactValuePredicate(rResolution)
                 ? lResolution.value === rResolution.value

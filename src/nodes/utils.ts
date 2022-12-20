@@ -1,5 +1,5 @@
-import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/classify.js"
+import type { ScopeRoot } from "../scopes/scope.js"
+import type { Domain } from "../utils/domains.js"
 import type { defined } from "../utils/generics.js"
 import { keysOf } from "../utils/generics.js"
 import { intersection } from "./intersection.js"
@@ -18,7 +18,7 @@ export const resolvePredicateIfIdentifier = (
     scope: ScopeRoot
 ) =>
     typeof predicate === "string"
-        ? scope.resolveToDomain(predicate, domain)
+        ? scope.resolvePredicate(predicate, domain)
         : predicate
 
 export const nodeExtends = (node: TypeNode, base: TypeNode, scope: ScopeRoot) =>
@@ -46,7 +46,6 @@ export const domainOfNode = (
     scope: ScopeRoot
 ): Domain | Domain[] => {
     const domains = keysOf(resolveIfIdentifier(node, scope))
-    // TODO: Handle never here
     return domains.length === 1 ? domains[0] : domains
 }
 
