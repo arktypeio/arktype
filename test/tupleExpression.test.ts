@@ -19,7 +19,7 @@ describe("tuple expression", () => {
             b: number
         }
         attest(t.root).snap({
-            object: { props: { required: { a: "string", b: "number" } } }
+            object: { props: { a: "string", b: "number" } }
         })
     })
     test("list", () => {

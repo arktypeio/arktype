@@ -11,7 +11,7 @@ import { composeIntersection, composeKeyedOperation } from "../compose.js"
 import type { PredicateContext } from "../predicate.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
 import { divisorIntersection } from "./divisor.js"
-import type { FlatPropsRules, PropsRules } from "./props.js"
+import type { FlatPropsRules, PropsRule } from "./props.js"
 import { propsIntersection } from "./props.js"
 import type { Range } from "./range.js"
 import { rangeIntersection } from "./range.js"
@@ -24,7 +24,7 @@ export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
     readonly divisor?: number
     readonly range?: Range
     readonly subdomain?: SubdomainRule<scope>
-    readonly props?: PropsRules<scope>
+    readonly props?: PropsRule<scope>
     readonly validator?: CollapsibleList<Validator<inferDomain<domain>>>
 }
 

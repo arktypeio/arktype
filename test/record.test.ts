@@ -9,10 +9,8 @@ describe("record", () => {
         attest(o.root).snap({
             object: {
                 props: {
-                    required: {
-                        a: "string",
-                        b: { object: { subdomain: ["Array", "boolean"] } }
-                    }
+                    a: "string",
+                    b: { object: { subdomain: ["Array", "boolean"] } }
                 }
             }
         })
@@ -23,10 +21,8 @@ describe("record", () => {
         attest(o.root).snap({
             object: {
                 props: {
-                    optional: { a: "string" },
-                    required: {
-                        b: { object: { subdomain: ["Array", "boolean"] } }
-                    }
+                    a: ["?", "string"],
+                    b: { object: { subdomain: ["Array", "boolean"] } }
                 }
             }
         })
@@ -36,7 +32,7 @@ describe("record", () => {
         attest(t.infer).typed as { "a?": string }
         attest(t.root).equals({
             object: {
-                props: { required: { "a?": "string" } }
+                props: { "a?": "string" }
             }
         })
     })

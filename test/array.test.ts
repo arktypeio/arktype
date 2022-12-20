@@ -22,7 +22,7 @@ describe("parse array", () => {
                     "Array",
                     {
                         object: {
-                            props: { required: { a: "string", b: "number" } }
+                            props: { a: "string", b: "number" }
                         }
                     }
                 ]

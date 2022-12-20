@@ -1,5 +1,5 @@
 import type { TypeNode } from "../nodes/node.js"
-import type { PropsRules } from "../nodes/rules/props.js"
+import type { PropsRule } from "../nodes/rules/props.js"
 import type { ScopeRoot } from "../scope.js"
 import type { Dict, evaluate, mutable } from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"
@@ -7,18 +7,15 @@ import { parseDefinition } from "./definition.js"
 import { Scanner } from "./shift/scanner.js"
 
 export const parseRecord = (def: Dict, scope: ScopeRoot): TypeNode => {
-    const props: MutableProps = {}
+    const props: mutable<PropsRule> = {}
     for (const definitionKey in def) {
         const propNode = parseDefinition(def[definitionKey], scope)
         if (definitionKey.endsWith(`${Scanner.escapeToken}?`)) {
-            props.required ??= {}
-            props.required[`${definitionKey.slice(0, -2)}?`] = propNode
+            props[`${definitionKey.slice(0, -2)}?`] = propNode
         } else if (definitionKey.endsWith("?")) {
-            props.optional ??= {}
-            props.optional[definitionKey.slice(0, -1)] = propNode
+            props[definitionKey.slice(0, -1)] = ["?", propNode]
         } else {
-            props.required ??= {}
-            props.required[definitionKey] = propNode
+            props[definitionKey] = propNode
         }
     }
     return {
@@ -76,7 +73,3 @@ type requiredKeyOf<def> = {
         ? name
         : never
 }[keyof def]
-
-type MutableProps = {
-    -readonly [k in keyof PropsRules]: mutable<PropsRules[k]>
-}
