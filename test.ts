@@ -1,5 +1,4 @@
-import { type } from "./exports.js"
+import { type } from "arktype"
 
-const a = type("string")
-const b = a.assert({ a: "b" })
-console.log(b)
+console.log(type("string").assert("Arktype"))
+console.log(type("'abc'").root)
