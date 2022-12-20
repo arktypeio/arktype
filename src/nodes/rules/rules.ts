@@ -12,7 +12,7 @@ import type { PredicateContext } from "../predicate.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
 import { divisorIntersection } from "./divisor.js"
 import type { FlatPropsRules, PropsRule } from "./props.js"
-import { propsIntersection } from "./props.js"
+import { flattenProps, propsIntersection } from "./props.js"
 import type { Range } from "./range.js"
 import { rangeIntersection } from "./range.js"
 import { getRegex, regexIntersection } from "./regex.js"
@@ -26,57 +26,6 @@ export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
     readonly subdomain?: SubdomainRule<scope>
     readonly props?: PropsRule<scope>
     readonly validator?: CollapsibleList<Validator<inferDomain<domain>>>
-}
-
-export type FlattenAndPushRule<t> = (
-    entries: RuleEntry[],
-    rule: t,
-    scope: ScopeRoot
-) => void
-
-const flattenAndPushMap: {
-    [k in keyof Rules]-?: FlattenAndPushRule<Rules[k] & {}>
-} = {
-    regex: (entries, rule) => {
-        if (typeof rule === "string") {
-            entries.push(["regex", getRegex(rule)])
-        } else {
-            for (const source of rule) {
-                entries.push(["regex", getRegex(source)])
-            }
-        }
-    },
-    divisor: (entries, rule) => {
-        entries.push(["divisor", rule])
-    },
-    range: (entries, rule) => {
-        entries.push(["range", rule])
-    },
-    validator: (entries, rule) => {
-        if (typeof rule === "function") {
-            entries.push(["validator", rule])
-        } else {
-            for (const validator of rule) {
-                entries.push(["validator", validator])
-            }
-        }
-    },
-    subdomain: flattenSubdomain,
-    props: (entries, props) => {
-        entries.push(["props", props] as any)
-    }
-}
-
-export const flattenRules = (
-    rules: Rules,
-    scope: ScopeRoot
-): readonly RuleEntry[] => {
-    const entries: RuleEntry[] = []
-    let k: keyof Rules
-    for (k in rules) {
-        flattenAndPushMap[k](entries, rules[k] as any, scope)
-    }
-    return entries
 }
 
 export type RuleEntry = entryOf<
@@ -138,3 +87,52 @@ export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
     },
     { onEmpty: "bubble" }
 )
+
+export type FlattenAndPushRule<t> = (
+    entries: RuleEntry[],
+    rule: t,
+    scope: ScopeRoot
+) => void
+
+const flattenAndPushMap: {
+    [k in keyof Rules]-?: FlattenAndPushRule<Rules[k] & {}>
+} = {
+    regex: (entries, rule) => {
+        if (typeof rule === "string") {
+            entries.push(["regex", getRegex(rule)])
+        } else {
+            for (const source of rule) {
+                entries.push(["regex", getRegex(source)])
+            }
+        }
+    },
+    divisor: (entries, rule) => {
+        entries.push(["divisor", rule])
+    },
+    range: (entries, rule) => {
+        entries.push(["range", rule])
+    },
+    validator: (entries, rule) => {
+        if (typeof rule === "function") {
+            entries.push(["validator", rule])
+        } else {
+            for (const validator of rule) {
+                entries.push(["validator", validator])
+            }
+        }
+    },
+    subdomain: flattenSubdomain,
+    props: flattenProps
+}
+
+export const flattenRules = (
+    rules: Rules,
+    scope: ScopeRoot
+): readonly RuleEntry[] => {
+    const entries: RuleEntry[] = []
+    let k: keyof Rules
+    for (k in rules) {
+        flattenAndPushMap[k](entries, rules[k] as any, scope)
+    }
+    return entries
+}
