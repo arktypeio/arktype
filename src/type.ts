@@ -46,7 +46,7 @@ export class ArkType<inferred = unknown> {
 
     check(data: unknown) {
         const state = {} as any
-        return state.problems.length
+        return state.problems?.length
             ? {
                   problems: state.problems
               }
