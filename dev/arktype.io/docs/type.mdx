@@ -16,7 +16,7 @@ stringData.check("Arktype") //{data: "Arktype"}
 stringData.check({}) //{problems: ArktypeError, data: }
 ```
 
-Creating an object schema
+## Creating an object schema
 
 ```ts
 import { type } from "arktype"
@@ -117,10 +117,10 @@ tupleSchema.check(["EZ", 69, "MOOCHI"])
 
 ```ts
 const union = type("string|number")
-typeof thing // string|number
+typeof union // string|number
 
 const intersection = type("string&number")
-typeof thing1 // never
+typeof intersection // never
 ```
 
 ## Escape Characters
@@ -140,3 +140,5 @@ questionableKey.check({ "questionable?": true })
 ## Cyclic Data
 
 We handle those cycles with ease! Cycle away!
+
+<TOCInline toc={toc} />
