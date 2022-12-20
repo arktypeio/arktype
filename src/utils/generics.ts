@@ -74,7 +74,7 @@ export type classOf<instanceType> = new (
 export type instanceOf<classType extends classOf<any>> =
     classType extends classOf<infer Instance> ? Instance : never
 
-export type entryOf<o> = { [k in keyof o]: [k, o[k]] }[o extends List
+export type entryOf<o> = { [k in keyof o]-?: [k, o[k] & {}] }[o extends List
     ? keyof o & number
     : keyof o]
 
@@ -152,7 +152,7 @@ export type Dict = {
 
 export type List = readonly unknown[]
 
-export const toArray = <t>(data: t) =>
+export const listFrom = <t>(data: t) =>
     (Array.isArray(data) ? data : [data]) as t extends List ? t : [t]
 
 export type CollapsibleTuple<t> = t | readonly t[]

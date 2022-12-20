@@ -1,15 +1,9 @@
-import type { Keyword, Keywords } from "../scopes/keywords.js"
 import type { ScopeRoot } from "../scopes/scope.js"
 import { checkRules } from "../traverse/check.js"
-import type {
-    Domain,
-    inferDomain,
-    ObjectKind,
-    ObjectKinds
-} from "../utils/domains.js"
+import type { Domain, inferDomain } from "../utils/domains.js"
 import { hasKind } from "../utils/domains.js"
 import type { CollapsibleTuple, Dict } from "../utils/generics.js"
-import { toArray } from "../utils/generics.js"
+import { listFrom } from "../utils/generics.js"
 import type { BranchComparison } from "./branches.js"
 import { compareBranches } from "./branches.js"
 import type { SetOperationResult } from "./compose.js"
@@ -76,8 +70,8 @@ export const comparePredicates = (
                 : empty
             : rulesIntersection(lResolution, rResolution, { domain, scope })
     }
-    const lComparisons = toArray(lResolution)
-    const rComparisons = toArray(rResolution)
+    const lComparisons = listFrom(lResolution)
+    const rComparisons = listFrom(rResolution)
     const comparison = compareBranches(
         domain,
         lComparisons,

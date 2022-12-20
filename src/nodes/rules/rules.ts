@@ -4,7 +4,12 @@ import type {
     inferDomain,
     ObjectKind
 } from "../../utils/domains.js"
-import type { CollapsibleTuple, Dict, evaluate } from "../../utils/generics.js"
+import type {
+    CollapsibleTuple,
+    Dict,
+    entryOf,
+    evaluate
+} from "../../utils/generics.js"
 import {
     composeIntersection,
     composeKeyedOperation,
