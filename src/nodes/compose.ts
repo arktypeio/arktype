@@ -1,7 +1,6 @@
 import type { ScopeRoot } from "../scope.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dict, mutable, stringKeyOf } from "../utils/generics.js"
-import { keywords } from "./keywords.js"
 import type { TypeNode, TypeSet } from "./node.js"
 import { resolveIfIdentifier } from "./utils.js"
 
@@ -137,5 +136,4 @@ export const composeNodeOperation =
 export const finalizeNodeOperation = (
     l: TypeNode,
     result: SetOperationResult<TypeNode>
-): TypeNode =>
-    result === empty ? keywords.never : result === equal ? l : result
+): TypeNode => (result === empty ? "never" : result === equal ? l : result)

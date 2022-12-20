@@ -1,6 +1,6 @@
-import { flatten } from "./nodes/flatten.js"
 import { keywords } from "./nodes/keywords.js"
 import type { TypeNode, TypeSet } from "./nodes/node.js"
+import { flattenNode } from "./nodes/node.js"
 import type { ResolvedPredicate } from "./nodes/predicate.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
@@ -21,7 +21,7 @@ const rawScope = (aliases: Dict, config: Config = {}) => {
     const types: Scope<Dict> = { $: root as any }
     for (const name in aliases) {
         const node = root.resolve(name)
-        types[name] = new ArkType(node, flatten(node), config, types)
+        types[name] = new ArkType(node, flattenNode(node, root), config, types)
     }
     return types
 }

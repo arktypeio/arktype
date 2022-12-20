@@ -14,16 +14,6 @@ export type FlatNode = {
     readonly [domain in Domain]?: FlatPredicate
 }
 
-export const flattenNode = (node: TypeNode, scope: ScopeRoot): FlatNode => {
-    const result: mutable<FlatNode> = {}
-    let domain: Domain
-    const resolution = resolveIfIdentifier(node, scope)
-    for (domain in resolution) {
-        result[domain] = flattenPredicate(resolution[domain]!, scope)
-    }
-    return result
-}
-
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to
  * manipulate.*/
@@ -34,3 +24,24 @@ export type TypeSet<scope extends Dict = Dict> = {
 }
 
 export type Identifier<scope extends Dict = Dict> = Keyword | stringKeyOf<scope>
+
+export const flattenNode = (node: TypeNode, scope: ScopeRoot): FlatNode => {
+    const result: mutable<FlatNode> = {}
+    let domain: Domain
+    const resolution = resolveIfIdentifier(node, scope)
+    for (domain in resolution) {
+        result[domain] = flattenPredicate(resolution[domain]!, scope)
+    }
+    return result
+}
+
+export const flattenNodes = <nodes extends { readonly [k in string]: TypeSet }>(
+    nodes: nodes,
+    scope: ScopeRoot
+) => {
+    const result = {} as { [k in keyof nodes]: FlatNode }
+    for (const name in nodes) {
+        result[name] = flattenNode(nodes[name], scope)
+    }
+    return result
+}

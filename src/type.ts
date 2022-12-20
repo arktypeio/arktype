@@ -1,6 +1,5 @@
-import type { FlatNode } from "./nodes/flatten.js"
-import { flatten } from "./nodes/flatten.js"
-import type { TypeSet } from "./nodes/node.js"
+import type { FlatNode, TypeSet } from "./nodes/node.js"
+import { flattenNode } from "./nodes/node.js"
 import { resolveIfIdentifier } from "./nodes/utils.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
@@ -19,7 +18,7 @@ const rawTypeFn: DynamicTypeFn = (
         parseDefinition(definition, scope.$),
         scope.$
     )
-    return new ArkType(node, flatten(node), config, scope as any)
+    return new ArkType(node, flattenNode(node, scope.$), config, scope as any)
 }
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(

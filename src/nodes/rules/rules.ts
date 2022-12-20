@@ -7,7 +7,6 @@ import type {
     evaluate,
     extend
 } from "../../utils/generics.js"
-import { listFrom } from "../../utils/generics.js"
 import { composeIntersection, composeKeyedOperation } from "../compose.js"
 import type { PredicateContext } from "../predicate.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
@@ -62,7 +61,10 @@ const flattenAndPushMap: {
             }
         }
     },
-    subdomain: flattenSubdomain
+    subdomain: flattenSubdomain,
+    props: (entries, props) => {
+        entries.push(["props", props] as any)
+    }
 }
 
 export const flattenRules = (

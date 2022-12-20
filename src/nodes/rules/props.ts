@@ -6,9 +6,8 @@ import {
     empty,
     equal
 } from "../compose.js"
-import type { FlatNode } from "../flatten.js"
 import { nodeIntersection } from "../intersection.js"
-import type { TypeNode } from "../node.js"
+import type { FlatNode, TypeNode } from "../node.js"
 import type { PredicateContext } from "../predicate.js"
 
 export type PropsRules<scope extends Dict = Dict> = {
