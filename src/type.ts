@@ -1,8 +1,11 @@
-import type { TypeNode } from "./nodes/node.js"
+import type { FlatNode } from "./nodes/flatten.js"
+import { flatten } from "./nodes/flatten.js"
+import type { TypeNode, TypeSet } from "./nodes/node.js"
+import { resolveIfIdentifier } from "./nodes/utils.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
-import type { DynamicScope, Scope } from "./scopes/scope.js"
-import { getRootScope } from "./scopes/scope.js"
+import type { DynamicScope, Scope } from "./scope.js"
+import { getRootScope } from "./scope.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { Dict, isTopType } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
@@ -11,7 +14,13 @@ import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 const rawTypeFn: DynamicTypeFn = (
     definition,
     { scope = getRootScope(), ...config } = {}
-) => new ArkType(parseDefinition(definition, scope.$), config, scope as any)
+) => {
+    const node = resolveIfIdentifier(
+        parseDefinition(definition, scope.$),
+        scope.$
+    )
+    return new ArkType(node, flatten(node), config, scope as any)
+}
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
@@ -32,7 +41,8 @@ export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
 export class ArkType<inferred = unknown> {
     constructor(
-        public root: TypeNode,
+        public root: TypeSet,
+        public flat: FlatNode,
         public config: Config,
         public scope: DynamicScope
     ) {}

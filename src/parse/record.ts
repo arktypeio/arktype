@@ -1,6 +1,6 @@
 import type { TypeNode } from "../nodes/node.js"
-import type { PropsRule } from "../nodes/rules/props.js"
-import type { ScopeRoot } from "../scopes/scope.js"
+import type { PropsRules } from "../nodes/rules/props.js"
+import type { ScopeRoot } from "../scope.js"
 import type { Dict, evaluate, mutable } from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
@@ -78,5 +78,5 @@ type requiredKeyOf<def> = {
 }[keyof def]
 
 type MutableProps = {
-    -readonly [k in keyof PropsRule]: mutable<PropsRule[k]>
+    -readonly [k in keyof PropsRules]: mutable<PropsRules[k]>
 }

@@ -1,7 +1,7 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
 import { buildUnresolvableMessage } from "../src/parse/shift/operand/unenclosed.js"
-import { scope } from "../src/scopes/scope.js"
+import { scope } from "../src/scope.js"
 import { type } from "../src/type.js"
 import type { Dict } from "../src/utils/generics.js"
 
@@ -9,7 +9,7 @@ describe("dynamic", () => {
     test("uninferred types", () => {
         const dynamicStringArray = type.dynamic("str" + "ing")
         attest(dynamicStringArray.infer).typed as unknown
-        attest(dynamicStringArray.root).equals("string")
+        attest(dynamicStringArray.root).equals({ string: true })
     })
     test("uninferred aliases", () => {
         const s = scope.dynamic({

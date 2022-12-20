@@ -2,7 +2,7 @@ import type { Domain } from "../utils/domains.js"
 import type { entryOf, mutable } from "../utils/generics.js"
 import { entriesOf, listFrom } from "../utils/generics.js"
 import type { TypeSet } from "./node.js"
-import type { PropsRule } from "./rules/props.js"
+import type { PropsRules } from "./rules/props.js"
 import type { Rules } from "./rules/rules.js"
 import { isExactValuePredicate } from "./utils.js"
 
@@ -33,16 +33,14 @@ export const flatten = (node: TypeSet): FlatNode => {
     return result
 }
 
-const flattenProps = (props: PropsRule) => {
+const flattenProps = (props: PropsRules) => {
     const result = {} as mutable<FlattenedProps>
-    let k: keyof PropsRule
+    let k: keyof PropsRules
     for (k in props) {
-        result[k] = Object.fromEntries(
-            entriesOf(props[k]!).map(([k, node]) => [
-                k,
-                typeof node === "string" ? node : flatten(node)
-            ])
-        ) as FlattenedPropGroup
+        result[k] = entriesOf(props[k]!).map(([k, node]) => [
+            k,
+            typeof node === "string" ? node : flatten(node)
+        ]) as FlattenedPropGroup
     }
     return result
 }
@@ -70,9 +68,9 @@ type FlatRule =
     | ["value", unknown]
 
 type FlattenedProps = {
-    readonly optional?: FlattenedPropGroup
     readonly required?: FlattenedPropGroup
+    readonly optional?: FlattenedPropGroup
     readonly mapped?: FlattenedPropGroup
 }
 
-type FlattenedPropGroup = { readonly [k in string]: FlatNode }
+type FlattenedPropGroup = [key: string, node: FlatNode][]

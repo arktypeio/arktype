@@ -1,4 +1,4 @@
-import type { ScopeRoot } from "../scopes/scope.js"
+import type { ScopeRoot } from "../scope.js"
 import { collapseIfSingleton } from "../utils/generics.js"
 import { isBranchComparison } from "./branches.js"
 import type { KeyReducerFn } from "./compose.js"
@@ -26,7 +26,7 @@ export const predicateIntersection: KeyReducerFn<
         return comparison
     }
     return collapseIfSingleton([
-        ...comparison.codependentIntersections,
+        ...comparison.distinctIntersections,
         ...comparison.equalPairs.map(
             (indices) => comparison.lConditions[indices[0]]
         ),

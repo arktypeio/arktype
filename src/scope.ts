@@ -1,28 +1,27 @@
-import type { TypeNode, TypeSet } from "../nodes/node.js"
-import type { ResolvedPredicate } from "../nodes/predicate.js"
-import type {
-    inferDefinition,
-    validateDefinition
-} from "../parse/definition.js"
-import { parseDefinition } from "../parse/definition.js"
-import { fullStringParse, maybeNaiveParse } from "../parse/string.js"
-import type { Config } from "../type.js"
-import { ArkType } from "../type.js"
-import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.js"
-import type { Domain } from "../utils/domains.js"
-import { throwInternalError, throwParseError } from "../utils/errors.js"
-import { deepFreeze } from "../utils/freeze.js"
-import type { Dict, evaluate } from "../utils/generics.js"
-import { isKeyOf } from "../utils/generics.js"
-import type { LazyDynamicWrap } from "../utils/lazyDynamicWrap.js"
-import { lazyDynamicWrap } from "../utils/lazyDynamicWrap.js"
-import { keywords } from "./keywords.js"
+import { flatten } from "./nodes/flatten.js"
+import { keywords } from "./nodes/keywords.js"
+import type { TypeNode, TypeSet } from "./nodes/node.js"
+import type { ResolvedPredicate } from "./nodes/predicate.js"
+import type { inferDefinition, validateDefinition } from "./parse/definition.js"
+import { parseDefinition } from "./parse/definition.js"
+import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
+import type { Config } from "./type.js"
+import { ArkType } from "./type.js"
+import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
+import type { Domain } from "./utils/domains.js"
+import { throwInternalError, throwParseError } from "./utils/errors.js"
+import { deepFreeze } from "./utils/freeze.js"
+import type { Dict, evaluate } from "./utils/generics.js"
+import { isKeyOf } from "./utils/generics.js"
+import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
+import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
 const rawScope = (aliases: Dict, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
     const types: Scope<Dict> = { $: root as any }
     for (const name in aliases) {
-        types[name] = new ArkType(root.resolve(name), config, types)
+        const node = root.resolve(name)
+        types[name] = new ArkType(node, flatten(node), config, types)
     }
     return types
 }

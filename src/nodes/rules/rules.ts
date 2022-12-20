@@ -4,7 +4,13 @@ import type {
     inferDomain,
     ObjectKind
 } from "../../utils/domains.js"
-import type { CollapsibleTuple, Dict, evaluate } from "../../utils/generics.js"
+import type {
+    CollapsibleTuple,
+    Dict,
+    entryOf,
+    evaluate,
+    extend
+} from "../../utils/generics.js"
 import {
     composeIntersection,
     composeKeyedOperation,
@@ -14,7 +20,7 @@ import {
 import type { PredicateContext } from "../predicate.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
 import { divisorIntersection } from "./divisor.js"
-import type { PropsRule } from "./props.js"
+import type { FlatPropsRules, PropsRules } from "./props.js"
 import { propsIntersection } from "./props.js"
 import type { Range } from "./range.js"
 import { rangeIntersection } from "./range.js"
@@ -24,10 +30,23 @@ export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
     readonly regex?: CollapsibleTuple<string>
     readonly divisor?: number
     readonly kind?: ObjectKind
-    readonly props?: PropsRule<scope>
+    readonly props?: PropsRules<scope>
     readonly range?: Range
     readonly validator?: CollapsibleTuple<Validator<inferDomain<domain>>>
 }
+
+export type FlatRules = extend<
+    { [k in Exclude<keyof Rules, "props">]-?: [k, unknown] },
+    evaluate<
+        {
+            regex: ["regex", RegExp]
+            divisor: ["divisor", number]
+            kind: ["kind", ObjectKind]
+            range: ["range", Range]
+            validator: ["validator", Validator]
+        } & FlatPropsRules
+    >
+>
 
 export type Validator<data = unknown> = (data: data) => boolean
 

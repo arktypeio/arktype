@@ -1,27 +1,50 @@
-import type { ScopeRoot } from "../../scopes/scope.js"
-import type { Dict } from "../../utils/generics.js"
+import type { ScopeRoot } from "../../scope.js"
+import type { Dict, entryOf } from "../../utils/generics.js"
 import {
     composeIntersection,
     composeKeyedOperation,
     empty,
     equal
 } from "../compose.js"
+import type { FlatNode } from "../flatten.js"
 import { nodeIntersection } from "../intersection.js"
 import type { TypeNode } from "../node.js"
 import type { PredicateContext } from "../predicate.js"
 
-export type PropsRule<scope extends Dict = Dict> = {
+export type PropsRules<scope extends Dict = Dict> = {
     readonly required?: PropSet<scope>
     readonly optional?: PropSet<scope>
     readonly mapped?: PropSet<scope>
 }
+
+export type FlatPropsRules = {
+    "props/required": FlatPropEntries
+    "props/optional": FlatPropEntries
+    "props/mapped": [
+        mappedEntries: MappedFlatPropEntries,
+        namedProps?: {
+            readonly required?: FlatPropSet
+            readonly optional?: FlatPropSet
+        }
+    ]
+}
+
+export type MappedFlatPropEntries = readonly [
+    ifKeySatisfies: FlatNode,
+    // Once we allow mapping based on key value, add: ((key: string) => FlatNode)
+    thenCheckValueAgainst: FlatNode
+]
+
+export type FlatPropEntries = readonly [propKey: string, flatNode: FlatNode][]
+
+export type FlatPropSet = { readonly [propKey in string]: FlatNode }
 
 export type PropSet<scope extends Dict = Dict> = {
     readonly [propKey in string]: TypeNode<scope>
 }
 
 export const propsIntersection = composeIntersection<
-    PropsRule,
+    PropsRules,
     PredicateContext
 >((l, r, context) => {
     const lCompiled = requireOppositeKeys(l, r)
@@ -39,7 +62,7 @@ export const propsIntersection = composeIntersection<
 // If a key is optional on one side and required on the other, the result should
 // be required. Returns props with the necessary changes if any, otherwise returns
 // the original reference to props.
-const requireOppositeKeys = (props: PropsRule, opposite: PropsRule) => {
+const requireOppositeKeys = (props: PropsRules, opposite: PropsRules) => {
     if (!props.optional || !opposite.required) {
         return props
     }
@@ -83,7 +106,7 @@ const composePropSetIntersection = (isRequiredName: boolean) =>
         )
     )
 
-const rawPropsIntersection = composeKeyedOperation<PropsRule, ScopeRoot>(
+const rawPropsIntersection = composeKeyedOperation<PropsRules, ScopeRoot>(
     {
         required: composePropSetIntersection(true),
         optional: composePropSetIntersection(false),

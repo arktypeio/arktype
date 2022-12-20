@@ -1,8 +1,7 @@
-import type { ScopeRoot } from "../scopes/scope.js"
+import type { ScopeRoot } from "../scope.js"
 import type { Domain } from "../utils/domains.js"
 import type { defined } from "../utils/generics.js"
 import { keysOf } from "../utils/generics.js"
-import { intersection } from "./intersection.js"
 import type { TypeNode, TypeSet } from "./node.js"
 import type { ExactValue, Predicate } from "./predicate.js"
 
@@ -20,9 +19,6 @@ export const resolvePredicateIfIdentifier = (
     typeof predicate === "string"
         ? scope.resolvePredicate(predicate, domain)
         : predicate
-
-export const nodeExtends = (node: TypeNode, base: TypeNode, scope: ScopeRoot) =>
-    intersection(node, base, scope) === node
 
 export const isExactValue = <domain extends Domain>(
     node: TypeNode,

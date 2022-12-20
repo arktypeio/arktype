@@ -1,4 +1,4 @@
-import type { Keyword, Keywords } from "../scopes/keywords.js"
+import type { Keyword, Keywords } from "../nodes/keywords.js"
 import type {
     Dict,
     Downcastable,

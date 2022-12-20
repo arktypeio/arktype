@@ -1,4 +1,4 @@
-import type { ScopeRoot } from "../scopes/scope.js"
+import type { ScopeRoot } from "../scope.js"
 import { checkRules } from "../traverse/check.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { hasKind } from "../utils/domains.js"

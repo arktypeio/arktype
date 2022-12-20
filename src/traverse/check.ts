@@ -1,5 +1,5 @@
 import type { TypeNode } from "../nodes/node.js"
-import type { ScopeRoot } from "../scopes/scope.js"
+import type { ScopeRoot } from "../scope.js"
 import type { Domain } from "../utils/domains.js"
 
 export const checkRules = (

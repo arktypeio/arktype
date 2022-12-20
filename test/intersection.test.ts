@@ -11,12 +11,12 @@ describe("intersection", () => {
         test("two types", () => {
             const t = type("boolean&true")
             attest(t.infer).typed as true
-            attest(t.root).snap("true")
+            attest(t.root).snap({ boolean: { value: true } })
         })
         test("several types", () => {
             const t = type("unknown&boolean&false")
             attest(t.infer).typed as false
-            attest(t.root).snap("false")
+            attest(t.root).snap({ boolean: { value: false } })
         })
         describe("number & literals", () => {
             test("same literal", () => {

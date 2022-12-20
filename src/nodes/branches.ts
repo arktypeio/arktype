@@ -1,4 +1,4 @@
-import type { ScopeRoot } from "../scopes/scope.js"
+import type { ScopeRoot } from "../scope.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf, hasDomain } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
@@ -19,7 +19,7 @@ export type BranchComparison = {
     lSubconditionsOfR: number[]
     rSubconditionsOfL: number[]
     equalPairs: [lIndex: number, rIndex: number][]
-    codependentIntersections: Branches
+    distinctIntersections: Branches
 }
 
 export const compareBranches = (
@@ -34,7 +34,7 @@ export const compareBranches = (
         lSubconditionsOfR: [],
         rSubconditionsOfL: [],
         equalPairs: [],
-        codependentIntersections: []
+        distinctIntersections: []
     }
     const pairs = rConditions.map((condition) => ({
         condition,
@@ -101,7 +101,7 @@ export const compareBranches = (
             }
         }
     })
-    result.codependentIntersections = pairs.flatMap(
+    result.distinctIntersections = pairs.flatMap(
         (pairs) => pairs.distinct ?? []
     )
     return result
