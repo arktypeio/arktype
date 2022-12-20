@@ -25,9 +25,7 @@ describe("tuple expression", () => {
     test("list", () => {
         const t = type(["string", "[]"])
         attest(t.infer).typed as string[]
-        attest(t.root).snap({
-            object: { kind: "Array", props: { mapped: { number: "string" } } }
-        })
+        attest(t.root).snap({ object: { subdomain: ["Array", "string"] } })
     })
     test("nested union", () => {
         const t = type(["string|bigint", "|", ["number", "|", "boolean"]])

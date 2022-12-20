@@ -2,21 +2,16 @@ import type {
     Domain,
     domainOf,
     inferDomain,
-    ObjectKind
+    Subdomain
 } from "../../utils/domains.js"
 import type {
-    CollapsibleTuple,
+    CollapsibleList,
     Dict,
     entryOf,
     evaluate,
     extend
 } from "../../utils/generics.js"
-import {
-    composeIntersection,
-    composeKeyedOperation,
-    empty,
-    equal
-} from "../compose.js"
+import { composeIntersection, composeKeyedOperation } from "../compose.js"
 import type { PredicateContext } from "../predicate.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
 import { divisorIntersection } from "./divisor.js"
@@ -25,26 +20,30 @@ import { propsIntersection } from "./props.js"
 import type { Range } from "./range.js"
 import { rangeIntersection } from "./range.js"
 import { regexIntersection } from "./regex.js"
+import type { SubdomainRule } from "./subdomain.js"
+import { subdomainIntersection } from "./subdomain.js"
 
 export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
-    readonly regex?: CollapsibleTuple<string>
+    readonly regex?: CollapsibleList<string>
     readonly divisor?: number
-    readonly kind?: ObjectKind
+    readonly subdomain?: SubdomainRule
     readonly props?: PropsRules<scope>
     readonly range?: Range
-    readonly validator?: CollapsibleTuple<Validator<inferDomain<domain>>>
+    readonly validator?: CollapsibleList<Validator<inferDomain<domain>>>
 }
 
-export type FlatRules = extend<
-    { [k in Exclude<keyof Rules, "props">]-?: [k, unknown] },
-    evaluate<
-        {
-            regex: ["regex", RegExp]
-            divisor: ["divisor", number]
-            kind: ["kind", ObjectKind]
-            range: ["range", Range]
-            validator: ["validator", Validator]
-        } & FlatPropsRules
+export type FlatRule = entryOf<
+    extend<
+        { [k in Exclude<keyof Rules, "props">]-?: unknown },
+        evaluate<
+            {
+                regex: RegExp
+                divisor: number
+                subdomain: Subdomain
+                range: Range
+                validator: Validator
+            } & FlatPropsRules
+        >
     >
 >
 
@@ -61,7 +60,11 @@ export type RuleSet<
 > = Domain extends domain
     ? Rules
     : domain extends "object"
-    ? defineRuleSet<"object", "kind" | "props" | "range" | "validator", scope>
+    ? defineRuleSet<
+          "object",
+          "subdomain" | "props" | "range" | "validator",
+          scope
+      >
     : domain extends "string"
     ? defineRuleSet<"string", "regex" | "range" | "validator", scope>
     : domain extends "number"
@@ -74,16 +77,12 @@ type defineRuleSet<
     scope extends Dict
 > = Pick<Rules<domain, scope>, keys>
 
-export const kindIntersection = composeIntersection<ObjectKind>((l, r) =>
-    l === r ? equal : empty
-)
-
 const validatorIntersection =
-    composeIntersection<CollapsibleTuple<Validator>>(collapsibleListUnion)
+    composeIntersection<CollapsibleList<Validator>>(collapsibleListUnion)
 
 export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
     {
-        kind: kindIntersection,
+        subdomain: subdomainIntersection,
         divisor: divisorIntersection,
         regex: regexIntersection,
         props: propsIntersection,

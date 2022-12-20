@@ -1,4 +1,4 @@
-import { hasDomain, kindOf } from "./domains.js"
+import { hasDomain, subdomainOf } from "./domains.js"
 import type { Dict, List } from "./generics.js"
 
 /**
@@ -12,8 +12,8 @@ export const deepEquals = (a: unknown, b: unknown) => {
     if (!hasDomain(a, "object") || !hasDomain(b, "object")) {
         return false
     }
-    const aObjectDomain = kindOf(a)
-    const bObjectDomain = kindOf(b)
+    const aObjectDomain = subdomainOf(a)
+    const bObjectDomain = subdomainOf(b)
     if (aObjectDomain !== bObjectDomain) {
         return false
     }

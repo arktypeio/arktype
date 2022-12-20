@@ -1,31 +1,39 @@
 import type { ScopeRoot } from "../scope.js"
 import { checkRules } from "../traverse/check.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
-import { hasKind } from "../utils/domains.js"
-import type { CollapsibleTuple, Dict } from "../utils/generics.js"
+import { hasSubdomain } from "../utils/domains.js"
+import type { CollapsibleList, Dict } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
 import type { BranchComparison } from "./branches.js"
 import { compareBranches } from "./branches.js"
 import type { SetOperationResult } from "./compose.js"
 import { empty, equal } from "./compose.js"
 import type { Identifier } from "./node.js"
-import type { RuleSet } from "./rules/rules.js"
+import type { FlatRule, RuleSet } from "./rules/rules.js"
 import { rulesIntersection } from "./rules/rules.js"
 import { isExactValuePredicate, resolvePredicateIfIdentifier } from "./utils.js"
 
 export type Predicate<
     domain extends Domain = Domain,
     scope extends Dict = Dict
-> = true | CollapsibleTuple<Condition<domain, scope>>
+> = true | CollapsibleList<Condition<domain, scope>>
+
+export type FlatPredicate = FlatCondition[]
 
 export type Condition<
     domain extends Domain = Domain,
     scope extends Dict = Dict
 > = RuleSet<domain, scope> | ExactValue<domain> | Identifier<scope>
 
+export type FlatCondition = readonly FlatRule[] | FlatExactValue | FlatAlias
+
 export type ExactValue<domain extends Domain = Domain> = {
     readonly value: inferDomain<domain>
 }
+
+export type FlatExactValue = ["value", unknown]
+
+export type FlatAlias = ["alias", string]
 
 export type PredicateContext = {
     domain: Domain
@@ -55,7 +63,10 @@ export const comparePredicates = (
     if (rResolution === true) {
         return l
     }
-    if (hasKind(lResolution, "Object") && hasKind(rResolution, "Object")) {
+    if (
+        hasSubdomain(lResolution, "object") &&
+        hasSubdomain(rResolution, "object")
+    ) {
         return isExactValuePredicate(lResolution)
             ? isExactValuePredicate(rResolution)
                 ? lResolution.value === rResolution.value

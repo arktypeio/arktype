@@ -20,14 +20,16 @@ export type PropsRules<scope extends Dict = Dict> = {
 export type FlatPropsRules = {
     "props/required": FlatPropEntries
     "props/optional": FlatPropEntries
-    "props/mapped": [
-        mappedEntries: MappedFlatPropEntries,
-        namedProps?: {
-            readonly required?: FlatPropSet
-            readonly optional?: FlatPropSet
-        }
-    ]
+    "props/mapped": MappedPropsRuleValue
 }
+
+export type MappedPropsRuleValue = [
+    mappedEntries: MappedFlatPropEntries,
+    namedProps?: {
+        readonly required?: FlatPropSet
+        readonly optional?: FlatPropSet
+    }
+]
 
 export type MappedFlatPropEntries = readonly [
     ifKeySatisfies: FlatNode,

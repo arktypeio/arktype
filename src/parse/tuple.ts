@@ -7,7 +7,7 @@ import { union } from "../nodes/union.js"
 import { resolveIfIdentifier } from "../nodes/utils.js"
 import type { ScopeRoot } from "../scope.js"
 import type { Domain } from "../utils/domains.js"
-import { domainOf, hasKind } from "../utils/domains.js"
+import { domainOf, hasSubdomain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type { Dict, error, evaluate, List, mutable } from "../utils/generics.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
@@ -25,7 +25,7 @@ export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
     }
     return {
         object: {
-            kind: "Array",
+            subdomain: "Array",
             props
         }
     }
@@ -73,6 +73,7 @@ type validateNarrowTuple<constrainedDef, scope extends Dict> = [
     Validator<inferDefinition<constrainedDef, scope, scope>>
 ]
 
+// TODO: Can this share logic with validate AST?
 type inferTupleExpression<
     def extends UnknownTupleExpression,
     scope extends Dict,
@@ -116,7 +117,7 @@ const buildMalformedConstraintMessage = (constraint: unknown) =>
     )})`
 
 const parseConstraintTuple: TupleExpressionParser<":"> = (def, scope) => {
-    if (!hasKind(def[2], "Function")) {
+    if (!hasSubdomain(def[2], "Function")) {
         return throwParseError(buildMalformedConstraintMessage(":"))
     }
     const constrained = parseDefinition(def[0], scope)

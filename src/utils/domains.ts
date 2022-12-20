@@ -68,70 +68,76 @@ export const domainOf = <data>(data: data) => {
 // Built-in objects that can be returned from
 // Object.prototype.toString.call(<value>). Based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-export type ObjectKinds = {
+export type ObjectSubdomains = {
     Array: readonly unknown[]
     Date: Date
     Error: Error
     Function: Function
     Map: Map<unknown, unknown>
-    Object: Dict
     RegExp: RegExp
     Set: Set<unknown>
+    object: Dict
 }
 
-export type ObjectKind = keyof ObjectKinds
+export type ObjectSubdomain = keyof ObjectSubdomains
 
-const objectKinds = {
+export type Subdomain<domain extends Domain = Domain> =
+    | domain
+    | (domain extends "object" ? ObjectSubdomain : never)
+
+const objectSubdomains = {
     Array,
     Date,
     Error,
     Function,
     Map,
-    Object: Object as unknown as classOf<Dict>,
     RegExp,
-    Set
+    Set,
+    object: Object as unknown as classOf<Dict>
 } satisfies {
-    [k in ObjectKind]: classOf<ObjectKinds[k]>
+    [subdomain in ObjectSubdomain]: classOf<ObjectSubdomains[subdomain]>
 }
 
-export type kindOf<data extends object> = object extends data
-    ? ObjectKind
-    : data extends List
-    ? "Array"
-    : data extends Date
-    ? "Date"
-    : data extends Error
-    ? "Error"
-    : data extends Function
-    ? "Function"
-    : data extends Map<unknown, unknown>
-    ? "Map"
-    : data extends RegExp
-    ? "RegExp"
-    : data extends Set<unknown>
-    ? "Set"
-    : "Object"
+export type subdomainOf<data> = data extends object
+    ? object extends data
+        ? ObjectSubdomain
+        : data extends List
+        ? "Array"
+        : data extends Date
+        ? "Date"
+        : data extends Error
+        ? "Error"
+        : data extends Function
+        ? "Function"
+        : data extends Map<unknown, unknown>
+        ? "Map"
+        : data extends RegExp
+        ? "RegExp"
+        : data extends Set<unknown>
+        ? "Set"
+        : "object"
+    : domainOf<data>
 
-export const kindOf = <data extends object>(data: data) => {
+export const subdomainOf = ((data): Subdomain => {
     if (Array.isArray(data)) {
         return "Array"
     }
     // The raw result will be something like [object Date]
     const prototypeName = Object.prototype.toString.call(data).slice(8, -1)
-    if (isKeyOf(prototypeName, objectKinds)) {
-        return data instanceof objectKinds[prototypeName]
+    if (isKeyOf(prototypeName, objectSubdomains)) {
+        return data instanceof objectSubdomains[prototypeName]
             ? prototypeName
             : // If the prototype has the same name as one of the builtin types but isn't an instance of it, fall back to Record
-              "Object"
+              "object"
     }
     if (prototypeName.endsWith("Error")) {
-        return data instanceof Error ? "Error" : "Object"
+        return data instanceof Error ? "Error" : "object"
     }
-    return "Object"
-}
+    return "object"
+}) as <data>(data: data) => subdomainOf<data>
 
-export const hasKind = <kind extends ObjectKind>(
+export const hasSubdomain = <subdomain extends ObjectSubdomain>(
     data: unknown,
-    kind: kind
-): data is ObjectKinds[kind] =>
-    hasDomain(data, "object") && kindOf(data) === kind
+    subdomain: subdomain
+): data is ObjectSubdomains[subdomain] =>
+    hasDomain(data, "object") && subdomainOf(data) === subdomain

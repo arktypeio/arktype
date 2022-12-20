@@ -11,12 +11,7 @@ describe("record", () => {
                 props: {
                     required: {
                         a: "string",
-                        b: {
-                            object: {
-                                kind: "Array",
-                                props: { mapped: { number: "boolean" } }
-                            }
-                        }
+                        b: { object: { subdomain: ["Array", "boolean"] } }
                     }
                 }
             }
@@ -30,12 +25,7 @@ describe("record", () => {
                 props: {
                     optional: { a: "string" },
                     required: {
-                        b: {
-                            object: {
-                                kind: "Array",
-                                props: { mapped: { number: "boolean" } }
-                            }
-                        }
+                        b: { object: { subdomain: ["Array", "boolean"] } }
                     }
                 }
             }

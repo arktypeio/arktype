@@ -84,7 +84,7 @@ export const parseRightBound = (
     s.intersect({
         number: { range },
         string: { range },
-        object: { kind: "Array", range }
+        object: { subdomain: "Array", range }
     })
 }
 

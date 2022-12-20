@@ -8,12 +8,7 @@ const morphs = {
     // TODO: array of?
     array: (node): TypeSet => ({
         object: {
-            kind: "Array",
-            props: {
-                mapped: {
-                    number: node
-                }
-            }
+            subdomain: ["Array", node]
         }
     })
 } satisfies { [morphName: string]: (input: TypeNode) => TypeNode }

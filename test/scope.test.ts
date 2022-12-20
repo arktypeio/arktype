@@ -77,15 +77,8 @@ describe("scope", () => {
             d: boolean
         }
         attest(s.$.roots).snap({
-            a: {
-                object: {
-                    kind: "Array",
-                    props: { mapped: { number: "string" } }
-                }
-            },
-            b: {
-                object: { kind: "Array", props: { mapped: { number: "a" } } }
-            },
+            a: { object: { subdomain: ["Array", "string"] } },
+            b: { object: { subdomain: ["Array", "a"] } },
             d: { boolean: true }
         })
     })

@@ -31,7 +31,7 @@ export const keywords = deepFreeze({
     void: { undefined: true },
     undefined: { undefined: true },
     // JS Object types
-    Function: { object: { kind: "Function" } },
+    Function: { object: { subdomain: "Function" } },
     // Regex
     email: { string: { regex: "^(.+)@(.+)\\.(.+)$" } },
     alphanumeric: { string: { regex: "^[dA-Za-z]+$" } },

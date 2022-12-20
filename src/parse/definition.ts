@@ -1,7 +1,7 @@
 import type { TypeNode } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
-import type { Domain, ObjectKind, Primitive } from "../utils/domains.js"
-import { domainOf, kindOf } from "../utils/domains.js"
+import type { Domain, ObjectSubdomain, Primitive } from "../utils/domains.js"
+import { domainOf, subdomainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
     Dict,
@@ -23,8 +23,8 @@ export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
         return parseString(def as string, scope)
     }
     if (domain === "object") {
-        const objectDomain = kindOf(def as object)
-        if (objectDomain === "Object") {
+        const objectDomain = subdomainOf(def as object)
+        if (objectDomain === "object") {
             return parseRecord(def as Dict, scope)
         } else if (objectDomain === "Array") {
             return parseTuple(def as List, scope)
@@ -81,11 +81,12 @@ export type buildUninferableDefinitionMessage<
     `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
 
 export const buildBadDefinitionTypeMessage = <
-    actual extends Domain | ObjectKind
+    actual extends Domain | ObjectSubdomain
 >(
     actual: actual
 ): buildBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
-export type buildBadDefinitionTypeMessage<actual extends Domain | ObjectKind> =
-    `Type definitions must be strings or objects (was ${actual})`
+export type buildBadDefinitionTypeMessage<
+    actual extends Domain | ObjectSubdomain
+> = `Type definitions must be strings or objects (was ${actual})`

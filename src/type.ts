@@ -1,6 +1,6 @@
 import type { FlatNode } from "./nodes/flatten.js"
 import { flatten } from "./nodes/flatten.js"
-import type { TypeNode, TypeSet } from "./nodes/node.js"
+import type { TypeSet } from "./nodes/node.js"
 import { resolveIfIdentifier } from "./nodes/utils.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"

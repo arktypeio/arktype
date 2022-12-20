@@ -5,12 +5,31 @@ import { incompleteArrayTokenMessage } from "../src/parse/shift/operator/operato
 
 describe("parse array", () => {
     test("parse", () => {
-        const stringArray = type("string[]")
-        attest(stringArray.infer).typed as string[]
-        attest(stringArray.root).snap({
-            object: { kind: "Array", props: { mapped: { number: "string" } } }
+        const t = type("string[]")
+        attest(t.infer).typed as string[]
+        attest(t.root).snap({
+            object: {
+                subdomain: ["Array", "string"]
+            }
         })
     })
+
+    test("subdomain intersection", () => {
+        const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
+        attest(t.root).snap({
+            object: {
+                subdomain: [
+                    "Array",
+                    {
+                        object: {
+                            props: { required: { a: "string", b: "number" } }
+                        }
+                    }
+                ]
+            }
+        })
+    })
+
     describe("errors", () => {
         test("incomplete token", () => {
             // @ts-expect-error
