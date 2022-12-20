@@ -3,14 +3,14 @@ import { checkRules } from "../traverse/check.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { hasSubdomain } from "../utils/domains.js"
 import type { CollapsibleList, Dict } from "../utils/generics.js"
-import { listFrom } from "../utils/generics.js"
+import { entriesOf, listFrom } from "../utils/generics.js"
 import type { BranchComparison } from "./branches.js"
 import { compareBranches } from "./branches.js"
 import type { SetOperationResult } from "./compose.js"
 import { empty, equal } from "./compose.js"
 import type { Identifier } from "./node.js"
-import type { FlatRule, RuleSet } from "./rules/rules.js"
-import { rulesIntersection } from "./rules/rules.js"
+import type { RuleEntry, RuleSet } from "./rules/rules.js"
+import { flattenRules, rulesIntersection } from "./rules/rules.js"
 import { isExactValuePredicate, resolvePredicateIfIdentifier } from "./utils.js"
 
 export type Predicate<
@@ -18,22 +18,42 @@ export type Predicate<
     scope extends Dict = Dict
 > = true | CollapsibleList<Condition<domain, scope>>
 
-export type FlatPredicate = FlatCondition[]
+export type FlatPredicate = true | readonly FlatCondition[]
+
+export const flattenPredicate = (
+    predicate: Predicate,
+    scope: ScopeRoot
+): FlatPredicate =>
+    predicate === true
+        ? true
+        : listFrom(predicate).map((condition) => {
+              if (typeof condition === "string") {
+                  // TODO: resolve
+                  return [["alias", condition]]
+              }
+              if (isExactValuePredicate(condition)) {
+                  return [["value", condition.value]]
+              }
+              return flattenRules(condition, scope)
+          })
 
 export type Condition<
     domain extends Domain = Domain,
     scope extends Dict = Dict
 > = RuleSet<domain, scope> | ExactValue<domain> | Identifier<scope>
 
-export type FlatCondition = readonly FlatRule[] | FlatExactValue | FlatAlias
+export type FlatCondition =
+    | readonly RuleEntry[]
+    | [ExactValueEntry]
+    | [AliasEntry]
 
 export type ExactValue<domain extends Domain = Domain> = {
     readonly value: inferDomain<domain>
 }
 
-export type FlatExactValue = ["value", unknown]
+export type ExactValueEntry = ["value", unknown]
 
-export type FlatAlias = ["alias", string]
+export type AliasEntry = ["alias", string]
 
 export type PredicateContext = {
     domain: Domain

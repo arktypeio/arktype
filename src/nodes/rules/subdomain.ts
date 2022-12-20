@@ -1,15 +1,39 @@
-import type { ScopeRoot } from "../../scope.js"
 import type { Subdomain } from "../../utils/domains.js"
+import type { Dict } from "../../utils/generics.js"
 import { composeIntersection, empty, equal } from "../compose.js"
 import { nodeIntersection } from "../intersection.js"
-import type { TypeNode } from "../node.js"
+import type { FlatNode, TypeNode } from "../node.js"
+import { flattenNode } from "../node.js"
 import type { PredicateContext } from "../predicate.js"
+import type { FlattenAndPushRule } from "./rules.js"
 
-export type SubdomainRule =
+export type SubdomainRule<scope extends Dict = Dict> = DefineSubdomainRule<
+    TypeNode<scope>
+>
+
+export type FlatSubdomainRule = DefineSubdomainRule<FlatNode>
+
+type DefineSubdomainRule<node> =
     | Subdomain
-    | ["Array", TypeNode]
-    | ["Set", TypeNode]
-    | ["Map", TypeNode, TypeNode]
+    | ["Array", node]
+    | ["Set", node]
+    | ["Map", node, node]
+
+export const flattenSubdomain: FlattenAndPushRule<SubdomainRule> = (
+    entries,
+    rule,
+    scope
+) => {
+    if (typeof rule === "string") {
+        entries.push(["subdomain", rule])
+    } else {
+        const flattened: [Subdomain, ...FlatNode[]] = [rule[0]]
+        for (let i = 1; i < rule.length; i++) {
+            flattened.push(flattenNode(rule[i], scope))
+        }
+        entries.push(["subdomain", flattened as FlatSubdomainRule])
+    }
+}
 
 export const subdomainIntersection = composeIntersection<
     SubdomainRule,
@@ -33,15 +57,15 @@ export const subdomainIntersection = composeIntersection<
     for (let i = 1; i < l.length; i++) {
         const parameterResult = nodeIntersection(l[i], r[i], context.scope)
         if (parameterResult === equal) {
-            result[i] = l[i]
+            result.push(l[i])
         } else if (parameterResult === l) {
-            result[i] = l[i]
+            result.push(l[i])
             rImpliesL = false
         } else if (parameterResult === r) {
-            result[i] = r[i]
+            result.push(r[i])
             lImpliesR = false
         } else {
-            result[i] = parameterResult === empty ? "never" : parameterResult
+            result.push(parameterResult === empty ? "never" : parameterResult)
             lImpliesR = false
             rImpliesL = false
         }

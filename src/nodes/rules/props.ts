@@ -1,5 +1,5 @@
 import type { ScopeRoot } from "../../scope.js"
-import type { Dict, entryOf } from "../../utils/generics.js"
+import type { Dict } from "../../utils/generics.js"
 import {
     composeIntersection,
     composeKeyedOperation,

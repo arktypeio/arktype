@@ -1,7 +1,10 @@
+import type { ScopeRoot } from "../scope.js"
 import type { Domain } from "../utils/domains.js"
-import type { Dict, stringKeyOf } from "../utils/generics.js"
+import type { Dict, mutable, stringKeyOf } from "../utils/generics.js"
 import type { Keyword } from "./keywords.js"
 import type { FlatPredicate, Predicate } from "./predicate.js"
+import { flattenPredicate } from "./predicate.js"
+import { resolveIfIdentifier } from "./utils.js"
 
 export type TypeNode<scope extends Dict = Dict> =
     | Identifier<scope>
@@ -9,6 +12,16 @@ export type TypeNode<scope extends Dict = Dict> =
 
 export type FlatNode = {
     readonly [domain in Domain]?: FlatPredicate
+}
+
+export const flattenNode = (node: TypeNode, scope: ScopeRoot): FlatNode => {
+    const result: mutable<FlatNode> = {}
+    let domain: Domain
+    const resolution = resolveIfIdentifier(node, scope)
+    for (domain in resolution) {
+        result[domain] = flattenPredicate(resolution[domain]!, scope)
+    }
+    return result
 }
 
 /** If scope is provided, we also narrow each predicate to match its domain.

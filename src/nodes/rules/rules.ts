@@ -1,9 +1,5 @@
-import type {
-    Domain,
-    domainOf,
-    inferDomain,
-    Subdomain
-} from "../../utils/domains.js"
+import type { ScopeRoot } from "../../scope.js"
+import type { Domain, domainOf, inferDomain } from "../../utils/domains.js"
 import type {
     CollapsibleList,
     Dict,
@@ -11,6 +7,7 @@ import type {
     evaluate,
     extend
 } from "../../utils/generics.js"
+import { listFrom } from "../../utils/generics.js"
 import { composeIntersection, composeKeyedOperation } from "../compose.js"
 import type { PredicateContext } from "../predicate.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
@@ -19,27 +16,75 @@ import type { FlatPropsRules, PropsRules } from "./props.js"
 import { propsIntersection } from "./props.js"
 import type { Range } from "./range.js"
 import { rangeIntersection } from "./range.js"
-import { regexIntersection } from "./regex.js"
-import type { SubdomainRule } from "./subdomain.js"
-import { subdomainIntersection } from "./subdomain.js"
+import { getRegex, regexIntersection } from "./regex.js"
+import type { FlatSubdomainRule, SubdomainRule } from "./subdomain.js"
+import { flattenSubdomain, subdomainIntersection } from "./subdomain.js"
 
 export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
     readonly regex?: CollapsibleList<string>
     readonly divisor?: number
-    readonly subdomain?: SubdomainRule
-    readonly props?: PropsRules<scope>
     readonly range?: Range
+    readonly subdomain?: SubdomainRule<scope>
+    readonly props?: PropsRules<scope>
     readonly validator?: CollapsibleList<Validator<inferDomain<domain>>>
 }
 
-export type FlatRule = entryOf<
+export type FlattenAndPushRule<t> = (
+    entries: RuleEntry[],
+    rule: t,
+    scope: ScopeRoot
+) => void
+
+const flattenAndPushMap: {
+    [k in keyof Rules]-?: FlattenAndPushRule<Rules[k] & {}>
+} = {
+    regex: (entries, rule) => {
+        if (typeof rule === "string") {
+            entries.push(["regex", getRegex(rule)])
+        } else {
+            for (const source of rule) {
+                entries.push(["regex", getRegex(source)])
+            }
+        }
+    },
+    divisor: (entries, rule) => {
+        entries.push(["divisor", rule])
+    },
+    range: (entries, rule) => {
+        entries.push(["range", rule])
+    },
+    validator: (entries, rule) => {
+        if (typeof rule === "function") {
+            entries.push(["validator", rule])
+        } else {
+            for (const validator of rule) {
+                entries.push(["validator", validator])
+            }
+        }
+    },
+    subdomain: flattenSubdomain
+}
+
+export const flattenRules = (
+    rules: Rules,
+    scope: ScopeRoot
+): readonly RuleEntry[] => {
+    const entries: RuleEntry[] = []
+    let k: keyof Rules
+    for (k in rules) {
+        flattenAndPushMap[k](entries, rules[k] as any, scope)
+    }
+    return entries
+}
+
+export type RuleEntry = entryOf<
     extend<
         { [k in Exclude<keyof Rules, "props">]-?: unknown },
         evaluate<
             {
                 regex: RegExp
                 divisor: number
-                subdomain: Subdomain
+                subdomain: FlatSubdomainRule
                 range: Range
                 validator: Validator
             } & FlatPropsRules
