@@ -5,6 +5,8 @@ import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import type { DynamicScope, Scope } from "./scope.js"
 import { getRootScope } from "./scope.js"
+import { check } from "./traverse/check.js"
+import { Problem, Problems } from "./traverse/problems.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { Dict, isTopType } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
@@ -51,17 +53,19 @@ export class ArkType<inferred = unknown> {
     }
 
     check(data: unknown) {
-        const state = {} as any
-        return state.problems.length
-            ? {
-                  problems: state.problems
+        return check(data, this.flat, this.scope.$)
+            ? { data: data as inferred }
+            : {
+                  problems: new Problems({ path: "", reason: "invalid" })
               }
-            : { data: data as inferred }
     }
 
     assert(data: unknown) {
         const result = this.check(data)
-        result.problems?.throw()
+        if (result.problems) {
+            throw new Error(`FAIL`)
+        }
+        // result.problems?.throw()
         return result.data as inferred
     }
 }

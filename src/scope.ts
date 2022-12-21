@@ -1,4 +1,4 @@
-import { keywords } from "./nodes/keywords.js"
+import { flatKeywords, keywords } from "./nodes/keywords.js"
 import type { FlatNode, TypeNode, TypeSet } from "./nodes/node.js"
 import { flattenNode } from "./nodes/node.js"
 import type { FlatPredicate, ResolvedPredicate } from "./nodes/predicate.js"
@@ -9,7 +9,6 @@ import type { Config } from "./type.js"
 import { ArkType } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { Domain } from "./utils/domains.js"
-import { subdomainOf } from "./utils/domains.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
 import { deepFreeze } from "./utils/freeze.js"
 import type { Dict, evaluate } from "./utils/generics.js"
@@ -94,14 +93,17 @@ export class ScopeRoot<inferred extends Dict = Dict> {
         return this.resolveRecurse(name, [])
     }
 
-    resolveFlat(name: string) {
+    resolveFlat(name: string): FlatNode {
+        if (isKeyOf(name, keywords)) {
+            return flatKeywords[name]
+        }
         this.resolveRecurse(name, [])
         return this.flatRoots[name]
     }
 
     private resolveRecurse(name: string, seen: string[]): TypeSet {
         if (isKeyOf(name, keywords)) {
-            return keywords[name] as any
+            return keywords[name]
         }
         if (isKeyOf(name, this.roots)) {
             return this.roots[name] as TypeSet

@@ -1,4 +1,4 @@
-import type { Dict, mutable } from "../../utils/generics.js"
+import type { Dict } from "../../utils/generics.js"
 import {
     composeIntersection,
     composeKeyedOperation,
@@ -21,9 +21,9 @@ export type Prop<scope extends Dict = Dict> =
 
 export type OptionalProp<scope extends Dict = Dict> = ["?", TypeNode<scope>]
 
-export type FlatRequiredProps = readonly ["requiredProps", ...FlatPropEntry[]]
+export type FlatRequiredProps = ["requiredProps", readonly FlatPropEntry[]]
 
-export type FlatOptionalProps = readonly ["optionalProps", ...FlatPropEntry[]]
+export type FlatOptionalProps = ["optionalProps", readonly FlatPropEntry[]]
 
 export type FlatPropEntry = [propKey: string, flatNode: FlatNode]
 
@@ -76,8 +76,8 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
     props,
     scope
 ) => {
-    const requiredProps: mutable<FlatRequiredProps> = ["requiredProps"]
-    const optionalProps: mutable<FlatOptionalProps> = ["optionalProps"]
+    const requiredProps: FlatPropEntry[] = []
+    const optionalProps: FlatPropEntry[] = []
     for (const k in props) {
         const prop = props[k]
         if (isOptional(prop)) {
@@ -86,11 +86,11 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
             requiredProps.push([k, flattenNode(prop, scope)])
         }
     }
-    if (requiredProps.length > 1) {
-        entries.push(requiredProps)
+    if (requiredProps.length) {
+        entries.push(["requiredProps", requiredProps])
     }
-    if (optionalProps.length > 1) {
-        entries.push(optionalProps)
+    if (optionalProps.length) {
+        entries.push(["optionalProps", optionalProps])
     }
 }
 

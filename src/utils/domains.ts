@@ -98,7 +98,9 @@ const objectSubdomains = {
     [subdomain in ObjectSubdomain]: classOf<ObjectSubdomains[subdomain]>
 }
 
-export type subdomainOf<data> = data extends object
+export type subdomainOf<data> = isTopType<data> extends true
+    ? Subdomain
+    : data extends object
     ? object extends data
         ? ObjectSubdomain
         : data extends List

@@ -39,7 +39,7 @@ export const rangeIntersection = composeIntersection<Range>((l, r) => {
     return maxComparison === "l" ? l : maxComparison === "r" ? r : equal
 })
 
-type BoundableData = number | string | List
+export type BoundableData = number | string | List
 
 export const checkRange = (data: BoundableData, range: Range) => {
     const size = typeof data === "number" ? data : data.length

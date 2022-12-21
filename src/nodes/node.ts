@@ -26,12 +26,13 @@ export type Identifier<scope extends Dict = Dict> = Keyword | stringKeyOf<scope>
 export type FlatNode = Domain | FlatSingleDomainNode | FlatMultiDomainNode
 
 export type FlatSingleDomainNode = readonly [
-    InitialPredicateEntry,
+    ExplicitDomainEntry | ImplicitDomainEntry,
     ...FlatPredicate
 ]
 
-export type InitialPredicateEntry =
-    | ["domain", Domain]
+export type ExplicitDomainEntry = ["domain", Domain]
+
+export type ImplicitDomainEntry =
     | ExactValueEntry
     | ["subdomain", FlatSubdomainRule]
 
@@ -40,7 +41,9 @@ const hasImpliedDomain = (
 ): flatPredicate is FlatSingleDomainNode =>
     flatPredicate[0][0] === "subdomain" || flatPredicate[0][0] === "value"
 
-export type FlatMultiDomainNode = readonly [["domains", FlatTypeSet]]
+export type FlatMultiDomainNode = [MultiDomainEntry]
+
+export type MultiDomainEntry = ["domains", FlatTypeSet]
 
 export type FlatTypeSet = {
     readonly [domain in Domain]?: FlatPredicate

@@ -18,9 +18,9 @@ export type Predicate<
     scope extends Dict = Dict
 > = true | CollapsibleList<Condition<domain, scope>>
 
-export type FlatPredicate = FlatCondition | [FlatBranchesPredicate]
+export type FlatPredicate = FlatCondition | [FlatBranchesEntry]
 
-export type FlatBranchesPredicate = ["branches", ...(readonly FlatCondition[])]
+export type FlatBranchesEntry = ["branches", readonly FlatCondition[]]
 
 export const flattenPredicate = (
     domain: Domain,
@@ -45,7 +45,7 @@ export const flattenPredicate = (
     }
     return flatBranches.length === 1
         ? flatBranches[0]
-        : [["branches", ...flatBranches]]
+        : [["branches", flatBranches]]
 }
 
 const branchesOf = (flatPredicate: FlatPredicate) =>
