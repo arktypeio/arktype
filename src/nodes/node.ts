@@ -3,9 +3,13 @@ import type { Domain } from "../utils/domains.js"
 import type { Dict, mutable, stringKeyOf } from "../utils/generics.js"
 import { keysOf } from "../utils/generics.js"
 import type { Keyword } from "./keywords.js"
-import type { ExactValueEntry, FlatPredicate, Predicate } from "./predicate.js"
+import type {
+    ExactValueEntry,
+    Predicate,
+    TraversalPredicate as TraversalPredicate
+} from "./predicate.js"
 import { flattenPredicate } from "./predicate.js"
-import type { FlatSubdomainRule } from "./rules/subdomain.js"
+import type { TraversalSubdomainRule as TraversalSubdomainRule } from "./rules/subdomain.js"
 import { resolveIfIdentifier } from "./utils.js"
 
 export type TypeNode<scope extends Dict = Dict> =
@@ -23,33 +27,39 @@ export type TypeSet<scope extends Dict = Dict> = {
 
 export type Identifier<scope extends Dict = Dict> = Keyword | stringKeyOf<scope>
 
-export type FlatNode = Domain | FlatSingleDomainNode | FlatMultiDomainNode
+export type TraversalNode =
+    | Domain
+    | SingleDomainTraversalNode
+    | MultiDomainTraversalNode
 
-export type FlatSingleDomainNode = readonly [
+export type SingleDomainTraversalNode = readonly [
     ExplicitDomainEntry | ImplicitDomainEntry,
-    ...FlatPredicate
+    ...TraversalPredicate
 ]
 
 export type ExplicitDomainEntry = ["domain", Domain]
 
 export type ImplicitDomainEntry =
     | ExactValueEntry
-    | ["subdomain", FlatSubdomainRule]
+    | ["subdomain", TraversalSubdomainRule]
 
 const hasImpliedDomain = (
-    flatPredicate: FlatPredicate | FlatSingleDomainNode
-): flatPredicate is FlatSingleDomainNode =>
+    flatPredicate: TraversalPredicate | SingleDomainTraversalNode
+): flatPredicate is SingleDomainTraversalNode =>
     flatPredicate[0][0] === "subdomain" || flatPredicate[0][0] === "value"
 
-export type FlatMultiDomainNode = [MultiDomainEntry]
+export type MultiDomainTraversalNode = [MultiDomainEntry]
 
-export type MultiDomainEntry = ["domains", FlatTypeSet]
+export type MultiDomainEntry = ["domains", TraversalTypeSet]
 
-export type FlatTypeSet = {
-    readonly [domain in Domain]?: FlatPredicate
+export type TraversalTypeSet = {
+    readonly [domain in Domain]?: TraversalPredicate
 }
 
-export const flattenNode = (node: TypeNode, scope: ScopeRoot): FlatNode => {
+export const flattenNode = (
+    node: TypeNode,
+    scope: ScopeRoot
+): TraversalNode => {
     const resolution = resolveIfIdentifier(node, scope)
     const domains = keysOf(resolution)
     if (domains.length === 1) {
@@ -63,7 +73,7 @@ export const flattenNode = (node: TypeNode, scope: ScopeRoot): FlatNode => {
             ? flatPredicate
             : [["domain", domain], ...flatPredicate]
     }
-    const result: mutable<FlatTypeSet> = {}
+    const result: mutable<TraversalTypeSet> = {}
     for (const domain of domains) {
         result[domain] = flattenPredicate(domain, resolution[domain]!, scope)
     }
@@ -74,7 +84,7 @@ export const flattenNodes = <nodes extends { readonly [k in string]: TypeSet }>(
     nodes: nodes,
     scope: ScopeRoot
 ) => {
-    const result = {} as { [k in keyof nodes]: FlatNode }
+    const result = {} as { [k in keyof nodes]: TraversalNode }
     for (const name in nodes) {
         result[name] = flattenNode(nodes[name], scope)
     }

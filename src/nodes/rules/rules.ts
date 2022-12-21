@@ -6,15 +6,15 @@ import type { PredicateContext } from "../predicate.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
 import { divisorIntersection } from "./divisor.js"
 import type {
-    FlatOptionalProps,
-    FlatRequiredProps,
-    PropsRule
+    PropsRule,
+    TraversalOptionalProps,
+    TraversalRequiredProps
 } from "./props.js"
 import { flattenProps, propsIntersection } from "./props.js"
 import type { Range } from "./range.js"
 import { rangeIntersection } from "./range.js"
 import { getRegex, regexIntersection } from "./regex.js"
-import type { FlatSubdomainRule, SubdomainRule } from "./subdomain.js"
+import type { SubdomainRule, TraversalSubdomainRule } from "./subdomain.js"
 import { flattenSubdomain, subdomainIntersection } from "./subdomain.js"
 
 export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
@@ -26,13 +26,13 @@ export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
     readonly validator?: CollapsibleList<Validator<inferDomain<domain>>>
 }
 
-export type RuleEntry =
-    | ["subdomain", FlatSubdomainRule]
+export type TraversalRuleEntry =
+    | ["subdomain", TraversalSubdomainRule]
     | ["regex", RegExp]
     | ["divisor", number]
     | ["range", Range]
-    | FlatRequiredProps
-    | FlatOptionalProps
+    | TraversalRequiredProps
+    | TraversalOptionalProps
     | ["validator", Validator]
 
 export type Validator<data = unknown> = (data: data) => boolean
@@ -81,7 +81,7 @@ export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
 )
 
 export type FlattenAndPushRule<t> = (
-    entries: RuleEntry[],
+    entries: TraversalRuleEntry[],
     rule: t,
     scope: ScopeRoot
 ) => void
@@ -117,7 +117,7 @@ const flattenAndPushMap: {
     }
 }
 
-const rulePrecedenceMap: { readonly [k in RuleEntry[0]]-?: number } = {
+const rulePrecedenceMap: { readonly [k in TraversalRuleEntry[0]]-?: number } = {
     // Critical: No other checks are performed if these fail
     subdomain: 0,
     // Shallow: All shallow checks will be performed even if one or more fail
@@ -134,8 +134,8 @@ const rulePrecedenceMap: { readonly [k in RuleEntry[0]]-?: number } = {
 export const flattenRules = (
     rules: Rules,
     scope: ScopeRoot
-): readonly RuleEntry[] => {
-    const entries: RuleEntry[] = []
+): readonly TraversalRuleEntry[] => {
+    const entries: TraversalRuleEntry[] = []
     let k: keyof Rules
     for (k in rules) {
         flattenAndPushMap[k](entries, rules[k] as any, scope)

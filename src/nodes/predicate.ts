@@ -9,7 +9,7 @@ import { compareBranches } from "./branches.js"
 import type { SetOperationResult } from "./compose.js"
 import { empty, equal } from "./compose.js"
 import type { Identifier } from "./node.js"
-import type { RuleEntry, RuleSet } from "./rules/rules.js"
+import type { RuleSet, TraversalRuleEntry } from "./rules/rules.js"
 import { flattenRules, rulesIntersection } from "./rules/rules.js"
 import { isExactValuePredicate, resolvePredicateIfIdentifier } from "./utils.js"
 
@@ -18,20 +18,20 @@ export type Predicate<
     scope extends Dict = Dict
 > = true | CollapsibleList<Condition<domain, scope>>
 
-export type FlatPredicate = FlatCondition | [FlatBranchesEntry]
+export type TraversalPredicate = TraversalCondition | [TraversalBranchesEntry]
 
-export type FlatBranchesEntry = ["branches", readonly FlatCondition[]]
+export type TraversalBranchesEntry = ["branches", readonly TraversalCondition[]]
 
 export const flattenPredicate = (
     domain: Domain,
     predicate: Predicate,
     scope: ScopeRoot
-): FlatPredicate => {
+): TraversalPredicate => {
     if (predicate === true) {
         return []
     }
     const branches = listFrom(predicate)
-    const flatBranches: FlatCondition[] = []
+    const flatBranches: TraversalCondition[] = []
     for (const condition of branches) {
         if (typeof condition === "string") {
             flatBranches.push(
@@ -48,17 +48,19 @@ export const flattenPredicate = (
         : [["branches", flatBranches]]
 }
 
-const branchesOf = (flatPredicate: FlatPredicate) =>
+const branchesOf = (flatPredicate: TraversalPredicate) =>
     (flatPredicate[0][0] === "branches"
         ? flatPredicate.slice(1)
-        : [flatPredicate]) as FlatCondition[]
+        : [flatPredicate]) as TraversalCondition[]
 
 export type Condition<
     domain extends Domain = Domain,
     scope extends Dict = Dict
 > = RuleSet<domain, scope> | ExactValue<domain> | Identifier<scope>
 
-export type FlatCondition = readonly RuleEntry[] | [ExactValueEntry]
+export type TraversalCondition =
+    | readonly TraversalRuleEntry[]
+    | [ExactValueEntry]
 
 export type ExactValue<domain extends Domain = Domain> = {
     readonly value: inferDomain<domain>
