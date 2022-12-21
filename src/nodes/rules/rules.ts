@@ -11,7 +11,7 @@ import { composeIntersection, composeKeyedOperation } from "../compose.js"
 import type { PredicateContext } from "../predicate.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
 import { divisorIntersection } from "./divisor.js"
-import type { FlatPropsRules, PropsRule } from "./props.js"
+import type { FlatProps, PropsRule } from "./props.js"
 import { flattenProps, propsIntersection } from "./props.js"
 import type { Range } from "./range.js"
 import { rangeIntersection } from "./range.js"
@@ -28,20 +28,20 @@ export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
     readonly validator?: CollapsibleList<Validator<inferDomain<domain>>>
 }
 
-export type RuleEntry = entryOf<
-    extend<
-        { [k in Exclude<keyof Rules, "props">]-?: unknown },
-        evaluate<
-            {
-                regex: RegExp
-                divisor: number
-                subdomain: FlatSubdomainRule
-                range: Range
-                validator: Validator
-            } & FlatPropsRules
-        >
-    >
->
+export type RuleEntry =
+    | entryOf<
+          extend<
+              { [k in Exclude<keyof Rules, "props">]-?: unknown },
+              evaluate<{
+                  regex: RegExp
+                  divisor: number
+                  subdomain: FlatSubdomainRule
+                  range: Range
+                  validator: Validator
+              }>
+          >
+      >
+    | FlatProps
 
 export type Validator<data = unknown> = (data: data) => boolean
 

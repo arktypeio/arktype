@@ -21,28 +21,13 @@ export type Prop<scope extends Dict = Dict> =
 
 export type OptionalProp<scope extends Dict = Dict> = ["?", TypeNode<scope>]
 
-export type FlatPropsRules = {
-    requiredProps: FlatPropEntries
-    optionalProps: FlatPropEntries
-    // mappedProps: FlatMappedPropsRule
-}
+export type FlatProps = FlatRequiredProps | FlatOptionalProps
 
-// export type FlatMappedPropsRule = [
-//     mappedEntries: readonly FlatMappedPropEntry[],
-//     namedProps?: {
-//         readonly required?: FlatPropSet
-//         readonly optional?: FlatPropSet
-//     }
-// ]
+export type FlatRequiredProps = readonly ["requiredProps", ...FlatPropEntry[]]
 
-// export type FlatMappedPropEntry = [
-//     ifKeySatisfies: FlatNode,
-//     thenCheckValueAgainst: FlatNode | ((key: string) => FlatNode)
-// ]
+export type FlatOptionalProps = readonly ["optionalProps", ...FlatPropEntry[]]
 
-// export type FlatPropSet = { readonly [propKey in string]: FlatNode }
-
-export type FlatPropEntries = readonly [propKey: string, flatNode: FlatNode][]
+export type FlatPropEntry = [propKey: string, flatNode: FlatNode]
 
 const isOptional = (prop: Prop): prop is OptionalProp =>
     (prop as OptionalProp)[0] === "?"
@@ -93,20 +78,35 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
     props,
     scope
 ) => {
-    const requiredEntries: mutable<FlatPropEntries> = []
-    const optionalEntries: mutable<FlatPropEntries> = []
+    const requiredProps: mutable<FlatRequiredProps> = ["requiredProps"]
+    const optionalProps: mutable<FlatOptionalProps> = ["optionalProps"]
     for (const k in props) {
         const prop = props[k]
         if (isOptional(prop)) {
-            optionalEntries.push([k, flattenNode(prop[1], scope)])
+            optionalProps.push([k, flattenNode(prop[1], scope)])
         } else {
-            requiredEntries.push([k, flattenNode(prop, scope)])
+            requiredProps.push([k, flattenNode(prop, scope)])
         }
     }
-    if (requiredEntries.length) {
-        entries.push(["requiredProps", requiredEntries])
+    if (requiredProps.length > 1) {
+        entries.push(requiredProps)
     }
-    if (optionalEntries.length) {
-        entries.push(["optionalProps", optionalEntries])
+    if (optionalProps.length > 1) {
+        entries.push(optionalProps)
     }
 }
+
+// export type FlatMappedPropsRule = [
+//     mappedEntries: readonly FlatMappedPropEntry[],
+//     namedProps?: {
+//         readonly required?: FlatPropSet
+//         readonly optional?: FlatPropSet
+//     }
+// ]
+
+// export type FlatMappedPropEntry = [
+//     ifKeySatisfies: FlatNode,
+//     thenCheckValueAgainst: FlatNode | ((key: string) => FlatNode)
+// ]
+
+// export type FlatPropSet = { readonly [propKey in string]: FlatNode }

@@ -7,17 +7,19 @@ import { flattenNode } from "../node.js"
 import type { PredicateContext } from "../predicate.js"
 import type { FlattenAndPushRule } from "./rules.js"
 
-export type SubdomainRule<scope extends Dict = Dict> = DefineSubdomainRule<
-    TypeNode<scope>
->
-
-export type FlatSubdomainRule = DefineSubdomainRule<FlatNode>
-
-type DefineSubdomainRule<node> =
+// Unfortunately we can't easily abstract between these two rules because of
+// nonsense TS circular reference issues.
+export type SubdomainRule<scope extends Dict = Dict> =
     | Subdomain
-    | ["Array", node]
-    | ["Set", node]
-    | ["Map", node, node]
+    | ["Array", TypeNode<scope>]
+    | ["Set", TypeNode<scope>]
+    | ["Map", TypeNode<scope>, TypeNode<scope>]
+
+export type FlatSubdomainRule =
+    | Subdomain
+    | ["Array", FlatNode]
+    | ["Set", FlatNode]
+    | ["Map", FlatNode, FlatNode]
 
 export const flattenSubdomain: FlattenAndPushRule<SubdomainRule> = (
     entries,

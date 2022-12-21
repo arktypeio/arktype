@@ -18,29 +18,45 @@ export type Predicate<
     scope extends Dict = Dict
 > = true | CollapsibleList<Condition<domain, scope>>
 
-export type FlatPredicate = true | readonly FlatCondition[]
+export type FlatPredicate = FlatCondition | [FlatBranchesEntry]
+
+export type FlatBranchesEntry = ["branches", ...(readonly FlatCondition[])]
 
 export const flattenPredicate = (
     predicate: Predicate,
     scope: ScopeRoot
-): FlatPredicate =>
-    predicate === true
-        ? true
-        : listFrom(predicate).map((condition) => {
-              if (typeof condition === "string") {
-                  // TODO: resolve
-                  return [["alias", condition]]
-              }
-              if (isExactValuePredicate(condition)) {
-                  return [["value", condition.value]]
-              }
-              return flattenRules(condition, scope)
-          })
+): FlatPredicate => {
+    if (predicate === true) {
+        return []
+    }
+    if (hasSubdomain(predicate, "Array")) {
+        const branches: FlatBranchesEntry = ["branches"]
+        for (const condition of predicate) {
+            branches.push(flattenCondition(condition, scope))
+        }
+        return [branches]
+    }
+    return flattenCondition(predicate, scope)
+}
 
 export type Condition<
     domain extends Domain = Domain,
     scope extends Dict = Dict
 > = RuleSet<domain, scope> | ExactValue<domain> | Identifier<scope>
+
+const flattenCondition = (
+    condition: Condition,
+    scope: ScopeRoot
+): FlatCondition => {
+    if (typeof condition === "string") {
+        // TODO: resolve
+        return [["alias", condition]]
+    }
+    if (isExactValuePredicate(condition)) {
+        return [["value", condition.value]]
+    }
+    return flattenRules(condition, scope)
+}
 
 export type FlatCondition =
     | readonly RuleEntry[]
