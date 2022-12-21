@@ -13,7 +13,7 @@ rmSync(filePath, { force: true })
 // without affecting our package.json
 writeFileSync(filePath, "save=false")
 let exitCode = 0
-for (const [tsVersion, tsMorphVersion] of Object.entries(versions)) {
+for (const [, tsMorphVersion] of Object.entries(versions)) {
     shell(`pnpm i ts-morph@${tsMorphVersion}`)
     try {
         shell(`pnpm test`)

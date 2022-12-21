@@ -59,13 +59,23 @@ export const getFileKey = (path: string) => relative(".", path)
 export const isRecursible = (value: unknown): value is object =>
     typeof value === "object" && value !== null
 
-export type Serialized<T> = T extends undefined | symbol | bigint | Function
-    ? string
-    : T extends number | string | boolean
-    ? T
-    : { [k in keyof T]: Serialized<T[k]> }
+type StringifiedValue = undefined | symbol | bigint | Function
 
-export const literalSerialize = <T>(value: T): Serialized<T> =>
+// A little repetitive but avoids infinite recursion on certain types. Could be
+// optimized.
+export type serialize<t> = t extends StringifiedValue
+    ? string
+    : t extends object
+    ? {
+          [k in keyof t]: t[k] extends StringifiedValue
+              ? string
+              : t[k] extends object
+              ? serialize<t[k]>
+              : t[k]
+      }
+    : t
+
+export const literalSerialize = <T>(value: T): serialize<T> =>
     serialize(value, false, [])
 
 export const stringSerialize = (value: unknown) => serialize(value, true, [])

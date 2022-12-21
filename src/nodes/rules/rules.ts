@@ -97,6 +97,7 @@ export type FlattenAndPushRule<t> = (
 const flattenAndPushMap: {
     [k in keyof Rules]-?: FlattenAndPushRule<Rules[k] & {}>
 } = {
+    subdomain: flattenSubdomain,
     regex: (entries, rule) => {
         if (typeof rule === "string") {
             entries.push(["regex", getRegex(rule)])
@@ -112,6 +113,7 @@ const flattenAndPushMap: {
     range: (entries, rule) => {
         entries.push(["range", rule])
     },
+    props: flattenProps,
     validator: (entries, rule) => {
         if (typeof rule === "function") {
             entries.push(["validator", rule])
@@ -120,9 +122,21 @@ const flattenAndPushMap: {
                 entries.push(["validator", validator])
             }
         }
-    },
-    subdomain: flattenSubdomain,
-    props: flattenProps
+    }
+}
+
+const rulePrecedenceMap: { readonly [k in RuleEntry[0]]-?: number } = {
+    // Critical: No other checks are performed if these fail
+    subdomain: 0,
+    // Shallow: All shallow checks will be performed even if one or more fail
+    regex: 1,
+    divisor: 1,
+    range: 1,
+    // Deep: Performed if all shallow checks pass, even if one or more deep checks fail
+    requiredProps: 2,
+    optionalProps: 3,
+    // Validation: Only performed if all shallow and deep checks pass
+    validator: 4
 }
 
 export const flattenRules = (
@@ -134,5 +148,7 @@ export const flattenRules = (
     for (k in rules) {
         flattenAndPushMap[k](entries, rules[k] as any, scope)
     }
-    return entries
+    return entries.sort(
+        (l, r) => rulePrecedenceMap[l[0]] - rulePrecedenceMap[r[0]]
+    )
 }

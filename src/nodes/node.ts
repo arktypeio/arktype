@@ -1,25 +1,21 @@
 import type { ScopeRoot } from "../scope.js"
 import type { Domain } from "../utils/domains.js"
-import type { Dict, mutable, stringKeyOf } from "../utils/generics.js"
+import type { Dict, List, mutable, stringKeyOf } from "../utils/generics.js"
 import { keysOf } from "../utils/generics.js"
 import type { Keyword } from "./keywords.js"
-import type { FlatPredicate, Predicate } from "./predicate.js"
+import type {
+    ExactValue,
+    ExactValueEntry,
+    FlatPredicate,
+    Predicate
+} from "./predicate.js"
 import { flattenPredicate } from "./predicate.js"
+import type { FlatSubdomainRule } from "./rules/subdomain.js"
 import { resolveIfIdentifier } from "./utils.js"
 
 export type TypeNode<scope extends Dict = Dict> =
     | Identifier<scope>
     | TypeSet<scope>
-
-export type FlatNode = Domain | FlatSingleDomainNode | FlatMultiDomainNode
-
-export type FlatSingleDomainNode = [["domain", Domain], ...FlatPredicate]
-
-export type FlatMultiDomainNode = [["domains", FlatTypeSet]]
-
-export type FlatTypeSet = {
-    readonly [domain in Domain]?: FlatPredicate
-}
 
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to
@@ -32,6 +28,30 @@ export type TypeSet<scope extends Dict = Dict> = {
 
 export type Identifier<scope extends Dict = Dict> = Keyword | stringKeyOf<scope>
 
+export type FlatNode = Domain | FlatSingleDomainNode | FlatMultiDomainNode
+
+export type FlatSingleDomainNode = readonly [
+    InitialPredicateEntry,
+    ...FlatPredicate
+]
+
+// "domain" entry is omitted if the predicate includes "value" or "subdomain"
+export type InitialPredicateEntry =
+    | ["domain", Domain]
+    | ExactValueEntry
+    | ["subdomain", FlatSubdomainRule]
+
+const hasImpliedDomain = (
+    flatPredicate: FlatPredicate | FlatSingleDomainNode
+): flatPredicate is FlatSingleDomainNode =>
+    flatPredicate[0][0] === "subdomain" || flatPredicate[0][0] === "value"
+
+export type FlatMultiDomainNode = readonly [["domains", FlatTypeSet]]
+
+export type FlatTypeSet = {
+    readonly [domain in Domain]?: FlatPredicate
+}
+
 export const flattenNode = (node: TypeNode, scope: ScopeRoot): FlatNode => {
     const resolution = resolveIfIdentifier(node, scope)
     const domains = keysOf(resolution)
@@ -41,7 +61,10 @@ export const flattenNode = (node: TypeNode, scope: ScopeRoot): FlatNode => {
         if (predicate === true) {
             return domain
         }
-        return [["domain", domain], ...flattenPredicate(predicate, scope)]
+        const flatPredicate = flattenPredicate(predicate, scope)
+        return hasImpliedDomain(flatPredicate)
+            ? flatPredicate
+            : [["domain", domain], ...flatPredicate]
     }
     const result: mutable<FlatTypeSet> = {}
     for (const domain of domains) {

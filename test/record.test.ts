@@ -26,6 +26,11 @@ describe("record", () => {
                 }
             }
         })
+        attest(o.flat).snap([
+            ["domain", "object"],
+            ["requiredProps", ["b", [["subdomain", ["Array", "boolean"]]]]],
+            ["optionalProps", ["a", "string"]]
+        ])
     })
     test("escaped optional token", () => {
         const t = type({ "a\\?": "string" })
