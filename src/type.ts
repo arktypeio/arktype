@@ -1,4 +1,4 @@
-import type { FlatNode, TypeSet } from "./nodes/node.js"
+import type { TraversalNode, TypeSet } from "./nodes/node.js"
 import { flattenNode } from "./nodes/node.js"
 import { resolveIfIdentifier } from "./nodes/utils.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
@@ -43,7 +43,7 @@ export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 export class ArkType<inferred = unknown> {
     constructor(
         public root: TypeSet,
-        public flat: FlatNode,
+        public flat: TraversalNode,
         public config: Config,
         public scope: DynamicScope
     ) {}

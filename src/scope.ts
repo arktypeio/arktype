@@ -1,7 +1,10 @@
 import { flatKeywords, keywords } from "./nodes/keywords.js"
-import type { FlatNode, TypeNode, TypeSet } from "./nodes/node.js"
+import type { TraversalNode, TypeNode, TypeSet } from "./nodes/node.js"
 import { flattenNode } from "./nodes/node.js"
-import type { FlatPredicate, ResolvedPredicate } from "./nodes/predicate.js"
+import type {
+    ResolvedPredicate,
+    TraversalPredicate
+} from "./nodes/predicate.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
@@ -67,7 +70,7 @@ type inferredScopeToArktypes<inferred> = {
 
 export class ScopeRoot<inferred extends Dict = Dict> {
     roots = {} as { [k in keyof inferred]: TypeSet<inferred> }
-    flatRoots = {} as { [k in keyof inferred]: FlatNode }
+    flatRoots = {} as { [k in keyof inferred]: TraversalNode }
 
     // TODO: Add intersection cache
     private cache: { [def: string]: TypeNode } = {}
@@ -93,7 +96,7 @@ export class ScopeRoot<inferred extends Dict = Dict> {
         return this.resolveRecurse(name, [])
     }
 
-    resolveFlat(name: string): FlatNode {
+    resolveFlat(name: string): TraversalNode {
         if (isKeyOf(name, keywords)) {
             return flatKeywords[name]
         }
@@ -138,7 +141,7 @@ export class ScopeRoot<inferred extends Dict = Dict> {
         return this.resolvePredicateRecurse(name, domain, [])
     }
 
-    resolveFlatPredicate(name: string, domain: Domain): FlatPredicate {
+    resolveFlatPredicate(name: string, domain: Domain): TraversalPredicate {
         const flatResolution = this.resolveFlat(name)
         if (typeof flatResolution === "string") {
             if (flatResolution !== domain) {
@@ -158,7 +161,7 @@ export class ScopeRoot<inferred extends Dict = Dict> {
             flatResolution[0][0] === "domain"
                 ? flatResolution.slice(1)
                 : flatResolution
-        ) as FlatPredicate
+        ) as TraversalPredicate
     }
 
     private resolvePredicateRecurse<domain extends Domain>(

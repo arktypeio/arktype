@@ -2,7 +2,7 @@ import type { Subdomain } from "../../utils/domains.js"
 import type { Dict } from "../../utils/generics.js"
 import { composeIntersection, empty, equal } from "../compose.js"
 import { nodeIntersection } from "../intersection.js"
-import type { FlatNode, TypeNode } from "../node.js"
+import type { TraversalNode, TypeNode } from "../node.js"
 import { flattenNode } from "../node.js"
 import type { PredicateContext } from "../predicate.js"
 import type { FlattenAndPushRule } from "./rules.js"
@@ -15,11 +15,11 @@ export type SubdomainRule<scope extends Dict = Dict> =
     | ["Set", TypeNode<scope>]
     | ["Map", TypeNode<scope>, TypeNode<scope>]
 
-export type FlatSubdomainRule =
+export type TraversalSubdomainRule =
     | Subdomain
-    | ["Array", FlatNode]
-    | ["Set", FlatNode]
-    | ["Map", FlatNode, FlatNode]
+    | ["Array", TraversalNode]
+    | ["Set", TraversalNode]
+    | ["Map", TraversalNode, TraversalNode]
 
 export const flattenSubdomain: FlattenAndPushRule<SubdomainRule> = (
     entries,
@@ -29,11 +29,11 @@ export const flattenSubdomain: FlattenAndPushRule<SubdomainRule> = (
     if (typeof rule === "string") {
         entries.push(["subdomain", rule])
     } else {
-        const flattened: [Subdomain, ...FlatNode[]] = [rule[0]]
+        const flattened: [Subdomain, ...TraversalNode[]] = [rule[0]]
         for (let i = 1; i < rule.length; i++) {
             flattened.push(flattenNode(rule[i], scope))
         }
-        entries.push(["subdomain", flattened as FlatSubdomainRule])
+        entries.push(["subdomain", flattened as TraversalSubdomainRule])
     }
 }
 

@@ -6,7 +6,7 @@ import {
     equal
 } from "../compose.js"
 import { nodeIntersection } from "../intersection.js"
-import type { FlatNode, TypeNode } from "../node.js"
+import type { TraversalNode, TypeNode } from "../node.js"
 import { flattenNode } from "../node.js"
 import type { PredicateContext } from "../predicate.js"
 import type { FlattenAndPushRule } from "./rules.js"
@@ -21,11 +21,17 @@ export type Prop<scope extends Dict = Dict> =
 
 export type OptionalProp<scope extends Dict = Dict> = ["?", TypeNode<scope>]
 
-export type FlatRequiredProps = ["requiredProps", readonly FlatPropEntry[]]
+export type TraversalRequiredProps = [
+    "requiredProps",
+    readonly TraversalPropEntry[]
+]
 
-export type FlatOptionalProps = ["optionalProps", readonly FlatPropEntry[]]
+export type TraversalOptionalProps = [
+    "optionalProps",
+    readonly TraversalPropEntry[]
+]
 
-export type FlatPropEntry = [propKey: string, flatNode: FlatNode]
+export type TraversalPropEntry = [propKey: string, flatNode: TraversalNode]
 
 const isOptional = (prop: Prop): prop is OptionalProp =>
     (prop as OptionalProp)[0] === "?"
@@ -76,8 +82,8 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
     props,
     scope
 ) => {
-    const requiredProps: FlatPropEntry[] = []
-    const optionalProps: FlatPropEntry[] = []
+    const requiredProps: TraversalPropEntry[] = []
+    const optionalProps: TraversalPropEntry[] = []
     for (const k in props) {
         const prop = props[k]
         if (isOptional(prop)) {
@@ -94,17 +100,17 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
     }
 }
 
-// export type FlatMappedPropsRule = [
-//     mappedEntries: readonly FlatMappedPropEntry[],
+// export type TraversalMappedPropsRule = [
+//     mappedEntries: readonly TraversalMappedPropEntry[],
 //     namedProps?: {
-//         readonly required?: FlatPropSet
-//         readonly optional?: FlatPropSet
+//         readonly required?: TraversalPropSet
+//         readonly optional?: TraversalPropSet
 //     }
 // ]
 
-// export type FlatMappedPropEntry = [
-//     ifKeySatisfies: FlatNode,
-//     thenCheckValueAgainst: FlatNode | ((key: string) => FlatNode)
+// export type TraversalMappedPropEntry = [
+//     ifKeySatisfies: TraversalNode,
+//     thenCheckValueAgainst: TraversalNode | ((key: string) => TraversalNode)
 // ]
 
-// export type FlatPropSet = { readonly [propKey in string]: FlatNode }
+// export type TraversalPropSet = { readonly [propKey in string]: TraversalNode }
