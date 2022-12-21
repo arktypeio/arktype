@@ -1,11 +1,8 @@
+// import type { FlatPredicate } from "../nodes/predicate.js"
+// import { Predicate } from "../nodes/predicate.js"
 // import type { ScopeRoot } from "../scope.js"
-// import type { mutable } from "../utils/generics.js"
-// import { listFrom } from "../utils/generics.js"
+// import type { Dict, mutable } from "../utils/generics.js"
 // import { pathToSegments } from "../utils/paths.js"
-// import type { array, dict, TypeName } from "../utils/typeOf.js"
-// import { hasType } from "../utils/typeOf.js"
-// import { intersection } from "./intersection.js"
-// import type { Attributes, NameNode, Node } from "./node.js"
 
 // export type DiscriminatedBranches = [
 //     token: "?",
@@ -13,17 +10,7 @@
 //     cases: DiscriminatedCases
 // ]
 
-// export type DiscriminatedCases = { [k in TypeName]?: Node }
-
-// export const compile = (attributes: Node, scope: ScopeRoot): Node => {
-//     const compiled = discriminate(attributes, scope)
-//     if (attributes.props) {
-//         for (const k in attributes.props) {
-//             compile(attributes.props[k], scope)
-//         }
-//     }
-//     return compiled
-// }
+// export type DiscriminatedCases = { readonly [k in string]: FlatPredicate }
 
 // export const queryPath = (attributes: Node, path: string) => {
 //     const segments = pathToSegments(path)
@@ -47,7 +34,7 @@
 //     if (!discriminant) {
 //         return branches
 //     }
-//     const branchesByValue: dict<Branches> = {}
+//     const branchesByValue: Dict<Branches> = {}
 //     for (let i = 0; i < branches.length; i++) {
 //         const value = queryPath(branches[i], discriminant.path)
 //         const caseKey = value ?? "default"
@@ -122,7 +109,7 @@
 // type PropFrequencyEntry = [propKey: string, appearances: number]
 
 // const sortPropsByFrequency = (branches: Node[]): PropFrequencyEntry[] => {
-//     const appearancesByProp: mutable<dict<number>> = {}
+//     const appearancesByProp: mutable<Dict<number>> = {}
 //     for (let i = 0; i < branches.length; i++) {
 //         if (!branches[i].props) {
 //             continue
