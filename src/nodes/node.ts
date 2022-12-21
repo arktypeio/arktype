@@ -55,14 +55,14 @@ export const flattenNode = (node: TypeNode, scope: ScopeRoot): FlatNode => {
         if (predicate === true) {
             return domain
         }
-        const flatPredicate = flattenPredicate(predicate, scope)
+        const flatPredicate = flattenPredicate(domain, predicate, scope)
         return hasImpliedDomain(flatPredicate)
             ? flatPredicate
             : [["domain", domain], ...flatPredicate]
     }
     const result: mutable<FlatTypeSet> = {}
     for (const domain of domains) {
-        result[domain] = flattenPredicate(resolution[domain]!, scope)
+        result[domain] = flattenPredicate(domain, resolution[domain]!, scope)
     }
     return [["domains", result]]
 }

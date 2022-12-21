@@ -1,7 +1,7 @@
 import { keywords } from "./nodes/keywords.js"
-import type { TypeNode, TypeSet } from "./nodes/node.js"
+import type { FlatNode, TypeNode, TypeSet } from "./nodes/node.js"
 import { flattenNode } from "./nodes/node.js"
-import type { ResolvedPredicate } from "./nodes/predicate.js"
+import type { FlatPredicate, ResolvedPredicate } from "./nodes/predicate.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
@@ -9,6 +9,7 @@ import type { Config } from "./type.js"
 import { ArkType } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { Domain } from "./utils/domains.js"
+import { subdomainOf } from "./utils/domains.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
 import { deepFreeze } from "./utils/freeze.js"
 import type { Dict, evaluate } from "./utils/generics.js"
@@ -67,6 +68,8 @@ type inferredScopeToArktypes<inferred> = {
 
 export class ScopeRoot<inferred extends Dict = Dict> {
     roots = {} as { [k in keyof inferred]: TypeSet<inferred> }
+    flatRoots = {} as { [k in keyof inferred]: FlatNode }
+
     // TODO: Add intersection cache
     private cache: { [def: string]: TypeNode } = {}
 
@@ -89,6 +92,11 @@ export class ScopeRoot<inferred extends Dict = Dict> {
 
     resolve(name: string) {
         return this.resolveRecurse(name, [])
+    }
+
+    resolveFlat(name: string) {
+        this.resolveRecurse(name, [])
+        return this.flatRoots[name]
     }
 
     private resolveRecurse(name: string, seen: string[]): TypeSet {
@@ -117,11 +125,38 @@ export class ScopeRoot<inferred extends Dict = Dict> {
             root = this.resolveRecurse(root, seen)
         }
         this.roots[name as keyof inferred] = root as TypeSet<inferred>
+        this.flatRoots[name as keyof inferred] = flattenNode(
+            root,
+            this as ScopeRoot
+        )
         return root
     }
 
     resolvePredicate<domain extends Domain>(name: string, domain: domain) {
         return this.resolvePredicateRecurse(name, domain, [])
+    }
+
+    resolveFlatPredicate(name: string, domain: Domain): FlatPredicate {
+        const flatResolution = this.resolveFlat(name)
+        if (typeof flatResolution === "string") {
+            if (flatResolution !== domain) {
+                return throwUnexpectedPredicateDomainError(name, domain)
+            }
+            // an empty predicate is satisfied by its domain alone
+            return []
+        }
+        if (flatResolution[0][0] === "domains") {
+            const predicate = flatResolution[0][1][domain]
+            if (predicate === undefined) {
+                return throwUnexpectedPredicateDomainError(name, domain)
+            }
+            return predicate
+        }
+        return (
+            flatResolution[0][0] === "domain"
+                ? flatResolution.slice(1)
+                : flatResolution
+        ) as FlatPredicate
     }
 
     private resolvePredicateRecurse<domain extends Domain>(
@@ -131,9 +166,7 @@ export class ScopeRoot<inferred extends Dict = Dict> {
     ): ResolvedPredicate<domain, inferred> {
         const resolution = this.resolve(name)[domain]
         if (resolution === undefined) {
-            return throwInternalError(
-                `Expected '${name}' to have a definition including '${domain}'`
-            )
+            return throwUnexpectedPredicateDomainError(name, domain)
         }
         if (typeof resolution !== "string") {
             return resolution as any
@@ -177,3 +210,11 @@ export const buildShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
         "=>"
     )}`
+
+const throwUnexpectedPredicateDomainError = (
+    name: string,
+    expectedDomain: Domain
+) =>
+    throwInternalError(
+        `Expected '${name}' to have a definition including '${expectedDomain}'`
+    )
