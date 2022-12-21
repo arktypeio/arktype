@@ -1,5 +1,4 @@
-// import type { FlatPredicate } from "../nodes/predicate.js"
-// import { Predicate } from "../nodes/predicate.js"
+// import type { TraversalPredicate } from "../nodes/predicate.js"
 // import type { ScopeRoot } from "../scope.js"
 // import type { Dict, mutable } from "../utils/generics.js"
 // import { pathToSegments } from "../utils/paths.js"
@@ -10,7 +9,7 @@
 //     cases: DiscriminatedCases
 // ]
 
-// export type DiscriminatedCases = { readonly [k in string]: FlatPredicate }
+// export type DiscriminatedCases = { readonly [k in string]: TraversalPredicate }
 
 // export const queryPath = (attributes: Node, path: string) => {
 //     const segments = pathToSegments(path)
