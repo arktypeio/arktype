@@ -42,7 +42,6 @@ const checkers = {
         return entries ? checkEntries(data, entries, scope) : false
     },
     domain: (data: unknown, domain) => domainOf(data) === domain,
-    // TODO: Fix
     subdomain: (data: unknown, subdomain, scope) => {
         const actual = subdomainOf(data)
         if (typeof subdomain === "string") {
