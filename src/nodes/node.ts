@@ -1,14 +1,9 @@
 import type { ScopeRoot } from "../scope.js"
 import type { Domain } from "../utils/domains.js"
-import type { Dict, List, mutable, stringKeyOf } from "../utils/generics.js"
+import type { Dict, mutable, stringKeyOf } from "../utils/generics.js"
 import { keysOf } from "../utils/generics.js"
 import type { Keyword } from "./keywords.js"
-import type {
-    ExactValue,
-    ExactValueEntry,
-    FlatPredicate,
-    Predicate
-} from "./predicate.js"
+import type { ExactValueEntry, FlatPredicate, Predicate } from "./predicate.js"
 import { flattenPredicate } from "./predicate.js"
 import type { FlatSubdomainRule } from "./rules/subdomain.js"
 import { resolveIfIdentifier } from "./utils.js"
@@ -35,7 +30,6 @@ export type FlatSingleDomainNode = readonly [
     ...FlatPredicate
 ]
 
-// "domain" entry is omitted if the predicate includes "value" or "subdomain"
 export type InitialPredicateEntry =
     | ["domain", Domain]
     | ExactValueEntry

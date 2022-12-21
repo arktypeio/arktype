@@ -1,17 +1,15 @@
 import type { ScopeRoot } from "../../scope.js"
 import type { Domain, domainOf, inferDomain } from "../../utils/domains.js"
-import type {
-    CollapsibleList,
-    Dict,
-    entryOf,
-    evaluate,
-    extend
-} from "../../utils/generics.js"
+import type { CollapsibleList, Dict, evaluate } from "../../utils/generics.js"
 import { composeIntersection, composeKeyedOperation } from "../compose.js"
 import type { PredicateContext } from "../predicate.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
 import { divisorIntersection } from "./divisor.js"
-import type { FlatProps, PropsRule } from "./props.js"
+import type {
+    FlatOptionalProps,
+    FlatRequiredProps,
+    PropsRule
+} from "./props.js"
 import { flattenProps, propsIntersection } from "./props.js"
 import type { Range } from "./range.js"
 import { rangeIntersection } from "./range.js"
@@ -20,28 +18,22 @@ import type { FlatSubdomainRule, SubdomainRule } from "./subdomain.js"
 import { flattenSubdomain, subdomainIntersection } from "./subdomain.js"
 
 export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
+    readonly subdomain?: SubdomainRule<scope>
     readonly regex?: CollapsibleList<string>
     readonly divisor?: number
     readonly range?: Range
-    readonly subdomain?: SubdomainRule<scope>
     readonly props?: PropsRule<scope>
     readonly validator?: CollapsibleList<Validator<inferDomain<domain>>>
 }
 
 export type RuleEntry =
-    | entryOf<
-          extend<
-              { [k in Exclude<keyof Rules, "props">]-?: unknown },
-              evaluate<{
-                  regex: RegExp
-                  divisor: number
-                  subdomain: FlatSubdomainRule
-                  range: Range
-                  validator: Validator
-              }>
-          >
-      >
-    | FlatProps
+    | ["subdomain", FlatSubdomainRule]
+    | ["regex", RegExp]
+    | ["divisor", number]
+    | ["range", Range]
+    | FlatRequiredProps
+    | FlatOptionalProps
+    | ["validator", Validator]
 
 export type Validator<data = unknown> = (data: data) => boolean
 

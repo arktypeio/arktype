@@ -21,8 +21,6 @@ export type Prop<scope extends Dict = Dict> =
 
 export type OptionalProp<scope extends Dict = Dict> = ["?", TypeNode<scope>]
 
-export type FlatProps = FlatRequiredProps | FlatOptionalProps
-
 export type FlatRequiredProps = readonly ["requiredProps", ...FlatPropEntry[]]
 
 export type FlatOptionalProps = readonly ["optionalProps", ...FlatPropEntry[]]
