@@ -5,7 +5,6 @@ export const morph = (name: MorphName, type: TypeNode) => morphs[name](type)
 export type MorphName = keyof typeof morphs
 
 const morphs = {
-    // TODO: array of?
     array: (node): TypeSet => ({
         object: {
             subdomain: ["Array", node]

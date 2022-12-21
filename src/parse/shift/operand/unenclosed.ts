@@ -1,5 +1,5 @@
-import type { TypeNode } from "../../../nodes/node.js"
 import type { Keyword } from "../../../nodes/keywords.js"
+import type { TypeNode } from "../../../nodes/node.js"
 import type { error } from "../../../utils/generics.js"
 import type {
     BigintLiteral,

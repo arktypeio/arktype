@@ -56,6 +56,7 @@ export type TraversalTypeSet = {
     readonly [domain in Domain]?: TraversalPredicate
 }
 
+// TODO: flatten=>compile
 export const flattenNode = (
     node: TypeNode,
     scope: ScopeRoot
@@ -84,7 +85,7 @@ export const flattenNodes = <nodes extends { readonly [k in string]: TypeSet }>(
     nodes: nodes,
     scope: ScopeRoot
 ) => {
-    const result = {} as { [k in keyof nodes]: TraversalNode }
+    const result = {} as Record<keyof nodes, TraversalNode>
     for (const name in nodes) {
         result[name] = flattenNode(nodes[name], scope)
     }

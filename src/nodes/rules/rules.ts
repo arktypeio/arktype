@@ -37,11 +37,6 @@ export type TraversalRuleEntry =
 
 export type Validator<data = unknown> = (data: data) => boolean
 
-// TODO: Allow as input
-export type DistributedValidator<data = unknown> = evaluate<{
-    [domain in domainOf<data>]?: Validator<Extract<data, inferDomain<domain>>>
-}>
-
 export type RuleSet<
     domain extends Domain,
     scope extends Dict

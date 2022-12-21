@@ -37,13 +37,8 @@ export const isExactValuePredicate = (
 ): predicate is ExactValue =>
     typeof predicate === "object" && "value" in predicate
 
-export const domainOfNode = (
-    node: TypeNode,
-    scope: ScopeRoot
-): Domain | Domain[] => {
-    const domains = keysOf(resolveIfIdentifier(node, scope))
-    return domains.length === 1 ? domains[0] : domains
-}
+export const domainsOfNode = (node: TypeNode, scope: ScopeRoot): Domain[] =>
+    keysOf(resolveIfIdentifier(node, scope))
 
 export type DomainSubtypeNode<domain extends Domain> = {
     readonly [k in domain]: defined<TypeSet[domain]>
@@ -53,4 +48,7 @@ export const nodeExtendsDomain = <domain extends Domain>(
     node: TypeNode,
     domain: domain,
     scope: ScopeRoot
-): node is DomainSubtypeNode<domain> => domainOfNode(node, scope) === domain
+): node is DomainSubtypeNode<domain> => {
+    const nodeDomains = domainsOfNode(node, scope)
+    return nodeDomains.length === 1 && nodeDomains[0] === domain
+}
