@@ -9,6 +9,10 @@ const details = [
             "Define types using TS syntax. Infer them 1:1. Use them to validate your data at runtime."
     },
     {
+        title: "Native TS",
+        description: "No extensions, plugins or compilers required"
+    },
+    {
         image: "Three",
         title: "Concise",
         description: "Say more with less"

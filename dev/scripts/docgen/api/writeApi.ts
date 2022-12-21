@@ -59,17 +59,21 @@ const generateMarkdownForExport = (
 
 class MarkdownSection {
     private contents: (string | MarkdownSection)[]
+    private optionsAdded = false
     constructor(header: string, private depth = 1) {
         this.contents = [`${"#".repeat(depth)} ${header}\n`]
     }
 
     options(options: {}) {
-        const optionStuff = ["---"]
-        for (const [k, v] of Object.entries(options)) {
-            optionStuff.push(`${k}: ${v}`)
+        if (!this.optionsAdded) {
+            const optionStuff = ["---"]
+            for (const [k, v] of Object.entries(options)) {
+                optionStuff.push(`${k}: ${v}`)
+            }
+            optionStuff.push("---\n")
+            this.contents.unshift(optionStuff.join("\n"))
         }
-        optionStuff.push("---\n")
-        this.contents.unshift(optionStuff.join("\n"))
+        this.optionsAdded = true
     }
     section(header: string) {
         const section = new MarkdownSection(header, this.depth + 1)

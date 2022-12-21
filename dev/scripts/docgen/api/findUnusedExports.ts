@@ -15,7 +15,7 @@ const project = new Project({
 })
 
 const unusedExports: Record<string, string[]> = {}
-const ignorePaths: string[] = [join("src", "__snippets__")]
+const ignorePaths: string[] = ["examples", "dist"]
 const exportAllRenamedRegex = /\* as /
 
 export const findUnusedExports = () => {

@@ -1,6 +1,6 @@
 # How to use this beaut
 
-Creating a simple string schema
+Creating a simple string
 
 ```ts
 import { type } from "arktype"
@@ -9,6 +9,7 @@ const stringData = type("string")
 
 // throws on error
 stringData.assert("Arktype") // "Arktype"
+
 stringData.assert({}) // throws ArktypeError
 
 // returns {problems?, data}
@@ -16,7 +17,7 @@ stringData.check("Arktype") //{data: "Arktype"}
 stringData.check({}) //{problems: ArktypeError, data: }
 ```
 
-## Creating an object schema
+## Creating an object
 
 ```ts
 import { type } from "arktype"
@@ -108,8 +109,8 @@ type("3<number<5").check(0, {
 ```ts
 import { type } from "arktype"
 
-const tupleSchema = type(["string", "number", "string"])
-tupleSchema.check(["EZ", 69, "MOOCHI"])
+const tuple = type(["string", "number", "string"])
+tuple.check(["EZ", 69, "MOOCHI"])
 // { data: [ 'EZ', 69, 'MOOCHI' ] }
 ```
 
