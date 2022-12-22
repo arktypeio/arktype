@@ -21,20 +21,27 @@ export type parseString<
 export type inferString<
     def extends string,
     scope extends Dict,
-    aliases
+    aliases,
+    input extends boolean
 > = inferAst<
     parseString<def, stringKeyOf<aliases> | stringKeyOf<scope>>,
     scope,
-    aliases
+    aliases,
+    input
 >
 
 export type validateString<
     def extends string,
-    scope extends Dict
+    scope extends Dict,
+    input extends boolean
 > = parseString<def, stringKeyOf<scope>> extends infer astOrError
     ? astOrError extends error<infer message>
         ? message
-        : validateAstSemantics<astOrError, scope> extends infer semanticResult
+        : validateAstSemantics<
+              astOrError,
+              scope,
+              input
+          > extends infer semanticResult
         ? semanticResult extends undefined
             ? def
             : semanticResult

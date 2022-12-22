@@ -8,7 +8,7 @@ import { getRootScope } from "./scope.js"
 import { check } from "./traverse/check.js"
 import { Problems } from "./traverse/problems.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { Dict, isTopType } from "./utils/generics.js"
+import type { Dict, equals, isTopType } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
@@ -28,35 +28,30 @@ export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
 )
 
 export type InferredTypeFn = <definition, scope extends Dict = {}>(
-    definition: validateDefinition<definition, scope>,
+    definition: validateDefinition<definition, scope, false>,
     options?: Config<scope>
 ) => isTopType<definition> extends true
     ? never
-    : definition extends validateDefinition<definition, scope>
-    ? ArkType<inferDefinition<definition, scope, {}>>
+    : definition extends validateDefinition<definition, scope, false>
+    ? inferRoot<
+          inferDefinition<definition, scope, {}, true>,
+          inferDefinition<definition, scope, {}, false>
+      >
     : never
 
 type DynamicTypeFn = (definition: unknown, options?: Config<Dict>) => ArkType
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
-export type inferInput<t> = t extends (input: infer input) => unknown
-    ? input
-    : t extends object
-    ? {
-          [k in keyof t]: inferInput<t[k]>
-      }
-    : t
+export type inferRoot<i, o> = equals<i, o> extends true
+    ? ArkType<o>
+    : ArkType<(io: i) => o>
 
-export type inferOutput<t> = t extends (input: any) => infer output
-    ? output
-    : t extends object
-    ? {
-          [k in keyof t]: inferOutput<t[k]>
-      }
-    : t
+type In<t> = t extends (io: infer input) => unknown ? input : t
 
-export class ArkType<t = unknown> {
+type Out<t> = t extends (io: any) => infer output ? output : t
+
+export class ArkType<T = unknown> {
     constructor(
         public root: TypeSet,
         public flat: TraversalNode,
@@ -64,19 +59,19 @@ export class ArkType<t = unknown> {
         public scope: DynamicScope
     ) {}
 
-    get infer(): inferOutput<t> {
+    get infer(): Out<T> {
         return chainableNoOpProxy
     }
 
     check(data: unknown) {
         return check(data, this.flat, this.scope.$)
-            ? { data: data as inferOutput<t> }
+            ? { data: data as Out<T> }
             : {
                   problems: new Problems({ path: "", reason: "invalid" })
               }
     }
 
-    from(data: inferInput<t>): inferOutput<t> {
+    from(data: In<T>): Out<T> {
         return data as any
     }
 
@@ -86,7 +81,7 @@ export class ArkType<t = unknown> {
             throw new Error(`FAIL`)
         }
         // result.problems?.throw()
-        return result.data as inferOutput<t>
+        return result.data as Out<T>
     }
 }
 
@@ -97,6 +92,8 @@ export type Config<scope extends Dict = {}> = {
 // const t = type(["string", "=>", "number", (s) => s.length])
 
 // const data = t.from("5")
+
+// const oo = type("string|number")
 
 // const zzt = type({ a: ["string", "=>", "number", (s) => s.length] })
 

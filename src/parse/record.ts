@@ -32,19 +32,22 @@ type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`
 export type inferRecord<
     def extends Dict,
     scope extends Dict,
-    aliases
+    aliases,
+    input extends boolean
 > = evaluate<
     {
         [requiredKeyName in requiredKeyOf<def>]: inferDefinition<
             def[withPossiblePreviousEscapeCharacter<requiredKeyName>],
             scope,
-            aliases
+            aliases,
+            input
         >
     } & {
         [optionalKeyName in optionalKeyOf<def>]?: inferDefinition<
             def[`${optionalKeyName}?`],
             scope,
-            aliases
+            aliases,
+            input
         >
     }
 >

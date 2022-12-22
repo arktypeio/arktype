@@ -198,11 +198,16 @@ export class ScopeRoot<inferred extends Dict = Dict> {
 }
 
 type validateAliases<aliases, scope extends Dict> = evaluate<{
-    [name in keyof aliases]: validateDefinition<aliases[name], scope>
+    [name in keyof aliases]: validateDefinition<aliases[name], scope, false>
 }>
 
 type inferAliases<aliases, scope extends Dict> = evaluate<{
-    [name in keyof aliases]: inferDefinition<aliases[name], scope, aliases>
+    [name in keyof aliases]: inferDefinition<
+        aliases[name],
+        scope,
+        aliases,
+        false
+    >
 }>
 
 type inferScopeContext<aliases, scope extends Dict> = inferAliases<

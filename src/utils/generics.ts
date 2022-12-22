@@ -116,6 +116,10 @@ export type deepImmutable<o> = [o] extends [object]
       }
     : o
 
+export type equals<t, u> = identity<t> extends identity<u> ? true : false
+
+export type identity<t> = (_: t) => t
+
 export type extend<t, u extends t> = u
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

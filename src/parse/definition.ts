@@ -37,20 +37,22 @@ export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
 export type inferDefinition<
     def,
     scope extends Dict,
-    aliases
+    aliases,
+    input extends boolean
 > = isTopType<def> extends true
     ? never
     : def extends string
-    ? inferString<def, scope, aliases>
+    ? inferString<def, scope, aliases, input>
     : def extends List
-    ? inferTuple<def, scope, aliases>
+    ? inferTuple<def, scope, aliases, input>
     : def extends Dict
-    ? inferRecord<def, scope, aliases>
+    ? inferRecord<def, scope, aliases, input>
     : never
 
 export type validateDefinition<
     def,
-    scope extends Dict
+    scope extends Dict,
+    input extends boolean
 > = isTopType<def> extends true
     ? buildUninferableDefinitionMessage<
           isAny<def> extends true ? "any" : "unknown"
@@ -58,15 +60,15 @@ export type validateDefinition<
     : def extends []
     ? def
     : def extends string
-    ? validateString<def, scope>
+    ? validateString<def, scope, input>
     : def extends List
-    ? validateTuple<def, scope>
+    ? validateTuple<def, scope, input>
     : def extends Primitive
     ? buildBadDefinitionTypeMessage<domainOf<def>>
     : def extends Function
     ? buildBadDefinitionTypeMessage<"Function">
     : evaluate<{
-          [k in keyof def]: validateDefinition<def[k], scope>
+          [k in keyof def]: validateDefinition<def[k], scope, input>
       }>
 
 export type buildUninferableDefinitionMessage<
