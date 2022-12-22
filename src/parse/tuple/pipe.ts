@@ -1,6 +1,12 @@
 import { intersection } from "../../nodes/intersection.js"
 import { TypeSet } from "../../nodes/node.js"
-import type { Dict, mutable, NonEmptyList } from "../../utils/generics.js"
+import { type } from "../../type.js"
+import type {
+    Dict,
+    evaluate,
+    mutable,
+    NonEmptyList
+} from "../../utils/generics.js"
 import type { inferDefinition, validateDefinition } from "../definition.js"
 import { parseDefinition } from "../definition.js"
 import type { TupleExpressionParser } from "./tuple.js"
@@ -34,3 +40,18 @@ export type validatePipeTuple<
 ]
 
 export type Pipe<T = any> = (In: T) => T
+
+// export type PipeFn = <def, scope extends Dict = {}>(
+//     ...args: validatePipeTuple<def, scope, false>
+// ) => evaluate<validatePipeTuple<def, scope, false>>
+
+// export const pipe: PipeFn = (definition) => definition as any
+
+// export const t = type([
+//     pipe(
+//         "string",
+//         "|>",
+//         (s) => s.trim(),
+//         (s) => s + "foo"
+//     )
+// ])

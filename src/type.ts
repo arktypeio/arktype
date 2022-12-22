@@ -42,21 +42,6 @@ export type InferredTypeFn = <definition, scope extends Dict = {}>(
       >
     : never
 
-// export type InferredDefineFn = <definition, scope extends Dict = {}>(
-//     ...args: validatePipeTuple<definition, scope, false>
-// ) => evaluate<validateNarrowTuple<definition, scope, false>>
-
-// export const define: InferredDefineFn = (definition) => definition as any
-
-// export const t = type([
-//     define(
-//         "string",
-//         "|>",
-//         (s) => s.trim(),
-//         (s) => s + "foo"
-//     )
-// ])
-
 type DynamicTypeFn = (definition: unknown, options?: Config<Dict>) => Type
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
