@@ -1,5 +1,5 @@
 import { intersection } from "../../nodes/intersection.js"
-import { TypeSet } from "../../nodes/node.js"
+import type { TypeSet } from "../../nodes/node.js"
 import { type } from "../../type.js"
 import type {
     Dict,
@@ -41,32 +41,14 @@ export type validatePipeTuple<
 
 export type Pipe<T = any> = (In: T) => T
 
-export type PipeFn = <
+export type PipeBuilder<scope extends Dict = {}> = <
     def,
     pipes extends NonEmptyList<
         distributable<Pipe<inferDefinition<def, scope, scope, false>>>
-    >,
-    scope extends Dict = {}
+    >
 >(
     def: validateDefinition<def, scope, false>,
     ...pipes: pipes
 ) => [def, "|>", ...pipes]
 
-export const pipe: PipeFn = (def, ...pipes) => [def as any, "|>", ...pipes]
-
-// pipe(
-//     "string",
-//     (s) => s.trim(),
-//     (s) => s + "foo"
-// )
-
-// export const t2 = type([
-//     pipe(
-//         pipe(
-//             "string",
-//             (s) => s.trim(),
-//             (s) => s + "foo"
-//         ),
-//         (s) => s.trim()
-//     )
-// ])
+export const pipe: PipeBuilder = (def, ...pipes) => [def as any, "|>", ...pipes]

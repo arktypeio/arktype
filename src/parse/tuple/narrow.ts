@@ -31,3 +31,17 @@ export type validateNarrowTuple<
     ":",
     distributable<Validator<inferDefinition<narrowedDef, scope, scope, input>>>
 ]
+
+export type ValidatorBuilder<scope extends Dict = {}> = <
+    def,
+    validator extends Validator<inferDefinition<def, scope, scope, false>>
+>(
+    def: validateDefinition<def, scope, false>,
+    validator: validator
+) => [def, ":", validator]
+
+export const validate: ValidatorBuilder = (def, validator) => [
+    def as any,
+    ":",
+    validator
+]
