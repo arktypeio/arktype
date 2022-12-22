@@ -3,7 +3,7 @@ import type { Dict } from "../../utils/generics.js"
 import { composeIntersection, empty, equal } from "../compose.js"
 import { nodeIntersection } from "../intersection.js"
 import type { TraversalNode, TypeNode } from "../node.js"
-import { flattenNode } from "../node.js"
+import { compileNode } from "../node.js"
 import type { PredicateContext } from "../predicate.js"
 import type { FlattenAndPushRule } from "./rules.js"
 
@@ -21,7 +21,7 @@ export type TraversalSubdomainRule =
     | ["Set", TraversalNode]
     | ["Map", TraversalNode, TraversalNode]
 
-export const flattenSubdomain: FlattenAndPushRule<SubdomainRule> = (
+export const compileSubdomain: FlattenAndPushRule<SubdomainRule> = (
     entries,
     rule,
     scope
@@ -29,11 +29,11 @@ export const flattenSubdomain: FlattenAndPushRule<SubdomainRule> = (
     if (typeof rule === "string") {
         entries.push(["subdomain", rule])
     } else {
-        const flattened: [Subdomain, ...TraversalNode[]] = [rule[0]]
+        const compiled: [Subdomain, ...TraversalNode[]] = [rule[0]]
         for (let i = 1; i < rule.length; i++) {
-            flattened.push(flattenNode(rule[i], scope))
+            compiled.push(compileNode(rule[i], scope))
         }
-        entries.push(["subdomain", flattened as TraversalSubdomainRule])
+        entries.push(["subdomain", compiled as TraversalSubdomainRule])
     }
 }
 

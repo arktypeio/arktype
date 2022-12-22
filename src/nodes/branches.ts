@@ -8,17 +8,17 @@ import type { Condition, Predicate, PredicateComparison } from "./predicate.js"
 
 export const isBranchComparison = (
     comparison: PredicateComparison
-): comparison is BranchComparison =>
-    (comparison as BranchComparison)?.lConditions !== undefined
+): comparison is BranchesComparison =>
+    (comparison as BranchesComparison)?.lConditions !== undefined
 
 export type Branches = readonly Condition[]
 
-export type BranchComparison = {
+export type BranchesComparison = {
     lConditions: Branches
     rConditions: Branches
     lSubconditionsOfR: number[]
     rSubconditionsOfL: number[]
-    equalPairs: [lIndex: number, rIndex: number][]
+    equalities: [lIndex: number, rIndex: number][]
     distinctIntersections: Branches
 }
 
@@ -27,13 +27,13 @@ export const compareBranches = (
     lConditions: Branches,
     rConditions: Branches,
     scope: ScopeRoot
-): BranchComparison => {
-    const result: BranchComparison = {
+): BranchesComparison => {
+    const result: BranchesComparison = {
         lConditions,
         rConditions,
         lSubconditionsOfR: [],
         rSubconditionsOfL: [],
-        equalPairs: [],
+        equalities: [],
         distinctIntersections: []
     }
     const pairs = rConditions.map((condition) => ({
@@ -74,7 +74,7 @@ export const compareBranches = (
                         return null
                     case equal:
                         // Combination of l and r subtype cases.
-                        result.equalPairs.push([lIndex, rIndex])
+                        result.equalities.push([lIndex, rIndex])
                         lImpliesR = true
                         rPairs.distinct = null
                         return null

@@ -7,7 +7,7 @@ import {
 } from "../compose.js"
 import { nodeIntersection } from "../intersection.js"
 import type { TraversalNode, TypeNode } from "../node.js"
-import { flattenNode } from "../node.js"
+import { compileNode } from "../node.js"
 import type { PredicateContext } from "../predicate.js"
 import type { FlattenAndPushRule } from "./rules.js"
 
@@ -77,7 +77,7 @@ export const propsIntersection = composeIntersection<
     )
 )
 
-export const flattenProps: FlattenAndPushRule<PropsRule> = (
+export const compileProps: FlattenAndPushRule<PropsRule> = (
     entries,
     props,
     scope
@@ -87,9 +87,9 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
     for (const k in props) {
         const prop = props[k]
         if (isOptional(prop)) {
-            optionalProps.push([k, flattenNode(prop[1], scope)])
+            optionalProps.push([k, compileNode(prop[1], scope)])
         } else {
-            requiredProps.push([k, flattenNode(prop, scope)])
+            requiredProps.push([k, compileNode(prop, scope)])
         }
     }
     if (requiredProps.length) {

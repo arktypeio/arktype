@@ -27,7 +27,7 @@ export const predicateIntersection: KeyReducerFn<
     }
     return collapseIfSingleton([
         ...comparison.distinctIntersections,
-        ...comparison.equalPairs.map(
+        ...comparison.equalities.map(
             (indices) => comparison.lConditions[indices[0]]
         ),
         ...comparison.lSubconditionsOfR.map(

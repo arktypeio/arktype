@@ -38,14 +38,14 @@ export const predicateUnion: KeyReducerFn<Required<TypeSet>, ScopeRoot> = (
         ...comparison.lConditions.filter(
             (_, lIndex) =>
                 !comparison.lSubconditionsOfR.includes(lIndex) &&
-                !comparison.equalPairs.some(
+                !comparison.equalities.some(
                     (indexPair) => indexPair[0] === lIndex
                 )
         ),
         ...comparison.rConditions.filter(
             (_, rIndex) =>
                 !comparison.rSubconditionsOfL.includes(rIndex) &&
-                !comparison.equalPairs.some(
+                !comparison.equalities.some(
                     (indexPair) => indexPair[1] === rIndex
                 )
         )

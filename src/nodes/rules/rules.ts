@@ -10,12 +10,12 @@ import type {
     TraversalOptionalProps,
     TraversalRequiredProps
 } from "./props.js"
-import { flattenProps, propsIntersection } from "./props.js"
+import { compileProps, propsIntersection } from "./props.js"
 import type { Range } from "./range.js"
 import { rangeIntersection } from "./range.js"
 import { getRegex, regexIntersection } from "./regex.js"
 import type { SubdomainRule, TraversalSubdomainRule } from "./subdomain.js"
-import { flattenSubdomain, subdomainIntersection } from "./subdomain.js"
+import { compileSubdomain, subdomainIntersection } from "./subdomain.js"
 
 export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
     readonly subdomain?: SubdomainRule<scope>
@@ -81,10 +81,10 @@ export type FlattenAndPushRule<t> = (
     scope: ScopeRoot
 ) => void
 
-const flattenAndPushMap: {
+const ruleCompilers: {
     [k in keyof Rules]-?: FlattenAndPushRule<Rules[k] & {}>
 } = {
-    subdomain: flattenSubdomain,
+    subdomain: compileSubdomain,
     regex: (entries, rule) => {
         if (typeof rule === "string") {
             entries.push(["regex", getRegex(rule)])
@@ -100,7 +100,7 @@ const flattenAndPushMap: {
     range: (entries, rule) => {
         entries.push(["range", rule])
     },
-    props: flattenProps,
+    props: compileProps,
     validator: (entries, rule) => {
         if (typeof rule === "function") {
             entries.push(["validator", rule])
@@ -126,14 +126,14 @@ const rulePrecedenceMap: { readonly [k in TraversalRuleEntry[0]]-?: number } = {
     validator: 4
 }
 
-export const flattenRules = (
+export const compileRules = (
     rules: Rules,
     scope: ScopeRoot
 ): readonly TraversalRuleEntry[] => {
     const entries: TraversalRuleEntry[] = []
     let k: keyof Rules
     for (k in rules) {
-        flattenAndPushMap[k](entries, rules[k] as any, scope)
+        ruleCompilers[k](entries, rules[k] as any, scope)
     }
     return entries.sort(
         (l, r) => rulePrecedenceMap[l[0]] - rulePrecedenceMap[r[0]]

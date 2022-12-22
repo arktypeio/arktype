@@ -4,13 +4,13 @@ import type { Domain, inferDomain } from "../utils/domains.js"
 import { hasSubdomain } from "../utils/domains.js"
 import type { CollapsibleList, Dict } from "../utils/generics.js"
 import { listFrom } from "../utils/generics.js"
-import type { BranchComparison } from "./branches.js"
+import type { BranchesComparison } from "./branches.js"
 import { compareBranches } from "./branches.js"
 import type { SetOperationResult } from "./compose.js"
 import { empty, equal } from "./compose.js"
 import type { Identifier } from "./node.js"
 import type { RuleSet, TraversalRuleEntry } from "./rules/rules.js"
-import { flattenRules, rulesIntersection } from "./rules/rules.js"
+import { compileRules, rulesIntersection } from "./rules/rules.js"
 import { isExactValuePredicate, resolvePredicateIfIdentifier } from "./utils.js"
 
 export type Predicate<
@@ -22,7 +22,7 @@ export type TraversalPredicate = TraversalCondition | [TraversalBranchesEntry]
 
 export type TraversalBranchesEntry = ["branches", readonly TraversalCondition[]]
 
-export const flattenPredicate = (
+export const compilePredicate = (
     domain: Domain,
     predicate: Predicate,
     scope: ScopeRoot
@@ -40,7 +40,7 @@ export const flattenPredicate = (
         } else if (isExactValuePredicate(condition)) {
             flatBranches.push([["value", condition.value]])
         } else {
-            flatBranches.push(flattenRules(condition, scope))
+            flatBranches.push(compileRules(condition, scope))
         }
     }
     return flatBranches.length === 1
@@ -80,7 +80,7 @@ export type ResolvedPredicate<
 
 export type PredicateComparison =
     | SetOperationResult<Predicate>
-    | BranchComparison
+    | BranchesComparison
 
 export const comparePredicates = (
     domain: Domain,
@@ -123,19 +123,19 @@ export const comparePredicates = (
         scope
     )
     if (
-        comparison.equalPairs.length === lComparisons.length &&
-        comparison.equalPairs.length === rComparisons.length
+        comparison.equalities.length === lComparisons.length &&
+        comparison.equalities.length === rComparisons.length
     ) {
         return equal
     }
     if (
-        comparison.lSubconditionsOfR.length + comparison.equalPairs.length ===
+        comparison.lSubconditionsOfR.length + comparison.equalities.length ===
         lComparisons.length
     ) {
         return l
     }
     if (
-        comparison.rSubconditionsOfL.length + comparison.equalPairs.length ===
+        comparison.rSubconditionsOfL.length + comparison.equalities.length ===
         rComparisons.length
     ) {
         return r

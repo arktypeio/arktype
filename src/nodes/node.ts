@@ -8,7 +8,7 @@ import type {
     Predicate,
     TraversalPredicate as TraversalPredicate
 } from "./predicate.js"
-import { flattenPredicate } from "./predicate.js"
+import { compilePredicate } from "./predicate.js"
 import type { TraversalSubdomainRule as TraversalSubdomainRule } from "./rules/subdomain.js"
 import { resolveIfIdentifier } from "./utils.js"
 
@@ -56,8 +56,7 @@ export type TraversalTypeSet = {
     readonly [domain in Domain]?: TraversalPredicate
 }
 
-// TODO: flatten=>compile
-export const flattenNode = (
+export const compileNode = (
     node: TypeNode,
     scope: ScopeRoot
 ): TraversalNode => {
@@ -69,25 +68,25 @@ export const flattenNode = (
         if (predicate === true) {
             return domain
         }
-        const flatPredicate = flattenPredicate(domain, predicate, scope)
+        const flatPredicate = compilePredicate(domain, predicate, scope)
         return hasImpliedDomain(flatPredicate)
             ? flatPredicate
             : [["domain", domain], ...flatPredicate]
     }
     const result: mutable<TraversalTypeSet> = {}
     for (const domain of domains) {
-        result[domain] = flattenPredicate(domain, resolution[domain]!, scope)
+        result[domain] = compilePredicate(domain, resolution[domain]!, scope)
     }
     return [["domains", result]]
 }
 
-export const flattenNodes = <nodes extends { readonly [k in string]: TypeSet }>(
+export const compileNodes = <nodes extends { readonly [k in string]: TypeSet }>(
     nodes: nodes,
     scope: ScopeRoot
 ) => {
     const result = {} as Record<keyof nodes, TraversalNode>
     for (const name in nodes) {
-        result[name] = flattenNode(nodes[name], scope)
+        result[name] = compileNode(nodes[name], scope)
     }
     return result
 }

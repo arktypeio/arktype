@@ -1,6 +1,6 @@
 import { flatKeywords, keywords } from "./nodes/keywords.js"
 import type { TraversalNode, TypeNode, TypeSet } from "./nodes/node.js"
-import { flattenNode } from "./nodes/node.js"
+import { compileNode } from "./nodes/node.js"
 import type {
     ResolvedPredicate,
     TraversalPredicate
@@ -24,7 +24,7 @@ const rawScope = (aliases: Dict, config: Config = {}) => {
     const types: Scope<Dict> = { $: root as any }
     for (const name in aliases) {
         const node = root.resolve(name)
-        types[name] = new ArkType(node, flattenNode(node, root), config, types)
+        types[name] = new ArkType(node, compileNode(node, root), config, types)
     }
     return types
 }
@@ -130,7 +130,7 @@ export class ScopeRoot<inferred extends Dict = Dict> {
             root = this.resolveRecurse(root, seen)
         }
         this.roots[name as keyof inferred] = root as TypeSet<inferred>
-        this.flatRoots[name as keyof inferred] = flattenNode(
+        this.flatRoots[name as keyof inferred] = compileNode(
             root,
             this as ScopeRoot
         )
