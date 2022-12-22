@@ -20,7 +20,7 @@ const rawTypeFn: DynamicTypeFn = (
         parseDefinition(definition, scope.$),
         scope.$
     )
-    return new ArkType(node, compileNode(node, scope.$), config, scope as any)
+    return new Type(node, compileNode(node, scope.$), config, scope as any)
 }
 
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
@@ -33,25 +33,25 @@ export type InferredTypeFn = <definition, scope extends Dict = {}>(
 ) => isTopType<definition> extends true
     ? never
     : definition extends validateDefinition<definition, scope, false>
-    ? inferRoot<
+    ? inferType<
           inferDefinition<definition, scope, {}, true>,
           inferDefinition<definition, scope, {}, false>
       >
     : never
 
-type DynamicTypeFn = (definition: unknown, options?: Config<Dict>) => ArkType
+type DynamicTypeFn = (definition: unknown, options?: Config<Dict>) => Type
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
-export type inferRoot<i, o> = equals<i, o> extends true
-    ? ArkType<o>
-    : ArkType<(io: i) => o>
+export type inferType<input, output> = equals<input, output> extends true
+    ? Type<output>
+    : Type<(In: input) => output>
 
 type In<T> = T extends (_: infer input) => unknown ? input : T
 
 type Out<T> = T extends (_: any) => infer output ? output : T
 
-export class ArkType<T = unknown> {
+export class Type<T = unknown> {
     constructor(
         public root: TypeSet,
         public flat: TraversalNode,

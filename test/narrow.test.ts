@@ -48,4 +48,12 @@ describe("narrow", () => {
             ])
         }).type.errors("Type 'boolean[]' is not assignable to type 'string[]'.")
     })
+    test.skip("functional inference in tuple", () => {
+        // TODO: https://github.com/arktypeio/arktype/issues/565
+        // Nesting a tuple expression requiring functional inference in a tuple
+        // like this currently breaks validation. This is likely a convoluted TS
+        // bug, as the equivalent form in an object literal is correctly inferred.
+        // @ts-expect-error
+        type([["boolean", ":", (b) => b === true]]).infer
+    })
 })

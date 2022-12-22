@@ -9,7 +9,7 @@ import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
 import type { Config } from "./type.js"
-import { ArkType } from "./type.js"
+import { Type } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { Domain } from "./utils/domains.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
@@ -24,7 +24,7 @@ const rawScope = (aliases: Dict, config: Config = {}) => {
     const types: Scope<Dict> = { $: root as any }
     for (const name in aliases) {
         const node = root.resolve(name)
-        types[name] = new ArkType(node, compileNode(node, root), config, types)
+        types[name] = new Type(node, compileNode(node, root), config, types)
     }
     return types
 }
@@ -63,7 +63,7 @@ export type Scope<inferred extends Dict> = {
 export type DynamicScope = Scope<Dict>
 
 type inferredScopeToArktypes<inferred> = {
-    [name in keyof inferred]: ArkType<inferred[name]>
+    [name in keyof inferred]: Type<inferred[name]>
 }
 
 // TODO: decide if parsing primarily managed through scope or only resolution/caching
