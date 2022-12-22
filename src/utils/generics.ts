@@ -138,6 +138,8 @@ export type error<message extends string = string> = `!${message}`
 
 export type stringKeyOf<t> = keyof t & string
 
+export type numberKeyOf<t> = keyof t & number
+
 export type RegexLiteral<expression extends string = string> = `/${expression}/`
 
 export type autocompleteString<suggestions extends string> =

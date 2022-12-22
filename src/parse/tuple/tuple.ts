@@ -3,6 +3,7 @@ import { intersection } from "../../nodes/intersection.js"
 import type { TypeNode } from "../../nodes/node.js"
 import { union } from "../../nodes/union.js"
 import type { ScopeRoot } from "../../scope.js"
+import { type } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type {
     conform,
@@ -41,13 +42,26 @@ export type validateTupleExpression<
     def extends UnknownTupleExpression,
     scope extends Dict,
     input extends boolean
+> = conformValidatedTupleExpression<
+    def,
+    parseTupleExpression<def, scope, input>
+>
+
+export type conformValidatedTupleExpression<
+    def extends UnknownTupleExpression,
+    parsed
 > = {
-    [i in keyof parseTupleExpression<def, scope, input>]: conform<
-        // @ts-expect-error
-        def[i],
-        parseTupleExpression<def, scope, input>[i]
-    >
+    // This did do something & (number | `${number}`)
+    [i in keyof parsed]: parsed[i] extends Function
+        ? parsed[i]
+        : conform<
+              // @ts-expect-error
+              def[i],
+              parsed[i]
+          >
 }
+
+// type([["string", ":", (s) => true]])
 
 type parseTupleExpression<
     def extends UnknownTupleExpression,
@@ -152,4 +166,4 @@ const isTupleExpression = (def: List): def is UnknownTupleExpression =>
 
 export type UnknownTupleExpression<
     token extends TupleExpressionToken = TupleExpressionToken
-> = readonly [unknown, token, ...unknown[]]
+> = [unknown, token, ...unknown[]]

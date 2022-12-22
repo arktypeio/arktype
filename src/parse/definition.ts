@@ -5,7 +5,8 @@ import type {
     Domain,
     domainOf,
     ObjectSubdomain,
-    Primitive
+    Primitive,
+    Subdomain
 } from "../utils/domains.js"
 import { subdomainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
@@ -92,13 +93,10 @@ export type buildUninferableDefinitionMessage<
 > =
     `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
 
-export const buildBadDefinitionTypeMessage = <
-    actual extends Domain | ObjectSubdomain
->(
+export const buildBadDefinitionTypeMessage = <actual extends Subdomain>(
     actual: actual
 ): buildBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
-export type buildBadDefinitionTypeMessage<
-    actual extends Domain | ObjectSubdomain
-> = `Type definitions must be strings or objects (was ${actual})`
+export type buildBadDefinitionTypeMessage<actual extends Subdomain> =
+    `Type definitions must be strings or objects (was ${actual})`

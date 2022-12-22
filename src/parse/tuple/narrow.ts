@@ -26,7 +26,7 @@ export type validateNarrowTuple<
     narrowedDef,
     scope extends Dict,
     input extends boolean
-> = readonly [
+> = [
     validateDefinition<narrowedDef, scope, input>,
     ":",
     distributable<Validator<inferDefinition<narrowedDef, scope, scope, input>>>

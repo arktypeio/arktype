@@ -15,7 +15,6 @@ describe("morph", () => {
             "'zero'|'one'|boolean",
             "=>",
             "0|1",
-            // TODO: Fix inference here for TS 5.0
             {
                 boolean: (b) => (b ? 1 : 0),
                 string: (s) => validateInferredAsZeroOrOne(s)
