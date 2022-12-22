@@ -1,12 +1,6 @@
 import { intersection } from "../../nodes/intersection.js"
 import type { TypeSet } from "../../nodes/node.js"
-import { type } from "../../type.js"
-import type {
-    Dict,
-    evaluate,
-    mutable,
-    NonEmptyList
-} from "../../utils/generics.js"
+import type { Dict, mutable, NonEmptyList } from "../../utils/generics.js"
 import type { inferDefinition, validateDefinition } from "../definition.js"
 import { parseDefinition } from "../definition.js"
 import type { TupleExpressionParser } from "./tuple.js"
