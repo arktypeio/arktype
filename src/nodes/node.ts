@@ -1,16 +1,27 @@
+import type { Morph } from "../parse/tuple.js"
 import type { ScopeRoot } from "../scope.js"
 import type { Domain } from "../utils/domains.js"
-import type { Dict, mutable, stringKeyOf } from "../utils/generics.js"
+import type { Dict, mutable } from "../utils/generics.js"
 import { keysOf } from "../utils/generics.js"
 import type { Keyword } from "./keywords.js"
 import type {
     ExactValueEntry,
     Predicate,
-    TraversalPredicate as TraversalPredicate
+    TraversalPredicate
 } from "./predicate.js"
 import { compilePredicate } from "./predicate.js"
-import type { TraversalSubdomainRule as TraversalSubdomainRule } from "./rules/subdomain.js"
+import type { TraversalSubdomainRule } from "./rules/subdomain.js"
 import { resolveIfIdentifier } from "./utils.js"
+
+export type Node<scope extends Dict = Dict> = MorphNode<scope> | TypeNode<scope>
+
+// TODO: intratype-morph
+export type MorphNode<scope extends Dict = Dict> = [
+    TypeNode<scope>,
+    "=>",
+    TypeNode<scope>,
+    Morph
+]
 
 export type TypeNode<scope extends Dict = Dict> =
     | Identifier<scope>
@@ -23,7 +34,7 @@ export type TypeSet<scope extends Dict = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, scope>
 }
 
-export type Identifier<scope extends Dict = Dict> = Keyword | stringKeyOf<scope>
+export type Identifier<scope extends Dict = Dict> = Keyword | keyof scope
 
 export type TraversalNode =
     | Domain

@@ -133,21 +133,12 @@ export type stringKeyOf<t> = keyof t & string
 
 export type RegexLiteral<expression extends string = string> = `/${expression}/`
 
-/** Either:
- * A, with all properties of B as never
- * OR
- * B, with all properties of A as never
- **/
-export type xor<a, b> =
-    | evaluate<a & { [k in keyof b]?: never }>
-    | evaluate<b & { [k in keyof a]?: never }>
-
 export type autocompleteString<suggestions extends string> =
     | suggestions
     | (string & {})
 
 export type Dict = {
-    readonly [key in string]: unknown
+    readonly [k in string]: unknown
 }
 
 export type List = readonly unknown[]

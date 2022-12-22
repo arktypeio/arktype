@@ -98,7 +98,7 @@ export type MorphImplementation<input, output> =
     | Morph<input, output>
     | DistributedMorph<input, output>
 
-export type Morph<input, output> = (data: input) => output
+export type Morph<input = unknown, output = unknown> = (data: input) => output
 
 export type DistributedMorph<input = unknown, output = unknown> = evaluate<{
     [domain in domainOf<input>]?: Morph<
