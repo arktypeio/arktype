@@ -1,3 +1,5 @@
+import { intersection } from "../../nodes/intersection.js"
+import { TypeSet } from "../../nodes/node.js"
 import type { Dict, mutable, NonEmptyList } from "../../utils/generics.js"
 import type { inferDefinition, validateDefinition } from "../definition.js"
 import { parseDefinition } from "../definition.js"

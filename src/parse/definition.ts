@@ -87,8 +87,6 @@ export type validateDefinition<
           [k in keyof def]: validateDefinition<def[k], scope, input>
       }>
 
-type(["string", ":", (s) => true])
-
 export type buildUninferableDefinitionMessage<
     typeName extends "any" | "unknown"
 > =
