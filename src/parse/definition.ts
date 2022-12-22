@@ -1,16 +1,10 @@
 import type { TypeNode } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
-import { type } from "../type.js"
-import type {
-    Domain,
-    domainOf,
-    ObjectSubdomain,
-    Primitive,
-    Subdomain
-} from "../utils/domains.js"
+import type { Primitive, Subdomain, domainOf } from "../utils/domains.js"
 import { subdomainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
+    conform,
     Dict,
     evaluate,
     isAny,
@@ -71,7 +65,7 @@ export type validateDefinition<
           isAny<def> extends true ? "any" : "unknown"
       >
     : def extends []
-    ? def
+    ? []
     : def extends string
     ? validateString<def, scope, input>
     : def extends UnknownTupleExpression
@@ -80,8 +74,6 @@ export type validateDefinition<
     ? def
     : def extends Primitive
     ? buildBadDefinitionTypeMessage<domainOf<def>>
-    : def extends RegExp
-    ? def
     : def extends Function
     ? buildBadDefinitionTypeMessage<"Function">
     : evaluate<{

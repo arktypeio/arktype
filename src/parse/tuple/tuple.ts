@@ -49,19 +49,12 @@ export type validateTupleExpression<
 
 export type conformValidatedTupleExpression<
     def extends UnknownTupleExpression,
-    parsed
+    parsed extends List
 > = {
-    // This did do something & (number | `${number}`)
-    [i in keyof parsed]: parsed[i] extends Function
-        ? parsed[i]
-        : conform<
-              // @ts-expect-error
-              def[i],
-              parsed[i]
-          >
+    [i in keyof parsed]: i extends keyof def
+        ? conform<def[i], parsed[i]>
+        : parsed[i]
 }
-
-// type([["string", ":", (s) => true]])
 
 type parseTupleExpression<
     def extends UnknownTupleExpression,
@@ -75,7 +68,7 @@ type parseTupleExpression<
     ? validateMorphTuple<def[0], def[2], scope, input>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
-        ? error<buildMissingRightOperandMessage<def[1], "">>
+        ? [def[0], error<buildMissingRightOperandMessage<def[1], "">>]
         : [
               validateDefinition<def[0], scope, input>,
               def[1],
@@ -83,7 +76,7 @@ type parseTupleExpression<
           ]
     : def[1] extends "[]"
     ? [validateDefinition<def[0], scope, input>, "[]"]
-    : error<`Unexpected tuple expression token ${def[1]}`>
+    : never
 
 export type inferTuple<
     def extends List,

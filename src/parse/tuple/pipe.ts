@@ -41,17 +41,32 @@ export type validatePipeTuple<
 
 export type Pipe<T = any> = (In: T) => T
 
-// export type PipeFn = <def, scope extends Dict = {}>(
-//     ...args: validatePipeTuple<def, scope, false>
-// ) => evaluate<validatePipeTuple<def, scope, false>>
+export type PipeFn = <
+    def,
+    pipes extends NonEmptyList<
+        distributable<Pipe<inferDefinition<def, scope, scope, false>>>
+    >,
+    scope extends Dict = {}
+>(
+    def: validateDefinition<def, scope, false>,
+    ...pipes: pipes
+) => [def, "|>", ...pipes]
 
-// export const pipe: PipeFn = (definition) => definition as any
+export const pipe: PipeFn = (def, ...pipes) => [def as any, "|>", ...pipes]
 
-// export const t = type([
+// pipe(
+//     "string",
+//     (s) => s.trim(),
+//     (s) => s + "foo"
+// )
+
+// export const t2 = type([
 //     pipe(
-//         "string",
-//         "|>",
-//         (s) => s.trim(),
-//         (s) => s + "foo"
+//         pipe(
+//             "string",
+//             (s) => s.trim(),
+//             (s) => s + "foo"
+//         ),
+//         (s) => s.trim()
 //     )
 // ])
