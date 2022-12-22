@@ -1,4 +1,4 @@
-import type { Keyword, Keywords } from "../nodes/keywords.js"
+import type { Keyword, Keywords } from "../../nodes/keywords.js"
 import type {
     Dict,
     Downcastable,
@@ -6,8 +6,8 @@ import type {
     evaluate,
     isAny,
     RegexLiteral
-} from "../utils/generics.js"
-import type { inferDefinition } from "./definition.js"
+} from "../../utils/generics.js"
+import type { inferDefinition } from "../definition.js"
 import type { StringLiteral } from "./shift/operand/enclosed.js"
 import type { Scanner } from "./shift/scanner.js"
 

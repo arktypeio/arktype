@@ -12,10 +12,10 @@ import type {
 } from "../utils/generics.js"
 import type { inferRecord } from "./record.js"
 import { parseRecord } from "./record.js"
-import type { inferString, validateString } from "./string.js"
-import { parseString } from "./string.js"
-import type { inferTuple, validateTuple } from "./tuple.js"
-import { parseTuple } from "./tuple.js"
+import type { inferString, validateString } from "./string/string.js"
+import { parseString } from "./string/string.js"
+import type { inferTuple, validateTuple } from "./tuple/tuple.js"
+import { parseTuple } from "./tuple/tuple.js"
 
 export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
     const domain = domainOf(def)

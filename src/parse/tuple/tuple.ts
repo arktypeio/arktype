@@ -1,18 +1,26 @@
-import { arrayOf } from "../nodes/generics.js"
-import { intersection } from "../nodes/intersection.js"
-import type { TypeNode, TypeSet } from "../nodes/node.js"
-import type { Validator } from "../nodes/rules/rules.js"
-import { union } from "../nodes/union.js"
-import { domainsOfNode } from "../nodes/utils.js"
-import type { ScopeRoot } from "../scope.js"
-import type { inferDomain } from "../utils/domains.js"
-import { domainOf, hasDomain, hasSubdomain } from "../utils/domains.js"
-import { throwParseError } from "../utils/errors.js"
-import type { Dict, error, evaluate, List, mutable } from "../utils/generics.js"
-import type { inferDefinition, validateDefinition } from "./definition.js"
-import { parseDefinition } from "./definition.js"
-import { buildMissingRightOperandMessage } from "./shift/operand/unenclosed.js"
-import type { Scanner } from "./shift/scanner.js"
+import { arrayOf } from "../../nodes/generics.js"
+import { intersection } from "../../nodes/intersection.js"
+import type { TypeNode, TypeSet } from "../../nodes/node.js"
+import type { Validator } from "../../nodes/rules/rules.js"
+import { union } from "../../nodes/union.js"
+import { domainsOfNode } from "../../nodes/utils.js"
+import type { ScopeRoot } from "../../scope.js"
+import type { inferDomain } from "../../utils/domains.js"
+import { domainOf, hasDomain, hasSubdomain } from "../../utils/domains.js"
+import { throwParseError } from "../../utils/errors.js"
+import type {
+    Dict,
+    error,
+    evaluate,
+    List,
+    mutable,
+    NonEmptyList,
+    UnaryFunction
+} from "../../utils/generics.js"
+import type { inferDefinition, validateDefinition } from "../definition.js"
+import { parseDefinition } from "../definition.js"
+import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
+import type { Scanner } from "../string/shift/scanner.js"
 
 export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
     if (isTupleExpression(def)) {
@@ -57,6 +65,8 @@ type validateTupleExpression<
     input extends boolean
 > = def[1] extends ":"
     ? validateNarrowTuple<def[0], scope, input>
+    : def[1] extends "|>"
+    ? validatePipeTuple<def[0], scope, input>
     : def[1] extends "=>"
     ? validateMorphTuple<def[0], def[2], scope, input>
     : def[1] extends Scanner.BranchToken
@@ -71,59 +81,15 @@ type validateTupleExpression<
     ? [validateDefinition<def[0], scope, input>, "[]"]
     : never
 
-type validateNarrowTuple<
-    constrainedDef,
-    scope extends Dict,
-    input extends boolean
-> = [
-    validateDefinition<constrainedDef, scope, input>,
-    ":",
-    ValidatorImplementation<
-        inferDefinition<constrainedDef, scope, scope, input>
-    >
-]
-
-export type ValidatorImplementation<In> =
-    | Validator<In>
-    | DistributedValidator<In>
-
-export type DistributedValidator<In> = distributeInput<In, boolean>
-
-type validateMorphTuple<
-    inputDef,
-    outputDef,
-    scope extends Dict,
-    input extends boolean
-> = [
-    validateDefinition<inputDef, scope, true>,
-    "=>",
-    validateDefinition<outputDef, scope, input>,
-    MorphImplementation<
-        inferDefinition<inputDef, scope, scope, true>,
-        inferDefinition<outputDef, scope, scope, input>
-    >
-]
-
-export type MorphImplementation<In, Out> =
-    | Morph<In, Out>
-    | DistributedMorph<In, Out>
-
-export type Morph<In, Out> = (In: In) => Out
-
-export type DistributedMorph<In, Out> = distributeInput<In, Out>
-
-export type distributeInput<In, Return> = evaluate<{
-    [domain in domainOf<In>]?: (
-        In: unknown extends In ? unknown : Extract<In, inferDomain<domain>>
-    ) => Return
-}>
-
 type inferTupleExpression<
     def extends UnknownTupleExpression,
     scope extends Dict,
     aliases,
     input extends boolean
 > = def[1] extends ":"
+    ? // TODO: try condensing inference context
+      inferDefinition<def[0], scope, aliases, input>
+    : def[1] extends "|>"
     ? inferDefinition<def[0], scope, aliases, input>
     : def[1] extends "=>"
     ? input extends true
@@ -144,8 +110,69 @@ type inferTupleExpression<
     ? inferDefinition<def[0], scope, aliases, input>[]
     : never
 
+type validateNarrowTuple<
+    narrowedDef,
+    scope extends Dict,
+    input extends boolean
+> = [
+    validateDefinition<narrowedDef, scope, input>,
+    ":",
+    distributable<Validator<inferDefinition<narrowedDef, scope, scope, input>>>
+]
+
+export type Pipe<T> = (In: T) => T
+
+type validatePipeTuple<pipedDef, scope extends Dict, input extends boolean> = [
+    validateDefinition<pipedDef, scope, input>,
+    "|>",
+    ...NonEmptyList<
+        distributable<Pipe<inferDefinition<pipedDef, scope, scope, input>>>
+    >
+]
+
+type validateMorphTuple<
+    inputDef,
+    outputDef,
+    scope extends Dict,
+    input extends boolean
+> = [
+    validateDefinition<inputDef, scope, true>,
+    "=>",
+    validateDefinition<outputDef, scope, input>,
+    // TODO: Nested morphs. Should input be recursive? It would've already been transformed.
+    distributable<
+        Morph<
+            inferDefinition<inputDef, scope, scope, true>,
+            inferDefinition<outputDef, scope, scope, input>
+        >
+    >
+]
+
+export type Morph<In, Out> = (In: In) => Out
+
+export type distributeInput<In, Return> = evaluate<{
+    [domain in domainOf<In>]?: (
+        In: unknown extends In ? unknown : Extract<In, inferDomain<domain>>
+    ) => Return
+}>
+
+export type distributable<f extends UnaryFunction> = f | distributeFunction<f>
+
+type distributeFunction<f extends UnaryFunction> = f extends UnaryFunction<
+    infer In,
+    infer Return
+>
+    ? evaluate<{
+          [domain in domainOf<In>]?: (
+              In: unknown extends In
+                  ? unknown
+                  : Extract<In, inferDomain<domain>>
+          ) => Return
+      }>
+    : never
+
 // TODO: Add default value
-export type TupleExpressionToken = "&" | "|" | "[]" | ":" | "=>"
+export type TupleExpressionToken = "&" | "|" | "[]" | ":" | "=>" | "|>"
 
 type TupleExpressionParser<token extends TupleExpressionToken> = (
     def: UnknownTupleExpression<token>,
@@ -222,7 +249,8 @@ const tupleExpressionParsers: {
     "&": parseBranchTuple,
     "[]": parseArrayTuple,
     ":": parseNarrowTuple,
-    "=>": parseMorphTuple
+    "=>": parseMorphTuple,
+    "|>": () => "never"
 }
 
 const parseTupleExpression = (

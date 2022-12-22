@@ -1,15 +1,15 @@
-import type { Keyword } from "../../../nodes/keywords.js"
-import type { TypeNode } from "../../../nodes/node.js"
-import type { error } from "../../../utils/generics.js"
+import type { Keyword } from "../../../../nodes/keywords.js"
+import type { TypeNode } from "../../../../nodes/node.js"
+import type { error } from "../../../../utils/generics.js"
 import type {
     BigintLiteral,
     buildMalformedNumericLiteralMessage,
     NumberLiteral
-} from "../../../utils/numericLiterals.js"
+} from "../../../../utils/numericLiterals.js"
 import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
-} from "../../../utils/numericLiterals.js"
+} from "../../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"

@@ -60,6 +60,11 @@ type topTypeIsUnknown<t> = (t extends {} ? true : false) extends false
     ? true
     : false
 
+export type UnaryFunction<In = any, Return = unknown> = (In: In) => Return
+
+// TODO: Type Casing?
+export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
+
 export type conform<t, base> = t extends base ? t : base
 
 export const isKeyOf = <k extends string | number, obj extends object>(

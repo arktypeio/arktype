@@ -2,11 +2,11 @@ import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
 import type { TypeNode } from "../exports.js"
 import { type } from "../exports.js"
-import { buildUnterminatedEnclosedMessage } from "../src/parse/shift/operand/enclosed.js"
+import { buildUnterminatedEnclosedMessage } from "../src/parse/string/shift/operand/enclosed.js"
 import {
     buildExpressionExpectedMessage,
     buildUnresolvableMessage
-} from "../src/parse/shift/operand/unenclosed.js"
+} from "../src/parse/string/shift/operand/unenclosed.js"
 
 describe("string", () => {
     test("errors on empty string", () => {

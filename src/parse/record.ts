@@ -4,7 +4,7 @@ import type { ScopeRoot } from "../scope.js"
 import type { Dict, evaluate, mutable } from "../utils/generics.js"
 import type { inferDefinition } from "./definition.js"
 import { parseDefinition } from "./definition.js"
-import { Scanner } from "./shift/scanner.js"
+import { Scanner } from "./string/shift/scanner.js"
 
 export const parseRecord = (def: Dict, scope: ScopeRoot): TypeNode => {
     const props: mutable<PropsRule> = {}

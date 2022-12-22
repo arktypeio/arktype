@@ -4,7 +4,7 @@ import { type } from "../exports.js"
 import {
     buildIndivisibleMessage,
     buildUnboundableMessage
-} from "../src/parse/ast.js"
+} from "../src/parse/string/ast.js"
 
 describe("semantics", () => {
     describe("bound", () => {

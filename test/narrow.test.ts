@@ -1,7 +1,6 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
 import { type } from "../exports.js"
-import type { DistributedValidator } from "../src/parse/tuple.js"
 
 describe("narrow", () => {
     test("functional", () => {
@@ -22,9 +21,9 @@ describe("narrow", () => {
     })
     test("distributed", () => {
         const distributedBlacklist = {
-            string: (s) => s !== "drop tables",
-            number: (n) => !Number.isNaN(n)
-        } satisfies DistributedValidator<unknown>
+            string: (s: unknown) => s !== "drop tables",
+            number: (n: unknown) => !Number.isNaN(n)
+        }
         const t = type(["string|number", ":", distributedBlacklist])
         attest(t.infer).typed as string | number
         attest(t.root).snap({

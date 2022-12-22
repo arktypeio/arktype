@@ -1,7 +1,7 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
 import { type } from "../exports.js"
-import { incompleteArrayTokenMessage } from "../src/parse/shift/operator/operator.js"
+import { incompleteArrayTokenMessage } from "../src/parse/string/shift/operator/operator.js"
 
 describe("parse array", () => {
     test("parse", () => {

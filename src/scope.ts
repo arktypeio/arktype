@@ -7,7 +7,7 @@ import type {
 } from "./nodes/predicate.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
-import { fullStringParse, maybeNaiveParse } from "./parse/string.js"
+import { fullStringParse, maybeNaiveParse } from "./parse/string/string.js"
 import type { Config } from "./type.js"
 import { Type } from "./type.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"

@@ -1,11 +1,11 @@
-import type { Bound, Range } from "../../../nodes/rules/range.js"
+import type { Bound, Range } from "../../../../nodes/rules/range.js"
 import {
     buildEmptyRangeMessage,
     compareStrictness
-} from "../../../nodes/rules/range.js"
-import type { error } from "../../../utils/generics.js"
-import { isKeyOf } from "../../../utils/generics.js"
-import { tryParseWellFormedNumber } from "../../../utils/numericLiterals.js"
+} from "../../../../nodes/rules/range.js"
+import type { error } from "../../../../utils/generics.js"
+import { isKeyOf } from "../../../../utils/generics.js"
+import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { buildUnpairableComparatorMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"

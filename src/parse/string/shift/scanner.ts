@@ -1,4 +1,4 @@
-import type { Dict } from "../../utils/generics.js"
+import type { Dict } from "../../../utils/generics.js"
 
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]

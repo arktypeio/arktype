@@ -1,7 +1,7 @@
 import { describe, test } from "mocha"
 import { attest } from "../dev/attest/exports.js"
 import { scope, type } from "../exports.js"
-import { buildUnresolvableMessage } from "../src/parse/shift/operand/unenclosed.js"
+import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.js"
 import { buildMalformedNumericLiteralMessage } from "../src/utils/numericLiterals.js"
 
 describe("parse unenclosed", () => {

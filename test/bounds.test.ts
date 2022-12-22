@@ -6,8 +6,8 @@ import {
     buildMultipleLeftBoundsMessage,
     buildOpenRangeMessage,
     buildUnpairableComparatorMessage
-} from "../src/parse/reduce/shared.js"
-import { singleEqualsMessage } from "../src/parse/shift/operator/bounds.js"
+} from "../src/parse/string/reduce/shared.js"
+import { singleEqualsMessage } from "../src/parse/string/shift/operator/bounds.js"
 
 describe("bound", () => {
     describe("parse", () => {
