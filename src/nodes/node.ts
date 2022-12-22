@@ -21,7 +21,7 @@ export type Node<scope extends Dict = Dict> =
 
 export type Traits<scope extends Dict = Dict> = {
     input: TypeNode<scope>
-    morph: Morph
+    morph: Morph<unknown, unknown>
 }
 
 export type TypeNode<scope extends Dict = Dict> =

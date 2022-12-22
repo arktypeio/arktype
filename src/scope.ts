@@ -66,8 +66,6 @@ type inferredScopeToArktypes<inferred> = {
     [name in keyof inferred]: Type<inferred[name]>
 }
 
-// TODO: decide if parsing primarily managed through scope or only resolution/caching
-
 export class ScopeRoot<inferred extends Dict = Dict> {
     roots = {} as { [k in keyof inferred]: TypeSet<inferred> }
     flatRoots = {} as { [k in keyof inferred]: TraversalNode }
@@ -201,6 +199,7 @@ type validateAliases<aliases, scope extends Dict> = evaluate<{
     [name in keyof aliases]: validateDefinition<aliases[name], scope, false>
 }>
 
+// TODO: Figure out how this works with IO nodes.
 type inferAliases<aliases, scope extends Dict> = evaluate<{
     [name in keyof aliases]: inferDefinition<
         aliases[name],

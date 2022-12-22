@@ -83,15 +83,9 @@ type validateNarrowTuple<
     >
 ]
 
-export type DistributedValidator<data = unknown> = evaluate<{
-    [domain in domainOf<data>]?: Validator<
-        unknown extends data ? unknown : Extract<data, inferDomain<domain>>
-    >
-}>
-
-export type ValidatorImplementation<data> =
-    | Validator<data>
-    | DistributedValidator<data>
+export type ValidatorImplementation<In> =
+    | Validator<In>
+    | distributeInput<In, boolean>
 
 type validateMorphTuple<
     inputDef,
@@ -108,20 +102,19 @@ type validateMorphTuple<
     >
 ]
 
-export type MorphImplementation<input, output> =
-    | Morph<input, output>
-    | DistributedMorph<input, output>
+export type MorphImplementation<In, Out> =
+    | Morph<In, Out>
+    | DistributedMorph<In, Out>
 
-export type Morph<input = unknown, output = unknown> = (data: input) => output
+export type Morph<In, Out> = (In: In) => Out
 
-export type DistributedMorph<input = unknown, output = unknown> = evaluate<{
-    [domain in domainOf<input>]?: Morph<
-        unknown extends input ? unknown : Extract<input, inferDomain<domain>>,
-        output
-    >
+export type DistributedMorph<In, Out> = distributeInput<In, Out>
+
+export type distributeInput<In, Return> = evaluate<{
+    [domain in domainOf<In>]?: (
+        In: unknown extends In ? unknown : Extract<In, inferDomain<domain>>
+    ) => Return
 }>
-
-export type MorphType<input, output> = (input: input) => output
 
 type inferTupleExpression<
     def extends UnknownTupleExpression,
@@ -149,6 +142,7 @@ type inferTupleExpression<
     ? inferDefinition<def[0], scope, aliases, input>[]
     : never
 
+// TODO: Add default value
 export type TupleExpressionToken = "&" | "|" | "[]" | ":" | "=>"
 
 type TupleExpressionParser<token extends TupleExpressionToken> = (
@@ -183,7 +177,9 @@ const parseNarrowTuple: TupleExpressionParser<":"> = (def, scope) => {
         }
     } else {
         for (const domain of domains) {
-            const domainValidator = (def[2] as DistributedValidator)[domain]
+            const domainValidator = (
+                def[2] as distributeInput<unknown, boolean>
+            )[domain]
             if (domainValidator !== undefined) {
                 if (typeof domainValidator !== "function") {
                     return throwParseError(
