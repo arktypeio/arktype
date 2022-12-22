@@ -63,13 +63,7 @@ export type validateDefinition<
     ? validateTuple<def, scope>
     : def extends Primitive
     ? buildBadDefinitionTypeMessage<domainOf<def>>
-    : // At runtime we implicitly check for other invalid object domains, so that,
-    // for example, if an Error or Map were passed as a definition, we would not
-    // try and parse it. However, that seems too niche a case to incur the type
-    // performance penalty for checking against all non Dictionary/List object
-    // domains, especially given that there would be a type error in these
-    // situations anyways (albeit a convaluted one).
-    def extends Function
+    : def extends Function
     ? buildBadDefinitionTypeMessage<"Function">
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], scope>

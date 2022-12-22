@@ -3,7 +3,6 @@ import { compileNode } from "./nodes/node.js"
 import { resolveIfIdentifier } from "./nodes/utils.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
-import type { MorphType } from "./parse/tuple.js"
 import type { DynamicScope, Scope } from "./scope.js"
 import { getRootScope } from "./scope.js"
 import { check } from "./traverse/check.js"
@@ -41,19 +40,23 @@ type DynamicTypeFn = (definition: unknown, options?: Config<Dict>) => ArkType
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
-// const t = type(["string", "=>", "number", (s) => s.length])
-
-// t.from("4")
-
-type inferInput<inferred> = inferred extends MorphType<infer input, unknown>
+export type inferInput<t> = t extends (input: infer input) => unknown
     ? input
-    : inferred
+    : t extends object
+    ? {
+          [k in keyof t]: inferInput<t[k]>
+      }
+    : t
 
-type inferOutput<inferred> = inferred extends MorphType<unknown, infer output>
+export type inferOutput<t> = t extends (input: any) => infer output
     ? output
-    : inferred
+    : t extends object
+    ? {
+          [k in keyof t]: inferOutput<t[k]>
+      }
+    : t
 
-export class ArkType<inferred = unknown> {
+export class ArkType<t = unknown> {
     constructor(
         public root: TypeSet,
         public flat: TraversalNode,
@@ -61,19 +64,19 @@ export class ArkType<inferred = unknown> {
         public scope: DynamicScope
     ) {}
 
-    get infer(): inferOutput<inferred> {
+    get infer(): inferOutput<t> {
         return chainableNoOpProxy
     }
 
     check(data: unknown) {
         return check(data, this.flat, this.scope.$)
-            ? { data: data as inferred }
+            ? { data: data as inferOutput<t> }
             : {
                   problems: new Problems({ path: "", reason: "invalid" })
               }
     }
 
-    from(data: inferInput<inferred>): inferOutput<inferred> {
+    from(data: inferInput<t>): inferOutput<t> {
         return data as any
     }
 
@@ -83,10 +86,22 @@ export class ArkType<inferred = unknown> {
             throw new Error(`FAIL`)
         }
         // result.problems?.throw()
-        return result.data as inferred
+        return result.data as inferOutput<t>
     }
 }
 
 export type Config<scope extends Dict = {}> = {
     scope?: Scope<scope>
 }
+
+// const t = type(["string", "=>", "number", (s) => s.length])
+
+// const data = t.from("5")
+
+// const zzt = type({ a: ["string", "=>", "number", (s) => s.length] })
+
+// const ff = zzt.from({ a: "5" })
+
+// const zzzt = type([["string", "=>", "number", (s) => s.length]])
+
+// const fzf = zzzt.from()
