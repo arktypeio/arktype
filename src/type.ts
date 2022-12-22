@@ -3,12 +3,15 @@ import { compileNode } from "./nodes/node.js"
 import { resolveIfIdentifier } from "./nodes/utils.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
+import { validateNarrowTuple } from "./parse/tuple/narrow.js"
+import { validatePipeTuple } from "./parse/tuple/pipe.js"
+import { TupleExpressionToken } from "./parse/tuple/tuple.js"
 import type { DynamicScope, Scope } from "./scope.js"
 import { getRootScope } from "./scope.js"
 import { check } from "./traverse/check.js"
 import { Problems } from "./traverse/problems.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { Dict, equals, isTopType } from "./utils/generics.js"
+import type { Dict, equals, evaluate, isTopType } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
@@ -38,6 +41,21 @@ export type InferredTypeFn = <definition, scope extends Dict = {}>(
           inferDefinition<definition, scope, {}, false>
       >
     : never
+
+// export type InferredDefineFn = <definition, scope extends Dict = {}>(
+//     ...args: validatePipeTuple<definition, scope, false>
+// ) => evaluate<validateNarrowTuple<definition, scope, false>>
+
+// export const define: InferredDefineFn = (definition) => definition as any
+
+// export const t = type([
+//     define(
+//         "string",
+//         "|>",
+//         (s) => s.trim(),
+//         (s) => s + "foo"
+//     )
+// ])
 
 type DynamicTypeFn = (definition: unknown, options?: Config<Dict>) => Type
 

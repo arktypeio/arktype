@@ -31,28 +31,7 @@ export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
     }
 }
 
-export type inferTuple<
-    def extends List,
-    scope extends Dict,
-    aliases,
-    input extends boolean
-> = def extends UnknownTupleExpression
-    ? inferTupleExpression<def, scope, aliases, input>
-    : {
-          [i in keyof def]: inferDefinition<def[i], scope, aliases, input>
-      }
-
-export type validateTuple<
-    def extends List,
-    scope extends Dict,
-    input extends boolean
-> = def extends UnknownTupleExpression
-    ? validateTupleExpression<def, scope, input>
-    : {
-          [i in keyof def]: validateDefinition<def[i], scope, input>
-      }
-
-type validateTupleExpression<
+export type validateTupleExpression<
     def extends UnknownTupleExpression,
     scope extends Dict,
     input extends boolean
@@ -72,7 +51,18 @@ type validateTupleExpression<
           ]
     : def[1] extends "[]"
     ? [validateDefinition<def[0], scope, input>, "[]"]
-    : never
+    : error<`Unexpected tuple expression token ${def[1]}`>
+
+export type inferTuple<
+    def extends List,
+    scope extends Dict,
+    aliases,
+    input extends boolean
+> = def extends UnknownTupleExpression
+    ? inferTupleExpression<def, scope, aliases, input>
+    : {
+          [i in keyof def]: inferDefinition<def[i], scope, aliases, input>
+      }
 
 type inferTupleExpression<
     def extends UnknownTupleExpression,
@@ -144,4 +134,4 @@ const isTupleExpression = (def: List): def is UnknownTupleExpression =>
 
 export type UnknownTupleExpression<
     token extends TupleExpressionToken = TupleExpressionToken
-> = [unknown, token, ...unknown[]]
+> = readonly [unknown, token, ...unknown[]]

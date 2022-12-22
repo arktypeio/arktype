@@ -38,7 +38,7 @@ export type validateMorphTuple<
     >
 ]
 
-export type Morph<In = any, Out = unknown> = (In: In) => Out
+export type Morph<In = unknown, Out = unknown> = (In: In) => Out
 
 const buildMalformedMorphExpressionMessage = (def: List) =>
     `Morph tuple expression must be structured as follows: [inDef, "=>", outDef, (In: inDef) => outDef ] (got ${JSON.stringify(

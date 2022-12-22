@@ -1,5 +1,6 @@
 import type { TypeNode } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
+import { type } from "../type.js"
 import type {
     Domain,
     domainOf,
@@ -19,7 +20,11 @@ import type { inferRecord } from "./record.js"
 import { parseRecord } from "./record.js"
 import type { inferString, validateString } from "./string/string.js"
 import { parseString } from "./string/string.js"
-import type { inferTuple, validateTuple } from "./tuple/tuple.js"
+import type {
+    inferTuple,
+    UnknownTupleExpression,
+    validateTupleExpression
+} from "./tuple/tuple.js"
 import { parseTuple } from "./tuple/tuple.js"
 
 export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
@@ -68,8 +73,10 @@ export type validateDefinition<
     ? def
     : def extends string
     ? validateString<def, scope, input>
-    : def extends List
-    ? validateTuple<def, scope, input>
+    : def extends UnknownTupleExpression
+    ? validateTupleExpression<def, scope, input>
+    : def extends RegExp
+    ? def
     : def extends Primitive
     ? buildBadDefinitionTypeMessage<domainOf<def>>
     : def extends RegExp
