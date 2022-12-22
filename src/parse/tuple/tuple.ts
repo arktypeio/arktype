@@ -103,7 +103,7 @@ type inferTupleExpression<
     ? inferDefinition<def[0], scope, aliases, input>[]
     : never
 
-// TODO: Add default value
+// TODO: Add default value ("="), spread ("...")
 export type TupleExpressionToken = "&" | "|" | "[]" | ":" | "=>" | "|>"
 
 export type TupleExpressionParser<token extends TupleExpressionToken> = (

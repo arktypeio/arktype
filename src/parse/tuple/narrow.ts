@@ -9,32 +9,21 @@ import type { inferDefinition, validateDefinition } from "../definition.js"
 import { parseDefinition } from "../definition.js"
 import type { TupleExpressionParser } from "./tuple.js"
 import type { distributable } from "./utils.js"
+import { entriesOfDistributableFunction } from "./utils.js"
 
 export const parseNarrowTuple: TupleExpressionParser<":"> = (def, scope) => {
     if (!hasDomain(def[2], "object")) {
         return throwParseError(buildMalformedNarrowMessage(def[2]))
     }
     const inputNode = parseDefinition(def[0], scope)
+    const distributedValidatorEntries = entriesOfDistributableFunction(
+        def[2],
+        inputNode,
+        scope
+    )
     const distributedValidatorNode: mutable<TypeSet> = {}
-    const domains = domainsOfNode(inputNode, scope)
-    if (typeof def[2] === "function") {
-        for (const domain of domains) {
-            distributedValidatorNode[domain] = { validator: def[2] }
-        }
-    } else {
-        for (const domain of domains) {
-            const domainValidator = def[2][domain]
-            if (domainValidator !== undefined) {
-                if (typeof domainValidator !== "function") {
-                    return throwParseError(
-                        buildMalformedNarrowMessage(domainValidator)
-                    )
-                }
-                distributedValidatorNode[domain] = {
-                    validator: domainValidator
-                }
-            }
-        }
+    for (const [domain, validator] of distributedValidatorEntries) {
+        distributedValidatorNode[domain] = { validator }
     }
     return intersection(inputNode, distributedValidatorNode, scope)
 }

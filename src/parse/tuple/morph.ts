@@ -1,21 +1,22 @@
-import { domainOf, hasSubdomain } from "../../utils/domains.js"
 import { throwParseError } from "../../utils/errors.js"
-import type { Dict } from "../../utils/generics.js"
+import type { Dict, List } from "../../utils/generics.js"
 import type { inferDefinition, validateDefinition } from "../definition.js"
 import { parseDefinition } from "../definition.js"
-import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
 import type { TupleExpressionParser } from "./tuple.js"
 import type { distributable } from "./utils.js"
+import { entriesOfDistributableFunction } from "./utils.js"
 
 export const parseMorphTuple: TupleExpressionParser<"=>"> = (def, scope) => {
-    if (def[2] === undefined) {
-        return throwParseError(buildMissingRightOperandMessage("=>", ""))
-    }
-    if (!hasSubdomain(def[3], "Function")) {
-        return throwParseError(buildMalformedMorphMessage(def[3]))
+    if (def.length !== 4) {
+        return throwParseError(buildMalformedMorphExpressionMessage(def))
     }
     const inputNode = parseDefinition(def[0], scope)
     const outputNode = parseDefinition(def[2], scope)
+    const distributedMorphEntries = entriesOfDistributableFunction(
+        def[3] as distributable<Morph>,
+        inputNode,
+        scope
+    )
     return outputNode
 }
 
@@ -37,7 +38,9 @@ export type validateMorphTuple<
     >
 ]
 
-export type Morph<In, Out> = (In: In) => Out
+export type Morph<In = any, Out = unknown> = (In: In) => Out
 
-const buildMalformedMorphMessage = (actual: unknown) =>
-    `Operator "=>" requires a Function at index 3 (got ${domainOf(actual)})`
+const buildMalformedMorphExpressionMessage = (def: List) =>
+    `Morph tuple expression must be structured as follows: [inDef, "=>", outDef, (In: inDef) => outDef ] (got ${JSON.stringify(
+        def
+    )})`
