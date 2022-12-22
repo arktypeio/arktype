@@ -6,6 +6,6 @@ describe("check", () => {
     test("problems", () => {
         const t = type("number%2")
         const checked = t.check(3)
-        attest(checked).snap({ data: 3 })
+        attest(checked).snap()
     })
 })
