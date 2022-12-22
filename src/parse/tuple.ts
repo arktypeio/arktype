@@ -85,7 +85,9 @@ type validateNarrowTuple<
 
 export type ValidatorImplementation<In> =
     | Validator<In>
-    | distributeInput<In, boolean>
+    | DistributedValidator<In>
+
+export type DistributedValidator<In> = distributeInput<In, boolean>
 
 type validateMorphTuple<
     inputDef,

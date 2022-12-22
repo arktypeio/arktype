@@ -24,7 +24,7 @@ describe("narrow", () => {
         const distributedBlacklist = {
             string: (s) => s !== "drop tables",
             number: (n) => !Number.isNaN(n)
-        } satisfies DistributedValidator
+        } satisfies DistributedValidator<unknown>
         const t = type(["string|number", ":", distributedBlacklist])
         attest(t.infer).typed as string | number
         attest(t.root).snap({
