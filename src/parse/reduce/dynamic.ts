@@ -1,6 +1,5 @@
+import { arrayOf } from "../../nodes/generics.js"
 import { intersection } from "../../nodes/intersection.js"
-import type { MorphName } from "../../nodes/morph.js"
-import { morph } from "../../nodes/morph.js"
 import type { TypeNode } from "../../nodes/node.js"
 import { union } from "../../nodes/union.js"
 import { isExactValue } from "../../nodes/utils.js"
@@ -75,8 +74,8 @@ export class DynamicState {
         this.root = node
     }
 
-    morphRoot(name: MorphName) {
-        this.root = morph(name, this.ejectRoot())
+    rootToArray() {
+        this.root = arrayOf(this.ejectRoot())
     }
 
     intersect(node: TypeNode) {

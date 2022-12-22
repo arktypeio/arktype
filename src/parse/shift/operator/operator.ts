@@ -13,7 +13,7 @@ export const parseOperator = (s: DynamicState): void => {
         ? s.finalize()
         : lookahead === "["
         ? s.scanner.shift() === "]"
-            ? s.morphRoot("array")
+            ? s.rootToArray()
             : s.error(incompleteArrayTokenMessage)
         : isKeyOf(lookahead, Scanner.branchTokens)
         ? s.pushRootToBranch(lookahead)

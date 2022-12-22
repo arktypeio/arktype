@@ -1,4 +1,4 @@
-import { morph } from "../nodes/morph.js"
+import { arrayOf } from "../nodes/generics.js"
 import type { TypeNode } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
 import type { Dict, error, stringKeyOf } from "../utils/generics.js"
@@ -63,7 +63,7 @@ export const maybeNaiveParse = (
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
         if (scope.isResolvable(elementDef)) {
-            return morph("array", elementDef)
+            return arrayOf(elementDef)
         }
     }
     if (scope.isResolvable(def)) {

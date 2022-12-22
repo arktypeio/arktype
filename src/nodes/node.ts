@@ -46,7 +46,8 @@ export type ImplicitDomainEntry =
 const hasImpliedDomain = (
     flatPredicate: TraversalPredicate | SingleDomainTraversalNode
 ): flatPredicate is SingleDomainTraversalNode =>
-    flatPredicate[0][0] === "subdomain" || flatPredicate[0][0] === "value"
+    flatPredicate[0] &&
+    (flatPredicate[0][0] === "subdomain" || flatPredicate[0][0] === "value")
 
 export type MultiDomainTraversalNode = [MultiDomainEntry]
 

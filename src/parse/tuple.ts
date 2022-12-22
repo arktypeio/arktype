@@ -1,5 +1,5 @@
+import { arrayOf } from "../nodes/generics.js"
 import { intersection } from "../nodes/intersection.js"
-import { morph } from "../nodes/morph.js"
 import type { TypeNode, TypeSet } from "../nodes/node.js"
 import type { Validator } from "../nodes/rules/rules.js"
 import { union } from "../nodes/union.js"
@@ -196,7 +196,7 @@ const parseMorphTuple: TupleExpressionParser<"=>"> = (def, scope) => {
 }
 
 const parseArrayTuple: TupleExpressionParser<"[]"> = (def, scope) =>
-    morph("array", parseDefinition(def[0], scope))
+    arrayOf(parseDefinition(def[0], scope))
 
 const tupleExpressionParsers: {
     [token in TupleExpressionToken]: TupleExpressionParser<token>
