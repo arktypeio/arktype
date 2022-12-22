@@ -5,7 +5,7 @@ import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import type { DynamicScope, Scope } from "./scope.js"
 import { getRootScope } from "./scope.js"
-import { check } from "./traverse/check.js"
+import { check, rootCheck } from "./traverse/check.js"
 import { Problems } from "./traverse/problems.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { Dict, isTopType } from "./utils/generics.js"
@@ -53,7 +53,8 @@ export class ArkType<inferred = unknown> {
     }
 
     check(data: unknown) {
-        return check(data, this.flat, this.scope.$)
+        //here I probably just call check and check returns the state in which I can then set data or problems
+        return rootCheck(data, this.flat, this.scope.$)
             ? { data: data as inferred }
             : {
                   problems: new Problems({ path: "", reason: "invalid" })

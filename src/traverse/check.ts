@@ -10,12 +10,13 @@ import type {
 import type { BoundableData } from "../nodes/rules/range.js"
 import { checkRange } from "../nodes/rules/range.js"
 import type { TraversalRuleEntry } from "../nodes/rules/rules.js"
+import { rulePrecedenceMap } from "../nodes/rules/rules.js"
 import type { ScopeRoot } from "../scope.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf, subdomainOf } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dict, evaluate, extend, List } from "../utils/generics.js"
-import type { Problems } from "./problems.js"
+import type { Problem } from "./problems.js"
 
 export const checkRules = (
     domain: Domain,
@@ -35,9 +36,11 @@ export type TraversalEntry =
 
 export type TraversalKey = TraversalEntry[0]
 
+//adding a ruleLevel so that if a problem occurs it should not proceed to the next
 export type TraversalState = {
     node: TraversalNode
     path: string[]
+    ruleLevel: number
 }
 
 export type CheckState<data = unknown> = evaluate<
@@ -50,12 +53,26 @@ export type CheckState<data = unknown> = evaluate<
 // Add a root check function that takes in data, a traversal node, and scope. It
 // should convert data and the node to an initial CheckState and pass it to the
 // next function.
+export const rootCheck = (
+    data: unknown,
+    node: TraversalNode,
+    scope: ScopeRoot
+) => {
+    const problems = new Problems()
+    const checkState: CheckState = {
+        node,
+        path: [],
+        data,
+        problems,
+        ruleLevel: 0
+    }
+    check(checkState, scope)
+}
 
-// Convert this check function to take CheckState and ScopeRoot only
-export const check = (data: unknown, node: TraversalNode, scope: ScopeRoot) =>
-    typeof node === "string"
-        ? domainOf(data) === node
-        : checkEntries(data, node, scope)
+export const check = (checkState: CheckState, scope: ScopeRoot) =>
+    typeof checkState.node === "string"
+        ? domainOf(checkState.data) === checkState.node
+        : checkEntries(checkState, scope)
 
 // If there is an error, we want to call some central API and pass in a context
 // specific to the current rule that contains additional information needed to
@@ -144,20 +161,30 @@ export type RuleInput<k extends TraversalKey> =
     k extends keyof ConstrainedRuleInputs ? ConstrainedRuleInputs[k] : unknown
 
 export const checkEntries = (
-    data: unknown,
-    entries: readonly TraversalEntry[],
+    checkState: CheckState,
     scope: ScopeRoot
-): boolean => {
-    for (let i = 0; i < entries.length; i++) {
+): CheckState => {
+    const entries = checkState.node as TraversalEntry[]
+    for (let i = 0; i < checkState.node?.length; i++) {
+        const ruleName = entries[i][0]
+        const ruleValidator = entries[i][1] as never
+        const currentLevel = rulePrecedenceMap[ruleName]
         if (
-            !checkers[entries[i][0]](
-                data as never,
-                entries[i][1] as never,
-                scope
-            )
+            checkState.problems.length &&
+            currentLevel !== checkState.ruleLevel
         ) {
-            return false
+            break
+        }
+        checkState.ruleLevel = rulePrecedenceMap[ruleName]
+        if (
+            !checkers[ruleName](checkState.data as never, ruleValidator, scope)
+        ) {
+            const problem: Problem = {
+                path: ruleName,
+                reason: `${checkState.data}`
+            }
+            checkState.problems.push(problem)
         }
     }
-    return true
+    return checkState
 }
