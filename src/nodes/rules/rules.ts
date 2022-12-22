@@ -1,6 +1,6 @@
 import type { ScopeRoot } from "../../scope.js"
-import type { Domain, domainOf, inferDomain } from "../../utils/domains.js"
-import type { CollapsibleList, Dict, evaluate } from "../../utils/generics.js"
+import type { Domain, inferDomain } from "../../utils/domains.js"
+import type { CollapsibleList, Dict } from "../../utils/generics.js"
 import { composeIntersection, composeKeyedOperation } from "../compose.js"
 import type { PredicateContext } from "../predicate.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"

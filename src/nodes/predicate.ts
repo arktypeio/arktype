@@ -16,7 +16,9 @@ import { isExactValuePredicate, resolvePredicateIfIdentifier } from "./utils.js"
 export type Predicate<
     domain extends Domain = Domain,
     scope extends Dict = Dict
-> = true | CollapsibleList<Condition<domain, scope>>
+> = string extends keyof scope
+    ? true | CollapsibleList<Condition>
+    : true | CollapsibleList<Condition<domain, scope>>
 
 export type TraversalPredicate = TraversalCondition | [TraversalBranchesEntry]
 

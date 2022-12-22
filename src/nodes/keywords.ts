@@ -1,4 +1,4 @@
-import type { ScopeRoot } from "../scope.js"
+import { getRootScope } from "../scope.js"
 import type { Domain } from "../utils/domains.js"
 import { deepFreeze } from "../utils/freeze.js"
 import type { TypeSet } from "./node.js"
@@ -43,8 +43,7 @@ export const keywords = deepFreeze({
     integer: { number: { divisor: 1 } }
 } as const satisfies Record<Keyword, TypeSet>)
 
-// Use a dummy scope here since we know there are no alias references
-export const flatKeywords = compileNodes(keywords, {} as ScopeRoot)
+export const flatKeywords = compileNodes(keywords, getRootScope().$)
 
 export type Keyword = keyof Keywords
 
