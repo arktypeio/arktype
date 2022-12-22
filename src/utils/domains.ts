@@ -121,6 +121,10 @@ export type subdomainOf<data> = isTopType<data> extends true
     : domainOf<data>
 
 export const subdomainOf = ((data): Subdomain => {
+    const domain = domainOf(data)
+    if (domain !== "object") {
+        return domain
+    }
     if (Array.isArray(data)) {
         return "Array"
     }
@@ -138,8 +142,14 @@ export const subdomainOf = ((data): Subdomain => {
     return "object"
 }) as <data>(data: data) => subdomainOf<data>
 
-export const hasSubdomain = <subdomain extends ObjectSubdomain>(
+export type inferSubdomain<subdomain extends Subdomain> =
+    subdomain extends ObjectSubdomain
+        ? ObjectSubdomains[subdomain]
+        : subdomain extends Domain
+        ? DomainTypes[subdomain]
+        : never
+
+export const hasSubdomain = <subdomain extends Subdomain>(
     data: unknown,
     subdomain: subdomain
-): data is ObjectSubdomains[subdomain] =>
-    hasDomain(data, "object") && subdomainOf(data) === subdomain
+): data is inferSubdomain<subdomain> => subdomainOf(data) === subdomain

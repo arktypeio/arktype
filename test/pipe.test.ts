@@ -19,7 +19,7 @@ describe("pipe", () => {
             }
         ])
         attest(t.infer).typed as "foo" | true
-        attest(t.root).snap()
+        attest(t.root).snap({})
     })
     test("multiple", () => {
         const t = type(["string", "|>", (s) => s.trim(), (s) => s + "!"])

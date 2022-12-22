@@ -1,26 +1,19 @@
 import { arrayOf } from "../../nodes/generics.js"
 import { intersection } from "../../nodes/intersection.js"
-import type { TypeNode, TypeSet } from "../../nodes/node.js"
-import type { Validator } from "../../nodes/rules/rules.js"
+import type { TypeNode } from "../../nodes/node.js"
 import { union } from "../../nodes/union.js"
-import { domainsOfNode } from "../../nodes/utils.js"
 import type { ScopeRoot } from "../../scope.js"
-import type { inferDomain } from "../../utils/domains.js"
-import { domainOf, hasDomain, hasSubdomain } from "../../utils/domains.js"
 import { throwParseError } from "../../utils/errors.js"
-import type {
-    Dict,
-    error,
-    evaluate,
-    List,
-    mutable,
-    NonEmptyList,
-    UnaryFunction
-} from "../../utils/generics.js"
+import type { Dict, error, evaluate, List } from "../../utils/generics.js"
 import type { inferDefinition, validateDefinition } from "../definition.js"
 import { parseDefinition } from "../definition.js"
 import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
 import type { Scanner } from "../string/shift/scanner.js"
+import type { validateMorphTuple } from "./morph.js"
+import { parseMorphTuple } from "./morph.js"
+import type { validateNarrowTuple } from "./narrow.js"
+import { parseNarrowTuple } from "./narrow.js"
+import type { validatePipeTuple } from "./pipe.js"
 
 export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
     if (isTupleExpression(def)) {
@@ -110,71 +103,10 @@ type inferTupleExpression<
     ? inferDefinition<def[0], scope, aliases, input>[]
     : never
 
-type validateNarrowTuple<
-    narrowedDef,
-    scope extends Dict,
-    input extends boolean
-> = [
-    validateDefinition<narrowedDef, scope, input>,
-    ":",
-    distributable<Validator<inferDefinition<narrowedDef, scope, scope, input>>>
-]
-
-export type Pipe<T> = (In: T) => T
-
-type validatePipeTuple<pipedDef, scope extends Dict, input extends boolean> = [
-    validateDefinition<pipedDef, scope, input>,
-    "|>",
-    ...NonEmptyList<
-        distributable<Pipe<inferDefinition<pipedDef, scope, scope, input>>>
-    >
-]
-
-type validateMorphTuple<
-    inputDef,
-    outputDef,
-    scope extends Dict,
-    input extends boolean
-> = [
-    validateDefinition<inputDef, scope, true>,
-    "=>",
-    validateDefinition<outputDef, scope, input>,
-    // TODO: Nested morphs. Should input be recursive? It would've already been transformed.
-    distributable<
-        Morph<
-            inferDefinition<inputDef, scope, scope, true>,
-            inferDefinition<outputDef, scope, scope, input>
-        >
-    >
-]
-
-export type Morph<In, Out> = (In: In) => Out
-
-export type distributeInput<In, Return> = evaluate<{
-    [domain in domainOf<In>]?: (
-        In: unknown extends In ? unknown : Extract<In, inferDomain<domain>>
-    ) => Return
-}>
-
-export type distributable<f extends UnaryFunction> = f | distributeFunction<f>
-
-type distributeFunction<f extends UnaryFunction> = f extends UnaryFunction<
-    infer In,
-    infer Return
->
-    ? evaluate<{
-          [domain in domainOf<In>]?: (
-              In: unknown extends In
-                  ? unknown
-                  : Extract<In, inferDomain<domain>>
-          ) => Return
-      }>
-    : never
-
 // TODO: Add default value
 export type TupleExpressionToken = "&" | "|" | "[]" | ":" | "=>" | "|>"
 
-type TupleExpressionParser<token extends TupleExpressionToken> = (
+export type TupleExpressionParser<token extends TupleExpressionToken> = (
     def: UnknownTupleExpression<token>,
     scope: ScopeRoot
 ) => TypeNode
@@ -186,57 +118,6 @@ const parseBranchTuple: TupleExpressionParser<"|" | "&"> = (def, scope) => {
     const l = parseDefinition(def[0], scope)
     const r = parseDefinition(def[2], scope)
     return def[1] === "&" ? intersection(l, r, scope) : union(l, r, scope)
-}
-
-const buildMalformedNarrowMessage = (validator: unknown) =>
-    `Operator ":" requires a Function or Record<Domain, Function> as a right operand (${JSON.stringify(
-        validator
-    )} was invalid)`
-
-const parseNarrowTuple: TupleExpressionParser<":"> = (def, scope) => {
-    if (!hasDomain(def[2], "object")) {
-        return throwParseError(buildMalformedNarrowMessage(def[2]))
-    }
-    const inputNode = parseDefinition(def[0], scope)
-    const distributedValidatorNode: mutable<TypeSet> = {}
-    const domains = domainsOfNode(inputNode, scope)
-    if (typeof def[2] === "function") {
-        for (const domain of domains) {
-            distributedValidatorNode[domain] = { validator: def[2] }
-        }
-    } else {
-        for (const domain of domains) {
-            const domainValidator = (
-                def[2] as distributeInput<unknown, boolean>
-            )[domain]
-            if (domainValidator !== undefined) {
-                if (typeof domainValidator !== "function") {
-                    return throwParseError(
-                        buildMalformedNarrowMessage(domainValidator)
-                    )
-                }
-                distributedValidatorNode[domain] = {
-                    validator: domainValidator
-                }
-            }
-        }
-    }
-    return intersection(inputNode, distributedValidatorNode, scope)
-}
-
-const buildMalformedMorphMessage = (actual: unknown) =>
-    `Operator "=>" requires a Function at index 3 (got ${domainOf(actual)})`
-
-const parseMorphTuple: TupleExpressionParser<"=>"> = (def, scope) => {
-    if (def[2] === undefined) {
-        return throwParseError(buildMissingRightOperandMessage("=>", ""))
-    }
-    if (!hasSubdomain(def[3], "Function")) {
-        return throwParseError(buildMalformedMorphMessage(def[3]))
-    }
-    const inputNode = parseDefinition(def[0], scope)
-    const outputNode = parseDefinition(def[2], scope)
-    return outputNode
 }
 
 const parseArrayTuple: TupleExpressionParser<"[]"> = (def, scope) =>
