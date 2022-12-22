@@ -47,9 +47,9 @@ export type inferRoot<i, o> = equals<i, o> extends true
     ? ArkType<o>
     : ArkType<(io: i) => o>
 
-type In<t> = t extends (io: infer input) => unknown ? input : t
+type In<t> = t extends (_: infer input) => unknown ? input : t
 
-type Out<t> = t extends (io: any) => infer output ? output : t
+type Out<t> = t extends (_: any) => infer output ? output : t
 
 export class ArkType<T = unknown> {
     constructor(
