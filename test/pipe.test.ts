@@ -23,6 +23,7 @@ describe("pipe", () => {
     })
     test("multiple", () => {
         const t = type(["string", "|>", (s) => s.trim(), (s) => s + "!"])
+        attest(t.infer).typed as string
     })
     describe("errors", () => {
         test("zero operands", () => {

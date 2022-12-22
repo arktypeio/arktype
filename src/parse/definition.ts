@@ -1,13 +1,19 @@
 import type { TypeNode } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
-import type { Domain, ObjectSubdomain, Primitive } from "../utils/domains.js"
-import { domainOf, subdomainOf } from "../utils/domains.js"
+import type {
+    Domain,
+    domainOf,
+    ObjectSubdomain,
+    Primitive
+} from "../utils/domains.js"
+import { subdomainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
     Dict,
     evaluate,
     isAny,
     isTopType,
+    keySet,
     List
 } from "../utils/generics.js"
 import type { inferRecord } from "./record.js"
@@ -18,20 +24,20 @@ import type { inferTuple, validateTuple } from "./tuple/tuple.js"
 import { parseTuple } from "./tuple/tuple.js"
 
 export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
-    const domain = domainOf(def)
-    if (domain === "string") {
-        return parseString(def as string, scope)
-    }
-    if (domain === "object") {
-        const objectDomain = subdomainOf(def as object)
-        if (objectDomain === "object") {
+    switch (subdomainOf(def)) {
+        case "string":
+            return parseString(def as string, scope)
+        case "object":
             return parseRecord(def as Dict, scope)
-        } else if (objectDomain === "Array") {
+        case "Array":
             return parseTuple(def as List, scope)
-        }
-        return throwParseError(buildBadDefinitionTypeMessage(objectDomain))
+        case "RegExp":
+            return { string: { regex: (def as RegExp).source } }
+        default:
+            return throwParseError(
+                buildBadDefinitionTypeMessage(subdomainOf(def))
+            )
     }
-    return throwParseError(buildBadDefinitionTypeMessage(domain))
 }
 
 export type inferDefinition<
@@ -45,6 +51,8 @@ export type inferDefinition<
     ? inferString<def, scope, aliases, input>
     : def extends List
     ? inferTuple<def, scope, aliases, input>
+    : def extends RegExp
+    ? string
     : def extends Dict
     ? inferRecord<def, scope, aliases, input>
     : never
@@ -65,6 +73,8 @@ export type validateDefinition<
     ? validateTuple<def, scope, input>
     : def extends Primitive
     ? buildBadDefinitionTypeMessage<domainOf<def>>
+    : def extends RegExp
+    ? def
     : def extends Function
     ? buildBadDefinitionTypeMessage<"Function">
     : evaluate<{
