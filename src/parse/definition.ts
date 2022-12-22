@@ -13,7 +13,6 @@ import type {
     evaluate,
     isAny,
     isTopType,
-    keySet,
     List
 } from "../utils/generics.js"
 import type { inferRecord } from "./record.js"
