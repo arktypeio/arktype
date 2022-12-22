@@ -4,7 +4,13 @@ import type { TypeNode } from "../../nodes/node.js"
 import { union } from "../../nodes/union.js"
 import type { ScopeRoot } from "../../scope.js"
 import { throwParseError } from "../../utils/errors.js"
-import type { Dict, error, evaluate, List } from "../../utils/generics.js"
+import type {
+    conform,
+    Dict,
+    error,
+    evaluate,
+    List
+} from "../../utils/generics.js"
 import type { inferDefinition, validateDefinition } from "../definition.js"
 import { parseDefinition } from "../definition.js"
 import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
@@ -32,6 +38,18 @@ export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
 }
 
 export type validateTupleExpression<
+    def extends UnknownTupleExpression,
+    scope extends Dict,
+    input extends boolean
+> = {
+    [i in keyof parseTupleExpression<def, scope, input>]: conform<
+        // @ts-expect-error
+        def[i],
+        parseTupleExpression<def, scope, input>[i]
+    >
+}
+
+type parseTupleExpression<
     def extends UnknownTupleExpression,
     scope extends Dict,
     input extends boolean
