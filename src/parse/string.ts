@@ -90,11 +90,10 @@ const loop = (s: DynamicState) => {
     return s.ejectFinalizedRoot()
 }
 
-type loop<s extends StaticState | error, alias extends string> = s extends error
-    ? s
-    : // TODO: Check type impact of reverse check
-      // @ts-expect-error If s is not an error, it must be a StaticState
-      loopValid<s, alias>
+type loop<
+    s extends StaticState | error,
+    alias extends string
+> = s extends StaticState ? loopValid<s, alias> : s
 
 type loopValid<
     s extends StaticState,

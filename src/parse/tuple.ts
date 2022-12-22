@@ -107,6 +107,8 @@ export type DistributedMorph<input = unknown, output = unknown> = evaluate<{
     >
 }>
 
+export type MorphType<input, output> = [input, "=>", output]
+
 type inferTupleExpression<
     def extends UnknownTupleExpression,
     scope extends Dict,
@@ -114,7 +116,10 @@ type inferTupleExpression<
 > = def[1] extends ":"
     ? inferDefinition<def[0], scope, aliases>
     : def[1] extends "=>"
-    ? inferDefinition<def[2], scope, aliases>
+    ? MorphType<
+          inferDefinition<def[0], scope, aliases>,
+          inferDefinition<def[2], scope, aliases>
+      >
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? never

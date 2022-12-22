@@ -3,6 +3,7 @@ import { compileNode } from "./nodes/node.js"
 import { resolveIfIdentifier } from "./nodes/utils.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
+import type { MorphType } from "./parse/tuple.js"
 import type { DynamicScope, Scope } from "./scope.js"
 import { getRootScope } from "./scope.js"
 import { check } from "./traverse/check.js"
@@ -40,6 +41,18 @@ type DynamicTypeFn = (definition: unknown, options?: Config<Dict>) => ArkType
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
+// const t = type(["string", "=>", "number", (s) => s.length])
+
+// t.from("4")
+
+type inferInput<inferred> = inferred extends MorphType<infer input, unknown>
+    ? input
+    : inferred
+
+type inferOutput<inferred> = inferred extends MorphType<unknown, infer output>
+    ? output
+    : inferred
+
 export class ArkType<inferred = unknown> {
     constructor(
         public root: TypeSet,
@@ -48,7 +61,7 @@ export class ArkType<inferred = unknown> {
         public scope: DynamicScope
     ) {}
 
-    get infer(): inferred {
+    get infer(): inferOutput<inferred> {
         return chainableNoOpProxy
     }
 
@@ -58,6 +71,10 @@ export class ArkType<inferred = unknown> {
             : {
                   problems: new Problems({ path: "", reason: "invalid" })
               }
+    }
+
+    from(data: inferInput<inferred>): inferOutput<inferred> {
+        return data as any
     }
 
     assert(data: unknown) {
