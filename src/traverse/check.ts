@@ -16,7 +16,9 @@ import type { Domain } from "../utils/domains.js"
 import { domainOf, subdomainOf } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dict, evaluate, extend, List } from "../utils/generics.js"
+import { ruleErrors } from "./errors.js"
 import type { Problem } from "./problems.js"
+import { Problems } from "./problems.js"
 
 export const checkRules = (
     domain: Domain,
@@ -50,9 +52,7 @@ export type CheckState<data = unknown> = evaluate<
     }
 >
 
-// Add a root check function that takes in data, a traversal node, and scope. It
-// should convert data and the node to an initial CheckState and pass it to the
-// next function.
+//TODO name
 export const rootCheck = (
     data: unknown,
     node: TraversalNode,
@@ -67,8 +67,10 @@ export const rootCheck = (
         ruleLevel: 0
     }
     check(checkState, scope)
+    return checkState
 }
 
+//TODO find a better way to do this. Probably just change into if statement and return state
 export const check = (checkState: CheckState, scope: ScopeRoot) =>
     typeof checkState.node === "string"
         ? domainOf(checkState.data) === checkState.node
@@ -160,10 +162,7 @@ export type ConstrainedRuleInputs = extend<
 export type RuleInput<k extends TraversalKey> =
     k extends keyof ConstrainedRuleInputs ? ConstrainedRuleInputs[k] : unknown
 
-export const checkEntries = (
-    checkState: CheckState,
-    scope: ScopeRoot
-): CheckState => {
+export const checkEntries = (checkState: CheckState, scope: ScopeRoot) => {
     const entries = checkState.node as TraversalEntry[]
     for (let i = 0; i < checkState.node?.length; i++) {
         const ruleName = entries[i][0]
@@ -180,11 +179,14 @@ export const checkEntries = (
             !checkers[ruleName](checkState.data as never, ruleValidator, scope)
         ) {
             const problem: Problem = {
+                //TODO keep track of path
                 path: ruleName,
-                reason: `${checkState.data}`
+                reason: `${ruleErrors[ruleName](
+                    checkState.data,
+                    ruleValidator
+                )}`
             }
             checkState.problems.push(problem)
         }
     }
-    return checkState
 }
