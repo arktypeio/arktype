@@ -1,5 +1,3 @@
-import type { Morph } from "../parse/tuple/morph.js"
-import type { Pipe } from "../parse/tuple/pipe.js"
 import type { ScopeRoot } from "../scope.js"
 import { checkRules } from "../traverse/check.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
@@ -10,7 +8,7 @@ import type { BranchesComparison } from "./branches.js"
 import { compareBranches } from "./branches.js"
 import type { SetOperationResult } from "./compose.js"
 import { empty, equal } from "./compose.js"
-import type { Identifier, TypeNode } from "./node.js"
+import type { Identifier } from "./node.js"
 import type { RuleSet, TraversalRuleEntry } from "./rules/rules.js"
 import { compileRules, rulesIntersection } from "./rules/rules.js"
 import { isExactValuePredicate, resolvePredicateIfIdentifier } from "./utils.js"
@@ -57,33 +55,38 @@ const branchesOf = (flatPredicate: TraversalPredicate) =>
         ? flatPredicate.slice(1)
         : [flatPredicate]) as TraversalCondition[]
 
-export type Branches<
-    domain extends Domain = Domain,
-    scope extends Dict = Dict
-> = readonly [
-    ...conditions: Condition<domain, scope>[],
-    ...morph:
-        | []
-        | readonly ["=>", Morph<inferDomain<domain>, unknown>, TypeNode<scope>]
-]
-
 export type Condition<
     domain extends Domain = Domain,
     scope extends Dict = Dict
-> =
-    | RuleSet<domain, scope>
-    | ExactValue<domain>
-    | Identifier<scope>
-    | PipeCondition<domain>
+> = RuleSet<domain, scope> | ExactValue<domain> | Identifier<scope>
+
+// export type Branches<
+//     domain extends Domain = Domain,
+//     scope extends Dict = Dict
+// > = readonly [
+//     ...conditions: Condition<domain, scope>[],
+//     ...morph:
+//         | []
+//         | readonly ["=>", Morph<inferDomain<domain>, unknown>, TypeNode<scope>]
+// ]
+
+// export type Condition<
+//     domain extends Domain = Domain,
+//     scope extends Dict = Dict
+// > =
+//     | RuleSet<domain, scope>
+//     | ExactValue<domain>
+//     | Identifier<scope>
+//     | PipeCondition<domain>
+
+// export type PipeCondition<domain extends Domain> = readonly [
+//     "|>",
+//     Pipe<inferDomain<domain>>
+// ]
 
 export type TraversalCondition =
     | readonly TraversalRuleEntry[]
     | [ExactValueEntry]
-
-export type PipeCondition<domain extends Domain> = readonly [
-    "|>",
-    Pipe<inferDomain<domain>>
-]
 
 export type ExactValue<domain extends Domain = Domain> = {
     readonly value: inferDomain<domain>

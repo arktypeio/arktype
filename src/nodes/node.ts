@@ -1,4 +1,3 @@
-import type { Morph } from "../parse/tuple/morph.js"
 import type { ScopeRoot } from "../scope.js"
 import type { Domain } from "../utils/domains.js"
 import type { Dict, mutable } from "../utils/generics.js"
