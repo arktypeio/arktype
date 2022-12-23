@@ -1,17 +1,10 @@
 import { AssertionError, strict } from "node:assert"
 import { describe, test } from "mocha"
-import type { evaluate } from "../../../src/utils/generics.ts"
 import { attest } from "../exports.ts"
 
 const o = { ark: "type" }
 
-type xor<a, b> =
-    | evaluate<a & { [k in keyof b]?: never }>
-    | evaluate<b & { [k in keyof a]?: never }>
-
-type aXorB = xor<{ a: true }, { b: true }>
-
-describe("Assertions", () => {
+describe("attest", () => {
     test("type toString", () => {
         attest(o).type.toString("{ ark: string; }")
         attest(o).type.toString.is("{ ark: string; }")
@@ -64,18 +57,5 @@ describe("Assertions", () => {
             AssertionError,
             "string"
         )
-    })
-    test("xor value", () => {
-        const value = { a: true } as aXorB
-        attest(value).equals({ a: true })
-        attest(value).equals({ b: true })
-        attest(() => {
-            // @ts-expect-error
-            attest(value).equals({})
-        }).throwsAndHasTypeError(/.*/)
-        attest(() => {
-            // @ts-expect-error
-            attest(value).equals({ a: true, b: true })
-        }).throwsAndHasTypeError(/.*/)
     })
 })

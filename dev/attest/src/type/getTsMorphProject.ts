@@ -1,5 +1,5 @@
-import type { ProjectOptions } from "ts-morph"
-import { Project, ResolutionHosts } from "ts-morph"
+import { resolve } from "node:path"
+import { Project, ts } from "ts-morph"
 import { getAttestConfig } from "../config.ts"
 
 export type ForceGetTsProjectOptions = {
@@ -8,29 +8,33 @@ export type ForceGetTsProjectOptions = {
 }
 
 export const forceCreateTsMorphProject = ({
-    preloadFiles = false,
-    useRealFs = false
+    preloadFiles,
+    useRealFs
 }: ForceGetTsProjectOptions) => {
     const config = getAttestConfig()
-    const options: ProjectOptions = {
+    const project = new Project({
         compilerOptions: {
             diagnostics: true,
             noEmit: true,
-            composite: false,
-            incremental: false
+            module: ts.ModuleKind.NodeNext,
+            target: ts.ScriptTarget.ESNext,
+            moduleResolution: ts.ModuleResolutionKind.NodeNext,
+            skipLibCheck: true,
+            strict: true,
+            isolatedModules: true,
+            esModuleInterop: true,
+            resolveJsonModule: true,
+            exactOptionalPropertyTypes: true,
+            noErrorTruncation: true,
+            lib: [
+                resolve("node_modules", "typescript", "lib", "lib.esnext.d.ts")
+            ]
         },
-        skipAddingFilesFromTsConfig: !preloadFiles && !useRealFs
-    }
-    if (process.versions.deno) {
-        options.resolutionHost = ResolutionHosts.deno
-    }
-    if (config.tsconfig) {
-        options.tsConfigFilePath = config.tsconfig
-    }
-    const project = new Project(options)
+        skipAddingFilesFromTsConfig: !preloadFiles || !useRealFs
+    })
     if (preloadFiles) {
         if (useRealFs) {
-            project.addSourceFilesAtPaths(["**"])
+            project.addSourceFilesFromTsConfig(config.tsconfig!)
         } else {
             if (!config.typeSources) {
                 throw Error(`Can't use virtual project without typeSources`)
@@ -38,7 +42,6 @@ export const forceCreateTsMorphProject = ({
             for (const [path, contents] of config.typeSources) {
                 project.createSourceFile(path, contents, { overwrite: true })
             }
-            console.log(config.typeSources.map(([path]) => path))
         }
     }
     return project

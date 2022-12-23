@@ -5,7 +5,7 @@ import { attest } from "../exports.ts"
 const n = 5
 const o = { re: "do" }
 
-describe("assertion errors", () => {
+describe("attest errors", () => {
     test("not equal", () => {
         strict.throws(
             () => attest(o).equals({ re: "doo" }),

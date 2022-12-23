@@ -1,8 +1,11 @@
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
-import { ensureDir } from "../../runtime/exports.ts"
-import type { SourceFileEntry } from "../../scripts/common.ts"
-import { getSourceFileEntries } from "../../scripts/common.ts"
+import type { SourceFileEntry } from "../../runtime/exports.ts"
+import {
+    ensureDir,
+    fromPackageRoot,
+    getSourceFileEntries
+} from "../../runtime/exports.ts"
 import { getCmdFromPid } from "./utils.ts"
 import type { BenchFormat } from "./writeSnapshot.ts"
 
@@ -75,7 +78,10 @@ export const getAttestConfig = (): AttestConfig => {
     if (cachedConfig) {
         return cachedConfig
     }
-    const tsconfig = existsSync("tsconfig.json") ? resolve("tsconfig.json") : ""
+    const possibleTsconfigPath = fromPackageRoot("tsconfig.json")
+    const tsconfig = existsSync(possibleTsconfigPath)
+        ? possibleTsconfigPath
+        : undefined
     const argsToCheck = getArgsToCheck()
     const cacheDir =
         checkArgsForParam(argsToCheck, "--cacheDir") ?? resolve(".attest")
@@ -89,7 +95,7 @@ export const getAttestConfig = (): AttestConfig => {
         (arg) => arg === "-n" || arg === "--no-write"
     )
     const typeSources = getSourceFileEntries()
-        .filter(([path]) => /^src|test|dev\/test/.test(path))
+        .filter(([path]) => !path.startsWith("dev/arktype.io"))
         .map(
             ([path, contents]): SourceFileEntry => [
                 path,
@@ -97,7 +103,7 @@ export const getAttestConfig = (): AttestConfig => {
                 contents.replaceAll('.ts"', '.js"')
             ]
         )
-    return {
+    cachedConfig = {
         updateSnapshots:
             transient ||
             argsToCheck.some((arg) => arg === "-u" || arg === "--update"),
@@ -116,7 +122,7 @@ export const getAttestConfig = (): AttestConfig => {
         filter: getFilter(argsToCheck),
         tsconfig,
         precached: argsToCheck.includes("--precache"),
-        preserveCache: false,
+        preserveCache: true,
         cacheDir,
         snapCacheDir,
         assertionCacheFile: join(cacheDir, "assertions.json"),
@@ -124,4 +130,5 @@ export const getAttestConfig = (): AttestConfig => {
         benchErrorOnThresholdExceeded: false,
         transient
     }
+    return cachedConfig
 }

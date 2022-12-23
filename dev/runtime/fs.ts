@@ -7,7 +7,6 @@ import {
     statSync,
     writeFileSync
 } from "node:fs"
-import { createRequire } from "node:module"
 import { homedir } from "node:os"
 import { dirname, join, parse } from "node:path"
 import { fileURLToPath, URL } from "node:url"

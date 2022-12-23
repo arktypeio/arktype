@@ -6,11 +6,12 @@ import {
     readFile,
     readJson,
     shell,
+    tsFileMatcher,
     walkPaths,
     writeFile,
     writeJson
 } from "../runtime/exports.ts"
-import { repoDirs, tsFileMatcher } from "./common.ts"
+import { repoDirs } from "./common.ts"
 import { denoTransformations } from "./denoBuildTransforms.ts"
 import { getProject } from "./docgen/main.ts"
 import { mapDir } from "./docgen/mapDir.ts"

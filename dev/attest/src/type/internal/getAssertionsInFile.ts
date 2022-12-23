@@ -7,7 +7,6 @@ import type {
     Type
 } from "ts-morph"
 import { SyntaxKind, ts } from "ts-morph"
-import { getAttestConfig } from "../../config.ts"
 import type { LinePositionRange } from "../../utils.ts"
 import { getFileKey } from "../../utils.ts"
 import type { DiagnosticsByFile } from "./getDiagnosticsByFile.ts"
@@ -26,11 +25,11 @@ export const getAssertionsInFile = (
     file: SourceFile,
     diagnosticsByFile: DiagnosticsByFile
 ): AssertionData[] => {
-    const assertCalls = getAssertCalls(file)
+    const assertCalls = getAttestCalls(file)
     return assertCalls.map((call) => analyzeAssertCall(call, diagnosticsByFile))
 }
 
-export const getAssertCalls = (file: SourceFile): CallExpression[] => {
+export const getAttestCalls = (file: SourceFile): CallExpression[] => {
     const assertCalls = file
         .getDescendantsOfKind(SyntaxKind.CallExpression)
         .filter(
