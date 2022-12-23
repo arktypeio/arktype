@@ -13,7 +13,6 @@ export type LogoCloudProps = {
     names: [string, string, string, string]
 }
 
-// eslint-disable-next-line max-lines-per-function
 export const LogoCloud = ({ names }: LogoCloudProps) => (
     <div style={{ position: "relative", height: "100%", width: 200 }}>
         <motion.div

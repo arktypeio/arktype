@@ -24,18 +24,4 @@ describe("snippets", () => {
             .snap(`dependencies/0/contributors: contributors is required
 contributors/0/email: Must be a valid email (was "david@araktypeio")`)
     })
-    test("constraints", async () => {
-        const constraintsSnippet = await import("../examples/constraints.js")
-        attest(constraintsSnippet.problems?.summary)
-            .snap(`email: Must match expression /[a-z]*@arktype.io/ (was "david@arktype.biz")
-about/age: Must be at least 18 (was 17)
-about/bio: Must be at most 80 characters (was 110)`)
-        attest(constraintsSnippet.employee.infer).typed as {
-            email: string
-            about: {
-                age: number
-                bio: string
-            }
-        }
-    })
 })

@@ -6,7 +6,6 @@ import {
     DEMO_ELEMENT_ID
 } from "./stackblitzGenerators/index"
 
-// eslint-disable-next-line max-lines-per-function
 export const StackBlitzDemo = (demoProps: DemoProps) => {
     const [isLoading, setIsLoading] = useState(true)
     useEffect(() => {

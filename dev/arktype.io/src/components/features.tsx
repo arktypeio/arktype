@@ -1,8 +1,4 @@
 import { Box, Stack, SvgIcon, Typography } from "@mui/material"
-import One from "@site/static/img/features/1.svg"
-import Two from "@site/static/img/features/2.svg"
-import Three from "@site/static/img/features/3.svg"
-import Four from "@site/static/img/features/4.svg"
 import React from "react"
 
 const details = [
@@ -30,15 +26,9 @@ const details = [
     }
 ]
 
-const features = {
-    One: <One />,
-    Two: <Two />,
-    Three: <Three />,
-    Four: <Four />
-}
-
 type FeatureProps = {
-    image: JSX.Element
+    //TODOSHAWN images removed for now but kept this as placeholder
+    image?: JSX.Element
     title: string
     description: string
 }
@@ -47,24 +37,26 @@ const Feature = ({ image, title, description }: FeatureProps) => (
     <Box id="feature" flex="1 0 45%">
         <SvgIcon
             sx={{
-                height: 150,
+                height: 100,
                 width: "100%"
             }}
         >
             {image}
         </SvgIcon>
-        <Typography component="h3" variant="h5" id="title">
-            {title}
-        </Typography>
-        <Typography component="h3" variant="h6" id="description">
-            {description}
-        </Typography>
+        <Box sx={{ padding: "0 5px" }}>
+            <Typography component="h3" variant="h5" id="title">
+                {title}
+            </Typography>
+            <Typography component="h3" variant="h6" id="description">
+                {description}
+            </Typography>
+        </Box>
     </Box>
 )
 
 const feats = details.map((feature, i) => (
     <Feature
-        image={features[feature.image as keyof typeof features]}
+        // image={features[feature.image as keyof typeof features]}
         title={feature.title}
         description={feature.description}
         key={i}

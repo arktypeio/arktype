@@ -1,4 +1,3 @@
-import constraints from "../generated/constraints"
 import scope from "../generated/scope"
 import type from "../generated/type"
 
@@ -8,8 +7,7 @@ export const contentsByAddonFile: Record<AddonFile, string> = {}
 
 export const contentsByEmbedId: Record<EmbedId, string> = {
     type,
-    scope,
-    constraints
+    scope
 }
 
 export const addonFilesByEmdedId: Partial<Record<EmbedId, AddonFile[]>> = {}
