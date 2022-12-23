@@ -10,7 +10,7 @@ import {
 } from "../../runtime/exports.js"
 import type { BenchData } from "./bench/history.js"
 import { updateIsBench, upsertBenchResult } from "./bench/history.js"
-import { getAtTestConfig, getFileKey } from "./common.js"
+import { getAttestConfig, getFileKey } from "./common.js"
 import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
 import {
     queueInlineSnapshotWriteOnProcessExit,
@@ -45,7 +45,7 @@ export const updateExternalSnapshot = ({
 }
 
 export const writeCachedInlineSnapshotUpdates = () => {
-    const config = getAtTestConfig()
+    const config = getAttestConfig()
     if (!existsSync(config.snapCacheDir)) {
         throw new Error(
             `Unable to update snapshots as expected cache directory ${config.snapCacheDir} does not exist.`
@@ -80,7 +80,7 @@ export const writeCachedInlineSnapshotUpdates = () => {
  */
 export const writeInlineSnapshotUpdateToCacheDir = (args: SnapshotArgs) => {
     writeJson(
-        join(getAtTestConfig().snapCacheDir, `snap-${randomUUID()}.json`),
+        join(getAttestConfig().snapCacheDir, `snap-${randomUUID()}.json`),
         args
     )
 }

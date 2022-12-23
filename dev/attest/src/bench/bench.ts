@@ -1,7 +1,7 @@
 import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.js"
 import { caller } from "../../../runtime/exports.js"
-import type { AtTestConfig, SourcePosition } from "../common.js"
-import { getAtTestConfig } from "../common.js"
+import type { AttestConfig, SourcePosition } from "../common.js"
+import { getAttestConfig } from "../common.js"
 import type { BenchFormat } from "../writeSnapshot.js"
 import type { TimeAssertionName } from "./call.js"
 import { BenchAssertions } from "./call.js"
@@ -33,7 +33,7 @@ export type BenchContext = {
     qualifiedPath: string[]
     qualifiedName: string
     options: InternalBenchOptions
-    cfg: AtTestConfig
+    cfg: AttestConfig
     benchCallPosition: SourcePosition
     lastSnapCallPosition: SourcePosition | undefined
     isAsync: boolean
@@ -105,7 +105,7 @@ export const bench = <Fn extends BenchableFunction>(
         qualifiedPath,
         qualifiedName: qualifiedPath.join("/"),
         options,
-        cfg: getAtTestConfig(),
+        cfg: getAttestConfig(),
         benchCallPosition: caller(),
         lastSnapCallPosition: undefined,
         isAsync: fn.constructor.name === "AsyncFunction"

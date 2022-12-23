@@ -1,6 +1,6 @@
 import { mkdirSync, rmSync } from "node:fs"
 import { writeJson } from "../../../runtime/exports.js"
-import { getAtTestConfig } from "../common.js"
+import { getAttestConfig } from "../common.js"
 import { writeCachedInlineSnapshotUpdates } from "../writeSnapshot.js"
 import { getAssertionsByFile } from "./analysis.js"
 
@@ -9,7 +9,7 @@ export type SetupCacheOptions = {
 }
 
 export const cacheAssertions = ({ forcePrecache }: SetupCacheOptions = {}) => {
-    const config = getAtTestConfig()
+    const config = getAttestConfig()
     if (!config.precached && !forcePrecache) {
         throw new Error(
             `You must set 'precached' to true in the 'assert' section ` +
@@ -26,7 +26,7 @@ export const cacheAssertions = ({ forcePrecache }: SetupCacheOptions = {}) => {
 }
 
 export const cleanupAssertions = () => {
-    const config = getAtTestConfig()
+    const config = getAttestConfig()
     try {
         writeCachedInlineSnapshotUpdates()
     } finally {

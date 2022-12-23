@@ -21,6 +21,6 @@ describe("morph", () => {
             }
         ])
         attest(t.infer).typed as 0 | 1
-        attest(t.root).snap()
+        attest(t.root).snap({ number: [{ value: 0 }, { value: 1 }] })
     })
 })

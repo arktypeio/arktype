@@ -25,5 +25,8 @@
         "node_modules"
     ],
     "deno.config": "./dev/configs/deno.jsonc",
-    "deno.enablePaths": ["./dist/exports.deno.ts", "./dist/deno"]
+    "deno.enablePaths": ["./dist/exports.deno.ts", "./dist/deno"],
+    // Until we migrate to .ts extensions with TS5.0, this needs to be disabled
+    // to use the Deno extension
+    "typescript.tsserver.experimental.enableProjectDiagnostics": true
 }

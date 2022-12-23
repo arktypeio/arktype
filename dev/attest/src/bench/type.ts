@@ -56,7 +56,10 @@ const getInstantiationsForIsolatedBench = (
     includeBenchFn: boolean,
     fakePath: string
 ) => {
-    const isolatedProject = forceCreateTsMorphProject()
+    const isolatedProject = forceCreateTsMorphProject({
+        useRealFs: false,
+        preloadFiles: false
+    })
     const fileToTransform = isolatedProject.createSourceFile(
         fakePath,
         originalFileText

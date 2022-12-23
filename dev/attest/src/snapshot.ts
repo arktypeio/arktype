@@ -3,11 +3,8 @@ import type { CallExpression, SourceFile, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
 import { readJson } from "../../runtime/exports.js"
 import type { SourcePosition } from "./common.js"
-import { getAtTestConfig, positionToString } from "./common.js"
-import {
-    getDefaultTsMorphProject,
-    getTsNodeAtPosition
-} from "./type/exports.js"
+import { getAttestConfig, positionToString } from "./common.js"
+import { getRealTsMorphProject, getTsNodeAtPosition } from "./type/exports.js"
 import type { BenchFormat } from "./writeSnapshot.js"
 import { writeUpdates } from "./writeSnapshot.js"
 
@@ -75,8 +72,8 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
     baselinePath,
     benchFormat
 }: SnapshotArgs) => {
-    const { transient } = getAtTestConfig()
-    const project = getDefaultTsMorphProject()
+    const { transient } = getAttestConfig()
+    const project = getRealTsMorphProject()
     const file = project.getSourceFileOrThrow(position.file)
     const snapCall = findCallExpressionAncestor(position, snapFunctionName)
     const newArgText = JSON.stringify(serializedValue)

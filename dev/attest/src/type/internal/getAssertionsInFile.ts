@@ -8,7 +8,7 @@ import type {
 } from "ts-morph"
 import { SyntaxKind, ts } from "ts-morph"
 import type { LinePositionRange } from "../../common.js"
-import { getAtTestConfig, getFileKey } from "../../common.js"
+import { getAttestConfig, getFileKey } from "../../common.js"
 import type { DiagnosticsByFile } from "./getDiagnosticsByFile.js"
 
 export type AssertionData = {
@@ -30,7 +30,7 @@ export const getAssertionsInFile = (
 }
 
 export const getAssertCalls = (file: SourceFile): CallExpression[] => {
-    const config = getAtTestConfig()
+    const config = getAttestConfig()
     const assertCalls = file
         .getDescendantsOfKind(SyntaxKind.CallExpression)
         .filter((callExpression) =>

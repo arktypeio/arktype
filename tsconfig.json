@@ -18,7 +18,7 @@
             ]
         }
     },
-    "exclude": ["dev/arktype.io", "**/node_modules", "**/dist"],
+    "exclude": ["dev/arktype.io", "**/node_modules/**", "**/dist/**"],
     "ts-node": {
         "esm": true,
         "swc": true,

@@ -1,10 +1,10 @@
 import { ts } from "ts-morph"
 import type { SourcePosition } from "../common.js"
 import { positionToString } from "../common.js"
-import { getDefaultTsMorphProject } from "./getTsMorphProject.js"
+import { getVirtualTsMorphProject } from "./getTsMorphProject.js"
 
 export const getTsNodeAtPosition = (position: SourcePosition) => {
-    const project = getDefaultTsMorphProject()
+    const project = getVirtualTsMorphProject()
     const sourceFile = project.getSourceFileOrThrow(position.file)
     const node = sourceFile.getDescendantAtPos(
         ts.getPositionOfLineAndCharacter(

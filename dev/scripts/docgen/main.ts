@@ -1,10 +1,9 @@
-import { existsSync, statSync } from "node:fs"
 import { basename, join, relative } from "node:path"
 import { stdout } from "node:process"
 import { Project } from "ts-morph"
 import type { WalkOptions } from "../../runtime/exports.js"
-import { dirName, shell } from "../../runtime/exports.js"
-import { repoDirs } from "../common.js"
+import { dirName } from "../../runtime/exports.js"
+import { getSourceControlPaths, repoDirs } from "../common.js"
 import { extractApi } from "./api/extractApi.js"
 import { writeApi } from "./api/writeApi.js"
 import { mapDir } from "./mapDir.js"
@@ -109,17 +108,12 @@ const updateApiDocs = (project: Project) => {
 
 const getSnippetsAndUpdateReferences = (project: Project) => {
     stdout.write("Updating snippets...")
-    const sourceControlPaths = shell("git ls-files", { stdio: "pipe" })
-        .toString()
-        .split("\n")
-        .filter(
-            (path) =>
-                existsSync(path) &&
-                statSync(path).isFile() &&
-                // Avoid conflicts between snip matching and the source
-                // code defining those matchers
-                !path.startsWith(relative(repoDirs.root, dirName()))
-        )
+    const sourceControlPaths = getSourceControlPaths().filter(
+        (path) =>
+            // Avoid conflicts between snip matching and the source
+            // code defining those matchers
+            !path.startsWith(relative(repoDirs.root, dirName()))
+    )
     const snippets = extractSnippets(sourceControlPaths, project)
     updateSnippetReferences(snippets)
     stdout.write("✅\n")

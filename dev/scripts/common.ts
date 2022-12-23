@@ -1,4 +1,7 @@
+import { existsSync, statSync } from "node:fs"
 import { join } from "node:path"
+import { readFile } from "../runtime/fs.js"
+import { shell } from "../runtime/shell.js"
 
 const root = "."
 const dev = "dev"
@@ -10,6 +13,19 @@ const typesOut = join(outRoot, "types")
 const mjsOut = join(outRoot, "mjs")
 const cjsOut = join(outRoot, "cjs")
 const denoOut = join(outRoot, "deno")
+
+export const getSourceControlPaths = () =>
+    shell("git ls-files", { stdio: "pipe" })
+        .toString()
+        .split("\n")
+        .filter((path) => existsSync(path) && statSync(path).isFile())
+
+export type SourceFileEntry = [path: string, contents: string]
+
+export const getSourceFileEntries = (): SourceFileEntry[] =>
+    getSourceControlPaths()
+        .filter((path) => tsFileMatcher.test(path))
+        .map((path) => [path, readFile(path)])
 
 export const repoDirs = {
     root,

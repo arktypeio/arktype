@@ -1,6 +1,8 @@
 import { existsSync } from "node:fs"
 import { join, relative, resolve } from "node:path"
 import { ensureDir, readJson } from "../../runtime/exports.js"
+import type { SourceFileEntry } from "../../scripts/common.js"
+import { getSourceFileEntries } from "../../scripts/common.js"
 import { getCmdFromPid } from "./utils.js"
 import type { BenchFormat } from "./writeSnapshot.js"
 
@@ -22,28 +24,25 @@ export type SourcePosition = LinePosition & {
 export const positionToString = (position: SourcePosition) =>
     `line ${position.line}, character ${position.char} at path '${position.file}'`
 
-export type AtTestConfig = Required<AtTestJson> & {
+export type AttestConfig = Required<AttestJson> & {
     updateSnapshots: boolean
     benchFormat: Required<BenchFormat>
     cacheDir: string
     assertionCacheFile: string
     snapCacheDir: string
     skipTypes: boolean
+    typeSources: [path: string, contents: string][]
     transient: boolean
     filter: string[] | string | undefined
 }
 
-type AtTestJson = {
+type AttestJson = {
     tsconfig?: string | undefined
     precached?: boolean
     preserveCache?: boolean
     assertAliases?: string[]
     benchPercentThreshold?: number
     benchErrorOnThresholdExceeded?: boolean
-}
-
-type ReJson = {
-    assert?: AtTestJson
 }
 
 const checkArgsForParam = (args: string[], param: `-${string}`) => {
@@ -160,18 +159,17 @@ const getFilter = (argsToCheck: string[]) => {
     }
 }
 
-let cachedConfig: AtTestConfig | undefined
+let cachedConfig: AttestConfig | undefined
 
 // eslint-disable-next-line max-lines-per-function
-export const getAtTestConfig = (): AtTestConfig => {
+export const getAttestConfig = (): AttestConfig => {
     if (cachedConfig) {
         return cachedConfig
     }
-    const attestJson: ReJson = existsSync("attest.json")
+    const attestJson: AttestJson = existsSync("attest.json")
         ? readJson("attest.json")
         : {}
     const tsconfig = existsSync("tsconfig.json") ? resolve("tsconfig.json") : ""
-    const atTestJson: AtTestJson = attestJson.assert ?? {}
     const argsToCheck = getArgsToCheck()
     const cacheDir =
         checkArgsForParam(argsToCheck, "--cacheDir") ?? resolve(".attest")
@@ -184,6 +182,15 @@ export const getAtTestConfig = (): AtTestConfig => {
     const noWrite = argsToCheck.some(
         (arg) => arg === "-n" || arg === "--no-write"
     )
+    const typeSources = getSourceFileEntries()
+        .filter(([path]) => /^src|test|dev\/test/.test(path))
+        .map(
+            ([path, contents]): SourceFileEntry => [
+                path,
+                // Use .js imports for node + pre 5.0 versions of TS
+                contents.replaceAll('.js"', '.ts"')
+            ]
+        )
     return {
         updateSnapshots:
             transient ||
@@ -191,6 +198,7 @@ export const getAtTestConfig = (): AtTestConfig => {
         skipTypes: argsToCheck.some(
             (arg) => arg === "-s" || arg === "--skipTypes"
         ),
+        typeSources,
         benchFormat: {
             noInline:
                 argsToCheck.includes("--no-inline") || noWrite || transient,
@@ -210,6 +218,6 @@ export const getAtTestConfig = (): AtTestConfig => {
         benchPercentThreshold: 20,
         benchErrorOnThresholdExceeded: false,
         transient,
-        ...atTestJson
+        ...attestJson
     }
 }
