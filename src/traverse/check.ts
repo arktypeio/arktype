@@ -7,8 +7,10 @@ import type {
     ExactValueEntry,
     TraversalBranchesEntry
 } from "../nodes/predicate.js"
+import { checkDivisor } from "../nodes/rules/divisor.js"
 import type { BoundableData } from "../nodes/rules/range.js"
 import { checkRange } from "../nodes/rules/range.js"
+import { checkRegexRule } from "../nodes/rules/regex.js"
 import type { TraversalRuleEntry } from "../nodes/rules/rules.js"
 import { rulePrecedenceMap } from "../nodes/rules/rules.js"
 import type { ScopeRoot } from "../scope.js"
@@ -17,6 +19,7 @@ import { domainOf, subdomainOf } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dict, evaluate, extend, List } from "../utils/generics.js"
 import type { Problem } from "./problems.js"
+import { Problems } from "./problems.js"
 
 export const checkRules = (
     domain: Domain,
@@ -40,23 +43,23 @@ export type TraversalKey = TraversalEntry[0]
 export type TraversalState = {
     node: TraversalNode
     path: string[]
-    ruleLevel: number
+    rulePrecedenceLevel: number
 }
 
 export type CheckState<data = unknown> = evaluate<
     TraversalState & {
         data: data
         problems: Problems
+        customError?: string | undefined
     }
 >
 
-// Add a root check function that takes in data, a traversal node, and scope. It
-// should convert data and the node to an initial CheckState and pass it to the
-// next function.
+//TODO name
 export const rootCheck = (
     data: unknown,
     node: TraversalNode,
-    scope: ScopeRoot
+    scope: ScopeRoot,
+    checkOptions: CheckState
 ) => {
     const problems = new Problems()
     const checkState: CheckState = {
@@ -64,11 +67,14 @@ export const rootCheck = (
         path: [],
         data,
         problems,
-        ruleLevel: 0
+        rulePrecedenceLevel: 0,
+        customError: checkOptions.customError
     }
     check(checkState, scope)
+    return checkState
 }
 
+//TODO find a better way to do this. Probably just change into if statement and return state
 export const check = (checkState: CheckState, scope: ScopeRoot) =>
     typeof checkState.node === "string"
         ? domainOf(checkState.data) === checkState.node
@@ -83,16 +89,26 @@ export const check = (checkState: CheckState, scope: ScopeRoot) =>
 // Checkers need to get the full state so they can make updates specific to the
 // rule Keep in mind some rules in the future will set "data" directly to some
 // transformation of the input
+const addError = (state: CheckState, comparitor: unknown, data: unknown) => {
+    state.problems.push({
+        path: state.path.join(),
+        reason: `${data}-${comparitor} are not equivalent`
+    })
+}
 const checkers = {
-    regex: (data, regex) => regex.test(data),
-    divisor: (data, divisor) => data % divisor === 0,
-    domains: (data, domains, scope) => {
-        const entries = domains[domainOf(data)]
+    regex: (state, regex) => checkRegexRule(state, regex),
+    divisor: (state, divisor) => checkDivisor(state, divisor),
+    domains: (state, domains, scope) => {
+        const entries = domains[domainOf(state.data)]
         return entries ? checkEntries(data, entries, scope) : false
     },
-    domain: (data, domain) => domainOf(data) === domain,
-    subdomain: (data, subdomain, scope) => {
-        const actual = subdomainOf(data)
+    domain: (state, domain) => {
+        if (domainOf(state.data) !== domain) {
+            addError(state, domain, domainOf(state.data))
+        }
+    },
+    subdomain: (state, subdomain, scope) => {
+        const actual = subdomainOf(state.data)
         if (typeof subdomain === "string") {
             return actual === subdomain
         }
@@ -100,7 +116,7 @@ const checkers = {
             return false
         }
         if (actual === "Array" || actual === "Set") {
-            for (const item of data as List | Set<unknown>) {
+            for (const item of state.data as List | Set<unknown>) {
                 if (!check(item, subdomain[1], scope)) {
                     return false
                 }
@@ -121,29 +137,33 @@ const checkers = {
         }
         return true
     },
-    range: (data, range) => checkRange(data, range),
-    requiredProps: (data, props, scope) =>
+    range: (state, range) => {
+        checkRange(state, range)
+    },
+    requiredProps: (state, props, scope) =>
         props.every(([propKey, propNode]) =>
             check(data[propKey], propNode, scope)
         ),
-    optionalProps: (data, props, scope) =>
+    optionalProps: (state, props, scope) =>
         props.every(
             ([propKey, propNode]) =>
                 !(propKey in data) || check(data[propKey], propNode, scope)
         ),
-    branches: (data, branches, scope) =>
+    branches: (state, branches, scope) =>
         branches.some((condition) => checkEntries(data, condition, scope)),
-    validator: (data, validator) => validator(data),
-    value: (data, value) => data === value
+    validator: (state, validator) => validator(data),
+    value: (state, value) => {
+        if (state.data === value) {
+            state.path.push("value")
+            addError(state, value, state.data)
+        }
+    }
 } satisfies {
     [k in TraversalKey]: (
-        // update to take state instead of data
-        // state: CheckState<RuleInput<k>>
-        data: RuleInput<k>,
+        state: CheckState<RuleInput<k>>,
         value: Extract<TraversalEntry, [k, unknown]>[1],
         scope: ScopeRoot
-        // Update return type to void
-    ) => boolean
+    ) => void
 }
 
 export type ConstrainedRuleInputs = extend<
@@ -160,31 +180,22 @@ export type ConstrainedRuleInputs = extend<
 export type RuleInput<k extends TraversalKey> =
     k extends keyof ConstrainedRuleInputs ? ConstrainedRuleInputs[k] : unknown
 
-export const checkEntries = (
-    checkState: CheckState,
-    scope: ScopeRoot
-): CheckState => {
+export const checkEntries = (checkState: CheckState, scope: ScopeRoot) => {
     const entries = checkState.node as TraversalEntry[]
     for (let i = 0; i < checkState.node?.length; i++) {
         const ruleName = entries[i][0]
         const ruleValidator = entries[i][1] as never
-        const currentLevel = rulePrecedenceMap[ruleName]
+        const precedenceLevel = rulePrecedenceMap[ruleName]
+        //CUREENT PANATH
         if (
             checkState.problems.length &&
-            currentLevel !== checkState.ruleLevel
+            precedenceLevel > checkState.rulePrecedenceLevel
         ) {
             break
         }
-        checkState.ruleLevel = rulePrecedenceMap[ruleName]
-        if (
-            !checkers[ruleName](checkState.data as never, ruleValidator, scope)
-        ) {
-            const problem: Problem = {
-                path: ruleName,
-                reason: `${checkState.data}`
-            }
-            checkState.problems.push(problem)
-        }
+        checkState.rulePrecedenceLevel = rulePrecedenceMap[ruleName]
+        checkState.path.push(`${entries[i][0]},${entries[i][1]}`)
+        checkers[ruleName](checkState as never, ruleValidator, scope)
+        checkState.path.pop()
     }
-    return checkState
 }

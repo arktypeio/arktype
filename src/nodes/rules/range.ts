@@ -1,3 +1,4 @@
+import type { CheckState } from "../../traverse/check.js"
 import type { List } from "../../utils/generics.js"
 import { composeIntersection, empty, equal } from "../compose.js"
 
@@ -41,14 +42,35 @@ export const rangeIntersection = composeIntersection<Range>((l, r) => {
 
 export type BoundableData = number | string | List
 
-export const checkRange = (data: BoundableData, range: Range) => {
+const rangeError = {
+    min: (data: BoundableData, minBound: Bound) =>
+        `Checked data:${data} must be greater than${
+            minBound.exclusive ? "" : " or equal to"
+        } min value:${minBound.limit}`,
+    max: (data: BoundableData, maxBound: Bound) =>
+        `Checked data: ${data} must be less than ${
+            maxBound.exclusive ?? false ? "" : " or equal to"
+        } max value:${maxBound.limit}`
+}
+
+const addRangeError = (state: CheckState, type: string, bound: Bound) => {
+    state.problems.push({
+        path: `[${[...state.path].join()}]`,
+        reason: state.customError
+            ? state.customError
+            : rangeError[type](state.data, bound)
+    })
+}
+
+export const checkRange = (state: CheckState, range: Range) => {
+    const { data } = state
     const size = typeof data === "number" ? data : data.length
     if (range.min) {
         if (
             size < range.min.limit ||
             (size === range.min.limit && range.min.exclusive)
         ) {
-            return false
+            addRangeError(state, "min", range.min)
         }
     }
     if (range.max) {
@@ -56,10 +78,9 @@ export const checkRange = (data: BoundableData, range: Range) => {
             size > range.max.limit ||
             (size === range.max.limit && range.max.exclusive)
         ) {
-            return false
+            addRangeError(state, "max", range.max)
         }
     }
-    return true
 }
 
 export const buildEmptyRangeMessage = (min: Bound, max: Bound) =>

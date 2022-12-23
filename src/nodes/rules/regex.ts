@@ -1,3 +1,4 @@
+import type { CheckState } from "../../traverse/check.js"
 import type { CollapsibleList } from "../../utils/generics.js"
 import { composeIntersection } from "../compose.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
@@ -26,14 +27,22 @@ export const getRegex = (source: string) => {
     }
     return regexCache[source]
 }
+const regexError = (data: string, regexSource: string) =>
+    `${data} does not match ${regexSource}`
 
-export const checkRegexRule = (data: string, rule: CollapsibleList<string>) =>
-    typeof rule === "string"
-        ? checkRegex(data, rule)
-        : rule.every((regexSource) => checkRegex(data, regexSource))
+export const checkRegexRule = (state: CheckState, rule: RegExp) => {
+    const { data } = state
+    checkRegex(state, rule)
+}
 
-const checkRegex = (data: string, regexSource: string) =>
-    getRegex(regexSource).test(data)
+const checkRegex = (state: CheckState, regexSource: RegExp) => {
+    if (!regexSource.test(state.data)) {
+        state.problems.push({
+            path: "regex",
+            reason: regexError(state.data, regexSource)
+        })
+    }
+}
 
 export const regexIntersection = composeIntersection<CollapsibleList<string>>(
     collapsibleListUnion<string>

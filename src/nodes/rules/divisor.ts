@@ -1,7 +1,16 @@
+import type { CheckState } from "../../traverse/check.js"
 import { composeIntersection, equal } from "../compose.js"
 
-export const checkDivisor = (data: number, divisor: number) =>
-    data % divisor === 0
+const divisorError = (data, divisor) => `${data} is not divisible by ${divisor}`
+
+export const checkDivisor = (state: CheckState, divisor: number) => {
+    if (state.data % divisor !== 0) {
+        state.problems.push({
+            path: `[${[...state.path].join()}]`,
+            reason: divisorError(state.data, divisor)
+        })
+    }
+}
 
 export const divisorIntersection = composeIntersection<number>(
     (l: number, r: number) =>
