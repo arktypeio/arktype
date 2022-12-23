@@ -3,15 +3,8 @@ import { intersection } from "../../nodes/intersection.js"
 import type { TypeNode } from "../../nodes/node.js"
 import { union } from "../../nodes/union.js"
 import type { ScopeRoot } from "../../scope.js"
-import { type } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
-import type {
-    conform,
-    Dict,
-    error,
-    evaluate,
-    List
-} from "../../utils/generics.js"
+import type { conform, error, evaluate, List } from "../../utils/generics.js"
 import type {
     inferDefinition,
     InferenceContext,
@@ -22,9 +15,9 @@ import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclo
 import type { Scanner } from "../string/shift/scanner.js"
 import type { validateMorphTuple } from "./morph.js"
 import { parseMorphTuple } from "./morph.js"
-import type { validateNarrowTuple } from "./narrow.js"
-import { parseNarrowTuple } from "./narrow.js"
 import type { validatePipeTuple } from "./pipe.js"
+import { parseValidatorTuple } from "./validate.js"
+import type { validateValidatorTuple } from "./validate.js"
 
 export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
     if (isTupleExpression(def)) {
@@ -60,7 +53,7 @@ type parseTupleExpression<
     def extends UnknownTupleExpression,
     c extends InferenceContext
 > = def[1] extends ":"
-    ? validateNarrowTuple<def[0], c>
+    ? validateValidatorTuple<def[0], c>
     : def[1] extends "|>"
     ? validatePipeTuple<def[0], c>
     : def[1] extends "=>"
@@ -130,7 +123,7 @@ const tupleExpressionParsers: {
     "|": parseBranchTuple,
     "&": parseBranchTuple,
     "[]": parseArrayTuple,
-    ":": parseNarrowTuple,
+    ":": parseValidatorTuple,
     "=>": parseMorphTuple,
     "|>": () => "never"
 }

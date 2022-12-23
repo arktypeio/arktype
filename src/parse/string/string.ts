@@ -1,7 +1,7 @@
 import { arrayOf } from "../../nodes/generics.js"
 import type { TypeNode } from "../../nodes/node.js"
 import type { ScopeRoot } from "../../scope.js"
-import type { Dict, error, stringKeyOf } from "../../utils/generics.js"
+import type { error, stringKeyOf } from "../../utils/generics.js"
 import type { InferenceContext } from "../definition.js"
 import type { inferAst, validateAstSemantics } from "./ast.js"
 import { DynamicState } from "./reduce/dynamic.js"

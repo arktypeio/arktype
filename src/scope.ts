@@ -5,11 +5,7 @@ import type {
     ResolvedPredicate,
     TraversalPredicate
 } from "./nodes/predicate.js"
-import type {
-    inferDefinition,
-    InferenceContext,
-    validateDefinition
-} from "./parse/definition.js"
+import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string/string.js"
 import type { Config } from "./type.js"

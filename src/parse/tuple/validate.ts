@@ -12,7 +12,7 @@ import type { TupleExpressionParser } from "./tuple.js"
 import type { distributable } from "./utils.js"
 import { entriesOfDistributableFunction } from "./utils.js"
 
-export const parseNarrowTuple: TupleExpressionParser<":"> = (def, scope) => {
+export const parseValidatorTuple: TupleExpressionParser<":"> = (def, scope) => {
     const inputNode = parseDefinition(def[0], scope)
     const distributedValidatorEntries = entriesOfDistributableFunction(
         def[2] as distributable<Validator>,
@@ -26,7 +26,7 @@ export const parseNarrowTuple: TupleExpressionParser<":"> = (def, scope) => {
     return intersection(inputNode, distributedValidatorNode, scope)
 }
 
-export type validateNarrowTuple<narrowedDef, c extends InferenceContext> = [
+export type validateValidatorTuple<narrowedDef, c extends InferenceContext> = [
     validateDefinition<narrowedDef, c>,
     ":",
     distributable<Validator<inferDefinition<narrowedDef, c>>>
