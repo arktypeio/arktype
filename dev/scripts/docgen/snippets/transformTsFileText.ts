@@ -1,9 +1,9 @@
 import type { Project, SourceFile } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { findPackageRoot, readPackageJson } from "../../../runtime/exports.js"
-import type { PackageMetadata } from "../api/extractApi.js"
-import type { DocGenSnippetsConfig } from "../main.js"
-import type { SnippetTransformToggles } from "./extractSnippets.js"
+import { findPackageRoot, readPackageJson } from "../../../runtime/exports.ts"
+import type { PackageMetadata } from "../api/extractApi.ts"
+import type { DocGenSnippetsConfig } from "../main.ts"
+import type { SnippetTransformToggles } from "./extractSnippets.ts"
 
 export type ExtractFileSnippetContext = {
     packageMetadata: PackageMetadata
@@ -37,7 +37,7 @@ export const transformRelativeImports = (
     )
     for (const declaration of importDeclarations) {
         const specifier = declaration.getModuleSpecifier()
-        if (specifier.getLiteralText().endsWith("../exports.js")) {
+        if (specifier.getLiteralText().endsWith("../exports.ts")) {
             specifier.replaceWithText(`"${packageJson.name}"`)
         }
     }

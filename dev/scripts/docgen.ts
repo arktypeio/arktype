@@ -1,3 +1,3 @@
-import { docgen } from "./docgen/main.js"
+import { docgen } from "./docgen/main.ts"
 
 docgen()

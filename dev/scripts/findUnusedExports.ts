@@ -1,7 +1,7 @@
 import {
     findUnusedExports,
     logUnusedExportsToConsole
-} from "./docgen/api/findUnusedExports.js"
+} from "./docgen/api/findUnusedExports.ts"
 
 const unusedExports = findUnusedExports()
 logUnusedExportsToConsole(unusedExports)

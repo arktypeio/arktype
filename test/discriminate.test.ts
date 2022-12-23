@@ -1,6 +1,6 @@
 import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import { scope, type } from "../exports.js"
+import { attest } from "../dev/attest/exports.ts"
+import { scope, type } from "../exports.ts"
 
 describe("compile", () => {
     const places = scope.lazy({

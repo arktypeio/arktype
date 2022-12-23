@@ -1,4 +1,4 @@
-import type { deepImmutable, Dict, mutable } from "./generics.js"
+import type { deepImmutable, Dict, mutable } from "./generics.ts"
 
 export const deepFreeze = <value>(value: value): deepImmutable<value> =>
     (Object.isFrozen(value)

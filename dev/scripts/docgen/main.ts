@@ -1,18 +1,18 @@
 import { basename, join, relative } from "node:path"
 import { stdout } from "node:process"
 import { Project } from "ts-morph"
-import type { WalkOptions } from "../../runtime/exports.js"
-import { dirName } from "../../runtime/exports.js"
-import { getSourceControlPaths, repoDirs } from "../common.js"
-import { extractApi } from "./api/extractApi.js"
-import { writeApi } from "./api/writeApi.js"
-import { mapDir } from "./mapDir.js"
+import type { WalkOptions } from "../../runtime/exports.ts"
+import { dirName } from "../../runtime/exports.ts"
+import { getSourceControlPaths, repoDirs } from "../common.ts"
+import { extractApi } from "./api/extractApi.ts"
+import { writeApi } from "./api/writeApi.ts"
+import { mapDir } from "./mapDir.ts"
 import type {
     SnippetsByPath,
     SnippetTransformToggles
-} from "./snippets/extractSnippets.js"
-import { extractSnippets } from "./snippets/extractSnippets.js"
-import { updateSnippetReferences } from "./snippets/writeSnippets.js"
+} from "./snippets/extractSnippets.ts"
+import { extractSnippets } from "./snippets/extractSnippets.ts"
+import { updateSnippetReferences } from "./snippets/writeSnippets.ts"
 
 export type DocGenConfig = {
     apis: DocGenApiConfig[]
@@ -69,7 +69,7 @@ export const defaultConfig = createConfig({
             },
             transformContents: (content) => {
                 let transformed = content
-                transformed = transformed.replaceAll(".js", "")
+                transformed = transformed.replaceAll(".ts", "")
                 return `export default \`${transformed.replaceAll(
                     /`|\${/g,
                     "\\$&"

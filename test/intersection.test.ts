@@ -1,10 +1,10 @@
 import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import { type } from "../exports.js"
+import { attest } from "../dev/attest/exports.ts"
+import { type } from "../exports.ts"
 import {
     buildMissingRightOperandMessage,
     buildUnresolvableMessage
-} from "../src/parse/string/shift/operand/unenclosed.js"
+} from "../src/parse/string/shift/operand/unenclosed.ts"
 
 describe("intersection", () => {
     describe("parse", () => {

@@ -1,5 +1,5 @@
-import type { classOf, Dict, evaluate, isTopType, List } from "./generics.js"
-import { isKeyOf } from "./generics.js"
+import type { classOf, Dict, evaluate, isTopType, List } from "./generics.ts"
+import { isKeyOf } from "./generics.ts"
 
 export const hasDomain = <data, domain extends Domain>(
     data: data,

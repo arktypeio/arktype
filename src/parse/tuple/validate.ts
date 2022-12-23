@@ -1,16 +1,16 @@
-import { intersection } from "../../nodes/intersection.js"
-import type { TypeSet } from "../../nodes/node.js"
-import type { Validator } from "../../nodes/rules/rules.js"
-import type { Dict, mutable } from "../../utils/generics.js"
+import { intersection } from "../../nodes/intersection.ts"
+import type { TypeSet } from "../../nodes/node.ts"
+import type { Validator } from "../../nodes/rules/rules.ts"
+import type { Dict, mutable } from "../../utils/generics.ts"
 import type {
     inferDefinition,
     InferenceContext,
     validateDefinition
-} from "../definition.js"
-import { parseDefinition } from "../definition.js"
-import type { TupleExpressionParser } from "./tuple.js"
-import type { distributable } from "./utils.js"
-import { entriesOfDistributableFunction } from "./utils.js"
+} from "../definition.ts"
+import { parseDefinition } from "../definition.ts"
+import type { TupleExpressionParser } from "./tuple.ts"
+import type { distributable } from "./utils.ts"
+import { entriesOfDistributableFunction } from "./utils.ts"
 
 export const parseValidatorTuple: TupleExpressionParser<":"> = (def, scope) => {
     const inputNode = parseDefinition(def[0], scope)

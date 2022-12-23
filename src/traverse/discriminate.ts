@@ -1,7 +1,7 @@
-// import type { TraversalPredicate } from "../nodes/predicate.js"
-// import type { ScopeRoot } from "../scope.js"
-// import type { Dict, mutable } from "../utils/generics.js"
-// import { pathToSegments } from "../utils/paths.js"
+// import type { TraversalPredicate } from "../nodes/predicate.ts"
+// import type { ScopeRoot } from "../scope.ts"
+// import type { Dict, mutable } from "../utils/generics.ts"
+// import { pathToSegments } from "../utils/paths.ts"
 
 // export type DiscriminatedBranches = [
 //     token: "?",

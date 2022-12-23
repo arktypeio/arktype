@@ -1,8 +1,8 @@
 import { rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { exit } from "node:process"
-import { fromPackageRoot, readPackageJson } from "../../runtime/fs.js"
-import { shell } from "../../runtime/shell.js"
+import { fromPackageRoot, readPackageJson } from "../../runtime/fs.ts"
+import { shell } from "../../runtime/shell.ts"
 
 const versions: { [k: string]: string } = {
     "4.8": "16.0.0"

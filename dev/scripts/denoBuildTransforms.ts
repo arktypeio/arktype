@@ -1,7 +1,7 @@
-import { fromPackageRoot, readJson } from "../runtime/fs.js"
+import { fromPackageRoot, readJson } from "../runtime/fs.ts"
 
 export const denoTransformations = (contents: string) => {
-    let transformedContents = contents.replaceAll(".js", ".ts")
+    let transformedContents = contents.replaceAll(".ts", ".ts")
     const nodeModuleImportsRegex = /import .+ from "[^.].*"/gm
     const nodeModuleImports = transformedContents.matchAll(
         nodeModuleImportsRegex

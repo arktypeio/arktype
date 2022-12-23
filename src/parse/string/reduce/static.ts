@@ -1,6 +1,6 @@
-import type { defined, error } from "../../../utils/generics.js"
-import type { astToString } from "../ast.js"
-import type { Scanner } from "../shift/scanner.js"
+import type { defined, error } from "../../../utils/generics.ts"
+import type { astToString } from "../ast.ts"
+import type { Scanner } from "../shift/scanner.ts"
 import type {
     buildMultipleLeftBoundsMessage,
     buildOpenRangeMessage,
@@ -8,7 +8,7 @@ import type {
     buildUnpairableComparatorMessage,
     OpenRange,
     unclosedGroupMessage
-} from "./shared.js"
+} from "./shared.ts"
 
 export type StaticState = {
     root: unknown

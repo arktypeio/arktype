@@ -1,4 +1,4 @@
-import { hasDomain } from "./domains.js"
+import { hasDomain } from "./domains.ts"
 
 export type downcast<t> = castWithExclusion<t, downcastRecurse<t>, []>
 

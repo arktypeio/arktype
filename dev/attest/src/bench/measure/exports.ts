@@ -1,3 +1,3 @@
-export * from "./measure.js"
-export * from "./time.js"
-export * from "./types.js"
+export * from "./measure.ts"
+export * from "./time.ts"
+export * from "./types.ts"

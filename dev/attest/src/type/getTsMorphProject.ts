@@ -1,6 +1,6 @@
 import type { ProjectOptions } from "ts-morph"
 import { Project, ResolutionHosts } from "ts-morph"
-import { getAttestConfig } from "../common.js"
+import { getAttestConfig } from "../config.ts"
 
 export type ForceGetTsProjectOptions = {
     useRealFs: boolean

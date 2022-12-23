@@ -1,7 +1,7 @@
 import { existsSync, statSync } from "node:fs"
 import { join } from "node:path"
-import { readFile } from "../runtime/fs.js"
-import { shell } from "../runtime/shell.js"
+import { readFile } from "../runtime/fs.ts"
+import { shell } from "../runtime/shell.ts"
 
 const root = "."
 const dev = "dev"

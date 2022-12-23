@@ -1,4 +1,4 @@
-import { Scanner } from "../shift/scanner.js"
+import { Scanner } from "../shift/scanner.ts"
 
 export const buildUnmatchedGroupCloseMessage = <unscanned extends string>(
     unscanned: unscanned

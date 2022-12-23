@@ -1,13 +1,13 @@
 import { performance } from "node:perf_hooks"
-import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.js"
-import { caller } from "../../../runtime/exports.js"
-import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
-import type { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
-import { unhandledExceptionMessages } from "./bench.js"
-import type { MarkMeasure, Measure, TimeUnit } from "./measure/exports.js"
-import { createTimeComparison, createTimeMeasure } from "./measure/exports.js"
-import type { BenchTypeAssertions } from "./type.js"
-import { createBenchTypeAssertion } from "./type.js"
+import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.ts"
+import { caller } from "../../../runtime/exports.ts"
+import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
+import type { BenchableFunction, BenchContext, UntilOptions } from "./bench.ts"
+import { unhandledExceptionMessages } from "./bench.ts"
+import type { MarkMeasure, Measure, TimeUnit } from "./measure/exports.ts"
+import { createTimeComparison, createTimeMeasure } from "./measure/exports.ts"
+import type { BenchTypeAssertions } from "./type.ts"
+import { createBenchTypeAssertion } from "./type.ts"
 
 export type StatName = keyof typeof stats
 

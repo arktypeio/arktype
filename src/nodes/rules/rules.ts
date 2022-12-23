@@ -1,21 +1,21 @@
-import type { ScopeRoot } from "../../scope.js"
-import type { Domain, inferDomain } from "../../utils/domains.js"
-import type { CollapsibleList, Dict } from "../../utils/generics.js"
-import { composeIntersection, composeKeyedOperation } from "../compose.js"
-import type { PredicateContext } from "../predicate.js"
-import { collapsibleListUnion } from "./collapsibleSet.js"
-import { divisorIntersection } from "./divisor.js"
+import type { ScopeRoot } from "../../scope.ts"
+import type { Domain, inferDomain } from "../../utils/domains.ts"
+import type { CollapsibleList, Dict } from "../../utils/generics.ts"
+import { composeIntersection, composeKeyedOperation } from "../compose.ts"
+import type { PredicateContext } from "../predicate.ts"
+import { collapsibleListUnion } from "./collapsibleSet.ts"
+import { divisorIntersection } from "./divisor.ts"
 import type {
     PropsRule,
     TraversalOptionalProps,
     TraversalRequiredProps
-} from "./props.js"
-import { compileProps, propsIntersection } from "./props.js"
-import type { Range } from "./range.js"
-import { rangeIntersection } from "./range.js"
-import { getRegex, regexIntersection } from "./regex.js"
-import type { SubdomainRule, TraversalSubdomainRule } from "./subdomain.js"
-import { compileSubdomain, subdomainIntersection } from "./subdomain.js"
+} from "./props.ts"
+import { compileProps, propsIntersection } from "./props.ts"
+import type { Range } from "./range.ts"
+import { rangeIntersection } from "./range.ts"
+import { getRegex, regexIntersection } from "./regex.ts"
+import type { SubdomainRule, TraversalSubdomainRule } from "./subdomain.ts"
+import { compileSubdomain, subdomainIntersection } from "./subdomain.ts"
 
 export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
     readonly subdomain?: SubdomainRule<scope>

@@ -1,10 +1,10 @@
 import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import { type } from "../exports.js"
+import { attest } from "../dev/attest/exports.ts"
+import { type } from "../exports.ts"
 import {
     buildIndivisibleMessage,
     buildUnboundableMessage
-} from "../src/parse/string/ast.js"
+} from "../src/parse/string/ast.ts"
 
 describe("semantics", () => {
     describe("bound", () => {

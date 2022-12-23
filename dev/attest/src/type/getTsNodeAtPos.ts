@@ -1,7 +1,8 @@
 import { ts } from "ts-morph"
-import type { SourcePosition } from "../common.js"
-import { positionToString } from "../common.js"
-import { getVirtualTsMorphProject } from "./getTsMorphProject.js"
+
+import type { SourcePosition } from "../utils.ts"
+import { positionToString } from "../utils.ts"
+import { getVirtualTsMorphProject } from "./getTsMorphProject.ts"
 
 export const getTsNodeAtPosition = (position: SourcePosition) => {
     const project = getVirtualTsMorphProject()

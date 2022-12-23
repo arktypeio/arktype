@@ -1,7 +1,7 @@
 import { renameSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import { stdout } from "node:process"
-import type { WalkOptions } from "../runtime/exports.js"
+import type { WalkOptions } from "../runtime/exports.ts"
 import {
     readFile,
     readJson,
@@ -9,12 +9,12 @@ import {
     walkPaths,
     writeFile,
     writeJson
-} from "../runtime/exports.js"
-import { repoDirs, tsFileMatcher } from "./common.js"
-import { denoTransformations } from "./denoBuildTransforms.js"
-import { getProject } from "./docgen/main.js"
-import { mapDir } from "./docgen/mapDir.js"
-import { extractSnippets } from "./docgen/snippets/extractSnippets.js"
+} from "../runtime/exports.ts"
+import { repoDirs, tsFileMatcher } from "./common.ts"
+import { denoTransformations } from "./denoBuildTransforms.ts"
+import { getProject } from "./docgen/main.ts"
+import { mapDir } from "./docgen/mapDir.ts"
+import { extractSnippets } from "./docgen/snippets/extractSnippets.ts"
 
 const isTestBuild = process.argv.includes("--test")
 
@@ -113,7 +113,7 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
 const buildExportsTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
     const originalPath =
         kind === "mjs" || kind === "cjs"
-            ? join(repoDirs.outRoot, kind, "exports.js")
+            ? join(repoDirs.outRoot, kind, "exports.ts")
             : "exports.ts"
     const originalContents = readFile(originalPath)
     if (kind === "mjs" || kind === "cjs") {
@@ -127,9 +127,9 @@ const buildExportsTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
         )
     }
     if (kind === "deno") {
-        transformedContents = transformedContents.replaceAll(".js", ".ts")
+        transformedContents = transformedContents.replaceAll(".ts", ".ts")
     }
-    const outputFileName = kind === "deno" ? "exports.ts" : "exports.js"
+    const outputFileName = kind === "deno" ? "exports.ts" : "exports.ts"
     const destinationFile = isTestBuild
         ? join(repoDirs.outRoot, `${kind}`, outputFileName)
         : join(
@@ -156,7 +156,7 @@ const buildDeno = () => {
         skipFormatting: true,
         skipSourceMap: true,
         sourceOptions: inFileFilter,
-        transformContents: (content) => content.replaceAll(/\.js"/g, '.ts"')
+        transformContents: (content) => content.replaceAll(/\.ts"/g, '.ts"')
     })
 
     buildExportsTs("deno")

@@ -2,20 +2,20 @@ import type {
     ExplicitDomainEntry,
     MultiDomainEntry,
     TraversalNode
-} from "../nodes/node.js"
+} from "../nodes/node.ts"
 import type {
     ExactValueEntry,
     TraversalBranchesEntry
-} from "../nodes/predicate.js"
-import type { BoundableData } from "../nodes/rules/range.js"
-import { checkRange } from "../nodes/rules/range.js"
-import type { TraversalRuleEntry } from "../nodes/rules/rules.js"
-import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/domains.js"
-import { domainOf, subdomainOf } from "../utils/domains.js"
-import { throwInternalError } from "../utils/errors.js"
-import type { Dict, evaluate, extend, List } from "../utils/generics.js"
-import type { Problems } from "./problems.js"
+} from "../nodes/predicate.ts"
+import type { BoundableData } from "../nodes/rules/range.ts"
+import { checkRange } from "../nodes/rules/range.ts"
+import type { TraversalRuleEntry } from "../nodes/rules/rules.ts"
+import type { ScopeRoot } from "../scope.ts"
+import type { Domain } from "../utils/domains.ts"
+import { domainOf, subdomainOf } from "../utils/domains.ts"
+import { throwInternalError } from "../utils/errors.ts"
+import type { Dict, evaluate, extend, List } from "../utils/generics.ts"
+import type { Problems } from "./problems.ts"
 
 export const checkRules = (
     domain: Domain,

@@ -1,12 +1,13 @@
-import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.js"
-import { caller } from "../../../runtime/exports.js"
-import type { AttestConfig, SourcePosition } from "../common.js"
-import { getAttestConfig } from "../common.js"
-import type { BenchFormat } from "../writeSnapshot.js"
-import type { TimeAssertionName } from "./call.js"
-import { BenchAssertions } from "./call.js"
-import type { BenchTypeAssertions } from "./type.js"
-import { createBenchTypeAssertion } from "./type.js"
+import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.ts"
+import { caller } from "../../../runtime/exports.ts"
+import type { AttestConfig } from "../config.ts"
+import { getAttestConfig } from "../config.ts"
+import type { SourcePosition } from "../utils.ts"
+import type { BenchFormat } from "../writeSnapshot.ts"
+import type { TimeAssertionName } from "./call.ts"
+import { BenchAssertions } from "./call.ts"
+import type { BenchTypeAssertions } from "./type.ts"
+import { createBenchTypeAssertion } from "./type.ts"
 
 export type UntilOptions = {
     ms?: number

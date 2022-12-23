@@ -1,10 +1,10 @@
-import type { TypeNode } from "../../nodes/node.js"
-import { domainsOfNode } from "../../nodes/utils.js"
-import type { ScopeRoot } from "../../scope.js"
-import type { Domain, domainOf, inferDomain } from "../../utils/domains.js"
-import { hasDomain } from "../../utils/domains.js"
-import { throwParseError } from "../../utils/errors.js"
-import type { evaluate } from "../../utils/generics.js"
+import type { TypeNode } from "../../nodes/node.ts"
+import { domainsOfNode } from "../../nodes/utils.ts"
+import type { ScopeRoot } from "../../scope.ts"
+import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
+import { hasDomain } from "../../utils/domains.ts"
+import { throwParseError } from "../../utils/errors.ts"
+import type { evaluate } from "../../utils/generics.ts"
 
 export type UnaryFunction<In = any, Return = unknown> = (In: In) => Return
 

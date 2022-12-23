@@ -1,4 +1,4 @@
-import { composeIntersection, equal } from "../compose.js"
+import { composeIntersection, equal } from "../compose.ts"
 
 export const checkDivisor = (data: number, divisor: number) =>
     data % divisor === 0

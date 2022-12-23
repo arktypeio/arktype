@@ -1,10 +1,10 @@
-import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/domains.js"
-import { domainOf, hasDomain } from "../utils/domains.js"
-import { throwInternalError } from "../utils/errors.js"
-import { empty, equal } from "./compose.js"
-import { predicateIntersection } from "./intersection.js"
-import type { Condition, Predicate, PredicateComparison } from "./predicate.js"
+import type { ScopeRoot } from "../scope.ts"
+import type { Domain } from "../utils/domains.ts"
+import { domainOf, hasDomain } from "../utils/domains.ts"
+import { throwInternalError } from "../utils/errors.ts"
+import { empty, equal } from "./compose.ts"
+import { predicateIntersection } from "./intersection.ts"
+import type { Condition, Predicate, PredicateComparison } from "./predicate.ts"
 
 export const isBranchComparison = (
     comparison: PredicateComparison

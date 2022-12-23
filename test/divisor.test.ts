@@ -1,7 +1,7 @@
 import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import { type } from "../exports.js"
-import { buildInvalidDivisorMessage } from "../src/parse/string/shift/operator/divisor.js"
+import { attest } from "../dev/attest/exports.ts"
+import { type } from "../exports.ts"
+import { buildInvalidDivisorMessage } from "../src/parse/string/shift/operator/divisor.ts"
 
 describe("divisibility", () => {
     describe("parse", () => {

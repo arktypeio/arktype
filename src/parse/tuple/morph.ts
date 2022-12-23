@@ -1,14 +1,14 @@
-import { throwParseError } from "../../utils/errors.js"
-import type { Dict, List } from "../../utils/generics.js"
+import { throwParseError } from "../../utils/errors.ts"
+import type { Dict, List } from "../../utils/generics.ts"
 import type {
     inferDefinition,
     InferenceContext,
     validateDefinition
-} from "../definition.js"
-import { parseDefinition } from "../definition.js"
-import type { TupleExpressionParser } from "./tuple.js"
-import type { distributable } from "./utils.js"
-import { entriesOfDistributableFunction } from "./utils.js"
+} from "../definition.ts"
+import { parseDefinition } from "../definition.ts"
+import type { TupleExpressionParser } from "./tuple.ts"
+import type { distributable } from "./utils.ts"
+import { entriesOfDistributableFunction } from "./utils.ts"
 
 export const parseMorphTuple: TupleExpressionParser<"=>"> = (def, scope) => {
     if (def.length !== 4) {

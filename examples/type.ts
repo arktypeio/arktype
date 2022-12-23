@@ -1,4 +1,4 @@
-import { type } from "../exports.js"
+import { type } from "../exports.ts"
 
 // Define a type...
 export const user = type({

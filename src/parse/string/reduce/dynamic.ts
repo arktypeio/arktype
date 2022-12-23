@@ -1,20 +1,20 @@
-import { arrayOf } from "../../../nodes/generics.js"
-import { intersection } from "../../../nodes/intersection.js"
-import type { TypeNode } from "../../../nodes/node.js"
-import { union } from "../../../nodes/union.js"
-import { isExactValue } from "../../../nodes/utils.js"
-import type { ScopeRoot } from "../../../scope.js"
-import { throwInternalError, throwParseError } from "../../../utils/errors.js"
-import { isKeyOf } from "../../../utils/generics.js"
-import { Scanner } from "../shift/scanner.js"
-import type { OpenRange } from "./shared.js"
+import { arrayOf } from "../../../nodes/generics.ts"
+import { intersection } from "../../../nodes/intersection.ts"
+import type { TypeNode } from "../../../nodes/node.ts"
+import { union } from "../../../nodes/union.ts"
+import { isExactValue } from "../../../nodes/utils.ts"
+import type { ScopeRoot } from "../../../scope.ts"
+import { throwInternalError, throwParseError } from "../../../utils/errors.ts"
+import { isKeyOf } from "../../../utils/generics.ts"
+import { Scanner } from "../shift/scanner.ts"
+import type { OpenRange } from "./shared.ts"
 import {
     buildMultipleLeftBoundsMessage,
     buildOpenRangeMessage,
     buildUnmatchedGroupCloseMessage,
     buildUnpairableComparatorMessage,
     unclosedGroupMessage
-} from "./shared.js"
+} from "./shared.ts"
 
 type BranchState = {
     range?: OpenRange

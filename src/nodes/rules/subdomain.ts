@@ -1,11 +1,11 @@
-import type { Subdomain } from "../../utils/domains.js"
-import type { Dict } from "../../utils/generics.js"
-import { composeIntersection, empty, equal } from "../compose.js"
-import { nodeIntersection } from "../intersection.js"
-import type { TraversalNode, TypeNode } from "../node.js"
-import { compileNode } from "../node.js"
-import type { PredicateContext } from "../predicate.js"
-import type { FlattenAndPushRule } from "./rules.js"
+import type { Subdomain } from "../../utils/domains.ts"
+import type { Dict } from "../../utils/generics.ts"
+import { composeIntersection, empty, equal } from "../compose.ts"
+import { nodeIntersection } from "../intersection.ts"
+import type { TraversalNode, TypeNode } from "../node.ts"
+import { compileNode } from "../node.ts"
+import type { PredicateContext } from "../predicate.ts"
+import type { FlattenAndPushRule } from "./rules.ts"
 
 // Unfortunately we can't easily abstract between these two rules because of
 // nonsense TS circular reference issues.

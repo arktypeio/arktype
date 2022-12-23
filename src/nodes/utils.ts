@@ -1,9 +1,9 @@
-import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/domains.js"
-import type { defined } from "../utils/generics.js"
-import { keysOf } from "../utils/generics.js"
-import type { TypeNode, TypeSet } from "./node.js"
-import type { ExactValue, Predicate } from "./predicate.js"
+import type { ScopeRoot } from "../scope.ts"
+import type { Domain } from "../utils/domains.ts"
+import type { defined } from "../utils/generics.ts"
+import { keysOf } from "../utils/generics.ts"
+import type { TypeNode, TypeSet } from "./node.ts"
+import type { ExactValue, Predicate } from "./predicate.ts"
 
 export const resolveIfIdentifier = (
     node: TypeNode,

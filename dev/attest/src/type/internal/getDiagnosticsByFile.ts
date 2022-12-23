@@ -1,6 +1,6 @@
 import type { ts } from "ts-morph"
-import { getFileKey } from "../../common.js"
-import { getVirtualTsMorphProject } from "../getTsMorphProject.js"
+import { getFileKey } from "../../utils.ts"
+import { getVirtualTsMorphProject } from "../getTsMorphProject.ts"
 
 export type DiagnosticData = {
     start: number

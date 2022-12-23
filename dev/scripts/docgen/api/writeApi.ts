@@ -1,18 +1,18 @@
 import { rmSync } from "node:fs"
 import { join } from "node:path"
-import { ensureDir, shell, writeFile } from "../../../runtime/exports.js"
-import type { DocGenApiConfig } from "../main.js"
+import { ensureDir, shell, writeFile } from "../../../runtime/exports.ts"
+import type { DocGenApiConfig } from "../main.ts"
 import type {
     ApiEntryPoint,
     ExportData,
     PackageExtractionData
-} from "./extractApi.js"
-import type { TsTagData } from "./tsDocTransforms.js"
+} from "./extractApi.ts"
+import type { TsTagData } from "./tsDocTransforms.ts"
 import {
     formatTagData,
     packTsDocTags,
     transformLinkTagToURL
-} from "./tsDocTransforms.js"
+} from "./tsDocTransforms.ts"
 
 export const writeApi = (
     apiConfig: DocGenApiConfig,

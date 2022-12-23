@@ -1,8 +1,8 @@
-import type { ScopeRoot } from "../scope.js"
-import { throwInternalError } from "../utils/errors.js"
-import type { Dict, mutable, stringKeyOf } from "../utils/generics.js"
-import type { TypeNode, TypeSet } from "./node.js"
-import { resolveIfIdentifier } from "./utils.js"
+import type { ScopeRoot } from "../scope.ts"
+import { throwInternalError } from "../utils/errors.ts"
+import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
+import type { TypeNode, TypeSet } from "./node.ts"
+import { resolveIfIdentifier } from "./utils.ts"
 
 type ContextFreeSetOperation<t, result extends t> = (
     l: t,

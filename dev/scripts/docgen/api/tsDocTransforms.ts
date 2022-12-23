@@ -1,4 +1,4 @@
-import type { ExportData, TsDocData } from "./extractApi.js"
+import type { ExportData, TsDocData } from "./extractApi.ts"
 
 type LinkDetails = [name: string, alias?: string]
 

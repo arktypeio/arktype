@@ -1,4 +1,4 @@
-import { domainOf } from "../utils/domains.js"
+import { domainOf } from "../utils/domains.ts"
 
 export type BaseProblemConfig = {
     omitActual?: boolean

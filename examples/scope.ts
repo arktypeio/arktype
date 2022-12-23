@@ -1,4 +1,4 @@
-import { scope } from "../exports.js"
+import { scope } from "../exports.ts"
 
 // Scopes are collections of types that can reference each other.
 export const types = scope({

@@ -1,12 +1,13 @@
 import { basename, dirname, isAbsolute, join } from "node:path"
 import type { CallExpression, SourceFile, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { readJson } from "../../runtime/exports.js"
-import type { SourcePosition } from "./common.js"
-import { getAttestConfig, positionToString } from "./common.js"
-import { getRealTsMorphProject, getTsNodeAtPosition } from "./type/exports.js"
-import type { BenchFormat } from "./writeSnapshot.js"
-import { writeUpdates } from "./writeSnapshot.js"
+import { readJson } from "../../runtime/exports.ts"
+import { getAttestConfig } from "./config.ts"
+import { getRealTsMorphProject, getTsNodeAtPosition } from "./type/exports.ts"
+import type { SourcePosition } from "./utils.ts"
+import { positionToString } from "./utils.ts"
+import type { BenchFormat } from "./writeSnapshot.ts"
+import { writeUpdates } from "./writeSnapshot.ts"
 
 export type SnapshotArgs = {
     position: SourcePosition

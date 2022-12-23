@@ -1,25 +1,25 @@
-import type { TypeNode } from "../nodes/node.js"
-import type { ScopeRoot } from "../scope.js"
-import type { domainOf, Primitive, Subdomain } from "../utils/domains.js"
-import { subdomainOf } from "../utils/domains.js"
-import { throwParseError } from "../utils/errors.js"
+import type { TypeNode } from "../nodes/node.ts"
+import type { ScopeRoot } from "../scope.ts"
+import type { domainOf, Primitive, Subdomain } from "../utils/domains.ts"
+import { subdomainOf } from "../utils/domains.ts"
+import { throwParseError } from "../utils/errors.ts"
 import type {
     Dict,
     evaluate,
     isAny,
     isTopType,
     List
-} from "../utils/generics.js"
-import type { inferRecord } from "./record.js"
-import { parseRecord } from "./record.js"
-import type { inferString, validateString } from "./string/string.js"
-import { parseString } from "./string/string.js"
+} from "../utils/generics.ts"
+import type { inferRecord } from "./record.ts"
+import { parseRecord } from "./record.ts"
+import type { inferString, validateString } from "./string/string.ts"
+import { parseString } from "./string/string.ts"
 import type {
     inferTuple,
     UnknownTupleExpression,
     validateTupleExpression
-} from "./tuple/tuple.js"
-import { parseTuple } from "./tuple/tuple.js"
+} from "./tuple/tuple.ts"
+import { parseTuple } from "./tuple/tuple.ts"
 
 export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
     switch (subdomainOf(def)) {

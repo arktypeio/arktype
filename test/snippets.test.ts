@@ -1,9 +1,9 @@
 import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
+import { attest } from "../dev/attest/exports.ts"
 
 describe("snippets", () => {
     test("type", async () => {
-        const typeSnippet = await import("../examples/type.js")
+        const typeSnippet = await import("../examples/type.ts")
         attest(typeSnippet.user.infer).typed as {
             name: string
             browser: {
@@ -16,7 +16,7 @@ describe("snippets", () => {
         )
     })
     test("scope", async () => {
-        const scopeSnippet = await import("../examples/scope.js")
+        const scopeSnippet = await import("../examples/scope.ts")
         attest(scopeSnippet.types.package.infer).type.toString.snap(
             "{ name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }"
         )

@@ -1,1 +1,1 @@
-export * from "./bench.js"
+export * from "./bench.ts"

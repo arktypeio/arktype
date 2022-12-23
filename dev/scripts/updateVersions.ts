@@ -7,9 +7,9 @@ import {
     shell,
     writeFile,
     writeJson
-} from "../runtime/exports.js"
-import { repoDirs } from "./common.js"
-import { docgen } from "./docgen/main.js"
+} from "../runtime/exports.ts"
+import { repoDirs } from "./common.ts"
+import { docgen } from "./docgen/main.ts"
 
 const suffixedPackageEntries: [rootDir: string, suffix: string][] = []
 

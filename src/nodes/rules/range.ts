@@ -1,5 +1,5 @@
-import type { List } from "../../utils/generics.js"
-import { composeIntersection, empty, equal } from "../compose.js"
+import type { List } from "../../utils/generics.ts"
+import { composeIntersection, empty, equal } from "../compose.ts"
 
 export type Range = {
     readonly min?: Bound

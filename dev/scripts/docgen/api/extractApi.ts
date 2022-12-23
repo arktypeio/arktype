@@ -7,8 +7,8 @@ import type {
     SourceFile
 } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { readPackageJson } from "../../../runtime/exports.js"
-import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
+import { readPackageJson } from "../../../runtime/exports.ts"
+import { getEntryPointsToRelativeDtsPaths } from "./utils.ts"
 
 export type ApiEntryPoint = {
     subpath: string

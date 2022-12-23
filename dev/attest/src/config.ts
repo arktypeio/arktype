@@ -1,30 +1,15 @@
 import { existsSync } from "node:fs"
-import { join, relative, resolve } from "node:path"
-import { ensureDir, readJson } from "../../runtime/exports.js"
-import type { SourceFileEntry } from "../../scripts/common.js"
-import { getSourceFileEntries } from "../../scripts/common.js"
-import { getCmdFromPid } from "./utils.js"
-import type { BenchFormat } from "./writeSnapshot.js"
+import { join, resolve } from "node:path"
+import { ensureDir } from "../../runtime/exports.ts"
+import type { SourceFileEntry } from "../../scripts/common.ts"
+import { getSourceFileEntries } from "../../scripts/common.ts"
+import { getCmdFromPid } from "./utils.ts"
+import type { BenchFormat } from "./writeSnapshot.ts"
 
-export type LinePosition = {
-    line: number
-    char: number
-}
-
-export type LinePositionRange = {
-    start: LinePosition
-    end: LinePosition
-}
-
-export type SourcePosition = LinePosition & {
-    file: string
-    method: string
-}
-
-export const positionToString = (position: SourcePosition) =>
-    `line ${position.line}, character ${position.char} at path '${position.file}'`
-
-export type AttestConfig = Required<AttestJson> & {
+export type AttestConfig = {
+    precached: boolean
+    preserveCache: boolean
+    tsconfig: string | undefined
     updateSnapshots: boolean
     benchFormat: Required<BenchFormat>
     cacheDir: string
@@ -33,16 +18,9 @@ export type AttestConfig = Required<AttestJson> & {
     skipTypes: boolean
     typeSources: [path: string, contents: string][]
     transient: boolean
+    benchPercentThreshold: number
+    benchErrorOnThresholdExceeded: boolean
     filter: string[] | string | undefined
-}
-
-type AttestJson = {
-    tsconfig?: string | undefined
-    precached?: boolean
-    preserveCache?: boolean
-    assertAliases?: string[]
-    benchPercentThreshold?: number
-    benchErrorOnThresholdExceeded?: boolean
 }
 
 const checkArgsForParam = (args: string[], param: `-${string}`) => {
@@ -51,75 +29,6 @@ const checkArgsForParam = (args: string[], param: `-${string}`) => {
         return undefined
     }
     return args[filterFlagIndex + 1]
-}
-
-export const getFileKey = (path: string) => relative(".", path)
-
-export const isRecursible = (value: unknown): value is object =>
-    typeof value === "object" && value !== null
-
-type StringifiedValue = undefined | symbol | bigint | Function
-
-// A little repetitive but avoids infinite recursion on certain types. Could be
-// optimized.
-export type serialize<t> = t extends StringifiedValue
-    ? string
-    : t extends object
-    ? {
-          [k in keyof t]: t[k] extends StringifiedValue
-              ? string
-              : t[k] extends object
-              ? serialize<t[k]>
-              : t[k]
-      }
-    : t
-
-export const literalSerialize = <T>(value: T): serialize<T> =>
-    serialize(value, false, [])
-
-export const stringSerialize = (value: unknown) => serialize(value, true, [])
-
-const serialize = <T>(
-    value: T,
-    alwaysStringify: boolean,
-    seen: unknown[]
-): any => {
-    if (isRecursible(value)) {
-        if (seen.includes(value)) {
-            return "<cyclic>"
-        } else {
-            const serializedObject = Array.isArray(value)
-                ? value.map((_) =>
-                      serialize(_, alwaysStringify, [...seen, value])
-                  )
-                : Object.fromEntries(
-                      Object.entries(value).map(([k, v]) => [
-                          k,
-                          serialize(v, alwaysStringify, [...seen, value])
-                      ])
-                  )
-            return alwaysStringify
-                ? JSON.stringify(serializedObject)
-                : serializedObject
-        }
-    } else {
-        return serializePrimitive(value, alwaysStringify)
-    }
-}
-
-const serializePrimitive = (value: unknown, stringify?: boolean) => {
-    switch (typeof value) {
-        case "symbol":
-            return `<symbol ${value.description ?? "(anonymous)"}>`
-        case "function":
-            return `<function${value.name ?? " (anonymous)"}>`
-        case "undefined":
-            return "<undefined>"
-        case "bigint":
-            return `<bigint ${value}>`
-        default:
-            return stringify ? JSON.stringify(value) : value
-    }
 }
 
 const getArgsToCheck = () => {
@@ -166,9 +75,6 @@ export const getAttestConfig = (): AttestConfig => {
     if (cachedConfig) {
         return cachedConfig
     }
-    const attestJson: AttestJson = existsSync("attest.json")
-        ? readJson("attest.json")
-        : {}
     const tsconfig = existsSync("tsconfig.json") ? resolve("tsconfig.json") : ""
     const argsToCheck = getArgsToCheck()
     const cacheDir =
@@ -188,7 +94,7 @@ export const getAttestConfig = (): AttestConfig => {
             ([path, contents]): SourceFileEntry => [
                 path,
                 // Use .js imports for node + pre 5.0 versions of TS
-                contents.replaceAll('.js"', '.ts"')
+                contents.replaceAll('.ts"', '.js"')
             ]
         )
     return {
@@ -211,13 +117,11 @@ export const getAttestConfig = (): AttestConfig => {
         tsconfig,
         precached: argsToCheck.includes("--precache"),
         preserveCache: false,
-        assertAliases: ["attest"],
         cacheDir,
         snapCacheDir,
         assertionCacheFile: join(cacheDir, "assertions.json"),
         benchPercentThreshold: 20,
         benchErrorOnThresholdExceeded: false,
-        transient,
-        ...attestJson
+        transient
     }
 }

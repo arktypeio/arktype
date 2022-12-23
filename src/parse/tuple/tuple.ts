@@ -1,23 +1,23 @@
-import { arrayOf } from "../../nodes/generics.js"
-import { intersection } from "../../nodes/intersection.js"
-import type { TypeNode } from "../../nodes/node.js"
-import { union } from "../../nodes/union.js"
-import type { ScopeRoot } from "../../scope.js"
-import { throwParseError } from "../../utils/errors.js"
-import type { conform, error, evaluate, List } from "../../utils/generics.js"
+import { arrayOf } from "../../nodes/generics.ts"
+import { intersection } from "../../nodes/intersection.ts"
+import type { TypeNode } from "../../nodes/node.ts"
+import { union } from "../../nodes/union.ts"
+import type { ScopeRoot } from "../../scope.ts"
+import { throwParseError } from "../../utils/errors.ts"
+import type { conform, error, evaluate, List } from "../../utils/generics.ts"
 import type {
     inferDefinition,
     InferenceContext,
     validateDefinition
-} from "../definition.js"
-import { parseDefinition } from "../definition.js"
-import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
-import type { Scanner } from "../string/shift/scanner.js"
-import type { validateMorphTuple } from "./morph.js"
-import { parseMorphTuple } from "./morph.js"
-import type { validatePipeTuple } from "./pipe.js"
-import { parseValidatorTuple } from "./validate.js"
-import type { validateValidatorTuple } from "./validate.js"
+} from "../definition.ts"
+import { parseDefinition } from "../definition.ts"
+import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
+import type { Scanner } from "../string/shift/scanner.ts"
+import type { validateMorphTuple } from "./morph.ts"
+import { parseMorphTuple } from "./morph.ts"
+import type { validatePipeTuple } from "./pipe.ts"
+import { parseValidatorTuple } from "./validate.ts"
+import type { validateValidatorTuple } from "./validate.ts"
 
 export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
     if (isTupleExpression(def)) {

@@ -1,8 +1,8 @@
-import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/domains.js"
-import { deepFreeze } from "../utils/freeze.js"
-import type { TypeSet } from "./node.js"
-import { compileNodes } from "./node.js"
+import type { ScopeRoot } from "../scope.ts"
+import type { Domain } from "../utils/domains.ts"
+import { deepFreeze } from "../utils/freeze.ts"
+import type { TypeSet } from "./node.ts"
+import { compileNodes } from "./node.ts"
 
 const always: Record<Domain, true> = {
     bigint: true,

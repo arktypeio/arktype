@@ -11,7 +11,7 @@ import { createRequire } from "node:module"
 import { homedir } from "node:os"
 import { dirname, join, parse } from "node:path"
 import { fileURLToPath, URL } from "node:url"
-import { caller } from "./caller.js"
+import { caller } from "./caller.ts"
 
 export const ensureDir = (path: string) => {
     if (existsSync(path)) {
@@ -124,6 +124,3 @@ export const fromPackageRoot = (...joinWith: string[]) =>
 
 export const readPackageJson = (startDir?: string) =>
     readJson(join(findPackageRoot(startDir), "package.json"))
-
-export const requireResolve = (specifier: string) =>
-    createRequire(import.meta.url).resolve(specifier)

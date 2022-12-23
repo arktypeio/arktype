@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs"
-import { readJson } from "../../../../runtime/exports.js"
-import type { AttestConfig } from "../../common.js"
+import { readJson } from "../../../../runtime/exports.ts"
+import type { AttestConfig } from "../../config.ts"
 
 export const getCachedAssertionData = (config: AttestConfig) => {
     if (!existsSync(config.assertionCacheFile)) {

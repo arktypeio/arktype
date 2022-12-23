@@ -1,15 +1,15 @@
-import type { Bound, Range } from "../../../../nodes/rules/range.js"
+import type { Bound, Range } from "../../../../nodes/rules/range.ts"
 import {
     buildEmptyRangeMessage,
     compareStrictness
-} from "../../../../nodes/rules/range.js"
-import type { error } from "../../../../utils/generics.js"
-import { isKeyOf } from "../../../../utils/generics.js"
-import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
-import type { DynamicState } from "../../reduce/dynamic.js"
-import { buildUnpairableComparatorMessage } from "../../reduce/shared.js"
-import type { state, StaticState } from "../../reduce/static.js"
-import { Scanner } from "../scanner.js"
+} from "../../../../nodes/rules/range.ts"
+import type { error } from "../../../../utils/generics.ts"
+import { isKeyOf } from "../../../../utils/generics.ts"
+import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.ts"
+import type { DynamicState } from "../../reduce/dynamic.ts"
+import { buildUnpairableComparatorMessage } from "../../reduce/shared.ts"
+import type { state, StaticState } from "../../reduce/static.ts"
+import { Scanner } from "../scanner.ts"
 
 export const parseBound = (
     s: DynamicState,

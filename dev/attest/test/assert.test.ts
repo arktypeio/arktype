@@ -1,7 +1,7 @@
 import { AssertionError, strict } from "node:assert"
 import { describe, test } from "mocha"
-import type { evaluate } from "../../../src/utils/generics.js"
-import { attest } from "../exports.js"
+import type { evaluate } from "../../../src/utils/generics.ts"
+import { attest } from "../exports.ts"
 
 const o = { ark: "type" }
 

@@ -1,26 +1,26 @@
 import { strict } from "node:assert"
 import { isDeepStrictEqual } from "node:util"
-import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.js"
-import { caller } from "../../../runtime/exports.js"
-import { assertEquals } from "../assertions.js"
-import type { AssertionContext } from "../attest.js"
-import { literalSerialize } from "../common.js"
-import type { SnapshotArgs } from "../snapshot.js"
+import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.ts"
+import { caller } from "../../../runtime/exports.ts"
+import { assertEquals } from "../assertions.ts"
+import type { AssertionContext } from "../attest.ts"
+import type { SnapshotArgs } from "../snapshot.ts"
 import {
     getSnapshotByName,
     queueInlineSnapshotWriteOnProcessExit
-} from "../snapshot.js"
-import { getTypeDataAtPos } from "../type/exports.js"
+} from "../snapshot.ts"
+import { getTypeDataAtPos } from "../type/exports.ts"
+import { literalSerialize } from "../utils.ts"
 import {
     updateExternalSnapshot,
     writeInlineSnapshotUpdateToCacheDir
-} from "../writeSnapshot.js"
-import type { ExternalSnapshotArgs, RootAssertions } from "./types.js"
+} from "../writeSnapshot.ts"
+import type { ExternalSnapshotArgs, RootAssertions } from "./types.ts"
 import {
     assertEqualOrMatching,
     callAssertedFunction,
     getThrownMessage
-} from "./utils.js"
+} from "./utils.ts"
 
 export type ChainableAssertionOptions = {
     isReturn?: boolean

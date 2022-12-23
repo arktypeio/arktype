@@ -1,10 +1,10 @@
-import type { TypeNode } from "../nodes/node.js"
-import type { PropsRule } from "../nodes/rules/props.js"
-import type { ScopeRoot } from "../scope.js"
-import type { Dict, evaluate, mutable } from "../utils/generics.js"
-import type { inferDefinition, InferenceContext } from "./definition.js"
-import { parseDefinition } from "./definition.js"
-import { Scanner } from "./string/shift/scanner.js"
+import type { TypeNode } from "../nodes/node.ts"
+import type { PropsRule } from "../nodes/rules/props.ts"
+import type { ScopeRoot } from "../scope.ts"
+import type { Dict, evaluate, mutable } from "../utils/generics.ts"
+import type { inferDefinition, InferenceContext } from "./definition.ts"
+import { parseDefinition } from "./definition.ts"
+import { Scanner } from "./string/shift/scanner.ts"
 
 export const parseRecord = (def: Dict, scope: ScopeRoot): TypeNode => {
     const props: mutable<PropsRule> = {}

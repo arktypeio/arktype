@@ -2,7 +2,8 @@
     "compilerOptions": {
         "module": "NodeNext",
         "target": "ESNext",
-        "moduleResolution": "NodeNext",
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
         "skipLibCheck": true,
         "strict": true,
         "isolatedModules": true,
@@ -18,7 +19,7 @@
             ]
         }
     },
-    "exclude": ["dev/arktype.io", "**/node_modules/**", "**/dist/**"],
+    "exclude": ["dev/arktype.io", "**/node_modules", "**/dist"],
     "ts-node": {
         "esm": true,
         "swc": true,

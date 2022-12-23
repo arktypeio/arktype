@@ -1,6 +1,6 @@
-import { bench, suite } from "../dev/attest/exports.js"
-import { scope, type } from "../exports.js"
-import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
+import { bench, suite } from "../dev/attest/exports.ts"
+import { scope, type } from "../exports.ts"
+import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.ts"
 
 // const recursive = scope({ dejaVu: { "dejaVu?": "dejaVu" } })
 // const dejaVu: typeof recursive.$.infer.dejaVu = {}

@@ -1,16 +1,16 @@
-import type { ScopeRoot } from "../scope.js"
-import { collapseIfSingleton } from "../utils/generics.js"
-import { isBranchComparison } from "./branches.js"
-import type { KeyReducerFn } from "./compose.js"
+import type { ScopeRoot } from "../scope.ts"
+import { collapseIfSingleton } from "../utils/generics.ts"
+import { isBranchComparison } from "./branches.ts"
+import type { KeyReducerFn } from "./compose.ts"
 import {
     composeKeyedOperation,
     composeNodeOperation,
     equal,
     finalizeNodeOperation
-} from "./compose.js"
-import type { TypeNode, TypeSet } from "./node.js"
-import type { Condition } from "./predicate.js"
-import { comparePredicates } from "./predicate.js"
+} from "./compose.ts"
+import type { TypeNode, TypeSet } from "./node.ts"
+import type { Condition } from "./predicate.ts"
+import { comparePredicates } from "./predicate.ts"
 
 export const union = (l: TypeNode, r: TypeNode, scope: ScopeRoot) =>
     finalizeNodeOperation(l, nodeUnion(l, r, scope))

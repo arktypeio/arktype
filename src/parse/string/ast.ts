@@ -1,14 +1,14 @@
-import type { Keyword, Keywords } from "../../nodes/keywords.js"
+import type { Keyword, Keywords } from "../../nodes/keywords.ts"
 import type {
     Downcastable,
     error,
     evaluate,
     isAny,
     RegexLiteral
-} from "../../utils/generics.js"
-import type { inferDefinition, InferenceContext } from "../definition.js"
-import type { StringLiteral } from "./shift/operand/enclosed.js"
-import type { Scanner } from "./shift/scanner.js"
+} from "../../utils/generics.ts"
+import type { inferDefinition, InferenceContext } from "../definition.ts"
+import type { StringLiteral } from "./shift/operand/enclosed.ts"
+import type { Scanner } from "./shift/scanner.ts"
 
 export type inferAst<
     ast,

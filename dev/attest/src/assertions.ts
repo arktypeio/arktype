@@ -1,6 +1,6 @@
 import { strict } from "node:assert"
-import type { AssertionContext } from "./attest.js"
-import { isRecursible } from "./common.js"
+import type { AssertionContext } from "./attest.ts"
+import { isRecursible } from "./utils.ts"
 
 export type ThrowAsertionErrorContext = {
     message: string

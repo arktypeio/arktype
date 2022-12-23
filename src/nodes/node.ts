@@ -1,16 +1,16 @@
-import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/domains.js"
-import type { Dict, mutable } from "../utils/generics.js"
-import { keysOf } from "../utils/generics.js"
-import type { Keyword } from "./keywords.js"
+import type { ScopeRoot } from "../scope.ts"
+import type { Domain } from "../utils/domains.ts"
+import type { Dict, mutable } from "../utils/generics.ts"
+import { keysOf } from "../utils/generics.ts"
+import type { Keyword } from "./keywords.ts"
 import type {
     ExactValueEntry,
     Predicate,
     TraversalPredicate
-} from "./predicate.js"
-import { compilePredicate } from "./predicate.js"
-import type { TraversalSubdomainRule } from "./rules/subdomain.js"
-import { resolveIfIdentifier } from "./utils.js"
+} from "./predicate.ts"
+import { compilePredicate } from "./predicate.ts"
+import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
+import { resolveIfIdentifier } from "./utils.ts"
 
 export type TypeNode<scope extends Dict = Dict> =
     | Identifier<scope>

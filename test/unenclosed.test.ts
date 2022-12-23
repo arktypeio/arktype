@@ -1,8 +1,8 @@
 import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import { scope, type } from "../exports.js"
-import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.js"
-import { buildMalformedNumericLiteralMessage } from "../src/utils/numericLiterals.js"
+import { attest } from "../dev/attest/exports.ts"
+import { scope, type } from "../exports.ts"
+import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
+import { buildMalformedNumericLiteralMessage } from "../src/utils/numericLiterals.ts"
 
 describe("parse unenclosed", () => {
     describe("identifier", () => {

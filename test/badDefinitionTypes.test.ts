@@ -1,7 +1,7 @@
 import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import { type } from "../exports.js"
-import { buildBadDefinitionTypeMessage } from "../src/parse/definition.js"
+import { attest } from "../dev/attest/exports.ts"
+import { type } from "../exports.ts"
+import { buildBadDefinitionTypeMessage } from "../src/parse/definition.ts"
 
 describe("bad definition types", () => {
     test("any", () => {

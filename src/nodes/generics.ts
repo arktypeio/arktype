@@ -1,4 +1,4 @@
-import type { TypeNode, TypeSet } from "./node.js"
+import type { TypeNode, TypeSet } from "./node.ts"
 
 export const arrayOf = (node: TypeNode): TypeSet => ({
     object: {

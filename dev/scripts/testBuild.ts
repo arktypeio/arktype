@@ -1,5 +1,5 @@
-import { shell } from "../runtime/exports.js"
-import { repoDirs } from "./common.js"
+import { shell } from "../runtime/exports.ts"
+import { repoDirs } from "./common.ts"
 
 export const testBuild = (outDir: string) => {
     outDir === repoDirs.denoOut

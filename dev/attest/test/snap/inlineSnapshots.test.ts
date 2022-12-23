@@ -1,6 +1,6 @@
 import { strict } from "node:assert"
 import { describe, test } from "mocha"
-import { attest } from "../../exports.js"
+import { attest } from "../../exports.ts"
 
 const o = { re: "do" }
 const shouldThrow = (a: false) => {

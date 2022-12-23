@@ -1,6 +1,6 @@
 export {
     cacheAssertions,
     cleanupAssertions
-} from "./src/type/cacheAssertions.js"
-export { attest } from "./src/attest.js"
-export { bench, suite } from "./src/bench/exports.js"
+} from "./src/type/cacheAssertions.ts"
+export { attest } from "./src/attest.ts"
+export { bench, suite } from "./src/bench/exports.ts"

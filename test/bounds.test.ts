@@ -1,13 +1,13 @@
 import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import type { TypeNode } from "../exports.js"
-import { type } from "../exports.js"
+import { attest } from "../dev/attest/exports.ts"
+import type { TypeNode } from "../exports.ts"
+import { type } from "../exports.ts"
 import {
     buildMultipleLeftBoundsMessage,
     buildOpenRangeMessage,
     buildUnpairableComparatorMessage
-} from "../src/parse/string/reduce/shared.js"
-import { singleEqualsMessage } from "../src/parse/string/shift/operator/bounds.js"
+} from "../src/parse/string/reduce/shared.ts"
+import { singleEqualsMessage } from "../src/parse/string/shift/operator/bounds.ts"
 
 describe("bound", () => {
     describe("parse", () => {

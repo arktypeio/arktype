@@ -1,18 +1,18 @@
-import type { Keyword } from "../../../../nodes/keywords.js"
-import type { TypeNode } from "../../../../nodes/node.js"
-import type { error } from "../../../../utils/generics.js"
+import type { Keyword } from "../../../../nodes/keywords.ts"
+import type { TypeNode } from "../../../../nodes/node.ts"
+import type { error } from "../../../../utils/generics.ts"
 import type {
     BigintLiteral,
     buildMalformedNumericLiteralMessage,
     NumberLiteral
-} from "../../../../utils/numericLiterals.js"
+} from "../../../../utils/numericLiterals.ts"
 import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
-} from "../../../../utils/numericLiterals.js"
-import type { DynamicState } from "../../reduce/dynamic.js"
-import type { state, StaticState } from "../../reduce/static.js"
-import type { Scanner } from "../scanner.js"
+} from "../../../../utils/numericLiterals.ts"
+import type { DynamicState } from "../../reduce/dynamic.ts"
+import type { state, StaticState } from "../../reduce/static.ts"
+import type { Scanner } from "../scanner.ts"
 
 export const parseUnenclosed = (s: DynamicState) => {
     const token = s.scanner.shiftUntilNextTerminator()

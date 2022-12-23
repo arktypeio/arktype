@@ -1,20 +1,20 @@
-import type { TraversalNode, TypeSet } from "./nodes/node.js"
-import { compileNode } from "./nodes/node.js"
-import { resolveIfIdentifier } from "./nodes/utils.js"
+import type { TraversalNode, TypeSet } from "./nodes/node.ts"
+import { compileNode } from "./nodes/node.ts"
+import { resolveIfIdentifier } from "./nodes/utils.ts"
 import type {
     inferDefinition,
     InferenceContext,
     validateDefinition
-} from "./parse/definition.js"
-import { parseDefinition } from "./parse/definition.js"
-import type { DynamicScope, Scope } from "./scope.js"
-import { getRootScope } from "./scope.js"
-import { check } from "./traverse/check.js"
-import { Problems } from "./traverse/problems.js"
-import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { Dict, equals, isTopType } from "./utils/generics.js"
-import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
-import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
+} from "./parse/definition.ts"
+import { parseDefinition } from "./parse/definition.ts"
+import type { DynamicScope, Scope } from "./scope.ts"
+import { getRootScope } from "./scope.ts"
+import { check } from "./traverse/check.ts"
+import { Problems } from "./traverse/problems.ts"
+import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
+import type { Dict, equals, isTopType } from "./utils/generics.ts"
+import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
+import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
 const rawTypeFn: DynamicTypeFn = (
     definition,
