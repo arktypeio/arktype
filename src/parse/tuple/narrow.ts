@@ -2,7 +2,11 @@ import { intersection } from "../../nodes/intersection.js"
 import type { TypeSet } from "../../nodes/node.js"
 import type { Validator } from "../../nodes/rules/rules.js"
 import type { Dict, mutable } from "../../utils/generics.js"
-import type { inferDefinition, validateDefinition } from "../definition.js"
+import type {
+    inferDefinition,
+    InferenceContext,
+    validateDefinition
+} from "../definition.js"
 import { parseDefinition } from "../definition.js"
 import type { TupleExpressionParser } from "./tuple.js"
 import type { distributable } from "./utils.js"
@@ -22,21 +26,17 @@ export const parseNarrowTuple: TupleExpressionParser<":"> = (def, scope) => {
     return intersection(inputNode, distributedValidatorNode, scope)
 }
 
-export type validateNarrowTuple<
-    narrowedDef,
-    scope extends Dict,
-    input extends boolean
-> = [
-    validateDefinition<narrowedDef, scope, input>,
+export type validateNarrowTuple<narrowedDef, c extends InferenceContext> = [
+    validateDefinition<narrowedDef, c>,
     ":",
-    distributable<Validator<inferDefinition<narrowedDef, scope, scope, input>>>
+    distributable<Validator<inferDefinition<narrowedDef, c>>>
 ]
 
 export type ValidatorBuilder<scope extends Dict = {}> = <
     def,
-    validator extends Validator<inferDefinition<def, scope, scope, false>>
+    validator extends Validator<inferDefinition<def, { scope: scope }>>
 >(
-    def: validateDefinition<def, scope, false>,
+    def: validateDefinition<def, { scope: scope }>,
     validator: validator
 ) => [def, ":", validator]
 

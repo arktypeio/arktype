@@ -1,72 +1,59 @@
 import type { Keyword, Keywords } from "../../nodes/keywords.js"
 import type {
-    Dict,
     Downcastable,
     error,
     evaluate,
     isAny,
     RegexLiteral
 } from "../../utils/generics.js"
-import type { inferDefinition } from "../definition.js"
+import type { inferDefinition, InferenceContext } from "../definition.js"
 import type { StringLiteral } from "./shift/operand/enclosed.js"
 import type { Scanner } from "./shift/scanner.js"
 
 export type inferAst<
     ast,
-    scope extends Dict,
-    aliases,
-    input extends boolean
+    c extends InferenceContext
 > = ast extends readonly unknown[]
     ? ast[1] extends "[]"
-        ? inferAst<ast[0], scope, aliases, input>[]
+        ? inferAst<ast[0], c>[]
         : ast[1] extends "|"
-        ?
-              | inferAst<ast[0], scope, aliases, input>
-              | inferAst<ast[2], scope, aliases, input>
+        ? inferAst<ast[0], c> | inferAst<ast[2], c>
         : ast[1] extends "&"
-        ? evaluate<
-              inferAst<ast[0], scope, aliases, input> &
-                  inferAst<ast[2], scope, aliases, input>
-          >
+        ? evaluate<inferAst<ast[0], c> & inferAst<ast[2], c>>
         : ast[1] extends Scanner.Comparator
         ? ast[0] extends number
-            ? inferAst<ast[2], scope, aliases, input>
-            : inferAst<ast[0], scope, aliases, input>
+            ? inferAst<ast[2], c>
+            : inferAst<ast[0], c>
         : ast[1] extends "%"
-        ? inferAst<ast[0], scope, aliases, input>
+        ? inferAst<ast[0], c>
         : never
-    : inferTerminal<ast, scope, aliases, input>
+    : inferTerminal<ast, c>
 
 export type validateAstSemantics<
     ast,
-    scope extends Dict,
-    input extends boolean
+    c extends InferenceContext
 > = ast extends string
     ? undefined
     : ast extends [infer child, unknown]
-    ? validateAstSemantics<child, scope, input>
+    ? validateAstSemantics<child, c>
     : ast extends [infer left, infer token, infer right]
     ? token extends Scanner.BranchToken
-        ? validateAstSemantics<left, scope, input> extends error<
-              infer leftMessage
-          >
+        ? validateAstSemantics<left, c> extends error<infer leftMessage>
             ? leftMessage
-            : validateAstSemantics<right, scope, input> extends error<
-                  infer rightMessage
-              >
+            : validateAstSemantics<right, c> extends error<infer rightMessage>
             ? rightMessage
             : undefined
         : token extends Scanner.Comparator
         ? left extends number
-            ? validateAstSemantics<right, scope, input>
-            : isBoundable<inferAst<left, scope, {}, input>> extends true
-            ? validateAstSemantics<left, scope, input>
+            ? validateAstSemantics<right, c>
+            : isBoundable<inferAst<left, c>> extends true
+            ? validateAstSemantics<left, c>
             : error<buildUnboundableMessage<astToString<ast[0]>>>
         : token extends "%"
-        ? isDivisible<inferAst<left, scope, {}, input>> extends true
-            ? validateAstSemantics<left, scope, input>
+        ? isDivisible<inferAst<left, c>> extends true
+            ? validateAstSemantics<left, c>
             : error<buildIndivisibleMessage<astToString<ast[0]>>>
-        : validateAstSemantics<left, scope, input>
+        : validateAstSemantics<left, c>
     : undefined
 
 type isNonLiteralNumber<t> = t extends number
@@ -95,17 +82,12 @@ type isBoundable<inferred> = isAny<inferred> extends true
     ? true
     : false
 
-type inferTerminal<
-    token,
-    scope extends Dict,
-    aliases,
-    input extends boolean
-> = token extends Keyword
+type inferTerminal<token, c extends InferenceContext> = token extends Keyword
     ? Keywords[token]
-    : token extends keyof scope
-    ? scope[token]
-    : token extends keyof aliases
-    ? inferDefinition<aliases[token], scope, aliases, input>
+    : token extends keyof c["scope"]
+    ? c["scope"][token]
+    : token extends keyof c["aliases"]
+    ? inferDefinition<c["aliases"][token], c>
     : token extends StringLiteral<infer Text>
     ? Text
     : token extends RegexLiteral

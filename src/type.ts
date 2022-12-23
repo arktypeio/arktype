@@ -1,17 +1,18 @@
 import type { TraversalNode, TypeSet } from "./nodes/node.js"
 import { compileNode } from "./nodes/node.js"
 import { resolveIfIdentifier } from "./nodes/utils.js"
-import type { inferDefinition, validateDefinition } from "./parse/definition.js"
+import type {
+    inferDefinition,
+    InferenceContext,
+    validateDefinition
+} from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
-import { validateNarrowTuple } from "./parse/tuple/narrow.js"
-import { validatePipeTuple } from "./parse/tuple/pipe.js"
-import { TupleExpressionToken } from "./parse/tuple/tuple.js"
 import type { DynamicScope, Scope } from "./scope.js"
 import { getRootScope } from "./scope.js"
 import { check } from "./traverse/check.js"
 import { Problems } from "./traverse/problems.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { Dict, equals, evaluate, isTopType } from "./utils/generics.js"
+import type { Dict, equals, isTopType } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
@@ -30,15 +31,25 @@ export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
-export type InferredTypeFn = <definition, scope extends Dict = {}>(
-    definition: validateDefinition<definition, scope, false>,
+export type InferredTypeFn = <
+    definition,
+    scope extends Dict = {},
+    c extends InferenceContext = { scope: scope }
+>(
+    definition: validateDefinition<definition, c>,
     options?: Config<scope>
 ) => isTopType<definition> extends true
     ? never
-    : definition extends validateDefinition<definition, scope, false>
+    : definition extends validateDefinition<definition, c>
     ? inferType<
-          inferDefinition<definition, scope, {}, true>,
-          inferDefinition<definition, scope, {}, false>
+          inferDefinition<
+              definition,
+              {
+                  scope: scope
+                  input: true
+              }
+          >,
+          inferDefinition<definition, c>
       >
     : never
 

@@ -2,7 +2,7 @@ import type { TypeNode } from "../nodes/node.js"
 import type { PropsRule } from "../nodes/rules/props.js"
 import type { ScopeRoot } from "../scope.js"
 import type { Dict, evaluate, mutable } from "../utils/generics.js"
-import type { inferDefinition } from "./definition.js"
+import type { inferDefinition, InferenceContext } from "./definition.js"
 import { parseDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"
 
@@ -31,23 +31,17 @@ type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`
 
 export type inferRecord<
     def extends Dict,
-    scope extends Dict,
-    aliases,
-    input extends boolean
+    c extends InferenceContext
 > = evaluate<
     {
         [requiredKeyName in requiredKeyOf<def>]: inferDefinition<
             def[withPossiblePreviousEscapeCharacter<requiredKeyName>],
-            scope,
-            aliases,
-            input
+            c
         >
     } & {
         [optionalKeyName in optionalKeyOf<def>]?: inferDefinition<
             def[`${optionalKeyName}?`],
-            scope,
-            aliases,
-            input
+            c
         >
     }
 >

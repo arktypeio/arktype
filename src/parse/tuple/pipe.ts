@@ -1,7 +1,11 @@
 import { intersection } from "../../nodes/intersection.js"
 import type { TypeSet } from "../../nodes/node.js"
 import type { Dict, mutable, NonEmptyList } from "../../utils/generics.js"
-import type { inferDefinition, validateDefinition } from "../definition.js"
+import type {
+    inferDefinition,
+    InferenceContext,
+    validateDefinition
+} from "../definition.js"
 import { parseDefinition } from "../definition.js"
 import type { TupleExpressionParser } from "./tuple.js"
 import type { distributable } from "./utils.js"
@@ -21,16 +25,10 @@ export const parsePipeTuple: TupleExpressionParser<"|>"> = (def, scope) => {
     return intersection(inputNode, distributedValidatorNode, scope)
 }
 
-export type validatePipeTuple<
-    pipedDef,
-    scope extends Dict,
-    input extends boolean
-> = [
-    validateDefinition<pipedDef, scope, input>,
+export type validatePipeTuple<pipedDef, c extends InferenceContext> = [
+    validateDefinition<pipedDef, c>,
     "|>",
-    ...NonEmptyList<
-        distributable<Pipe<inferDefinition<pipedDef, scope, scope, input>>>
-    >
+    ...NonEmptyList<distributable<Pipe<inferDefinition<pipedDef, c>>>>
 ]
 
 export type Pipe<T = any> = (In: T) => T
@@ -38,10 +36,10 @@ export type Pipe<T = any> = (In: T) => T
 export type PipeBuilder<scope extends Dict = {}> = <
     def,
     pipes extends NonEmptyList<
-        distributable<Pipe<inferDefinition<def, scope, scope, false>>>
+        distributable<Pipe<inferDefinition<def, { scope: scope }>>>
     >
 >(
-    def: validateDefinition<def, scope, false>,
+    def: validateDefinition<def, { scope: scope }>,
     ...pipes: pipes
 ) => [def, "|>", ...pipes]
 

@@ -12,7 +12,11 @@ import type {
     evaluate,
     List
 } from "../../utils/generics.js"
-import type { inferDefinition, validateDefinition } from "../definition.js"
+import type {
+    inferDefinition,
+    InferenceContext,
+    validateDefinition
+} from "../definition.js"
 import { parseDefinition } from "../definition.js"
 import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
 import type { Scanner } from "../string/shift/scanner.js"
@@ -40,12 +44,8 @@ export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
 
 export type validateTupleExpression<
     def extends UnknownTupleExpression,
-    scope extends Dict,
-    input extends boolean
-> = conformValidatedTupleExpression<
-    def,
-    parseTupleExpression<def, scope, input>
->
+    c extends InferenceContext
+> = conformValidatedTupleExpression<def, parseTupleExpression<def, c>>
 
 export type conformValidatedTupleExpression<
     def extends UnknownTupleExpression,
@@ -58,64 +58,50 @@ export type conformValidatedTupleExpression<
 
 type parseTupleExpression<
     def extends UnknownTupleExpression,
-    scope extends Dict,
-    input extends boolean
+    c extends InferenceContext
 > = def[1] extends ":"
-    ? validateNarrowTuple<def[0], scope, input>
+    ? validateNarrowTuple<def[0], c>
     : def[1] extends "|>"
-    ? validatePipeTuple<def[0], scope, input>
+    ? validatePipeTuple<def[0], c>
     : def[1] extends "=>"
-    ? validateMorphTuple<def[0], def[2], scope, input>
+    ? validateMorphTuple<def[0], def[2], c>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? [def[0], error<buildMissingRightOperandMessage<def[1], "">>]
-        : [
-              validateDefinition<def[0], scope, input>,
-              def[1],
-              validateDefinition<def[2], scope, input>
-          ]
+        : [validateDefinition<def[0], c>, def[1], validateDefinition<def[2], c>]
     : def[1] extends "[]"
-    ? [validateDefinition<def[0], scope, input>, "[]"]
+    ? [validateDefinition<def[0], c>, "[]"]
     : never
 
 export type inferTuple<
     def extends List,
-    scope extends Dict,
-    aliases,
-    input extends boolean
+    c extends InferenceContext
 > = def extends UnknownTupleExpression
-    ? inferTupleExpression<def, scope, aliases, input>
+    ? inferTupleExpression<def, c>
     : {
-          [i in keyof def]: inferDefinition<def[i], scope, aliases, input>
+          [i in keyof def]: inferDefinition<def[i], c>
       }
 
 type inferTupleExpression<
     def extends UnknownTupleExpression,
-    scope extends Dict,
-    aliases,
-    input extends boolean
+    c extends InferenceContext
 > = def[1] extends ":"
     ? // TODO: try condensing inference context
-      inferDefinition<def[0], scope, aliases, input>
+      inferDefinition<def[0], c>
     : def[1] extends "|>"
-    ? inferDefinition<def[0], scope, aliases, input>
+    ? inferDefinition<def[0], c>
     : def[1] extends "=>"
-    ? input extends true
-        ? inferDefinition<def[0], scope, aliases, input>
-        : inferDefinition<def[2], scope, aliases, input>
+    ? c["input"] extends true
+        ? inferDefinition<def[0], c>
+        : inferDefinition<def[2], c>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? never
         : def[1] extends "&"
-        ? evaluate<
-              inferDefinition<def[0], scope, aliases, input> &
-                  inferDefinition<def[2], scope, aliases, input>
-          >
-        :
-              | inferDefinition<def[0], scope, aliases, input>
-              | inferDefinition<def[2], scope, aliases, input>
+        ? evaluate<inferDefinition<def[0], c> & inferDefinition<def[2], c>>
+        : inferDefinition<def[0], c> | inferDefinition<def[2], c>
     : def[1] extends "[]"
-    ? inferDefinition<def[0], scope, aliases, input>[]
+    ? inferDefinition<def[0], c>[]
     : never
 
 // TODO: Add default value ("="), spread ("...")

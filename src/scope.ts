@@ -5,7 +5,11 @@ import type {
     ResolvedPredicate,
     TraversalPredicate
 } from "./nodes/predicate.js"
-import type { inferDefinition, validateDefinition } from "./parse/definition.js"
+import type {
+    inferDefinition,
+    InferenceContext,
+    validateDefinition
+} from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { fullStringParse, maybeNaiveParse } from "./parse/string/string.js"
 import type { Config } from "./type.js"
@@ -196,16 +200,23 @@ export class ScopeRoot<inferred extends Dict = Dict> {
 }
 
 type validateAliases<aliases, scope extends Dict> = evaluate<{
-    [name in keyof aliases]: validateDefinition<aliases[name], scope, false>
+    [name in keyof aliases]: validateDefinition<
+        aliases[name],
+        {
+            scope: scope
+            aliases: aliases
+        }
+    >
 }>
 
 // TODO: Figure out how this works with IO nodes.
 type inferAliases<aliases, scope extends Dict> = evaluate<{
     [name in keyof aliases]: inferDefinition<
         aliases[name],
-        scope,
-        aliases,
-        false
+        {
+            scope: scope
+            aliases: aliases
+        }
     >
 }>
 

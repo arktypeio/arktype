@@ -1,6 +1,10 @@
 import { throwParseError } from "../../utils/errors.js"
 import type { Dict, List } from "../../utils/generics.js"
-import type { inferDefinition, validateDefinition } from "../definition.js"
+import type {
+    inferDefinition,
+    InferenceContext,
+    validateDefinition
+} from "../definition.js"
 import { parseDefinition } from "../definition.js"
 import type { TupleExpressionParser } from "./tuple.js"
 import type { distributable } from "./utils.js"
@@ -23,18 +27,14 @@ export const parseMorphTuple: TupleExpressionParser<"=>"> = (def, scope) => {
 export type validateMorphTuple<
     inputDef,
     outputDef,
-    scope extends Dict,
-    input extends boolean
+    c extends InferenceContext
 > = [
-    validateDefinition<inputDef, scope, true>,
+    validateDefinition<inputDef, c>,
     "=>",
-    validateDefinition<outputDef, scope, input>,
+    validateDefinition<outputDef, c>,
     // TODO: Nested morphs. Should input be recursive? It would've already been transformed.
     distributable<
-        Morph<
-            inferDefinition<inputDef, scope, scope, true>,
-            inferDefinition<outputDef, scope, scope, input>
-        >
+        Morph<inferDefinition<inputDef, c>, inferDefinition<outputDef, c>>
     >
 ]
 
@@ -45,17 +45,19 @@ const buildMalformedMorphExpressionMessage = (def: List) =>
 
 export type Morph<In = unknown, Out = unknown> = (In: In) => Out
 
+export type InferMorph<inputDef, outputDef, scope extends Dict> = Morph<
+    inferDefinition<inputDef, { scope: scope }>,
+    inferDefinition<outputDef, { scope: scope }>
+>
+
 export type MorphBuilder<scope extends Dict = {}> = <
     inputDef,
     outputDef,
     // TODO: update IO
-    morph extends Morph<
-        inferDefinition<inputDef, scope, scope, false>,
-        inferDefinition<outputDef, scope, scope, false>
-    >
+    morph extends InferMorph<inputDef, outputDef, scope>
 >(
-    inputDef: validateDefinition<inputDef, scope, false>,
-    outputDef: validateDefinition<inputDef, scope, false>,
+    inputDef: validateDefinition<inputDef, { scope: scope }>,
+    outputDef: validateDefinition<outputDef, { scope: scope }>,
     morph: morph
 ) => [inputDef, "=>", outputDef, morph]
 

@@ -1,10 +1,9 @@
 import type { TypeNode } from "../nodes/node.js"
 import type { ScopeRoot } from "../scope.js"
-import type { Primitive, Subdomain, domainOf } from "../utils/domains.js"
+import type { domainOf, Primitive, Subdomain } from "../utils/domains.js"
 import { subdomainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
-    conform,
     Dict,
     evaluate,
     isAny,
@@ -39,27 +38,30 @@ export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
     }
 }
 
+export type InferenceContext = {
+    scope: Dict
+    aliases?: unknown
+    input?: true
+}
+
 export type inferDefinition<
     def,
-    scope extends Dict,
-    aliases,
-    input extends boolean
+    c extends InferenceContext
 > = isTopType<def> extends true
     ? never
     : def extends string
-    ? inferString<def, scope, aliases, input>
+    ? inferString<def, c>
     : def extends List
-    ? inferTuple<def, scope, aliases, input>
+    ? inferTuple<def, c>
     : def extends RegExp
     ? string
     : def extends Dict
-    ? inferRecord<def, scope, aliases, input>
+    ? inferRecord<def, c>
     : never
 
 export type validateDefinition<
     def,
-    scope extends Dict,
-    input extends boolean
+    c extends InferenceContext
 > = isTopType<def> extends true
     ? buildUninferableDefinitionMessage<
           isAny<def> extends true ? "any" : "unknown"
@@ -67,9 +69,9 @@ export type validateDefinition<
     : def extends []
     ? []
     : def extends string
-    ? validateString<def, scope, input>
+    ? validateString<def, c>
     : def extends UnknownTupleExpression
-    ? validateTupleExpression<def, scope, input>
+    ? validateTupleExpression<def, c>
     : def extends RegExp
     ? def
     : def extends Primitive
@@ -77,7 +79,7 @@ export type validateDefinition<
     : def extends Function
     ? buildBadDefinitionTypeMessage<"Function">
     : evaluate<{
-          [k in keyof def]: validateDefinition<def[k], scope, input>
+          [k in keyof def]: validateDefinition<def[k], c>
       }>
 
 export type buildUninferableDefinitionMessage<

@@ -2,6 +2,7 @@ import { arrayOf } from "../../nodes/generics.js"
 import type { TypeNode } from "../../nodes/node.js"
 import type { ScopeRoot } from "../../scope.js"
 import type { Dict, error, stringKeyOf } from "../../utils/generics.js"
+import type { InferenceContext } from "../definition.js"
 import type { inferAst, validateAstSemantics } from "./ast.js"
 import { DynamicState } from "./reduce/dynamic.js"
 import type { state, StaticState } from "./reduce/static.js"
@@ -20,28 +21,19 @@ export type parseString<
 
 export type inferString<
     def extends string,
-    scope extends Dict,
-    aliases,
-    input extends boolean
+    c extends InferenceContext
 > = inferAst<
-    parseString<def, stringKeyOf<aliases> | stringKeyOf<scope>>,
-    scope,
-    aliases,
-    input
+    parseString<def, stringKeyOf<c["aliases"]> | stringKeyOf<c["scope"]>>,
+    c
 >
 
 export type validateString<
     def extends string,
-    scope extends Dict,
-    input extends boolean
-> = parseString<def, stringKeyOf<scope>> extends infer astOrError
+    c extends InferenceContext
+> = parseString<def, stringKeyOf<c["scope"]>> extends infer astOrError
     ? astOrError extends error<infer message>
         ? message
-        : validateAstSemantics<
-              astOrError,
-              scope,
-              input
-          > extends infer semanticResult
+        : validateAstSemantics<astOrError, c> extends infer semanticResult
         ? semanticResult extends undefined
             ? def
             : semanticResult
