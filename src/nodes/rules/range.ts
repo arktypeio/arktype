@@ -42,7 +42,7 @@ export const rangeIntersection = composeIntersection<Range>((l, r) => {
 
 export type BoundableData = number | string | List
 
-const rangeError = {
+const rangeError: Record<string, Function> = {
     min: (data: BoundableData, minBound: Bound) =>
         `Checked data:${data} must be greater than${
             minBound.exclusive ? "" : " or equal to"
@@ -62,7 +62,7 @@ const addRangeError = (state: CheckState, type: string, bound: Bound) => {
     })
 }
 
-export const checkRange = (state: CheckState, range: Range) => {
+export const checkRange = (state: CheckState<BoundableData>, range: Range) => {
     const { data } = state
     const size = typeof data === "number" ? data : data.length
     if (range.min) {

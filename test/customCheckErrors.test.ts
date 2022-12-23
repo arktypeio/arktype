@@ -41,12 +41,10 @@ describe("check errors", () => {
     })
     test("domain", () => {
         const t = type("number>2")
-        const checked = t.check("hello")
-        attest(checked).snap({
-            problems: [
-                { path: "domain", reason: "string:number are not equivalent" }
-            ]
-        })
+
+        attest(t.check("hellop").problems?.summary).snap(
+            "string-number are not equivalent"
+        )
     })
     test("regex", () => {
         const t = type("/\\w@hotmail.com/")

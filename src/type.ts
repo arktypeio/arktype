@@ -6,8 +6,9 @@ import { parseDefinition } from "./parse/definition.js"
 import type { DynamicScope, Scope } from "./scope.js"
 import { getRootScope } from "./scope.js"
 import { rootCheck } from "./traverse/check.js"
+import type { Problems } from "./traverse/problems.js"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { Dict, isTopType } from "./utils/generics.js"
+import type { Dict, isTopType, xor } from "./utils/generics.js"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.js"
 
@@ -40,9 +41,10 @@ type DynamicTypeFn = (definition: unknown, options?: Config<Dict>) => ArkType
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
 export type CheckOptions = {
-    customError?: string | Function
+    customError?: string
     allowExtraneouskeys?: boolean
 }
+
 export class ArkType<inferred = unknown> {
     constructor(
         public root: TypeSet,
@@ -58,19 +60,8 @@ export class ArkType<inferred = unknown> {
     check(
         data: unknown,
         checkOptions: CheckOptions = { allowExtraneouskeys: false }
-    ) {
-        const state = rootCheck(data, this.flat, this.scope.$, checkOptions)
-        //TODO: I don't like this
-        if (typeof state === "boolean") {
-            if (state === true) {
-                return { data }
-            } else {
-                return { problems: { path: `${data}`, reason: "String error" } }
-            }
-        }
-        return state.problems.length
-            ? { problems: state.problems }
-            : { data: state.data as inferred }
+    ): xor<{ data: inferred }, { problems: Problems }> {
+        return rootCheck(data, this.flat, this.scope.$, checkOptions) as any
     }
 
     assert(data: unknown) {
