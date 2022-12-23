@@ -31,6 +31,7 @@ export type validatePipeTuple<pipedDef, c extends InferenceContext> = [
     ...NonEmptyList<distributable<Pipe<inferDefinition<pipedDef, c>>>>
 ]
 
+// TODO: Pipe would only maintain the domains/subdomains. Other rules like bounds/regex would go away
 export type Pipe<T = any> = (In: T) => T
 
 export type PipeBuilder<scope extends Dict = {}> = <

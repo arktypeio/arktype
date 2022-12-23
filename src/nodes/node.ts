@@ -13,15 +13,6 @@ import { compilePredicate } from "./predicate.js"
 import type { TraversalSubdomainRule } from "./rules/subdomain.js"
 import { resolveIfIdentifier } from "./utils.js"
 
-export type Node<scope extends Dict = Dict> =
-    | TypeNode<scope>
-    | [TypeNode<scope>, Traits<scope>]
-
-export type Traits<scope extends Dict = Dict> = {
-    input: TypeNode<scope>
-    morph: Morph<unknown, unknown>
-}
-
 export type TypeNode<scope extends Dict = Dict> =
     | Identifier<scope>
     | TypeSet<scope>

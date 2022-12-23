@@ -38,6 +38,7 @@ export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
     }
 }
 
+// TODO: Could this all just be called scope?
 export type InferenceContext = {
     scope: Dict
     aliases?: unknown
