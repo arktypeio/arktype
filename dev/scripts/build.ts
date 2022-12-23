@@ -53,6 +53,7 @@ const buildTypes = () => {
             `pnpm tsc --project ${tempTsConfig} --outDir ${repoDirs.outRoot} --emitDeclarationOnly`
         )
         renameSync(join(repoDirs.outRoot, "src"), repoDirs.typesOut)
+        rewriteTsImports(repoDirs.typesOut)
         buildExportsTs("types")
     } finally {
         rmSync(tempTsConfig, { force: true })
@@ -64,7 +65,6 @@ const transpile = () => {
     stdout.write(`⌛ Transpiling...`.padEnd(successMessage.length))
     swc("mjs")
     swc("cjs")
-    buildDeno()
     stdout.write("✅\n")
 }
 
@@ -84,6 +84,7 @@ const swc = (kind: "mjs" | "cjs") => {
     } else {
         buildWithTests(kind, kindOutDir)
     }
+    rewriteTsImports(kindOutDir)
     buildExportsTs(kind)
     writeJson(join(kindOutDir, "package.json"), {
         type: kind === "cjs" ? "commonjs" : "module"
@@ -114,7 +115,7 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
 const buildExportsTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
     const originalPath =
         kind === "mjs" || kind === "cjs"
-            ? join(repoDirs.outRoot, kind, "exports.ts")
+            ? join(repoDirs.outRoot, kind, "exports.js")
             : "exports.ts"
     const originalContents = readFile(originalPath)
     if (kind === "mjs" || kind === "cjs") {
@@ -127,12 +128,19 @@ const buildExportsTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
             `./${kind}/`
         )
     }
-    if (kind === "deno") {
-        transformedContents = transformedContents.replaceAll(".ts", ".ts")
+    if (kind === "types") {
+        transformedContents = replaceTsImports(transformedContents)
     }
-    const outputFileName = kind === "deno" ? "exports.ts" : "exports.ts"
     const destinationFile = isTestBuild
-        ? join(repoDirs.outRoot, `${kind}`, outputFileName)
+        ? join(
+              repoDirs.outRoot,
+              `${kind}`,
+              kind === "types"
+                  ? "exports.d.ts"
+                  : kind === "deno"
+                  ? "exports.ts"
+                  : "exports.js"
+          )
         : join(
               repoDirs.outRoot,
               `exports.${
@@ -156,11 +164,18 @@ const buildDeno = () => {
         targets: ["dist/deno"],
         skipFormatting: true,
         skipSourceMap: true,
-        sourceOptions: inFileFilter,
-        transformContents: (content) => content.replaceAll(/\.ts"/g, '.ts"')
+        sourceOptions: inFileFilter
     })
 
     buildExportsTs("deno")
 }
+
+const rewriteTsImports = (dir: string) => {
+    walkPaths(dir, { excludeDirs: true }).forEach((path) => {
+        writeFile(path, replaceTsImports(readFile(path)))
+    })
+}
+
+const replaceTsImports = (source: string) => source.replaceAll('.ts"', '.js"')
 
 arktypeTsc()

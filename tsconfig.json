@@ -1,7 +1,6 @@
 {
     "compilerOptions": {
         "module": "NodeNext",
-        // TODO ??
         "target": "ESNext",
         "moduleResolution": "bundler",
         "allowImportingTsExtensions": true,

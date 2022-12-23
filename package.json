@@ -18,8 +18,7 @@
         ".": {
             "types": "./dist/exports.d.ts",
             "import": "./dist/exports.mjs",
-            "require": "./dist/exports.cjs",
-            "deno": "./dist/exports.deno.ts"
+            "require": "./dist/exports.cjs"
         }
     },
     "packageManager": "pnpm@7.18.0",
