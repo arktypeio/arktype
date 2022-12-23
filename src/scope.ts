@@ -66,6 +66,7 @@ type inferredScopeToArktypes<inferred> = {
     [name in keyof inferred]: Type<inferred[name]>
 }
 
+// TODO: What can we build into this? Parsing/lookups etc.
 export class ScopeRoot<inferred extends Dict = Dict> {
     roots = {} as { [k in keyof inferred]: TypeSet<inferred> }
     flatRoots = {} as { [k in keyof inferred]: TraversalNode }

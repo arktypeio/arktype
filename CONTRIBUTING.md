@@ -46,7 +46,29 @@ Make sure you are using our repo's pinned version of TypeScript and not one that
 git checkout -b amazing-feature
 ```
 
-6. Once you've made the changes you want to and added corresponding unit tests, run the `prChecks` command in the project root and address any problems:
+6. Do your best to write code that is stylistically consistent with its context. The linter will help with this, but it won't catch everything. Here's a few general guidelines:
+
+    - Favor functions over classes
+    - Favor arrow functions outside of classes
+    - Favor types over interfaces
+    - Favor mutation over copying objects in perf-sensitive contexts
+    - Favor clarity in naming with the following exceptions:
+        - Ubiquitous variables/types. For example, use `s` over `dynamicParserState` for a variable of type DynamicParserState that is used in the same way across many functions.
+        - Ephemeral variables whose contents can be trivially inferred from context. For example, prefer `rawKeyDefinitions.map(_ => _.trim())` to `rawKeyDefinitions.map(rawKeyDefinition => rawKeyDefinition.trim())`.
+
+We also have some unique casing rules for our TypeScript types to making writing isomorphic code easier:
+
+-   Use `CapitalCase` for...
+
+    -   Non-generic types (e.g. `SomeData`)
+    -   Generic types with noun names, like `Array<t>`. As a rule of thumb, your generic should be named this way if all its parameters have defaults (unfortunately TS's builtin `Array` type doesn't have a default parameter, but it should have been `unknown`!)
+
+-   Use `camelCase` for...
+
+    -   Generic types with verb names like `inferDomain<t>`. Types named this way should always have at least one required parameter.
+    -   Parameter names, e.g. `t` in `Array<t>`
+
+7. Once you've made the changes you want to and added corresponding unit tests, run the `prChecks` command in the project root and address any problems:
 
 ```sh
 pnpm prChecks
@@ -60,13 +82,13 @@ You can also run any of these commands individually:
 
 All of these commands will run as part of our CI process and must succeed in order for us to accept your Pull Request.
 
-7. Once everything is passing, commit your changes and ensure your fork is up to date:
+8. Once everything is passing, commit your changes and ensure your fork is up to date:
 
 ```sh
 git push -u
 ```
 
-8. Go to [the repository](https://github.com/arktypeio/arktype) and make a Pull Request.
+9. Go to [the repository](https://github.com/arktypeio/arktype) and make a Pull Request.
 
 The core team is monitoring for Pull Requests. We will review your Pull Request and either merge it, request changes to it, or close it with an explanation.
 

@@ -60,7 +60,6 @@ type topTypeIsUnknown<t> = (t extends {} ? true : false) extends false
     ? true
     : false
 
-// TODO: Type Casing?
 export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
 
 export type conform<t, base> = t extends base ? t : base
@@ -142,7 +141,7 @@ export type numberKeyOf<t> = keyof t & number
 
 export type RegexLiteral<expression extends string = string> = `/${expression}/`
 
-export type autocompleteString<suggestions extends string> =
+export type autocomplete<suggestions extends string> =
     | suggestions
     | (string & {})
 
