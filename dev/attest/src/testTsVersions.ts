@@ -16,7 +16,7 @@ for (const [, tsMorphVersion] of Object.entries(versions)) {
     shell(`pnpm i ts-morph@${tsMorphVersion}`)
     try {
         shell(`pnpm test`)
-    } catch (e) {
+    } catch {
         exitCode = 1
     }
 }

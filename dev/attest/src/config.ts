@@ -109,9 +109,9 @@ export const getAttestConfig = (): AttestConfig => {
         updateSnapshots:
             transient ||
             argsToCheck.some((arg) => arg === "-u" || arg === "--update"),
-        skipTypes: argsToCheck.some(
-            (arg) => arg === "-s" || arg === "--skipTypes"
-        ),
+        skipTypes:
+            argsToCheck.some((arg) => arg === "-s" || arg === "--skipTypes") ||
+            "Deno" in globalThis,
         typeSources,
         benchFormat: {
             noInline:

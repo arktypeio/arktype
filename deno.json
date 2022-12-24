@@ -1,0 +1,17 @@
+{
+    "importMap": "./dev/configs/import_map.json",
+    "lock": "./dev/configs/deno.lock",
+    "lint": {
+        "rules": {
+            "exclude": ["ban-ts-comment", "ban-types", "no-explicit-any"]
+        }
+    },
+    "test": {
+        "files": {
+            "include": ["test"]
+        }
+    },
+    "tasks": {
+        "test": "deno test --no-check --allow-all"
+    }
+}

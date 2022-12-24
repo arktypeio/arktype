@@ -30,7 +30,7 @@
         "docgen": "ts-node ./dev/scripts/docgen.ts",
         "test": "ts-node ./dev/attest/cli.ts --cmd mocha",
         "testCov": "c8 pnpm test",
-        "denoTest": "deno --no-check --allow-all ./dev/attest/cli.ts",
+        "denoTest": "deno test",
         "testBuild": "ts-node ./dev/scripts/testBuild.ts",
         "buildThenTest": "pnpm build --test && pnpm testBuild",
         "tnt": "ts-node ./dev/attest/cli.ts --skipTypes --cmd mocha",
