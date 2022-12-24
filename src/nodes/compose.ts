@@ -1,6 +1,7 @@
 import type { ScopeRoot } from "../scope.ts"
 import { throwInternalError } from "../utils/errors.ts"
-import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
+import type { Dict, mutable } from "../utils/generics.ts"
+import { keysOf } from "../utils/generics.ts"
 import type { TypeNode, TypeSet } from "./node.ts"
 import { resolveIfIdentifier } from "./utils.ts"
 
@@ -87,7 +88,7 @@ export const composeKeyedOperation =
     ): ContextualSetOperation<root, context, root> =>
     (l, r, context) => {
         const result = {} as mutable<root>
-        const keys: stringKeyOf<root>[] = Object.keys({ ...l, ...r })
+        const keys = keysOf({ ...l, ...r } as root)
         let lImpliesR = true
         let rImpliesL = true
         for (const k of keys) {

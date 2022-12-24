@@ -25,7 +25,6 @@
         "dist",
         "node_modules"
     ],
-    "deno.config": "./dev/configs/deno.jsonc",
-    "deno.enable": true,
-    "typescript.tsserver.experimental.enableProjectDiagnostics": true
+    "typescript.tsserver.experimental.enableProjectDiagnostics": true,
+    "deno.enable": false
 }

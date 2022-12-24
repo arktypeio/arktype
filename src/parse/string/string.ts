@@ -23,7 +23,7 @@ export type inferString<
     def extends string,
     c extends InferenceContext
 > = inferAst<
-    parseString<def, stringKeyOf<c["aliases"]> | stringKeyOf<c["scope"]>>,
+    parseString<def, string & (keyof c["aliases"] | keyof c["scope"])>,
     c
 >
 

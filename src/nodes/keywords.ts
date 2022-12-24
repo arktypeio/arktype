@@ -43,7 +43,6 @@ export const keywords = deepFreeze({
     integer: { number: { divisor: 1 } }
 } as const satisfies Record<Keyword, TypeSet>)
 
-// TODO: Add Set, Map
 export const functorKeywords = {
     Array: (node: TypeNode): TypeSet => ({
         object: {

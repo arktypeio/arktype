@@ -85,9 +85,16 @@ export type entriesOf<o extends object> = entryOf<o>[]
 export const entriesOf = <o extends object>(o: o) =>
     Object.entries(o) as entriesOf<o>
 
-export type keysOf<o extends object> = (keyof o)[]
+export type stringKeyOf<o extends object> = o extends readonly unknown[]
+    ? any[] extends o
+        ? `${number}`
+        : keyof o & `${number}`
+    : keyof o extends number
+    ? `${keyof o}`
+    : Exclude<keyof o, symbol>
 
-export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>
+export const keysOf = <o extends object>(o: o) =>
+    Object.keys(o) as stringKeyOf<o>[]
 
 export const hasKey = <o, k extends string>(
     o: o,
@@ -134,10 +141,6 @@ export type requireKeys<o, key extends keyof o> = o & {
 }
 
 export type error<message extends string = string> = `!${message}`
-
-export type stringKeyOf<t> = keyof t & string
-
-export type numberKeyOf<t> = keyof t & number
 
 export type RegexLiteral<expression extends string = string> = `/${expression}/`
 
