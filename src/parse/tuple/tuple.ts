@@ -1,5 +1,5 @@
-import { arrayOf } from "../../nodes/generics.ts"
 import { intersection } from "../../nodes/intersection.ts"
+import { functorKeywords } from "../../nodes/keywords.ts"
 import type { TypeNode } from "../../nodes/node.ts"
 import { union } from "../../nodes/union.ts"
 import type { ScopeRoot } from "../../scope.ts"
@@ -115,7 +115,7 @@ const parseBranchTuple: TupleExpressionParser<"|" | "&"> = (def, scope) => {
 }
 
 const parseArrayTuple: TupleExpressionParser<"[]"> = (def, scope) =>
-    arrayOf(parseDefinition(def[0], scope))
+    functorKeywords.Array(parseDefinition(def[0], scope))
 
 const tupleExpressionParsers: {
     [token in TupleExpressionToken]: TupleExpressionParser<token>

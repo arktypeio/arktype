@@ -1,4 +1,4 @@
-import { arrayOf } from "../../nodes/generics.ts"
+import { functorKeywords } from "../../nodes/keywords.ts"
 import type { TypeNode } from "../../nodes/node.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import type { error, stringKeyOf } from "../../utils/generics.ts"
@@ -62,7 +62,7 @@ export const maybeNaiveParse = (
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
         if (scope.isResolvable(elementDef)) {
-            return arrayOf(elementDef)
+            return functorKeywords.Array(elementDef)
         }
     }
     if (scope.isResolvable(def)) {

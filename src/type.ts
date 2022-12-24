@@ -57,9 +57,9 @@ type DynamicTypeFn = (definition: unknown, options?: Config<Dict>) => Type
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
-export type inferType<input, output> = equals<input, output> extends true
-    ? Type<output>
-    : Type<(In: input) => output>
+export type inferType<i, o> = equals<i, o> extends true
+    ? Type<o>
+    : Type<(from: i) => o>
 
 type In<T> = T extends (_: infer input) => unknown ? input : T
 
@@ -102,17 +102,3 @@ export class Type<T = unknown> {
 export type Config<scope extends Dict = {}> = {
     scope?: Scope<scope>
 }
-
-// const t = type(["string", "=>", "number", (s) => s.length])
-
-// const data = t.from("5")
-
-// const oo = type("string|number")
-
-// const zzt = type({ a: ["string", "=>", "number", (s) => s.length] })
-
-// const ff = zzt.from({ a: "5" })
-
-// const zzzt = type([["string", "=>", "number", (s) => s.length]])
-
-// const fzf = zzzt.from()

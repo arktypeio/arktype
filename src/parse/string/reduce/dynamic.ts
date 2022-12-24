@@ -1,5 +1,5 @@
-import { arrayOf } from "../../../nodes/generics.ts"
 import { intersection } from "../../../nodes/intersection.ts"
+import { functorKeywords } from "../../../nodes/keywords.ts"
 import type { TypeNode } from "../../../nodes/node.ts"
 import { union } from "../../../nodes/union.ts"
 import { isExactValue } from "../../../nodes/utils.ts"
@@ -75,7 +75,7 @@ export class DynamicState {
     }
 
     rootToArray() {
-        this.root = arrayOf(this.ejectRoot())
+        this.root = functorKeywords.Array(this.ejectRoot())
     }
 
     intersect(node: TypeNode) {
