@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url"
-import { caller, getCallStack } from "../../runtime/exports.ts"
+import { caller, getCallStack } from "../../runtime/api.ts"
 import { Assertions } from "./assertions/assertions.ts"
 import type { RootAssertions } from "./assertions/types.ts"
 import type { AttestConfig } from "./config.ts"

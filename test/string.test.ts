@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
-import { attest } from "../dev/attest/exports.ts"
-import type { TypeNode } from "../exports.ts"
-import { type } from "../exports.ts"
+import { attest } from "../dev/attest/api.ts"
+import type { TypeNode } from "../api.ts"
+import { type } from "../api.ts"
 import { buildUnterminatedEnclosedMessage } from "../src/parse/string/shift/operand/enclosed.ts"
 import {
     buildExpressionExpectedMessage,

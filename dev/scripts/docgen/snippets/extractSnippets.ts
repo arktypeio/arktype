@@ -1,5 +1,5 @@
 import type { Project } from "ts-morph"
-import { readFile, tsFileMatcher } from "../../../runtime/exports.ts"
+import { readFile, tsFileMatcher } from "../../../runtime/api.ts"
 import type { DocGenSnippetsConfig } from "../main.ts"
 import { defaultConfig } from "../main.ts"
 import type { ExtractionToken } from "./snipTokens.ts"
@@ -56,7 +56,6 @@ const extractSnippetsFromFile = (
 
 export type SnippetsByLabel = Record<string, Snippet>
 
-// eslint-disable-next-line max-lines-per-function, max-statements
 const extractLabeledSnippets = (
     filePath: string,
     sourceText: string
@@ -123,7 +122,6 @@ type SnipStart = {
 
 type ParsedSnip = SnipStart | SnipLine | SnipEnd
 
-// eslint-disable-next-line max-lines-per-function
 const parseSnipComment = (
     snipComment: string,
     filePath: string,

@@ -1,13 +1,8 @@
 #!/usr/bin/env node
 import { basename } from "node:path"
 import { version, versions } from "node:process"
-import {
-    fileName,
-    findPackageRoot,
-    shell,
-    walkPaths
-} from "../runtime/exports.ts"
-import { cacheAssertions, cleanupAssertions } from "./src/type/exports.ts"
+import { fileName, findPackageRoot, shell, walkPaths } from "../runtime/api.ts"
+import { cacheAssertions, cleanupAssertions } from "./api.ts"
 
 let runTestsCmd = ""
 const attestArgIndex = process.argv.findIndex((arg) =>
@@ -60,7 +55,8 @@ if (testCmd === "node") {
     }
     runTestsCmd += `node --loader ts-node/esm --test `
 } else if (process.versions.deno) {
-    runTestsCmd += "deno test --no-check --allow-all ./test "
+    runTestsCmd +=
+        "deno test --no-check --allow-all --config ./dev/configs/deno.jsonc ./test "
 } else {
     runTestsCmd += `npx ${testCmd} `
 }
@@ -77,15 +73,15 @@ try {
             "✅ Skipping type assertions because --skipTypes was passed."
         )
     } else {
-        console.log(`⏳ @arktype/test: Analyzing type assertions...`)
+        console.log(`⏳ attest: Analyzing type assertions...`)
         const cacheStart = Date.now()
         cacheAssertions({ forcePrecache: true })
         const cacheSeconds = (Date.now() - cacheStart) / 1000
         console.log(
-            `✅ @arktype/test: Finished caching type assertions in ${cacheSeconds} seconds.\n`
+            `✅ attest: Finished caching type assertions in ${cacheSeconds} seconds.\n`
         )
     }
-    console.log(`⏳ @arktype/test: Using ${testCmd} to run your tests...`)
+    console.log(`⏳ attest: Using ${testCmd} to run your tests...`)
     const runnerStart = Date.now()
 
     shell(runTestsCmd, {
@@ -94,20 +90,16 @@ try {
     })
     const runnerSeconds = (Date.now() - runnerStart) / 1000
     console.log(
-        `✅ @arktype/test: ${testCmd} completed in ${runnerSeconds} seconds.\n`
+        `✅ attest: ${testCmd} completed in ${runnerSeconds} seconds.\n`
     )
 } catch (error) {
     processError = error
 } finally {
-    console.log(
-        `⏳ @arktype/test: Updating inline snapshots and cleaning up cache...`
-    )
+    console.log(`⏳ attest: Updating inline snapshots and cleaning up cache...`)
     const cleanupStart = Date.now()
     cleanupAssertions()
     const cleanupSeconds = (Date.now() - cleanupStart) / 1000
-    console.log(
-        `✅ @arktype/test: Finished cleanup in ${cleanupSeconds} seconds.`
-    )
+    console.log(`✅ attest: Finished cleanup in ${cleanupSeconds} seconds.`)
 }
 if (processError) {
     throw processError

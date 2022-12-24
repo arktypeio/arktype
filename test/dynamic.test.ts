@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { attest } from "../dev/attest/exports.ts"
+import { attest } from "../dev/attest/api.ts"
 import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 import { scope } from "../src/scope.ts"
 import { type } from "../src/type.ts"

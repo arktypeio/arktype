@@ -7,7 +7,7 @@ import {
     shell,
     writeFile,
     writeJson
-} from "../runtime/exports.ts"
+} from "../runtime/api.ts"
 import { repoDirs } from "./common.ts"
 import { docgen } from "./docgen/main.ts"
 

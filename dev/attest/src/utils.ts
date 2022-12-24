@@ -1,6 +1,6 @@
 import { platform } from "node:os"
 import { relative } from "node:path"
-import { shell } from "../../runtime/exports.ts"
+import { shell } from "../../runtime/api.ts"
 
 export const getCmdFromPid = (pid: number) =>
     platform() === "win32" ? getCmdFromWindowsPid(pid) : getCmdFromPosixPid(pid)

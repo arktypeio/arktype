@@ -1,5 +1,5 @@
-import { bench, suite } from "../dev/attest/exports.ts"
-import { scope, type } from "../exports.ts"
+import { bench, suite } from "../dev/attest/api.ts"
+import { scope, type } from "../api.ts"
 
 suite("parse/str/operand", () => {
     suite("enclosed", () => {

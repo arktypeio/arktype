@@ -1,12 +1,12 @@
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import * as process from "node:process"
-import type { SourceFileEntry } from "../../runtime/exports.ts"
+import type { SourceFileEntry } from "../../runtime/api.ts"
 import {
     ensureDir,
     fromPackageRoot,
     getSourceFileEntries
-} from "../../runtime/exports.ts"
+} from "../../runtime/api.ts"
 import { getCmdFromPid } from "./utils.ts"
 import type { BenchFormat } from "./writeSnapshot.ts"
 
@@ -76,7 +76,6 @@ const getFilter = (argsToCheck: string[]) => {
 
 let cachedConfig: AttestConfig | undefined
 
-// eslint-disable-next-line max-lines-per-function
 export const getAttestConfig = (): AttestConfig => {
     if (cachedConfig) {
         return cachedConfig

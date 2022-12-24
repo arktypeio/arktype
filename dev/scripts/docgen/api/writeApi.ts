@@ -1,6 +1,6 @@
 import { rmSync } from "node:fs"
 import { join } from "node:path"
-import { ensureDir, shell, writeFile } from "../../../runtime/exports.ts"
+import { ensureDir, shell, writeFile } from "../../../runtime/api.ts"
 import type { DocGenApiConfig } from "../main.ts"
 import type {
     ApiEntryPoint,

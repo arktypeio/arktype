@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
-import { attest } from "../dev/attest/exports.ts"
-import { scope, type } from "../exports.ts"
+import { attest } from "../dev/attest/api.ts"
+import { scope, type } from "../api.ts"
 import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 import { buildMalformedNumericLiteralMessage } from "../src/utils/numericLiterals.ts"
 

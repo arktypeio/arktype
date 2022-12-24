@@ -1,31 +1,24 @@
 import { renameSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import * as process from "node:process"
-import type { WalkOptions } from "../runtime/exports.ts"
 import {
+    getSourceFilePaths,
     readFile,
     readJson,
     shell,
-    tsFileMatcher,
     walkPaths,
     writeFile,
     writeJson
-} from "../runtime/exports.ts"
+} from "../runtime/api.ts"
 import { repoDirs } from "./common.ts"
 
 const isTestBuild = process.argv.includes("--test")
 
 const isProd = () => process.argv.includes("--prod") || !!process.env.CI
 
-const inFileFilter: WalkOptions = {
-    include: (path) =>
-        tsFileMatcher.test(path) &&
-        /(^src|test|dev\/attest|dev\/runtime)\/?/.test(path) &&
-        !/dev\/attest\/test/.test(path),
-    ignoreDirsMatching: /node_modules|dist|docgen/
-}
-
-const inFiles = walkPaths(isTestBuild ? "." : "src", inFileFilter)
+const inFiles = getSourceFilePaths(
+    isTestBuild ? repoDirs.root : repoDirs.srcRoot
+)
 
 const successMessage = `📦 Successfully built arktype!`
 
@@ -75,7 +68,7 @@ const swc = (kind: "mjs" | "cjs") => {
     }
     if (!isTestBuild) {
         cmd += inFiles.join(" ")
-        cmd += " exports.ts"
+        cmd += " api.ts"
         shell(cmd)
     } else {
         buildWithTests(kind, kindOutDir)
@@ -90,9 +83,7 @@ const swc = (kind: "mjs" | "cjs") => {
 const buildWithTests = (kind: string, kindOutDir: string) => {
     const cjsAddon = kind === "cjs" ? "-C module.type=commonjs" : ""
 
-    shell(
-        `pnpm swc ${cjsAddon} ./exports.ts -d dist/${kind}/ --source-maps inline`
-    )
+    shell(`pnpm swc ${cjsAddon} ./api.ts -d dist/${kind}/ --source-maps inline`)
 
     const dirs = {
         src: ["src"],
@@ -111,8 +102,8 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
 const buildExportsTs = (kind: "mjs" | "cjs" | "types") => {
     const originalPath =
         kind === "mjs" || kind === "cjs"
-            ? join(repoDirs.outRoot, kind, "exports.js")
-            : "exports.ts"
+            ? join(repoDirs.outRoot, kind, "api.js")
+            : "api.ts"
     const originalContents = readFile(originalPath)
     if (kind === "mjs" || kind === "cjs") {
         rmSync(originalPath)
@@ -131,9 +122,9 @@ const buildExportsTs = (kind: "mjs" | "cjs" | "types") => {
         ? join(
               repoDirs.outRoot,
               `${kind}`,
-              kind === "types" ? "exports.d.ts" : "exports.js"
+              kind === "types" ? "api.d.ts" : "api.js"
           )
-        : join(repoDirs.outRoot, `exports.${kind === "types" ? "d.ts" : kind}`)
+        : join(repoDirs.outRoot, `api.${kind === "types" ? "d.ts" : kind}`)
     writeFile(destinationFile, transformedContents)
 }
 

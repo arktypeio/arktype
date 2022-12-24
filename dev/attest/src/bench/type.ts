@@ -1,12 +1,13 @@
 import type { Node, Project, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { caller } from "../../../runtime/exports.ts"
+import { caller } from "../../../runtime/api.ts"
 import { findCallExpressionAncestor } from "../snapshot.ts"
-import { forceCreateTsMorphProject } from "../type/exports.ts"
+import { forceCreateTsMorphProject } from "../type/getTsMorphProject.ts"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
 import type { BenchContext } from "./bench.ts"
-import type { Measure, MeasureComparison, TypeUnit } from "./measure/exports.ts"
-import { createTypeComparison } from "./measure/exports.ts"
+import type { Measure, MeasureComparison } from "./measure/measure.ts"
+import type { TypeUnit } from "./measure/types.ts"
+import { createTypeComparison } from "./measure/types.ts"
 
 export type BenchTypeAssertions = {
     type: (instantiations?: Measure<TypeUnit>) => void

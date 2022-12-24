@@ -1,7 +1,7 @@
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.ts"
-import { caller } from "../../../runtime/exports.ts"
+import { caller } from "../../../runtime/api.ts"
 import { assertEquals } from "../assertions.ts"
 import type { AssertionContext } from "../attest.ts"
 import type { SnapshotArgs } from "../snapshot.ts"
@@ -9,7 +9,7 @@ import {
     getSnapshotByName,
     queueInlineSnapshotWriteOnProcessExit
 } from "../snapshot.ts"
-import { getTypeDataAtPos } from "../type/exports.ts"
+import { getTypeDataAtPos } from "../type/getAssertionAtPos.ts"
 import { literalSerialize } from "../utils.ts"
 import {
     updateExternalSnapshot,

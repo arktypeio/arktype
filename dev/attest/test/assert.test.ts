@@ -1,6 +1,6 @@
 import * as assert from "node:assert/strict"
 import { describe, it } from "mocha"
-import { attest } from "../exports.ts"
+import { attest } from "../api.ts"
 
 const o = { ark: "type" }
 

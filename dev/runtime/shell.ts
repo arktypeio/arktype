@@ -1,22 +1,7 @@
 import { execSync } from "node:child_process"
 import { existsSync, statSync } from "node:fs"
 import * as process from "node:process"
-import { readFile } from "../runtime/fs.ts"
-
-export const getSourceControlPaths = () =>
-    shell("git ls-files", { stdio: "pipe" })!
-        .toString()
-        .split("\n")
-        .filter((path) => existsSync(path) && statSync(path).isFile())
-
-export type SourceFileEntry = [path: string, contents: string]
-
-export const tsFileMatcher = /^.*\.(c|m)?tsx?$/
-
-export const getSourceFileEntries = (): SourceFileEntry[] =>
-    getSourceControlPaths()
-        .filter((path) => tsFileMatcher.test(path))
-        .map((path) => [path, readFile(path)])
+import { readFile, WalkOptions } from "../runtime/fs.ts"
 
 /** Add a listener that works with Deno or Node */
 export const addListener = (signal: string, handler: () => void) => {

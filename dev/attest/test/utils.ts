@@ -1,5 +1,5 @@
 import { copyFileSync, rmSync } from "node:fs"
-import { fromHere, readFile, shell } from "../../runtime/exports.ts"
+import { fromHere, readFile, shell } from "../../runtime/api.ts"
 import type { BenchFormat } from "../src/writeSnapshot.ts"
 
 const PATH_TO_TEST_ASSERTIONS_DIR = fromHere(".attest")
@@ -10,7 +10,6 @@ export type RunThenGetContentsOptions = {
     benchFormat?: BenchFormat
 }
 
-// eslint-disable-next-line max-lines-per-function
 export const runThenGetContents = (
     templatePath: string,
     { precache, includeBenches, benchFormat }: RunThenGetContentsOptions = {}

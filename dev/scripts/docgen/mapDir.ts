@@ -7,12 +7,11 @@ import {
     shell,
     walkPaths,
     writeJson
-} from "../../runtime/exports.ts"
+} from "../../runtime/api.ts"
 import { repoDirs } from "../common.ts"
 import type { DocGenMappedDirsConfig } from "./main.ts"
 import type { SnippetsByPath } from "./snippets/extractSnippets.ts"
 
-// eslint-disable-next-line max-lines-per-function
 export const mapDir = (
     snippetsByPath: SnippetsByPath,
     options: DocGenMappedDirsConfig
