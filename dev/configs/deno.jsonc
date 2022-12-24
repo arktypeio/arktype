@@ -1,3 +1,8 @@
 {
-    "importMap": "./import_map.json"
+    "importMap": "./import_map.json",
+    "lint": {
+        "rules": {
+            "exclude": ["ban-ts-comment", "ban-types", "no-explicit-any"]
+        }
+    }
 }

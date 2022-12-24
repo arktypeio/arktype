@@ -1,15 +1,15 @@
-import { describe, test } from "mocha"
+import { describe, it } from "mocha"
 import { attest } from "../dev/attest/exports.ts"
 import { type } from "../exports.ts"
 
 describe("narrow", () => {
-    test("functional", () => {
+    it("functional", () => {
         const isOdd = (n: number) => n % 2 === 1
         const t = type(["number", ":", isOdd])
         attest(t.infer).typed as number
         attest(t.root).equals({ number: { validator: isOdd as any } })
     })
-    test("functional parameter inference", () => {
+    it("functional parameter inference", () => {
         attest(() => {
             type([
                 "number|boolean[]",
@@ -19,7 +19,7 @@ describe("narrow", () => {
             ])
         }).type.errors("Type 'boolean' is not assignable to type 'string'.")
     })
-    test("distributed", () => {
+    it("distributed", () => {
         const distributedBlacklist = {
             string: (s: unknown) => s !== "drop tables",
             number: (n: unknown) => !Number.isNaN(n)
@@ -31,7 +31,7 @@ describe("narrow", () => {
             number: { validator: distributedBlacklist.number }
         })
     })
-    test("distributed parameter inference", () => {
+    it("distributed parameter inference", () => {
         const validateInferredAsZero = (input: 0) => !input
         attest(() => {
             type([
@@ -47,7 +47,7 @@ describe("narrow", () => {
             ])
         }).type.errors("Type 'boolean[]' is not assignable to type 'string[]'.")
     })
-    test.skip("functional inference in tuple", () => {
+    it("functional inference in tuple", () => {
         // TODO: https://github.com/arktypeio/arktype/issues/565
         // Nesting a tuple expression requiring functional inference in a tuple
         // like this currently breaks validation. This is likely a convoluted TS

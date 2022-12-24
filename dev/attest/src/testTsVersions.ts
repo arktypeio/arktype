@@ -1,6 +1,5 @@
 import { rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { exit } from "node:process"
 import { fromPackageRoot, readPackageJson } from "../../runtime/fs.ts"
 import { shell } from "../../runtime/shell.ts"
 
@@ -25,4 +24,6 @@ const rootJson = readPackageJson(fromPackageRoot())
 const tsMorphVersion = rootJson["devDependencies"]["ts-morph"]
 shell(`pnpm i ts-morph@${tsMorphVersion}`)
 rmSync(filePath, { force: true })
-exit(exitCode)
+if (exitCode) {
+    throw new Error()
+}

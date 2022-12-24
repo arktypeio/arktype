@@ -52,7 +52,6 @@ module.exports = defineConfig({
          * Imports
          */
         "import/no-duplicates": "warn",
-        "import/no-cycle": "warn",
         // Sort import statements
         "import/order": [
             "warn",
@@ -95,20 +94,12 @@ module.exports = defineConfig({
          */
         {
             files: ["**/src/**"],
-            excludedFiles: ["**/__tests__/**"],
             rules: {
                 /**
                  * In tests and scripts, we can safely import from the monorepo's root devDependencies,
                  * so no need to worry about checking imports beyond what TypeScript does by default.
                  **/
                 "import/no-extraneous-dependencies": "warn"
-            }
-        },
-        {
-            files: ["**/*.test.ts", "**/*.bench.ts"],
-            rules: {
-                // Does not play well with "describe" or "suite" blocks
-                "max-lines-per-function": "off"
             }
         },
         {

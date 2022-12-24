@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
+import * as process from "node:process"
 import type { SourceFileEntry } from "../../runtime/exports.ts"
 import {
     ensureDir,
@@ -39,8 +40,10 @@ const getArgsToCheck = () => {
         // If using arktype runner, ARKTYPE_CHECK_CMD will be set to the original cmd.
         return process.env.ARKTYPE_CHECK_CMD.split(" ")
     } else if (process.env.JEST_WORKER_ID) {
-        // If we're in a jest worker process, check the parent process cmd args
-        const parentCmd = getCmdFromPid(process.ppid)
+        // If we're in a jest worker process, check the parent process cmd args (with Deno workaround)
+        const parentCmd = getCmdFromPid(
+            (process as any).ppid ?? (globalThis as any).Deno.ppid
+        )
         if (!parentCmd) {
             throw new Error(
                 `Unable to locate parent thread of jest worker ${process.env.JEST_WORKER_ID}.`
@@ -121,7 +124,7 @@ export const getAttestConfig = (): AttestConfig => {
         },
         filter: getFilter(argsToCheck),
         tsconfig,
-        precached: argsToCheck.includes("--precache"),
+        precached: true,
         preserveCache: true,
         cacheDir,
         snapCacheDir,

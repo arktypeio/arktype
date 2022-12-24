@@ -1,5 +1,5 @@
-import { strict } from "node:assert"
-import { describe, test } from "mocha"
+import * as assert from "node:assert/strict"
+import { describe, it } from "mocha"
 import { attest } from "../../exports.ts"
 
 const o = { re: "do" }
@@ -12,38 +12,38 @@ const throwError = () => {
     throw new Error("Test error.")
 }
 describe("Assertions for Inline Snapshots", () => {
-    test("default serializer doesn't care about prop order", () => {
+    it("default serializer doesn't care about prop order", () => {
         const actual = { a: true, b: false }
         attest(actual).snap({ b: false, a: true })
     })
-    test("snap", () => {
+    it("snap", () => {
         attest(o).snap({ re: `do` })
         attest(o).equals({ re: "do" }).type.toString.snap(`{ re: string; }`)
-        strict.throws(
+        assert.throws(
             () => attest(o).snap({ re: `dorf` }),
-            strict.AssertionError,
+            assert.AssertionError,
             "dorf"
         )
     })
-    test("value and type snap", () => {
+    it("value and type snap", () => {
         attest(o).snap({ re: `do` }).type.toString.snap(`{ re: string; }`)
-        strict.throws(
+        assert.throws(
             () =>
                 attest(o)
                     .snap({ re: `do` })
                     .type.toString.snap(`{ re: number; }`),
-            strict.AssertionError,
+            assert.AssertionError,
             "number"
         )
     })
-    test("error and type error snap", () => {
+    it("error and type error snap", () => {
         // @ts-expect-error
         attest(() => shouldThrow(true))
             .throws.snap(`Error: true is not assignable to false`)
             .type.errors.snap(
                 `Argument of type 'true' is not assignable to parameter of type 'false'.`
             )
-        strict.throws(
+        assert.throws(
             () =>
                 // @ts-expect-error
                 attest(() => shouldThrow(1))
@@ -51,16 +51,16 @@ describe("Assertions for Inline Snapshots", () => {
                     .type.errors.snap(
                         `Argument of type '2' is not assignable to parameter of type 'false'.`
                     ),
-            strict.AssertionError,
+            assert.AssertionError,
             "'2'"
         )
     })
-    test("throws", () => {
+    it("throws", () => {
         attest(throwError).throws(/error/g)
-        strict.throws(
+        assert.throws(
             // Snap should never be populated
             () => attest(() => shouldThrow(false)).throws.snap(),
-            strict.AssertionError,
+            assert.AssertionError,
             "didn't throw"
         )
     })
@@ -68,13 +68,13 @@ describe("Assertions for Inline Snapshots", () => {
      * Some TS errors as formatted as diagnostic "chains"
      * We represent them by joining the parts of the message with newlines
      */
-    test("TS diagnostic chain", () => {
+    it("TS diagnostic chain", () => {
         // @ts-expect-error
         attest(() => shouldThrow({} as {} | false)).type.errors.snap(
             `Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'.`
         )
     })
-    test("multiple inline snaps", () => {
+    it("multiple inline snaps", () => {
         attest("firstLine\nsecondLine").snap(`firstLine
 secondLine`)
         attest("firstLine\nsecondLine").snap(`firstLine

@@ -1,6 +1,6 @@
 import { renameSync, rmSync } from "node:fs"
 import { join } from "node:path"
-import { stdout } from "node:process"
+import * as process from "node:process"
 import type { WalkOptions } from "../runtime/exports.ts"
 import {
     readFile,
@@ -12,10 +12,6 @@ import {
     writeJson
 } from "../runtime/exports.ts"
 import { repoDirs } from "./common.ts"
-import { denoTransformations } from "./denoBuildTransforms.ts"
-import { getProject } from "./docgen/main.ts"
-import { mapDir } from "./docgen/mapDir.ts"
-import { extractSnippets } from "./docgen/snippets/extractSnippets.ts"
 
 const isTestBuild = process.argv.includes("--test")
 
@@ -44,7 +40,7 @@ const arktypeTsc = () => {
 }
 
 const buildTypes = () => {
-    stdout.write("⏳ Building types...".padEnd(successMessage.length))
+    process.stdout.write("⏳ Building types...".padEnd(successMessage.length))
     const tsConfigData = readJson(join(repoDirs.root, "tsconfig.json"))
     const tempTsConfig = join(repoDirs.root, "tsconfig.temp.json")
     try {
@@ -58,14 +54,14 @@ const buildTypes = () => {
     } finally {
         rmSync(tempTsConfig, { force: true })
     }
-    stdout.write(`✅\n`)
+    process.stdout.write(`✅\n`)
 }
 
 const transpile = () => {
-    stdout.write(`⌛ Transpiling...`.padEnd(successMessage.length))
+    process.stdout.write(`⌛ Transpiling...`.padEnd(successMessage.length))
     swc("mjs")
     swc("cjs")
-    stdout.write("✅\n")
+    process.stdout.write("✅\n")
 }
 
 const swc = (kind: "mjs" | "cjs") => {
@@ -112,7 +108,7 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
     }
 }
 
-const buildExportsTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
+const buildExportsTs = (kind: "mjs" | "cjs" | "types") => {
     const originalPath =
         kind === "mjs" || kind === "cjs"
             ? join(repoDirs.outRoot, kind, "exports.js")
@@ -135,39 +131,10 @@ const buildExportsTs = (kind: "mjs" | "cjs" | "types" | "deno") => {
         ? join(
               repoDirs.outRoot,
               `${kind}`,
-              kind === "types"
-                  ? "exports.d.ts"
-                  : kind === "deno"
-                  ? "exports.ts"
-                  : "exports.js"
+              kind === "types" ? "exports.d.ts" : "exports.js"
           )
-        : join(
-              repoDirs.outRoot,
-              `exports.${
-                  kind === "types" ? "d.ts" : kind === "deno" ? "deno.ts" : kind
-              }`
-          )
+        : join(repoDirs.outRoot, `exports.${kind === "types" ? "d.ts" : kind}`)
     writeFile(destinationFile, transformedContents)
-}
-
-const buildDeno = () => {
-    const sources = extractSnippets(inFiles, getProject(), {
-        universalTransforms: { imports: false }
-    })
-    for (const [source, snippetsByLabel] of Object.entries(sources)) {
-        sources[source].all.text = denoTransformations(snippetsByLabel.all.text)
-    }
-    mapDir(sources, {
-        sources: isTestBuild
-            ? ["src", "test", "dev/attest", "dev/runtime"]
-            : ["src"],
-        targets: ["dist/deno"],
-        skipFormatting: true,
-        skipSourceMap: true,
-        sourceOptions: inFileFilter
-    })
-
-    buildExportsTs("deno")
 }
 
 const rewriteTsImports = (dir: string) => {

@@ -1,4 +1,4 @@
-import { strict } from "node:assert"
+import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.ts"
 import { caller } from "../../../runtime/exports.ts"
@@ -59,7 +59,7 @@ export class Assertions implements AssertionRecord {
     }
 
     is(expected: unknown) {
-        strict.equal(this.actual, expected)
+        assert.equal(this.actual, expected)
         return this
     }
     equals(expected: unknown) {
@@ -218,7 +218,7 @@ export class Assertions implements AssertionRecord {
             !assertionData.type.equivalent &&
             assertionData.type.actual !== assertionData.type.expected
         ) {
-            strict.equal(assertionData.type.actual, assertionData.type.expected)
+            assert.equal(assertionData.type.actual, assertionData.type.expected)
         }
     }
 }

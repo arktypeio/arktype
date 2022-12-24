@@ -1,14 +1,14 @@
-import { describe, test } from "mocha"
+import { describe, it } from "mocha"
 import { attest } from "../dev/attest/exports.ts"
 import { type } from "../exports.ts"
 
 describe("morph", () => {
-    test("functional", () => {
+    it("functional", () => {
         const t = type(["string", "=>", "number", (s) => s.length])
         attest(t.infer).typed as number
         attest(t.root).snap({ number: true })
     })
-    test("distributed", () => {
+    it("distributed", () => {
         const validateInferredAsZeroOrOne = (input: "zero" | "one") =>
             input === "zero" ? 0 : 1
         const t = type([

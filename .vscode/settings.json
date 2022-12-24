@@ -18,6 +18,7 @@
     "mochaExplorer.env": {
         "ARKTYPE_CHECK_CMD": "--skipTypes"
     },
+    "testExplorer.useNativeTesting": true,
     "typescript.tsdk": "./node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "typescript.preferences.autoImportFileExcludePatterns": [
@@ -25,8 +26,6 @@
         "node_modules"
     ],
     "deno.config": "./dev/configs/deno.jsonc",
-    "deno.enablePaths": ["./dist/exports.deno.ts", "./dist/deno"],
-    // Until we migrate to .ts extensions with TS5.0, this needs to be disabled
-    // to use the Deno extension
+    "deno.enable": false,
     "typescript.tsserver.experimental.enableProjectDiagnostics": true
 }

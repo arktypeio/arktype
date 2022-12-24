@@ -1,6 +1,6 @@
-import { strict } from "node:assert"
+import * as assert from "node:assert/strict"
 import { basename } from "node:path"
-import { describe, test } from "mocha"
+import { describe, it } from "mocha"
 import { fileName } from "../../runtime/exports.ts"
 import { attest } from "../exports.ts"
 
@@ -15,7 +15,7 @@ const throwError = () => {
     throw new Error("Test error.")
 }
 describe("assertion errors", () => {
-    test("valid type errors", () => {
+    it("valid type errors", () => {
         // @ts-expect-error
         attest(o.re.length.nonexistent).type.errors(
             /Property 'nonexistent' does not exist on type 'number'/
@@ -26,74 +26,74 @@ describe("assertion errors", () => {
             "Expected 1 arguments, but got 2."
         )
     })
-    test("bad type errors", () => {
-        strict.throws(
+    it("bad type errors", () => {
+        assert.throws(
             () => attest(o).type.errors(/This error doesn't exist/),
-            strict.AssertionError,
+            assert.AssertionError,
             "doesn't exist"
         )
-        strict.throws(
+        assert.throws(
             () =>
                 attest(() =>
                     // @ts-expect-error
                     shouldThrow("this is a type error")
                 ).type.errors.is(""),
-            strict.AssertionError,
+            assert.AssertionError,
             "not assignable"
         )
     })
-    test("chainable", () => {
+    it("chainable", () => {
         attest(o).equals({ re: "do" }).typed as { re: string }
         // @ts-expect-error
         attest(() => throwError("this is a type error"))
             .throws("Test error.")
             .type.errors("Expected 0 arguments, but got 1.")
     })
-    test("bad chainable", () => {
-        strict.throws(
+    it("bad chainable", () => {
+        assert.throws(
             () =>
                 attest(n)
                     .equals(5)
                     .type.errors.equals("Expecting an error here will throw"),
-            strict.AssertionError,
+            assert.AssertionError,
             "Expecting an error"
         )
-        strict.throws(
+        assert.throws(
             () => attest(n).is(7).type.toString("string"),
-            strict.AssertionError,
+            assert.AssertionError,
             "7"
         )
     })
-    test("throwsAndHasTypeError", () => {
+    it("throwsAndHasTypeError", () => {
         // @ts-expect-error
         attest(() => shouldThrow(true)).throwsAndHasTypeError(
             /true[\S\s]*not assignable[\S\s]*false/
         )
         // No thrown error
-        strict.throws(
+        assert.throws(
             () =>
                 // @ts-expect-error
                 attest(() => shouldThrow(null)).throwsAndHasTypeError(
                     "not assignable"
                 ),
-            strict.AssertionError,
+            assert.AssertionError,
             "didn't throw"
         )
         // No type error
-        strict.throws(
+        assert.throws(
             () =>
                 attest(() => shouldThrow(true as any)).throwsAndHasTypeError(
                     "not assignable"
                 ),
-            strict.AssertionError,
+            assert.AssertionError,
             "not assignable"
         )
     })
-    test("throws empty", () => {
+    it("throws empty", () => {
         attest(throwError).throws()
-        strict.throws(
+        assert.throws(
             () => attest(() => shouldThrow(false)).throws(),
-            strict.AssertionError,
+            assert.AssertionError,
             "didn't throw"
         )
     })
@@ -109,8 +109,8 @@ describe("assertion errors", () => {
         throw new Error("Expected function to throw an error.")
     }
 
-    test("stack starts from test file", () => {
+    it("stack starts from test file", () => {
         const e = getThrownError(() => attest(1 + 1).equals(3))
-        strict.match(e.stack!.split("\n")[1], new RegExp(basename(fileName())))
+        assert.match(e.stack!.split("\n")[1], new RegExp(basename(fileName())))
     })
 })

@@ -1,10 +1,11 @@
-import { describe, test } from "mocha"
+import { describe, it } from "mocha"
 import { attest } from "../dev/attest/exports.ts"
 import { scope, type } from "../exports.ts"
 import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 
 describe("scope", () => {
-    test("single", () => {
+    it("single", () => {
+        console.log(globalThis)
         const s = scope({ a: "string" })
         attest(s.$.infer).typed as { a: string }
         attest(s.a.infer).typed as string
@@ -13,7 +14,7 @@ describe("scope", () => {
             scope({ a: "strng" })
         ).throwsAndHasTypeError(buildUnresolvableMessage("strng"))
     })
-    test("interdependent", () => {
+    it("interdependent", () => {
         const s = scope({ a: "string>5", b: "email<=10", c: "a&b" })
         attest(s.c.infer).typed as string
         attest(s.c.root).equals({
@@ -29,7 +30,7 @@ describe("scope", () => {
             }
         })
     })
-    test("cyclic", () => {
+    it("cyclic", () => {
         const s = scope({ a: { b: "b" }, b: { a: "a" } })
         attest(s.a.root).snap({
             object: { props: { b: "b" } }
@@ -55,18 +56,18 @@ describe("scope", () => {
             `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
         )
     })
-    test("object array", () => {
+    it("object array", () => {
         attest(scope({ a: "string", b: [{ c: "a" }] }).$.infer.b).typed as [
             {
                 c: string
             }
         ]
     })
-    test("doesn't try to validate any in scope", () => {
+    it("doesn't try to validate any in scope", () => {
         attest(type(["number", "a"], { scope: scope({ a: {} as any }) }).infer)
             .typed as [number, never]
     })
-    test("parent scope", () => {
+    it("parent scope", () => {
         const s = scope(
             { a: "string[]", b: "a[]", d: "definedInScope" },
             { scope: scope({ definedInScope: "boolean" }) }

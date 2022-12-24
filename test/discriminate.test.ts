@@ -1,4 +1,4 @@
-import { describe, test } from "mocha"
+import { describe, it } from "mocha"
 import { attest } from "../dev/attest/exports.ts"
 import { scope, type } from "../exports.ts"
 
@@ -10,11 +10,11 @@ describe("compile", () => {
         desert: { wet: "false", blue: "false", isDesert: "true" },
         anywhereWet: { wet: "true" }
     })
-    test("flatten", () => {})
-    // test("discriminate simple", () => {
+    it("flatten", () => {})
+    // it("discriminate simple", () => {
     //     attest(type("ocean|sky", { scope: places }).root).snap({})
     // })
-    // test("discriminate", () => {
+    // it("discriminate", () => {
     //     attest(
     //         type("ocean|sky|rainforest|desert", { scope: places }).root
     //     ).snap({})

@@ -9,6 +9,7 @@ import {
 } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, join, parse } from "node:path"
+import * as process from "node:process"
 import { fileURLToPath, URL } from "node:url"
 import { caller } from "./caller.ts"
 
@@ -93,7 +94,7 @@ export const fromHere = (...joinWith: string[]) =>
 export const fromCwd = (...joinWith: string[]) =>
     join(process.cwd(), ...joinWith)
 
-export const fromHome = (...joinWith: string[]) => join(homedir(), ...joinWith)
+export const fromHome = (...joinWith: string[]) => join(homedir()!, ...joinWith)
 
 export const fsRoot = parse(process.cwd()).root
 

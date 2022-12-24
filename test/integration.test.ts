@@ -1,9 +1,9 @@
-import { describe, test } from "mocha"
+import { describe, it } from "mocha"
 import { attest } from "../dev/attest/exports.ts"
 import { type } from "../exports.ts"
 
 describe("branch", () => {
-    test("intersection parsed before union", () => {
+    it("intersection parsed before union", () => {
         // Should be parsed as:
         // 1. "0" | ("1"&"2") | "3"
         // 2. "0" | never | "3"

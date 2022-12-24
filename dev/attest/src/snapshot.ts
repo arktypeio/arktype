@@ -2,6 +2,7 @@ import { basename, dirname, isAbsolute, join } from "node:path"
 import type { CallExpression, SourceFile, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
 import { readJson } from "../../runtime/exports.ts"
+import { addListener } from "../../runtime/shell.ts"
 import { getAttestConfig } from "./config.ts"
 import { getRealTsMorphProject, getTsNodeAtPosition } from "./type/exports.ts"
 import type { SourcePosition } from "./utils.ts"
@@ -114,7 +115,7 @@ export type QueuedUpdate = {
  **/
 const queuedUpdates: QueuedUpdate[] = []
 
-process.on("exit", () => {
+addListener("SIGTERM", () => {
     try {
         writeUpdates(queuedUpdates)
     } catch (e) {

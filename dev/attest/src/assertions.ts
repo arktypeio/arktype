@@ -1,4 +1,4 @@
-import { strict } from "node:assert"
+import * as assert from "node:assert/strict"
 import type { AssertionContext } from "./attest.ts"
 import { isRecursible } from "./utils.ts"
 
@@ -13,7 +13,7 @@ export const throwAssertionError = ({
     ctx,
     ...errorArgs
 }: ThrowAsertionErrorContext): never => {
-    const e = new strict.AssertionError(errorArgs)
+    const e = new assert.AssertionError(errorArgs)
     e.stack = ctx.assertionStack
     throw e
 }
@@ -28,7 +28,7 @@ export const assertEquals = (
     }
     if (isRecursible(expected) && isRecursible(actual)) {
         try {
-            strict.deepStrictEqual(actual, expected)
+            assert.deepStrictEqual(actual, expected)
         } catch (e: any) {
             e.stack = ctx.assertionStack
             throw e
@@ -36,7 +36,7 @@ export const assertEquals = (
     } else {
         // some nonsense to get a good stack trace
         try {
-            strict.strictEqual(actual, expected)
+            assert.strictEqual(actual, expected)
         } catch (e: any) {
             e.stack = ctx.assertionStack
             throw e

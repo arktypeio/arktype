@@ -1,58 +1,58 @@
-import { describe, test } from "mocha"
+import { describe, it } from "mocha"
 import { attest } from "../dev/attest/exports.ts"
 import { type } from "../exports.ts"
 import { buildBadDefinitionTypeMessage } from "../src/parse/definition.ts"
 
 describe("bad definition types", () => {
-    test("any", () => {
+    it("any", () => {
         // Can't create an assignment error if type is any, so we have to rely
         // on the return type being never
         // @ts-expect-error The type error is from attest
         attest(type({} as any)).typed as never
     })
-    test("unknown", () => {
+    it("unknown", () => {
         // @ts-expect-error
         attest(type({} as unknown)).type.errors(
             "Cannot statically parse a definition inferred as unknown. Use 'type.dynamic(...)' instead."
         )
     })
-    test("undefined", () => {
+    it("undefined", () => {
         // @ts-expect-error
         attest(() => type({ bad: undefined })).throwsAndHasTypeError(
             buildBadDefinitionTypeMessage("undefined")
         )
     })
-    test("null", () => {
+    it("null", () => {
         // @ts-expect-error
         attest(() => type({ bad: null })).throwsAndHasTypeError(
             buildBadDefinitionTypeMessage("null")
         )
     })
-    test("boolean", () => {
+    it("boolean", () => {
         // @ts-expect-error
         attest(() => type({ bad: true })).throwsAndHasTypeError(
             buildBadDefinitionTypeMessage("boolean")
         )
     })
-    test("number", () => {
+    it("number", () => {
         // @ts-expect-error
         attest(() => type({ bad: 5 })).throwsAndHasTypeError(
             buildBadDefinitionTypeMessage("number")
         )
     })
-    test("bigint", () => {
+    it("bigint", () => {
         // @ts-expect-error
         attest(() => type({ bad: 99999n })).throwsAndHasTypeError(
             buildBadDefinitionTypeMessage("bigint")
         )
     })
-    test("symbol", () => {
+    it("symbol", () => {
         // @ts-expect-error
         attest(() => type({ bad: Symbol() })).throwsAndHasTypeError(
             buildBadDefinitionTypeMessage("symbol")
         )
     })
-    test("objects", () => {
+    it("objects", () => {
         // @ts-expect-error
         attest(() => type({ bad: () => {} })).throwsAndHasTypeError(
             buildBadDefinitionTypeMessage("Function")

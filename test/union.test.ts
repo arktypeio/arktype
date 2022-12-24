@@ -1,4 +1,4 @@
-import { describe, test } from "mocha"
+import { describe, it } from "mocha"
 import { attest } from "../dev/attest/exports.ts"
 import { type } from "../exports.ts"
 import {
@@ -7,12 +7,12 @@ import {
 } from "../src/parse/string/shift/operand/unenclosed.ts"
 
 describe("union/parse", () => {
-    test("binary", () => {
+    it("binary", () => {
         const binary = type("number|string")
         attest(binary.infer).typed as number | string
         attest(binary.root).snap({ number: true, string: true })
     })
-    test("nary", () => {
+    it("nary", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
         attest(nary.root).snap({
@@ -29,14 +29,14 @@ describe("union/parse", () => {
             }
         })
     })
-    test("union of true and false reduces to boolean", () => {
+    it("union of true and false reduces to boolean", () => {
         attest(type("true|false").root).equals({ boolean: true })
         attest(type("true|false|number").root).equals({
             boolean: true,
             number: true
         })
     })
-    test("subtype pruning", () => {
+    it("subtype pruning", () => {
         const t = type([
             [{ a: "boolean" }, "|", { a: "true" }],
             "|",
@@ -47,25 +47,25 @@ describe("union/parse", () => {
         })
     })
     describe("errors", () => {
-        test("bad reference", () => {
+        it("bad reference", () => {
             // @ts-expect-error
             attest(() => type("number|strng")).throwsAndHasTypeError(
                 buildUnresolvableMessage("strng")
             )
         })
-        test("consecutive tokens", () => {
+        it("consecutive tokens", () => {
             // @ts-expect-error
             attest(() => type("boolean||null")).throwsAndHasTypeError(
                 buildMissingRightOperandMessage("|", "|null")
             )
         })
-        test("ends with |", () => {
+        it("ends with |", () => {
             // @ts-expect-error
             attest(() => type("boolean|")).throwsAndHasTypeError(
                 buildMissingRightOperandMessage("|", "")
             )
         })
-        test("long missing union member", () => {
+        it("long missing union member", () => {
             attest(() =>
                 // @ts-expect-error
                 type("boolean[]|(string|number|)|object")

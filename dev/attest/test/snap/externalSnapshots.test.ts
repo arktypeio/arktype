@@ -1,7 +1,7 @@
-import { strict } from "node:assert"
+import * as assert from "node:assert/strict"
 import { rmSync } from "node:fs"
 import { join } from "node:path"
-import { afterEach, beforeEach, describe, test } from "mocha"
+import { afterEach, beforeEach, describe, it } from "mocha"
 import { dirName, readJson, writeJson } from "../../../runtime/exports.ts"
 import { attest } from "../../exports.ts"
 const testDir = dirName()
@@ -40,11 +40,11 @@ describe("snapToFile", () => {
         rmSync(customSnapPath, { force: true })
     })
 
-    test("create", () => {
+    it("create", () => {
         attest(o).snapToFile({ id: "toFile" })
-        strict.throws(
+        assert.throws(
             () => attest({ re: "kt" }).snapToFile({ id: "toFile" }),
-            strict.AssertionError,
+            assert.AssertionError,
             "kt"
         )
         attest(1337).snapToFile({ id: "toFileNew" })
@@ -56,7 +56,7 @@ describe("snapToFile", () => {
             }
         })
     })
-    test("update existing", () => {
+    it("update existing", () => {
         // @ts-ignore (using internal updateSnapshots hook)
         attest({ re: "dew" }, { updateSnapshots: true }).snapToFile({
             id: "toFileUpdate"
@@ -68,21 +68,21 @@ describe("snapToFile", () => {
                 toFileUpdate: { re: "dew" }
             }
         }
-        strict.deepEqual(updatedContents, expectedContents)
+        assert.deepEqual(updatedContents, expectedContents)
     })
 
-    test("with path", () => {
+    it("with path", () => {
         attest(o).snapToFile({
             id: "toCustomFile",
             path: customFileName
         })
-        strict.throws(
+        assert.throws(
             () =>
                 attest({ re: "kt" }).snapToFile({
                     id: "toCustomFile",
                     path: customFileName
                 }),
-            strict.AssertionError,
+            assert.AssertionError,
             "kt"
         )
         attest(null).snapToFile({

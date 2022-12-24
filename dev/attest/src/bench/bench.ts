@@ -1,5 +1,7 @@
+import * as process from "node:process"
 import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.ts"
 import { caller } from "../../../runtime/exports.ts"
+import { addListener } from "../../../runtime/shell.ts"
 import type { AttestConfig } from "../config.ts"
 import { getAttestConfig } from "../config.ts"
 import type { SourcePosition } from "../utils.ts"
@@ -52,7 +54,7 @@ export type InitialBenchAssertions<Fn extends BenchableFunction> =
 const currentSuitePath: string[] = []
 export const unhandledExceptionMessages: string[] = []
 
-process.on("beforeExit", () => {
+addListener("beforeExit", () => {
     if (unhandledExceptionMessages.length) {
         console.error(
             `${unhandledExceptionMessages.length} unhandled exception(s) occurred during your benches (see details above).`

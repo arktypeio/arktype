@@ -1,5 +1,5 @@
 import { basename, join, relative } from "node:path"
-import { stdout } from "node:process"
+import * as process from "node:process"
 import { Project } from "ts-morph"
 import type { WalkOptions } from "../../runtime/exports.ts"
 import { dirName, getSourceControlPaths } from "../../runtime/exports.ts"
@@ -98,16 +98,16 @@ export const getProject = () => {
 }
 
 const updateApiDocs = (project: Project) => {
-    stdout.write("Updating api docs...")
+    process.stdout.write("Updating api docs...")
     for (const api of defaultConfig.apis) {
         const data = extractApi(project, api.packageRoot)
         writeApi(api, data)
     }
-    stdout.write("✅\n")
+    process.stdout.write("✅\n")
 }
 
 const getSnippetsAndUpdateReferences = (project: Project) => {
-    stdout.write("Updating snippets...")
+    process.stdout.write("Updating snippets...")
     const sourceControlPaths = getSourceControlPaths().filter(
         (path) =>
             // Avoid conflicts between snip matching and the source
@@ -116,14 +116,14 @@ const getSnippetsAndUpdateReferences = (project: Project) => {
     )
     const snippets = extractSnippets(sourceControlPaths, project)
     updateSnippetReferences(snippets)
-    stdout.write("✅\n")
+    process.stdout.write("✅\n")
     return snippets
 }
 
 export const mapDirs = (snippets: SnippetsByPath) => {
-    stdout.write("Mapping dirs...")
+    process.stdout.write("Mapping dirs...")
     for (const mapConfig of defaultConfig.mappedDirs) {
         mapDir(snippets, mapConfig)
     }
-    stdout.write("✅\n")
+    process.stdout.write("✅\n")
 }

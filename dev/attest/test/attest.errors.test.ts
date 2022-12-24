@@ -1,91 +1,91 @@
-import { strict } from "node:assert"
-import { describe, test } from "mocha"
+import * as assert from "node:assert/strict"
+import { describe, it } from "mocha"
 import { attest } from "../exports.ts"
 
 const n = 5
 const o = { re: "do" }
 
 describe("attest errors", () => {
-    test("not equal", () => {
-        strict.throws(
+    it("not equal", () => {
+        assert.throws(
             () => attest(o).equals({ re: "doo" }),
-            strict.AssertionError,
+            assert.AssertionError,
             "do !== doo"
         )
     })
-    test("incorrect type", () => {
-        strict.throws(
+    it("incorrect type", () => {
+        assert.throws(
             () => attest(o).typed as { re: number },
-            strict.AssertionError,
+            assert.AssertionError,
             "o is not of type number"
         )
     })
-    test("any type", () => {
+    it("any type", () => {
         attest(n as any).typedValue(5 as any)
         attest(o as any).typed as any
-        strict.throws(
+        assert.throws(
             () => attest(n).typedValue(5 as any),
-            strict.AssertionError,
+            assert.AssertionError,
             "number"
         )
-        strict.throws(
+        assert.throws(
             () => attest({} as unknown).typed as any,
-            strict.AssertionError,
+            assert.AssertionError,
             "unknown"
         )
     })
-    test("typedValue", () => {
+    it("typedValue", () => {
         const getDo = () => "do"
         attest(o).typedValue({ re: getDo() })
-        strict.throws(
+        assert.throws(
             () => attest(o).typedValue({ re: "do" as any }),
-            strict.AssertionError,
+            assert.AssertionError,
             "any"
         )
-        strict.throws(
+        assert.throws(
             () => attest(o).typedValue({ re: "don't" }),
-            strict.AssertionError,
+            assert.AssertionError,
             "don't"
         )
     })
-    test("assert unknown ignores type", () => {
+    it("assert unknown ignores type", () => {
         const myValue = { a: ["+"] } as const
         const myExpectedValue = { a: ["+"] }
         // @ts-expect-error
         attest(myValue).equals(myExpectedValue)
         attest(myValue).unknown.equals(myExpectedValue)
-        strict.throws(
+        assert.throws(
             () => attest(myValue).unknown.is(myExpectedValue),
-            strict.AssertionError,
+            assert.AssertionError,
             "not reference-equal"
         )
     })
-    test("multiline", () => {
+    it("multiline", () => {
         attest({
             several: true,
             lines: true,
             long: true
         } as object).typed as object
-        strict.throws(
+        assert.throws(
             () =>
                 attest({
                     several: true,
                     lines: true,
                     long: true
                 }).typed as object,
-            strict.AssertionError,
+            assert.AssertionError,
             "object"
         )
     })
-    test("nonexistent types always fail", () => {
+    it("nonexistent types always fail", () => {
         // @ts-expect-error
         const nonexistent: NonExistent = {}
-        strict.throws(
+        assert.throws(
             () =>
                 attest(nonexistent).typed as {
                     something: "specific"
                 },
-            strict.AssertionError,
+            assert.AssertionError,
             "specific"
         )
     })
