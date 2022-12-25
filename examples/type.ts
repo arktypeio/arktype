@@ -23,6 +23,5 @@ export const fetchUser = () => ({
 export const { problems, data } = user.check(fetchUser())
 
 if (problems) {
-    // TODO: Add actual error
     console.log(problems.summary)
 }

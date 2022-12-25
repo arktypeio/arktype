@@ -12,7 +12,7 @@ import { getRootScope } from "./scope.ts"
 import { check } from "./traverse/check.ts"
 import { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import type { Dict, equals, isTopType } from "./utils/generics.ts"
+import type { Dict, isTopType } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
@@ -31,7 +31,7 @@ export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
-// Overloads with optional scope?
+// TODO: Overloads with optional scope?
 export type InferredTypeFn = <
     def,
     scope extends Dict = {},

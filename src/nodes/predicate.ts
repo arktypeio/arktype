@@ -60,30 +60,6 @@ export type Condition<
     scope extends Dict = Dict
 > = RuleSet<domain, scope> | ExactValue<domain> | Identifier<scope>
 
-// export type Branches<
-//     domain extends Domain = Domain,
-//     scope extends Dict = Dict
-// > = readonly [
-//     ...conditions: Condition<domain, scope>[],
-//     ...morph:
-//         | []
-//         | readonly ["=>", Morph<inferDomain<domain>, unknown>, TypeNode<scope>]
-// ]
-
-// export type Condition<
-//     domain extends Domain = Domain,
-//     scope extends Dict = Dict
-// > =
-//     | RuleSet<domain, scope>
-//     | ExactValue<domain>
-//     | Identifier<scope>
-//     | PipeCondition<domain>
-
-// export type PipeCondition<domain extends Domain> = readonly [
-//     "|>",
-//     Pipe<inferDomain<domain>>
-// ]
-
 export type TraversalCondition =
     | readonly TraversalRuleEntry[]
     | [ExactValueEntry]

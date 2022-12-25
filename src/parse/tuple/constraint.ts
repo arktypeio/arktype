@@ -12,7 +12,10 @@ import type { TupleExpressionParser } from "./tuple.ts"
 import type { distributable } from "./utils.ts"
 import { entriesOfDistributableFunction } from "./utils.ts"
 
-export const parseValidatorTuple: TupleExpressionParser<":"> = (def, scope) => {
+export const parseConstraintTuple: TupleExpressionParser<":"> = (
+    def,
+    scope
+) => {
     const inputNode = parseDefinition(def[0], scope)
     const distributedValidatorEntries = entriesOfDistributableFunction(
         def[2] as distributable<Validator>,
@@ -26,13 +29,13 @@ export const parseValidatorTuple: TupleExpressionParser<":"> = (def, scope) => {
     return intersection(inputNode, distributedValidatorNode, scope)
 }
 
-export type validateValidatorTuple<narrowedDef, c extends InferenceContext> = [
+export type validateConstraintTuple<narrowedDef, c extends InferenceContext> = [
     validateDefinition<narrowedDef, c>,
     ":",
     distributable<Validator<inferDefinition<narrowedDef, c>>>
 ]
 
-export type ValidatorBuilder<scope extends Dict = {}> = <
+export type ConstraintBuilder<scope extends Dict = {}> = <
     def,
     validator extends Validator<inferDefinition<def, { scope: scope }>>
 >(
@@ -40,8 +43,4 @@ export type ValidatorBuilder<scope extends Dict = {}> = <
     validator: validator
 ) => [def, ":", validator]
 
-export const validate: ValidatorBuilder = (def, validator) => [
-    def as any,
-    ":",
-    validator
-]
+export const constrain: ConstraintBuilder = (def, fn) => [def as any, ":", fn]

@@ -13,8 +13,8 @@ import type {
 import { parseDefinition } from "../definition.ts"
 import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
-import type { validateValidatorTuple } from "./validate.ts"
-import { parseValidatorTuple } from "./validate.ts"
+import type { validateConstraintTuple } from "./constraint.ts"
+import { parseConstraintTuple } from "./constraint.ts"
 
 export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
     if (isTupleExpression(def)) {
@@ -36,7 +36,7 @@ export type validateTupleExpression<
     def extends UnknownTupleExpression,
     c extends InferenceContext
 > = def[1] extends ":"
-    ? validateValidatorTuple<def[0], c>
+    ? validateConstraintTuple<def[0], c>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? [def[0], error<buildMissingRightOperandMessage<def[1], "">>]
@@ -95,7 +95,7 @@ const tupleExpressionParsers: {
     "|": parseBranchTuple,
     "&": parseBranchTuple,
     "[]": parseArrayTuple,
-    ":": parseValidatorTuple
+    ":": parseConstraintTuple
 }
 
 const parseTupleExpression = (

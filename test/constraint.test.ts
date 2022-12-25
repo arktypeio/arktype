@@ -3,7 +3,7 @@ import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import type { assertEqual } from "../src/utils/generics.ts"
 
-describe("narrow", () => {
+describe("constraint", () => {
     it("functional", () => {
         const isOdd = (n: number) => n % 2 === 1
         const t = type(["number", ":", isOdd])
