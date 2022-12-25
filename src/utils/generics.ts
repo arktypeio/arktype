@@ -166,3 +166,12 @@ export type CollapsibleList<t> = t | readonly t[]
 
 export const collapseIfSingleton = <t extends List>(array: t): t | t[number] =>
     array.length === 1 ? array[0] : array
+
+/** Either:
+ * A, with all properties of B as never
+ * OR
+ * B, with all properties of A as never
+ **/
+export type xor<a, b> =
+    | evaluate<a & { [k in keyof b]?: never }>
+    | evaluate<b & { [k in keyof a]?: never }>

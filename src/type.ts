@@ -12,7 +12,7 @@ import { getRootScope } from "./scope.ts"
 import { check } from "./traverse/check.ts"
 import { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import type { Dict, isTopType } from "./utils/generics.ts"
+import type { Dict, isTopType, xor } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
@@ -81,6 +81,15 @@ export class Type<T = unknown> {
         // result.problems?.throw()
         return result.data as T
     }
+}
+
+export type CheckResult<T = unknown> = xor<{ data: T }, { problems: Problems }>
+
+export type Checker<T = unknown> = (data: unknown) => CheckResult<T>
+
+// Convert to this
+export type ArkType<T = unknown> = Checker<T> & {
+    infer: T
 }
 
 export type Config<scope extends Dict = {}> = {
