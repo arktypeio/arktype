@@ -23,7 +23,7 @@ export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
     readonly divisor?: number
     readonly range?: Range
     readonly props?: PropsRule<scope>
-    readonly constraint?: CollapsibleList<Constraint<inferDomain<domain>>>
+    readonly refinement?: CollapsibleList<Refinement<inferDomain<domain>>>
 }
 
 export type TraversalRuleEntry =
@@ -33,9 +33,9 @@ export type TraversalRuleEntry =
     | ["range", Range]
     | TraversalRequiredProps
     | TraversalOptionalProps
-    | ["constraint", Constraint]
+    | ["refinement", Refinement]
 
-export type Constraint<data = unknown> = (data: data) => boolean
+export type Refinement<data = unknown> = (data: data) => boolean
 
 export type RuleSet<
     domain extends Domain,
@@ -45,14 +45,14 @@ export type RuleSet<
     : domain extends "object"
     ? defineRuleSet<
           "object",
-          "subdomain" | "props" | "range" | "constraint",
+          "subdomain" | "props" | "range" | "refinement",
           scope
       >
     : domain extends "string"
-    ? defineRuleSet<"string", "regex" | "range" | "constraint", scope>
+    ? defineRuleSet<"string", "regex" | "range" | "refinement", scope>
     : domain extends "number"
-    ? defineRuleSet<"number", "divisor" | "range" | "constraint", scope>
-    : defineRuleSet<domain, "constraint", scope>
+    ? defineRuleSet<"number", "divisor" | "range" | "refinement", scope>
+    : defineRuleSet<domain, "refinement", scope>
 
 type defineRuleSet<
     domain extends Domain,
@@ -60,8 +60,8 @@ type defineRuleSet<
     scope extends Dict
 > = Pick<Rules<domain, scope>, keys>
 
-const constraintIntersection =
-    composeIntersection<CollapsibleList<Constraint>>(collapsibleListUnion)
+const refinementIntersection =
+    composeIntersection<CollapsibleList<Refinement>>(collapsibleListUnion)
 
 export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
     {
@@ -70,7 +70,7 @@ export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
         regex: regexIntersection,
         props: propsIntersection,
         range: rangeIntersection,
-        constraint: constraintIntersection
+        refinement: refinementIntersection
     },
     { onEmpty: "bubble" }
 )
@@ -101,12 +101,12 @@ const ruleCompilers: {
         entries.push(["range", rule])
     },
     props: compileProps,
-    constraint: (entries, rule) => {
+    refinement: (entries, rule) => {
         if (typeof rule === "function") {
-            entries.push(["constraint", rule])
+            entries.push(["refinement", rule])
         } else {
-            for (const constraint of rule) {
-                entries.push(["constraint", constraint])
+            for (const refinement of rule) {
+                entries.push(["refinement", refinement])
             }
         }
     }
@@ -123,7 +123,7 @@ const rulePrecedenceMap: { readonly [k in TraversalRuleEntry[0]]-?: number } = {
     requiredProps: 2,
     optionalProps: 3,
     // Validation: Only performed if all shallow and deep checks pass
-    constraint: 4
+    refinement: 4
 }
 
 export const compileRules = (

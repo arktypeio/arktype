@@ -116,7 +116,7 @@ const checkers = {
         ),
     branches: (data, branches, scope) =>
         branches.some((condition) => checkEntries(data, condition, scope)),
-    constraint: (data, constraint) => constraint(data),
+    refinement: (data, refinement) => refinement(data),
     value: (data, value) => data === value
 } satisfies {
     [k in TraversalKey]: (

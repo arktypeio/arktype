@@ -206,7 +206,6 @@ type validateAliases<aliases, scope extends Dict> = evaluate<{
     >
 }>
 
-// TODO: Figure out how this works with IO nodes.
 type inferAliases<aliases, scope extends Dict> = evaluate<{
     [name in keyof aliases]: inferDefinition<
         aliases[name],

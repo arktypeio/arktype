@@ -1,4 +1,4 @@
-import type { TraversalNode, TypeNode } from "./nodes/node.ts"
+import type { Identifier, TraversalNode, TypeNode } from "./nodes/node.ts"
 import { compileNode } from "./nodes/node.ts"
 import { resolveIfIdentifier } from "./nodes/utils.ts"
 import type {
@@ -41,6 +41,8 @@ export const rawTypeFn: DynamicTypeFn = (
     ) as any
 }
 
+// TODO: builtin syntax for traits (should be config basically)
+// TODO: allow type to be used as a def
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
@@ -49,10 +51,11 @@ export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
 export type InferredTypeFn = <
     def,
     scope extends Dict = {},
-    c extends InferenceContext = { scope: scope }
+    c extends InferenceContext = { scope: scope },
+    t = inferDefinition<def, c>
 >(
     def: validateDefinition<def, c>,
-    opts?: Config<scope>
+    traits?: Traits<t, c>
 ) => isTopType<def> extends true
     ? never
     : def extends validateDefinition<def, c>
@@ -77,4 +80,13 @@ export type Type<T = unknown> = Checker<T> & TypeMetadata<T>
 
 export type Config<scope extends Dict = {}> = {
     scope?: Scope<scope>
+}
+
+export type Traits<T, c extends InferenceContext> = {
+    in?: {
+        [name in Identifier<c["scope"]>]?: (data: inferDefinition<name, c>) => T
+    }
+    out?: {
+        [name in Identifier<c["scope"]>]?: (data: T) => inferDefinition<name, c>
+    }
 }

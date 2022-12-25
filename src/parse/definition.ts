@@ -16,7 +16,7 @@ import type { inferString, validateString } from "./string/string.ts"
 import { parseString } from "./string/string.ts"
 import type {
     inferTuple,
-    UnknownTupleExpression,
+    TupleExpression,
     validateTupleExpression
 } from "./tuple/tuple.ts"
 import { parseTuple } from "./tuple/tuple.ts"
@@ -70,7 +70,7 @@ export type validateDefinition<
     ? []
     : def extends string
     ? validateString<def, c>
-    : def extends UnknownTupleExpression
+    : def extends TupleExpression
     ? validateTupleExpression<def, c>
     : def extends RegExp
     ? def

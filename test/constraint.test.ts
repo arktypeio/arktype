@@ -3,12 +3,12 @@ import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import type { assertEqual } from "../src/utils/generics.ts"
 
-describe("constraint", () => {
+describe("refinement", () => {
     it("functional", () => {
         const isOdd = (n: number) => n % 2 === 1
         const t = type(["number", "=>", isOdd])
         attest(t.infer).typed as number
-        attest(t.root).equals({ number: { constraint: isOdd as any } })
+        attest(t.root).equals({ number: { refinement: isOdd as any } })
     })
     it("functional parameter inference", () => {
         type Expected = number | boolean[]
@@ -38,8 +38,8 @@ describe("constraint", () => {
         const t = type(["string|number", "=>", distributedBlacklist])
         attest(t.infer).typed as string | number
         attest(t.root).snap({
-            string: { constraint: distributedBlacklist.string },
-            number: { constraint: distributedBlacklist.number }
+            string: { refinement: distributedBlacklist.string },
+            number: { refinement: distributedBlacklist.number }
         })
     })
     it("distributed parameter inference", () => {

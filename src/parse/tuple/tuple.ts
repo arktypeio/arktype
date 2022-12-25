@@ -13,8 +13,8 @@ import type {
 import { parseDefinition } from "../definition.ts"
 import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
-import type { validateConstraintTuple } from "./constraint.ts"
-import { parseConstraintTuple } from "./constraint.ts"
+import type { validateRefinementTuple } from "./refinement.ts"
+import { parseRefinementTuple } from "./refinement.ts"
 
 export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
     if (isTupleExpression(def)) {
@@ -34,10 +34,10 @@ export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
 
 // TODO: flat tuple expressions
 export type validateTupleExpression<
-    def extends UnknownTupleExpression,
+    def extends TupleExpression,
     c extends InferenceContext
 > = def[1] extends "=>"
-    ? validateConstraintTuple<def[0], c>
+    ? validateRefinementTuple<def[0], c>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? [def[0], error<buildMissingRightOperandMessage<def[1], "">>]
@@ -49,16 +49,16 @@ export type validateTupleExpression<
 export type inferTuple<
     def extends List,
     c extends InferenceContext
-> = def extends UnknownTupleExpression
+> = def extends TupleExpression
     ? inferTupleExpression<def, c>
     : {
           [i in keyof def]: inferDefinition<def[i], c>
       }
 
 type inferTupleExpression<
-    def extends UnknownTupleExpression,
+    def extends TupleExpression,
     c extends InferenceContext
-> = def[1] extends "=>"
+> = def[1] extends "=>" | ":"
     ? inferDefinition<def[0], c>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
@@ -74,7 +74,7 @@ type inferTupleExpression<
 export type TupleExpressionToken = "&" | "|" | "[]" | "=>"
 
 export type TupleExpressionParser<token extends TupleExpressionToken> = (
-    def: UnknownTupleExpression<token>,
+    def: TupleExpression<token>,
     scope: ScopeRoot
 ) => TypeNode
 
@@ -96,17 +96,17 @@ const tupleExpressionParsers: {
     "|": parseBranchTuple,
     "&": parseBranchTuple,
     "[]": parseArrayTuple,
-    "=>": parseConstraintTuple
+    "=>": parseRefinementTuple
 }
 
 const parseTupleExpression = (
-    def: UnknownTupleExpression,
+    def: TupleExpression,
     scope: ScopeRoot
 ): TypeNode => tupleExpressionParsers[def[1]](def as any, scope)
 
-const isTupleExpression = (def: List): def is UnknownTupleExpression =>
+const isTupleExpression = (def: List): def is TupleExpression =>
     typeof def[1] === "string" && def[1] in tupleExpressionParsers
 
-export type UnknownTupleExpression<
+export type TupleExpression<
     token extends TupleExpressionToken = TupleExpressionToken
 > = [unknown, token, ...unknown[]]
