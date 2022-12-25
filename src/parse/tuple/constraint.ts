@@ -1,6 +1,6 @@
 import { intersection } from "../../nodes/intersection.ts"
 import type { TypeSet } from "../../nodes/node.ts"
-import type { Validator } from "../../nodes/rules/rules.ts"
+import type { Constraint } from "../../nodes/rules/rules.ts"
 import type { Dict, mutable } from "../../utils/generics.ts"
 import type {
     inferDefinition,
@@ -18,13 +18,13 @@ export const parseConstraintTuple: TupleExpressionParser<":"> = (
 ) => {
     const inputNode = parseDefinition(def[0], scope)
     const distributedValidatorEntries = entriesOfDistributableFunction(
-        def[2] as distributable<Validator>,
+        def[2] as distributable<Constraint>,
         inputNode,
         scope
     )
     const distributedValidatorNode: mutable<TypeSet> = {}
-    for (const [domain, validator] of distributedValidatorEntries) {
-        distributedValidatorNode[domain] = { validator }
+    for (const [domain, constraint] of distributedValidatorEntries) {
+        distributedValidatorNode[domain] = { constraint }
     }
     return intersection(inputNode, distributedValidatorNode, scope)
 }
@@ -32,15 +32,15 @@ export const parseConstraintTuple: TupleExpressionParser<":"> = (
 export type validateConstraintTuple<narrowedDef, c extends InferenceContext> = [
     validateDefinition<narrowedDef, c>,
     ":",
-    distributable<Validator<inferDefinition<narrowedDef, c>>>
+    distributable<Constraint<inferDefinition<narrowedDef, c>>>
 ]
 
 export type ConstraintBuilder<scope extends Dict = {}> = <
     def,
-    validator extends Validator<inferDefinition<def, { scope: scope }>>
+    constraint extends Constraint<inferDefinition<def, { scope: scope }>>
 >(
     def: validateDefinition<def, { scope: scope }>,
-    validator: validator
-) => [def, ":", validator]
+    constraint: constraint
+) => [def, ":", constraint]
 
 export const constrain: ConstraintBuilder = (def, fn) => [def as any, ":", fn]

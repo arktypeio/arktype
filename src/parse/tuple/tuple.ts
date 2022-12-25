@@ -4,7 +4,7 @@ import type { TypeNode } from "../../nodes/node.ts"
 import { union } from "../../nodes/union.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import { throwParseError } from "../../utils/errors.ts"
-import type { conform, error, evaluate, List } from "../../utils/generics.ts"
+import type { error, evaluate, List } from "../../utils/generics.ts"
 import type {
     inferDefinition,
     InferenceContext,

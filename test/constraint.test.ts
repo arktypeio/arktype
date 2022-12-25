@@ -8,7 +8,7 @@ describe("constraint", () => {
         const isOdd = (n: number) => n % 2 === 1
         const t = type(["number", ":", isOdd])
         attest(t.infer).typed as number
-        attest(t.root).equals({ number: { validator: isOdd as any } })
+        attest(t.root).equals({ number: { constraint: isOdd as any } })
     })
     it("functional parameter inference", () => {
         type Expected = number | boolean[]
@@ -37,8 +37,8 @@ describe("constraint", () => {
         const t = type(["string|number", ":", distributedBlacklist])
         attest(t.infer).typed as string | number
         attest(t.root).snap({
-            string: { validator: distributedBlacklist.string },
-            number: { validator: distributedBlacklist.number }
+            string: { constraint: distributedBlacklist.string },
+            number: { constraint: distributedBlacklist.number }
         })
     })
     it("distributed parameter inference", () => {
