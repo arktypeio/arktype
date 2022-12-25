@@ -1,6 +1,7 @@
+import type { S } from "../parse/definition.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
-import type { Dict, mutable } from "../utils/generics.ts"
+import type { mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
 import type { Keyword } from "./keywords.ts"
 import type {
@@ -12,18 +13,16 @@ import { compilePredicate } from "./predicate.ts"
 import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
 import { resolveIfIdentifier } from "./utils.ts"
 
-export type TypeNode<scope extends Dict = Dict> =
-    | Identifier<scope>
-    | TypeSet<scope>
+export type TypeNode<s extends S = S> = Identifier<s> | TypeSet<s>
 
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to
  * manipulate.*/
-export type TypeSet<scope extends Dict = Dict> = {
-    readonly [domain in Domain]?: Predicate<domain, scope>
+export type TypeSet<s extends S = S> = {
+    readonly [domain in Domain]?: Predicate<domain, s>
 }
 
-export type Identifier<scope extends Dict = Dict> = Keyword | keyof scope
+export type Identifier<s extends S = S> = Keyword | keyof s["t"]
 
 export type TraversalNode =
     | Domain

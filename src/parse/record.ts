@@ -2,7 +2,7 @@ import type { TypeNode } from "../nodes/node.ts"
 import type { PropsRule } from "../nodes/rules/props.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Dict, evaluate, mutable } from "../utils/generics.ts"
-import type { inferDefinition, InferenceContext } from "./definition.ts"
+import type { inferDefinition, S } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"
 import { Scanner } from "./string/shift/scanner.ts"
 
@@ -29,19 +29,16 @@ type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`
     ? `${name}${Scanner.EscapeToken}?`
     : k
 
-export type inferRecord<
-    def extends Dict,
-    c extends InferenceContext
-> = evaluate<
+export type inferRecord<def extends Dict, s extends S> = evaluate<
     {
         [requiredKeyName in requiredKeyOf<def>]: inferDefinition<
             def[withPossiblePreviousEscapeCharacter<requiredKeyName>],
-            c
+            s
         >
     } & {
         [optionalKeyName in optionalKeyOf<def>]?: inferDefinition<
             def[`${optionalKeyName}?`],
-            c
+            s
         >
     }
 >

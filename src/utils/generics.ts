@@ -153,11 +153,11 @@ export type autocomplete<suggestions extends string> =
     | suggestions
     | (string & {})
 
-export type Dict = {
-    readonly [k in string]: unknown
+export type Dict<k extends string = string, v = unknown> = {
+    readonly [_ in k]: v
 }
 
-export type List = readonly unknown[]
+export type List<t = unknown> = readonly t[]
 
 export const listFrom = <t>(data: t) =>
     (Array.isArray(data) ? data : [data]) as t extends List ? t : [t]

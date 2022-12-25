@@ -1,4 +1,4 @@
-import type { Dict } from "../../utils/generics.ts"
+import type { S } from "../../parse/definition.ts"
 import {
     composeIntersection,
     composeKeyedOperation,
@@ -11,15 +11,13 @@ import { compileNode } from "../node.ts"
 import type { PredicateContext } from "../predicate.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
-export type PropsRule<scope extends Dict = Dict> = {
-    [propKey in string]: Prop<scope>
+export type PropsRule<s extends S = S> = {
+    [propKey in string]: Prop<s>
 }
 
-export type Prop<scope extends Dict = Dict> =
-    | TypeNode<scope>
-    | OptionalProp<scope>
+export type Prop<s extends S = S> = TypeNode<s> | OptionalProp<s>
 
-export type OptionalProp<scope extends Dict = Dict> = ["?", TypeNode<scope>]
+export type OptionalProp<s extends S = S> = ["?", TypeNode<s>]
 
 export type TraversalRequiredProps = [
     "requiredProps",

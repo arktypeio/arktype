@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
 import { attest } from "../dev/attest/api.ts"
 import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
-import { scope } from "../src/scope.ts"
+import type { Dict } from "../src/scope.ts"
 import { type } from "../src/type.ts"
 import type { Dict } from "../src/utils/generics.ts"
 

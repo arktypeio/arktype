@@ -1,3 +1,4 @@
+import type { S } from "../parse/definition.ts"
 import type { ScopeRoot } from "../scope.ts"
 import { checkRules } from "../traverse/check.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
@@ -15,10 +16,10 @@ import { isExactValuePredicate, resolvePredicateIfIdentifier } from "./utils.ts"
 
 export type Predicate<
     domain extends Domain = Domain,
-    scope extends Dict = Dict
-> = string extends keyof scope
+    s extends S = S
+> = string extends keyof s
     ? true | CollapsibleList<Condition>
-    : true | CollapsibleList<Condition<domain, scope>>
+    : true | CollapsibleList<Condition<domain, s>>
 
 export type TraversalPredicate = TraversalCondition | [TraversalBranchesEntry]
 
@@ -55,10 +56,10 @@ const branchesOf = (flatPredicate: TraversalPredicate) =>
         ? flatPredicate.slice(1)
         : [flatPredicate]) as TraversalCondition[]
 
-export type Condition<
-    domain extends Domain = Domain,
-    scope extends Dict = Dict
-> = RuleSet<domain, scope> | ExactValue<domain> | Identifier<scope>
+export type Condition<domain extends Domain = Domain, s extends S = S> =
+    | RuleSet<domain, S>
+    | ExactValue<domain>
+    | Identifier<S>
 
 export type TraversalCondition =
     | readonly TraversalRuleEntry[]
@@ -77,8 +78,8 @@ export type PredicateContext = {
 
 export type ResolvedPredicate<
     domain extends Domain = Domain,
-    scope extends Dict = Dict
-> = Exclude<Predicate<domain, scope>, string>
+    s extends S = S
+> = Exclude<Predicate<domain, s>, string>
 
 export type PredicateComparison =
     | SetOperationResult<Predicate>

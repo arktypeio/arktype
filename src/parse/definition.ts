@@ -1,5 +1,5 @@
 import type { TypeNode } from "../nodes/node.ts"
-import type { ScopeRoot } from "../scope.ts"
+import type { S, ScopeRoot } from "../scope.ts"
 import type { domainOf, Primitive, Subdomain } from "../utils/domains.ts"
 import { subdomainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
@@ -21,6 +21,9 @@ import type {
 } from "./tuple/tuple.ts"
 import { parseTuple } from "./tuple/tuple.ts"
 
+// TODO: fix
+export type { S } from "../scope.ts"
+
 export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
     switch (subdomainOf(def)) {
         case "string":
@@ -38,40 +41,28 @@ export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
     }
 }
 
-// TODO: Could this all just be called scope?
-export type InferenceContext = {
-    scope: Dict
-    aliases?: unknown
-}
-
-export type inferDefinition<
-    def,
-    c extends InferenceContext
-> = isTopType<def> extends true
+export type inferDefinition<def, s extends S> = isTopType<def> extends true
     ? never
     : def extends string
-    ? inferString<def, c>
+    ? inferString<def, s>
     : def extends List
-    ? inferTuple<def, c>
+    ? inferTuple<def, s>
     : def extends RegExp
     ? string
     : def extends Dict
-    ? inferRecord<def, c>
+    ? inferRecord<def, s>
     : never
 
-export type validateDefinition<
-    def,
-    c extends InferenceContext
-> = isTopType<def> extends true
+export type validateDefinition<def, s extends S> = isTopType<def> extends true
     ? buildUninferableDefinitionMessage<
           isAny<def> extends true ? "any" : "unknown"
       >
     : def extends []
     ? []
     : def extends string
-    ? validateString<def, c>
+    ? validateString<def, s>
     : def extends TupleExpression
-    ? validateTupleExpression<def, c>
+    ? validateTupleExpression<def, s>
     : def extends RegExp
     ? def
     : def extends Primitive
@@ -79,7 +70,7 @@ export type validateDefinition<
     : def extends Function
     ? buildBadDefinitionTypeMessage<"Function">
     : evaluate<{
-          [k in keyof def]: validateDefinition<def[k], c>
+          [k in keyof def]: validateDefinition<def[k], s>
       }>
 
 export type buildUninferableDefinitionMessage<

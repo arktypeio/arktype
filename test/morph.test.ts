@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { type } from "../api.ts"
+import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
 describe("morph", () => {
@@ -17,3 +17,21 @@ describe("morph", () => {
         })
     })
 })
+
+const t = scope({ a: "string", b: "a" })
+
+const s = [
+    scope({ a: "string", b: "a" }),
+    scope({ a: "string", b: "a" }),
+    scope({ a: "string", b: "a" }),
+    scope({ a: "string", b: "a" }),
+    scope({ a: "string", b: "a" }),
+    scope({ a: "string", b: "a" }),
+    scope({ a: "string", b: "a" }),
+    scope({ a: "string", b: "a" }),
+    scope({ a: "string", b: "a" }),
+    scope({ a: "string", b: "a" }),
+    scope({ a: "string", b: "a" }),
+    scope({ a: "string", b: "a" }),
+    scope({ a: "string", b: "a" })
+]

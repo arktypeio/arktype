@@ -1,5 +1,5 @@
+import type { S } from "../../parse/definition.ts"
 import type { Subdomain } from "../../utils/domains.ts"
-import type { Dict } from "../../utils/generics.ts"
 import { composeIntersection, empty, equal } from "../compose.ts"
 import { nodeIntersection } from "../intersection.ts"
 import type { TraversalNode, TypeNode } from "../node.ts"
@@ -9,11 +9,11 @@ import type { FlattenAndPushRule } from "./rules.ts"
 
 // Unfortunately we can't easily abstract between these two rules because of
 // nonsense TS circular reference issues.
-export type SubdomainRule<scope extends Dict = Dict> =
+export type SubdomainRule<s extends S = S> =
     | Subdomain
-    | ["Array", TypeNode<scope>]
-    | ["Set", TypeNode<scope>]
-    | ["Map", TypeNode<scope>, TypeNode<scope>]
+    | ["Array", TypeNode<s>]
+    | ["Set", TypeNode<s>]
+    | ["Map", TypeNode<s>, TypeNode<s>]
 
 export type TraversalSubdomainRule =
     | Subdomain

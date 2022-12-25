@@ -3,12 +3,12 @@ import { compileNode } from "./nodes/node.ts"
 import { resolveIfIdentifier } from "./nodes/utils.ts"
 import type {
     inferDefinition,
-    InferenceContext,
+    S,
     validateDefinition
 } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
-import type { Scope } from "./scope.ts"
-import { getRootScope } from "./scope.ts"
+import type { GlobalScope, Scope } from "./scope.ts"
+import { getGlobalScope, scope } from "./scope.ts"
 import { check } from "./traverse/check.ts"
 import { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
@@ -17,13 +17,10 @@ import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
 export const rawTypeFn: DynamicTypeFn = (
-    definition,
-    { scope = getRootScope(), ...config } = {}
+    def,
+    { scope = getGlobalScope(), ...config } = {}
 ) => {
-    const node = resolveIfIdentifier(
-        parseDefinition(definition, scope.$),
-        scope.$
-    )
+    const node = resolveIfIdentifier(parseDefinition(def, scope.$), scope.$)
     const traversal = compileNode(node, scope.$)
     return Object.assign(
         (data: unknown) => {
@@ -41,28 +38,50 @@ export const rawTypeFn: DynamicTypeFn = (
     ) as any
 }
 
-// TODO: builtin syntax for traits (should be config basically)
 // TODO: allow type to be used as a def
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
-// TODO: Overloads with optional scope?
-export type InferredTypeFn = <
-    def,
-    scope extends Dict = {},
-    c extends InferenceContext = { scope: scope },
-    t = inferDefinition<def, c>
->(
-    def: validateDefinition<def, c>,
-    traits?: Traits<t, c>
-) => isTopType<def> extends true
+export type InferredTypeFn = {
+    <def>(def: validateDefinition<def, GlobalScope>): InferredTypeResult<
+        def,
+        GlobalScope
+    >
+    <
+        def,
+        T extends Dict = {},
+        // TODO: Change name of scope[t]
+        s extends S = { T: T; aliases: {} }
+    >(
+        def: validateDefinition<def, s>,
+        traits: { scope?: Scope<T> } & Traits<InferredTypeResult<def, s>, s>
+    ): InferredTypeResult<def, s>
+}
+
+type("string|number[]>10")
+
+type("string|a", { scope: scope({ a: "number" }) }).infer
+
+type InferredTypeResult<def, s extends S> = isTopType<def> extends true
     ? never
-    : def extends validateDefinition<def, c>
-    ? Type<inferDefinition<def, c>>
+    : def extends validateDefinition<def, s>
+    ? Type<inferDefinition<def, s>>
     : never
 
-type DynamicTypeFn = (definition: unknown, options?: Config<Dict>) => Type
+export type Traits<t, s extends S> = {
+    in?: {
+        [name in Identifier<s>]?: (data: inferDefinition<name, s>) => t
+    }
+    out?: {
+        [name in Identifier<s>]?: (data: t) => inferDefinition<name, s>
+    }
+}
+
+type DynamicTypeFn = (
+    def: unknown,
+    traits?: { scope?: Scope<Dict> } & Traits<unknown, S>
+) => Type
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
@@ -76,17 +95,4 @@ export type TypeMetadata<T = unknown> = {
     flat: TraversalNode
 }
 
-export type Type<T = unknown> = Checker<T> & TypeMetadata<T>
-
-export type Config<scope extends Dict = {}> = {
-    scope?: Scope<scope>
-}
-
-export type Traits<T, c extends InferenceContext> = {
-    in?: {
-        [name in Identifier<c["scope"]>]?: (data: inferDefinition<name, c>) => T
-    }
-    out?: {
-        [name in Identifier<c["scope"]>]?: (data: T) => inferDefinition<name, c>
-    }
-}
+export type Type<t = unknown> = Checker<t> & TypeMetadata<t>

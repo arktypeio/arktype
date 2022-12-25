@@ -6,54 +6,48 @@ import type {
     isAny,
     RegexLiteral
 } from "../../utils/generics.ts"
-import type { inferDefinition, InferenceContext } from "../definition.ts"
+import type { inferDefinition, S } from "../definition.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
-export type inferAst<
-    ast,
-    c extends InferenceContext
-> = ast extends readonly unknown[]
+export type inferAst<ast, s extends S> = ast extends readonly unknown[]
     ? ast[1] extends "[]"
-        ? inferAst<ast[0], c>[]
+        ? inferAst<ast[0], s>[]
         : ast[1] extends "|"
-        ? inferAst<ast[0], c> | inferAst<ast[2], c>
+        ? inferAst<ast[0], s> | inferAst<ast[2], s>
         : ast[1] extends "&"
-        ? evaluate<inferAst<ast[0], c> & inferAst<ast[2], c>>
+        ? evaluate<inferAst<ast[0], s> & inferAst<ast[2], s>>
         : ast[1] extends Scanner.Comparator
         ? ast[0] extends number
-            ? inferAst<ast[2], c>
-            : inferAst<ast[0], c>
+            ? inferAst<ast[2], s>
+            : inferAst<ast[0], s>
         : ast[1] extends "%"
-        ? inferAst<ast[0], c>
+        ? inferAst<ast[0], s>
         : never
-    : inferTerminal<ast, c>
+    : inferTerminal<ast, s>
 
-export type validateAstSemantics<
-    ast,
-    c extends InferenceContext
-> = ast extends string
+export type validateAstSemantics<ast, s extends S> = ast extends string
     ? undefined
     : ast extends [infer child, unknown]
-    ? validateAstSemantics<child, c>
+    ? validateAstSemantics<child, s>
     : ast extends [infer left, infer token, infer right]
     ? token extends Scanner.BranchToken
-        ? validateAstSemantics<left, c> extends error<infer leftMessage>
+        ? validateAstSemantics<left, s> extends error<infer leftMessage>
             ? leftMessage
-            : validateAstSemantics<right, c> extends error<infer rightMessage>
+            : validateAstSemantics<right, s> extends error<infer rightMessage>
             ? rightMessage
             : undefined
         : token extends Scanner.Comparator
         ? left extends number
-            ? validateAstSemantics<right, c>
-            : isBoundable<inferAst<left, c>> extends true
-            ? validateAstSemantics<left, c>
+            ? validateAstSemantics<right, s>
+            : isBoundable<inferAst<left, s>> extends true
+            ? validateAstSemantics<left, s>
             : error<buildUnboundableMessage<astToString<ast[0]>>>
         : token extends "%"
-        ? isDivisible<inferAst<left, c>> extends true
-            ? validateAstSemantics<left, c>
+        ? isDivisible<inferAst<left, s>> extends true
+            ? validateAstSemantics<left, s>
             : error<buildIndivisibleMessage<astToString<ast[0]>>>
-        : validateAstSemantics<left, c>
+        : validateAstSemantics<left, s>
     : undefined
 
 type isNonLiteralNumber<t> = t extends number
@@ -82,12 +76,12 @@ type isBoundable<inferred> = isAny<inferred> extends true
     ? true
     : false
 
-type inferTerminal<token, c extends InferenceContext> = token extends Keyword
+type inferTerminal<token, s extends S> = token extends Keyword
     ? Keywords[token]
-    : token extends keyof c["scope"]
-    ? c["scope"][token]
-    : token extends keyof c["aliases"]
-    ? inferDefinition<c["aliases"][token], c>
+    : token extends keyof s["T"]
+    ? s["T"][token]
+    : token extends keyof s["aliases"]
+    ? inferDefinition<s["aliases"][token], s>
     : token extends StringLiteral<infer Text>
     ? Text
     : token extends RegexLiteral

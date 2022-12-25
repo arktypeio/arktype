@@ -51,7 +51,7 @@ const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
     if (maybeBigint !== undefined) {
         return {
             bigint: {
-                value: `${maybeBigint}`
+                value: maybeBigint
             }
         }
     }

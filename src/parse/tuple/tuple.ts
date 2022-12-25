@@ -5,11 +5,7 @@ import { union } from "../../nodes/union.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type { error, evaluate, List } from "../../utils/generics.ts"
-import type {
-    inferDefinition,
-    InferenceContext,
-    validateDefinition
-} from "../definition.ts"
+import type { inferDefinition, S, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
@@ -35,39 +31,39 @@ export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
 // TODO: flat tuple expressions
 export type validateTupleExpression<
     def extends TupleExpression,
-    c extends InferenceContext
+    s extends S
 > = def[1] extends "=>"
-    ? validateRefinementTuple<def[0], c>
+    ? validateRefinementTuple<def[0], s>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? [def[0], error<buildMissingRightOperandMessage<def[1], "">>]
-        : [validateDefinition<def[0], c>, def[1], validateDefinition<def[2], c>]
+        : [validateDefinition<def[0], s>, def[1], validateDefinition<def[2], s>]
     : def[1] extends "[]"
-    ? [validateDefinition<def[0], c>, "[]"]
+    ? [validateDefinition<def[0], s>, "[]"]
     : never
 
 export type inferTuple<
     def extends List,
-    c extends InferenceContext
+    s extends S
 > = def extends TupleExpression
-    ? inferTupleExpression<def, c>
+    ? inferTupleExpression<def, s>
     : {
-          [i in keyof def]: inferDefinition<def[i], c>
+          [i in keyof def]: inferDefinition<def[i], s>
       }
 
 type inferTupleExpression<
     def extends TupleExpression,
-    c extends InferenceContext
+    s extends S
 > = def[1] extends "=>" | ":"
-    ? inferDefinition<def[0], c>
+    ? inferDefinition<def[0], s>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? never
         : def[1] extends "&"
-        ? evaluate<inferDefinition<def[0], c> & inferDefinition<def[2], c>>
-        : inferDefinition<def[0], c> | inferDefinition<def[2], c>
+        ? evaluate<inferDefinition<def[0], s> & inferDefinition<def[2], s>>
+        : inferDefinition<def[0], s> | inferDefinition<def[2], s>
     : def[1] extends "[]"
-    ? inferDefinition<def[0], c>[]
+    ? inferDefinition<def[0], s>[]
     : never
 
 // TODO: spread ("...")

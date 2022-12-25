@@ -2,7 +2,7 @@ import { functorKeywords } from "../../nodes/keywords.ts"
 import type { TypeNode } from "../../nodes/node.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import type { error, stringKeyOf } from "../../utils/generics.ts"
-import type { InferenceContext } from "../definition.ts"
+import type { S } from "../definition.ts"
 import type { inferAst, validateAstSemantics } from "./ast.ts"
 import { DynamicState } from "./reduce/dynamic.ts"
 import type { state, StaticState } from "./reduce/static.ts"
@@ -19,21 +19,18 @@ export type parseString<
     alias extends string
 > = maybeNaiveParse<def, alias>
 
-export type inferString<
-    def extends string,
-    c extends InferenceContext
-> = inferAst<
-    parseString<def, string & (keyof c["aliases"] | keyof c["scope"])>,
-    c
+export type inferString<def extends string, s extends S> = inferAst<
+    parseString<def, string & (keyof s["aliases"] | keyof s["T"])>,
+    s
 >
 
-export type validateString<
-    def extends string,
-    c extends InferenceContext
-> = parseString<def, stringKeyOf<c["scope"]>> extends infer astOrError
+export type validateString<def extends string, s extends S> = parseString<
+    def,
+    stringKeyOf<s["T"]>
+> extends infer astOrError
     ? astOrError extends error<infer message>
         ? message
-        : validateAstSemantics<astOrError, c> extends infer semanticResult
+        : validateAstSemantics<astOrError, s> extends infer semanticResult
         ? semanticResult extends undefined
             ? def
             : semanticResult
