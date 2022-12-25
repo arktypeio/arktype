@@ -8,8 +8,8 @@ import type {
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
 import { fullStringParse, maybeNaiveParse } from "./parse/string/string.ts"
-import type { Config } from "./type.ts"
-import { Type } from "./type.ts"
+import type { Config, Type } from "./type.ts"
+import { type } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type { Domain } from "./utils/domains.ts"
 import { throwInternalError, throwParseError } from "./utils/errors.ts"
@@ -22,9 +22,9 @@ import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 const rawScope = (aliases: Dict, config: Config = {}) => {
     const root = new ScopeRoot(aliases, config)
     const types: Scope<Dict> = { $: root as any }
+    const typeConfig = { ...config, scope: types }
     for (const name in aliases) {
-        const node = root.resolve(name)
-        types[name] = new Type(node, compileNode(node, root), config, types)
+        types[name] = type.dynamic(aliases[name], typeConfig)
     }
     return types
 }

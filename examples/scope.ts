@@ -34,4 +34,4 @@ export const readPackageData = () => {
 // `Encountered errors at the following paths:
 //   dependencies/0/contributors: Required value of type contributor[] was missing.
 //   contributors/0/email: "david@sharktypeio" is not assignable to email.`
-export const { problems } = types.package.check(readPackageData())
+export const { problems } = types.package(readPackageData())

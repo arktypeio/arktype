@@ -20,7 +20,7 @@ export const fetchUser = () => ({
 })
 
 // Types can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
-export const { problems, data } = user.check(fetchUser())
+export const { data, problems } = user(fetchUser())
 
 if (problems) {
     console.log(problems.summary)
