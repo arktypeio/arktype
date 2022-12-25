@@ -20,13 +20,13 @@ export type parseString<
 > = maybeNaiveParse<def, alias>
 
 export type inferString<def extends string, s extends S> = inferAst<
-    parseString<def, string & (keyof s["aliases"] | keyof s["T"])>,
+    parseString<def, string & (keyof s["aliases"] | keyof s["inferred"])>,
     s
 >
 
 export type validateString<def extends string, s extends S> = parseString<
     def,
-    stringKeyOf<s["T"]>
+    stringKeyOf<s["inferred"]>
 > extends infer astOrError
     ? astOrError extends error<infer message>
         ? message

@@ -21,7 +21,7 @@ import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
 const rawScope = (aliases: Dict, parent?: ScopeRoot) => {
     const root = new ScopeRoot(aliases, parent ?? getGlobalScope().$)
-    const types: DynamicScope = { $: root as any }
+    const types: Scope = { $: root as any }
     const typeConfig = { scope: types }
     for (const name in aliases) {
         // TODO: Fix typeConfig
@@ -31,12 +31,12 @@ const rawScope = (aliases: Dict, parent?: ScopeRoot) => {
 }
 
 export type S = {
-    T: Dict
-    aliases: Dict
+    inferred: Dict
+    aliases?: unknown
 }
 
-export type ScopeConfig<T extends Dict> = {
-    scope?: Scope<T>
+export type ScopeConfig<inferred extends Dict> = {
+    scope?: Scope<inferred>
 }
 
 export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
@@ -47,7 +47,7 @@ export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
 export type GlobalScope = extend<
     S,
     {
-        T: {}
+        inferred: {}
         aliases: {}
     }
 >
@@ -59,46 +59,42 @@ export const getGlobalScope = () => {
     return globalScope!
 }
 
-type InferredScopeFn = <
-    aliases extends Dict,
-    parent extends S = GlobalScope,
-    T extends Dict = inferAliases<aliases, parent>
->(
-    aliases: validateAliases<aliases, inferScopeContext<aliases, parent>>,
-    scope?: { scope: parent }
-) => Scope<T>
+type InferredScopeFn = <aliases, inferredParent extends Dict = {}>(
+    aliases: validateAliases<
+        aliases,
+        inferScopeContext<aliases, inferredParent>
+    >,
+    config?: ScopeConfig<inferredParent>
+) => Scope<inferAliases<aliases, inferredParent>>
 
-type DynamicScopeFn = <
-    aliases extends Dict,
-    T extends Dict = { [k in keyof aliases]: unknown }
->(
+type DynamicScopeFn = <aliases extends Dict>(
     aliases: aliases
-) => Scope<T>
+) => Scope<{ [k in keyof aliases]: unknown }>
 
-export type Scope<T extends Dict> = {
-    $: ScopeRoot<T>
-} & inferredScopeToTypes<T>
+export type Scope<inferred extends Dict = Dict> = {
+    $: ScopeRoot<inferred>
+} & inferredScopeToTypes<inferred>
 
-export type DynamicScope = Scope<Dict>
-
-type inferredScopeToTypes<T extends Dict> = {
-    [name in keyof T]: Type<T[name]>
+type inferredScopeToTypes<inferred extends Dict> = {
+    [name in keyof inferred]: Type<inferred[name]>
 }
 
 // TODO: What can we build into this? Parsing/lookups etc.
-export class ScopeRoot<T extends Dict = Dict> {
-    roots = {} as { [k in keyof T]: TypeSet<{ T: T; aliases: {} }> }
-    flatRoots = {} as { [k in keyof T]: TraversalNode }
+export class ScopeRoot<inferred extends Dict = Dict> {
+    roots = {} as {
+        [k in keyof inferred]: TypeSet<{ inferred: inferred; aliases: {} }>
+    }
+    flatRoots = {} as { [k in keyof inferred]: TraversalNode }
 
     // TODO: Add intersection cache
     private cache: { [def: string]: TypeNode } = {}
 
     constructor(
-        public aliases: { readonly [k in keyof T]: unknown },
+        public aliases: { readonly [k in keyof inferred]: unknown },
         public parent: ScopeRoot
     ) {}
 
-    get infer(): T {
+    get infer(): inferred {
         return chainableNoOpProxy
     }
 
@@ -137,7 +133,7 @@ export class ScopeRoot<T extends Dict = Dict> {
                 )
             )
         }
-        let root = parseDefinition(this.aliases[name], this as any)
+        let root = parseDefinition(this.aliases[name], this as ScopeRoot)
         if (typeof root === "string") {
             if (seen.includes(root)) {
                 return throwParseError(
@@ -147,8 +143,11 @@ export class ScopeRoot<T extends Dict = Dict> {
             seen.push(root)
             root = this.resolveRecurse(root, seen)
         }
-        this.roots[name as keyof T] = root as any
-        this.flatRoots[name as keyof T] = compileNode(root, this as any)
+        this.roots[name as keyof inferred] = root as any
+        this.flatRoots[name as keyof inferred] = compileNode(
+            root,
+            this as ScopeRoot
+        )
         return root as TypeSet
     }
 
@@ -183,7 +182,7 @@ export class ScopeRoot<T extends Dict = Dict> {
         name: string,
         domain: domain,
         seen: string[]
-    ): ResolvedPredicate<domain, { T: T; aliases: {} }> {
+    ): ResolvedPredicate<domain, { inferred: inferred; aliases: {} }> {
         const resolution = this.resolve(name)[domain]
         if (resolution === undefined) {
             return throwUnexpectedPredicateDomainError(name, domain)
@@ -205,33 +204,32 @@ export class ScopeRoot<T extends Dict = Dict> {
             return this.cache[def]
         }
         const root =
-            maybeNaiveParse(def, this as any) ??
-            fullStringParse(def, this as any)
+            maybeNaiveParse(def, this as ScopeRoot) ??
+            fullStringParse(def, this as ScopeRoot)
         this.cache[def] = deepFreeze(root)
         return root
     }
 }
 
-type validateAliases<aliases extends Dict, parent extends S> = evaluate<{
+type validateAliases<aliases, inferredContext extends Dict> = evaluate<{
     [name in keyof aliases]: validateDefinition<
         aliases[name],
-        parent & {
-            aliases: aliases
-        }
+        { inferred: inferredContext }
     >
 }>
 
-type inferAliases<aliases, parent extends S> = evaluate<{
+type inferAliases<aliases, inferredContext extends Dict> = evaluate<{
     [name in keyof aliases]: inferDefinition<
         aliases[name],
-        parent & { aliases: aliases }
+        { inferred: inferredContext }
     >
 }>
 
-type inferScopeContext<aliases, parent extends S> = {
-    T: inferAliases<aliases, parent>
-    aliases: aliases & parent["aliases"]
-}
+type inferScopeContext<aliases, inferredParent extends Dict> = inferAliases<
+    aliases,
+    inferredParent
+> &
+    inferredParent
 
 export const buildShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(

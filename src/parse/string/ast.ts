@@ -78,8 +78,8 @@ type isBoundable<inferred> = isAny<inferred> extends true
 
 type inferTerminal<token, s extends S> = token extends Keyword
     ? Keywords[token]
-    : token extends keyof s["T"]
-    ? s["T"][token]
+    : token extends keyof s["inferred"]
+    ? s["inferred"][token]
     : token extends keyof s["aliases"]
     ? inferDefinition<s["aliases"][token], s>
     : token extends StringLiteral<infer Text>

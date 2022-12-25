@@ -50,18 +50,17 @@ export type InferredTypeFn = {
     >
     <
         def,
-        T extends Dict = {},
+        inferred extends Dict = {},
         // TODO: Change name of scope[t]
-        s extends S = { T: T; aliases: {} }
+        s extends S = { inferred: inferred; aliases: {} }
     >(
         def: validateDefinition<def, s>,
-        traits: { scope?: Scope<T> } & Traits<InferredTypeResult<def, s>, s>
+        traits: { scope: Scope<inferred> } & Traits<
+            InferredTypeResult<def, s>,
+            s
+        >
     ): InferredTypeResult<def, s>
 }
-
-type("string|number[]>10")
-
-type("string|a", { scope: scope({ a: "number" }) }).infer
 
 type InferredTypeResult<def, s extends S> = isTopType<def> extends true
     ? never

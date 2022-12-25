@@ -22,7 +22,10 @@ export type TypeSet<s extends S = S> = {
     readonly [domain in Domain]?: Predicate<domain, s>
 }
 
-export type Identifier<s extends S = S> = Keyword | keyof s["t"]
+export type Identifier<s extends S = S> =
+    | Keyword
+    | keyof s["inferred"]
+    | keyof s["aliases"]
 
 export type TraversalNode =
     | Domain
