@@ -6,24 +6,25 @@ import type { assertEqual } from "../src/utils/generics.ts"
 describe("constraint", () => {
     it("functional", () => {
         const isOdd = (n: number) => n % 2 === 1
-        const t = type(["number", ":", isOdd])
+        const t = type(["number", "=>", isOdd])
         attest(t.infer).typed as number
         attest(t.root).equals({ number: { constraint: isOdd as any } })
     })
     it("functional parameter inference", () => {
         type Expected = number | boolean[]
-        const validateNumberOrBoolean = <t>(t: assertEqual<t, Expected>) => true
+        const validateNumberOrBooleanList = <t>(t: assertEqual<t, Expected>) =>
+            true
         attest(
             type([
                 "number|boolean[]",
-                ":",
-                (data) => validateNumberOrBoolean(data)
+                "=>",
+                (data) => validateNumberOrBooleanList(data)
             ]).infer
         ).typed as number | boolean[]
         attest(() => {
             type([
                 "number|boolean[]",
-                ":",
+                "=>",
                 // @ts-expect-error
                 (data: number | string[]) => !!data
             ])
@@ -34,7 +35,7 @@ describe("constraint", () => {
             string: (s: unknown) => s !== "drop tables",
             number: (n: unknown) => !Number.isNaN(n)
         }
-        const t = type(["string|number", ":", distributedBlacklist])
+        const t = type(["string|number", "=>", distributedBlacklist])
         attest(t.infer).typed as string | number
         attest(t.root).snap({
             string: { constraint: distributedBlacklist.string },
@@ -46,7 +47,7 @@ describe("constraint", () => {
         attest(() => {
             type([
                 "0|boolean[]",
-                ":",
+                "=>",
                 {
                     number: (n) => validateInferredAsZero(n),
                     // @ts-expect-error bad parameter type
@@ -63,6 +64,6 @@ describe("constraint", () => {
         // like this currently breaks validation. This is likely a convoluted TS
         // bug, as the equivalent form in an object literal is correctly inferred.
         // @ts-expect-error
-        type([["boolean", ":", (b) => b === true]]).infer
+        type([["boolean", "=>", (b) => b === true]]).infer
     })
 })

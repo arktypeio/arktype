@@ -32,10 +32,11 @@ export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
     }
 }
 
+// TODO: flat tuple expressions
 export type validateTupleExpression<
     def extends UnknownTupleExpression,
     c extends InferenceContext
-> = def[1] extends ":"
+> = def[1] extends "=>"
     ? validateConstraintTuple<def[0], c>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
@@ -57,7 +58,7 @@ export type inferTuple<
 type inferTupleExpression<
     def extends UnknownTupleExpression,
     c extends InferenceContext
-> = def[1] extends ":"
+> = def[1] extends "=>"
     ? inferDefinition<def[0], c>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
@@ -70,7 +71,7 @@ type inferTupleExpression<
     : never
 
 // TODO: spread ("...")
-export type TupleExpressionToken = "&" | "|" | "[]" | ":"
+export type TupleExpressionToken = "&" | "|" | "[]" | "=>"
 
 export type TupleExpressionParser<token extends TupleExpressionToken> = (
     def: UnknownTupleExpression<token>,
@@ -95,7 +96,7 @@ const tupleExpressionParsers: {
     "|": parseBranchTuple,
     "&": parseBranchTuple,
     "[]": parseArrayTuple,
-    ":": parseConstraintTuple
+    "=>": parseConstraintTuple
 }
 
 const parseTupleExpression = (

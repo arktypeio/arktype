@@ -12,7 +12,8 @@ import type { TupleExpressionParser } from "./tuple.ts"
 import type { distributable } from "./utils.ts"
 import { entriesOfDistributableFunction } from "./utils.ts"
 
-export const parseConstraintTuple: TupleExpressionParser<":"> = (
+// TODO: Allow narrowing from predicate?
+export const parseConstraintTuple: TupleExpressionParser<"=>"> = (
     def,
     scope
 ) => {
@@ -31,7 +32,7 @@ export const parseConstraintTuple: TupleExpressionParser<":"> = (
 
 export type validateConstraintTuple<narrowedDef, c extends InferenceContext> = [
     validateDefinition<narrowedDef, c>,
-    ":",
+    "=>",
     distributable<Constraint<inferDefinition<narrowedDef, c>>>
 ]
 
@@ -41,6 +42,6 @@ export type ConstraintBuilder<scope extends Dict = {}> = <
 >(
     def: validateDefinition<def, { scope: scope }>,
     constraint: constraint
-) => [def, ":", constraint]
+) => [def, "=>", constraint]
 
-export const constrain: ConstraintBuilder = (def, fn) => [def as any, ":", fn]
+export const constrain: ConstraintBuilder = (def, fn) => [def as any, "=>", fn]

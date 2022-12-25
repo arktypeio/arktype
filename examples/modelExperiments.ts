@@ -35,6 +35,42 @@ const s = scope({
     }
 })
 
+const creditCard = type([
+    /5431876432/,
+    "=>",
+    (s) => isLuhnValid(s),
+    ":",
+    {
+        in: {
+            number: (n) => String(n)
+        },
+        out: {
+            number: (s) => parseInt(s)
+        }
+    }
+])
+
+type CreditCard = typeof creditCard.infer
+
+const { data } = creditCard("54354235") // data is string
+const { data } = creditCard(531243212) // data is string
+
+// If there were inputs that couldn't be discriminated, would need to be explicit
+const { data } = creditCard(531243212, { from: "number" }) // data is string
+
+const { data } = creditCard(531243212).to("number") // data is number
+
+// Could be used as a syntax to skip validation (would be used for conversions
+// if the data has already been checked)
+const { data } = creditCard("45325", "!").to("number")
+const { data } = creditCard("45325", { check: false }).to("number")
+
+const { data } = creditCard.check("54354235")
+// Could be a union of in types? Would need to be able to discriminate between them, otherwise would have to be named.
+creditCard.from(153434321451) //returns string
+creditCard.from.number(432142341234) //returns string (is validated)
+creditCard.to.number("432142387461") //returns number (wouldn't need to be validated)
+
 // Could be a union of in types? Would need to be able to discriminate between them, otherwise would have to be named.
 scope.user.from('{name: "david", age: "105"  }')
 scope.user.from.json('{name: "david", age: "105"  }') //returns user
@@ -44,5 +80,4 @@ scope.user.to.json({ name: "david", age: 105 }) //returns json
 
 // TODO: Sugar for I/O type
 
-// TODO: models can be in scope without having to be a type, e.g.
-// generics also wouldn't be legal to refer to as a normal type
+// TODO: Allow Type as def
