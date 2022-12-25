@@ -42,7 +42,6 @@ export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
 export type InferenceContext = {
     scope: Dict
     aliases?: unknown
-    input?: true
 }
 
 export type inferDefinition<

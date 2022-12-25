@@ -31,39 +31,23 @@ export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
+// Overloads with optional scope?
 export type InferredTypeFn = <
-    definition,
+    def,
     scope extends Dict = {},
     c extends InferenceContext = { scope: scope }
 >(
-    definition: validateDefinition<definition, c>,
-    options?: Config<scope>
-) => isTopType<definition> extends true
+    def: validateDefinition<def, c>,
+    opts?: Config<scope>
+) => isTopType<def> extends true
     ? never
-    : definition extends validateDefinition<definition, c>
-    ? inferType<
-          inferDefinition<
-              definition,
-              {
-                  scope: scope
-                  input: true
-              }
-          >,
-          inferDefinition<definition, c>
-      >
+    : def extends validateDefinition<def, c>
+    ? Type<inferDefinition<def, c>>
     : never
 
 type DynamicTypeFn = (definition: unknown, options?: Config<Dict>) => Type
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
-
-export type inferType<i, o> = equals<i, o> extends true
-    ? Type<o>
-    : Type<(from: i) => o>
-
-type In<T> = T extends (_: infer input) => unknown ? input : T
-
-type Out<T> = T extends (_: any) => infer output ? output : T
 
 export class Type<T = unknown> {
     constructor(
@@ -73,19 +57,19 @@ export class Type<T = unknown> {
         public scope: DynamicScope
     ) {}
 
-    get infer(): Out<T> {
+    get infer(): T {
         return chainableNoOpProxy
     }
 
     check(data: unknown) {
         return check(data, this.flat, this.scope.$)
-            ? { data: data as Out<T> }
+            ? { data: data as T }
             : {
                   problems: new Problems({ path: "", reason: "invalid" })
               }
     }
 
-    from(data: In<T>): Out<T> {
+    from(data: T): T {
         return data as any
     }
 
@@ -95,7 +79,7 @@ export class Type<T = unknown> {
             throw new Error(`FAIL`)
         }
         // result.problems?.throw()
-        return result.data as Out<T>
+        return result.data as T
     }
 }
 

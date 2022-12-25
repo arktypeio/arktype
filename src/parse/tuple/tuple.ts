@@ -13,11 +13,8 @@ import type {
 import { parseDefinition } from "../definition.ts"
 import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
-import type { validateMorphTuple } from "./morph.ts"
-import { parseMorphTuple } from "./morph.ts"
-import type { validatePipeTuple } from "./pipe.ts"
-import { parseValidatorTuple } from "./validate.ts"
 import type { validateValidatorTuple } from "./validate.ts"
+import { parseValidatorTuple } from "./validate.ts"
 
 export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
     if (isTupleExpression(def)) {
@@ -38,26 +35,8 @@ export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
 export type validateTupleExpression<
     def extends UnknownTupleExpression,
     c extends InferenceContext
-> = conformValidatedTupleExpression<def, parseTupleExpression<def, c>>
-
-export type conformValidatedTupleExpression<
-    def extends UnknownTupleExpression,
-    parsed extends List
-> = {
-    [i in keyof parsed]: i extends keyof def
-        ? conform<def[i], parsed[i]>
-        : parsed[i]
-}
-
-type parseTupleExpression<
-    def extends UnknownTupleExpression,
-    c extends InferenceContext
 > = def[1] extends ":"
     ? validateValidatorTuple<def[0], c>
-    : def[1] extends "|>"
-    ? validatePipeTuple<def[0], c>
-    : def[1] extends "=>"
-    ? validateMorphTuple<def[0], def[2], c>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? [def[0], error<buildMissingRightOperandMessage<def[1], "">>]
@@ -79,14 +58,7 @@ type inferTupleExpression<
     def extends UnknownTupleExpression,
     c extends InferenceContext
 > = def[1] extends ":"
-    ? // TODO: try condensing inference context
-      inferDefinition<def[0], c>
-    : def[1] extends "|>"
     ? inferDefinition<def[0], c>
-    : def[1] extends "=>"
-    ? c["input"] extends true
-        ? inferDefinition<def[0], c>
-        : inferDefinition<def[2], c>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? never
@@ -97,8 +69,8 @@ type inferTupleExpression<
     ? inferDefinition<def[0], c>[]
     : never
 
-// TODO: Add default value ("="), spread ("...")
-export type TupleExpressionToken = "&" | "|" | "[]" | ":" | "=>" | "|>"
+// TODO: spread ("...")
+export type TupleExpressionToken = "&" | "|" | "[]" | ":"
 
 export type TupleExpressionParser<token extends TupleExpressionToken> = (
     def: UnknownTupleExpression<token>,
@@ -123,9 +95,7 @@ const tupleExpressionParsers: {
     "|": parseBranchTuple,
     "&": parseBranchTuple,
     "[]": parseArrayTuple,
-    ":": parseValidatorTuple,
-    "=>": parseMorphTuple,
-    "|>": () => "never"
+    ":": parseValidatorTuple
 }
 
 const parseTupleExpression = (

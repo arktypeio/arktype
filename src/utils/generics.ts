@@ -127,6 +127,11 @@ export type deepImmutable<o> = [o] extends [object]
 
 export type equals<t, u> = identity<t> extends identity<u> ? true : false
 
+// TODO: Use symbol
+export type assertEqual<t, u> = equals<t, u> extends true
+    ? t
+    : error<`types were not equivalent`>
+
 export type identity<t> = (_: t) => t
 
 export type extend<t, u extends t> = u

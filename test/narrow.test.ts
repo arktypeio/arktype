@@ -1,6 +1,7 @@
 import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
+import type { assertEqual } from "../src/utils/generics.ts"
 
 describe("narrow", () => {
     it("functional", () => {
@@ -10,6 +11,15 @@ describe("narrow", () => {
         attest(t.root).equals({ number: { validator: isOdd as any } })
     })
     it("functional parameter inference", () => {
+        type Expected = number | boolean[]
+        const validateNumberOrBoolean = <t>(t: assertEqual<t, Expected>) => true
+        attest(
+            type([
+                "number|boolean[]",
+                ":",
+                (data) => validateNumberOrBoolean(data)
+            ]).infer
+        ).typed as number | boolean[]
         attest(() => {
             type([
                 "number|boolean[]",
