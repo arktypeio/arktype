@@ -6,20 +6,22 @@ import { hasDomain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type { evaluate } from "../../utils/generics.ts"
 
-export type UnaryFunction<In = any, Return = unknown> = (In: In) => Return
+export type UnaryFunction<input = any, output = unknown> = (
+    input: input
+) => output
 
 export type distributable<f extends UnaryFunction> = f | distributeFunction<f>
 
 type distributeFunction<f extends UnaryFunction> = f extends UnaryFunction<
-    infer In,
-    infer Return
+    infer input,
+    infer output
 >
     ? evaluate<{
-          [domain in domainOf<In>]?: (
-              In: unknown extends In
+          [domain in domainOf<input>]?: (
+              input: unknown extends input
                   ? unknown
-                  : Extract<In, inferDomain<domain>>
-          ) => Return
+                  : Extract<input, inferDomain<domain>>
+          ) => output
       }>
     : never
 

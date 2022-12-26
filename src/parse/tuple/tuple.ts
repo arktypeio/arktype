@@ -54,7 +54,7 @@ export type inferTuple<
 type inferTupleExpression<
     def extends TupleExpression,
     s extends S
-> = def[1] extends "=>" | ":"
+> = def[1] extends "=>"
     ? inferDefinition<def[0], s>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined

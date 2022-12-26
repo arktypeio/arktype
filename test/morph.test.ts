@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { scope, type } from "../api.ts"
+import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
 describe("morph", () => {
@@ -10,6 +10,7 @@ describe("morph", () => {
                     number: (n) => `${n}`
                 },
                 out: {
+                    symbol: (s) => Symbol(s),
                     number: (s) => parseFloat(s)
                 }
             })

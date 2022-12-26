@@ -48,17 +48,17 @@ export type InferredTypeFn = {
         def,
         GlobalScope
     >
+
     <
         def,
         inferred extends Dict = {},
-        // TODO: Change name of scope[t]
-        s extends S = { inferred: inferred; aliases: {} }
+        // TODO: Stop confusing use of alias, can pass root scope?
+        s extends S = { inferred: inferred; aliases: {} },
+        t = inferDefinition<def, s>,
+        traits extends Traits<t, s> = Traits<t, s>
     >(
         def: validateDefinition<def, s>,
-        traits: { scope: Scope<inferred> } & Traits<
-            InferredTypeResult<def, s>,
-            s
-        >
+        traits: { scope?: Scope<inferred> } & traits
     ): InferredTypeResult<def, s>
 }
 
