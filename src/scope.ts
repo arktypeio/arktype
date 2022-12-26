@@ -20,7 +20,7 @@ import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
 const rawScope = (aliases: Dict, parent?: ScopeRoot) => {
-    const root = new ScopeRoot(aliases, parent ?? getGlobalScope().$)
+    const root = new ScopeRoot(aliases, parent)
     const types: Scope = { $: root as any }
     const typeConfig = { scope: types }
     for (const name in aliases) {
@@ -91,7 +91,7 @@ export class ScopeRoot<inferred extends Dict = Dict> {
 
     constructor(
         public aliases: { readonly [k in keyof inferred]: unknown },
-        public parent: ScopeRoot
+        public parent?: ScopeRoot
     ) {}
 
     get infer(): inferred {
@@ -101,7 +101,7 @@ export class ScopeRoot<inferred extends Dict = Dict> {
     isResolvable(name: string) {
         return isKeyOf(name, keywords) ||
             this.aliases[name] ||
-            this.parent.roots[name]
+            this.parent?.roots[name]
             ? true
             : false
     }
@@ -127,7 +127,7 @@ export class ScopeRoot<inferred extends Dict = Dict> {
         }
         if (!this.aliases[name]) {
             return (
-                this.parent.roots[name] ??
+                this.parent?.roots[name] ??
                 throwInternalError(
                     `Unexpectedly failed to resolve alias '${name}'`
                 )

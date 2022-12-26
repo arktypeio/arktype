@@ -17,21 +17,3 @@ describe("morph", () => {
         })
     })
 })
-
-const t = scope({ a: "string", b: "a" })
-
-const s = [
-    scope({ a: "string", b: "a" }),
-    scope({ a: "string", b: "a" }),
-    scope({ a: "string", b: "a" }),
-    scope({ a: "string", b: "a" }),
-    scope({ a: "string", b: "a" }),
-    scope({ a: "string", b: "a" }),
-    scope({ a: "string", b: "a" }),
-    scope({ a: "string", b: "a" }),
-    scope({ a: "string", b: "a" }),
-    scope({ a: "string", b: "a" }),
-    scope({ a: "string", b: "a" }),
-    scope({ a: "string", b: "a" }),
-    scope({ a: "string", b: "a" })
-]
