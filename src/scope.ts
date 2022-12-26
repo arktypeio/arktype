@@ -221,7 +221,10 @@ type validateAliases<aliases, inferredContext extends Dict> = evaluate<{
 type inferAliases<aliases, inferredContext extends Dict> = evaluate<{
     [name in keyof aliases]: inferDefinition<
         aliases[name],
-        { inferred: inferredContext }
+        {
+            inferred: inferredContext
+            aliases: aliases
+        }
     >
 }>
 

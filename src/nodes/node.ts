@@ -22,6 +22,7 @@ export type TypeSet<s extends S = S> = {
     readonly [domain in Domain]?: Predicate<domain, s>
 }
 
+// TODO: Try just passing scope around
 export type Identifier<s extends S = S> =
     | Keyword
     | keyof s["inferred"]

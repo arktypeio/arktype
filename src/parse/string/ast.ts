@@ -4,6 +4,7 @@ import type {
     error,
     evaluate,
     isAny,
+    List,
     RegexLiteral
 } from "../../utils/generics.ts"
 import type { inferDefinition, S } from "../definition.ts"
@@ -72,7 +73,7 @@ type isBoundable<inferred> = isAny<inferred> extends true
     ? true
     : isNonLiteralString<inferred> extends true
     ? true
-    : inferred extends readonly unknown[]
+    : inferred extends List
     ? true
     : false
 
