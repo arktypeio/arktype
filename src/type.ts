@@ -68,6 +68,7 @@ type InferredTypeResult<def, s extends S> = isTopType<def> extends true
     ? Type<inferDefinition<def, s>>
     : never
 
+// TODO: Allow extra args to morphs
 export type Traits<t, s extends S> = {
     in?: {
         [name in Identifier<s>]?: (data: inferDefinition<name, s>) => t
@@ -84,12 +85,12 @@ type DynamicTypeFn = (
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
-export type CheckResult<T = unknown> = xor<{ data: T }, { problems: Problems }>
+export type CheckResult<t = unknown> = xor<{ data: t }, { problems: Problems }>
 
-export type Checker<T = unknown> = (data: unknown) => CheckResult<T>
+export type Checker<t = unknown> = (data: unknown) => CheckResult<t>
 
-export type TypeMetadata<T = unknown> = {
-    infer: T
+export type TypeMetadata<t = unknown> = {
+    infer: t
     root: TypeNode
     flat: TraversalNode
 }

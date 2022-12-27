@@ -65,7 +65,7 @@ export type validateDefinition<def, s extends S> = isTopType<def> extends true
     ? validateTupleExpression<def, s>
     : def extends RegExp
     ? def
-    : def extends Primitive
+    : def extends BadDefinitionType
     ? buildBadDefinitionTypeMessage<domainOf<def>>
     : def extends Function
     ? buildBadDefinitionTypeMessage<"Function">
@@ -77,6 +77,8 @@ export type buildUninferableDefinitionMessage<
     typeName extends "any" | "unknown"
 > =
     `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
+
+export type BadDefinitionType = Exclude<Primitive, string>
 
 export const buildBadDefinitionTypeMessage = <actual extends Subdomain>(
     actual: actual
