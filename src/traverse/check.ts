@@ -10,7 +10,7 @@ import type {
 import type { BoundableData } from "../nodes/rules/range.ts"
 import { checkRange } from "../nodes/rules/range.ts"
 import type { TraversalRuleEntry } from "../nodes/rules/rules.ts"
-import type { ScopeRoot } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf, subdomainOf } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
@@ -21,7 +21,7 @@ export const checkRules = (
     domain: Domain,
     data: unknown,
     attributes: unknown,
-    scope: ScopeRoot
+    scope: Scope
 ) => {
     return true
 }
@@ -52,7 +52,7 @@ export type CheckState<data = unknown> = evaluate<
 // next function.
 
 // Convert this check function to take CheckState and ScopeRoot only
-export const check = (data: unknown, node: TraversalNode, scope: ScopeRoot) =>
+export const check = (data: unknown, node: TraversalNode, scope: Scope) =>
     typeof node === "string"
         ? domainOf(data) === node
         : checkEntries(data, node, scope)
@@ -124,7 +124,7 @@ const checkers = {
         // state: CheckState<RuleInput<k>>
         data: RuleInput<k>,
         value: Extract<TraversalEntry, [k, unknown]>[1],
-        scope: ScopeRoot
+        scope: Scope
         // Update return type to void
     ) => boolean
 }
@@ -146,7 +146,7 @@ export type RuleInput<k extends TraversalKey> =
 export const checkEntries = (
     data: unknown,
     entries: readonly TraversalEntry[],
-    scope: ScopeRoot
+    scope: Scope
 ): boolean => {
     for (let i = 0; i < entries.length; i++) {
         if (

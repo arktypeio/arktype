@@ -1,9 +1,8 @@
-import type { S } from "../parse/definition.ts"
-import type { ScopeRoot } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import { checkRules } from "../traverse/check.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
-import type { CollapsibleList, Dict } from "../utils/generics.ts"
+import type { CollapsibleList } from "../utils/generics.ts"
 import { listFrom } from "../utils/generics.ts"
 import type { BranchesComparison } from "./branches.ts"
 import { compareBranches } from "./branches.ts"
@@ -16,10 +15,10 @@ import { isExactValuePredicate, resolvePredicateIfIdentifier } from "./utils.ts"
 
 export type Predicate<
     domain extends Domain = Domain,
-    s extends S = S
-> = string extends keyof s
+    alias extends string = string
+> = string extends alias
     ? true | CollapsibleList<Condition>
-    : true | CollapsibleList<Condition<domain, s>>
+    : true | CollapsibleList<Condition<domain, alias>>
 
 export type TraversalPredicate = TraversalCondition | [TraversalBranchesEntry]
 
@@ -28,7 +27,7 @@ export type TraversalBranchesEntry = ["branches", readonly TraversalCondition[]]
 export const compilePredicate = (
     domain: Domain,
     predicate: Predicate,
-    scope: ScopeRoot
+    scope: Scope
 ): TraversalPredicate => {
     if (predicate === true) {
         return []
@@ -56,10 +55,10 @@ const branchesOf = (flatPredicate: TraversalPredicate) =>
         ? flatPredicate.slice(1)
         : [flatPredicate]) as TraversalCondition[]
 
-export type Condition<domain extends Domain = Domain, s extends S = S> =
-    | RuleSet<domain, S>
-    | ExactValue<domain>
-    | Identifier<S>
+export type Condition<
+    domain extends Domain = Domain,
+    alias extends string = string
+> = RuleSet<domain, alias> | ExactValue<domain> | Identifier<alias>
 
 export type TraversalCondition =
     | readonly TraversalRuleEntry[]
@@ -73,12 +72,12 @@ export type ExactValueEntry = ["value", unknown]
 
 export type PredicateContext = {
     domain: Domain
-    scope: ScopeRoot
+    scope: Scope
 }
 
 export type ResolvedPredicate<
     domain extends Domain = Domain,
-    s extends S = S
+    s extends Scope = Scope
 > = Exclude<Predicate<domain, s>, string>
 
 export type PredicateComparison =
@@ -89,7 +88,7 @@ export const comparePredicates = (
     domain: Domain,
     l: Predicate,
     r: Predicate,
-    scope: ScopeRoot
+    scope: Scope
 ): PredicateComparison => {
     const lResolution = resolvePredicateIfIdentifier(domain, l, scope)
     const rResolution = resolvePredicateIfIdentifier(domain, r, scope)

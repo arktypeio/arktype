@@ -1,4 +1,5 @@
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
+import type { Scope } from "../../scope.ts"
 import type {
     Downcastable,
     error,
@@ -7,11 +8,11 @@ import type {
     List,
     RegexLiteral
 } from "../../utils/generics.ts"
-import type { inferDefinition, S } from "../definition.ts"
+import type { inferDefinition } from "../definition.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
-export type inferAst<ast, s extends S> = ast extends readonly unknown[]
+export type inferAst<ast, s extends Scope> = ast extends readonly unknown[]
     ? ast[1] extends "[]"
         ? inferAst<ast[0], s>[]
         : ast[1] extends "|"
@@ -27,7 +28,7 @@ export type inferAst<ast, s extends S> = ast extends readonly unknown[]
         : never
     : inferTerminal<ast, s>
 
-export type validateAstSemantics<ast, s extends S> = ast extends string
+export type validateAstSemantics<ast, s extends Scope> = ast extends string
     ? undefined
     : ast extends [infer child, unknown]
     ? validateAstSemantics<child, s>
@@ -77,12 +78,12 @@ type isBoundable<inferred> = isAny<inferred> extends true
     ? true
     : false
 
-type inferTerminal<token, s extends S> = token extends Keyword
+type inferTerminal<token, s extends Scope> = token extends Keyword
     ? Keywords[token]
-    : token extends keyof s["inferred"]
-    ? s["inferred"][token]
-    : token extends keyof s["aliases"]
-    ? inferDefinition<s["aliases"][token], s>
+    : token extends keyof s["infer"]
+    ? s["infer"][token]
+    : token extends keyof s["def"]
+    ? inferDefinition<s["def"][token], s>
     : token extends StringLiteral<infer Text>
     ? Text
     : token extends RegexLiteral

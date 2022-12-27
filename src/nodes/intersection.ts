@@ -1,4 +1,4 @@
-import type { ScopeRoot } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import { collapseIfSingleton } from "../utils/generics.ts"
 import { isBranchComparison } from "./branches.ts"
 import type { KeyReducerFn } from "./compose.ts"
@@ -14,13 +14,15 @@ import { comparePredicates } from "./predicate.ts"
 export const intersection = (
     l: TypeNode,
     r: TypeNode,
-    scope: ScopeRoot
+    scope: Scope
 ): TypeNode => finalizeNodeOperation(l, nodeIntersection(l, r, scope))
 
-export const predicateIntersection: KeyReducerFn<
-    Required<TypeSet>,
-    ScopeRoot
-> = (domain, l, r, scope) => {
+export const predicateIntersection: KeyReducerFn<Required<TypeSet>, Scope> = (
+    domain,
+    l,
+    r,
+    scope
+) => {
     const comparison = comparePredicates(domain, l, r, scope)
     if (!isBranchComparison(comparison)) {
         return comparison
@@ -39,7 +41,7 @@ export const predicateIntersection: KeyReducerFn<
     ])
 }
 
-const typeSetIntersection = composeKeyedOperation<TypeSet, ScopeRoot>(
+const typeSetIntersection = composeKeyedOperation<TypeSet, Scope>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : undefined

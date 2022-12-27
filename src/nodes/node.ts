@@ -1,7 +1,6 @@
-import type { S } from "../parse/definition.ts"
-import type { ScopeRoot } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
-import type { mutable } from "../utils/generics.ts"
+import type { autocomplete, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
 import type { Keyword } from "./keywords.ts"
 import type {
@@ -13,20 +12,21 @@ import { compilePredicate } from "./predicate.ts"
 import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
 import { resolveIfIdentifier } from "./utils.ts"
 
-export type TypeNode<s extends S = S> = Identifier<s> | TypeSet<s>
+export type TypeNode<alias extends string = string> =
+    | Identifier<alias>
+    | TypeSet<alias>
 
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to
  * manipulate.*/
-export type TypeSet<s extends S = S> = {
-    readonly [domain in Domain]?: Predicate<domain, s>
+export type TypeSet<alias extends string = string> = {
+    readonly [domain in Domain]?: Predicate<domain, alias>
 }
 
 // TODO: Try just passing scope around
-export type Identifier<s extends S = S> =
-    | Keyword
-    | keyof s["inferred"]
-    | keyof s["aliases"]
+export type Identifier<alias extends string = string> = string extends alias
+    ? autocomplete<Keyword>
+    : Keyword | alias
 
 export type TraversalNode =
     | Domain
@@ -58,10 +58,7 @@ export type TraversalTypeSet = {
     readonly [domain in Domain]?: TraversalPredicate
 }
 
-export const compileNode = (
-    node: TypeNode,
-    scope: ScopeRoot
-): TraversalNode => {
+export const compileNode = (node: TypeNode, scope: Scope): TraversalNode => {
     const resolution = resolveIfIdentifier(node, scope)
     const domains = keysOf(resolution)
     if (domains.length === 1) {
@@ -84,7 +81,7 @@ export const compileNode = (
 
 export const compileNodes = <nodes extends { readonly [k in string]: TypeSet }>(
     nodes: nodes,
-    scope: ScopeRoot
+    scope: Scope
 ) => {
     const result = {} as Record<keyof nodes, TraversalNode>
     for (const name in nodes) {

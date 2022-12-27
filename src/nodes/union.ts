@@ -1,4 +1,4 @@
-import type { ScopeRoot } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import { collapseIfSingleton } from "../utils/generics.ts"
 import { isBranchComparison } from "./branches.ts"
 import type { KeyReducerFn } from "./compose.ts"
@@ -12,10 +12,10 @@ import type { TypeNode, TypeSet } from "./node.ts"
 import type { Condition } from "./predicate.ts"
 import { comparePredicates } from "./predicate.ts"
 
-export const union = (l: TypeNode, r: TypeNode, scope: ScopeRoot) =>
+export const union = (l: TypeNode, r: TypeNode, scope: Scope) =>
     finalizeNodeOperation(l, nodeUnion(l, r, scope))
 
-export const predicateUnion: KeyReducerFn<Required<TypeSet>, ScopeRoot> = (
+export const predicateUnion: KeyReducerFn<Required<TypeSet>, Scope> = (
     domain,
     l,
     r,
@@ -52,7 +52,7 @@ export const predicateUnion: KeyReducerFn<Required<TypeSet>, ScopeRoot> = (
     ])
 }
 
-export const typeSetUnion = composeKeyedOperation<TypeSet, ScopeRoot>(
+export const typeSetUnion = composeKeyedOperation<TypeSet, Scope>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : r

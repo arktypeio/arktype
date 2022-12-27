@@ -1,4 +1,4 @@
-import type { ScopeRoot } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { deepFreeze } from "../utils/freeze.ts"
 import type { TypeNode, TypeSet } from "./node.ts"
@@ -62,7 +62,7 @@ export const functorKeywords = {
 }
 
 // Use a dummy scope here since we know there are no alias references
-export const flatKeywords = compileNodes(keywords, {} as ScopeRoot)
+export const flatKeywords = compileNodes(keywords, {} as Scope)
 
 export type Keyword = keyof Keywords
 

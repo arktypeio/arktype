@@ -1,13 +1,9 @@
 import type { Identifier, TraversalNode, TypeNode } from "./nodes/node.ts"
 import { compileNode } from "./nodes/node.ts"
 import { resolveIfIdentifier } from "./nodes/utils.ts"
-import type {
-    inferDefinition,
-    S,
-    validateDefinition
-} from "./parse/definition.ts"
+import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
-import type { GlobalScope, Scope } from "./scope.ts"
+import type { aliasOf, GlobalScope, Scope } from "./scope.ts"
 import { getGlobalScope, scope } from "./scope.ts"
 import { check } from "./traverse/check.ts"
 import { Problems } from "./traverse/problems.ts"
@@ -20,11 +16,11 @@ export const rawTypeFn: DynamicTypeFn = (
     def,
     { scope = getGlobalScope(), ...config } = {}
 ) => {
-    const node = resolveIfIdentifier(parseDefinition(def, scope.$), scope.$)
-    const traversal = compileNode(node, scope.$)
+    const node = resolveIfIdentifier(parseDefinition(def, scope), scope)
+    const traversal = compileNode(node, scope)
     return Object.assign(
         (data: unknown) => {
-            const result = check(data, traversal, scope.$)
+            const result = check(data, traversal, scope)
             return result
                 ? { data }
                 : { problems: new Problems({ path: "", reason: "invalid" }) }
@@ -51,36 +47,34 @@ export type InferredTypeFn = {
 
     <
         def,
-        inferred extends Dict = {},
-        // TODO: Stop confusing use of alias, can pass root scope?
-        s extends S = { inferred: inferred; aliases: {} },
+        s extends Scope = GlobalScope,
         t = inferDefinition<def, s>,
         traits extends Traits<t, s> = Traits<t, s>
     >(
         def: validateDefinition<def, s>,
-        traits: { scope?: Scope<inferred> } & traits
+        traits: { scope?: s } & traits
     ): InferredTypeResult<def, s>
 }
 
-type InferredTypeResult<def, s extends S> = isTopType<def> extends true
+type InferredTypeResult<def, s extends Scope> = isTopType<def> extends true
     ? never
     : def extends validateDefinition<def, s>
     ? Type<inferDefinition<def, s>>
     : never
 
 // TODO: Allow extra args to morphs
-export type Traits<t, s extends S> = {
+export type Traits<t, s extends Scope> = {
     in?: {
-        [name in Identifier<s>]?: (data: inferDefinition<name, s>) => t
+        [name in Identifier<aliasOf<s>>]?: (data: inferDefinition<name, s>) => t
     }
     out?: {
-        [name in Identifier<s>]?: (data: t) => inferDefinition<name, s>
+        [name in Identifier<aliasOf<s>>]?: (data: t) => inferDefinition<name, s>
     }
 }
 
 type DynamicTypeFn = (
     def: unknown,
-    traits?: { scope?: Scope<Dict> } & Traits<unknown, S>
+    traits?: { scope?: Scope } & Traits<unknown, Scope>
 ) => Type
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>

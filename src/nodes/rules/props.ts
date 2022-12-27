@@ -1,4 +1,3 @@
-import type { S } from "../../parse/definition.ts"
 import {
     composeIntersection,
     composeKeyedOperation,
@@ -11,13 +10,15 @@ import { compileNode } from "../node.ts"
 import type { PredicateContext } from "../predicate.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
-export type PropsRule<s extends S = S> = {
-    [propKey in string]: Prop<s>
+export type PropsRule<alias extends string = string> = {
+    [propKey in string]: Prop<alias>
 }
 
-export type Prop<s extends S = S> = TypeNode<s> | OptionalProp<s>
+export type Prop<alias extends string = string> =
+    | TypeNode<alias>
+    | OptionalProp<alias>
 
-export type OptionalProp<s extends S = S> = ["?", TypeNode<s>]
+export type OptionalProp<alias extends string = string> = ["?", TypeNode<alias>]
 
 export type TraversalRequiredProps = [
     "requiredProps",

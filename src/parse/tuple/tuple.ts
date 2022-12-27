@@ -2,17 +2,17 @@ import { intersection } from "../../nodes/intersection.ts"
 import { functorKeywords } from "../../nodes/keywords.ts"
 import type { TypeNode } from "../../nodes/node.ts"
 import { union } from "../../nodes/union.ts"
-import type { GlobalScope, ScopeRoot } from "../../scope.ts"
+import type { Scope } from "../../scope.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type { error, evaluate, List } from "../../utils/generics.ts"
-import type { inferDefinition, S, validateDefinition } from "../definition.ts"
+import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
 import type { validateRefinementTuple } from "./refinement.ts"
 import { parseRefinementTuple } from "./refinement.ts"
 
-export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
+export const parseTuple = (def: List, scope: Scope): TypeNode => {
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, scope)
     }
@@ -31,7 +31,7 @@ export const parseTuple = (def: List, scope: ScopeRoot): TypeNode => {
 // TODO: flat tuple expressions
 export type validateTupleExpression<
     def extends TupleExpression,
-    s extends S
+    s extends Scope
 > = def[1] extends "=>"
     ? validateRefinementTuple<def[0], s>
     : def[1] extends Scanner.BranchToken
@@ -44,7 +44,7 @@ export type validateTupleExpression<
 
 export type inferTuple<
     def extends List,
-    s extends S
+    s extends Scope
 > = def extends TupleExpression
     ? inferTupleExpression<def, s>
     : {
@@ -53,7 +53,7 @@ export type inferTuple<
 
 type inferTupleExpression<
     def extends TupleExpression,
-    s extends S
+    s extends Scope
 > = def[1] extends "=>"
     ? inferDefinition<def[0], s>
     : def[1] extends Scanner.BranchToken
@@ -71,7 +71,7 @@ export type TupleExpressionToken = "&" | "|" | "[]" | "=>"
 
 export type TupleExpressionParser<token extends TupleExpressionToken> = (
     def: TupleExpression<token>,
-    scope: ScopeRoot
+    scope: Scope
 ) => TypeNode
 
 const parseBranchTuple: TupleExpressionParser<"|" | "&"> = (def, scope) => {
@@ -95,10 +95,8 @@ const tupleExpressionParsers: {
     "=>": parseRefinementTuple
 }
 
-const parseTupleExpression = (
-    def: TupleExpression,
-    scope: ScopeRoot
-): TypeNode => tupleExpressionParsers[def[1]](def as any, scope)
+const parseTupleExpression = (def: TupleExpression, scope: Scope): TypeNode =>
+    tupleExpressionParsers[def[1]](def as any, scope)
 
 const isTupleExpression = (def: List): def is TupleExpression =>
     typeof def[1] === "string" && def[1] in tupleExpressionParsers

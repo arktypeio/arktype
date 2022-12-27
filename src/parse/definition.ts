@@ -1,5 +1,5 @@
 import type { TypeNode } from "../nodes/node.ts"
-import type { S, ScopeRoot } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import type { domainOf, Primitive, Subdomain } from "../utils/domains.ts"
 import { subdomainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
@@ -21,10 +21,7 @@ import type {
 } from "./tuple/tuple.ts"
 import { parseTuple } from "./tuple/tuple.ts"
 
-// TODO: fix
-export type { S } from "../scope.ts"
-
-export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
+export const parseDefinition = (def: unknown, scope: Scope): TypeNode => {
     switch (subdomainOf(def)) {
         case "string":
             return parseString(def as string, scope)
@@ -41,7 +38,7 @@ export const parseDefinition = (def: unknown, scope: ScopeRoot): TypeNode => {
     }
 }
 
-export type inferDefinition<def, s extends S> = isTopType<def> extends true
+export type inferDefinition<def, s extends Scope> = isTopType<def> extends true
     ? never
     : def extends string
     ? inferString<def, s>
@@ -53,7 +50,10 @@ export type inferDefinition<def, s extends S> = isTopType<def> extends true
     ? inferRecord<def, s>
     : never
 
-export type validateDefinition<def, s extends S> = isTopType<def> extends true
+export type validateDefinition<
+    def,
+    s extends Scope
+> = isTopType<def> extends true
     ? buildUninferableDefinitionMessage<
           isAny<def> extends true ? "any" : "unknown"
       >

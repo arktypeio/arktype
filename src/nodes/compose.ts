@@ -1,4 +1,4 @@
-import type { ScopeRoot } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { Dict, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
@@ -125,8 +125,8 @@ export const composeKeyedOperation =
 
 export const composeNodeOperation =
     (
-        typeSetOperation: SetOperation<TypeSet, ScopeRoot>
-    ): SetOperation<TypeNode, ScopeRoot> =>
+        typeSetOperation: SetOperation<TypeSet, Scope>
+    ): SetOperation<TypeNode, Scope> =>
     (l, r, scope) => {
         const lResolution = resolveIfIdentifier(l, scope)
         const rResolution = resolveIfIdentifier(r, scope)

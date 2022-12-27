@@ -1,8 +1,7 @@
 import { functorKeywords } from "../../nodes/keywords.ts"
 import type { TypeNode } from "../../nodes/node.ts"
-import type { ScopeRoot } from "../../scope.ts"
+import type { aliasOf, Scope } from "../../scope.ts"
 import type { error, stringKeyOf } from "../../utils/generics.ts"
-import type { S } from "../definition.ts"
 import type { inferAst, validateAstSemantics } from "./ast.ts"
 import { DynamicState } from "./reduce/dynamic.ts"
 import type { state, StaticState } from "./reduce/static.ts"
@@ -11,7 +10,7 @@ import type { isResolvableIdentifier } from "./shift/operand/unenclosed.ts"
 import { parseOperator } from "./shift/operator/operator.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
-export const parseString = (def: string, scope: ScopeRoot) =>
+export const parseString = (def: string, scope: Scope) =>
     scope.memoizedParse(def)
 
 export type parseString<
@@ -19,14 +18,14 @@ export type parseString<
     alias extends string
 > = maybeNaiveParse<def, alias>
 
-export type inferString<def extends string, s extends S> = inferAst<
-    parseString<def, string & (keyof s["aliases"] | keyof s["inferred"])>,
+export type inferString<def extends string, s extends Scope> = inferAst<
+    parseString<def, aliasOf<s>>,
     s
 >
 
-export type validateString<def extends string, s extends S> = parseString<
+export type validateString<def extends string, s extends Scope> = parseString<
     def,
-    stringKeyOf<s["inferred"]>
+    aliasOf<s>
 > extends infer astOrError
     ? astOrError extends error<infer message>
         ? message
@@ -54,7 +53,7 @@ type maybeNaiveParse<
 
 export const maybeNaiveParse = (
     def: string,
-    scope: ScopeRoot
+    scope: Scope
 ): TypeNode | undefined => {
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
@@ -67,7 +66,7 @@ export const maybeNaiveParse = (
     }
 }
 
-export const fullStringParse = (def: string, scope: ScopeRoot) => {
+export const fullStringParse = (def: string, scope: Scope) => {
     const s = new DynamicState(def, scope)
     parseOperand(s)
     return loop(s)
