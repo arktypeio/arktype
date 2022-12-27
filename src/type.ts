@@ -1,14 +1,19 @@
-import type { Identifier, TraversalNode, TypeNode } from "./nodes/node.ts"
+import type {
+    Identifier,
+    TraversalNode,
+    TypeNode,
+    TypeSet
+} from "./nodes/node.ts"
 import { compileNode } from "./nodes/node.ts"
 import { resolveIfIdentifier } from "./nodes/utils.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
 import type { aliasOf, GlobalScope, Scope } from "./scope.ts"
-import { getGlobalScope, scope } from "./scope.ts"
+import { getGlobalScope } from "./scope.ts"
 import { check } from "./traverse/check.ts"
 import { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import type { Dict, isTopType, xor } from "./utils/generics.ts"
+import type { isTopType, xor } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
@@ -17,7 +22,15 @@ export const rawTypeFn: DynamicTypeFn = (
     { scope = getGlobalScope(), ...config } = {}
 ) => {
     const node = resolveIfIdentifier(parseDefinition(def, scope), scope)
-    const traversal = compileNode(node, scope)
+    return createType(node, scope, config)
+}
+
+export const createType = (
+    root: TypeSet,
+    scope: Scope,
+    config: Traits<unknown, Scope>
+) => {
+    const traversal = compileNode(root, scope)
     return Object.assign(
         (data: unknown) => {
             const result = check(data, traversal, scope)
@@ -28,7 +41,7 @@ export const rawTypeFn: DynamicTypeFn = (
         {
             config,
             infer: chainableNoOpProxy,
-            root: node,
+            root,
             flat: traversal
         }
     ) as any

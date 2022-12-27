@@ -1,4 +1,4 @@
-import type { Scope } from "../scope.ts"
+import type { aliasOf, Scope } from "../scope.ts"
 import { checkRules } from "../traverse/check.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
@@ -11,7 +11,11 @@ import { empty, equal } from "./compose.ts"
 import type { Identifier } from "./node.ts"
 import type { RuleSet, TraversalRuleEntry } from "./rules/rules.ts"
 import { compileRules, rulesIntersection } from "./rules/rules.ts"
-import { isExactValuePredicate, resolvePredicateIfIdentifier } from "./utils.ts"
+import {
+    isExactValuePredicate,
+    resolveFlatPredicate,
+    resolvePredicateIfIdentifier
+} from "./utils.ts"
 
 export type Predicate<
     domain extends Domain = Domain,
@@ -37,7 +41,7 @@ export const compilePredicate = (
     for (const condition of branches) {
         if (typeof condition === "string") {
             flatBranches.push(
-                ...branchesOf(scope.resolveFlatPredicate(condition, domain))
+                ...branchesOf(resolveFlatPredicate(scope, condition, domain))
             )
         } else if (isExactValuePredicate(condition)) {
             flatBranches.push([["value", condition.value]])
@@ -78,7 +82,7 @@ export type PredicateContext = {
 export type ResolvedPredicate<
     domain extends Domain = Domain,
     s extends Scope = Scope
-> = Exclude<Predicate<domain, s>, string>
+> = Exclude<Predicate<domain, aliasOf<s>>, string>
 
 export type PredicateComparison =
     | SetOperationResult<Predicate>

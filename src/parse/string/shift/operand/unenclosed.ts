@@ -1,5 +1,6 @@
 import type { Keyword } from "../../../../nodes/keywords.ts"
 import type { TypeNode } from "../../../../nodes/node.ts"
+import { isResolvable } from "../../../../nodes/utils.ts"
 import type { error } from "../../../../utils/generics.ts"
 import type {
     BigintLiteral,
@@ -33,7 +34,7 @@ export type parseUnenclosed<
     : never
 
 const unenclosedToNode = (s: DynamicState, token: string) =>
-    s.scope.isResolvable(token)
+    isResolvable(s.scope, token)
         ? token
         : maybeParseUnenclosedLiteral(token) ??
           s.error(

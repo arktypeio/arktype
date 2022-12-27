@@ -1,5 +1,6 @@
 import { functorKeywords } from "../../nodes/keywords.ts"
 import type { TypeNode } from "../../nodes/node.ts"
+import { isResolvable, memoizedParse } from "../../nodes/utils.ts"
 import type { aliasOf, Scope } from "../../scope.ts"
 import type { error, stringKeyOf } from "../../utils/generics.ts"
 import type { inferAst, validateAstSemantics } from "./ast.ts"
@@ -11,7 +12,7 @@ import { parseOperator } from "./shift/operator/operator.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
 export const parseString = (def: string, scope: Scope) =>
-    scope.memoizedParse(def)
+    memoizedParse(scope, def)
 
 export type parseString<
     def extends string,
@@ -57,11 +58,11 @@ export const maybeNaiveParse = (
 ): TypeNode | undefined => {
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
-        if (scope.isResolvable(elementDef)) {
+        if (isResolvable(scope, elementDef)) {
             return functorKeywords.Array(elementDef)
         }
     }
-    if (scope.isResolvable(def)) {
+    if (isResolvable(scope, def)) {
         return def
     }
 }
