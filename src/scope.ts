@@ -1,4 +1,4 @@
-import type { TypeNode, TypeSet } from "./nodes/node.ts"
+import type { TypeNode } from "./nodes/node.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import type { Type } from "./type.ts"
 import { type } from "./type.ts"
@@ -35,7 +35,7 @@ export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
     DynamicScopeFn
 >
 
-let globalScope: Scope<{}> | undefined
+let globalScope: Scope<{}, {}> | undefined
 
 export type GlobalScope = typeof globalScope & {}
 
