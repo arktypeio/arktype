@@ -75,13 +75,19 @@ type InferredTypeResult<def, s extends Scope> = isTopType<def> extends true
     ? Type<inferDefinition<def, s>>
     : never
 
-// TODO: Allow extra args to morphs
 export type Traits<t, s extends Scope> = {
     in?: {
-        [name in Identifier<aliasOf<s>>]?: (data: inferDefinition<name, s>) => t
+        [name in Identifier<aliasOf<s>>]?: (
+            data: inferDefinition<name, s>,
+            // rest args typed as never so they can't be used unless explicitly typed
+            ...rest: never[]
+        ) => t
     }
     out?: {
-        [name in Identifier<aliasOf<s>>]?: (data: t) => inferDefinition<name, s>
+        [name in Identifier<aliasOf<s>>]?: (
+            data: t,
+            ...rest: never[]
+        ) => inferDefinition<name, s>
     }
 }
 

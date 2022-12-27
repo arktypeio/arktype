@@ -16,5 +16,24 @@ describe("morph", () => {
             })
             attest(t.infer).typed as string
         })
+        it("additional args", () => {
+            const t = type("number", {
+                in: {
+                    string: (s, radix) => parseInt(s, radix)
+                },
+                out: {
+                    string: (s, radix) => s.toString(radix)
+                }
+            })
+            attest(t.infer).typed as number
+        })
+        describe("errors", () => {
+            it("untyped additional args", () => {
+                // TODO: Error here
+                type("string", {
+                    out: { number: (n, radix) => parseInt(n, radix) }
+                })
+            })
+        })
     })
 })
