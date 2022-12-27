@@ -17,7 +17,7 @@ describe("dynamic", () => {
             "b?": "a"
         })
         // Types are inferred as unknown
-        attest(s.a.infer).typed as unknown
+        attest(s.types.a.infer).typed as unknown
         // Doesn't allow bad references
         attest(() => {
             // @ts-expect-error
@@ -26,9 +26,9 @@ describe("dynamic", () => {
     })
     it("uninferred scope", () => {
         const unknownScope = scope.dynamic({ a: "string" } as Dict)
-        attest(unknownScope.a.infer).typed as unknown
+        attest(unknownScope.types.a.infer).typed as unknown
         // Allows any references but will throw at runtime
-        attest(() => unknownScope.b.infer).throws.snap(
+        attest(() => unknownScope.types.b.infer).throws.snap(
             `TypeError: Cannot read properties of undefined (reading 'infer')`
         )
         attest(() => type("b", { scope: unknownScope })).throws(

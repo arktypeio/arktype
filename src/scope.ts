@@ -26,8 +26,8 @@ const rawScope = (def: Dict, parent?: Scope) => {
     return result
 }
 
-export type ScopeConfig<inferred extends Dict> = {
-    scope?: Scope<inferred>
+export type ScopeConfig<parent extends Scope> = {
+    parent?: parent
 }
 
 export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
@@ -37,20 +37,17 @@ export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
 
 let globalScope: Scope<{}, {}> | undefined
 
-export type GlobalScope = typeof globalScope & {}
+export type GlobalScope = typeof globalScope & { parent?: undefined }
 
 export const getGlobalScope = () => {
     globalScope ??= scope({}) as any
     return globalScope!
 }
 
-type InferredScopeFn = <aliases, inferredParent extends Dict = {}>(
-    aliases: validateAliases<
-        aliases,
-        inferScopeContext<aliases, inferredParent>
-    >,
-    config?: ScopeConfig<inferredParent>
-) => Scope<inferAliases<aliases, inferredParent>>
+type InferredScopeFn = <aliases, parent extends Scope = GlobalScope>(
+    aliases: validateAliases<aliases, parent>,
+    config?: ScopeConfig<parent>
+) => Scope<inferAliases<aliases, parent>>
 
 // TODO: imports/exports, extends
 export type Scope<t extends Dict = Dict, def = Dict> = {
@@ -65,26 +62,20 @@ export type Scope<t extends Dict = Dict, def = Dict> = {
 
 type DynamicScopeFn = <aliases extends Dict>(
     aliases: aliases
-) => Scope<{ [k in keyof aliases]: unknown }>
+) => Scope<Dict<keyof aliases & string>, Dict<keyof aliases & string>>
 
 export type aliasOf<s extends Scope> = keyof s["def"] & string
 
-type validateAliases<aliases, inferredContext extends Dict> = evaluate<{
+type validateAliases<aliases, parent extends Scope> = evaluate<{
     [name in keyof aliases]: validateDefinition<
         aliases[name],
-        Scope<inferredContext, aliases>
+        parent & { def: aliases }
     >
 }>
 
-type inferAliases<aliases, inferredContext extends Dict> = evaluate<{
+type inferAliases<aliases, parent extends Scope> = evaluate<{
     [name in keyof aliases]: inferDefinition<
         aliases[name],
-        Scope<inferredContext, aliases>
+        parent & { def: aliases }
     >
 }>
-
-type inferScopeContext<aliases, inferredParent extends Dict> = inferAliases<
-    aliases,
-    inferredParent
-> &
-    inferredParent
