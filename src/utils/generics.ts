@@ -127,6 +127,12 @@ export type deepImmutable<o> = [o] extends [object]
 
 export type equals<t, u> = identity<t> extends identity<u> ? true : false
 
+declare const id: unique symbol
+
+export type nominal<t, id extends string> = t & {
+    readonly [id]: id
+}
+
 // TODO: Use symbol
 export type assertEqual<t, u> = equals<t, u> extends true
     ? t

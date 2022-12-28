@@ -34,8 +34,8 @@ describe("morph", () => {
                 }
             })
             // TODO: to should continue chaining data/problems as a final result.
-            const result = t(true).to?.("string")
-            attest(result).equals("true").typed as string | undefined
+            const { data } = t(true).to("string")
+            attest(data).equals("true").typed as string | undefined
         })
         describe("errors", () => {
             it("untyped additional args", () => {

@@ -47,15 +47,21 @@ export const getGlobalScope = () => {
 type InferredScopeFn = <aliases, parent extends Scope = GlobalScope>(
     aliases: validateAliases<aliases, parent>,
     config?: ScopeConfig<parent>
-) => Scope<inferAliases<aliases, parent>>
+) => Scope<inferAliases<aliases, parent>, aliases>
 
 // TODO: imports/exports, extends
-export type Scope<t extends Dict = Dict, def = Dict> = {
-    infer: t
-    def: def
-    types: {
+export type Scope<
+    t extends Dict = Dict,
+    def = Dict,
+    types extends {
+        [k in keyof t]: Type<t[k]>
+    } = {
         [k in keyof t]: Type<t[k]>
     }
+> = {
+    infer: t
+    def: def
+    types: types
     cache: { [k in keyof t]: TypeNode }
     parent?: Scope
 }
