@@ -2,9 +2,9 @@ import type {
     LinePosition,
     LinePositionRange,
     SourcePosition
-} from "../common.js"
-import { getFileKey } from "../common.js"
-import { getAssertionsByFile } from "./analysis.js"
+} from "../utils.ts"
+import { getFileKey } from "../utils.ts"
+import { getAssertionsByFile } from "./analysis.ts"
 
 const isPositionWithinRange = (
     { line, char }: LinePosition,

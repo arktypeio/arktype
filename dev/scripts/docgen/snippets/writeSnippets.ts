@@ -4,9 +4,9 @@ import {
     readJson,
     shell,
     writeFile
-} from "../../../runtime/exports.js"
-import type { SnippetsByPath } from "./extractSnippets.js"
-import { referenceTokens } from "./snipTokens.js"
+} from "../../../runtime/api.ts"
+import type { SnippetsByPath } from "./extractSnippets.ts"
+import { referenceTokens } from "./snipTokens.ts"
 
 export const updateSnippetReferences = (snippetsByPath: SnippetsByPath) => {
     const updatedPaths = Object.keys(snippetsByPath).filter((path) =>

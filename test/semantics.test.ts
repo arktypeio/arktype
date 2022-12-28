@@ -1,27 +1,27 @@
-import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import { type } from "../exports.js"
+import { describe, it } from "mocha"
+import { attest } from "../dev/attest/api.ts"
+import { type } from "../api.ts"
 import {
     buildIndivisibleMessage,
     buildUnboundableMessage
-} from "../src/parse/ast.js"
+} from "../src/parse/string/ast.ts"
 
 describe("semantics", () => {
     describe("bound", () => {
-        test("number", () => {
+        it("number", () => {
             attest(type("number==-3.14159").infer).typed as number
         })
-        test("string", () => {
+        it("string", () => {
             attest(type("string<=5").infer).typed as string
         })
-        test("array", () => {
+        it("array", () => {
             attest(type("87<=boolean[]<89").infer).typed as boolean[]
         })
-        test("any", () => {
+        it("any", () => {
             attest(type("any>5").infer).typed as any
         })
         describe("errors", () => {
-            test("unboundable", () => {
+            it("unboundable", () => {
                 // @ts-expect-error
                 attest(() => type("unknown<10")).throwsAndHasTypeError(
                     buildUnboundableMessage("unknown")
@@ -29,7 +29,7 @@ describe("semantics", () => {
             })
             // Note: Bounding a number literal results in a syntax error and is
             // tested alongside other bound parse errors
-            test("string literal", () => {
+            it("string literal", () => {
                 // @ts-expect-error
                 attest(() => type("1<'foo'<10")).throwsAndHasTypeError(
                     buildUnboundableMessage("'foo'")
@@ -38,20 +38,20 @@ describe("semantics", () => {
         })
     })
     describe("divisibility", () => {
-        test("number", () => {
+        it("number", () => {
             attest(type("number%2").infer).typed as number
         })
-        test("any", () => {
+        it("any", () => {
             attest(type("any%1").infer).typed as any
         })
         describe("errors", () => {
-            test("indivisible", () => {
+            it("indivisible", () => {
                 // @ts-expect-error
                 attest(() => type("unknown%2")).throwsAndHasTypeError(
                     buildIndivisibleMessage("unknown")
                 )
             })
-            test("number literal", () => {
+            it("number literal", () => {
                 // @ts-expect-error
                 attest(() => type("5%10")).throwsAndHasTypeError(
                     buildIndivisibleMessage("5")

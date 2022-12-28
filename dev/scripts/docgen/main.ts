@@ -1,19 +1,18 @@
-import { existsSync, statSync } from "node:fs"
 import { basename, join, relative } from "node:path"
-import { stdout } from "node:process"
+import * as process from "node:process"
 import { Project } from "ts-morph"
-import type { WalkOptions } from "../../runtime/exports.js"
-import { dirName, shell } from "../../runtime/exports.js"
-import { repoDirs } from "../common.js"
-import { extractApi } from "./api/extractApi.js"
-import { writeApi } from "./api/writeApi.js"
-import { mapDir } from "./mapDir.js"
+import type { WalkOptions } from "../../runtime/api.ts"
+import { dirName, getSourceControlPaths } from "../../runtime/api.ts"
+import { repoDirs } from "../common.ts"
+import { extractApi } from "./api/extractApi.ts"
+import { writeApi } from "./api/writeApi.ts"
+import { mapDir } from "./mapDir.ts"
 import type {
     SnippetsByPath,
     SnippetTransformToggles
-} from "./snippets/extractSnippets.js"
-import { extractSnippets } from "./snippets/extractSnippets.js"
-import { updateSnippetReferences } from "./snippets/writeSnippets.js"
+} from "./snippets/extractSnippets.ts"
+import { extractSnippets } from "./snippets/extractSnippets.ts"
+import { updateSnippetReferences } from "./snippets/writeSnippets.ts"
 
 export type DocGenConfig = {
     apis: DocGenApiConfig[]
@@ -70,7 +69,7 @@ export const defaultConfig = createConfig({
             },
             transformContents: (content) => {
                 let transformed = content
-                transformed = transformed.replaceAll(".js", "")
+                transformed = transformed.replaceAll(".ts", "")
                 return `export default \`${transformed.replaceAll(
                     /`|\${/g,
                     "\\$&"
@@ -99,37 +98,32 @@ export const getProject = () => {
 }
 
 const updateApiDocs = (project: Project) => {
-    stdout.write("Updating api docs...")
+    process.stdout.write("Updating api docs...")
     for (const api of defaultConfig.apis) {
         const data = extractApi(project, api.packageRoot)
         writeApi(api, data)
     }
-    stdout.write("✅\n")
+    process.stdout.write("✅\n")
 }
 
 const getSnippetsAndUpdateReferences = (project: Project) => {
-    stdout.write("Updating snippets...")
-    const sourceControlPaths = shell("git ls-files", { stdio: "pipe" })
-        .toString()
-        .split("\n")
-        .filter(
-            (path) =>
-                existsSync(path) &&
-                statSync(path).isFile() &&
-                // Avoid conflicts between snip matching and the source
-                // code defining those matchers
-                !path.startsWith(relative(repoDirs.root, dirName()))
-        )
+    process.stdout.write("Updating snippets...")
+    const sourceControlPaths = getSourceControlPaths().filter(
+        (path) =>
+            // Avoid conflicts between snip matching and the source
+            // code defining those matchers
+            !path.startsWith(relative(repoDirs.root, dirName()))
+    )
     const snippets = extractSnippets(sourceControlPaths, project)
     updateSnippetReferences(snippets)
-    stdout.write("✅\n")
+    process.stdout.write("✅\n")
     return snippets
 }
 
 export const mapDirs = (snippets: SnippetsByPath) => {
-    stdout.write("Mapping dirs...")
+    process.stdout.write("Mapping dirs...")
     for (const mapConfig of defaultConfig.mappedDirs) {
         mapDir(snippets, mapConfig)
     }
-    stdout.write("✅\n")
+    process.stdout.write("✅\n")
 }

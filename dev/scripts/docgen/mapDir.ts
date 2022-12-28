@@ -1,17 +1,17 @@
 import { rmSync, writeFileSync } from "node:fs"
 import { dirname, join, relative } from "node:path"
+import * as process from "node:process"
 import {
     ensureDir,
     fileName,
     shell,
     walkPaths,
     writeJson
-} from "../../runtime/exports.js"
-import { repoDirs } from "../common.js"
-import type { DocGenMappedDirsConfig } from "./main.js"
-import type { SnippetsByPath } from "./snippets/extractSnippets.js"
+} from "../../runtime/api.ts"
+import { repoDirs } from "../common.ts"
+import type { DocGenMappedDirsConfig } from "./main.ts"
+import type { SnippetsByPath } from "./snippets/extractSnippets.ts"
 
-// eslint-disable-next-line max-lines-per-function
 export const mapDir = (
     snippetsByPath: SnippetsByPath,
     options: DocGenMappedDirsConfig

@@ -2,9 +2,9 @@ import { existsSync } from "node:fs"
 import { join, relative } from "node:path"
 import type { ExportedDeclarations, Node, SourceFile, ts } from "ts-morph"
 import { Project, SyntaxKind } from "ts-morph"
-import { findPackageRoot, readPackageJson } from "../../../runtime/exports.js"
-import { repoDirs } from "../../common.js"
-import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
+import { findPackageRoot, readPackageJson } from "../../../runtime/api.ts"
+import { repoDirs } from "../../common.ts"
+import { getEntryPointsToRelativeDtsPaths } from "./utils.ts"
 
 const ignoreUnusedComment = "@ignore-unused"
 const publicApiRoots = [repoDirs.root]

@@ -1,5 +1,5 @@
 import { writeFileSync } from "node:fs"
-import { fromHere } from "../dev/runtime/exports.js"
+import { fromHere } from "../dev/runtime/api.ts"
 
 const randomInRange = (min: number, max: number) =>
     Math.floor(Math.random() * (max - min + 1)) + min

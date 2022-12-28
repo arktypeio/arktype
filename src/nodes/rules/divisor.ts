@@ -1,6 +1,6 @@
-import type { CheckState } from "../../traverse/check.js"
-import { addProblem } from "../../traverse/errors.js"
-import { composeIntersection, equal } from "../compose.js"
+import type { CheckState } from "../../traverse/check.ts"
+import { addProblem } from "../../traverse/errors.ts"
+import { composeIntersection, equal } from "../compose.ts"
 
 export const divisorError = (data: number, divisor: number) =>
     `${data} is not divisible by ${divisor}`

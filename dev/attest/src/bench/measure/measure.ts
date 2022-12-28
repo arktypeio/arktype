@@ -1,8 +1,8 @@
-import { isKeyOf } from "../../../../../src/utils/generics.js"
-import type { StatName } from "../call.js"
-import type { TimeUnit } from "./time.js"
-import { stringifyTimeMeasure, TIME_UNIT_RATIOS } from "./time.js"
-import type { TypeUnit } from "./types.js"
+import { isKeyOf } from "../../../../../src/utils/generics.ts"
+import type { StatName } from "../call.ts"
+import type { TimeUnit } from "./time.ts"
+import { stringifyTimeMeasure, TIME_UNIT_RATIOS } from "./time.ts"
+import type { TypeUnit } from "./types.ts"
 
 type MeasureUnit = TimeUnit | TypeUnit
 

@@ -1,9 +1,9 @@
-import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import { type } from "../exports.js"
+import { describe, it } from "mocha"
+import { attest } from "../dev/attest/api.ts"
+import { type } from "../api.ts"
 
 describe("record", () => {
-    test("required", () => {
+    it("required", () => {
         const o = type({ a: "string", b: "boolean[]" })
         attest(o.infer).typed as { a: string; b: boolean[] }
         attest(o.root).snap({
@@ -15,7 +15,7 @@ describe("record", () => {
             }
         })
     })
-    test("optional keys", () => {
+    it("optional keys", () => {
         const o = type({ "a?": "string", b: "boolean[]" })
         attest(o.infer).typed as { a?: string; b: boolean[] }
         attest(o.root).snap({
@@ -27,7 +27,7 @@ describe("record", () => {
             }
         })
     })
-    test("escaped optional token", () => {
+    it("escaped optional token", () => {
         const t = type({ "a\\?": "string" })
         attest(t.infer).typed as { "a?": string }
         attest(t.root).equals({

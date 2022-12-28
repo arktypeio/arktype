@@ -1,6 +1,6 @@
-import { hasSubdomain } from "../../utils/domains.js"
-import type { CollapsibleList, List } from "../../utils/generics.js"
-import { equal } from "../compose.js"
+import { hasSubdomain } from "../../utils/domains.ts"
+import type { CollapsibleList, List } from "../../utils/generics.ts"
+import { equal } from "../compose.ts"
 
 export const collapsibleListUnion = <t>(
     l: CollapsibleList<t>,

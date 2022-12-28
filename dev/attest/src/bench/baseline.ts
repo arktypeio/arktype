@@ -1,12 +1,13 @@
-import { literalSerialize } from "../common.js"
-import { queueInlineSnapshotWriteOnProcessExit } from "../snapshot.js"
-import type { BenchAssertionContext, BenchContext } from "./bench.js"
+import process from "node:process"
+import { queueInlineSnapshotWriteOnProcessExit } from "../snapshot.ts"
+import { literalSerialize } from "../utils.ts"
+import type { BenchAssertionContext, BenchContext } from "./bench.ts"
 import type {
     MarkMeasure,
     Measure,
     MeasureComparison
-} from "./measure/exports.js"
-import { stringifyMeasure } from "./measure/exports.js"
+} from "./measure/measure.ts"
+import { stringifyMeasure } from "./measure/measure.ts"
 
 export const queueBaselineUpdateIfNeeded = (
     updated: Measure | MarkMeasure,

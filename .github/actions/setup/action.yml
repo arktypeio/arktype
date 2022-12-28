@@ -1,5 +1,5 @@
 name: Setup repo
-description: Install dependencies and perform setup arktypeio/arktype
+description: Install dependencies and perform setup for https://github.com/arktypeio/arktype
 
 inputs:
     node:
@@ -19,6 +19,10 @@ runs:
               node-version: ${{ inputs.node }}
               registry-url: "https://registry.npmjs.org"
               cache: "pnpm"
+
+        - uses: denoland/setup-deno@v1
+          with:
+              deno-version: v1.x
 
         - name: Install dependencies
           shell: bash

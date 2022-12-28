@@ -1,10 +1,10 @@
-import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import { type } from "../exports.js"
-import { incompleteArrayTokenMessage } from "../src/parse/shift/operator/operator.js"
+import { describe, it } from "mocha"
+import { type } from "../api.ts"
+import { attest } from "../dev/attest/api.ts"
+import { incompleteArrayTokenMessage } from "../src/parse/string/shift/operator/operator.ts"
 
 describe("parse array", () => {
-    test("parse", () => {
+    it("parse", () => {
         const t = type("string[]")
         attest(t.infer).typed as string[]
         attest(t.root).snap({
@@ -14,7 +14,7 @@ describe("parse array", () => {
         })
     })
 
-    test("subdomain intersection", () => {
+    it("subdomain intersection", () => {
         const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
         attest(t.root).snap({
             object: {
@@ -31,7 +31,7 @@ describe("parse array", () => {
     })
 
     describe("errors", () => {
-        test("incomplete token", () => {
+        it("incomplete token", () => {
             // @ts-expect-error
             attest(() => type("string[")).throwsAndHasTypeError(
                 incompleteArrayTokenMessage

@@ -1,8 +1,8 @@
-import type { CheckState } from "../../traverse/check.js"
-import { addProblem } from "../../traverse/errors.js"
-import type { CollapsibleList } from "../../utils/generics.js"
-import { composeIntersection } from "../compose.js"
-import { collapsibleListUnion } from "./collapsibleSet.js"
+import type { CheckState } from "../../traverse/check.ts"
+import { addProblem } from "../../traverse/errors.ts"
+import type { CollapsibleList } from "../../utils/generics.ts"
+import { composeIntersection } from "../compose.ts"
+import { collapsibleListUnion } from "./collapsibleSet.ts"
 
 const regexCache: Record<string, RegExp> = {}
 

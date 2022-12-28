@@ -1,5 +1,5 @@
-import type { downcast } from "../../../../src/utils/generics.js"
-import type { serialize } from "../common.js"
+import type { downcast } from "../../../../src/utils/generics.ts"
+import type { serialize } from "../utils.ts"
 
 export type RootAssertions<
     T,

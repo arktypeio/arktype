@@ -1,22 +1,22 @@
-import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import { scope, type } from "../exports.js"
-import { buildUnresolvableMessage } from "../src/parse/shift/operand/unenclosed.js"
+import { describe, it } from "mocha"
+import { scope, type } from "../api.ts"
+import { attest } from "../dev/attest/api.ts"
+import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 
 describe("scope", () => {
-    test("single", () => {
+    it("single", () => {
         const s = scope({ a: "string" })
-        attest(s.$.infer).typed as { a: string }
-        attest(s.a.infer).typed as string
+        attest(s.infer).typed as { a: string }
+        attest(s.types.a.infer).typed as string
         attest(() =>
             // @ts-expect-error
             scope({ a: "strng" })
         ).throwsAndHasTypeError(buildUnresolvableMessage("strng"))
     })
-    test("interdependent", () => {
+    it("interdependent", () => {
         const s = scope({ a: "string>5", b: "email<=10", c: "a&b" })
-        attest(s.c.infer).typed as string
-        attest(s.c.root).equals({
+        attest(s.types.c.infer).typed as string
+        attest(s.types.c.root).equals({
             string: {
                 regex: "^(.+)@(.+)\\.(.+)$",
                 range: {
@@ -29,13 +29,13 @@ describe("scope", () => {
             }
         })
     })
-    test("cyclic", () => {
+    it("cyclic", () => {
         const s = scope({ a: { b: "b" }, b: { a: "a" } })
-        attest(s.a.root).snap({
+        attest(s.types.a.root).snap({
             object: { props: { b: "b" } }
         })
         // Type hint displays as any on hitting cycle
-        attest(s.$.infer.a).typed as {
+        attest(s.infer.a).typed as {
             b: {
                 a: {
                     b: {
@@ -45,41 +45,41 @@ describe("scope", () => {
             }
         }
         // But still yields correct types when properties are accessed
-        attest(s.$.infer.b.a.b.a.b.a.b.a).typed as {
+        attest(s.infer.b.a.b.a.b.a.b.a).typed as {
             b: {
                 a: any
             }
         }
         // @ts-expect-error
-        attest(s.$.infer.a.b.a.b.c).type.errors.snap(
+        attest(s.infer.a.b.a.b.c).type.errors.snap(
             `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
         )
     })
-    test("object array", () => {
-        attest(scope({ a: "string", b: [{ c: "a" }] }).$.infer.b).typed as [
+    it("object array", () => {
+        attest(scope({ a: "string", b: [{ c: "a" }] }).infer.b).typed as [
             {
                 c: string
             }
         ]
     })
-    test("doesn't try to validate any in scope", () => {
+    it("doesn't try to validate any in scope", () => {
         attest(type(["number", "a"], { scope: scope({ a: {} as any }) }).infer)
             .typed as [number, never]
     })
-    test("parent scope", () => {
+    it("parent scope", () => {
         const s = scope(
-            { a: "string[]", b: "a[]", d: "definedInScope" },
-            { scope: scope({ definedInScope: "boolean" }) }
+            { a: "string[]", b: "a[]", c: "definedInScope" },
+            { parent: scope({ definedInScope: "boolean" }) }
         )
-        attest(s.$.infer).typed as {
+        attest(s.infer).typed as {
             a: string[]
             b: string[][]
-            d: boolean
+            c: boolean
         }
-        attest(s.$.roots).snap({
-            a: { object: { subdomain: ["Array", "string"] } },
-            b: { object: { subdomain: ["Array", "a"] } },
-            d: { boolean: true }
+        attest(s.types.a.root).snap({
+            object: { subdomain: ["Array", "string"] }
         })
+        attest(s.types.b.root).snap({ object: { subdomain: ["Array", "a"] } })
+        attest(s.types.c.root).snap({ boolean: true })
     })
 })

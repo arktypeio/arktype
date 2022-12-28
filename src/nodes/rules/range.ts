@@ -1,7 +1,7 @@
-import type { CheckState } from "../../traverse/check.js"
-import { addProblem } from "../../traverse/errors.js"
-import type { List } from "../../utils/generics.js"
-import { composeIntersection, empty, equal } from "../compose.js"
+import type { CheckState } from "../../traverse/check.ts"
+import { addProblem } from "../../traverse/errors.ts"
+import type { List } from "../../utils/generics.ts"
+import { composeIntersection, empty, equal } from "../compose.ts"
 
 export type Range = {
     readonly min?: Bound

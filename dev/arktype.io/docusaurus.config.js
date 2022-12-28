@@ -52,6 +52,12 @@ const config = {
                         label: "Tutorial"
                     },
                     {
+                        type: "doc",
+                        docId: "api/type",
+                        position: "left",
+                        label: "API"
+                    },
+                    {
                         type: "docsVersionDropdown",
                         position: "right",
                         className: "navbar-versions"

@@ -1,10 +1,10 @@
-import type { ExecSyncOptions } from "node:child_process"
 import { execSync } from "node:child_process"
 import { rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
+import * as process from "node:process"
 
 //@blockFrom:dev/runtime/shell.ts:shell
-export type ShellOptions = ExecSyncOptions & {
+export type ShellOptions = Parameters<typeof execSync>[1] & {
     returnOutput?: boolean
 }
 

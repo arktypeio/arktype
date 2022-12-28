@@ -1,6 +1,6 @@
-import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import { scope, type } from "../exports.js"
+import { describe, it } from "mocha"
+import { scope, type } from "../api.ts"
+import { attest } from "../dev/attest/api.ts"
 
 describe("compile", () => {
     const places = scope.lazy({
@@ -10,11 +10,11 @@ describe("compile", () => {
         desert: { wet: "false", blue: "false", isDesert: "true" },
         anywhereWet: { wet: "true" }
     })
-    test("flatten", () => {})
-    // test("discriminate simple", () => {
+    it("flatten", () => {})
+    // it("discriminate simple", () => {
     //     attest(type("ocean|sky", { scope: places }).root).snap({})
     // })
-    // test("discriminate", () => {
+    // it("discriminate", () => {
     //     attest(
     //         type("ocean|sky|rainforest|desert", { scope: places }).root
     //     ).snap({})

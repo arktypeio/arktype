@@ -1,41 +1,70 @@
-import type { ProjectOptions } from "ts-morph"
-import { Project, ResolutionHosts } from "ts-morph"
-import { getAtTestConfig } from "../common.js"
+import { resolve } from "node:path"
+import { Project, ts } from "ts-morph"
+import { getAttestConfig } from "../config.ts"
 
 export type ForceGetTsProjectOptions = {
-    addFiles?: boolean
+    useRealFs: boolean
+    preloadFiles: boolean
 }
 
 export const forceCreateTsMorphProject = ({
-    addFiles
-}: ForceGetTsProjectOptions = {}) => {
-    const config = getAtTestConfig()
-    const options: ProjectOptions = {
+    preloadFiles,
+    useRealFs
+}: ForceGetTsProjectOptions) => {
+    const config = getAttestConfig()
+    const project = new Project({
         compilerOptions: {
             diagnostics: true,
             noEmit: true,
-            composite: false,
-            incremental: false
+            module: ts.ModuleKind.NodeNext,
+            target: ts.ScriptTarget.ESNext,
+            moduleResolution: ts.ModuleResolutionKind.NodeNext,
+            skipLibCheck: true,
+            strict: true,
+            isolatedModules: true,
+            esModuleInterop: true,
+            resolveJsonModule: true,
+            exactOptionalPropertyTypes: true,
+            noErrorTruncation: true,
+            lib: [
+                resolve("node_modules", "typescript", "lib", "lib.esnext.d.ts")
+            ]
         },
-        skipAddingFilesFromTsConfig: !addFiles
-    }
-    if (process.versions.deno) {
-        options.resolutionHost = ResolutionHosts.deno
-    }
-    if (config.tsconfig) {
-        options.tsConfigFilePath = config.tsconfig
-    }
-    const project = new Project(options)
-    if (!config.tsconfig && addFiles) {
-        project.addSourceFilesAtPaths(["**"])
+        skipAddingFilesFromTsConfig: !preloadFiles || !useRealFs
+    })
+    if (preloadFiles) {
+        if (useRealFs) {
+            project.addSourceFilesFromTsConfig(config.tsconfig!)
+        } else {
+            if (!config.typeSources) {
+                throw Error(`Can't use virtual project without typeSources`)
+            }
+            for (const [path, contents] of config.typeSources) {
+                project.createSourceFile(path, contents, { overwrite: true })
+            }
+        }
     }
     return project
 }
 
-let __projectCache: undefined | Project
-export const getDefaultTsMorphProject = () => {
-    if (!__projectCache) {
-        __projectCache = forceCreateTsMorphProject({ addFiles: true })
+let __virtualProjectCache: undefined | Project
+export const getVirtualTsMorphProject = () => {
+    if (!__virtualProjectCache) {
+        __virtualProjectCache = forceCreateTsMorphProject({
+            useRealFs: false,
+            preloadFiles: true
+        })
     }
-    return __projectCache
+    return __virtualProjectCache
+}
+
+let __realProjectCache: undefined | Project
+export const getRealTsMorphProject = () => {
+    if (!__realProjectCache) {
+        __realProjectCache = forceCreateTsMorphProject({
+            useRealFs: true,
+            preloadFiles: true
+        })
+    }
+    return __realProjectCache
 }

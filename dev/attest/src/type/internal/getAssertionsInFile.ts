@@ -7,9 +7,9 @@ import type {
     Type
 } from "ts-morph"
 import { SyntaxKind, ts } from "ts-morph"
-import type { LinePositionRange } from "../../common.js"
-import { getAtTestConfig, getFileKey } from "../../common.js"
-import type { DiagnosticsByFile } from "./getDiagnosticsByFile.js"
+import type { LinePositionRange } from "../../utils.ts"
+import { getFileKey } from "../../utils.ts"
+import type { DiagnosticsByFile } from "./getDiagnosticsByFile.ts"
 
 export type AssertionData = {
     location: LinePositionRange
@@ -25,22 +25,20 @@ export const getAssertionsInFile = (
     file: SourceFile,
     diagnosticsByFile: DiagnosticsByFile
 ): AssertionData[] => {
-    const assertCalls = getAssertCalls(file)
+    const assertCalls = getAttestCalls(file)
     return assertCalls.map((call) => analyzeAssertCall(call, diagnosticsByFile))
 }
 
-export const getAssertCalls = (file: SourceFile): CallExpression[] => {
-    const config = getAtTestConfig()
+export const getAttestCalls = (file: SourceFile): CallExpression[] => {
     const assertCalls = file
         .getDescendantsOfKind(SyntaxKind.CallExpression)
-        .filter((callExpression) =>
-            /*
-             * We get might get some extraneous calls to other "assert" functions,
-             * but they won't be referenced at runtime so shouldn't matter.
-             */
-            config.assertAliases.find(
-                (alias) => alias === callExpression.getFirstChild()?.getText()
-            )
+        .filter(
+            (callExpression) =>
+                /*
+                 * We get might get some extraneous calls to other "attest" functions,
+                 * but they won't be referenced at runtime so shouldn't matter.
+                 */
+                callExpression.getFirstChild()?.getText() === "attest"
         )
     return assertCalls
 }

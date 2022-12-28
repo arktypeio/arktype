@@ -1,20 +1,20 @@
-import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import { scope, type } from "../exports.js"
-import { buildUnresolvableMessage } from "../src/parse/shift/operand/unenclosed.js"
-import { buildMalformedNumericLiteralMessage } from "../src/utils/numericLiterals.js"
+import { describe, it } from "mocha"
+import { scope, type } from "../api.ts"
+import { attest } from "../dev/attest/api.ts"
+import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
+import { buildMalformedNumericLiteralMessage } from "../src/utils/numericLiterals.ts"
 
 describe("parse unenclosed", () => {
     describe("identifier", () => {
-        test("keyword", () => {
+        it("keyword", () => {
             attest(type("string").infer).typed as string
         })
-        test("alias", () => {
+        it("alias", () => {
             const a = type("a", { scope: scope({ a: "string" }) })
             attest(a.infer).typed as string
         })
         describe("errors", () => {
-            test("unresolvable", () => {
+            it("unresolvable", () => {
                 // @ts-expect-error
                 attest(() => type("HUH")).throwsAndHasTypeError(
                     buildUnresolvableMessage("HUH")
@@ -24,59 +24,59 @@ describe("parse unenclosed", () => {
     })
     describe("number", () => {
         describe("positive", () => {
-            test("whole", () => {
+            it("whole", () => {
                 const four = type("4")
                 attest(four.infer).typed as 4
                 attest(four.root).snap({ number: { value: 4 } })
             })
-            test("decimal", () => {
+            it("decimal", () => {
                 attest(type("3.14159").infer).typed as 3.14159
             })
-            test("decimal with zero whole portion", () => {
+            it("decimal with zero whole portion", () => {
                 attest(type("0.5").infer).typed as 0.5
             })
         })
         describe("negative", () => {
-            test("whole", () => {
+            it("whole", () => {
                 attest(type("-12").infer).typed as -12
             })
-            test("decimal", () => {
+            it("decimal", () => {
                 attest(type("-1.618").infer).typed as -1.618
             })
-            test("decimal with zero whole portion", () => {
+            it("decimal with zero whole portion", () => {
                 attest(type("-0.001").infer).typed as -0.001
             })
         })
-        test("zero", () => {
+        it("zero", () => {
             attest(type("0").infer).typed as 0
         })
         describe("errors", () => {
-            test("multiple decimals", () => {
+            it("multiple decimals", () => {
                 // @ts-expect-error
                 attest(() => type("127.0.0.1")).throwsAndHasTypeError(
                     buildUnresolvableMessage("127.0.0.1")
                 )
             })
-            test("with alpha", () => {
+            it("with alpha", () => {
                 // @ts-expect-error
                 attest(() => type("13three7")).throwsAndHasTypeError(
                     buildUnresolvableMessage("13three7")
                 )
             })
 
-            test("leading zeroes", () => {
+            it("leading zeroes", () => {
                 // @ts-expect-error
                 attest(() => type("010")).throwsAndHasTypeError(
                     buildMalformedNumericLiteralMessage("010", "number")
                 )
             })
-            test("trailing zeroes", () => {
+            it("trailing zeroes", () => {
                 // @ts-expect-error
                 attest(() => type("4.0")).throwsAndHasTypeError(
                     buildMalformedNumericLiteralMessage("4.0", "number")
                 )
             })
-            test("negative zero", () => {
+            it("negative zero", () => {
                 // @ts-expect-error
                 attest(() => type("-0")).throwsAndHasTypeError(
                     buildMalformedNumericLiteralMessage("-0", "number")
@@ -85,26 +85,26 @@ describe("parse unenclosed", () => {
         })
     })
     describe("bigint", () => {
-        test("positive", () => {
+        it("positive", () => {
             // Is prime :D
             attest(type("12345678910987654321n").infer)
                 .typed as 12345678910987654321n
         })
-        test("negative", () => {
+        it("negative", () => {
             attest(type("-9801n").infer).typed as -9801n
         })
-        test("zero", () => {
+        it("zero", () => {
             attest(type("0n").infer).typed as 0n
         })
         describe("errors", () => {
-            test("decimal", () => {
+            it("decimal", () => {
                 // @ts-expect-error
                 attest(() => type("999.1n")).throwsAndHasTypeError(
                     buildUnresolvableMessage("999.1n")
                 )
             })
 
-            test("leading zeroes", () => {
+            it("leading zeroes", () => {
                 // TS currently doesn't try to infer this as bigint even
                 // though it matches our rules for a "malformed" integer.
                 // @ts-expect-error
@@ -114,7 +114,7 @@ describe("parse unenclosed", () => {
                     )
                     .type.errors(buildUnresolvableMessage("007n"))
             })
-            test("negative zero", () => {
+            it("negative zero", () => {
                 // @ts-expect-error
                 attest(() => type("-0n")).throwsAndHasTypeError(
                     buildMalformedNumericLiteralMessage("-0n", "bigint")

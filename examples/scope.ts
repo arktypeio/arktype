@@ -1,7 +1,7 @@
-import { scope } from "../exports.js"
+import { scope } from "../api.ts"
 
 // Scopes are collections of types that can reference each other.
-export const types = scope({
+export const $ = scope({
     package: {
         name: "string",
         "dependencies?": "package[]",
@@ -16,7 +16,7 @@ export const types = scope({
 })
 
 // Cyclic types are inferred to arbitrary depth...
-export type Package = typeof types.package.infer
+export type Package = typeof $.types.package.infer
 
 // And can validate cyclic data.
 export const readPackageData = () => {
@@ -34,4 +34,4 @@ export const readPackageData = () => {
 // `Encountered errors at the following paths:
 //   dependencies/0/contributors: Required value of type contributor[] was missing.
 //   contributors/0/email: "david@sharktypeio" is not assignable to email.`
-export const { problems } = types.package.check(readPackageData())
+export const { problems } = $.types.package(readPackageData())

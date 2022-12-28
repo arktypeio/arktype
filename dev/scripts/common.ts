@@ -23,5 +23,3 @@ export const repoDirs = {
     cjsOut,
     denoOut
 }
-
-export const tsFileMatcher = /^.*\.(c|m)?tsx?$/

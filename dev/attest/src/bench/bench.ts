@@ -1,12 +1,15 @@
-import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.js"
-import { caller } from "../../../runtime/exports.js"
-import type { AtTestConfig, SourcePosition } from "../common.js"
-import { getAtTestConfig } from "../common.js"
-import type { BenchFormat } from "../writeSnapshot.js"
-import type { TimeAssertionName } from "./call.js"
-import { BenchAssertions } from "./call.js"
-import type { BenchTypeAssertions } from "./type.js"
-import { createBenchTypeAssertion } from "./type.js"
+import * as process from "node:process"
+import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.ts"
+import { caller } from "../../../runtime/api.ts"
+import { addListener } from "../../../runtime/shell.ts"
+import type { AttestConfig } from "../config.ts"
+import { getAttestConfig } from "../config.ts"
+import type { SourcePosition } from "../utils.ts"
+import type { BenchFormat } from "../writeSnapshot.ts"
+import type { TimeAssertionName } from "./call.ts"
+import { BenchAssertions } from "./call.ts"
+import type { BenchTypeAssertions } from "./type.ts"
+import { createBenchTypeAssertion } from "./type.ts"
 
 export type UntilOptions = {
     ms?: number
@@ -33,7 +36,7 @@ export type BenchContext = {
     qualifiedPath: string[]
     qualifiedName: string
     options: InternalBenchOptions
-    cfg: AtTestConfig
+    cfg: AttestConfig
     benchCallPosition: SourcePosition
     lastSnapCallPosition: SourcePosition | undefined
     isAsync: boolean
@@ -51,7 +54,7 @@ export type InitialBenchAssertions<Fn extends BenchableFunction> =
 const currentSuitePath: string[] = []
 export const unhandledExceptionMessages: string[] = []
 
-process.on("beforeExit", () => {
+addListener("beforeExit", () => {
     if (unhandledExceptionMessages.length) {
         console.error(
             `${unhandledExceptionMessages.length} unhandled exception(s) occurred during your benches (see details above).`
@@ -105,7 +108,7 @@ export const bench = <Fn extends BenchableFunction>(
         qualifiedPath,
         qualifiedName: qualifiedPath.join("/"),
         options,
-        cfg: getAtTestConfig(),
+        cfg: getAttestConfig(),
         benchCallPosition: caller(),
         lastSnapCallPosition: undefined,
         isAsync: fn.constructor.name === "AsyncFunction"

@@ -1,4 +1,4 @@
-import type { Measure, MeasureComparison } from "./measure.js"
+import type { Measure, MeasureComparison } from "./measure.ts"
 
 export const TYPE_UNITS = ["instantiations"] as const
 

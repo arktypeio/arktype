@@ -1,68 +1,68 @@
-import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import { type } from "../exports.js"
+import { describe, it } from "mocha"
+import { type } from "../api.ts"
+import { attest } from "../dev/attest/api.ts"
 import {
     buildUnmatchedGroupCloseMessage,
     unclosedGroupMessage
-} from "../src/parse/reduce/shared.js"
-import { buildExpressionExpectedMessage } from "../src/parse/shift/operand/unenclosed.js"
+} from "../src/parse/string/reduce/shared.ts"
+import { buildExpressionExpectedMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 
 describe("group", () => {
-    test("entire expression", () => {
+    it("entire expression", () => {
         attest(type("(string)").infer).typed as string
     })
-    test("overrides default precedence", () => {
+    it("overrides default precedence", () => {
         attest(type("boolean|number[]").infer).typed as boolean | number[]
         attest(type("(boolean|number)[]").infer).typed as (boolean | number)[]
     })
-    test("nested", () => {
+    it("nested", () => {
         attest(type("((boolean|number)[]|(string|undefined)[])[]").infer)
             .typed as ((number | boolean)[] | (string | undefined)[])[]
     })
     describe("errors", () => {
-        test("empty", () => {
+        it("empty", () => {
             attest(() => {
                 // @ts-expect-error
                 type("()")
             }).throwsAndHasTypeError(buildExpressionExpectedMessage(")"))
         })
-        test("unmatched (", () => {
+        it("unmatched (", () => {
             attest(() => {
                 // @ts-expect-error
                 type("string|(boolean|number[]")
             }).throwsAndHasTypeError(unclosedGroupMessage)
         })
-        test("unmatched )", () => {
+        it("unmatched )", () => {
             attest(() => {
                 // @ts-expect-error
                 type("string|number[]|boolean)")
             }).throwsAndHasTypeError(buildUnmatchedGroupCloseMessage(""))
         })
-        test("lone )", () => {
+        it("lone )", () => {
             attest(() => {
                 // @ts-expect-error
                 type(")")
             }).throwsAndHasTypeError(buildExpressionExpectedMessage(")"))
         })
-        test("lone (", () => {
+        it("lone (", () => {
             attest(() => {
                 // @ts-expect-error
                 type("(")
             }).throwsAndHasTypeError(buildExpressionExpectedMessage(""))
         })
-        test("deep unmatched (", () => {
+        it("deep unmatched (", () => {
             attest(() => {
                 // @ts-expect-error
                 type("(null|(undefined|(1))|2")
             }).throwsAndHasTypeError(unclosedGroupMessage)
         })
-        test("deep unmatched )", () => {
+        it("deep unmatched )", () => {
             attest(() => {
                 // @ts-expect-error
                 type("((string|number)[]|boolean))[]")
             }).throwsAndHasTypeError(buildUnmatchedGroupCloseMessage("[]"))
         })
-        test("starting )", () => {
+        it("starting )", () => {
             attest(() => {
                 // @ts-expect-error
                 type(")number(")

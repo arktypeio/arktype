@@ -1,29 +1,32 @@
-import type { ScopeRoot } from "../../scope.js"
-import type { Domain, domainOf, inferDomain } from "../../utils/domains.js"
-import type { CollapsibleList, Dict, evaluate } from "../../utils/generics.js"
-import { composeIntersection, composeKeyedOperation } from "../compose.js"
-import type { PredicateContext } from "../predicate.js"
-import { collapsibleListUnion } from "./collapsibleSet.js"
-import { divisorIntersection } from "./divisor.js"
+import type { Scope } from "../../scope.ts"
+import type { Domain, inferDomain } from "../../utils/domains.ts"
+import type { CollapsibleList } from "../../utils/generics.ts"
+import { composeIntersection, composeKeyedOperation } from "../compose.ts"
+import type { PredicateContext } from "../predicate.ts"
+import { collapsibleListUnion } from "./collapsibleSet.ts"
+import { divisorIntersection } from "./divisor.ts"
 import type {
     PropsRule,
     TraversalOptionalProps,
     TraversalRequiredProps
-} from "./props.js"
-import { flattenProps, propsIntersection } from "./props.js"
-import type { Range } from "./range.js"
-import { rangeIntersection } from "./range.js"
-import { getRegex, regexIntersection } from "./regex.js"
-import type { SubdomainRule, TraversalSubdomainRule } from "./subdomain.js"
-import { flattenSubdomain, subdomainIntersection } from "./subdomain.js"
+} from "./props.ts"
+import { compileProps, propsIntersection } from "./props.ts"
+import type { Range } from "./range.ts"
+import { rangeIntersection } from "./range.ts"
+import { getRegex, regexIntersection } from "./regex.ts"
+import type { SubdomainRule, TraversalSubdomainRule } from "./subdomain.ts"
+import { compileSubdomain, subdomainIntersection } from "./subdomain.ts"
 
-export type Rules<domain extends Domain = Domain, scope extends Dict = Dict> = {
-    readonly subdomain?: SubdomainRule<scope>
+export type Rules<
+    domain extends Domain = Domain,
+    alias extends string = string
+> = {
+    readonly subdomain?: SubdomainRule<alias>
     readonly regex?: CollapsibleList<string>
     readonly divisor?: number
     readonly range?: Range
-    readonly props?: PropsRule<scope>
-    readonly validator?: CollapsibleList<Validator<inferDomain<domain>>>
+    readonly props?: PropsRule<alias>
+    readonly refinement?: CollapsibleList<Refinement<inferDomain<domain>>>
 }
 
 export type TraversalRuleEntry =
@@ -33,40 +36,35 @@ export type TraversalRuleEntry =
     | ["range", Range]
     | TraversalRequiredProps
     | TraversalOptionalProps
-    | ["validator", Validator]
+    | ["refinement", Refinement]
 
-export type Validator<data = unknown> = (data: data) => boolean
-
-// TODO: Allow as input
-export type DistributedValidator<data = unknown> = evaluate<{
-    [domain in domainOf<data>]?: Validator<Extract<data, inferDomain<domain>>>
-}>
+export type Refinement<data = unknown> = (data: data) => boolean
 
 export type RuleSet<
     domain extends Domain,
-    scope extends Dict
+    alias extends string
 > = Domain extends domain
     ? Rules
     : domain extends "object"
     ? defineRuleSet<
           "object",
-          "subdomain" | "props" | "range" | "validator",
-          scope
+          "subdomain" | "props" | "range" | "refinement",
+          alias
       >
     : domain extends "string"
-    ? defineRuleSet<"string", "regex" | "range" | "validator", scope>
+    ? defineRuleSet<"string", "regex" | "range" | "refinement", alias>
     : domain extends "number"
-    ? defineRuleSet<"number", "divisor" | "range" | "validator", scope>
-    : defineRuleSet<domain, "validator", scope>
+    ? defineRuleSet<"number", "divisor" | "range" | "refinement", alias>
+    : defineRuleSet<domain, "refinement", alias>
 
 type defineRuleSet<
     domain extends Domain,
     keys extends keyof Rules,
-    scope extends Dict
-> = Pick<Rules<domain, scope>, keys>
+    alias extends string
+> = Pick<Rules<domain, alias>, keys>
 
-const validatorIntersection =
-    composeIntersection<CollapsibleList<Validator>>(collapsibleListUnion)
+const refinementIntersection =
+    composeIntersection<CollapsibleList<Refinement>>(collapsibleListUnion)
 
 export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
     {
@@ -75,7 +73,7 @@ export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
         regex: regexIntersection,
         props: propsIntersection,
         range: rangeIntersection,
-        validator: validatorIntersection
+        refinement: refinementIntersection
     },
     { onEmpty: "bubble" }
 )
@@ -83,13 +81,13 @@ export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
 export type FlattenAndPushRule<t> = (
     entries: TraversalRuleEntry[],
     rule: t,
-    scope: ScopeRoot
+    scope: Scope
 ) => void
 
-const flattenAndPushMap: {
+const ruleCompilers: {
     [k in keyof Rules]-?: FlattenAndPushRule<Rules[k] & {}>
 } = {
-    subdomain: flattenSubdomain,
+    subdomain: compileSubdomain,
     regex: (entries, rule) => {
         if (typeof rule === "string") {
             entries.push(["regex", getRegex(rule)])
@@ -105,13 +103,13 @@ const flattenAndPushMap: {
     range: (entries, rule) => {
         entries.push(["range", rule])
     },
-    props: flattenProps,
-    validator: (entries, rule) => {
+    props: compileProps,
+    refinement: (entries, rule) => {
         if (typeof rule === "function") {
-            entries.push(["validator", rule])
+            entries.push(["refinement", rule])
         } else {
-            for (const validator of rule) {
-                entries.push(["validator", validator])
+            for (const refinement of rule) {
+                entries.push(["refinement", refinement])
             }
         }
     }
@@ -129,17 +127,17 @@ export const rulePrecedenceMap: {
     requiredProps: 2,
     optionalProps: 3,
     // Validation: Only performed if all shallow and deep checks pass
-    validator: 4
+    refinement: 4
 }
 
-export const flattenRules = (
+export const compileRules = (
     rules: Rules,
-    scope: ScopeRoot
+    scope: Scope
 ): readonly TraversalRuleEntry[] => {
     const entries: TraversalRuleEntry[] = []
     let k: keyof Rules
     for (k in rules) {
-        flattenAndPushMap[k](entries, rules[k] as any, scope)
+        ruleCompilers[k](entries, rules[k] as any, scope)
     }
     return entries.sort(
         (l, r) => rulePrecedenceMap[l[0]] - rulePrecedenceMap[r[0]]

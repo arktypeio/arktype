@@ -1,27 +1,27 @@
-import type { TraversalCheck } from "../../traverse/check.js"
-import { checkNode } from "../../traverse/check.js"
-import type { Dict } from "../../utils/generics.js"
+import type { TraversalCheck } from "../../traverse/check.ts"
+import { checkNode } from "../../traverse/check.ts"
+import type { Dict } from "../../utils/generics.ts"
 import {
     composeIntersection,
     composeKeyedOperation,
     empty,
     equal
-} from "../compose.js"
-import { nodeIntersection } from "../intersection.js"
-import type { TraversalNode, TypeNode } from "../node.js"
-import { flattenNode } from "../node.js"
-import type { PredicateContext } from "../predicate.js"
-import type { FlattenAndPushRule } from "./rules.js"
+} from "../compose.ts"
+import { nodeIntersection } from "../intersection.ts"
+import type { TraversalNode, TypeNode } from "../node.ts"
+import { compileNode } from "../node.ts"
+import type { PredicateContext } from "../predicate.ts"
+import type { FlattenAndPushRule } from "./rules.ts"
 
-export type PropsRule<scope extends Dict = Dict> = {
-    [propKey in string]: Prop<scope>
+export type PropsRule<alias extends string = string> = {
+    [propKey in string]: Prop<alias>
 }
 
-export type Prop<scope extends Dict = Dict> =
-    | TypeNode<scope>
-    | OptionalProp<scope>
+export type Prop<alias extends string = string> =
+    | TypeNode<alias>
+    | OptionalProp<alias>
 
-export type OptionalProp<scope extends Dict = Dict> = ["?", TypeNode<scope>]
+export type OptionalProp<alias extends string = string> = ["?", TypeNode<alias>]
 
 export type TraversalRequiredProps = [
     "requiredProps",
@@ -79,7 +79,7 @@ export const propsIntersection = composeIntersection<
     )
 )
 
-export const flattenProps: FlattenAndPushRule<PropsRule> = (
+export const compileProps: FlattenAndPushRule<PropsRule> = (
     entries,
     props,
     scope
@@ -89,9 +89,9 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
     for (const k in props) {
         const prop = props[k]
         if (isOptional(prop)) {
-            optionalProps.push([k, flattenNode(prop[1], scope)])
+            optionalProps.push([k, compileNode(prop[1], scope)])
         } else {
-            requiredProps.push([k, flattenNode(prop, scope)])
+            requiredProps.push([k, compileNode(prop, scope)])
         }
     }
     if (requiredProps.length) {

@@ -1,12 +1,12 @@
-import type { TypeNode } from "../nodes/node.js"
-import type { PropsRule } from "../nodes/rules/props.js"
-import type { ScopeRoot } from "../scope.js"
-import type { Dict, evaluate, mutable } from "../utils/generics.js"
-import type { inferDefinition } from "./definition.js"
-import { parseDefinition } from "./definition.js"
-import { Scanner } from "./shift/scanner.js"
+import type { TypeNode } from "../nodes/node.ts"
+import type { PropsRule } from "../nodes/rules/props.ts"
+import type { Scope } from "../scope.ts"
+import type { Dict, evaluate, mutable } from "../utils/generics.ts"
+import type { inferDefinition } from "./definition.ts"
+import { parseDefinition } from "./definition.ts"
+import { Scanner } from "./string/shift/scanner.ts"
 
-export const parseRecord = (def: Dict, scope: ScopeRoot): TypeNode => {
+export const parseRecord = (def: Dict, scope: Scope): TypeNode => {
     const props: mutable<PropsRule> = {}
     for (const definitionKey in def) {
         const propNode = parseDefinition(def[definitionKey], scope)
@@ -29,22 +29,16 @@ type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`
     ? `${name}${Scanner.EscapeToken}?`
     : k
 
-export type inferRecord<
-    def extends Dict,
-    scope extends Dict,
-    aliases
-> = evaluate<
+export type inferRecord<def extends Dict, s extends Scope> = evaluate<
     {
         [requiredKeyName in requiredKeyOf<def>]: inferDefinition<
             def[withPossiblePreviousEscapeCharacter<requiredKeyName>],
-            scope,
-            aliases
+            s
         >
     } & {
         [optionalKeyName in optionalKeyOf<def>]?: inferDefinition<
             def[`${optionalKeyName}?`],
-            scope,
-            aliases
+            s
         >
     }
 >

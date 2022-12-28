@@ -30,9 +30,5 @@ const demoAdapters: Record<EmbedId, DemoAdapter> = {
     scope: [
         `const { types, readPackageData, errors } = await import("./scope")`,
         "{ definition: types.$root.dictionary, data: readPackageData(), error: errors?.summary }"
-    ],
-    constraints: [
-        `const { employee, queryEmployee, errors } = await import("./constraints")`,
-        "{ definition: employee.definition, data: queryEmployee(), error: errors?.summary }"
     ]
 }

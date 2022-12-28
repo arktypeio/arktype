@@ -1,4 +1,4 @@
-import type { Measure, MeasureComparison } from "./measure.js"
+import type { Measure, MeasureComparison } from "./measure.ts"
 
 export const TIME_UNIT_RATIOS = Object.freeze({
     ns: 0.000_001,

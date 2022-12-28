@@ -1,31 +1,32 @@
-import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/domains.js"
-import type { Dict, mutable, stringKeyOf } from "../utils/generics.js"
-import { keysOf } from "../utils/generics.js"
-import type { Keyword } from "./keywords.js"
+import type { Scope } from "../scope.ts"
+import type { Domain } from "../utils/domains.ts"
+import type { autocomplete, mutable } from "../utils/generics.ts"
+import { keysOf } from "../utils/generics.ts"
+import type { Keyword } from "./keywords.ts"
 import type {
     ExactValueEntry,
     Predicate,
-    TraversalPredicate as TraversalPredicate
-} from "./predicate.js"
-import { flattenPredicate } from "./predicate.js"
-import type { TraversalSubdomainRule as TraversalSubdomainRule } from "./rules/subdomain.js"
-import { resolveIfIdentifier } from "./utils.js"
+    TraversalPredicate
+} from "./predicate.ts"
+import { compilePredicate } from "./predicate.ts"
+import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
+import { resolveIfIdentifier } from "./utils.ts"
 
-export type TypeNode<scope extends Dict = Dict> =
-    | Identifier<scope>
-    | TypeSet<scope>
+export type TypeNode<alias extends string = string> =
+    | Identifier<alias>
+    | TypeSet<alias>
 
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to
  * manipulate.*/
-export type TypeSet<scope extends Dict = Dict> = {
-    readonly [domain in Domain]?: string extends keyof scope
-        ? Predicate
-        : Predicate<domain, scope>
+export type TypeSet<alias extends string = string> = {
+    readonly [domain in Domain]?: Predicate<domain, alias>
 }
 
-export type Identifier<scope extends Dict = Dict> = Keyword | stringKeyOf<scope>
+// TODO: Try just passing scope around
+export type Identifier<alias extends string = string> = string extends alias
+    ? autocomplete<Keyword>
+    : Keyword | alias
 
 export type TraversalNode =
     | Domain
@@ -46,7 +47,8 @@ export type ImplicitDomainEntry =
 const hasImpliedDomain = (
     flatPredicate: TraversalPredicate | SingleDomainTraversalNode
 ): flatPredicate is SingleDomainTraversalNode =>
-    flatPredicate[0][0] === "subdomain" || flatPredicate[0][0] === "value"
+    flatPredicate[0] &&
+    (flatPredicate[0][0] === "subdomain" || flatPredicate[0][0] === "value")
 
 export type MultiDomainTraversalNode = [MultiDomainEntry]
 
@@ -56,10 +58,7 @@ export type TraversalTypeSet = {
     readonly [domain in Domain]?: TraversalPredicate
 }
 
-export const flattenNode = (
-    node: TypeNode,
-    scope: ScopeRoot
-): TraversalNode => {
+export const compileNode = (node: TypeNode, scope: Scope): TraversalNode => {
     const resolution = resolveIfIdentifier(node, scope)
     const domains = keysOf(resolution)
     if (domains.length === 1) {
@@ -68,25 +67,25 @@ export const flattenNode = (
         if (predicate === true) {
             return domain
         }
-        const flatPredicate = flattenPredicate(domain, predicate, scope)
+        const flatPredicate = compilePredicate(domain, predicate, scope)
         return hasImpliedDomain(flatPredicate)
             ? flatPredicate
             : [["domain", domain], ...flatPredicate]
     }
     const result: mutable<TraversalTypeSet> = {}
     for (const domain of domains) {
-        result[domain] = flattenPredicate(domain, resolution[domain]!, scope)
+        result[domain] = compilePredicate(domain, resolution[domain]!, scope)
     }
     return [["domains", result]]
 }
 
-export const flattenNodes = <nodes extends { readonly [k in string]: TypeSet }>(
+export const compileNodes = <nodes extends { readonly [k in string]: TypeSet }>(
     nodes: nodes,
-    scope: ScopeRoot
+    scope: Scope
 ) => {
-    const result = {} as { [k in keyof nodes]: TraversalNode }
+    const result = {} as Record<keyof nodes, TraversalNode>
     for (const name in nodes) {
-        result[name] = flattenNode(nodes[name], scope)
+        result[name] = compileNode(nodes[name], scope)
     }
     return result
 }

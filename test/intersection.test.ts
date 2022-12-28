@@ -1,58 +1,58 @@
-import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import { type } from "../exports.js"
+import { describe, it } from "mocha"
+import { type } from "../api.ts"
+import { attest } from "../dev/attest/api.ts"
 import {
     buildMissingRightOperandMessage,
     buildUnresolvableMessage
-} from "../src/parse/shift/operand/unenclosed.js"
+} from "../src/parse/string/shift/operand/unenclosed.ts"
 
 describe("intersection", () => {
     describe("parse", () => {
-        test("two types", () => {
+        it("two types", () => {
             const t = type("boolean&true")
             attest(t.infer).typed as true
             attest(t.root).snap({ boolean: { value: true } })
         })
-        test("several types", () => {
+        it("several types", () => {
             const t = type("unknown&boolean&false")
             attest(t.infer).typed as false
             attest(t.root).snap({ boolean: { value: false } })
         })
         describe("number & literals", () => {
-            test("same literal", () => {
+            it("same literal", () => {
                 attest(type("2&2").root).snap({ number: { value: 2 } })
             })
-            test("literal&number type", () => {
+            it("literal&number type", () => {
                 attest(type("number&22").root).snap({
                     number: { value: 22 }
                 })
             })
-            test("float&number type", () => {
+            it("float&number type", () => {
                 attest(type("number&22.22").root).snap({
                     number: { value: 22.22 }
                 })
             })
         })
         describe("string & literal", () => {
-            test("string", () => {
+            it("string", () => {
                 attest(type("string&'a'").root).snap({ string: { value: "a" } })
             })
         })
 
         describe("errors", () => {
-            test("bad reference", () => {
+            it("bad reference", () => {
                 // @ts-expect-error
                 attest(() => type("boolean&tru")).throwsAndHasTypeError(
                     buildUnresolvableMessage("tru")
                 )
             })
-            test("double and", () => {
+            it("double and", () => {
                 // @ts-expect-error
                 attest(() => type("boolean&&true")).throwsAndHasTypeError(
                     buildMissingRightOperandMessage("&", "&true")
                 )
             })
-            test("never", () => {
+            it("never", () => {
                 // TODO: Top-level never?
                 attest(type("string&number").root).snap({})
             })

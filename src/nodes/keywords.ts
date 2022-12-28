@@ -1,8 +1,8 @@
-import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/domains.js"
-import { deepFreeze } from "../utils/freeze.js"
-import type { TypeSet } from "./node.js"
-import { flattenNodes } from "./node.js"
+import type { Scope } from "../scope.ts"
+import type { Domain } from "../utils/domains.ts"
+import { deepFreeze } from "../utils/freeze.ts"
+import type { TypeNode, TypeSet } from "./node.ts"
+import { compileNodes } from "./node.ts"
 
 const always: Record<Domain, true> = {
     bigint: true,
@@ -43,8 +43,26 @@ export const keywords = deepFreeze({
     integer: { number: { divisor: 1 } }
 } as const satisfies Record<Keyword, TypeSet>)
 
+export const functorKeywords = {
+    Array: (node: TypeNode): TypeSet => ({
+        object: {
+            subdomain: ["Array", node]
+        }
+    }),
+    Set: (node: TypeNode): TypeSet => ({
+        object: {
+            subdomain: ["Set", node]
+        }
+    }),
+    Map: (k: TypeNode, v: TypeNode): TypeSet => ({
+        object: {
+            subdomain: ["Map", k, v]
+        }
+    })
+}
+
 // Use a dummy scope here since we know there are no alias references
-export const flatKeywords = flattenNodes(keywords, {} as ScopeRoot)
+export const flatKeywords = compileNodes(keywords, {} as Scope)
 
 export type Keyword = keyof Keywords
 

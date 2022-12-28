@@ -1,24 +1,24 @@
-import type { ScopeRoot } from "../scope.js"
-import type { Domain } from "../utils/domains.js"
-import { domainOf, hasDomain } from "../utils/domains.js"
-import { throwInternalError } from "../utils/errors.js"
-import { empty, equal } from "./compose.js"
-import { predicateIntersection } from "./intersection.js"
-import type { Condition, Predicate, PredicateComparison } from "./predicate.js"
+import type { Scope } from "../scope.ts"
+import type { Domain } from "../utils/domains.ts"
+import { domainOf, hasDomain } from "../utils/domains.ts"
+import { throwInternalError } from "../utils/errors.ts"
+import { empty, equal } from "./compose.ts"
+import { predicateIntersection } from "./intersection.ts"
+import type { Condition, Predicate, PredicateComparison } from "./predicate.ts"
 
 export const isBranchComparison = (
     comparison: PredicateComparison
-): comparison is BranchComparison =>
-    (comparison as BranchComparison)?.lConditions !== undefined
+): comparison is BranchesComparison =>
+    (comparison as BranchesComparison)?.lConditions !== undefined
 
 export type Branches = readonly Condition[]
 
-export type BranchComparison = {
+export type BranchesComparison = {
     lConditions: Branches
     rConditions: Branches
     lSubconditionsOfR: number[]
     rSubconditionsOfL: number[]
-    equalPairs: [lIndex: number, rIndex: number][]
+    equalities: [lIndex: number, rIndex: number][]
     distinctIntersections: Branches
 }
 
@@ -26,14 +26,14 @@ export const compareBranches = (
     domain: Domain,
     lConditions: Branches,
     rConditions: Branches,
-    scope: ScopeRoot
-): BranchComparison => {
-    const result: BranchComparison = {
+    scope: Scope
+): BranchesComparison => {
+    const result: BranchesComparison = {
         lConditions,
         rConditions,
         lSubconditionsOfR: [],
         rSubconditionsOfL: [],
-        equalPairs: [],
+        equalities: [],
         distinctIntersections: []
     }
     const pairs = rConditions.map((condition) => ({
@@ -74,7 +74,7 @@ export const compareBranches = (
                         return null
                     case equal:
                         // Combination of l and r subtype cases.
-                        result.equalPairs.push([lIndex, rIndex])
+                        result.equalities.push([lIndex, rIndex])
                         lImpliesR = true
                         rPairs.distinct = null
                         return null

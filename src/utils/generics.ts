@@ -1,4 +1,4 @@
-import { hasDomain } from "./domains.js"
+import { hasDomain } from "./domains.ts"
 
 export type downcast<t> = castWithExclusion<t, downcastRecurse<t>, []>
 
@@ -60,6 +60,8 @@ type topTypeIsUnknown<t> = (t extends {} ? true : false) extends false
     ? true
     : false
 
+export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
+
 export type conform<t, base> = t extends base ? t : base
 
 export const isKeyOf = <k extends string | number, obj extends object>(
@@ -83,9 +85,16 @@ export type entriesOf<o extends object> = entryOf<o>[]
 export const entriesOf = <o extends object>(o: o) =>
     Object.entries(o) as entriesOf<o>
 
-export type keysOf<o extends object> = (keyof o)[]
+export type stringKeyOf<o extends object> = o extends readonly unknown[]
+    ? any[] extends o
+        ? `${number}`
+        : keyof o & `${number}`
+    : keyof o extends number
+    ? `${keyof o}`
+    : Exclude<keyof o, symbol>
 
-export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>
+export const keysOf = <o extends object>(o: o) =>
+    Object.keys(o) as stringKeyOf<o>[]
 
 export const hasKey = <o, k extends string>(
     o: o,
@@ -116,6 +125,15 @@ export type deepImmutable<o> = [o] extends [object]
       }
     : o
 
+export type equals<t, u> = identity<t> extends identity<u> ? true : false
+
+// TODO: Use symbol
+export type assertEqual<t, u> = equals<t, u> extends true
+    ? t
+    : error<`types were not equivalent`>
+
+export type identity<t> = (_: t) => t
+
 export type extend<t, u extends t> = u
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -129,9 +147,25 @@ export type requireKeys<o, key extends keyof o> = o & {
 
 export type error<message extends string = string> = `!${message}`
 
-export type stringKeyOf<t> = keyof t & string
-
 export type RegexLiteral<expression extends string = string> = `/${expression}/`
+
+export type autocomplete<suggestions extends string> =
+    | suggestions
+    | (string & {})
+
+export type Dict<k extends string = string, v = unknown> = {
+    readonly [_ in k]: v
+}
+
+export type List<t = unknown> = readonly t[]
+
+export const listFrom = <t>(data: t) =>
+    (Array.isArray(data) ? data : [data]) as t extends List ? t : [t]
+
+export type CollapsibleList<t> = t | readonly t[]
+
+export const collapseIfSingleton = <t extends List>(array: t): t | t[number] =>
+    array.length === 1 ? array[0] : array
 
 /** Either:
  * A, with all properties of B as never
@@ -141,21 +175,3 @@ export type RegexLiteral<expression extends string = string> = `/${expression}/`
 export type xor<a, b> =
     | evaluate<a & { [k in keyof b]?: never }>
     | evaluate<b & { [k in keyof a]?: never }>
-
-export type autocompleteString<suggestions extends string> =
-    | suggestions
-    | (string & {})
-
-export type Dict = {
-    readonly [key in string]: unknown
-}
-
-export type List = readonly unknown[]
-
-export const listFrom = <t>(data: t) =>
-    (Array.isArray(data) ? data : [data]) as t extends List ? t : [t]
-
-export type CollapsibleList<t> = t | readonly t[]
-
-export const collapseIfSingleton = <t extends List>(array: t): t | t[number] =>
-    array.length === 1 ? array[0] : array

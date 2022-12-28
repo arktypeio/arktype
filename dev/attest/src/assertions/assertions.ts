@@ -1,26 +1,26 @@
-import { strict } from "node:assert"
+import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
-import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.js"
-import { caller } from "../../../runtime/exports.js"
-import { assertEquals } from "../assertions.js"
-import type { AssertionContext } from "../attest.js"
-import { literalSerialize } from "../common.js"
-import type { SnapshotArgs } from "../snapshot.js"
+import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.ts"
+import { caller } from "../../../runtime/api.ts"
+import { assertEquals } from "../assertions.ts"
+import type { AssertionContext } from "../attest.ts"
+import type { SnapshotArgs } from "../snapshot.ts"
 import {
     getSnapshotByName,
     queueInlineSnapshotWriteOnProcessExit
-} from "../snapshot.js"
-import { getTypeDataAtPos } from "../type/exports.js"
+} from "../snapshot.ts"
+import { getTypeDataAtPos } from "../type/getAssertionAtPos.ts"
+import { literalSerialize } from "../utils.ts"
 import {
     updateExternalSnapshot,
     writeInlineSnapshotUpdateToCacheDir
-} from "../writeSnapshot.js"
-import type { ExternalSnapshotArgs, RootAssertions } from "./types.js"
+} from "../writeSnapshot.ts"
+import type { ExternalSnapshotArgs, RootAssertions } from "./types.ts"
 import {
     assertEqualOrMatching,
     callAssertedFunction,
     getThrownMessage
-} from "./utils.js"
+} from "./utils.ts"
 
 export type ChainableAssertionOptions = {
     isReturn?: boolean
@@ -59,7 +59,7 @@ export class Assertions implements AssertionRecord {
     }
 
     is(expected: unknown) {
-        strict.equal(this.actual, expected)
+        assert.equal(this.actual, expected)
         return this
     }
     equals(expected: unknown) {
@@ -218,7 +218,7 @@ export class Assertions implements AssertionRecord {
             !assertionData.type.equivalent &&
             assertionData.type.actual !== assertionData.type.expected
         ) {
-            strict.equal(assertionData.type.actual, assertionData.type.expected)
+            assert.equal(assertionData.type.actual, assertionData.type.expected)
         }
     }
 }

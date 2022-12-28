@@ -1,8 +1,9 @@
-import type { ScopeRoot } from "../scope.js"
-import { throwInternalError } from "../utils/errors.js"
-import type { Dict, mutable, stringKeyOf } from "../utils/generics.js"
-import type { TypeNode, TypeSet } from "./node.js"
-import { resolveIfIdentifier } from "./utils.js"
+import type { Scope } from "../scope.ts"
+import { throwInternalError } from "../utils/errors.ts"
+import type { Dict, mutable } from "../utils/generics.ts"
+import { keysOf } from "../utils/generics.ts"
+import type { TypeNode, TypeSet } from "./node.ts"
+import { resolveIfIdentifier } from "./utils.ts"
 
 type ContextFreeSetOperation<t, result extends t> = (
     l: t,
@@ -87,7 +88,7 @@ export const composeKeyedOperation =
     ): ContextualSetOperation<root, context, root> =>
     (l, r, context) => {
         const result = {} as mutable<root>
-        const keys: stringKeyOf<root>[] = Object.keys({ ...l, ...r })
+        const keys = keysOf({ ...l, ...r } as root)
         let lImpliesR = true
         let rImpliesL = true
         for (const k of keys) {
@@ -124,8 +125,8 @@ export const composeKeyedOperation =
 
 export const composeNodeOperation =
     (
-        typeSetOperation: SetOperation<TypeSet, ScopeRoot>
-    ): SetOperation<TypeNode, ScopeRoot> =>
+        typeSetOperation: SetOperation<TypeSet, Scope>
+    ): SetOperation<TypeNode, Scope> =>
     (l, r, scope) => {
         const lResolution = resolveIfIdentifier(l, scope)
         const rResolution = resolveIfIdentifier(r, scope)

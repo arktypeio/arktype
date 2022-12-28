@@ -1,11 +1,12 @@
-import { getAtTestConfig, getFileKey } from "../common.js"
-import { getDefaultTsMorphProject } from "./getTsMorphProject.js"
-import type { AssertionData } from "./internal/exports.js"
+import { getAttestConfig } from "../config.ts"
+import { getFileKey } from "../utils.ts"
+import { getVirtualTsMorphProject } from "./getTsMorphProject.ts"
+import type { AssertionData } from "./internal/api.ts"
 import {
     getAssertionsInFile,
     getCachedAssertionData,
     getDiagnosticsByFile
-} from "./internal/exports.js"
+} from "./internal/api.ts"
 
 type AnalyzeTypeAssertionsOptions = {
     isInitialCache?: boolean
@@ -19,11 +20,11 @@ export const getAssertionsByFile = ({
     if (__assertionCache) {
         return __assertionCache
     }
-    const config = getAtTestConfig()
+    const config = getAttestConfig()
     if (config.precached && !isInitialCache) {
         return getCachedAssertionData(config)
     }
-    const project = getDefaultTsMorphProject()
+    const project = getVirtualTsMorphProject()
     const diagnosticsByFile = getDiagnosticsByFile()
     const assertionsByFile: AssertionsByFile = {}
     for (const file of project.getSourceFiles()) {

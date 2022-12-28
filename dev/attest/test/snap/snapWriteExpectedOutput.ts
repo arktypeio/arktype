@@ -1,4 +1,5 @@
-import { attest, cacheAssertions, cleanupAssertions } from "../../exports.js"
+import * as process from "node:process"
+import { attest, cacheAssertions, cleanupAssertions } from "../../api.ts"
 
 const isPrecached = process.argv.includes("--attestTestPreCached")
 isPrecached && cacheAssertions()

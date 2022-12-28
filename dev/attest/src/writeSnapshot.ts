@@ -1,21 +1,17 @@
 import { randomUUID } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
-import { basename, dirname, join } from "node:path"
+import { basename, join } from "node:path"
 import type { Node, ts } from "ts-morph"
-import {
-    readJson,
-    requireResolve,
-    shell,
-    writeJson
-} from "../../runtime/exports.js"
-import type { BenchData } from "./bench/history.js"
-import { updateIsBench, upsertBenchResult } from "./bench/history.js"
-import { getAtTestConfig, getFileKey } from "./common.js"
-import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
+import { readJson, shell, writeJson } from "../../runtime/api.ts"
+import type { BenchData } from "./bench/history.ts"
+import { updateIsBench, upsertBenchResult } from "./bench/history.ts"
+import { getAttestConfig } from "./config.ts"
+import type { QueuedUpdate, SnapshotArgs } from "./snapshot.ts"
 import {
     queueInlineSnapshotWriteOnProcessExit,
     resolveSnapshotPath
-} from "./snapshot.js"
+} from "./snapshot.ts"
+import { getFileKey } from "./utils.ts"
 
 export type BenchFormat = {
     noInline?: boolean
@@ -45,7 +41,7 @@ export const updateExternalSnapshot = ({
 }
 
 export const writeCachedInlineSnapshotUpdates = () => {
-    const config = getAtTestConfig()
+    const config = getAttestConfig()
     if (!existsSync(config.snapCacheDir)) {
         throw new Error(
             `Unable to update snapshots as expected cache directory ${config.snapCacheDir} does not exist.`
@@ -80,7 +76,7 @@ export const writeCachedInlineSnapshotUpdates = () => {
  */
 export const writeInlineSnapshotUpdateToCacheDir = (args: SnapshotArgs) => {
     writeJson(
-        join(getAtTestConfig().snapCacheDir, `snap-${randomUUID()}.json`),
+        join(getAttestConfig().snapCacheDir, `snap-${randomUUID()}.json`),
         args
     )
 }
@@ -117,12 +113,10 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
 
 const runPrettierIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
     try {
-        const prettierPath = requireResolve("prettier")
-        const prettierBin = join(dirname(prettierPath), "bin-prettier.js")
         const updatedPaths = [
             ...new Set(queuedUpdates.map((update) => update.file.getFilePath()))
         ]
-        shell(`node ${prettierBin} --write ${updatedPaths.join(" ")}`)
+        shell(`pnpx prettier --write ${updatedPaths.join(" ")}`)
     } catch {
         // If prettier is unavailable, do nothing.
     }

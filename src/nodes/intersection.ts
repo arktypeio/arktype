@@ -1,33 +1,35 @@
-import type { ScopeRoot } from "../scope.js"
-import { collapseIfSingleton } from "../utils/generics.js"
-import { isBranchComparison } from "./branches.js"
-import type { KeyReducerFn } from "./compose.js"
+import type { Scope } from "../scope.ts"
+import { collapseIfSingleton } from "../utils/generics.ts"
+import { isBranchComparison } from "./branches.ts"
+import type { KeyReducerFn } from "./compose.ts"
 import {
     composeKeyedOperation,
     composeNodeOperation,
     equal,
     finalizeNodeOperation
-} from "./compose.js"
-import type { TypeNode, TypeSet } from "./node.js"
-import { comparePredicates } from "./predicate.js"
+} from "./compose.ts"
+import type { TypeNode, TypeSet } from "./node.ts"
+import { comparePredicates } from "./predicate.ts"
 
 export const intersection = (
     l: TypeNode,
     r: TypeNode,
-    scope: ScopeRoot
+    scope: Scope
 ): TypeNode => finalizeNodeOperation(l, nodeIntersection(l, r, scope))
 
-export const predicateIntersection: KeyReducerFn<
-    Required<TypeSet>,
-    ScopeRoot
-> = (domain, l, r, scope) => {
+export const predicateIntersection: KeyReducerFn<Required<TypeSet>, Scope> = (
+    domain,
+    l,
+    r,
+    scope
+) => {
     const comparison = comparePredicates(domain, l, r, scope)
     if (!isBranchComparison(comparison)) {
         return comparison
     }
     return collapseIfSingleton([
         ...comparison.distinctIntersections,
-        ...comparison.equalPairs.map(
+        ...comparison.equalities.map(
             (indices) => comparison.lConditions[indices[0]]
         ),
         ...comparison.lSubconditionsOfR.map(
@@ -39,7 +41,7 @@ export const predicateIntersection: KeyReducerFn<
     ])
 }
 
-const typeSetIntersection = composeKeyedOperation<TypeSet, ScopeRoot>(
+const typeSetIntersection = composeKeyedOperation<TypeSet, Scope>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : undefined

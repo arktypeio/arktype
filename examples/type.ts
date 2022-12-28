@@ -1,4 +1,4 @@
-import { type } from "../exports.js"
+import { type } from "../api.ts"
 
 // Define a type...
 export const user = type({
@@ -20,9 +20,8 @@ export const fetchUser = () => ({
 })
 
 // Types can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
-export const { problems, data } = user.check(fetchUser())
+export const { data, problems } = user(fetchUser())
 
 if (problems) {
-    // TODO: Add actual error
     console.log(problems.summary)
 }

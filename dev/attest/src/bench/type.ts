@@ -1,12 +1,13 @@
 import type { Node, Project, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { caller } from "../../../runtime/exports.js"
-import { findCallExpressionAncestor } from "../snapshot.js"
-import { forceCreateTsMorphProject } from "../type/exports.js"
-import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
-import type { BenchContext } from "./bench.js"
-import type { Measure, MeasureComparison, TypeUnit } from "./measure/exports.js"
-import { createTypeComparison } from "./measure/exports.js"
+import { caller } from "../../../runtime/api.ts"
+import { findCallExpressionAncestor } from "../snapshot.ts"
+import { forceCreateTsMorphProject } from "../type/getTsMorphProject.ts"
+import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
+import type { BenchContext } from "./bench.ts"
+import type { Measure, MeasureComparison } from "./measure/measure.ts"
+import type { TypeUnit } from "./measure/types.ts"
+import { createTypeComparison } from "./measure/types.ts"
 
 export type BenchTypeAssertions = {
     type: (instantiations?: Measure<TypeUnit>) => void
@@ -56,7 +57,10 @@ const getInstantiationsForIsolatedBench = (
     includeBenchFn: boolean,
     fakePath: string
 ) => {
-    const isolatedProject = forceCreateTsMorphProject()
+    const isolatedProject = forceCreateTsMorphProject({
+        useRealFs: false,
+        preloadFiles: false
+    })
     const fileToTransform = isolatedProject.createSourceFile(
         fakePath,
         originalFileText

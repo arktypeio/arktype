@@ -1,34 +1,31 @@
 import type {
     ExplicitDomainEntry,
     MultiDomainEntry,
-    TraversalNode,
-    TraversalTypeSet
-} from "../nodes/node.js"
+    TraversalNode
+} from "../nodes/node.ts"
 import type {
     ExactValueEntry,
     TraversalBranchesEntry
-} from "../nodes/predicate.js"
-import { checkDivisor } from "../nodes/rules/divisor.js"
-import { requiredProps } from "../nodes/rules/props.js"
-import type { BoundableData } from "../nodes/rules/range.js"
-import { checkRange } from "../nodes/rules/range.js"
-import { checkRegexRule } from "../nodes/rules/regex.js"
-import type { TraversalRuleEntry } from "../nodes/rules/rules.js"
-import { rulePrecedenceMap } from "../nodes/rules/rules.js"
-import type { ScopeRoot } from "../scope.js"
-import type { CheckOptions } from "../type.js"
-import type { Domain } from "../utils/domains.js"
-import { domainOf, subdomainOf } from "../utils/domains.js"
-import { throwInternalError } from "../utils/errors.js"
-import type { Dict, evaluate, extend, List, xor } from "../utils/generics.js"
-import { addProblem, unassignableError } from "./errors.js"
-import { Problems } from "./problems.js"
+} from "../nodes/predicate.ts"
+import { checkDivisor } from "../nodes/rules/divisor.ts"
+import { requiredProps } from "../nodes/rules/props.ts"
+import type { BoundableData } from "../nodes/rules/range.ts"
+import { checkRange } from "../nodes/rules/range.ts"
+import { checkRegexRule } from "../nodes/rules/regex.ts"
+import type { TraversalRuleEntry } from "../nodes/rules/rules.ts"
+import type { Scope } from "../scope.ts"
+import type { Domain } from "../utils/domains.ts"
+import { domainOf, subdomainOf } from "../utils/domains.ts"
+import { throwInternalError } from "../utils/errors.ts"
+import type { Dict, evaluate, extend, List, xor } from "../utils/generics.ts"
+import { addProblem, unassignableError } from "./errors.ts"
+import { Problems } from "./problems.ts"
 
 export const checkRules = (
     domain: Domain,
     data: unknown,
     attributes: unknown,
-    scope: ScopeRoot
+    scope: Scope
 ) => {
     return true
 }
@@ -56,11 +53,15 @@ export type CheckState<data = unknown> = evaluate<
         customError?: string | undefined
     }
 >
+export type CheckOptions = {
+    customError?: string
+    allowExtraneouskeys?: boolean
+}
 
 export const rootCheck = (
     data: unknown,
     node: TraversalNode,
-    scope: ScopeRoot,
+    scope: Scope,
     checkOptions: CheckOptions
 ): CheckResult => {
     if (typeof node === "string") {
@@ -86,7 +87,7 @@ type CheckResult<inferred = unknown> = xor<
     { problems: Problems }
 >
 
-export const checkNode = (state: CheckState, scope: ScopeRoot) => {
+export const checkNode = (state: CheckState, scope: Scope) => {
     if (typeof state.node === "string") {
         checkDomain(state, "string")
     } else {
@@ -189,7 +190,7 @@ const checkers = {
 export type TraversalCheck<k extends TraversalKey> = (
     state: CheckState<RuleInput<k>>,
     value: Extract<TraversalEntry, [k, unknown]>[1],
-    scope: ScopeRoot
+    scope: Scope
 ) => void
 
 export type ConstrainedRuleInputs = extend<

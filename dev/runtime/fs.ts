@@ -7,11 +7,13 @@ import {
     statSync,
     writeFileSync
 } from "node:fs"
-import { createRequire } from "node:module"
 import { homedir } from "node:os"
 import { dirname, join, parse } from "node:path"
+import * as process from "node:process"
 import { fileURLToPath, URL } from "node:url"
-import { caller } from "./caller.js"
+import { repoDirs } from "../scripts/common.ts"
+import { caller } from "./caller.ts"
+import { shell } from "./shell.ts"
 
 export const ensureDir = (path: string) => {
     if (existsSync(path)) {
@@ -94,7 +96,7 @@ export const fromHere = (...joinWith: string[]) =>
 export const fromCwd = (...joinWith: string[]) =>
     join(process.cwd(), ...joinWith)
 
-export const fromHome = (...joinWith: string[]) => join(homedir(), ...joinWith)
+export const fromHome = (...joinWith: string[]) => join(homedir()!, ...joinWith)
 
 export const fsRoot = parse(process.cwd()).root
 
@@ -125,5 +127,26 @@ export const fromPackageRoot = (...joinWith: string[]) =>
 export const readPackageJson = (startDir?: string) =>
     readJson(join(findPackageRoot(startDir), "package.json"))
 
-export const requireResolve = (specifier: string) =>
-    createRequire(import.meta.url).resolve(specifier)
+export const getSourceControlPaths = () =>
+    shell("git ls-files", { stdio: "pipe" })!
+        .toString()
+        .split("\n")
+        .filter((path) => existsSync(path) && statSync(path).isFile())
+
+export const tsFileMatcher = /^.*\.(c|m)?tsx?$/
+
+const inFileFilter: WalkOptions = {
+    include: (path) =>
+        tsFileMatcher.test(path) &&
+        /(^api\.ts|src|test|dev\/attest|dev\/runtime)\/?/.test(path) &&
+        !/dev\/attest\/test/.test(path),
+    ignoreDirsMatching: /node_modules|dist|docgen/
+}
+
+export const getSourceFilePaths = (dir = repoDirs.root) =>
+    walkPaths(dir, inFileFilter)
+
+export type SourceFileEntry = [path: string, contents: string]
+
+export const getSourceFileEntries = (dir = repoDirs.root): SourceFileEntry[] =>
+    getSourceFilePaths(dir).map((path) => [path, readFile(path)])

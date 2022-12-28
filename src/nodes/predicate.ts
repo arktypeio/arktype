@@ -1,31 +1,37 @@
-import type { ScopeRoot } from "../scope.js"
-import { checkRules } from "../traverse/check.js"
-import type { Domain, inferDomain } from "../utils/domains.js"
-import { hasSubdomain } from "../utils/domains.js"
-import type { CollapsibleList, Dict } from "../utils/generics.js"
-import { listFrom } from "../utils/generics.js"
-import type { BranchComparison } from "./branches.js"
-import { compareBranches } from "./branches.js"
-import type { SetOperationResult } from "./compose.js"
-import { empty, equal } from "./compose.js"
-import type { Identifier } from "./node.js"
-import type { RuleSet, TraversalRuleEntry } from "./rules/rules.js"
-import { flattenRules, rulesIntersection } from "./rules/rules.js"
-import { isExactValuePredicate, resolvePredicateIfIdentifier } from "./utils.js"
+import type { aliasOf, Scope } from "../scope.ts"
+import { checkRules } from "../traverse/check.ts"
+import type { Domain, inferDomain } from "../utils/domains.ts"
+import { hasSubdomain } from "../utils/domains.ts"
+import type { CollapsibleList } from "../utils/generics.ts"
+import { listFrom } from "../utils/generics.ts"
+import type { BranchesComparison } from "./branches.ts"
+import { compareBranches } from "./branches.ts"
+import type { SetOperationResult } from "./compose.ts"
+import { empty, equal } from "./compose.ts"
+import type { Identifier } from "./node.ts"
+import type { RuleSet, TraversalRuleEntry } from "./rules/rules.ts"
+import { compileRules, rulesIntersection } from "./rules/rules.ts"
+import {
+    isExactValuePredicate,
+    resolveFlatPredicate,
+    resolvePredicateIfIdentifier
+} from "./utils.ts"
 
 export type Predicate<
     domain extends Domain = Domain,
-    scope extends Dict = Dict
-> = true | CollapsibleList<Condition<domain, scope>>
+    alias extends string = string
+> = string extends alias
+    ? true | CollapsibleList<Condition>
+    : true | CollapsibleList<Condition<domain, alias>>
 
 export type TraversalPredicate = TraversalCondition | [TraversalBranchesEntry]
 
 export type TraversalBranchesEntry = ["branches", readonly TraversalCondition[]]
 
-export const flattenPredicate = (
+export const compilePredicate = (
     domain: Domain,
     predicate: Predicate,
-    scope: ScopeRoot
+    scope: Scope
 ): TraversalPredicate => {
     if (predicate === true) {
         return []
@@ -35,12 +41,12 @@ export const flattenPredicate = (
     for (const condition of branches) {
         if (typeof condition === "string") {
             flatBranches.push(
-                ...branchesOf(scope.resolveFlatPredicate(condition, domain))
+                ...branchesOf(resolveFlatPredicate(scope, condition, domain))
             )
         } else if (isExactValuePredicate(condition)) {
             flatBranches.push([["value", condition.value]])
         } else {
-            flatBranches.push(flattenRules(condition, scope))
+            flatBranches.push(compileRules(condition, scope))
         }
     }
     return flatBranches.length === 1
@@ -55,8 +61,8 @@ const branchesOf = (flatPredicate: TraversalPredicate) =>
 
 export type Condition<
     domain extends Domain = Domain,
-    scope extends Dict = Dict
-> = RuleSet<domain, scope> | ExactValue<domain> | Identifier<scope>
+    alias extends string = string
+> = RuleSet<domain, alias> | ExactValue<domain> | Identifier<alias>
 
 export type TraversalCondition =
     | readonly TraversalRuleEntry[]
@@ -70,23 +76,23 @@ export type ExactValueEntry = ["value", unknown]
 
 export type PredicateContext = {
     domain: Domain
-    scope: ScopeRoot
+    scope: Scope
 }
 
 export type ResolvedPredicate<
     domain extends Domain = Domain,
-    scope extends Dict = Dict
-> = Exclude<Predicate<domain, scope>, string>
+    s extends Scope = Scope
+> = Exclude<Predicate<domain, aliasOf<s>>, string>
 
 export type PredicateComparison =
     | SetOperationResult<Predicate>
-    | BranchComparison
+    | BranchesComparison
 
 export const comparePredicates = (
     domain: Domain,
     l: Predicate,
     r: Predicate,
-    scope: ScopeRoot
+    scope: Scope
 ): PredicateComparison => {
     const lResolution = resolvePredicateIfIdentifier(domain, l, scope)
     const rResolution = resolvePredicateIfIdentifier(domain, r, scope)
@@ -123,19 +129,19 @@ export const comparePredicates = (
         scope
     )
     if (
-        comparison.equalPairs.length === lComparisons.length &&
-        comparison.equalPairs.length === rComparisons.length
+        comparison.equalities.length === lComparisons.length &&
+        comparison.equalities.length === rComparisons.length
     ) {
         return equal
     }
     if (
-        comparison.lSubconditionsOfR.length + comparison.equalPairs.length ===
+        comparison.lSubconditionsOfR.length + comparison.equalities.length ===
         lComparisons.length
     ) {
         return l
     }
     if (
-        comparison.rSubconditionsOfL.length + comparison.equalPairs.length ===
+        comparison.rSubconditionsOfL.length + comparison.equalities.length ===
         rComparisons.length
     ) {
         return r
