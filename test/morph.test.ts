@@ -27,6 +27,16 @@ describe("morph", () => {
             })
             attest(t.infer).typed as number
         })
+        it("out morphs", () => {
+            const t = type("boolean", {
+                out: {
+                    string: (data) => `${data}`
+                }
+            })
+            // TODO: to should continue chaining data/problems as a final result.
+            const result = t(true).to?.("string")
+            attest(result).equals("true").typed as string | undefined
+        })
         describe("errors", () => {
             it("untyped additional args", () => {
                 // TODO: Error here

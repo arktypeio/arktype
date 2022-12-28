@@ -54,8 +54,10 @@ export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
 
 export type InferredTypeFn = {
     <def>(def: validateDefinition<def, GlobalScope>): InferredTypeResult<
+        inferDefinition<def, GlobalScope>,
         def,
-        GlobalScope
+        GlobalScope,
+        {}
     >
 
     <
@@ -66,16 +68,23 @@ export type InferredTypeFn = {
     >(
         def: validateDefinition<def, s>,
         traits: { scope?: s } & traits
-    ): InferredTypeResult<def, s>
+    ): InferredTypeResult<t, def, s, traits>
 }
 
-type InferredTypeResult<def, s extends Scope> = isTopType<def> extends true
+type InferredTypeResult<
+    t,
+    def,
+    s extends Scope,
+    traits extends Traits<t, s>
+> = isTopType<def> extends true
     ? never
     : def extends validateDefinition<def, s>
-    ? Type<inferDefinition<def, s>>
+    ? {} extends traits
+        ? Type<t>
+        : MorphType<t, s, traits>
     : never
 
-export type Traits<t, s extends Scope> = {
+export type Traits<t = unknown, s extends Scope = Scope> = {
     in?: {
         [name in Identifier<aliasOf<s>>]?: (
             data: inferDefinition<name, s>,
@@ -98,9 +107,23 @@ type DynamicTypeFn = (
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
-export type CheckResult<t = unknown> = xor<{ data: t }, { problems: Problems }>
+export type CheckResult<t = unknown, outMorphs = undefined> = xor<
+    outMorphs extends undefined
+        ? { data: t }
+        : {
+              data: t
+              to: outMorphs
+          },
+    { problems: Problems }
+>
 
-export type Checker<t = unknown> = (data: unknown) => CheckResult<t>
+type extractOutMorphs<s extends Scope, traits extends Traits> = {
+    [name in keyof traits["out"]]: (target: name) => inferDefinition<name, s>
+}[keyof traits["out"]]
+
+export type Checker<t = unknown, outMorphs = undefined> = (
+    data: unknown
+) => CheckResult<t, outMorphs>
 
 export type TypeMetadata<t = unknown> = {
     infer: t
@@ -109,3 +132,9 @@ export type TypeMetadata<t = unknown> = {
 }
 
 export type Type<t = unknown> = Checker<t> & TypeMetadata<t>
+
+export type MorphType<
+    t = unknown,
+    s extends Scope = Scope,
+    traits extends Traits<t, s> = Traits<t, s>
+> = Checker<t, extractOutMorphs<s, traits>> & TypeMetadata<t>

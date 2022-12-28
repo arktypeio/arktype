@@ -1,6 +1,5 @@
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
 import type { Scope } from "../../scope.ts"
-import { type } from "../../type.ts"
 import type {
     Downcastable,
     error,

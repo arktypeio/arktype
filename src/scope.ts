@@ -35,9 +35,9 @@ export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
     DynamicScopeFn
 >
 
-let globalScope: Scope<{}, {}> | undefined
+let globalScope: Scope<{}, {}>
 
-export type GlobalScope = typeof globalScope & { parent?: undefined }
+export type GlobalScope = typeof globalScope
 
 export const getGlobalScope = () => {
     globalScope ??= scope({}) as any
