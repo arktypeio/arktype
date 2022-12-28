@@ -1,9 +1,4 @@
-import type {
-    Identifier,
-    TraversalNode,
-    TypeNode,
-    TypeSet
-} from "./nodes/node.ts"
+import type { TraversalNode, TypeNode, TypeSet } from "./nodes/node.ts"
 import { compileNode } from "./nodes/node.ts"
 import { resolveIfIdentifier } from "./nodes/utils.ts"
 import type {
@@ -13,12 +8,13 @@ import type {
     validateRoot
 } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
-import type { aliasOf, GlobalScope, Scope } from "./scope.ts"
+import type { Sources, Targets, Traits } from "./parse/tuple/traits.ts"
+import type { GlobalScope, Scope } from "./scope.ts"
 import { getGlobalScope } from "./scope.ts"
 import { check } from "./traverse/check.ts"
 import { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import type { isTopType, nominal, xor } from "./utils/generics.ts"
+import type { extend, isTopType, nominal, xor } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
@@ -60,50 +56,36 @@ export type InferredTypeFn = {
     <def>(def: validateRoot<def, GlobalScope>): InferredTypeResult<
         inferRoot<def, GlobalScope>,
         def,
-        GlobalScope,
-        {}
+        {
+            scope: GlobalScope
+        }
     >
 
     <
         def,
         s extends Scope = GlobalScope,
         t = inferRoot<def, s>,
-        // TODO: Individual in/out
-        traits extends Traits<t, s> = Traits<t, s>
+        traits extends Traits<t, s> = {
+            in?: {}
+            out?: {}
+        }
     >(
         def: validateRoot<def, s>,
         traits: { scope?: s } & traits
-    ): InferredTypeResult<t, def, s, traits>
+    ): InferredTypeResult<t, def, { scope: s } & traits>
 }
 
 type InferredTypeResult<
     t,
     def,
-    s extends Scope,
-    traits extends Traits<t, s>
+    c extends TypeContext
 > = isTopType<def> extends true
     ? never
-    : def extends validateDefinition<def, s>
-    ? {} extends traits
+    : def extends validateDefinition<def, c["scope"]>
+    ? c["in"] | c["out"] extends undefined
         ? Type<t>
-        : Type<TypeInput<t, s, traits>>
+        : Type<TypeInput<t, c>>
     : never
-
-export type Traits<t = unknown, s extends Scope = Scope> = {
-    in?: {
-        [name in Identifier<aliasOf<s>>]?: (
-            data: inferDefinition<name, s>,
-            // rest args typed as never so they can't be used unless explicitly typed
-            ...rest: never[]
-        ) => t
-    }
-    out?: {
-        [name in Identifier<aliasOf<s>>]?: (
-            data: t,
-            ...rest: never[]
-        ) => inferDefinition<name, s>
-    }
-}
 
 type DynamicTypeFn = (
     def: unknown,
@@ -122,11 +104,11 @@ export type CheckResult<
       }) &
     xor<{ data: t }, { problems: Problems }>
 
-type extractOutMorphs<s extends Scope, traits extends Traits> = {
-    [name in keyof traits["out"]]: (
+type extractOutMorphs<c extends TypeContext> = {
+    [name in keyof c["out"]]: (
         target: name
-    ) => CheckResult<inferDefinition<name, s>, s>
-}[keyof traits["out"]]
+    ) => CheckResult<inferDefinition<name, c["scope"]>, c["scope"]>
+}[keyof c["out"]]
 
 export type Checker<t = unknown, outMorphs = {}> = (
     data: unknown
@@ -138,23 +120,26 @@ export type TypeMetadata<t = unknown> = {
     flat: TraversalNode
 }
 
-export type Type<t = unknown> = t extends TypeInput<
-    infer t,
-    infer s,
-    infer traits
->
-    ? Checker<t, extractOutMorphs<s, traits>> & TypeMetadata<t>
+export type TypeContext<
+    t = unknown,
+    s extends Scope = Scope,
+    sources extends Sources<t, s> = Sources<t, s>,
+    targets extends Targets<t, s> = Targets<t, s>
+> = {
+    scope: s
+    in?: sources
+    out?: targets
+}
+
+export type Type<t = unknown> = t extends TypeInput<infer t, infer c>
+    ? Checker<t, extractOutMorphs<c>> & TypeMetadata<t>
     : Checker<t> & TypeMetadata<t>
 
-export type TypeInput<
-    t,
-    s extends Scope = GlobalScope,
-    traits extends Traits<t, s> = {}
-> = nominal<
+export type TypeInput<t, c extends TypeContext> = nominal<
     {
         t: t
-        s: s
-        traits: traits
+        s: c["scope"]
+        traits: c
     },
     "meta"
 >
