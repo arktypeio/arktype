@@ -1,5 +1,10 @@
 import type { TypeNode } from "./nodes/node.ts"
-import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
+import type {
+    inferDefinition,
+    inferRoot,
+    validateDefinition,
+    validateRoot
+} from "./parse/definition.ts"
 import type { Type } from "./type.ts"
 import { type } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
@@ -73,15 +78,12 @@ type DynamicScopeFn = <aliases extends Dict>(
 export type aliasOf<s extends Scope> = keyof s["def"] & string
 
 type validateAliases<aliases, parent extends Scope> = evaluate<{
-    [name in keyof aliases]: validateDefinition<
+    [name in keyof aliases]: validateRoot<
         aliases[name],
         parent & { def: aliases }
     >
 }>
 
 type inferAliases<aliases, parent extends Scope> = evaluate<{
-    [name in keyof aliases]: inferDefinition<
-        aliases[name],
-        parent & { def: aliases }
-    >
+    [name in keyof aliases]: inferRoot<aliases[name], parent & { def: aliases }>
 }>

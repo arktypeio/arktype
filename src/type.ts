@@ -6,7 +6,12 @@ import type {
 } from "./nodes/node.ts"
 import { compileNode } from "./nodes/node.ts"
 import { resolveIfIdentifier } from "./nodes/utils.ts"
-import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
+import type {
+    inferDefinition,
+    inferRoot,
+    validateDefinition,
+    validateRoot
+} from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
 import type { aliasOf, GlobalScope, Scope } from "./scope.ts"
 import { getGlobalScope } from "./scope.ts"
@@ -22,10 +27,10 @@ export const rawTypeFn: DynamicTypeFn = (
     { scope = getGlobalScope(), ...config } = {}
 ) => {
     const node = resolveIfIdentifier(parseDefinition(def, scope), scope)
-    return createType(node, scope, config)
+    return nodeToType(node, scope, config)
 }
 
-export const createType = (
+export const nodeToType = (
     root: TypeSet,
     scope: Scope,
     config: Traits<unknown, Scope>
@@ -47,14 +52,13 @@ export const createType = (
     ) as any
 }
 
-// TODO: allow type to be used as a def
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
 export type InferredTypeFn = {
-    <def>(def: validateDefinition<def, GlobalScope>): InferredTypeResult<
-        inferDefinition<def, GlobalScope>,
+    <def>(def: validateRoot<def, GlobalScope>): InferredTypeResult<
+        inferRoot<def, GlobalScope>,
         def,
         GlobalScope,
         {}
@@ -63,10 +67,11 @@ export type InferredTypeFn = {
     <
         def,
         s extends Scope = GlobalScope,
-        t = inferDefinition<def, s>,
+        t = inferRoot<def, s>,
+        // TODO: Individual in/out
         traits extends Traits<t, s> = Traits<t, s>
     >(
-        def: validateDefinition<def, s>,
+        def: validateRoot<def, s>,
         traits: { scope?: s } & traits
     ): InferredTypeResult<t, def, s, traits>
 }

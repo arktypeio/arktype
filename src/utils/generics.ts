@@ -133,7 +133,6 @@ export type nominal<t, id extends string> = t & {
     readonly [id]: id
 }
 
-// TODO: Use symbol
 export type assertEqual<t, u> = equals<t, u> extends true
     ? t
     : error<`types were not equivalent`>
@@ -151,7 +150,10 @@ export type requireKeys<o, key extends keyof o> = o & {
     [requiredKey in key]-?: o[requiredKey]
 }
 
-export type error<message extends string = string> = `!${message}`
+export type error<message extends string = string> = nominal<
+    `!${message}`,
+    "error"
+>
 
 export type RegexLiteral<expression extends string = string> = `/${expression}/`
 

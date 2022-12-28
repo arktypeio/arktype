@@ -1,37 +1,32 @@
-// import type { Identifier } from "../../nodes/node.ts"
-// import type { conform } from "../../utils/generics.ts"
-// import type {
-//     inferDefinition,
-//     InferenceContext,
-//     validateDefinition
-// } from "../definition.ts"
-// import { parseDefinition } from "../definition.ts"
-// import type { TupleExpressionParser } from "./tuple.ts"
+import type { Identifier } from "../../nodes/node.ts"
+import type { aliasOf, Scope } from "../../scope.ts"
+import type { inferDefinition, validateDefinition } from "../definition.ts"
 
-// export type Traits<T, c extends InferenceContext> = {
-//     in?: {
-//         [name in Identifier<c["scope"]>]?: (data: inferDefinition<name, c>) => T
-//     }
-//     out?: {
-//         [name in Identifier<c["scope"]>]?: (data: T) => inferDefinition<name, c>
-//     }
-// }
+export type Traits<t = unknown, s extends Scope = Scope> = {
+    in?: {
+        [name in Identifier<aliasOf<s>>]?: (
+            data: inferDefinition<name, s>,
+            // rest args typed as never so they can't be used unless explicitly typed
+            ...rest: never[]
+        ) => t
+    }
+    out?: {
+        [name in Identifier<aliasOf<s>>]?: (
+            data: t,
+            ...rest: never[]
+        ) => inferDefinition<name, s>
+    }
+}
 
-// export const parseTraitsTuple: TupleExpressionParser<":"> = (def, scope) =>
-//     parseDefinition(def[0], scope)
+export type TraitsTuple = [unknown, ":", unknown]
 
-// export type TraitsTuple = [unknown, ":", unknown]
+export type inferTraitsTuple<
+    def extends TraitsTuple,
+    s extends Scope
+> = inferDefinition<def[0], s>
 
-// export type inferTraitsTuple<
-//     def extends TraitsTuple,
-//     c extends InferenceContext
-// > = inferDefinition<def[0], c>
-
-// export type validateTraitsTuple<
-//     def extends TraitsTuple,
-//     c extends InferenceContext
-// > = [
-//     validateDefinition<def[0], c>,
-//     ":",
-//     validateTraitsTuple<def[2], inferDefinition<def[2], c>, c>
-// ]
+export type validateTraitsTuple<def extends TraitsTuple, s extends Scope> = [
+    validateDefinition<def[0], s>,
+    ":",
+    Traits<inferDefinition<def[0], s>, s>
+]
