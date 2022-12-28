@@ -1,10 +1,5 @@
 import type { TypeNode } from "./nodes/node.ts"
-import type {
-    inferDefinition,
-    inferRoot,
-    validateDefinition,
-    validateRoot
-} from "./parse/definition.ts"
+import type { inferRoot, validateRoot } from "./parse/definition.ts"
 import type { Type } from "./type.ts"
 import { type } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
