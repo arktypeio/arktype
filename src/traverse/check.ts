@@ -61,8 +61,7 @@ export type CheckOptions = {
 export const rootCheck = (
     data: unknown,
     node: TraversalNode,
-    scope: Scope,
-    checkOptions: CheckOptions
+    scope: Scope
 ): CheckResult => {
     if (typeof node === "string") {
         return checkDomain(data, node, [])
@@ -73,8 +72,7 @@ export const rootCheck = (
         path: [],
         data,
         problems,
-        rulePrecedenceLevel: 0,
-        customError: checkOptions.customError
+        rulePrecedenceLevel: 0
     }
     checkNode(checkState, scope)
     return checkState.problems.length

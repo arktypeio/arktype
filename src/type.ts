@@ -10,7 +10,7 @@ import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
 import type { aliasOf, GlobalScope, Scope } from "./scope.ts"
 import { getGlobalScope } from "./scope.ts"
-import { check } from "./traverse/check.ts"
+import { rootCheck } from "./traverse/check.ts"
 import { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type { isTopType, xor } from "./utils/generics.ts"
@@ -33,7 +33,7 @@ export const createType = (
     const traversal = compileNode(root, scope)
     return Object.assign(
         (data: unknown) => {
-            const result = check(data, traversal, scope)
+            const result = rootCheck(data, traversal, scope)
             return result
                 ? { data }
                 : { problems: new Problems({ path: "", reason: "invalid" }) }
@@ -97,21 +97,6 @@ export type Traits<t = unknown, s extends Scope = Scope> = {
             data: t,
             ...rest: never[]
         ) => inferDefinition<name, s>
-
-    check(
-        data: unknown,
-        checkOptions: CheckOptions = { allowExtraneouskeys: false }
-    ): xor<{ data: inferred }, { problems: Problems }> {
-        return rootCheck(data, this.flat, this.scope.$, checkOptions) as any
-    }
-
-    assert(data: unknown) {
-        const result = this.check(data)
-        if (result.problems) {
-            throw new Error(`FAIL`)
-        }
-        // result.problems?.throw()
-        return result.data as inferred
     }
 }
 

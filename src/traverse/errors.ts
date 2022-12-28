@@ -15,8 +15,7 @@ import type { CheckState } from "./check.js"
 export const addProblem = (state: CheckState, message: string) => {
     state.problems.push({
         path: state.path.join(),
-        //TODO this is wrong
-        reason: state.customError ?? message
+        reason: message
     })
 }
 
