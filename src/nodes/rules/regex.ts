@@ -1,4 +1,5 @@
 import type { CheckState } from "../../traverse/check.js"
+import { addProblem } from "../../traverse/errors.js"
 import type { CollapsibleList } from "../../utils/generics.js"
 import { composeIntersection } from "../compose.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
@@ -27,20 +28,24 @@ export const getRegex = (source: string) => {
     }
     return regexCache[source]
 }
-const regexError = (data: string, regexSource: string) =>
+export const regexError = (data: string, regexSource: RegExp) =>
     `${data} does not match ${regexSource}`
 
-export const checkRegexRule = (state: CheckState, rule: RegExp) => {
-    const { data } = state
-    checkRegex(state, rule)
+export const checkRegexRule = (
+    state: CheckState<string>,
+    rule: RegExp | string
+) => {
+    let ruleAsRegExp
+    if (typeof rule === "string") {
+        ruleAsRegExp = getRegex(rule)
+    }
+    //TODO: howdu I do
+    checkRegex(state, ruleAsRegExp ?? (rule as RegExp))
 }
 
-const checkRegex = (state: CheckState, regexSource: RegExp) => {
+const checkRegex = (state: CheckState<string>, regexSource: RegExp) => {
     if (!regexSource.test(state.data)) {
-        state.problems.push({
-            path: "regex",
-            reason: regexError(state.data, regexSource)
-        })
+        addProblem(state, regexError(state.data, regexSource))
     }
 }
 

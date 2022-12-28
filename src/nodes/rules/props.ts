@@ -1,3 +1,5 @@
+import type { TraversalCheck } from "../../traverse/check.js"
+import { checkNode } from "../../traverse/check.js"
 import type { Dict } from "../../utils/generics.js"
 import {
     composeIntersection,
@@ -98,6 +100,24 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
     if (optionalProps.length) {
         entries.push(["optionalProps", optionalProps])
     }
+}
+
+export const requiredProps: TraversalCheck<"requiredProps"> = (
+    state,
+    props,
+    scope
+) => {
+    const rootData = state.data
+    const rootNode = state.node
+    props.forEach(([propKey, propNode]) => {
+        state.path.push(propKey)
+        state.data = rootData[propKey] as any
+        state.node = propNode
+        checkNode(state, scope)
+        state.path.pop()
+    })
+    state.data = rootData
+    state.node = rootNode
 }
 
 // export type TraversalMappedPropsRule = [

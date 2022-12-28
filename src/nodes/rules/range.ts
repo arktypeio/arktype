@@ -1,4 +1,5 @@
 import type { CheckState } from "../../traverse/check.js"
+import { addProblem } from "../../traverse/errors.js"
 import type { List } from "../../utils/generics.js"
 import { composeIntersection, empty, equal } from "../compose.js"
 
@@ -42,25 +43,14 @@ export const rangeIntersection = composeIntersection<Range>((l, r) => {
 
 export type BoundableData = number | string | List
 
-const rangeError: Record<string, Function> = {
-    min: (data: BoundableData, minBound: Bound) =>
-        `Checked data:${data} must be greater than${
-            minBound.exclusive ? "" : " or equal to"
-        } min value:${minBound.limit}`,
-    max: (data: BoundableData, maxBound: Bound) =>
-        `Checked data: ${data} must be less than ${
-            maxBound.exclusive ?? false ? "" : " or equal to"
-        } max value:${maxBound.limit}`
+const comparators = {
+    min: (exclusive: boolean) => (exclusive ? ">" : ">="),
+    max: (exclusive: boolean) => (exclusive ? "<" : "<=")
 }
-
-const addRangeError = (state: CheckState, type: string, bound: Bound) => {
-    state.problems.push({
-        path: `[${[...state.path].join()}]`,
-        reason: state.customError
-            ? state.customError
-            : rangeError[type](state.data, bound)
-    })
-}
+const rangeError = (value: number, kind: "min" | "max", bound: Bound) =>
+    `Value must be ${comparators[kind](bound.exclusive ?? false)} ${
+        bound.limit
+    } (was ${value})`
 
 export const checkRange = (state: CheckState<BoundableData>, range: Range) => {
     const { data } = state
@@ -70,7 +60,7 @@ export const checkRange = (state: CheckState<BoundableData>, range: Range) => {
             size < range.min.limit ||
             (size === range.min.limit && range.min.exclusive)
         ) {
-            addRangeError(state, "min", range.min)
+            addProblem(state, rangeError(size, "min", range.min))
         }
     }
     if (range.max) {
@@ -78,7 +68,7 @@ export const checkRange = (state: CheckState<BoundableData>, range: Range) => {
             size > range.max.limit ||
             (size === range.max.limit && range.max.exclusive)
         ) {
-            addRangeError(state, "max", range.max)
+            addProblem(state, rangeError(size, "max", range.max))
         }
     }
 }

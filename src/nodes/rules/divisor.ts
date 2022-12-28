@@ -1,14 +1,13 @@
 import type { CheckState } from "../../traverse/check.js"
+import { addProblem } from "../../traverse/errors.js"
 import { composeIntersection, equal } from "../compose.js"
 
-const divisorError = (data, divisor) => `${data} is not divisible by ${divisor}`
+export const divisorError = (data: number, divisor: number) =>
+    `${data} is not divisible by ${divisor}`
 
-export const checkDivisor = (state: CheckState, divisor: number) => {
+export const checkDivisor = (state: CheckState<number>, divisor: number) => {
     if (state.data % divisor !== 0) {
-        state.problems.push({
-            path: `[${[...state.path].join()}]`,
-            reason: divisorError(state.data, divisor)
-        })
+        addProblem(state, divisorError(state.data, divisor))
     }
 }
 
