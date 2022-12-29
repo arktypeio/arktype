@@ -29,16 +29,16 @@ type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`
     ? `${name}${Scanner.EscapeToken}?`
     : k
 
-export type inferRecord<def extends Dict, s extends Scope> = evaluate<
+export type inferRecord<def extends Dict, scope extends Scope> = evaluate<
     {
         [requiredKeyName in requiredKeyOf<def>]: inferDefinition<
             def[withPossiblePreviousEscapeCharacter<requiredKeyName>],
-            s
+            scope
         >
     } & {
         [optionalKeyName in optionalKeyOf<def>]?: inferDefinition<
             def[`${optionalKeyName}?`],
-            s
+            scope
         >
     }
 >

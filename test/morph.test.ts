@@ -6,10 +6,10 @@ describe("morph", () => {
     describe("in", () => {
         it("base", () => {
             const t = type("string", {
-                in: {
+                from: {
                     number: (n) => `${n}`
                 },
-                out: {
+                to: {
                     symbol: (s) => Symbol(s),
                     number: (s) => parseFloat(s)
                 }
@@ -18,7 +18,7 @@ describe("morph", () => {
         })
         it("out morphs", () => {
             const t = type("boolean", {
-                out: {
+                to: {
                     string: (data) => `${data}`
                 }
             })
@@ -49,7 +49,7 @@ describe("morph", () => {
                     scope: scope({
                         a: "string"
                     }),
-                    in: {
+                    from: {
                         number: (n) => `${n}`,
                         a: (data) => `${data}`,
                         // @ts-expect-error

@@ -30,11 +30,7 @@ export const rawTypeFn: DynamicTypeFn = (
     return nodeToType(node, scope, config)
 }
 
-export const nodeToType = (
-    root: TypeSet,
-    scope: Scope,
-    config: Morphs<unknown, Scope>
-) => {
+export const nodeToType = (root: TypeSet, scope: Scope, config: Morphs) => {
     const traversal = compileNode(root, scope)
     return Object.assign(
         (data: unknown) => {
@@ -61,67 +57,77 @@ export type InferredTypeFn = {
 
     <
         def,
-        sources extends Sources<inferRoot<def, s>, s>,
-        targets extends Targets<inferRoot<def, s>, s>,
-        s extends Scope = RootScope
+        sources extends Sources<inferRoot<def, scope>, scope>,
+        targets extends Targets<inferRoot<def, scope>, scope>,
+        scope extends Scope = RootScope
     >(
-        def: validateRoot<def, s>,
+        def: validateRoot<def, scope>,
         opts: {
-            scope?: s
-            in?: sources
-            out?: targets
+            scope?: scope
+            from?: sources
+            to?: targets
         }
-    ): createType<def, s, extractMorphs<inferRoot<def, s>, s, sources, targets>>
+    ): createType<
+        def,
+        scope,
+        extractMorphs<inferRoot<def, scope>, scope, sources, targets>
+    >
 }
 
-export type Sources<t, s extends Scope> = {
-    [name in Identifier<aliasOf<s>>]?: InMorph<t, inferDefinition<name, s>>
+export type Sources<t, scope extends Scope> = {
+    [name in Identifier<aliasOf<scope>>]?: InMorph<
+        t,
+        inferDefinition<name, scope>
+    >
 }
 
 // TODO: possible to allow more args?
-type InMorph<t, source> = (data: source) => t
+type InMorph<data, source> = (data: source) => data
 
-type OutMorph<t, target> = (data: t) => target
+type OutMorph<data, target> = (data: data) => target
 
-export type Targets<t, s extends Scope> = {
-    [name in Identifier<aliasOf<s>>]?: OutMorph<t, inferDefinition<name, s>>
+export type Targets<data, scope extends Scope> = {
+    [name in Identifier<aliasOf<scope>>]?: OutMorph<
+        data,
+        inferDefinition<name, scope>
+    >
 }
 
-export type Morphs<t = unknown, s extends Scope = Scope> = {
-    in?: Sources<t, s>
-    out?: Targets<t, s>
+export type Morphs<data = unknown, scope extends Scope = Scope> = {
+    from?: Sources<data, scope>
+    to?: Targets<data, scope>
 }
 
 type createType<
     def,
-    s extends Scope,
-    morphs extends Morphs<data, s>,
-    data = inferRoot<def, s>
+    scope extends Scope,
+    morphs extends Morphs<data, scope>,
+    data = inferRoot<def, scope>
 > = isTopType<def> extends true
     ? never
-    : def extends validateDefinition<def, s>
-    ? "in" extends keyof morphs
-        ? "out" extends keyof morphs
+    : def extends validateDefinition<def, scope>
+    ? morphs["from"] extends {}
+        ? morphs["to"] extends {}
             ? Type<
                   (
-                      from: keyof morphs["in"]
-                  ) => (data: data) => to<keyof morphs["out"]>
+                      from: keyof morphs["from"]
+                  ) => (data: data) => to<keyof morphs["to"]>
               >
-            : Type<(from: keyof morphs["in"]) => data>
-        : "out" extends keyof morphs
-        ? (data: data) => to<keyof morphs["out"]>
+            : Type<(from: keyof morphs["from"]) => data>
+        : morphs["to"] extends {}
+        ? (data: data) => to<keyof morphs["to"]>
         : Type<data>
     : never
 
 type extractMorphs<
-    t,
-    s extends Scope,
-    sources extends Sources<t, s>,
-    targets extends Targets<t, s>
-> = (Sources<t, s> extends sources ? {} : { in: sources }) &
-    (Targets<t, s> extends targets ? {} : { out: targets })
+    data,
+    scope extends Scope,
+    sources extends Sources<data, scope>,
+    targets extends Targets<data, scope>
+> = (Sources<data, scope> extends sources ? {} : { from: sources }) &
+    (Targets<data, scope> extends targets ? {} : { to: targets })
 
-type DynamicTypeOptions = { scope?: Scope } & Morphs<unknown, Scope>
+type DynamicTypeOptions = { scope?: Scope } & Morphs
 
 type DynamicTypeFn = (def: unknown, opts?: DynamicTypeOptions) => Type
 
@@ -131,22 +137,18 @@ export type CheckResult<data> = xor<{ data: data }, { problems: Problems }>
 
 export type Checker<data> = (data: unknown) => CheckResult<data>
 
-export type TypeMetadata<t = unknown> = {
-    infer: t
+export type TypeMetadata<data = unknown> = {
+    infer: data
     root: TypeNode
     flat: TraversalNode
 }
 
-export type to<names> = defer<nominal<names, "out">>
+export type to<names> = defer<nominal<names, "to">>
 
-export type Type<t = unknown> = defer<
-    t extends (data: infer data) => infer morphs
-        ? Checker<data> & TypeMetadata<data>
-        : Checker<t> & TypeMetadata<t>
->
+export type Type<data = unknown> = defer<Checker<data> & TypeMetadata<data>>
 
-type extractOutMorphs<s extends Scope, outMorphs> = {
+type extractOutMorphs<scope extends Scope, outMorphs> = {
     [name in keyof outMorphs]: (
         target: name
-    ) => CheckResult<inferDefinition<name, s>>
+    ) => CheckResult<inferDefinition<name, scope>>
 }[keyof outMorphs]

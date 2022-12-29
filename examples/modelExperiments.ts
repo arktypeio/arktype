@@ -65,19 +65,4 @@ const { data } = creditCard(531243212).to("number") // data is number
 const { data } = creditCard("45325", "!").to("number")
 const { data } = creditCard("45325", { check: false }).to("number")
 
-const { data } = creditCard.check("54354235")
-// Could be a union of in types? Would need to be able to discriminate between them, otherwise would have to be named.
-creditCard.from(153434321451) //returns string
-creditCard.from.number(432142341234) //returns string (is validated)
-creditCard.to.number("432142387461") //returns number (wouldn't need to be validated)
-
-// Could be a union of in types? Would need to be able to discriminate between them, otherwise would have to be named.
-scope.user.from('{name: "david", age: "105"  }')
-scope.user.from.json('{name: "david", age: "105"  }') //returns user
-scope.user.to.json({ name: "david", age: 105 }) //returns json
-
 // Could have variant types with a base type and sets of conditions
-
-// TODO: Sugar for I/O type
-
-// TODO: Allow Type as def

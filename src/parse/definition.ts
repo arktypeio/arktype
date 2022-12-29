@@ -45,47 +45,50 @@ export const parseDefinition = (def: unknown, scope: Scope): TypeNode => {
     }
 }
 
-export type inferRoot<def, s extends Scope> = def extends TraitsTuple
-    ? inferTraitsTuple<def, s>
-    : inferDefinition<def, s>
+export type inferRoot<def, scope extends Scope> = def extends TraitsTuple
+    ? inferTraitsTuple<def, scope>
+    : inferDefinition<def, scope>
 
-export type validateRoot<def, s extends Scope> = isTopType<def> extends true
+export type validateRoot<def, scope extends Scope> = isTopType<def> extends true
     ? buildUninferableDefinitionMessage<def>
     : def extends TraitsTuple
-    ? validateTraitsTuple<def, s>
-    : validateDefinition<def, s>
+    ? validateTraitsTuple<def, scope>
+    : validateDefinition<def, scope>
 
-export type inferDefinition<def, s extends Scope> = isTopType<def> extends true
+export type inferDefinition<
+    def,
+    scope extends Scope
+> = isTopType<def> extends true
     ? never
     : def extends string
-    ? inferString<def, s>
+    ? inferString<def, scope>
     : def extends List
-    ? inferTuple<def, s>
+    ? inferTuple<def, scope>
     : def extends Type
     ? def["infer"]
     : def extends RegExp
     ? string
     : def extends Dict
-    ? inferRecord<def, s>
+    ? inferRecord<def, scope>
     : never
 
 export type validateDefinition<
     def,
-    s extends Scope
+    scope extends Scope
 > = isTopType<def> extends true
     ? buildUninferableDefinitionMessage<def>
     : def extends []
     ? []
     : def extends string
-    ? validateString<def, s>
+    ? validateString<def, scope>
     : def extends TupleExpression
-    ? validateTupleExpression<def, s>
+    ? validateTupleExpression<def, scope>
     : def extends TerminalObject
     ? def
     : def extends BadDefinitionType
     ? buildBadDefinitionTypeMessage<subdomainOf<def>>
     : evaluate<{
-          [k in keyof def]: validateDefinition<def[k], s>
+          [k in keyof def]: validateDefinition<def[k], scope>
       }>
 
 export type buildUninferableDefinitionMessage<def> =

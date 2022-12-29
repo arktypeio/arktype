@@ -70,7 +70,7 @@ type DynamicScopeFn = <aliases extends Dict>(
     aliases: aliases
 ) => Scope<Dict<keyof aliases & string>, Dict<keyof aliases & string>>
 
-export type aliasOf<s extends Scope> = keyof s["def"] & string
+export type aliasOf<scope extends Scope> = keyof scope["def"] & string
 
 type validateAliases<aliases, parent extends Scope> = evaluate<{
     [name in keyof aliases]: validateRoot<

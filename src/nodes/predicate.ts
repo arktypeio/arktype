@@ -81,8 +81,8 @@ export type PredicateContext = {
 
 export type ResolvedPredicate<
     domain extends Domain = Domain,
-    s extends Scope = Scope
-> = Exclude<Predicate<domain, aliasOf<s>>, string>
+    scope extends Scope = Scope
+> = Exclude<Predicate<domain, aliasOf<scope>>, string>
 
 export type PredicateComparison =
     | SetOperationResult<Predicate>
