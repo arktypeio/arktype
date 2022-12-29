@@ -1,5 +1,5 @@
 import type { CheckState } from "../../traverse/check.ts"
-import { addProblem } from "../../traverse/errors.ts"
+import { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
 import type { CollapsibleList } from "../../utils/generics.ts"
 import { composeIntersection } from "../compose.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
@@ -28,8 +28,6 @@ export const getRegex = (source: string) => {
     }
     return regexCache[source]
 }
-export const regexError = (data: string, regexSource: RegExp) =>
-    `${data} does not match ${regexSource}`
 
 export const checkRegexRule = (
     state: CheckState<string>,
@@ -43,9 +41,19 @@ export const checkRegexRule = (
     checkRegex(state, ruleAsRegExp ?? (rule as RegExp))
 }
 
-const checkRegex = (state: CheckState<string>, regexSource: RegExp) => {
-    if (!regexSource.test(state.data)) {
-        addProblem(state, regexError(state.data, regexSource))
+export type RegexErrorContext = {
+    data: string
+    rule: RegExp
+}
+
+export const buildRegexError: DiagnosticMessageBuilder<"RegexMismatch"> = ({
+    data,
+    rule
+}) => `'${data}' must match expression /${rule}/.`
+
+const checkRegex = (state: CheckState<string>, source: RegExp) => {
+    if (!source.test(state.data)) {
+        state.problems.addProblem(state, { data: state.data, rule: source })
     }
 }
 

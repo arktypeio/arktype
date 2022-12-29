@@ -1,4 +1,8 @@
-import type { Subdomain } from "../../utils/domains.ts"
+import { Scope } from "../../scope.ts"
+import { CheckState, checkNode } from "../../traverse/check.ts"
+import { Subdomain, subdomainOf } from "../../utils/domains.ts"
+import { throwInternalError } from "../../utils/errors.ts"
+import { List } from "../../utils/generics.ts"
 import { composeIntersection, empty, equal } from "../compose.ts"
 import { nodeIntersection } from "../intersection.ts"
 import type { TraversalNode, TypeNode } from "../node.ts"
@@ -79,3 +83,49 @@ export const subdomainIntersection = composeIntersection<
         ? r
         : (result as SubdomainRule)
 })
+
+export const checkSubdomain = (
+    state: CheckState<unknown>,
+    subdomain: TraversalSubdomainRule,
+    scope: Scope
+) => {
+    const actual = subdomainOf(state.data)
+    if (typeof subdomain === "string") {
+        if (actual !== subdomain) {
+            state.problems.addProblem(state, {
+                actual,
+                expected: subdomain
+            })
+        }
+        return
+    }
+    if (actual !== subdomain[0]) {
+        state.problems.addProblem(state, { actual, expected: subdomain[0] })
+        return
+    }
+    if (actual === "Array" || actual === "Set") {
+        const rootData = state.data
+        state.node = subdomain[1]
+        for (const item of state.data as List | Set<unknown>) {
+            state.data = item
+            state.path.push(`${item}`)
+            checkNode(state, scope)
+            state.path.pop()
+        }
+        state.data = rootData
+    } else if (actual === "Map") {
+        for (const entry of state.data as Map<unknown, unknown>) {
+            if (!checkNode(entry[0], subdomain[1], scope)) {
+                return false
+            }
+            if (!checkNode(entry[1], subdomain[2] as TraversalNode, scope)) {
+                return false
+            }
+        }
+    } else {
+        return throwInternalError(
+            `Unexpected subdomain entry ${JSON.stringify(subdomain)}`
+        )
+    }
+    return true
+}

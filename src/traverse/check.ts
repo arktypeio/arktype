@@ -8,17 +8,16 @@ import type {
     TraversalBranchesEntry
 } from "../nodes/predicate.ts"
 import { checkDivisor } from "../nodes/rules/divisor.ts"
-import { requiredProps } from "../nodes/rules/props.ts"
+import { checkOptionalProps, checkRequiredProps } from "../nodes/rules/props.ts"
 import type { BoundableData } from "../nodes/rules/range.ts"
 import { checkRange } from "../nodes/rules/range.ts"
 import { checkRegexRule } from "../nodes/rules/regex.ts"
-import type { TraversalRuleEntry } from "../nodes/rules/rules.ts"
+import { TraversalRuleEntry, rulePrecedenceMap } from "../nodes/rules/rules.ts"
+import { checkSubdomain } from "../nodes/rules/subdomain.ts"
 import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf, subdomainOf } from "../utils/domains.ts"
-import { throwInternalError } from "../utils/errors.ts"
-import type { Dict, evaluate, extend, List, xor } from "../utils/generics.ts"
-import { addProblem, unassignableError } from "./errors.ts"
+import type { Dict, evaluate, extend, xor } from "../utils/generics.ts"
 import { Problems } from "./problems.ts"
 
 export const checkRules = (
@@ -29,6 +28,10 @@ export const checkRules = (
 ) => {
     return true
 }
+
+const precedenceMap: {
+    readonly [k in TraversalEntry[0]]-?: number
+} = { domain: 0, value: 0, domains: 0, branches: 0, ...rulePrecedenceMap }
 
 export type TraversalEntry =
     | MultiDomainEntry
@@ -87,38 +90,24 @@ type CheckResult<inferred = unknown> = xor<
 
 export const checkNode = (state: CheckState, scope: Scope) => {
     if (typeof state.node === "string") {
-        checkDomain(state, "string")
-    } else {
-        checkEntries(state, scope)
+        checkDomain(state.data, state.node, state.path)
     }
+    checkEntries(state, scope)
 }
 
-const checkDomain = (state: CheckState, domain: string): CheckResult => {
-    if (domainOf(state.data) === domain) {
-        return { data: state.data }
-    } else {
-        addProblem(state, unassignableError(domain, state.data))
-        return { problems: state.problems }
-    }
-}
-
-const optionalProps: TraversalCheck<"optionalProps"> = (
-    state,
-    props,
-    scope
-) => {
-    const rootData = state.data
-    const rootNode = state.node
-    props.forEach(([propKey, propNode]) => {
-        state.path.push(propKey)
-        state.data = rootData[propKey] as any
-        state.node = propNode
-        !(checkNode(state, scope) || propKey in state.data)
-        state.path.pop()
-    })
-    state.data = rootData
-    state.node = rootNode
-}
+const checkDomain = (
+    data: unknown,
+    domain: string,
+    path: string[]
+): CheckResult =>
+    domainOf(data) === domain
+        ? { data }
+        : {
+              problems: new Problems({
+                  path: path.join("."),
+                  reason: `${domain} !== ${data}`
+              })
+          }
 
 const checkers = {
     regex: (state, regex) => checkRegexRule(state, regex),
@@ -128,57 +117,36 @@ const checkers = {
         if (entries) {
             checkEntries(state, scope)
         } else {
-            addProblem(state, unassignableError(domains, domainOf(state.data)))
+            state.problems.addProblem(state, {
+                actual: domainOf(state.data),
+                expected: domains
+            })
         }
     },
     domain: (state, domain) => {
         if (domainOf(state.data) !== domain) {
-            addProblem(state, unassignableError(domain, domainOf(state.data)))
+            state.problems.addProblem(state, {
+                actual: domainOf(state.data),
+                expected: domain
+            })
         }
     },
-    subdomain: (state, subdomain, scope) => {
-        const actual = subdomainOf(state.data)
-        if (typeof subdomain === "string") {
-            return actual === subdomain
-        }
-        if (actual !== subdomain[0]) {
-            addProblem(state, unassignableError(subdomain[0], actual))
-        }
-        if (actual === "Array" || actual === "Set") {
-            for (const item of state.data as List | Set<unknown>) {
-                if (!checkNode(item, subdomain[1], scope)) {
-                    return false
-                }
-            }
-        } else if (actual === "Map") {
-            for (const entry of data as Map<unknown, unknown>) {
-                if (!checkNode(entry[0], subdomain[1], scope)) {
-                    return false
-                }
-                if (
-                    !checkNode(entry[1], subdomain[2] as TraversalNode, scope)
-                ) {
-                    return false
-                }
-            }
-        } else {
-            return throwInternalError(
-                `Unexpected subdomain entry ${JSON.stringify(subdomain)}`
-            )
-        }
-        return true
-    },
+    subdomain: (state, subdomain, scope) =>
+        checkSubdomain(state, subdomain, scope),
     range: (state, range) => {
         checkRange(state, range)
     },
-    requiredProps,
-    optionalProps,
+    requiredProps: checkRequiredProps,
+    optionalProps: checkOptionalProps,
     branches: (state, branches, scope) =>
         branches.some((condition) => checkEntries(state, scope)),
-    validator: (state, validator) => validator(data),
+    refinement: (state, validator) => validator(state),
     value: (state, value) => {
-        if (state.data === value) {
-            addProblem(state, unassignableError(value, state.data))
+        if (state.data !== value) {
+            state.problems.addProblem(state, {
+                actual: state.data,
+                expected: value
+            })
         }
     }
 } satisfies {
@@ -205,19 +173,19 @@ export type ConstrainedRuleInputs = extend<
 export type RuleInput<k extends TraversalKey> =
     k extends keyof ConstrainedRuleInputs ? ConstrainedRuleInputs[k] : unknown
 
-export const checkEntries = (checkState: CheckState, scope: ScopeRoot) => {
+export const checkEntries = (checkState: CheckState, scope: Scope) => {
     const entries = checkState.node as TraversalEntry[]
+    let precedenceLevel = 0
     for (let i = 0; i < checkState.node?.length; i++) {
         const ruleName = entries[i][0]
         const ruleValidator = entries[i][1]
-        const precedenceLevel = rulePrecedenceMap[ruleName]
         if (
-            checkState.problems.length &&
-            precedenceLevel > checkState.rulePrecedenceLevel
+            checkState.problems.byPath[ruleName] &&
+            precedenceMap[ruleName] > precedenceLevel
         ) {
             break
         }
-        checkState.rulePrecedenceLevel = rulePrecedenceMap[ruleName]
+        precedenceLevel = precedenceMap[ruleName]
         checkers[ruleName](checkState as never, ruleValidator as never, scope)
     }
 }

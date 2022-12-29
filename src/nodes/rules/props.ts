@@ -102,23 +102,26 @@ export const compileProps: FlattenAndPushRule<PropsRule> = (
     }
 }
 
-export const requiredProps: TraversalCheck<"requiredProps"> = (
-    state,
-    props,
-    scope
-) => {
-    const rootData = state.data
-    const rootNode = state.node
-    props.forEach(([propKey, propNode]) => {
-        state.path.push(propKey)
-        state.data = rootData[propKey] as any
-        state.node = propNode
-        checkNode(state, scope)
-        state.path.pop()
-    })
-    state.data = rootData
-    state.node = rootNode
-}
+const createPropChecker = <k extends "requiredProps" | "optionalProps">(k: k) =>
+    ((state, props, scope) => {
+        const rootData = state.data
+        const rootNode = state.node
+        for (const [propKey, propNode] of props as TraversalPropEntry[]) {
+            if (k === "optionalProps" && !(propKey in state.data)) {
+                continue
+            }
+            state.path.push(propKey)
+            state.data = rootData[propKey] as any
+            state.node = propNode
+            checkNode(state, scope)
+            state.path.pop()
+        }
+        state.data = rootData
+        state.node = rootNode
+    }) as TraversalCheck<k>
+
+export const checkRequiredProps = createPropChecker("requiredProps")
+export const checkOptionalProps = createPropChecker("optionalProps")
 
 // export type TraversalMappedPropsRule = [
 //     mappedEntries: readonly TraversalMappedPropEntry[],

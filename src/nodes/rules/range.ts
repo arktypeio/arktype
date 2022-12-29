@@ -1,5 +1,7 @@
+import { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { CheckState } from "../../traverse/check.ts"
-import { addProblem } from "../../traverse/errors.ts"
+import { DiagnosticMessageBuilder, Problems } from "../../traverse/problems.ts"
+import { subdomainOf } from "../../utils/domains.ts"
 import type { List } from "../../utils/generics.ts"
 import { composeIntersection, empty, equal } from "../compose.ts"
 
@@ -43,14 +45,22 @@ export const rangeIntersection = composeIntersection<Range>((l, r) => {
 
 export type BoundableData = number | string | List
 
-const comparators = {
-    min: (exclusive: boolean) => (exclusive ? ">" : ">="),
-    max: (exclusive: boolean) => (exclusive ? "<" : "<=")
+export type RangeErrorContext = {
+    comparator: Scanner.Comparator
+    limit: number
+    size: number
+    kind: subdomainOf<BoundableData>
 }
-const rangeError = (value: number, kind: "min" | "max", bound: Bound) =>
-    `Value must be ${comparators[kind](bound.exclusive ?? false)} ${
-        bound.limit
-    } (was ${value})`
+
+export const buildRangeError: DiagnosticMessageBuilder<"RangeViolation"> = ({
+    comparator,
+    limit,
+    size,
+    kind
+}) =>
+    `Must be ${Scanner.comparatorDescriptions[comparator]} ${limit} ${
+        kind === "string" ? "characters " : kind === "Array" ? "items " : ""
+    }(got ${size}).`
 
 export const checkRange = (state: CheckState<BoundableData>, range: Range) => {
     const { data } = state
@@ -60,7 +70,12 @@ export const checkRange = (state: CheckState<BoundableData>, range: Range) => {
             size < range.min.limit ||
             (size === range.min.limit && range.min.exclusive)
         ) {
-            addProblem(state, rangeError(size, "min", range.min))
+            state.problems.addProblem(state, {
+                comparator: toComparator("min", range.min),
+                limit: range.min.limit,
+                size,
+                kind: subdomainOf(data)
+            })
         }
     }
     if (range.max) {
@@ -68,7 +83,12 @@ export const checkRange = (state: CheckState<BoundableData>, range: Range) => {
             size > range.max.limit ||
             (size === range.max.limit && range.max.exclusive)
         ) {
-            addProblem(state, rangeError(size, "max", range.max))
+            state.problems.addProblem(state, {
+                comparator: toComparator("max", range.max),
+                limit: range.max.limit,
+                size,
+                kind: subdomainOf(data)
+            })
         }
     }
 }
@@ -80,7 +100,10 @@ export const buildEmptyRangeMessage = (min: Bound, max: Bound) =>
     )} is empty`
 
 const stringifyBound = (kind: BoundKind, bound: Bound) =>
-    `${kind === "min" ? ">" : "<"}${bound.exclusive ? "" : "="}${bound.limit}`
+    `${toComparator(kind, bound)}${bound.limit}` as const
+
+const toComparator = (kind: BoundKind, bound: Bound) =>
+    `${kind === "min" ? ">" : "<"}${bound.exclusive ? "" : "="}` as const
 
 const invertedKinds = {
     min: "max",
