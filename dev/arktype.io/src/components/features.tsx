@@ -1,4 +1,4 @@
-import { Box, Stack, SvgIcon, Typography } from "@mui/material"
+import { Box, Container, Stack, SvgIcon, Typography } from "@mui/material"
 import React from "react"
 
 const details = [
@@ -7,6 +7,10 @@ const details = [
         title: "Isomorphic",
         description:
             "Define types using TS syntax. Infer them 1:1. Use them to validate your data at runtime."
+    },
+    {
+        title: "Native TS",
+        description: "No extensions, plugins or compilers required"
     },
     {
         image: "Three",
@@ -65,13 +69,18 @@ const feats = details.map((feature, i) => (
 
 export const Features = () => {
     return (
-        <Stack
-            justifyContent="space-evenly"
-            direction="row"
-            flexWrap="wrap"
-            id="featuresComponent"
-        >
-            {feats}
-        </Stack>
+        <Container sx={{ margin: "2em auto" }}>
+            <Typography component="h3" variant="h2" id="title" align="center">
+                Features
+            </Typography>
+            <Stack
+                justifyContent="space-evenly"
+                direction="row"
+                flexWrap="wrap"
+                id="featuresComponent"
+            >
+                {feats}
+            </Stack>
+        </Container>
     )
 }

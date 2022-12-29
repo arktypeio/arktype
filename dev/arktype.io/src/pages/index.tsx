@@ -2,9 +2,9 @@ import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import { Stack, ThemeProvider, Typography } from "@mui/material"
 import Layout from "@theme/Layout"
 import React from "react"
-import { StackBlitzDemo } from "../../docs/demos/index"
 import { Ark } from "../components/ark"
 import { Features } from "../components/features"
+import { Demo } from "../components/homepageDemo"
 import { getTheme } from "../components/index"
 import { IntroContainer } from "../components/introContainer"
 import { LogoCloud } from "../components/logoCloud"
@@ -23,7 +23,7 @@ const Contents = () => {
             >
                 <IntroContainer />
                 <Features />
-                <StackBlitzDemo embedId="type" />
+                <Demo />
             </main>
         </ThemeProvider>
     )
