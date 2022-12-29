@@ -53,7 +53,16 @@ export class Problems extends Array<Problem> {
     ) {
         state.problems.push({
             path: state.path.join(),
-            reason: defaultMessagesByCode[code]
+            //TODO custom error
+            // type("3<number<5").check(0, {
+            //     diagnostics: {
+            //         BoundViolation: {
+            //             message: ({ data, comparator, limit }) =>
+            //                 `${data} not ${comparator}${limit}`
+            //         }
+            //     }
+            // })
+            reason: defaultMessagesByCode["DivisorViolation"](context as never)
         })
     }
 }
@@ -93,27 +102,11 @@ const buildUnassignableError: DiagnosticMessageBuilder<"Unassignable"> = ({
 }) =>
     `${new Stringifiable(actual).toString()} is not assignable to ${expected}.`
 
-const buildCustomError: DiagnosticMessageBuilder<"Custom"> = ({
-    message,
-    args
-}) => {}
-
-type CustomErrorContext = { message: string; args?: { [k: string]: unknown } }
-
-// type("3<number<5").check(0, {
-//     diagnostics: {
-//         BoundViolation: {
-//             message: ({ data, comparator, limit }) =>
-//                 `${data} not ${comparator}${limit}`
-//         }
-//     }
-// })
 export type DiagnosticsByCode = {
     DivisorViolation: DivisorErrorContext
     RangeViolation: RangeErrorContext
     RegexMismatch: RegexErrorContext
     Unassignable: UnassignableErrorContext
-    Custom: CustomErrorContext
 }
 
 export type DiagnosticCode = keyof DiagnosticsByCode
@@ -128,6 +121,5 @@ const defaultMessagesByCode: {
     DivisorViolation: buildDivisorError,
     RangeViolation: buildRangeError,
     RegexMismatch: buildRegexError,
-    Unassignable: buildUnassignableError,
-    Custom: buildCustomError
+    Unassignable: buildUnassignableError
 }

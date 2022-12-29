@@ -105,6 +105,7 @@ export const checkSubdomain = (
     }
     if (actual === "Array" || actual === "Set") {
         const rootData = state.data
+        const rootNode = state.node
         state.node = subdomain[1]
         for (const item of state.data as List | Set<unknown>) {
             state.data = item
@@ -113,15 +114,29 @@ export const checkSubdomain = (
             state.path.pop()
         }
         state.data = rootData
+        state.node = rootNode
     } else if (actual === "Map") {
+        const rootData = state.data
+        const rootNode = state.node
         for (const entry of state.data as Map<unknown, unknown>) {
-            if (!checkNode(entry[0], subdomain[1], scope)) {
-                return false
+            checkNode({ ...state, data: entry[0], node: subdomain[1] }, scope)
+            if (state.problems.length) {
+                return
             }
-            if (!checkNode(entry[1], subdomain[2] as TraversalNode, scope)) {
-                return false
+            checkNode(
+                {
+                    ...state,
+                    data: entry[1],
+                    node: subdomain[2] as TraversalNode
+                },
+                scope
+            )
+            if (state.problems.length) {
+                return
             }
         }
+        state.data = rootData
+        state.node = rootNode
     } else {
         return throwInternalError(
             `Unexpected subdomain entry ${JSON.stringify(subdomain)}`
