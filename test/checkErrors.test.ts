@@ -1,6 +1,6 @@
 import { describe, test } from "mocha"
-import { attest } from "../dev/attest/exports.js"
-import { type } from "../exports.js"
+import { attest } from "../dev/attest/api.ts"
+import { type } from "../api.ts"
 
 describe("check errors", () => {
     test("divisible", () => {
