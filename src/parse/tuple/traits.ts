@@ -1,10 +1,10 @@
 import type { Scope } from "../../scope.ts"
-import type { Sources, ValidatedTargets } from "../../type.ts"
+import type { Sources, Targets } from "../../type.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 
 export type Traits<t = unknown, s extends Scope = Scope> = {
     in?: Sources<t, s>
-    out?: ValidatedTargets<t, s>
+    out?: Targets<t, s>
 }
 
 export type TraitsTuple = [unknown, ":", unknown]

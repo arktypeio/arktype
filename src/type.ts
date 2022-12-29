@@ -85,13 +85,10 @@ export type Sources<t, s extends Scope> = {
     [name in Identifier<aliasOf<s>>]?: InMorph<t, inferDefinition<name, s>>
 }
 
-type InMorph<t, source> = (
-    data: source,
-    // rest args typed as never so they can't be used unless explicitly typeda
-    ...rest: never[]
-) => t
+// TODO: possible to allow more args?
+type InMorph<t, source> = (data: source) => t
 
-type OutMorph<t, target> = (data: t, ...rest: never[]) => target
+type OutMorph<t, target> = (data: t) => target
 
 export type Targets<t, s extends Scope> = {
     [name in Identifier<aliasOf<s>>]?: OutMorph<t, inferDefinition<name, s>>
@@ -105,14 +102,14 @@ export type Morphs<t = unknown, s extends Scope = Scope> = {
 type createType<
     def,
     s extends Scope,
-    morphs extends Morphs<t, s>,
-    t = inferRoot<def, s>
+    morphs extends Morphs<data, s>,
+    data = inferRoot<def, s>
 > = isTopType<def> extends true
     ? never
     : def extends validateDefinition<def, s>
     ? {} extends morphs
-        ? Type<t>
-        : Type<(data: t) => morphs>
+        ? Type<data>
+        : Type<(In: keyof morphs["in"]) => (data: data) => keyof morphs["out"]>
     : never
 
 type extractMorphs<

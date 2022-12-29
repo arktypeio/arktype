@@ -16,17 +16,6 @@ describe("morph", () => {
             })
             attest(t.infer).typed as string
         })
-        it("additional args", () => {
-            const t = type("number", {
-                in: {
-                    string: (s, radix) => parseInt(s, radix)
-                },
-                out: {
-                    string: (s, radix) => s.toString(radix)
-                }
-            })
-            attest(t.infer).typed as number
-        })
         it("out morphs", () => {
             const t = type("boolean", {
                 out: {
@@ -55,12 +44,6 @@ describe("morph", () => {
             attest(data).equals(5).typed as number
         })
         describe("errors", () => {
-            it("untyped additional args", () => {
-                // TODO: Error here
-                type("string", {
-                    out: { number: (n, radix) => parseInt(n, radix) }
-                })
-            })
             it("unresolvable keys", () => {
                 const t = type("string", {
                     scope: scope({
