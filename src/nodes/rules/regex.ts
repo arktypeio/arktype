@@ -37,7 +37,6 @@ export const checkRegexRule = (
     if (typeof rule === "string") {
         ruleAsRegExp = getRegex(rule)
     }
-    //TODO: howdu I do
     checkRegex(state, ruleAsRegExp ?? (rule as RegExp))
 }
 

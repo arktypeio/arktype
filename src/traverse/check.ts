@@ -42,7 +42,6 @@ export type TraversalEntry =
 
 export type TraversalKey = TraversalEntry[0]
 
-//adding a ruleLevel so that if a problem occurs it should not proceed to the next
 export type TraversalState = {
     node: TraversalNode
     path: string[]

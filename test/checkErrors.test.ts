@@ -24,9 +24,6 @@ describe("check errors", () => {
         )
     })
     test("range", () => {
-        // TODO: until a structure is defined for errors customError only accepts a string
-        // once it's better defined there will be a clear idea of what Users can pass in for params if they want to
-        // customize it based on the data that's being checked
         const t = type("number>2")
         const checked = t.check(2, {
             customError: `Houston we have an error`
