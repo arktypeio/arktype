@@ -13,19 +13,12 @@ import type {
     validateRoot
 } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
-import type { UnaryFunction } from "./parse/tuple/utils.ts"
 import type { aliasOf, RootScope, Scope } from "./scope.ts"
-import { getRootScope, scope } from "./scope.ts"
+import { getRootScope } from "./scope.ts"
 import { check } from "./traverse/check.ts"
 import { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import type {
-    autocomplete,
-    defer,
-    isTopType,
-    nominal,
-    xor
-} from "./utils/generics.ts"
+import type { defer, isTopType, nominal, xor } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
@@ -107,9 +100,17 @@ type createType<
 > = isTopType<def> extends true
     ? never
     : def extends validateDefinition<def, s>
-    ? {} extends morphs
-        ? Type<data>
-        : Type<(In: keyof morphs["in"]) => (data: data) => keyof morphs["out"]>
+    ? "in" extends keyof morphs
+        ? "out" extends keyof morphs
+            ? Type<
+                  (
+                      from: keyof morphs["in"]
+                  ) => (data: data) => to<keyof morphs["out"]>
+              >
+            : Type<(from: keyof morphs["in"]) => data>
+        : "out" extends keyof morphs
+        ? (data: data) => to<keyof morphs["out"]>
+        : Type<data>
     : never
 
 type extractMorphs<
@@ -135,6 +136,8 @@ export type TypeMetadata<t = unknown> = {
     root: TypeNode
     flat: TraversalNode
 }
+
+export type to<names> = defer<nominal<names, "out">>
 
 export type Type<t = unknown> = defer<
     t extends (data: infer data) => infer morphs
