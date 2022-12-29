@@ -1,14 +1,15 @@
-import type {
-    Identifier,
-    TraversalNode,
-    TypeNode,
-    TypeSet
-} from "./nodes/node.ts"
+import type { TraversalNode, TypeNode, TypeSet } from "./nodes/node.ts"
 import { compileNode } from "./nodes/node.ts"
 import { resolveIfIdentifier } from "./nodes/utils.ts"
-import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
+import type {
+    inferDefinition,
+    inferRoot,
+    validateDefinition,
+    validateRoot
+} from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
-import type { aliasOf, GlobalScope, Scope } from "./scope.ts"
+import type { Sources, Targets, Traits } from "./parse/tuple/traits.ts"
+import type { GlobalScope, Scope } from "./scope.ts"
 import { getGlobalScope } from "./scope.ts"
 import { rootCheck } from "./traverse/check.ts"
 import { Problems } from "./traverse/problems.ts"
@@ -22,10 +23,10 @@ export const rawTypeFn: DynamicTypeFn = (
     { scope = getGlobalScope(), ...config } = {}
 ) => {
     const node = resolveIfIdentifier(parseDefinition(def, scope), scope)
-    return createType(node, scope, config)
+    return nodeToType(node, scope, config)
 }
 
-export const createType = (
+export const nodeToType = (
     root: TypeSet,
     scope: Scope,
     config: Traits<unknown, Scope>
@@ -47,83 +48,58 @@ export const createType = (
     ) as any
 }
 
-// TODO: allow type to be used as a def
 export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
     rawTypeFn
 )
 
 export type InferredTypeFn = {
-    <def>(def: validateDefinition<def, GlobalScope>): InferredTypeResult<
-        inferDefinition<def, GlobalScope>,
+    <def>(def: validateRoot<def, GlobalScope>): InferredTypeResult<
         def,
-        GlobalScope,
-        {}
+        {
+            infer: inferRoot<def, GlobalScope>
+            scope: GlobalScope
+        }
     >
 
     <
         def,
         s extends Scope = GlobalScope,
-        t = inferDefinition<def, s>,
-        traits extends Traits<t, s> = Traits<t, s>
+        t = inferRoot<def, s>,
+        traits extends Traits<t, s> = {
+            in?: {}
+            out?: {}
+        }
     >(
-        def: validateDefinition<def, s>,
+        def: validateRoot<def, s>,
         traits: { scope?: s } & traits
-    ): InferredTypeResult<t, def, s, traits>
+    ): InferredTypeResult<def, { infer: t; scope: s } & traits>
 }
 
 type InferredTypeResult<
-    t,
     def,
-    s extends Scope,
-    traits extends Traits<t, s>
+    c extends TypeContext
 > = isTopType<def> extends true
     ? never
-    : def extends validateDefinition<def, s>
-    ? {} extends traits
-        ? Type<t>
-        : MorphType<t, s, traits>
+    : def extends validateDefinition<def, c["scope"]>
+    ? Type<c>
     : never
 
-export type Traits<t = unknown, s extends Scope = Scope> = {
-    in?: {
-        [name in Identifier<aliasOf<s>>]?: (
-            data: inferDefinition<name, s>,
-            // rest args typed as never so they can't be used unless explicitly typed
-            ...rest: never[]
-        ) => t
-    }
-    out?: {
-        [name in Identifier<aliasOf<s>>]?: (
-            data: t,
-            ...rest: never[]
-        ) => inferDefinition<name, s>
-    }
-}
-
-type DynamicTypeFn = (
-    def: unknown,
-    traits?: { scope?: Scope } & Traits<unknown, Scope>
-) => Type
+type DynamicTypeFn = (def: unknown, opts?: TypeOptions) => Type
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
-export type CheckResult<t = unknown, outMorphs = undefined> = xor<
-    outMorphs extends undefined
-        ? { data: t }
-        : {
-              data: t
-              to: outMorphs
-          },
-    { problems: Problems }
->
+export type CheckResult<c extends TypeContext> = {
+    to: extractOutMorphs<c>
+} & xor<{ data: c["infer"] }, { problems: Problems }>
 
-type extractOutMorphs<s extends Scope, traits extends Traits> = {
-    [name in keyof traits["out"]]: (target: name) => inferDefinition<name, s>
-}[keyof traits["out"]]
+type extractOutMorphs<c extends TypeContext> = {
+    [name in keyof c["out"]]: (target: name) => CheckResult<{
+        infer: inferDefinition<name, c["scope"]>
+        scope: c["scope"]
+    }>
+}[keyof c["out"]]
 
-export type Checker<t = unknown, outMorphs = undefined> = (
-    data: unknown
-) => CheckResult<t, outMorphs>
+export type Checker<c extends TypeContext> = (data: unknown) => CheckResult<c>
 
 export type TypeMetadata<t = unknown> = {
     infer: t
@@ -131,10 +107,24 @@ export type TypeMetadata<t = unknown> = {
     flat: TraversalNode
 }
 
-export type Type<t = unknown> = Checker<t> & TypeMetadata<t>
+export type TypeOptions = {
+    scope?: Scope
+    in?: Sources
+    out?: Targets
+}
 
-export type MorphType<
+export type TypeContext<
     t = unknown,
     s extends Scope = Scope,
-    traits extends Traits<t, s> = Traits<t, s>
-> = Checker<t, extractOutMorphs<s, traits>> & TypeMetadata<t>
+    sources extends Sources<t, s> = Sources<t, s>,
+    targets extends Targets<t, s> = Targets<t, s>
+> = {
+    infer: t
+    scope: s
+    in?: sources
+    out?: targets
+}
+
+export type Type<t = unknown> = t extends TypeContext
+    ? Checker<t> & TypeMetadata<t["infer"]>
+    : Checker<{ infer: t; scope: GlobalScope }> & TypeMetadata<t>

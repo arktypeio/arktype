@@ -127,7 +127,12 @@ export type deepImmutable<o> = [o] extends [object]
 
 export type equals<t, u> = identity<t> extends identity<u> ? true : false
 
-// TODO: Use symbol
+declare const id: unique symbol
+
+export type nominal<t, id extends string> = t & {
+    readonly [id]: id
+}
+
 export type assertEqual<t, u> = equals<t, u> extends true
     ? t
     : error<`types were not equivalent`>
@@ -145,7 +150,10 @@ export type requireKeys<o, key extends keyof o> = o & {
     [requiredKey in key]-?: o[requiredKey]
 }
 
-export type error<message extends string = string> = `!${message}`
+export type error<message extends string = string> = nominal<
+    `!${message}`,
+    "error"
+>
 
 export type RegexLiteral<expression extends string = string> = `/${expression}/`
 

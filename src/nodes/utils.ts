@@ -1,7 +1,7 @@
 import { parseDefinition } from "../parse/definition.ts"
 import { fullStringParse, maybeNaiveParse } from "../parse/string/string.ts"
 import type { Scope } from "../scope.ts"
-import { createType } from "../type.ts"
+import { nodeToType } from "../type.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import { deepFreeze } from "../utils/freeze.ts"
@@ -106,7 +106,7 @@ const resolveRecurse = (
         root = resolveRecurse(scope, root, seen)
     }
     // TODO: config?
-    scope.types[name] = createType(root, scope, {})
+    scope.types[name] = nodeToType(root, scope, {})
     return root as TypeSet
 }
 

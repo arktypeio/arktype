@@ -1,5 +1,5 @@
 import type { TypeNode } from "./nodes/node.ts"
-import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
+import type { inferRoot, validateRoot } from "./parse/definition.ts"
 import type { Type } from "./type.ts"
 import { type } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
@@ -47,15 +47,21 @@ export const getGlobalScope = () => {
 type InferredScopeFn = <aliases, parent extends Scope = GlobalScope>(
     aliases: validateAliases<aliases, parent>,
     config?: ScopeConfig<parent>
-) => Scope<inferAliases<aliases, parent>>
+) => Scope<inferAliases<aliases, parent>, aliases>
 
 // TODO: imports/exports, extends
-export type Scope<t extends Dict = Dict, def = Dict> = {
-    infer: t
-    def: def
-    types: {
+export type Scope<
+    t extends Dict = Dict,
+    def = Dict,
+    types extends {
+        [k in keyof t]: Type<t[k]>
+    } = {
         [k in keyof t]: Type<t[k]>
     }
+> = {
+    infer: t
+    def: def
+    types: types
     cache: { [k in keyof t]: TypeNode }
     parent?: Scope
 }
@@ -67,15 +73,12 @@ type DynamicScopeFn = <aliases extends Dict>(
 export type aliasOf<s extends Scope> = keyof s["def"] & string
 
 type validateAliases<aliases, parent extends Scope> = evaluate<{
-    [name in keyof aliases]: validateDefinition<
+    [name in keyof aliases]: validateRoot<
         aliases[name],
         parent & { def: aliases }
     >
 }>
 
 type inferAliases<aliases, parent extends Scope> = evaluate<{
-    [name in keyof aliases]: inferDefinition<
-        aliases[name],
-        parent & { def: aliases }
-    >
+    [name in keyof aliases]: inferRoot<aliases[name], parent & { def: aliases }>
 }>

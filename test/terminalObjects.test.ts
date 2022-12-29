@@ -6,6 +6,13 @@ describe("terminal objects", () => {
     it("regex", () => {
         const t = type(/.*/)
         attest(t.infer).typed as string
-        attest(t.root).snap({ string: { regex: ".*" } })
+        attest(t.root).equals({ string: { regex: ".*" } })
+    })
+    it("type", () => {
+        const t = type({
+            a: type("string")
+        })
+        attest(t.infer).typed as { a: string }
+        attest(t.root).equals({ object: { props: { a: "string" } } })
     })
 })

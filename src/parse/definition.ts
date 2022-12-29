@@ -1,6 +1,8 @@
 import type { TypeNode } from "../nodes/node.ts"
 import type { Scope } from "../scope.ts"
-import type { domainOf, Primitive, Subdomain } from "../utils/domains.ts"
+import type { Type } from "../type.ts"
+import { type } from "../type.ts"
+import type { Primitive, Subdomain } from "../utils/domains.ts"
 import { subdomainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type {
@@ -14,6 +16,11 @@ import type { inferRecord } from "./record.ts"
 import { parseRecord } from "./record.ts"
 import type { inferString, validateString } from "./string/string.ts"
 import { parseString } from "./string/string.ts"
+import type {
+    inferTraitsTuple,
+    TraitsTuple,
+    validateTraitsTuple
+} from "./tuple/traits.ts"
 import type {
     inferTuple,
     TupleExpression,
@@ -38,12 +45,24 @@ export const parseDefinition = (def: unknown, scope: Scope): TypeNode => {
     }
 }
 
+export type inferRoot<def, s extends Scope> = def extends TraitsTuple
+    ? inferTraitsTuple<def, s>
+    : inferDefinition<def, s>
+
+export type validateRoot<def, s extends Scope> = isTopType<def> extends true
+    ? buildUninferableDefinitionMessage<def>
+    : def extends TraitsTuple
+    ? validateTraitsTuple<def, s>
+    : validateDefinition<def, s>
+
 export type inferDefinition<def, s extends Scope> = isTopType<def> extends true
     ? never
     : def extends string
     ? inferString<def, s>
     : def extends List
     ? inferTuple<def, s>
+    : def extends Type
+    ? def["infer"]
     : def extends RegExp
     ? string
     : def extends Dict
@@ -54,31 +73,29 @@ export type validateDefinition<
     def,
     s extends Scope
 > = isTopType<def> extends true
-    ? buildUninferableDefinitionMessage<
-          isAny<def> extends true ? "any" : "unknown"
-      >
+    ? buildUninferableDefinitionMessage<def>
     : def extends []
     ? []
     : def extends string
     ? validateString<def, s>
     : def extends TupleExpression
     ? validateTupleExpression<def, s>
-    : def extends RegExp
+    : def extends TerminalObject
     ? def
     : def extends BadDefinitionType
-    ? buildBadDefinitionTypeMessage<domainOf<def>>
-    : def extends Function
-    ? buildBadDefinitionTypeMessage<"Function">
+    ? buildBadDefinitionTypeMessage<subdomainOf<def>>
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], s>
       }>
 
-export type buildUninferableDefinitionMessage<
-    typeName extends "any" | "unknown"
-> =
-    `Cannot statically parse a definition inferred as ${typeName}. Use 'type.dynamic(...)' instead.`
+export type buildUninferableDefinitionMessage<def> =
+    `Cannot statically parse a definition inferred as ${isAny<def> extends true
+        ? "any"
+        : "unknown"}. Use 'type.dynamic(...)' instead.`
 
-export type BadDefinitionType = Exclude<Primitive, string>
+export type TerminalObject = Type | RegExp
+
+export type BadDefinitionType = Exclude<Primitive, string> | Function
 
 export const buildBadDefinitionTypeMessage = <actual extends Subdomain>(
     actual: actual

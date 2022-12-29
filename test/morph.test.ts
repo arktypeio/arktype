@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { type } from "../api.ts"
+import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
 describe("morph", () => {
@@ -34,8 +34,25 @@ describe("morph", () => {
                 }
             })
             // TODO: to should continue chaining data/problems as a final result.
-            const result = t(true).to?.("string")
-            attest(result).equals("true").typed as string | undefined
+            const { data } = t(true).to("string")
+            attest(data).equals("true").typed as string | undefined
+        })
+        it("in scope", () => {
+            const s = scope({
+                a: [
+                    "string",
+                    ":",
+                    {
+                        // TODO: don't allow both sides of i/o mapping to be defined
+                        out: {
+                            b: (s) => parseInt(s)
+                        }
+                    }
+                ],
+                b: "number"
+            })
+            const { data } = s.types.a("5").to("b")
+            attest(data).equals(5).typed as number
         })
         describe("errors", () => {
             it("untyped additional args", () => {
