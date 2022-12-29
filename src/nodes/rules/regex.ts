@@ -1,4 +1,4 @@
-import type { CheckState } from "../../traverse/check.ts"
+import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
 import { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
 import type { CollapsibleList } from "../../utils/generics.ts"
 import { composeIntersection } from "../compose.ts"
@@ -29,16 +29,11 @@ export const getRegex = (source: string) => {
     return regexCache[source]
 }
 
-export const checkRegexRule = (
-    state: CheckState<string>,
-    rule: RegExp | string
-) => {
-    let ruleAsRegExp
-    if (typeof rule === "string") {
-        ruleAsRegExp = getRegex(rule)
+export const checkRegexRule = ((state, rule) => {
+    if (!rule.test(state.data)) {
+        state.problems.addProblem(state, { data: state.data, rule })
     }
-    checkRegex(state, ruleAsRegExp ?? (rule as RegExp))
-}
+}) satisfies TraversalCheck<"regex">
 
 export type RegexErrorContext = {
     data: string
@@ -49,12 +44,6 @@ export const buildRegexError: DiagnosticMessageBuilder<"RegexMismatch"> = ({
     data,
     rule
 }) => `'${data}' must match expression /${rule}/.`
-
-const checkRegex = (state: CheckState<string>, source: RegExp) => {
-    if (!source.test(state.data)) {
-        state.problems.addProblem(state, { data: state.data, rule: source })
-    }
-}
 
 export const regexIntersection = composeIntersection<CollapsibleList<string>>(
     collapsibleListUnion<string>

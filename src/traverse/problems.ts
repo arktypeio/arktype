@@ -83,10 +83,8 @@ export class Stringifiable<Data = unknown> {
 const uncapitalize = (s: string) => s[0].toLowerCase() + s.slice(1)
 
 // export type DiagnosticsByCode = {
-//     ExtraneousKeys: ExtraneousKeysDiagnostic
 //     MissingKey: MissingKeyDiagnostic
 //     Custom: CustomDiagnostic
-//     NumberSubtype: NumberSubtypeDiagnostic
 //     TupleLength: TupleLengthDiagnostic
 //     Union: UnionDiagnostic
 // }

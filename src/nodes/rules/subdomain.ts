@@ -1,5 +1,5 @@
 import { Scope } from "../../scope.ts"
-import { CheckState, checkNode } from "../../traverse/check.ts"
+import { CheckState, TraversalCheck, checkNode } from "../../traverse/check.ts"
 import { Subdomain, subdomainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import { List } from "../../utils/generics.ts"
@@ -84,10 +84,10 @@ export const subdomainIntersection = composeIntersection<
         : (result as SubdomainRule)
 })
 
-export const checkSubdomain = (
-    state: CheckState<unknown>,
-    subdomain: TraversalSubdomainRule,
-    scope: Scope
+export const checkSubdomain: TraversalCheck<"subdomain"> = (
+    state,
+    subdomain,
+    scope
 ) => {
     const actual = subdomainOf(state.data)
     if (typeof subdomain === "string") {

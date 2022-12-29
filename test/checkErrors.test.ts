@@ -5,12 +5,12 @@ import { type } from "../api.ts"
 describe("check errors", () => {
     test("divisible", () => {
         const t = type("number%2")
-        const checked = t.check(3)
+        const checked = t(3)
         attest(checked.problems?.summary).snap("[] 3 is not divisible by 2")
     })
     test("divisible", () => {
         const t = type("number%2")
-        const checked = t.check(4)
+        const checked = t(4)
         attest(checked).snap({ data: 4 })
     })
     test("string length", () => {
