@@ -5,12 +5,9 @@ import { attest } from "../dev/attest/api.ts"
 describe("morph", () => {
     describe("in", () => {
         it("base", () => {
-            const s = scope({ user: { name: "string" } })
             const t = type("string", {
-                scope: s,
                 from: {
-                    number: (n) => `${n}`,
-                    user: (data, other: string) => JSON.stringify(data)
+                    number: (n) => `${n}`
                 },
                 to: {
                     symbol: (s) => Symbol(s),
@@ -60,12 +57,12 @@ describe("morph", () => {
         describe("errors", () => {
             it("untyped additional args", () => {
                 // TODO: Error here
-                const t = type("string", {
+                type("string", {
                     to: { number: (n, radix) => parseInt(n, radix) }
                 })
             })
             it("unresolvable keys", () => {
-                const t = type("string", {
+                type("string", {
                     scope: scope({
                         a: "string"
                     }),
