@@ -53,12 +53,10 @@ export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
 )
 
 export type InferredTypeFn = {
-    <def>(def: validateRoot<def, GlobalScope>): InferredTypeResult<
+    <def>(def: validateRoot<def, GlobalScope>): createType<
         def,
-        {
-            infer: inferRoot<def, GlobalScope>
-            scope: GlobalScope
-        }
+        GlobalScope,
+        inferDefinition<def, GlobalScope>
     >
 
     <
@@ -72,25 +70,22 @@ export type InferredTypeFn = {
     >(
         def: validateRoot<def, s>,
         traits: { scope?: s } & traits
-    ): InferredTypeResult<def, { infer: t; scope: s } & traits>
+    ): createType<def, s, { scope: s } & traits>
 }
 
-type InferredTypeResult<
-    def,
-    c extends TypeContext
-> = isTopType<def> extends true
+type createType<def, s extends Scope, result> = isTopType<def> extends true
     ? never
-    : def extends validateDefinition<def, c["scope"]>
-    ? Type<c>
+    : def extends validateDefinition<def, s>
+    ? [result] extends [TypeContext]
+        ? Contextual.Type<result>
+        : Type<result>
     : never
 
 type DynamicTypeFn = (def: unknown, opts?: TypeOptions) => Type
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
-export type CheckResult<c extends TypeContext> = {
-    to: extractOutMorphs<c>
-} & xor<{ data: c["infer"] }, { problems: Problems }>
+export type CheckResult<data> = xor<{ data: data }, { problems: Problems }>
 
 type extractOutMorphs<c extends TypeContext> = {
     [name in keyof c["out"]]: (target: name) => CheckResult<{
@@ -99,7 +94,7 @@ type extractOutMorphs<c extends TypeContext> = {
     }>
 }[keyof c["out"]]
 
-export type Checker<c extends TypeContext> = (data: unknown) => CheckResult<c>
+export type Checker<data> = (data: unknown) => CheckResult<data>
 
 export type TypeMetadata<t = unknown> = {
     infer: t
@@ -125,6 +120,9 @@ export type TypeContext<
     out?: targets
 }
 
-export type Type<t = unknown> = t extends TypeContext
-    ? Checker<t> & TypeMetadata<t["infer"]>
-    : Checker<{ infer: t; scope: GlobalScope }> & TypeMetadata<t>
+export type Type<t = unknown> = Checker<t> & TypeMetadata<t>
+
+export namespace Contextual {
+    export type Type<t extends TypeContext = TypeContext> = Checker<t> &
+        TypeMetadata<t>
+}
