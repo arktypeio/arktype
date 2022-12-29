@@ -5,9 +5,12 @@ import { attest } from "../dev/attest/api.ts"
 describe("morph", () => {
     describe("in", () => {
         it("base", () => {
+            const s = scope({ user: { name: "string" } })
             const t = type("string", {
+                scope: s,
                 from: {
-                    number: (n) => `${n}`
+                    number: (n) => `${n}`,
+                    user: (data, other: string) => JSON.stringify(data)
                 },
                 to: {
                     symbol: (s) => Symbol(s),
@@ -15,6 +18,17 @@ describe("morph", () => {
                 }
             })
             attest(t.infer).typed as string
+        })
+        it("additional args", () => {
+            const t = type("number", {
+                from: {
+                    string: (s, radix: number) => parseInt(s, radix)
+                },
+                to: {
+                    string: (s, radix: number) => s.toString(radix)
+                }
+            })
+            attest(t.infer).typed as number
         })
         it("out morphs", () => {
             const t = type("boolean", {
@@ -44,6 +58,12 @@ describe("morph", () => {
             attest(data).equals(5).typed as number
         })
         describe("errors", () => {
+            it("untyped additional args", () => {
+                // TODO: Error here
+                const t = type("string", {
+                    to: { number: (n, radix) => parseInt(n, radix) }
+                })
+            })
             it("unresolvable keys", () => {
                 const t = type("string", {
                     scope: scope({

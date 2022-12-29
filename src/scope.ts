@@ -1,6 +1,6 @@
 import type { TypeNode } from "./nodes/node.ts"
 import type { inferRoot, validateRoot } from "./parse/definition.ts"
-import type { Type } from "./type.ts"
+import type { Morphable } from "./type.ts"
 import { type } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type { Dict, evaluate } from "./utils/generics.ts"
@@ -54,9 +54,9 @@ export type Scope<
     t extends Dict = Dict,
     def = Dict,
     types extends {
-        [k in keyof t]: Type<t[k]>
+        [k in keyof t]: Morphable<t[k]>
     } = {
-        [k in keyof t]: Type<t[k]>
+        [k in keyof t]: Morphable<t[k]>
     }
 > = {
     infer: t

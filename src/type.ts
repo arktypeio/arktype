@@ -18,7 +18,13 @@ import { getRootScope } from "./scope.ts"
 import { check } from "./traverse/check.ts"
 import { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import type { defer, isTopType, nominal, xor } from "./utils/generics.ts"
+import type {
+    defer,
+    evaluate,
+    isTopType,
+    nominal,
+    xor
+} from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
@@ -70,66 +76,61 @@ export type InferredTypeFn = {
     ): createType<
         def,
         scope,
-        extractMorphs<inferRoot<def, scope>, scope, sources, targets>
+        extractNeighbors<inferRoot<def, scope>, scope, sources, targets>
     >
 }
 
-export type Sources<t, scope extends Scope> = {
-    [name in Identifier<aliasOf<scope>>]?: InMorph<
-        t,
-        inferDefinition<name, scope>
-    >
-}
-
-// TODO: possible to allow more args?
-type InMorph<data, source> = (data: source) => data
-
-type OutMorph<data, target> = (data: data) => target
-
-export type Targets<data, scope extends Scope> = {
-    [name in Identifier<aliasOf<scope>>]?: OutMorph<
-        data,
-        inferDefinition<name, scope>
-    >
-}
+type createType<
+    def,
+    scope extends Scope,
+    morphs extends Morphs,
+    data = inferRoot<def, scope>
+> = isTopType<def> extends true
+    ? never
+    : def extends validateDefinition<def, scope>
+    ? {} extends morphs
+        ? Type<data>
+        : Morphable<data, evaluate<morphs>>
+    : never
 
 export type Morphs<data = unknown, scope extends Scope = Scope> = {
     from?: Sources<data, scope>
     to?: Targets<data, scope>
 }
 
-type createType<
-    def,
-    scope extends Scope,
-    morphs extends Morphs<data, scope>,
-    data = inferRoot<def, scope>
-> = isTopType<def> extends true
-    ? never
-    : def extends validateDefinition<def, scope>
-    ? morphs["from"] extends {}
-        ? morphs["to"] extends {}
-            ? Type<
-                  (
-                      from: keyof morphs["from"]
-                  ) => (data: data) => to<keyof morphs["to"]>
-              >
-            : Type<(from: keyof morphs["from"]) => data>
-        : morphs["to"] extends {}
-        ? (data: data) => to<keyof morphs["to"]>
-        : Type<data>
-    : never
+export type Sources<data, scope extends Scope> = {
+    [name in Identifier<aliasOf<scope>>]?: (
+        source: inferDefinition<name, scope>,
+        ...args: never[]
+    ) => data
+}
 
-type extractMorphs<
+export type Targets<data, scope extends Scope> = {
+    [name in Identifier<aliasOf<scope>>]?: (
+        data: data,
+        ...args: never[]
+    ) => inferDefinition<name, scope>
+}
+
+type extractNeighbors<
     data,
     scope extends Scope,
     sources extends Sources<data, scope>,
     targets extends Targets<data, scope>
-> = (Sources<data, scope> extends sources ? {} : { from: sources }) &
-    (Targets<data, scope> extends targets ? {} : { to: targets })
+> = (Sources<data, scope> extends sources
+    ? {}
+    : {
+          from: sources
+      }) &
+    (Targets<data, scope> extends targets
+        ? {}
+        : {
+              to: targets
+          })
 
 type DynamicTypeOptions = { scope?: Scope } & Morphs
 
-type DynamicTypeFn = (def: unknown, opts?: DynamicTypeOptions) => Type
+type DynamicTypeFn = (def: unknown, opts?: DynamicTypeOptions) => Morphable
 
 export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
 
@@ -143,12 +144,22 @@ export type TypeMetadata<data = unknown> = {
     flat: TraversalNode
 }
 
-export type to<names> = defer<nominal<names, "to">>
+export type from<sources> = defer<nominal<sources, "from">>
+
+export type to<targets> = defer<nominal<targets, "to">>
 
 export type Type<data = unknown> = defer<Checker<data> & TypeMetadata<data>>
 
-type extractOutMorphs<scope extends Scope, outMorphs> = {
-    [name in keyof outMorphs]: (
+export type Morphable<data = unknown, morphs = {}> = defer<
+    Checker<data> & TypeMetadata<data>
+>
+
+type extractTargets<
+    data,
+    scope extends Scope,
+    targets extends Targets<data, scope>
+> = {
+    [name in keyof targets]: (
         target: name
     ) => CheckResult<inferDefinition<name, scope>>
-}[keyof outMorphs]
+}[keyof targets]

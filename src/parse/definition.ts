@@ -1,7 +1,7 @@
 import type { TypeNode } from "../nodes/node.ts"
 import type { Scope } from "../scope.ts"
-import type { Type } from "../type.ts"
-import { type } from "../type.ts"
+import type { Morphable } from "../type.ts"
+import { Type } from "../type.ts"
 import type { Primitive, Subdomain } from "../utils/domains.ts"
 import { subdomainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
@@ -64,7 +64,7 @@ export type inferDefinition<
     ? inferString<def, scope>
     : def extends List
     ? inferTuple<def, scope>
-    : def extends Type
+    : def extends Morphable
     ? def["infer"]
     : def extends RegExp
     ? string
@@ -96,7 +96,7 @@ export type buildUninferableDefinitionMessage<def> =
         ? "any"
         : "unknown"}. Use 'type.dynamic(...)' instead.`
 
-export type TerminalObject = Type | RegExp
+export type TerminalObject = Morphable | RegExp
 
 export type BadDefinitionType = Exclude<Primitive, string> | Function
 
