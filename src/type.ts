@@ -13,12 +13,19 @@ import type {
     validateRoot
 } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
+import type { UnaryFunction } from "./parse/tuple/utils.ts"
 import type { aliasOf, RootScope, Scope } from "./scope.ts"
 import { getRootScope, scope } from "./scope.ts"
 import { check } from "./traverse/check.ts"
 import { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import type { isTopType, xor } from "./utils/generics.ts"
+import type {
+    autocomplete,
+    defer,
+    isTopType,
+    nominal,
+    xor
+} from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
@@ -61,38 +68,33 @@ export type InferredTypeFn = {
 
     <
         def,
-        morphs extends Morphs<inferRoot<def, s>, s>,
+        sources extends Sources<inferRoot<def, s>, s>,
+        targets extends Targets<inferRoot<def, s>, s>,
         s extends Scope = RootScope
     >(
         def: validateRoot<def, s>,
-        opts: { scope?: s } & morphs
-    ): createType<def, s, morphs>
+        opts: {
+            scope?: s
+            in?: sources
+            out?: targets
+        }
+    ): createType<def, s, extractMorphs<inferRoot<def, s>, s, sources, targets>>
 }
 
 export type Sources<t, s extends Scope> = {
-    [name in Identifier<aliasOf<s>>]?: (
-        data: inferDefinition<name, s>,
-        // rest args typed as never so they can't be used unless explicitly typed
-        ...rest: never[]
-    ) => t
+    [name in Identifier<aliasOf<s>>]?: InMorph<t, inferDefinition<name, s>>
 }
 
-const t = type("string", {
-    scope: scope({
-        a: "string"
-    }),
-    in: {
-        number: (n) => `${n}`,
-        a: (data) => `${data}`,
-        foo: (bar) => `${bar}`
-    }
-})
+type InMorph<t, source> = (
+    data: source,
+    // rest args typed as never so they can't be used unless explicitly typeda
+    ...rest: never[]
+) => t
+
+type OutMorph<t, target> = (data: t, ...rest: never[]) => target
 
 export type Targets<t, s extends Scope> = {
-    [name in Identifier<aliasOf<s>>]?: (
-        data: t,
-        ...rest: never[]
-    ) => inferDefinition<name, s>
+    [name in Identifier<aliasOf<s>>]?: OutMorph<t, inferDefinition<name, s>>
 }
 
 export type Morphs<t = unknown, s extends Scope = Scope> = {
@@ -108,8 +110,18 @@ type createType<
 > = isTopType<def> extends true
     ? never
     : def extends validateDefinition<def, s>
-    ? Type<t>
+    ? {} extends morphs
+        ? Type<t>
+        : Type<(data: t) => morphs>
     : never
+
+type extractMorphs<
+    t,
+    s extends Scope,
+    sources extends Sources<t, s>,
+    targets extends Targets<t, s>
+> = (Sources<t, s> extends sources ? {} : { in: sources }) &
+    (Targets<t, s> extends targets ? {} : { out: targets })
 
 type DynamicTypeOptions = { scope?: Scope } & Morphs<unknown, Scope>
 
@@ -127,7 +139,11 @@ export type TypeMetadata<t = unknown> = {
     flat: TraversalNode
 }
 
-export type Type<t = unknown> = Checker<t> & TypeMetadata<t>
+export type Type<t = unknown> = defer<
+    t extends (data: infer data) => infer morphs
+        ? Checker<data> & TypeMetadata<data>
+        : Checker<t> & TypeMetadata<t>
+>
 
 type extractOutMorphs<s extends Scope, outMorphs> = {
     [name in keyof outMorphs]: (

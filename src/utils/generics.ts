@@ -21,6 +21,11 @@ export type evaluate<t> = {
     [k in keyof t]: t[k]
 } & unknown
 
+/** Causes a type that would be eagerly calculated to be displayed as-is.
+ *  WARNING: Makes t NonNullable as a side effect.
+ */
+export type defer<t> = t & {}
+
 // Currently returns never if string and number keys of the same name are merged, e.g.:
 // type Result = Merge<{1: false}, {"1": true}> //never
 // This feels too niche to fix at the cost of performance and complexity, but that could change.

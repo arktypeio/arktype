@@ -61,6 +61,19 @@ describe("morph", () => {
                     out: { number: (n, radix) => parseInt(n, radix) }
                 })
             })
+            it("unresolvable keys", () => {
+                const t = type("string", {
+                    scope: scope({
+                        a: "string"
+                    }),
+                    in: {
+                        number: (n) => `${n}`,
+                        a: (data) => `${data}`,
+                        // @ts-expect-error
+                        foo: (bar) => "baz"
+                    }
+                })
+            })
         })
     })
 })
