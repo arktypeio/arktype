@@ -150,6 +150,9 @@ export type requireKeys<o, key extends keyof o> = o & {
     [requiredKey in key]-?: o[requiredKey]
 }
 
+/** Type equivalent of ?? */
+export type coalesce<t, fallback> = t extends {} ? t : fallback
+
 export type error<message extends string = string> = nominal<
     `!${message}`,
     "error"

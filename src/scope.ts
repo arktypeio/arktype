@@ -35,16 +35,16 @@ export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
     DynamicScopeFn
 >
 
-let globalScope: Scope<{}, {}>
+let rootScope: Scope<{}, {}>
 
-export type GlobalScope = typeof globalScope
+export type RootScope = typeof rootScope
 
-export const getGlobalScope = () => {
-    globalScope ??= scope({}) as any
-    return globalScope!
+export const getRootScope = () => {
+    rootScope ??= scope({}) as any
+    return rootScope!
 }
 
-type InferredScopeFn = <aliases, parent extends Scope = GlobalScope>(
+type InferredScopeFn = <aliases, parent extends Scope = RootScope>(
     aliases: validateAliases<aliases, parent>,
     config?: ScopeConfig<parent>
 ) => Scope<inferAliases<aliases, parent>, aliases>
