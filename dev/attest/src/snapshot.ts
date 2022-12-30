@@ -1,5 +1,5 @@
 import { basename, dirname, isAbsolute, join } from "node:path"
-import type { CallExpression, SourceFile, ts } from "ts-morph"
+import type { CallExpression, Project, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
 import { readJson } from "../../runtime/api.ts"
 import { addListener } from "../../runtime/shell.ts"
@@ -20,10 +20,11 @@ export type SnapshotArgs = {
 }
 
 export const findCallExpressionAncestor = (
+    project: Project,
     position: SourcePosition,
     functionName: string
 ): CallExpression<ts.CallExpression> => {
-    const startNode = getTsNodeAtPosition(position)
+    const startNode = getTsNodeAtPosition(project, position)
     const matchingCall = startNode.getAncestors().find((ancestor) => {
         const expression = ancestor
             .asKind(SyntaxKind.CallExpression)
@@ -76,12 +77,13 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
     benchFormat
 }: SnapshotArgs) => {
     const { transient } = getAttestConfig()
-    const project = getRealTsMorphProject()
-    const file = project.getSourceFileOrThrow(position.file)
-    const snapCall = findCallExpressionAncestor(position, snapFunctionName)
+    const snapCall = findCallExpressionAncestor(
+        getRealTsMorphProject(),
+        position,
+        snapFunctionName
+    )
     const newArgText = JSON.stringify(serializedValue)
     queuedUpdates.push({
-        file,
         position,
         snapCall,
         snapFunctionName,
@@ -93,7 +95,6 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
 }
 
 export type QueuedUpdate = {
-    file: SourceFile
     position: SourcePosition
     snapCall: CallExpression
     snapFunctionName: string
@@ -116,7 +117,7 @@ export type QueuedUpdate = {
  **/
 const queuedUpdates: QueuedUpdate[] = []
 
-addListener("SIGTERM", () => {
+addListener("exit", () => {
     try {
         writeUpdates(queuedUpdates)
     } catch (e) {

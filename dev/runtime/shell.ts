@@ -1,14 +1,12 @@
 import { execSync } from "node:child_process"
-import { existsSync, statSync } from "node:fs"
 import * as process from "node:process"
-import { readFile, WalkOptions } from "../runtime/fs.ts"
 
 /** Add a listener that works with Deno or Node */
 export const addListener = (signal: string, handler: () => void) => {
     const self = globalThis as any
     return self.addEventListener
         ? self.addEventListener(signal, handler)
-        : self.process.addListener(signal, handler)
+        : self.process.on(signal, handler)
 }
 
 // @snipStart:shell

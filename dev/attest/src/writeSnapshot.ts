@@ -114,7 +114,11 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
 const runPrettierIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
     try {
         const updatedPaths = [
-            ...new Set(queuedUpdates.map((update) => update.file.getFilePath()))
+            ...new Set(
+                queuedUpdates.map((update) =>
+                    update.snapCall.getSourceFile().getFilePath()
+                )
+            )
         ]
         shell(`pnpx prettier --write ${updatedPaths.join(" ")}`)
     } catch {
@@ -132,9 +136,9 @@ const summarizeSnapUpdate = (
     } `
     updateSummary += update.baselinePath
         ? `baseline '${update.baselinePath.join("/")}' `
-        : `snap at ${getFileKey(update.file.getFilePath())}:${
-              update.position.line
-          } `
+        : `snap at ${getFileKey(
+              update.snapCall.getSourceFile().getFilePath()
+          )}:${update.position.line} `
     updateSummary += previousValue
         ? `from ${previousValue} to `
         : `${update.baselinePath ? "at" : "as"} `
@@ -151,5 +155,5 @@ const writeUpdateToFile = (
         update.snapCall.removeArgument(originalArg)
     }
     update.snapCall.addArgument(update.newArgText)
-    update.file.saveSync()
+    update.snapCall.getSourceFile().saveSync()
 }

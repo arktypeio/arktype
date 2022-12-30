@@ -7,6 +7,7 @@ describe("parse array", () => {
     it("parse", () => {
         const t = type("string[]")
         attest(t.infer).typed as string[]
+        attest(t.flat).snap([["subdomain", ["Array", "string"]]])
         attest(t.root).snap({
             object: {
                 subdomain: ["Array", "string"]
