@@ -66,3 +66,42 @@ const { data } = creditCard("45325", "!").to("number")
 const { data } = creditCard("45325", { check: false }).to("number")
 
 // Could have variant types with a base type and sets of conditions
+
+type zzz = [
+    Type<(from: "number") => (data: string) => to<"number" | "symbol">>,
+
+    Type<(In: "number") => (data: string) => Out<"number" | "symbol">>,
+
+    Type<
+        string,
+        {
+            in: {
+                number: number
+            }
+            out: {
+                symbol: symbol
+                number: number
+            }
+        }
+    >,
+
+    Type<
+        string,
+        {
+            from: {
+                number: number
+            }
+            to: {
+                symbol: symbol
+                number: number
+            }
+        }
+    >,
+
+    Type<
+        (from: { number: number }) => (data: string) => to<{
+            number: number
+            symbol: symbol
+        }>
+    >
+]

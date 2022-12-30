@@ -14,23 +14,23 @@ import type { Scanner } from "./shift/scanner.ts"
 export const parseString = (def: string, scope: Scope) =>
     memoizedParse(scope, def)
 
-export type parseString<
-    def extends string,
-    alias extends string
-> = maybeNaiveParse<def, alias>
-
-export type inferString<def extends string, scope extends Scope> = inferAst<
-    parseString<def, aliasOf<scope>>,
-    scope
+export type parseString<def extends string, aliases> = maybeNaiveParse<
+    def,
+    aliases
 >
 
-export type validateString<
-    def extends string,
-    scope extends Scope
-> = parseString<def, aliasOf<scope>> extends infer astOrError
-    ? astOrError extends error<infer message>
+export type inferString<def extends string, aliases> = inferAst<
+    parseString<def, aliases>,
+    aliases
+>
+
+export type validateString<def extends string, aliases> = parseString<
+    def,
+    aliases
+> extends infer result
+    ? result extends error<infer message>
         ? message
-        : validateAstSemantics<astOrError, scope> extends infer semanticResult
+        : validateAstSemantics<result, aliases> extends infer semanticResult
         ? semanticResult extends undefined
             ? def
             : semanticResult
@@ -43,14 +43,14 @@ export type validateString<
  */
 type maybeNaiveParse<
     def extends string,
-    alias extends string
+    aliases
 > = def extends `${infer child}[]`
-    ? isResolvableIdentifier<child, alias> extends true
+    ? isResolvableIdentifier<child, aliases> extends true
         ? [child, "[]"]
-        : fullStringParse<def, alias>
-    : isResolvableIdentifier<def, alias> extends true
+        : fullStringParse<def, aliases>
+    : isResolvableIdentifier<def, aliases> extends true
     ? def
-    : fullStringParse<def, alias>
+    : fullStringParse<def, aliases>
 
 export const maybeNaiveParse = (
     def: string,
@@ -73,9 +73,9 @@ export const fullStringParse = (def: string, scope: Scope) => {
     return loop(s)
 }
 
-type fullStringParse<def extends string, alias extends string> = loop<
+type fullStringParse<def extends string, aliases> = loop<
     state.initialize<def>,
-    alias
+    aliases
 >
 
 // TODO: Recursion perf?
@@ -86,22 +86,20 @@ const loop = (s: DynamicState) => {
     return s.ejectFinalizedRoot()
 }
 
-type loop<
-    s extends StaticState | error,
-    alias extends string
-> = s extends StaticState ? loopValid<s, alias> : s
+type loop<s extends StaticState | error, aliases> = s extends StaticState
+    ? loopValid<s, aliases>
+    : s
 
 type loopValid<
     s extends StaticState,
-    alias extends string
+    aliases
 > = s["unscanned"] extends Scanner.finalized
     ? s["root"]
-    : loop<next<s, alias>, alias>
+    : loop<next<s, aliases>, aliases>
 
 const next = (s: DynamicState) =>
     s.hasRoot() ? parseOperator(s) : parseOperand(s)
 
-type next<
-    s extends StaticState,
-    alias extends string
-> = s["root"] extends undefined ? parseOperand<s, alias> : parseOperator<s>
+type next<s extends StaticState, aliases> = s["root"] extends undefined
+    ? parseOperand<s, aliases>
+    : parseOperator<s>

@@ -1,6 +1,6 @@
 import type { Scope } from "../../scope.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
-import type { CollapsibleList } from "../../utils/generics.ts"
+import type { CollapsibleList, Dict } from "../../utils/generics.ts"
 import { composeIntersection, composeKeyedOperation } from "../compose.ts"
 import type { PredicateContext } from "../predicate.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
@@ -17,15 +17,12 @@ import { getRegex, regexIntersection } from "./regex.ts"
 import type { SubdomainRule, TraversalSubdomainRule } from "./subdomain.ts"
 import { compileSubdomain, subdomainIntersection } from "./subdomain.ts"
 
-export type Rules<
-    domain extends Domain = Domain,
-    alias extends string = string
-> = {
-    readonly subdomain?: SubdomainRule<alias>
+export type Rules<domain extends Domain = Domain, aliases = Dict> = {
+    readonly subdomain?: SubdomainRule<aliases>
     readonly regex?: CollapsibleList<string>
     readonly divisor?: number
     readonly range?: Range
-    readonly props?: PropsRule<alias>
+    readonly props?: PropsRule<aliases>
     readonly refinement?: CollapsibleList<Refinement<inferDomain<domain>>>
 }
 
@@ -40,28 +37,25 @@ export type TraversalRuleEntry =
 
 export type Refinement<data = unknown> = (data: data) => boolean
 
-export type RuleSet<
-    domain extends Domain,
-    alias extends string
-> = Domain extends domain
+export type RuleSet<domain extends Domain, aliases> = Domain extends domain
     ? Rules
     : domain extends "object"
     ? defineRuleSet<
           "object",
           "subdomain" | "props" | "range" | "refinement",
-          alias
+          aliases
       >
     : domain extends "string"
-    ? defineRuleSet<"string", "regex" | "range" | "refinement", alias>
+    ? defineRuleSet<"string", "regex" | "range" | "refinement", aliases>
     : domain extends "number"
-    ? defineRuleSet<"number", "divisor" | "range" | "refinement", alias>
-    : defineRuleSet<domain, "refinement", alias>
+    ? defineRuleSet<"number", "divisor" | "range" | "refinement", aliases>
+    : defineRuleSet<domain, "refinement", aliases>
 
 type defineRuleSet<
     domain extends Domain,
     keys extends keyof Rules,
-    alias extends string
-> = Pick<Rules<domain, alias>, keys>
+    aliases
+> = Pick<Rules<domain, aliases>, keys>
 
 const refinementIntersection =
     composeIntersection<CollapsibleList<Refinement>>(collapsibleListUnion)

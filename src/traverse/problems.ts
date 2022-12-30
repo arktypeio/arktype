@@ -79,6 +79,7 @@ export class Stringifiable<Data = unknown> {
     }
 
     // TODO: Fix
+
     toString() {
         return JSON.stringify(this.raw)
     }
@@ -88,7 +89,6 @@ const uncapitalize = (s: string) => s[0].toLowerCase() + s.slice(1)
 
 // export type DiagnosticsByCode = {
 //     Extraneous
-//
 //     Custom: CustomDiagnostic
 //     TupleLength: TupleLengthDiagnostic
 //     Union: UnionDiagnostic

@@ -4,6 +4,7 @@ import { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
 import { Subdomain, subdomainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import { List } from "../../utils/generics.ts"
+import type { Dict } from "../../utils/generics.ts"
 import { composeIntersection, empty, equal } from "../compose.ts"
 import { nodeIntersection } from "../intersection.ts"
 import type { TraversalNode, TypeNode } from "../node.ts"
@@ -13,11 +14,11 @@ import type { FlattenAndPushRule } from "./rules.ts"
 
 // Unfortunately we can't easily abstract between these two rules because of
 // nonsense TS circular reference issues.
-export type SubdomainRule<alias extends string = string> =
+export type SubdomainRule<aliases = Dict> =
     | Subdomain
-    | ["Array", TypeNode<alias>]
-    | ["Set", TypeNode<alias>]
-    | ["Map", TypeNode<alias>, TypeNode<alias>]
+    | ["Array", TypeNode<aliases>]
+    | ["Set", TypeNode<aliases>]
+    | ["Map", TypeNode<aliases>, TypeNode<aliases>]
 
 export type TraversalSubdomainRule =
     | Subdomain

@@ -63,7 +63,9 @@ export const nodeExtendsDomain = <domain extends Domain>(
 
 // TODO: Move to parse
 export const isResolvable = (scope: Scope, name: string) => {
-    return isKeyOf(name, keywords) || scope.def[name] || scope.parent?.def[name]
+    return isKeyOf(name, keywords) ||
+        scope.aliases[name] ||
+        scope.parent?.aliases[name]
         ? true
         : false
 }
@@ -91,13 +93,13 @@ const resolveRecurse = (
     if (isKeyOf(name, scope.types)) {
         return scope.types[name].root as TypeSet
     }
-    if (!scope.def[name]) {
+    if (!scope.aliases[name]) {
         return (
             (scope.parent?.types[name].root as TypeSet) ??
             throwInternalError(`Unexpectedly failed to resolve alias '${name}'`)
         )
     }
-    let root = parseDefinition(scope.def[name], scope)
+    let root = parseDefinition(scope.aliases[name], scope)
     if (typeof root === "string") {
         if (seen.includes(root)) {
             return throwParseError(buildShallowCycleErrorMessage(name, seen))

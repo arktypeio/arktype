@@ -1,5 +1,5 @@
 import { getRegex } from "../../../../nodes/rules/regex.ts"
-import type { error } from "../../../../utils/generics.ts"
+import type { error, tailOfString } from "../../../../utils/generics.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { state, StaticState } from "../../reduce/static.ts"
 import type { Scanner } from "../scanner.ts"
@@ -42,7 +42,7 @@ export type parseEnclosed<
         : state.setRoot<
               s,
               `${enclosing}${scanned}${enclosing}`,
-              Scanner.tailOf<nextUnscanned>
+              tailOfString<nextUnscanned>
           >
     : never
 

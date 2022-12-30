@@ -15,6 +15,19 @@ describe("morph", () => {
                 }
             })
             attest(t.infer).typed as string
+            t("foo").to("symbol")
+        })
+        it("additional args", () => {
+            const t = type("number", {
+                from: {
+                    string: (s, radix: number) => parseInt(s, radix)
+                },
+                to: {
+                    string: (s, radix: number) => s.toString(radix)
+                }
+            })
+            attest(t.infer).typed as number
+            t(5).to("string", 5)
         })
         it("out morphs", () => {
             const t = type("boolean", {
@@ -33,7 +46,7 @@ describe("morph", () => {
                     ":",
                     {
                         // TODO: don't allow both sides of i/o mapping to be defined
-                        out: {
+                        to: {
                             b: (s) => parseInt(s)
                         }
                     }
@@ -44,11 +57,14 @@ describe("morph", () => {
             attest(data).equals(5).typed as number
         })
         describe("errors", () => {
-            it("unresolvable keys", () => {
+            it("untyped additional args", () => {
+                // TODO: Error here
                 const t = type("string", {
-                    scope: scope({
-                        a: "string"
-                    }),
+                    to: { number: (n, radix) => parseInt(n, radix) }
+                })
+            })
+            it("unresolvable keys", () => {
+                const t = scope({ a: "string" }).type("string", {
                     from: {
                         number: (n) => `${n}`,
                         a: (data) => `${data}`,

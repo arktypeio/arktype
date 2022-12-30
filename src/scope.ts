@@ -1,27 +1,36 @@
 import type { TypeNode } from "./nodes/node.ts"
-import type { inferRoot, validateRoot } from "./parse/definition.ts"
-import type { Type } from "./type.ts"
-import { type } from "./type.ts"
+import type {
+    buildUninferableDefinitionMessage,
+    inferDefinition,
+    validateDefinition
+} from "./parse/definition.ts"
+import type {
+    InferredTypeConstructor,
+    morphsFrom,
+    toType,
+    Traits
+} from "./type.ts"
+import { composeType, type } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import type { Dict, evaluate } from "./utils/generics.ts"
+import type { Dict, evaluate, isTopType } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
 const rawScope = (def: Dict, parent?: Scope) => {
     const result: Scope = {
-        def,
+        aliases: def,
         infer: chainableNoOpProxy,
-        // TODO: intersection cache
         cache: {},
-        types: {}
+        types: {},
+        type: {} as any
     }
+    result.type = composeType(result) as any
     if (parent) {
         result.parent = parent
     }
-    const typeConfig = { scope: result }
     for (const name in def) {
         // TODO: Fix typeConfig
-        result.types[name] = type.dynamic(def[name], typeConfig as any)
+        result.types[name] = type.dynamic(def[name])
     }
     return result
 }
@@ -31,11 +40,11 @@ export type ScopeConfig<parent extends Scope> = {
 }
 
 export const scope = lazyDynamicWrap(rawScope) as any as LazyDynamicWrap<
-    InferredScopeFn,
-    DynamicScopeFn
+    InferredScopeConstructor,
+    DynamicScopeConstructor
 >
 
-let rootScope: Scope<{}, {}>
+let rootScope: Scope<{}>
 
 export type RootScope = typeof rootScope
 
@@ -44,41 +53,67 @@ export const getRootScope = () => {
     return rootScope!
 }
 
-type InferredScopeFn = <aliases, parent extends Scope = RootScope>(
+type InferredScopeConstructor = <aliases, parent extends Scope = RootScope>(
     aliases: validateAliases<aliases, parent>,
     config?: ScopeConfig<parent>
-) => Scope<inferAliases<aliases, parent>, aliases>
+) => Scope<aliases>
 
-// TODO: imports/exports, extends
-export type Scope<
-    t extends Dict = Dict,
-    def = Dict,
-    types extends {
-        [k in keyof t]: Type<t[k]>
-    } = {
-        [k in keyof t]: Type<t[k]>
-    }
-> = {
-    infer: t
-    def: def
-    types: types
-    cache: { [k in keyof t]: TypeNode }
-    parent?: Scope
+type toScope<aliases> = {
+    [k in keyof aliases]: aliases[k] extends TraitsTuple
+        ? toType<aliases[k][0], aliases, morphsFrom<aliases[k][2], RootScope>>
+        : toType<aliases[k], aliases, {}>
 }
 
-type DynamicScopeFn = <aliases extends Dict>(
+// TODO: imports/exports, extends
+export type Scope<aliases = Dict> = {
     aliases: aliases
-) => Scope<Dict<keyof aliases & string>, Dict<keyof aliases & string>>
+    // TODO: Fix parent
+    infer: Dict extends aliases ? Dict : inferAliases<aliases, RootScope>
+    types: toScope<aliases>
+    cache: { [k in keyof aliases]: TypeNode }
+    parent?: Scope
+    type: InferredTypeConstructor<aliases>
+}
 
-export type aliasOf<scope extends Scope> = keyof scope["def"] & string
+export type aliasOf<aliases> = keyof aliases & string
+
+type DynamicScopeConstructor = <aliases extends Dict>(
+    aliases: aliases
+) => Scope<Dict<aliasOf<aliases>>>
 
 type validateAliases<aliases, parent extends Scope> = evaluate<{
-    [name in keyof aliases]: validateRoot<
+    [name in keyof aliases]: validateTypeDefinition<
         aliases[name],
-        parent & { def: aliases }
+        aliases & parent["aliases"]
     >
 }>
 
+type validateTypeDefinition<def, aliases> = isTopType<def> extends true
+    ? buildUninferableDefinitionMessage<def>
+    : def extends TraitsTuple
+    ? validateTraitsTuple<def, aliases>
+    : validateDefinition<def, aliases>
+
 type inferAliases<aliases, parent extends Scope> = evaluate<{
-    [name in keyof aliases]: inferRoot<aliases[name], parent & { def: aliases }>
+    [name in keyof aliases]: inferTypeDefinition<
+        aliases[name],
+        aliases & parent["aliases"]
+    >
 }>
+
+type inferTypeDefinition<def, aliases> = def extends TraitsTuple
+    ? inferTraitsTuple<def, aliases>
+    : inferDefinition<def, aliases>
+
+export type TraitsTuple = [unknown, ":", unknown]
+
+export type inferTraitsTuple<
+    def extends TraitsTuple,
+    aliases
+> = inferDefinition<def[0], aliases>
+
+export type validateTraitsTuple<def extends TraitsTuple, aliases> = [
+    validateDefinition<def[0], aliases>,
+    ":",
+    Traits<inferDefinition<def[0], aliases>, aliases>
+]

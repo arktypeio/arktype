@@ -1,8 +1,7 @@
 import { describe, it } from "mocha"
-import { scope } from "../api.ts"
+import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
-import { type } from "../src/type.ts"
 import type { Dict } from "../src/utils/generics.ts"
 
 describe("dynamic", () => {
@@ -31,7 +30,7 @@ describe("dynamic", () => {
         attest(() => unknownScope.types.b.infer).throws.snap(
             `TypeError: Cannot read properties of undefined (reading 'infer')`
         )
-        attest(() => type("b", { scope: unknownScope })).throws(
+        attest(() => unknownScope.type("b")).throws(
             buildUnresolvableMessage("b")
         )
     })

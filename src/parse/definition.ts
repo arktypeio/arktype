@@ -1,7 +1,6 @@
 import type { TypeNode } from "../nodes/node.ts"
 import type { Scope } from "../scope.ts"
 import type { Type } from "../type.ts"
-import { type } from "../type.ts"
 import type { Primitive, Subdomain } from "../utils/domains.ts"
 import { subdomainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
@@ -16,11 +15,6 @@ import type { inferRecord } from "./record.ts"
 import { parseRecord } from "./record.ts"
 import type { inferString, validateString } from "./string/string.ts"
 import { parseString } from "./string/string.ts"
-import type {
-    inferTraitsTuple,
-    TraitsTuple,
-    validateTraitsTuple
-} from "./tuple/traits.ts"
 import type {
     inferTuple,
     TupleExpression,
@@ -45,50 +39,34 @@ export const parseDefinition = (def: unknown, scope: Scope): TypeNode => {
     }
 }
 
-export type inferRoot<def, scope extends Scope> = def extends TraitsTuple
-    ? inferTraitsTuple<def, scope>
-    : inferDefinition<def, scope>
-
-export type validateRoot<def, scope extends Scope> = isTopType<def> extends true
-    ? buildUninferableDefinitionMessage<def>
-    : def extends TraitsTuple
-    ? validateTraitsTuple<def, scope>
-    : validateDefinition<def, scope>
-
-export type inferDefinition<
-    def,
-    scope extends Scope
-> = isTopType<def> extends true
+export type inferDefinition<def, aliases> = isTopType<def> extends true
     ? never
     : def extends string
-    ? inferString<def, scope>
+    ? inferString<def, aliases>
     : def extends List
-    ? inferTuple<def, scope>
+    ? inferTuple<def, aliases>
     : def extends Type
     ? def["infer"]
     : def extends RegExp
     ? string
     : def extends Dict
-    ? inferRecord<def, scope>
+    ? inferRecord<def, aliases>
     : never
 
-export type validateDefinition<
-    def,
-    scope extends Scope
-> = isTopType<def> extends true
+export type validateDefinition<def, aliases> = isTopType<def> extends true
     ? buildUninferableDefinitionMessage<def>
     : def extends []
     ? []
     : def extends string
-    ? validateString<def, scope>
+    ? validateString<def, aliases>
     : def extends TupleExpression
-    ? validateTupleExpression<def, scope>
+    ? validateTupleExpression<def, aliases>
     : def extends TerminalObject
     ? def
     : def extends BadDefinitionType
     ? buildBadDefinitionTypeMessage<subdomainOf<def>>
     : evaluate<{
-          [k in keyof def]: validateDefinition<def[k], scope>
+          [k in keyof def]: validateDefinition<def[k], aliases>
       }>
 
 export type buildUninferableDefinitionMessage<def> =

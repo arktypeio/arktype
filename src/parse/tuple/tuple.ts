@@ -31,45 +31,43 @@ export const parseTuple = (def: List, scope: Scope): TypeNode => {
 // TODO: flat tuple expressions
 export type validateTupleExpression<
     def extends TupleExpression,
-    scope extends Scope
+    aliases
 > = def[1] extends "=>"
-    ? validateRefinementTuple<def[0], scope>
+    ? validateRefinementTuple<def[0], aliases>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? [def[0], error<buildMissingRightOperandMessage<def[1], "">>]
         : [
-              validateDefinition<def[0], scope>,
+              validateDefinition<def[0], aliases>,
               def[1],
-              validateDefinition<def[2], scope>
+              validateDefinition<def[2], aliases>
           ]
     : def[1] extends "[]"
-    ? [validateDefinition<def[0], scope>, "[]"]
+    ? [validateDefinition<def[0], aliases>, "[]"]
     : never
 
-export type inferTuple<
-    def extends List,
-    scope extends Scope
-> = def extends TupleExpression
-    ? inferTupleExpression<def, scope>
+export type inferTuple<def extends List, aliases> = def extends TupleExpression
+    ? inferTupleExpression<def, aliases>
     : {
-          [i in keyof def]: inferDefinition<def[i], scope>
+          [i in keyof def]: inferDefinition<def[i], aliases>
       }
 
 type inferTupleExpression<
     def extends TupleExpression,
-    scope extends Scope
+    aliases
 > = def[1] extends "=>"
-    ? inferDefinition<def[0], scope>
+    ? inferDefinition<def[0], aliases>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? never
         : def[1] extends "&"
         ? evaluate<
-              inferDefinition<def[0], scope> & inferDefinition<def[2], scope>
+              inferDefinition<def[0], aliases> &
+                  inferDefinition<def[2], aliases>
           >
-        : inferDefinition<def[0], scope> | inferDefinition<def[2], scope>
+        : inferDefinition<def[0], aliases> | inferDefinition<def[2], aliases>
     : def[1] extends "[]"
-    ? inferDefinition<def[0], scope>[]
+    ? inferDefinition<def[0], aliases>[]
     : never
 
 // TODO: spread ("...")

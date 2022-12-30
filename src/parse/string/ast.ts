@@ -1,5 +1,4 @@
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
-import type { Scope } from "../../scope.ts"
 import type {
     Downcastable,
     error,
@@ -12,46 +11,46 @@ import type { inferDefinition } from "../definition.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
-export type inferAst<ast, scope extends Scope> = ast extends readonly unknown[]
+export type inferAst<ast, aliases> = ast extends readonly unknown[]
     ? ast[1] extends "[]"
-        ? inferAst<ast[0], scope>[]
+        ? inferAst<ast[0], aliases>[]
         : ast[1] extends "|"
-        ? inferAst<ast[0], scope> | inferAst<ast[2], scope>
+        ? inferAst<ast[0], aliases> | inferAst<ast[2], aliases>
         : ast[1] extends "&"
-        ? evaluate<inferAst<ast[0], scope> & inferAst<ast[2], scope>>
+        ? evaluate<inferAst<ast[0], aliases> & inferAst<ast[2], aliases>>
         : ast[1] extends Scanner.Comparator
         ? ast[0] extends number
-            ? inferAst<ast[2], scope>
-            : inferAst<ast[0], scope>
+            ? inferAst<ast[2], aliases>
+            : inferAst<ast[0], aliases>
         : ast[1] extends "%"
-        ? inferAst<ast[0], scope>
+        ? inferAst<ast[0], aliases>
         : never
-    : inferTerminal<ast, scope>
+    : inferTerminal<ast, aliases>
 
-export type validateAstSemantics<ast, scope extends Scope> = ast extends string
+export type validateAstSemantics<ast, aliases> = ast extends string
     ? undefined
     : ast extends [infer child, unknown]
-    ? validateAstSemantics<child, scope>
+    ? validateAstSemantics<child, aliases>
     : ast extends [infer left, infer token, infer right]
     ? token extends Scanner.BranchToken
-        ? validateAstSemantics<left, scope> extends error<infer leftMessage>
+        ? validateAstSemantics<left, aliases> extends error<infer leftMessage>
             ? leftMessage
-            : validateAstSemantics<right, scope> extends error<
+            : validateAstSemantics<right, aliases> extends error<
                   infer rightMessage
               >
             ? rightMessage
             : undefined
         : token extends Scanner.Comparator
         ? left extends number
-            ? validateAstSemantics<right, scope>
-            : isBoundable<inferAst<left, scope>> extends true
-            ? validateAstSemantics<left, scope>
+            ? validateAstSemantics<right, aliases>
+            : isBoundable<inferAst<left, aliases>> extends true
+            ? validateAstSemantics<left, aliases>
             : error<buildUnboundableMessage<astToString<ast[0]>>>
         : token extends "%"
-        ? isDivisible<inferAst<left, scope>> extends true
-            ? validateAstSemantics<left, scope>
+        ? isDivisible<inferAst<left, aliases>> extends true
+            ? validateAstSemantics<left, aliases>
             : error<buildIndivisibleMessage<astToString<ast[0]>>>
-        : validateAstSemantics<left, scope>
+        : validateAstSemantics<left, aliases>
     : undefined
 
 type isNonLiteralNumber<t> = t extends number
@@ -66,26 +65,24 @@ type isNonLiteralString<t> = t extends string
         : false
     : false
 
-type isDivisible<inferred> = isAny<inferred> extends true
+type isDivisible<data> = isAny<data> extends true
     ? true
-    : isNonLiteralNumber<inferred>
+    : isNonLiteralNumber<data>
 
-type isBoundable<inferred> = isAny<inferred> extends true
+type isBoundable<data> = isAny<data> extends true
     ? true
-    : isNonLiteralNumber<inferred> extends true
+    : isNonLiteralNumber<data> extends true
     ? true
-    : isNonLiteralString<inferred> extends true
+    : isNonLiteralString<data> extends true
     ? true
-    : inferred extends List
+    : data extends List
     ? true
     : false
 
-type inferTerminal<token, scope extends Scope> = token extends Keyword
+type inferTerminal<token, aliases> = token extends Keyword
     ? Keywords[token]
-    : token extends keyof scope["infer"]
-    ? scope["infer"][token]
-    : token extends keyof scope["def"]
-    ? inferDefinition<scope["def"][token], scope>
+    : token extends keyof aliases
+    ? inferDefinition<aliases[token], aliases>
     : token extends StringLiteral<infer Text>
     ? Text
     : token extends RegexLiteral

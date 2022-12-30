@@ -169,6 +169,33 @@ export type autocomplete<suggestions extends string> =
     | suggestions
     | (string & {})
 
+export type tailOf<t extends List> = t extends readonly [unknown, ...infer tail]
+    ? tail
+    : []
+
+export type headOf<t extends List> = t extends readonly [
+    infer head,
+    ...unknown[]
+]
+    ? head
+    : never
+
+export type tailOfString<S extends string> = S extends `${string}${infer Tail}`
+    ? Tail
+    : ""
+
+export type headOfString<S extends string> = S extends `${infer Head}${string}`
+    ? Head
+    : ""
+
+export type parametersOf<f> = f extends (...args: infer parameters) => unknown
+    ? parameters
+    : never
+
+export type returnOf<f> = f extends (...args: never[]) => infer returns
+    ? returns
+    : never
+
 export type Dict<k extends string = string, v = unknown> = {
     readonly [_ in k]: v
 }
