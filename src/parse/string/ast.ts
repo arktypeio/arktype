@@ -1,4 +1,5 @@
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
+import type { inferResolution } from "../../scope.ts"
 import type {
     Downcastable,
     error,
@@ -7,7 +8,6 @@ import type {
     List,
     RegexLiteral
 } from "../../utils/generics.ts"
-import type { inferDefinition } from "../definition.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
@@ -82,7 +82,7 @@ type isBoundable<data> = isAny<data> extends true
 type inferTerminal<token, aliases> = token extends Keyword
     ? Keywords[token]
     : token extends keyof aliases
-    ? inferDefinition<aliases[token], aliases>
+    ? inferResolution<aliases[token], aliases>
     : token extends StringLiteral<infer Text>
     ? Text
     : token extends RegexLiteral

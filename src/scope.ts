@@ -97,12 +97,17 @@ type toTypes<aliases> = {
 type toCache<aliases> = { [k in keyof aliases]: TypeNode }
 
 type validateAliases<aliases, parentAliases> = {
-    [name in keyof aliases]: validateDefinition<
-        aliases[name],
-        merge<parentAliases, aliases>
-    >
+    [name in keyof aliases]: aliases[name] extends () => any
+        ? aliases[name]
+        : validateDefinition<aliases[name], merge<parentAliases, aliases>>
 }
 
 type inferAliases<aliases> = evaluate<{
-    [name in keyof aliases]: inferDefinition<aliases[name], aliases>
+    [name in keyof aliases]: inferResolution<aliases[name], aliases>
 }>
+
+export type inferResolution<def, aliases> = def extends () => {
+    infer: infer data
+}
+    ? data
+    : inferDefinition<def, aliases>
