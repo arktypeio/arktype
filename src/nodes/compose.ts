@@ -3,7 +3,6 @@ import { throwInternalError } from "../utils/errors.ts"
 import type { Dict, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
 import type { TypeNode, TypeSet } from "./node.ts"
-import { resolveIfIdentifier } from "./utils.ts"
 
 type ContextFreeSetOperation<t, result extends t> = (
     l: t,
@@ -122,19 +121,3 @@ export const composeKeyedOperation =
         }
         return lImpliesR ? (rImpliesL ? equal : l) : rImpliesL ? r : result
     }
-
-export const composeNodeOperation =
-    (
-        typeSetOperation: SetOperation<TypeSet, Scope>
-    ): SetOperation<TypeNode, Scope> =>
-    (l, r, scope) => {
-        const lResolution = resolveIfIdentifier(l, scope)
-        const rResolution = resolveIfIdentifier(r, scope)
-        const result = typeSetOperation(lResolution, rResolution, scope)
-        return result === lResolution ? l : result === rResolution ? r : result
-    }
-
-export const finalizeNodeOperation = (
-    l: TypeNode,
-    result: SetOperationResult<TypeNode>
-): TypeNode => (result === empty ? "never" : result === equal ? l : result)

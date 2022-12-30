@@ -39,37 +39,37 @@ describe("morph", () => {
             const { data } = t(true).to("string")
             attest(data).equals("true").typed as string | undefined
         })
-        it("in scope", () => {
-            const s = scope({
-                a: [
-                    "string",
-                    ":",
-                    {
-                        // TODO: don't allow both sides of i/o mapping to be defined
-                        to: {
-                            b: (s) => parseInt(s)
-                        }
-                    }
-                ],
-                b: "number"
-            })
-            const { data } = s.types.a("5").to("b")
-            attest(data).equals(5).typed as number
-        })
+        // it("in scope", () => {
+        //     const s = scope({
+        //         a: [
+        //             "string",
+        //             ":",
+        //             {
+        //                 to: {
+        //                     // TODO: don't allow both sides of i/o mapping to be defined
+        //                     b: (s) => parseInt(s)
+        //                 }
+        //             }
+        //         ],
+        //         b: "number"
+        //     })
+        //     const { data } = s.types.a("5").to("b")
+        //     attest(data).equals(5).typed as number
+        // })
         describe("errors", () => {
             it("untyped additional args", () => {
                 // TODO: Error here
-                const t = type("string", {
+                type("string", {
                     to: { number: (n, radix) => parseInt(n, radix) }
                 })
             })
             it("unresolvable keys", () => {
-                const t = scope({ a: "string" }).type("string", {
+                scope({ a: "string" }).type("string", {
                     from: {
                         number: (n) => `${n}`,
                         a: (data) => `${data}`,
                         // @ts-expect-error
-                        foo: (bar) => "baz"
+                        foo: (bar) => bar
                     }
                 })
             })

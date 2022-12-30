@@ -3,12 +3,12 @@ import { checkRules } from "../traverse/check.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
 import type { CollapsibleList, Dict, stringKeyOf } from "../utils/generics.ts"
-import { listFrom } from "../utils/generics.ts"
+import { collapseIfSingleton, listFrom } from "../utils/generics.ts"
 import type { BranchesComparison } from "./branches.ts"
-import { compareBranches } from "./branches.ts"
-import type { SetOperationResult } from "./compose.ts"
+import { compareBranches, isBranchComparison } from "./branches.ts"
+import type { KeyReducerFn, SetOperationResult } from "./compose.ts"
 import { empty, equal } from "./compose.ts"
-import type { Identifier } from "./node.ts"
+import type { Identifier, TypeSet } from "./node.ts"
 import type { RuleSet, TraversalRuleEntry } from "./rules/rules.ts"
 import { compileRules, rulesIntersection } from "./rules/rules.ts"
 import {
@@ -147,4 +147,65 @@ export const comparePredicates = (
         return r
     }
     return comparison
+}
+
+export const predicateIntersection: KeyReducerFn<Required<TypeSet>, Scope> = (
+    domain,
+    l,
+    r,
+    scope
+) => {
+    const comparison = comparePredicates(domain, l, r, scope)
+    if (!isBranchComparison(comparison)) {
+        return comparison
+    }
+    return collapseIfSingleton([
+        ...comparison.distinctIntersections,
+        ...comparison.equalities.map(
+            (indices) => comparison.lConditions[indices[0]]
+        ),
+        ...comparison.lSubconditionsOfR.map(
+            (lIndex) => comparison.lConditions[lIndex]
+        ),
+        ...comparison.rSubconditionsOfL.map(
+            (rIndex) => comparison.rConditions[rIndex]
+        )
+    ])
+}
+
+export const predicateUnion: KeyReducerFn<Required<TypeSet>, Scope> = (
+    domain,
+    l,
+    r,
+    scope
+) => {
+    const comparison = comparePredicates(domain, l, r, scope)
+    if (!isBranchComparison(comparison)) {
+        return comparison === l
+            ? r
+            : comparison === r
+            ? l
+            : // If a boolean has multiple branches, neither of which is a
+            // subtype of the other, it consists of two opposite literals
+            // and can be simplified to a non-literal boolean.
+            domain === "boolean"
+            ? true
+            : ([l, r] as Condition[])
+    }
+    return collapseIfSingleton([
+        ...comparison.lConditions.filter(
+            (_, lIndex) =>
+                !comparison.lSubconditionsOfR.includes(lIndex) &&
+                !comparison.equalities.some(
+                    (indexPair) => indexPair[0] === lIndex
+                )
+        ),
+        ...comparison.rConditions.filter(
+            (_, rIndex) =>
+                !comparison.rSubconditionsOfL.includes(rIndex) &&
+                !comparison.equalities.some(
+                    (indexPair) => indexPair[1] === rIndex
+                )
+        )
+    ])
 }

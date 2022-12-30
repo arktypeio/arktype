@@ -3,8 +3,8 @@ import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import { empty, equal } from "./compose.ts"
-import { predicateIntersection } from "./intersection.ts"
 import type { Condition, Predicate, PredicateComparison } from "./predicate.ts"
+import { predicateIntersection } from "./predicate.ts"
 
 export const isBranchComparison = (
     comparison: PredicateComparison

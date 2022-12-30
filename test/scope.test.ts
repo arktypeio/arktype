@@ -67,10 +67,11 @@ describe("scope", () => {
         attest(s.type(["number", "a"]).infer).typed as [number, never]
     })
     it("parent scope", () => {
-        const s = scope(
-            { a: "string[]", b: "a[]", c: "definedInScope" },
-            { parent: scope({ definedInScope: "boolean" }) }
-        )
+        const s = scope({ definedInScope: "boolean" }).extend({
+            a: "string[]",
+            b: "a[]",
+            c: "definedInScope"
+        })
         attest(s.infer).typed as {
             a: string[]
             b: string[][]

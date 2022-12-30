@@ -1,5 +1,5 @@
-import { intersection } from "../../nodes/intersection.ts"
 import type { TypeSet } from "../../nodes/node.ts"
+import { intersection } from "../../nodes/node.ts"
 import type { Refinement } from "../../nodes/rules/rules.ts"
 import type { mutable } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
