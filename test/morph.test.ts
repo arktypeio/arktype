@@ -6,30 +6,19 @@ describe("morph", () => {
     describe("in", () => {
         it("base", () => {
             const t = type("string", {
-                in: {
+                from: {
                     number: (n) => `${n}`
                 },
-                out: {
+                to: {
                     symbol: (s) => Symbol(s),
                     number: (s) => parseFloat(s)
                 }
             })
             attest(t.infer).typed as string
         })
-        it("additional args", () => {
-            const t = type("number", {
-                in: {
-                    string: (s, radix) => parseInt(s, radix)
-                },
-                out: {
-                    string: (s, radix) => s.toString(radix)
-                }
-            })
-            attest(t.infer).typed as number
-        })
         it("out morphs", () => {
             const t = type("boolean", {
-                out: {
+                to: {
                     string: (data) => `${data}`
                 }
             })
@@ -55,10 +44,17 @@ describe("morph", () => {
             attest(data).equals(5).typed as number
         })
         describe("errors", () => {
-            it("untyped additional args", () => {
-                // TODO: Error here
-                type("string", {
-                    out: { number: (n, radix) => parseInt(n, radix) }
+            it("unresolvable keys", () => {
+                const t = type("string", {
+                    scope: scope({
+                        a: "string"
+                    }),
+                    from: {
+                        number: (n) => `${n}`,
+                        a: (data) => `${data}`,
+                        // @ts-expect-error
+                        foo: (bar) => "baz"
+                    }
                 })
             })
         })

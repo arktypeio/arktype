@@ -1,5 +1,6 @@
 import { Scope } from "../../scope.ts"
 import { CheckState, TraversalCheck, checkNode } from "../../traverse/check.ts"
+import { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
 import { Subdomain, subdomainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import { List } from "../../utils/generics.ts"
@@ -121,6 +122,7 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         for (const entry of state.data as Map<unknown, unknown>) {
             checkNode({ ...state, data: entry[0], node: subdomain[1] }, scope)
             if (state.problems.length) {
+                state.problems.addProblem(state, { key: entry[0] })
                 return
             }
             checkNode(
@@ -144,3 +146,9 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     }
     return true
 }
+
+export type MissingKeyDiagnostic = { key: unknown }
+
+export const buildMissingKeyError: DiagnosticMessageBuilder<"MissingKey"> = ({
+    key
+}) => `${key} is required.`

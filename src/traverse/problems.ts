@@ -4,6 +4,10 @@ import {
 } from "../nodes/rules/divisor.ts"
 import { RangeErrorContext, buildRangeError } from "../nodes/rules/range.ts"
 import { RegexErrorContext, buildRegexError } from "../nodes/rules/regex.ts"
+import {
+    MissingKeyDiagnostic,
+    buildMissingKeyError
+} from "../nodes/rules/subdomain.ts"
 import { type } from "../type.ts"
 import { domainOf } from "../utils/domains.ts"
 import { CheckState } from "./check.ts"
@@ -83,7 +87,8 @@ export class Stringifiable<Data = unknown> {
 const uncapitalize = (s: string) => s[0].toLowerCase() + s.slice(1)
 
 // export type DiagnosticsByCode = {
-//     MissingKey: MissingKeyDiagnostic
+//     Extraneous
+//
 //     Custom: CustomDiagnostic
 //     TupleLength: TupleLengthDiagnostic
 //     Union: UnionDiagnostic
@@ -102,6 +107,7 @@ const buildUnassignableError: DiagnosticMessageBuilder<"Unassignable"> = ({
 
 export type DiagnosticsByCode = {
     DivisorViolation: DivisorErrorContext
+    MissingKey: MissingKeyDiagnostic
     RangeViolation: RangeErrorContext
     RegexMismatch: RegexErrorContext
     Unassignable: UnassignableErrorContext
@@ -117,6 +123,7 @@ const defaultMessagesByCode: {
     [code in DiagnosticCode]: DiagnosticMessageBuilder<code>
 } = {
     DivisorViolation: buildDivisorError,
+    MissingKey: buildMissingKeyError,
     RangeViolation: buildRangeError,
     RegexMismatch: buildRegexError,
     Unassignable: buildUnassignableError

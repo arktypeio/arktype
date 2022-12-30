@@ -19,18 +19,18 @@ export type parseString<
     alias extends string
 > = maybeNaiveParse<def, alias>
 
-export type inferString<def extends string, s extends Scope> = inferAst<
-    parseString<def, aliasOf<s>>,
-    s
+export type inferString<def extends string, scope extends Scope> = inferAst<
+    parseString<def, aliasOf<scope>>,
+    scope
 >
 
-export type validateString<def extends string, s extends Scope> = parseString<
-    def,
-    aliasOf<s>
-> extends infer astOrError
+export type validateString<
+    def extends string,
+    scope extends Scope
+> = parseString<def, aliasOf<scope>> extends infer astOrError
     ? astOrError extends error<infer message>
         ? message
-        : validateAstSemantics<astOrError, s> extends infer semanticResult
+        : validateAstSemantics<astOrError, scope> extends infer semanticResult
         ? semanticResult extends undefined
             ? def
             : semanticResult

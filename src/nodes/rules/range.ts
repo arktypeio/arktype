@@ -1,5 +1,5 @@
 import { Scanner } from "../../parse/string/shift/scanner.ts"
-import type { CheckState } from "../../traverse/check.ts"
+import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
 import { DiagnosticMessageBuilder, Problems } from "../../traverse/problems.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import type { List } from "../../utils/generics.ts"
@@ -62,7 +62,7 @@ export const buildRangeError: DiagnosticMessageBuilder<"RangeViolation"> = ({
         kind === "string" ? "characters " : kind === "Array" ? "items " : ""
     }(got ${size}).`
 
-export const checkRange = (state: CheckState<BoundableData>, range: Range) => {
+export const checkRange = ((state, range) => {
     const { data } = state
     const size = typeof data === "number" ? data : data.length
     if (range.min) {
@@ -91,7 +91,7 @@ export const checkRange = (state: CheckState<BoundableData>, range: Range) => {
             })
         }
     }
-}
+}) satisfies TraversalCheck<"range">
 
 export const buildEmptyRangeMessage = (min: Bound, max: Bound) =>
     `the range bounded by ${stringifyBound("min", min)} and ${stringifyBound(

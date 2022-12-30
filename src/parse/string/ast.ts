@@ -12,44 +12,46 @@ import type { inferDefinition } from "../definition.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
-export type inferAst<ast, s extends Scope> = ast extends readonly unknown[]
+export type inferAst<ast, scope extends Scope> = ast extends readonly unknown[]
     ? ast[1] extends "[]"
-        ? inferAst<ast[0], s>[]
+        ? inferAst<ast[0], scope>[]
         : ast[1] extends "|"
-        ? inferAst<ast[0], s> | inferAst<ast[2], s>
+        ? inferAst<ast[0], scope> | inferAst<ast[2], scope>
         : ast[1] extends "&"
-        ? evaluate<inferAst<ast[0], s> & inferAst<ast[2], s>>
+        ? evaluate<inferAst<ast[0], scope> & inferAst<ast[2], scope>>
         : ast[1] extends Scanner.Comparator
         ? ast[0] extends number
-            ? inferAst<ast[2], s>
-            : inferAst<ast[0], s>
+            ? inferAst<ast[2], scope>
+            : inferAst<ast[0], scope>
         : ast[1] extends "%"
-        ? inferAst<ast[0], s>
+        ? inferAst<ast[0], scope>
         : never
-    : inferTerminal<ast, s>
+    : inferTerminal<ast, scope>
 
-export type validateAstSemantics<ast, s extends Scope> = ast extends string
+export type validateAstSemantics<ast, scope extends Scope> = ast extends string
     ? undefined
     : ast extends [infer child, unknown]
-    ? validateAstSemantics<child, s>
+    ? validateAstSemantics<child, scope>
     : ast extends [infer left, infer token, infer right]
     ? token extends Scanner.BranchToken
-        ? validateAstSemantics<left, s> extends error<infer leftMessage>
+        ? validateAstSemantics<left, scope> extends error<infer leftMessage>
             ? leftMessage
-            : validateAstSemantics<right, s> extends error<infer rightMessage>
+            : validateAstSemantics<right, scope> extends error<
+                  infer rightMessage
+              >
             ? rightMessage
             : undefined
         : token extends Scanner.Comparator
         ? left extends number
-            ? validateAstSemantics<right, s>
-            : isBoundable<inferAst<left, s>> extends true
-            ? validateAstSemantics<left, s>
+            ? validateAstSemantics<right, scope>
+            : isBoundable<inferAst<left, scope>> extends true
+            ? validateAstSemantics<left, scope>
             : error<buildUnboundableMessage<astToString<ast[0]>>>
         : token extends "%"
-        ? isDivisible<inferAst<left, s>> extends true
-            ? validateAstSemantics<left, s>
+        ? isDivisible<inferAst<left, scope>> extends true
+            ? validateAstSemantics<left, scope>
             : error<buildIndivisibleMessage<astToString<ast[0]>>>
-        : validateAstSemantics<left, s>
+        : validateAstSemantics<left, scope>
     : undefined
 
 type isNonLiteralNumber<t> = t extends number
@@ -78,12 +80,12 @@ type isBoundable<inferred> = isAny<inferred> extends true
     ? true
     : false
 
-type inferTerminal<token, s extends Scope> = token extends Keyword
+type inferTerminal<token, scope extends Scope> = token extends Keyword
     ? Keywords[token]
-    : token extends keyof s["infer"]
-    ? s["infer"][token]
-    : token extends keyof s["def"]
-    ? inferDefinition<s["def"][token], s>
+    : token extends keyof scope["infer"]
+    ? scope["infer"][token]
+    : token extends keyof scope["def"]
+    ? inferDefinition<scope["def"][token], scope>
     : token extends StringLiteral<infer Text>
     ? Text
     : token extends RegexLiteral
