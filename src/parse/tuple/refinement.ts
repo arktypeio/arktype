@@ -1,7 +1,6 @@
 import { intersection } from "../../nodes/intersection.ts"
 import type { TypeSet } from "../../nodes/node.ts"
 import type { Refinement } from "../../nodes/rules/rules.ts"
-import type { Scope } from "../../scope.ts"
 import type { mutable } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
@@ -27,8 +26,8 @@ export const parseRefinementTuple: TupleExpressionParser<"=>"> = (
     return intersection(inputNode, distributedValidatorNode, scope)
 }
 
-export type validateRefinementTuple<def, scope extends Scope> = [
-    validateDefinition<def, scope>,
+export type validateRefinementTuple<def, aliases> = [
+    validateDefinition<def, aliases>,
     "=>",
-    distributable<Refinement<inferDefinition<def, scope>>>
+    distributable<Refinement<inferDefinition<def, aliases>>>
 ]

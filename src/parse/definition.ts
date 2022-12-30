@@ -39,40 +39,34 @@ export const parseDefinition = (def: unknown, scope: Scope): TypeNode => {
     }
 }
 
-export type inferDefinition<
-    def,
-    scope extends Scope
-> = isTopType<def> extends true
+export type inferDefinition<def, aliases> = isTopType<def> extends true
     ? never
     : def extends string
-    ? inferString<def, scope>
+    ? inferString<def, aliases>
     : def extends List
-    ? inferTuple<def, scope>
+    ? inferTuple<def, aliases>
     : def extends Type
     ? def["infer"]
     : def extends RegExp
     ? string
     : def extends Dict
-    ? inferRecord<def, scope>
+    ? inferRecord<def, aliases>
     : never
 
-export type validateDefinition<
-    def,
-    scope extends Scope
-> = isTopType<def> extends true
+export type validateDefinition<def, aliases> = isTopType<def> extends true
     ? buildUninferableDefinitionMessage<def>
     : def extends []
     ? []
     : def extends string
-    ? validateString<def, scope>
+    ? validateString<def, aliases>
     : def extends TupleExpression
-    ? validateTupleExpression<def, scope>
+    ? validateTupleExpression<def, aliases>
     : def extends TerminalObject
     ? def
     : def extends BadDefinitionType
     ? buildBadDefinitionTypeMessage<subdomainOf<def>>
     : evaluate<{
-          [k in keyof def]: validateDefinition<def[k], scope>
+          [k in keyof def]: validateDefinition<def[k], aliases>
       }>
 
 export type buildUninferableDefinitionMessage<def> =

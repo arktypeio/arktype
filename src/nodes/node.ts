@@ -1,4 +1,4 @@
-import type { Scope } from "../scope.ts"
+import type { aliasOf, Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import type { autocomplete, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
@@ -23,10 +23,9 @@ export type TypeSet<alias extends string = string> = {
     readonly [domain in Domain]?: Predicate<domain, alias>
 }
 
-// TODO: Try just passing scope around
-export type Identifier<alias extends string = string> = string extends alias
+export type Identifier<aliases> = string extends keyof aliases
     ? autocomplete<Keyword>
-    : Keyword | alias
+    : Keyword | aliasOf<aliases>
 
 export type TraversalNode =
     | Domain
