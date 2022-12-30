@@ -61,25 +61,27 @@ type InferredScopeConstructor = <aliases, parent extends Scope = RootScope>(
     config?: ScopeConfig<parent>
 ) => Scope<aliases>
 
-type toTypes<aliases> = {
-    [k in keyof aliases]: aliases[k] extends TraitsTuple
-        ? aliases[k][2] extends Traits
-            ? toType<
-                  aliases[k][0],
-                  aliases,
-                  morphsFrom<aliases[k][2], RootScope>
-              >
-            : // TODO: Add error
-              never
-        : toType<aliases[k], aliases, {}>
-}
+type toTypes<aliases> = Dict extends aliases
+    ? { [k in string]: Type }
+    : {
+          [k in keyof aliases]: aliases[k] extends TraitsTuple
+              ? aliases[k][2] extends Traits
+                  ? toType<
+                        aliases[k][0],
+                        aliases,
+                        morphsFrom<aliases[k][2], RootScope>
+                    >
+                  : // TODO: Add error
+                    never
+              : toType<aliases[k], aliases, {}>
+      }
 
 // TODO: imports/exports, extends
 export type Scope<aliases = Dict> = {
     aliases: aliases
     // TODO: Fix parent
     infer: Dict extends aliases ? Dict : inferAliases<aliases, RootScope>
-    types: Dict extends aliases ? Dict<string, Type> : toTypes<aliases>
+    types: toTypes<aliases>
     cache: { [k in keyof aliases]: TypeNode }
     parent?: Scope
     type: InferredTypeConstructor<aliases>
