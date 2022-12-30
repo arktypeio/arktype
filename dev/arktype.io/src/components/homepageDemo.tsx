@@ -1,7 +1,7 @@
 import Collapse from "@mui/icons-material/ExpandLess"
 import Expand from "@mui/icons-material/ExpandMore"
 import Terminal from "@mui/icons-material/Terminal"
-import { Button, Stack, Typography } from "@mui/material"
+import { Button, Stack, Typography, Box } from "@mui/material"
 import CircularProgress from "@mui/material/CircularProgress"
 import React, { useRef, useState } from "react"
 import { StackBlitzDemo } from "../../docs/demos/index"
@@ -13,9 +13,11 @@ export const Demo = () => {
     return (
         <Stack
             spacing={2}
-            direction="column"
-            justifyContent="center"
-            position="relative"
+            sx={{
+                position: "relative",
+                width: "100%",
+                display: "flex"
+            }}
         >
             <Typography component="h4" variant="h2" align="center">
                 Experience Greatness!
@@ -29,7 +31,6 @@ export const Demo = () => {
                 activeDemo={activeDemo}
                 demoElement={<StackBlitzDemo embedId="type" />}
                 demoRef={ref}
-                sx={{ margin: "0 auto", width: "100%", position: "relative" }}
             />
             {loading && (
                 <CircularProgress
@@ -49,34 +50,46 @@ export const Demo = () => {
 }
 const HomepageDemo = (props: any) => {
     return (
-        <Button
-            color={props.buttonColor}
-            variant="contained"
-            sx={{ whiteSpace: "nowrap" }}
-            onClick={() => {
-                setTimeout(() => {
-                    props.setLoading(false)
-                }, 3000)
-                props.setLoading(props.activeDemo ? false : true)
-                props.setActiveDemo(
-                    props.activeDemo ? null : props.demoElement!
-                )
-                !props.activeDemo &&
-                    setTimeout(() => {
-                        props.demoRef.current?.scrollIntoView({
-                            behavior: "smooth",
-                            block: "end"
-                        })
-                    }, 1)
+        <Box
+            sx={{
+                position: "relative",
+                width: "100%",
+                display: "flex",
+                justifyContent: "center"
             }}
-            endIcon={
-                <div style={{ display: "flex" }}>
-                    <Terminal />
-                    {props.activeDemo ? <Collapse /> : <Expand />}
-                </div>
-            }
         >
-            {props.activeDemo ? "All done?" : "Try it here!"}
-        </Button>
+            <Button
+                color={props.buttonColor}
+                variant="contained"
+                sx={{
+                    width: "fit-content",
+                    margin: "0 auto"
+                }}
+                onClick={() => {
+                    setTimeout(() => {
+                        props.setLoading(false)
+                    }, 1000)
+                    props.setLoading(props.activeDemo ? false : true)
+                    props.setActiveDemo(
+                        props.activeDemo ? null : props.demoElement!
+                    )
+                    !props.activeDemo &&
+                        setTimeout(() => {
+                            props.demoRef.current?.scrollIntoView({
+                                behavior: "smooth",
+                                block: "end"
+                            })
+                        }, 1)
+                }}
+                endIcon={
+                    <div style={{ display: "flex" }}>
+                        <Terminal />
+                        {props.activeDemo ? <Collapse /> : <Expand />}
+                    </div>
+                }
+            >
+                {props.activeDemo ? "All done?" : "Try it here!"}
+            </Button>
+        </Box>
     )
 }

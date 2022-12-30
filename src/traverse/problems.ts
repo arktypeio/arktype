@@ -57,15 +57,6 @@ export class Problems extends Array<Problem> {
     ) {
         state.problems.push({
             path: state.path.join(),
-            //TODO custom error
-            // type("3<number<5").check(0, {
-            //     diagnostics: {
-            //         BoundViolation: {
-            //             message: ({ data, comparator, limit }) =>
-            //                 `${data} not ${comparator}${limit}`
-            //         }
-            //     }
-            // })
             reason: defaultMessagesByCode["DivisorViolation"](context as never)
         })
     }
@@ -87,13 +78,6 @@ export class Stringifiable<Data = unknown> {
 
 const uncapitalize = (s: string) => s[0].toLowerCase() + s.slice(1)
 
-// export type DiagnosticsByCode = {
-//     Extraneous
-//     Custom: CustomDiagnostic
-//     TupleLength: TupleLengthDiagnostic
-//     Union: UnionDiagnostic
-// }
-
 type UnassignableErrorContext = {
     actual: unknown
     expected: unknown
@@ -104,6 +88,13 @@ const buildUnassignableError: DiagnosticMessageBuilder<"Unassignable"> = ({
     expected
 }) =>
     `${new Stringifiable(actual).toString()} is not assignable to ${expected}.`
+
+// export type DiagnosticsByCode = {
+//     Extraneous
+//     Custom: CustomDiagnostic
+//     TupleLength: TupleLengthDiagnostic
+//     Union: UnionDiagnostic
+// }
 
 export type DiagnosticsByCode = {
     DivisorViolation: DivisorErrorContext
@@ -128,3 +119,12 @@ const defaultMessagesByCode: {
     RegexMismatch: buildRegexError,
     Unassignable: buildUnassignableError
 }
+//TODO custom error
+// type("3<number<5").check(0, {
+//     diagnostics: {
+//         BoundViolation: {
+//             message: ({ data, comparator, limit }) =>
+//                 `${data} not ${comparator}${limit}`
+//         }
+//     }
+// })

@@ -18,7 +18,8 @@ describe("check errors", () => {
         attest(gte3("yes").problems).equals(undefined)
     })
     test("tuple length", () => {
-        const gte3 = type("string[]>=3")
+        const gte3 = type(["string", "number", "string"])
+
         attest(gte3(["abc", "def"]).problems?.summary).snap()
     })
     test("range", () => {
@@ -48,6 +49,7 @@ describe("check errors", () => {
             name: "string",
             age: "number"
         })
+        const User = t.infer
         const checked = t({ name: "Shawn" })
         attest(checked.problems?.summary).snap()
     })

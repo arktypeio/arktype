@@ -63,35 +63,3 @@ header {
     overflow: hidden;
     background: #0067a5;
 }
-
-#featuresComponent {
-    flex-wrap: wrap;
-    height: fit-content;
-    max-width: 100vw;
-    justify-content: space-evenly;
-    align-items: center;
-}
-#feature {
-    height: 325px;
-    width: 300px;
-    text-align: center;
-    position: relative;
-    margin-bottom: 15px;
-}
-
-#feature #description {
-    line-height: 1.2em;
-    padding-bottom: 10px;
-}
-@media only screen and (max-width: 900px) {
-    #featuresComponent,
-    #introContainer {
-        flex-direction: column;
-    }
-    #feature {
-        width: 90vw;
-    }
-    #introContainer > * {
-        width: 100%;
-    }
-}

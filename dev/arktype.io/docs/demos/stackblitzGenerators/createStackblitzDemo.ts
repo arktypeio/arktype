@@ -7,7 +7,7 @@ import {
     getAddonFiles
 } from "./rawDemoFiles"
 
-export const embedIds = { type: 1, scope: 1, constraints: 1 }
+export const embedIds = { type: 1, scope: 1 }
 export type EmbedId = keyof typeof embedIds
 export type AddonFile = never
 export type DemoProps = {
