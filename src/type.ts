@@ -57,13 +57,14 @@ export type InferredTypeConstructor<aliases> = {
 export type toType<
     def,
     aliases,
-    morphs extends Morphs
+    morphs extends Morphs,
+    data = inferDefinition<def, aliases>
 > = isTopType<def> extends true
     ? never
     : def extends validateDefinition<def, aliases>
     ? {} extends morphs
-        ? Type<inferDefinition<def, aliases>>
-        : Morphable<inferDefinition<def, aliases>, morphs>
+        ? Type<data>
+        : Morphable<data, morphs>
     : never
 
 export type Traits<data = unknown, aliases = Dict> = Morphs<data, aliases>

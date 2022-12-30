@@ -1,3 +1,4 @@
+import { cyclic500 } from "../test/generated/cyclic.ts"
 import type { TypeNode } from "./nodes/node.ts"
 import { resolveIfIdentifier } from "./nodes/utils.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
@@ -43,18 +44,21 @@ export const composeTypeConstructor = <scope extends Scope>(
         return nodeToType(node, scope, traits)
     })
 
-let rootScope: Scope<{}>
+let rootScope: RootScope
 
-export type RootScope = typeof rootScope
+export type RootScope = Scope<{}>
 
+// TODO: Fix root scope types
 export const getRootScope = (): RootScope => {
     rootScope ??= composeScopeConstructor()({})
     return rootScope!
 }
 
-export const type = composeTypeConstructor(getRootScope())
+export const type: TypeConstructor<{}> = composeTypeConstructor(getRootScope())
 
-export const scope = composeScopeConstructor(getRootScope())
+export const scope: ScopeConstructor<{}> = composeScopeConstructor(
+    getRootScope()
+)
 
 type ScopeConstructor<parentAliases> = LazyDynamicWrap<
     InferredScopeConstructor<parentAliases>,
