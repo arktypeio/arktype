@@ -2,7 +2,7 @@ import type { aliasOf, Scope } from "../scope.ts"
 import { checkRules } from "../traverse/check.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
-import type { CollapsibleList } from "../utils/generics.ts"
+import type { CollapsibleList, Dict } from "../utils/generics.ts"
 import { listFrom } from "../utils/generics.ts"
 import type { BranchesComparison } from "./branches.ts"
 import { compareBranches } from "./branches.ts"
@@ -19,10 +19,10 @@ import {
 
 export type Predicate<
     domain extends Domain = Domain,
-    alias extends string = string
-> = string extends alias
+    aliases = Dict
+> = string extends aliases
     ? true | CollapsibleList<Condition>
-    : true | CollapsibleList<Condition<domain, alias>>
+    : true | CollapsibleList<Condition<domain, aliases>>
 
 export type TraversalPredicate = TraversalCondition | [TraversalBranchesEntry]
 
@@ -59,10 +59,10 @@ const branchesOf = (flatPredicate: TraversalPredicate) =>
         ? flatPredicate.slice(1)
         : [flatPredicate]) as TraversalCondition[]
 
-export type Condition<
-    domain extends Domain = Domain,
-    alias extends string = string
-> = RuleSet<domain, alias> | ExactValue<domain> | Identifier<alias>
+export type Condition<domain extends Domain = Domain, aliases = Dict> =
+    | RuleSet<domain, aliases>
+    | ExactValue<domain>
+    | Identifier<aliases>
 
 export type TraversalCondition =
     | readonly TraversalRuleEntry[]

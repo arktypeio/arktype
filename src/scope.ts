@@ -68,11 +68,11 @@ type toScope<aliases> = {
 export type Scope<aliases = Dict> = {
     aliases: aliases
     // TODO: Fix parent
-    infer: inferAliases<aliases, RootScope>
+    infer: Dict extends aliases ? Dict : inferAliases<aliases, RootScope>
     types: toScope<aliases>
     cache: { [k in keyof aliases]: TypeNode }
     parent?: Scope
-    type: InferredTypeConstructor<Scope<aliases>>
+    type: InferredTypeConstructor<aliases>
 }
 
 export type aliasOf<aliases> = keyof aliases & string

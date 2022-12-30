@@ -1,6 +1,6 @@
 import type { aliasOf, Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
-import type { autocomplete, mutable } from "../utils/generics.ts"
+import type { autocomplete, Dict, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
 import type { Keyword } from "./keywords.ts"
 import type {
@@ -12,15 +12,13 @@ import { compilePredicate } from "./predicate.ts"
 import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
 import { resolveIfIdentifier } from "./utils.ts"
 
-export type TypeNode<alias extends string = string> =
-    | Identifier<alias>
-    | TypeSet<alias>
+export type TypeNode<aliases = Dict> = Identifier<aliases> | TypeSet<aliases>
 
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to
  * manipulate.*/
-export type TypeSet<alias extends string = string> = {
-    readonly [domain in Domain]?: Predicate<domain, alias>
+export type TypeSet<aliases = Dict> = {
+    readonly [domain in Domain]?: Predicate<domain, aliases>
 }
 
 export type Identifier<aliases> = string extends keyof aliases

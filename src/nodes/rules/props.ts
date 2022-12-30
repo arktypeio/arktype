@@ -1,3 +1,4 @@
+import type { Dict } from "../../utils/generics.ts"
 import {
     composeIntersection,
     composeKeyedOperation,
@@ -10,15 +11,13 @@ import { compileNode } from "../node.ts"
 import type { PredicateContext } from "../predicate.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
-export type PropsRule<alias extends string = string> = {
-    [propKey in string]: Prop<alias>
+export type PropsRule<aliases = Dict> = {
+    [propKey in string]: Prop<aliases>
 }
 
-export type Prop<alias extends string = string> =
-    | TypeNode<alias>
-    | OptionalProp<alias>
+export type Prop<aliases = Dict> = TypeNode<aliases> | OptionalProp<aliases>
 
-export type OptionalProp<alias extends string = string> = ["?", TypeNode<alias>]
+export type OptionalProp<aliases = Dict> = ["?", TypeNode<aliases>]
 
 export type TraversalRequiredProps = [
     "requiredProps",

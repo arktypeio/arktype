@@ -1,6 +1,7 @@
 import type { Keyword } from "../../../../nodes/keywords.ts"
 import type { TypeNode } from "../../../../nodes/node.ts"
 import { isResolvable } from "../../../../nodes/utils.ts"
+import type { aliasOf } from "../../../../scope.ts"
 import type { error } from "../../../../utils/generics.ts"
 import type {
     BigintLiteral,
@@ -22,11 +23,11 @@ export const parseUnenclosed = (s: DynamicState) => {
 
 export type parseUnenclosed<
     s extends StaticState,
-    alias extends string
+    aliases
 > = Scanner.shiftUntilNextTerminator<
     s["unscanned"]
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
-    ? tryResolve<s, scanned, alias> extends infer result
+    ? tryResolve<s, scanned, aliases> extends infer result
         ? result extends error<infer message>
             ? error<message>
             : state.setRoot<s, result, nextUnscanned>
@@ -58,16 +59,17 @@ const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
     }
 }
 
-export type isResolvableIdentifier<
-    token,
-    alias extends string
-> = token extends Keyword ? true : token extends alias ? true : false
+export type isResolvableIdentifier<token, aliases> = token extends Keyword
+    ? true
+    : token extends aliasOf<aliases>
+    ? true
+    : false
 
 type tryResolve<
     s extends StaticState,
     token extends string,
-    alias extends string
-> = isResolvableIdentifier<token, alias> extends true
+    aliases
+> = isResolvableIdentifier<token, aliases> extends true
     ? token
     : token extends NumberLiteral<infer value>
     ? number extends value
