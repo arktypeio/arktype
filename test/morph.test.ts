@@ -6,6 +6,7 @@ describe("morph", () => {
     describe("in", () => {
         it("base", () => {
             const t = type("string", {
+                scope: scope({ a: "string" }),
                 from: {
                     number: (n) => `${n}`
                 },
@@ -15,7 +16,7 @@ describe("morph", () => {
                 }
             })
             attest(t.infer).typed as string
-            t("foo").toNumber()
+            t("foo").to("symbol")
         })
         it("additional args", () => {
             const t = type("number", {
@@ -27,7 +28,7 @@ describe("morph", () => {
                 }
             })
             attest(t.infer).typed as number
-            t(5).to.string(5)
+            t(5).to("string", 5)
         })
         it("out morphs", () => {
             const t = type("boolean", {
@@ -64,15 +65,14 @@ describe("morph", () => {
                 })
             })
             it("unresolvable keys", () => {
-                type("string", {
+                const t = type("string", {
                     scope: scope({
                         a: "string"
                     }),
                     from: {
                         number: (n) => `${n}`,
-                        a: (data) => `${data}`,
-                        // @ts-expect-error
-                        foo: (bar) => "baz"
+                        a: (data) => `${data}`
+                        // foo: (bar) => "baz"
                     }
                 })
             })

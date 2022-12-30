@@ -17,7 +17,9 @@ import type {
     defer,
     evaluate,
     isTopType,
-    nominal,
+    parametersOf,
+    returnOf,
+    tailOf,
     xor
 } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
@@ -57,6 +59,7 @@ export type InferredTypeFn = {
     <def>(def: validateDefinition<def, RootScope>): createType<
         def,
         RootScope,
+        {},
         {}
     >
 
@@ -75,14 +78,19 @@ export type InferredTypeFn = {
     ): createType<
         def,
         scope,
-        compileMorphs<inferDefinition<def, scope>, scope, sources, targets>
+        excludeUnspecifiedMorphs<
+            inferDefinition<def, scope>,
+            scope,
+            sources,
+            targets
+        >
     >
 }
 
 type createType<
     def,
     scope extends Scope,
-    morphs extends Traits,
+    morphs,
     data = inferDefinition<def, scope>
 > = isTopType<def> extends true
     ? never
@@ -91,6 +99,14 @@ type createType<
         ? Type<data>
         : Morphable<data, evaluate<morphs>>
     : never
+
+type excludeUnspecifiedMorphs<
+    data,
+    scope extends Scope,
+    sources,
+    targets
+> = (Sources<data, scope> extends sources ? {} : { from: sources }) &
+    (Targets<data, scope> extends targets ? {} : { to: targets })
 
 export type Traits<data = unknown, scope extends Scope = Scope> = {
     from?: Sources<data, scope>
@@ -116,27 +132,13 @@ export type Targets<data, scope extends Scope> = {
     ) => inferDefinition<name, scope>
 }
 
-type compileMorphs<
-    data,
-    scope extends Scope,
-    sources extends Sources<data, scope>,
-    targets extends Targets<data, scope>
-> = (Sources<data, scope> extends sources
-    ? {}
-    : {
-          from: sources
-      }) &
-    (Targets<data, scope> extends targets
-        ? {}
-        : {
-              [k in keyof targets &
-                  string as `to${Capitalize<k>}`]: targets[k] extends (
-                  data: data,
-                  ...args: infer args
-              ) => infer returns
-                  ? (...args: args) => returns
-                  : never
-          })
+type compileMorphs<sources, targets> = {
+    from: sources
+    to: <k extends keyof targets>(
+        name: k,
+        ...args: tailOf<parametersOf<targets[k]>>
+    ) => returnOf<targets[k]>
+}
 
 type DynamicTypeOptions = { scope?: Scope } & Traits
 
@@ -159,6 +161,7 @@ export type TypeMetadata<data = unknown> = {
 
 export type Type<data = unknown> = defer<Checker<data, {}> & TypeMetadata<data>>
 
-export type Morphable<data = unknown, morphs extends Morphs = {}> = defer<
-    Checker<data, morphs> & TypeMetadata<data>
+export type Morphable<data = unknown, morphs = {}> = defer<
+    Checker<data, compileMorphs<morphs["from"], morphs["to"]>> &
+        TypeMetadata<data>
 >

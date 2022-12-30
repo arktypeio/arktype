@@ -160,10 +160,6 @@ export namespace Scanner {
         Unscanned extends string
     > = `${Lookahead}${Unscanned}`
 
-    export type tailOf<S> = S extends `${string}${infer Tail}` ? Tail : ""
-
-    export type headOf<S> = S extends `${infer Head}${string}` ? Head : ""
-
     export type shiftUntil<
         unscanned extends string,
         terminator extends string,
