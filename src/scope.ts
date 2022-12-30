@@ -1,4 +1,3 @@
-import { cyclic500 } from "../test/generated/cyclic.ts"
 import type { TypeNode } from "./nodes/node.ts"
 import { resolveIfIdentifier } from "./nodes/utils.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
