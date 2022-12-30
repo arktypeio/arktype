@@ -1,5 +1,5 @@
-import { bench, suite } from "../dev/attest/api.ts"
 import { type } from "../api.ts"
+import { bench, suite } from "../dev/attest/api.ts"
 
 const buildBranchDef = (token: string, size: number) =>
     [...Array(size - 1)].reduce((def, _, i) => `${def}${token}${i + 1}`, "0")

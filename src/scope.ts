@@ -4,8 +4,8 @@ import type {
     inferDefinition,
     validateDefinition
 } from "./parse/definition.ts"
-import type { InferredTypeFn, Morphable, Traits } from "./type.ts"
-import { type } from "./type.ts"
+import type { InferredTypeConstructor, Morphable, Traits } from "./type.ts"
+import { composeType, type } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type { Dict, evaluate, isTopType } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
@@ -15,17 +15,17 @@ const rawScope = (def: Dict, parent?: Scope) => {
     const result: Scope = {
         def,
         infer: chainableNoOpProxy,
-        // TODO: intersection cache
         cache: {},
-        types: {}
+        types: {},
+        type: {} as any
     }
+    result.type = composeType(result) as any
     if (parent) {
         result.parent = parent
     }
-    const typeConfig = { scope: result }
     for (const name in def) {
         // TODO: Fix typeConfig
-        result.types[name] = type.dynamic(def[name], typeConfig as any)
+        result.types[name] = type.dynamic(def[name])
     }
     return result
 }
@@ -68,7 +68,7 @@ export type Scope<
     types: types
     cache: { [k in keyof t]: TypeNode }
     parent?: Scope
-    type: InferredTypeFn<Scope<t, def, types>>
+    type: InferredTypeConstructor<Scope<t, def, types>>
 }
 
 type DynamicScopeFn = <aliases extends Dict>(
