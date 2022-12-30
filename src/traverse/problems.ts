@@ -1,16 +1,14 @@
-import {
-    DivisorErrorContext,
-    buildDivisorError
-} from "../nodes/rules/divisor.ts"
-import { RangeErrorContext, buildRangeError } from "../nodes/rules/range.ts"
-import { RegexErrorContext, buildRegexError } from "../nodes/rules/regex.ts"
-import {
-    MissingKeyDiagnostic,
-    buildMissingKeyError
-} from "../nodes/rules/subdomain.ts"
+import type { DivisorErrorContext } from "../nodes/rules/divisor.ts"
+import { buildDivisorError } from "../nodes/rules/divisor.ts"
+import type { RangeErrorContext } from "../nodes/rules/range.ts"
+import { buildRangeError } from "../nodes/rules/range.ts"
+import type { RegexErrorContext } from "../nodes/rules/regex.ts"
+import { buildRegexError } from "../nodes/rules/regex.ts"
+import type { MissingKeyDiagnostic } from "../nodes/rules/subdomain.ts"
+import { buildMissingKeyError } from "../nodes/rules/subdomain.ts"
 import { type } from "../type.ts"
 import { domainOf } from "../utils/domains.ts"
-import { CheckState } from "./check.ts"
+import type { CheckState } from "./check.ts"
 
 export type BaseProblemConfig = {
     omitActual?: boolean
@@ -56,7 +54,7 @@ export class Problems extends Array<Problem> {
         context: DiagnosticsByCode[code]
     ) {
         state.problems.push({
-            path: state.path.join(),
+            path: state.path.join("."),
             reason: defaultMessagesByCode["DivisorViolation"](context as never)
         })
     }

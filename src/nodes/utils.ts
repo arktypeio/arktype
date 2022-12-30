@@ -7,9 +7,8 @@ import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import { deepFreeze } from "../utils/freeze.ts"
 import type { defined } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
-import { keywords } from "./keywords.ts"
+import { getFlatKeywords, keywords } from "./keywords.ts"
 import type { TraversalNode, TypeNode, TypeSet } from "./node.ts"
-import { getFlatKeywords } from "./node.ts"
 import type {
     ExactValue,
     Predicate,
@@ -64,11 +63,7 @@ export const nodeExtendsDomain = <domain extends Domain>(
 
 // TODO: Move to parse
 export const isResolvable = (scope: Scope, name: string) => {
-    return isKeyOf(name, keywords) ||
-        scope.aliases[name] ||
-        scope.parent?.aliases[name]
-        ? true
-        : false
+    return isKeyOf(name, keywords) || scope.aliases[name] ? true : false
 }
 
 export const resolve = (scope: Scope, name: string) => {
@@ -95,9 +90,8 @@ const resolveRecurse = (
         return scope.types[name].root as TypeSet
     }
     if (!scope.aliases[name]) {
-        return (
-            (scope.parent?.types[name].root as TypeSet) ??
-            throwInternalError(`Unexpectedly failed to resolve alias '${name}'`)
+        return throwInternalError(
+            `Unexpectedly failed to resolve alias '${name}'`
         )
     }
     let root = parseDefinition(scope.aliases[name], scope)

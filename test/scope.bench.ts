@@ -19,7 +19,7 @@ suite("scope", () => {
     // }).median()
 
     bench("cyclic(10)", () => {
-        const cyclic10Scope = scope(cyclic10)
+        return scope(cyclic10)
     })
         // .median()
         .type([2212, "instantiations"])

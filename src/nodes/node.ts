@@ -7,6 +7,8 @@ import type {
     stringKeyOf
 } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
+import type { SetOperation, SetOperationResult } from "./compose.ts"
+import { composeKeyedOperation, empty, equal } from "./compose.ts"
 import type { Keyword } from "./keywords.ts"
 import { keywords } from "./keywords.ts"
 import type {
@@ -14,7 +16,11 @@ import type {
     Predicate,
     TraversalPredicate
 } from "./predicate.ts"
-import { compilePredicate } from "./predicate.ts"
+import {
+    compilePredicate,
+    predicateIntersection,
+    predicateUnion
+} from "./predicate.ts"
 import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
 import { resolveIfIdentifier } from "./utils.ts"
 
@@ -99,12 +105,57 @@ export const compileNodes = <nodes extends ScopeNodes>(
     return result
 }
 
-// Use a dummy scope here since we know there are no alias references
-let flatKeywords: CompiledScopeNodes<typeof keywords>
-
-export const getFlatKeywords = () => {
-    if (!flatKeywords) {
-        flatKeywords = compileNodes(keywords, {} as Scope)
+export const composeNodeOperation =
+    (
+        typeSetOperation: SetOperation<TypeSet, Scope>
+    ): SetOperation<TypeNode, Scope> =>
+    (l, r, scope) => {
+        const lResolution = resolveIfIdentifier(l, scope)
+        const rResolution = resolveIfIdentifier(r, scope)
+        const result = typeSetOperation(lResolution, rResolution, scope)
+        return result === lResolution ? l : result === rResolution ? r : result
     }
-    return flatKeywords
-}
+
+export const finalizeNodeOperation = (
+    l: TypeNode,
+    result: SetOperationResult<TypeNode>
+): TypeNode => (result === empty ? "never" : result === equal ? l : result)
+
+const typeSetIntersection = composeKeyedOperation<TypeSet, Scope>(
+    (domain, l, r, scope) => {
+        if (l === undefined) {
+            return r === undefined ? equal : undefined
+        }
+        if (r === undefined) {
+            return undefined
+        }
+        return predicateIntersection(domain, l, r, scope)
+    },
+    { onEmpty: "delete" }
+)
+
+export const nodeIntersection = composeNodeOperation(typeSetIntersection)
+
+export const intersection = (
+    l: TypeNode,
+    r: TypeNode,
+    scope: Scope
+): TypeNode => finalizeNodeOperation(l, nodeIntersection(l, r, scope))
+
+export const union = (l: TypeNode, r: TypeNode, scope: Scope) =>
+    finalizeNodeOperation(l, nodeUnion(l, r, scope))
+
+export const typeSetUnion = composeKeyedOperation<TypeSet, Scope>(
+    (domain, l, r, scope) => {
+        if (l === undefined) {
+            return r === undefined ? equal : r
+        }
+        if (r === undefined) {
+            return l
+        }
+        return predicateUnion(domain, l, r, scope)
+    },
+    { onEmpty: "throw" }
+)
+
+export const nodeUnion = composeNodeOperation(typeSetUnion)

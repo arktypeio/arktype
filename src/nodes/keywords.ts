@@ -1,7 +1,7 @@
 import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { deepFreeze } from "../utils/freeze.ts"
-import type { TypeNode, TypeSet } from "./node.ts"
+import type { CompiledScopeNodes, TypeNode, TypeSet } from "./node.ts"
 import { compileNodes } from "./node.ts"
 
 const always: Record<Domain, true> = {
@@ -90,4 +90,14 @@ export type Keywords = {
     uppercase: string
     // Numeric
     integer: number
+}
+
+// Use a dummy scope here since we know there are no alias references
+let flatKeywords: CompiledScopeNodes<typeof keywords>
+
+export const getFlatKeywords = () => {
+    if (!flatKeywords) {
+        flatKeywords = compileNodes(keywords, {} as Scope)
+    }
+    return flatKeywords
 }

@@ -1,13 +1,13 @@
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
-import { Stack, ThemeProvider, Typography, Box, Container } from "@mui/material"
+import { Box, Container, Stack, ThemeProvider, Typography } from "@mui/material"
 import Layout from "@theme/Layout"
 import React from "react"
 import { Ark } from "../components/ark"
+import { Features } from "../components/features"
+import { Features2 } from "../components/features2"
 import { Demo } from "../components/homepageDemo"
 import { getTheme } from "../components/index"
 import { LogoCloud } from "../components/logoCloud"
-import { Features2 } from "../components/features2"
-import { Features } from "../components/features"
 
 const Contents = () => {
     const { siteConfig } = useDocusaurusContext()
@@ -78,8 +78,8 @@ const Contents = () => {
                         />
                     </Box>
                 </Container>
-                {/* <Features/> */}
-                <Features2 />
+                <Features />
+                {/* <Features2 /> */}
                 <Demo />
             </main>
         </ThemeProvider>

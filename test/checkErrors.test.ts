@@ -1,6 +1,6 @@
 import { describe, test } from "mocha"
-import { attest } from "../dev/attest/api.ts"
 import { type } from "../api.ts"
+import { attest } from "../dev/attest/api.ts"
 
 describe("check errors", () => {
     test("divisible", () => {
@@ -35,8 +35,7 @@ describe("check errors", () => {
     })
     test("domain", () => {
         const t = type("number>2")
-
-        attest(t("hellop").problems?.summary).snap()
+        attest(t("hellop")).snap()
     })
     test("regex", () => {
         const t = type("/\\w@hotmail.com/")
@@ -54,18 +53,19 @@ describe("check errors", () => {
         attest(checked.problems?.summary).snap()
     })
     // TODOSHAWN All tests under here
-    test("optional keys", () => {
-        const t = type({
-            name: "string",
-            "age?": "number"
-        })
-        const checked = t({ age: 22 })
-        attest(checked.problems?.summary).snap()
-    })
-
+    // test("optional keys", () => {
+    //     const t = type({
+    //         name: "string",
+    //         "age?": "number"
+    //     })
+    //     const checked = t({ age: 22 })
+    //     attest(checked.problems?.summary).snap()
+    // })
+})
+describe("", () => {
     test("tuple length", () => {
-        const t = type("any[]>2")
-        const checked = t(["abc", 1])
-        attest(checked)
+        const t = type(["string", "number"])
+        const checked = t(["hello"])
+        attest(checked).snap()
     })
 })

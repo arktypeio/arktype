@@ -5,13 +5,11 @@ import type {
     TypeSet
 } from "./nodes/node.ts"
 import { compileNode } from "./nodes/node.ts"
-import { resolveIfIdentifier } from "./nodes/utils.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
-import { parseDefinition } from "./parse/definition.ts"
 import type { Scope } from "./scope.ts"
 import { getRootScope } from "./scope.ts"
 import { rootCheck } from "./traverse/check.ts"
-import { Problems } from "./traverse/problems.ts"
+import type { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type {
     defer,
@@ -25,15 +23,6 @@ import type {
     xor
 } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
-import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
-
-export const composeType = <scope extends Scope>(
-    scope: scope
-): TypeConstructor<scope> =>
-    lazyDynamicWrap((def, traits = {}) => {
-        const node = resolveIfIdentifier(parseDefinition(def, scope), scope)
-        return nodeToType(node, scope, traits)
-    })
 
 export const nodeToType = (
     root: TypeSet,
@@ -43,10 +32,7 @@ export const nodeToType = (
     const traversal = compileNode(root, scope)
     return Object.assign(
         (data: unknown) => {
-            const result = rootCheck(data, traversal, scope)
-            return result
-                ? { data }
-                : { problems: new Problems({ path: "", reason: "invalid" }) }
+            return rootCheck(data, traversal, scope)
         },
         {
             config,
@@ -56,8 +42,6 @@ export const nodeToType = (
         }
     ) as any
 }
-
-export const type = composeType(getRootScope())
 
 export type InferredTypeConstructor<aliases> = {
     <def>(def: validateDefinition<def, aliases>): toType<def, aliases, {}>
@@ -125,8 +109,8 @@ type compileOutMorph<morphs extends Morphs> = morphs["to"] extends {}
 
 type DynamicTypeFn = (def: unknown, traits?: Traits) => Morphable
 
-export type TypeConstructor<scope extends Scope> = LazyDynamicWrap<
-    InferredTypeConstructor<scope>,
+export type TypeConstructor<aliases> = LazyDynamicWrap<
+    InferredTypeConstructor<aliases>,
     DynamicTypeFn
 >
 

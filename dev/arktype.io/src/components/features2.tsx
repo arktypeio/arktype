@@ -1,17 +1,17 @@
-import React from "react"
 import {
     Box,
+    Card,
     Container,
+    Paper,
     Stack,
     SvgIcon,
-    Typography,
-    Card,
-    Paper
+    Typography
 } from "@mui/material"
 
+import CardContent from "@mui/material/CardContent"
 import CardHeader from "@mui/material/CardHeader"
 import CardMedia from "@mui/material/CardMedia"
-import CardContent from "@mui/material/CardContent"
+import React from "react"
 
 const details = [
     {
@@ -46,8 +46,6 @@ const Feature = (props: {
     <Card
         sx={{
             width: "80%",
-            margin:
-                props.index % 2 === 0 ? "0 0 20px 25px " : "0 25px 20px auto",
             backgroundColor: "#fff"
         }}
     >
