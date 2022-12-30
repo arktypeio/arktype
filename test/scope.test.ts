@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { scope, type } from "../api.ts"
+import { scope } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 
@@ -63,8 +63,8 @@ describe("scope", () => {
         ]
     })
     it("doesn't try to validate any in scope", () => {
-        attest(type(["number", "a"], { scope: scope({ a: {} as any }) }).infer)
-            .typed as [number, never]
+        const s = scope({ a: {} as any })
+        attest(s.type(["number", "a"]).infer).typed as [number, never]
     })
     it("parent scope", () => {
         const s = scope(

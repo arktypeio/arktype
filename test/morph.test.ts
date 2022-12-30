@@ -6,7 +6,6 @@ describe("morph", () => {
     describe("in", () => {
         it("base", () => {
             const t = type("string", {
-                scope: scope({ a: "string" }),
                 from: {
                     number: (n) => `${n}`
                 },
@@ -65,14 +64,12 @@ describe("morph", () => {
                 })
             })
             it("unresolvable keys", () => {
-                const t = type("string", {
-                    scope: scope({
-                        a: "string"
-                    }),
+                const t = scope({ a: "string" }).type("string", {
                     from: {
                         number: (n) => `${n}`,
-                        a: (data) => `${data}`
-                        // foo: (bar) => "baz"
+                        a: (data) => `${data}`,
+                        // @ts-expect-error
+                        foo: (bar) => "baz"
                     }
                 })
             })

@@ -51,40 +51,24 @@ export const nodeToType = (root: TypeSet, scope: Scope, config: Traits) => {
     ) as any
 }
 
-export const type: TypeFn = lazyDynamicWrap<InferredTypeFn, DynamicTypeFn>(
-    rawTypeFn
-)
+export const type: TypeFn = lazyDynamicWrap<
+    InferredTypeFn<RootScope>,
+    DynamicTypeFn
+>(rawTypeFn)
 
-export type InferredTypeFn = {
-    <def>(def: validateDefinition<def, RootScope>): createType<
-        def,
-        RootScope,
-        {},
-        {}
-    >
+export type InferredTypeFn<scope extends Scope> = {
+    <def>(def: validateDefinition<def, scope>): createType<def, scope, {}>
 
     <
         def,
-        sources extends Sources<inferDefinition<def, scope>, scope>,
-        targets extends Targets<inferDefinition<def, scope>, scope>,
-        scope extends Scope = RootScope
+        morphs extends {
+            from?: Sources<inferDefinition<def, scope>, scope>
+            to?: Targets<inferDefinition<def, scope>, scope>
+        }
     >(
         def: validateDefinition<def, scope>,
-        opts: {
-            scope?: scope
-            from?: sources
-            to?: targets
-        }
-    ): createType<
-        def,
-        scope,
-        excludeUnspecifiedMorphs<
-            inferDefinition<def, scope>,
-            scope,
-            sources,
-            targets
-        >
-    >
+        opts: morphs
+    ): createType<def, scope, morphs>
 }
 
 type createType<
@@ -99,14 +83,6 @@ type createType<
         ? Type<data>
         : Morphable<data, evaluate<morphs>>
     : never
-
-type excludeUnspecifiedMorphs<
-    data,
-    scope extends Scope,
-    sources,
-    targets
-> = (Sources<data, scope> extends sources ? {} : { from: sources }) &
-    (Targets<data, scope> extends targets ? {} : { to: targets })
 
 export type Traits<data = unknown, scope extends Scope = Scope> = {
     from?: Sources<data, scope>
@@ -144,7 +120,7 @@ type DynamicTypeOptions = { scope?: Scope } & Traits
 
 type DynamicTypeFn = (def: unknown, opts?: DynamicTypeOptions) => Morphable
 
-export type TypeFn = LazyDynamicWrap<InferredTypeFn, DynamicTypeFn>
+export type TypeFn = LazyDynamicWrap<InferredTypeFn<RootScope>, DynamicTypeFn>
 
 export type CheckResult<data, targets> = targets &
     xor<{ data: data }, { problems: Problems }>

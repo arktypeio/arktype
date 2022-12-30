@@ -171,14 +171,14 @@ export type autocomplete<suggestions extends string> =
 
 export type tailOf<t extends List> = t extends readonly [unknown, ...infer tail]
     ? tail
-    : ""
+    : []
 
 export type headOf<t extends List> = t extends readonly [
     infer head,
     ...unknown[]
 ]
     ? head
-    : ""
+    : never
 
 export type tailOfString<S extends string> = S extends `${string}${infer Tail}`
     ? Tail

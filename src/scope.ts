@@ -4,7 +4,7 @@ import type {
     inferDefinition,
     validateDefinition
 } from "./parse/definition.ts"
-import type { Morphable, Traits } from "./type.ts"
+import type { InferredTypeFn, Morphable, Traits } from "./type.ts"
 import { type } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type { Dict, evaluate, isTopType } from "./utils/generics.ts"
@@ -68,6 +68,7 @@ export type Scope<
     types: types
     cache: { [k in keyof t]: TypeNode }
     parent?: Scope
+    type: InferredTypeFn<Scope<t, def, types>>
 }
 
 type DynamicScopeFn = <aliases extends Dict>(

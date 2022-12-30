@@ -27,7 +27,7 @@ suite("parse/str/operand", () => {
             .type()
         const strungScope = scope({ strung: "string" })
         bench("alias", () => {
-            const _ = type("strung", { scope: strungScope })
+            const _ = strungScope.type("strung")
         })
             .median()
             .type()

@@ -30,7 +30,7 @@ describe("dynamic", () => {
         attest(() => unknownScope.types.b.infer).throws.snap(
             `TypeError: Cannot read properties of undefined (reading 'infer')`
         )
-        attest(() => type("b", { scope: unknownScope })).throws(
+        attest(() => unknownScope.type("b")).throws(
             buildUnresolvableMessage("b")
         )
     })
