@@ -3,7 +3,10 @@ import { SyntaxKind } from "ts-morph"
 import { caller } from "../../../runtime/api.ts"
 import { getAttestConfig } from "../config.ts"
 import { findCallExpressionAncestor } from "../snapshot.ts"
-import { forceCreateTsMorphProject } from "../type/getTsMorphProject.ts"
+import {
+    forceCreateTsMorphProject,
+    getVirtualTsMorphProject
+} from "../type/getTsMorphProject.ts"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
 import type { BenchContext } from "./bench.ts"
 import type { Measure, MeasureComparison } from "./measure/measure.ts"
@@ -135,6 +138,7 @@ export const createBenchTypeAssertion = (
     type: (...args: [instantiations?: Measure<TypeUnit> | undefined]) => {
         ctx.lastSnapCallPosition = caller()
         const benchFnCall = findCallExpressionAncestor(
+            getVirtualTsMorphProject(),
             ctx.benchCallPosition,
             "bench"
         )

@@ -123,7 +123,7 @@ export const getAttestConfig = (): AttestConfig => {
         },
         filter: getFilter(argsToCheck),
         tsconfig,
-        precached: true,
+        precached: argsToCheck.includes("--precache"),
         preserveCache: true,
         cacheDir,
         snapCacheDir,

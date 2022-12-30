@@ -16,8 +16,8 @@ describe("string", () => {
         )
     })
     it("ignores whitespace between identifiers/operators", () => {
-        const modelWithWhitespace = type("     string  | boolean    []   ")
-        attest(modelWithWhitespace.infer).typed as string | boolean[]
+        const t = type("     string  | boolean    []   ")
+        attest(t.infer).typed as string | boolean[]
     })
     it("errors on bad whitespace", () => {
         attest(() =>

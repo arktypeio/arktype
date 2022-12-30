@@ -26,14 +26,7 @@ export type evaluate<t> = {
  */
 export type defer<t> = t & {}
 
-// Currently returns never if string and number keys of the same name are merged, e.g.:
-// type Result = Merge<{1: false}, {"1": true}> //never
-// This feels too niche to fix at the cost of performance and complexity, but that could change.
-// It also overrides values with undefined, unlike the associated function. We'll have to see if this is problematic.
-export type merge<base, merged> = evaluate<
-    Omit<conform<base, {}>, Extract<keyof base, keyof merged>> &
-        conform<merged, {}>
->
+export type merge<base, merged> = evaluate<Omit<base, keyof merged> & merged>
 
 /** Replace existing keys of o without altering readonly or optional modifiers  */
 export type replaceKeys<

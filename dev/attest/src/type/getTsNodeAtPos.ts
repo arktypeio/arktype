@@ -1,11 +1,12 @@
+import type { Project } from "ts-morph"
 import { ts } from "ts-morph"
-
 import type { SourcePosition } from "../utils.ts"
 import { positionToString } from "../utils.ts"
-import { getVirtualTsMorphProject } from "./getTsMorphProject.ts"
 
-export const getTsNodeAtPosition = (position: SourcePosition) => {
-    const project = getVirtualTsMorphProject()
+export const getTsNodeAtPosition = (
+    project: Project,
+    position: SourcePosition
+) => {
     const sourceFile = project.getSourceFileOrThrow(position.file)
     const node = sourceFile.getDescendantAtPos(
         ts.getPositionOfLineAndCharacter(
