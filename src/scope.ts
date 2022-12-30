@@ -10,13 +10,22 @@ import type {
 } from "./type.ts"
 import { nodeToType } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import type { Dict, evaluate, merge, mutable } from "./utils/generics.ts"
+import type {
+    Dict,
+    evaluate,
+    isTopType,
+    merge,
+    mutable
+} from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
-const composeScopeConstructor = <parent extends Scope>(parent?: parent) =>
+const composeScopeConstructor = <parent extends Scope = RootScope>(
+    parent?: parent
+) =>
     lazyDynamicWrap((def: Dict) => {
         const result: Scope = {
+            // TODO: Finalize this behavior, align with types
             aliases: parent ? { ...parent.aliases, ...def } : def,
             infer: chainableNoOpProxy,
             cache: {},
@@ -33,7 +42,7 @@ const composeScopeConstructor = <parent extends Scope>(parent?: parent) =>
             )
         }
         return result
-    }) as ScopeConstructor<Scope extends parent ? {} : parent["aliases"]>
+    }) as ScopeConstructor<parent["aliases"]>
 
 export const composeTypeConstructor = <scope extends Scope>(
     scope: scope
@@ -47,7 +56,6 @@ let rootScope: RootScope
 
 export type RootScope = Scope<{}>
 
-// TODO: Fix root scope types
 export const getRootScope = (): RootScope => {
     rootScope ??= composeScopeConstructor()({})
     return rootScope!
@@ -75,19 +83,20 @@ type DynamicScopeConstructor<parentAliases> = <aliases extends Dict>(
 // TODO: imports/exports, extends
 export type Scope<aliases = Dict> = {
     aliases: aliases
-    // TODO: Fix parent
     infer: inferAliases<aliases>
     types: toTypes<aliases>
-    cache: { [k in keyof aliases]: TypeNode }
+    cache: toCache<aliases>
     type: InferredTypeConstructor<aliases>
     extend: ScopeConstructor<aliases>
 }
 
-type toTypes<aliases> = Dict extends aliases
-    ? { [k in string]: Type }
-    : {
-          [k in keyof aliases]: toType<aliases[k], aliases, {}>
-      }
+type toTypes<aliases> = {
+    [k in keyof aliases]: isTopType<aliases[k]> extends true
+        ? Type
+        : toType<aliases[k], aliases, {}>
+}
+
+type toCache<aliases> = { [k in keyof aliases]: TypeNode }
 
 type validateAliases<aliases, parentAliases> = {
     [name in keyof aliases]: validateDefinition<
