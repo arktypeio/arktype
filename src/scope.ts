@@ -63,9 +63,7 @@ export const getRootScope = (): RootScope => {
 
 export const type: TypeConstructor<{}> = composeTypeConstructor(getRootScope())
 
-export const scope: ScopeConstructor<{}> = composeScopeConstructor(
-    getRootScope()
-)
+export const scope: ScopeConstructor<{}> = composeScopeConstructor()
 
 type ScopeConstructor<parentAliases> = LazyDynamicWrap<
     InferredScopeConstructor<parentAliases>,
