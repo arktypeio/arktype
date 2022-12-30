@@ -8,7 +8,7 @@ import { compileNode } from "./nodes/node.ts"
 import { resolveIfIdentifier } from "./nodes/utils.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
-import type { aliasOf, RootScope, Scope } from "./scope.ts"
+import type { aliasOf, Scope } from "./scope.ts"
 import { getRootScope } from "./scope.ts"
 import { check } from "./traverse/check.ts"
 import { Problems } from "./traverse/problems.ts"
@@ -59,7 +59,7 @@ export type InferredTypeConstructor<scope extends Scope> = {
     <def, traits extends Traits<inferDefinition<def, scope>, scope>>(
         def: validateDefinition<def, scope>,
         traits: traits
-    ): toType<def, scope, morphsFrom<traits>>
+    ): toType<def, scope, morphsFrom<traits, scope>>
 }
 
 type toType<
@@ -98,9 +98,18 @@ export type Targets<data, scope extends Scope> = {
     ) => inferDefinition<name, scope>
 }
 
-type morphsFrom<traits extends Traits> = evaluate<{
-    [k in "to" | "from"]: traits[k] extends {} ? traits[k] : never
-}>
+type morphsFrom<traits extends Traits, scope extends Scope> = evaluate<
+    (traits["from"] extends {} ? { from: traits["from"] } : {}) &
+        (traits["to"] extends {}
+            ? {
+                  to: {
+                      [name in keyof traits["to"] & string]: (
+                          ...args: parametersOf<traits["to"][name]>
+                      ) => InferResult<name, scope>
+                  }
+              }
+            : {})
+>
 
 type compileOutMorph<morphs extends Morphs> = morphs["to"] extends {}
     ? {
@@ -118,12 +127,18 @@ export type TypeConstructor<scope extends Scope> = LazyDynamicWrap<
     DynamicTypeFn
 >
 
-export type CheckResult<data, outMorph> = outMorph &
-    xor<{ data: data }, { problems: Problems }>
+export type Result<data> = xor<{ data: data }, { problems: Problems }>
 
-export type Checker<data, outMorph> = (
-    data: unknown
-) => CheckResult<data, outMorph>
+export type Chainable<data, outMorph> = outMorph & Result<data>
+
+export type InferResult<
+    name extends Identifier<aliasOf<scope>>,
+    scope extends Scope
+> = name extends aliasOf<scope>
+    ? ReturnType<scope["types"][name]>
+    : Result<inferDefinition<name, scope>>
+
+export type Checker<data, outMorph> = (data: unknown) => outMorph & Result<data>
 
 export type TypeMetadata<data = unknown> = {
     infer: data
