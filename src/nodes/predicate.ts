@@ -1,8 +1,8 @@
-import type { aliasOf, Scope } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import { checkRules } from "../traverse/check.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
-import type { CollapsibleList, Dict } from "../utils/generics.ts"
+import type { CollapsibleList, Dict, stringKeyOf } from "../utils/generics.ts"
 import { listFrom } from "../utils/generics.ts"
 import type { BranchesComparison } from "./branches.ts"
 import { compareBranches } from "./branches.ts"
@@ -20,7 +20,7 @@ import {
 export type Predicate<
     domain extends Domain = Domain,
     aliases = Dict
-> = string extends aliases
+> = Dict extends aliases
     ? true | CollapsibleList<Condition>
     : true | CollapsibleList<Condition<domain, aliases>>
 
@@ -81,8 +81,8 @@ export type PredicateContext = {
 
 export type ResolvedPredicate<
     domain extends Domain = Domain,
-    scope extends Scope = Scope
-> = Exclude<Predicate<domain, aliasOf<scope>>, string>
+    aliases = Dict
+> = Exclude<Predicate<domain, stringKeyOf<aliases>>, string>
 
 export type PredicateComparison =
     | SetOperationResult<Predicate>

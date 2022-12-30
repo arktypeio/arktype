@@ -20,6 +20,7 @@ import type {
     isTopType,
     parametersOf,
     returnOf,
+    stringKeyOf,
     tailOf,
     xor
 } from "./utils/generics.ts"
@@ -34,7 +35,11 @@ export const composeType = <scope extends Scope>(
         return nodeToType(node, scope, traits)
     })
 
-export const nodeToType = (root: TypeSet, scope: Scope, config: Traits) => {
+export const nodeToType = (
+    root: TypeSet,
+    scope: Scope,
+    config: Traits
+): Type => {
     const traversal = compileNode(root, scope)
     return Object.assign(
         (data: unknown) => {
@@ -101,7 +106,7 @@ export type morphsFrom<traits extends Traits, aliases> = evaluate<
         (traits["to"] extends {}
             ? {
                   to: {
-                      [name in keyof traits["to"] & string]: (
+                      [name in stringKeyOf<traits["to"]>]: (
                           ...args: parametersOf<traits["to"][name]>
                       ) => InferResult<name, aliases>
                   }
@@ -130,10 +135,11 @@ export type Result<data> = xor<{ data: data }, { problems: Problems }>
 export type Chainable<data, outMorph> = outMorph & Result<data>
 
 export type InferResult<
-    name extends Identifier<aliases>,
+    name extends string,
     aliases
 > = name extends keyof aliases
-    ? ReturnType<aliases[name]>
+    ? // TODO: Fix
+      Result<inferDefinition<name, aliases>> //ReturnType<aliases[name]>
     : Result<inferDefinition<name, aliases>>
 
 export type Checker<data, outMorph> = (data: unknown) => outMorph & Result<data>

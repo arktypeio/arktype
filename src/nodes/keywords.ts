@@ -61,9 +61,6 @@ export const functorKeywords = {
     })
 }
 
-// Use a dummy scope here since we know there are no alias references
-export const flatKeywords = compileNodes(keywords, {} as Scope)
-
 export type Keyword = keyof Keywords
 
 export type Keywords = {

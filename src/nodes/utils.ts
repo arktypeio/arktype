@@ -7,8 +7,9 @@ import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import { deepFreeze } from "../utils/freeze.ts"
 import type { defined } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
-import { flatKeywords, keywords } from "./keywords.ts"
+import { keywords } from "./keywords.ts"
 import type { TraversalNode, TypeNode, TypeSet } from "./node.ts"
+import { getFlatKeywords } from "./node.ts"
 import type {
     ExactValue,
     Predicate,
@@ -76,7 +77,7 @@ export const resolve = (scope: Scope, name: string) => {
 
 const resolveFlat = (scope: Scope, name: string): TraversalNode => {
     if (isKeyOf(name, keywords)) {
-        return flatKeywords[name]
+        return getFlatKeywords()[name]
     }
     resolveRecurse(scope, name, [])
     return scope.types[name].flat
