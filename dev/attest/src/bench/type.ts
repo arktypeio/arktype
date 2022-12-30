@@ -1,6 +1,7 @@
-import type { Node, Project, ts } from "ts-morph"
+import type { Node, Project, SourceFile, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
 import { caller } from "../../../runtime/api.ts"
+import { getAttestConfig } from "../config.ts"
 import { findCallExpressionAncestor } from "../snapshot.ts"
 import { forceCreateTsMorphProject } from "../type/getTsMorphProject.ts"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
@@ -51,20 +52,29 @@ const isBenchExpression = (statement: Node<ts.ExpressionStatement>) => {
     return firstCallIdentifier === "bench" || firstCallIdentifier === "suite"
 }
 
-const getInstantiationsForIsolatedBench = (
-    originalFileText: string,
-    isolatedBenchExressionText: string,
-    includeBenchFn: boolean,
-    fakePath: string
-) => {
+const getInstantiationsWithFile = (fileText: string, fakePath: string) => {
     const isolatedProject = forceCreateTsMorphProject({
         useRealFs: false,
         preloadFiles: false
     })
-    const fileToTransform = isolatedProject.createSourceFile(
-        fakePath,
-        originalFileText
-    )
+    const config = getAttestConfig()
+    for (const [path, contents] of config.typeSources) {
+        if (!path.startsWith("src") && path !== "api.ts") {
+            continue
+        }
+        isolatedProject.createSourceFile(path, contents, { overwrite: true })
+    }
+    isolatedProject.createSourceFile(fakePath, fileText)
+    return getUpdatedInstantiationCount(isolatedProject)
+}
+
+const transformBenchSource = (
+    originalFile: SourceFile,
+    isolatedBenchExressionText: string,
+    includeBenchFn: boolean,
+    fakePath: string
+) => {
+    const fileToTransform = originalFile.copy(fakePath)
     const currentBenchStatement = fileToTransform.getFirstDescendantOrThrow(
         (node) =>
             node.isKind(SyntaxKind.ExpressionStatement) &&
@@ -84,28 +94,36 @@ const getInstantiationsForIsolatedBench = (
     if (!includeBenchFn) {
         emptyBenchFn(currentBenchStatement)
     }
-    return getUpdatedInstantiationCount(isolatedProject)
+    const text = fileToTransform.getText()
+    fileToTransform.delete()
+    return text
 }
 
 const getInstantiationsContributedByNode = (
     benchCall: Node<ts.CallExpression>
 ) => {
-    const fakePath = benchCall.getSourceFile().getFilePath() + ".nonexistent.ts"
-    const originalFileText = benchCall.getSourceFile().getText()
+    const originalFile = benchCall.getSourceFile()
+    const fakePath = originalFile.getFilePath() + ".nonexistent.ts"
     const benchExpression = benchCall.getFirstAncestorByKindOrThrow(
         SyntaxKind.ExpressionStatement
     )
     const originalBenchExpressionText = benchExpression.getText()
-    const instantiationsWithNode = getInstantiationsForIsolatedBench(
-        originalFileText,
-        originalBenchExpressionText,
-        true,
+    const instantiationsWithNode = getInstantiationsWithFile(
+        transformBenchSource(
+            originalFile,
+            originalBenchExpressionText,
+            true,
+            fakePath
+        ),
         fakePath
     )
-    const instantiationsWithoutNode = getInstantiationsForIsolatedBench(
-        originalFileText,
-        originalBenchExpressionText,
-        false,
+    const instantiationsWithoutNode = getInstantiationsWithFile(
+        transformBenchSource(
+            originalFile,
+            originalBenchExpressionText,
+            false,
+            fakePath
+        ),
         fakePath
     )
     return instantiationsWithNode - instantiationsWithoutNode

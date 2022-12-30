@@ -15,7 +15,6 @@ export const forceCreateTsMorphProject = ({
     const project = new Project({
         compilerOptions: {
             diagnostics: true,
-            noEmit: true,
             module: ts.ModuleKind.NodeNext,
             target: ts.ScriptTarget.ESNext,
             moduleResolution: ts.ModuleResolutionKind.NodeNext,
