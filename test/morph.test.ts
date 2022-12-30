@@ -15,6 +15,7 @@ describe("morph", () => {
                 }
             })
             attest(t.infer).typed as string
+            t("foo").toNumber()
         })
         it("additional args", () => {
             const t = type("number", {
@@ -26,6 +27,7 @@ describe("morph", () => {
                 }
             })
             attest(t.infer).typed as number
+            t(5).to.string(5)
         })
         it("out morphs", () => {
             const t = type("boolean", {
@@ -44,7 +46,7 @@ describe("morph", () => {
                     ":",
                     {
                         // TODO: don't allow both sides of i/o mapping to be defined
-                        out: {
+                        to: {
                             b: (s) => parseInt(s)
                         }
                     }
@@ -57,7 +59,7 @@ describe("morph", () => {
         describe("errors", () => {
             it("untyped additional args", () => {
                 // TODO: Error here
-                type("string", {
+                const t = type("string", {
                     to: { number: (n, radix) => parseInt(n, radix) }
                 })
             })

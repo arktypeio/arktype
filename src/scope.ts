@@ -1,9 +1,13 @@
 import type { TypeNode } from "./nodes/node.ts"
-import type { inferRoot, validateRoot } from "./parse/definition.ts"
-import type { Morphable } from "./type.ts"
+import type {
+    buildUninferableDefinitionMessage,
+    inferDefinition,
+    validateDefinition
+} from "./parse/definition.ts"
+import type { Morphable, Traits } from "./type.ts"
 import { type } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import type { Dict, evaluate } from "./utils/generics.ts"
+import type { Dict, evaluate, isTopType } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
@@ -73,12 +77,44 @@ type DynamicScopeFn = <aliases extends Dict>(
 export type aliasOf<scope extends Scope> = keyof scope["def"] & string
 
 type validateAliases<aliases, parent extends Scope> = evaluate<{
-    [name in keyof aliases]: validateRoot<
+    [name in keyof aliases]: validateTypeDefinition<
         aliases[name],
         parent & { def: aliases }
     >
 }>
 
+type validateTypeDefinition<
+    def,
+    scope extends Scope
+> = isTopType<def> extends true
+    ? buildUninferableDefinitionMessage<def>
+    : def extends TraitsTuple
+    ? validateTraitsTuple<def, scope>
+    : validateDefinition<def, scope>
+
 type inferAliases<aliases, parent extends Scope> = evaluate<{
-    [name in keyof aliases]: inferRoot<aliases[name], parent & { def: aliases }>
+    [name in keyof aliases]: inferTypeDefinition<
+        aliases[name],
+        parent & { def: aliases }
+    >
 }>
+
+type inferTypeDefinition<def, scope extends Scope> = def extends TraitsTuple
+    ? inferTraitsTuple<def, scope>
+    : inferDefinition<def, scope>
+
+export type TraitsTuple = [unknown, ":", unknown]
+
+export type inferTraitsTuple<
+    def extends TraitsTuple,
+    scope extends Scope
+> = inferDefinition<def[0], scope>
+
+export type validateTraitsTuple<
+    def extends TraitsTuple,
+    scope extends Scope
+> = [
+    validateDefinition<def[0], scope>,
+    ":",
+    Traits<inferDefinition<def[0], scope>, scope>
+]

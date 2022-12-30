@@ -1,7 +1,6 @@
 import type { TypeNode } from "../nodes/node.ts"
 import type { Scope } from "../scope.ts"
 import type { Morphable } from "../type.ts"
-import { Type } from "../type.ts"
 import type { Primitive, Subdomain } from "../utils/domains.ts"
 import { subdomainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
@@ -16,11 +15,6 @@ import type { inferRecord } from "./record.ts"
 import { parseRecord } from "./record.ts"
 import type { inferString, validateString } from "./string/string.ts"
 import { parseString } from "./string/string.ts"
-import type {
-    inferTraitsTuple,
-    TraitsTuple,
-    validateTraitsTuple
-} from "./tuple/traits.ts"
 import type {
     inferTuple,
     TupleExpression,
@@ -44,16 +38,6 @@ export const parseDefinition = (def: unknown, scope: Scope): TypeNode => {
             )
     }
 }
-
-export type inferRoot<def, scope extends Scope> = def extends TraitsTuple
-    ? inferTraitsTuple<def, scope>
-    : inferDefinition<def, scope>
-
-export type validateRoot<def, scope extends Scope> = isTopType<def> extends true
-    ? buildUninferableDefinitionMessage<def>
-    : def extends TraitsTuple
-    ? validateTraitsTuple<def, scope>
-    : validateDefinition<def, scope>
 
 export type inferDefinition<
     def,
