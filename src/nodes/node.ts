@@ -1,8 +1,14 @@
-import type { aliasOf, Scope } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
-import type { autocomplete, Dict, mutable } from "../utils/generics.ts"
+import type {
+    autocomplete,
+    Dict,
+    mutable,
+    stringKeyOf
+} from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
 import type { Keyword } from "./keywords.ts"
+import { keywords } from "./keywords.ts"
 import type {
     ExactValueEntry,
     Predicate,
@@ -21,9 +27,9 @@ export type TypeSet<aliases = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, aliases>
 }
 
-export type Identifier<aliases> = string extends keyof aliases
+export type Identifier<aliases = Dict> = string extends keyof aliases
     ? autocomplete<Keyword>
-    : Keyword | aliasOf<aliases>
+    : Keyword | stringKeyOf<aliases>
 
 export type TraversalNode =
     | Domain
@@ -76,13 +82,29 @@ export const compileNode = (node: TypeNode, scope: Scope): TraversalNode => {
     return [["domains", result]]
 }
 
-export const compileNodes = <nodes extends { readonly [k in string]: TypeSet }>(
+export type ScopeNodes = { readonly [k in string]: TypeSet }
+
+export type CompiledScopeNodes<nodes extends ScopeNodes> = {
+    readonly [k in keyof nodes]: TraversalNode
+}
+
+export const compileNodes = <nodes extends ScopeNodes>(
     nodes: nodes,
     scope: Scope
-) => {
-    const result = {} as Record<keyof nodes, TraversalNode>
+): CompiledScopeNodes<nodes> => {
+    const result = {} as mutable<CompiledScopeNodes<nodes>>
     for (const name in nodes) {
         result[name] = compileNode(nodes[name], scope)
     }
     return result
+}
+
+// Use a dummy scope here since we know there are no alias references
+let flatKeywords: CompiledScopeNodes<typeof keywords>
+
+export const getFlatKeywords = () => {
+    if (!flatKeywords) {
+        flatKeywords = compileNodes(keywords, {} as Scope)
+    }
+    return flatKeywords
 }

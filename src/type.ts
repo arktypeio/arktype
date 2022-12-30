@@ -133,7 +133,8 @@ export type InferResult<
     name extends Identifier<aliases>,
     aliases
 > = name extends keyof aliases
-    ? ReturnType<aliases[name]>
+    ? // TODO: Fix
+      Result<inferDefinition<name, aliases>> //ReturnType<aliases[name]>
     : Result<inferDefinition<name, aliases>>
 
 export type Checker<data, outMorph> = (data: unknown) => outMorph & Result<data>

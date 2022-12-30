@@ -8,11 +8,12 @@ import type {
     InferredTypeConstructor,
     morphsFrom,
     toType,
-    Traits
+    Traits,
+    Type
 } from "./type.ts"
 import { composeType, type } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import type { Dict, evaluate, isTopType } from "./utils/generics.ts"
+import type { Dict, evaluate, isTopType, mutable } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
@@ -30,7 +31,9 @@ const rawScope = (def: Dict, parent?: Scope) => {
     }
     for (const name in def) {
         // TODO: Fix typeConfig
-        result.types[name] = type.dynamic(def[name])
+        ;(result.types as mutable<Scope["types"]>)[name] = type.dynamic(
+            def[name]
+        )
     }
     return result
 }
@@ -58,9 +61,16 @@ type InferredScopeConstructor = <aliases, parent extends Scope = RootScope>(
     config?: ScopeConfig<parent>
 ) => Scope<aliases>
 
-type toScope<aliases> = {
+type toTypes<aliases> = {
     [k in keyof aliases]: aliases[k] extends TraitsTuple
-        ? toType<aliases[k][0], aliases, morphsFrom<aliases[k][2], RootScope>>
+        ? aliases[k][2] extends Traits
+            ? toType<
+                  aliases[k][0],
+                  aliases,
+                  morphsFrom<aliases[k][2], RootScope>
+              >
+            : // TODO: Add error
+              never
         : toType<aliases[k], aliases, {}>
 }
 
@@ -69,17 +79,15 @@ export type Scope<aliases = Dict> = {
     aliases: aliases
     // TODO: Fix parent
     infer: Dict extends aliases ? Dict : inferAliases<aliases, RootScope>
-    types: toScope<aliases>
+    types: Dict extends aliases ? Dict<string, Type> : toTypes<aliases>
     cache: { [k in keyof aliases]: TypeNode }
     parent?: Scope
     type: InferredTypeConstructor<aliases>
 }
 
-export type aliasOf<aliases> = keyof aliases & string
-
 type DynamicScopeConstructor = <aliases extends Dict>(
     aliases: aliases
-) => Scope<Dict<aliasOf<aliases>>>
+) => Scope<{ [k in keyof aliases]: "unknown" }>
 
 type validateAliases<aliases, parent extends Scope> = evaluate<{
     [name in keyof aliases]: validateTypeDefinition<
