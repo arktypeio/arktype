@@ -4,7 +4,7 @@ import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
 import type {
     InferredTypeConstructor,
-    toType,
+    parseType,
     Type,
     TypeConstructor
 } from "./type.ts"
@@ -27,7 +27,7 @@ const composeScopeConstructor = <parent extends Scope>(parent?: parent) =>
             $: {
                 infer: chainableNoOpProxy,
                 cache: {},
-                aliases: def
+                definitions: def
             } satisfies Omit<ScopeMeta, "type" | "extend"> as any
         }
         bootstrap.$.type = composeTypeConstructor(bootstrap)
@@ -66,12 +66,11 @@ type InferredScopeConstructor<parent> = <defs>(
 ) => Scope<parseScope<merge<parent, defs>>>
 
 type DynamicScopeConstructor<parent> = <defs extends Dict>(
-    aliases: defs
+    defs: defs
 ) => Scope<Aliases<stringKeyOf<parent & defs>>>
 
 export type Aliases<name extends string = string> = { [k in name]: Type }
 
-// TODO: imports/exports, extends
 export type Scope<aliases = Aliases> = {
     $: ScopeMeta<aliases>
 } & aliases
@@ -85,7 +84,7 @@ export type ScopeMeta<aliases = Aliases> = {
             : never
     }
     cache: { [def in string]: TypeNode }
-    aliases: Dict
+    definitions: Dict
 }
 
 type parseScope<defs> = evaluate<{
@@ -95,7 +94,7 @@ type parseScope<defs> = evaluate<{
         ? defs[k]
         : defs[k] extends (() => infer r extends Type)
         ? r
-        : toType<defs[k], defs, {}>
+        : parseType<defs[k], defs, {}>
 }>
 
 type validateScope<defs, parent> = {

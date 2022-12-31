@@ -42,15 +42,19 @@ export const nodeToType = (root: TypeSet, $: Scope, config: Traits): Type => {
 }
 
 export type InferredTypeConstructor<$> = {
-    <def>(def: validateDefinition<def, $>): toType<def, $, {}>
+    <def>(def: validateDefinition<def, $>): parseType<def, $, {}>
 
     <def, traits extends Traits<inferDefinition<def, $>, $>>(
         def: validateDefinition<def, $>,
         traits: traits
-    ): toType<def, $, morphsFrom<traits, $>>
+    ): parseType<def, $, morphsFrom<traits, $>>
 }
 
-export type toType<def, $, morphs extends Morphs> = isTopType<def> extends true
+export type parseType<
+    def,
+    $,
+    morphs extends Morphs
+> = isTopType<def> extends true
     ? never
     : def extends validateDefinition<def, $>
     ? {} extends morphs

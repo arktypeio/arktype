@@ -40,16 +40,16 @@ describe("morph", () => {
             attest(data).equals("true").typed as string | undefined
         })
         it("in scope", () => {
-            const io = scope({
+            const types = scope({
                 a: () =>
-                    io.$.type("b", {
+                    types.$.type("b", {
                         to: {
                             b: (s) => s
                         }
                     }),
                 b: "string",
                 c: () =>
-                    io.$.type("a|d", {
+                    types.$.type("a|d", {
                         from: {
                             b: (s) => s
                         }

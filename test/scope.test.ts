@@ -5,40 +5,40 @@ import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unen
 
 describe("scope", () => {
     it("base definition", () => {
-        const io = scope({ a: "string" })
-        attest(io.a.infer).typed as string
+        const types = scope({ a: "string" })
+        attest(types.a.infer).typed as string
         attest(() =>
             // @ts-expect-error
             scope({ a: "strong" })
         ).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
     })
     it("type definition", () => {
-        const io = scope({ a: type("string") })
-        attest(io.a.infer).typed as string
+        const types = scope({ a: type("string") })
+        attest(types.a.infer).typed as string
         attest(() =>
             // @ts-expect-error
             scope({ a: type("strong") })
         ).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
     })
     it("thunk definition", () => {
-        const io = scope({ a: () => io.$.type("string") })
-        attest(io.a.infer).typed as string
+        const types = scope({ a: () => types.$.type("string") })
+        attest(types.a.infer).typed as string
         attest(() => {
             // @ts-expect-error
-            const io = scope({ a: () => io.$.type("strong") })
+            const types = scope({ a: () => types.$.type("strong") })
         }).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
     })
     // we can't catch this in validation without breaking inference
     it("bad thunk inferred as never", () => {
         attest(() => {
-            const io = scope({ a: () => true })
-            attest([io.a]).typed as never[]
+            const types = scope({ a: () => true })
+            attest([types.a]).typed as never[]
         })
     })
     it("interdependent", () => {
-        const io = scope({ a: "string>5", b: "email<=10", c: "a&b" })
-        attest(io.c.infer).typed as string
-        attest(io.c.root).equals({
+        const types = scope({ a: "string>5", b: "email<=10", c: "a&b" })
+        attest(types.c.infer).typed as string
+        attest(types.c.root).equals({
             string: {
                 regex: "^(.+)@(.+)\\.(.+)$",
                 range: {
@@ -52,12 +52,12 @@ describe("scope", () => {
         })
     })
     it("cyclic", () => {
-        const io = scope({ a: { b: "b" }, b: { a: "a" } })
-        attest(io.a.root).snap({
+        const types = scope({ a: { b: "b" }, b: { a: "a" } })
+        attest(types.a.root).snap({
             object: { props: { b: "b" } }
         })
         // Type hint displays as any on hitting cycle
-        attest(io.a.infer).typed as {
+        attest(types.a.infer).typed as {
             b: {
                 a: {
                     b: {
@@ -67,13 +67,13 @@ describe("scope", () => {
             }
         }
         // But still yields correct types when properties are accessed
-        attest(io.$.infer.b.a.b.a.b.a.b.a).typed as {
+        attest(types.$.infer.b.a.b.a.b.a.b.a).typed as {
             b: {
                 a: any
             }
         }
         // @ts-expect-error
-        attest(io.$.meta.infer.a.b.a.b.c).type.errors.snap(
+        attest(types.$.meta.infer.a.b.a.b.c).type.errors.snap(
             `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
         )
     })
@@ -85,28 +85,28 @@ describe("scope", () => {
         ]
     })
     it("doesn't try to validate any in scope", () => {
-        const io = scope({ a: {} as any })
-        attest(io.$.type(["number", "a"]).infer).typed as [number, never]
+        const types = scope({ a: {} as any })
+        attest(types.$.type(["number", "a"]).infer).typed as [number, never]
     })
     describe("extension", () => {
         it("base", () => {
-            const io = scope({ definedInScope: "boolean" }).$.extend({
+            const types = scope({ definedInScope: "boolean" }).$.extend({
                 a: "string[]",
                 b: "a[]",
                 c: "definedInScope"
             })
-            attest(io.$.infer).typed as {
+            attest(types.$.infer).typed as {
                 a: string[]
                 b: string[][]
                 c: boolean
             }
-            attest(io.a.root).snap({
+            attest(types.a.root).snap({
                 object: { subdomain: ["Array", "string"] }
             })
-            attest(io.b.root).snap({
+            attest(types.b.root).snap({
                 object: { subdomain: ["Array", "a"] }
             })
-            attest(io.c.root).snap({ boolean: true })
+            attest(types.c.root).snap({ boolean: true })
         })
     })
 })
