@@ -7,8 +7,9 @@ import type {
 import { compileNode } from "./nodes/node.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import type { Scope } from "./scope.ts"
-import { check } from "./traverse/check.ts"
-import { Problems } from "./traverse/problems.ts"
+import type { CheckConfig } from "./traverse/check.ts"
+import { rootCheck } from "./traverse/check.ts"
+import type { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type {
     defer,
@@ -27,10 +28,7 @@ export const nodeToType = (root: TypeSet, $: Scope, config: Traits): Type => {
     const traversal = compileNode(root, $)
     return Object.assign(
         (data: unknown) => {
-            const result = check(data, traversal, $)
-            return result
-                ? { data }
-                : { problems: new Problems({ path: "", reason: "invalid" }) }
+            return rootCheck(data, traversal, $, config)
         },
         {
             config,
@@ -62,7 +60,7 @@ export type parseType<
         : Morphable<inferDefinition<def, $>, morphs>
     : never
 
-export type Traits<data = unknown, $ = Dict> = Morphs<data, $>
+export type Traits<data = unknown, $ = Dict> = Morphs<data, $> & CheckConfig
 
 export type Morphs<data = unknown, $ = Dict> = {
     from?: Sources<data, $>

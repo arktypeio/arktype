@@ -2,8 +2,8 @@
     "extends": "../../tsconfig",
     "compilerOptions": {
         "noEmit": true,
-        "module": "CommonJS",
-        "moduleResolution": "node",
+        "module": "NodeNext",
+        "moduleResolution": "bundler",
         "target": "ES2017",
         "jsx": "react",
         "types": [

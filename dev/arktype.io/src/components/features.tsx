@@ -1,25 +1,32 @@
-import { Box, Stack, SvgIcon, Typography } from "@mui/material"
+import {
+    Box,
+    Container,
+    Stack,
+    SvgIcon,
+    Typography,
+    Paper
+} from "@mui/material"
 import React from "react"
 
 const details = [
     {
-        image: "Two",
         title: "Isomorphic",
         description:
             "Define types using TS syntax. Infer them 1:1. Use them to validate your data at runtime."
     },
     {
-        image: "Three",
+        title: "Native TS",
+        description: "No extensions, plugins or compilers required"
+    },
+    {
         title: "Concise",
         description: "Say more with less"
     },
     {
-        image: "Four",
         title: "Fast",
         description: "..."
     },
     {
-        image: "One",
         title: "Portable",
         description:
             "Most ArkType definitions are just strings and objects. Serialize them and take them anywhere your data can go!"
@@ -34,20 +41,38 @@ type FeatureProps = {
 }
 
 const Feature = ({ image, title, description }: FeatureProps) => (
-    <Box id="feature" flex="1 0 45%">
+    <Box
+        id="feature"
+        flex="1 0 45%"
+        sx={{
+            minWidth: "400px",
+            minHeight: "300px",
+            position: "relative",
+            textAlign: "center"
+        }}
+    >
         <SvgIcon
             sx={{
-                height: 100,
+                height: 100
+            }}
+        ></SvgIcon>
+        <Box
+            sx={{
                 width: "100%"
             }}
         >
-            {image}
-        </SvgIcon>
-        <Box sx={{ padding: "0 5px" }}>
             <Typography component="h3" variant="h5" id="title">
                 {title}
             </Typography>
-            <Typography component="h3" variant="h6" id="description">
+            <Typography
+                component="h3"
+                variant="h6"
+                sx={{
+                    lineHeight: "1.2em",
+                    paddingBottom: "10px",
+                    position: "relative"
+                }}
+            >
                 {description}
             </Typography>
         </Box>
@@ -55,23 +80,49 @@ const Feature = ({ image, title, description }: FeatureProps) => (
 )
 
 const feats = details.map((feature, i) => (
-    <Feature
-        // image={features[feature.image as keyof typeof features]}
-        title={feature.title}
-        description={feature.description}
-        key={i}
-    />
+    <Feature title={feature.title} description={feature.description} key={i} />
 ))
 
-export const Features = () => {
+export const Features = (props: any) => {
     return (
-        <Stack
-            justifyContent="space-evenly"
-            direction="row"
-            flexWrap="wrap"
-            id="featuresComponent"
+        <Container
+            sx={{
+                height: "fit-content",
+                flexWrap: "wrap",
+                display: "flex",
+                minWidth: "100%",
+                padding: "0 !important",
+                justifyContent: "center"
+            }}
         >
-            {feats}
-        </Stack>
+            <Paper
+                elevation={4}
+                sx={{
+                    marginTop: "1em",
+                    backgroundColor: "secondary.main"
+                }}
+            >
+                <Typography
+                    component="h3"
+                    variant="h2"
+                    id="title"
+                    align="center"
+                >
+                    Features
+                </Typography>
+                <Stack
+                    justifyContent="space-evenly"
+                    direction="row"
+                    flexWrap="wrap"
+                    id="featuresComponent"
+                    sx={{
+                        width: "100%",
+                        display: "relative"
+                    }}
+                >
+                    {feats}
+                </Stack>
+            </Paper>
+        </Container>
     )
 }

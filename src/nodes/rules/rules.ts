@@ -103,8 +103,9 @@ const ruleCompilers: {
         }
     }
 }
-
-const rulePrecedenceMap: { readonly [k in TraversalRuleEntry[0]]-?: number } = {
+export const rulePrecedenceMap: {
+    readonly [k in TraversalRuleEntry[0]]-?: number
+} = {
     // Critical: No other checks are performed if these fail
     subdomain: 0,
     // Shallow: All shallow checks will be performed even if one or more fail

@@ -58,6 +58,12 @@ const config = {
                         label: "API"
                     },
                     {
+                        type: "doc",
+                        docId: "examples/type",
+                        position: "left",
+                        label: "Docs"
+                    },
+                    {
                         type: "docsVersionDropdown",
                         position: "right",
                         className: "navbar-versions"
@@ -99,7 +105,7 @@ const config = {
                         ]
                     }
                 ],
-                copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`
+                copyright: `Copyright © ${new Date().getFullYear()} Arktype, Inc. Built with Docusaurus.`
             }
         })
 }

@@ -7,15 +7,20 @@ import type {
     ExactValueEntry,
     TraversalBranchesEntry
 } from "../nodes/predicate.ts"
+import { checkDivisor } from "../nodes/rules/divisor.ts"
+import { checkOptionalProps, checkRequiredProps } from "../nodes/rules/props.ts"
 import type { BoundableData } from "../nodes/rules/range.ts"
 import { checkRange } from "../nodes/rules/range.ts"
+import { checkRegexRule } from "../nodes/rules/regex.ts"
 import type { TraversalRuleEntry } from "../nodes/rules/rules.ts"
+import { rulePrecedenceMap } from "../nodes/rules/rules.ts"
+import { checkSubdomain } from "../nodes/rules/subdomain.ts"
 import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
-import { domainOf, subdomainOf } from "../utils/domains.ts"
-import { throwInternalError } from "../utils/errors.ts"
-import type { Dict, evaluate, extend, List } from "../utils/generics.ts"
-import type { Problems } from "./problems.ts"
+import { domainOf } from "../utils/domains.ts"
+import type { Dict, evaluate, extend, xor } from "../utils/generics.ts"
+import type { DiagnosticCode, DiagnosticsByCode } from "./problems.ts"
+import { Problems } from "./problems.ts"
 
 export const checkRules = (
     domain: Domain,
@@ -25,6 +30,10 @@ export const checkRules = (
 ) => {
     return true
 }
+
+const precedenceMap: {
+    readonly [k in TraversalEntry[0]]-?: number
+} = { domain: 0, value: 0, domains: 0, branches: 0, ...rulePrecedenceMap }
 
 export type TraversalEntry =
     | MultiDomainEntry
@@ -44,90 +53,145 @@ export type CheckState<data = unknown> = evaluate<
     TraversalState & {
         data: data
         problems: Problems
+        config: CheckConfig
     }
 >
 
-// Add a root check function that takes in data, a traversal node, and scope. It
-// should convert data and the node to an initial CheckState and pass it to the
-// next function.
+export type CheckConfig = {
+    problems?: OptionsByDiagnostic
+}
 
-// Convert this check function to take CheckState and ScopeRoot only
-export const check = (data: unknown, node: TraversalNode, scope: Scope) =>
-    typeof node === "string"
-        ? domainOf(data) === node
-        : checkEntries(data, node, scope)
+export type OptionsByDiagnostic = {
+    [Code in DiagnosticCode]?: BaseDiagnosticOptions<Code>
+}
+export type BaseDiagnosticOptions<Code extends keyof DiagnosticsByCode> = {
+    message: (context: DiagnosticsByCode[Code]) => string
+}
 
-// If there is an error, we want to call some central API and pass in a context
-// specific to the current rule that contains additional information needed to
-// construct an error message. This should be used both in the default error
-// message implementation and what would be passed to a custom error message
-// function if one is provided.
+export const rootCheck = (
+    data: unknown,
+    node: TraversalNode,
+    scope: Scope,
+    config: CheckConfig = {}
+): CheckResult => {
+    if (typeof node === "string") {
+        return baseCheckDomain(data, node, [])
+    }
+    const problems = new Problems()
+    const checkState: CheckState = {
+        node,
+        path: [],
+        data,
+        problems,
+        config
+    }
+    checkNode(checkState, scope)
+    return checkState.problems.length
+        ? { problems: checkState.problems }
+        : { data: checkState.data }
+}
 
-// Checkers need to get the full state so they can make updates specific to the
-// rule Keep in mind some rules in the future will set "data" directly to some
-// transformation of the input
+type CheckResult<inferred = unknown> = xor<
+    { data: inferred },
+    { problems: Problems }
+>
+
+export const checkNode = (state: CheckState, scope: Scope) => {
+    if (typeof state.node === "string") {
+        checkDomain(state)
+        return
+    }
+    checkEntries(state, scope)
+}
+
+const checkDomain = (state: CheckState) => {
+    if (domainOf(state.data) !== state.node) {
+        state.problems.addProblem(
+            "Unassignable",
+            {
+                actual: domainOf(state.data),
+                expected: state.node
+            },
+            state
+        )
+    }
+}
+
+const baseCheckDomain = (
+    data: unknown,
+    domain: string,
+    path: string[]
+): CheckResult =>
+    domainOf(data) === domain
+        ? { data }
+        : {
+              problems: new Problems({
+                  path: path.join("."),
+                  reason: `${domain} !== ${data}`
+              })
+          }
+
 const checkers = {
-    regex: (data, regex) => regex.test(data),
-    divisor: (data, divisor) => data % divisor === 0,
-    domains: (data, domains, scope) => {
-        const entries = domains[domainOf(data)]
-        return entries ? checkEntries(data, entries, scope) : false
-    },
-    domain: (data, domain) => domainOf(data) === domain,
-    subdomain: (data, subdomain, scope) => {
-        const actual = subdomainOf(data)
-        if (typeof subdomain === "string") {
-            return actual === subdomain
-        }
-        if (actual !== subdomain[0]) {
-            return false
-        }
-        if (actual === "Array" || actual === "Set") {
-            for (const item of data as List | Set<unknown>) {
-                if (!check(item, subdomain[1], scope)) {
-                    return false
-                }
-            }
-        } else if (actual === "Map") {
-            for (const entry of data as Map<unknown, unknown>) {
-                if (!check(entry[0], subdomain[1], scope)) {
-                    return false
-                }
-                if (!check(entry[1], subdomain[2] as TraversalNode, scope)) {
-                    return false
-                }
-            }
+    regex: (state, regex) => checkRegexRule(state, regex),
+    divisor: (state, divisor) => checkDivisor(state, divisor),
+    domains: (state, domains, scope) => {
+        const entries = domains[domainOf(state.data)]
+        if (entries) {
+            checkEntries(state, scope)
         } else {
-            return throwInternalError(
-                `Unexpected subdomain entry ${JSON.stringify(subdomain)}`
+            state.problems.addProblem(
+                "Unassignable",
+                {
+                    actual: domainOf(state.data),
+                    expected: domains
+                },
+                state
             )
         }
-        return true
     },
-    range: (data, range) => checkRange(data, range),
-    requiredProps: (data, props, scope) =>
-        props.every(([propKey, propNode]) =>
-            check(data[propKey], propNode, scope)
-        ),
-    optionalProps: (data, props, scope) =>
-        props.every(
-            ([propKey, propNode]) =>
-                !(propKey in data) || check(data[propKey], propNode, scope)
-        ),
-    branches: (data, branches, scope) =>
-        branches.some((condition) => checkEntries(data, condition, scope)),
-    refinement: (data, refinement) => refinement(data),
-    value: (data, value) => data === value
+    domain: (state, domain) => {
+        if (domainOf(state.data) !== domain) {
+            state.problems.addProblem(
+                "Unassignable",
+                {
+                    actual: domainOf(state.data),
+                    expected: domain
+                },
+                state
+            )
+        }
+    },
+    subdomain: (state, subdomain, scope) =>
+        checkSubdomain(state, subdomain, scope),
+    range: (state, range) => {
+        checkRange(state, range)
+    },
+    requiredProps: checkRequiredProps,
+    optionalProps: checkOptionalProps,
+    branches: (state, branches, scope) =>
+        branches.some((condition) => checkEntries(state, scope)),
+    refinement: (state, validator) => validator(state),
+    value: (state, value) => {
+        if (state.data !== value) {
+            state.problems.addProblem(
+                "Unassignable",
+                {
+                    actual: state.data,
+                    expected: value
+                },
+                state
+            )
+        }
+    }
 } satisfies {
-    [k in TraversalKey]: (
-        // update to take state instead of data
-        // state: CheckState<RuleInput<k>>
-        data: RuleInput<k>,
-        value: Extract<TraversalEntry, [k, unknown]>[1],
-        scope: Scope
-        // Update return type to void
-    ) => boolean
+    [k in TraversalKey]: TraversalCheck<k>
 }
+
+export type TraversalCheck<k extends TraversalKey> = (
+    state: CheckState<RuleInput<k>>,
+    value: Extract<TraversalEntry, [k, unknown]>[1],
+    scope: Scope
+) => void
 
 export type ConstrainedRuleInputs = extend<
     { [k in TraversalKey]?: unknown },
@@ -143,21 +207,19 @@ export type ConstrainedRuleInputs = extend<
 export type RuleInput<k extends TraversalKey> =
     k extends keyof ConstrainedRuleInputs ? ConstrainedRuleInputs[k] : unknown
 
-export const checkEntries = (
-    data: unknown,
-    entries: readonly TraversalEntry[],
-    scope: Scope
-): boolean => {
+export const checkEntries = (checkState: CheckState, scope: Scope) => {
+    const entries = checkState.node as TraversalEntry[]
+    let precedenceLevel = 0
     for (let i = 0; i < entries.length; i++) {
+        const ruleName = entries[i][0]
+        const ruleValidator = entries[i][1]
         if (
-            !checkers[entries[i][0]](
-                data as never,
-                entries[i][1] as never,
-                scope
-            )
+            checkState.problems.byPath[ruleName] &&
+            precedenceMap[ruleName] > precedenceLevel
         ) {
-            return false
+            break
         }
+        precedenceLevel = precedenceMap[ruleName]
+        checkers[ruleName](checkState as never, ruleValidator as never, scope)
     }
-    return true
 }

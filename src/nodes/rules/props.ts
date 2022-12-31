@@ -1,3 +1,6 @@
+import type { TraversalCheck } from "../../traverse/check.ts"
+import { checkNode } from "../../traverse/check.ts"
+import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
 import type { Dict } from "../../utils/generics.ts"
 import {
     composeIntersection,
@@ -92,6 +95,38 @@ export const compileProps: FlattenAndPushRule<PropsRule> = (
         entries.push(["optionalProps", optionalProps])
     }
 }
+
+const createPropChecker = <k extends "requiredProps" | "optionalProps">(k: k) =>
+    ((state, props, scope) => {
+        const rootData = state.data
+        const rootNode = state.node
+        for (const [propKey, propNode] of props as TraversalPropEntry[]) {
+            if (k === "optionalProps" && !(propKey in state.data)) {
+                continue
+            } else if (!rootData[propKey]) {
+                state.path.push(propKey)
+                state.problems.addProblem("MissingKey", { key: propKey }, state)
+                state.path.pop()
+                continue
+            }
+            state.path.push(propKey)
+            state.data = rootData[propKey] as any
+            state.node = propNode
+            checkNode(state, scope)
+            state.path.pop()
+        }
+        state.data = rootData
+        state.node = rootNode
+    }) as TraversalCheck<k>
+
+export const checkRequiredProps = createPropChecker("requiredProps")
+export const checkOptionalProps = createPropChecker("optionalProps")
+
+export type MissingKeyDiagnostic = { key: unknown }
+
+export const buildMissingKeyError: DiagnosticMessageBuilder<"MissingKey"> = ({
+    key
+}) => `${key} is required.`
 
 // export type TraversalMappedPropsRule = [
 //     mappedEntries: readonly TraversalMappedPropEntry[],

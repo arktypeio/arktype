@@ -1,5 +1,11 @@
+import { Scope } from "../../scope.ts"
+import type { TraversalCheck } from "../../traverse/check.ts"
+import { checkNode, CheckState } from "../../traverse/check.ts"
+import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
 import type { Subdomain } from "../../utils/domains.ts"
-import type { Dict } from "../../utils/generics.ts"
+import { subdomainOf } from "../../utils/domains.ts"
+import { throwInternalError } from "../../utils/errors.ts"
+import type { Dict, List } from "../../utils/generics.ts"
 import { composeIntersection, empty, equal } from "../compose.ts"
 import type { TraversalNode, TypeNode } from "../node.ts"
 import { compileNode, nodeIntersection } from "../node.ts"
@@ -79,3 +85,86 @@ export const subdomainIntersection = composeIntersection<
         ? r
         : (result as SubdomainRule)
 })
+
+export const checkSubdomain: TraversalCheck<"subdomain"> = (
+    state,
+    subdomain,
+    scope
+) => {
+    const actual = subdomainOf(state.data)
+    if (typeof subdomain === "string") {
+        if (actual !== subdomain) {
+            state.problems.addProblem(
+                "Unassignable",
+                {
+                    actual,
+                    expected: subdomain
+                },
+                state
+            )
+        }
+        return
+    }
+    if (actual !== subdomain[0]) {
+        state.problems.addProblem(
+            "Unassignable",
+            {
+                actual,
+                expected: subdomain[0]
+            },
+            state
+        )
+        return
+    }
+    if (actual === "Array" || actual === "Set") {
+        const rootData = state.data
+        const rootNode = state.node
+        state.node = subdomain[1]
+        for (const item of state.data as List | Set<unknown>) {
+            state.data = item
+            state.path.push(`${item}`)
+            checkNode(state, scope)
+            state.path.pop()
+        }
+        state.data = rootData
+        state.node = rootNode
+    } else if (actual === "Map") {
+        const rootData = state.data
+        const rootNode = state.node
+        for (const entry of state.data as Map<unknown, unknown>) {
+            checkNode({ ...state, data: entry[0], node: subdomain[1] }, scope)
+            if (state.problems.length) {
+                state.problems.addProblem(
+                    "MissingKey",
+                    { key: entry[0] },
+                    state
+                )
+                return
+            }
+            checkNode(
+                {
+                    ...state,
+                    data: entry[1],
+                    node: subdomain[2] as TraversalNode
+                },
+                scope
+            )
+            if (state.problems.length) {
+                return
+            }
+        }
+        state.data = rootData
+        state.node = rootNode
+    } else {
+        return throwInternalError(
+            `Unexpected subdomain entry ${JSON.stringify(subdomain)}`
+        )
+    }
+    return true
+}
+
+export type MissingKeyDiagnostic = { key: unknown }
+
+export const buildMissingKeyError: DiagnosticMessageBuilder<"MissingKey"> = ({
+    key
+}) => `${key} is required.`

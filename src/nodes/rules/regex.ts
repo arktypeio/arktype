@@ -1,3 +1,5 @@
+import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
+import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
 import type { CollapsibleList } from "../../utils/generics.ts"
 import { composeIntersection } from "../compose.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
@@ -27,13 +29,25 @@ export const getRegex = (source: string) => {
     return regexCache[source]
 }
 
-export const checkRegexRule = (data: string, rule: CollapsibleList<string>) =>
-    typeof rule === "string"
-        ? checkRegex(data, rule)
-        : rule.every((regexSource) => checkRegex(data, regexSource))
+export const checkRegexRule = ((state, rule) => {
+    if (!rule.test(state.data)) {
+        state.problems.addProblem(
+            "RegexMismatch",
+            { data: state.data, rule },
+            state
+        )
+    }
+}) satisfies TraversalCheck<"regex">
 
-const checkRegex = (data: string, regexSource: string) =>
-    getRegex(regexSource).test(data)
+export type RegexErrorContext = {
+    data: string
+    rule: RegExp
+}
+
+export const buildRegexError: DiagnosticMessageBuilder<"RegexMismatch"> = ({
+    data,
+    rule
+}) => `'${data}' must match expression /${rule}/.`
 
 export const regexIntersection = composeIntersection<CollapsibleList<string>>(
     collapsibleListUnion<string>

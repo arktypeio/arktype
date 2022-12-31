@@ -21,6 +21,15 @@ module.exports = {
                 { type: "doc", label: "Scope", id: "api/scope" },
                 { type: "doc", label: "Node", id: "api/TypeNode" }
             ]
+        },
+        {
+            type: "category",
+            label: "Examples",
+            items: [
+                { type: "doc", label: "Useage", id: "examples/type" },
+                { type: "doc", label: "Errors", id: "examples/error" },
+                { type: "doc", label: "Advanced", id: "examples/advanced" }
+            ]
         }
     ]
 }

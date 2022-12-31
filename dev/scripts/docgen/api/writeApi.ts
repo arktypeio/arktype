@@ -49,6 +49,7 @@ const generateMarkdownForExport = (
     tagData: TsTagData
 ) => {
     const md = new MarkdownSection(exported.name)
+    md.options({ hide_table_of_contents: true })
     for (const [tag, arrayOfTagData] of Object.entries(tagData)) {
         md.section(tag).text(formatTagData(arrayOfTagData, tag))
     }
@@ -58,10 +59,22 @@ const generateMarkdownForExport = (
 
 class MarkdownSection {
     private contents: (string | MarkdownSection)[]
+    private optionsAdded = false
     constructor(header: string, private depth = 1) {
         this.contents = [`${"#".repeat(depth)} ${header}\n`]
     }
 
+    options(options: {}) {
+        if (!this.optionsAdded) {
+            const optionStuff = ["---"]
+            for (const [k, v] of Object.entries(options)) {
+                optionStuff.push(`${k}: ${v}`)
+            }
+            optionStuff.push("---\n")
+            this.contents.unshift(optionStuff.join("\n"))
+        }
+        this.optionsAdded = true
+    }
     section(header: string) {
         const section = new MarkdownSection(header, this.depth + 1)
         this.contents.push(section)
