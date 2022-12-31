@@ -62,9 +62,7 @@ export type CheckConfig = {
 }
 
 export type OptionsByDiagnostic = {
-    [Code in DiagnosticCode]?: BaseDiagnosticOptions<Code> &
-        //@ts-expect-error
-        DiagnosticsByCode[Code]["options"]
+    [Code in DiagnosticCode]?: BaseDiagnosticOptions<Code>
 }
 export type BaseDiagnosticOptions<Code extends keyof DiagnosticsByCode> = {
     message: (context: DiagnosticsByCode[Code]) => string
@@ -74,8 +72,7 @@ export const rootCheck = (
     data: unknown,
     node: TraversalNode,
     scope: Scope,
-    //todo not any
-    config: any = {}
+    config: CheckConfig = {}
 ): CheckResult => {
     if (typeof node === "string") {
         return baseCheckDomain(data, node, [])

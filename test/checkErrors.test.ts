@@ -69,7 +69,7 @@ describe("custom errors", () => {
         const isEven = type("number%2", {
             problems: {
                 DivisorViolation: {
-                    message: ({ value, divisor }) =>
+                    message: ({ divisor, value }) =>
                         `${value} is not even. (${value}%${divisor})`
                 }
             }
