@@ -27,7 +27,7 @@ export class DynamicState {
     private branches: BranchState = {}
     private groups: BranchState[] = []
 
-    constructor(def: string, public readonly scope: Scope) {
+    constructor(def: string, public readonly $: Scope) {
         this.scanner = new Scanner(def)
     }
 
@@ -41,7 +41,7 @@ export class DynamicState {
 
     ejectRootIfLimit() {
         this.assertHasRoot()
-        if (isExactValue(this.root!, "number", this.scope)) {
+        if (isExactValue(this.root!, "number", this.$)) {
             const limit = this.root.number.value
             this.root = undefined
             return limit
@@ -78,7 +78,7 @@ export class DynamicState {
     }
 
     intersect(node: TypeNode) {
-        this.root = intersection(this.ejectRoot(), node, this.scope)
+        this.root = intersection(this.ejectRoot(), node, this.$)
     }
 
     private ejectRoot() {
@@ -130,7 +130,7 @@ export class DynamicState {
                 intersection(
                     this.branches.intersection,
                     this.ejectRoot(),
-                    this.scope
+                    this.$
                 )
             )
         }
@@ -150,19 +150,11 @@ export class DynamicState {
     pushRootToBranch(token: Scanner.BranchToken) {
         this.assertRangeUnset()
         this.branches.intersection = this.branches.intersection
-            ? intersection(
-                  this.branches.intersection,
-                  this.ejectRoot(),
-                  this.scope
-              )
+            ? intersection(this.branches.intersection, this.ejectRoot(), this.$)
             : this.ejectRoot()
         if (token === "|") {
             this.branches.union = this.branches.union
-                ? union(
-                      this.branches.union,
-                      this.branches.intersection,
-                      this.scope
-                  )
+                ? union(this.branches.union, this.branches.intersection, this.$)
                 : this.branches.intersection
             delete this.branches.intersection
         }

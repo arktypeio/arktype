@@ -1,5 +1,7 @@
 // @ts-nocheck
 
+import { scope } from "../api"
+
 type User = {
     name: string
     age: number

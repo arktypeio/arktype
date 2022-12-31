@@ -36,9 +36,9 @@ export type DistributedFunctionEntry<F extends UnaryFunction = UnaryFunction> =
 export const entriesOfDistributableFunction = <F extends UnaryFunction>(
     distributableFunction: distributable<F>,
     inputNode: TypeNode,
-    scope: Scope
+    $: Scope
 ): DistributedFunctionEntry<F>[] => {
-    const domains = domainsOfNode(inputNode, scope)
+    const domains = domainsOfNode(inputNode, $)
     if (!hasDomain(distributableFunction, "object")) {
         return throwParseError(
             buildMalformedDistributableFunctionMessage(distributableFunction)

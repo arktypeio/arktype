@@ -136,11 +136,8 @@ const typeSetIntersection = composeKeyedOperation<TypeSet, Scope>(
 
 export const nodeIntersection = composeNodeOperation(typeSetIntersection)
 
-export const intersection = (
-    l: TypeNode,
-    r: TypeNode,
-    scope: Scope
-): TypeNode => finalizeNodeOperation(l, nodeIntersection(l, r, scope))
+export const intersection = (l: TypeNode, r: TypeNode, $: Scope): TypeNode =>
+    finalizeNodeOperation(l, nodeIntersection(l, r, $))
 
 export const union = (l: TypeNode, r: TypeNode, scope: Scope) =>
     finalizeNodeOperation(l, nodeUnion(l, r, scope))

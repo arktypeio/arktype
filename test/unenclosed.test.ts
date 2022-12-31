@@ -10,7 +10,7 @@ describe("parse unenclosed", () => {
             attest(type("string").infer).typed as string
         })
         it("alias", () => {
-            const a = scope({ a: "string" }).type("a")
+            const a = scope({ a: "string" }).$.type("a")
             attest(a.infer).typed as string
         })
         describe("errors", () => {

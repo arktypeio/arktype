@@ -12,13 +12,13 @@ import type { Scanner } from "../string/shift/scanner.ts"
 import type { validateRefinementTuple } from "./refinement.ts"
 import { parseRefinementTuple } from "./refinement.ts"
 
-export const parseTuple = (def: List, scope: Scope): TypeNode => {
+export const parseTuple = (def: List, $: Scope): TypeNode => {
     if (isTupleExpression(def)) {
-        return parseTupleExpression(def, scope)
+        return parseTupleExpression(def, $)
     }
     const props: Record<number, TypeNode> = {}
     for (let i = 0; i < def.length; i++) {
-        props[i] = parseDefinition(def[i], scope)
+        props[i] = parseDefinition(def[i], $)
     }
     return {
         object: {
@@ -65,7 +65,7 @@ export type TupleExpressionToken = "&" | "|" | "[]" | "=>"
 
 export type TupleExpressionParser<token extends TupleExpressionToken> = (
     def: TupleExpression<token>,
-    scope: Scope
+    $: Scope
 ) => TypeNode
 
 const parseBranchTuple: TupleExpressionParser<"|" | "&"> = (def, scope) => {
@@ -89,8 +89,8 @@ const tupleExpressionParsers: {
     "=>": parseRefinementTuple
 }
 
-const parseTupleExpression = (def: TupleExpression, scope: Scope): TypeNode =>
-    tupleExpressionParsers[def[1]](def as any, scope)
+const parseTupleExpression = (def: TupleExpression, $: Scope): TypeNode =>
+    tupleExpressionParsers[def[1]](def as any, $)
 
 const isTupleExpression = (def: List): def is TupleExpression =>
     typeof def[1] === "string" && def[1] in tupleExpressionParsers

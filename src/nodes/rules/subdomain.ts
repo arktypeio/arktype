@@ -56,7 +56,7 @@ export const subdomainIntersection = composeIntersection<
     let lImpliesR = true
     let rImpliesL = true
     for (let i = 1; i < l.length; i++) {
-        const parameterResult = nodeIntersection(l[i], r[i], context.scope)
+        const parameterResult = nodeIntersection(l[i], r[i], context.$)
         if (parameterResult === equal) {
             result.push(l[i])
         } else if (parameterResult === l) {

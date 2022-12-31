@@ -51,11 +51,7 @@ export const propsIntersection = composeIntersection<
             if (r === undefined) {
                 return l
             }
-            const result = nodeIntersection(
-                nodeFrom(l),
-                nodeFrom(r),
-                context.scope
-            )
+            const result = nodeIntersection(nodeFrom(l), nodeFrom(r), context.$)
             const resultIsOptional = isOptional(l) && isOptional(r)
             if (
                 result === empty &&

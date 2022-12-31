@@ -23,15 +23,11 @@ import type {
 } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
-export const nodeToType = (
-    root: TypeSet,
-    scope: Scope,
-    config: Traits
-): Type => {
-    const traversal = compileNode(root, scope)
+export const nodeToType = (root: TypeSet, $: Scope, config: Traits): Type => {
+    const traversal = compileNode(root, $)
     return Object.assign(
         (data: unknown) => {
-            const result = check(data, traversal, scope)
+            const result = check(data, traversal, $)
             return result
                 ? { data }
                 : { problems: new Problems({ path: "", reason: "invalid" }) }

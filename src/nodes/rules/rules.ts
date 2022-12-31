@@ -70,7 +70,7 @@ export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
 export type FlattenAndPushRule<t> = (
     entries: TraversalRuleEntry[],
     rule: t,
-    scope: Scope
+    $: Scope
 ) => void
 
 const ruleCompilers: {
@@ -120,12 +120,12 @@ const rulePrecedenceMap: { readonly [k in TraversalRuleEntry[0]]-?: number } = {
 
 export const compileRules = (
     rules: Rules,
-    scope: Scope
+    $: Scope
 ): readonly TraversalRuleEntry[] => {
     const entries: TraversalRuleEntry[] = []
     let k: keyof Rules
     for (k in rules) {
-        ruleCompilers[k](entries, rules[k] as any, scope)
+        ruleCompilers[k](entries, rules[k] as any, $)
     }
     return entries.sort(
         (l, r) => rulePrecedenceMap[l[0]] - rulePrecedenceMap[r[0]]

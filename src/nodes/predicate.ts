@@ -28,7 +28,7 @@ export type TraversalBranchesEntry = ["branches", readonly TraversalCondition[]]
 export const compilePredicate = (
     domain: Domain,
     predicate: Predicate,
-    scope: Scope
+    $: Scope
 ): TraversalPredicate => {
     if (predicate === true) {
         return []
@@ -38,12 +38,12 @@ export const compilePredicate = (
     for (const condition of branches) {
         if (typeof condition === "string") {
             flatBranches.push(
-                ...branchesOf(resolveFlatPredicate(scope, condition, domain))
+                ...branchesOf(resolveFlatPredicate($, condition, domain))
             )
         } else if (isExactValuePredicate(condition)) {
             flatBranches.push([["value", condition.value]])
         } else {
-            flatBranches.push(compileRules(condition, scope))
+            flatBranches.push(compileRules(condition, $))
         }
     }
     return flatBranches.length === 1
@@ -73,7 +73,7 @@ export type ExactValueEntry = ["value", unknown]
 
 export type PredicateContext = {
     domain: Domain
-    scope: Scope
+    $: Scope
 }
 
 export type ResolvedPredicate<
@@ -89,10 +89,10 @@ export const comparePredicates = (
     domain: Domain,
     l: Predicate,
     r: Predicate,
-    scope: Scope
+    $: Scope
 ): PredicateComparison => {
-    const lResolution = resolvePredicateIfIdentifier(domain, l, scope)
-    const rResolution = resolvePredicateIfIdentifier(domain, r, scope)
+    const lResolution = resolvePredicateIfIdentifier(domain, l, $)
+    const rResolution = resolvePredicateIfIdentifier(domain, r, $)
     if (lResolution === true) {
         return rResolution === true ? equal : r
     }
@@ -108,23 +108,18 @@ export const comparePredicates = (
                 ? lResolution.value === rResolution.value
                     ? equal
                     : empty
-                : checkRules(domain, lResolution.value, rResolution, scope)
+                : checkRules(domain, lResolution.value, rResolution, $)
                 ? l
                 : empty
             : isExactValuePredicate(rResolution)
-            ? checkRules(domain, rResolution.value, lResolution, scope)
+            ? checkRules(domain, rResolution.value, lResolution, $)
                 ? r
                 : empty
-            : rulesIntersection(lResolution, rResolution, { domain, scope })
+            : rulesIntersection(lResolution, rResolution, { domain, $ })
     }
     const lComparisons = listFrom(lResolution)
     const rComparisons = listFrom(rResolution)
-    const comparison = compareBranches(
-        domain,
-        lComparisons,
-        rComparisons,
-        scope
-    )
+    const comparison = compareBranches(domain, lComparisons, rComparisons, $)
     if (
         comparison.equalities.length === lComparisons.length &&
         comparison.equalities.length === rComparisons.length

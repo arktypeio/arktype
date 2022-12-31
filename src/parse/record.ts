@@ -6,10 +6,10 @@ import type { inferDefinition } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"
 import { Scanner } from "./string/shift/scanner.ts"
 
-export const parseRecord = (def: Dict, scope: Scope): TypeNode => {
+export const parseRecord = (def: Dict, $: Scope): TypeNode => {
     const props: mutable<PropsRule> = {}
     for (const definitionKey in def) {
-        const propNode = parseDefinition(def[definitionKey], scope)
+        const propNode = parseDefinition(def[definitionKey], $)
         if (definitionKey.endsWith(`${Scanner.escapeToken}?`)) {
             props[`${definitionKey.slice(0, -2)}?`] = propNode
         } else if (definitionKey.endsWith("?")) {

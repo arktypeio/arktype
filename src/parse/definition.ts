@@ -22,14 +22,14 @@ import type {
 } from "./tuple/tuple.ts"
 import { parseTuple } from "./tuple/tuple.ts"
 
-export const parseDefinition = (def: unknown, scope: Scope): TypeNode => {
+export const parseDefinition = (def: unknown, $: Scope): TypeNode => {
     switch (subdomainOf(def)) {
         case "string":
-            return parseString(def as string, scope)
+            return parseString(def as string, $)
         case "object":
-            return parseRecord(def as Dict, scope)
+            return parseRecord(def as Dict, $)
         case "Array":
-            return parseTuple(def as List, scope)
+            return parseTuple(def as List, $)
         case "RegExp":
             return { string: { regex: (def as RegExp).source } }
         default:
