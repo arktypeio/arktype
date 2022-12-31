@@ -17,8 +17,9 @@ import { rulePrecedenceMap } from "../nodes/rules/rules.ts"
 import { checkSubdomain } from "../nodes/rules/subdomain.ts"
 import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
-import { domainOf, subdomainOf } from "../utils/domains.ts"
+import { domainOf } from "../utils/domains.ts"
 import type { Dict, evaluate, extend, xor } from "../utils/generics.ts"
+import type { DiagnosticCode, DiagnosticsByCode } from "./problems.ts"
 import { Problems } from "./problems.ts"
 
 export const checkRules = (
@@ -46,28 +47,38 @@ export type TraversalKey = TraversalEntry[0]
 export type TraversalState = {
     node: TraversalNode
     path: string[]
-    rulePrecedenceLevel: number
 }
 
 export type CheckState<data = unknown> = evaluate<
     TraversalState & {
         data: data
         problems: Problems
-        customError?: string | undefined
+        config: CheckConfig
     }
 >
-export type CheckOptions = {
-    customError?: string
-    allowExtraneouskeys?: boolean
+
+export type CheckConfig = {
+    problems?: OptionsByDiagnostic
+}
+
+export type OptionsByDiagnostic = {
+    [Code in DiagnosticCode]?: BaseDiagnosticOptions<Code> &
+        //@ts-expect-error
+        DiagnosticsByCode[Code]["options"]
+}
+export type BaseDiagnosticOptions<Code extends keyof DiagnosticsByCode> = {
+    message: (context: DiagnosticsByCode[Code]) => string
 }
 
 export const rootCheck = (
     data: unknown,
     node: TraversalNode,
-    scope: Scope
+    scope: Scope,
+    //todo not any
+    config: any = {}
 ): CheckResult => {
     if (typeof node === "string") {
-        return checkDomain(data, node, [])
+        return baseCheckDomain(data, node, [])
     }
     const problems = new Problems()
     const checkState: CheckState = {
@@ -75,7 +86,7 @@ export const rootCheck = (
         path: [],
         data,
         problems,
-        rulePrecedenceLevel: 0
+        config
     }
     checkNode(checkState, scope)
     return checkState.problems.length
@@ -90,12 +101,26 @@ type CheckResult<inferred = unknown> = xor<
 
 export const checkNode = (state: CheckState, scope: Scope) => {
     if (typeof state.node === "string") {
-        checkDomain(state.data, state.node, state.path)
+        checkDomain(state)
+        return
     }
     checkEntries(state, scope)
 }
 
-const checkDomain = (
+const checkDomain = (state: CheckState) => {
+    if (domainOf(state.data) !== state.node) {
+        state.problems.addProblem(
+            "Unassignable",
+            {
+                actual: domainOf(state.data),
+                expected: state.node
+            },
+            state
+        )
+    }
+}
+
+const baseCheckDomain = (
     data: unknown,
     domain: string,
     path: string[]
@@ -117,18 +142,26 @@ const checkers = {
         if (entries) {
             checkEntries(state, scope)
         } else {
-            state.problems.addProblem(state, {
-                actual: domainOf(state.data),
-                expected: domains
-            })
+            state.problems.addProblem(
+                "Unassignable",
+                {
+                    actual: domainOf(state.data),
+                    expected: domains
+                },
+                state
+            )
         }
     },
     domain: (state, domain) => {
         if (domainOf(state.data) !== domain) {
-            state.problems.addProblem(state, {
-                actual: domainOf(state.data),
-                expected: domain
-            })
+            state.problems.addProblem(
+                "Unassignable",
+                {
+                    actual: domainOf(state.data),
+                    expected: domain
+                },
+                state
+            )
         }
     },
     subdomain: (state, subdomain, scope) =>
@@ -143,10 +176,14 @@ const checkers = {
     refinement: (state, validator) => validator(state),
     value: (state, value) => {
         if (state.data !== value) {
-            state.problems.addProblem(state, {
-                actual: state.data,
-                expected: value
-            })
+            state.problems.addProblem(
+                "Unassignable",
+                {
+                    actual: state.data,
+                    expected: value
+                },
+                state
+            )
         }
     }
 } satisfies {
@@ -176,7 +213,7 @@ export type RuleInput<k extends TraversalKey> =
 export const checkEntries = (checkState: CheckState, scope: Scope) => {
     const entries = checkState.node as TraversalEntry[]
     let precedenceLevel = 0
-    for (let i = 0; i < checkState.node?.length; i++) {
+    for (let i = 0; i < entries.length; i++) {
         const ruleName = entries[i][0]
         const ruleValidator = entries[i][1]
         if (

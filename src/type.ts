@@ -7,7 +7,7 @@ import type {
 import { compileNode } from "./nodes/node.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import type { Scope } from "./scope.ts"
-import { getRootScope } from "./scope.ts"
+import type { CheckConfig } from "./traverse/check.ts"
 import { rootCheck } from "./traverse/check.ts"
 import type { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
@@ -32,7 +32,7 @@ export const nodeToType = (
     const traversal = compileNode(root, scope)
     return Object.assign(
         (data: unknown) => {
-            return rootCheck(data, traversal, scope)
+            return rootCheck(data, traversal, scope, config)
         },
         {
             config,
@@ -64,7 +64,8 @@ export type toType<
         : Morphable<inferDefinition<def, aliases>, morphs>
     : never
 
-export type Traits<data = unknown, aliases = Dict> = Morphs<data, aliases>
+export type Traits<data = unknown, aliases = Dict> = Morphs<data, aliases> &
+    CheckConfig
 
 export type Morphs<data = unknown, aliases = Dict> = {
     from?: Sources<data, aliases>

@@ -1,10 +1,11 @@
 import { Scope } from "../../scope.ts"
-import { CheckState, TraversalCheck, checkNode } from "../../traverse/check.ts"
-import { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
-import { Subdomain, subdomainOf } from "../../utils/domains.ts"
+import type { TraversalCheck } from "../../traverse/check.ts"
+import { checkNode, CheckState } from "../../traverse/check.ts"
+import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
+import type { Subdomain } from "../../utils/domains.ts"
+import { subdomainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
-import { List } from "../../utils/generics.ts"
-import type { Dict } from "../../utils/generics.ts"
+import type { Dict, List } from "../../utils/generics.ts"
 import { composeIntersection, empty, equal } from "../compose.ts"
 import type { TraversalNode, TypeNode } from "../node.ts"
 import { compileNode, nodeIntersection } from "../node.ts"
@@ -93,15 +94,26 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     const actual = subdomainOf(state.data)
     if (typeof subdomain === "string") {
         if (actual !== subdomain) {
-            state.problems.addProblem(state, {
-                actual,
-                expected: subdomain
-            })
+            state.problems.addProblem(
+                "Unassignable",
+                {
+                    actual,
+                    expected: subdomain
+                },
+                state
+            )
         }
         return
     }
     if (actual !== subdomain[0]) {
-        state.problems.addProblem(state, { actual, expected: subdomain[0] })
+        state.problems.addProblem(
+            "Unassignable",
+            {
+                actual,
+                expected: subdomain[0]
+            },
+            state
+        )
         return
     }
     if (actual === "Array" || actual === "Set") {
@@ -122,7 +134,11 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         for (const entry of state.data as Map<unknown, unknown>) {
             checkNode({ ...state, data: entry[0], node: subdomain[1] }, scope)
             if (state.problems.length) {
-                state.problems.addProblem(state, { key: entry[0] })
+                state.problems.addProblem(
+                    "MissingKey",
+                    { key: entry[0] },
+                    state
+                )
                 return
             }
             checkNode(

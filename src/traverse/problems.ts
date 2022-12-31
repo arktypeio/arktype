@@ -1,12 +1,11 @@
 import type { DivisorErrorContext } from "../nodes/rules/divisor.ts"
 import { buildDivisorError } from "../nodes/rules/divisor.ts"
+import type { MissingKeyDiagnostic } from "../nodes/rules/props.ts"
+import { buildMissingKeyError } from "../nodes/rules/props.ts"
 import type { RangeErrorContext } from "../nodes/rules/range.ts"
 import { buildRangeError } from "../nodes/rules/range.ts"
 import type { RegexErrorContext } from "../nodes/rules/regex.ts"
 import { buildRegexError } from "../nodes/rules/regex.ts"
-import type { MissingKeyDiagnostic } from "../nodes/rules/subdomain.ts"
-import { buildMissingKeyError } from "../nodes/rules/subdomain.ts"
-import { type } from "../type.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { CheckState } from "./check.ts"
 
@@ -36,7 +35,7 @@ export class Problems extends Array<Problem> {
         if (this.length === 1) {
             const problem = this[0]
             if (problem.path !== "") {
-                return `${problem.path} ${uncapitalize(problem.reason)}`
+                return `${problem.path}: ${uncapitalize(problem.reason)}`
             }
             return problem.reason
         }
@@ -50,12 +49,18 @@ export class Problems extends Array<Problem> {
     }
 
     addProblem<code extends DiagnosticCode>(
-        state: CheckState,
-        context: DiagnosticsByCode[code]
+        code: code,
+        context: DiagnosticsByCode[code],
+        state: CheckState
     ) {
+        let customMessage
+        if (state.config.problems !== undefined) {
+            //todo gross
+            customMessage = state.config.problems[code]?.message(context)
+        }
         state.problems.push({
-            path: state.path.join("."),
-            reason: defaultMessagesByCode["DivisorViolation"](context as never)
+            path: [...state.path].join("."),
+            reason: customMessage ?? defaultMessagesByCode[code](context)
         })
     }
 }
@@ -90,7 +95,6 @@ const buildUnassignableError: DiagnosticMessageBuilder<"Unassignable"> = ({
 // export type DiagnosticsByCode = {
 //     Extraneous
 //     Custom: CustomDiagnostic
-//     TupleLength: TupleLengthDiagnostic
 //     Union: UnionDiagnostic
 // }
 
@@ -117,12 +121,3 @@ const defaultMessagesByCode: {
     RegexMismatch: buildRegexError,
     Unassignable: buildUnassignableError
 }
-//TODO custom error
-// type("3<number<5").check(0, {
-//     diagnostics: {
-//         BoundViolation: {
-//             message: ({ data, comparator, limit }) =>
-//                 `${data} not ${comparator}${limit}`
-//         }
-//     }
-// })

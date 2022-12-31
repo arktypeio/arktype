@@ -1,5 +1,5 @@
 import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
-import { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
+import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
 import type { CollapsibleList } from "../../utils/generics.ts"
 import { composeIntersection } from "../compose.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
@@ -31,7 +31,11 @@ export const getRegex = (source: string) => {
 
 export const checkRegexRule = ((state, rule) => {
     if (!rule.test(state.data)) {
-        state.problems.addProblem(state, { data: state.data, rule })
+        state.problems.addProblem(
+            "RegexMismatch",
+            { data: state.data, rule },
+            state
+        )
     }
 }) satisfies TraversalCheck<"regex">
 

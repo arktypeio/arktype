@@ -1,6 +1,7 @@
 import { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
-import { DiagnosticMessageBuilder, Problems } from "../../traverse/problems.ts"
+import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
+import { Problems } from "../../traverse/problems.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import type { List } from "../../utils/generics.ts"
 import { composeIntersection, empty, equal } from "../compose.ts"
@@ -63,19 +64,22 @@ export const buildRangeError: DiagnosticMessageBuilder<"RangeViolation"> = ({
     }(got ${size}).`
 
 export const checkRange = ((state, range) => {
-    const { data } = state
-    const size = typeof data === "number" ? data : data.length
+    const size = typeof state.data === "number" ? state.data : state.data.length
     if (range.min) {
         if (
             size < range.min.limit ||
             (size === range.min.limit && range.min.exclusive)
         ) {
-            state.problems.addProblem(state, {
-                comparator: toComparator("min", range.min),
-                limit: range.min.limit,
-                size,
-                kind: subdomainOf(data)
-            })
+            state.problems.addProblem(
+                "RangeViolation",
+                {
+                    comparator: toComparator("min", range.min),
+                    limit: range.min.limit,
+                    size,
+                    kind: subdomainOf(state.data)
+                },
+                state
+            )
         }
     }
     if (range.max) {
@@ -83,12 +87,16 @@ export const checkRange = ((state, range) => {
             size > range.max.limit ||
             (size === range.max.limit && range.max.exclusive)
         ) {
-            state.problems.addProblem(state, {
-                comparator: toComparator("max", range.max),
-                limit: range.max.limit,
-                size,
-                kind: subdomainOf(data)
-            })
+            state.problems.addProblem(
+                "RangeViolation",
+                {
+                    comparator: toComparator("max", range.max),
+                    limit: range.max.limit,
+                    size,
+                    kind: subdomainOf(state.data)
+                },
+                state
+            )
         }
     }
 }) satisfies TraversalCheck<"range">

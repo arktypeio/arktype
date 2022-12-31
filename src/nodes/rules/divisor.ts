@@ -1,5 +1,5 @@
 import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
-import { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
+import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
 import { composeIntersection, equal } from "../compose.ts"
 
 export const divisorIntersection = composeIntersection<number>(
@@ -31,6 +31,13 @@ export const buildDivisorError: DiagnosticMessageBuilder<
 
 export const checkDivisor = ((state, divisor) => {
     if (state.data % divisor !== 0) {
-        state.problems.addProblem(state, { value: state.data, divisor })
+        state.problems.addProblem(
+            "DivisorViolation",
+            {
+                value: state.data,
+                divisor
+            },
+            state
+        )
     }
 }) satisfies TraversalCheck<"divisor">

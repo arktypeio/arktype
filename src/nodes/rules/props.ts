@@ -1,5 +1,6 @@
 import type { TraversalCheck } from "../../traverse/check.ts"
 import { checkNode } from "../../traverse/check.ts"
+import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
 import type { Dict } from "../../utils/generics.ts"
 import {
     composeIntersection,
@@ -106,6 +107,11 @@ const createPropChecker = <k extends "requiredProps" | "optionalProps">(k: k) =>
         for (const [propKey, propNode] of props as TraversalPropEntry[]) {
             if (k === "optionalProps" && !(propKey in state.data)) {
                 continue
+            } else if (!rootData[propKey]) {
+                state.path.push(propKey)
+                state.problems.addProblem("MissingKey", { key: propKey }, state)
+                state.path.pop()
+                continue
             }
             state.path.push(propKey)
             state.data = rootData[propKey] as any
@@ -119,6 +125,12 @@ const createPropChecker = <k extends "requiredProps" | "optionalProps">(k: k) =>
 
 export const checkRequiredProps = createPropChecker("requiredProps")
 export const checkOptionalProps = createPropChecker("optionalProps")
+
+export type MissingKeyDiagnostic = { key: unknown }
+
+export const buildMissingKeyError: DiagnosticMessageBuilder<"MissingKey"> = ({
+    key
+}) => `${key} is required.`
 
 // export type TraversalMappedPropsRule = [
 //     mappedEntries: readonly TraversalMappedPropEntry[],
