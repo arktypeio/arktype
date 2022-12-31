@@ -22,11 +22,11 @@ export const parseUnenclosed = (s: DynamicState) => {
 
 export type parseUnenclosed<
     s extends StaticState,
-    aliases
+    $
 > = Scanner.shiftUntilNextTerminator<
     s["unscanned"]
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
-    ? tryResolve<s, scanned, aliases> extends infer result
+    ? tryResolve<s, scanned, $> extends infer result
         ? result extends error<infer message>
             ? error<message>
             : state.setRoot<s, result, nextUnscanned>
@@ -34,7 +34,7 @@ export type parseUnenclosed<
     : never
 
 const unenclosedToNode = (s: DynamicState, token: string) =>
-    isResolvable(s.scope, token)
+    isResolvable(s.$, token)
         ? token
         : maybeParseUnenclosedLiteral(token) ??
           s.error(
@@ -58,17 +58,17 @@ const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
     }
 }
 
-export type isResolvableIdentifier<token, aliases> = token extends Keyword
+export type isResolvableIdentifier<token, $> = token extends Keyword
     ? true
-    : token extends stringKeyOf<aliases>
+    : token extends stringKeyOf<$>
     ? true
     : false
 
 type tryResolve<
     s extends StaticState,
     token extends string,
-    aliases
-> = isResolvableIdentifier<token, aliases> extends true
+    $
+> = isResolvableIdentifier<token, $> extends true
     ? token
     : token extends NumberLiteral<infer value>
     ? number extends value

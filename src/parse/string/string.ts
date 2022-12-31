@@ -11,26 +11,22 @@ import type { isResolvableIdentifier } from "./shift/operand/unenclosed.ts"
 import { parseOperator } from "./shift/operator/operator.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
-export const parseString = (def: string, scope: Scope) =>
-    memoizedParse(scope, def)
+export const parseString = (def: string, $: Scope) => memoizedParse($, def)
 
-export type parseString<def extends string, aliases> = maybeNaiveParse<
-    def,
-    aliases
+export type parseString<def extends string, $> = maybeNaiveParse<def, $>
+
+export type inferString<def extends string, $> = inferAst<
+    parseString<def, $>,
+    $
 >
 
-export type inferString<def extends string, aliases> = inferAst<
-    parseString<def, aliases>,
-    aliases
->
-
-export type validateString<def extends string, aliases> = parseString<
+export type validateString<def extends string, $> = parseString<
     def,
-    aliases
+    $
 > extends infer result
     ? result extends error<infer message>
         ? message
-        : validateAstSemantics<result, aliases> extends infer semanticResult
+        : validateAstSemantics<result, $> extends infer semanticResult
         ? semanticResult extends undefined
             ? def
             : semanticResult
@@ -41,42 +37,36 @@ export type validateString<def extends string, aliases> = parseString<
  * Try to parse the definition from right to left using the most common syntax.
  * This can be much more efficient for simple definitions.
  */
-type maybeNaiveParse<
-    def extends string,
-    aliases
-> = def extends `${infer child}[]`
-    ? isResolvableIdentifier<child, aliases> extends true
+type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
+    ? isResolvableIdentifier<child, $> extends true
         ? [child, "[]"]
-        : fullStringParse<def, aliases>
-    : isResolvableIdentifier<def, aliases> extends true
+        : fullStringParse<def, $>
+    : isResolvableIdentifier<def, $> extends true
     ? def
-    : fullStringParse<def, aliases>
+    : fullStringParse<def, $>
 
 export const maybeNaiveParse = (
     def: string,
-    scope: Scope
+    $: Scope
 ): TypeNode | undefined => {
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
-        if (isResolvable(scope, elementDef)) {
+        if (isResolvable($, elementDef)) {
             return functorKeywords.Array(elementDef)
         }
     }
-    if (isResolvable(scope, def)) {
+    if (isResolvable($, def)) {
         return def
     }
 }
 
-export const fullStringParse = (def: string, scope: Scope) => {
-    const s = new DynamicState(def, scope)
+export const fullStringParse = (def: string, $: Scope) => {
+    const s = new DynamicState(def, $)
     parseOperand(s)
     return loop(s)
 }
 
-type fullStringParse<def extends string, aliases> = loop<
-    state.initialize<def>,
-    aliases
->
+type fullStringParse<def extends string, $> = loop<state.initialize<def>, $>
 
 // TODO: Recursion perf?
 const loop = (s: DynamicState) => {
@@ -86,20 +76,18 @@ const loop = (s: DynamicState) => {
     return s.ejectFinalizedRoot()
 }
 
-type loop<s extends StaticState | error, aliases> = s extends StaticState
-    ? loopValid<s, aliases>
+type loop<s extends StaticState | error, $> = s extends StaticState
+    ? loopValid<s, $>
     : s
 
 type loopValid<
     s extends StaticState,
-    aliases
-> = s["unscanned"] extends Scanner.finalized
-    ? s["root"]
-    : loop<next<s, aliases>, aliases>
+    $
+> = s["unscanned"] extends Scanner.finalized ? s["root"] : loop<next<s, $>, $>
 
 const next = (s: DynamicState) =>
     s.hasRoot() ? parseOperator(s) : parseOperand(s)
 
-type next<s extends StaticState, aliases> = s["root"] extends undefined
-    ? parseOperand<s, aliases>
+type next<s extends StaticState, $> = s["root"] extends undefined
+    ? parseOperand<s, $>
     : parseOperator<s>

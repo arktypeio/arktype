@@ -14,11 +14,11 @@ import type { FlattenAndPushRule } from "./rules.ts"
 
 // Unfortunately we can't easily abstract between these two rules because of
 // nonsense TS circular reference issues.
-export type SubdomainRule<aliases = Dict> =
+export type SubdomainRule<$ = Dict> =
     | Subdomain
-    | ["Array", TypeNode<aliases>]
-    | ["Set", TypeNode<aliases>]
-    | ["Map", TypeNode<aliases>, TypeNode<aliases>]
+    | ["Array", TypeNode<$>]
+    | ["Set", TypeNode<$>]
+    | ["Map", TypeNode<$>, TypeNode<$>]
 
 export type TraversalSubdomainRule =
     | Subdomain
@@ -62,7 +62,7 @@ export const subdomainIntersection = composeIntersection<
     let lImpliesR = true
     let rImpliesL = true
     for (let i = 1; i < l.length; i++) {
-        const parameterResult = nodeIntersection(l[i], r[i], context.scope)
+        const parameterResult = nodeIntersection(l[i], r[i], context.$)
         if (parameterResult === equal) {
             result.push(l[i])
         } else if (parameterResult === l) {

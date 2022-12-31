@@ -1,11 +1,13 @@
 // @ts-nocheck
 
+import { scope } from "../api"
+
 type User = {
     name: string
     age: number
 }
 
-const s = scope({
+const $ = scope({
     // these are standard type deftinions. you can infer them and use them to check data.
     admin: ["user", "&", { isAdmin: "true" }],
     json: "string",

@@ -22,14 +22,14 @@ import type {
 } from "./tuple/tuple.ts"
 import { parseTuple } from "./tuple/tuple.ts"
 
-export const parseDefinition = (def: unknown, scope: Scope): TypeNode => {
+export const parseDefinition = (def: unknown, $: Scope): TypeNode => {
     switch (subdomainOf(def)) {
         case "string":
-            return parseString(def as string, scope)
+            return parseString(def as string, $)
         case "object":
-            return parseRecord(def as Dict, scope)
+            return parseRecord(def as Dict, $)
         case "Array":
-            return parseTuple(def as List, scope)
+            return parseTuple(def as List, $)
         case "RegExp":
             return { string: { regex: (def as RegExp).source } }
         default:
@@ -39,34 +39,34 @@ export const parseDefinition = (def: unknown, scope: Scope): TypeNode => {
     }
 }
 
-export type inferDefinition<def, aliases> = isTopType<def> extends true
+export type inferDefinition<def, $> = isTopType<def> extends true
     ? never
     : def extends string
-    ? inferString<def, aliases>
+    ? inferString<def, $>
     : def extends List
-    ? inferTuple<def, aliases>
+    ? inferTuple<def, $>
     : def extends Type
     ? def["infer"]
     : def extends RegExp
     ? string
     : def extends Dict
-    ? inferRecord<def, aliases>
+    ? inferRecord<def, $>
     : never
 
-export type validateDefinition<def, aliases> = isTopType<def> extends true
+export type validateDefinition<def, $> = isTopType<def> extends true
     ? buildUninferableDefinitionMessage<def>
     : def extends []
     ? []
     : def extends string
-    ? validateString<def, aliases>
+    ? validateString<def, $>
     : def extends TupleExpression
-    ? validateTupleExpression<def, aliases>
+    ? validateTupleExpression<def, $>
     : def extends TerminalObject
     ? def
     : def extends BadDefinitionType
     ? buildBadDefinitionTypeMessage<subdomainOf<def>>
     : evaluate<{
-          [k in keyof def]: validateDefinition<def[k], aliases>
+          [k in keyof def]: validateDefinition<def[k], $>
       }>
 
 export type buildUninferableDefinitionMessage<def> =

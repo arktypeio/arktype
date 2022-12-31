@@ -1,22 +1,44 @@
 import { describe, it } from "mocha"
-import { scope } from "../api.ts"
+import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 
 describe("scope", () => {
-    it("single", () => {
-        const s = scope({ a: "string" })
-        attest(s.infer).typed as { a: string }
-        attest(s.types.a.infer).typed as string
+    it("base definition", () => {
+        const types = scope({ a: "string" })
+        attest(types.a.infer).typed as string
         attest(() =>
             // @ts-expect-error
-            scope({ a: "strng" })
-        ).throwsAndHasTypeError(buildUnresolvableMessage("strng"))
+            scope({ a: "strong" })
+        ).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
+    })
+    it("type definition", () => {
+        const types = scope({ a: type("string") })
+        attest(types.a.infer).typed as string
+        attest(() =>
+            // @ts-expect-error
+            scope({ a: type("strong") })
+        ).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
+    })
+    it("thunk definition", () => {
+        const types = scope({ a: () => types.$.type("string") })
+        attest(types.a.infer).typed as string
+        attest(() => {
+            // @ts-expect-error
+            const types = scope({ a: () => types.$.type("strong") })
+        }).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
+    })
+    // we can't catch this in validation without breaking inference
+    it("bad thunk inferred as never", () => {
+        attest(() => {
+            const types = scope({ a: () => true })
+            attest([types.a]).typed as never[]
+        })
     })
     it("interdependent", () => {
-        const s = scope({ a: "string>5", b: "email<=10", c: "a&b" })
-        attest(s.types.c.infer).typed as string
-        attest(s.types.c.root).equals({
+        const types = scope({ a: "string>5", b: "email<=10", c: "a&b" })
+        attest(types.c.infer).typed as string
+        attest(types.c.root).equals({
             string: {
                 regex: "^(.+)@(.+)\\.(.+)$",
                 range: {
@@ -30,12 +52,12 @@ describe("scope", () => {
         })
     })
     it("cyclic", () => {
-        const s = scope({ a: { b: "b" }, b: { a: "a" } })
-        attest(s.types.a.root).snap({
+        const types = scope({ a: { b: "b" }, b: { a: "a" } })
+        attest(types.a.root).snap({
             object: { props: { b: "b" } }
         })
         // Type hint displays as any on hitting cycle
-        attest(s.infer.a).typed as {
+        attest(types.a.infer).typed as {
             b: {
                 a: {
                     b: {
@@ -45,42 +67,46 @@ describe("scope", () => {
             }
         }
         // But still yields correct types when properties are accessed
-        attest(s.infer.b.a.b.a.b.a.b.a).typed as {
+        attest(types.$.infer.b.a.b.a.b.a.b.a).typed as {
             b: {
                 a: any
             }
         }
         // @ts-expect-error
-        attest(s.infer.a.b.a.b.c).type.errors.snap(
+        attest(types.$.meta.infer.a.b.a.b.c).type.errors.snap(
             `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
         )
     })
     it("object array", () => {
-        attest(scope({ a: "string", b: [{ c: "a" }] }).infer.b).typed as [
+        attest(scope({ a: "string", b: [{ c: "a" }] }).$.infer.b).typed as [
             {
                 c: string
             }
         ]
     })
     it("doesn't try to validate any in scope", () => {
-        const s = scope({ a: {} as any })
-        attest(s.type(["number", "a"]).infer).typed as [number, never]
+        const types = scope({ a: {} as any })
+        attest(types.$.type(["number", "a"]).infer).typed as [number, never]
     })
-    it("parent scope", () => {
-        const s = scope({ definedInScope: "boolean" }).extend({
-            a: "string[]",
-            b: "a[]",
-            c: "definedInScope"
+    describe("extension", () => {
+        it("base", () => {
+            const types = scope({ definedInScope: "boolean" }).$.extend({
+                a: "string[]",
+                b: "a[]",
+                c: "definedInScope"
+            })
+            attest(types.$.infer).typed as {
+                a: string[]
+                b: string[][]
+                c: boolean
+            }
+            attest(types.a.root).snap({
+                object: { subdomain: ["Array", "string"] }
+            })
+            attest(types.b.root).snap({
+                object: { subdomain: ["Array", "a"] }
+            })
+            attest(types.c.root).snap({ boolean: true })
         })
-        attest(s.infer).typed as {
-            a: string[]
-            b: string[][]
-            c: boolean
-        }
-        attest(s.types.a.root).snap({
-            object: { subdomain: ["Array", "string"] }
-        })
-        attest(s.types.b.root).snap({ object: { subdomain: ["Array", "a"] } })
-        attest(s.types.c.root).snap({ boolean: true })
     })
 })

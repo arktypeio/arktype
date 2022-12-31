@@ -17,7 +17,7 @@ describe("snippets", () => {
     })
     it("scope", async () => {
         const scopeSnippet = await import("../examples/scope.ts")
-        attest(scopeSnippet.$.types.package.infer).type.toString.snap(
+        attest(scopeSnippet.types.package.infer).type.toString.snap(
             "{ name: string; dependencies: any[]; contributors: { email: string; packages?: any[] | undefined; }[]; }"
         )
         attest(scopeSnippet.problems?.summary)
