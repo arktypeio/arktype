@@ -10,13 +10,13 @@ import { compileNode, nodeIntersection } from "../node.ts"
 import type { PredicateContext } from "../predicate.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
-export type PropsRule<aliases = Dict> = {
-    [propKey in string]: Prop<aliases>
+export type PropsRule<$ = Dict> = {
+    [propKey in string]: Prop<$>
 }
 
-export type Prop<aliases = Dict> = TypeNode<aliases> | OptionalProp<aliases>
+export type Prop<$ = Dict> = TypeNode<$> | OptionalProp<$>
 
-export type OptionalProp<aliases = Dict> = ["?", TypeNode<aliases>]
+export type OptionalProp<$ = Dict> = ["?", TypeNode<$>]
 
 export type TraversalRequiredProps = [
     "requiredProps",

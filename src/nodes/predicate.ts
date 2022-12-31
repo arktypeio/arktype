@@ -17,12 +17,9 @@ import {
     resolvePredicateIfIdentifier
 } from "./utils.ts"
 
-export type Predicate<
-    domain extends Domain = Domain,
-    aliases = Dict
-> = Dict extends aliases
+export type Predicate<domain extends Domain = Domain, $ = Dict> = Dict extends $
     ? true | CollapsibleList<Condition>
-    : true | CollapsibleList<Condition<domain, aliases>>
+    : true | CollapsibleList<Condition<domain, $>>
 
 export type TraversalPredicate = TraversalCondition | [TraversalBranchesEntry]
 
@@ -59,10 +56,10 @@ const branchesOf = (flatPredicate: TraversalPredicate) =>
         ? flatPredicate.slice(1)
         : [flatPredicate]) as TraversalCondition[]
 
-export type Condition<domain extends Domain = Domain, aliases = Dict> =
-    | RuleSet<domain, aliases>
+export type Condition<domain extends Domain = Domain, $ = Dict> =
+    | RuleSet<domain, $>
     | ExactValue<domain>
-    | Identifier<aliases>
+    | Identifier<$>
 
 export type TraversalCondition =
     | readonly TraversalRuleEntry[]
@@ -81,8 +78,8 @@ export type PredicateContext = {
 
 export type ResolvedPredicate<
     domain extends Domain = Domain,
-    aliases = Dict
-> = Exclude<Predicate<domain, stringKeyOf<aliases>>, string>
+    $ = Dict
+> = Exclude<Predicate<domain, stringKeyOf<$>>, string>
 
 export type PredicateComparison =
     | SetOperationResult<Predicate>

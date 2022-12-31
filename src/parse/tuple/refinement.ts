@@ -26,8 +26,8 @@ export const parseRefinementTuple: TupleExpressionParser<"=>"> = (
     return intersection(inputNode, distributedValidatorNode, scope)
 }
 
-export type validateRefinementTuple<def, aliases> = [
-    validateDefinition<def, aliases>,
+export type validateRefinementTuple<def, $> = [
+    validateDefinition<def, $>,
     "=>",
-    distributable<Refinement<inferDefinition<def, aliases>>>
+    distributable<Refinement<inferDefinition<def, $>>>
 ]

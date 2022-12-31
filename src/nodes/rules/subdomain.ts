@@ -8,11 +8,11 @@ import type { FlattenAndPushRule } from "./rules.ts"
 
 // Unfortunately we can't easily abstract between these two rules because of
 // nonsense TS circular reference issues.
-export type SubdomainRule<aliases = Dict> =
+export type SubdomainRule<$ = Dict> =
     | Subdomain
-    | ["Array", TypeNode<aliases>]
-    | ["Set", TypeNode<aliases>]
-    | ["Map", TypeNode<aliases>, TypeNode<aliases>]
+    | ["Array", TypeNode<$>]
+    | ["Set", TypeNode<$>]
+    | ["Map", TypeNode<$>, TypeNode<$>]
 
 export type TraversalSubdomainRule =
     | Subdomain

@@ -63,7 +63,7 @@ export const nodeExtendsDomain = <domain extends Domain>(
 
 // TODO: Move to parse
 export const isResolvable = (scope: Scope, name: string) => {
-    return isKeyOf(name, keywords) || scope.aliases[name] ? true : false
+    return isKeyOf(name, keywords) || scope.types[name] ? true : false
 }
 
 export const resolve = (scope: Scope, name: string) => {
@@ -89,12 +89,12 @@ const resolveRecurse = (
     if (isKeyOf(name, scope.types)) {
         return scope.types[name].root as TypeSet
     }
-    if (!scope.aliases[name]) {
+    if (!scope.types[name]) {
         return throwInternalError(
             `Unexpectedly failed to resolve alias '${name}'`
         )
     }
-    let root = parseDefinition(scope.aliases[name], scope)
+    let root = parseDefinition(scope.types[name], scope)
     if (typeof root === "string") {
         if (seen.includes(root)) {
             return throwParseError(buildShallowCycleErrorMessage(name, seen))
@@ -163,11 +163,11 @@ const resolvePredicateRecurse = <domain extends Domain>(
 }
 
 export const memoizedParse = (scope: Scope, def: string): TypeNode => {
-    if (def in scope.cache) {
-        return scope.cache[def]
+    if (def in scope.meta.cache) {
+        return scope.meta.cache[def]
     }
     const root = maybeNaiveParse(def, scope) ?? fullStringParse(def, scope)
-    scope.cache[def] = deepFreeze(root)
+    scope.meta.cache[def] = deepFreeze(root)
     return root
 }
 

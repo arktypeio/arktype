@@ -18,11 +18,11 @@ export const parseOperand = (s: DynamicState): void =>
 // TODO: try adding aliases string extends where possible
 export type parseOperand<
     s extends StaticState,
-    aliases
+    $
 > = s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
     ? lookahead extends "("
         ? state.reduceGroupOpen<s, unscanned>
         : lookahead extends EnclosingChar
         ? parseEnclosed<s, lookahead, unscanned>
-        : parseUnenclosed<s, aliases>
+        : parseUnenclosed<s, $>
     : error<buildMissingOperandMessage<s>>

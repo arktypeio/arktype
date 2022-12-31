@@ -10,13 +10,7 @@ import type {
 } from "./type.ts"
 import { nodeToType } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import type {
-    Dict,
-    evaluate,
-    isTopType,
-    merge,
-    mutable
-} from "./utils/generics.ts"
+import type { Dict, isTopType, merge, mutable } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
@@ -24,29 +18,28 @@ const composeScopeConstructor = <parent extends Scope = RootScope>(
     parent?: parent
 ) =>
     lazyDynamicWrap((def: Dict) => {
-        const result: Scope = {
-            // TODO: Finalize this behavior, align with types
-            aliases: parent ? { ...parent.aliases, ...def } : def,
-            infer: chainableNoOpProxy,
-            cache: {},
-            types: {},
-            type: {} as any,
-            extend: {} as any
-        }
-        result.type = composeTypeConstructor(result)
-        result.extend = composeScopeConstructor(result)
+        const types: Scope["types"] = {}
         for (const name in def) {
             // TODO: Fix typeConfig
-            ;(result.types as mutable<Scope["types"]>)[name] = type.dynamic(
-                def[name]
-            )
+            // TODO: could these already be defined?
+            types[name] = type.dynamic(def[name])
         }
-        return result
-    }) as ScopeConstructor<parent["aliases"]>
+        const bootstrapScope = {
+            types,
+            meta: {
+                infer: chainableNoOpProxy,
+                cache: {},
+                aliases: def
+            }
+        } satisfies Omit<Scope, "type" | "extend"> as Scope
+        bootstrapScope.type = composeTypeConstructor(bootstrapScope)
+        bootstrapScope.extend = composeScopeConstructor(bootstrapScope)
+        return bootstrapScope
+    }) as ScopeConstructor<parent["types"]>
 
 export const composeTypeConstructor = <scope extends Scope>(
     scope: scope
-): TypeConstructor<scope["aliases"]> =>
+): TypeConstructor<scope["types"]> =>
     lazyDynamicWrap((def, traits = {}) => {
         const node = resolveIfIdentifier(parseDefinition(def, scope), scope)
         return nodeToType(node, scope, traits)
@@ -65,49 +58,60 @@ export const type: TypeConstructor<{}> = composeTypeConstructor(getRootScope())
 
 export const scope: ScopeConstructor<{}> = composeScopeConstructor()
 
-type ScopeConstructor<parentAliases> = LazyDynamicWrap<
-    InferredScopeConstructor<parentAliases>,
-    DynamicScopeConstructor<parentAliases>
+type ScopeConstructor<parent> = LazyDynamicWrap<
+    InferredScopeConstructor<parent>,
+    DynamicScopeConstructor<parent>
 >
 
-type InferredScopeConstructor<parentAliases> = <aliases>(
-    aliases: validateAliases<aliases, parentAliases>
-) => Scope<merge<parentAliases, aliases>>
+type InferredScopeConstructor<parent> = <aliases>(
+    aliases: validateAliases<aliases, parent>
+) => Scope<toTypes<merge<parent, aliases>>>
 
-type DynamicScopeConstructor<parentAliases> = <aliases extends Dict>(
+type DynamicScopeConstructor<parent> = <aliases extends Dict>(
     aliases: aliases
-) => Scope<{ [k in keyof aliases | keyof parentAliases]: "unknown" }>
+) => Scope<{ [k in keyof aliases | keyof parent]: Type }>
 
 // TODO: imports/exports, extends
-export type Scope<aliases = Dict> = {
-    aliases: aliases
-    infer: inferAliases<aliases>
-    types: toTypes<aliases>
-    cache: toCache<aliases>
-    type: InferredTypeConstructor<aliases>
-    extend: ScopeConstructor<aliases>
+export type Scope<types = { [k in string]: Type }> = {
+    types: types
+    type: InferredTypeConstructor<types>
+    extend: ScopeConstructor<types>
+    // TODO: finalize API after writing more tests
+    // TODO: how to use word aliases?
+    meta: {
+        infer: {
+            [k in keyof types]: types[k] extends { infer: infer data }
+                ? data
+                : never
+        }
+        cache: { [def in string]: TypeNode }
+        aliases: Dict
+    }
 }
 
 type toTypes<aliases> = {
     [k in keyof aliases]: isTopType<aliases[k]> extends true
         ? Type
+        : aliases[k] extends Type
+        ? aliases[k]
+        : aliases[k] extends (() => infer r extends Type)
+        ? r
         : toType<aliases[k], aliases, {}>
 }
 
-type toCache<aliases> = { [k in keyof aliases]: TypeNode }
-
 type validateAliases<aliases, parentAliases> = {
+    // somehow using "any" as the thunk return type does not cause a circular
+    // reference error (every other type does)
     [name in keyof aliases]: aliases[name] extends () => any
         ? aliases[name]
         : validateDefinition<aliases[name], merge<parentAliases, aliases>>
 }
 
-type inferAliases<aliases> = evaluate<{
-    [name in keyof aliases]: inferResolution<aliases[name], aliases>
-}>
-
-export type inferResolution<def, aliases> = def extends () => {
+// TODO: test perf diff between Type/infer
+export type inferResolution<def, $> = def extends () => {
     infer: infer data
 }
     ? data
-    : inferDefinition<def, aliases>
+    : def extends { infer: infer data }
+    ? data
+    : inferDefinition<def, $>

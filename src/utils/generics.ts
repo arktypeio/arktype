@@ -149,6 +149,10 @@ export type requireKeys<o, key extends keyof o> = o & {
     [requiredKey in key]-?: o[requiredKey]
 }
 
+export type optionalizeKeys<o, key extends keyof o> = Omit<o, key> & {
+    [requiredKey in key]?: o[requiredKey]
+}
+
 /** Type equivalent of ?? */
 export type coalesce<t, fallback> = t extends {} ? t : fallback
 

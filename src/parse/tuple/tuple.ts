@@ -31,43 +31,33 @@ export const parseTuple = (def: List, scope: Scope): TypeNode => {
 // TODO: flat tuple expressions
 export type validateTupleExpression<
     def extends TupleExpression,
-    aliases
+    $
 > = def[1] extends "=>"
-    ? validateRefinementTuple<def[0], aliases>
+    ? validateRefinementTuple<def[0], $>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? [def[0], error<buildMissingRightOperandMessage<def[1], "">>]
-        : [
-              validateDefinition<def[0], aliases>,
-              def[1],
-              validateDefinition<def[2], aliases>
-          ]
+        : [validateDefinition<def[0], $>, def[1], validateDefinition<def[2], $>]
     : def[1] extends "[]"
-    ? [validateDefinition<def[0], aliases>, "[]"]
+    ? [validateDefinition<def[0], $>, "[]"]
     : never
 
-export type inferTuple<def extends List, aliases> = def extends TupleExpression
-    ? inferTupleExpression<def, aliases>
+export type inferTuple<def extends List, $> = def extends TupleExpression
+    ? inferTupleExpression<def, $>
     : {
-          [i in keyof def]: inferDefinition<def[i], aliases>
+          [i in keyof def]: inferDefinition<def[i], $>
       }
 
-type inferTupleExpression<
-    def extends TupleExpression,
-    aliases
-> = def[1] extends "=>"
-    ? inferDefinition<def[0], aliases>
+type inferTupleExpression<def extends TupleExpression, $> = def[1] extends "=>"
+    ? inferDefinition<def[0], $>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? never
         : def[1] extends "&"
-        ? evaluate<
-              inferDefinition<def[0], aliases> &
-                  inferDefinition<def[2], aliases>
-          >
-        : inferDefinition<def[0], aliases> | inferDefinition<def[2], aliases>
+        ? evaluate<inferDefinition<def[0], $> & inferDefinition<def[2], $>>
+        : inferDefinition<def[0], $> | inferDefinition<def[2], $>
     : def[1] extends "[]"
-    ? inferDefinition<def[0], aliases>[]
+    ? inferDefinition<def[0], $>[]
     : never
 
 // TODO: spread ("...")

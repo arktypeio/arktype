@@ -24,18 +24,18 @@ import {
 import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
 import { resolveIfIdentifier } from "./utils.ts"
 
-export type TypeNode<aliases = Dict> = Identifier<aliases> | TypeSet<aliases>
+export type TypeNode<$ = Dict> = Identifier<$> | TypeSet<$>
 
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to
  * manipulate.*/
-export type TypeSet<aliases = Dict> = {
-    readonly [domain in Domain]?: Predicate<domain, aliases>
+export type TypeSet<$ = Dict> = {
+    readonly [domain in Domain]?: Predicate<domain, $>
 }
 
-export type Identifier<aliases = Dict> = string extends keyof aliases
+export type Identifier<$ = Dict> = string extends keyof $
     ? autocomplete<Keyword>
-    : Keyword | stringKeyOf<aliases>
+    : Keyword | stringKeyOf<$>
 
 export type TraversalNode =
     | Domain
@@ -67,8 +67,8 @@ export type TraversalTypeSet = {
     readonly [domain in Domain]?: TraversalPredicate
 }
 
-export const compileNode = (node: TypeNode, scope: Scope): TraversalNode => {
-    const resolution = resolveIfIdentifier(node, scope)
+export const compileNode = (node: TypeNode, $: Scope): TraversalNode => {
+    const resolution = resolveIfIdentifier(node, $)
     const domains = keysOf(resolution)
     if (domains.length === 1) {
         const domain = domains[0]
@@ -76,14 +76,14 @@ export const compileNode = (node: TypeNode, scope: Scope): TraversalNode => {
         if (predicate === true) {
             return domain
         }
-        const flatPredicate = compilePredicate(domain, predicate, scope)
+        const flatPredicate = compilePredicate(domain, predicate, $)
         return hasImpliedDomain(flatPredicate)
             ? flatPredicate
             : [["domain", domain], ...flatPredicate]
     }
     const result: mutable<TraversalTypeSet> = {}
     for (const domain of domains) {
-        result[domain] = compilePredicate(domain, resolution[domain]!, scope)
+        result[domain] = compilePredicate(domain, resolution[domain]!, $)
     }
     return [["domains", result]]
 }
@@ -96,11 +96,11 @@ export type CompiledScopeNodes<nodes extends ScopeNodes> = {
 
 export const compileNodes = <nodes extends ScopeNodes>(
     nodes: nodes,
-    scope: Scope
+    $: Scope
 ): CompiledScopeNodes<nodes> => {
     const result = {} as mutable<CompiledScopeNodes<nodes>>
     for (const name in nodes) {
-        result[name] = compileNode(nodes[name], scope)
+        result[name] = compileNode(nodes[name], $)
     }
     return result
 }
@@ -109,10 +109,10 @@ export const composeNodeOperation =
     (
         typeSetOperation: SetOperation<TypeSet, Scope>
     ): SetOperation<TypeNode, Scope> =>
-    (l, r, scope) => {
-        const lResolution = resolveIfIdentifier(l, scope)
-        const rResolution = resolveIfIdentifier(r, scope)
-        const result = typeSetOperation(lResolution, rResolution, scope)
+    (l, r, $) => {
+        const lResolution = resolveIfIdentifier(l, $)
+        const rResolution = resolveIfIdentifier(r, $)
+        const result = typeSetOperation(lResolution, rResolution, $)
         return result === lResolution ? l : result === rResolution ? r : result
     }
 
@@ -122,14 +122,14 @@ export const finalizeNodeOperation = (
 ): TypeNode => (result === empty ? "never" : result === equal ? l : result)
 
 const typeSetIntersection = composeKeyedOperation<TypeSet, Scope>(
-    (domain, l, r, scope) => {
+    (domain, l, r, $) => {
         if (l === undefined) {
             return r === undefined ? equal : undefined
         }
         if (r === undefined) {
             return undefined
         }
-        return predicateIntersection(domain, l, r, scope)
+        return predicateIntersection(domain, l, r, $)
     },
     { onEmpty: "delete" }
 )

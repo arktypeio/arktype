@@ -45,56 +45,52 @@ export const nodeToType = (
     ) as any
 }
 
-export type InferredTypeConstructor<aliases> = {
-    <def>(def: validateDefinition<def, aliases>): toType<def, aliases, {}>
+export type InferredTypeConstructor<$> = {
+    <def>(def: validateDefinition<def, $>): toType<def, $, {}>
 
-    <def, traits extends Traits<inferDefinition<def, aliases>, aliases>>(
-        def: validateDefinition<def, aliases>,
+    <def, traits extends Traits<inferDefinition<def, $>, $>>(
+        def: validateDefinition<def, $>,
         traits: traits
-    ): toType<def, aliases, morphsFrom<traits, aliases>>
+    ): toType<def, $, morphsFrom<traits, $>>
 }
 
-export type toType<
-    def,
-    aliases,
-    morphs extends Morphs
-> = isTopType<def> extends true
+export type toType<def, $, morphs extends Morphs> = isTopType<def> extends true
     ? never
-    : def extends validateDefinition<def, aliases>
+    : def extends validateDefinition<def, $>
     ? {} extends morphs
-        ? Type<inferDefinition<def, aliases>>
-        : Morphable<inferDefinition<def, aliases>, morphs>
+        ? Type<inferDefinition<def, $>>
+        : Morphable<inferDefinition<def, $>, morphs>
     : never
 
-export type Traits<data = unknown, aliases = Dict> = Morphs<data, aliases>
+export type Traits<data = unknown, $ = Dict> = Morphs<data, $>
 
-export type Morphs<data = unknown, aliases = Dict> = {
-    from?: Sources<data, aliases>
-    to?: Targets<data, aliases>
+export type Morphs<data = unknown, $ = Dict> = {
+    from?: Sources<data, $>
+    to?: Targets<data, $>
 }
 
-export type Sources<data, aliases> = {
-    [name in Identifier<aliases>]?: (
-        source: inferDefinition<name, aliases>,
+export type Sources<data, $> = {
+    [name in Identifier<$>]?: (
+        source: inferDefinition<name, $>,
         ...args: never[]
     ) => data
 }
 
-export type Targets<data, aliases> = {
-    [name in Identifier<aliases>]?: (
+export type Targets<data, $> = {
+    [name in Identifier<$>]?: (
         data: data,
         ...args: never[]
-    ) => inferDefinition<name, aliases>
+    ) => inferDefinition<name, $>
 }
 
-export type morphsFrom<traits extends Traits, aliases> = evaluate<
+export type morphsFrom<traits extends Traits, $> = evaluate<
     (traits["from"] extends {} ? { from: traits["from"] } : {}) &
         (traits["to"] extends {}
             ? {
                   to: {
                       [name in stringKeyOf<traits["to"]>]: (
                           ...args: parametersOf<traits["to"][name]>
-                      ) => InferResult<name, aliases>
+                      ) => InferResult<name, $>
                   }
               }
             : {})
@@ -111,8 +107,8 @@ type compileOutMorph<morphs extends Morphs> = morphs["to"] extends {}
 
 type DynamicTypeFn = (def: unknown, traits?: Traits) => Morphable
 
-export type TypeConstructor<aliases> = LazyDynamicWrap<
-    InferredTypeConstructor<aliases>,
+export type TypeConstructor<$> = LazyDynamicWrap<
+    InferredTypeConstructor<$>,
     DynamicTypeFn
 >
 
@@ -120,13 +116,10 @@ export type Result<data> = xor<{ data: data }, { problems: Problems }>
 
 export type Chainable<data, outMorph> = outMorph & Result<data>
 
-export type InferResult<
-    name extends string,
-    aliases
-> = name extends keyof aliases
+export type InferResult<name extends string, $> = name extends keyof $
     ? // TODO: Fix
-      Result<inferDefinition<name, aliases>> //ReturnType<aliases[name]>
-    : Result<inferDefinition<name, aliases>>
+      Result<inferDefinition<name, $>> //ReturnType<$[name]>
+    : Result<inferDefinition<name, $>>
 
 export type Checker<data, outMorph> = (data: unknown) => outMorph & Result<data>
 

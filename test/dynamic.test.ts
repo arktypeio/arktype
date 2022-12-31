@@ -11,16 +11,16 @@ describe("dynamic", () => {
         attest(dynamicStringArray.root).equals({ string: true })
     })
     it("uninferred aliases", () => {
-        const s = scope.dynamic({
+        const $ = scope.dynamic({
             a: "str" + "ing[" + "]",
             "b?": "a"
         })
         // Types are inferred as unknown
-        attest(s.types.a.infer).typed as unknown
+        attest($.types.a.infer).typed as unknown
         // Doesn't allow bad references
         attest(() => {
             // @ts-expect-error
-            type({ a: "nonexistent" }, { scope: s })
+            type({ a: "nonexistent" }, { scope: $ })
         }).throwsAndHasTypeError(buildUnresolvableMessage("nonexistent"))
     })
     it("uninferred scope", () => {
