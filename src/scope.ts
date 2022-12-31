@@ -27,7 +27,8 @@ const composeScopeConstructor = <parent extends Scope>(parent?: parent) =>
             $: {
                 infer: chainableNoOpProxy,
                 cache: {},
-                definitions: def
+                definitions: def,
+                aliases: {}
             } satisfies Omit<ScopeMeta, "type" | "extend"> as any
         }
         bootstrap.$.type = composeTypeConstructor(bootstrap)
@@ -39,7 +40,6 @@ const composeScopeConstructor = <parent extends Scope>(parent?: parent) =>
         return bootstrap
     }) as ScopeConstructor<Scope extends parent ? {} : parent>
 
-// TODO: figure out how to avoid $ as an alias
 export const composeTypeConstructor = <$ extends Scope>(
     $: $
 ): TypeConstructor<$> =>
@@ -84,7 +84,8 @@ export type ScopeMeta<aliases = Aliases> = {
             : never
     }
     cache: { [def in string]: TypeNode }
-    definitions: Dict
+    aliases: aliases
+    definitions: { [k in keyof aliases]: unknown }
 }
 
 type parseScope<defs> = evaluate<{
