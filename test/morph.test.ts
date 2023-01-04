@@ -40,16 +40,16 @@ describe("morph", () => {
             attest(data).equals("true").typed as string | undefined
         })
         it("in scope", () => {
-            const types = scope({
+            const $ = scope({
                 a: () =>
-                    types.$.type("b", {
+                    $.type("b", {
                         to: {
                             b: (s) => s
                         }
                     }),
                 b: "string",
                 c: () =>
-                    types.$.type("a|d", {
+                    $.type("a|d", {
                         from: {
                             b: (s) => s
                         }
@@ -65,7 +65,7 @@ describe("morph", () => {
                 })
             })
             it("unresolvable keys", () => {
-                scope({ a: "string" }).$.type("string", {
+                scope({ a: "string" }).type("string", {
                     from: {
                         number: (n) => `${n}`,
                         a: (data) => `${data}`,

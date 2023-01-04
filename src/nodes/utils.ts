@@ -75,15 +75,15 @@ const resolveFlat = ($: Scope, name: string): TraversalNode => {
         return getFlatKeywords()[name]
     }
     resolveRecurse($, name, [])
-    return $.aliases[name].flat
+    return $.compile[name].flat
 }
 
 const resolveRecurse = ($: Scope, name: string, seen: string[]): TypeRoot => {
     if (isKeyOf(name, keywords)) {
         return keywords[name]
     }
-    if (isKeyOf(name, $.aliases)) {
-        return $.aliases[name].root as TypeRoot
+    if (isKeyOf(name, $.compile)) {
+        return $.compile[name].root as TypeRoot
     }
     if (!$.defs[name]) {
         return throwInternalError(
@@ -99,7 +99,7 @@ const resolveRecurse = ($: Scope, name: string, seen: string[]): TypeRoot => {
         root = resolveRecurse($, root, seen)
     }
     // TODO: config?
-    $.aliases[name] = nodeToType(root, $, {})
+    $.compile[name] = nodeToType(root, $, {})
     return root as TypeRoot
 }
 

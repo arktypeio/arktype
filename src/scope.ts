@@ -45,6 +45,9 @@ const composeScopeParser = <parent extends Scope>(parent?: parent) =>
                     }
                 }
                 return aliases
+            },
+            compile: () => {
+                return $.aliases
             }
         } satisfies Omit<Scope, "type" | "extend"> as any
         $.type = composeTypeParser($)
@@ -99,6 +102,7 @@ export type Scope<aliases = Aliases> = {
             : never
     }
     cache: { [def in string]: TypeNode }
+    compile: () => aliases
     aliases: aliases
     defs: { [k in keyof aliases]: unknown }
 }
