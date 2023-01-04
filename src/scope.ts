@@ -21,40 +21,36 @@ import type {
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
-const composeScopeConstructor = <parent extends Scope>(parent?: parent) =>
+const composeScopeParser = <parent extends Resolver>(parent?: parent) =>
     lazyDynamicWrap((defs: Dict) => {
-        const bootstrap: mutable<Scope> = {
-            $: {
-                infer: chainableNoOpProxy,
-                cache: {},
-                defs,
-                aliases: {}
-            } satisfies Omit<Resolver, "type" | "extend"> as any
-        }
-        bootstrap.$.type = composeTypeConstructor(bootstrap)
-        bootstrap.$.extend = composeScopeConstructor(bootstrap)
+        const $: mutable<Resolver> = {
+            infer: chainableNoOpProxy,
+            cache: {},
+            defs,
+            aliases: {}
+        } satisfies Omit<Resolver, "type" | "extend"> as any
+        $.type = composeTypeParser($)
+        $.extend = composeScopeParser($)
         for (const name in defs) {
             // TODO: Need to access scope here
-            bootstrap[name] = type.dynamic(defs[name])
+            $.aliases[name] = type.dynamic(defs[name])
         }
-        return bootstrap
+        return Object.assign($.aliases, { $ })
     }) as ScopeConstructor<Scope extends parent ? {} : parent>
 
-export const composeTypeConstructor = <s extends Scope>(
-    s: s
-): TypeConstructor<s> =>
+export const composeTypeParser = <$ extends Resolver>(
+    $: $
+): TypeConstructor<$> =>
     lazyDynamicWrap((def, traits = {}) => {
-        const node = resolveIfIdentifier(parseDefinition(def, s.$), s.$)
-        return nodeToType(node, s.$, traits)
+        const node = resolveIfIdentifier(parseDefinition(def, $), $)
+        return nodeToType(node, $, traits)
     })
 
-export const scope: ScopeConstructor<{}> = composeScopeConstructor()
+export const scope: ScopeConstructor<{}> = composeScopeParser()
 
-const rootScope = composeScopeConstructor()({})
+const rootScope = composeScopeParser()({})
 
-export const type: TypeConstructor<{}> = composeTypeConstructor(
-    rootScope as Scope
-)
+export const type: TypeConstructor<{}> = composeTypeParser(rootScope.$)
 
 type ScopeConstructor<parent> = LazyDynamicWrap<
     InferredScopeConstructor<parent>,
