@@ -1,4 +1,4 @@
-import { Resolver } from "../../scope.ts"
+import { Scope } from "../../scope.ts"
 import type { TraversalCheck } from "../../traverse/check.ts"
 import { checkNode, CheckState } from "../../traverse/check.ts"
 import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"

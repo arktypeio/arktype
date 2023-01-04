@@ -1,6 +1,6 @@
 import { parseDefinition } from "../parse/definition.ts"
 import { fullStringParse, maybeNaiveParse } from "../parse/string/string.ts"
-import type { Resolver } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import { nodeToType } from "../type.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
@@ -16,13 +16,13 @@ import type {
     TraversalPredicate
 } from "./predicate.ts"
 
-export const resolveIfIdentifier = (node: TypeNode, $: Resolver): TypeRoot =>
+export const resolveIfIdentifier = (node: TypeNode, $: Scope): TypeRoot =>
     typeof node === "string" ? (resolve($, node) as TypeRoot) : node
 
 export const resolvePredicateIfIdentifier = (
     domain: Domain,
     predicate: Predicate,
-    $: Resolver
+    $: Scope
 ) =>
     typeof predicate === "string"
         ? resolvePredicate($, predicate, domain)
@@ -31,7 +31,7 @@ export const resolvePredicateIfIdentifier = (
 export const isExactValue = <domain extends Domain>(
     node: TypeNode,
     domain: domain,
-    $: Resolver
+    $: Scope
 ): node is { [_ in domain]: ExactValue<domain> } => {
     const resolution = resolveIfIdentifier(node, $)
     return (
@@ -45,7 +45,7 @@ export const isExactValuePredicate = (
 ): predicate is ExactValue =>
     typeof predicate === "object" && "value" in predicate
 
-export const domainsOfNode = (node: TypeNode, $: Resolver): Domain[] =>
+export const domainsOfNode = (node: TypeNode, $: Scope): Domain[] =>
     keysOf(resolveIfIdentifier(node, $))
 
 export type DomainSubtypeNode<domain extends Domain> = {
@@ -55,22 +55,22 @@ export type DomainSubtypeNode<domain extends Domain> = {
 export const nodeExtendsDomain = <domain extends Domain>(
     node: TypeNode,
     domain: domain,
-    $: Resolver
+    $: Scope
 ): node is DomainSubtypeNode<domain> => {
     const nodeDomains = domainsOfNode(node, $)
     return nodeDomains.length === 1 && nodeDomains[0] === domain
 }
 
 // TODO: Move to parse
-export const isResolvable = ($: Resolver, name: string) => {
-    return isKeyOf(name, keywords) || $.aliases[name] ? true : false
+export const isResolvable = ($: Scope, name: string) => {
+    return isKeyOf(name, keywords) || $.defs[name] ? true : false
 }
 
-export const resolve = ($: Resolver, name: string) => {
+export const resolve = ($: Scope, name: string) => {
     return resolveRecurse($, name, [])
 }
 
-const resolveFlat = ($: Resolver, name: string): TraversalNode => {
+const resolveFlat = ($: Scope, name: string): TraversalNode => {
     if (isKeyOf(name, keywords)) {
         return getFlatKeywords()[name]
     }
@@ -78,23 +78,19 @@ const resolveFlat = ($: Resolver, name: string): TraversalNode => {
     return $.aliases[name].flat
 }
 
-const resolveRecurse = (
-    $: Resolver,
-    name: string,
-    seen: string[]
-): TypeRoot => {
+const resolveRecurse = ($: Scope, name: string, seen: string[]): TypeRoot => {
     if (isKeyOf(name, keywords)) {
         return keywords[name]
     }
     if (isKeyOf(name, $.aliases)) {
         return $.aliases[name].root as TypeRoot
     }
-    if (!$[name]) {
+    if (!$.defs[name]) {
         return throwInternalError(
             `Unexpectedly failed to resolve alias '${name}'`
         )
     }
-    let root = parseDefinition($[name], $)
+    let root = parseDefinition($.defs[name], $)
     if (typeof root === "string") {
         if (seen.includes(root)) {
             return throwParseError(buildShallowCycleErrorMessage(name, seen))
@@ -108,7 +104,7 @@ const resolveRecurse = (
 }
 
 export const resolvePredicate = <domain extends Domain>(
-    $: Resolver,
+    $: Scope,
     name: string,
     domain: domain
 ) => {
@@ -116,7 +112,7 @@ export const resolvePredicate = <domain extends Domain>(
 }
 
 export const resolveFlatPredicate = (
-    $: Resolver,
+    $: Scope,
     name: string,
     domain: Domain
 ): TraversalPredicate => {
@@ -143,11 +139,11 @@ export const resolveFlatPredicate = (
 }
 
 const resolvePredicateRecurse = <domain extends Domain>(
-    $: Resolver,
+    $: Scope,
     name: string,
     domain: domain,
     seen: string[]
-): ResolvedPredicate<domain, Resolver> => {
+): ResolvedPredicate<domain, Scope> => {
     const resolution = resolve($, name)[domain]
     if (resolution === undefined) {
         return throwUnexpectedPredicateDomainError(name, domain)
@@ -162,7 +158,7 @@ const resolvePredicateRecurse = <domain extends Domain>(
     return resolvePredicateRecurse($, resolution, domain, seen)
 }
 
-export const memoizedParse = ($: Resolver, def: string): TypeNode => {
+export const memoizedParse = ($: Scope, def: string): TypeNode => {
     if (def in $.cache) {
         return $.cache[def]
     }

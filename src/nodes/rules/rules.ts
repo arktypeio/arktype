@@ -1,4 +1,4 @@
-import type { Resolver } from "../../scope.ts"
+import type { Scope } from "../../scope.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type { CollapsibleList, Dict } from "../../utils/generics.ts"
 import { composeIntersection, composeKeyedOperation } from "../compose.ts"
@@ -70,7 +70,7 @@ export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
 export type FlattenAndPushRule<t> = (
     entries: TraversalRuleEntry[],
     rule: t,
-    $: Resolver
+    $: Scope
 ) => void
 
 const ruleCompilers: {
@@ -121,7 +121,7 @@ export const rulePrecedenceMap: {
 
 export const compileRules = (
     rules: Rules,
-    $: Resolver
+    $: Scope
 ): readonly TraversalRuleEntry[] => {
     const entries: TraversalRuleEntry[] = []
     let k: keyof Rules

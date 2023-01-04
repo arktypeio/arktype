@@ -1,4 +1,4 @@
-import type { Resolver } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { deepFreeze } from "../utils/freeze.ts"
 import type { CompiledScopeNodes, TypeNode, TypeRoot } from "./node.ts"
@@ -97,7 +97,7 @@ let flatKeywords: CompiledScopeNodes<typeof keywords>
 
 export const getFlatKeywords = () => {
     if (!flatKeywords) {
-        flatKeywords = compileNodes(keywords, {} as Resolver)
+        flatKeywords = compileNodes(keywords, {} as Scope)
     }
     return flatKeywords
 }

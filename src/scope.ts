@@ -17,20 +17,42 @@ import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
 // TODO: Integrate parent
-const composeScopeParser = <parent extends Resolver>(parent?: parent) =>
+const composeScopeParser = <parent extends Scope>(parent?: parent) =>
     lazyDynamicWrap((defs: Dict) => {
-        const $: mutable<Resolver> = {
+        let aliases: Aliases | undefined
+        const $: mutable<Scope> = {
             infer: chainableNoOpProxy,
             cache: {},
             defs,
-            aliases: {}
-        } satisfies Omit<Resolver, "type" | "extend"> as any
+            get aliases() {
+                if (aliases === undefined) {
+                    aliases = {}
+                    for (const k in defs) {
+                        const def = defs[k]
+                        aliases[k] =
+                            typeof def === "function"
+                                ? isType(def)
+                                    ? def
+                                    : def()
+                                : nodeToType(
+                                      resolveIfIdentifier(
+                                          parseDefinition(def, $),
+                                          $
+                                      ),
+                                      $,
+                                      {}
+                                  )
+                    }
+                }
+                return aliases
+            }
+        } satisfies Omit<Scope, "type" | "extend"> as any
         $.type = composeTypeParser($)
         $.extend = composeScopeParser($)
-        return resolveScope($)
+        return $
     }) as ScopeParser<Scope extends parent ? {} : parent>
 
-const resolveScope = ($: Resolver): Scope => {
+const resolveScope = ($: Scope): Scope => {
     for (const k in $.defs) {
         const def = $.defs[k]
         $.aliases[k] =
@@ -44,10 +66,10 @@ const resolveScope = ($: Resolver): Scope => {
                       {}
                   )
     }
-    return Object.assign($.aliases, { $ })
+    return $
 }
 
-export const composeTypeParser = <$ extends Resolver>($: $): TypeParser<$> =>
+export const composeTypeParser = <$ extends Scope>($: $): TypeParser<$> =>
     lazyDynamicWrap((def, traits = {}) => {
         const node = resolveIfIdentifier(parseDefinition(def, $), $)
         return nodeToType(node, $, traits)
@@ -69,10 +91,6 @@ type DynamicScopeParser<parent> = <defs extends Dict>(
 export type Aliases<name extends string = string> = { [k in name]: Type }
 
 export type Scope<aliases = Aliases> = {
-    $: Resolver<aliases>
-} & aliases
-
-export type Resolver<aliases = Aliases> = {
     type: TypeParser<aliases>
     extend: ScopeParser<aliases>
     infer: {
@@ -116,4 +134,4 @@ export const scope: ScopeParser<{}> = composeScopeParser()
 
 const rootScope = composeScopeParser()({})
 
-export const type: TypeParser<{}> = composeTypeParser(rootScope.$)
+export const type: TypeParser<{}> = composeTypeParser(rootScope)
