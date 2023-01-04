@@ -8,7 +8,7 @@ import { deepFreeze } from "../utils/freeze.ts"
 import type { defined } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
 import { getFlatKeywords, keywords } from "./keywords.ts"
-import type { TraversalNode, TypeNode, TypeSet } from "./node.ts"
+import type { TraversalNode, TypeNode, TypeRoot } from "./node.ts"
 import type {
     ExactValue,
     Predicate,
@@ -16,8 +16,8 @@ import type {
     TraversalPredicate
 } from "./predicate.ts"
 
-export const resolveIfIdentifier = (node: TypeNode, $: Resolver): TypeSet =>
-    typeof node === "string" ? (resolve($, node) as TypeSet) : node
+export const resolveIfIdentifier = (node: TypeNode, $: Resolver): TypeRoot =>
+    typeof node === "string" ? (resolve($, node) as TypeRoot) : node
 
 export const resolvePredicateIfIdentifier = (
     domain: Domain,
@@ -49,7 +49,7 @@ export const domainsOfNode = (node: TypeNode, $: Resolver): Domain[] =>
     keysOf(resolveIfIdentifier(node, $))
 
 export type DomainSubtypeNode<domain extends Domain> = {
-    readonly [k in domain]: defined<TypeSet[domain]>
+    readonly [k in domain]: defined<TypeRoot[domain]>
 }
 
 export const nodeExtendsDomain = <domain extends Domain>(
@@ -78,12 +78,16 @@ const resolveFlat = ($: Resolver, name: string): TraversalNode => {
     return $.aliases[name].flat
 }
 
-const resolveRecurse = ($: Resolver, name: string, seen: string[]): TypeSet => {
+const resolveRecurse = (
+    $: Resolver,
+    name: string,
+    seen: string[]
+): TypeRoot => {
     if (isKeyOf(name, keywords)) {
         return keywords[name]
     }
     if (isKeyOf(name, $.aliases)) {
-        return $.aliases[name].root as TypeSet
+        return $.aliases[name].root as TypeRoot
     }
     if (!$[name]) {
         return throwInternalError(
@@ -100,7 +104,7 @@ const resolveRecurse = ($: Resolver, name: string, seen: string[]): TypeSet => {
     }
     // TODO: config?
     $.aliases[name] = nodeToType(root, $, {})
-    return root as TypeSet
+    return root as TypeRoot
 }
 
 export const resolvePredicate = <domain extends Domain>(

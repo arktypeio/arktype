@@ -2,7 +2,7 @@ import type {
     Identifier,
     TraversalNode,
     TypeNode,
-    TypeSet
+    TypeRoot
 } from "./nodes/node.ts"
 import { compileNode } from "./nodes/node.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
@@ -25,7 +25,7 @@ import type {
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
 export const nodeToType = (
-    root: TypeSet,
+    root: TypeRoot,
     $: Resolver,
     config: Traits
 ): Type => {
@@ -43,7 +43,10 @@ export const nodeToType = (
     ) as any
 }
 
-export type InferredTypeConstructor<$> = {
+export const isType = (value: {}): value is Type =>
+    (value as Type).infer === chainableNoOpProxy
+
+export type InferredTypeParser<$> = {
     <def>(def: validateDefinition<def, $>): parseType<def, $, {}>
 
     <def, traits extends Traits<inferDefinition<def, $>, $>>(
@@ -109,8 +112,8 @@ type compileOutMorph<morphs extends Morphs> = morphs["to"] extends {}
 
 type DynamicTypeFn = (def: unknown, traits?: Traits) => Morphable
 
-export type TypeConstructor<$> = LazyDynamicWrap<
-    InferredTypeConstructor<$>,
+export type TypeParser<$> = LazyDynamicWrap<
+    InferredTypeParser<$>,
     DynamicTypeFn
 >
 
@@ -125,6 +128,7 @@ export type InferResult<name extends string, $> = name extends keyof $
 
 export type Checker<data, outMorph> = (data: unknown) => outMorph & Result<data>
 
+// TODO: Rename
 export type TypeMetadata<data = unknown> = {
     infer: data
     root: TypeNode

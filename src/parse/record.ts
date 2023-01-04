@@ -1,4 +1,4 @@
-import type { TypeNode } from "../nodes/node.ts"
+import type { TypeRoot } from "../nodes/node.ts"
 import type { PropsRule } from "../nodes/rules/props.ts"
 import type { Resolver } from "../scope.ts"
 import type { Dict, evaluate, mutable } from "../utils/generics.ts"
@@ -6,7 +6,7 @@ import type { inferDefinition } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"
 import { Scanner } from "./string/shift/scanner.ts"
 
-export const parseRecord = (def: Dict, $: Resolver): TypeNode => {
+export const parseRecord = (def: Dict, $: Resolver): TypeRoot => {
     const props: mutable<PropsRule> = {}
     for (const definitionKey in def) {
         const propNode = parseDefinition(def[definitionKey], $)

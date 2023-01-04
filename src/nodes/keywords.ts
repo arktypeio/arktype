@@ -1,7 +1,7 @@
 import type { Resolver } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { deepFreeze } from "../utils/freeze.ts"
-import type { CompiledScopeNodes, TypeNode, TypeSet } from "./node.ts"
+import type { CompiledScopeNodes, TypeNode, TypeRoot } from "./node.ts"
 import { compileNodes } from "./node.ts"
 
 const always: Record<Domain, true> = {
@@ -41,20 +41,20 @@ export const keywords = deepFreeze({
     uppercase: { string: { regex: "^[A-Z]*$" } },
     // Numeric
     integer: { number: { divisor: 1 } }
-} as const satisfies Record<Keyword, TypeSet>)
+} as const satisfies Record<Keyword, TypeRoot>)
 
 export const functorKeywords = {
-    Array: (node: TypeNode): TypeSet => ({
+    Array: (node: TypeNode): TypeRoot => ({
         object: {
             subdomain: ["Array", node]
         }
     }),
-    Set: (node: TypeNode): TypeSet => ({
+    Set: (node: TypeNode): TypeRoot => ({
         object: {
             subdomain: ["Set", node]
         }
     }),
-    Map: (k: TypeNode, v: TypeNode): TypeSet => ({
+    Map: (k: TypeNode, v: TypeNode): TypeRoot => ({
         object: {
             subdomain: ["Map", k, v]
         }

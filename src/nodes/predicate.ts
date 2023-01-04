@@ -8,7 +8,7 @@ import type { BranchesComparison } from "./branches.ts"
 import { compareBranches, isBranchComparison } from "./branches.ts"
 import type { KeyReducerFn, SetOperationResult } from "./compose.ts"
 import { empty, equal } from "./compose.ts"
-import type { Identifier, TypeSet } from "./node.ts"
+import type { Identifier, TypeRoot } from "./node.ts"
 import type { RuleSet, TraversalRuleEntry } from "./rules/rules.ts"
 import { compileRules, rulesIntersection } from "./rules/rules.ts"
 import {
@@ -142,7 +142,7 @@ export const comparePredicates = (
 }
 
 export const predicateIntersection: KeyReducerFn<
-    Required<TypeSet>,
+    Required<TypeRoot>,
     Resolver
 > = (domain, l, r, scope) => {
     const comparison = comparePredicates(domain, l, r, scope)
@@ -163,7 +163,7 @@ export const predicateIntersection: KeyReducerFn<
     ])
 }
 
-export const predicateUnion: KeyReducerFn<Required<TypeSet>, Resolver> = (
+export const predicateUnion: KeyReducerFn<Required<TypeRoot>, Resolver> = (
     domain,
     l,
     r,

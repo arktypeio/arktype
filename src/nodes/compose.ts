@@ -1,8 +1,6 @@
-import type { Resolver } from "../scope.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { Dict, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
-import type { TypeNode, TypeSet } from "./node.ts"
 
 type ContextFreeSetOperation<t, result extends t> = (
     l: t,
