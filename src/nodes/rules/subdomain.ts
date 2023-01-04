@@ -1,6 +1,7 @@
 import { Scope } from "../../scope.ts"
 import type { TraversalCheck } from "../../traverse/check.ts"
 import { checkNode, CheckState } from "../../traverse/check.ts"
+import type { defineDiagnostic } from "../../traverse/problems.js"
 import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
 import type { Subdomain } from "../../utils/domains.ts"
 import { subdomainOf } from "../../utils/domains.ts"
@@ -97,7 +98,6 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
             state.problems.addProblem(
                 "Unassignable",
                 {
-                    actual,
                     expected: subdomain
                 },
                 state
@@ -109,7 +109,6 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         state.problems.addProblem(
             "Unassignable",
             {
-                actual,
                 expected: subdomain[0]
             },
             state
@@ -163,12 +162,11 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     return true
 }
 
-export type TupleLengthErrorContext = {
+export type TupleLengthErrorContext = defineDiagnostic<{
     expectedLength: number
-    actualLength: number
-}
+}>
 
 export const buildTupleLengthError: DiagnosticMessageBuilder<"TupleLength"> = ({
     expectedLength,
-    actualLength
-}) => `Tuple must have length ${expectedLength} (got ${actualLength}).`
+    data
+}) => `Tuple must have length ${expectedLength} (got ${data}).`

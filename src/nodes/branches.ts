@@ -1,4 +1,5 @@
 import type { Scope } from "../scope.ts"
+import { defineDiagnostic } from "../traverse/problems.js"
 import type { DiagnosticMessageBuilder } from "../traverse/problems.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
@@ -112,7 +113,6 @@ export const compareBranches = (
 export const buildUnionError: DiagnosticMessageBuilder<"Union"> = ({
     data,
     type
-}) => `${data} is not assignable to any of ${type.toString()}`
-//does not satisfy branches {blah: blah:}
+}) => `${data} does not satisfy any branches of ${type.toString()}`
 
-export type UnionErrorContext = { data: unknown; type: unknown }
+export type UnionErrorContext = defineDiagnostic<unknown, { type: unknown }>
