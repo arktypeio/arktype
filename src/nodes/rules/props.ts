@@ -122,7 +122,7 @@ const createPropChecker = <k extends "requiredProps" | "optionalProps">(k: k) =>
 export const checkRequiredProps = createPropChecker("requiredProps")
 export const checkOptionalProps = createPropChecker("optionalProps")
 
-export type MissingKeyDiagnostic = { key: unknown }
+export type MissingKeyContext = { key: unknown }
 
 export const buildMissingKeyError: DiagnosticMessageBuilder<"MissingKey"> = ({
     key

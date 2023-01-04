@@ -163,8 +163,12 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     return true
 }
 
-export type MissingKeyDiagnostic = { key: unknown }
+export type TupleLengthErrorContext = {
+    expectedLength: number
+    actualLength: number
+}
 
-export const buildMissingKeyError: DiagnosticMessageBuilder<"MissingKey"> = ({
-    key
-}) => `${key} is required.`
+export const buildTupleLengthError: DiagnosticMessageBuilder<"TupleLength"> = ({
+    expectedLength,
+    actualLength
+}) => `Tuple must have length ${expectedLength} (got ${actualLength}).`

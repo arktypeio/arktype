@@ -32,28 +32,6 @@ const Contents = () => {
                 >
                     <Box
                         sx={{
-                            marginRight: "0 auto",
-                            padding: "10px",
-                            minWidth: "500px",
-                            maxWidth: "850px",
-                            flex: 1
-                        }}
-                    >
-                        <Typography component="h1" variant="h2">
-                            Taking <b>Type Safety</b> to new limits!
-                        </Typography>
-                        <Typography component="h1" variant="h5">
-                            Arktype utilizes TypeScript-like syntax to perform a
-                            variety of tasks, including inferring, validating,
-                            and more, from a single definition. It allows
-                            developers to define the structure and behavior of
-                            their code in a clear and concise manner, making it
-                            easier to create and maintain complex software
-                            systems.
-                        </Typography>
-                    </Box>
-                    <Box
-                        sx={{
                             margin: "0 auto",
                             minWidth: "500px",
                             maxWidth: "800px",

@@ -17,7 +17,7 @@ import { rulePrecedenceMap } from "../nodes/rules/rules.ts"
 import { checkSubdomain } from "../nodes/rules/subdomain.ts"
 import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
-import { domainOf } from "../utils/domains.ts"
+import { domainOf, subdomainOf } from "../utils/domains.ts"
 import type { Dict, evaluate, extend, xor } from "../utils/generics.ts"
 import type { DiagnosticCode, DiagnosticsByCode } from "./problems.ts"
 import { Problems } from "./problems.ts"
@@ -100,6 +100,24 @@ export const checkNode = (state: CheckState, scope: Scope) => {
     if (typeof state.node === "string") {
         checkDomain(state)
         return
+    } else if (
+        subdomainOf(state.node) === "Array" &&
+        state.node[0][0] !== "domains"
+    ) {
+        if (
+            state.node[1][0] === "requiredProps" &&
+            state.node[1][1].length !== state.data.length
+        ) {
+            state.problems.addProblem(
+                "TupleLength",
+                {
+                    expectedLength: state.node[1][1].length,
+                    actualLength: state.data.length
+                },
+                state
+            )
+            return
+        }
     }
     checkEntries(state, scope)
 }
@@ -137,13 +155,15 @@ const checkers = {
     domains: (state, domains, scope) => {
         const entries = domains[domainOf(state.data)]
         if (entries) {
+            state.path.push(domainOf(state.data))
+            state.node = entries
             checkEntries(state, scope)
         } else {
             state.problems.addProblem(
-                "Unassignable",
+                "Union",
                 {
-                    actual: domainOf(state.data),
-                    expected: domains
+                    data: domainOf(state.data),
+                    type: state.node
                 },
                 state
             )
@@ -169,7 +189,11 @@ const checkers = {
     requiredProps: checkRequiredProps,
     optionalProps: checkOptionalProps,
     branches: (state, branches, scope) =>
-        branches.some((condition) => checkEntries(state, scope)),
+        branches.some((condition) => {
+            state.node = condition
+            checkEntries(state, scope)
+            return state.problems.length === 0 ? true : false
+        }),
     refinement: (state, validator) => validator(state),
     value: (state, value) => {
         if (state.data !== value) {

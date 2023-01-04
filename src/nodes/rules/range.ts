@@ -1,7 +1,6 @@
 import { Scanner } from "../../parse/string/shift/scanner.ts"
-import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
+import type { TraversalCheck } from "../../traverse/check.ts"
 import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
-import { Problems } from "../../traverse/problems.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import type { List } from "../../utils/generics.ts"
 import { composeIntersection, empty, equal } from "../compose.ts"

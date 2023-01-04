@@ -13,6 +13,14 @@ describe("intersection", () => {
             attest(t.infer).typed as true
             attest(t.root).snap({ boolean: { value: true } })
         })
+        it("email", () => {
+            const t = type("email&/@arktype.io$/")
+            attest(t.infer).typed as true
+            attest(t("shawn@arktype.io")).snap({ data: "shawn@arktype.io" })
+            attest(t.root).snap({
+                string: { regex: ["^(.+)@(.+)\\.(.+)$", "@arktype.io$"] }
+            })
+        })
         it("several types", () => {
             const t = type("unknown&boolean&false")
             attest(t.infer).typed as false

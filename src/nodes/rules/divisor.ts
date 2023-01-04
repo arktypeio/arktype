@@ -1,5 +1,8 @@
 import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
-import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
+import type {
+    defineDiagnostic,
+    DiagnosticMessageBuilder
+} from "../../traverse/problems.ts"
 import { composeIntersection, equal } from "../compose.ts"
 
 export const divisorIntersection = composeIntersection<number>(
@@ -20,21 +23,20 @@ const greatestCommonDivisor = (l: number, r: number) => {
     return greatestCommonDivisor
 }
 
-export type DivisorErrorContext = { value: number; divisor: number }
+export type DivisorErrorContext = defineDiagnostic<number, { divisor: number }>
 
 export const buildDivisorError: DiagnosticMessageBuilder<
     "DivisorViolation"
-> = ({ value, divisor }) =>
+> = ({ data, divisor }) =>
     divisor === 1
-        ? `${value} is not an integer.`
-        : `${value} is not divisible by ${divisor}.`
+        ? `${data} is not an integer.`
+        : `${data} is not divisible by ${divisor}.`
 
 export const checkDivisor = ((state, divisor) => {
     if (state.data % divisor !== 0) {
         state.problems.addProblem(
             "DivisorViolation",
             {
-                value: state.data,
                 divisor
             },
             state

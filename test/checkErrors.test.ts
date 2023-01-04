@@ -60,7 +60,7 @@ describe("", () => {
         const t = type(["string", "number", "string", "string[]"])
         const checked = t(["hello"])
         attest(checked.problems?.summary).snap(
-            "1: 1 is required.\n2: 2 is required.\n3: 3 is required."
+            "Tuple must have length 4 (got 1)."
         )
     })
 })
@@ -69,12 +69,28 @@ describe("custom errors", () => {
         const isEven = type("number%2", {
             problems: {
                 DivisorViolation: {
-                    message: ({ divisor, value }) =>
-                        `${value} is not even. (${value}%${divisor})`
+                    message: ({ data, divisor }) =>
+                        `${data} is not even. (${data}%${divisor})`
                 }
             }
         })
         const check = isEven(3)
         attest(check.problems?.summary).snap("3 is not even. (3%2)")
+    })
+})
+describe("unions", () => {
+    test("union", () => {
+        const basic = type("string|number")
+        const check = basic({ a: "hello" })
+        attest(check.problems?.summary).snap(
+            'object is not assignable to any of [["domains",{"string":[],"number":[]}]]'
+        )
+    })
+    test("obj|obj", () => {
+        const basic = type([{ a: "number" }, "|", { c: "string" }])
+        const check = basic({ a: "hello" })
+        attest(check.problems?.summary).snap(
+            'a: "string" is not assignable to number.\nc: c is required.'
+        )
     })
 })

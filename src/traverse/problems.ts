@@ -1,12 +1,19 @@
+import type { BenchAssertionContext } from "../../dev/attest/src/bench/bench.ts"
+import type { UnionErrorContext } from "../nodes/branches.ts"
+import { buildUnionError } from "../nodes/branches.ts"
 import type { DivisorErrorContext } from "../nodes/rules/divisor.ts"
 import { buildDivisorError } from "../nodes/rules/divisor.ts"
-import type { MissingKeyDiagnostic } from "../nodes/rules/props.ts"
+import type { MissingKeyContext } from "../nodes/rules/props.ts"
 import { buildMissingKeyError } from "../nodes/rules/props.ts"
 import type { RangeErrorContext } from "../nodes/rules/range.ts"
 import { buildRangeError } from "../nodes/rules/range.ts"
 import type { RegexErrorContext } from "../nodes/rules/regex.ts"
 import { buildRegexError } from "../nodes/rules/regex.ts"
+import type { TupleLengthErrorContext } from "../nodes/rules/subdomain.ts"
+import { buildTupleLengthError } from "../nodes/rules/subdomain.ts"
 import { domainOf } from "../utils/domains.ts"
+import type { evaluate } from "../utils/generics.ts"
+import { hasKey } from "../utils/generics.ts"
 import type { CheckState } from "./check.ts"
 
 export type BaseProblemConfig = {
@@ -50,13 +57,12 @@ export class Problems extends Array<Problem> {
 
     addProblem<code extends DiagnosticCode>(
         code: code,
-        context: DiagnosticsByCode[code],
-        state: CheckState
+        context: Omit<DiagnosticsByCode[code], keyof BaseDiagnosticContext>,
+        state: CheckState<DiagnosticsByCode[code]["data"]["raw"]>
     ) {
         let customMessage
-        if (state.config.problems !== undefined) {
-            //todo gross
-            customMessage = state.config.problems[code]?.message(context)
+        if (hasKey(state.config.problems, code)) {
+            customMessage = state.config.problems[code].message(context as any)
         }
         state.problems.push({
             path: [...state.path].join("."),
@@ -73,7 +79,6 @@ export class Stringifiable<Data = unknown> {
     }
 
     // TODO: Fix
-
     toString() {
         return JSON.stringify(this.raw)
     }
@@ -89,21 +94,16 @@ type UnassignableErrorContext = {
 const buildUnassignableError: DiagnosticMessageBuilder<"Unassignable"> = ({
     actual,
     expected
-}) =>
-    `${new Stringifiable(actual).toString()} is not assignable to ${expected}.`
-
-// export type DiagnosticsByCode = {
-//     Extraneous
-//     Custom: CustomDiagnostic
-//     Union: UnionDiagnostic
-// }
+}) => `${actual.toString()} is not assignable to ${expected}.`
 
 export type DiagnosticsByCode = {
     DivisorViolation: DivisorErrorContext
-    MissingKey: MissingKeyDiagnostic
+    MissingKey: MissingKeyContext
     RangeViolation: RangeErrorContext
     RegexMismatch: RegexErrorContext
+    TupleLength: TupleLengthErrorContext
     Unassignable: UnassignableErrorContext
+    Union: UnionErrorContext
 }
 
 export type DiagnosticCode = keyof DiagnosticsByCode
@@ -119,5 +119,13 @@ const defaultMessagesByCode: {
     MissingKey: buildMissingKeyError,
     RangeViolation: buildRangeError,
     RegexMismatch: buildRegexError,
-    Unassignable: buildUnassignableError
+    TupleLength: buildTupleLengthError,
+    Unassignable: buildUnassignableError,
+    Union: buildUnionError
 }
+
+export type defineDiagnostic<data, customContext = {}> = evaluate<
+    BaseDiagnosticContext<data> & customContext
+>
+
+type BaseDiagnosticContext<data = unknown> = { data: Stringifiable<data> }
