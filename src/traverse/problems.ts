@@ -86,15 +86,17 @@ export class Stringifiable<Data = unknown> {
 
 const uncapitalize = (s: string) => s[0].toLowerCase() + s.slice(1)
 
-type UnassignableErrorContext = {
-    actual: unknown
-    expected: unknown
-}
+type UnassignableErrorContext = defineDiagnostic<
+    unknown,
+    {
+        expected: unknown
+    }
+>
 
 const buildUnassignableError: DiagnosticMessageBuilder<"Unassignable"> = ({
-    actual,
+    data,
     expected
-}) => `${actual.toString()} is not assignable to ${expected}.`
+}) => `${data.toString()} is not assignable to ${expected}.`
 
 export type DiagnosticsByCode = {
     DivisorViolation: DivisorErrorContext

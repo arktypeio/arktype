@@ -1,6 +1,9 @@
 import { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { TraversalCheck } from "../../traverse/check.ts"
-import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
+import type {
+    defineDiagnostic,
+    DiagnosticMessageBuilder
+} from "../../traverse/problems.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import type { List } from "../../utils/generics.ts"
 import { composeIntersection, empty, equal } from "../compose.ts"
@@ -45,22 +48,24 @@ export const rangeIntersection = composeIntersection<Range>((l, r) => {
 
 export type BoundableData = number | string | List
 
-export type RangeErrorContext = {
-    comparator: Scanner.Comparator
-    limit: number
-    size: number
-    kind: subdomainOf<BoundableData>
-}
+export type RangeErrorContext = defineDiagnostic<
+    number,
+    {
+        comparator: Scanner.Comparator
+        limit: number
+        kind: subdomainOf<BoundableData>
+    }
+>
 
 export const buildRangeError: DiagnosticMessageBuilder<"RangeViolation"> = ({
+    data,
     comparator,
     limit,
-    size,
     kind
 }) =>
     `Must be ${Scanner.comparatorDescriptions[comparator]} ${limit} ${
         kind === "string" ? "characters " : kind === "Array" ? "items " : ""
-    }(got ${size}).`
+    }(got ${data}).`
 
 export const checkRange = ((state, range) => {
     const size = typeof state.data === "number" ? state.data : state.data.length
@@ -74,7 +79,6 @@ export const checkRange = ((state, range) => {
                 {
                     comparator: toComparator("min", range.min),
                     limit: range.min.limit,
-                    size,
                     kind: subdomainOf(state.data)
                 },
                 state
@@ -91,7 +95,6 @@ export const checkRange = ((state, range) => {
                 {
                     comparator: toComparator("max", range.max),
                     limit: range.max.limit,
-                    size,
                     kind: subdomainOf(state.data)
                 },
                 state

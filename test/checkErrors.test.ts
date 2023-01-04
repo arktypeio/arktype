@@ -83,7 +83,7 @@ describe("unions", () => {
         const basic = type("string|number")
         const check = basic({ a: "hello" })
         attest(check.problems?.summary).snap(
-            'object is not assignable to any of [["domains",{"string":[],"number":[]}]]'
+            "object is not assignable to any of domains,[object Object]"
         )
     })
     test("obj|obj", () => {
