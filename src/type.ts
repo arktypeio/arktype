@@ -6,7 +6,7 @@ import type {
 } from "./nodes/node.ts"
 import { compileNode } from "./nodes/node.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
-import type { Scope } from "./scope.ts"
+import type { Resolver } from "./scope.ts"
 import type { CheckConfig } from "./traverse/check.ts"
 import { rootCheck } from "./traverse/check.ts"
 import type { Problems } from "./traverse/problems.ts"
@@ -24,7 +24,11 @@ import type {
 } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
-export const nodeToType = (root: TypeSet, $: Scope, config: Traits): Type => {
+export const nodeToType = (
+    root: TypeSet,
+    $: Resolver,
+    config: Traits
+): Type => {
     const traversal = compileNode(root, $)
     return Object.assign(
         (data: unknown) => {

@@ -2,7 +2,7 @@ import { functorKeywords } from "../../nodes/keywords.ts"
 import type { TypeNode } from "../../nodes/node.ts"
 import { intersection, union } from "../../nodes/node.ts"
 
-import type { Scope } from "../../scope.ts"
+import type { Resolver } from "../../scope.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type { error, evaluate, List } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
@@ -12,7 +12,7 @@ import type { Scanner } from "../string/shift/scanner.ts"
 import type { validateRefinementTuple } from "./refinement.ts"
 import { parseRefinementTuple } from "./refinement.ts"
 
-export const parseTuple = (def: List, $: Scope): TypeNode => {
+export const parseTuple = (def: List, $: Resolver): TypeNode => {
     if (isTupleExpression(def)) {
         return parseTupleExpression(def, $)
     }
@@ -65,7 +65,7 @@ export type TupleExpressionToken = "&" | "|" | "[]" | "=>"
 
 export type TupleExpressionParser<token extends TupleExpressionToken> = (
     def: TupleExpression<token>,
-    $: Scope
+    $: Resolver
 ) => TypeNode
 
 const parseBranchTuple: TupleExpressionParser<"|" | "&"> = (def, scope) => {
@@ -89,7 +89,7 @@ const tupleExpressionParsers: {
     "=>": parseRefinementTuple
 }
 
-const parseTupleExpression = (def: TupleExpression, $: Scope): TypeNode =>
+const parseTupleExpression = (def: TupleExpression, $: Resolver): TypeNode =>
     tupleExpressionParsers[def[1]](def as any, $)
 
 const isTupleExpression = (def: List): def is TupleExpression =>

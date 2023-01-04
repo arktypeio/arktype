@@ -1,6 +1,6 @@
 import type { TypeNode } from "../../nodes/node.ts"
 import { domainsOfNode } from "../../nodes/utils.ts"
-import type { Scope } from "../../scope.ts"
+import type { Resolver } from "../../scope.ts"
 import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
@@ -36,7 +36,7 @@ export type DistributedFunctionEntry<F extends UnaryFunction = UnaryFunction> =
 export const entriesOfDistributableFunction = <F extends UnaryFunction>(
     distributableFunction: distributable<F>,
     inputNode: TypeNode,
-    $: Scope
+    $: Resolver
 ): DistributedFunctionEntry<F>[] => {
     const domains = domainsOfNode(inputNode, $)
     if (!hasDomain(distributableFunction, "object")) {

@@ -22,30 +22,30 @@ import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
 const composeScopeConstructor = <parent extends Scope>(parent?: parent) =>
-    lazyDynamicWrap((def: Dict) => {
+    lazyDynamicWrap((defs: Dict) => {
         const bootstrap: mutable<Scope> = {
             $: {
                 infer: chainableNoOpProxy,
                 cache: {},
-                definitions: def,
+                defs,
                 aliases: {}
-            } satisfies Omit<ScopeMeta, "type" | "extend"> as any
+            } satisfies Omit<Resolver, "type" | "extend"> as any
         }
         bootstrap.$.type = composeTypeConstructor(bootstrap)
         bootstrap.$.extend = composeScopeConstructor(bootstrap)
-        for (const name in def) {
+        for (const name in defs) {
             // TODO: Need to access scope here
-            bootstrap[name] = type.dynamic(def[name])
+            bootstrap[name] = type.dynamic(defs[name])
         }
         return bootstrap
     }) as ScopeConstructor<Scope extends parent ? {} : parent>
 
-export const composeTypeConstructor = <$ extends Scope>(
-    $: $
-): TypeConstructor<$> =>
+export const composeTypeConstructor = <s extends Scope>(
+    s: s
+): TypeConstructor<s> =>
     lazyDynamicWrap((def, traits = {}) => {
-        const node = resolveIfIdentifier(parseDefinition(def, $), $)
-        return nodeToType(node, $, traits)
+        const node = resolveIfIdentifier(parseDefinition(def, s.$), s.$)
+        return nodeToType(node, s.$, traits)
     })
 
 export const scope: ScopeConstructor<{}> = composeScopeConstructor()
@@ -72,10 +72,10 @@ type DynamicScopeConstructor<parent> = <defs extends Dict>(
 export type Aliases<name extends string = string> = { [k in name]: Type }
 
 export type Scope<aliases = Aliases> = {
-    $: ScopeMeta<aliases>
+    $: Resolver<aliases>
 } & aliases
 
-export type ScopeMeta<aliases = Aliases> = {
+export type Resolver<aliases = Aliases> = {
     type: InferredTypeConstructor<aliases>
     extend: ScopeConstructor<aliases>
     infer: {
@@ -85,7 +85,7 @@ export type ScopeMeta<aliases = Aliases> = {
     }
     cache: { [def in string]: TypeNode }
     aliases: aliases
-    definitions: { [k in keyof aliases]: unknown }
+    defs: { [k in keyof aliases]: unknown }
 }
 
 type parseScope<defs> = evaluate<{

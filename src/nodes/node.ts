@@ -1,4 +1,4 @@
-import type { Scope } from "../scope.ts"
+import type { Resolver } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import type {
     autocomplete,
@@ -67,7 +67,7 @@ export type TraversalTypeSet = {
     readonly [domain in Domain]?: TraversalPredicate
 }
 
-export const compileNode = (node: TypeNode, $: Scope): TraversalNode => {
+export const compileNode = (node: TypeNode, $: Resolver): TraversalNode => {
     const resolution = resolveIfIdentifier(node, $)
     const domains = keysOf(resolution)
     if (domains.length === 1) {
@@ -96,7 +96,7 @@ export type CompiledScopeNodes<nodes extends ScopeNodes> = {
 
 export const compileNodes = <nodes extends ScopeNodes>(
     nodes: nodes,
-    $: Scope
+    $: Resolver
 ): CompiledScopeNodes<nodes> => {
     const result = {} as mutable<CompiledScopeNodes<nodes>>
     for (const name in nodes) {
@@ -107,8 +107,8 @@ export const compileNodes = <nodes extends ScopeNodes>(
 
 export const composeNodeOperation =
     (
-        typeSetOperation: SetOperation<TypeSet, Scope>
-    ): SetOperation<TypeNode, Scope> =>
+        typeSetOperation: SetOperation<TypeSet, Resolver>
+    ): SetOperation<TypeNode, Resolver> =>
     (l, r, $) => {
         const lResolution = resolveIfIdentifier(l, $)
         const rResolution = resolveIfIdentifier(r, $)
@@ -121,7 +121,7 @@ export const finalizeNodeOperation = (
     result: SetOperationResult<TypeNode>
 ): TypeNode => (result === empty ? "never" : result === equal ? l : result)
 
-const typeSetIntersection = composeKeyedOperation<TypeSet, Scope>(
+const typeSetIntersection = composeKeyedOperation<TypeSet, Resolver>(
     (domain, l, r, $) => {
         if (l === undefined) {
             return r === undefined ? equal : undefined
@@ -136,13 +136,13 @@ const typeSetIntersection = composeKeyedOperation<TypeSet, Scope>(
 
 export const nodeIntersection = composeNodeOperation(typeSetIntersection)
 
-export const intersection = (l: TypeNode, r: TypeNode, $: Scope): TypeNode =>
+export const intersection = (l: TypeNode, r: TypeNode, $: Resolver): TypeNode =>
     finalizeNodeOperation(l, nodeIntersection(l, r, $))
 
-export const union = (l: TypeNode, r: TypeNode, scope: Scope) =>
+export const union = (l: TypeNode, r: TypeNode, scope: Resolver) =>
     finalizeNodeOperation(l, nodeUnion(l, r, scope))
 
-export const typeSetUnion = composeKeyedOperation<TypeSet, Scope>(
+export const typeSetUnion = composeKeyedOperation<TypeSet, Resolver>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : r

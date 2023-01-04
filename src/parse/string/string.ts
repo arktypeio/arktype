@@ -1,7 +1,7 @@
 import { functorKeywords } from "../../nodes/keywords.ts"
 import type { TypeNode } from "../../nodes/node.ts"
 import { isResolvable, memoizedParse } from "../../nodes/utils.ts"
-import type { Scope } from "../../scope.ts"
+import type { Resolver } from "../../scope.ts"
 import type { error } from "../../utils/generics.ts"
 import type { inferAst, validateAstSemantics } from "./ast.ts"
 import { DynamicState } from "./reduce/dynamic.ts"
@@ -11,7 +11,7 @@ import type { isResolvableIdentifier } from "./shift/operand/unenclosed.ts"
 import { parseOperator } from "./shift/operator/operator.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
-export const parseString = (def: string, $: Scope) => memoizedParse($, def)
+export const parseString = (def: string, $: Resolver) => memoizedParse($, def)
 
 export type parseString<def extends string, $> = maybeNaiveParse<def, $>
 
@@ -47,7 +47,7 @@ type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
 
 export const maybeNaiveParse = (
     def: string,
-    $: Scope
+    $: Resolver
 ): TypeNode | undefined => {
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
@@ -60,7 +60,7 @@ export const maybeNaiveParse = (
     }
 }
 
-export const fullStringParse = (def: string, $: Scope) => {
+export const fullStringParse = (def: string, $: Resolver) => {
     const s = new DynamicState(def, $)
     parseOperand(s)
     return loop(s)

@@ -1,4 +1,4 @@
-import type { Scope } from "../scope.ts"
+import type { Resolver } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
@@ -26,7 +26,7 @@ export const compareBranches = (
     domain: Domain,
     lConditions: Branches,
     rConditions: Branches,
-    scope: Scope
+    scope: Resolver
 ): BranchesComparison => {
     const result: BranchesComparison = {
         lConditions,

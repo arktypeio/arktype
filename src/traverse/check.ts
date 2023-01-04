@@ -15,7 +15,7 @@ import { checkRegexRule } from "../nodes/rules/regex.ts"
 import type { TraversalRuleEntry } from "../nodes/rules/rules.ts"
 import { rulePrecedenceMap } from "../nodes/rules/rules.ts"
 import { checkSubdomain } from "../nodes/rules/subdomain.ts"
-import type { Scope } from "../scope.ts"
+import type { Resolver } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { Dict, evaluate, extend, xor } from "../utils/generics.ts"
@@ -26,7 +26,7 @@ export const checkRules = (
     domain: Domain,
     data: unknown,
     attributes: unknown,
-    scope: Scope
+    scope: Resolver
 ) => {
     return true
 }
@@ -71,7 +71,7 @@ export type BaseDiagnosticOptions<Code extends keyof DiagnosticsByCode> = {
 export const rootCheck = (
     data: unknown,
     node: TraversalNode,
-    scope: Scope,
+    scope: Resolver,
     config: CheckConfig = {}
 ): CheckResult => {
     if (typeof node === "string") {
@@ -96,7 +96,7 @@ type CheckResult<inferred = unknown> = xor<
     { problems: Problems }
 >
 
-export const checkNode = (state: CheckState, scope: Scope) => {
+export const checkNode = (state: CheckState, scope: Resolver) => {
     if (typeof state.node === "string") {
         checkDomain(state)
         return
@@ -190,7 +190,7 @@ const checkers = {
 export type TraversalCheck<k extends TraversalKey> = (
     state: CheckState<RuleInput<k>>,
     value: Extract<TraversalEntry, [k, unknown]>[1],
-    scope: Scope
+    scope: Resolver
 ) => void
 
 export type ConstrainedRuleInputs = extend<
@@ -207,7 +207,7 @@ export type ConstrainedRuleInputs = extend<
 export type RuleInput<k extends TraversalKey> =
     k extends keyof ConstrainedRuleInputs ? ConstrainedRuleInputs[k] : unknown
 
-export const checkEntries = (checkState: CheckState, scope: Scope) => {
+export const checkEntries = (checkState: CheckState, scope: Resolver) => {
     const entries = checkState.node as TraversalEntry[]
     let precedenceLevel = 0
     for (let i = 0; i < entries.length; i++) {

@@ -1,4 +1,4 @@
-import type { Scope } from "../scope.ts"
+import type { Resolver } from "../scope.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { Dict, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
