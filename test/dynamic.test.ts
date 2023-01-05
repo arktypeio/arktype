@@ -26,14 +26,13 @@ describe("dynamic", () => {
         }).throwsAndHasTypeError(buildUnresolvableMessage("nonexistent"))
     })
     it("uninferred scope", () => {
-        const unknownScope = scope.dynamic({ a: "string" } as Dict).compile()
-        attest(unknownScope.a.infer).typed as unknown
+        const $ = scope.dynamic({ a: "string" } as Dict)
+        const types = $.compile()
+        attest(types.a.infer).typed as unknown
         // Allows any references but will throw at runtime
-        attest(() => unknownScope.b.infer).throws.snap(
+        attest(() => types.b.infer).throws.snap(
             `TypeError: Cannot read properties of undefined (reading 'infer')`
         )
-        attest(() => unknownScope.type("b")).throws(
-            buildUnresolvableMessage("b")
-        )
+        attest(() => $.type("b")).throws(buildUnresolvableMessage("b"))
     })
 })
