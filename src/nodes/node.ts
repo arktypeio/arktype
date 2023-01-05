@@ -20,7 +20,7 @@ import {
     predicateIntersection,
     predicateUnion
 } from "./predicate.ts"
-import { resolveIfIdentifier } from "./resolve.ts"
+import { resolve, resolveIfIdentifier } from "./resolve.ts"
 import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | TypeRoot<$>
@@ -67,7 +67,12 @@ export type TraversalTypeSet = {
 }
 
 export const compileNode = (node: TypeNode, $: Scope): TraversalNode => {
-    const resolution = resolveIfIdentifier(node, $)
+    let resolution
+    if (typeof node === "string") {
+        resolution = resolve(node, $)
+    } else {
+        resolution = node
+    }
     const domains = keysOf(resolution)
     if (domains.length === 1) {
         const domain = domains[0]

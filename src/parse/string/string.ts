@@ -11,7 +11,7 @@ import type { isResolvableIdentifier } from "./shift/operand/unenclosed.ts"
 import { parseOperator } from "./shift/operator/operator.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
-export const parseString = (def: string, $: Scope) => memoizedParse($, def)
+export const parseString = (def: string, $: Scope) => memoizedParse(def, $)
 
 export type parseString<def extends string, $> = maybeNaiveParse<def, $>
 
@@ -49,14 +49,14 @@ export const maybeNaiveParse = (
     def: string,
     $: Scope
 ): TypeNode | undefined => {
+    if (isResolvable(def, $)) {
+        return def
+    }
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
-        if (isResolvable($, elementDef)) {
+        if (isResolvable(elementDef, $)) {
             return functorKeywords.Array(elementDef)
         }
-    }
-    if (isResolvable($, def)) {
-        return def
     }
 }
 

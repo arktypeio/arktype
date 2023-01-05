@@ -17,7 +17,7 @@ import type {
 } from "./predicate.ts"
 
 export const resolveIfIdentifier = (node: TypeNode, $: Scope): TypeRoot =>
-    typeof node === "string" ? (resolve($, node) as TypeRoot) : node
+    typeof node === "string" ? (resolve(node, $) as TypeRoot) : node
 
 export const resolvePredicateIfIdentifier = (
     domain: Domain,
@@ -25,7 +25,7 @@ export const resolvePredicateIfIdentifier = (
     $: Scope
 ) =>
     typeof predicate === "string"
-        ? resolvePredicate($, predicate, domain)
+        ? resolvePredicate(predicate, domain, $)
         : predicate
 
 export const isExactValue = <domain extends Domain>(
@@ -62,23 +62,23 @@ export const nodeExtendsDomain = <domain extends Domain>(
 }
 
 // TODO: Move to parse
-export const isResolvable = ($: Scope, name: string) => {
+export const isResolvable = (name: string, $: Scope) => {
     return isKeyOf(name, keywords) || $.aliases[name] ? true : false
 }
 
-export const resolve = ($: Scope, name: string) => {
-    return resolveRecurse($, name, [])
+export const resolve = (name: string, $: Scope) => {
+    return resolveRecurse(name, [], $)
 }
 
-const resolveFlat = ($: Scope, name: string): TraversalNode => {
+const resolveFlat = (name: string, $: Scope): TraversalNode => {
     if (isKeyOf(name, keywords)) {
         return getFlatKeywords()[name]
     }
-    resolveRecurse($, name, [])
+    resolveRecurse(name, [], $)
     return $.cache.types[name]!.flat
 }
 
-const resolveRecurse = ($: Scope, name: string, seen: string[]): TypeRoot => {
+const resolveRecurse = (name: string, seen: string[], $: Scope): TypeRoot => {
     if (isKeyOf(name, keywords)) {
         return keywords[name]
     }
@@ -96,26 +96,26 @@ const resolveRecurse = ($: Scope, name: string, seen: string[]): TypeRoot => {
             return throwParseError(buildShallowCycleErrorMessage(name, seen))
         }
         seen.push(root)
-        root = resolveRecurse($, root, seen)
+        root = resolveRecurse(root, seen, $)
     }
     $.cache.types[name] = nodeToType(root, $, {})
     return root as TypeRoot
 }
 
 export const resolvePredicate = <domain extends Domain>(
-    $: Scope,
     name: string,
-    domain: domain
+    domain: domain,
+    $: Scope
 ) => {
-    return resolvePredicateRecurse($, name, domain, [])
+    return resolvePredicateRecurse(name, domain, [], $)
 }
 
 export const resolveFlatPredicate = (
-    $: Scope,
     name: string,
-    domain: Domain
+    domain: Domain,
+    $: Scope
 ): TraversalPredicate => {
-    const flatResolution = resolveFlat($, name)
+    const flatResolution = resolveFlat(name, $)
     if (typeof flatResolution === "string") {
         if (flatResolution !== domain) {
             return throwUnexpectedPredicateDomainError(name, domain)
@@ -138,12 +138,12 @@ export const resolveFlatPredicate = (
 }
 
 const resolvePredicateRecurse = <domain extends Domain>(
-    $: Scope,
     name: string,
     domain: domain,
-    seen: string[]
+    seen: string[],
+    $: Scope
 ): ResolvedPredicate<domain, Scope> => {
-    const resolution = resolve($, name)[domain]
+    const resolution = resolve(name, $)[domain]
     if (resolution === undefined) {
         return throwUnexpectedPredicateDomainError(name, domain)
     }
@@ -154,10 +154,10 @@ const resolvePredicateRecurse = <domain extends Domain>(
         return throwParseError(buildShallowCycleErrorMessage(resolution, seen))
     }
     seen.push(resolution)
-    return resolvePredicateRecurse($, resolution, domain, seen)
+    return resolvePredicateRecurse(resolution, domain, seen, $)
 }
 
-export const memoizedParse = ($: Scope, def: string): TypeNode => {
+export const memoizedParse = (def: string, $: Scope): TypeNode => {
     if (def in $.cache) {
         return $.cache.nodes[def]
     }

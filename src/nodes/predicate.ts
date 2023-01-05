@@ -38,7 +38,7 @@ export const compilePredicate = (
     for (const condition of branches) {
         if (typeof condition === "string") {
             flatBranches.push(
-                ...branchesOf(resolveFlatPredicate($, condition, domain))
+                ...branchesOf(resolveFlatPredicate(condition, domain, $))
             )
         } else if (isExactValuePredicate(condition)) {
             flatBranches.push([["value", condition.value]])
