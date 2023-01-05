@@ -20,7 +20,7 @@ import {
     predicateIntersection,
     predicateUnion
 } from "./predicate.ts"
-import { resolve, resolveFlat, resolveIfIdentifier } from "./resolve.ts"
+import { resolveFlat, resolveIfIdentifier } from "./resolve.ts"
 import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | TypeRoot<$>
