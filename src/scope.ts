@@ -4,8 +4,9 @@ import { resolveIfIdentifier } from "./nodes/resolve.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
 import type { parseType, Type, TypeParser } from "./type.ts"
-import { nodeToType } from "./type.ts"
+import { isType, nodeToType } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
+import { throwParseError } from "./utils/errors.ts"
 import type {
     Dict,
     evaluate,
@@ -16,11 +17,23 @@ import type {
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
-// TODO: Integrate parent
 const composeScopeParser = <parent extends Scope>(parent?: parent) =>
-    lazyDynamicWrap((aliases: Dict) => new Scope(aliases)) as ScopeParser<
-        Scope extends parent ? {} : parent
-    >
+    lazyDynamicWrap((aliases: Dict) => {
+        if (parent) {
+            const merged = { ...parent.aliases }
+            for (const name in aliases) {
+                if (name in parent.aliases) {
+                    throwParseError(buildDuplicateAliasMessage(name))
+                }
+                merged[name] = aliases[name]
+            }
+            const $ = new Scope({ ...aliases, ...parent?.aliases })
+            $.cache = parent.cache
+            return $
+        } else {
+            return new Scope(aliases)
+        }
+    }) as unknown as ScopeParser<Scope extends parent ? {} : parent>
 
 export const composeTypeParser = <$ extends Scope>($: $): TypeParser<$> =>
     lazyDynamicWrap((def, traits = {}) => {
@@ -61,9 +74,9 @@ export class Scope<types = Types> {
     extend: ScopeParser<types>
 
     constructor(public aliases: { readonly [k in keyof types]: unknown }) {
-        this.$ = this as Scope
+        this.$ = this as unknown as Scope
         this.type = composeTypeParser(this.$)
-        this.extend = composeScopeParser(this.$)
+        this.extend = composeScopeParser(this.$) as ScopeParser<types>
     }
 
     get infer(): inferScope<types> {
@@ -73,7 +86,13 @@ export class Scope<types = Types> {
     compile() {
         const types = {} as Types
         for (const name in this.aliases) {
-            types[name] ??= this.type.dynamic(this.aliases[name])
+            const def = this.aliases[name]
+            types[name] ??=
+                typeof def === "function"
+                    ? isType(def)
+                        ? def
+                        : def()
+                    : this.type.dynamic(this.aliases[name])
         }
         return types as types
     }
@@ -92,7 +111,9 @@ type parseScope<aliases> = evaluate<{
 type validateScope<aliases, parent> = {
     // somehow using "any" as the thunk return type does not cause a circular
     // reference error (every other type does)
-    [name in keyof aliases]: aliases[name] extends () => any
+    [name in keyof aliases]: name extends stringKeyOf<parent>
+        ? buildDuplicateAliasMessage<name>
+        : aliases[name] extends () => any
         ? aliases[name]
         : validateDefinition<aliases[name], merge<parent, aliases>>
 }
@@ -115,3 +136,10 @@ export const scope: ScopeParser<{}> = composeScopeParser()
 const rootScope = composeScopeParser()({})
 
 export const type: TypeParser<{}> = composeTypeParser(rootScope)
+
+export const buildDuplicateAliasMessage = <name extends string>(
+    name: name
+): buildDuplicateAliasMessage<name> => `Alias '${name}' is already defined.`
+
+type buildDuplicateAliasMessage<name extends string> =
+    `Alias '${name}' is already defined.`
