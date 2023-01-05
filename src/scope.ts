@@ -11,7 +11,6 @@ import type {
     Dict,
     evaluate,
     isTopType,
-    merge,
     stringKeyOf
 } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
