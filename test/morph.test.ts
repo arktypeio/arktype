@@ -59,13 +59,18 @@ describe("morph", () => {
                 c: "boolean"
             })
             const types = $.compile()
+            types.a("foo").to("b").to("c")
+            types.a
         })
         describe("errors", () => {
             it("untyped additional args", () => {
-                // TODO: Error here
-                type("string", {
+                const t = type("string", {
                     to: { number: (n, radix) => parseInt(n, radix) }
                 })
+                // @ts-expect-error
+                attest(t("foo").to("number", 10)).type.errors(
+                    "Argument of type 'number' is not assignable to parameter of type 'never'."
+                )
             })
             it("unresolvable keys", () => {
                 scope({ a: "string" }).type("string", {

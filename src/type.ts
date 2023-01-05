@@ -89,7 +89,9 @@ export type morphsFrom<traits extends Traits, $> = evaluate<
                   to: {
                       [name in stringKeyOf<traits["to"]>]: (
                           ...args: parametersOf<traits["to"][name]>
-                      ) => Result<inferDefinition<name, $>>
+                      ) => name extends keyof $
+                          ? returnOf<$[name]>
+                          : Result<inferDefinition<name, $>>
                   }
               }
             : {})
