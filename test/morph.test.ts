@@ -43,16 +43,20 @@ describe("morph", () => {
             const $ = scope({
                 a: () =>
                     $.type("string", {
+                        from: {
+                            b: (n) => `${n}`
+                        },
                         to: {
-                            b: (s) => s
+                            b: (s) => parseInt(s)
                         }
                     }),
                 b: () =>
                     $.type("number", {
                         to: {
-                            a: (n) => `${n}`
+                            c: (n) => n !== 0
                         }
-                    })
+                    }),
+                c: "boolean"
             })
             const types = $.compile()
         })

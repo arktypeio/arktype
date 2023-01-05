@@ -108,16 +108,6 @@ type parseScope<aliases> = evaluate<{
         : parseType<aliases[k], aliases, {}>
 }>
 
-type inferAliases<aliases> = evaluate<{
-    [k in keyof aliases]: isTopType<aliases[k]> extends true
-        ? Type
-        : aliases[k] extends Type
-        ? aliases[k]["infer"]
-        : aliases[k] extends (() => infer r extends Type)
-        ? r["infer"]
-        : inferDefinition<aliases[k], aliases>
-}>
-
 type validateScope<aliases, parent> = {
     // somehow using "any" as the thunk return type does not cause a circular
     // reference error (every other type does)
