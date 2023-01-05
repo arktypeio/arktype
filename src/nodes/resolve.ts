@@ -9,6 +9,7 @@ import type { defined } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
 import { getFlatKeywords, keywords } from "./keywords.ts"
 import type { TraversalNode, TypeNode, TypeRoot } from "./node.ts"
+import { compileNode } from "./node.ts"
 import type {
     ExactValue,
     Predicate,
@@ -70,20 +71,21 @@ export const resolve = (name: string, $: Scope) => {
     return resolveRecurse(name, [], $)
 }
 
-const resolveFlat = (name: string, $: Scope): TraversalNode => {
+export const resolveFlat = (name: string, $: Scope): TraversalNode => {
     if (isKeyOf(name, keywords)) {
         return getFlatKeywords()[name]
     }
     resolveRecurse(name, [], $)
-    return $.cache.types[name]!.flat
+    return $.cache.types[name].flat
 }
 
+// TODO: change return to Type?
 const resolveRecurse = (name: string, seen: string[], $: Scope): TypeRoot => {
     if (isKeyOf(name, keywords)) {
         return keywords[name]
     }
     if (isKeyOf(name, $.cache.types)) {
-        return $.cache.types[name]!.root as TypeRoot
+        return $.cache.types[name].root
     }
     if (!$.aliases[name]) {
         return throwInternalError(
@@ -98,7 +100,10 @@ const resolveRecurse = (name: string, seen: string[], $: Scope): TypeRoot => {
         seen.push(root)
         root = resolveRecurse(root, seen, $)
     }
-    $.cache.types[name] = nodeToType(root, $, {})
+    // temporarily set the TraversalNode to an alias that will be used for cyclic resolutions
+    const type = nodeToType(root, [["alias", name]], $, {})
+    $.cache.types[name] = type
+    type.flat = compileNode(root, $)
     return root as TypeRoot
 }
 

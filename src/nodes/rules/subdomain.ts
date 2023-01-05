@@ -1,6 +1,5 @@
-import { Scope } from "../../scope.ts"
 import type { TraversalCheck } from "../../traverse/check.ts"
-import { checkNode, CheckState } from "../../traverse/check.ts"
+import { checkNode } from "../../traverse/check.ts"
 import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
 import type { Subdomain } from "../../utils/domains.ts"
 import { subdomainOf } from "../../utils/domains.ts"

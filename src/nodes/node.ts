@@ -20,7 +20,7 @@ import {
     predicateIntersection,
     predicateUnion
 } from "./predicate.ts"
-import { resolve, resolveIfIdentifier } from "./resolve.ts"
+import { resolve, resolveFlat, resolveIfIdentifier } from "./resolve.ts"
 import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | TypeRoot<$>
@@ -40,11 +40,14 @@ export type TraversalNode =
     | Domain
     | SingleDomainTraversalNode
     | MultiDomainTraversalNode
+    | CyclicReferenceNode
 
 export type SingleDomainTraversalNode = readonly [
     ExplicitDomainEntry | ImplicitDomainEntry,
     ...TraversalPredicate
 ]
+
+export type CyclicReferenceNode = [["alias", string]]
 
 export type ExplicitDomainEntry = ["domain", Domain]
 
@@ -67,16 +70,13 @@ export type TraversalTypeSet = {
 }
 
 export const compileNode = (node: TypeNode, $: Scope): TraversalNode => {
-    let resolution
     if (typeof node === "string") {
-        resolution = resolve(node, $)
-    } else {
-        resolution = node
+        return resolveFlat(node, $)
     }
-    const domains = keysOf(resolution)
+    const domains = keysOf(node)
     if (domains.length === 1) {
         const domain = domains[0]
-        const predicate = resolution[domain]!
+        const predicate = node[domain]!
         if (predicate === true) {
             return domain
         }
@@ -87,7 +87,7 @@ export const compileNode = (node: TypeNode, $: Scope): TraversalNode => {
     }
     const result: mutable<TraversalTypeSet> = {}
     for (const domain of domains) {
-        result[domain] = compilePredicate(domain, resolution[domain]!, $)
+        result[domain] = compilePredicate(domain, node[domain]!, $)
     }
     return [["domains", result]]
 }

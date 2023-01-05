@@ -1,9 +1,10 @@
 import type { TypeNode } from "./nodes/node.ts"
+import { compileNode } from "./nodes/node.ts"
 import { resolveIfIdentifier } from "./nodes/resolve.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
 import type { parseType, Type, TypeParser } from "./type.ts"
-import { isType, nodeToType } from "./type.ts"
+import { nodeToType } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type {
     Dict,
@@ -23,8 +24,9 @@ const composeScopeParser = <parent extends Scope>(parent?: parent) =>
 
 export const composeTypeParser = <$ extends Scope>($: $): TypeParser<$> =>
     lazyDynamicWrap((def, traits = {}) => {
-        const node = resolveIfIdentifier(parseDefinition(def, $), $)
-        return nodeToType(node, $, traits)
+        const root = resolveIfIdentifier(parseDefinition(def, $), $)
+        const flat = compileNode(root, $)
+        return nodeToType(root, flat, $, traits)
     })
 
 type ScopeParser<parent> = LazyDynamicWrap<
@@ -42,9 +44,9 @@ type DynamicScopeParser<parent> = <defs extends Dict>(
 
 export type Types<name extends string = string> = { [k in name]: Type }
 
-type ScopeCache<types = Types> = {
+type ScopeCache = {
     nodes: { [def in string]: TypeNode }
-    types: Partial<types>
+    types: { [name in string]: Type }
 }
 
 export class Scope<types = Types> {
@@ -69,24 +71,11 @@ export class Scope<types = Types> {
     }
 
     compile() {
-        const types = {} as types
+        const types = {} as Types
         for (const name in this.aliases) {
-            const def = this.aliases[name]
-            types[name] =
-                typeof def === "function"
-                    ? isType(def)
-                        ? def
-                        : def()
-                    : nodeToType(
-                          resolveIfIdentifier(
-                              parseDefinition(def, this.$),
-                              this.$
-                          ),
-                          this.$,
-                          {}
-                      )
+            types[name] ??= this.type.dynamic(this.aliases[name])
         }
-        return types
+        return types as types
     }
 }
 

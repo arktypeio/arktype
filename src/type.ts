@@ -1,10 +1,4 @@
-import type {
-    Identifier,
-    TraversalNode,
-    TypeNode,
-    TypeRoot
-} from "./nodes/node.ts"
-import { compileNode } from "./nodes/node.ts"
+import type { Identifier, TraversalNode, TypeRoot } from "./nodes/node.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import type { Scope } from "./scope.ts"
 import type { CheckConfig } from "./traverse/check.ts"
@@ -24,17 +18,21 @@ import type {
 } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
-export const nodeToType = (root: TypeRoot, $: Scope, config: Traits): Type => {
-    const traversal = compileNode(root, $)
+export const nodeToType = (
+    root: TypeRoot,
+    flat: TraversalNode,
+    $: Scope,
+    config: Traits
+): Type => {
     return Object.assign(
         (data: unknown) => {
-            return rootCheck(data, traversal, $, config)
+            return rootCheck(data, flat, $, config)
         },
         {
             config,
             infer: chainableNoOpProxy,
             root,
-            flat: traversal
+            flat
         }
     ) as any
 }
@@ -127,7 +125,7 @@ export type Checker<data, outMorph> = (data: unknown) => outMorph & Result<data>
 // TODO: Rename
 export type TypeMetadata<data = unknown> = {
     infer: data
-    root: TypeNode
+    root: TypeRoot
     flat: TraversalNode
 }
 
