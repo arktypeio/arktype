@@ -89,7 +89,7 @@ export type morphsFrom<traits extends Traits, $> = evaluate<
                   to: {
                       [name in stringKeyOf<traits["to"]>]: (
                           ...args: parametersOf<traits["to"][name]>
-                      ) => InferResult<name, $>
+                      ) => Result<inferDefinition<name, $>>
                   }
               }
             : {})
@@ -112,13 +112,6 @@ export type TypeParser<$> = LazyDynamicWrap<
 >
 
 export type Result<data> = xor<{ data: data }, { problems: Problems }>
-
-export type Chainable<data, outMorph> = outMorph & Result<data>
-
-export type InferResult<name extends string, $> = name extends keyof $
-    ? // TODO: Fix
-      Result<inferDefinition<name, $>> //ReturnType<$[name]>
-    : Result<inferDefinition<name, $>>
 
 export type Checker<data, outMorph> = (data: unknown) => outMorph & Result<data>
 

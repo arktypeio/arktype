@@ -42,20 +42,19 @@ describe("morph", () => {
         it("in scope", () => {
             const $ = scope({
                 a: () =>
-                    $.type("b", {
+                    $.type("string", {
                         to: {
                             b: (s) => s
                         }
                     }),
-                b: "string",
-                c: () =>
-                    $.type("a|d", {
-                        from: {
-                            b: (s) => s
+                b: () =>
+                    $.type("number", {
+                        to: {
+                            a: (n) => `${n}`
                         }
-                    }),
-                d: "number"
+                    })
             })
+            const types = $.compile()
         })
         describe("errors", () => {
             it("untyped additional args", () => {
