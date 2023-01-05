@@ -49,7 +49,7 @@ type ScopeParser<parent> = LazyDynamicWrap<
 
 type InferredScopeParser<parent> = <defs>(
     defs: validateScope<defs, parent>
-) => Scope<parseScope<merge<parent, defs>>>
+) => Scope<parseScope<parent & defs>>
 
 type DynamicScopeParser<parent> = <defs extends Dict>(
     defs: defs
@@ -108,6 +108,16 @@ type parseScope<aliases> = evaluate<{
         : parseType<aliases[k], aliases, {}>
 }>
 
+type inferAliases<aliases> = evaluate<{
+    [k in keyof aliases]: isTopType<aliases[k]> extends true
+        ? Type
+        : aliases[k] extends Type
+        ? aliases[k]["infer"]
+        : aliases[k] extends (() => infer r extends Type)
+        ? r["infer"]
+        : inferDefinition<aliases[k], aliases>
+}>
+
 type validateScope<aliases, parent> = {
     // somehow using "any" as the thunk return type does not cause a circular
     // reference error (every other type does)
@@ -115,7 +125,7 @@ type validateScope<aliases, parent> = {
         ? buildDuplicateAliasMessage<name>
         : aliases[name] extends () => any
         ? aliases[name]
-        : validateDefinition<aliases[name], merge<parent, aliases>>
+        : validateDefinition<aliases[name], parent & aliases>
 }
 
 type inferScope<types> = {
