@@ -9,7 +9,7 @@ describe("scope", () => {
         attest(types.a.infer).typed as string
         attest(() =>
             // @ts-expect-error
-            scope({ a: "strong" })
+            scope({ a: "strong" }).compile()
         ).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
     })
     it("type definition", () => {

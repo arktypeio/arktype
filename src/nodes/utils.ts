@@ -63,7 +63,7 @@ export const nodeExtendsDomain = <domain extends Domain>(
 
 // TODO: Move to parse
 export const isResolvable = ($: Scope, name: string) => {
-    return isKeyOf(name, keywords) || $.defs[name] ? true : false
+    return isKeyOf(name, keywords) || $.aliases[name] ? true : false
 }
 
 export const resolve = ($: Scope, name: string) => {
@@ -75,22 +75,22 @@ const resolveFlat = ($: Scope, name: string): TraversalNode => {
         return getFlatKeywords()[name]
     }
     resolveRecurse($, name, [])
-    return $.compile[name].flat
+    return $.cache.types[name].flat
 }
 
 const resolveRecurse = ($: Scope, name: string, seen: string[]): TypeRoot => {
     if (isKeyOf(name, keywords)) {
         return keywords[name]
     }
-    if (isKeyOf(name, $.compile)) {
-        return $.compile[name].root as TypeRoot
+    if (isKeyOf(name, $.cache.types)) {
+        return $.cache.types[name].root as TypeRoot
     }
-    if (!$.defs[name]) {
+    if (!$.aliases[name]) {
         return throwInternalError(
             `Unexpectedly failed to resolve alias '${name}'`
         )
     }
-    let root = parseDefinition($.defs[name], $)
+    let root = parseDefinition($.aliases[name], $)
     if (typeof root === "string") {
         if (seen.includes(root)) {
             return throwParseError(buildShallowCycleErrorMessage(name, seen))
@@ -98,8 +98,7 @@ const resolveRecurse = ($: Scope, name: string, seen: string[]): TypeRoot => {
         seen.push(root)
         root = resolveRecurse($, root, seen)
     }
-    // TODO: config?
-    $.compile[name] = nodeToType(root, $, {})
+    $.cache.types[name] = nodeToType(root, $, {})
     return root as TypeRoot
 }
 
@@ -160,10 +159,10 @@ const resolvePredicateRecurse = <domain extends Domain>(
 
 export const memoizedParse = ($: Scope, def: string): TypeNode => {
     if (def in $.cache) {
-        return $.cache[def]
+        return $.cache.nodes[def]
     }
     const root = maybeNaiveParse(def, $) ?? fullStringParse(def, $)
-    $.cache[def] = deepFreeze(root)
+    $.cache.nodes[def] = deepFreeze(root)
     return root
 }
 

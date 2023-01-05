@@ -18,47 +18,26 @@ import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
 // TODO: Integrate parent
 const composeScopeParser = <parent extends Scope>(parent?: parent) =>
-    lazyDynamicWrap((defs: Dict) => {
-        let aliases: Aliases | undefined
+    lazyDynamicWrap((aliases: Dict) => {
         const $: mutable<Scope> = {
             infer: chainableNoOpProxy,
-            cache: {},
-            defs,
-            get aliases() {
-                if (aliases === undefined) {
-                    aliases = {}
-                    for (const k in defs) {
-                        const def = defs[k]
-                        aliases[k] =
-                            typeof def === "function"
-                                ? isType(def)
-                                    ? def
-                                    : def()
-                                : nodeToType(
-                                      resolveIfIdentifier(
-                                          parseDefinition(def, $),
-                                          $
-                                      ),
-                                      $,
-                                      {}
-                                  )
-                    }
-                }
-                return aliases
+            cache: {
+                nodes: {},
+                types: {}
             },
-            compile: () => {
-                return $.aliases
-            }
+            aliases,
+            compile: () => compileScope($)
         } satisfies Omit<Scope, "type" | "extend"> as any
         $.type = composeTypeParser($)
         $.extend = composeScopeParser($)
         return $
     }) as ScopeParser<Scope extends parent ? {} : parent>
 
-const resolveScope = ($: Scope): Scope => {
-    for (const k in $.defs) {
-        const def = $.defs[k]
-        $.aliases[k] =
+const compileScope = <aliases>($: Scope<aliases>) => {
+    const types = {} as aliases
+    for (const k in $.aliases) {
+        const def = $.aliases[k]
+        types[k] =
             typeof def === "function"
                 ? isType(def)
                     ? def
@@ -69,7 +48,7 @@ const resolveScope = ($: Scope): Scope => {
                       {}
                   )
     }
-    return $
+    return types
 }
 
 export const composeTypeParser = <$ extends Scope>($: $): TypeParser<$> =>
@@ -89,50 +68,52 @@ type InferredScopeParser<parent> = <defs>(
 
 type DynamicScopeParser<parent> = <defs extends Dict>(
     defs: defs
-) => Scope<Aliases<stringKeyOf<parent & defs>>>
+) => Scope<Types<stringKeyOf<parent & defs>>>
 
-export type Aliases<name extends string = string> = { [k in name]: Type }
+export type Types<name extends string = string> = { [k in name]: Type }
 
-export type Scope<aliases = Aliases> = {
-    type: TypeParser<aliases>
-    extend: ScopeParser<aliases>
-    infer: {
-        [k in keyof aliases]: aliases[k] extends { infer: infer data }
-            ? data
-            : never
+export type Scope<types = Types> = {
+    type: TypeParser<types>
+    extend: ScopeParser<types>
+    compile: () => types
+    infer: inferScope<types>
+    cache: {
+        nodes: { [def in string]: TypeNode }
+        types: types
     }
-    cache: { [def in string]: TypeNode }
-    compile: () => aliases
-    aliases: aliases
-    defs: { [k in keyof aliases]: unknown }
+    aliases: { readonly [k in keyof types]: unknown }
 }
 
-type parseScope<defs> = evaluate<{
-    [k in keyof defs]: isTopType<defs[k]> extends true
+type parseScope<aliases> = evaluate<{
+    [k in keyof aliases]: isTopType<aliases[k]> extends true
         ? Type
-        : defs[k] extends Type
-        ? defs[k]
-        : defs[k] extends (() => infer r extends Type)
+        : aliases[k] extends Type
+        ? aliases[k]
+        : aliases[k] extends (() => infer r extends Type)
         ? r
-        : parseType<defs[k], defs, {}>
+        : parseType<aliases[k], aliases, {}>
 }>
 
-type validateScope<defs, parent> = {
+type validateScope<aliases, parent> = {
     // somehow using "any" as the thunk return type does not cause a circular
     // reference error (every other type does)
-    [name in keyof defs]: defs[name] extends () => any
-        ? defs[name]
-        : validateDefinition<defs[name], merge<parent, defs>>
+    [name in keyof aliases]: aliases[name] extends () => any
+        ? aliases[name]
+        : validateDefinition<aliases[name], merge<parent, aliases>>
+}
+
+type inferScope<types> = {
+    [k in keyof types]: types[k] extends { infer: infer data } ? data : never
 }
 
 // TODO: test perf diff between Type/infer
-export type inferResolution<def, $> = def extends () => {
+export type inferResolution<resolution, $> = resolution extends () => {
     infer: infer data
 }
     ? data
-    : def extends { infer: infer data }
+    : resolution extends { infer: infer data }
     ? data
-    : inferDefinition<def, $>
+    : inferDefinition<resolution, $>
 
 export const scope: ScopeParser<{}> = composeScopeParser()
 
