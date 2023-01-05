@@ -1,6 +1,6 @@
 import { functorKeywords } from "../../nodes/keywords.ts"
 import type { TypeNode } from "../../nodes/node.ts"
-import { isResolvable, memoizedParse } from "../../nodes/utils.ts"
+import { isResolvable, memoizedParse } from "../../nodes/resolve.ts"
 import type { Scope } from "../../scope.ts"
 import type { error } from "../../utils/generics.ts"
 import type { inferAst, validateAstSemantics } from "./ast.ts"

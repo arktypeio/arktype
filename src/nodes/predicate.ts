@@ -9,13 +9,13 @@ import { compareBranches, isBranchComparison } from "./branches.ts"
 import type { KeyReducerFn, SetOperationResult } from "./compose.ts"
 import { empty, equal } from "./compose.ts"
 import type { Identifier, TypeRoot } from "./node.ts"
-import type { RuleSet, TraversalRuleEntry } from "./rules/rules.ts"
-import { compileRules, rulesIntersection } from "./rules/rules.ts"
 import {
     isExactValuePredicate,
     resolveFlatPredicate,
     resolvePredicateIfIdentifier
-} from "./utils.ts"
+} from "./resolve.ts"
+import type { RuleSet, TraversalRuleEntry } from "./rules/rules.ts"
+import { compileRules, rulesIntersection } from "./rules/rules.ts"
 
 export type Predicate<domain extends Domain = Domain, $ = Dict> = Dict extends $
     ? true | CollapsibleList<Condition>

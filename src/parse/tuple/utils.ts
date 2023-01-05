@@ -1,5 +1,5 @@
 import type { TypeNode } from "../../nodes/node.ts"
-import { domainsOfNode } from "../../nodes/utils.ts"
+import { domainsOfNode } from "../../nodes/resolve.ts"
 import type { Scope } from "../../scope.ts"
 import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
