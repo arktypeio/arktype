@@ -111,11 +111,9 @@ export const compareBranches = (
     return result
 }
 
-//TODOSHAWN toString
 export const buildUnionError: DiagnosticMessageBuilder<"Union"> = ({
     data,
     type
-}) => `${data} is not assignable to any of ${type.toString()}`
-//does not satisfy branches {blah: blah:}
+}) => `${data} does not satisfy any branches of ${type}`
 
 export type UnionErrorContext = defineDiagnostic<unknown, { type: unknown }>

@@ -1,6 +1,6 @@
-import { Scope } from "../../scope.ts"
 import type { TraversalCheck } from "../../traverse/check.ts"
-import { checkNode, CheckState } from "../../traverse/check.ts"
+import { checkNode } from "../../traverse/check.ts"
+import type { defineDiagnostic } from "../../traverse/problems.js"
 import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
 import type { Subdomain } from "../../utils/domains.ts"
 import { subdomainOf } from "../../utils/domains.ts"
@@ -97,7 +97,6 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
             state.problems.addProblem(
                 "Unassignable",
                 {
-                    actual,
                     expected: subdomain
                 },
                 state
@@ -109,7 +108,6 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         state.problems.addProblem(
             "Unassignable",
             {
-                actual,
                 expected: subdomain[0]
             },
             state
@@ -133,6 +131,7 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         const rootNode = state.node
         for (const entry of state.data as Map<unknown, unknown>) {
             checkNode({ ...state, data: entry[0], node: subdomain[1] }, scope)
+            //TODOSHAWN this feels wrong too...
             if (state.problems.length) {
                 state.problems.addProblem(
                     "MissingKey",
@@ -163,12 +162,14 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     return true
 }
 
-export type TupleLengthErrorContext = {
-    expectedLength: number
-    actualLength: number
-}
+export type TupleLengthErrorContext = defineDiagnostic<
+    unknown,
+    {
+        expectedLength: number
+    }
+>
 
 export const buildTupleLengthError: DiagnosticMessageBuilder<"TupleLength"> = ({
-    expectedLength,
-    actualLength
-}) => `Tuple must have length ${expectedLength} (got ${actualLength}).`
+    data,
+    expectedLength
+}) => `Tuple must have length ${expectedLength} (got ${data.raw}).`

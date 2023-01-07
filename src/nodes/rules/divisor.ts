@@ -1,4 +1,4 @@
-import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
+import type { TraversalCheck } from "../../traverse/check.ts"
 import type {
     defineDiagnostic,
     DiagnosticMessageBuilder
@@ -29,8 +29,8 @@ export const buildDivisorError: DiagnosticMessageBuilder<
     "DivisorViolation"
 > = ({ data, divisor }) =>
     divisor === 1
-        ? `${data} is not an integer.`
-        : `${data} is not divisible by ${divisor}.`
+        ? `${data.raw} is not an integer.`
+        : `${data.raw} is not divisible by ${divisor}.`
 
 export const checkDivisor = ((state, divisor) => {
     if (state.data % divisor !== 0) {

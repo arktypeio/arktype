@@ -49,7 +49,7 @@ export const rangeIntersection = composeIntersection<Range>((l, r) => {
 export type BoundableData = number | string | List
 
 export type RangeErrorContext = defineDiagnostic<
-    number,
+    unknown,
     {
         comparator: Scanner.Comparator
         limit: number

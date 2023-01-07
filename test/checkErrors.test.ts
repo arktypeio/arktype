@@ -35,35 +35,36 @@ describe("check errors", () => {
         const t = type("number>2")
         const checked = t("hellop")
         attest(checked.problems?.summary).snap(
-            '"string" is not assignable to number.'
+            '"hellop" is not assignable to number.'
         )
     })
     test("regex", () => {
         const t = type("/\\w@hotmail.com/")
         const checked = t("shawn@hotail.com")
         attest(checked.problems?.summary).snap(
-            "'shawn@hotail.com' must match expression //\\w@hotmail.com//."
+            '"shawn@hotail.com" must match expression /\\w@hotmail.com/.'
         )
     })
-
     test("required keys", () => {
         const t = type({
             name: "string",
             age: "number"
         })
+        attest(t.flat).snap([
+            ["domain", "object"],
+            [
+                "requiredProps",
+                [
+                    ["name", "string"],
+                    ["age", "number"]
+                ]
+            ]
+        ])
         const checked = t({ name: "Shawn" })
         attest(checked.problems?.summary).snap("age: age is required.")
     })
 })
-describe("", () => {
-    test("tuple length", () => {
-        const t = type(["string", "number", "string", "string[]"])
-        const checked = t(["hello"])
-        attest(checked.problems?.summary).snap(
-            "Tuple must have length 4 (got 1)."
-        )
-    })
-})
+
 describe("custom errors", () => {
     test("divisor", () => {
         const isEven = type("number%2", {
@@ -80,17 +81,53 @@ describe("custom errors", () => {
 })
 describe("unions", () => {
     test("union", () => {
-        const basic = type("string|number")
-        const check = basic({ a: "hello" })
+        const basic = type("string|number[]")
+        const check = basic(2)
+        //Should be unassignable error
+        //should be {domains}
         attest(check.problems?.summary).snap(
-            "object is not assignable to any of domains,[object Object]"
-        )
-    })
-    test("obj|obj", () => {
-        const basic = type([{ a: "number" }, "|", { c: "string" }])
-        const check = basic({ a: "hello" })
-        attest(check.problems?.summary).snap(
-            'a: "string" is not assignable to number.\nc: c is required.'
+            "data must by type of string|object (was number)"
         )
     })
 })
+describe("", () => {
+    test("tuple length", () => {
+        const t = type(["string", "number", "string", "string[]"])
+        attest(t.flat).snap([
+            ["subdomain", "Array"],
+            [
+                "requiredProps",
+                [
+                    ["0", "string"],
+                    ["1", "number"],
+                    ["2", "string"],
+                    ["3", [["subdomain", ["Array", "string"]]]]
+                ]
+            ]
+        ])
+        const checked = t(["hello"])
+        attest(checked.problems?.summary).snap(
+            "Tuple must have length 4 (got 1)."
+        )
+    })
+})
+describe("boop", () => {
+    test("obj|obj", () => {
+        const t = type([{ a: "number" }, "|", { c: "string" }])
+        attest(t.flat).snap([
+            ["domain", "object"],
+            [
+                "branches",
+                [
+                    [["requiredProps", [["a", "number"]]]],
+                    [["requiredProps", [["c", "string"]]]]
+                ]
+            ]
+        ])
+        const check = t({ a: "hello" })
+        attest(check.problems?.summary).snap(
+            'a: "hello" is not assignable to number.\nc: c is required.'
+        )
+    })
+})
+//union depth is a thing or something

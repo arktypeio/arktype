@@ -77,6 +77,11 @@ export const rootCheck = (
     if (typeof node === "string") {
         return baseCheckDomain(data, node, [])
     }
+    //TODOSHAWN maybe a way we can preemptively check for Unassignable
+    const a = c(data, node, [])
+    if ("problems" in a!) {
+        return a
+    }
     const problems = new Problems()
     const checkState: CheckState = {
         node,
@@ -97,22 +102,21 @@ type CheckResult<inferred = unknown> = xor<
 >
 
 export const checkNode = (state: CheckState, scope: Scope) => {
+    //TODOSHAWN: feels wrong
+    const base = state.node[0][0]
     if (typeof state.node === "string") {
         checkDomain(state)
         return
-    } else if (
-        subdomainOf(state.node) === "Array" &&
-        state.node[0][0] !== "domains"
-    ) {
+    } else if (base === "subdomain") {
+        //TODOSHAWN maybe clean
         if (
-            state.node[1][0] === "requiredProps" &&
-            state.node[1][1].length !== state.data.length
+            state.node[1]?.[0] === "requiredProps" &&
+            state.node[1][1].length !== (state.data as []).length
         ) {
             state.problems.addProblem(
                 "TupleLength",
                 {
-                    expectedLength: state.node[1][1].length,
-                    actualLength: state.data.length
+                    expectedLength: state.node[1][1].length
                 },
                 state
             )
@@ -127,7 +131,6 @@ const checkDomain = (state: CheckState) => {
         state.problems.addProblem(
             "Unassignable",
             {
-                actual: domainOf(state.data),
                 expected: state.node
             },
             state
@@ -149,6 +152,37 @@ const baseCheckDomain = (
               })
           }
 
+const c = (data: unknown, domain: unknown, path: string[]) => {
+    if (typeof domain === "string") {
+        if (domain !== domainOf(data)) {
+            return {
+                problems: new Problems({
+                    path: path.join("."),
+                    reason: `data must be of type string (was ${domainOf(
+                        data
+                    )})`
+                })
+            }
+        }
+    }
+    if (subdomainOf(domain) === "Array") {
+        if (domain[0][0] === "domains") {
+            const keys = Object.keys(domain[0][1])
+            const assignable = keys.some((domain) => domainOf(data) === domain)
+            if (!assignable) {
+                return {
+                    problems: new Problems({
+                        path: path.join("."),
+                        reason: `data must by type of ${keys.join(
+                            "|"
+                        )} (was ${domainOf(data)})`
+                    })
+                }
+            }
+        }
+    }
+    return {}
+}
 const checkers = {
     regex: (state, regex) => checkRegexRule(state, regex),
     divisor: (state, divisor) => checkDivisor(state, divisor),
@@ -156,13 +190,12 @@ const checkers = {
         const entries = domains[domainOf(state.data)]
         if (entries) {
             state.path.push(domainOf(state.data))
-            state.node = entries
+            state.node = entries as TraversalNode
             checkEntries(state, scope)
         } else {
             state.problems.addProblem(
                 "Union",
                 {
-                    data: domainOf(state.data),
                     type: state.node
                 },
                 state
@@ -174,7 +207,6 @@ const checkers = {
             state.problems.addProblem(
                 "Unassignable",
                 {
-                    actual: domainOf(state.data),
                     expected: domain
                 },
                 state
@@ -190,7 +222,7 @@ const checkers = {
     optionalProps: checkOptionalProps,
     branches: (state, branches, scope) =>
         branches.some((condition) => {
-            state.node = condition
+            state.node = condition as TraversalNode
             checkEntries(state, scope)
             return state.problems.length === 0 ? true : false
         }),
@@ -200,7 +232,6 @@ const checkers = {
             state.problems.addProblem(
                 "Unassignable",
                 {
-                    actual: state.data,
                     expected: value
                 },
                 state

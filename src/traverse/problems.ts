@@ -1,4 +1,4 @@
-import type { BenchAssertionContext } from "../../dev/attest/src/bench/bench.ts"
+import { ChainContext } from "../../dev/attest/src/assertions/types.ts"
 import type { UnionErrorContext } from "../nodes/branches.ts"
 import { buildUnionError } from "../nodes/branches.ts"
 import type { DivisorErrorContext } from "../nodes/rules/divisor.ts"
@@ -13,7 +13,6 @@ import type { TupleLengthErrorContext } from "../nodes/rules/subdomain.ts"
 import { buildTupleLengthError } from "../nodes/rules/subdomain.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { evaluate } from "../utils/generics.ts"
-import { hasKey } from "../utils/generics.ts"
 import type { CheckState } from "./check.ts"
 
 export type BaseProblemConfig = {
@@ -54,22 +53,35 @@ export class Problems extends Array<Problem> {
     throw(): never {
         throw new ArktypeError(this)
     }
-
     addProblem<code extends DiagnosticCode>(
         code: code,
         context: Omit<DiagnosticsByCode[code], keyof BaseDiagnosticContext>,
-        state: CheckState<DiagnosticsByCode[code]["data"]["raw"]>
+        state: CheckState<dataTypeOfCode<code>>
     ) {
-        let customMessage
-        if (hasKey(state.config.problems, code)) {
-            customMessage = state.config.problems[code].message(context as any)
-        }
+        const compiledContext = Object.assign(
+            "type" in context
+                ? { type: JSON.stringify(context.type).toString() }
+                : context,
+            {
+                data: new Stringifiable(
+                    code === "TupleLength"
+                        ? (state.data as []).length
+                        : state.data
+                )
+            }
+        ) as DiagnosticsByCode[code]
+
         state.problems.push({
             path: [...state.path].join("."),
-            reason: customMessage ?? defaultMessagesByCode[code](context)
+            reason:
+                state.config.problems?.[code]?.message(compiledContext) ??
+                defaultMessagesByCode[code](compiledContext)
         })
     }
 }
+
+type dataTypeOfCode<code extends DiagnosticCode> =
+    DiagnosticsByCode[code]["data"]["raw"]
 
 export class Stringifiable<Data = unknown> {
     constructor(public raw: Data) {}
