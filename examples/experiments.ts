@@ -1,27 +1,7 @@
 // @ts-nocheck
 /* eslint-disable */
 
-import { scope, type } from "../api"
-
-const date = type("Date", {
-    from: {
-        string: (s) => {
-            return new Date(s)
-        }
-    },
-    to: {
-        string: (d: Date) => {
-            return d.toString()
-        }
-    }
-})
-
-// Arbitrary input/output types on morphs vs key names representing defined types
-
-// TODO: Change to type to always attach directly to output,  still be chainable
-// out name would be arbitrary, could make out a special case of to
-// if data specified, just override existing data
-// problems should not be used as a name
+import { type } from "../api"
 
 const user = type(
     {
@@ -45,10 +25,17 @@ const user = type(
     }
 )
 
+// All out morphs are attached alongside data
+const { string, data, problems } = user({ name: "David", age: 29 })
+
+// "to" function can be used for chaining
 const { string, problems } = user({ name: "David", age: 29 }).to("admin")
 
-user.from("string", "fdsoifusahgo")
+// Input if multiple named inputs are specified
+user.from("string", '{"name": "David", "age": 29}')
 
-user.from("fdsoifusahgo")
+// Default input ("in" key if named morphs)
+user.from('{"name": "David", "age": 29}')
 
+// Access out morphs on prevalidated data
 user.data({ name: "David", age: 29 }).out

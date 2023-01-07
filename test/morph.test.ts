@@ -6,75 +6,77 @@ describe("morph", () => {
     describe("in", () => {
         it("base", () => {
             const t = type("string", {
-                from: {
+                in: {
                     number: (n) => `${n}`
                 },
-                to: {
+                out: {
                     symbol: (s) => Symbol(s),
                     number: (s) => parseFloat(s)
                 }
             })
             attest(t.infer).typed as string
-            t("foo").to("symbol")
+            const { number } = t("5.7")
+            if (number) {
+                const result = number
+            }
         })
         it("additional args", () => {
             const t = type("number", {
-                from: {
+                in: {
                     string: (s, radix: number) => parseInt(s, radix)
                 },
-                to: {
+                out: {
                     string: (s, radix: number) => s.toString(radix)
                 }
             })
             attest(t.infer).typed as number
-            t(5).to("string", 5)
+            t(5).string?.(5)
         })
         it("out morphs", () => {
             const t = type("boolean", {
-                to: {
+                out: {
                     string: (data) => `${data}`
                 }
             })
-            // TODO: to should continue chaining data/problems as a final result.
-            const { data } = t(true).to("string")
-            attest(data).equals("true").typed as string | undefined
+            const { string } = t(true)
+            attest(string).equals("true").typed as string | undefined
         })
         it("in scope", () => {
             const $ = scope({
                 a: () =>
                     $.type("string", {
-                        from: {
+                        in: {
                             b: (n) => `${n}`
                         },
-                        to: {
+                        out: {
                             b: (s) => parseInt(s)
                         }
                     }),
                 b: () =>
                     $.type("number", {
-                        to: {
+                        out: {
                             c: (n) => n !== 0
                         }
                     }),
                 c: "boolean"
             })
             const types = $.compile()
-            types.a("foo").to("b").to("c")
-            types.a
+            // types.a("foo").out("b").out("c")
+            // types.a
         })
         describe("errors", () => {
             it("untyped additional args", () => {
                 const t = type("string", {
-                    to: { number: (n, radix) => parseInt(n, radix) }
+                    out: { number: (n, radix) => parseInt(n, radix) }
                 })
                 // @ts-expect-error
-                attest(t("foo").to("number", 10)).type.errors(
+                attest(t("foo").out("number", 10)).type.errors(
                     "Argument of type 'number' is not assignable to parameter of type 'never'."
                 )
             })
             it("unresolvable keys", () => {
                 scope({ a: "string" }).type("string", {
-                    from: {
+                    in: {
                         number: (n) => `${n}`,
                         a: (data) => `${data}`,
                         // @ts-expect-error

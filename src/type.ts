@@ -10,10 +10,10 @@ import type {
     Dict,
     evaluate,
     isTopType,
+    merge,
     parametersOf,
     returnOf,
     stringKeyOf,
-    tailOf,
     xor
 } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
@@ -64,8 +64,8 @@ export type parseType<
 export type Traits<data = unknown, $ = Dict> = Morphs<data, $> & CheckConfig
 
 export type Morphs<data = unknown, $ = Dict> = {
-    from?: Sources<data, $>
-    to?: Targets<data, $>
+    in?: Sources<data, $>
+    out?: Targets<data, $>
 }
 
 export type Sources<data, $> = {
@@ -83,28 +83,35 @@ export type Targets<data, $> = {
 }
 
 export type morphsFrom<traits extends Traits, $> = evaluate<
-    (traits["from"] extends {} ? { from: traits["from"] } : {}) &
-        (traits["to"] extends {}
+    (traits["in"] extends {} ? { from: traits["in"] } : {}) &
+        (traits["out"] extends {}
             ? {
-                  to: {
-                      [name in stringKeyOf<traits["to"]>]: (
-                          ...args: parametersOf<traits["to"][name]>
-                      ) => name extends keyof $
-                          ? returnOf<$[name]>
-                          : Result<inferDefinition<name, $>>
+                  out: {
+                      [name in stringKeyOf<traits["out"]>]: parametersOf<
+                          traits["out"][name]
+                      > extends [
+                          data: any,
+                          ...args: infer args extends [any, ...any[]]
+                      ]
+                          ? (
+                                ...args: args
+                            ) => name extends keyof $
+                                ? returnOf<$[name]>
+                                : Result<inferDefinition<name, $>>
+                          : returnOf<traits["out"][name]>
                   }
               }
             : {})
 >
 
-type compileOutMorph<morphs extends Morphs> = morphs["to"] extends {}
-    ? {
-          to: <k extends keyof morphs["to"]>(
-              name: k,
-              ...args: tailOf<parametersOf<morphs["to"][k]>>
-          ) => returnOf<morphs["to"][k]>
-      }
-    : {}
+// type compileOutMorph<morphs extends Morphs> = morphs["out"] extends {}
+//     ? {
+//           out: <k extends keyof morphs["out"]>(
+//               name: k,
+//               ...args: tailOf<parametersOf<morphs["out"][k]>>
+//           ) => returnOf<morphs["out"][k]>
+//       }
+//     : {}
 
 type DynamicTypeFn = (def: unknown, traits?: Traits) => Morphable
 
@@ -113,9 +120,9 @@ export type TypeParser<$> = LazyDynamicWrap<
     DynamicTypeFn
 >
 
-export type Result<data> = xor<{ data: data }, { problems: Problems }>
+export type Result<output> = xor<output, { problems: Problems }>
 
-export type Checker<data, outMorph> = (data: unknown) => outMorph & Result<data>
+export type Checker<output> = (data: unknown) => Result<output>
 
 // TODO: Rename
 export type TypeMetadata<data = unknown> = {
@@ -124,8 +131,10 @@ export type TypeMetadata<data = unknown> = {
     flat: TraversalNode
 }
 
-export type Type<data = unknown> = defer<Checker<data, {}> & TypeMetadata<data>>
+export type Type<data = unknown> = defer<
+    Checker<{ data: data }> & TypeMetadata<data>
+>
 
 export type Morphable<data = unknown, morphs extends Morphs = Morphs> = defer<
-    Checker<data, compileOutMorph<morphs>> & TypeMetadata<data>
+    Checker<merge<{ data: data }, morphs["out"]>> & TypeMetadata<data>
 >
