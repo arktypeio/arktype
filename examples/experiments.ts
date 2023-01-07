@@ -33,7 +33,7 @@ const user = type(
             return JSON.parse(s)
         },
         out: {
-            out: (user): ValidatedUser => {
+            main: (user): ValidatedUser => {
                 return { ...user, isInternal: true }
             },
             string: (user) => {
@@ -45,4 +45,10 @@ const user = type(
     }
 )
 
-const { out, data, string, problems } = user({ name: "David", age: 29 })
+const { string, problems } = user({ name: "David", age: 29 }).to("admin")
+
+user.from("string", "fdsoifusahgo")
+
+user.from("fdsoifusahgo")
+
+user.data({ name: "David", age: 29 }).out
