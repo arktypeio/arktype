@@ -1,10 +1,4 @@
-import type {
-    Identifier,
-    TraversalNode,
-    TypeNode,
-    TypeSet
-} from "./nodes/node.ts"
-import { compileNode } from "./nodes/node.ts"
+import type { Identifier, TraversalNode, TypeRoot } from "./nodes/node.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import type { Scope } from "./scope.ts"
 import type { CheckConfig } from "./traverse/check.ts"
@@ -24,22 +18,29 @@ import type {
 } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
-export const nodeToType = (root: TypeSet, $: Scope, config: Traits): Type => {
-    const traversal = compileNode(root, $)
+export const nodeToType = (
+    root: TypeRoot,
+    flat: TraversalNode,
+    $: Scope,
+    config: Traits
+): Type => {
     return Object.assign(
         (data: unknown) => {
-            return rootCheck(data, traversal, $, config)
+            return rootCheck(data, flat, $, config)
         },
         {
             config,
             infer: chainableNoOpProxy,
             root,
-            flat: traversal
+            flat
         }
     ) as any
 }
 
-export type InferredTypeConstructor<$> = {
+export const isType = (value: {}): value is Type =>
+    (value as Type).infer === chainableNoOpProxy
+
+export type InferredTypeParser<$> = {
     <def>(def: validateDefinition<def, $>): parseType<def, $, {}>
 
     <def, traits extends Traits<inferDefinition<def, $>, $>>(
@@ -88,7 +89,9 @@ export type morphsFrom<traits extends Traits, $> = evaluate<
                   to: {
                       [name in stringKeyOf<traits["to"]>]: (
                           ...args: parametersOf<traits["to"][name]>
-                      ) => InferResult<name, $>
+                      ) => name extends keyof $
+                          ? returnOf<$[name]>
+                          : Result<inferDefinition<name, $>>
                   }
               }
             : {})
@@ -105,25 +108,19 @@ type compileOutMorph<morphs extends Morphs> = morphs["to"] extends {}
 
 type DynamicTypeFn = (def: unknown, traits?: Traits) => Morphable
 
-export type TypeConstructor<$> = LazyDynamicWrap<
-    InferredTypeConstructor<$>,
+export type TypeParser<$> = LazyDynamicWrap<
+    InferredTypeParser<$>,
     DynamicTypeFn
 >
 
 export type Result<data> = xor<{ data: data }, { problems: Problems }>
 
-export type Chainable<data, outMorph> = outMorph & Result<data>
-
-export type InferResult<name extends string, $> = name extends keyof $
-    ? // TODO: Fix
-      Result<inferDefinition<name, $>> //ReturnType<$[name]>
-    : Result<inferDefinition<name, $>>
-
 export type Checker<data, outMorph> = (data: unknown) => outMorph & Result<data>
 
+// TODO: Rename
 export type TypeMetadata<data = unknown> = {
     infer: data
-    root: TypeNode
+    root: TypeRoot
     flat: TraversalNode
 }
 

@@ -1,4 +1,4 @@
-import type { TypeSet } from "../../nodes/node.ts"
+import type { TypeRoot } from "../../nodes/node.ts"
 import { intersection } from "../../nodes/node.ts"
 import type { Refinement } from "../../nodes/rules/rules.ts"
 import type { mutable } from "../../utils/generics.ts"
@@ -19,7 +19,7 @@ export const parseRefinementTuple: TupleExpressionParser<"=>"> = (
         inputNode,
         scope
     )
-    const distributedValidatorNode: mutable<TypeSet> = {}
+    const distributedValidatorNode: mutable<TypeRoot> = {}
     for (const [domain, refinement] of distributedValidatorEntries) {
         distributedValidatorNode[domain] = { refinement }
     }

@@ -117,9 +117,11 @@ export type DiagnosticsByCode = {
     RegexMismatch: RegexErrorContext
     TupleLength: TupleLengthErrorContext
     Unassignable: UnassignableErrorContext
+    // Unsatifactory: UnsatisfyingErrorContext
     Union: UnionErrorContext
 }
-
+//Domain error
+//Domains error
 export type DiagnosticCode = keyof DiagnosticsByCode
 
 export type DiagnosticMessageBuilder<code extends DiagnosticCode> = (

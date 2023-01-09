@@ -25,9 +25,9 @@ suite("parse/str/operand", () => {
         })
             .median()
             .type()
-        const types = scope({ strung: "string" })
+        const $ = scope({ strung: "string" })
         bench("alias", () => {
-            const _ = types.$.type("strung")
+            const _ = $.type("strung")
         })
             .median()
             .type()

@@ -77,11 +77,6 @@ export const rootCheck = (
     if (typeof node === "string") {
         return baseCheckDomain(data, node, [])
     }
-    //TODOSHAWN maybe a way we can preemptively check for Unassignable
-    const a = c(data, node, [])
-    if ("problems" in a!) {
-        return a
-    }
     const problems = new Problems()
     const checkState: CheckState = {
         node,
@@ -152,37 +147,6 @@ const baseCheckDomain = (
               })
           }
 
-const c = (data: unknown, domain: unknown, path: string[]) => {
-    if (typeof domain === "string") {
-        if (domain !== domainOf(data)) {
-            return {
-                problems: new Problems({
-                    path: path.join("."),
-                    reason: `data must be of type string (was ${domainOf(
-                        data
-                    )})`
-                })
-            }
-        }
-    }
-    if (subdomainOf(domain) === "Array") {
-        if (domain[0][0] === "domains") {
-            const keys = Object.keys(domain[0][1])
-            const assignable = keys.some((domain) => domainOf(data) === domain)
-            if (!assignable) {
-                return {
-                    problems: new Problems({
-                        path: path.join("."),
-                        reason: `data must by type of ${keys.join(
-                            "|"
-                        )} (was ${domainOf(data)})`
-                    })
-                }
-            }
-        }
-    }
-    return {}
-}
 const checkers = {
     regex: (state, regex) => checkRegexRule(state, regex),
     divisor: (state, divisor) => checkDivisor(state, divisor),
@@ -194,9 +158,9 @@ const checkers = {
             checkEntries(state, scope)
         } else {
             state.problems.addProblem(
-                "Union",
+                "Unassignable",
                 {
-                    type: state.node
+                    expected: state.node
                 },
                 state
             )

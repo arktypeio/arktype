@@ -12,15 +12,13 @@ export const user = type({
 // Infer it...
 export type User = typeof user.infer
 
-export const fetchUser = () => ({
+// Validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
+export const { data, problems } = user({
     name: "Dan Abramov",
     browser: {
         kind: "Internet Explorer" // R.I.P.
     }
 })
-
-// Types can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
-export const { data, problems } = user(fetchUser())
 
 if (problems) {
     console.log(problems.summary)

@@ -83,10 +83,8 @@ describe("unions", () => {
     test("union", () => {
         const basic = type("string|number[]")
         const check = basic(2)
-        //Should be unassignable error
-        //should be {domains}
         attest(check.problems?.summary).snap(
-            "data must by type of string|object (was number)"
+            "2 is not assignable to domains,[object Object]."
         )
     })
 })

@@ -8,7 +8,8 @@ import { deepFreeze } from "../utils/freeze.ts"
 import type { defined } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
 import { getFlatKeywords, keywords } from "./keywords.ts"
-import type { TraversalNode, TypeNode, TypeSet } from "./node.ts"
+import type { TraversalNode, TypeNode, TypeRoot } from "./node.ts"
+import { compileNode } from "./node.ts"
 import type {
     ExactValue,
     Predicate,
@@ -16,8 +17,8 @@ import type {
     TraversalPredicate
 } from "./predicate.ts"
 
-export const resolveIfIdentifier = (node: TypeNode, $: Scope): TypeSet =>
-    typeof node === "string" ? (resolve($, node) as TypeSet) : node
+export const resolveIfIdentifier = (node: TypeNode, $: Scope): TypeRoot =>
+    typeof node === "string" ? (resolve(node, $) as TypeRoot) : node
 
 export const resolvePredicateIfIdentifier = (
     domain: Domain,
@@ -25,7 +26,7 @@ export const resolvePredicateIfIdentifier = (
     $: Scope
 ) =>
     typeof predicate === "string"
-        ? resolvePredicate($, predicate, domain)
+        ? resolvePredicate(predicate, domain, $)
         : predicate
 
 export const isExactValue = <domain extends Domain>(
@@ -49,7 +50,7 @@ export const domainsOfNode = (node: TypeNode, $: Scope): Domain[] =>
     keysOf(resolveIfIdentifier(node, $))
 
 export type DomainSubtypeNode<domain extends Domain> = {
-    readonly [k in domain]: defined<TypeSet[domain]>
+    readonly [k in domain]: defined<TypeRoot[domain]>
 }
 
 export const nodeExtendsDomain = <domain extends Domain>(
@@ -62,61 +63,64 @@ export const nodeExtendsDomain = <domain extends Domain>(
 }
 
 // TODO: Move to parse
-export const isResolvable = ($: Scope, name: string) => {
-    return isKeyOf(name, keywords) || $[name] ? true : false
+export const isResolvable = (name: string, $: Scope) => {
+    return isKeyOf(name, keywords) || $.aliases[name] ? true : false
 }
 
-export const resolve = ($: Scope, name: string) => {
-    return resolveRecurse($, name, [])
+export const resolve = (name: string, $: Scope) => {
+    return resolveRecurse(name, [], $)
 }
 
-const resolveFlat = ($: Scope, name: string): TraversalNode => {
+export const resolveFlat = (name: string, $: Scope): TraversalNode => {
     if (isKeyOf(name, keywords)) {
         return getFlatKeywords()[name]
     }
-    resolveRecurse($, name, [])
-    return $[name].flat
+    resolveRecurse(name, [], $)
+    return $.cache.types[name].flat
 }
 
-const resolveRecurse = ($: Scope, name: string, seen: string[]): TypeSet => {
+// TODO: change return to Type?
+const resolveRecurse = (name: string, seen: string[], $: Scope): TypeRoot => {
     if (isKeyOf(name, keywords)) {
         return keywords[name]
     }
-    if (isKeyOf(name, $.types)) {
-        return $[name].root as TypeSet
+    if (isKeyOf(name, $.cache.types)) {
+        return $.cache.types[name].root
     }
-    if (!$[name]) {
+    if (!$.aliases[name]) {
         return throwInternalError(
             `Unexpectedly failed to resolve alias '${name}'`
         )
     }
-    let root = parseDefinition($[name], $)
+    let root = parseDefinition($.aliases[name], $)
     if (typeof root === "string") {
         if (seen.includes(root)) {
             return throwParseError(buildShallowCycleErrorMessage(name, seen))
         }
         seen.push(root)
-        root = resolveRecurse($, root, seen)
+        root = resolveRecurse(root, seen, $)
     }
-    // TODO: config?
-    $[name] = nodeToType(root, $, {})
-    return root as TypeSet
+    // temporarily set the TraversalNode to an alias that will be used for cyclic resolutions
+    const type = nodeToType(root, [["alias", name]], $, {})
+    $.cache.types[name] = type
+    type.flat = compileNode(root, $)
+    return root as TypeRoot
 }
 
 export const resolvePredicate = <domain extends Domain>(
-    $: Scope,
     name: string,
-    domain: domain
+    domain: domain,
+    $: Scope
 ) => {
-    return resolvePredicateRecurse($, name, domain, [])
+    return resolvePredicateRecurse(name, domain, [], $)
 }
 
 export const resolveFlatPredicate = (
-    $: Scope,
     name: string,
-    domain: Domain
+    domain: Domain,
+    $: Scope
 ): TraversalPredicate => {
-    const flatResolution = resolveFlat($, name)
+    const flatResolution = resolveFlat(name, $)
     if (typeof flatResolution === "string") {
         if (flatResolution !== domain) {
             return throwUnexpectedPredicateDomainError(name, domain)
@@ -139,12 +143,12 @@ export const resolveFlatPredicate = (
 }
 
 const resolvePredicateRecurse = <domain extends Domain>(
-    $: Scope,
     name: string,
     domain: domain,
-    seen: string[]
+    seen: string[],
+    $: Scope
 ): ResolvedPredicate<domain, Scope> => {
-    const resolution = resolve($, name)[domain]
+    const resolution = resolve(name, $)[domain]
     if (resolution === undefined) {
         return throwUnexpectedPredicateDomainError(name, domain)
     }
@@ -155,15 +159,15 @@ const resolvePredicateRecurse = <domain extends Domain>(
         return throwParseError(buildShallowCycleErrorMessage(resolution, seen))
     }
     seen.push(resolution)
-    return resolvePredicateRecurse($, resolution, domain, seen)
+    return resolvePredicateRecurse(resolution, domain, seen, $)
 }
 
-export const memoizedParse = ($: Scope, def: string): TypeNode => {
-    if (def in $.$.cache) {
-        return $.$.cache[def]
+export const memoizedParse = (def: string, $: Scope): TypeNode => {
+    if (def in $.cache) {
+        return $.cache.nodes[def]
     }
     const root = maybeNaiveParse(def, $) ?? fullStringParse(def, $)
-    $.$.cache[def] = deepFreeze(root)
+    $.cache.nodes[def] = deepFreeze(root)
     return root
 }
 
