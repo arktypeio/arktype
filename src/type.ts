@@ -46,7 +46,7 @@ export type InferredTypeParser<$> = {
     <def, traits extends Traits<inferDefinition<def, $>, $>>(
         def: validateDefinition<def, $>,
         traits: traits
-    ): parseType<def, $, morphsFrom<traits, $>>
+    ): parseType<def, $, morphsFrom<traits>>
 }
 
 export type parseType<
@@ -69,49 +69,27 @@ export type Morphs<data = unknown, $ = Dict> = {
 }
 
 export type Sources<data, $> = {
-    [name in Identifier<$>]?: (
-        source: inferDefinition<name, $>,
-        ...args: never[]
-    ) => data
-}
+    [name in Identifier<$>]?: (source: inferDefinition<name, $>) => data
+} & { [name in string]: (...args: never[]) => data }
 
 export type Targets<data, $> = {
-    [name in Identifier<$>]?: (
-        data: data,
-        ...args: never[]
-    ) => inferDefinition<name, $>
+    [name in Identifier<$>]?: (data: data) => inferDefinition<name, $>
+} & {
+    [name in string]: (data: data) => unknown
 }
 
-export type morphsFrom<traits extends Traits, $> = evaluate<
+export type morphsFrom<traits extends Traits> = evaluate<
     (traits["in"] extends {} ? { from: traits["in"] } : {}) &
         (traits["out"] extends {}
             ? {
                   out: {
-                      [name in stringKeyOf<traits["out"]>]: parametersOf<
+                      [name in stringKeyOf<traits["out"]>]: returnOf<
                           traits["out"][name]
-                      > extends [
-                          data: any,
-                          ...args: infer args extends [any, ...any[]]
-                      ]
-                          ? (
-                                ...args: args
-                            ) => name extends keyof $
-                                ? returnOf<$[name]>
-                                : Result<inferDefinition<name, $>>
-                          : returnOf<traits["out"][name]>
+                      >
                   }
               }
             : {})
 >
-
-// type compileOutMorph<morphs extends Morphs> = morphs["out"] extends {}
-//     ? {
-//           out: <k extends keyof morphs["out"]>(
-//               name: k,
-//               ...args: tailOf<parametersOf<morphs["out"][k]>>
-//           ) => returnOf<morphs["out"][k]>
-//       }
-//     : {}
 
 type DynamicTypeFn = (def: unknown, traits?: Traits) => Morphable
 

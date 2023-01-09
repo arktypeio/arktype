@@ -7,7 +7,8 @@ describe("morph", () => {
         it("base", () => {
             const t = type("string", {
                 in: {
-                    number: (n) => `${n}`
+                    number: (n) => `${n}`,
+                    strfing: (s: number) => `${s}`
                 },
                 out: {
                     symbol: (s) => Symbol(s),
@@ -15,27 +16,30 @@ describe("morph", () => {
                 }
             })
             attest(t.infer).typed as string
-            const { number } = t("5.7")
-            if (number) {
+            const { number, problems } = t("5.7")
+            if (number !== undefined) {
                 const result = number
+            } else {
+                problems.summary
             }
         })
-        it("additional args", () => {
-            const t = type("number", {
-                in: {
-                    string: (s, radix: number) => parseInt(s, radix)
-                },
-                out: {
-                    string: (s, radix: number) => s.toString(radix)
-                }
-            })
-            attest(t.infer).typed as number
-            t(5).string?.(5)
-        })
+        // it("additional args", () => {
+        //     const t = type("number", {
+        //         in: {
+        //             string: (s, radix: number) => parseInt(s, radix)
+        //         },
+        //         out: {
+        //             string: (s, radix: number) => s.toString(radix)
+        //         }
+        //     })
+        //     attest(t.infer).typed as number
+        //     t(5).string?.(5)
+        // })
         it("out morphs", () => {
             const t = type("boolean", {
                 out: {
-                    string: (data) => `${data}`
+                    string: (data) => `${data}`,
+                    boof: (data) => 5
                 }
             })
             const { string } = t(true)
@@ -65,15 +69,15 @@ describe("morph", () => {
             // types.a
         })
         describe("errors", () => {
-            it("untyped additional args", () => {
-                const t = type("string", {
-                    out: { number: (n, radix) => parseInt(n, radix) }
-                })
-                // @ts-expect-error
-                attest(t("foo").out("number", 10)).type.errors(
-                    "Argument of type 'number' is not assignable to parameter of type 'never'."
-                )
-            })
+            // it("untyped additional args", () => {
+            //     const t = type("string", {
+            //         out: { number: (n, radix) => parseInt(n, radix) }
+            //     })
+            //     // @ts-expect-error
+            //     attest(t("foo").out("number", 10)).type.errors(
+            //         "Argument of type 'number' is not assignable to parameter of type 'never'."
+            //     )
+            // })
             it("unresolvable keys", () => {
                 scope({ a: "string" }).type("string", {
                     in: {
