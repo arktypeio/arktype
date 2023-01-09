@@ -3,27 +3,6 @@ import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
 describe("morph", () => {
-    it("in scope", () => {
-        const $ = scope({
-            a: () =>
-                $.type("string", {
-                    in: {
-                        b: (n) => `${n}`
-                    },
-                    out: {
-                        b: (s) => parseInt(s)
-                    }
-                }),
-            b: () =>
-                $.type("number", {
-                    out: {
-                        c: (n) => n !== 0
-                    }
-                }),
-            c: "boolean"
-        })
-        const types = $.compile()
-    })
     it("function", () => {
         const t = type("boolean", {
             out: (data) => `${data}`
@@ -60,4 +39,39 @@ describe("morph", () => {
         const { bit } = t(true)
         attest(bit).equals(1).typed as 1 | 0 | undefined
     })
+    it("scoped", () => {
+        const $ = scope({
+            a: () =>
+                $.type("string", {
+                    in: {
+                        b: (n) => `${n}`
+                    },
+                    out: {
+                        b: (s) => parseInt(s)
+                    }
+                }),
+            b: "number"
+        })
+        const types = $.compile()
+        attest(types.a.from("b", 5).data).equals("5").typed as
+            | string
+            | undefined
+        attest(types.a("5").b).equals(5).typed as number | undefined
+    })
+    // it("scoped cyclic", () => {
+    //     const $ = scope({
+    //         a: () =>
+    //             $.type("string", {
+    //                 out: {
+    //                     b: (s) => parseInt(s)
+    //                 }
+    //             }),
+    //         b: () =>
+    //             $.type("number", {
+    //                 out: {
+    //                     a: (n) => `${n}`
+    //                 }
+    //             })
+    //     })
+    // })
 })

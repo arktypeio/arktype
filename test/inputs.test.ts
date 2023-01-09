@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { scope, type } from "../api.ts"
+import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
 describe("inputs", () => {
