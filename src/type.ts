@@ -92,7 +92,7 @@ export type morphsFrom<traits> = evaluate<
     (traits extends { in: {} }
         ? {
               in: traits["in"] extends Preprocessor<infer input>
-                  ? input
+                  ? { default: input }
                   : {
                         [name in keyof traits["in"]]: parametersOf<
                             traits["in"][name]
@@ -113,11 +113,11 @@ export type morphsFrom<traits> = evaluate<
             : {})
 >
 
-type DynamicTypeFn = (def: unknown, traits?: Traits) => Morphable
+type DynamicTypeParser = (def: unknown, traits?: Traits) => Morphable
 
 export type TypeParser<$> = LazyDynamicWrap<
     InferredTypeParser<$>,
-    DynamicTypeFn
+    DynamicTypeParser
 >
 
 export type Result<output> = xor<output, { problems: Problems }>
@@ -136,5 +136,23 @@ export type Type<data = unknown> = defer<
 >
 
 export type Morphable<data = unknown, morphs extends Morphs = Morphs> = defer<
-    Checker<merge<{ data: data }, morphs["out"]>> & TypeMetadata<data>
+    Checker<outputFrom<data, morphs>> &
+        TypeMetadata<data> &
+        inputFrom<data, morphs>
 >
+
+type outputFrom<data, morphs extends Morphs> = morphs["out"] extends {}
+    ? merge<{ data: data }, morphs["out"]>
+    : { data: data }
+
+type inputFrom<data, morphs extends Morphs> = morphs["in"] extends {}
+    ? {
+          from: (morphs["in"] extends { default: infer input }
+              ? (input: input) => Result<outputFrom<data, morphs>>
+              : {}) &
+              (<k extends keyof morphs["in"]>(
+                  key: k,
+                  input: morphs["in"][k]
+              ) => Result<outputFrom<data, morphs>>)
+      }
+    : {}
