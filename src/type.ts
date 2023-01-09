@@ -67,33 +67,48 @@ export type Morphs<data = unknown, $ = Dict> = {
     out?: Targets<data, $>
 }
 
-export type Sources<$> = {
-    [name in Identifier<$>]?: (input: inferDefinition<name, $>) => unknown
-} & { [name in string]: (input: never) => unknown }
+export type Sources<$> =
+    | Preprocessor
+    | ({
+          [name in Identifier<$>]?: Preprocessor<inferDefinition<name, $>>
+      } & { [name in string]: Preprocessor })
 
-export type Targets<data, $> = {
-    [name in Identifier<$>]?: (data: data) => inferDefinition<name, $>
-} & {
-    [name in string]: (data: data) => unknown
-}
+type Preprocessor<input = never> = (input: input) => unknown
+
+export type Targets<data, $> =
+    | Postprocessor<data>
+    | ({
+          [name in Identifier<$>]?: Postprocessor<
+              data,
+              inferDefinition<name, $>
+          >
+      } & {
+          [name in string]: Postprocessor<data>
+      })
+
+type Postprocessor<data, output = unknown> = (data: data) => output
 
 export type morphsFrom<traits> = evaluate<
     (traits extends { in: {} }
         ? {
-              in: {
-                  [name in keyof traits["in"]]: parametersOf<
-                      traits["in"][name]
-                  >[0]
-              }
+              in: traits["in"] extends Preprocessor<infer input>
+                  ? input
+                  : {
+                        [name in keyof traits["in"]]: parametersOf<
+                            traits["in"][name]
+                        >[0]
+                    }
           }
         : {}) &
         (traits extends { out: {} }
             ? {
-                  out: {
-                      [name in keyof traits["out"]]: returnOf<
-                          traits["out"][name]
-                      >
-                  }
+                  out: traits["out"] extends Postprocessor<never, infer output>
+                      ? { out: output }
+                      : {
+                            [name in keyof traits["out"]]: returnOf<
+                                traits["out"][name]
+                            >
+                        }
               }
             : {})
 >

@@ -24,16 +24,6 @@ describe("morph", () => {
                 problems.summary
             }
         })
-        it("out morphs", () => {
-            const t = type("boolean", {
-                out: {
-                    string: (data) => `${data}`,
-                    boof: (data) => 5
-                }
-            })
-            const { string } = t(true)
-            attest(string).equals("true").typed as string | undefined
-        })
         it("in scope", () => {
             const $ = scope({
                 a: () =>
@@ -54,29 +44,44 @@ describe("morph", () => {
                 c: "boolean"
             })
             const types = $.compile()
-            // types.a("foo").out("b").out("c")
-            // types.a
         })
-        describe("errors", () => {
-            // it("untyped additional args", () => {
-            //     const t = type("string", {
-            //         out: { number: (n, radix) => parseInt(n, radix) }
-            //     })
-            //     // @ts-expect-error
-            //     attest(t("foo").out("number", 10)).type.errors(
-            //         "Argument of type 'number' is not assignable to parameter of type 'never'."
-            //     )
-            // })
-            // it("unresolvable keys", () => {
-            //     scope({ a: "string" }).type("string", {
-            //         in: {
-            //             number: (n) => `${n}`,
-            //             a: (data) => `${data}`,
-            //             // @ts-expect-error
-            //             foo: (bar) => bar
-            //         }
-            //     })
-            // })
+    })
+    describe("out", () => {
+        it("root function", () => {
+            const t = type("boolean", {
+                out: (data) => `${data}`
+            })
+            const { out, data } = t(true)
+            attest(data).equals(true).typed as boolean | undefined
+            attest(out).equals("true").typed as string | undefined
+        })
+        it("identifier", () => {
+            const t = type("boolean", {
+                out: {
+                    string: (data) => `${data}` as const
+                }
+            })
+            const { string } = t(true)
+            attest(string).equals("true").typed as "true" | "false" | undefined
+        })
+        it("mismatched identifier", () => {
+            attest(() => {
+                type("boolean", {
+                    out: {
+                        // @ts-expect-error
+                        number: (data) => `${data}`
+                    }
+                })
+            }).type.errors("Type 'string' is not assignable to type 'number'.")
+        })
+        it("non-identifier", () => {
+            const t = type("boolean", {
+                out: {
+                    bit: (data) => (data ? 1 : 0)
+                }
+            })
+            const { bit } = t(true)
+            attest(bit).equals(1).typed as 1 | 0 | undefined
         })
     })
 })
