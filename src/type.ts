@@ -92,7 +92,7 @@ export type morphsFrom<traits> = evaluate<
     (traits extends { in: {} }
         ? {
               in: traits["in"] extends Preprocessor<infer input>
-                  ? { in: input }
+                  ? { default: input }
                   : {
                         [name in keyof traits["in"]]: parametersOf<
                             traits["in"][name]
