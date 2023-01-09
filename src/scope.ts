@@ -34,12 +34,12 @@ const composeScopeParser = <parent extends Scope>(parent?: parent) =>
         }
     }) as unknown as ScopeParser<Scope extends parent ? {} : parent>
 
-export const composeTypeParser = <$ extends Scope>($: $): TypeParser<$> =>
+export const composeTypeParser = <$ extends Scope>($: $) =>
     lazyDynamicWrap((def, traits = {}) => {
         const root = resolveIfIdentifier(parseDefinition(def, $), $)
         const flat = compileNode(root, $)
         return nodeToType(root, flat, $, traits)
-    })
+    }) as TypeParser<$>
 
 type ScopeParser<parent> = LazyDynamicWrap<
     InferredScopeParser<parent>,

@@ -13,7 +13,6 @@ import type {
     merge,
     parametersOf,
     returnOf,
-    stringKeyOf,
     xor
 } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
@@ -64,13 +63,13 @@ export type parseType<
 export type Traits<data = unknown, $ = Dict> = Morphs<data, $> & CheckConfig
 
 export type Morphs<data = unknown, $ = Dict> = {
-    in?: Sources<data, $>
+    in?: Sources<$>
     out?: Targets<data, $>
 }
 
-export type Sources<data, $> = {
-    [name in Identifier<$>]?: (source: inferDefinition<name, $>) => data
-} & { [name in string]: (...args: never[]) => data }
+export type Sources<$> = {
+    [name in Identifier<$>]?: (input: inferDefinition<name, $>) => unknown
+} & { [name in string]: (input: never) => unknown }
 
 export type Targets<data, $> = {
     [name in Identifier<$>]?: (data: data) => inferDefinition<name, $>
@@ -78,12 +77,20 @@ export type Targets<data, $> = {
     [name in string]: (data: data) => unknown
 }
 
-export type morphsFrom<traits extends Traits> = evaluate<
-    (traits["in"] extends {} ? { from: traits["in"] } : {}) &
-        (traits["out"] extends {}
+export type morphsFrom<traits> = evaluate<
+    (traits extends { in: {} }
+        ? {
+              in: {
+                  [name in keyof traits["in"]]: parametersOf<
+                      traits["in"][name]
+                  >[0]
+              }
+          }
+        : {}) &
+        (traits extends { out: {} }
             ? {
                   out: {
-                      [name in stringKeyOf<traits["out"]>]: returnOf<
+                      [name in keyof traits["out"]]: returnOf<
                           traits["out"][name]
                       >
                   }

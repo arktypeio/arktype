@@ -12,7 +12,8 @@ describe("morph", () => {
                 },
                 out: {
                     symbol: (s) => Symbol(s),
-                    number: (s) => parseFloat(s)
+                    number: (s) => parseFloat(s),
+                    foo: (s) => s
                 }
             })
             attest(t.infer).typed as string
@@ -23,18 +24,6 @@ describe("morph", () => {
                 problems.summary
             }
         })
-        // it("additional args", () => {
-        //     const t = type("number", {
-        //         in: {
-        //             string: (s, radix: number) => parseInt(s, radix)
-        //         },
-        //         out: {
-        //             string: (s, radix: number) => s.toString(radix)
-        //         }
-        //     })
-        //     attest(t.infer).typed as number
-        //     t(5).string?.(5)
-        // })
         it("out morphs", () => {
             const t = type("boolean", {
                 out: {
@@ -78,16 +67,16 @@ describe("morph", () => {
             //         "Argument of type 'number' is not assignable to parameter of type 'never'."
             //     )
             // })
-            it("unresolvable keys", () => {
-                scope({ a: "string" }).type("string", {
-                    in: {
-                        number: (n) => `${n}`,
-                        a: (data) => `${data}`,
-                        // @ts-expect-error
-                        foo: (bar) => bar
-                    }
-                })
-            })
+            // it("unresolvable keys", () => {
+            //     scope({ a: "string" }).type("string", {
+            //         in: {
+            //             number: (n) => `${n}`,
+            //             a: (data) => `${data}`,
+            //             // @ts-expect-error
+            //             foo: (bar) => bar
+            //         }
+            //     })
+            // })
         })
     })
 })

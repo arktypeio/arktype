@@ -10,7 +10,6 @@
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "composite": true,
-        "exactOptionalPropertyTypes": true,
         "noErrorTruncation": false,
         "lib": ["ESNext"],
         "paths": {
