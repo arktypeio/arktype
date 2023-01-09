@@ -10,10 +10,9 @@ import type {
     Dict,
     evaluate,
     isTopType,
+    merge,
     parametersOf,
     returnOf,
-    stringKeyOf,
-    tailOf,
     xor
 } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
@@ -46,7 +45,7 @@ export type InferredTypeParser<$> = {
     <def, traits extends Traits<inferDefinition<def, $>, $>>(
         def: validateDefinition<def, $>,
         traits: traits
-    ): parseType<def, $, morphsFrom<traits, $>>
+    ): parseType<def, $, morphsFrom<traits>>
 }
 
 export type parseType<
@@ -64,58 +63,66 @@ export type parseType<
 export type Traits<data = unknown, $ = Dict> = Morphs<data, $> & CheckConfig
 
 export type Morphs<data = unknown, $ = Dict> = {
-    from?: Sources<data, $>
-    to?: Targets<data, $>
+    in?: Sources<$>
+    out?: Targets<data, $>
 }
 
-export type Sources<data, $> = {
-    [name in Identifier<$>]?: (
-        source: inferDefinition<name, $>,
-        ...args: never[]
-    ) => data
-}
+export type Sources<$> =
+    | Preprocessor
+    | ({
+          [name in Identifier<$>]?: Preprocessor<inferDefinition<name, $>>
+      } & { [name in string]: Preprocessor })
 
-export type Targets<data, $> = {
-    [name in Identifier<$>]?: (
-        data: data,
-        ...args: never[]
-    ) => inferDefinition<name, $>
-}
+type Preprocessor<input = never> = (input: input) => unknown
 
-export type morphsFrom<traits extends Traits, $> = evaluate<
-    (traits["from"] extends {} ? { from: traits["from"] } : {}) &
-        (traits["to"] extends {}
+export type Targets<data, $> =
+    | Postprocessor<data>
+    | ({
+          [name in Identifier<$>]?: Postprocessor<
+              data,
+              inferDefinition<name, $>
+          >
+      } & {
+          [name in string]: Postprocessor<data>
+      })
+
+type Postprocessor<data, output = unknown> = (data: data) => output
+
+export type morphsFrom<traits> = evaluate<
+    (traits extends { in: {} }
+        ? {
+              in: traits["in"] extends Preprocessor<infer input>
+                  ? { default: input }
+                  : {
+                        [name in keyof traits["in"]]: parametersOf<
+                            traits["in"][name]
+                        >[0]
+                    }
+          }
+        : {}) &
+        (traits extends { out: {} }
             ? {
-                  to: {
-                      [name in stringKeyOf<traits["to"]>]: (
-                          ...args: parametersOf<traits["to"][name]>
-                      ) => name extends keyof $
-                          ? returnOf<$[name]>
-                          : Result<inferDefinition<name, $>>
-                  }
+                  out: traits["out"] extends Postprocessor<never, infer output>
+                      ? { out: output }
+                      : {
+                            [name in keyof traits["out"]]: returnOf<
+                                traits["out"][name]
+                            >
+                        }
               }
             : {})
 >
 
-type compileOutMorph<morphs extends Morphs> = morphs["to"] extends {}
-    ? {
-          to: <k extends keyof morphs["to"]>(
-              name: k,
-              ...args: tailOf<parametersOf<morphs["to"][k]>>
-          ) => returnOf<morphs["to"][k]>
-      }
-    : {}
-
-type DynamicTypeFn = (def: unknown, traits?: Traits) => Morphable
+type DynamicTypeParser = (def: unknown, traits?: Traits) => Morphable
 
 export type TypeParser<$> = LazyDynamicWrap<
     InferredTypeParser<$>,
-    DynamicTypeFn
+    DynamicTypeParser
 >
 
-export type Result<data> = xor<{ data: data }, { problems: Problems }>
+export type Result<output> = xor<output, { problems: Problems }>
 
-export type Checker<data, outMorph> = (data: unknown) => outMorph & Result<data>
+export type Checker<output> = (data: unknown) => Result<output>
 
 // TODO: Rename
 export type TypeMetadata<data = unknown> = {
@@ -124,8 +131,28 @@ export type TypeMetadata<data = unknown> = {
     flat: TraversalNode
 }
 
-export type Type<data = unknown> = defer<Checker<data, {}> & TypeMetadata<data>>
+export type Type<data = unknown> = defer<
+    Checker<{ data: data }> & TypeMetadata<data>
+>
 
 export type Morphable<data = unknown, morphs extends Morphs = Morphs> = defer<
-    Checker<data, compileOutMorph<morphs>> & TypeMetadata<data>
+    Checker<outputFrom<data, morphs>> &
+        TypeMetadata<data> &
+        inputFrom<data, morphs>
 >
+
+type outputFrom<data, morphs extends Morphs> = morphs["out"] extends {}
+    ? merge<{ data: data }, morphs["out"]>
+    : { data: data }
+
+type inputFrom<data, morphs extends Morphs> = morphs["in"] extends {}
+    ? {
+          from: (morphs["in"] extends { default: infer input }
+              ? (input: input) => Result<outputFrom<data, morphs>>
+              : {}) &
+              (<k extends keyof morphs["in"]>(
+                  key: k,
+                  input: morphs["in"][k]
+              ) => Result<outputFrom<data, morphs>>)
+      }
+    : {}

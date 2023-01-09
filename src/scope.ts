@@ -108,11 +108,11 @@ type parseScope<aliases> = evaluate<{
 }>
 
 type validateScope<aliases, parent> = {
-    // somehow using "any" as the thunk return type does not cause a circular
-    // reference error (every other type does)
     [name in keyof aliases]: name extends stringKeyOf<parent>
         ? buildDuplicateAliasMessage<name>
-        : aliases[name] extends () => any
+        : // somehow using "any" as the thunk return type does not cause a circular
+        // reference error (every other type does)
+        aliases[name] extends () => any
         ? aliases[name]
         : validateDefinition<aliases[name], parent & aliases>
 }
