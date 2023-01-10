@@ -2,6 +2,7 @@
 /* eslint-disable */
 
 import { type } from "../api"
+import { evaluate } from "../src/utils/generics"
 
 const user = type(
     {
@@ -13,7 +14,7 @@ const user = type(
             return JSON.parse(s)
         },
         out: {
-            main: (user): ValidatedUser => {
+            out: (user): ValidatedUser => {
                 return { ...user, isInternal: true }
             },
             string: (user) => {
@@ -26,10 +27,7 @@ const user = type(
 )
 
 // All out morphs are attached alongside data
-const { string, data, problems } = user({ name: "David", age: 29 })
-
-// "to" function can be used for chaining
-const { string, problems } = user({ name: "David", age: 29 }).to("admin")
+const { string, admin, out, data, problems } = user({ name: "David", age: 29 })
 
 // Input if multiple named inputs are specified
 user.from("string", '{"name": "David", "age": 29}')
@@ -45,14 +43,39 @@ const user = type({
     birthday: "Date"
 })
 
+type overlaps<t, u> = t & u extends never ? false : t & u
+
+type Z = overlaps<{ a?: boolean }, { a?: "foo" }>
+
+type Zzzz = evaluate<{ a: string } & { a: number }>
+
 const $ = scope({
-    // implementation is string=>unknown, inferred as string=>Date
+    user: {
+        name: "string",
+        birthday: "date"
+    },
+    person: {
+        birthday: ["string=>", (s) => new Date(s)]
+    },
+    date: ["Date", "|", ["string=>", (s) => new Date(s)]],
+    newType: "user|>person"
+})
+
+type ZZ = {
+    (n: number): string
+    (s: string): string
+}
+
+const z: ZZ = (n) => n
+
+const $ = scope({
+    // implementation is string=>unknown, inferred as unknown=>Date
     date: ["string=>Date", () => {}],
     // implementation unknown=>unknown, inferred as unknown=>Date
     date2: ["=>Date"],
-    // implementation string=>Date, inferred as string=>Date
+    // implementation string=>Date, inferred as unknown=>Date
     date3: ["string=>"],
-    // implementation unknown=>Date, inferred as unknown=>Date
+    // implementation unknown=>Date, inferred as unknown=>Date;
     date4: ["=>"]
 })
 
