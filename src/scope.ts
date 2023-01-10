@@ -26,7 +26,7 @@ const composeScopeParser = <parent extends Scope>(parent?: parent) =>
                 }
                 merged[name] = aliases[name]
             }
-            const $ = new Scope({ ...aliases, ...parent?.aliases })
+            const $ = new Scope(merged)
             $.cache = parent.cache
             return $
         } else {
