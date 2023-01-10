@@ -61,7 +61,7 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends "=>"
     : never
 
 // TODO: spread ("...")
-export type TupleExpressionToken = "&" | "|" | "[]" | "=>"
+export type TupleExpressionToken = "&" | "|" | "[]" | "=>" | ":" | "|>"
 
 export type TupleExpressionParser<token extends TupleExpressionToken> = (
     def: TupleExpression<token>,
@@ -86,7 +86,9 @@ const tupleExpressionParsers: {
     "|": parseBranchTuple,
     "&": parseBranchTuple,
     "[]": parseArrayTuple,
-    "=>": parseRefinementTuple
+    ":": parseRefinementTuple,
+    "=>": () => ({}),
+    "|>": () => ({})
 }
 
 const parseTupleExpression = (def: TupleExpression, $: Scope): TypeNode =>

@@ -156,3 +156,26 @@ type inputFrom<data, morphs extends Morphs> = morphs["in"] extends {}
               ) => Result<outputFrom<data, morphs>>)
       }
     : {}
+
+// export type inferType<i, o> = equals<i, o> extends true
+//     ? Type<o>
+//     : Type<(from: i) => o>
+
+// type In<T> = T extends (_: infer input) => unknown ? input : T
+
+// type Out<T> = T extends (_: any) => infer output ? output : T
+
+// isTopType<definition> extends true
+//     ? never
+//     : definition extends validateDefinition<definition, c>
+//     ? inferType<
+//           inferDefinition<
+//               definition,
+//               {
+//                   scope: scope
+//                   input: true
+//               }
+//           >,
+//           inferDefinition<definition, c>
+//       >
+//     : never
