@@ -34,7 +34,7 @@ export const rootIsValidator = (root: TypeRoot): root is ValidatorNode =>
 
 export const resolveInput = (node: TypeNode, $: Scope): ValidatorNode => {
     const root = resolveRoot(node, $)
-    return rootIsMorph(root) ? root["in"] ?? keywords.unknown : root
+    return rootIsMorph(root) ? root["validator"] : root
 }
 
 export const resolvePredicateIfIdentifier = (

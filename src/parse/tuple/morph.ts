@@ -1,9 +1,8 @@
-import { type } from "../../scope.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type { List } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
-import type { TupleExpression, TupleExpressionParser } from "./tuple.ts"
+import type { TupleExpressionParser } from "./tuple.ts"
 import type { distributable } from "./utils.ts"
 import { entriesOfDistributableFunction } from "./utils.ts"
 
@@ -26,8 +25,6 @@ export type validateMorphTuple<inputDef, $> = [
     "=>",
     distributable<Morph<inferDefinition<inputDef, $>, unknown>>
 ]
-
-const t = type({ a: ["string", "=>", (s) => parseInt(s)] })
 
 const buildMalformedMorphExpressionMessage = (def: List) =>
     `Morph tuple expression must be structured as follows: [inDef, "=>", (In: inDef) => Out ] (got ${JSON.stringify(

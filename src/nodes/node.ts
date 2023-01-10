@@ -35,9 +35,8 @@ export type Identifier<$ = Dict> = string extends keyof $
     : Keyword | stringKeyOf<$>
 
 export type MorphNode<$ = Dict> = {
-    readonly in?: ValidatorNode<$>
+    readonly validator: ValidatorNode<$>
     readonly morph: Morph
-    readonly out?: ValidatorNode<$>
 }
 
 export type Morph<Source = never, Target = unknown> = (In: Source) => Target
