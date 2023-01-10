@@ -39,3 +39,35 @@ user.from('{"name": "David", "age": 29}')
 
 // Access out morphs on prevalidated data
 user.data({ name: "David", age: 29 }).out
+
+const user = type({
+    name: "string",
+    birthday: "Date"
+})
+
+const $ = scope({
+    // implementation is string=>unknown, inferred as string=>Date
+    date: ["string=>Date", () => {}],
+    // implementation unknown=>unknown, inferred as unknown=>Date
+    date2: ["=>Date"],
+    // implementation string=>Date, inferred as string=>Date
+    date3: ["string=>"],
+    // implementation unknown=>Date, inferred as unknown=>Date
+    date4: ["=>"]
+})
+
+// &, | work same
+
+// input: a & (b=>c)
+// output: (a&b)=>c
+
+// input: (a=>b) & (c=>d)
+// output: Error: Operation between two morphs... try |> instead
+
+// input: (a=>b) |> (c=>d)
+// output:
+//   if b is a subtype of c:
+//     (a => d)
+//   else:
+//     error: b is not assignable to c
+// EZ MOOOCHI
