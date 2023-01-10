@@ -90,6 +90,12 @@ const $ = scope({
     myType: "user&person"
 })
 
+// Goals: preserve commutativity of operators (|, &)
+// Allow operations that have an intuitive result, even if outside the normal bounds of type theory
+
+// Is in/out a special case of contexts? No, because the key is that it defines
+// a morph and doesn't necessarily define complete types for that morph
+
 // Union of morphs:
 // If inputs are discriminatable, allow, because we can return a determinsistic result
 // input: (a=>b) | (c=>d)
