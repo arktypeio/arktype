@@ -80,12 +80,23 @@ const $ = scope({
     // implementation unknown=>Date, inferred as unknown=>Date;
     // could work without any tuple definition
     date4: ["=>"],
+    user2: [
+        { name: "string", age: "number" },
+        "=>",
+        (data) => ({ age, first: name.split(" ")[0] })
+        // TODO: Implement named outputs or create issue
+        // {
+        //     out: (data) => ({ age, first: name.split(" ")[0] }),
+        //     string: JSON.stringify,
+        //     foo: (data) => {}
+        // }
+    ],
     user: {
         name: "string",
-        birthday: "date(string)"
+        birthday: "date"
     },
     person: {
-        birthday: "otherDate(string)"
+        birthday: "otherDate"
     },
     myType: "user&person"
 })
