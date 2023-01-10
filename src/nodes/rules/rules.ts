@@ -23,7 +23,7 @@ export type Rules<domain extends Domain = Domain, $ = Dict> = {
     readonly divisor?: number
     readonly range?: Range
     readonly props?: PropsRule<$>
-    readonly refinement?: CollapsibleList<Refinement<inferDomain<domain>>>
+    readonly narrow?: CollapsibleList<Narrow<inferDomain<domain>>>
 }
 
 export type TraversalRuleEntry =
@@ -33,27 +33,27 @@ export type TraversalRuleEntry =
     | ["range", Range]
     | TraversalRequiredProps
     | TraversalOptionalProps
-    | ["refinement", Refinement]
+    | ["narrow", Narrow]
 
-export type Refinement<data = unknown> = (data: data) => boolean
+export type Narrow<data = unknown> = (data: data) => boolean
 
 export type RuleSet<domain extends Domain, $> = Domain extends domain
     ? Rules
     : domain extends "object"
-    ? defineRuleSet<"object", "subdomain" | "props" | "range" | "refinement", $>
+    ? defineRuleSet<"object", "subdomain" | "props" | "range" | "narrow", $>
     : domain extends "string"
-    ? defineRuleSet<"string", "regex" | "range" | "refinement", $>
+    ? defineRuleSet<"string", "regex" | "range" | "narrow", $>
     : domain extends "number"
-    ? defineRuleSet<"number", "divisor" | "range" | "refinement", $>
-    : defineRuleSet<domain, "refinement", $>
+    ? defineRuleSet<"number", "divisor" | "range" | "narrow", $>
+    : defineRuleSet<domain, "narrow", $>
 
 type defineRuleSet<domain extends Domain, keys extends keyof Rules, $> = Pick<
     Rules<domain, $>,
     keys
 >
 
-const refinementIntersection =
-    composeIntersection<CollapsibleList<Refinement>>(collapsibleListUnion)
+const narrowIntersection =
+    composeIntersection<CollapsibleList<Narrow>>(collapsibleListUnion)
 
 export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
     {
@@ -62,7 +62,7 @@ export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
         regex: regexIntersection,
         props: propsIntersection,
         range: rangeIntersection,
-        refinement: refinementIntersection
+        narrow: narrowIntersection
     },
     { onEmpty: "bubble" }
 )
@@ -93,12 +93,12 @@ const ruleCompilers: {
         entries.push(["range", rule])
     },
     props: compileProps,
-    refinement: (entries, rule) => {
+    narrow: (entries, rule) => {
         if (typeof rule === "function") {
-            entries.push(["refinement", rule])
+            entries.push(["narrow", rule])
         } else {
-            for (const refinement of rule) {
-                entries.push(["refinement", refinement])
+            for (const narrow of rule) {
+                entries.push(["narrow", narrow])
             }
         }
     }
@@ -115,8 +115,8 @@ export const rulePrecedenceMap: {
     // Deep: Performed if all shallow checks pass, even if one or more deep checks fail
     requiredProps: 2,
     optionalProps: 3,
-    // Validation: Only performed if all shallow and deep checks pass
-    refinement: 4
+    // Narrow: Only performed if all shallow and deep checks pass
+    narrow: 4
 }
 
 export const compileRules = (

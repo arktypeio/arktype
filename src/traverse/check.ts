@@ -170,7 +170,7 @@ const checkers = {
     optionalProps: checkOptionalProps,
     branches: (state, branches, scope) =>
         branches.some((condition) => checkEntries(state, scope)),
-    refinement: (state, validator) => validator(state),
+    narrow: (state, validator) => validator(state),
     value: (state, value) => {
         if (state.data !== value) {
             state.problems.addProblem(

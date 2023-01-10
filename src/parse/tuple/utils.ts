@@ -1,5 +1,6 @@
 import type { TypeNode } from "../../nodes/node.ts"
 import { domainsOfNode } from "../../nodes/resolve.ts"
+import type { Rules, RuleSet } from "../../nodes/rules/rules.ts"
 import type { Scope } from "../../scope.ts"
 import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
@@ -30,34 +31,59 @@ export const buildMalformedDistributableFunctionMessage = (def: unknown) =>
         def
     )} was invalid)`
 
-export type DistributedFunctionEntry<F extends UnaryFunction = UnaryFunction> =
-    [domain: Domain, distributedFunction: F]
+export type DistributedFunctionNode<
+    f,
+    ruleKey extends keyof Rules | undefined = undefined
+> = {
+    [domain in Domain]?: DomainFunction<f, ruleKey>
+}
 
-export const entriesOfDistributableFunction = <F extends UnaryFunction>(
-    distributableFunction: distributable<F>,
+export type DomainFunction<
+    f,
+    ruleKey extends keyof Rules | undefined
+> = ruleKey extends keyof Rules ? { [k in ruleKey]: f } : f
+
+export const distributeFunctionToNode = <
+    f extends UnaryFunction,
+    ruleKey extends keyof Rules | undefined = undefined
+>(
+    distributableFunction: distributable<f>,
     inputNode: TypeNode,
-    $: Scope
-): DistributedFunctionEntry<F>[] => {
+    $: Scope,
+    ruleKey?: ruleKey
+): DistributedFunctionNode<f, ruleKey> => {
     const domains = domainsOfNode(inputNode, $)
     if (!hasDomain(distributableFunction, "object")) {
         return throwParseError(
             buildMalformedDistributableFunctionMessage(distributableFunction)
         )
     }
+    const distributed = {} as DistributedFunctionNode<f, ruleKey>
     if (typeof distributableFunction === "function") {
-        return domains.map((domain) => [domain, distributableFunction])
-    }
-    const entries: DistributedFunctionEntry<F>[] = []
-    for (const domain of domains) {
-        const domainValidator = distributableFunction[domain]
-        if (domainValidator !== undefined) {
-            if (typeof domainValidator !== "function") {
-                return throwParseError(
-                    buildMalformedDistributableFunctionMessage(domainValidator)
-                )
+        const domainFunction: DomainFunction<f, ruleKey> = (
+            ruleKey
+                ? { [ruleKey]: distributableFunction }
+                : distributableFunction
+        ) as any
+        for (const domain of domains) {
+            distributed[domain] = domainFunction
+        }
+    } else {
+        for (const domain of domains) {
+            const domainFunction = distributableFunction[
+                domain
+            ] as DomainFunction<f, ruleKey>
+            if (domainFunction !== undefined) {
+                if (typeof domainFunction !== "function") {
+                    return throwParseError(
+                        buildMalformedDistributableFunctionMessage(
+                            domainFunction
+                        )
+                    )
+                }
+                distributed[domain] = domainFunction
             }
-            entries.push([domain, distributableFunction[domain] as F])
         }
     }
-    return entries
+    return distributed
 }

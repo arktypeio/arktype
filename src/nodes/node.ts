@@ -1,3 +1,5 @@
+import type { Morph } from "../parse/tuple/morph.ts"
+import type { DistributedFunctionNode } from "../parse/tuple/utils.ts"
 import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import type {
@@ -35,11 +37,9 @@ export type Identifier<$ = Dict> = string extends keyof $
     : Keyword | stringKeyOf<$>
 
 export type MorphNode<$ = Dict> = {
-    readonly validator: ValidatorNode<$>
-    readonly morph: Morph
+    readonly input: TypeNode<$>
+    readonly morph: DistributedFunctionNode<Morph>
 }
-
-export type Morph<Source = never, Target = unknown> = (In: Source) => Target
 
 export type ValidatorNode<$ = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, $>
