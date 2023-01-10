@@ -9,10 +9,7 @@ import type { distributable } from "./utils.ts"
 import { entriesOfDistributableFunction } from "./utils.ts"
 
 // TODO: Allow narrowing from predicate?
-export const parseRefinementTuple: TupleExpressionParser<":"> = (
-    def,
-    scope
-) => {
+export const parseNarrowTuple: TupleExpressionParser<":"> = (def, scope) => {
     const inputNode = parseDefinition(def[0], scope)
     const distributedValidatorEntries = entriesOfDistributableFunction(
         def[2] as distributable<Refinement>,
@@ -26,7 +23,7 @@ export const parseRefinementTuple: TupleExpressionParser<":"> = (
     return intersection(inputNode, distributedValidatorNode, scope)
 }
 
-export type validateRefinementTuple<def, $> = [
+export type validateNarrowTuple<def, $> = [
     validateDefinition<def, $>,
     ":",
     distributable<Refinement<inferDefinition<def, $>>>

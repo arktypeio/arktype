@@ -8,7 +8,13 @@ import { deepFreeze } from "../utils/freeze.ts"
 import type { defined } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
 import { getFlatKeywords, keywords } from "./keywords.ts"
-import type { TraversalNode, TypeNode, TypeRoot } from "./node.ts"
+import type {
+    MorphNode,
+    TraversalNode,
+    TypeNode,
+    TypeRoot,
+    ValidatorNode
+} from "./node.ts"
 import { compileNode } from "./node.ts"
 import type {
     ExactValue,
@@ -17,8 +23,19 @@ import type {
     TraversalPredicate
 } from "./predicate.ts"
 
-export const resolveIfIdentifier = (node: TypeNode, $: Scope): TypeRoot =>
+export const resolveRoot = (node: TypeNode, $: Scope): TypeRoot =>
     typeof node === "string" ? (resolve(node, $) as TypeRoot) : node
+
+export const rootIsMorph = (root: TypeRoot): root is MorphNode =>
+    (root as MorphNode).morph !== undefined
+
+export const rootIsValidator = (root: TypeRoot): root is ValidatorNode =>
+    !rootIsMorph(root)
+
+export const resolveInput = (node: TypeNode, $: Scope): ValidatorNode => {
+    const root = resolveRoot(node, $)
+    return rootIsMorph(root) ? root["in"] ?? keywords.unknown : root
+}
 
 export const resolvePredicateIfIdentifier = (
     domain: Domain,
@@ -34,7 +51,7 @@ export const isExactValue = <domain extends Domain>(
     domain: domain,
     $: Scope
 ): node is { [_ in domain]: ExactValue<domain> } => {
-    const resolution = resolveIfIdentifier(node, $)
+    const resolution = resolveInput(node, $)
     return (
         nodeExtendsDomain(resolution, domain, $) &&
         isExactValuePredicate(resolution[domain])
@@ -47,10 +64,10 @@ export const isExactValuePredicate = (
     typeof predicate === "object" && "value" in predicate
 
 export const domainsOfNode = (node: TypeNode, $: Scope): Domain[] =>
-    keysOf(resolveIfIdentifier(node, $))
+    keysOf(resolveInput(node, $))
 
 export type DomainSubtypeNode<domain extends Domain> = {
-    readonly [k in domain]: defined<TypeRoot[domain]>
+    readonly [k in domain]: defined<ValidatorNode[domain]>
 }
 
 export const nodeExtendsDomain = <domain extends Domain>(
@@ -148,7 +165,7 @@ const resolvePredicateRecurse = <domain extends Domain>(
     seen: string[],
     $: Scope
 ): ResolvedPredicate<domain, Scope> => {
-    const resolution = resolve(name, $)[domain]
+    const resolution = resolveInput(name, $)[domain]
     if (resolution === undefined) {
         return throwUnexpectedPredicateDomainError(name, domain)
     }

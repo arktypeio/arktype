@@ -8,7 +8,7 @@ import type { BranchesComparison } from "./branches.ts"
 import { compareBranches, isBranchComparison } from "./branches.ts"
 import type { KeyReducerFn, SetOperationResult } from "./compose.ts"
 import { empty, equal } from "./compose.ts"
-import type { Identifier, TypeRoot } from "./node.ts"
+import type { Identifier, ValidatorNode } from "./node.ts"
 import {
     isExactValuePredicate,
     resolveFlatPredicate,
@@ -141,12 +141,10 @@ export const comparePredicates = (
     return comparison
 }
 
-export const predicateIntersection: KeyReducerFn<Required<TypeRoot>, Scope> = (
-    domain,
-    l,
-    r,
-    scope
-) => {
+export const predicateIntersection: KeyReducerFn<
+    Required<ValidatorNode>,
+    Scope
+> = (domain, l, r, scope) => {
     const comparison = comparePredicates(domain, l, r, scope)
     if (!isBranchComparison(comparison)) {
         return comparison
@@ -165,7 +163,7 @@ export const predicateIntersection: KeyReducerFn<Required<TypeRoot>, Scope> = (
     ])
 }
 
-export const predicateUnion: KeyReducerFn<Required<TypeRoot>, Scope> = (
+export const predicateUnion: KeyReducerFn<Required<ValidatorNode>, Scope> = (
     domain,
     l,
     r,

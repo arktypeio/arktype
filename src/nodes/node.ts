@@ -20,7 +20,7 @@ import {
     predicateIntersection,
     predicateUnion
 } from "./predicate.ts"
-import { resolveFlat, resolveIfIdentifier } from "./resolve.ts"
+import { resolveFlat, resolveInput, rootIsMorph } from "./resolve.ts"
 import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | TypeRoot<$>
@@ -39,9 +39,6 @@ export type MorphNode<$ = Dict> = {
     readonly morph: Morph
     readonly out?: ValidatorNode<$>
 }
-
-export const isMorph = (root: TypeRoot): root is MorphNode =>
-    (root as MorphNode).morph !== undefined
 
 export type Morph<Source = never, Target = unknown> = (In: Source) => Target
 
@@ -86,7 +83,7 @@ export const compileNode = (node: TypeNode, $: Scope): TraversalNode => {
     if (typeof node === "string") {
         return resolveFlat(node, $)
     }
-    if (isMorph(node)) {
+    if (rootIsMorph(node)) {
         return "null"
     }
     const domains = keysOf(node)
@@ -127,12 +124,12 @@ export const compileNodes = <nodes extends ScopeNodes>(
 
 export const composeNodeOperation =
     (
-        typeSetOperation: SetOperation<TypeRoot, Scope>
+        validatorOperation: SetOperation<ValidatorNode, Scope>
     ): SetOperation<TypeNode, Scope> =>
     (l, r, $) => {
-        const lResolution = resolveIfIdentifier(l, $)
-        const rResolution = resolveIfIdentifier(r, $)
-        const result = typeSetOperation(lResolution, rResolution, $)
+        const lResolution = resolveInput(l, $)
+        const rResolution = resolveInput(r, $)
+        const result = validatorOperation(lResolution, rResolution, $)
         return result === lResolution ? l : result === rResolution ? r : result
     }
 
@@ -141,7 +138,7 @@ export const finalizeNodeOperation = (
     result: SetOperationResult<TypeNode>
 ): TypeNode => (result === empty ? "never" : result === equal ? l : result)
 
-const typeSetIntersection = composeKeyedOperation<TypeRoot, Scope>(
+const validatorIntersection = composeKeyedOperation<ValidatorNode, Scope>(
     (domain, l, r, $) => {
         if (l === undefined) {
             return r === undefined ? equal : undefined
@@ -154,15 +151,15 @@ const typeSetIntersection = composeKeyedOperation<TypeRoot, Scope>(
     { onEmpty: "delete" }
 )
 
-export const nodeIntersection = composeNodeOperation(typeSetIntersection)
+export const nodeIntersection = composeNodeOperation(validatorIntersection)
 
-export const intersection = (l: TypeNode, r: TypeNode, $: Scope): TypeNode =>
+export const intersection = (l: TypeNode, r: TypeNode, $: Scope) =>
     finalizeNodeOperation(l, nodeIntersection(l, r, $))
 
-export const union = (l: TypeNode, r: TypeNode, scope: Scope) =>
-    finalizeNodeOperation(l, nodeUnion(l, r, scope))
+export const union = (l: TypeNode, r: TypeNode, $: Scope) =>
+    finalizeNodeOperation(l, nodeUnion(l, r, $))
 
-export const typeSetUnion = composeKeyedOperation<TypeRoot, Scope>(
+export const validatorUnion = composeKeyedOperation<ValidatorNode, Scope>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : r
@@ -175,4 +172,4 @@ export const typeSetUnion = composeKeyedOperation<TypeRoot, Scope>(
     { onEmpty: "throw" }
 )
 
-export const nodeUnion = composeNodeOperation(typeSetUnion)
+export const nodeUnion = composeNodeOperation(validatorUnion)
