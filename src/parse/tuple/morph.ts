@@ -1,61 +1,51 @@
+import { type } from "../../scope.ts"
 import { throwParseError } from "../../utils/errors.ts"
-import type { Dict, List } from "../../utils/generics.ts"
+import type { List } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
-import type { TupleExpressionParser } from "./tuple.ts"
+import type { TupleExpression, TupleExpressionParser } from "./tuple.ts"
 import type { distributable } from "./utils.ts"
 import { entriesOfDistributableFunction } from "./utils.ts"
 
-export const parseMorphTuple: TupleExpressionParser<"=>"> = (def, scope) => {
+export const parseMorphTuple: TupleExpressionParser<"=>"> = (def, $) => {
     if (def.length !== 4) {
         return throwParseError(buildMalformedMorphExpressionMessage(def))
     }
-    const inputNode = parseDefinition(def[0], scope)
-    const outputNode = parseDefinition(def[2], scope)
+    const inputNode = parseDefinition(def[0], $)
+    const outputNode = parseDefinition(def[2], $)
     const distributedMorphEntries = entriesOfDistributableFunction(
         def[3] as distributable<Morph>,
         inputNode,
-        scope
+        $
     )
     return outputNode
 }
 
-export type validateMorphTuple<inputDef, outputDef, $> = [
+export type validateMorphTuple<inputDef, $> = [
     validateDefinition<inputDef, $>,
     "=>",
-    validateDefinition<outputDef, $>,
-    // TODO: Nested morphs. Should input be recursive? It would've already been transformed.
-    distributable<
-        Morph<inferDefinition<inputDef, $>, inferDefinition<outputDef, $>>
-    >
+    distributable<Morph<inferDefinition<inputDef, $>, unknown>>
 ]
 
+const t = type({ a: ["string", "=>", (s) => parseInt(s)] })
+
 const buildMalformedMorphExpressionMessage = (def: List) =>
-    `Morph tuple expression must be structured as follows: [inDef, "=>", outDef, (In: inDef) => outDef ] (got ${JSON.stringify(
+    `Morph tuple expression must be structured as follows: [inDef, "=>", (In: inDef) => Out ] (got ${JSON.stringify(
         def
     )})`
 
 export type Morph<In = unknown, Out = unknown> = (In: In) => Out
 
-export type InferMorph<inputDef, outputDef, scope extends Dict> = Morph<
-    inferDefinition<inputDef, { scope: scope }>,
-    inferDefinition<outputDef, { scope: scope }>
->
-
-export type MorphBuilder<scope extends Dict = {}> = <
+export type MorphBuilder<$ = {}> = <
     inputDef,
-    outputDef,
-    // TODO: update IO
-    morph extends InferMorph<inputDef, outputDef, scope>
+    morph extends Morph<inferDefinition<inputDef, $>>
 >(
-    inputDef: validateDefinition<inputDef, { scope: scope }>,
-    outputDef: validateDefinition<outputDef, { scope: scope }>,
+    inputDef: validateDefinition<inputDef, $>,
     morph: morph
-) => [inputDef, "=>", outputDef, morph]
+) => [inputDef, "=>", morph]
 
-export const morph: MorphBuilder = (inputDef, outputDef, morph) => [
+export const morph: MorphBuilder = (inputDef, morph) => [
     inputDef as any,
     "=>",
-    outputDef as any,
     morph
 ]

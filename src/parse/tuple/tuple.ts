@@ -4,11 +4,12 @@ import { intersection, union } from "../../nodes/node.ts"
 
 import type { Scope } from "../../scope.ts"
 import { throwParseError } from "../../utils/errors.ts"
-import type { error, evaluate, List } from "../../utils/generics.ts"
+import type { error, evaluate, List, returnOf } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
+import type { validateMorphTuple } from "./morph.ts"
 import type { validateNarrowTuple } from "./narrow.ts"
 import { parseNarrowTuple } from "./narrow.ts"
 
@@ -34,6 +35,8 @@ export type validateTupleExpression<
     $
 > = def[1] extends ":"
     ? validateNarrowTuple<def[0], $>
+    : def[1] extends "=>"
+    ? validateMorphTuple<def[0], $>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? [def[0], error<buildMissingRightOperandMessage<def[1], "">>]
@@ -50,6 +53,8 @@ export type inferTuple<def extends List, $> = def extends TupleExpression
 
 type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
     ? inferDefinition<def[0], $>
+    : def[1] extends "=>"
+    ? (In: inferDefinition<def[0], $>) => returnOf<def[2]>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? never
@@ -63,7 +68,8 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
 // TODO: spread ("...")
 // TODO: instanceof
 // TODO: = (Default value)
-export type TupleExpressionToken = "&" | "|" | "[]" | ":" | "=>" | "|>"
+// TODO: Pipe
+export type TupleExpressionToken = "&" | "|" | "[]" | ":" | "=>"
 
 export type TupleExpressionParser<token extends TupleExpressionToken> = (
     def: TupleExpression<token>,
@@ -89,8 +95,7 @@ const tupleExpressionParsers: {
     "&": parseBranchTuple,
     "[]": parseArrayTuple,
     ":": parseNarrowTuple,
-    "=>": () => ({}),
-    "|>": () => ({})
+    "=>": () => ({})
 }
 
 const parseTupleExpression = (def: TupleExpression, $: Scope): TypeNode =>
