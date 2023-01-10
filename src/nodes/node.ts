@@ -28,13 +28,26 @@ export type TypeNode<$ = Dict> = Identifier<$> | TypeRoot<$>
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to
  * manipulate.*/
-export type TypeRoot<$ = Dict> = {
-    readonly [domain in Domain]?: Predicate<domain, $>
-}
+export type TypeRoot<$ = Dict> = ValidatorNode<$> | MorphNode<$>
 
 export type Identifier<$ = Dict> = string extends keyof $
     ? autocomplete<Keyword>
     : Keyword | stringKeyOf<$>
+
+export type MorphNode<$ = Dict> = {
+    readonly in?: ValidatorNode<$>
+    readonly morph: Morph
+    readonly out?: ValidatorNode<$>
+}
+
+export const isMorph = (root: TypeRoot): root is MorphNode =>
+    (root as MorphNode).morph !== undefined
+
+export type Morph<Source = never, Target = unknown> = (In: Source) => Target
+
+export type ValidatorNode<$ = Dict> = {
+    readonly [domain in Domain]?: Predicate<domain, $>
+}
 
 export type TraversalNode =
     | Domain
@@ -72,6 +85,9 @@ export type TraversalTypeSet = {
 export const compileNode = (node: TypeNode, $: Scope): TraversalNode => {
     if (typeof node === "string") {
         return resolveFlat(node, $)
+    }
+    if (isMorph(node)) {
+        return "null"
     }
     const domains = keysOf(node)
     if (domains.length === 1) {

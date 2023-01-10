@@ -32,7 +32,7 @@ export const parseTuple = (def: List, $: Scope): TypeNode => {
 export type validateTupleExpression<
     def extends TupleExpression,
     $
-> = def[1] extends "=>"
+> = def[1] extends ":"
     ? validateRefinementTuple<def[0], $>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
@@ -48,7 +48,7 @@ export type inferTuple<def extends List, $> = def extends TupleExpression
           [i in keyof def]: inferDefinition<def[i], $>
       }
 
-type inferTupleExpression<def extends TupleExpression, $> = def[1] extends "=>"
+type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
     ? inferDefinition<def[0], $>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
@@ -61,7 +61,9 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends "=>"
     : never
 
 // TODO: spread ("...")
-export type TupleExpressionToken = "&" | "|" | "[]" | "=>" | ":" | "|>"
+// TODO: instanceof
+// TODO: = (Default value)
+export type TupleExpressionToken = "&" | "|" | "[]" | ":" | "=>" | "|>"
 
 export type TupleExpressionParser<token extends TupleExpressionToken> = (
     def: TupleExpression<token>,
