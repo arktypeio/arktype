@@ -1,3 +1,4 @@
+import { doubleMorphIntersectionMessage } from "../parse/string/ast.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
@@ -179,8 +180,6 @@ export const nodeIntersection = composeNodeOperation(
               }
     }
 )
-
-export const doubleMorphIntersectionMessage = `An intersection must have at least one non-morph operand.`
 
 export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) =>
     finalizeNodeOperation(l, nodeIntersection(l, r, $))

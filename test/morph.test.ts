@@ -38,16 +38,19 @@ describe("morph", () => {
         })
     })
     it("two-morph intersection", () => {
-        attest(
-            () =>
-                scope({
-                    a: ["boolean", "=>", (data) => `${data}`],
-                    b: ["boolean", "=>", (data) => `${data}!!!`],
-                    c: "a&b"
-                })
+        attest(() => {
+            scope({
+                a: { a: ["boolean", "=>", (data) => `${data}`] },
+                b: { a: ["boolean", "=>", (data) => `${data}!!!`] },
+                // @ts-expect-error
+                c: "a&b"
+            })
+        }).throwsAndHasTypeError(
             // TODO: Add paths to these errors
-        ).throws("An intersection must have at least one non-morph operand.")
+            "An intersection must have at least one non-morph operand."
+        )
     })
+    it("foobar", () => {})
     // it("function", () => {
     //     const t = type("boolean", {
     //         out: (data) => `${data}`

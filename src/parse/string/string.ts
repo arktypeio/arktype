@@ -23,14 +23,12 @@ export type inferString<def extends string, $> = inferAst<
 export type validateString<def extends string, $> = parseString<
     def,
     $
-> extends infer result
-    ? result extends error<infer message>
+> extends infer ast
+    ? ast extends error<infer message>
         ? message
-        : validateAstSemantics<result, $> extends infer semanticResult
-        ? semanticResult extends undefined
-            ? def
-            : semanticResult
-        : never
+        : validateAstSemantics<ast, $> extends error<infer message>
+        ? message
+        : def
     : never
 
 /**

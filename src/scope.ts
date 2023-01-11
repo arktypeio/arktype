@@ -62,7 +62,7 @@ type ScopeCache = {
     types: { [name in string]: Type }
 }
 
-export type Scope<types = Types> = types & { $: ScopeRoot }
+export type Scope<types = Types> = types & { $: ScopeRoot<types> }
 
 export class ScopeRoot<types = Types> {
     cache: ScopeCache = {
