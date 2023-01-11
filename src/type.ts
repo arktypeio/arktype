@@ -9,7 +9,6 @@ import type {
     defer,
     Dict,
     evaluate,
-    isTopType,
     merge,
     parametersOf,
     returnOf,

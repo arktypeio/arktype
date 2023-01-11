@@ -1,6 +1,5 @@
 import type { TypeNode } from "../nodes/node.ts"
 import type { Scope } from "../scope.ts"
-import { type } from "../scope.ts"
 import type { Type } from "../type.ts"
 import { isType } from "../type.ts"
 import type { Primitive, Subdomain } from "../utils/domains.ts"
@@ -10,7 +9,6 @@ import type {
     Dict,
     evaluate,
     isAny,
-    isTopType,
     isUnknown,
     List
 } from "../utils/generics.ts"
