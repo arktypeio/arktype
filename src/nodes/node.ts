@@ -1,6 +1,7 @@
 import type { Morph } from "../parse/tuple/morph.ts"
 import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
+import { throwParseError } from "../utils/errors.ts"
 import type {
     autocomplete,
     Dict,
@@ -21,7 +22,7 @@ import {
     predicateIntersection,
     predicateUnion
 } from "./predicate.ts"
-import { resolveFlat, resolveInput, rootIsMorph } from "./resolve.ts"
+import { resolveFlat, resolveRoot, rootIsMorph } from "./resolve.ts"
 import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | TypeRoot<$>
@@ -120,15 +121,29 @@ export const compileNodes = <nodes extends ScopeNodes>(
     return result
 }
 
+export type MixedOperation = (
+    morphNode: MorphNode,
+    validator: ValidatorNode,
+    $: Scope
+) => SetOperationResult<MorphNode>
+
 export const composeNodeOperation =
     (
-        validatorOperation: SetOperation<ValidatorNode, Scope>
+        validatorOperation: SetOperation<ValidatorNode, Scope>,
+        morphOperation: SetOperation<MorphNode, Scope>,
+        mixedOperation: MixedOperation
     ): SetOperation<TypeNode, Scope> =>
     (l, r, $) => {
-        const lResolution = resolveInput(l, $)
-        const rResolution = resolveInput(r, $)
-        const result = validatorOperation(lResolution, rResolution, $)
-        return result === lResolution ? l : result === rResolution ? r : result
+        const lRoot = resolveRoot(l, $)
+        const rRoot = resolveRoot(r, $)
+        const result = rootIsMorph(lRoot)
+            ? rootIsMorph(rRoot)
+                ? morphOperation(lRoot, rRoot, $)
+                : mixedOperation(lRoot, rRoot, $)
+            : rootIsMorph(rRoot)
+            ? mixedOperation(rRoot, lRoot, $)
+            : validatorOperation(lRoot, rRoot, $)
+        return result === lRoot ? l : result === rRoot ? r : result
     }
 
 export const finalizeNodeOperation = (
@@ -149,7 +164,23 @@ const validatorIntersection = composeKeyedOperation<ValidatorNode, Scope>(
     { onEmpty: "delete" }
 )
 
-export const nodeIntersection = composeNodeOperation(validatorIntersection)
+export const nodeIntersection = composeNodeOperation(
+    validatorIntersection,
+    () => throwParseError(doubleMorphIntersectionMessage),
+    (morphNode, validatorNode, $) => {
+        const input = nodeIntersection(morphNode.input, validatorNode, $)
+        return input === morphNode.input || input === equal
+            ? morphNode
+            : input === empty
+            ? empty
+            : {
+                  input,
+                  morph: morphNode.morph
+              }
+    }
+)
+
+export const doubleMorphIntersectionMessage = `An intersection must have at least one non-morph operand.`
 
 export const intersection = (l: TypeNode, r: TypeNode, $: Scope) =>
     finalizeNodeOperation(l, nodeIntersection(l, r, $))
@@ -170,4 +201,21 @@ export const validatorUnion = composeKeyedOperation<ValidatorNode, Scope>(
     { onEmpty: "throw" }
 )
 
-export const nodeUnion = composeNodeOperation(validatorUnion)
+export const nodeUnion = composeNodeOperation(
+    validatorUnion,
+    () =>
+        throwParseError(
+            `An intersection must have at least one non-morph operand.`
+        ),
+    (morphNode, validatorNode, $) => {
+        const input = nodeIntersection(morphNode.input, validatorNode, $)
+        return input === morphNode.input || input === equal
+            ? morphNode
+            : input === empty
+            ? empty
+            : {
+                  input,
+                  morph: morphNode.morph
+              }
+    }
+)

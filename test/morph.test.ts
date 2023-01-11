@@ -7,6 +7,48 @@ describe("morph", () => {
         const t = type(["boolean", "=>", (data) => `${data}`])
         attest(t.root).snap({ input: "boolean", morph: "<function>" })
     })
+    it("mixed intersection", () => {
+        const types = scope({
+            a: ["number>0", "=>", (data) => data + 1],
+            b: "number<=1",
+            leftMorph: "a&b",
+            rightMorph: "b&a"
+        }).compile()
+        attest(types.leftMorph.root).snap({
+            input: {
+                number: {
+                    range: {
+                        min: { limit: 0, exclusive: true },
+                        max: { limit: 1 }
+                    }
+                }
+            },
+            morph: "<function>"
+        })
+        attest(types.rightMorph.root).snap({
+            input: {
+                number: {
+                    range: {
+                        min: { limit: 0, exclusive: true },
+                        max: { limit: 1 }
+                    }
+                }
+            },
+            morph: "<function>"
+        })
+    })
+    // TODO: Try functional
+    it("two-morph intersection", () => {
+        attest(
+            () =>
+                scope({
+                    a: ["boolean", "=>", (data) => `${data}`],
+                    b: ["boolean", "=>", (data) => `${data}!!!`],
+                    c: "a&b"
+                }).compile()
+            // TODO: Add paths to these errors
+        ).throws("An intersection must have at least one non-morph operand.")
+    })
     // it("function", () => {
     //     const t = type("boolean", {
     //         out: (data) => `${data}`
