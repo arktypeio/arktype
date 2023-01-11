@@ -1,13 +1,18 @@
 import type { TypeNode } from "./nodes/node.ts"
 import { compileNode } from "./nodes/node.ts"
 import { resolveRoot } from "./nodes/resolve.ts"
-import type { validateDefinition } from "./parse/definition.ts"
+import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
 import type { parseType, Type, TypeParser } from "./type.ts"
 import { isType, nodeToType } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import { throwParseError } from "./utils/errors.ts"
-import type { Dict, evaluate, isAny, stringKeyOf } from "./utils/generics.ts"
+import type {
+    Dict,
+    evaluate,
+    isTopType,
+    stringKeyOf
+} from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
@@ -41,13 +46,13 @@ type ScopeParser<parent> = LazyDynamicWrap<
     DynamicScopeParser<parent>
 >
 
-type InferredScopeParser<parent> = <aliases>(
-    aliases: validateScope<aliases, parent>
-) => Scope<parseScope<parent & aliases>>
+type InferredScopeParser<parent> = <defs>(
+    defs: validateScope<defs, parent>
+) => Scope<parseScope<parent & defs>>
 
-type DynamicScopeParser<parent> = <aliases extends Dict>(
-    aliases: aliases
-) => Scope<Types<stringKeyOf<parent & aliases>>>
+type DynamicScopeParser<parent> = <defs extends Dict>(
+    defs: defs
+) => Scope<Types<stringKeyOf<parent & defs>>>
 
 export type Types<name extends string = string> = { [k in name]: Type }
 
@@ -93,8 +98,12 @@ export class Scope<types = Types> {
 }
 
 type parseScope<aliases> = evaluate<{
-    [k in keyof aliases]: isAny<aliases[k]> extends true
+    [k in keyof aliases]: isTopType<aliases[k]> extends true
         ? Type
+        : aliases[k] extends Type
+        ? aliases[k]
+        : aliases[k] extends (() => infer r extends Type)
+        ? r
         : parseType<aliases[k], aliases, {}>
 }>
 
@@ -102,13 +111,24 @@ type validateScope<aliases, parent> = {
     [name in keyof aliases]: name extends stringKeyOf<parent>
         ? buildDuplicateAliasMessage<name>
         : // somehow using "any" as the thunk return type does not cause a circular
-          // reference error (every other type does)
-          validateDefinition<aliases[name], parent & aliases>
+        // reference error (every other type does)
+        aliases[name] extends () => any
+        ? aliases[name]
+        : validateDefinition<aliases[name], parent & aliases>
 }
 
 type inferScope<types> = {
     [k in keyof types]: types[k] extends { infer: infer data } ? data : never
 }
+
+// TODO: test perf diff between Type/infer
+export type inferResolution<resolution, $> = resolution extends () => {
+    infer: infer data
+}
+    ? data
+    : resolution extends { infer: infer data }
+    ? data
+    : inferDefinition<resolution, $>
 
 export const scope: ScopeParser<{}> = composeScopeParser()
 

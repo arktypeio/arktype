@@ -10,6 +10,7 @@ import type {
     Dict,
     evaluate,
     isAny,
+    isTopType,
     isUnknown,
     List
 } from "../utils/generics.ts"
@@ -47,16 +48,9 @@ export type inferDefinition<def, $> = isAny<def> extends true
     ? inferString<def, $>
     : def extends List
     ? inferTuple<def, $>
-    : def extends Function
-    ? def extends Type
-        ? def["infer"]
-        : def
-    : // def extends (In: any) => In is infer narrowed
-    // ? narrowed
-    // : def extends (In: infer In) => infer morphed
-    // ? (In: In) => morphed
-    // : never
-    def extends RegExp
+    : def extends Type
+    ? def["infer"]
+    : def extends RegExp
     ? string
     : def extends Dict
     ? inferRecord<def, $>

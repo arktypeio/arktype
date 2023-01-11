@@ -2,7 +2,6 @@ import { functorKeywords } from "../../nodes/keywords.ts"
 import type { TypeNode } from "../../nodes/node.ts"
 import { intersection, union } from "../../nodes/node.ts"
 import type { Scope } from "../../scope.ts"
-import { type } from "../../scope.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type { error, evaluate, List, returnOf } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
@@ -34,12 +33,10 @@ export const parseTuple = (def: List, $: Scope): TypeNode => {
 export type validateTupleExpression<
     def extends TupleExpression,
     $
-> = def[1] extends "=>"
-    ? [
-          validateDefinition<def[0], $>,
-          "=>",
-          (In: inferDefinition<def[0], $>) => unknown
-      ]
+> = def[1] extends ":"
+    ? validateNarrowTuple<def[0], $>
+    : def[1] extends "=>"
+    ? validateMorphTuple<def[0], $>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? [def[0], error<buildMissingRightOperandMessage<def[1], "">>]
@@ -54,8 +51,10 @@ export type inferTuple<def extends List, $> = def extends TupleExpression
           [i in keyof def]: inferDefinition<def[i], $>
       }
 
-type inferTupleExpression<def extends TupleExpression, $> = def[1] extends "=>"
-    ? inferDefinition<def[2], $>
+type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
+    ? inferDefinition<def[0], $>
+    : def[1] extends "=>"
+    ? (In: inferDefinition<def[0], $>) => returnOf<def[2]>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? never
@@ -70,7 +69,7 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends "=>"
 // TODO: instanceof
 // TODO: = (Default value)
 // TODO: Pipe
-export type TupleExpressionToken = "&" | "|" | "[]" | "=>"
+export type TupleExpressionToken = "&" | "|" | "[]" | ":" | "=>"
 
 export type TupleExpressionParser<token extends TupleExpressionToken> = (
     def: TupleExpression<token>,
@@ -95,6 +94,7 @@ const tupleExpressionParsers: {
     "|": parseBranchTuple,
     "&": parseBranchTuple,
     "[]": parseArrayTuple,
+    ":": parseNarrowTuple,
     "=>": parseMorphTuple
 }
 
