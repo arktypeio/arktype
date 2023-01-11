@@ -32,8 +32,6 @@ suite("scope", () => {
 
     bench("cyclic(500)", () => {
         const cyclic500Scope = scope(cyclic500)
-        // cyclic500Scope.group143.infer
-        // cyclic500Scope.$.type("group145&group123")
     })
         // .median()
         .type([53550, "instantiations"])

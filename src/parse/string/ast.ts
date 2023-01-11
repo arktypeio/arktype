@@ -36,12 +36,12 @@ export type inferAst<ast, $> = ast extends readonly unknown[]
         : never
     : inferTerminal<ast, $>
 
-export type intersectTypes<l, r> = l extends Morph<infer In, infer Out>
+export type intersectTypes<l, r> = l extends Morph<infer lIn, infer lOut>
     ? r extends Morph
         ? error<doubleMorphIntersectionMessage>
-        : (In: evaluate<In & r>) => out<Out>
-    : r extends Morph<infer In, infer Out>
-    ? (In: evaluate<In & l>) => out<Out>
+        : (In: evaluate<lIn & r>) => out<lOut>
+    : r extends Morph<infer rIn, infer rOut>
+    ? (In: evaluate<rIn & l>) => out<rOut>
     : l extends object
     ? r extends object
         ? evaluate<{
@@ -53,8 +53,8 @@ export type intersectTypes<l, r> = l extends Morph<infer In, infer Out>
                   ? r[k]
                   : never
           }> extends infer nextResult
-            ? error<doubleMorphIntersectionMessage> extends nextResult[keyof nextResult]
-                ? error<doubleMorphIntersectionMessage>
+            ? nextResult[keyof nextResult] extends error<infer message>
+                ? error<message>
                 : nextResult
             : never
         : l & r
