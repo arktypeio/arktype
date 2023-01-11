@@ -121,15 +121,6 @@ type inferScope<types> = {
     [k in keyof types]: types[k] extends { infer: infer data } ? data : never
 }
 
-// TODO: test perf diff between Type/infer
-export type inferResolution<resolution, $> = resolution extends () => {
-    infer: infer data
-}
-    ? data
-    : resolution extends { infer: infer data }
-    ? data
-    : inferDefinition<resolution, $>
-
 export const scope: ScopeParser<{}> = composeScopeParser()
 
 const rootScope = composeScopeParser()({})

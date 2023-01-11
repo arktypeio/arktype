@@ -37,7 +37,6 @@ describe("morph", () => {
             morph: "<function>"
         })
     })
-    // TODO: Try functional
     it("two-morph intersection", () => {
         attest(
             () =>
