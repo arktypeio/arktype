@@ -46,13 +46,13 @@ type ScopeParser<parent> = LazyDynamicWrap<
     DynamicScopeParser<parent>
 >
 
-type InferredScopeParser<parent> = <defs>(
-    defs: validateScope<defs, parent>
-) => Scope<parseScope<parent & defs>>
+type InferredScopeParser<parent> = <aliases>(
+    aliases: validateScope<aliases, parent>
+) => Scope<parseScope<parent & aliases>>
 
-type DynamicScopeParser<parent> = <defs extends Dict>(
-    defs: defs
-) => Scope<Types<stringKeyOf<parent & defs>>>
+type DynamicScopeParser<parent> = <aliases extends Dict>(
+    aliases: aliases
+) => Scope<Types<stringKeyOf<parent & aliases>>>
 
 export type Types<name extends string = string> = { [k in name]: Type }
 

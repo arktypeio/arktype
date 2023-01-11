@@ -7,10 +7,10 @@ import type { Primitive, Subdomain } from "../utils/domains.ts"
 import { subdomainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type {
+    conform,
     Dict,
     evaluate,
     isAny,
-    isTopType,
     isUnknown,
     List
 } from "../utils/generics.ts"
@@ -18,12 +18,14 @@ import type { inferRecord } from "./record.ts"
 import { parseRecord } from "./record.ts"
 import type { inferString, validateString } from "./string/string.ts"
 import { parseString } from "./string/string.ts"
+import type { Morph } from "./tuple/morph.ts"
 import type {
     inferTuple,
     TupleExpression,
     validateTupleExpression
 } from "./tuple/tuple.ts"
 import { parseTuple } from "./tuple/tuple.ts"
+import type { UnaryFunction } from "./tuple/utils.ts"
 
 export const parseDefinition = (def: unknown, $: Scope): TypeNode => {
     switch (subdomainOf(def)) {
@@ -48,29 +50,37 @@ export type inferDefinition<def, $> = isAny<def> extends true
     ? inferString<def, $>
     : def extends List
     ? inferTuple<def, $>
-    : def extends Type
-    ? def["infer"]
+    : def extends Function
+    ? def extends Type
+        ? def["infer"]
+        : def extends (In: unknown) => In is infer narrowed
+        ? narrowed
+        : def extends (In: unknown) => infer morphed
+        ? (In: unknown) => morphed
+        : never
     : def extends RegExp
     ? string
     : def extends Dict
     ? inferRecord<def, $>
     : never
 
-export type validateDefinition<def, $> = def extends []
-    ? []
-    : def extends string
-    ? validateString<def, $>
-    : def extends TupleExpression
-    ? validateTupleExpression<def, $>
-    : def extends TerminalObject
-    ? def
-    : def extends BadDefinitionType
-    ? buildBadDefinitionTypeMessage<subdomainOf<def>>
-    : isUnknown<def> extends true
-    ? unknownDefinitionMessage
-    : evaluate<{
-          [k in keyof def]: validateDefinition<def[k], $>
-      }>
+export type validateDefinition<def, $> =
+    | ((In: unknown) => unknown)
+    | (def extends []
+          ? []
+          : def extends string
+          ? validateString<def, $>
+          : def extends TupleExpression
+          ? validateTupleExpression<def, $>
+          : def extends TerminalObject
+          ? def
+          : def extends BadDefinitionType
+          ? buildBadDefinitionTypeMessage<subdomainOf<def>>
+          : isUnknown<def> extends true
+          ? unknownDefinitionMessage
+          : evaluate<{
+                [k in keyof def]: validateDefinition<def[k], $>
+            }>)
 
 export type unknownDefinitionMessage =
     `Cannot statically parse a definition inferred as unknown. Use 'type.dynamic(...)' instead.`

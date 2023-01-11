@@ -101,6 +101,8 @@ const $ = scope({
     myType: "user&person"
 })
 
+type(["string", "?", (s) => true])
+
 // Goals: preserve commutativity of operators (|, &)
 // Allow operations that have an intuitive result, even if outside the normal bounds of type theory
 
