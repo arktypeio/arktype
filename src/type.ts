@@ -1,6 +1,6 @@
 import type { Identifier, TraversalNode, TypeRoot } from "./nodes/node.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
-import type { Scope } from "./scope.ts"
+import type { ScopeRoot } from "./scope.ts"
 import type { CheckConfig } from "./traverse/check.ts"
 import { rootCheck } from "./traverse/check.ts"
 import type { Problems } from "./traverse/problems.ts"
@@ -19,7 +19,7 @@ import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 export const nodeToType = (
     root: TypeRoot,
     flat: TraversalNode,
-    $: Scope,
+    $: ScopeRoot,
     config: Traits
 ): Type => {
     return Object.assign(

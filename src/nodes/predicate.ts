@@ -1,4 +1,4 @@
-import type { Scope } from "../scope.ts"
+import type { ScopeRoot } from "../scope.ts"
 import { checkRules } from "../traverse/check.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
@@ -28,7 +28,7 @@ export type TraversalBranchesEntry = ["branches", readonly TraversalCondition[]]
 export const compilePredicate = (
     domain: Domain,
     predicate: Predicate,
-    $: Scope
+    $: ScopeRoot
 ): TraversalPredicate => {
     if (predicate === true) {
         return []
@@ -73,7 +73,7 @@ export type ExactValueEntry = ["value", unknown]
 
 export type PredicateContext = {
     domain: Domain
-    $: Scope
+    $: ScopeRoot
 }
 
 export type ResolvedPredicate<
@@ -89,7 +89,7 @@ export const comparePredicates = (
     domain: Domain,
     l: Predicate,
     r: Predicate,
-    $: Scope
+    $: ScopeRoot
 ): PredicateComparison => {
     const lResolution = resolvePredicateIfIdentifier(domain, l, $)
     const rResolution = resolvePredicateIfIdentifier(domain, r, $)
@@ -143,7 +143,7 @@ export const comparePredicates = (
 
 export const predicateIntersection: KeyReducerFn<
     Required<ValidatorNode>,
-    Scope
+    ScopeRoot
 > = (domain, l, r, scope) => {
     const comparison = comparePredicates(domain, l, r, scope)
     if (!isBranchComparison(comparison)) {
@@ -163,12 +163,10 @@ export const predicateIntersection: KeyReducerFn<
     ])
 }
 
-export const predicateUnion: KeyReducerFn<Required<ValidatorNode>, Scope> = (
-    domain,
-    l,
-    r,
-    scope
-) => {
+export const predicateUnion: KeyReducerFn<
+    Required<ValidatorNode>,
+    ScopeRoot
+> = (domain, l, r, scope) => {
     const comparison = comparePredicates(domain, l, r, scope)
     if (!isBranchComparison(comparison)) {
         return comparison === l

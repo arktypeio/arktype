@@ -13,7 +13,7 @@ describe("morph", () => {
             b: "number<=1",
             leftMorph: "a&b",
             rightMorph: "b&a"
-        }).compile()
+        })
         attest(types.leftMorph.root).snap({
             input: {
                 number: {
@@ -44,7 +44,7 @@ describe("morph", () => {
                     a: ["boolean", "=>", (data) => `${data}`],
                     b: ["boolean", "=>", (data) => `${data}!!!`],
                     c: "a&b"
-                }).compile()
+                })
             // TODO: Add paths to these errors
         ).throws("An intersection must have at least one non-morph operand.")
     })

@@ -4,20 +4,16 @@ import { resolveRoot } from "./nodes/resolve.ts"
 import type { validateDefinition } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
 import type { parseType, Type, TypeParser } from "./type.ts"
-import { isType, nodeToType } from "./type.ts"
+import { nodeToType } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import { throwParseError } from "./utils/errors.ts"
-import type {
-    Dict,
-    evaluate,
-    isTopType,
-    stringKeyOf
-} from "./utils/generics.ts"
+import type { Dict, evaluate, stringKeyOf } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
-const composeScopeParser = <parent extends Scope>(parent?: parent) =>
+const composeScopeParser = <parent extends ScopeRoot>(parent?: parent) =>
     lazyDynamicWrap((aliases: Dict) => {
+        let $
         if (parent) {
             const merged = { ...parent.aliases }
             for (const name in aliases) {
@@ -26,15 +22,20 @@ const composeScopeParser = <parent extends Scope>(parent?: parent) =>
                 }
                 merged[name] = aliases[name]
             }
-            const $ = new Scope(merged)
+            $ = new ScopeRoot(merged)
             $.cache = parent.cache
-            return $
         } else {
-            return new Scope(aliases)
+            $ = new ScopeRoot(aliases)
         }
-    }) as unknown as ScopeParser<Scope extends parent ? {} : parent>
+        const types = {} as Types
+        for (const name in $.aliases) {
+            types[name] ??= $.type.dynamic($.aliases[name])
+        }
+        types.$ = $ as any
+        return types
+    }) as unknown as ScopeParser<ScopeRoot extends parent ? {} : parent>
 
-export const composeTypeParser = <$ extends Scope>($: $): TypeParser<$> =>
+export const composeTypeParser = <$ extends ScopeRoot>($: $): TypeParser<$> =>
     lazyDynamicWrap((def, traits = {}) => {
         const root = resolveRoot(parseDefinition(def, $), $)
         const flat = compileNode(root, $)
@@ -46,13 +47,13 @@ type ScopeParser<parent> = LazyDynamicWrap<
     DynamicScopeParser<parent>
 >
 
-type InferredScopeParser<parent> = <defs>(
-    defs: validateScope<defs, parent>
-) => Scope<parseScope<parent & defs>>
+type InferredScopeParser<parent> = <aliases>(
+    aliases: validateScope<aliases, parent>
+) => Scope<parseScope<parent & aliases>>
 
-type DynamicScopeParser<parent> = <defs extends Dict>(
-    defs: defs
-) => Scope<Types<stringKeyOf<parent & defs>>>
+type DynamicScopeParser<parent> = <aliases extends Dict>(
+    aliases: aliases
+) => Scope<Types<stringKeyOf<parent & aliases>>>
 
 export type Types<name extends string = string> = { [k in name]: Type }
 
@@ -61,46 +62,29 @@ type ScopeCache = {
     types: { [name in string]: Type }
 }
 
-export class Scope<types = Types> {
+export type Scope<types = Types> = types & { $: ScopeRoot }
+
+export class ScopeRoot<types = Types> {
     cache: ScopeCache = {
         nodes: {},
         types: {}
     }
 
-    // alias for this used to avoid TS errors when passed to a function
-    private $: Scope<Types>
     type: TypeParser<types>
     extend: ScopeParser<types>
 
     constructor(public aliases: { readonly [k in keyof types]: unknown }) {
-        this.$ = this as unknown as Scope
-        this.type = composeTypeParser(this.$)
-        this.extend = composeScopeParser(this.$) as ScopeParser<types>
+        this.type = composeTypeParser(this as any)
+        this.extend = composeScopeParser(this as any) as ScopeParser<types>
     }
 
     get infer(): inferScope<types> {
         return chainableNoOpProxy
     }
-
-    compile() {
-        const types = {} as Types
-        for (const name in this.aliases) {
-            const def = this.aliases[name]
-            types[name] ??=
-                typeof def === "function"
-                    ? isType(def)
-                        ? def
-                        : def()
-                    : this.type.dynamic(this.aliases[name])
-        }
-        return types as types
-    }
 }
 
 type parseScope<aliases> = evaluate<{
-    [k in keyof aliases]: isTopType<aliases[k]> extends true
-        ? Type
-        : parseType<aliases[k], aliases, {}>
+    [k in keyof aliases]: parseType<aliases[k], aliases, {}>
 }>
 
 type validateScope<aliases, parent> = {
@@ -117,7 +101,7 @@ export const scope: ScopeParser<{}> = composeScopeParser()
 
 const rootScope = composeScopeParser()({})
 
-export const type: TypeParser<{}> = composeTypeParser(rootScope)
+export const type: TypeParser<{}> = composeTypeParser(rootScope as any)
 
 export const buildDuplicateAliasMessage = <name extends string>(
     name: name

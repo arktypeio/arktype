@@ -1,5 +1,5 @@
 import type { Morph } from "../parse/tuple/morph.ts"
-import type { Scope } from "../scope.ts"
+import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type {
@@ -78,7 +78,7 @@ export type TraversalTypeSet = {
     readonly [domain in Domain]?: TraversalPredicate
 }
 
-export const compileNode = (node: TypeNode, $: Scope): TraversalNode => {
+export const compileNode = (node: TypeNode, $: ScopeRoot): TraversalNode => {
     if (typeof node === "string") {
         return resolveFlat(node, $)
     }
@@ -112,7 +112,7 @@ export type CompiledScopeNodes<nodes extends ScopeNodes> = {
 
 export const compileNodes = <nodes extends ScopeNodes>(
     nodes: nodes,
-    $: Scope
+    $: ScopeRoot
 ): CompiledScopeNodes<nodes> => {
     const result = {} as mutable<CompiledScopeNodes<nodes>>
     for (const name in nodes) {
@@ -124,15 +124,15 @@ export const compileNodes = <nodes extends ScopeNodes>(
 export type MixedOperation = (
     morphNode: MorphNode,
     validator: ValidatorNode,
-    $: Scope
+    $: ScopeRoot
 ) => SetOperationResult<MorphNode>
 
 export const composeNodeOperation =
     (
-        validatorOperation: SetOperation<ValidatorNode, Scope>,
-        morphOperation: SetOperation<MorphNode, Scope>,
+        validatorOperation: SetOperation<ValidatorNode, ScopeRoot>,
+        morphOperation: SetOperation<MorphNode, ScopeRoot>,
         mixedOperation: MixedOperation
-    ): SetOperation<TypeNode, Scope> =>
+    ): SetOperation<TypeNode, ScopeRoot> =>
     (l, r, $) => {
         const lRoot = resolveRoot(l, $)
         const rRoot = resolveRoot(r, $)
@@ -151,7 +151,7 @@ export const finalizeNodeOperation = (
     result: SetOperationResult<TypeNode>
 ): TypeNode => (result === empty ? "never" : result === equal ? l : result)
 
-const validatorIntersection = composeKeyedOperation<ValidatorNode, Scope>(
+const validatorIntersection = composeKeyedOperation<ValidatorNode, ScopeRoot>(
     (domain, l, r, $) => {
         if (l === undefined) {
             return r === undefined ? equal : undefined
@@ -182,13 +182,13 @@ export const nodeIntersection = composeNodeOperation(
 
 export const doubleMorphIntersectionMessage = `An intersection must have at least one non-morph operand.`
 
-export const intersection = (l: TypeNode, r: TypeNode, $: Scope) =>
+export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) =>
     finalizeNodeOperation(l, nodeIntersection(l, r, $))
 
-export const union = (l: TypeNode, r: TypeNode, $: Scope) =>
+export const union = (l: TypeNode, r: TypeNode, $: ScopeRoot) =>
     finalizeNodeOperation(l, nodeUnion(l, r, $))
 
-export const validatorUnion = composeKeyedOperation<ValidatorNode, Scope>(
+export const validatorUnion = composeKeyedOperation<ValidatorNode, ScopeRoot>(
     (domain, l, r, scope) => {
         if (l === undefined) {
             return r === undefined ? equal : r
