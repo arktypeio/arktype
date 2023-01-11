@@ -36,8 +36,8 @@ export const nodeToType = (
     ) as any
 }
 
-export const isType = (value: {}): value is Type =>
-    (value as Type).infer === chainableNoOpProxy
+export const isType = (value: unknown): value is Type =>
+    (value as Type)?.infer === chainableNoOpProxy
 
 export type InferredTypeParser<$> = {
     <def>(def: validateDefinition<def, $>): parseType<def, $, {}>
@@ -52,9 +52,7 @@ export type parseType<
     def,
     $,
     morphs extends Morphs
-> = isTopType<def> extends true
-    ? never
-    : def extends validateDefinition<def, $>
+> = def extends validateDefinition<def, $>
     ? {} extends morphs
         ? Type<inferDefinition<def, $>>
         : Morphable<inferDefinition<def, $>, morphs>
