@@ -9,6 +9,7 @@ import { parseDefinition } from "../definition.ts"
 import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
 import type { validateMorphTuple } from "./morph.ts"
+import { parseMorphTuple } from "./morph.ts"
 import type { validateNarrowTuple } from "./narrow.ts"
 import { parseNarrowTuple } from "./narrow.ts"
 
@@ -94,7 +95,7 @@ const tupleExpressionParsers: {
     "&": parseBranchTuple,
     "[]": parseArrayTuple,
     ":": parseNarrowTuple,
-    "=>": () => ({})
+    "=>": parseMorphTuple
 }
 
 const parseTupleExpression = (def: TupleExpression, $: Scope): TypeNode =>
