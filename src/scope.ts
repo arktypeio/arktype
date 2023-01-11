@@ -1,7 +1,7 @@
 import type { TypeNode } from "./nodes/node.ts"
 import { compileNode } from "./nodes/node.ts"
 import { resolveRoot } from "./nodes/resolve.ts"
-import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
+import type { validateDefinition } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
 import type { parseType, Type, TypeParser } from "./type.ts"
 import { isType, nodeToType } from "./type.ts"
@@ -100,20 +100,12 @@ export class Scope<types = Types> {
 type parseScope<aliases> = evaluate<{
     [k in keyof aliases]: isTopType<aliases[k]> extends true
         ? Type
-        : aliases[k] extends Type
-        ? aliases[k]
-        : aliases[k] extends (() => infer r extends Type)
-        ? r
         : parseType<aliases[k], aliases, {}>
 }>
 
 type validateScope<aliases, parent> = {
     [name in keyof aliases]: name extends stringKeyOf<parent>
         ? buildDuplicateAliasMessage<name>
-        : // somehow using "any" as the thunk return type does not cause a circular
-        // reference error (every other type does)
-        aliases[name] extends () => any
-        ? aliases[name]
         : validateDefinition<aliases[name], parent & aliases>
 }
 

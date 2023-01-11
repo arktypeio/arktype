@@ -21,23 +21,6 @@ describe("scope", () => {
             scope({ a: type("strong") })
         ).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
     })
-    it("thunk definition", () => {
-        const $ = scope({ a: () => $.type("string") })
-        const types = $.compile()
-        attest(types.a.infer).typed as string
-        attest(() => {
-            // @ts-expect-error
-            const types = scope({ a: () => types.type("strong") })
-            types.compile()
-        }).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
-    })
-    // we can't catch this in validation without breaking inference
-    it("bad thunk inferred as never", () => {
-        attest(() => {
-            const types = scope({ a: () => true }).compile()
-            attest(types).typed as { a: never }
-        })
-    })
     it("interdependent", () => {
         const types = scope({
             a: "string>5",
