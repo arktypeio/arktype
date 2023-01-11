@@ -1,11 +1,13 @@
 import type { Identifier, TraversalNode, TypeRoot } from "./nodes/node.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import type { Scope } from "./scope.ts"
+import { type } from "./scope.ts"
 import type { CheckConfig } from "./traverse/check.ts"
 import { rootCheck } from "./traverse/check.ts"
 import type { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type {
+    conform,
     defer,
     Dict,
     evaluate,

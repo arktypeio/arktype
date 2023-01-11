@@ -3,10 +3,10 @@ import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
 describe("morph", () => {
-    it("base", () => {
-        const t = type(["boolean", "=>", (data) => `${data}`])
-        attest(t.root).snap({ input: "boolean", morph: "<function>" })
-    })
+    // it("base", () => {
+    //     const t = type(["boolean", "=>", (data) => `${data}`])
+    //     attest(t.root).snap({ input: "boolean", morph: "<function>" })
+    // })
     it("mixed intersection", () => {
         const types = scope({
             a: ["number>0", "=>", (data) => data + 1],

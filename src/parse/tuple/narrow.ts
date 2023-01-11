@@ -7,7 +7,7 @@ import type { distributable } from "./utils.ts"
 import { distributeFunctionToNode } from "./utils.ts"
 
 // TODO: Allow narrowing from predicate?
-export const parseNarrowTuple: TupleExpressionParser<":"> = (def, scope) => {
+export const parseNarrowTuple: TupleExpressionParser<"=>"> = (def, scope) => {
     const inputNode = parseDefinition(def[0], scope)
     return intersection(
         inputNode,
