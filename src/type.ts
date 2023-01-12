@@ -1,6 +1,6 @@
 import type { TraversalNode, TypeResolution } from "./nodes/node.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
-import type { Morph } from "./parse/tuple/morph.ts"
+import type { ParsedMorph } from "./parse/tuple/morph.ts"
 import type { ScopeRoot } from "./scope.ts"
 import type { CheckConfig } from "./traverse/check.ts"
 import { rootCheck } from "./traverse/check.ts"
@@ -20,6 +20,7 @@ export const nodeToType = (
             return rootCheck(data, flat, $, config)
         },
         {
+            t: chainableNoOpProxy,
             config,
             infer: chainableNoOpProxy,
             node,
@@ -52,22 +53,25 @@ export type Result<output> = xor<output, { problems: Problems }>
 export type Checker<output> = (data: unknown) => Result<output>
 
 export type TypeRoot<t = unknown> = {
-    infer: t extends Morph
-        ? {
-              in: inferIn<t>
-              out: inferOut<t>
-          }
-        : t
+    t: t
+    infer: inferIo<t, "out">
     node: TypeResolution
     flat: TraversalNode
 }
 
 export type Type<t = unknown> = defer<
-    Checker<{ data: inferIn<t> }> & TypeRoot<t>
+    Checker<{ data: inferIo<t, "in"> }> & TypeRoot<t>
 >
 
 export type TypeOptions = CheckConfig
 
-type inferIn<t> = t extends (_: infer input) => unknown ? input : t
-
-type inferOut<t> = t extends (_: any) => infer output ? output : t
+type inferIo<t, io extends "in" | "out"> = t extends ParsedMorph<
+    infer i,
+    infer o
+>
+    ? io extends "in"
+        ? i
+        : o
+    : t extends object
+    ? { [k in keyof t]: inferIo<t[k], io> }
+    : t
