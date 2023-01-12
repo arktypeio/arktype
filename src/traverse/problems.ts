@@ -1,12 +1,17 @@
+import type { UnionErrorContext } from "../nodes/branches.ts"
+import { buildUnionError } from "../nodes/branches.ts"
 import type { DivisorErrorContext } from "../nodes/rules/divisor.ts"
 import { buildDivisorError } from "../nodes/rules/divisor.ts"
-import type { MissingKeyDiagnostic } from "../nodes/rules/props.ts"
+import type { MissingKeyContext } from "../nodes/rules/props.ts"
 import { buildMissingKeyError } from "../nodes/rules/props.ts"
 import type { RangeErrorContext } from "../nodes/rules/range.ts"
 import { buildRangeError } from "../nodes/rules/range.ts"
 import type { RegexErrorContext } from "../nodes/rules/regex.ts"
 import { buildRegexError } from "../nodes/rules/regex.ts"
+import type { TupleLengthErrorContext } from "../nodes/rules/subdomain.ts"
+import { buildTupleLengthError } from "../nodes/rules/subdomain.ts"
 import { domainOf } from "../utils/domains.ts"
+import type { evaluate } from "../utils/generics.ts"
 import type { CheckState } from "./check.ts"
 
 export type BaseProblemConfig = {
@@ -47,23 +52,35 @@ export class Problems extends Array<Problem> {
     throw(): never {
         throw new ArktypeError(this)
     }
-
     addProblem<code extends DiagnosticCode>(
         code: code,
-        context: DiagnosticsByCode[code],
-        state: CheckState
+        context: Omit<DiagnosticsByCode[code], keyof BaseDiagnosticContext>,
+        state: CheckState<dataTypeOfCode<code>>
     ) {
-        let customMessage
-        if (state.config.problems !== undefined) {
-            //todo gross
-            customMessage = state.config.problems[code]?.message(context)
-        }
+        const compiledContext = Object.assign(
+            "type" in context
+                ? { type: JSON.stringify(context.type).toString() }
+                : context,
+            {
+                data: new Stringifiable(
+                    code === "TupleLength"
+                        ? (state.data as []).length
+                        : state.data
+                )
+            }
+        ) as DiagnosticsByCode[code]
+
         state.problems.push({
             path: [...state.path].join("."),
-            reason: customMessage ?? defaultMessagesByCode[code](context)
+            reason:
+                state.config.problems?.[code]?.message(compiledContext) ??
+                defaultMessagesByCode[code](compiledContext)
         })
     }
 }
+
+type dataTypeOfCode<code extends DiagnosticCode> =
+    DiagnosticsByCode[code]["data"]["raw"]
 
 export class Stringifiable<Data = unknown> {
     constructor(public raw: Data) {}
@@ -73,7 +90,6 @@ export class Stringifiable<Data = unknown> {
     }
 
     // TODO: Fix
-
     toString() {
         return JSON.stringify(this.raw)
     }
@@ -81,31 +97,43 @@ export class Stringifiable<Data = unknown> {
 
 const uncapitalize = (s: string) => s[0].toLowerCase() + s.slice(1)
 
-type UnassignableErrorContext = {
-    actual: unknown
-    expected: unknown
-}
+type UnassignableErrorContext = defineDiagnostic<
+    unknown,
+    {
+        expected: unknown
+    }
+>
 
 const buildUnassignableError: DiagnosticMessageBuilder<"Unassignable"> = ({
-    actual,
+    data,
+    expected
+}) => `${data.toString()} is not assignable to ${expected}.`
+
+type DomainsErrorContext = defineDiagnostic<unknown, { expected: unknown }>
+
+const buildDomainsError: DiagnosticMessageBuilder<"Domains"> = ({
+    data,
     expected
 }) =>
-    `${new Stringifiable(actual).toString()} is not assignable to ${expected}.`
-
-// export type DiagnosticsByCode = {
-//     Extraneous
-//     Custom: CustomDiagnostic
-//     Union: UnionDiagnostic
-// }
+    //TODOSHAWN this looks questionable
+    `${data.toString()} is not assignable to ${
+        typeof expected === "object"
+            ? Object.keys(expected!).join("|")
+            : expected
+    }`
 
 export type DiagnosticsByCode = {
     DivisorViolation: DivisorErrorContext
-    MissingKey: MissingKeyDiagnostic
+    Domains: DomainsErrorContext
+    MissingKey: MissingKeyContext
     RangeViolation: RangeErrorContext
     RegexMismatch: RegexErrorContext
+    TupleLength: TupleLengthErrorContext
     Unassignable: UnassignableErrorContext
+    Union: UnionErrorContext
 }
-
+//Domain error
+//Domains error
 export type DiagnosticCode = keyof DiagnosticsByCode
 
 export type DiagnosticMessageBuilder<code extends DiagnosticCode> = (
@@ -116,8 +144,17 @@ const defaultMessagesByCode: {
     [code in DiagnosticCode]: DiagnosticMessageBuilder<code>
 } = {
     DivisorViolation: buildDivisorError,
+    Domains: buildDomainsError,
     MissingKey: buildMissingKeyError,
     RangeViolation: buildRangeError,
     RegexMismatch: buildRegexError,
-    Unassignable: buildUnassignableError
+    TupleLength: buildTupleLengthError,
+    Unassignable: buildUnassignableError,
+    Union: buildUnionError
 }
+
+export type defineDiagnostic<data, customContext = {}> = evaluate<
+    BaseDiagnosticContext<data> & customContext
+>
+
+type BaseDiagnosticContext<data = unknown> = { data: Stringifiable<data> }

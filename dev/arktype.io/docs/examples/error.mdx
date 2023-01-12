@@ -51,8 +51,8 @@ gt3(2)
 ```ts
 import { type } from "arktype"
 
-const email = type("/\\w@arktype.io/")
-email("john@doe.com")
+const matchesRegex = type("/@arktype.io/$")
+matchesRegex("john@doe.com")
 // {problems: `'john@doe.com' must match expression /\\w@arktype.io/.`}
 ```
 

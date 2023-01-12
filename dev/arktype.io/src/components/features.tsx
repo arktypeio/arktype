@@ -1,10 +1,10 @@
 import {
     Box,
     Container,
+    Paper,
     Stack,
     SvgIcon,
-    Typography,
-    Paper
+    Typography
 } from "@mui/material"
 import React from "react"
 
@@ -61,7 +61,7 @@ const Feature = ({ image, title, description }: FeatureProps) => (
                 width: "100%"
             }}
         >
-            <Typography component="h3" variant="h5" id="title">
+            <Typography component="h3" variant="h5" id="title" fontWeight={600}>
                 {title}
             </Typography>
             <Typography
@@ -83,7 +83,7 @@ const feats = details.map((feature, i) => (
     <Feature title={feature.title} description={feature.description} key={i} />
 ))
 
-export const Features = (props: any) => {
+export const Features = () => {
     return (
         <Container
             sx={{
@@ -95,11 +95,10 @@ export const Features = (props: any) => {
                 justifyContent: "center"
             }}
         >
-            <Paper
+            <Stack
                 elevation={4}
                 sx={{
-                    marginTop: "1em",
-                    backgroundColor: "secondary.main"
+                    marginTop: "1em"
                 }}
             >
                 <Typography
@@ -107,6 +106,7 @@ export const Features = (props: any) => {
                     variant="h2"
                     id="title"
                     align="center"
+                    fontWeight={600}
                 >
                     Features
                 </Typography>
@@ -122,7 +122,7 @@ export const Features = (props: any) => {
                 >
                     {feats}
                 </Stack>
-            </Paper>
+            </Stack>
         </Container>
     )
 }

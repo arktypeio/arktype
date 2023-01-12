@@ -97,9 +97,24 @@ type CheckResult<inferred = unknown> = xor<
 >
 
 export const checkNode = (state: CheckState, scope: ScopeRoot) => {
+    const base = state.node[0][0]
     if (typeof state.node === "string") {
         checkDomain(state)
         return
+    } else if (base === "subdomain") {
+        if (
+            state.node[1]?.[0] === "requiredProps" &&
+            state.node[1][1].length !== (state.data as []).length
+        ) {
+            state.problems.addProblem(
+                "TupleLength",
+                {
+                    expectedLength: state.node[1][1].length
+                },
+                state
+            )
+            return
+        }
     }
     checkEntries(state, scope)
 }
@@ -109,7 +124,6 @@ const checkDomain = (state: CheckState) => {
         state.problems.addProblem(
             "Unassignable",
             {
-                actual: domainOf(state.data),
                 expected: state.node
             },
             state
@@ -137,13 +151,14 @@ const checkers = {
     domains: (state, domains, scope) => {
         const entries = domains[domainOf(state.data)]
         if (entries) {
+            state.path.push(domainOf(state.data))
+            state.node = entries as TraversalNode
             checkEntries(state, scope)
         } else {
             state.problems.addProblem(
-                "Unassignable",
+                "Domains",
                 {
-                    actual: domainOf(state.data),
-                    expected: domains
+                    expected: state.node[0][1]
                 },
                 state
             )
@@ -154,7 +169,6 @@ const checkers = {
             state.problems.addProblem(
                 "Unassignable",
                 {
-                    actual: domainOf(state.data),
                     expected: domain
                 },
                 state
@@ -169,14 +183,17 @@ const checkers = {
     requiredProps: checkRequiredProps,
     optionalProps: checkOptionalProps,
     branches: (state, branches, scope) =>
-        branches.some((condition) => checkEntries(state, scope)),
+        branches.some((condition) => {
+            state.node = condition as TraversalNode
+            checkEntries(state, scope)
+            return state.problems.length === 0 ? true : false
+        }),
     narrow: (state, validator) => validator(state),
     value: (state, value) => {
         if (state.data !== value) {
             state.problems.addProblem(
                 "Unassignable",
                 {
-                    actual: state.data,
                     expected: value
                 },
                 state
