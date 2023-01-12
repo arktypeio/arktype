@@ -1,4 +1,3 @@
-import { ChainContext } from "../../dev/attest/src/assertions/types.ts"
 import type { UnionErrorContext } from "../nodes/branches.ts"
 import { buildUnionError } from "../nodes/branches.ts"
 import type { DivisorErrorContext } from "../nodes/rules/divisor.ts"

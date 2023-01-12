@@ -131,7 +131,7 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         const rootNode = state.node
         for (const entry of state.data as Map<unknown, unknown>) {
             checkNode({ ...state, data: entry[0], node: subdomain[1] }, scope)
-            //TODOSHAWN this feels wrong too...
+            //TODOSHAWN I don't think this makes sense to be here
             if (state.problems.length) {
                 state.problems.addProblem(
                     "MissingKey",

@@ -17,7 +17,7 @@ import { rulePrecedenceMap } from "../nodes/rules/rules.ts"
 import { checkSubdomain } from "../nodes/rules/subdomain.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
-import { domainOf, subdomainOf } from "../utils/domains.ts"
+import { domainOf } from "../utils/domains.ts"
 import type { Dict, evaluate, extend, xor } from "../utils/generics.ts"
 import type { DiagnosticCode, DiagnosticsByCode } from "./problems.ts"
 import { Problems } from "./problems.ts"
@@ -97,13 +97,11 @@ type CheckResult<inferred = unknown> = xor<
 >
 
 export const checkNode = (state: CheckState, scope: ScopeRoot) => {
-    //TODOSHAWN: feels wrong
     const base = state.node[0][0]
     if (typeof state.node === "string") {
         checkDomain(state)
         return
     } else if (base === "subdomain") {
-        //TODOSHAWN maybe clean
         if (
             state.node[1]?.[0] === "requiredProps" &&
             state.node[1][1].length !== (state.data as []).length
