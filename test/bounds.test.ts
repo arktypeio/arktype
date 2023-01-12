@@ -15,14 +15,14 @@ describe("bound", () => {
             it(">", () => {
                 const t = type("number>0")
                 attest(t.infer).typed as number
-                attest(t.root).snap({
+                attest(t.node).snap({
                     number: { range: { min: { limit: 0, exclusive: true } } }
                 })
             })
             it("<", () => {
                 const t = type("number<10")
                 attest(t.infer).typed as number
-                attest(t.root).snap({
+                attest(t.node).snap({
                     number: {
                         range: { max: { limit: 10, exclusive: true } }
                     }
@@ -31,7 +31,7 @@ describe("bound", () => {
             it("<=", () => {
                 const t = type("number<=-49")
                 attest(t.infer).typed as number
-                attest(t.root).snap({
+                attest(t.node).snap({
                     number: {
                         range: { max: { limit: -49 } }
                     }
@@ -40,7 +40,7 @@ describe("bound", () => {
             it("==", () => {
                 const t = type("number==3211993")
                 attest(t.infer).typed as number
-                attest(t.root).snap({
+                attest(t.node).snap({
                     number: {
                         range: {
                             min: { limit: 3211993 },
@@ -54,7 +54,7 @@ describe("bound", () => {
             it("<,<=", () => {
                 const t = type("-5<number<=5")
                 attest(t.infer).typed as number
-                attest(t.root).snap({
+                attest(t.node).snap({
                     number: {
                         range: {
                             min: { limit: -5, exclusive: true },
@@ -66,7 +66,7 @@ describe("bound", () => {
             it("<=,<", () => {
                 const t = type("-3.23<=number<4.654")
                 attest(t.infer).typed as number
-                attest(t.root).snap({
+                attest(t.node).snap({
                     number: {
                         range: {
                             min: { limit: -3.23 },
@@ -79,7 +79,7 @@ describe("bound", () => {
         it("whitespace following comparator", () => {
             const t = type("number > 3")
             attest(t.infer).typed as number
-            attest(t.root).snap({
+            attest(t.node).snap({
                 number: {
                     range: { min: { limit: 3, exclusive: true } }
                 }
@@ -95,12 +95,12 @@ describe("bound", () => {
                         }
                     }
                 }
-                attest(type("2<=number<3").root).equals(expected)
-                attest(type("number>=2&number<3").root).equals(expected)
-                attest(type("2<=number<4&1<=number<3").root).equals(expected)
+                attest(type("2<=number<3").node).equals(expected)
+                attest(type("number>=2&number<3").node).equals(expected)
+                attest(type("2<=number<4&1<=number<3").node).equals(expected)
             })
             it("single value overlap", () => {
-                attest(type("0<number<=1&1<=number<2").root).equals({
+                attest(type("0<number<=1&1<=number<2").node).equals({
                     number: {
                         range: {
                             min: {
@@ -115,29 +115,29 @@ describe("bound", () => {
             })
             it("non-overlapping", () => {
                 const expected: TypeNode = {}
-                attest(type("number>3&number<=3").root).equals(expected)
-                attest(type("-2<number<-1&1<number<2").root).equals(expected)
+                attest(type("number>3&number<=3").node).equals(expected)
+                attest(type("-2<number<-1&1<number<2").node).equals(expected)
             })
             it("greater min is stricter", () => {
                 const expected: TypeNode = {
                     number: { range: { min: { limit: 3 } } }
                 }
-                attest(type("number>=3&number>2").root).equals(expected)
-                attest(type("number>2&number>=3").root).equals(expected)
+                attest(type("number>=3&number>2").node).equals(expected)
+                attest(type("number>2&number>=3").node).equals(expected)
             })
             it("lesser max is stricter", () => {
                 const expected: TypeNode = {
                     number: { range: { max: { limit: 3 } } }
                 }
-                attest(type("number<=3&number<4").root).equals(expected)
-                attest(type("number<4&number<=3").root).equals(expected)
+                attest(type("number<=3&number<4").node).equals(expected)
+                attest(type("number<4&number<=3").node).equals(expected)
             })
             it("exclusive included if limits equal", () => {
                 const expected: TypeNode = {
                     number: { range: { max: { limit: 3, exclusive: true } } }
                 }
-                attest(type("number<3&number<=3").root).equals(expected)
-                attest(type("number<=3&number<3").root).equals(expected)
+                attest(type("number<3&number<=3").node).equals(expected)
+                attest(type("number<=3&number<3").node).equals(expected)
             })
         })
         describe("errors", () => {
@@ -172,7 +172,7 @@ describe("bound", () => {
                 )
             })
             it("empty range", () => {
-                attest(() => type("3<=number<2").root).throws.snap(
+                attest(() => type("3<=number<2").node).throws.snap(
                     "Error: the range bounded by >=3 and <2 is empty"
                 )
             })

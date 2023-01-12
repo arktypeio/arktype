@@ -15,6 +15,8 @@ export const parseMorphTuple: TupleExpressionParser<"=>"> = (def, $) => {
     }
 }
 
+export type out<t = {}> = nominal<t, "out">
+
 export type validateMorphTuple<inputDef, $> = [
     validateDefinition<inputDef, $>,
     "=>",

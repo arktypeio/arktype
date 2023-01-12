@@ -6,7 +6,7 @@ describe("record", () => {
     it("required", () => {
         const o = type({ a: "string", b: "boolean[]" })
         attest(o.infer).typed as { a: string; b: boolean[] }
-        attest(o.root).snap({
+        attest(o.node).snap({
             object: {
                 props: {
                     a: "string",
@@ -18,7 +18,7 @@ describe("record", () => {
     it("optional keys", () => {
         const o = type({ "a?": "string", b: "boolean[]" })
         attest(o.infer).typed as { a?: string; b: boolean[] }
-        attest(o.root).snap({
+        attest(o.node).snap({
             object: {
                 props: {
                     a: ["?", "string"],
@@ -30,7 +30,7 @@ describe("record", () => {
     it("escaped optional token", () => {
         const t = type({ "a\\?": "string" })
         attest(t.infer).typed as { "a?": string }
-        attest(t.root).equals({
+        attest(t.node).equals({
             object: {
                 props: { "a?": "string" }
             }

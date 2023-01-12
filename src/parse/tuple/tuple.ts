@@ -8,7 +8,7 @@ import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
-import type { validateMorphTuple } from "./morph.ts"
+import type { out, validateMorphTuple } from "./morph.ts"
 import { parseMorphTuple } from "./morph.ts"
 import type { validateNarrowTuple } from "./narrow.ts"
 import { parseNarrowTuple } from "./narrow.ts"
@@ -52,9 +52,13 @@ export type inferTuple<def extends List, $> = def extends TupleExpression
       }
 
 type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
-    ? inferDefinition<def[0], $>
+    ? def[2] extends (In: any) => In is infer narrowed
+        ? narrowed
+        : inferDefinition<def[0], $>
     : def[1] extends "=>"
-    ? (In: inferDefinition<def[0], $>) => returnOf<def[2]>
+    ? $ extends out
+        ? returnOf<def[2]>
+        : inferDefinition<def[0], $>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? never
@@ -69,6 +73,7 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
 // TODO: instanceof
 // TODO: = (Default value)
 // TODO: Pipe
+// TODO: Merge
 export type TupleExpressionToken = "&" | "|" | "[]" | ":" | "=>"
 
 export type TupleExpressionParser<token extends TupleExpressionToken> = (

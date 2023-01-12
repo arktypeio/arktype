@@ -1,6 +1,7 @@
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
 import type {
     Downcastable,
+    equals,
     error,
     evaluate,
     isAny,
@@ -8,7 +9,7 @@ import type {
     RegexLiteral
 } from "../../utils/generics.ts"
 import type { inferDefinition } from "../definition.ts"
-import type { Morph } from "../tuple/morph.ts"
+import type { out } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
@@ -18,14 +19,7 @@ export type inferAst<ast, $> = ast extends readonly unknown[]
         : ast[1] extends "|"
         ? inferAst<ast[0], $> | inferAst<ast[2], $>
         : ast[1] extends "&"
-        ? intersectTypes<
-              inferAst<ast[0], $>,
-              inferAst<ast[2], $>
-          > extends infer result
-            ? result extends error
-                ? never
-                : result
-            : never
+        ? evaluate<inferAst<ast[0], $> & inferAst<ast[2], $>>
         : ast[1] extends Scanner.Comparator
         ? ast[0] extends number
             ? inferAst<ast[2], $>
@@ -35,13 +29,14 @@ export type inferAst<ast, $> = ast extends readonly unknown[]
         : never
     : inferTerminal<ast, $>
 
-export type intersectTypes<l, r> = l extends Morph<infer lIn, infer lOut>
-    ? r extends Morph
-        ? error<doubleMorphIntersectionMessage>
-        : (In: evaluate<lIn & r>) => lOut
-    : r extends Morph<infer rIn, infer rOut>
-    ? (In: evaluate<rIn & l>) => rOut
-    : evaluate<l & r>
+export type validateAstIntersection<lIn, lOut, rIn, rOut> = equals<
+    lIn,
+    lOut
+> extends true
+    ? undefined
+    : equals<rIn, rOut> extends true
+    ? undefined
+    : error<doubleMorphIntersectionMessage>
 
 export const doubleMorphIntersectionMessage = `An intersection must have at least one non-morph operand.`
 
@@ -61,9 +56,12 @@ export type validateAstSemantics<ast, $> = ast extends string
     ? validateAstSemantics<child, $>
     : ast extends [infer l, infer token, infer r]
     ? token extends "&"
-        ? intersectTypes<inferAst<l, $>, inferAst<r, $>> extends error<
-              infer message
-          >
+        ? validateAstIntersection<
+              inferAst<l, $>,
+              inferAst<l, out<$>>,
+              inferAst<r, $>,
+              inferAst<r, out<$>>
+          > extends error<infer message>
             ? error<message>
             : validateBinary<l, r, $>
         : token extends "|"

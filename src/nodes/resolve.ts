@@ -12,7 +12,7 @@ import type {
     MorphNode,
     TraversalNode,
     TypeNode,
-    TypeRoot,
+    TypeResolution,
     ValidatorNode
 } from "./node.ts"
 import { compileNode } from "./node.ts"
@@ -23,13 +23,13 @@ import type {
     TraversalPredicate
 } from "./predicate.ts"
 
-export const resolveRoot = (node: TypeNode, $: ScopeRoot): TypeRoot =>
-    typeof node === "string" ? (resolve(node, $) as TypeRoot) : node
+export const resolveRoot = (node: TypeNode, $: ScopeRoot): TypeResolution =>
+    typeof node === "string" ? (resolve(node, $) as TypeResolution) : node
 
-export const rootIsMorph = (root: TypeRoot): root is MorphNode =>
+export const rootIsMorph = (root: TypeResolution): root is MorphNode =>
     (root as MorphNode).morph !== undefined
 
-export const rootIsValidator = (root: TypeRoot): root is ValidatorNode =>
+export const rootIsValidator = (root: TypeResolution): root is ValidatorNode =>
     !rootIsMorph(root)
 
 export const resolveInput = (node: TypeNode, $: ScopeRoot): ValidatorNode => {
@@ -101,12 +101,12 @@ const resolveRecurse = (
     name: string,
     seen: string[],
     $: ScopeRoot
-): TypeRoot => {
+): TypeResolution => {
     if (isKeyOf(name, keywords)) {
         return keywords[name]
     }
     if (isKeyOf(name, $.cache.types)) {
-        return $.cache.types[name].root
+        return $.cache.types[name].node
     }
     if (!$.aliases[name]) {
         return throwInternalError(
@@ -125,7 +125,7 @@ const resolveRecurse = (
     const type = nodeToType(root, [["alias", name]], $, {})
     $.cache.types[name] = type
     type.flat = compileNode(root, $)
-    return root as TypeRoot
+    return root as TypeResolution
 }
 
 export const resolvePredicate = <domain extends Domain>(

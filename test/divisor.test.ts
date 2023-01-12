@@ -8,7 +8,7 @@ describe("divisibility", () => {
         describe("valid", () => {
             it("integerLiteralDefinition", () => {
                 const divisibleByTwo = type("number%2")
-                attest(divisibleByTwo.root).equals({
+                attest(divisibleByTwo.node).equals({
                     number: {
                         divisor: 2
                     }
@@ -19,7 +19,7 @@ describe("divisibility", () => {
                 attest(type("number % 5").infer).typed as number
             })
             it("with bound", () => {
-                attest(type("number<3&number%8").root).snap({
+                attest(type("number<3&number%8").node).snap({
                     number: {
                         range: { max: { limit: 3, exclusive: true } },
                         divisor: 8
@@ -50,30 +50,30 @@ describe("divisibility", () => {
     })
     describe("intersection", () => {
         it("identical", () => {
-            attest(type("number%2&number%2").root).snap({
+            attest(type("number%2&number%2").node).snap({
                 number: { divisor: 2 }
             })
         })
         it("purely divisible", () => {
-            attest(type("number%4&number%2").root).snap({
+            attest(type("number%4&number%2").node).snap({
                 number: { divisor: 4 }
             })
         })
         it("common divisor", () => {
-            attest(type("number%6&number%4").root).snap({
+            attest(type("number%6&number%4").node).snap({
                 number: { divisor: 12 }
             })
         })
         it("relatively prime", () => {
-            attest(type("number%2&number%3").root).snap({
+            attest(type("number%2&number%3").node).snap({
                 number: { divisor: 6 }
             })
         })
         it("valid literal", () => {
-            attest(type("number%5&0").root).snap({ number: { value: 0 } })
+            attest(type("number%5&0").node).snap({ number: { value: 0 } })
         })
         it("invalid literal", () => {
-            attest(type("number%3&8").root).snap({ number: [] })
+            attest(type("number%3&8").node).snap({ number: [] })
         })
     })
 })

@@ -6,7 +6,7 @@ describe("terminal objects", () => {
     it("regex", () => {
         const t = type(/.*/)
         attest(t.infer).typed as string
-        attest(t.root).equals({ string: { regex: ".*" } })
+        attest(t.node).equals({ string: { regex: ".*" } })
     })
     // TODO: fix
     // it("type", () => {

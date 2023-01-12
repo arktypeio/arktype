@@ -84,7 +84,7 @@ export class ScopeRoot<types = Types> {
 }
 
 type parseScope<aliases> = evaluate<{
-    [k in keyof aliases]: parseType<aliases[k], aliases, {}>
+    [k in keyof aliases]: parseType<aliases[k], aliases>
 }>
 
 type validateScope<aliases, parent> = {

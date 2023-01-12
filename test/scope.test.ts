@@ -29,7 +29,7 @@ describe("scope", () => {
             c: "a&b"
         })
         attest(types.c.infer).typed as string
-        attest(types.c.root).equals({
+        attest(types.c.node).equals({
             string: {
                 regex: "^(.+)@(.+)\\.(.+)$",
                 range: {
@@ -44,7 +44,7 @@ describe("scope", () => {
     })
     it("cyclic", () => {
         const types = scope({ a: { b: "b" }, b: { a: "a" } })
-        attest(types.a.root).snap({
+        attest(types.a.node).snap({
             object: { props: { b: "b" } }
         })
         // Type hint displays as "..." on hitting cycle (or any if "noErrorTruncation" is true)
@@ -92,13 +92,13 @@ describe("scope", () => {
                 b: string[][]
                 c: boolean
             }
-            attest(types.a.root).snap({
+            attest(types.a.node).snap({
                 object: { subdomain: ["Array", "string"] }
             })
-            attest(types.b.root).snap({
+            attest(types.b.node).snap({
                 object: { subdomain: ["Array", "a"] }
             })
-            attest(types.c.root).snap({ boolean: true })
+            attest(types.c.node).snap({ boolean: true })
         })
         describe("errors", () => {
             it("duplicate alias", () => {

@@ -16,6 +16,7 @@ import type { inferRecord } from "./record.ts"
 import { parseRecord } from "./record.ts"
 import type { inferString, validateString } from "./string/string.ts"
 import { parseString } from "./string/string.ts"
+import type { Morph, out } from "./tuple/morph.ts"
 import type {
     inferTuple,
     TupleExpression,
@@ -28,7 +29,7 @@ export const parseDefinition = (def: unknown, $: ScopeRoot): TypeNode => {
         case "string":
             return parseString(def as string, $)
         case "object":
-            return isType(def) ? def.root : parseRecord(def as Dict, $)
+            return isType(def) ? def.node : parseRecord(def as Dict, $)
         case "Array":
             return parseTuple(def as List, $)
         case "RegExp":
@@ -44,7 +45,11 @@ export type inferDefinition<def, $> = isAny<def> extends true
     ? def
     : // TODO: test perf diff between Type/infer
     def extends { infer: infer data }
-    ? data
+    ? $ extends out
+        ? def extends { inferOut: infer out }
+            ? out
+            : never
+        : data
     : def extends string
     ? inferString<def, $>
     : def extends List

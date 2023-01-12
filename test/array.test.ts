@@ -7,7 +7,7 @@ describe("parse array", () => {
     it("parse", () => {
         const t = type("string[]")
         attest(t.infer).typed as string[]
-        attest(t.root).snap({
+        attest(t.node).snap({
             object: {
                 subdomain: ["Array", "string"]
             }
@@ -16,7 +16,7 @@ describe("parse array", () => {
 
     it("subdomain intersection", () => {
         const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
-        attest(t.root).snap({
+        attest(t.node).snap({
             object: {
                 subdomain: [
                     "Array",

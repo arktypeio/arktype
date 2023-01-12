@@ -26,12 +26,12 @@ import {
 import { resolveFlat, resolveRoot, rootIsMorph } from "./resolve.ts"
 import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
 
-export type TypeNode<$ = Dict> = Identifier<$> | TypeRoot<$>
+export type TypeNode<$ = Dict> = Identifier<$> | TypeResolution<$>
 
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to
  * manipulate.*/
-export type TypeRoot<$ = Dict> = ValidatorNode<$> | MorphNode<$>
+export type TypeResolution<$ = Dict> = ValidatorNode<$> | MorphNode<$>
 
 export type Identifier<$ = Dict> = string extends keyof $
     ? autocomplete<Keyword>
@@ -105,7 +105,7 @@ export const compileNode = (node: TypeNode, $: ScopeRoot): TraversalNode => {
     return [["domains", result]]
 }
 
-export type ScopeNodes = { readonly [k in string]: TypeRoot }
+export type ScopeNodes = { readonly [k in string]: TypeResolution }
 
 export type CompiledScopeNodes<nodes extends ScopeNodes> = {
     readonly [k in keyof nodes]: TraversalNode

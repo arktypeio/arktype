@@ -5,7 +5,7 @@ import { attest } from "../dev/attest/api.ts"
 describe("morph", () => {
     it("base", () => {
         const t = type(["boolean", "=>", (data) => `${data}`])
-        attest(t.root).snap({ input: "boolean", morph: "<function>" })
+        attest(t.node).snap({ input: "boolean", morph: "<function>" })
     })
     it("mixed intersection", () => {
         const types = scope({
@@ -14,7 +14,7 @@ describe("morph", () => {
             leftMorph: "a&b",
             rightMorph: "b&a"
         })
-        attest(types.leftMorph.root).snap({
+        attest(types.leftMorph.node).snap({
             input: {
                 number: {
                     range: {
@@ -25,7 +25,7 @@ describe("morph", () => {
             },
             morph: "<function>"
         })
-        attest(types.rightMorph.root).snap({
+        attest(types.rightMorph.node).snap({
             input: {
                 number: {
                     range: {
@@ -39,10 +39,10 @@ describe("morph", () => {
     })
     it("two-morph intersection", () => {
         attest(() => {
-            // TODO: Check props
             const types = scope({
                 a: ["boolean", "=>", (data) => `${data}`],
                 b: ["boolean", "=>", (data) => `${data}!!!`],
+                // @ts-expect-error
                 c: "a&b"
             })
         }).throwsAndHasTypeError(
@@ -50,7 +50,6 @@ describe("morph", () => {
             "An intersection must have at least one non-morph operand."
         )
     })
-    it("foobar", () => {})
     // it("function", () => {
     //     const t = type("boolean", {
     //         out: (data) => `${data}`
@@ -120,6 +119,45 @@ describe("morph", () => {
     //                     a: (n) => `${n}`
     //                 }
     //             })
+    //     })
+    // })
+
+    // describe("inputs", () => {
+    //     it("function", () => {
+    //         const t = type("boolean", {
+    //             in: (n: number) => !!n
+    //         })
+    //         attest(t.from(1).data).equals(true).typed as boolean | undefined
+    //         attest(t.from("default", 1).data).equals(true).typed as
+    //             | boolean
+    //             | undefined
+    //     })
+    //     it("identifier", () => {
+    //         const t = type("boolean", {
+    //             in: {
+    //                 number: (n) => !!n
+    //             }
+    //         })
+    //         attest(t.from("number", 1).data).equals(true).typed as
+    //             | boolean
+    //             | undefined
+    //     })
+    //     it("non-identifier", () => {
+    //         const t = type("boolean", {
+    //             in: {
+    //                 explicit: (input: number) => !!input,
+    //                 implicit: (input) => input
+    //             }
+    //         })
+    //         attest(t.from("explicit", 1).data).equals(true).typed as
+    //             | boolean
+    //             | undefined
+    //         attest(() => {
+    //             // @ts-expect-error
+    //             t.from("implicit", 1)
+    //         }).type.errors(
+    //             "Argument of type 'number' is not assignable to parameter of type 'never'."
+    //         )
     //     })
     // })
 })

@@ -27,7 +27,7 @@ describe("parse unenclosed", () => {
             it("whole", () => {
                 const four = type("4")
                 attest(four.infer).typed as 4
-                attest(four.root).snap({ number: { value: 4 } })
+                attest(four.node).snap({ number: { value: 4 } })
             })
             it("decimal", () => {
                 attest(type("3.14159").infer).typed as 3.14159
