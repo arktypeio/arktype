@@ -39,10 +39,10 @@ describe("morph", () => {
     })
     it("two-morph intersection", () => {
         attest(() => {
-            scope({
-                a: { a: ["boolean", "=>", (data) => `${data}`] },
-                b: { a: ["boolean", "=>", (data) => `${data}!!!`] },
-                // @ts-expect-error
+            // TODO: Check props
+            const types = scope({
+                a: ["boolean", "=>", (data) => `${data}`],
+                b: ["boolean", "=>", (data) => `${data}!!!`],
                 c: "a&b"
             })
         }).throwsAndHasTypeError(

@@ -1,8 +1,8 @@
 import { throwParseError } from "../../utils/errors.ts"
-import type { nominal, returnOf } from "../../utils/generics.ts"
+import type { nominal } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
-import type { TupleExpression, TupleExpressionParser } from "./tuple.ts"
+import type { TupleExpressionParser } from "./tuple.ts"
 
 export const parseMorphTuple: TupleExpressionParser<"=>"> = (def, $) => {
     const inputNode = parseDefinition(def[0], $)
@@ -18,12 +18,10 @@ export const parseMorphTuple: TupleExpressionParser<"=>"> = (def, $) => {
 export type validateMorphTuple<inputDef, $> = [
     validateDefinition<inputDef, $>,
     "=>",
-    (In: inferDefinition<inputDef, $>) => unknown
+    Morph<inferDefinition<inputDef, $>, unknown>
 ]
 
-export type Morph<In = any, Out = unknown> = (In: In) => out<Out>
-
-export type out<t> = nominal<t, "out">
+export type Morph<In = any, Out = unknown> = (In: In) => Out
 
 export const buildMalformedMorphExpressionMessage = (value: unknown) =>
     `Morph expression requires a function following '=>' (got ${typeof value} at index 2)`
