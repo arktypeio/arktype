@@ -4,12 +4,6 @@ import { attest } from "../dev/attest/api.ts"
 import { buildBadDefinitionTypeMessage } from "../src/parse/definition.ts"
 
 describe("bad definition types", () => {
-    it("any", () => {
-        // Can't create an assignment error if type is any, so we have to rely
-        // on the return type being never
-        // @ts-expect-error The type error is from attest
-        attest(type({} as any)).typed as never
-    })
     it("unknown", () => {
         // @ts-expect-error
         attest(type({} as unknown)).type.errors(

@@ -3,10 +3,11 @@ import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 import { buildDuplicateAliasMessage } from "../src/scope.ts"
+import type { Type } from "../src/type.ts"
 
 describe("scope", () => {
     it("base definition", () => {
-        const types = scope({ a: "string" }).compile()
+        const types = scope({ a: "string" })
         attest(types.a.infer).typed as string
         attest(() =>
             // @ts-expect-error
@@ -14,38 +15,21 @@ describe("scope", () => {
         ).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
     })
     it("type definition", () => {
-        const types = scope({ a: type("string") }).compile()
+        const types = scope({ a: type("string") })
         attest(types.a.infer).typed as string
         attest(() =>
             // @ts-expect-error
             scope({ a: type("strong") })
         ).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
     })
-    it("thunk definition", () => {
-        const $ = scope({ a: () => $.type("string") })
-        const types = $.compile()
-        attest(types.a.infer).typed as string
-        attest(() => {
-            // @ts-expect-error
-            const types = scope({ a: () => types.type("strong") })
-            types.compile()
-        }).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
-    })
-    // we can't catch this in validation without breaking inference
-    it("bad thunk inferred as never", () => {
-        attest(() => {
-            const types = scope({ a: () => true }).compile()
-            attest(types).typed as { a: never }
-        })
-    })
     it("interdependent", () => {
         const types = scope({
             a: "string>5",
             b: "email<=10",
             c: "a&b"
-        }).compile()
+        })
         attest(types.c.infer).typed as string
-        attest(types.c.root).equals({
+        attest(types.c.node).equals({
             string: {
                 regex: "^(.+)@(.+)\\.(.+)$",
                 range: {
@@ -59,8 +43,8 @@ describe("scope", () => {
         })
     })
     it("cyclic", () => {
-        const types = scope({ a: { b: "b" }, b: { a: "a" } }).compile()
-        attest(types.a.root).snap({
+        const types = scope({ a: { b: "b" }, b: { a: "a" } })
+        attest(types.a.node).snap({
             object: { props: { b: "b" } }
         })
         // Type hint displays as "..." on hitting cycle (or any if "noErrorTruncation" is true)
@@ -85,42 +69,42 @@ describe("scope", () => {
         )
     })
     it("object array", () => {
-        attest(scope({ a: "string", b: [{ c: "a" }] }).infer.b).typed as [
+        attest(scope({ a: "string", b: [{ c: "a" }] }).$.infer.b).typed as [
             {
                 c: string
             }
         ]
     })
     it("doesn't try to validate any in scope", () => {
-        const $ = scope({ a: {} as any })
-        attest($.type(["number", "a"]).infer).typed as [number, never]
+        const types = scope({ a: {} as any })
+        attest(types.a).typed as Type
+        attest(types.$.type(["number", "a"]).infer).typed as [number, never]
     })
     describe("extension", () => {
         it("base", () => {
-            const $ = scope({ definedInScope: "boolean" }).extend({
+            const types = scope({ definedInScope: "boolean" }).$.extend({
                 a: "string[]",
                 b: "a[]",
                 c: "definedInScope"
             })
-            attest($.infer).typed as {
+            attest(types.$.infer).typed as {
                 a: string[]
                 b: string[][]
                 c: boolean
             }
-            const types = $.compile()
-            attest(types.a.root).snap({
+            attest(types.a.node).snap({
                 object: { subdomain: ["Array", "string"] }
             })
-            attest(types.b.root).snap({
+            attest(types.b.node).snap({
                 object: { subdomain: ["Array", "a"] }
             })
-            attest(types.c.root).snap({ boolean: true })
+            attest(types.c.node).snap({ boolean: true })
         })
         describe("errors", () => {
             it("duplicate alias", () => {
                 attest(() => {
                     // @ts-expect-error
-                    scope({ a: "string" }).extend({ a: "number" })
+                    scope({ a: "string" }).$.extend({ a: "number" })
                 }).throwsAndHasTypeError(buildDuplicateAliasMessage("a"))
             })
         })

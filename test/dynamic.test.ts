@@ -8,15 +8,13 @@ describe("dynamic", () => {
     it("uninferred types", () => {
         const dynamicStringArray = type.dynamic("str" + "ing")
         attest(dynamicStringArray.infer).typed as unknown
-        attest(dynamicStringArray.root).equals({ string: true })
+        attest(dynamicStringArray.node).equals({ string: true })
     })
     it("uninferred aliases", () => {
-        const types = scope
-            .dynamic({
-                a: "str" + "ing[" + "]",
-                "b?": "a"
-            })
-            .compile()
+        const types = scope.dynamic({
+            a: "str" + "ing[" + "]",
+            "b?": "a"
+        })
         // Types are inferred as unknown
         attest(types.a.infer).typed as unknown
         // Doesn't allow bad references
@@ -26,13 +24,12 @@ describe("dynamic", () => {
         }).throwsAndHasTypeError(buildUnresolvableMessage("nonexistent"))
     })
     it("uninferred scope", () => {
-        const $ = scope.dynamic({ a: "string" } as Dict)
-        const types = $.compile()
+        const types = scope.dynamic({ a: "string" } as Dict)
         attest(types.a.infer).typed as unknown
         // Allows any references but will throw at runtime
         attest(() => types.b.infer).throws.snap(
             `TypeError: Cannot read properties of undefined (reading 'infer')`
         )
-        attest(() => $.type("b")).throws(buildUnresolvableMessage("b"))
+        attest(() => types.$.type("b")).throws(buildUnresolvableMessage("b"))
     })
 })

@@ -1,7 +1,7 @@
 import { functorKeywords } from "../../nodes/keywords.ts"
 import type { TypeNode } from "../../nodes/node.ts"
 import { isResolvable, memoizedParse } from "../../nodes/resolve.ts"
-import type { Scope } from "../../scope.ts"
+import type { ScopeRoot } from "../../scope.ts"
 import type { error } from "../../utils/generics.ts"
 import type { inferAst, validateAstSemantics } from "./ast.ts"
 import { DynamicState } from "./reduce/dynamic.ts"
@@ -11,7 +11,7 @@ import type { isResolvableIdentifier } from "./shift/operand/unenclosed.ts"
 import { parseOperator } from "./shift/operator/operator.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
-export const parseString = (def: string, $: Scope) => memoizedParse(def, $)
+export const parseString = (def: string, $: ScopeRoot) => memoizedParse(def, $)
 
 export type parseString<def extends string, $> = maybeNaiveParse<def, $>
 
@@ -23,14 +23,12 @@ export type inferString<def extends string, $> = inferAst<
 export type validateString<def extends string, $> = parseString<
     def,
     $
-> extends infer result
-    ? result extends error<infer message>
+> extends infer ast
+    ? ast extends error<infer message>
         ? message
-        : validateAstSemantics<result, $> extends infer semanticResult
-        ? semanticResult extends undefined
-            ? def
-            : semanticResult
-        : never
+        : validateAstSemantics<ast, $> extends error<infer message>
+        ? message
+        : def
     : never
 
 /**
@@ -47,7 +45,7 @@ type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
 
 export const maybeNaiveParse = (
     def: string,
-    $: Scope
+    $: ScopeRoot
 ): TypeNode | undefined => {
     if (isResolvable(def, $)) {
         return def
@@ -60,7 +58,7 @@ export const maybeNaiveParse = (
     }
 }
 
-export const fullStringParse = (def: string, $: Scope) => {
+export const fullStringParse = (def: string, $: ScopeRoot) => {
     const s = new DynamicState(def, $)
     parseOperand(s)
     return loop(s)

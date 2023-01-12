@@ -1,13 +1,15 @@
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
-import type { inferResolution } from "../../scope.ts"
 import type {
     Downcastable,
+    equals,
     error,
     evaluate,
     isAny,
     List,
     RegexLiteral
 } from "../../utils/generics.ts"
+import type { inferDefinition } from "../definition.ts"
+import type { out } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
@@ -27,28 +29,54 @@ export type inferAst<ast, $> = ast extends readonly unknown[]
         : never
     : inferTerminal<ast, $>
 
+export type validateAstIntersection<lIn, lOut, rIn, rOut> = equals<
+    lIn,
+    lOut
+> extends true
+    ? undefined
+    : equals<rIn, rOut> extends true
+    ? undefined
+    : error<doubleMorphIntersectionMessage>
+
+export const doubleMorphIntersectionMessage = `An intersection must have at least one non-morph operand.`
+
+type doubleMorphIntersectionMessage = typeof doubleMorphIntersectionMessage
+
+type validateBinary<l, r, $> = validateAstSemantics<l, $> extends error<
+    infer leftMessage
+>
+    ? leftMessage
+    : validateAstSemantics<r, $> extends error<infer rightMessage>
+    ? rightMessage
+    : undefined
+
 export type validateAstSemantics<ast, $> = ast extends string
     ? undefined
     : ast extends [infer child, unknown]
     ? validateAstSemantics<child, $>
-    : ast extends [infer left, infer token, infer right]
-    ? token extends Scanner.BranchToken
-        ? validateAstSemantics<left, $> extends error<infer leftMessage>
-            ? leftMessage
-            : validateAstSemantics<right, $> extends error<infer rightMessage>
-            ? rightMessage
-            : undefined
+    : ast extends [infer l, infer token, infer r]
+    ? token extends "&"
+        ? validateAstIntersection<
+              inferAst<l, $>,
+              inferAst<l, out<$>>,
+              inferAst<r, $>,
+              inferAst<r, out<$>>
+          > extends error<infer message>
+            ? error<message>
+            : validateBinary<l, r, $>
+        : token extends "|"
+        ? validateBinary<l, r, $>
         : token extends Scanner.Comparator
-        ? left extends number
-            ? validateAstSemantics<right, $>
-            : isBoundable<inferAst<left, $>> extends true
-            ? validateAstSemantics<left, $>
+        ? l extends number
+            ? validateAstSemantics<r, $>
+            : isBoundable<inferAst<l, $>> extends true
+            ? validateAstSemantics<l, $>
             : error<buildUnboundableMessage<astToString<ast[0]>>>
         : token extends "%"
-        ? isDivisible<inferAst<left, $>> extends true
-            ? validateAstSemantics<left, $>
+        ? isDivisible<inferAst<l, $>> extends true
+            ? validateAstSemantics<l, $>
             : error<buildIndivisibleMessage<astToString<ast[0]>>>
-        : validateAstSemantics<left, $>
+        : validateAstSemantics<l, $>
     : undefined
 
 type isNonLiteralNumber<t> = t extends number
@@ -80,7 +108,7 @@ type isBoundable<data> = isAny<data> extends true
 type inferTerminal<token, $> = token extends Keyword
     ? Keywords[token]
     : token extends keyof $
-    ? inferResolution<$[token], $>
+    ? inferDefinition<$[token], $>
     : token extends StringLiteral<infer Text>
     ? Text
     : token extends RegexLiteral

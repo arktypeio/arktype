@@ -35,14 +35,14 @@ describe("string", () => {
 
 describe("regex intersections", () => {
     it("distinct strings", () => {
-        attest(type("/a/&/b/").root).snap({
+        attest(type("/a/&/b/").node).snap({
             string: {
                 regex: ["a", "b"]
             }
         })
     })
     it("identical strings", () => {
-        attest(type("/a/&/a/").root).snap({
+        attest(type("/a/&/a/").node).snap({
             string: {
                 regex: "a"
             }
@@ -50,10 +50,10 @@ describe("regex intersections", () => {
     })
     // TODO: Use set comparisons https://github.com/arktypeio/arktype/issues/557
     it("string and list", () => {
-        attest(type(["/a/", "&", "/b/&/c/"]).root).snap({
+        attest(type(["/a/", "&", "/b/&/c/"]).node).snap({
             string: { regex: ["b", "c", "a"] }
         })
-        attest(type(["/a/&/b/", "&", "/c/"]).root).snap({
+        attest(type(["/a/&/b/", "&", "/c/"]).node).snap({
             string: { regex: ["a", "b", "c"] }
         })
     })
@@ -63,25 +63,25 @@ describe("regex intersections", () => {
                 regex: ["a", "b", "c"]
             }
         }
-        attest(type(["/a/", "&", "/a/&/b/&/c/"]).root).equals(expected)
-        attest(type(["/a/&/b/&/c/", "&", "/c/"]).root).equals(expected)
+        attest(type(["/a/", "&", "/a/&/b/&/c/"]).node).equals(expected)
+        attest(type(["/a/&/b/&/c/", "&", "/c/"]).node).equals(expected)
     })
     it("distinct lists", () => {
-        attest(type(["/a/&/b/", "&", "/c/&/d/"]).root).snap({
+        attest(type(["/a/&/b/", "&", "/c/&/d/"]).node).snap({
             string: {
                 regex: ["a", "b", "c", "d"]
             }
         })
     })
     it("overlapping lists", () => {
-        attest(type(["/a/&/b/", "&", "/c/&/b/"]).root).snap({
+        attest(type(["/a/&/b/", "&", "/c/&/b/"]).node).snap({
             string: {
                 regex: ["a", "b", "c"]
             }
         })
     })
     it("identical lists", () => {
-        attest(type(["/a/&/b/", "&", "/b/&/a/"]).root).snap({
+        attest(type(["/a/&/b/", "&", "/b/&/a/"]).node).snap({
             string: {
                 regex: ["a", "b"]
             }

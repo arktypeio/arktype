@@ -10,12 +10,12 @@ describe("union/parse", () => {
     it("binary", () => {
         const binary = type("number|string")
         attest(binary.infer).typed as number | string
-        attest(binary.root).snap({ number: true, string: true })
+        attest(binary.node).snap({ number: true, string: true })
     })
     it("nary", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
-        attest(nary.root).snap({
+        attest(nary.node).snap({
             boolean: {
                 value: false
             },
@@ -30,8 +30,8 @@ describe("union/parse", () => {
         })
     })
     it("union of true and false reduces to boolean", () => {
-        attest(type("true|false").root).equals({ boolean: true })
-        attest(type("true|false|number").root).equals({
+        attest(type("true|false").node).equals({ boolean: true })
+        attest(type("true|false|number").node).equals({
             boolean: true,
             number: true
         })
@@ -42,7 +42,7 @@ describe("union/parse", () => {
             "|",
             { a: "false" }
         ])
-        attest(t.root).snap({
+        attest(t.node).snap({
             object: { props: { a: "boolean" } }
         })
     })

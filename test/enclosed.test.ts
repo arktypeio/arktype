@@ -62,7 +62,7 @@ describe("parse enclosed", () => {
     it("escaped enclosing", () => {
         const t = type("'don\\'t'")
         attest(t.infer).typed as "don't"
-        attest(type("'don\\'t'").root).equals({
+        attest(type("'don\\'t'").node).equals({
             string: { value: "don't" }
         })
     })

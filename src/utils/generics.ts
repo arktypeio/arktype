@@ -29,7 +29,7 @@ export type defer<t> = t & {}
 export type merge<base, merged> = evaluate<Omit<base, keyof merged> & merged>
 
 /** Replace existing keys of o without altering readonly or optional modifiers  */
-export type replaceKeys<
+export type replaceProps<
     o,
     replacements extends { -readonly [k in keyof o]?: unknown }
 > = evaluate<{

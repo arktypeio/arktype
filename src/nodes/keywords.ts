@@ -1,7 +1,7 @@
-import type { Scope } from "../scope.ts"
+import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { deepFreeze } from "../utils/freeze.ts"
-import type { CompiledScopeNodes, TypeNode, TypeRoot } from "./node.ts"
+import type { CompiledScopeNodes, TypeNode, TypeResolution } from "./node.ts"
 import { compileNodes } from "./node.ts"
 
 const always: Record<Domain, true> = {
@@ -41,20 +41,20 @@ export const keywords = deepFreeze({
     uppercase: { string: { regex: "^[A-Z]*$" } },
     // Numeric
     integer: { number: { divisor: 1 } }
-} as const satisfies Record<Keyword, TypeRoot>)
+} as const satisfies Record<Keyword, TypeResolution>)
 
 export const functorKeywords = {
-    Array: (node: TypeNode): TypeRoot => ({
+    Array: (node: TypeNode): TypeResolution => ({
         object: {
             subdomain: ["Array", node]
         }
     }),
-    Set: (node: TypeNode): TypeRoot => ({
+    Set: (node: TypeNode): TypeResolution => ({
         object: {
             subdomain: ["Set", node]
         }
     }),
-    Map: (k: TypeNode, v: TypeNode): TypeRoot => ({
+    Map: (k: TypeNode, v: TypeNode): TypeResolution => ({
         object: {
             subdomain: ["Map", k, v]
         }
@@ -97,7 +97,7 @@ let flatKeywords: CompiledScopeNodes<typeof keywords>
 
 export const getFlatKeywords = () => {
     if (!flatKeywords) {
-        flatKeywords = compileNodes(keywords, {} as Scope)
+        flatKeywords = compileNodes(keywords, {} as ScopeRoot)
     }
     return flatKeywords
 }

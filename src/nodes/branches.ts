@@ -1,4 +1,4 @@
-import type { Scope } from "../scope.ts"
+import type { ScopeRoot } from "../scope.ts"
 import type {
     defineDiagnostic,
     DiagnosticMessageBuilder
@@ -30,7 +30,7 @@ export const compareBranches = (
     domain: Domain,
     lConditions: Branches,
     rConditions: Branches,
-    scope: Scope
+    scope: ScopeRoot
 ): BranchesComparison => {
     const result: BranchesComparison = {
         lConditions,
