@@ -50,19 +50,19 @@ describe("morph", () => {
             "An intersection must have at least one non-morph operand."
         )
     })
-    // it("deep morph intersection", () => {
-    //     attest(() => {
-    //         const types = scope({
-    //             a: { a: ["boolean", "=>", (data) => `${data}`] },
-    //             b: { a: ["boolean", "=>", (data) => `${data}!!!`] },
-    //             // @ts-expect-error
-    //             c: "a&b"
-    //         })
-    //     }).throwsAndHasTypeError(
-    //         // TODO: Add paths to these errors
-    //         "An intersection must have at least one non-morph operand."
-    //     )
-    // })
+    it("deep morph intersection", () => {
+        attest(() => {
+            const types = scope({
+                a: { a: ["boolean", "=>", (data) => `${data}`] },
+                b: { a: ["boolean", "=>", (data) => `${data}!!!`] },
+                // @ts-expect-error
+                c: "a&b"
+            })
+        }).throwsAndHasTypeError(
+            // TODO: Add paths to these errors
+            "An intersection must have at least one non-morph operand."
+        )
+    })
     // it("function", () => {
     //     const t = type("boolean", {
     //         out: (data) => `${data}`
@@ -134,7 +134,6 @@ describe("morph", () => {
     //             })
     //     })
     // })
-
     // describe("inputs", () => {
     //     it("function", () => {
     //         const t = type("boolean", {

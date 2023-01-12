@@ -1,5 +1,6 @@
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
 import type {
+    Dict,
     Downcastable,
     error,
     evaluate,
@@ -8,7 +9,7 @@ import type {
     RegexLiteral
 } from "../../utils/generics.ts"
 import type { inferDefinition } from "../definition.ts"
-import type { Morph, Out } from "../tuple/morph.ts"
+import type { Out, ParsedMorph } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
@@ -18,7 +19,14 @@ export type inferAst<ast, $> = ast extends readonly unknown[]
         : ast[1] extends "|"
         ? inferAst<ast[0], $> | inferAst<ast[2], $>
         : ast[1] extends "&"
-        ? inferIntersection<inferAst<ast[0], $>, inferAst<ast[2], $>>
+        ? inferIntersection<
+              inferAst<ast[0], $>,
+              inferAst<ast[2], $>
+          > extends infer result
+            ? result extends error
+                ? never
+                : result
+            : never
         : ast[1] extends Scanner.Comparator
         ? ast[0] extends number
             ? inferAst<ast[2], $>
@@ -27,26 +35,6 @@ export type inferAst<ast, $> = ast extends readonly unknown[]
         ? inferAst<ast[0], $>
         : never
     : inferTerminal<ast, $>
-
-export type inferIntersection<l, r> = l extends Morph<infer lIn, infer lOut>
-    ? r extends Morph
-        ? error<doubleMorphIntersectionMessage>
-        : (In: evaluate<lIn & r>) => Out<lOut>
-    : r extends Morph<infer rIn, infer rOut>
-    ? (In: evaluate<rIn & l>) => Out<rOut>
-    : evaluate<l & r>
-
-export const doubleMorphIntersectionMessage = `An intersection must have at least one non-morph operand.`
-
-type doubleMorphIntersectionMessage = typeof doubleMorphIntersectionMessage
-
-type validateBinary<l, r, $> = validateAstSemantics<l, $> extends error<
-    infer leftMessage
->
-    ? leftMessage
-    : validateAstSemantics<r, $> extends error<infer rightMessage>
-    ? rightMessage
-    : undefined
 
 export type validateAstSemantics<ast, $> = ast extends string
     ? undefined
@@ -73,6 +61,52 @@ export type validateAstSemantics<ast, $> = ast extends string
             : error<buildIndivisibleMessage<astToString<ast[0]>>>
         : validateAstSemantics<l, $>
     : undefined
+
+type validateBinary<l, r, $> = validateAstSemantics<l, $> extends error<
+    infer leftMessage
+>
+    ? leftMessage
+    : validateAstSemantics<r, $> extends error<infer rightMessage>
+    ? rightMessage
+    : undefined
+
+type inferIntersection<l, r> = inferIntersectionRecurse<l, r, never>
+
+type inferIntersectionRecurse<l, r, seen> = l extends seen
+    ? l & r
+    : l extends ParsedMorph<infer lIn, infer lOut>
+    ? r extends ParsedMorph
+        ? error<doubleMorphIntersectionMessage>
+        : (In: evaluate<lIn & r>) => Out<lOut>
+    : r extends ParsedMorph<infer rIn, infer rOut>
+    ? (In: evaluate<rIn & l>) => Out<rOut>
+    : l extends Dict
+    ? r extends Dict
+        ? bubblePropErrors<
+              {
+                  [k in keyof l]: k extends keyof r
+                      ? inferIntersectionRecurse<l[k], r[k], seen | l>
+                      : l[k]
+              } & Omit<r, keyof l>
+          >
+        : l & r
+    : l & r
+
+type bubblePropErrors<t> = errorKeyOf<t> extends never ? t : t[errorKeyOf<t>]
+
+type errorKeyOf<t> = {
+    [k in keyof t]: isAny<t[k]> extends true
+        ? never
+        : t[k] extends never
+        ? never
+        : t[k] extends error
+        ? k
+        : never
+}[keyof t]
+
+export const doubleMorphIntersectionMessage = `An intersection must have at least one non-morph operand.`
+
+type doubleMorphIntersectionMessage = typeof doubleMorphIntersectionMessage
 
 type isNonLiteralNumber<t> = t extends number
     ? number extends t

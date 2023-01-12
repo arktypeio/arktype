@@ -3,18 +3,12 @@ import type { TypeNode } from "../../nodes/node.ts"
 import { intersection, union } from "../../nodes/node.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import { throwParseError } from "../../utils/errors.ts"
-import type {
-    error,
-    evaluate,
-    List,
-    parametersOf,
-    returnOf
-} from "../../utils/generics.ts"
+import type { error, evaluate, List, returnOf } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
-import type { In, Out, validateMorphTuple } from "./morph.ts"
+import type { Out, validateMorphTuple } from "./morph.ts"
 import { parseMorphTuple } from "./morph.ts"
 import type { validateNarrowTuple } from "./narrow.ts"
 import { parseNarrowTuple } from "./narrow.ts"
@@ -62,12 +56,13 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
         ? narrowed
         : inferDefinition<def[0], $>
     : def[1] extends "=>"
-    ? $ extends Out
-        ? returnOf<def[2]>
-        : $ extends In
-        ? inferDefinition<def[0], $>
-        : (In: inferDefinition<def[0], $>) => Out<returnOf<def[2]>>
-    : def[1] extends Scanner.BranchToken
+    ? (In: inferDefinition<def[0], $>) => Out<returnOf<def[2]>>
+    : // $ extends Out
+    //         ? returnOf<def[2]>
+    //         : $ extends In
+    //         ? inferDefinition<def[0], $>
+    //         : (In: inferDefinition<def[0], $>) => returnOf<def[2]>
+    def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? never
         : def[1] extends "&"

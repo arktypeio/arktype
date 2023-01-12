@@ -11,7 +11,7 @@ export const parseMorphTuple: TupleExpressionParser<"=>"> = (def, $) => {
     }
     return {
         input: inputNode,
-        morph: def[2] as Morph
+        morph: def[2] as ParsedMorph
     }
 }
 
@@ -22,12 +22,12 @@ export type In<t = {}> = nominal<t, "in">
 export type validateMorphTuple<inputDef, $> = [
     validateDefinition<inputDef, $>,
     "=>",
-    MorphDefinition<inferDefinition<inputDef, $>, unknown>
+    Morph<inferDefinition<inputDef, $>, unknown>
 ]
 
-export type MorphDefinition<i = any, o = unknown> = (In: i) => o
+export type Morph<i = any, o = unknown> = (In: i) => o
 
-export type Morph<i = any, o = unknown> = (In: i) => Out<o>
+export type ParsedMorph<i = any, o = unknown> = (In: i) => Out<o>
 
 export const buildMalformedMorphExpressionMessage = (value: unknown) =>
     `Morph expression requires a function following '=>' (got ${typeof value} at index 2)`
