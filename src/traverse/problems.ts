@@ -110,14 +110,27 @@ const buildUnassignableError: DiagnosticMessageBuilder<"Unassignable"> = ({
     expected
 }) => `${data.toString()} is not assignable to ${expected}.`
 
+type DomainsErrorContext = defineDiagnostic<unknown, { expected: unknown }>
+
+const buildDomainsError: DiagnosticMessageBuilder<"Domains"> = ({
+    data,
+    expected
+}) =>
+    //TODOSHAWN this looks questionable
+    `${data.toString()} is not assignable to ${
+        typeof expected === "object"
+            ? Object.keys(expected!).join("|")
+            : expected
+    }`
+
 export type DiagnosticsByCode = {
     DivisorViolation: DivisorErrorContext
+    Domains: DomainsErrorContext
     MissingKey: MissingKeyContext
     RangeViolation: RangeErrorContext
     RegexMismatch: RegexErrorContext
     TupleLength: TupleLengthErrorContext
     Unassignable: UnassignableErrorContext
-    // Unsatifactory: UnsatisfyingErrorContext
     Union: UnionErrorContext
 }
 //Domain error
@@ -132,6 +145,7 @@ const defaultMessagesByCode: {
     [code in DiagnosticCode]: DiagnosticMessageBuilder<code>
 } = {
     DivisorViolation: buildDivisorError,
+    Domains: buildDomainsError,
     MissingKey: buildMissingKeyError,
     RangeViolation: buildRangeError,
     RegexMismatch: buildRegexError,

@@ -158,9 +158,9 @@ const checkers = {
             checkEntries(state, scope)
         } else {
             state.problems.addProblem(
-                "Unassignable",
+                "Domains",
                 {
-                    expected: state.node
+                    expected: state.node[0][1]
                 },
                 state
             )
