@@ -60,7 +60,11 @@ export type TypeRoot<t = unknown> = {
 }
 
 export type Type<t = unknown> = defer<
-    Checker<{ data: inferIo<t, "in"> }> & TypeRoot<t>
+    Checker<{
+        data: inferIo<t, "in">
+        out: inferIo<t, "out">
+    }> &
+        TypeRoot<t>
 >
 
 export type TypeOptions = CheckConfig

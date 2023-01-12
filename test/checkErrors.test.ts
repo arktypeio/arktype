@@ -5,13 +5,8 @@ import { attest } from "../dev/attest/api.ts"
 describe("check errors", () => {
     test("divisible", () => {
         const t = type("number%2")
-        const checked = t(3)
-        attest(checked.problems?.summary).snap("3 is not divisible by 2.")
-    })
-    test("divisible", () => {
-        const t = type("number%2")
-        const checked = t(4)
-        attest(checked).snap({ data: 4 })
+        attest(t(4).data).snap(4)
+        attest(t(5).problems?.summary).snap("5 is not divisible by 2.")
     })
     test("string length", () => {
         const gte3 = type("string>=3")
