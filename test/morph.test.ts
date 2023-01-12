@@ -37,6 +37,14 @@ describe("morph", () => {
             morph: "<function>"
         })
     })
+    it("deep mixed intersection", () => {
+        const types = scope({
+            a: { a: ["number>0", "=>", (data) => data + 1] },
+            b: { a: "1" },
+            c: "a&b"
+        })
+        attest(types.c.infer)
+    })
     it("shallow morph intersection", () => {
         attest(() => {
             const types = scope({

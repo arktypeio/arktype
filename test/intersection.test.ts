@@ -38,7 +38,25 @@ describe("intersection", () => {
                 attest(type("string&'a'").node).snap({ string: { value: "a" } })
             })
         })
-
+        it("list intersection", () => {
+            const t = type([
+                [{ a: "string" }, "[]"],
+                "&",
+                [{ b: "boolean" }, "[]"]
+            ])
+            attest(t.infer).typed as {
+                a: string
+                b: boolean
+            }[]
+            attest(t.node).snap({
+                object: {
+                    subdomain: [
+                        "Array",
+                        { object: { props: { a: "string", b: "boolean" } } }
+                    ]
+                }
+            })
+        })
         describe("errors", () => {
             it("bad reference", () => {
                 // @ts-expect-error

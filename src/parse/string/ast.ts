@@ -70,7 +70,7 @@ type validateBinary<l, r, $> = validateAstSemantics<l, $> extends error<
     ? rightMessage
     : undefined
 
-type inferIntersection<l, r> = inferIntersectionRecurse<l, r, never>
+export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, never>
 
 type inferIntersectionRecurse<l, r, seen> = l extends seen
     ? l & r
@@ -80,16 +80,18 @@ type inferIntersectionRecurse<l, r, seen> = l extends seen
         : (In: evaluate<lIn & r>) => Out<lOut>
     : r extends ParsedMorph<infer rIn, infer rOut>
     ? (In: evaluate<rIn & l>) => Out<rOut>
-    : l extends Dict
-    ? r extends Dict
-        ? bubblePropErrors<
+    : [l, r] extends [Dict, Dict]
+    ? bubblePropErrors<
+          evaluate<
               {
                   [k in keyof l]: k extends keyof r
                       ? inferIntersectionRecurse<l[k], r[k], seen | l>
                       : l[k]
               } & Omit<r, keyof l>
           >
-        : l & r
+      >
+    : [l, r] extends [List<infer lItem>, List<infer rItem>]
+    ? inferIntersectionRecurse<lItem, rItem, seen>[]
     : l & r
 
 type bubblePropErrors<t> = errorKeyOf<t> extends never ? t : t[errorKeyOf<t>]

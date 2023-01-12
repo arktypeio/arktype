@@ -101,7 +101,7 @@ export const scope: ScopeParser<{}> = composeScopeParser()
 
 const rootScope = composeScopeParser()({})
 
-export const type: TypeParser<{}> = composeTypeParser(rootScope as any)
+export const type: TypeParser<{}> = composeTypeParser(rootScope.$)
 
 export const buildDuplicateAliasMessage = <name extends string>(
     name: name

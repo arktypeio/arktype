@@ -6,6 +6,7 @@ import { throwParseError } from "../../utils/errors.ts"
 import type { error, evaluate, List, returnOf } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
+import type { inferIntersection } from "../string/ast.ts"
 import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
 import type { Out, validateMorphTuple } from "./morph.ts"
@@ -51,6 +52,7 @@ export type inferTuple<def extends List, $> = def extends TupleExpression
           [i in keyof def]: inferDefinition<def[i], $>
       }
 
+// TODO: unify with ast
 type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
     ? def[2] extends (In: any) => In is infer narrowed
         ? narrowed
@@ -66,7 +68,10 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
     ? def[2] extends undefined
         ? never
         : def[1] extends "&"
-        ? evaluate<inferDefinition<def[0], $> & inferDefinition<def[2], $>>
+        ? inferIntersection<
+              inferDefinition<def[0], $>,
+              inferDefinition<def[2], $>
+          >
         : inferDefinition<def[0], $> | inferDefinition<def[2], $>
     : def[1] extends "[]"
     ? inferDefinition<def[0], $>[]

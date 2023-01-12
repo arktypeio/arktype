@@ -1,6 +1,6 @@
 import type { TraversalNode, TypeResolution } from "./nodes/node.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
-import type { ParsedMorph } from "./parse/tuple/morph.ts"
+import type { Morph } from "./parse/tuple/morph.ts"
 import type { ScopeRoot } from "./scope.ts"
 import type { CheckConfig } from "./traverse/check.ts"
 import { rootCheck } from "./traverse/check.ts"
@@ -10,23 +10,22 @@ import type { defer, xor } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
 export const nodeToType = (
-    root: TypeResolution,
+    node: TypeResolution,
     flat: TraversalNode,
     $: ScopeRoot,
     config: TypeOptions
-): Type => {
-    return Object.assign(
+) =>
+    Object.assign(
         (data: unknown) => {
             return rootCheck(data, flat, $, config)
         },
         {
             config,
             infer: chainableNoOpProxy,
-            root,
+            node,
             flat
         }
-    ) as any
-}
+    ) as Type
 
 export const isType = (value: unknown): value is Type =>
     (value as Type)?.infer === chainableNoOpProxy
@@ -53,13 +52,12 @@ export type Result<output> = xor<output, { problems: Problems }>
 export type Checker<output> = (data: unknown) => Result<output>
 
 export type TypeRoot<t = unknown> = {
-    infer: t
-    // t extends Morph
-    //     ? {
-    //           in: inferIn<t>
-    //           out: inferOut<t>
-    //       }
-    //     : t
+    infer: t extends Morph
+        ? {
+              in: inferIn<t>
+              out: inferOut<t>
+          }
+        : t
     node: TypeResolution
     flat: TraversalNode
 }
