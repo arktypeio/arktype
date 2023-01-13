@@ -34,9 +34,9 @@ export type validateTupleExpression<
     def extends TupleExpression,
     $
 > = def[1] extends "=>"
-    ? validateMorphTuple<def[0], $>
+    ? validateMorphTuple<def, $>
     : def[1] extends ":"
-    ? validateNarrowTuple<def[0], $>
+    ? validateNarrowTuple<def, $>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? [def[0], error<buildMissingRightOperandMessage<def[1], "">>]
@@ -52,11 +52,19 @@ export type inferTuple<def extends List, $> = def extends TupleExpression
       }
 
 type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
-    ? def[2] extends (data: any) => data is infer narrowed
+    ? [unknown, 3] extends [def[2], keyof def]
+        ? inferDefinition<def[3], $>
+        : def[2] extends (data: any) => data is infer narrowed
         ? narrowed
         : inferDefinition<def[0], $>
     : def[1] extends "=>"
-    ? (In: inferDefinition<def[0], $>) => Out<returnOf<def[2]>>
+    ? (
+          In: inferDefinition<def[0], $>
+      ) => Out<
+          [unknown, 3] extends [def[2], keyof def]
+              ? inferDefinition<def[3], $>
+              : returnOf<def[2]>
+      >
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? never

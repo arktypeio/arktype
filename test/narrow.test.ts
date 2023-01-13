@@ -82,7 +82,9 @@ describe("narrow", () => {
         // @ts-expect-error
         type([["boolean", ":", (b) => b === true]]).infer
     })
+    // TODO: finalize API workarounds (something explicit like "as"?)
     it("functional inference in scope", () => {
+        // https://github.com/arktypeio/arktype/issues/577
         // There is a problem inferring tuple expressions that
         // reference an object in a scope. Based on some investigation, it has
         // to do with aliases being passed to validateDefinition and an object
@@ -90,10 +92,12 @@ describe("narrow", () => {
         // following two cases don't fail.
 
         const bad = scope({
-            a: [{ a: "1" }, "=>", (data) => `${data}`]
+            a: [{ a: "1" }, "=>", (data) => `${data}`],
+            // should be narrowed from {a: number} to {a: 1} but isn't
+            b: [{ a: "number" }, ":", (data): data is { a: 1 } => true]
         })
         // @ts-expect-error inferred as never
-        attest(bad.a.infer).typed as { a: 1 }
+        attest(bad.a.infer).typed as string
 
         // works fine if input def is not a record or an alias resolving to a
         // record.
@@ -108,6 +112,23 @@ describe("narrow", () => {
         const okType = type({
             a: [{ a: "1" }, "=>", (data) => `${data}`]
         })
-        attest(okType.infer).typed as { a: 1 }
+        attest(okType.infer).typed as { a: string }
+
+        const workaround = scope({
+            // added a workaround allowing out inference from an extra def at position 3
+            a: [{ a: "1" }, "=>", (data) => `${data}`, "string"],
+            // Also works for narrowing
+            b: [
+                { a: "number" },
+                ":",
+                (data): data is { a: 1 } => data.a === 1,
+                { a: "1" }
+            ],
+            // can also avoid by explicitly annotating the input def, but that may be difficult if the scope is cyclic
+            c: [{ a: "1" }, "=>", (data: { a: 1 }) => `${data}`]
+        })
+        attest(workaround.a.infer).typed as string
+        attest(workaround.b.infer).typed as { a: 1 }
+        attest(workaround.c.infer).typed as string
     })
 })

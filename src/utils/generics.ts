@@ -8,7 +8,9 @@ type downcastRecurse<t> = {
         : downcastRecurse<t[k]>
 }
 
-type castWithExclusion<t, castTo, excluded> = t extends excluded ? t : castTo
+export type castWithExclusion<t, castTo, excluded> = t extends excluded
+    ? t
+    : castTo
 
 export type Downcastable = string | boolean | number | bigint
 

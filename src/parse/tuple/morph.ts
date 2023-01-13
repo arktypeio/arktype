@@ -2,7 +2,7 @@ import { throwParseError } from "../../utils/errors.ts"
 import type { nominal } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
-import type { TupleExpressionParser } from "./tuple.ts"
+import type { TupleExpression, TupleExpressionParser } from "./tuple.ts"
 
 export const parseMorphTuple: TupleExpressionParser<"=>"> = (def, $) => {
     const inputNode = parseDefinition(def[0], $)
@@ -17,10 +17,11 @@ export const parseMorphTuple: TupleExpressionParser<"=>"> = (def, $) => {
 
 export type Out<t = {}> = nominal<t, "out">
 
-export type validateMorphTuple<inputDef, $> = [
-    validateDefinition<inputDef, $>,
-    "=>",
-    Morph<inferDefinition<inputDef, $>, unknown>
+export type validateMorphTuple<def extends TupleExpression, $> = [
+    _: validateDefinition<def[0], $>,
+    _: "=>",
+    _: Morph<inferDefinition<def[0], $>>,
+    _?: validateDefinition<def[3], $>
 ]
 
 export type Morph<i = any, o = unknown> = (In: i) => o
