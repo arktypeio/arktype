@@ -11,13 +11,11 @@ export const parseMorphTuple: TupleExpressionParser<"=>"> = (def, $) => {
     }
     return {
         input: inputNode,
-        morph: def[2] as ParsedMorph
+        morph: def[2] as Morph
     }
 }
 
 export type Out<t = {}> = nominal<t, "out">
-
-export type In<t = {}> = nominal<t, "in">
 
 export type validateMorphTuple<inputDef, $> = [
     validateDefinition<inputDef, $>,

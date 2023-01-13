@@ -1,5 +1,5 @@
 import { doubleMorphIntersectionMessage } from "../parse/string/ast.ts"
-import type { ParsedMorph } from "../parse/tuple/morph.ts"
+import type { Morph } from "../parse/tuple/morph.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
@@ -39,7 +39,7 @@ export type Identifier<$ = Dict> = string extends keyof $
 
 export type MorphNode<$ = Dict> = {
     readonly input: TypeNode<$>
-    readonly morph: ParsedMorph
+    readonly morph: Morph
 }
 
 export type ValidatorNode<$ = Dict> = {

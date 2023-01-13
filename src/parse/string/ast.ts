@@ -1,12 +1,10 @@
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
-import type { subdomainOf } from "../../utils/domains.ts"
 import type {
     Dict,
     Downcastable,
     error,
     evaluate,
     isAny,
-    isTopType,
     List,
     RegexLiteral
 } from "../../utils/generics.ts"

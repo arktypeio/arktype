@@ -6,7 +6,7 @@ import { throwParseError } from "../../utils/errors.ts"
 import type { error, List, returnOf } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
-import type { inferIntersection } from "../string/ast.ts"
+import type { inferIntersection, inferUnion } from "../string/ast.ts"
 import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
 import type { Out, validateMorphTuple } from "./morph.ts"
@@ -33,10 +33,10 @@ export const parseTuple = (def: List, $: ScopeRoot): TypeNode => {
 export type validateTupleExpression<
     def extends TupleExpression,
     $
-> = def[1] extends ":"
-    ? validateNarrowTuple<def[0], $>
-    : def[1] extends "=>"
+> = def[1] extends "=>"
     ? validateMorphTuple<def[0], $>
+    : def[1] extends ":"
+    ? validateNarrowTuple<def[0], $>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? [def[0], error<buildMissingRightOperandMessage<def[1], "">>]
@@ -52,7 +52,7 @@ export type inferTuple<def extends List, $> = def extends TupleExpression
       }
 
 type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
-    ? def[2] extends (In: any) => In is infer narrowed
+    ? def[2] extends (data: any) => data is infer narrowed
         ? narrowed
         : inferDefinition<def[0], $>
     : def[1] extends "=>"
@@ -65,7 +65,7 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
               inferDefinition<def[0], $>,
               inferDefinition<def[2], $>
           >
-        : inferDefinition<def[0], $> | inferDefinition<def[2], $>
+        : inferUnion<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
     : def[1] extends "[]"
     ? inferDefinition<def[0], $>[]
     : never
