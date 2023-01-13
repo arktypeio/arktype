@@ -1,3 +1,4 @@
+import type { Narrow } from "../../parse/tuple/narrow.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import type { TraversalEntry } from "../../traverse/check.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
@@ -24,7 +25,9 @@ export type Rules<domain extends Domain = Domain, $ = Dict> = {
     readonly divisor?: number
     readonly range?: Range
     readonly props?: PropsRule<$>
-    readonly narrow?: CollapsibleList<Narrow<inferDomain<domain>>>
+    readonly narrow?: CollapsibleList<
+        Narrow<Domain extends domain ? any : inferDomain<domain>>
+    >
 }
 
 export type TraversalRuleEntry =
@@ -35,8 +38,6 @@ export type TraversalRuleEntry =
     | TraversalRequiredProps
     | TraversalOptionalProps
     | ["narrow", Narrow]
-
-export type Narrow<data = unknown> = (data: data) => boolean
 
 export type RuleSet<domain extends Domain, $> = Domain extends domain
     ? Rules

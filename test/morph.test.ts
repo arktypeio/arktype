@@ -1,6 +1,7 @@
 import { describe, it } from "mocha"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
+import { doubleMorphIntersectionMessage } from "../src/parse/string/ast.ts"
 
 describe("morph", () => {
     it("base", () => {
@@ -47,7 +48,7 @@ describe("morph", () => {
     })
     it("shallow morph intersection", () => {
         attest(() => {
-            const types = scope({
+            scope({
                 a: ["boolean", "=>", (data) => `${data}`],
                 b: ["boolean", "=>", (data) => `${data}!!!`],
                 // @ts-expect-error
@@ -55,23 +56,29 @@ describe("morph", () => {
             })
         }).throwsAndHasTypeError(
             // TODO: Add paths to these errors
-            "An intersection must have at least one non-morph operand."
+            doubleMorphIntersectionMessage
         )
     })
     it("deep morph intersection", () => {
         attest(() => {
-            const types = scope({
+            scope({
                 a: { a: ["boolean", "=>", (data) => `${data}`] },
                 b: { a: ["boolean", "=>", (data) => `${data}!!!`] },
                 // @ts-expect-error
                 c: "a&b"
             })
-        }).throwsAndHasTypeError(
-            // TODO: Add paths to these errors
-            "An intersection must have at least one non-morph operand."
-        )
+        }).throwsAndHasTypeError(doubleMorphIntersectionMessage)
     })
-    it("array intersection", () => {})
+    it("array intersection", () => {
+        attest(() => {
+            scope({
+                a: { a: ["number>0", "=>", (data) => data + 1] },
+                b: { a: ["number>0", "=>", (data) => data + 1] },
+                // @ts-expect-error
+                c: "a[]&b[]"
+            })
+        }).throwsAndHasTypeError(doubleMorphIntersectionMessage)
+    })
     // it("function", () => {
     //     const t = type("boolean", {
     //         out: (data) => `${data}`
