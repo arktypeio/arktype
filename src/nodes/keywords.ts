@@ -15,6 +15,7 @@ const always: Record<Domain, true> = {
     undefined: true
 }
 
+// TODO: convert to node definitions, root scope
 export const keywords = deepFreeze({
     // TS keywords
     any: always,
@@ -92,11 +93,11 @@ export type Keywords = {
     integer: number
 }
 
-// Use a dummy scope here since we know there are no alias references
 let flatKeywords: CompiledScopeNodes<typeof keywords>
 
 export const getFlatKeywords = () => {
     if (!flatKeywords) {
+        // Use a dummy scope here since we know there are no alias references
         flatKeywords = compileNodes(keywords, {} as ScopeRoot)
     }
     return flatKeywords

@@ -2,51 +2,85 @@ import { describe, it } from "mocha"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import { doubleMorphIntersectionMessage } from "../src/parse/string/ast.ts"
+import type { Out } from "../src/parse/tuple/morph.ts"
+import type { Type } from "../src/type.ts"
 
 describe("morph", () => {
     it("base", () => {
         const t = type(["boolean", "=>", (data) => `${data}`])
+        attest(t.t).typed as Type<(In: boolean) => Out<string>>
+        attest(t.infer).typed as Type<string>
         attest(t.node).snap({ input: "boolean", morph: "<function>" })
+        attest(t(true).data).equals(true).typed as boolean
+        attest(t(true).out).equals("true").typed as string
+        attest(t("foo").problems?.summary).snap()
     })
-    it("mixed intersection", () => {
+    it("endomorph", () => {
+        const t = type(["boolean", "=>", (data) => !data])
+        attest(t.t).typed as Type<(In: boolean) => Out<boolean>>
+        attest(t(true).data).equals(true).typed as boolean
+        attest(t(true).out).equals(false).typed as boolean
+    })
+    it("object inference", () => {
+        const t = type([{ a: "string" }, "=>", (data) => `${data}`])
+        attest(t.t).typed as Type<(In: { a: string }) => Out<string>>
+    })
+    it("intersection", () => {
         const types = scope({
-            a: ["number>0", "=>", (data) => data + 1],
-            b: "number<=1",
-            leftMorph: "a&b",
-            rightMorph: "b&a"
+            a: [{ a: "1" }, "=>", (data) => `${data}`],
+            b: { b: "2" },
+            aAndB: "a&b",
+            bAndA: "b&a"
         })
-        attest(types.leftMorph.node).snap({
+        // attest(types.a).typed as Type<(In: { a: 1 }) => Out<string>>
+        attest(types.aAndB).typed as Type<(In: { a: 1; b: 2 }) => Out<string>>
+        attest(types.aAndB.node).snap({
             input: {
-                number: {
-                    range: {
-                        min: { limit: 0, exclusive: true },
-                        max: { limit: 1 }
+                object: {
+                    props: {
+                        a: { number: { value: 1 } },
+                        b: { number: { value: 2 } }
                     }
                 }
             },
             morph: "<function>"
         })
-        attest(types.rightMorph.node).snap({
-            input: {
-                number: {
-                    range: {
-                        min: { limit: 0, exclusive: true },
-                        max: { limit: 1 }
-                    }
-                }
-            },
-            morph: "<function>"
-        })
+        attest(types.bAndA).typed as typeof types.aAndB
+        attest(types.bAndA.node).equals(types.aAndB.node)
     })
-    it("deep mixed intersection", () => {
+    it("union", () => {
+        const types = scope({
+            a: ["number", "=>", (data) => `${data}`],
+            b: "boolean",
+            aOrB: "a|b",
+            bOrA: "b|a"
+        })
+        attest(types.aOrB).typed as Type<(In: number | boolean) => Out<string>>
+        attest(types.aOrB.node).snap({ input: {}, morph: "<function>" })
+        attest(types.bOrA).typed as typeof types.aOrB
+        attest(types.bOrA.node).equals(types.aOrB.node)
+    })
+    it("deep intersection", () => {
         const types = scope({
             a: { a: ["number>0", "=>", (data) => data + 1] },
             b: { a: "1" },
             c: "a&b"
         })
-        attest(types.c.infer)
+        attest(types.c).typed as Type<{
+            a: (In: 1) => Out<number>
+        }>
+        attest(types.c.node).snap({
+            object: {
+                props: {
+                    a: {
+                        input: { number: { value: 1 } },
+                        morph: "<function>" as any
+                    }
+                }
+            }
+        })
     })
-    it("shallow morph intersection", () => {
+    it("double intersection", () => {
         attest(() => {
             scope({
                 a: ["boolean", "=>", (data) => `${data}`],
@@ -59,7 +93,7 @@ describe("morph", () => {
             doubleMorphIntersectionMessage
         )
     })
-    it("deep morph intersection", () => {
+    it("deep double intersection", () => {
         attest(() => {
             scope({
                 a: { a: ["boolean", "=>", (data) => `${data}`] },
@@ -69,7 +103,7 @@ describe("morph", () => {
             })
         }).throwsAndHasTypeError(doubleMorphIntersectionMessage)
     })
-    it("array intersection", () => {
+    it("array double intersection", () => {
         attest(() => {
             scope({
                 a: { a: ["number>0", "=>", (data) => data + 1] },
@@ -79,113 +113,4 @@ describe("morph", () => {
             })
         }).throwsAndHasTypeError(doubleMorphIntersectionMessage)
     })
-    // it("function", () => {
-    //     const t = type("boolean", {
-    //         out: (data) => `${data}`
-    //     })
-    //     const { out, data } = t(true)
-    //     attest(data).equals(true).typed as boolean | undefined
-    //     attest(out).equals("true").typed as string | undefined
-    // })
-    // it("identifier", () => {
-    //     const t = type("boolean", {
-    //         out: {
-    //             string: (data) => `${data}` as const
-    //         }
-    //     })
-    //     const { string } = t(true)
-    //     attest(string).equals("true").typed as "true" | "false" | undefined
-    // })
-    // it("mismatched identifier", () => {
-    //     attest(() => {
-    //         type("boolean", {
-    //             out: {
-    //                 // @ts-expect-error
-    //                 number: (data) => `${data}`
-    //             }
-    //         })
-    //     }).type.errors("Type 'string' is not assignable to type 'number'.")
-    // })
-    // it("non-identifier", () => {
-    //     const t = type("boolean", {
-    //         out: {
-    //             bit: (data) => (data ? 1 : 0)
-    //         }
-    //     })
-    //     const { bit } = t(true)
-    //     attest(bit).equals(1).typed as 1 | 0 | undefined
-    // })
-    // it("scoped", () => {
-    //     const $ = scope({
-    //         a: () =>
-    //             $.type("string", {
-    //                 in: {
-    //                     b: (n) => `${n}`
-    //                 },
-    //                 out: {
-    //                     b: (s) => parseInt(s)
-    //                 }
-    //             }),
-    //         b: "number"
-    //     })
-    //     const types = $.compile()
-    //     attest(types.a.from("b", 5).data).equals("5").typed as
-    //         | string
-    //         | undefined
-    //     attest(types.a("5").b).equals(5).typed as number | undefined
-    // })
-    // it("scoped cyclic", () => {
-    //     const $ = scope({
-    //         a: () =>
-    //             $.type("string", {
-    //                 out: {
-    //                     b: (s) => parseInt(s)
-    //                 }
-    //             }),
-    //         b: () =>
-    //             $.type("number", {
-    //                 out: {
-    //                     a: (n) => `${n}`
-    //                 }
-    //             })
-    //     })
-    // })
-    // describe("inputs", () => {
-    //     it("function", () => {
-    //         const t = type("boolean", {
-    //             in: (n: number) => !!n
-    //         })
-    //         attest(t.from(1).data).equals(true).typed as boolean | undefined
-    //         attest(t.from("default", 1).data).equals(true).typed as
-    //             | boolean
-    //             | undefined
-    //     })
-    //     it("identifier", () => {
-    //         const t = type("boolean", {
-    //             in: {
-    //                 number: (n) => !!n
-    //             }
-    //         })
-    //         attest(t.from("number", 1).data).equals(true).typed as
-    //             | boolean
-    //             | undefined
-    //     })
-    //     it("non-identifier", () => {
-    //         const t = type("boolean", {
-    //             in: {
-    //                 explicit: (input: number) => !!input,
-    //                 implicit: (input) => input
-    //             }
-    //         })
-    //         attest(t.from("explicit", 1).data).equals(true).typed as
-    //             | boolean
-    //             | undefined
-    //         attest(() => {
-    //             // @ts-expect-error
-    //             t.from("implicit", 1)
-    //         }).type.errors(
-    //             "Argument of type 'number' is not assignable to parameter of type 'never'."
-    //         )
-    //     })
-    // })
 })

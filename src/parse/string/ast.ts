@@ -1,10 +1,12 @@
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
+import type { subdomainOf } from "../../utils/domains.ts"
 import type {
     Dict,
     Downcastable,
     error,
     evaluate,
     isAny,
+    isTopType,
     List,
     RegexLiteral
 } from "../../utils/generics.ts"
@@ -17,7 +19,15 @@ export type inferAst<ast, $> = ast extends readonly unknown[]
     ? ast[1] extends "[]"
         ? inferAst<ast[0], $>[]
         : ast[1] extends "|"
-        ? inferAst<ast[0], $> | inferAst<ast[2], $>
+        ? inferUnion<
+              inferAst<ast[0], $>,
+              inferAst<ast[2], $>
+          > extends infer result
+            ? // TODO: more robust against top types
+              result extends error
+                ? never
+                : result
+            : never
         : ast[1] extends "&"
         ? inferIntersection<
               inferAst<ast[0], $>,
@@ -48,7 +58,11 @@ export type validateAstSemantics<ast, $> = ast extends string
             ? error<message>
             : validateBinary<l, r, $>
         : token extends "|"
-        ? validateBinary<l, r, $>
+        ? inferUnion<inferAst<l, $>, inferAst<r, $>> extends error<
+              infer message
+          >
+            ? error<message>
+            : validateBinary<l, r, $>
         : token extends Scanner.Comparator
         ? l extends number
             ? validateAstSemantics<r, $>
@@ -72,13 +86,13 @@ type validateBinary<l, r, $> = validateAstSemantics<l, $> extends error<
 
 export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, never>
 
-type inferIntersectionRecurse<l, r, seen> = l extends seen
+type inferIntersectionRecurse<l, r, seen> = [l] extends [seen]
     ? l & r
-    : l extends ParsedMorph<infer lIn, infer lOut>
+    : [l] extends [ParsedMorph<infer lIn, infer lOut>]
     ? r extends ParsedMorph
         ? error<doubleMorphIntersectionMessage>
         : (In: evaluate<lIn & r>) => Out<lOut>
-    : r extends ParsedMorph<infer rIn, infer rOut>
+    : [r] extends [ParsedMorph<infer rIn, infer rOut>]
     ? (In: evaluate<rIn & l>) => Out<rOut>
     : [l, r] extends [Dict, Dict]
     ? bubblePropErrors<
@@ -110,9 +124,28 @@ type errorKeyOf<t> = {
         : never
 }[keyof t]
 
-export const doubleMorphIntersectionMessage = `An intersection must have at least one non-morph operand.`
+export type inferUnion<l, r> = [l] extends [ParsedMorph<infer lIn, infer lOut>]
+    ? [r] extends [ParsedMorph<infer rIn, infer rOut>]
+        ? lIn & rIn extends never
+            ? (In: lIn | rIn) => Out<lOut | rOut>
+            : undiscriminatableMorphUnionMessage
+        : lIn & r extends never
+        ? (In: lIn | r) => Out<lOut | r>
+        : undiscriminatableMorphUnionMessage
+    : [r] extends [ParsedMorph<infer rIn, infer rOut>]
+    ? l & rIn extends never
+        ? (In: l | rIn) => Out<l | rOut>
+        : undiscriminatableMorphUnionMessage
+    : l | r
+
+export const doubleMorphIntersectionMessage = `An intersection must have at least one non-morph operand`
 
 type doubleMorphIntersectionMessage = typeof doubleMorphIntersectionMessage
+
+export const undiscriminatableMorphUnionMessage = `A union of one or more morphs must be discriminatable`
+
+type undiscriminatableMorphUnionMessage =
+    typeof undiscriminatableMorphUnionMessage
 
 type isNonLiteralNumber<t> = t extends number
     ? number extends t

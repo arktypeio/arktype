@@ -132,21 +132,21 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         )
         return
     }
-    if (dataSubdomain === "Array" || dataSubdomain === "Set") {
-        if (dataSubdomain === "Array" && typeof rule[2] === "number") {
-            const actual = (state.data as List).length
-            const expected = rule[2]
-            if (expected !== actual) {
-                return state.problems.addProblem(
-                    "TupleLength",
-                    {
-                        actual,
-                        expected
-                    },
-                    state as CheckState<List>
-                )
-            }
+    if (dataSubdomain === "Array" && typeof rule[2] === "number") {
+        const actual = (state.data as List).length
+        const expected = rule[2]
+        if (expected !== actual) {
+            return state.problems.addProblem(
+                "TupleLength",
+                {
+                    actual,
+                    expected
+                },
+                state as CheckState<List>
+            )
         }
+    }
+    if (dataSubdomain === "Array" || dataSubdomain === "Set") {
         const rootData = state.data
         const rootNode = state.node
         state.node = rule[1]
@@ -158,37 +158,7 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         }
         state.data = rootData
         state.node = rootNode
-    }
-    // else if (actual === "Map") {
-    // const rootData = state.data
-    // const rootNode = state.node
-    // for (const entry of state.data as Map<unknown, unknown>) {
-    //     checkNode({ ...state, data: entry[0], node: subdomain[1] }, scope)
-    //     //TODOSHAWN I don't think this makes sense to be here
-    //     if (state.problems.length) {
-    //         state.problems.addProblem(
-    //             "MissingKey",
-    //             { key: entry[0] },
-    //             state
-    //         )
-    //         return
-    //     }
-    //     checkNode(
-    //         {
-    //             ...state,
-    //             data: entry[1],
-    //             node: subdomain[2] as TraversalNode
-    //         },
-    //         scope
-    //     )
-    //     if (state.problems.length) {
-    //         return
-    //     }
-    // }
-    // state.data = rootData
-    // state.node = rootNode
-    //}
-    else {
+    } else {
         return throwInternalError(
             `Unexpected subdomain entry ${JSON.stringify(rule)}`
         )
@@ -207,4 +177,4 @@ export type TupleLengthErrorContext = defineDiagnostic<
 export const buildTupleLengthError: DiagnosticMessageBuilder<"TupleLength"> = ({
     actual,
     expected
-}) => `Tuple must have length ${expected} (got ${actual}).`
+}) => `Tuple must have length ${expected} (got ${actual})`
