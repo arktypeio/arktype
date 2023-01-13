@@ -1,8 +1,9 @@
-import type { TraversalCheck } from "../../traverse/check.ts"
+import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
 import { checkNode } from "../../traverse/check.ts"
 import type { defineDiagnostic } from "../../traverse/problems.js"
 import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
 import type { Dict } from "../../utils/generics.ts"
+import { hasKey } from "../../utils/generics.ts"
 import {
     composeIntersection,
     composeKeyedOperation,
@@ -97,33 +98,37 @@ export const compileProps: FlattenAndPushRule<PropsRule> = (
     }
 }
 
-const createPropChecker = <k extends "requiredProps" | "optionalProps">(k: k) =>
+const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
+    propKind: propKind
+) =>
     ((state, props, scope) => {
         const rootData = state.data
         const rootNode = state.node
         for (const [propKey, propNode] of props as TraversalPropEntry[]) {
-            if (k === "optionalProps" && !(propKey in state.data)) {
-                continue
-            } else if (!rootData[propKey]) {
-                state.path.push(propKey)
-                state.problems.addProblem("MissingKey", { key: propKey }, state)
-                state.path.pop()
-                continue
-            }
             state.path.push(propKey)
             state.data = rootData[propKey] as any
             state.node = propNode
+            if (!hasKey(rootData, propKey)) {
+                if (propKind !== "optionalProps") {
+                    state.problems.addProblem(
+                        "MissingKey",
+                        { key: propKey },
+                        state as CheckState<undefined>
+                    )
+                }
+                continue
+            }
             checkNode(state, scope)
             state.path.pop()
         }
         state.data = rootData
         state.node = rootNode
-    }) as TraversalCheck<k>
+    }) as TraversalCheck<propKind>
 
 export const checkRequiredProps = createPropChecker("requiredProps")
 export const checkOptionalProps = createPropChecker("optionalProps")
 
-export type MissingKeyContext = defineDiagnostic<unknown, { key: unknown }>
+export type MissingKeyContext = defineDiagnostic<undefined, { key: string }>
 
 export const buildMissingKeyError: DiagnosticMessageBuilder<"MissingKey"> = ({
     key

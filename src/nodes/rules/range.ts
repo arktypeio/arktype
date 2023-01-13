@@ -49,23 +49,24 @@ export const rangeIntersection = composeIntersection<Range>((l, r) => {
 export type BoundableData = number | string | List
 
 export type RangeErrorContext = defineDiagnostic<
-    unknown,
+    BoundableData,
     {
         comparator: Scanner.Comparator
         limit: number
+        size: number
         kind: subdomainOf<BoundableData>
     }
 >
 
 export const buildRangeError: DiagnosticMessageBuilder<"RangeViolation"> = ({
-    data,
     comparator,
     limit,
-    kind
+    kind,
+    size
 }) =>
     `Must be ${Scanner.comparatorDescriptions[comparator]} ${limit} ${
         kind === "string" ? "characters " : kind === "Array" ? "items " : ""
-    }(got ${data}).`
+    }(got ${size}).`
 
 export const checkRange = ((state, range) => {
     const size = typeof state.data === "number" ? state.data : state.data.length
@@ -79,7 +80,8 @@ export const checkRange = ((state, range) => {
                 {
                     comparator: toComparator("min", range.min),
                     limit: range.min.limit,
-                    kind: subdomainOf(state.data)
+                    kind: subdomainOf(state.data),
+                    size
                 },
                 state
             )
@@ -95,7 +97,8 @@ export const checkRange = ((state, range) => {
                 {
                     comparator: toComparator("max", range.max),
                     limit: range.max.limit,
-                    kind: subdomainOf(state.data)
+                    kind: subdomainOf(state.data),
+                    size
                 },
                 state
             )

@@ -29,8 +29,8 @@ export const buildDivisorError: DiagnosticMessageBuilder<
     "DivisorViolation"
 > = ({ data, divisor }) =>
     divisor === 1
-        ? `${data.raw} is not an integer.`
-        : `${data.raw} is not divisible by ${divisor}.`
+        ? `${data} is not an integer.`
+        : `${data} is not divisible by ${divisor}.`
 
 export const checkDivisor = ((state, divisor) => {
     if (state.data % divisor !== 0) {

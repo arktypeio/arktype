@@ -32,23 +32,23 @@ export const getRegex = (source: string) => {
     return regexCache[source]
 }
 
-export const checkRegexRule = ((state, rule) => {
-    if (!rule.test(state.data)) {
-        state.problems.addProblem("RegexMismatch", { rule }, state)
+export const checkRegexRule = ((state, regex) => {
+    if (!regex.test(state.data)) {
+        state.problems.addProblem("RegexMismatch", { regex }, state)
     }
 }) satisfies TraversalCheck<"regex">
 
 export type RegexErrorContext = defineDiagnostic<
     string,
     {
-        rule: RegExp
+        regex: RegExp
     }
 >
 
 export const buildRegexError: DiagnosticMessageBuilder<"RegexMismatch"> = ({
     data,
-    rule
-}) => `${data} must match expression ${rule}.`
+    regex
+}) => `${data} must match expression ${regex}.`
 
 export const regexIntersection = composeIntersection<CollapsibleList<string>>(
     collapsibleListUnion<string>

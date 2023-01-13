@@ -3,7 +3,7 @@ import type { TypeNode } from "../../nodes/node.ts"
 import { intersection, union } from "../../nodes/node.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import { throwParseError } from "../../utils/errors.ts"
-import type { error, evaluate, List, returnOf } from "../../utils/generics.ts"
+import type { error, List, returnOf } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { inferIntersection } from "../string/ast.ts"
@@ -24,7 +24,7 @@ export const parseTuple = (def: List, $: ScopeRoot): TypeNode => {
     }
     return {
         object: {
-            subdomain: "Array",
+            subdomain: ["Array", "unknown", def.length],
             props
         }
     }

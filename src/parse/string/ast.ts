@@ -91,7 +91,11 @@ type inferIntersectionRecurse<l, r, seen> = l extends seen
           >
       >
     : [l, r] extends [List<infer lItem>, List<infer rItem>]
-    ? inferIntersectionRecurse<lItem, rItem, seen>[]
+    ? inferIntersectionRecurse<lItem, rItem, seen> extends infer result
+        ? result extends error
+            ? result
+            : result[]
+        : never
     : l & r
 
 type bubblePropErrors<t> = errorKeyOf<t> extends never ? t : t[errorKeyOf<t>]

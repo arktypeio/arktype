@@ -16,8 +16,10 @@ describe("intersection", () => {
         it("email", () => {
             const t = type("email&/@arktype.io$/")
             attest(t.infer).typed as true
-            attest(t("shawn@arktype.io")).snap({ data: "shawn@arktype.io" })
-            attest(t).snap()
+            attest(t("shawn@arktype.io").data).snap("shawn@arktype.io")
+            attest(t("shawn@arkype.com").problems?.summary).snap(
+                '"shawn@arkype.com" must match expression /@arktype.io$/.'
+            )
         })
         it("several types", () => {
             const t = type("unknown&boolean&false")

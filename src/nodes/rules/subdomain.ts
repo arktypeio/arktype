@@ -1,4 +1,4 @@
-import type { TraversalCheck } from "../../traverse/check.ts"
+import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
 import { checkNode } from "../../traverse/check.ts"
 import type { defineDiagnostic } from "../../traverse/problems.js"
 import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
@@ -17,30 +17,43 @@ import type { FlattenAndPushRule } from "./rules.ts"
 export type SubdomainRule<$ = Dict> =
     | Subdomain
     | ["Array", TypeNode<$>]
+    | ["Array", TypeNode<$>, number]
     | ["Set", TypeNode<$>]
     | ["Map", TypeNode<$>, TypeNode<$>]
 
 export type TraversalSubdomainRule =
     | Subdomain
     | ["Array", TraversalNode]
+    | ["Array", TraversalNode, number]
     | ["Set", TraversalNode]
     | ["Map", TraversalNode, TraversalNode]
+
+const isTupleRule = <rule extends List>(
+    rule: rule
+): rule is Extract<rule, ["Array", unknown, number]> =>
+    typeof rule[2] === "number"
 
 export const compileSubdomain: FlattenAndPushRule<SubdomainRule> = (
     entries,
     rule,
-    scope
-) => {
-    if (typeof rule === "string") {
-        entries.push(["subdomain", rule])
-    } else {
-        const compiled: [Subdomain, ...TraversalNode[]] = [rule[0]]
-        for (let i = 1; i < rule.length; i++) {
-            compiled.push(compileNode(rule[i], scope))
-        }
-        entries.push(["subdomain", compiled as TraversalSubdomainRule])
-    }
-}
+    $
+) =>
+    entries.push([
+        "subdomain",
+        typeof rule === "string"
+            ? rule
+            : ([
+                  rule[0],
+                  compileNode(rule[1], $),
+                  ...(rule.length === 3
+                      ? [
+                            typeof rule[2] === "number"
+                                ? rule[2]
+                                : compileNode(rule[2], $)
+                        ]
+                      : [])
+              ] as TraversalSubdomainRule)
+    ])
 
 export const subdomainIntersection = composeIntersection<
     SubdomainRule,
@@ -58,66 +71,85 @@ export const subdomainIntersection = composeIntersection<
     if (l[0] !== r[0]) {
         return empty
     }
-    const result: [Subdomain, ...TypeNode[]] = [l[0]]
+    const result = [l[0]] as unknown as Exclude<SubdomainRule, string>
+    if (isTupleRule(l)) {
+        if (isTupleRule(r) && l[2] !== r[2]) {
+            return empty
+        }
+        result[2] = l[2]
+    } else if (isTupleRule(r)) {
+        result[2] = r[2]
+    }
     let lImpliesR = true
     let rImpliesL = true
-    for (let i = 1; i < l.length; i++) {
-        const parameterResult = nodeIntersection(l[i], r[i], context.$)
+    const maxNodeIndex = l[0] === "Map" ? 2 : 1
+    for (let i = 1; i < maxNodeIndex; i++) {
+        const lNode = l[i] as TypeNode
+        const rNode = r[i] as TypeNode
+        const parameterResult = nodeIntersection(lNode, rNode, context.$)
         if (parameterResult === equal) {
-            result.push(l[i])
+            result[i] = lNode
         } else if (parameterResult === l) {
-            result.push(l[i])
+            result[i] = lNode
             rImpliesL = false
         } else if (parameterResult === r) {
-            result.push(r[i])
+            result[i] = rNode
             lImpliesR = false
         } else {
-            result.push(parameterResult === empty ? "never" : parameterResult)
+            result[i] = parameterResult === empty ? "never" : parameterResult
             lImpliesR = false
             rImpliesL = false
         }
     }
-    return lImpliesR
-        ? rImpliesL
-            ? equal
-            : l
-        : rImpliesL
-        ? r
-        : (result as SubdomainRule)
+    return lImpliesR ? (rImpliesL ? equal : l) : rImpliesL ? r : result
 })
 
 export const checkSubdomain: TraversalCheck<"subdomain"> = (
     state,
-    subdomain,
+    rule,
     scope
 ) => {
-    const actual = subdomainOf(state.data)
-    if (typeof subdomain === "string") {
-        if (actual !== subdomain) {
+    const dataSubdomain = subdomainOf(state.data)
+    if (typeof rule === "string") {
+        if (dataSubdomain !== rule) {
             state.problems.addProblem(
                 "Unassignable",
                 {
-                    expected: subdomain
+                    expected: rule
                 },
                 state
             )
         }
         return
     }
-    if (actual !== subdomain[0]) {
+    if (dataSubdomain !== rule[0]) {
         state.problems.addProblem(
             "Unassignable",
             {
-                expected: subdomain[0]
+                expected: rule[0]
             },
             state
         )
         return
     }
-    if (actual === "Array" || actual === "Set") {
+    if (dataSubdomain === "Array" || dataSubdomain === "Set") {
+        if (dataSubdomain === "Array" && typeof rule[2] === "number") {
+            const actual = (state.data as List).length
+            const expected = rule[2]
+            if (expected !== actual) {
+                return state.problems.addProblem(
+                    "TupleLength",
+                    {
+                        actual,
+                        expected
+                    },
+                    state as CheckState<List>
+                )
+            }
+        }
         const rootData = state.data
         const rootNode = state.node
-        state.node = subdomain[1]
+        state.node = rule[1]
         for (const item of state.data as List | Set<unknown>) {
             state.data = item
             state.path.push(`${item}`)
@@ -126,50 +158,53 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         }
         state.data = rootData
         state.node = rootNode
-    } else if (actual === "Map") {
-        const rootData = state.data
-        const rootNode = state.node
-        for (const entry of state.data as Map<unknown, unknown>) {
-            checkNode({ ...state, data: entry[0], node: subdomain[1] }, scope)
-            //TODOSHAWN I don't think this makes sense to be here
-            if (state.problems.length) {
-                state.problems.addProblem(
-                    "MissingKey",
-                    { key: entry[0] },
-                    state
-                )
-                return
-            }
-            checkNode(
-                {
-                    ...state,
-                    data: entry[1],
-                    node: subdomain[2] as TraversalNode
-                },
-                scope
-            )
-            if (state.problems.length) {
-                return
-            }
-        }
-        state.data = rootData
-        state.node = rootNode
-    } else {
+    }
+    // else if (actual === "Map") {
+    // const rootData = state.data
+    // const rootNode = state.node
+    // for (const entry of state.data as Map<unknown, unknown>) {
+    //     checkNode({ ...state, data: entry[0], node: subdomain[1] }, scope)
+    //     //TODOSHAWN I don't think this makes sense to be here
+    //     if (state.problems.length) {
+    //         state.problems.addProblem(
+    //             "MissingKey",
+    //             { key: entry[0] },
+    //             state
+    //         )
+    //         return
+    //     }
+    //     checkNode(
+    //         {
+    //             ...state,
+    //             data: entry[1],
+    //             node: subdomain[2] as TraversalNode
+    //         },
+    //         scope
+    //     )
+    //     if (state.problems.length) {
+    //         return
+    //     }
+    // }
+    // state.data = rootData
+    // state.node = rootNode
+    //}
+    else {
         return throwInternalError(
-            `Unexpected subdomain entry ${JSON.stringify(subdomain)}`
+            `Unexpected subdomain entry ${JSON.stringify(rule)}`
         )
     }
     return true
 }
 
 export type TupleLengthErrorContext = defineDiagnostic<
-    unknown,
+    List,
     {
-        expectedLength: number
+        actual: number
+        expected: number
     }
 >
 
 export const buildTupleLengthError: DiagnosticMessageBuilder<"TupleLength"> = ({
-    data,
-    expectedLength
-}) => `Tuple must have length ${expectedLength} (got ${data.raw}).`
+    actual,
+    expected
+}) => `Tuple must have length ${expected} (got ${actual}).`

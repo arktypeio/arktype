@@ -71,7 +71,7 @@ describe("morph", () => {
             "An intersection must have at least one non-morph operand."
         )
     })
-
+    it("array intersection", () => {})
     // it("function", () => {
     //     const t = type("boolean", {
     //         out: (data) => `${data}`

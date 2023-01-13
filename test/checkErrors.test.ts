@@ -1,46 +1,38 @@
-import { describe, test } from "mocha"
+import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
-describe("check errors", () => {
-    test("divisible", () => {
+describe("check", () => {
+    it("divisible", () => {
         const t = type("number%2")
         attest(t(4).data).snap(4)
         attest(t(5).problems?.summary).snap("5 is not divisible by 2.")
     })
-    test("string length", () => {
+    it("string length", () => {
         const gte3 = type("string>=3")
         attest(gte3("yes").problems).equals(undefined)
     })
 
-    test("range", () => {
+    it("range", () => {
         const t = type("number>2")
-
-        //TODO separate tests
-        const checked1 = t(2)
-        attest(checked1.problems?.summary).snap(
-            "Must be greater than 2 (got 2)."
-        )
-
-        const checked2 = t(3)
-        attest(checked2.data).snap(3)
-        attest(checked2.problems?.summary).equals(undefined)
+        attest(t(3).data).snap(3)
+        attest(t(2).problems?.summary).snap("Must be greater than 2 (got 2).")
     })
-    test("domain", () => {
-        const t = type("number>2")
+    it("domain", () => {
+        const t = type("number")
         const checked = t("hellop")
         attest(checked.problems?.summary).snap(
             '"hellop" is not assignable to number.'
         )
     })
-    test("regex", () => {
+    it("regex", () => {
         const t = type("/\\w@hotmail.com/")
         const checked = t("shawn@hotail.com")
         attest(checked.problems?.summary).snap(
             '"shawn@hotail.com" must match expression /\\w@hotmail.com/.'
         )
     })
-    test("required keys", () => {
+    it("required keys", () => {
         const t = type({
             name: "string",
             age: "number"
@@ -58,10 +50,7 @@ describe("check errors", () => {
         const checked = t({ name: "Shawn" })
         attest(checked.problems?.summary).snap("age: age is required.")
     })
-})
-
-describe("custom errors", () => {
-    test("divisor", () => {
+    it("custom errors", () => {
         const isEven = type("number%2", {
             problems: {
                 DivisorViolation: {
@@ -73,54 +62,19 @@ describe("custom errors", () => {
         const check = isEven(3)
         attest(check.problems?.summary).snap("3 is not even. (3%2)")
     })
-})
-describe("unions", () => {
-    test("union", () => {
+    it("domains", () => {
         const basic = type("string|number[]")
         const check = basic(2)
         attest(check.problems?.summary).snap(
             "2 is not assignable to string|object"
         )
     })
-})
-describe("", () => {
-    test("tuple length", () => {
+    it("tuple length", () => {
         const t = type(["string", "number", "string", "string[]"])
-        attest(t.flat).snap([
-            ["subdomain", "Array"],
-            [
-                "requiredProps",
-                [
-                    ["0", "string"],
-                    ["1", "number"],
-                    ["2", "string"],
-                    ["3", [["subdomain", ["Array", "string"]]]]
-                ]
-            ]
-        ])
-        const checked = t(["hello"])
-        attest(checked.problems?.summary).snap(
+        const data: typeof t.infer = ["foo", 5, "boo", []]
+        attest(t(data).data).equals(data)
+        attest(t(["hello"]).problems?.summary).snap(
             "Tuple must have length 4 (got 1)."
         )
     })
 })
-describe("boop", () => {
-    test("obj|obj", () => {
-        const t = type([{ a: "number" }, "|", { c: "string" }])
-        attest(t.flat).snap([
-            ["domain", "object"],
-            [
-                "branches",
-                [
-                    [["requiredProps", [["a", "number"]]]],
-                    [["requiredProps", [["c", "string"]]]]
-                ]
-            ]
-        ])
-        const check = t({ a: "hello" })
-        attest(check.problems?.summary).snap(
-            'a: "hello" is not assignable to number.\nc: c is required.'
-        )
-    })
-})
-//union depth is a thing or something

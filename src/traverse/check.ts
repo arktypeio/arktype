@@ -13,7 +13,7 @@ import type { BoundableData } from "../nodes/rules/range.ts"
 import { checkRange } from "../nodes/rules/range.ts"
 import { checkRegexRule } from "../nodes/rules/regex.ts"
 import type { TraversalRuleEntry } from "../nodes/rules/rules.ts"
-import { rulePrecedenceMap } from "../nodes/rules/rules.ts"
+import { precedenceMap } from "../nodes/rules/rules.ts"
 import { checkSubdomain } from "../nodes/rules/subdomain.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
@@ -30,10 +30,6 @@ export const checkRules = (
 ) => {
     return true
 }
-
-const precedenceMap: {
-    readonly [k in TraversalEntry[0]]-?: number
-} = { domain: 0, value: 0, domains: 0, branches: 0, ...rulePrecedenceMap }
 
 export type TraversalEntry =
     | MultiDomainEntry
@@ -96,39 +92,20 @@ type CheckResult<inferred = unknown> = xor<
     { problems: Problems }
 >
 
-export const checkNode = (state: CheckState, scope: ScopeRoot) => {
-    const base = state.node[0][0]
+export const checkNode = (state: CheckState, $: ScopeRoot) => {
     if (typeof state.node === "string") {
-        checkDomain(state)
-        return
-    } else if (base === "subdomain") {
-        if (
-            state.node[1]?.[0] === "requiredProps" &&
-            state.node[1][1].length !== (state.data as []).length
-        ) {
+        if (domainOf(state.data) !== state.node) {
             state.problems.addProblem(
-                "TupleLength",
+                "Unassignable",
                 {
-                    expectedLength: state.node[1][1].length
+                    expected: state.node
                 },
                 state
             )
-            return
         }
+        return
     }
-    checkEntries(state, scope)
-}
-
-const checkDomain = (state: CheckState) => {
-    if (domainOf(state.data) !== state.node) {
-        state.problems.addProblem(
-            "Unassignable",
-            {
-                expected: state.node
-            },
-            state
-        )
-    }
+    checkEntries(state, $)
 }
 
 const baseCheckDomain = (
@@ -231,12 +208,13 @@ export const checkEntries = (checkState: CheckState, scope: ScopeRoot) => {
         const ruleName = entries[i][0]
         const ruleValidator = entries[i][1]
         if (
-            checkState.problems.byPath[ruleName] &&
+            // TODO: path string
+            checkState.problems.byPath[checkState.path.join(".")] &&
             precedenceMap[ruleName] > precedenceLevel
         ) {
             break
         }
-        precedenceLevel = precedenceMap[ruleName]
         checkers[ruleName](checkState as never, ruleValidator as never, scope)
+        precedenceLevel = precedenceMap[ruleName]
     }
 }

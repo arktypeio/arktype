@@ -1,4 +1,5 @@
 import type { ScopeRoot } from "../../scope.ts"
+import type { TraversalEntry } from "../../traverse/check.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type { CollapsibleList, Dict } from "../../utils/generics.ts"
 import { composeIntersection, composeKeyedOperation } from "../compose.ts"
@@ -103,10 +104,14 @@ const ruleCompilers: {
         }
     }
 }
-export const rulePrecedenceMap: {
-    readonly [k in TraversalRuleEntry[0]]-?: number
+export const precedenceMap: {
+    readonly [k in TraversalEntry[0]]: number
 } = {
     // Critical: No other checks are performed if these fail
+    domain: 0,
+    value: 0,
+    domains: 0,
+    branches: 0,
     subdomain: 0,
     // Shallow: All shallow checks will be performed even if one or more fail
     regex: 1,
@@ -128,7 +133,5 @@ export const compileRules = (
     for (k in rules) {
         ruleCompilers[k](entries, rules[k] as any, $)
     }
-    return entries.sort(
-        (l, r) => rulePrecedenceMap[l[0]] - rulePrecedenceMap[r[0]]
-    )
+    return entries.sort((l, r) => precedenceMap[l[0]] - precedenceMap[r[0]])
 }

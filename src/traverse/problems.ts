@@ -52,6 +52,7 @@ export class Problems extends Array<Problem> {
     throw(): never {
         throw new ArktypeError(this)
     }
+
     addProblem<code extends DiagnosticCode>(
         code: code,
         context: Omit<DiagnosticsByCode[code], keyof BaseDiagnosticContext>,
@@ -62,20 +63,18 @@ export class Problems extends Array<Problem> {
                 ? { type: JSON.stringify(context.type).toString() }
                 : context,
             {
-                data: new Stringifiable(
-                    code === "TupleLength"
-                        ? (state.data as []).length
-                        : state.data
-                )
+                data: new Stringifiable(state.data)
             }
         ) as DiagnosticsByCode[code]
-
-        state.problems.push({
+        const problem = {
             path: [...state.path].join("."),
             reason:
                 state.config.problems?.[code]?.message(compiledContext) ??
                 defaultMessagesByCode[code](compiledContext)
-        })
+        }
+        state.problems.push(problem)
+        // TODO: migrate multi-part errors
+        this.byPath[problem.path] = problem
     }
 }
 
@@ -107,7 +106,7 @@ type UnassignableErrorContext = defineDiagnostic<
 const buildUnassignableError: DiagnosticMessageBuilder<"Unassignable"> = ({
     data,
     expected
-}) => `${data.toString()} is not assignable to ${expected}.`
+}) => `${data} is not assignable to ${expected}.`
 
 type DomainsErrorContext = defineDiagnostic<unknown, { expected: unknown }>
 
@@ -115,8 +114,7 @@ const buildDomainsError: DiagnosticMessageBuilder<"Domains"> = ({
     data,
     expected
 }) =>
-    //TODOSHAWN this looks questionable
-    `${data.toString()} is not assignable to ${
+    `${data} is not assignable to ${
         typeof expected === "object"
             ? Object.keys(expected!).join("|")
             : expected
@@ -132,8 +130,7 @@ export type DiagnosticsByCode = {
     Unassignable: UnassignableErrorContext
     Union: UnionErrorContext
 }
-//Domain error
-//Domains error
+
 export type DiagnosticCode = keyof DiagnosticsByCode
 
 export type DiagnosticMessageBuilder<code extends DiagnosticCode> = (
