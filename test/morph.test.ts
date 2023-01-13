@@ -1,7 +1,10 @@
 import { describe, it } from "mocha"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { doubleMorphIntersectionMessage } from "../src/parse/string/ast.ts"
+import {
+    doubleMorphIntersectionMessage,
+    undiscriminatableMorphUnionMessage
+} from "../src/parse/string/ast.ts"
 import type { Out } from "../src/parse/tuple/morph.ts"
 import type { Type } from "../src/type.ts"
 
@@ -80,6 +83,22 @@ describe("morph", () => {
             }
         })
     })
+    it("deep union", () => {
+        const types = scope({
+            a: { a: ["number>0", "=>", (data) => `${data}`] },
+            b: { a: "Function" },
+            c: "a|b"
+        })
+        attest(types.c).typed as Type<
+            | {
+                  a: (In: number) => Out<string>
+              }
+            | {
+                  a: Function
+              }
+        >
+        attest(types.c.node).snap()
+    })
     it("double intersection", () => {
         attest(() => {
             scope({
@@ -93,6 +112,16 @@ describe("morph", () => {
             doubleMorphIntersectionMessage
         )
     })
+    it("undiscriminated union", () => {
+        attest(() => {
+            scope({
+                a: ["/.*/", "=>", (s) => s.trim()],
+                b: "string",
+                // @ts-expect-error
+                c: "a|b"
+            })
+        }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
+    })
     it("deep double intersection", () => {
         attest(() => {
             scope({
@@ -102,6 +131,15 @@ describe("morph", () => {
                 c: "a&b"
             })
         }).throwsAndHasTypeError(doubleMorphIntersectionMessage)
+    })
+    it("deep undiscriminated union", () => {
+        attest(() => {
+            const types = scope({
+                a: { a: ["string", "=>", (s) => s.trim()] },
+                b: { a: "'foo'" },
+                c: "a|b"
+            })
+        }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
     })
     it("array double intersection", () => {
         attest(() => {

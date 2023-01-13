@@ -60,7 +60,17 @@ type topTypeIsUnknown<t> = (t extends {} ? true : false) extends false
     ? true
     : false
 
-export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
+export type extractKeysWithValue<o, filter> = {
+    [k in keyof o]: isAny<o[k]> extends true
+        ? never
+        : o[k] extends never
+        ? never
+        : o[k] extends filter
+        ? k
+        : never
+}[keyof o]
+
+export type extractValues<o, filter> = o[extractKeysWithValue<o, filter>]
 
 export type conform<t, base> = t extends base ? t : base
 

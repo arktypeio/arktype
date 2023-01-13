@@ -1,10 +1,13 @@
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
 import type { BootstrapScope } from "../../scope.ts"
+import type { Type } from "../../type.ts"
 import type {
     Dict,
     Downcastable,
     error,
     evaluate,
+    extractKeysWithValue,
+    extractValues,
     isAny,
     List,
     RegexLiteral
@@ -51,16 +54,18 @@ export type validateAstSemantics<ast, $> = ast extends string
     ? validateAstSemantics<child, $>
     : ast extends [infer l, infer token, infer r]
     ? token extends "&"
-        ? inferIntersection<inferAst<l, $>, inferAst<r, $>> extends error<
-              infer message
-          >
-            ? error<message>
+        ? inferIntersection<
+              inferAst<l, $>,
+              inferAst<r, $>
+          > extends infer result extends error
+            ? result
             : validateBinary<l, r, $>
         : token extends "|"
-        ? inferUnion<inferAst<l, $>, inferAst<r, $>> extends error<
-              infer message
-          >
-            ? error<message>
+        ? inferUnion<
+              inferAst<l, $>,
+              inferAst<r, $>
+          > extends infer result extends error
+            ? result
             : validateBinary<l, r, $>
         : token extends Scanner.Comparator
         ? l extends number
@@ -85,7 +90,9 @@ type validateBinary<l, r, $> = validateAstSemantics<l, $> extends error<
 
 export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, never>
 
-type inferIntersectionRecurse<l, r, seen> = [l] extends [seen]
+type inferIntersectionRecurse<l, r, seen> = isAny<l | r> extends true
+    ? any
+    : [l] extends [seen]
     ? l & r
     : [l] extends [ParsedMorph<infer lIn, infer lOut>]
     ? r extends ParsedMorph
@@ -111,31 +118,51 @@ type inferIntersectionRecurse<l, r, seen> = [l] extends [seen]
         : never
     : l & r
 
-type bubblePropErrors<t> = errorKeyOf<t> extends never ? t : t[errorKeyOf<t>]
+type bubblePropErrors<o> = extractKeysWithValue<o, error> extends never
+    ? o
+    : o[extractKeysWithValue<o, error>]
 
-type errorKeyOf<t> = {
-    [k in keyof t]: isAny<t[k]> extends true
-        ? never
-        : t[k] extends never
-        ? never
-        : t[k] extends error
-        ? k
-        : never
-}[keyof t]
+type Z = containsMorphs<{ a: Type }>
+//   ^?
 
-export type inferUnion<l, r> = [l] extends [ParsedMorph<infer lIn, infer lOut>]
+export type inferUnion<l, r> = isAny<l | r> extends true
+    ? any
+    : [l] extends [never]
+    ? r
+    : [r] extends [never]
+    ? l
+    : [l] extends [ParsedMorph<infer lIn, infer lOut>]
     ? [r] extends [ParsedMorph<infer rIn, infer rOut>]
         ? lIn & rIn extends never
             ? (In: lIn | rIn) => Out<lOut | rOut>
-            : undiscriminatableMorphUnionMessage
+            : error<undiscriminatableMorphUnionMessage>
         : lIn & r extends never
         ? (In: lIn | r) => Out<lOut | r>
-        : undiscriminatableMorphUnionMessage
+        : error<undiscriminatableMorphUnionMessage>
     : [r] extends [ParsedMorph<infer rIn, infer rOut>]
     ? l & rIn extends never
         ? (In: l | rIn) => Out<l | rOut>
-        : undiscriminatableMorphUnionMessage
+        : error<undiscriminatableMorphUnionMessage>
     : l | r
+//  // should be based on input
+// l & r extends never
+// ? l | r
+// : error<undiscriminatableMorphUnionMessage>
+
+type containsMorphs<t> = containsMorphRecurse<t, never> extends never
+    ? false
+    : true
+
+type containsMorphRecurse<t, seen> = t extends seen
+    ? never
+    : t extends ParsedMorph
+    ? true
+    : t extends object
+    ? extractValues<
+          { [k in keyof t]: containsMorphRecurse<t[k], seen | t> },
+          true
+      >
+    : never
 
 export const doubleMorphIntersectionMessage = `An intersection must have at least one non-morph operand`
 
