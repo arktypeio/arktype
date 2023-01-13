@@ -1,13 +1,19 @@
 import type { TypeNode } from "./nodes/node.ts"
 import { compileNode } from "./nodes/node.ts"
 import { resolveRoot } from "./nodes/resolve.ts"
-import type { validateDefinition } from "./parse/definition.ts"
+import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
-import type { parseType, Type, TypeParser } from "./type.ts"
+import type { Type, TypeParser } from "./type.ts"
 import { nodeToType } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import { throwParseError } from "./utils/errors.ts"
-import type { Dict, evaluate, stringKeyOf } from "./utils/generics.ts"
+import type {
+    Dict,
+    evaluate,
+    mutable,
+    nominal,
+    stringKeyOf
+} from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
@@ -27,7 +33,7 @@ const composeScopeParser = <parent extends ScopeRoot>(parent?: parent) =>
         } else {
             $ = new ScopeRoot(aliases)
         }
-        const types = {} as Types
+        const types = {} as mutable<Scope>
         for (const name in $.aliases) {
             types[name] ??= $.type.dynamic($.aliases[name])
         }
@@ -49,52 +55,48 @@ type ScopeParser<parent> = LazyDynamicWrap<
 
 type InferredScopeParser<parent> = <aliases>(
     aliases: validateScope<aliases, parent>
-) => Scope<parseScope<parent & aliases>>
+) => Scope<inferScope<parent & aliases>>
+
+type validateScope<aliases, parent> = {
+    [name in keyof aliases]: name extends stringKeyOf<parent>
+        ? buildDuplicateAliasMessage<name>
+        : validateDefinition<aliases[name], inferScope<parent & aliases>>
+}
+
+type inferScope<aliases> = evaluate<{
+    [k in keyof aliases]: inferDefinition<aliases[k], BootstrapScope<aliases>>
+}>
 
 type DynamicScopeParser<parent> = <aliases extends Dict>(
     aliases: aliases
-) => Scope<Types<stringKeyOf<parent & aliases>>>
-
-export type Types<name extends string = string> = { [k in name]: Type }
+) => Scope<Dict<stringKeyOf<parent> | stringKeyOf<aliases>>>
 
 type ScopeCache = {
     nodes: { [def in string]: TypeNode }
     types: { [name in string]: Type }
 }
 
-export type Scope<types = Types> = types & { $: ScopeRoot<types> }
+export type Scope<root = Dict> = { [k in keyof root]: Type<root[k]> } & {
+    $: ScopeRoot<root>
+}
 
-export class ScopeRoot<types = Types> {
+export class ScopeRoot<root = Dict> {
     cache: ScopeCache = {
         nodes: {},
         types: {}
     }
 
-    type: TypeParser<types>
-    extend: ScopeParser<types>
+    type: TypeParser<root>
+    extend: ScopeParser<root>
 
-    constructor(public aliases: { readonly [k in keyof types]: unknown }) {
+    constructor(public aliases: { readonly [k in keyof root]: unknown }) {
         this.type = composeTypeParser(this as any)
-        this.extend = composeScopeParser(this as any) as ScopeParser<types>
+        this.extend = composeScopeParser(this as any) as ScopeParser<root>
     }
 
-    get infer(): inferScope<types> {
+    get infer(): root {
         return chainableNoOpProxy
     }
-}
-
-type parseScope<aliases> = evaluate<{
-    [k in keyof aliases]: parseType<aliases[k], aliases>
-}>
-
-type validateScope<aliases, parent> = {
-    [name in keyof aliases]: name extends stringKeyOf<parent>
-        ? buildDuplicateAliasMessage<name>
-        : validateDefinition<aliases[name], parent & aliases>
-}
-
-type inferScope<types> = {
-    [k in keyof types]: types[k] extends { infer: infer data } ? data : never
 }
 
 export const scope: ScopeParser<{}> = composeScopeParser()
@@ -102,6 +104,8 @@ export const scope: ScopeParser<{}> = composeScopeParser()
 const rootScope = composeScopeParser()({})
 
 export const type: TypeParser<{}> = composeTypeParser(rootScope.$)
+
+export type BootstrapScope<$ = {}> = nominal<$, "bootstrap">
 
 export const buildDuplicateAliasMessage = <name extends string>(
     name: name

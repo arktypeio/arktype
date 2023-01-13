@@ -41,7 +41,7 @@ export const parseDefinition = (def: unknown, $: ScopeRoot): TypeNode => {
 }
 
 export type inferDefinition<def, $> = isAny<def> extends true
-    ? def
+    ? never
     : // TODO: test perf diff between Type/infer
     def extends { t: infer t }
     ? t

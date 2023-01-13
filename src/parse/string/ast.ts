@@ -1,4 +1,5 @@
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
+import type { BootstrapScope } from "../../scope.ts"
 import type {
     Dict,
     Downcastable,
@@ -174,7 +175,9 @@ type isBoundable<data> = isAny<data> extends true
 type inferTerminal<token, $> = token extends Keyword
     ? Keywords[token]
     : token extends keyof $
-    ? inferDefinition<$[token], $>
+    ? $ extends BootstrapScope
+        ? inferDefinition<$[token], $>
+        : $[token]
     : token extends StringLiteral<infer Text>
     ? Text
     : token extends RegexLiteral

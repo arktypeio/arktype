@@ -95,12 +95,14 @@ describe("narrow", () => {
         // @ts-expect-error inferred as never
         attest(bad.a.infer).typed as { a: 1 }
 
-        // works fine if input def is not an object or an alias resolving to an
-        // object
+        // works fine if input def is not a record or an alias resolving to a
+        // record.
         const ok = scope({
-            a: ["number", "=>", (data) => `${data}`]
+            a: ["number", "=>", (data) => `${data}`],
+            b: [["string"], "=>", (data) => data]
         })
-        attest(ok.a.infer).typed as { a: 1 }
+        attest(ok.a.infer).typed as number
+        attest(ok.b.infer).typed as [string]
 
         // original form works fine for types
         const okType = type({
