@@ -2,7 +2,7 @@ import { describe, it } from "mocha"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import {
-    doubleMorphIntersectionMessage,
+    buildDoubleMorphIntersectionMessage,
     undiscriminatableMorphUnionMessage
 } from "../src/parse/string/ast.ts"
 import type { Out } from "../src/parse/tuple/morph.ts"
@@ -131,10 +131,7 @@ describe("morph", () => {
                 // @ts-expect-error
                 c: "a&b"
             })
-        }).throwsAndHasTypeError(
-            // TODO: Add paths to these errors
-            doubleMorphIntersectionMessage
-        )
+        }).throwsAndHasTypeError(buildDoubleMorphIntersectionMessage([]))
     })
     it("undiscriminated union", () => {
         attest(() => {
@@ -154,7 +151,7 @@ describe("morph", () => {
                 // @ts-expect-error
                 c: "a&b"
             })
-        }).throwsAndHasTypeError(doubleMorphIntersectionMessage)
+        }).throwsAndHasTypeError(buildDoubleMorphIntersectionMessage(["a"]))
     })
     it("deep undiscriminated union", () => {
         attest(() => {
@@ -174,6 +171,8 @@ describe("morph", () => {
                 // @ts-expect-error
                 c: "a[]&b[]"
             })
-        }).throwsAndHasTypeError(doubleMorphIntersectionMessage)
+        }).throwsAndHasTypeError(
+            buildDoubleMorphIntersectionMessage(["${number}", "a"])
+        )
     })
 })

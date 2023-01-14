@@ -67,7 +67,8 @@ export class Problems extends Array<Problem> {
             }
         ) as DiagnosticsByCode[code]
         const problem = {
-            path: [...state.path].join("."),
+            // TODO: default delimiter?
+            path: [...state.path].join("/"),
             reason:
                 state.config.problems?.[code]?.message(compiledContext) ??
                 defaultMessagesByCode[code](compiledContext)

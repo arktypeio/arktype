@@ -5,6 +5,7 @@ import type { subdomainOf } from "../../utils/domains.ts"
 import type {
     castOnError,
     Dict,
+    downcast,
     Downcastable,
     equals,
     error,
@@ -14,8 +15,10 @@ import type {
     List,
     RegexLiteral,
     requiredKeyOf,
+    stringKeyOf,
     tryCatch
 } from "../../utils/generics.ts"
+import type { join } from "../../utils/paths"
 import type { inferDefinition } from "../definition.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
@@ -80,19 +83,21 @@ type validateBinary<l, r, $> = tryCatch<
     tryCatch<validateAstSemantics<r, $>, undefined>
 >
 
-export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, never>
+export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, []>
 
-type inferIntersectionRecurse<l, r, seen> = [l] extends [seen]
-    ? // if we're in a cycle (or l is never, in which case this will trigger immediately),
-      // return a shallow intersection.
-      l & r
-    : r extends never
-    ? r
+type inferIntersectionRecurse<
+    l,
+    r,
+    path extends string[]
+> = path["length"] extends 10
+    ? l & r
+    : l & r extends never
+    ? never
     : isAny<l | r> extends true
     ? any
     : l extends ParsedMorph<infer lIn, infer lOut>
     ? r extends ParsedMorph
-        ? error<doubleMorphIntersectionMessage>
+        ? error<buildDoubleMorphIntersectionMessage<path>>
         : (In: evaluate<lIn & r>) => Out<lOut>
     : r extends ParsedMorph<infer rIn, infer rOut>
     ? (In: evaluate<rIn & l>) => Out<rOut>
@@ -100,14 +105,18 @@ type inferIntersectionRecurse<l, r, seen> = [l] extends [seen]
     ? bubblePropErrors<
           evaluate<
               {
-                  [k in keyof l]: k extends keyof r
-                      ? inferIntersectionRecurse<l[k], r[k], seen | l>
+                  [k in stringKeyOf<l>]: k extends keyof r
+                      ? inferIntersectionRecurse<l[k], r[k], [...path, k]>
                       : l[k]
               } & Omit<r, keyof l>
           >
       >
     : [l, r] extends [List<infer lItem>, List<infer rItem>]
-    ? inferIntersectionRecurse<lItem, rItem, seen | l> extends infer result
+    ? inferIntersectionRecurse<
+          lItem,
+          rItem,
+          [...path, "${number}"]
+      > extends infer result
         ? tryCatch<result, result[]>
         : never
     : l & r
@@ -152,9 +161,21 @@ type discriminatableRecurse<l, r, seen> = [l] extends [seen]
     ? true
     : never
 
-export const doubleMorphIntersectionMessage = `An intersection must have at least one non-morph operand`
+export const buildDoubleMorphIntersectionMessage = <path>(
+    path: downcast<path>
+): buildDoubleMorphIntersectionMessage<path> =>
+    `Intersection${
+        (path as string[]).length
+            ? ` at ${(path as string[]).join("/")}`
+            : ("" as any)
+    } must have at least one non-morph operand` as const
 
-type doubleMorphIntersectionMessage = typeof doubleMorphIntersectionMessage
+type buildDoubleMorphIntersectionMessage<path> = `Intersection${path extends [
+    string,
+    ...string[]
+]
+    ? ` at ${join<path>}`
+    : ""} must have at least one non-morph operand`
 
 export const undiscriminatableMorphUnionMessage = `A union of one or more morphs must be discriminatable`
 

@@ -1,7 +1,9 @@
-export const pushKey = (path: string, key: string, delimiter = ".") =>
+import type { List } from "./generics"
+
+export const pushKey = (path: string, key: string, delimiter = "/") =>
     path === "" ? key : `${path}${delimiter}${key}`
 
-export const withoutLastKey = (path: string, delimiter = ".") => {
+export const withoutLastKey = (path: string, delimiter = "/") => {
     const lastDelimiterIndex = path.lastIndexOf(delimiter)
     return lastDelimiterIndex === -1 ? "" : path.slice(0, lastDelimiterIndex)
 }
@@ -17,5 +19,17 @@ export const getPath = (value: unknown, path: string[]): unknown => {
     return result
 }
 
-export const pathToSegments = (path: string, delimiter = ".") =>
+export const pathToSegments = (path: string, delimiter = "/") =>
     path === "" ? [] : path.split(delimiter)
+
+export type join<
+    segments extends List<string>,
+    delimiter extends string = "/",
+    result extends string = ""
+> = segments extends [infer head extends string, ...infer tail extends string[]]
+    ? join<
+          tail,
+          delimiter,
+          result extends "" ? head : `${result}${delimiter}${head}`
+      >
+    : result

@@ -81,6 +81,7 @@ type ScopeCache = {
     types: { [name in string]: Type }
 }
 
+// TODO: change names to Space/Scope?
 export type Scope<root = Dict> = { [k in keyof root]: Type<root[k]> } & {
     $: ScopeRoot<root>
 }

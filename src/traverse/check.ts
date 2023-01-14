@@ -117,7 +117,7 @@ const baseCheckDomain = (
         ? { data }
         : {
               problems: new Problems({
-                  path: path.join("."),
+                  path: path.join("/"),
                   reason: `${domain} !== ${data}`
               })
           }
@@ -209,7 +209,7 @@ export const checkEntries = (checkState: CheckState, scope: ScopeRoot) => {
         const ruleValidator = entries[i][1]
         if (
             // TODO: path string
-            checkState.problems.byPath[checkState.path.join(".")] &&
+            checkState.problems.byPath[checkState.path.join("/")] &&
             precedenceMap[ruleName] > precedenceLevel
         ) {
             break
