@@ -162,10 +162,7 @@ type discriminatableRecurse<
           },
           string[]
       >
-    : // TODO
-      never
-
-type Z = [1, 2] extends Dict ? true : false
+    : never
 
 export const buildDoubleMorphIntersectionMessage = <path>(
     path: downcast<path>
