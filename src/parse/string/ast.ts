@@ -87,15 +87,13 @@ type inferIntersectionRecurse<l, r, seen> = [l] extends [seen]
     ? // if we're in a cycle (or l is never, in which case this will trigger immediately),
       // return a shallow intersection.
       l & r
-    : [r] extends [never]
-    ? never
     : isAny<l | r> extends true
     ? any
-    : [l] extends [ParsedMorph<infer lIn, infer lOut>]
-    ? [r] extends [ParsedMorph]
+    : l extends ParsedMorph<infer lIn, infer lOut>
+    ? r extends ParsedMorph
         ? error<doubleMorphIntersectionMessage>
         : (In: evaluate<lIn & r>) => Out<lOut>
-    : [r] extends [ParsedMorph<infer rIn, infer rOut>]
+    : r extends ParsedMorph<infer rIn, infer rOut>
     ? (In: evaluate<rIn & l>) => Out<rOut>
     : [l, r] extends [Dict, Dict]
     ? bubblePropErrors<
@@ -108,16 +106,14 @@ type inferIntersectionRecurse<l, r, seen> = [l] extends [seen]
           >
       >
     : [l, r] extends [List<infer lItem>, List<infer rItem>]
-    ? inferIntersectionRecurse<lItem, rItem, seen> extends infer result
-        ? result extends error
-            ? result
-            : result[]
+    ? inferIntersectionRecurse<lItem, rItem, seen | l> extends infer result
+        ? tryCatch<result, result[]>
         : never
     : l & r
 
-type bubblePropErrors<o> = extractKeysWithValue<o, error> extends never
+type bubblePropErrors<o> = extractValues<o, error> extends never
     ? o
-    : o[extractKeysWithValue<o, error>]
+    : extractValues<o, error>
 
 export type inferUnion<l, r> = isAny<l | r> extends true
     ? any
@@ -139,7 +135,7 @@ type discriminatable<l, r> = discriminatableRecurse<l, r, never> extends never
 
 type discriminatableRecurse<l, r, seen> = [l] extends [seen]
     ? never
-    : [l & r] extends [never]
+    : l & r extends never
     ? true
     : // TODO: Add tuple
     [subdomainOf<l>, subdomainOf<r>] extends ["object", "object"]
@@ -151,7 +147,7 @@ type discriminatableRecurse<l, r, seen> = [l] extends [seen]
           },
           true
       >
-    : [subdomainOf<l> & subdomainOf<r>] extends [never]
+    : subdomainOf<l> & subdomainOf<r> extends never
     ? true
     : never
 

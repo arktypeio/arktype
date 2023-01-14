@@ -30,14 +30,24 @@ describe("morph", () => {
     })
     it("intersection", () => {
         const types = scope({
-            a: [{ a: "1" }, "=>", (data) => `${data}`],
-            b: { b: "2" },
+            a: ["number", "=>", (data) => `${data}`, "string"],
+            b: "3.14",
             aAndB: "a&b",
             bAndA: "b&a"
         })
-        // attest(types.a).typed as Type<(In: { a: 1 }) => Out<string>>
-        attest(types.aAndB).typed as Type<(In: { a: 1; b: 2 }) => Out<string>>
-        attest(types.aAndB.node).snap({
+        attest(types.aAndB).typed as Type<(In: 3.14) => Out<string>>
+        attest(types.aAndB.node).snap()
+        attest(types.bAndA).typed as typeof types.aAndB
+        attest(types.bAndA.node).equals(types.aAndB.node)
+    })
+    it("object interesection", () => {
+        const types = scope({
+            a: [{ a: "1" }, "=>", (data) => `${data}`, "string"],
+            b: { b: "2" },
+            c: "a&b"
+        })
+        attest(types.c).typed as Type<(In: { a: 1; b: 2 }) => Out<string>>
+        attest(types.c.node).snap({
             input: {
                 object: {
                     props: {
@@ -48,8 +58,6 @@ describe("morph", () => {
             },
             morph: "<function>"
         })
-        attest(types.bAndA).typed as typeof types.aAndB
-        attest(types.bAndA.node).equals(types.aAndB.node)
     })
     it("union", () => {
         const types = scope({
