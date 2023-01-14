@@ -54,30 +54,31 @@ export type Checker<output> = (data: unknown) => Result<output>
 
 export type TypeRoot<t = unknown> = {
     t: t
-    infer: inferIo<t, "out">
+    infer: asOut<t>
     node: TypeResolution
     flat: TraversalNode
 }
 
 export type Type<t = unknown> = defer<
     Checker<{
-        data: inferIo<t, "in">
-        out: inferIo<t, "out">
+        data: asIn<t>
+        out: asOut<t>
     }> &
         TypeRoot<t>
 >
 
 export type TypeOptions = CheckConfig
 
-export type inferIo<t, io extends "in" | "out"> = t extends ParsedMorph<
-    infer i,
-    infer o
->
+export type asIn<t> = asIo<t, "in">
+
+export type asOut<t> = asIo<t, "out">
+
+type asIo<t, io extends "in" | "out"> = t extends ParsedMorph<infer i, infer o>
     ? io extends "in"
         ? i
         : o
     : t extends object
     ? t extends Function
         ? t
-        : { [k in keyof t]: inferIo<t[k], io> }
+        : { [k in keyof t]: asIo<t[k], io> }
     : t

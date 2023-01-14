@@ -1,5 +1,5 @@
 import { intersection } from "../../nodes/node.ts"
-import type { inferIo } from "../../type.ts"
+import type { asIn } from "../../type.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { TupleExpression, TupleExpressionParser } from "./tuple.ts"
@@ -25,6 +25,6 @@ export type Narrow<data = any> = (data: data) => boolean
 export type validateNarrowTuple<def extends TupleExpression, $> = [
     _: validateDefinition<def[0], $>,
     _: ":",
-    _: distributable<Narrow<inferIo<inferDefinition<def[0], $>, "in">>>,
+    _: distributable<Narrow<asIn<inferDefinition<def[0], $>>>>,
     _?: validateDefinition<def[3], $>
 ]

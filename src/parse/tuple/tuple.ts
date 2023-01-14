@@ -2,7 +2,7 @@ import { functorKeywords } from "../../nodes/keywords.ts"
 import type { TypeNode } from "../../nodes/node.ts"
 import { intersection, union } from "../../nodes/node.ts"
 import type { ScopeRoot } from "../../scope.ts"
-import type { inferIo } from "../../type.ts"
+import type { asIn, asOut } from "../../type.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type { error, List, returnOf } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
@@ -60,11 +60,10 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
         : inferDefinition<def[0], $>
     : def[1] extends "=>"
     ? (
-          // TODO: Cleanup inferios.
-          In: inferIo<inferDefinition<def[0], $>, "in">
+          In: asIn<inferDefinition<def[0], $>>
       ) => Out<
           [unknown, 3] extends [def[2], keyof def]
-              ? inferIo<inferDefinition<def[3], $>, "out">
+              ? asOut<inferDefinition<def[3], $>>
               : returnOf<def[2]>
       >
     : def[1] extends "&"

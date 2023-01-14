@@ -1,6 +1,6 @@
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
 import type { BootstrapScope } from "../../scope.ts"
-import type { inferIo } from "../../type.ts"
+import type { asIn } from "../../type.ts"
 import type { subdomainOf } from "../../utils/domains.ts"
 import type {
     castOnError,
@@ -122,7 +122,7 @@ export type inferUnion<l, r> = isAny<l | r> extends true
     ? r
     : [r] extends [never]
     ? l
-    : [inferIo<l, "in">, inferIo<r, "in">] extends [infer lIn, infer rIn]
+    : [asIn<l>, asIn<r>] extends [infer lIn, infer rIn]
     ? [equals<l, lIn>, equals<r, rIn>] extends [true, true]
         ? l | r
         : discriminatable<lIn, rIn> extends true
