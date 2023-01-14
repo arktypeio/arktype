@@ -139,27 +139,33 @@ export type inferUnion<l, r> = isAny<l | r> extends true
         : error<undiscriminatableMorphUnionMessage>
     : never
 
-type discriminatable<l, r> = discriminatableRecurse<l, r, never> extends never
+type discriminatable<l, r> = discriminatableRecurse<l, r, []> extends never
     ? false
     : true
 
-type discriminatableRecurse<l, r, seen> = [l] extends [seen]
+type discriminatableRecurse<
+    l,
+    r,
+    path extends string[]
+> = path["length"] extends 10
     ? never
     : l & r extends never
-    ? true
-    : // TODO: Add tuple
-    [subdomainOf<l>, subdomainOf<r>] extends ["object", "object"]
+    ? path
+    : subdomainOf<l> & subdomainOf<r> extends never
+    ? path
+    : [subdomainOf<l>, subdomainOf<r>] extends ["object", "object"]
     ? extractValues<
           {
               [k in requiredKeyOf<l>]: k extends requiredKeyOf<r>
-                  ? discriminatableRecurse<l[k], r[k], seen | l>
+                  ? discriminatableRecurse<l[k], r[k], [...path, k & string]>
                   : never
           },
-          true
+          string[]
       >
-    : subdomainOf<l> & subdomainOf<r> extends never
-    ? true
-    : never
+    : // TODO
+      never
+
+type Z = [1, 2] extends Dict ? true : false
 
 export const buildDoubleMorphIntersectionMessage = <path>(
     path: downcast<path>

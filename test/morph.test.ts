@@ -108,20 +108,31 @@ describe("morph", () => {
         attest(types.c.node).snap()
     })
     it("chained", () => {
-        const t = scope({
+        const types = scope({
             a: ["string", "=>", (s) => s.length, "number"],
             b: ["a", "=>", (n) => n === 0]
         })
-        attest(t.b).typed as Type<(In: string) => Out<boolean>>
-        attest(t.b.node).snap()
+        attest(types.b).typed as Type<(In: string) => Out<boolean>>
+        attest(types.b.node).snap()
     })
     it("chained nested", () => {
-        const t = scope({
+        const types = scope({
             a: ["string", "=>", (s) => s.length, "number"],
             b: [{ a: "a" }, "=>", ({ a }) => a === 0, "boolean"]
         })
-        attest(t.b).typed as Type<(In: { a: string }) => Out<boolean>>
-        attest(t.b.node).snap()
+        attest(types.b).typed as Type<(In: { a: string }) => Out<boolean>>
+        attest(types.b.node).snap()
+    })
+    it("discriminatable tuple union", () => {
+        const types = scope({
+            a: [["string"], "=>", (s) => [...s, "!"], "string[]"],
+            b: ["boolean"],
+            c: "a|b"
+        })
+        attest(types.c).typed as Type<
+            [boolean] | ((In: [string]) => Out<string[]>)
+        >
+        attest(types.c.node).snap()
     })
     it("double intersection", () => {
         attest(() => {

@@ -234,6 +234,8 @@ export type Dict<k extends string = string, v = unknown> = {
 
 export type List<t = unknown> = readonly t[]
 
+export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
+
 export const listFrom = <t>(data: t) =>
     (Array.isArray(data) ? data : [data]) as t extends List ? t : [t]
 
