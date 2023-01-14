@@ -165,6 +165,12 @@ export type optionalizeKeys<o, key extends keyof o> = Omit<o, key> & {
     [requiredKey in key]?: o[requiredKey]
 }
 
+export type requiredKeyOf<o> = {
+    [k in keyof o]-?: o extends { [_ in k]-?: o[k] } ? k : never
+}[keyof o]
+
+export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
+
 /** Type equivalent of ?? */
 export type coalesce<t, fallback> = t extends {} ? t : fallback
 

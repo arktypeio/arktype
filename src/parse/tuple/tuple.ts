@@ -65,15 +65,10 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
               ? inferDefinition<def[3], $>
               : returnOf<def[2]>
       >
-    : def[1] extends Scanner.BranchToken
-    ? def[2] extends undefined
-        ? never
-        : def[1] extends "&"
-        ? inferIntersection<
-              inferDefinition<def[0], $>,
-              inferDefinition<def[2], $>
-          >
-        : inferUnion<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
+    : def[1] extends "&"
+    ? inferIntersection<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
+    : def[1] extends "|"
+    ? inferUnion<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
     : def[1] extends "[]"
     ? inferDefinition<def[0], $>[]
     : never

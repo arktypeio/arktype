@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
-import { attest } from "../dev/attest/api.ts"
 import { type } from "../api.ts"
+import { attest } from "../dev/attest/api.ts"
 
 describe("record", () => {
     it("required", () => {

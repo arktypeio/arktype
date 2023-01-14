@@ -1,16 +1,20 @@
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
 import type { BootstrapScope } from "../../scope.ts"
-import type { Type } from "../../type.ts"
+import type { inferIo, Type } from "../../type.ts"
+import type { subdomainOf } from "../../utils/domains.ts"
+import { domainOf } from "../../utils/domains.ts"
 import type {
     Dict,
     Downcastable,
+    equals,
     error,
     evaluate,
     extractKeysWithValue,
     extractValues,
     isAny,
     List,
-    RegexLiteral
+    RegexLiteral,
+    requiredKeyOf
 } from "../../utils/generics.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
@@ -27,7 +31,7 @@ export type inferAst<ast, $> = ast extends readonly unknown[]
           > extends infer result
             ? // TODO: more robust against top types
               result extends error
-                ? never
+                ? result
                 : result
             : never
         : ast[1] extends "&"
@@ -122,46 +126,49 @@ type bubblePropErrors<o> = extractKeysWithValue<o, error> extends never
     ? o
     : o[extractKeysWithValue<o, error>]
 
-type Z = containsMorphs<{ a: Type }>
-//   ^?
-
 export type inferUnion<l, r> = isAny<l | r> extends true
     ? any
     : [l] extends [never]
     ? r
     : [r] extends [never]
     ? l
-    : [l] extends [ParsedMorph<infer lIn, infer lOut>]
-    ? [r] extends [ParsedMorph<infer rIn, infer rOut>]
-        ? lIn & rIn extends never
-            ? (In: lIn | rIn) => Out<lOut | rOut>
-            : error<undiscriminatableMorphUnionMessage>
-        : lIn & r extends never
-        ? (In: lIn | r) => Out<lOut | r>
+    : [inferIo<l, "in">, inferIo<r, "in">] extends [infer lIn, infer rIn]
+    ? [equals<l, lIn>, equals<r, rIn>] extends [true, true]
+        ? l | r
+        : discriminatable<lIn, rIn> extends true
+        ? l | r
         : error<undiscriminatableMorphUnionMessage>
-    : [r] extends [ParsedMorph<infer rIn, infer rOut>]
-    ? l & rIn extends never
-        ? (In: l | rIn) => Out<l | rOut>
-        : error<undiscriminatableMorphUnionMessage>
-    : l | r
-//  // should be based on input
-// l & r extends never
-// ? l | r
-// : error<undiscriminatableMorphUnionMessage>
+    : never
 
-type containsMorphs<t> = containsMorphRecurse<t, never> extends never
+type Z = discriminatable<
+    {
+        a: true
+    },
+    { a: false }
+>
+
+type F = Z
+//   ^?
+
+type discriminatable<l, r> = discriminatableRecurse<l, r, never> extends never
     ? false
     : true
 
-type containsMorphRecurse<t, seen> = t extends seen
+type discriminatableRecurse<l, r, seen> = [l] extends [seen]
     ? never
-    : t extends ParsedMorph
+    : [l & r] extends [never]
     ? true
-    : t extends object
+    : [subdomainOf<l>, subdomainOf<r>] extends ["object", "object"]
     ? extractValues<
-          { [k in keyof t]: containsMorphRecurse<t[k], seen | t> },
+          {
+              [k in requiredKeyOf<l>]: k extends requiredKeyOf<r>
+                  ? discriminatableRecurse<l[k], r[k], seen | l>
+                  : never
+          },
           true
       >
+    : [subdomainOf<l> & subdomainOf<r>] extends [never]
+    ? true
     : never
 
 export const doubleMorphIntersectionMessage = `An intersection must have at least one non-morph operand`

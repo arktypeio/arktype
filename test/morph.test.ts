@@ -134,9 +134,10 @@ describe("morph", () => {
     })
     it("deep undiscriminated union", () => {
         attest(() => {
-            const types = scope({
+            scope({
                 a: { a: ["string", "=>", (s) => s.trim()] },
                 b: { a: "'foo'" },
+                // @ts-expect-error
                 c: "a|b"
             })
         }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)

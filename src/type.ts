@@ -69,7 +69,7 @@ export type Type<t = unknown> = defer<
 
 export type TypeOptions = CheckConfig
 
-type inferIo<t, io extends "in" | "out"> = t extends ParsedMorph<
+export type inferIo<t, io extends "in" | "out"> = t extends ParsedMorph<
     infer i,
     infer o
 >
@@ -77,5 +77,7 @@ type inferIo<t, io extends "in" | "out"> = t extends ParsedMorph<
         ? i
         : o
     : t extends object
-    ? { [k in keyof t]: inferIo<t[k], io> }
+    ? t extends Function
+        ? t
+        : { [k in keyof t]: inferIo<t[k], io> }
     : t
