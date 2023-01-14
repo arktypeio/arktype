@@ -14,14 +14,15 @@ import type {
     isAny,
     List,
     RegexLiteral,
-    requiredKeyOf
+    requiredKeyOf,
+    tryCatch
 } from "../../utils/generics.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
-export type inferAst<ast, $> = ast extends readonly unknown[]
+export type inferAst<ast, $> = ast extends List
     ? ast[1] extends "[]"
         ? inferAst<ast[0], $>[]
         : ast[1] extends "|"
@@ -53,19 +54,15 @@ export type validateAstSemantics<ast, $> = ast extends string
     ? validateAstSemantics<child, $>
     : ast extends [infer l, infer token, infer r]
     ? token extends "&"
-        ? inferIntersection<
-              inferAst<l, $>,
-              inferAst<r, $>
-          > extends infer result extends error
-            ? result
-            : validateBinary<l, r, $>
+        ? tryCatch<
+              inferIntersection<inferAst<l, $>, inferAst<r, $>>,
+              validateBinary<l, r, $>
+          >
         : token extends "|"
-        ? inferUnion<
-              inferAst<l, $>,
-              inferAst<r, $>
-          > extends infer result extends error
-            ? result
-            : validateBinary<l, r, $>
+        ? tryCatch<
+              inferUnion<inferAst<l, $>, inferAst<r, $>>,
+              validateBinary<l, r, $>
+          >
         : token extends Scanner.Comparator
         ? l extends number
             ? validateAstSemantics<r, $>
@@ -79,13 +76,10 @@ export type validateAstSemantics<ast, $> = ast extends string
         : validateAstSemantics<l, $>
     : undefined
 
-type validateBinary<l, r, $> = validateAstSemantics<l, $> extends error<
-    infer leftMessage
+type validateBinary<l, r, $> = tryCatch<
+    validateAstSemantics<l, $>,
+    tryCatch<validateAstSemantics<r, $>, undefined>
 >
-    ? leftMessage
-    : validateAstSemantics<r, $> extends error<infer rightMessage>
-    ? rightMessage
-    : undefined
 
 export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, never>
 
