@@ -187,7 +187,7 @@ export type castOnError<t, to> = isTopType<t> extends true
     ? to
     : t
 
-export type tryCatch<t, onValid> = isTopType<t> extends true
+export type tryCatch<t, onValid> = isAny<t> extends true
     ? onValid
     : t extends never
     ? onValid

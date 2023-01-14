@@ -9,7 +9,6 @@ import type {
     equals,
     error,
     evaluate,
-    extractKeysWithValue,
     extractValues,
     isAny,
     List,
@@ -87,6 +86,8 @@ type inferIntersectionRecurse<l, r, seen> = [l] extends [seen]
     ? // if we're in a cycle (or l is never, in which case this will trigger immediately),
       // return a shallow intersection.
       l & r
+    : r extends never
+    ? r
     : isAny<l | r> extends true
     ? any
     : l extends ParsedMorph<infer lIn, infer lOut>

@@ -26,7 +26,7 @@ suite("scope", () => {
 
     bench("cyclic(100)", () => {
         const cyclic100Scope = scope(cyclic100)
-        // cyclic100Scope.$.type("user2&user2")
+        cyclic100Scope.$.type("user2&user2")
     })
         // .median()
         .type([11919, "instantiations"])
