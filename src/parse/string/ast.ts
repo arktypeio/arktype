@@ -190,8 +190,13 @@ type isBoundable<data> = isAny<data> extends true
 type inferTerminal<token, $> = token extends Keyword
     ? Keywords[token]
     : token extends keyof $
-    ? $ extends BootstrapScope
-        ? inferDefinition<$[token], $>
+    ? $[token] extends BootstrapScope<infer def>
+        ? // TODO: standardize tryCatch to deal with other types of defs like this
+          isAny<$[token]> extends true
+            ? any
+            : $[token] extends never
+            ? never
+            : inferDefinition<def, $>
         : $[token]
     : token extends StringLiteral<infer Text>
     ? Text

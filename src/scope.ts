@@ -55,17 +55,22 @@ type ScopeParser<parent> = LazyDynamicWrap<
 
 type InferredScopeParser<parent> = <aliases>(
     aliases: validateScope<aliases, parent>
-) => Scope<inferScope<parent & aliases>>
+) => Scope<inferScope<aliases, parent>>
 
 type validateScope<aliases, parent> = {
     [name in keyof aliases]: name extends stringKeyOf<parent>
         ? buildDuplicateAliasMessage<name>
-        : validateDefinition<aliases[name], inferScope<parent & aliases>>
+        : validateDefinition<aliases[name], inferScope<aliases, parent>>
 }
 
-type inferScope<aliases> = evaluate<{
-    [k in keyof aliases]: inferDefinition<aliases[k], BootstrapScope<aliases>>
-}>
+type inferScope<aliases, parent> = evaluate<
+    {
+        [k in keyof aliases]: inferDefinition<
+            aliases[k],
+            { [k in keyof aliases]: BootstrapScope<aliases[k]> } & parent
+        >
+    } & parent
+>
 
 type DynamicScopeParser<parent> = <aliases extends Dict>(
     aliases: aliases
