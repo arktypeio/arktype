@@ -179,6 +179,14 @@ export type error<message extends string = string> = nominal<
     "error"
 >
 
+export type castOnError<t, to> = isTopType<t> extends true
+    ? t
+    : t extends never
+    ? t
+    : t extends error
+    ? to
+    : t
+
 export type RegexLiteral<expression extends string = string> = `/${expression}/`
 
 export type autocomplete<suggestions extends string> =

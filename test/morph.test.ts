@@ -102,9 +102,17 @@ describe("morph", () => {
     it("chained", () => {
         const t = scope({
             a: ["string", "=>", (s) => s.length, "number"],
-            b: ["a", "=>", (n) => n === 0, "boolean"]
+            b: ["a", "=>", (n) => n === 0]
         })
         attest(t.b).typed as Type<(In: string) => Out<boolean>>
+        attest(t.b.node).snap()
+    })
+    it("chained nested", () => {
+        const t = scope({
+            a: ["string", "=>", (s) => s.length, "number"],
+            b: [{ a: "a" }, "=>", ({ a }) => a === 0, "boolean"]
+        })
+        attest(t.b).typed as Type<(In: { a: string }) => Out<boolean>>
         attest(t.b.node).snap()
     })
     it("double intersection", () => {
