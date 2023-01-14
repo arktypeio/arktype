@@ -1,3 +1,4 @@
+import type { inferIo } from "../../type.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type { nominal } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
@@ -20,7 +21,7 @@ export type Out<t = {}> = nominal<t, "out">
 export type validateMorphTuple<def extends TupleExpression, $> = [
     _: validateDefinition<def[0], $>,
     _: "=>",
-    _: Morph<inferDefinition<def[0], $>>,
+    _: Morph<inferIo<inferDefinition<def[0], $>, "out">>,
     _?: validateDefinition<def[3], $>
 ]
 

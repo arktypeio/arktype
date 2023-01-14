@@ -99,6 +99,14 @@ describe("morph", () => {
         >
         attest(types.c.node).snap()
     })
+    it("chained", () => {
+        const t = scope({
+            a: ["string", "=>", (s) => s.length, "number"],
+            b: ["a", "=>", (n) => n === 0, "boolean"]
+        })
+        attest(t.b).typed as Type<(In: string) => Out<boolean>>
+        attest(t.b.node).snap()
+    })
     it("double intersection", () => {
         attest(() => {
             scope({

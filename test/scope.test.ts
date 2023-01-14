@@ -15,13 +15,12 @@ describe("scope", () => {
         ).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
     })
     it("type definition", () => {
-        // TODO: fix
-        // const types = scope({ a: type("string") })
-        // attest(types.a.infer).typed as string
-        // attest(() =>
-        //     // @ts-expect-error
-        //     scope({ a: type("strong") })
-        // ).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
+        const types = scope({ a: type("string") })
+        attest(types.a.infer).typed as string
+        attest(() =>
+            // @ts-expect-error
+            scope({ a: type("strong") })
+        ).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
     })
     it("interdependent", () => {
         const types = scope({
@@ -58,7 +57,6 @@ describe("scope", () => {
                 }
             }
         }
-        // But still yields correct types when properties are accessed
         attest(types.b.infer.a.b.a.b.a.b.a).typed as {
             b: {
                 a: any

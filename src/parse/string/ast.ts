@@ -1,8 +1,7 @@
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
 import type { BootstrapScope } from "../../scope.ts"
-import type { inferIo, Type } from "../../type.ts"
+import type { inferIo } from "../../type.ts"
 import type { subdomainOf } from "../../utils/domains.ts"
-import { domainOf } from "../../utils/domains.ts"
 import type {
     Dict,
     Downcastable,
@@ -94,10 +93,14 @@ type validateBinary<l, r, $> = validateAstSemantics<l, $> extends error<
 
 export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, never>
 
-type inferIntersectionRecurse<l, r, seen> = isAny<l | r> extends true
+type inferIntersectionRecurse<l, r, seen> = [l] extends [seen]
+    ? // if we're in a cycle (or l is never, in which case this will trigger immediately),
+      // return a shallow intersection.
+      l & r
+    : r extends never
+    ? never
+    : isAny<l | r> extends true
     ? any
-    : [l] extends [seen]
-    ? l & r
     : [l] extends [ParsedMorph<infer lIn, infer lOut>]
     ? r extends ParsedMorph
         ? error<doubleMorphIntersectionMessage>
@@ -122,6 +125,43 @@ type inferIntersectionRecurse<l, r, seen> = isAny<l | r> extends true
         : never
     : l & r
 
+// type inferIntersectionRecurse<l, r, seen> = [l] extends [seen]
+//     ? // if we're in a cycle (or l is never, in which case this will trigger immediately),
+//       // return a shallow intersection.
+//       l & r
+//     : r extends never
+//     ? never
+//     : isAny<l | r> extends true
+//     ? any
+//     : // TODO: Split this up
+//     [l] extends [ParsedMorph<infer lIn, infer lOut>]
+//     ? r extends ParsedMorph
+//         ? error<doubleMorphIntersectionMessage>
+//         : (
+//               In: evaluate<inferIo<lIn, "out"> & inferIo<r, "out">>
+//           ) => Out<inferIo<lOut, "out">>
+//     : [r] extends [ParsedMorph<infer rIn, infer rOut>]
+//     ? (
+//           In: evaluate<inferIo<l, "out"> & inferIo<rIn, "out">>
+//       ) => Out<inferIo<rOut, "out">>
+//     : [l, r] extends [Dict, Dict]
+//     ? bubblePropErrors<
+//           evaluate<
+//               {
+//                   [k in keyof l]: k extends keyof r
+//                       ? inferIntersectionRecurse<l[k], r[k], seen | l>
+//                       : l[k]
+//               } & Omit<r, keyof l>
+//           >
+//       >
+//     : [l, r] extends [List<infer lItem>, List<infer rItem>]
+//     ? inferIntersectionRecurse<lItem, rItem, seen> extends infer result
+//         ? result extends error
+//             ? result
+//             : result[]
+//         : never
+//     : l & r
+
 type bubblePropErrors<o> = extractKeysWithValue<o, error> extends never
     ? o
     : o[extractKeysWithValue<o, error>]
@@ -139,16 +179,6 @@ export type inferUnion<l, r> = isAny<l | r> extends true
         ? l | r
         : error<undiscriminatableMorphUnionMessage>
     : never
-
-type Z = discriminatable<
-    {
-        a: true
-    },
-    { a: false }
->
-
-type F = Z
-//   ^?
 
 type discriminatable<l, r> = discriminatableRecurse<l, r, never> extends never
     ? false
