@@ -29,7 +29,8 @@ const composeScopeParser = <parent extends ScopeRoot>(parent?: parent) =>
                 merged[name] = aliases[name]
             }
             $ = new ScopeRoot(merged)
-            $.cache = parent.cache
+            // we can copy the parent cache because we don't allow overriding
+            $.cache = { ...parent.cache }
         } else {
             $ = new ScopeRoot(aliases)
         }
