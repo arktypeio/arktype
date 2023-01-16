@@ -8,10 +8,11 @@ import type {
     TraversalBranchesEntry
 } from "../nodes/predicate.ts"
 import { checkDivisor } from "../nodes/rules/divisor.ts"
+import { checkInstanceOf } from "../nodes/rules/instanceof.ts"
 import { checkOptionalProps, checkRequiredProps } from "../nodes/rules/props.ts"
 import type { BoundableData } from "../nodes/rules/range.ts"
 import { checkRange } from "../nodes/rules/range.ts"
-import { checkRegexRule } from "../nodes/rules/regex.ts"
+import { checkRegex } from "../nodes/rules/regex.ts"
 import type { TraversalRuleEntry } from "../nodes/rules/rules.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
 import { checkSubdomain } from "../nodes/rules/subdomain.ts"
@@ -123,8 +124,8 @@ const baseCheckDomain = (
           }
 
 const checkers = {
-    regex: (state, regex) => checkRegexRule(state, regex),
-    divisor: (state, divisor) => checkDivisor(state, divisor),
+    regex: checkRegex,
+    divisor: checkDivisor,
     domains: (state, domains, scope) => {
         const entries = domains[domainOf(state.data)]
         if (entries) {
@@ -152,11 +153,8 @@ const checkers = {
             )
         }
     },
-    subdomain: (state, subdomain, scope) =>
-        checkSubdomain(state, subdomain, scope),
-    range: (state, range) => {
-        checkRange(state, range)
-    },
+    subdomain: checkSubdomain,
+    range: checkRange,
     requiredProps: checkRequiredProps,
     optionalProps: checkOptionalProps,
     branches: (state, branches, scope) =>
@@ -165,6 +163,8 @@ const checkers = {
             checkEntries(state, scope)
             return state.problems.length === 0 ? true : false
         }),
+    instanceof: checkInstanceOf,
+    // TODO: add error message syntax.
     narrow: (state, validator) => validator(state),
     value: (state, value) => {
         if (state.data !== value) {

@@ -58,7 +58,7 @@ export type RangeErrorContext = defineDiagnostic<
     }
 >
 
-export const buildRangeError: DiagnosticMessageBuilder<"RangeViolation"> = ({
+export const buildRangeError: DiagnosticMessageBuilder<"range"> = ({
     comparator,
     limit,
     kind,
@@ -76,7 +76,7 @@ export const checkRange = ((state, range) => {
             (size === range.min.limit && range.min.exclusive)
         ) {
             state.problems.addProblem(
-                "RangeViolation",
+                "range",
                 {
                     comparator: toComparator("min", range.min),
                     limit: range.min.limit,
@@ -93,7 +93,7 @@ export const checkRange = ((state, range) => {
             (size === range.max.limit && range.max.exclusive)
         ) {
             state.problems.addProblem(
-                "RangeViolation",
+                "range",
                 {
                     comparator: toComparator("max", range.max),
                     limit: range.max.limit,

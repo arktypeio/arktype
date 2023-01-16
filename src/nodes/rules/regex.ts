@@ -32,7 +32,7 @@ export const getRegex = (source: string) => {
     return regexCache[source]
 }
 
-export const checkRegexRule = ((state, regex) => {
+export const checkRegex = ((state, regex) => {
     if (!regex.test(state.data)) {
         state.problems.addProblem("RegexMismatch", { regex }, state)
     }

@@ -1,7 +1,9 @@
 import type { UnionErrorContext } from "../nodes/branches.ts"
 import { buildUnionError } from "../nodes/branches.ts"
-import type { DivisorErrorContext } from "../nodes/rules/divisor.ts"
+import type { DivisibilityContext } from "../nodes/rules/divisor.ts"
 import { buildDivisorError } from "../nodes/rules/divisor.ts"
+import type { InstanceOfErrorContext } from "../nodes/rules/instanceof.ts"
+import { buildInstanceOfError } from "../nodes/rules/instanceof.ts"
 import type { MissingKeyContext } from "../nodes/rules/props.ts"
 import { buildMissingKeyError } from "../nodes/rules/props.ts"
 import type { RangeErrorContext } from "../nodes/rules/range.ts"
@@ -122,10 +124,11 @@ const buildDomainsError: DiagnosticMessageBuilder<"Domains"> = ({
     }`
 
 export type DiagnosticsByCode = {
-    DivisorViolation: DivisorErrorContext
+    divisibility: DivisibilityContext
     Domains: DomainsErrorContext
     MissingKey: MissingKeyContext
-    RangeViolation: RangeErrorContext
+    range: RangeErrorContext
+    instanceof: InstanceOfErrorContext
     RegexMismatch: RegexErrorContext
     TupleLength: TupleLengthErrorContext
     Unassignable: UnassignableErrorContext
@@ -141,10 +144,11 @@ export type DiagnosticMessageBuilder<code extends DiagnosticCode> = (
 const defaultMessagesByCode: {
     [code in DiagnosticCode]: DiagnosticMessageBuilder<code>
 } = {
-    DivisorViolation: buildDivisorError,
+    divisibility: buildDivisorError,
     Domains: buildDomainsError,
     MissingKey: buildMissingKeyError,
-    RangeViolation: buildRangeError,
+    range: buildRangeError,
+    instanceof: buildInstanceOfError,
     RegexMismatch: buildRegexError,
     TupleLength: buildTupleLengthError,
     Unassignable: buildUnassignableError,

@@ -23,11 +23,12 @@ const greatestCommonDivisor = (l: number, r: number) => {
     return greatestCommonDivisor
 }
 
-export type DivisorErrorContext = defineDiagnostic<number, { divisor: number }>
+export type DivisibilityContext = defineDiagnostic<number, { divisor: number }>
 
-export const buildDivisorError: DiagnosticMessageBuilder<
-    "DivisorViolation"
-> = ({ data, divisor }) =>
+export const buildDivisorError: DiagnosticMessageBuilder<"divisibility"> = ({
+    data,
+    divisor
+}) =>
     divisor === 1
         ? `${data} is not an integer.`
         : `${data} is not divisible by ${divisor}.`
@@ -35,7 +36,7 @@ export const buildDivisorError: DiagnosticMessageBuilder<
 export const checkDivisor = ((state, divisor) => {
     if (state.data % divisor !== 0) {
         state.problems.addProblem(
-            "DivisorViolation",
+            "divisibility",
             {
                 divisor
             },
