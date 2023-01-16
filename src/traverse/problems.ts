@@ -14,6 +14,7 @@ import type { TupleLengthErrorContext } from "../nodes/rules/subdomain.ts"
 import { buildTupleLengthError } from "../nodes/rules/subdomain.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { evaluate } from "../utils/generics.ts"
+import { stringSerialize } from "../utils/serialize.ts"
 import type { CheckState } from "./check.ts"
 
 export type BaseProblemConfig = {
@@ -60,14 +61,9 @@ export class Problems extends Array<Problem> {
         context: Omit<DiagnosticsByCode[code], keyof BaseDiagnosticContext>,
         state: CheckState<dataTypeOfCode<code>>
     ) {
-        const compiledContext = Object.assign(
-            "type" in context
-                ? { type: JSON.stringify(context.type).toString() }
-                : context,
-            {
-                data: new Stringifiable(state.data)
-            }
-        ) as DiagnosticsByCode[code]
+        const compiledContext = Object.assign(context, {
+            data: new Stringifiable(state.data)
+        }) as DiagnosticsByCode[code]
         const problem = {
             // TODO: default delimiter?
             path: [...state.path].join("/"),
@@ -87,13 +83,12 @@ type dataTypeOfCode<code extends DiagnosticCode> =
 export class Stringifiable<Data = unknown> {
     constructor(public raw: Data) {}
 
-    get typeOf() {
+    get domain() {
         return domainOf(this.raw)
     }
 
-    // TODO: Fix
     toString() {
-        return JSON.stringify(this.raw)
+        return stringSerialize(this.raw)
     }
 }
 

@@ -8,6 +8,7 @@ import type { Subdomain } from "../../utils/domains.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import type { Dict, List } from "../../utils/generics.ts"
+import { stringSerialize } from "../../utils/serialize.ts"
 import { composeIntersection, empty, equal } from "../compose.ts"
 import type { TraversalNode, TypeNode } from "../node.ts"
 import { compileNode, nodeIntersection } from "../node.ts"
@@ -162,7 +163,7 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         state.node = rootNode
     } else {
         return throwInternalError(
-            `Unexpected subdomain entry ${JSON.stringify(rule)}`
+            `Unexpected subdomain entry ${stringSerialize(rule)}`
         )
     }
     return true

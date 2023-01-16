@@ -1,5 +1,5 @@
 import type { downcast } from "../../../../src/utils/generics.ts"
-import type { serialize } from "../utils.ts"
+import type { serialize } from "../../../../src/utils/serialize.ts"
 
 export type RootAssertions<
     T,

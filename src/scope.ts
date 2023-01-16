@@ -116,7 +116,7 @@ export type BootstrapScope<$ = {}> = nominal<$, "bootstrap">
 
 export const buildDuplicateAliasMessage = <name extends string>(
     name: name
-): buildDuplicateAliasMessage<name> => `Alias '${name}' is already defined.`
+): buildDuplicateAliasMessage<name> => `Alias '${name}' is already defined`
 
 type buildDuplicateAliasMessage<name extends string> =
-    `Alias '${name}' is already defined.`
+    `Alias '${name}' is already defined`

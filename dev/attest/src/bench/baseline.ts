@@ -1,6 +1,6 @@
 import process from "node:process"
+import { literalSerialize } from "../../../../src/utils/serialize.ts"
 import { queueInlineSnapshotWriteOnProcessExit } from "../snapshot.ts"
-import { literalSerialize } from "../utils.ts"
 import type { BenchAssertionContext, BenchContext } from "./bench.ts"
 import type {
     MarkMeasure,

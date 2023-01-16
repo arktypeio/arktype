@@ -21,7 +21,7 @@ import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { Dict, evaluate, extend, xor } from "../utils/generics.ts"
 import type { DiagnosticCode, DiagnosticsByCode } from "./problems.ts"
-import { Problems } from "./problems.ts"
+import { Problems, Stringifiable } from "./problems.ts"
 
 export const checkRules = (
     domain: Domain,
@@ -171,7 +171,8 @@ const checkers = {
             state.problems.addProblem(
                 "Unassignable",
                 {
-                    expected: value
+                    // TODO: better error
+                    expected: new Stringifiable(value)
                 },
                 state
             )

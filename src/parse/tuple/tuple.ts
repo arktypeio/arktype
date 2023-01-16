@@ -3,6 +3,7 @@ import type { TypeNode } from "../../nodes/node.ts"
 import { intersection, union } from "../../nodes/node.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import type { asIn, asOut } from "../../type.ts"
+import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type { classOf, error, List, returnOf } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
@@ -47,6 +48,8 @@ export type validateTupleExpression<
         : [validateDefinition<def[0], $>, def[1], validateDefinition<def[2], $>]
     : def[1] extends "[]"
     ? [validateDefinition<def[0], $>, "[]"]
+    : def[0] extends "==="
+    ? ["===", def[1]]
     : def[0] extends "instanceof"
     ? [
           "instanceof",
@@ -82,6 +85,8 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
     ? inferUnion<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
     : def[1] extends "[]"
     ? inferDefinition<def[0], $>[]
+    : def[0] extends "==="
+    ? def[1]
     : def[0] extends "instanceof"
     ? def[1] extends classOf<infer t>
         ? t
@@ -145,7 +150,7 @@ const postfixParsers: {
     "=>": parseMorphTuple
 }
 
-type PrefixToken = "instanceof"
+type PrefixToken = "instanceof" | "==="
 
 type PrefixExpression<token extends PrefixToken = PrefixToken> = [
     token,
@@ -162,7 +167,8 @@ const prefixParsers: {
             )
         }
         return { object: { instanceof: def[1] as classOf<unknown> } }
-    }
+    },
+    "===": (def) => ({ [domainOf(def[1])]: { value: def[1] } })
 }
 
 const isPrefixExpression = (def: List): def is PrefixExpression =>

@@ -1,6 +1,6 @@
 import * as assert from "node:assert/strict"
+import { isRecursible } from "../../../src/utils/serialize.ts"
 import type { AssertionContext } from "./attest.ts"
-import { isRecursible } from "./utils.ts"
 
 export type ThrowAsertionErrorContext = {
     message: string
