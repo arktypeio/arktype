@@ -1,6 +1,7 @@
 import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
+import { buildImplicitNeverMessage } from "../src/parse/string/ast.ts"
 import {
     buildMissingRightOperandMessage,
     buildUnresolvableMessage
@@ -78,9 +79,11 @@ describe("intersection", () => {
                     buildMissingRightOperandMessage("&", "&true")
                 )
             })
-            it("never", () => {
-                // TODO: Top-level never?
-                attest(type("string&number").node).snap({})
+            it("implicit never", () => {
+                // @ts-expect-error
+                attest(() => type("string&number")).throwsAndHasTypeError(
+                    buildImplicitNeverMessage("")
+                )
             })
         })
     })

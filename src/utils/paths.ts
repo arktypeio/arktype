@@ -1,4 +1,4 @@
-import type { List } from "./generics"
+import type { downcast, List } from "./generics"
 
 export const pushKey = (path: string, key: string, delimiter = "/") =>
     path === "" ? key : `${path}${delimiter}${key}`
@@ -33,3 +33,22 @@ export type join<
           result extends "" ? head : `${result}${delimiter}${head}`
       >
     : result
+
+export const withPathContext = <base extends string, path>(
+    base: base,
+    path: downcast<path>,
+    delimiter = "/"
+): withPathContext<base, path> =>
+    `${base}${
+        (path as string[]).length
+            ? ` at ${(path as string[]).join(delimiter)}`
+            : ("" as any)
+    }`
+
+export type withPathContext<
+    base extends string,
+    path,
+    delimiter extends string = "/"
+> = `${base}${path extends [string, ...string[]]
+    ? ` at ${join<path, delimiter>}`
+    : ""}`

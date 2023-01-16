@@ -19,6 +19,7 @@ import type {
     tryCatch
 } from "../../utils/generics.ts"
 import type { join } from "../../utils/paths"
+import { withPathContext } from "../../utils/paths"
 import type { inferDefinition } from "../definition.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
@@ -91,8 +92,12 @@ type inferIntersectionRecurse<
     path extends string[]
 > = path["length"] extends 10
     ? l & r
-    : l & r extends never
+    : l extends never
     ? never
+    : r extends never
+    ? never
+    : l & r extends never
+    ? error<buildImplicitNeverMessage<path>>
     : isAny<l | r> extends true
     ? any
     : l extends ParsedMorph<infer lIn, infer lOut>
@@ -167,20 +172,27 @@ type discriminatableRecurse<
 export const buildDoubleMorphIntersectionMessage = <path>(
     path: downcast<path>
 ): buildDoubleMorphIntersectionMessage<path> =>
-    `Intersection${
-        (path as string[]).length
-            ? ` at ${(path as string[]).join("/")}`
-            : ("" as any)
-    } must have at least one non-morph operand` as const
+    `${withPathContext(
+        "Intersection",
+        path
+    )} must have at least one non-morph operand`
 
-type buildDoubleMorphIntersectionMessage<path> = `Intersection${path extends [
-    string,
-    ...string[]
-]
-    ? ` at ${join<path>}`
-    : ""} must have at least one non-morph operand`
+type buildDoubleMorphIntersectionMessage<path> = `${withPathContext<
+    "Intersection",
+    path
+>} must have at least one non-morph operand`
 
 export const undiscriminatableMorphUnionMessage = `A union of one or more morphs must be discriminatable`
+
+export const buildImplicitNeverMessage = <path>(
+    path: downcast<path>
+): buildImplicitNeverMessage<path> =>
+    `${withPathContext("Intersection", path)} results in an unsatisfiable type`
+
+type buildImplicitNeverMessage<path> = `${withPathContext<
+    "Intersection",
+    path
+>} results in an unsatisfiable type`
 
 type undiscriminatableMorphUnionMessage =
     typeof undiscriminatableMorphUnionMessage
