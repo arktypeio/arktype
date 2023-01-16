@@ -2,8 +2,8 @@ import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import {
-    buildMissingRightOperandMessage,
-    buildUnresolvableMessage
+    writeMissingRightOperandMessage,
+    writeUnresolvableMessage
 } from "../src/parse/string/shift/operand/unenclosed.ts"
 
 describe("union/parse", () => {
@@ -50,19 +50,19 @@ describe("union/parse", () => {
         it("bad reference", () => {
             // @ts-expect-error
             attest(() => type("number|strng")).throwsAndHasTypeError(
-                buildUnresolvableMessage("strng")
+                writeUnresolvableMessage("strng")
             )
         })
         it("consecutive tokens", () => {
             // @ts-expect-error
             attest(() => type("boolean||null")).throwsAndHasTypeError(
-                buildMissingRightOperandMessage("|", "|null")
+                writeMissingRightOperandMessage("|", "|null")
             )
         })
         it("ends with |", () => {
             // @ts-expect-error
             attest(() => type("boolean|")).throwsAndHasTypeError(
-                buildMissingRightOperandMessage("|", "")
+                writeMissingRightOperandMessage("|", "")
             )
         })
         it("long missing union member", () => {
@@ -70,7 +70,7 @@ describe("union/parse", () => {
                 // @ts-expect-error
                 type("boolean[]|(string|number|)|object")
             ).throwsAndHasTypeError(
-                buildMissingRightOperandMessage("|", ")|object")
+                writeMissingRightOperandMessage("|", ")|object")
             )
         })
     })

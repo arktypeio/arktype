@@ -2,7 +2,7 @@ import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
 import { checkNode } from "../../traverse/check.ts"
 import type {
     defineProblem,
-    ProblemMessageBuilder
+    ProblemMessageWriter
 } from "../../traverse/problems.ts"
 import type { Dict } from "../../utils/generics.ts"
 import { hasKey } from "../../utils/generics.ts"
@@ -113,7 +113,7 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
             if (!hasKey(rootData, propKey)) {
                 if (propKind !== "optionalProps") {
                     state.problems.addProblem(
-                        "MissingKey",
+                        "missing",
                         { key: propKey },
                         state as CheckState<undefined>
                     )
@@ -132,9 +132,9 @@ export const checkOptionalProps = createPropChecker("optionalProps")
 
 export type MissingKeyContext = defineProblem<undefined, { key: string }>
 
-export const buildMissingKeyError: ProblemMessageBuilder<"MissingKey"> = ({
+export const writeMissingKeyError: ProblemMessageWriter<"missing"> = ({
     key
-}) => `${key} is required.`
+}) => `${key} is required`
 
 // export type TraversalMappedPropsRule = [
 //     mappedEntries: readonly TraversalMappedPropEntry[],

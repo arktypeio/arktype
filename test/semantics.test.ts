@@ -2,8 +2,8 @@ import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import {
-    buildIndivisibleMessage,
-    buildUnboundableMessage
+    writeIndivisibleMessage,
+    writeUnboundableMessage
 } from "../src/parse/string/ast.ts"
 
 describe("semantics", () => {
@@ -24,7 +24,7 @@ describe("semantics", () => {
             it("unboundable", () => {
                 // @ts-expect-error
                 attest(() => type("unknown<10")).throwsAndHasTypeError(
-                    buildUnboundableMessage("unknown")
+                    writeUnboundableMessage("unknown")
                 )
             })
             // Note: Bounding a number literal results in a syntax error and is
@@ -32,7 +32,7 @@ describe("semantics", () => {
             it("string literal", () => {
                 // @ts-expect-error
                 attest(() => type("1<'foo'<10")).throwsAndHasTypeError(
-                    buildUnboundableMessage("'foo'")
+                    writeUnboundableMessage("'foo'")
                 )
             })
         })
@@ -48,13 +48,13 @@ describe("semantics", () => {
             it("indivisible", () => {
                 // @ts-expect-error
                 attest(() => type("unknown%2")).throwsAndHasTypeError(
-                    buildIndivisibleMessage("unknown")
+                    writeIndivisibleMessage("unknown")
                 )
             })
             it("number literal", () => {
                 // @ts-expect-error
                 attest(() => type("5%10")).throwsAndHasTypeError(
-                    buildIndivisibleMessage("5")
+                    writeIndivisibleMessage("5")
                 )
             })
         })

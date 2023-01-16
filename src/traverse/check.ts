@@ -21,7 +21,7 @@ import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { Dict, evaluate, extend, xor } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
-import type { ProblemCode, ProblemContexts } from "./problems.ts"
+import type { ProblemCode, ProblemMessageWriter } from "./problems.ts"
 import { Problems, Stringifiable } from "./problems.ts"
 
 export const checkRules = (
@@ -56,15 +56,17 @@ export type CheckState<data = unknown> = evaluate<
 >
 
 export type CheckConfig = {
-    problems?: OptionsByDiagnostic
+    problems?: ProblemsOptions
 }
 
-export type OptionsByDiagnostic = {
-    [Code in ProblemCode]?: BaseDiagnosticOptions<Code>
+export type ProblemsOptions = {
+    [code in ProblemCode]?: BaseProblemOptions<code>
 }
-export type BaseDiagnosticOptions<Code extends keyof ProblemContexts> = {
-    message: (context: ProblemContexts[Code]) => string
-}
+export type BaseProblemOptions<code extends ProblemCode> =
+    | ProblemMessageWriter<code>
+    | {
+          message?: ProblemMessageWriter<code>
+      }
 
 export const rootCheck = (
     data: unknown,
@@ -98,9 +100,9 @@ export const checkNode = (state: CheckState, $: ScopeRoot) => {
     if (typeof state.node === "string") {
         if (domainOf(state.data) !== state.node) {
             state.problems.addProblem(
-                "Unassignable",
+                "domain",
                 {
-                    expected: state.node
+                    expected: [state.node]
                 },
                 state
             )
@@ -146,9 +148,9 @@ const checkers = {
     domain: (state, domain) => {
         if (domainOf(state.data) !== domain) {
             state.problems.addProblem(
-                "Unassignable",
+                "domain",
                 {
-                    expected: domain
+                    expected: [domain]
                 },
                 state
             )
@@ -164,15 +166,14 @@ const checkers = {
             checkEntries(state, scope)
             return state.problems.length === 0 ? true : false
         }),
-    instanceof: checkInstanceOf,
+    class: checkInstanceOf,
     // TODO: add error message syntax.
     narrow: (state, validator) => validator(state),
     value: (state, value) => {
         if (state.data !== value) {
             state.problems.addProblem(
-                "Unassignable",
+                "value",
                 {
-                    // TODO: better error
                     expected: new Stringifiable(value)
                 },
                 state

@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
-import { buildDuplicateAliasMessage } from "../src/scope.ts"
+import { writeUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
+import { writeDuplicateAliasMessage } from "../src/scope.ts"
 import type { Type } from "../src/type.ts"
 
 describe("scope", () => {
@@ -12,7 +12,7 @@ describe("scope", () => {
         attest(() =>
             // @ts-expect-error
             scope({ a: "strong" }).compile()
-        ).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
+        ).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
     })
     it("type definition", () => {
         const types = scope({ a: type("string") })
@@ -20,7 +20,7 @@ describe("scope", () => {
         attest(() =>
             // @ts-expect-error
             scope({ a: type("strong") })
-        ).throwsAndHasTypeError(buildUnresolvableMessage("strong"))
+        ).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
     })
     it("interdependent", () => {
         const types = scope({
@@ -104,7 +104,7 @@ describe("scope", () => {
                 attest(() => {
                     // @ts-expect-error
                     scope({ a: "string" }).$.extend({ a: "number" })
-                }).throwsAndHasTypeError(buildDuplicateAliasMessage("a"))
+                }).throwsAndHasTypeError(writeDuplicateAliasMessage("a"))
             })
         })
     })

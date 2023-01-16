@@ -116,7 +116,7 @@ const resolveRecurse = (
     let root = parseDefinition($.aliases[name], $)
     if (typeof root === "string") {
         if (seen.includes(root)) {
-            return throwParseError(buildShallowCycleErrorMessage(name, seen))
+            return throwParseError(writeShallowCycleErrorMessage(name, seen))
         }
         seen.push(root)
         root = resolveRecurse(root, seen, $)
@@ -177,7 +177,7 @@ const resolvePredicateRecurse = <domain extends Domain>(
         return resolution as any
     }
     if (seen.includes(resolution)) {
-        return throwParseError(buildShallowCycleErrorMessage(resolution, seen))
+        return throwParseError(writeShallowCycleErrorMessage(resolution, seen))
     }
     seen.push(resolution)
     return resolvePredicateRecurse(resolution, domain, seen, $)
@@ -200,7 +200,7 @@ const throwUnexpectedPredicateDomainError = (
         `Expected '${name}' to have a definition including '${expectedDomain}'`
     )
 
-export const buildShallowCycleErrorMessage = (name: string, seen: string[]) =>
+export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
         "=>"
     )}`

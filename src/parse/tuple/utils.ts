@@ -27,7 +27,7 @@ type distributeFunction<f extends UnaryFunction> = f extends UnaryFunction<
       }>
     : never
 
-export const buildMalformedDistributableFunctionMessage = (def: unknown) =>
+export const writeMalformedDistributableFunctionMessage = (def: unknown) =>
     `Expected a Function or Record<Domain, Function> operand (${stringSerialize(
         def
     )} was invalid)`
@@ -56,7 +56,7 @@ export const distributeFunctionToNode = <
     const domains = domainsOfNode(inputNode, $)
     if (!hasDomain(distributableFunction, "object")) {
         return throwParseError(
-            buildMalformedDistributableFunctionMessage(distributableFunction)
+            writeMalformedDistributableFunctionMessage(distributableFunction)
         )
     }
     const distributed = {} as DistributedFunctionNode<f, ruleKey>
@@ -77,7 +77,7 @@ export const distributeFunctionToNode = <
             if (domainFunction !== undefined) {
                 if (typeof domainFunction !== "function") {
                     return throwParseError(
-                        buildMalformedDistributableFunctionMessage(
+                        writeMalformedDistributableFunctionMessage(
                             domainFunction
                         )
                     )

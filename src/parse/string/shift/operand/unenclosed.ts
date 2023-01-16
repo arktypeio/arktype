@@ -4,8 +4,8 @@ import { isResolvable } from "../../../../nodes/resolve.ts"
 import type { error, stringKeyOf } from "../../../../utils/generics.ts"
 import type {
     BigintLiteral,
-    buildMalformedNumericLiteralMessage,
-    NumberLiteral
+    NumberLiteral,
+    writeMalformedNumericLiteralMessage
 } from "../../../../utils/numericLiterals.ts"
 import {
     tryParseWellFormedBigint,
@@ -39,8 +39,8 @@ const unenclosedToNode = (s: DynamicState, token: string) =>
         : maybeParseUnenclosedLiteral(token) ??
           s.error(
               token === ""
-                  ? buildMissingOperandMessage(s)
-                  : buildUnresolvableMessage(token)
+                  ? writeMissingOperandMessage(s)
+                  : writeUnresolvableMessage(token)
           )
 
 const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
@@ -72,65 +72,65 @@ type tryResolve<
     ? token
     : token extends NumberLiteral<infer value>
     ? number extends value
-        ? error<buildMalformedNumericLiteralMessage<token, "number">>
+        ? error<writeMalformedNumericLiteralMessage<token, "number">>
         : value
     : token extends BigintLiteral<infer value>
     ? bigint extends value
-        ? error<buildMalformedNumericLiteralMessage<token, "bigint">>
+        ? error<writeMalformedNumericLiteralMessage<token, "bigint">>
         : value
     : error<
           token extends ""
-              ? buildMissingOperandMessage<s>
-              : buildUnresolvableMessage<token>
+              ? writeMissingOperandMessage<s>
+              : writeUnresolvableMessage<token>
       >
 
-export const buildUnresolvableMessage = <token extends string>(
+export const writeUnresolvableMessage = <token extends string>(
     token: token
-): buildUnresolvableMessage<token> => `'${token}' is unresolvable`
+): writeUnresolvableMessage<token> => `'${token}' is unresolvable`
 
-type buildUnresolvableMessage<token extends string> =
+type writeUnresolvableMessage<token extends string> =
     `'${token}' is unresolvable`
 
-export const buildMissingOperandMessage = <s extends DynamicState>(s: s) => {
+export const writeMissingOperandMessage = <s extends DynamicState>(s: s) => {
     const operator = s.previousOperator()
     return operator
-        ? buildMissingRightOperandMessage(operator, s.scanner.unscanned)
-        : buildExpressionExpectedMessage(s.scanner.unscanned)
+        ? writeMissingRightOperandMessage(operator, s.scanner.unscanned)
+        : writeExpressionExpectedMessage(s.scanner.unscanned)
 }
 
-export type buildMissingOperandMessage<
+export type writeMissingOperandMessage<
     s extends StaticState,
     operator extends Scanner.InfixToken | undefined = state.previousOperator<s>
 > = operator extends {}
-    ? buildMissingRightOperandMessage<operator, s["unscanned"]>
-    : buildExpressionExpectedMessage<s["unscanned"]>
+    ? writeMissingRightOperandMessage<operator, s["unscanned"]>
+    : writeExpressionExpectedMessage<s["unscanned"]>
 
-export type buildMissingRightOperandMessage<
+export type writeMissingRightOperandMessage<
     token extends Scanner.InfixToken,
     unscanned extends string
 > = `Token '${token}' requires a right operand${unscanned extends ""
     ? ""
     : ` before '${unscanned}'`}`
 
-export const buildMissingRightOperandMessage = <
+export const writeMissingRightOperandMessage = <
     token extends Scanner.InfixToken,
     unscanned extends string
 >(
     token: token,
     unscanned: unscanned
-): buildMissingRightOperandMessage<token, unscanned> =>
+): writeMissingRightOperandMessage<token, unscanned> =>
     `Token '${token}' requires a right operand${
         unscanned ? (` before '${unscanned}'` as any) : ""
     }`
 
-export const buildExpressionExpectedMessage = <unscanned extends string>(
+export const writeExpressionExpectedMessage = <unscanned extends string>(
     unscanned: unscanned
 ) =>
     `Expected an expression${
         unscanned ? ` before '${unscanned}'` : ""
-    }` as buildExpressionExpectedMessage<unscanned>
+    }` as writeExpressionExpectedMessage<unscanned>
 
-export type buildExpressionExpectedMessage<unscanned extends string> =
+export type writeExpressionExpectedMessage<unscanned extends string> =
     `Expected an expression${unscanned extends ""
         ? ""
         : ` before '${unscanned}'`}`

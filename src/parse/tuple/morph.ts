@@ -8,7 +8,7 @@ import type { PostfixParser, TupleExpression } from "./tuple.ts"
 export const parseMorphTuple: PostfixParser<"=>"> = (def, $) => {
     const inputNode = parseDefinition(def[0], $)
     if (typeof def[2] !== "function") {
-        return throwParseError(buildMalformedMorphExpressionMessage(def[2]))
+        return throwParseError(writeMalformedMorphExpressionMessage(def[2]))
     }
     return {
         input: inputNode,
@@ -29,5 +29,5 @@ export type Morph<i = any, o = unknown> = (In: i) => o
 
 export type ParsedMorph<i = any, o = unknown> = (In: i) => Out<o>
 
-export const buildMalformedMorphExpressionMessage = (value: unknown) =>
-    `Morph expression requires a function following '=>' (got ${typeof value} at index 2)`
+export const writeMalformedMorphExpressionMessage = (value: unknown) =>
+    `Morph expression requires a function following '=>' (was ${typeof value})`

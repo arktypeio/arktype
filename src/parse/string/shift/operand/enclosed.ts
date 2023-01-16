@@ -17,7 +17,7 @@ export type SingleQuotedStringLiteral<Text extends string = string> =
 export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
     const token = s.scanner.shiftUntil(untilLookaheadIsClosing[enclosing])
     if (s.scanner.lookahead === "") {
-        return s.error(buildUnterminatedEnclosedMessage(token, enclosing))
+        return s.error(writeUnterminatedEnclosedMessage(token, enclosing))
     }
     // Shift the scanner one additional time for the second enclosing token
     if (s.scanner.shift() === "/") {
@@ -38,7 +38,7 @@ export type parseEnclosed<
     infer nextUnscanned
 >
     ? nextUnscanned extends ""
-        ? error<buildUnterminatedEnclosedMessage<scanned, enclosing>>
+        ? error<writeUnterminatedEnclosedMessage<scanned, enclosing>>
         : state.setRoot<
               s,
               `${enclosing}${scanned}${enclosing}`,
@@ -68,16 +68,16 @@ const enclosingCharDescriptions = {
 
 type enclosingCharDescriptions = typeof enclosingCharDescriptions
 
-export const buildUnterminatedEnclosedMessage = <
+export const writeUnterminatedEnclosedMessage = <
     fragment extends string,
     enclosing extends EnclosingChar
 >(
     fragment: fragment,
     enclosing: enclosing
-): buildUnterminatedEnclosedMessage<fragment, enclosing> =>
+): writeUnterminatedEnclosedMessage<fragment, enclosing> =>
     `${enclosing}${fragment} requires a closing ${enclosingCharDescriptions[enclosing]}`
 
-type buildUnterminatedEnclosedMessage<
+type writeUnterminatedEnclosedMessage<
     fragment extends string,
     enclosing extends EnclosingChar
 > = `${enclosing}${fragment} requires a closing ${enclosingCharDescriptions[enclosing]}`

@@ -2,7 +2,7 @@ import { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { TraversalCheck } from "../../traverse/check.ts"
 import type {
     defineProblem,
-    ProblemMessageBuilder
+    ProblemMessageWriter
 } from "../../traverse/problems.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import type { List } from "../../utils/generics.ts"
@@ -48,7 +48,7 @@ export const rangeIntersection = composeIntersection<Range>((l, r) => {
 
 export type BoundableData = number | string | List
 
-export type RangeErrorContext = defineProblem<
+export type RangeProblemContext = defineProblem<
     BoundableData,
     {
         comparator: Scanner.Comparator
@@ -58,7 +58,7 @@ export type RangeErrorContext = defineProblem<
     }
 >
 
-export const buildRangeError: ProblemMessageBuilder<"range"> = ({
+export const writeRangeError: ProblemMessageWriter<"range"> = ({
     comparator,
     limit,
     kind,
@@ -66,7 +66,7 @@ export const buildRangeError: ProblemMessageBuilder<"range"> = ({
 }) =>
     `Must be ${Scanner.comparatorDescriptions[comparator]} ${limit} ${
         kind === "string" ? "characters " : kind === "Array" ? "items " : ""
-    }(got ${size}).`
+    }(was ${size})`
 
 export const checkRange = ((state, range) => {
     const size = typeof state.data === "number" ? state.data : state.data.length
@@ -106,7 +106,7 @@ export const checkRange = ((state, range) => {
     }
 }) satisfies TraversalCheck<"range">
 
-export const buildEmptyRangeMessage = (min: Bound, max: Bound) =>
+export const writeEmptyRangeMessage = (min: Bound, max: Bound) =>
     `the range bounded by ${stringifyBound("min", min)} and ${stringifyBound(
         "max",
         max

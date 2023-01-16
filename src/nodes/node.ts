@@ -1,4 +1,4 @@
-import { buildDoubleMorphIntersectionMessage } from "../parse/string/ast.ts"
+import { writeDoubleMorphIntersectionMessage } from "../parse/string/ast.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
@@ -167,7 +167,7 @@ const validatorIntersection = composeKeyedOperation<ValidatorNode, ScopeRoot>(
 
 export const nodeIntersection = composeNodeOperation(
     validatorIntersection,
-    () => throwParseError(buildDoubleMorphIntersectionMessage([])),
+    () => throwParseError(writeDoubleMorphIntersectionMessage([])),
     (morphNode, validatorNode, $) => {
         const input = nodeIntersection(morphNode.input, validatorNode, $)
         return input === morphNode.input || input === equal

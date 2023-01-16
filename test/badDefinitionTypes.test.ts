@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { buildBadDefinitionTypeMessage } from "../src/parse/definition.ts"
+import { writeBadDefinitionTypeMessage } from "../src/parse/definition.ts"
 
 describe("bad definition types", () => {
     it("unknown", () => {
@@ -13,43 +13,43 @@ describe("bad definition types", () => {
     it("undefined", () => {
         // @ts-expect-error
         attest(() => type({ bad: undefined })).throwsAndHasTypeError(
-            buildBadDefinitionTypeMessage("undefined")
+            writeBadDefinitionTypeMessage("undefined")
         )
     })
     it("null", () => {
         // @ts-expect-error
         attest(() => type({ bad: null })).throwsAndHasTypeError(
-            buildBadDefinitionTypeMessage("null")
+            writeBadDefinitionTypeMessage("null")
         )
     })
     it("boolean", () => {
         // @ts-expect-error
         attest(() => type({ bad: true })).throwsAndHasTypeError(
-            buildBadDefinitionTypeMessage("boolean")
+            writeBadDefinitionTypeMessage("boolean")
         )
     })
     it("number", () => {
         // @ts-expect-error
         attest(() => type({ bad: 5 })).throwsAndHasTypeError(
-            buildBadDefinitionTypeMessage("number")
+            writeBadDefinitionTypeMessage("number")
         )
     })
     it("bigint", () => {
         // @ts-expect-error
         attest(() => type({ bad: 99999n })).throwsAndHasTypeError(
-            buildBadDefinitionTypeMessage("bigint")
+            writeBadDefinitionTypeMessage("bigint")
         )
     })
     it("symbol", () => {
         // @ts-expect-error
         attest(() => type({ bad: Symbol() })).throwsAndHasTypeError(
-            buildBadDefinitionTypeMessage("symbol")
+            writeBadDefinitionTypeMessage("symbol")
         )
     })
     it("objects", () => {
         // @ts-expect-error
         attest(() => type({ bad: () => {} })).throwsAndHasTypeError(
-            buildBadDefinitionTypeMessage("Function")
+            writeBadDefinitionTypeMessage("Function")
         )
     })
 })

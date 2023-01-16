@@ -2,10 +2,10 @@ import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import {
-    buildUnmatchedGroupCloseMessage,
+    writeUnmatchedGroupCloseMessage,
     unclosedGroupMessage
 } from "../src/parse/string/reduce/shared.ts"
-import { buildExpressionExpectedMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
+import { writeExpressionExpectedMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 
 describe("group", () => {
     it("entire expression", () => {
@@ -24,7 +24,7 @@ describe("group", () => {
             attest(() => {
                 // @ts-expect-error
                 type("()")
-            }).throwsAndHasTypeError(buildExpressionExpectedMessage(")"))
+            }).throwsAndHasTypeError(writeExpressionExpectedMessage(")"))
         })
         it("unmatched (", () => {
             attest(() => {
@@ -36,19 +36,19 @@ describe("group", () => {
             attest(() => {
                 // @ts-expect-error
                 type("string|number[]|boolean)")
-            }).throwsAndHasTypeError(buildUnmatchedGroupCloseMessage(""))
+            }).throwsAndHasTypeError(writeUnmatchedGroupCloseMessage(""))
         })
         it("lone )", () => {
             attest(() => {
                 // @ts-expect-error
                 type(")")
-            }).throwsAndHasTypeError(buildExpressionExpectedMessage(")"))
+            }).throwsAndHasTypeError(writeExpressionExpectedMessage(")"))
         })
         it("lone (", () => {
             attest(() => {
                 // @ts-expect-error
                 type("(")
-            }).throwsAndHasTypeError(buildExpressionExpectedMessage(""))
+            }).throwsAndHasTypeError(writeExpressionExpectedMessage(""))
         })
         it("deep unmatched (", () => {
             attest(() => {
@@ -60,13 +60,13 @@ describe("group", () => {
             attest(() => {
                 // @ts-expect-error
                 type("((string|number)[]|boolean))[]")
-            }).throwsAndHasTypeError(buildUnmatchedGroupCloseMessage("[]"))
+            }).throwsAndHasTypeError(writeUnmatchedGroupCloseMessage("[]"))
         })
         it("starting )", () => {
             attest(() => {
                 // @ts-expect-error
                 type(")number(")
-            }).throwsAndHasTypeError(buildExpressionExpectedMessage(")number("))
+            }).throwsAndHasTypeError(writeExpressionExpectedMessage(")number("))
         })
     })
 })

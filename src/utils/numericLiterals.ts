@@ -49,18 +49,18 @@ const numericLiteralDescriptions = {
 
 type numericLiteralDescriptions = typeof numericLiteralDescriptions
 
-export type buildMalformedNumericLiteralMessage<
+export type writeMalformedNumericLiteralMessage<
     def extends string,
     kind extends NumericLiteralKind
 > = `'${def}' was parsed as ${numericLiteralDescriptions[kind]} but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation`
 
-export const buildMalformedNumericLiteralMessage = <
+export const writeMalformedNumericLiteralMessage = <
     def extends string,
     kind extends NumericLiteralKind
 >(
     def: def,
     kind: kind
-): buildMalformedNumericLiteralMessage<def, kind> =>
+): writeMalformedNumericLiteralMessage<def, kind> =>
     `'${def}' was parsed as ${numericLiteralDescriptions[kind]} but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation`
 
 type ValidationKind = "number" | "integer"
@@ -84,7 +84,7 @@ export type tryParseWellFormedNumber<
     messageOnFail extends string
 > = token extends NumberLiteral<infer value>
     ? number extends value
-        ? buildMalformedNumericLiteralMessage<token, "number">
+        ? writeMalformedNumericLiteralMessage<token, "number">
         : value
     : messageOnFail
 
@@ -101,7 +101,7 @@ export type tryParseWellFormedInteger<
     messageOnFail extends string
 > = token extends IntegerLiteral<infer value>
     ? bigint extends value
-        ? buildMalformedNumericLiteralMessage<token, "integer">
+        ? writeMalformedNumericLiteralMessage<token, "integer">
         : `${value}` extends NumberLiteral<infer valueAsNumber>
         ? valueAsNumber
         : never
@@ -121,7 +121,7 @@ const parseWellFormed = <ErrorOnFail extends boolean | string>(
             // If the definition looks like the correct numeric kind but is
             // not well-formed, always throw.
             return throwParseError(
-                buildMalformedNumericLiteralMessage(token, kind)
+                writeMalformedNumericLiteralMessage(token, kind)
             )
         }
     }
@@ -154,7 +154,7 @@ export const tryParseWellFormedBigint = (def: string) => {
         // If the definition looks like a bigint but is
         // not well-formed, throw.
         return throwParseError(
-            buildMalformedNumericLiteralMessage(def, "bigint")
+            writeMalformedNumericLiteralMessage(def, "bigint")
         )
     }
 }

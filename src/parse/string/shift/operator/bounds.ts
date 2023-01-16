@@ -1,13 +1,13 @@
 import type { Bound, Range } from "../../../../nodes/rules/range.ts"
 import {
-    buildEmptyRangeMessage,
-    compareStrictness
+    compareStrictness,
+    writeEmptyRangeMessage
 } from "../../../../nodes/rules/range.ts"
 import type { error } from "../../../../utils/generics.ts"
 import { isKeyOf } from "../../../../utils/generics.ts"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
-import { buildUnpairableComparatorMessage } from "../../reduce/shared.ts"
+import { writeUnpairableComparatorMessage } from "../../reduce/shared.ts"
 import type { state, StaticState } from "../../reduce/static.ts"
 import { Scanner } from "../scanner.ts"
 
@@ -66,17 +66,17 @@ export const parseRightBound = (
     const limitToken = s.scanner.shiftUntilNextTerminator()
     const limit = tryParseWellFormedNumber(
         limitToken,
-        buildInvalidLimitMessage(comparator, limitToken + s.scanner.unscanned)
+        writeInvalidLimitMessage(comparator, limitToken + s.scanner.unscanned)
     )
     const openRange = s.ejectRangeIfOpen()
     let range
     if (openRange) {
         if (!isKeyOf(comparator, Scanner.pairableComparators)) {
-            return s.error(buildUnpairableComparatorMessage(comparator))
+            return s.error(writeUnpairableComparatorMessage(comparator))
         }
         range = deserializeRange(openRange[0], openRange[1], comparator, limit)
         if (compareStrictness(range.min, range.max, "min") === "l") {
-            return s.error(buildEmptyRangeMessage(range.min!, range.max!))
+            return s.error(writeEmptyRangeMessage(range.min!, range.max!))
         }
     } else {
         range = deserializeBound(comparator, limit)
@@ -98,7 +98,7 @@ export type parseRightBound<
 >
     ? tryParseWellFormedNumber<
           scanned,
-          buildInvalidLimitMessage<comparator, scanned>
+          writeInvalidLimitMessage<comparator, scanned>
       > extends infer limit
         ? limit extends number
             ? s["branches"]["range"] extends {}
@@ -111,22 +111,22 @@ export type parseRightBound<
                           limit,
                           nextUnscanned
                       >
-                    : error<buildUnpairableComparatorMessage<comparator>>
+                    : error<writeUnpairableComparatorMessage<comparator>>
                 : state.reduceSingleBound<s, comparator, limit, nextUnscanned>
             : error<limit & string>
         : never
     : never
 
-export const buildInvalidLimitMessage = <
+export const writeInvalidLimitMessage = <
     comparator extends Scanner.Comparator,
     limit extends string
 >(
     comparator: comparator,
     limit: limit
-): buildInvalidLimitMessage<comparator, limit> =>
+): writeInvalidLimitMessage<comparator, limit> =>
     `Comparator ${comparator} must be followed by a number literal (was '${limit}')`
 
-export type buildInvalidLimitMessage<
+export type writeInvalidLimitMessage<
     comparator extends Scanner.Comparator,
     limit extends string
 > = `Comparator ${comparator} must be followed by a number literal (was '${limit}')`

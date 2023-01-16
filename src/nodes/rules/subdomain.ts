@@ -2,7 +2,7 @@ import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
 import { checkNode } from "../../traverse/check.ts"
 import type {
     defineProblem,
-    ProblemMessageBuilder
+    ProblemMessageWriter
 } from "../../traverse/problems.ts"
 import type { Subdomain } from "../../utils/domains.ts"
 import { subdomainOf } from "../../utils/domains.ts"
@@ -116,9 +116,9 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     if (typeof rule === "string") {
         if (dataSubdomain !== rule) {
             state.problems.addProblem(
-                "Unassignable",
+                "domain",
                 {
-                    expected: rule
+                    expected: [rule]
                 },
                 state
             )
@@ -127,9 +127,9 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     }
     if (dataSubdomain !== rule[0]) {
         state.problems.addProblem(
-            "Unassignable",
+            "domain",
             {
-                expected: rule[0]
+                expected: [rule[0]]
             },
             state
         )
@@ -140,7 +140,7 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         const expected = rule[2]
         if (expected !== actual) {
             return state.problems.addProblem(
-                "TupleLength",
+                "tupleLength",
                 {
                     actual,
                     expected
@@ -169,7 +169,7 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     return true
 }
 
-export type TupleLengthErrorContext = defineProblem<
+export type TupleLengthProblemContext = defineProblem<
     List,
     {
         actual: number
@@ -177,7 +177,7 @@ export type TupleLengthErrorContext = defineProblem<
     }
 >
 
-export const buildTupleLengthError: ProblemMessageBuilder<"TupleLength"> = ({
+export const writeTupleLengthError: ProblemMessageWriter<"tupleLength"> = ({
     actual,
     expected
-}) => `Tuple must have length ${expected} (got ${actual})`
+}) => `Tuple must have length ${expected} (was ${actual})`

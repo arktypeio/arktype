@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { buildInvalidDivisorMessage } from "../src/parse/string/shift/operator/divisor.ts"
+import { writeInvalidDivisorMessage } from "../src/parse/string/shift/operator/divisor.ts"
 
 describe("divisibility", () => {
     describe("parse", () => {
@@ -31,19 +31,19 @@ describe("divisibility", () => {
             it("non-integer divisor", () => {
                 // @ts-expect-error
                 attest(() => type("number%2.3")).throwsAndHasTypeError(
-                    buildInvalidDivisorMessage("2.3")
+                    writeInvalidDivisorMessage("2.3")
                 )
             })
             it("non-numeric divisor", () => {
                 // @ts-expect-error
                 attest(() => type("number%foobar")).throwsAndHasTypeError(
-                    buildInvalidDivisorMessage("foobar")
+                    writeInvalidDivisorMessage("foobar")
                 )
             })
             it("zero divisor", () => {
                 // @ts-expect-error
                 attest(() => type("number%0")).throwsAndHasTypeError(
-                    buildInvalidDivisorMessage(0)
+                    writeInvalidDivisorMessage(0)
                 )
             })
         })

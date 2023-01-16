@@ -1,7 +1,7 @@
 import { type } from "../api.ts"
 import { bench, suite } from "../dev/attest/api.ts"
 
-const buildBranchDef = (token: string, size: number) =>
+const writeBranchDef = (token: string, size: number) =>
     [...Array(size - 1)].reduce((def, _, i) => `${def}${token}${i + 1}`, "0")
 
 suite("parse/str/operator", () => {
@@ -24,7 +24,7 @@ suite("parse/str/operator", () => {
             .median()
             .type()
 
-        const largeUnionDef = buildBranchDef("|", 100)
+        const largeUnionDef = writeBranchDef("|", 100)
         bench("100-ary", () => {
             type.dynamic(largeUnionDef)
         }).median()
@@ -43,7 +43,7 @@ suite("parse/str/operator", () => {
             .median()
             .type()
 
-        const largeIntersectionDef = buildBranchDef("&", 100)
+        const largeIntersectionDef = writeBranchDef("&", 100)
         bench("100-ary", () => {
             type.dynamic(largeIntersectionDef)
         }).median()

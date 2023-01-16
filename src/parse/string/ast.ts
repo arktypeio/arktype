@@ -70,11 +70,11 @@ export type validateAstSemantics<ast, $> = ast extends string
             ? validateAstSemantics<r, $>
             : isBoundable<inferAst<l, $>> extends true
             ? validateAstSemantics<l, $>
-            : error<buildUnboundableMessage<astToString<ast[0]>>>
+            : error<writeUnboundableMessage<astToString<ast[0]>>>
         : token extends "%"
         ? isDivisible<inferAst<l, $>> extends true
             ? validateAstSemantics<l, $>
-            : error<buildIndivisibleMessage<astToString<ast[0]>>>
+            : error<writeIndivisibleMessage<astToString<ast[0]>>>
         : validateAstSemantics<l, $>
     : undefined
 
@@ -96,12 +96,12 @@ type inferIntersectionRecurse<
     : r extends never
     ? never
     : l & r extends never
-    ? error<buildImplicitNeverMessage<path>>
+    ? error<writeImplicitNeverMessage<path>>
     : isAny<l | r> extends true
     ? any
     : l extends ParsedMorph<infer lIn, infer lOut>
     ? r extends ParsedMorph
-        ? error<buildDoubleMorphIntersectionMessage<path>>
+        ? error<writeDoubleMorphIntersectionMessage<path>>
         : (In: evaluate<lIn & r>) => Out<lOut>
     : r extends ParsedMorph<infer rIn, infer rOut>
     ? (In: evaluate<rIn & l>) => Out<rOut>
@@ -168,27 +168,27 @@ type discriminatableRecurse<
       >
     : never
 
-export const buildDoubleMorphIntersectionMessage = <path>(
+export const writeDoubleMorphIntersectionMessage = <path>(
     path: downcast<path>
-): buildDoubleMorphIntersectionMessage<path> =>
+): writeDoubleMorphIntersectionMessage<path> =>
     `${withPathContext(
         "Intersection",
         path
     )} must have at least one non-morph operand`
 
-type buildDoubleMorphIntersectionMessage<path> = `${withPathContext<
+type writeDoubleMorphIntersectionMessage<path> = `${withPathContext<
     "Intersection",
     path
 >} must have at least one non-morph operand`
 
 export const undiscriminatableMorphUnionMessage = `A union of one or more morphs must be discriminatable`
 
-export const buildImplicitNeverMessage = <path>(
+export const writeImplicitNeverMessage = <path>(
     path: downcast<path>
-): buildImplicitNeverMessage<path> =>
+): writeImplicitNeverMessage<path> =>
     `${withPathContext("Intersection", path)} results in an unsatisfiable type`
 
-type buildImplicitNeverMessage<path> = `${withPathContext<
+type writeImplicitNeverMessage<path> = `${withPathContext<
     "Intersection",
     path
 >} results in an unsatisfiable type`
@@ -250,18 +250,18 @@ export type astToString<ast, result extends string = ""> = ast extends [
     ? `${result}${ast extends bigint ? `${ast}n` : ast}`
     : "..."
 
-export const buildIndivisibleMessage = <root extends string>(
+export const writeIndivisibleMessage = <root extends string>(
     root: root
-): buildIndivisibleMessage<root> =>
+): writeIndivisibleMessage<root> =>
     `Divisibility operand ${root} must be a non-literal number`
 
-type buildIndivisibleMessage<root extends string> =
+type writeIndivisibleMessage<root extends string> =
     `Divisibility operand ${root} must be a non-literal number`
 
-export const buildUnboundableMessage = <root extends string>(
+export const writeUnboundableMessage = <root extends string>(
     root: root
-): buildUnboundableMessage<root> =>
+): writeUnboundableMessage<root> =>
     `Bounded expression ${root} must be a non-literal number, string or array`
 
-type buildUnboundableMessage<root extends string> =
+type writeUnboundableMessage<root extends string> =
     `Bounded expression ${root} must be a non-literal number, string or array`

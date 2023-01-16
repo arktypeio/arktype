@@ -7,7 +7,7 @@ import { composeIntersection, composeKeyedOperation } from "../compose.ts"
 import type { PredicateContext } from "../predicate.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
-import { instanceofIntersection } from "./instanceof.ts"
+import { classIntersection } from "./instanceof.ts"
 import type {
     PropsRule,
     TraversalOptionalProps,
@@ -26,7 +26,7 @@ export type Rules<domain extends Domain = Domain, $ = Dict> = {
     readonly divisor?: number
     readonly range?: Range
     readonly props?: PropsRule<$>
-    readonly instanceof?: classOf<unknown>
+    readonly class?: classOf<unknown>
     readonly narrow?: CollapsibleList<
         Narrow<Domain extends domain ? any : inferDomain<domain>>
     >
@@ -37,7 +37,7 @@ export type TraversalRuleEntry =
     | ["regex", RegExp]
     | ["divisor", number]
     | ["range", Range]
-    | ["instanceof", classOf<unknown>]
+    | ["class", classOf<unknown>]
     | TraversalRequiredProps
     | TraversalOptionalProps
     | ["narrow", Narrow]
@@ -47,7 +47,7 @@ export type RuleSet<domain extends Domain, $> = Domain extends domain
     : domain extends "object"
     ? defineRuleSet<
           "object",
-          "subdomain" | "props" | "range" | "narrow" | "instanceof",
+          "subdomain" | "props" | "range" | "narrow" | "class",
           $
       >
     : domain extends "string"
@@ -70,7 +70,7 @@ export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
         divisor: divisorIntersection,
         regex: regexIntersection,
         props: propsIntersection,
-        instanceof: instanceofIntersection,
+        class: classIntersection,
         range: rangeIntersection,
         narrow: narrowIntersection
     },
@@ -102,8 +102,8 @@ const ruleCompilers: {
     range: (entries, rule) => {
         entries.push(["range", rule])
     },
-    instanceof: (entries, rule) => {
-        entries.push(["instanceof", rule])
+    class: (entries, rule) => {
+        entries.push(["class", rule])
     },
     props: compileProps,
     narrow: (entries, rule) => {
@@ -126,7 +126,7 @@ export const precedenceMap: {
     branches: 0,
     subdomain: 0,
     // Shallow: All shallow checks will be performed even if one or more fail
-    instanceof: 1,
+    class: 1,
     regex: 1,
     divisor: 1,
     range: 1,

@@ -2,12 +2,12 @@ import type { defined, error } from "../../../utils/generics.ts"
 import type { astToString } from "../ast.ts"
 import type { Scanner } from "../shift/scanner.ts"
 import type {
-    buildMultipleLeftBoundsMessage,
-    buildOpenRangeMessage,
-    buildUnmatchedGroupCloseMessage,
-    buildUnpairableComparatorMessage,
     OpenRange,
-    unclosedGroupMessage
+    unclosedGroupMessage,
+    writeMultipleLeftBoundsMessage,
+    writeOpenRangeMessage,
+    writeUnmatchedGroupCloseMessage,
+    writeUnpairableComparatorMessage
 } from "./shared.ts"
 
 export type StaticState = {
@@ -73,7 +73,7 @@ export namespace state {
     > = comparator extends Scanner.PairableComparator
         ? s["branches"]["range"] extends {}
             ? error<
-                  buildMultipleLeftBoundsMessage<
+                  writeMultipleLeftBoundsMessage<
                       s["branches"]["range"][0],
                       s["branches"]["range"][1],
                       limit,
@@ -90,7 +90,7 @@ export namespace state {
                   groups: s["groups"]
                   unscanned: unscanned
               }>
-        : error<buildUnpairableComparatorMessage<comparator>>
+        : error<writeUnpairableComparatorMessage<comparator>>
 
     export type reduceRange<
         s extends StaticState,
@@ -151,7 +151,7 @@ export namespace state {
               root: mergeToUnion<s>
               unscanned: unscanned
           }>
-        : error<buildUnmatchedGroupCloseMessage<unscanned>>
+        : error<writeUnmatchedGroupCloseMessage<unscanned>>
 
     export type reduceGroupOpen<
         s extends StaticState,
@@ -175,7 +175,7 @@ export namespace state {
         : error<unclosedGroupMessage>
 
     type openRangeError<range extends defined<BranchState["range"]>> = error<
-        buildOpenRangeMessage<range[0], range[1]>
+        writeOpenRangeMessage<range[0], range[1]>
     >
 
     export type previousOperator<s extends StaticState> =

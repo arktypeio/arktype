@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { buildUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
-import { buildMalformedNumericLiteralMessage } from "../src/utils/numericLiterals.ts"
+import { writeUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
+import { writeMalformedNumericLiteralMessage } from "../src/utils/numericLiterals.ts"
 
 describe("parse unenclosed", () => {
     describe("identifier", () => {
@@ -17,7 +17,7 @@ describe("parse unenclosed", () => {
             it("unresolvable", () => {
                 // @ts-expect-error
                 attest(() => type("HUH")).throwsAndHasTypeError(
-                    buildUnresolvableMessage("HUH")
+                    writeUnresolvableMessage("HUH")
                 )
             })
         })
@@ -54,32 +54,32 @@ describe("parse unenclosed", () => {
             it("multiple decimals", () => {
                 // @ts-expect-error
                 attest(() => type("127.0.0.1")).throwsAndHasTypeError(
-                    buildUnresolvableMessage("127.0.0.1")
+                    writeUnresolvableMessage("127.0.0.1")
                 )
             })
             it("with alpha", () => {
                 // @ts-expect-error
                 attest(() => type("13three7")).throwsAndHasTypeError(
-                    buildUnresolvableMessage("13three7")
+                    writeUnresolvableMessage("13three7")
                 )
             })
 
             it("leading zeroes", () => {
                 // @ts-expect-error
                 attest(() => type("010")).throwsAndHasTypeError(
-                    buildMalformedNumericLiteralMessage("010", "number")
+                    writeMalformedNumericLiteralMessage("010", "number")
                 )
             })
             it("trailing zeroes", () => {
                 // @ts-expect-error
                 attest(() => type("4.0")).throwsAndHasTypeError(
-                    buildMalformedNumericLiteralMessage("4.0", "number")
+                    writeMalformedNumericLiteralMessage("4.0", "number")
                 )
             })
             it("negative zero", () => {
                 // @ts-expect-error
                 attest(() => type("-0")).throwsAndHasTypeError(
-                    buildMalformedNumericLiteralMessage("-0", "number")
+                    writeMalformedNumericLiteralMessage("-0", "number")
                 )
             })
         })
@@ -100,7 +100,7 @@ describe("parse unenclosed", () => {
             it("decimal", () => {
                 // @ts-expect-error
                 attest(() => type("999.1n")).throwsAndHasTypeError(
-                    buildUnresolvableMessage("999.1n")
+                    writeUnresolvableMessage("999.1n")
                 )
             })
 
@@ -110,14 +110,14 @@ describe("parse unenclosed", () => {
                 // @ts-expect-error
                 attest(() => type("007n"))
                     .throws(
-                        buildMalformedNumericLiteralMessage("007n", "bigint")
+                        writeMalformedNumericLiteralMessage("007n", "bigint")
                     )
-                    .type.errors(buildUnresolvableMessage("007n"))
+                    .type.errors(writeUnresolvableMessage("007n"))
             })
             it("negative zero", () => {
                 // @ts-expect-error
                 attest(() => type("-0n")).throwsAndHasTypeError(
-                    buildMalformedNumericLiteralMessage("-0n", "bigint")
+                    writeMalformedNumericLiteralMessage("-0n", "bigint")
                 )
             })
         })

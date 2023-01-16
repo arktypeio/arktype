@@ -8,10 +8,10 @@ export const parseDivisor = (s: DynamicState) => {
     const divisorToken = s.scanner.shiftUntilNextTerminator()
     const divisor = tryParseWellFormedInteger(
         divisorToken,
-        buildInvalidDivisorMessage(divisorToken)
+        writeInvalidDivisorMessage(divisorToken)
     )
     if (divisor === 0) {
-        s.error(buildInvalidDivisorMessage(0))
+        s.error(writeInvalidDivisorMessage(0))
     }
     s.intersect({ number: { divisor } })
 }
@@ -25,20 +25,20 @@ export type parseDivisor<
 >
     ? tryParseWellFormedInteger<
           scanned,
-          buildInvalidDivisorMessage<scanned>
+          writeInvalidDivisorMessage<scanned>
       > extends infer result
         ? result extends number
             ? result extends 0
-                ? error<buildInvalidDivisorMessage<0>>
+                ? error<writeInvalidDivisorMessage<0>>
                 : state.setRoot<s, [s["root"], "%", result], nextUnscanned>
             : error<result & string>
         : never
     : never
 
-export const buildInvalidDivisorMessage = <divisor extends string | number>(
+export const writeInvalidDivisorMessage = <divisor extends string | number>(
     divisor: divisor
-): buildInvalidDivisorMessage<divisor> =>
+): writeInvalidDivisorMessage<divisor> =>
     `% operator must be followed by a non-zero integer literal (was ${divisor})`
 
-export type buildInvalidDivisorMessage<divisor extends string | number> =
+export type writeInvalidDivisorMessage<divisor extends string | number> =
     `% operator must be followed by a non-zero integer literal (was ${divisor})`

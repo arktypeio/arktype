@@ -26,7 +26,7 @@ export const parseOperator = (s: DynamicState): void => {
         : lookahead === " "
         ? parseOperator(s)
         : /* c8 ignore next */
-          throwInternalError(buildUnexpectedCharacterMessage(lookahead))
+          throwInternalError(writeUnexpectedCharacterMessage(lookahead))
 }
 
 export type parseOperator<s extends StaticState> =
@@ -45,14 +45,14 @@ export type parseOperator<s extends StaticState> =
             ? parseDivisor<s, unscanned>
             : lookahead extends " "
             ? parseOperator<state.scanTo<s, unscanned>>
-            : error<buildUnexpectedCharacterMessage<lookahead>>
+            : error<writeUnexpectedCharacterMessage<lookahead>>
         : state.finalize<s>
 
-export const buildUnexpectedCharacterMessage = <char extends string>(
+export const writeUnexpectedCharacterMessage = <char extends string>(
     char: char
-): buildUnexpectedCharacterMessage<char> => `Unexpected character '${char}'`
+): writeUnexpectedCharacterMessage<char> => `Unexpected character '${char}'`
 
-type buildUnexpectedCharacterMessage<char extends string> =
+type writeUnexpectedCharacterMessage<char extends string> =
     `Unexpected character '${char}'`
 
 export const incompleteArrayTokenMessage = `Missing expected ']'`

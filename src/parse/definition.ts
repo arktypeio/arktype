@@ -35,7 +35,7 @@ export const parseDefinition = (def: unknown, $: ScopeRoot): TypeNode => {
             return { string: { regex: (def as RegExp).source } }
         default:
             return throwParseError(
-                buildBadDefinitionTypeMessage(subdomainOf(def))
+                writeBadDefinitionTypeMessage(subdomainOf(def))
             )
     }
 }
@@ -64,7 +64,7 @@ export type validateDefinition<def, $> = def extends []
     : def extends TerminalObject
     ? def
     : def extends BadDefinitionType
-    ? buildBadDefinitionTypeMessage<subdomainOf<def>>
+    ? writeBadDefinitionTypeMessage<subdomainOf<def>>
     : isUnknown<def> extends true
     ? unknownDefinitionMessage
     : evaluate<{
@@ -78,10 +78,10 @@ export type TerminalObject = Type | RegExp
 
 export type BadDefinitionType = Exclude<Primitive, string> | Function
 
-export const buildBadDefinitionTypeMessage = <actual extends Subdomain>(
+export const writeBadDefinitionTypeMessage = <actual extends Subdomain>(
     actual: actual
-): buildBadDefinitionTypeMessage<actual> =>
+): writeBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
-export type buildBadDefinitionTypeMessage<actual extends Subdomain> =
+export type writeBadDefinitionTypeMessage<actual extends Subdomain> =
     `Type definitions must be strings or objects (was ${actual})`

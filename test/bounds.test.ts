@@ -3,9 +3,9 @@ import type { TypeNode } from "../api.ts"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import {
-    buildMultipleLeftBoundsMessage,
-    buildOpenRangeMessage,
-    buildUnpairableComparatorMessage
+    writeMultipleLeftBoundsMessage,
+    writeOpenRangeMessage,
+    writeUnpairableComparatorMessage
 } from "../src/parse/string/reduce/shared.ts"
 import { singleEqualsMessage } from "../src/parse/string/shift/operator/bounds.ts"
 
@@ -150,25 +150,25 @@ describe("bound", () => {
             it("invalid left comparator", () => {
                 // @ts-expect-error
                 attest(() => type("3>number<5")).throwsAndHasTypeError(
-                    buildUnpairableComparatorMessage(">")
+                    writeUnpairableComparatorMessage(">")
                 )
             })
             it("invalid right double-bound comparator", () => {
                 // @ts-expect-error
                 attest(() => type("3<number==5")).throwsAndHasTypeError(
-                    buildUnpairableComparatorMessage("==")
+                    writeUnpairableComparatorMessage("==")
                 )
             })
             it("unpaired left", () => {
                 // @ts-expect-error
                 attest(() => type("3<number")).throwsAndHasTypeError(
-                    buildOpenRangeMessage(3, "<")
+                    writeOpenRangeMessage(3, "<")
                 )
             })
             it("double left", () => {
                 // @ts-expect-error
                 attest(() => type("3<5<8")).throwsAndHasTypeError(
-                    buildMultipleLeftBoundsMessage(3, "<", 5, "<")
+                    writeMultipleLeftBoundsMessage(3, "<", 5, "<")
                 )
             })
             it("empty range", () => {

@@ -1,18 +1,16 @@
-import type { UnionErrorContext } from "../nodes/branches.ts"
-import { buildUnionError } from "../nodes/branches.ts"
 import type { DivisibilityContext } from "../nodes/rules/divisor.ts"
-import { buildDivisorError } from "../nodes/rules/divisor.ts"
-import type { InstanceOfErrorContext } from "../nodes/rules/instanceof.ts"
-import { buildInstanceOfError } from "../nodes/rules/instanceof.ts"
+import { writeDivisorError } from "../nodes/rules/divisor.ts"
+import type { ClassProblemContext } from "../nodes/rules/instanceof.ts"
+import { writeClassProblem } from "../nodes/rules/instanceof.ts"
 import type { MissingKeyContext } from "../nodes/rules/props.ts"
-import { buildMissingKeyError } from "../nodes/rules/props.ts"
-import type { RangeErrorContext } from "../nodes/rules/range.ts"
-import { buildRangeError } from "../nodes/rules/range.ts"
-import type { RegexErrorContext } from "../nodes/rules/regex.ts"
-import { buildRegexError } from "../nodes/rules/regex.ts"
-import type { TupleLengthErrorContext } from "../nodes/rules/subdomain.ts"
-import { buildTupleLengthError } from "../nodes/rules/subdomain.ts"
-import type { Domain } from "../utils/domains.ts"
+import { writeMissingKeyError } from "../nodes/rules/props.ts"
+import type { RangeProblemContext } from "../nodes/rules/range.ts"
+import { writeRangeError } from "../nodes/rules/range.ts"
+import type { RegexProblemContext } from "../nodes/rules/regex.ts"
+import { writeRegexError } from "../nodes/rules/regex.ts"
+import type { TupleLengthProblemContext } from "../nodes/rules/subdomain.ts"
+import { writeTupleLengthError } from "../nodes/rules/subdomain.ts"
+import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { evaluate } from "../utils/generics.ts"
 import { stringSerialize } from "../utils/serialize.ts"
@@ -61,11 +59,15 @@ export class Problems extends Array<Problem> {
         const compiledContext = Object.assign(context, {
             data: new Stringifiable(state.data)
         }) as ProblemContexts[code]
+        const problemConfig = state.config.problems?.[code]
+        const customMessageWriter =
+            typeof problemConfig === "function"
+                ? (problemConfig as ProblemMessageWriter<code>)
+                : problemConfig?.message
         const problem = {
-            // TODO: default delimiter?
             path: [...state.path].join("/"),
             reason:
-                state.config.problems?.[code]?.message(compiledContext) ??
+                customMessageWriter?.(compiledContext) ??
                 defaultMessagesByCode[code](compiledContext)
         }
         state.problems.push(problem)
@@ -90,85 +92,100 @@ export class Stringifiable<Data = unknown> {
 
 const uncapitalize = (s: string) => s[0].toLowerCase() + s.slice(1)
 
-type UnassignableErrorContext = defineProblem<
-    unknown,
-    {
-        expected: unknown
+const writeDomainError: ProblemMessageWriter<"domain"> = ({ data, expected }) =>
+    `Must ${describeSubdomains(expected)} (was ${data.domain})`
+
+const describeSubdomains = (subdomains: Subdomain[]) => {
+    if (subdomains.length === 1) {
+        return subdomainDescriptions[subdomains[0]]
     }
->
-
-const buildUnassignableError: ProblemMessageBuilder<"Unassignable"> = ({
-    data,
-    expected
-}) => `${data} is not assignable to ${expected}.`
-
-type DomainContext = defineProblem<unknown, { expected: Domain[] }>
-
-const buildDomainError: ProblemMessageBuilder<"domain"> = ({
-    data,
-    expected
-}) => `Must be ${describeDomains(expected)} (was ${data.domain})`
-
-const describeDomains = (domains: Domain[]) => {
-    if (domains.length === 1) {
-        return domainDescriptions[domains[0]]
-    }
-    if (domains.length === 0) {
+    if (subdomains.length === 0) {
         return "never"
     }
     let description = "either "
-    for (let i = 0; i < domains.length - 1; i++) {
-        description += domainDescriptions[domains[i]]
-        if (i < domains.length - 2) {
+    for (let i = 0; i < subdomains.length - 1; i++) {
+        description += subdomainDescriptions[subdomains[i]]
+        if (i < subdomains.length - 2) {
             description += ", "
         }
     }
-    description += `or ${domainDescriptions[domains[domains.length - 1]]}`
+    description += `or ${
+        subdomainDescriptions[subdomains[subdomains.length - 1]]
+    }`
     return description
 }
 
-/** Each domain's completion for the phrase "Must be _____" */
-const domainDescriptions: Record<Domain, string> = {
-    bigint: "a bigint",
-    boolean: "boolean",
-    null: "null",
-    number: "a number",
-    object: "an object",
-    string: "a string",
-    symbol: "a symbol",
-    undefined: "undefined"
-}
+type DomainProblemContext = defineProblem<
+    unknown,
+    {
+        expected: Subdomain[]
+    }
+>
+
+/** Each Subdomain's completion for the phrase "Must _____" */
+const subdomainDescriptions = {
+    bigint: "be a bigint",
+    boolean: "be boolean",
+    null: "be null",
+    number: "be a number",
+    object: "be an object",
+    string: "be a string",
+    symbol: "be a symbol",
+    undefined: "be undefined",
+    Array: "be an array",
+    Function: "be a function",
+    Date: "extend Date",
+    RegExp: "extend RegExp",
+    Error: "extend Error",
+    Map: "extend Map",
+    Set: "extend Set"
+} as const satisfies Record<Subdomain, string>
+
+export const writeUnionError: ProblemMessageWriter<"union"> = ({ data }) =>
+    `${data} does not satisfy any branches`
+
+export type UnionProblemContext = defineProblem<unknown, {}>
 
 export type ProblemContexts = {
     divisibility: DivisibilityContext
-    domain: DomainContext
-    MissingKey: MissingKeyContext
-    range: RangeErrorContext
-    instanceof: InstanceOfErrorContext
-    RegexMismatch: RegexErrorContext
-    TupleLength: TupleLengthErrorContext
-    Unassignable: UnassignableErrorContext
-    Union: UnionErrorContext
+    domain: DomainProblemContext
+    missing: MissingKeyContext
+    range: RangeProblemContext
+    class: ClassProblemContext
+    regex: RegexProblemContext
+    tupleLength: TupleLengthProblemContext
+    union: UnionProblemContext
+    value: ValueProblemContext
 }
+
+export type ValueProblemContext = defineProblem<
+    unknown,
+    {
+        expected: Stringifiable
+    }
+>
+
+const writeValueProblem: ProblemMessageWriter<"value"> = ({ data, expected }) =>
+    `Must be ${expected} (was ${data})`
 
 export type ProblemCode = keyof ProblemContexts
 
-export type ProblemMessageBuilder<code extends ProblemCode> = (
+export type ProblemMessageWriter<code extends ProblemCode> = (
     context: ProblemContexts[code]
 ) => string
 
 const defaultMessagesByCode: {
-    [code in ProblemCode]: ProblemMessageBuilder<code>
+    [code in ProblemCode]: ProblemMessageWriter<code>
 } = {
-    divisibility: buildDivisorError,
-    domain: buildDomainError,
-    MissingKey: buildMissingKeyError,
-    range: buildRangeError,
-    instanceof: buildInstanceOfError,
-    RegexMismatch: buildRegexError,
-    TupleLength: buildTupleLengthError,
-    Unassignable: buildUnassignableError,
-    Union: buildUnionError
+    divisibility: writeDivisorError,
+    domain: writeDomainError,
+    missing: writeMissingKeyError,
+    range: writeRangeError,
+    class: writeClassProblem,
+    regex: writeRegexError,
+    tupleLength: writeTupleLengthError,
+    union: writeUnionError,
+    value: writeValueProblem
 }
 
 export type defineProblem<data, customContext = {}> = evaluate<

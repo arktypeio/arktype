@@ -24,7 +24,7 @@ const composeScopeParser = <parent extends ScopeRoot>(parent?: parent) =>
             const merged = { ...parent.aliases }
             for (const name in aliases) {
                 if (name in parent.aliases) {
-                    throwParseError(buildDuplicateAliasMessage(name))
+                    throwParseError(writeDuplicateAliasMessage(name))
                 }
                 merged[name] = aliases[name]
             }
@@ -60,7 +60,7 @@ type InferredScopeParser<parent> = <aliases>(
 
 type validateScope<aliases, parent> = {
     [name in keyof aliases]: name extends stringKeyOf<parent>
-        ? buildDuplicateAliasMessage<name>
+        ? writeDuplicateAliasMessage<name>
         : validateDefinition<aliases[name], inferScope<aliases, parent>>
 }
 
@@ -114,9 +114,9 @@ export const type: TypeParser<{}> = composeTypeParser(rootScope.$)
 
 export type BootstrapScope<$ = {}> = nominal<$, "bootstrap">
 
-export const buildDuplicateAliasMessage = <name extends string>(
+export const writeDuplicateAliasMessage = <name extends string>(
     name: name
-): buildDuplicateAliasMessage<name> => `Alias '${name}' is already defined`
+): writeDuplicateAliasMessage<name> => `Alias '${name}' is already defined`
 
-type buildDuplicateAliasMessage<name extends string> =
+type writeDuplicateAliasMessage<name extends string> =
     `Alias '${name}' is already defined`

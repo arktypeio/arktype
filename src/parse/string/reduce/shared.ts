@@ -1,11 +1,11 @@
 import { Scanner } from "../shift/scanner.ts"
 
-export const buildUnmatchedGroupCloseMessage = <unscanned extends string>(
+export const writeUnmatchedGroupCloseMessage = <unscanned extends string>(
     unscanned: unscanned
-): buildUnmatchedGroupCloseMessage<unscanned> =>
+): writeUnmatchedGroupCloseMessage<unscanned> =>
     `Unmatched )${(unscanned === "" ? "" : ` before ${unscanned}`) as any}`
 
-export type buildUnmatchedGroupCloseMessage<unscanned extends string> =
+export type writeUnmatchedGroupCloseMessage<unscanned extends string> =
     `Unmatched )${unscanned extends "" ? "" : ` before ${unscanned}`}`
 
 export const unclosedGroupMessage = "Missing )"
@@ -14,33 +14,33 @@ export type unclosedGroupMessage = typeof unclosedGroupMessage
 
 export type OpenRange = [min: number, comparator: Scanner.PairableComparator]
 
-export const buildOpenRangeMessage = <
+export const writeOpenRangeMessage = <
     min extends number,
     comparator extends Scanner.Comparator
 >(
     min: min,
     comparator: comparator
-): buildOpenRangeMessage<min, comparator> =>
+): writeOpenRangeMessage<min, comparator> =>
     `Left bounds are only valid when paired with right bounds (try ...${Scanner.invertedComparators[comparator]}${min})`
 
-export type buildOpenRangeMessage<
+export type writeOpenRangeMessage<
     min extends number,
     comparator extends Scanner.Comparator
 > = `Left bounds are only valid when paired with right bounds (try ...${Scanner.invertedComparators[comparator]}${min})`
 
-export type buildUnpairableComparatorMessage<
+export type writeUnpairableComparatorMessage<
     comparator extends Scanner.Comparator
 > =
     `Left-bounded expressions must specify their limits using < or <= (was ${comparator})`
 
-export const buildUnpairableComparatorMessage = <
+export const writeUnpairableComparatorMessage = <
     comparator extends Scanner.Comparator
 >(
     comparator: comparator
-): buildUnpairableComparatorMessage<comparator> =>
+): writeUnpairableComparatorMessage<comparator> =>
     `Left-bounded expressions must specify their limits using < or <= (was ${comparator})`
 
-export const buildMultipleLeftBoundsMessage = <
+export const writeMultipleLeftBoundsMessage = <
     openLimit extends number,
     openComparator extends Scanner.PairableComparator,
     limit extends number,
@@ -50,17 +50,17 @@ export const buildMultipleLeftBoundsMessage = <
     openComparator: openComparator,
     limit: limit,
     comparator: comparator
-): buildMultipleLeftBoundsMessage<
+): writeMultipleLeftBoundsMessage<
     openLimit,
     openComparator,
     limit,
     comparator
 > =>
-    `An expression may have at most one left bound (got ${openLimit}${openComparator}, ${limit}${comparator})`
+    `An expression may have at most one left bound (parsed ${openLimit}${openComparator}, ${limit}${comparator})`
 
-export type buildMultipleLeftBoundsMessage<
+export type writeMultipleLeftBoundsMessage<
     openLimit extends number,
     openComparator extends Scanner.PairableComparator,
     limit extends number,
     comparator extends Scanner.PairableComparator
-> = `An expression may have at most one left bound (got ${openLimit}${openComparator}, ${limit}${comparator})`
+> = `An expression may have at most one left bound (parsed ${openLimit}${openComparator}, ${limit}${comparator})`

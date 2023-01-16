@@ -1,10 +1,10 @@
 import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { buildImplicitNeverMessage } from "../src/parse/string/ast.ts"
+import { writeImplicitNeverMessage } from "../src/parse/string/ast.ts"
 import {
-    buildMissingRightOperandMessage,
-    buildUnresolvableMessage
+    writeMissingRightOperandMessage,
+    writeUnresolvableMessage
 } from "../src/parse/string/shift/operand/unenclosed.ts"
 
 describe("intersection", () => {
@@ -70,19 +70,19 @@ describe("intersection", () => {
             it("bad reference", () => {
                 // @ts-expect-error
                 attest(() => type("boolean&tru")).throwsAndHasTypeError(
-                    buildUnresolvableMessage("tru")
+                    writeUnresolvableMessage("tru")
                 )
             })
             it("double and", () => {
                 // @ts-expect-error
                 attest(() => type("boolean&&true")).throwsAndHasTypeError(
-                    buildMissingRightOperandMessage("&", "&true")
+                    writeMissingRightOperandMessage("&", "&true")
                 )
             })
             it("implicit never", () => {
                 // @ts-expect-error
                 attest(() => type("string&number")).throwsAndHasTypeError(
-                    buildImplicitNeverMessage("")
+                    writeImplicitNeverMessage("")
                 )
             })
         })

@@ -2,8 +2,8 @@ import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import {
-    buildMissingRightOperandMessage,
-    buildUnresolvableMessage
+    writeMissingRightOperandMessage,
+    writeUnresolvableMessage
 } from "../src/parse/string/shift/operand/unenclosed.ts"
 
 describe("tuple expression", () => {
@@ -41,24 +41,24 @@ describe("tuple expression", () => {
         it("missing right operand", () => {
             // @ts-expect-error
             attest(() => type(["string", "|"])).throwsAndHasTypeError(
-                buildMissingRightOperandMessage("|", "")
+                writeMissingRightOperandMessage("|", "")
             )
             // @ts-expect-error
             attest(() => type(["string", "&"])).throwsAndHasTypeError(
-                buildMissingRightOperandMessage("&", "")
+                writeMissingRightOperandMessage("&", "")
             )
         })
         it("nested parse error", () => {
             attest(() => {
                 // @ts-expect-error
                 type(["string", "|", "numbr"])
-            }).throwsAndHasTypeError(buildUnresolvableMessage("numbr"))
+            }).throwsAndHasTypeError(writeUnresolvableMessage("numbr"))
         })
         it("nested object parse error", () => {
             attest(() => {
                 // @ts-expect-error
                 type([{ s: "strng" }, "|", "number"])
-            }).throwsAndHasTypeError(buildUnresolvableMessage("strng"))
+            }).throwsAndHasTypeError(writeUnresolvableMessage("strng"))
         })
     })
 })

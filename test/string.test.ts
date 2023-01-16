@@ -2,17 +2,17 @@ import { describe, it } from "mocha"
 import type { TypeNode } from "../api.ts"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { buildUnterminatedEnclosedMessage } from "../src/parse/string/shift/operand/enclosed.ts"
+import { writeUnterminatedEnclosedMessage } from "../src/parse/string/shift/operand/enclosed.ts"
 import {
-    buildExpressionExpectedMessage,
-    buildUnresolvableMessage
+    writeExpressionExpectedMessage,
+    writeUnresolvableMessage
 } from "../src/parse/string/shift/operand/unenclosed.ts"
 
 describe("string", () => {
     it("errors on empty string", () => {
         // @ts-expect-error
         attest(() => type("")).throwsAndHasTypeError(
-            buildExpressionExpectedMessage("")
+            writeExpressionExpectedMessage("")
         )
     })
     it("ignores whitespace between identifiers/operators", () => {
@@ -23,12 +23,12 @@ describe("string", () => {
         attest(() =>
             // @ts-expect-error
             type("string | boo lean[]")
-        ).throwsAndHasTypeError(buildUnresolvableMessage("boo"))
+        ).throwsAndHasTypeError(writeUnresolvableMessage("boo"))
     })
     it("unterminated string", () => {
         // @ts-expect-error
         attest(() => type("'bob")).throwsAndHasTypeError(
-            buildUnterminatedEnclosedMessage("bob", "'")
+            writeUnterminatedEnclosedMessage("bob", "'")
         )
     })
 })

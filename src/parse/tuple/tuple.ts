@@ -9,7 +9,7 @@ import type { classOf, error, List, returnOf } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { inferIntersection, inferUnion } from "../string/ast.ts"
-import { buildMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
+import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
 import type { Out, validateMorphTuple } from "./morph.ts"
 import { parseMorphTuple } from "./morph.ts"
@@ -44,7 +44,7 @@ export type validateTupleExpression<
     ? validateNarrowTuple<def, $>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
-        ? [def[0], error<buildMissingRightOperandMessage<def[1], "">>]
+        ? [def[0], error<writeMissingRightOperandMessage<def[1], "">>]
         : [validateDefinition<def[0], $>, def[1], validateDefinition<def[2], $>]
     : def[1] extends "[]"
     ? [validateDefinition<def[0], $>, "[]"]
@@ -95,7 +95,7 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, $) => {
     if (def[2] === undefined) {
-        return throwParseError(buildMissingRightOperandMessage(def[1], ""))
+        return throwParseError(writeMissingRightOperandMessage(def[1], ""))
     }
     const l = parseDefinition(def[0], $)
     const r = parseDefinition(def[2], $)
@@ -117,11 +117,11 @@ export type PrefixParser<token extends PrefixToken> = (
 
 export type TupleExpression = PrefixExpression | PostfixExpression
 
-export const buildMalformedFunctionalExpressionMessage = (
+export const writeMalformedFunctionalExpressionMessage = (
     operator: "=>" | ":",
     rightDef: unknown
 ) =>
-    `Expression requires a function following '${operator}' (got ${typeof rightDef})`
+    `Expression requires a function following '${operator}' (was ${typeof rightDef})`
 
 export type TupleExpressionToken = PrefixToken | PostfixToken
 
@@ -163,7 +163,7 @@ const prefixParsers: {
     instanceof: (def) => {
         if (typeof def[1] !== "function") {
             return throwParseError(
-                `Expected a constructor following 'instanceof' operator (got ${typeof def[1]}).`
+                `Expected a constructor following 'instanceof' operator (was ${typeof def[1]}).`
             )
         }
         return { object: { instanceof: def[1] as classOf<unknown> } }

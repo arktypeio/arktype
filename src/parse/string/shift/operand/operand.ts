@@ -4,11 +4,11 @@ import type { state, StaticState } from "../../reduce/static.ts"
 import type { Scanner } from "../scanner.ts"
 import type { EnclosingChar } from "./enclosed.ts"
 import { enclosingChar, parseEnclosed } from "./enclosed.ts"
-import { buildMissingOperandMessage, parseUnenclosed } from "./unenclosed.ts"
+import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.ts"
 
 export const parseOperand = (s: DynamicState): void =>
     s.scanner.lookahead === ""
-        ? s.error(buildMissingOperandMessage(s))
+        ? s.error(writeMissingOperandMessage(s))
         : s.scanner.lookahead === "("
         ? s.shiftedByOne().reduceGroupOpen()
         : s.scanner.lookaheadIsIn(enclosingChar)
@@ -25,4 +25,4 @@ export type parseOperand<
         : lookahead extends EnclosingChar
         ? parseEnclosed<s, lookahead, unscanned>
         : parseUnenclosed<s, $>
-    : error<buildMissingOperandMessage<s>>
+    : error<writeMissingOperandMessage<s>>

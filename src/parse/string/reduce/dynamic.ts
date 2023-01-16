@@ -8,11 +8,11 @@ import { isKeyOf } from "../../../utils/generics.ts"
 import { Scanner } from "../shift/scanner.ts"
 import type { OpenRange } from "./shared.ts"
 import {
-    buildMultipleLeftBoundsMessage,
-    buildOpenRangeMessage,
-    buildUnmatchedGroupCloseMessage,
-    buildUnpairableComparatorMessage,
-    unclosedGroupMessage
+    unclosedGroupMessage,
+    writeMultipleLeftBoundsMessage,
+    writeOpenRangeMessage,
+    writeUnmatchedGroupCloseMessage,
+    writeUnpairableComparatorMessage
 } from "./shared.ts"
 
 type BranchState = {
@@ -105,11 +105,11 @@ export class DynamicState {
 
     reduceLeftBound(limit: number, comparator: Scanner.Comparator) {
         if (!isKeyOf(comparator, Scanner.pairableComparators)) {
-            return this.error(buildUnpairableComparatorMessage(comparator))
+            return this.error(writeUnpairableComparatorMessage(comparator))
         }
         if (this.branches.range) {
             return this.error(
-                buildMultipleLeftBoundsMessage(
+                writeMultipleLeftBoundsMessage(
                     this.branches.range[0],
                     this.branches.range[1],
                     limit,
@@ -141,7 +141,7 @@ export class DynamicState {
         const topBranchState = this.groups.pop()
         if (!topBranchState) {
             return this.error(
-                buildUnmatchedGroupCloseMessage(this.scanner.unscanned)
+                writeUnmatchedGroupCloseMessage(this.scanner.unscanned)
             )
         }
         this.branches = topBranchState
@@ -163,7 +163,7 @@ export class DynamicState {
     private assertRangeUnset() {
         if (this.branches.range) {
             return this.error(
-                buildOpenRangeMessage(
+                writeOpenRangeMessage(
                     this.branches.range[0],
                     this.branches.range[1]
                 )

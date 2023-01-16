@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { buildUnterminatedEnclosedMessage } from "../src/parse/string/shift/operand/enclosed.ts"
+import { writeUnterminatedEnclosedMessage } from "../src/parse/string/shift/operand/enclosed.ts"
 
 describe("parse enclosed", () => {
     it("with spaces", () => {
@@ -15,19 +15,19 @@ describe("parse enclosed", () => {
             it("regex", () => {
                 // @ts-expect-error
                 attest(() => type("/.*")).throwsAndHasTypeError(
-                    buildUnterminatedEnclosedMessage(".*", "/")
+                    writeUnterminatedEnclosedMessage(".*", "/")
                 )
             })
             it("single-quote", () => {
                 // @ts-expect-error
                 attest(() => type("'.*")).throwsAndHasTypeError(
-                    buildUnterminatedEnclosedMessage(".*", "'")
+                    writeUnterminatedEnclosedMessage(".*", "'")
                 )
             })
             it("double-quote", () => {
                 // @ts-expect-error
                 attest(() => type('".*')).throwsAndHasTypeError(
-                    buildUnterminatedEnclosedMessage(".*", '"')
+                    writeUnterminatedEnclosedMessage(".*", '"')
                 )
             })
         })
