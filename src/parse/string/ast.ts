@@ -18,7 +18,6 @@ import type {
     stringKeyOf,
     tryCatch
 } from "../../utils/generics.ts"
-import type { join } from "../../utils/paths"
 import { withPathContext } from "../../utils/paths"
 import type { inferDefinition } from "../definition.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"

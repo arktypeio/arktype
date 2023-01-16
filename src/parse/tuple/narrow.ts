@@ -2,11 +2,11 @@ import { intersection } from "../../nodes/node.ts"
 import type { asIn } from "../../type.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
-import type { TupleExpression, TupleExpressionParser } from "./tuple.ts"
+import type { PostfixParser, TupleExpression } from "./tuple.ts"
 import type { distributable } from "./utils.ts"
 import { distributeFunctionToNode } from "./utils.ts"
 
-export const parseNarrowTuple: TupleExpressionParser<":"> = (def, scope) => {
+export const parseNarrowTuple: PostfixParser<":"> = (def, scope) => {
     const inputNode = parseDefinition(def[0], scope)
     return intersection(
         inputNode,

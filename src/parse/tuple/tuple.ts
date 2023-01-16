@@ -16,8 +16,11 @@ import type { validateNarrowTuple } from "./narrow.ts"
 import { parseNarrowTuple } from "./narrow.ts"
 
 export const parseTuple = (def: List, $: ScopeRoot): TypeNode => {
-    if (isTupleExpression(def)) {
-        return parseTupleExpression(def, $)
+    if (isPostfixExpression(def)) {
+        return postfixParsers[def[1]](def as never, $)
+    }
+    if (isPrefixExpression(def)) {
+        return prefixParsers[def[0]](def as never, $)
     }
     const props: Record<number, TypeNode> = {}
     for (let i = 0; i < def.length; i++) {
@@ -74,32 +77,55 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
     ? inferDefinition<def[0], $>[]
     : never
 
-// TODO: instanceof
+const parseBranchTuple: PostfixParser<"|" | "&"> = (def, $) => {
+    if (def[2] === undefined) {
+        return throwParseError(buildMissingRightOperandMessage(def[1], ""))
+    }
+    const l = parseDefinition(def[0], $)
+    const r = parseDefinition(def[2], $)
+    return def[1] === "&" ? intersection(l, r, $) : union(l, r, $)
+}
+
+const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
+    functorKeywords.Array(parseDefinition(def[0], scope))
+
+export type PostfixParser<token extends PostfixToken> = (
+    def: PostfixExpression<token>,
+    $: ScopeRoot
+) => TypeNode
+
+export type PrefixParser<token extends PrefixToken> = (
+    def: PrefixExpression<token>,
+    $: ScopeRoot
+) => TypeNode
+
+export type TupleExpression = PrefixExpression | PostfixExpression
+
+export const buildMalformedFunctionalExpressionMessage = (
+    operator: "=>" | ":",
+    rightDef: unknown
+) =>
+    `Expression requires a function following '${operator}' (got ${typeof rightDef})`
+
+export type TupleExpressionToken = PrefixToken | PostfixToken
+
 // TODO: === (exact value)
 // TODO: = (Default value)
 // TODO: Pipe
 // TODO: Merge
-export type TupleExpressionToken = "&" | "|" | "[]" | ":" | "=>"
+type PostfixToken = "[]" | "&" | "|" | ":" | "=>"
 
-export type TupleExpressionParser<token extends TupleExpressionToken> = (
-    def: TupleExpression<token>,
-    $: ScopeRoot
-) => TypeNode
+type PostfixExpression<token extends PostfixToken = PostfixToken> = [
+    unknown,
+    token,
+    ...unknown[]
+]
 
-const parseBranchTuple: TupleExpressionParser<"|" | "&"> = (def, scope) => {
-    if (def[2] === undefined) {
-        return throwParseError(buildMissingRightOperandMessage(def[1], ""))
-    }
-    const l = parseDefinition(def[0], scope)
-    const r = parseDefinition(def[2], scope)
-    return def[1] === "&" ? intersection(l, r, scope) : union(l, r, scope)
-}
+const isPostfixExpression = (def: List): def is PostfixExpression =>
+    postfixParsers[def[1] as PostfixToken] !== undefined
 
-const parseArrayTuple: TupleExpressionParser<"[]"> = (def, scope) =>
-    functorKeywords.Array(parseDefinition(def[0], scope))
-
-const tupleExpressionParsers: {
-    [token in TupleExpressionToken]: TupleExpressionParser<token>
+const postfixParsers: {
+    [token in PostfixToken]: PostfixParser<token>
 } = {
     "|": parseBranchTuple,
     "&": parseBranchTuple,
@@ -108,12 +134,18 @@ const tupleExpressionParsers: {
     "=>": parseMorphTuple
 }
 
-const parseTupleExpression = (def: TupleExpression, $: ScopeRoot): TypeNode =>
-    tupleExpressionParsers[def[1]](def as any, $)
+type PrefixToken = "instanceof"
 
-const isTupleExpression = (def: List): def is TupleExpression =>
-    typeof def[1] === "string" && def[1] in tupleExpressionParsers
+type PrefixExpression<token extends PrefixToken = PrefixToken> = [
+    token,
+    ...unknown[]
+]
 
-export type TupleExpression<
-    token extends TupleExpressionToken = TupleExpressionToken
-> = [unknown, token, ...unknown[]]
+const prefixParsers: {
+    [token in PrefixToken]: PrefixParser<token>
+} = {
+    instanceof: () => ({})
+}
+
+const isPrefixExpression = (def: List): def is PrefixExpression =>
+    prefixParsers[def[0] as PrefixToken] !== undefined

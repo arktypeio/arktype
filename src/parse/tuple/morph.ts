@@ -3,9 +3,9 @@ import { throwParseError } from "../../utils/errors.ts"
 import type { nominal } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
-import type { TupleExpression, TupleExpressionParser } from "./tuple.ts"
+import type { PostfixParser, TupleExpression } from "./tuple.ts"
 
-export const parseMorphTuple: TupleExpressionParser<"=>"> = (def, $) => {
+export const parseMorphTuple: PostfixParser<"=>"> = (def, $) => {
     const inputNode = parseDefinition(def[0], $)
     if (typeof def[2] !== "function") {
         return throwParseError(buildMalformedMorphExpressionMessage(def[2]))
