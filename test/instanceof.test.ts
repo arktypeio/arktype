@@ -10,7 +10,7 @@ describe("instanceof", () => {
         const e = new Error()
         attest(t(e).data).equals(e)
         attest(t({}).problems?.summary).snap(
-            "Must be an instance of Error (got Object)"
+            "Must be an instance of Error (was Object)"
         )
     })
     it("inherited", () => {
@@ -18,7 +18,7 @@ describe("instanceof", () => {
         const e = new TypeError()
         attest(t(e).data).equals(e)
         attest(t(new Error()).problems?.summary).snap(
-            "Must be an instance of TypeError (got Error)"
+            "Must be an instance of TypeError (was Error)"
         )
     })
 })
