@@ -1,7 +1,9 @@
 import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
 import { checkNode } from "../../traverse/check.ts"
-import type { defineDiagnostic } from "../../traverse/problems.js"
-import type { DiagnosticMessageBuilder } from "../../traverse/problems.ts"
+import type {
+    defineDiagnostic,
+    DiagnosticMessageBuilder
+} from "../../traverse/problems.ts"
 import type { Subdomain } from "../../utils/domains.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"

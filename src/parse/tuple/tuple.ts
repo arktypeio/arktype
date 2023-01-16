@@ -4,7 +4,7 @@ import { intersection, union } from "../../nodes/node.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import type { asIn, asOut } from "../../type.ts"
 import { throwParseError } from "../../utils/errors.ts"
-import type { error, List, returnOf } from "../../utils/generics.ts"
+import type { classOf, error, List, returnOf } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { inferIntersection, inferUnion } from "../string/ast.ts"
@@ -47,6 +47,13 @@ export type validateTupleExpression<
         : [validateDefinition<def[0], $>, def[1], validateDefinition<def[2], $>]
     : def[1] extends "[]"
     ? [validateDefinition<def[0], $>, "[]"]
+    : def[0] extends "instanceof"
+    ? [
+          "instanceof",
+          def[1] extends classOf<unknown>
+              ? def[1]
+              : "Expected a constructor following instanceof"
+      ]
     : never
 
 export type inferTuple<def extends List, $> = def extends TupleExpression
@@ -75,6 +82,10 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
     ? inferUnion<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
     : def[1] extends "[]"
     ? inferDefinition<def[0], $>[]
+    : def[0] extends "instanceof"
+    ? def[1] extends classOf<infer t>
+        ? t
+        : never
     : never
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, $) => {
@@ -144,7 +155,14 @@ type PrefixExpression<token extends PrefixToken = PrefixToken> = [
 const prefixParsers: {
     [token in PrefixToken]: PrefixParser<token>
 } = {
-    instanceof: () => ({})
+    instanceof: (def) => {
+        if (typeof def[1] !== "function") {
+            return throwParseError(
+                `Expected a constructor following 'instanceof' operator (got ${typeof def[1]}).`
+            )
+        }
+        return { object: { instanceof: def[1] as classOf<unknown> } }
+    }
 }
 
 const isPrefixExpression = (def: List): def is PrefixExpression =>

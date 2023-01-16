@@ -18,7 +18,7 @@ import type {
     stringKeyOf,
     tryCatch
 } from "../../utils/generics.ts"
-import { withPathContext } from "../../utils/paths"
+import { withPathContext } from "../../utils/paths.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"

@@ -53,14 +53,14 @@ describe("check", () => {
     it("custom errors", () => {
         const isEven = type("number%2", {
             problems: {
-                DivisorViolation: {
+                divisibility: {
                     message: ({ data, divisor }) =>
-                        `${data} is not even. (${data}%${divisor})`
+                        `${data} is not disivible by ${divisor}!`
                 }
             }
         })
         const check = isEven(3)
-        attest(check.problems?.summary).snap("3 is not even. (3%2)")
+        attest(check.problems?.summary).snap()
     })
     it("domains", () => {
         const basic = type("string|number[]")
