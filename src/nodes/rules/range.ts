@@ -1,8 +1,8 @@
 import { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { TraversalCheck } from "../../traverse/check.ts"
 import type {
-    defineDiagnostic,
-    DiagnosticMessageBuilder
+    defineProblem,
+    ProblemMessageBuilder
 } from "../../traverse/problems.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import type { List } from "../../utils/generics.ts"
@@ -48,7 +48,7 @@ export const rangeIntersection = composeIntersection<Range>((l, r) => {
 
 export type BoundableData = number | string | List
 
-export type RangeErrorContext = defineDiagnostic<
+export type RangeErrorContext = defineProblem<
     BoundableData,
     {
         comparator: Scanner.Comparator
@@ -58,7 +58,7 @@ export type RangeErrorContext = defineDiagnostic<
     }
 >
 
-export const buildRangeError: DiagnosticMessageBuilder<"range"> = ({
+export const buildRangeError: ProblemMessageBuilder<"range"> = ({
     comparator,
     limit,
     kind,

@@ -1,7 +1,7 @@
 import type { TraversalCheck } from "../../traverse/check.ts"
 import type {
-    defineDiagnostic,
-    DiagnosticMessageBuilder
+    defineProblem,
+    ProblemMessageBuilder
 } from "../../traverse/problems.ts"
 import { composeIntersection, equal } from "../compose.ts"
 
@@ -23,9 +23,9 @@ const greatestCommonDivisor = (l: number, r: number) => {
     return greatestCommonDivisor
 }
 
-export type DivisibilityContext = defineDiagnostic<number, { divisor: number }>
+export type DivisibilityContext = defineProblem<number, { divisor: number }>
 
-export const buildDivisorError: DiagnosticMessageBuilder<"divisibility"> = ({
+export const buildDivisorError: ProblemMessageBuilder<"divisibility"> = ({
     data,
     divisor
 }) =>

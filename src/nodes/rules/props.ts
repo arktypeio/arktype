@@ -1,8 +1,8 @@
 import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
 import { checkNode } from "../../traverse/check.ts"
 import type {
-    defineDiagnostic,
-    DiagnosticMessageBuilder
+    defineProblem,
+    ProblemMessageBuilder
 } from "../../traverse/problems.ts"
 import type { Dict } from "../../utils/generics.ts"
 import { hasKey } from "../../utils/generics.ts"
@@ -130,9 +130,9 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
 export const checkRequiredProps = createPropChecker("requiredProps")
 export const checkOptionalProps = createPropChecker("optionalProps")
 
-export type MissingKeyContext = defineDiagnostic<undefined, { key: string }>
+export type MissingKeyContext = defineProblem<undefined, { key: string }>
 
-export const buildMissingKeyError: DiagnosticMessageBuilder<"MissingKey"> = ({
+export const buildMissingKeyError: ProblemMessageBuilder<"MissingKey"> = ({
     key
 }) => `${key} is required.`
 

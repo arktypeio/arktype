@@ -20,7 +20,8 @@ import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { Dict, evaluate, extend, xor } from "../utils/generics.ts"
-import type { DiagnosticCode, DiagnosticsByCode } from "./problems.ts"
+import { keysOf } from "../utils/generics.ts"
+import type { ProblemCode, ProblemContexts } from "./problems.ts"
 import { Problems, Stringifiable } from "./problems.ts"
 
 export const checkRules = (
@@ -59,10 +60,10 @@ export type CheckConfig = {
 }
 
 export type OptionsByDiagnostic = {
-    [Code in DiagnosticCode]?: BaseDiagnosticOptions<Code>
+    [Code in ProblemCode]?: BaseDiagnosticOptions<Code>
 }
-export type BaseDiagnosticOptions<Code extends keyof DiagnosticsByCode> = {
-    message: (context: DiagnosticsByCode[Code]) => string
+export type BaseDiagnosticOptions<Code extends keyof ProblemContexts> = {
+    message: (context: ProblemContexts[Code]) => string
 }
 
 export const rootCheck = (
@@ -134,9 +135,9 @@ const checkers = {
             checkEntries(state, scope)
         } else {
             state.problems.addProblem(
-                "Domains",
+                "domain",
                 {
-                    expected: state.node[0][1]
+                    expected: keysOf(domains)
                 },
                 state
             )

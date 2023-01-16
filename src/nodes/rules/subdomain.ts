@@ -1,8 +1,8 @@
 import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
 import { checkNode } from "../../traverse/check.ts"
 import type {
-    defineDiagnostic,
-    DiagnosticMessageBuilder
+    defineProblem,
+    ProblemMessageBuilder
 } from "../../traverse/problems.ts"
 import type { Subdomain } from "../../utils/domains.ts"
 import { subdomainOf } from "../../utils/domains.ts"
@@ -169,7 +169,7 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     return true
 }
 
-export type TupleLengthErrorContext = defineDiagnostic<
+export type TupleLengthErrorContext = defineProblem<
     List,
     {
         actual: number
@@ -177,7 +177,7 @@ export type TupleLengthErrorContext = defineDiagnostic<
     }
 >
 
-export const buildTupleLengthError: DiagnosticMessageBuilder<"TupleLength"> = ({
+export const buildTupleLengthError: ProblemMessageBuilder<"TupleLength"> = ({
     actual,
     expected
 }) => `Tuple must have length ${expected} (got ${actual})`

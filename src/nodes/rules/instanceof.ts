@@ -1,7 +1,7 @@
 import type { TraversalCheck } from "../../traverse/check.ts"
 import type {
-    defineDiagnostic,
-    DiagnosticMessageBuilder
+    defineProblem,
+    ProblemMessageBuilder
 } from "../../traverse/problems.ts"
 import type { classOf } from "../../utils/generics.ts"
 import { composeIntersection, empty, equal } from "../compose.ts"
@@ -11,7 +11,7 @@ export const instanceofIntersection = composeIntersection<classOf<unknown>>(
         l === r ? equal : l instanceof r ? l : r instanceof l ? r : empty
 )
 
-export type InstanceOfErrorContext = defineDiagnostic<
+export type InstanceOfErrorContext = defineProblem<
     unknown,
     {
         expected: string
@@ -19,7 +19,7 @@ export type InstanceOfErrorContext = defineDiagnostic<
     }
 >
 
-export const buildInstanceOfError: DiagnosticMessageBuilder<"instanceof"> = ({
+export const buildInstanceOfError: ProblemMessageBuilder<"instanceof"> = ({
     actual,
     expected
 }) => `Must be an instance of ${expected} (got ${actual})`

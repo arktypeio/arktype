@@ -1,7 +1,7 @@
 import type { TraversalCheck } from "../../traverse/check.ts"
 import type {
-    defineDiagnostic,
-    DiagnosticMessageBuilder
+    defineProblem,
+    ProblemMessageBuilder
 } from "../../traverse/problems.ts"
 import type { CollapsibleList } from "../../utils/generics.ts"
 import { composeIntersection } from "../compose.ts"
@@ -38,14 +38,14 @@ export const checkRegex = ((state, regex) => {
     }
 }) satisfies TraversalCheck<"regex">
 
-export type RegexErrorContext = defineDiagnostic<
+export type RegexErrorContext = defineProblem<
     string,
     {
         regex: RegExp
     }
 >
 
-export const buildRegexError: DiagnosticMessageBuilder<"RegexMismatch"> = ({
+export const buildRegexError: ProblemMessageBuilder<"RegexMismatch"> = ({
     data,
     regex
 }) => `${data} must match expression ${regex}.`

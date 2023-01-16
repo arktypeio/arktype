@@ -1,7 +1,7 @@
 import type { ScopeRoot } from "../scope.ts"
 import type {
-    defineDiagnostic,
-    DiagnosticMessageBuilder
+    defineProblem,
+    ProblemMessageBuilder
 } from "../traverse/problems.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
@@ -111,9 +111,9 @@ export const compareBranches = (
     return result
 }
 
-export const buildUnionError: DiagnosticMessageBuilder<"Union"> = ({
+export const buildUnionError: ProblemMessageBuilder<"Union"> = ({
     data,
     type
 }) => `${data} does not satisfy any branches of ${type}`
 
-export type UnionErrorContext = defineDiagnostic<unknown, { type: unknown }>
+export type UnionErrorContext = defineProblem<unknown, { type: unknown }>
