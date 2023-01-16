@@ -125,7 +125,6 @@ export const writeMalformedFunctionalExpressionMessage = (
 
 export type TupleExpressionToken = PrefixToken | PostfixToken
 
-// TODO: === (exact value)
 // TODO: = (Default value)
 // TODO: Pipe
 // TODO: Merge
@@ -166,7 +165,7 @@ const prefixParsers: {
                 `Expected a constructor following 'instanceof' operator (was ${typeof def[1]}).`
             )
         }
-        return { object: { instanceof: def[1] as classOf<unknown> } }
+        return { object: { class: def[1] as classOf<unknown> } }
     },
     "===": (def) => ({ [domainOf(def[1])]: { value: def[1] } })
 }
