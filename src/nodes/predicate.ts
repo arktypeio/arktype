@@ -1,8 +1,13 @@
 import type { ScopeRoot } from "../scope.ts"
 import { checkRules } from "../traverse/check.ts"
-import type { Domain, inferDomain } from "../utils/domains.ts"
+import type { Domain, inferDomain, Subdomain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
-import type { CollapsibleList, Dict, stringKeyOf } from "../utils/generics.ts"
+import type {
+    CollapsibleList,
+    Dict,
+    extend,
+    stringKeyOf
+} from "../utils/generics.ts"
 import { collapseIfSingleton, listFrom } from "../utils/generics.ts"
 import type { BranchesComparison } from "./branches.ts"
 import { compareBranches, isBranchComparison } from "./branches.ts"
@@ -21,9 +26,41 @@ export type Predicate<domain extends Domain = Domain, $ = Dict> = Dict extends $
     ? true | CollapsibleList<Condition>
     : true | CollapsibleList<Condition<domain, $>>
 
-export type TraversalPredicate = TraversalCondition | [TraversalBranchesEntry]
+export type TraversalPredicate =
+    | TraversalCondition
+    | [TraversalBranchesEntry]
+    | [DiscriminatedTraversalBranchesEntry]
 
 export type TraversalBranchesEntry = ["branches", readonly TraversalCondition[]]
+
+export type DiscriminatableRuleName = "domain" | "subdomain" | "value"
+
+export type DiscriminatedTraversalBranchesEntry<
+    by extends DiscriminatableRuleName = DiscriminatableRuleName
+> = ["cases", DiscriminatedTraversalBranches<by>]
+
+export type DiscriminatedTraversalBranches<
+    by extends DiscriminatableRuleName = DiscriminatableRuleName
+> = {
+    readonly path: string[]
+    readonly by: by
+    readonly cases: TraversalCases<by>
+}
+
+export type TraversalCases<
+    key extends DiscriminatableRuleName = DiscriminatableRuleName
+> = {
+    [caseKey in CaseKeys[key]]?: TraversalPredicate
+}
+
+type CaseKeys = extend<
+    Record<DiscriminatableRuleName, unknown>,
+    {
+        domain: Domain
+        subdomain: Subdomain
+        value: string
+    }
+>
 
 export const compilePredicate = (
     domain: Domain,
@@ -46,9 +83,22 @@ export const compilePredicate = (
             flatBranches.push(compileRules(condition, $))
         }
     }
-    return flatBranches.length === 1
-        ? flatBranches[0]
-        : [["branches", flatBranches]]
+    if (flatBranches.length === 1) {
+        return flatBranches[0]
+    }
+    if (domain === "object") {
+        return [
+            [
+                "cases",
+                {
+                    path: [],
+                    by: "domain",
+                    cases: {}
+                }
+            ]
+        ]
+    }
+    return [["branches", flatBranches]]
 }
 
 const branchesOf = (flatPredicate: TraversalPredicate) =>

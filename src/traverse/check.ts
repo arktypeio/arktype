@@ -7,8 +7,8 @@ import type {
     ExactValueEntry,
     TraversalBranchesEntry
 } from "../nodes/predicate.ts"
+import { checkClass } from "../nodes/rules/class.ts"
 import { checkDivisor } from "../nodes/rules/divisor.ts"
-import { checkInstanceOf } from "../nodes/rules/instanceof.ts"
 import { checkOptionalProps, checkRequiredProps } from "../nodes/rules/props.ts"
 import type { BoundableData } from "../nodes/rules/range.ts"
 import { checkRange } from "../nodes/rules/range.ts"
@@ -166,7 +166,7 @@ const checkers = {
             checkEntries(state, scope)
             return state.problems.length === 0 ? true : false
         }),
-    class: checkInstanceOf,
+    class: checkClass,
     // TODO: add error message syntax.
     narrow: (state, validator) => validator(state),
     value: (state, value) => {

@@ -5,9 +5,9 @@ import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type { classOf, CollapsibleList, Dict } from "../../utils/generics.ts"
 import { composeIntersection, composeKeyedOperation } from "../compose.ts"
 import type { PredicateContext } from "../predicate.ts"
+import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
-import { classIntersection } from "./instanceof.ts"
 import type {
     PropsRule,
     TraversalOptionalProps,

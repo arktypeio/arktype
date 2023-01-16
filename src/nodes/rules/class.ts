@@ -23,7 +23,7 @@ export const writeClassProblem: ProblemMessageWriter<"class"> = ({
     expected
 }) => `Must be an instance of ${expected} (was ${actual})`
 
-export const checkInstanceOf = ((state, expectedClass) => {
+export const checkClass = ((state, expectedClass) => {
     if (!(state.data instanceof expectedClass)) {
         state.problems.addProblem(
             "class",

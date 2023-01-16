@@ -51,6 +51,7 @@ export type TraversalNode =
     | SingleDomainTraversalNode
     | MultiDomainTraversalNode
     | CyclicReferenceNode
+    | MorphTraversalNode
 
 export type SingleDomainTraversalNode = readonly [
     ExplicitDomainEntry | ImplicitDomainEntry,
@@ -75,6 +76,16 @@ export type MultiDomainTraversalNode = [MultiDomainEntry]
 
 export type MultiDomainEntry = ["domains", TraversalTypeSet]
 
+export type MorphTraversalNode = [
+    [
+        "morph",
+        {
+            readonly input: TraversalNode
+            readonly morph: Morph
+        }
+    ]
+]
+
 export type TraversalTypeSet = {
     readonly [domain in Domain]?: TraversalPredicate
 }
@@ -84,7 +95,16 @@ export const compileNode = (node: TypeNode, $: ScopeRoot): TraversalNode => {
         return resolveFlat(node, $)
     }
     if (rootIsMorph(node)) {
-        return "null"
+        // TODO: chained?
+        return [
+            [
+                "morph",
+                {
+                    input: compileNode(node.input, $),
+                    morph: node.morph
+                }
+            ]
+        ]
     }
     const domains = keysOf(node)
     if (domains.length === 1) {

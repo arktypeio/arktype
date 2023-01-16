@@ -2,8 +2,8 @@ import { describe, it } from "mocha"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import {
-    writeDoubleMorphIntersectionMessage,
-    undiscriminatableMorphUnionMessage
+    undiscriminatableMorphUnionMessage,
+    writeDoubleMorphIntersectionMessage
 } from "../src/parse/string/ast.ts"
 import type { Out } from "../src/parse/tuple/morph.ts"
 import type { Type } from "../src/type.ts"
