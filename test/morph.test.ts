@@ -36,7 +36,10 @@ describe("morph", () => {
             bAndA: "b&a"
         })
         attest(types.aAndB).typed as Type<(In: 3.14) => Out<string>>
-        attest(types.aAndB.node).snap()
+        attest(types.aAndB.node).snap({
+            input: { number: { value: 3.14 } },
+            morph: "<function>"
+        })
         attest(types.bAndA).typed as typeof types.aAndB
         attest(types.bAndA.node).equals(types.aAndB.node)
     })
@@ -113,7 +116,10 @@ describe("morph", () => {
             b: ["a", "=>", (n) => n === 0]
         })
         attest(types.b).typed as Type<(In: string) => Out<boolean>>
-        attest(types.b.node).snap()
+        attest(types.b.node).snap({
+            input: "string",
+            morph: ["<function>", "<function>"]
+        })
     })
     it("chained nested", () => {
         const types = scope({
@@ -121,7 +127,10 @@ describe("morph", () => {
             b: [{ a: "a" }, "=>", ({ a }) => a === 0, "boolean"]
         })
         attest(types.b).typed as Type<(In: { a: string }) => Out<boolean>>
-        attest(types.b.node).snap()
+        attest(types.b.node).snap({
+            input: { object: { props: { a: "a" } } },
+            morph: "<function>"
+        })
     })
     it("discriminatable tuple union", () => {
         const types = scope({
@@ -132,7 +141,18 @@ describe("morph", () => {
         attest(types.c).typed as Type<
             [boolean] | ((In: [string]) => Out<string[]>)
         >
-        attest(types.c.node).snap()
+        attest(types.c.node).snap({
+            object: [
+                {
+                    subdomain: ["Array", "unknown", 1],
+                    props: { "0": "string" }
+                },
+                {
+                    subdomain: ["Array", "unknown", 1],
+                    props: { "0": "boolean" }
+                }
+            ]
+        })
     })
     it("double intersection", () => {
         attest(() => {

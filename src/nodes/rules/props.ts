@@ -35,7 +35,7 @@ export type TraversalOptionalProps = [
     readonly TraversalPropEntry[]
 ]
 
-export type TraversalPropEntry = [propKey: string, flatNode: TraversalNode]
+export type TraversalPropEntry = [propKey: string, node: TraversalNode]
 
 const isOptional = (prop: Prop): prop is OptionalProp =>
     (prop as OptionalProp)[0] === "?"

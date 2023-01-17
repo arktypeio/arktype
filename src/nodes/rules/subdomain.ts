@@ -91,7 +91,7 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
         let lImpliesR = true
         let rImpliesL = true
         const maxNodeIndex = l[0] === "Map" ? 2 : 1
-        for (let i = 1; i < maxNodeIndex; i++) {
+        for (let i = 1; i <= maxNodeIndex; i++) {
             const lNode = l[i] as TypeNode
             const rNode = r[i] as TypeNode
             const parameterResult = nodeIntersection(lNode, rNode, context)

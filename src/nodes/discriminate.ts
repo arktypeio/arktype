@@ -1,15 +1,5 @@
-import type {
-    Predicate,
-    TraversalCondition,
-    TraversalPredicate
-} from "../nodes/predicate.ts"
+import type { TraversalPredicate } from "../nodes/predicate.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
-import type {
-    MorphTraversalNode,
-    TraversalNode,
-    ValidatorTraversalNode
-} from "./node.ts"
-import type { TraversalRequiredProps } from "./rules/props.ts"
 
 export type DiscriminatedBranches<
     rule extends DiscriminatableRule = DiscriminatableRule

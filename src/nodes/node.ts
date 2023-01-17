@@ -19,7 +19,6 @@ import type {
 import {
     composeKeyedOperation,
     equality,
-    Equality,
     isDisjoint,
     isEquality
 } from "./compose.ts"

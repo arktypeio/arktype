@@ -60,7 +60,7 @@ describe("check", () => {
             }
         })
         const check = isEven(3)
-        attest(check.problems?.summary).snap()
+        attest(check.problems?.summary).snap("3 is not disivible by 2!")
     })
     it("domains", () => {
         const basic = type("string|number[]")
