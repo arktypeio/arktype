@@ -1,7 +1,7 @@
-import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
+import type { OperationContext } from "./compose.ts"
 import { empty, equal } from "./compose.ts"
 import type { Condition, Predicate, PredicateComparison } from "./predicate.ts"
 import { predicateIntersection } from "./predicate.ts"
@@ -26,7 +26,7 @@ export const compareBranches = (
     domain: Domain,
     lConditions: Branches,
     rConditions: Branches,
-    scope: ScopeRoot
+    context: OperationContext
 ): BranchesComparison => {
     const result: BranchesComparison = {
         lConditions,
@@ -52,7 +52,7 @@ export const compareBranches = (
                     domain,
                     l,
                     r,
-                    scope
+                    context
                 )
                 switch (keyIntersection) {
                     case empty:

@@ -79,12 +79,10 @@ export const isKeyOf = <k extends string | number, obj extends object>(
     obj: obj
 ): k is Extract<keyof obj, k> => k in obj
 
-export type classOf<instanceType> = new (
-    ...constructorArgs: any[]
-) => instanceType
+export type constructor<instance = unknown> = new (...args: any[]) => instance
 
-export type instanceOf<classType extends classOf<any>> =
-    classType extends classOf<infer Instance> ? Instance : never
+export type instanceOf<classType extends constructor<any>> =
+    classType extends constructor<infer Instance> ? Instance : never
 
 export type entryOf<o> = { [k in keyof o]-?: [k, o[k]] }[o extends List
     ? keyof o & number

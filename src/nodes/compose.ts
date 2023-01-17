@@ -1,39 +1,24 @@
+import type { ScopeRoot } from "../scope.ts"
+import type { Domain, Subdomain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
-import type { Dict, mutable } from "../utils/generics.ts"
+import type { constructor, Dict, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
+import type { Range } from "./rules/range.ts"
 
-type ContextFreeSetOperation<t, result extends t> = (
-    l: t,
-    r: t
-) => SetOperationResult<result>
-
-type ContextualSetOperation<t, context, result extends t> = (
+export type SetOperation<t> = (
     l: t,
     r: t,
-    context: context
-) => SetOperationResult<result>
+    context: OperationContext
+) => SetOperationResult<t>
 
-export type SetOperation<
-    t,
-    context = undefined,
-    result extends t = t
-> = context extends undefined
-    ? ContextFreeSetOperation<t, result>
-    : ContextualSetOperation<t, context, result>
-
-type allowUndefinedOperands<f extends SetOperation<any, any>> =
-    f extends SetOperation<infer operand, infer context>
-        ? SetOperation<
-              operand | undefined,
-              unknown extends context ? undefined : context,
-              operand
-          >
+type allowUndefinedOperands<f extends SetOperation<any>> =
+    f extends SetOperation<infer operand>
+        ? SetOperation<operand | undefined>
         : never
 
 export const composeIntersection = <
     t,
-    context = undefined,
-    reducer extends SetOperation<t, context> = SetOperation<t, context>
+    reducer extends SetOperation<t> = SetOperation<t>
 >(
     reducer: reducer
 ) =>
@@ -51,38 +36,76 @@ const throwUndefinedOperandsError = () =>
 
 export type SetOperationResult<t> = t | empty | equal
 
+export type EmptyIntersectionKinds = {
+    domain: Domain[]
+    subdomain: Subdomain[]
+    range: Range
+    class: constructor
+}
+
+export type EmptyIntersectionKind = keyof EmptyIntersectionKinds
+
+export type OperationContext = {
+    $: ScopeRoot
+    path: string
+    domain: Domain | null
+    emptyResults: Record<string, EmptyIntersection>
+}
+
 export const empty = Symbol("empty")
 
 export type empty = typeof empty
+
+export const addEmpty = <kind extends EmptyIntersectionKind>(
+    kind: kind,
+    left: EmptyIntersectionKinds[kind],
+    right: EmptyIntersectionKinds[kind],
+    context: OperationContext
+): empty => {
+    context.emptyResults[context.path] = {
+        kind,
+        left,
+        right
+    }
+    return empty
+}
+
+export type EmptyIntersection<
+    kind extends EmptyIntersectionKind = EmptyIntersectionKind
+> = {
+    kind: kind
+    left: EmptyIntersectionKinds[kind]
+    right: EmptyIntersectionKinds[kind]
+}
 
 export const equal = Symbol("equal")
 
 export type equal = typeof equal
 
-export type KeyReducerMap<root extends Dict, context> = {
-    [k in keyof root]-?: SetOperation<root[k], context>
+export type KeyReducerMap<root extends Dict> = {
+    [k in keyof root]-?: SetOperation<root[k]>
 }
 
-export type KeyReducerFn<root extends Dict, context> = <key extends keyof root>(
+export type KeyReducerFn<root extends Dict> = <key extends keyof root>(
     key: key,
     l: root[key],
     r: root[key],
-    context: context
+    context: OperationContext
 ) => SetOperationResult<root[key]>
 
-export type KeyReducer<root extends Dict, context> =
-    | KeyReducerFn<root, context>
-    | KeyReducerMap<root, context>
+export type KeyReducer<root extends Dict> =
+    | KeyReducerFn<root>
+    | KeyReducerMap<root>
 
 export type KeyedOperationConfig = {
     onEmpty: "delete" | "bubble" | "throw"
 }
 
 export const composeKeyedOperation =
-    <root extends Dict, context>(
-        reducer: KeyReducer<root, context>,
+    <root extends Dict>(
+        reducer: KeyReducer<root>,
         config: KeyedOperationConfig
-    ): ContextualSetOperation<root, context, root> =>
+    ): SetOperation<root> =>
     (l, r, context) => {
         const result = {} as mutable<root>
         const keys = keysOf({ ...l, ...r } as root)

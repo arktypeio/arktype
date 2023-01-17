@@ -5,7 +5,12 @@ import type { ScopeRoot } from "../../scope.ts"
 import type { asIn, asOut } from "../../type.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
-import type { classOf, error, List, returnOf } from "../../utils/generics.ts"
+import type {
+    constructor,
+    error,
+    List,
+    returnOf
+} from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { inferIntersection, inferUnion } from "../string/ast.ts"
@@ -53,7 +58,7 @@ export type validateTupleExpression<
     : def[0] extends "instanceof"
     ? [
           "instanceof",
-          def[1] extends classOf<unknown>
+          def[1] extends constructor
               ? def[1]
               : "Expected a constructor following instanceof"
       ]
@@ -88,7 +93,7 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
     : def[0] extends "==="
     ? def[1]
     : def[0] extends "instanceof"
-    ? def[1] extends classOf<infer t>
+    ? def[1] extends constructor<infer t>
         ? t
         : never
     : never
@@ -165,7 +170,7 @@ const prefixParsers: {
                 `Expected a constructor following 'instanceof' operator (was ${typeof def[1]}).`
             )
         }
-        return { object: { class: def[1] as classOf<unknown> } }
+        return { object: { class: def[1] as constructor } }
     },
     "===": (def) => ({ [domainOf(def[1])]: { value: def[1] } })
 }

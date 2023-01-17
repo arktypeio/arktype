@@ -6,7 +6,11 @@ import type { CollapsibleList, Dict, stringKeyOf } from "../utils/generics.ts"
 import { collapseIfSingleton, listFrom } from "../utils/generics.ts"
 import type { BranchesComparison } from "./branches.ts"
 import { compareBranches, isBranchComparison } from "./branches.ts"
-import type { KeyReducerFn, SetOperationResult } from "./compose.ts"
+import type {
+    KeyReducerFn,
+    OperationContext,
+    SetOperationResult
+} from "./compose.ts"
 import { empty, equal } from "./compose.ts"
 import type {
     DiscriminatableRule,
@@ -95,11 +99,6 @@ export type ExactValue<domain extends Domain = Domain> = {
 
 export type ExactValueEntry = ["value", unknown]
 
-export type PredicateContext = {
-    domain: Domain
-    $: ScopeRoot
-}
-
 export type ResolvedPredicate<
     domain extends Domain = Domain,
     $ = Dict
@@ -113,10 +112,10 @@ export const comparePredicates = (
     domain: Domain,
     l: Predicate,
     r: Predicate,
-    $: ScopeRoot
+    context: OperationContext
 ): PredicateComparison => {
-    const lResolution = resolvePredicateIfIdentifier(domain, l, $)
-    const rResolution = resolvePredicateIfIdentifier(domain, r, $)
+    const lResolution = resolvePredicateIfIdentifier(domain, l, context.$)
+    const rResolution = resolvePredicateIfIdentifier(domain, r, context.$)
     if (lResolution === true) {
         return rResolution === true ? equal : r
     }
@@ -132,18 +131,23 @@ export const comparePredicates = (
                 ? lResolution.value === rResolution.value
                     ? equal
                     : empty
-                : checkRules(domain, lResolution.value, rResolution, $)
+                : checkRules(domain, lResolution.value, rResolution, context)
                 ? l
                 : empty
             : isExactValuePredicate(rResolution)
-            ? checkRules(domain, rResolution.value, lResolution, $)
+            ? checkRules(domain, rResolution.value, lResolution, context)
                 ? r
                 : empty
-            : rulesIntersection(lResolution, rResolution, { domain, $ })
+            : rulesIntersection(lResolution, rResolution, context)
     }
     const lComparisons = listFrom(lResolution)
     const rComparisons = listFrom(rResolution)
-    const comparison = compareBranches(domain, lComparisons, rComparisons, $)
+    const comparison = compareBranches(
+        domain,
+        lComparisons,
+        rComparisons,
+        context
+    )
     if (
         comparison.equalities.length === lComparisons.length &&
         comparison.equalities.length === rComparisons.length
@@ -165,11 +169,13 @@ export const comparePredicates = (
     return comparison
 }
 
-export const predicateIntersection: KeyReducerFn<
-    Required<ValidatorNode>,
-    ScopeRoot
-> = (domain, l, r, scope) => {
-    const comparison = comparePredicates(domain, l, r, scope)
+export const predicateIntersection: KeyReducerFn<Required<ValidatorNode>> = (
+    domain,
+    l,
+    r,
+    context
+) => {
+    const comparison = comparePredicates(domain, l, r, context)
     if (!isBranchComparison(comparison)) {
         return comparison
     }
@@ -187,11 +193,13 @@ export const predicateIntersection: KeyReducerFn<
     ])
 }
 
-export const predicateUnion: KeyReducerFn<
-    Required<ValidatorNode>,
-    ScopeRoot
-> = (domain, l, r, scope) => {
-    const comparison = comparePredicates(domain, l, r, scope)
+export const predicateUnion: KeyReducerFn<Required<ValidatorNode>> = (
+    domain,
+    l,
+    r,
+    context
+) => {
+    const comparison = comparePredicates(domain, l, r, context)
     if (!isBranchComparison(comparison)) {
         return comparison === l
             ? r

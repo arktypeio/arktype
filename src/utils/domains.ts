@@ -1,4 +1,10 @@
-import type { classOf, Dict, evaluate, isTopType, List } from "./generics.ts"
+import type {
+    constructor,
+    Dict,
+    evaluate,
+    isTopType,
+    List
+} from "./generics.ts"
 import { isKeyOf } from "./generics.ts"
 
 export const hasDomain = <data, domain extends Domain>(
@@ -93,9 +99,9 @@ const objectSubdomains = {
     Map,
     RegExp,
     Set,
-    object: Object as unknown as classOf<Dict>
+    object: Object as unknown as constructor<Dict>
 } satisfies {
-    [subdomain in ObjectSubdomain]: classOf<ObjectSubdomains[subdomain]>
+    [subdomain in ObjectSubdomain]: constructor<ObjectSubdomains[subdomain]>
 }
 
 export type subdomainOf<data> = isTopType<data> extends true

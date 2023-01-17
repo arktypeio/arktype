@@ -11,7 +11,11 @@ import type {
     stringKeyOf
 } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
-import type { SetOperation, SetOperationResult } from "./compose.ts"
+import type {
+    OperationContext,
+    SetOperation,
+    SetOperationResult
+} from "./compose.ts"
 import { composeKeyedOperation, empty, equal } from "./compose.ts"
 import type { Keyword } from "./keywords.ts"
 import type {
@@ -146,25 +150,25 @@ export const compileNodes = <nodes extends ScopeNodes>(
 export type MixedOperation = (
     morphNode: MorphNode,
     validator: ValidatorNode,
-    $: ScopeRoot
+    context: OperationContext
 ) => SetOperationResult<MorphNode>
 
 export const composeNodeOperation =
     (
-        validatorOperation: SetOperation<ValidatorNode, ScopeRoot>,
-        morphOperation: SetOperation<MorphNode, ScopeRoot>,
+        validatorOperation: SetOperation<ValidatorNode>,
+        morphOperation: SetOperation<MorphNode>,
         mixedOperation: MixedOperation
-    ): SetOperation<TypeNode, ScopeRoot> =>
-    (l, r, $) => {
-        const lRoot = resolveIfIdentifier(l, $)
-        const rRoot = resolveIfIdentifier(r, $)
+    ): SetOperation<TypeNode> =>
+    (l, r, context) => {
+        const lRoot = resolveIfIdentifier(l, context.$)
+        const rRoot = resolveIfIdentifier(r, context.$)
         const result = nodeIsMorph(lRoot)
             ? nodeIsMorph(rRoot)
-                ? morphOperation(lRoot, rRoot, $)
-                : mixedOperation(lRoot, rRoot, $)
+                ? morphOperation(lRoot, rRoot, context)
+                : mixedOperation(lRoot, rRoot, context)
             : nodeIsMorph(rRoot)
-            ? mixedOperation(rRoot, lRoot, $)
-            : validatorOperation(lRoot, rRoot, $)
+            ? mixedOperation(rRoot, lRoot, context)
+            : validatorOperation(lRoot, rRoot, context)
         return result === lRoot ? l : result === rRoot ? r : result
     }
 
@@ -173,15 +177,15 @@ export const finalizeNodeOperation = (
     result: SetOperationResult<TypeNode>
 ): TypeNode => (result === empty ? "never" : result === equal ? l : result)
 
-const validatorIntersection = composeKeyedOperation<ValidatorNode, ScopeRoot>(
-    (domain, l, r, $) => {
+const validatorIntersection = composeKeyedOperation<ValidatorNode>(
+    (domain, l, r, context) => {
         if (l === undefined) {
             return r === undefined ? equal : undefined
         }
         if (r === undefined) {
             return undefined
         }
-        return predicateIntersection(domain, l, r, $)
+        return predicateIntersection(domain, l, r, context)
     },
     { onEmpty: "delete" }
 )
@@ -189,11 +193,11 @@ const validatorIntersection = composeKeyedOperation<ValidatorNode, ScopeRoot>(
 export const nodeIntersection = composeNodeOperation(
     validatorIntersection,
     () => throwParseError(writeDoubleMorphIntersectionMessage([])),
-    (morphNode, validatorNode, $) => {
+    (morphNode, validatorNode, context) => {
         const input = nodeIntersection(
             morphNode.input,
             validatorNode,
-            $
+            context
         ) as SetOperationResult<ValidatorNode>
         return input === morphNode.input || input === equal
             ? morphNode
@@ -206,21 +210,31 @@ export const nodeIntersection = composeNodeOperation(
     }
 )
 
+const initializeOperationContext = ($: ScopeRoot): OperationContext => ({
+    $,
+    path: "",
+    emptyResults: {},
+    domain: null
+})
+
 export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) =>
-    finalizeNodeOperation(l, nodeIntersection(l, r, $))
+    finalizeNodeOperation(
+        l,
+        nodeIntersection(l, r, initializeOperationContext($))
+    )
 
 export const union = (l: TypeNode, r: TypeNode, $: ScopeRoot) =>
-    finalizeNodeOperation(l, nodeUnion(l, r, $))
+    finalizeNodeOperation(l, nodeUnion(l, r, initializeOperationContext($)))
 
-export const validatorUnion = composeKeyedOperation<ValidatorNode, ScopeRoot>(
-    (domain, l, r, scope) => {
+export const validatorUnion = composeKeyedOperation<ValidatorNode>(
+    (domain, l, r, context) => {
         if (l === undefined) {
             return r === undefined ? equal : r
         }
         if (r === undefined) {
             return l
         }
-        return predicateUnion(domain, l, r, scope)
+        return predicateUnion(domain, l, r, context)
     },
     { onEmpty: "throw" }
 )

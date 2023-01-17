@@ -14,7 +14,6 @@ import {
 } from "../compose.ts"
 import type { TraversalNode, TypeNode } from "../node.ts"
 import { compileNode, nodeIntersection } from "../node.ts"
-import type { PredicateContext } from "../predicate.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
 export type PropsRule<$ = Dict> = {
@@ -46,11 +45,8 @@ const mappedKeyRegex = /^\[.*\]$/
 
 const isMappedKey = (propKey: string) => mappedKeyRegex.test(propKey)
 
-export const propsIntersection = composeIntersection<
-    PropsRule,
-    PredicateContext
->(
-    composeKeyedOperation<PropsRule, PredicateContext>(
+export const propsIntersection = composeIntersection<PropsRule>(
+    composeKeyedOperation<PropsRule>(
         (propKey, l, r, context) => {
             if (l === undefined) {
                 return r === undefined ? equal : r
@@ -58,7 +54,7 @@ export const propsIntersection = composeIntersection<
             if (r === undefined) {
                 return l
             }
-            const result = nodeIntersection(nodeFrom(l), nodeFrom(r), context.$)
+            const result = nodeIntersection(nodeFrom(l), nodeFrom(r), context)
             const resultIsOptional = isOptional(l) && isOptional(r)
             if (
                 result === empty &&

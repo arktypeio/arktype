@@ -3,11 +3,18 @@ import type {
     defineProblem,
     ProblemMessageWriter
 } from "../../traverse/problems.ts"
-import type { classOf } from "../../utils/generics.ts"
-import { composeIntersection, empty, equal } from "../compose.ts"
+import type { constructor } from "../../utils/generics.ts"
+import { addEmpty, composeIntersection, equal } from "../compose.ts"
 
-export const classIntersection = composeIntersection<classOf<unknown>>((l, r) =>
-    l === r ? equal : l instanceof r ? l : r instanceof l ? r : empty
+export const classIntersection = composeIntersection<constructor>(
+    (l, r, context) =>
+        l === r
+            ? equal
+            : l instanceof r
+            ? l
+            : r instanceof l
+            ? r
+            : addEmpty("class", l, r, context)
 )
 
 export type ClassProblemContext = defineProblem<

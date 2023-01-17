@@ -1,3 +1,4 @@
+import type { OperationContext } from "../nodes/compose.ts"
 import type {
     ExplicitDomainEntry,
     MultiDomainEntry,
@@ -28,7 +29,7 @@ export const checkRules = (
     domain: Domain,
     data: unknown,
     attributes: unknown,
-    scope: ScopeRoot
+    context: OperationContext
 ) => {
     return true
 }

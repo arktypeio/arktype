@@ -12,7 +12,6 @@ import { stringSerialize } from "../../utils/serialize.ts"
 import { composeIntersection, empty, equal } from "../compose.ts"
 import type { TraversalNode, TypeNode } from "../node.ts"
 import { compileNode, nodeIntersection } from "../node.ts"
-import type { PredicateContext } from "../predicate.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
 // Unfortunately we can't easily abstract between these two rules because of
@@ -58,54 +57,54 @@ export const compileSubdomain: FlattenAndPushRule<SubdomainRule> = (
               ] as TraversalSubdomainRule)
     ])
 
-export const subdomainIntersection = composeIntersection<
-    SubdomainRule,
-    PredicateContext
->((l, r, context) => {
-    if (typeof l === "string") {
-        if (typeof r === "string") {
-            return l === r ? equal : empty
+export const subdomainIntersection = composeIntersection<SubdomainRule>(
+    (l, r, context) => {
+        if (typeof l === "string") {
+            if (typeof r === "string") {
+                return l === r ? equal : empty
+            }
+            return l === r[0] ? r : empty
         }
-        return l === r[0] ? r : empty
-    }
-    if (typeof r === "string") {
-        return l[0] === r ? l : empty
-    }
-    if (l[0] !== r[0]) {
-        return empty
-    }
-    const result = [l[0]] as unknown as Exclude<SubdomainRule, string>
-    if (isTupleRule(l)) {
-        if (isTupleRule(r) && l[2] !== r[2]) {
+        if (typeof r === "string") {
+            return l[0] === r ? l : empty
+        }
+        if (l[0] !== r[0]) {
             return empty
         }
-        result[2] = l[2]
-    } else if (isTupleRule(r)) {
-        result[2] = r[2]
-    }
-    let lImpliesR = true
-    let rImpliesL = true
-    const maxNodeIndex = l[0] === "Map" ? 2 : 1
-    for (let i = 1; i < maxNodeIndex; i++) {
-        const lNode = l[i] as TypeNode
-        const rNode = r[i] as TypeNode
-        const parameterResult = nodeIntersection(lNode, rNode, context.$)
-        if (parameterResult === equal) {
-            result[i] = lNode
-        } else if (parameterResult === l) {
-            result[i] = lNode
-            rImpliesL = false
-        } else if (parameterResult === r) {
-            result[i] = rNode
-            lImpliesR = false
-        } else {
-            result[i] = parameterResult === empty ? "never" : parameterResult
-            lImpliesR = false
-            rImpliesL = false
+        const result = [l[0]] as unknown as Exclude<SubdomainRule, string>
+        if (isTupleRule(l)) {
+            if (isTupleRule(r) && l[2] !== r[2]) {
+                return empty
+            }
+            result[2] = l[2]
+        } else if (isTupleRule(r)) {
+            result[2] = r[2]
         }
+        let lImpliesR = true
+        let rImpliesL = true
+        const maxNodeIndex = l[0] === "Map" ? 2 : 1
+        for (let i = 1; i < maxNodeIndex; i++) {
+            const lNode = l[i] as TypeNode
+            const rNode = r[i] as TypeNode
+            const parameterResult = nodeIntersection(lNode, rNode, context)
+            if (parameterResult === equal) {
+                result[i] = lNode
+            } else if (parameterResult === l) {
+                result[i] = lNode
+                rImpliesL = false
+            } else if (parameterResult === r) {
+                result[i] = rNode
+                lImpliesR = false
+            } else {
+                result[i] =
+                    parameterResult === empty ? "never" : parameterResult
+                lImpliesR = false
+                rImpliesL = false
+            }
+        }
+        return lImpliesR ? (rImpliesL ? equal : l) : rImpliesL ? r : result
     }
-    return lImpliesR ? (rImpliesL ? equal : l) : rImpliesL ? r : result
-})
+)
 
 export const checkSubdomain: TraversalCheck<"subdomain"> = (
     state,

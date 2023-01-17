@@ -6,7 +6,7 @@ import type {
 } from "../../traverse/problems.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import type { List } from "../../utils/generics.ts"
-import { composeIntersection, empty, equal } from "../compose.ts"
+import { addEmpty, composeIntersection, equal } from "../compose.ts"
 
 export type Range = {
     readonly min?: Bound
@@ -18,13 +18,13 @@ export type Bound = {
     readonly exclusive?: true
 }
 
-export const rangeIntersection = composeIntersection<Range>((l, r) => {
+export const rangeIntersection = composeIntersection<Range>((l, r, c) => {
     const minComparison = compareStrictness(l.min, r.min, "min")
     const maxComparison = compareStrictness(l.max, r.max, "max")
     if (minComparison === "l") {
         if (maxComparison === "r") {
             return compareStrictness(l.min!, r.max!, "min") === "l"
-                ? empty
+                ? addEmpty("range", l, r, c)
                 : {
                       min: l.min!,
                       max: r.max!
@@ -35,7 +35,7 @@ export const rangeIntersection = composeIntersection<Range>((l, r) => {
     if (minComparison === "r") {
         if (maxComparison === "l") {
             return compareStrictness(l.max!, r.min!, "max") === "l"
-                ? empty
+                ? addEmpty("range", l, r, c)
                 : {
                       min: r.min!,
                       max: l.max!

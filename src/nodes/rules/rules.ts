@@ -2,9 +2,12 @@ import type { Narrow } from "../../parse/tuple/narrow.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import type { TraversalEntry } from "../../traverse/check.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
-import type { classOf, CollapsibleList, Dict } from "../../utils/generics.ts"
+import type {
+    CollapsibleList,
+    constructor,
+    Dict
+} from "../../utils/generics.ts"
 import { composeIntersection, composeKeyedOperation } from "../compose.ts"
-import type { PredicateContext } from "../predicate.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
@@ -26,7 +29,7 @@ export type Rules<domain extends Domain = Domain, $ = Dict> = {
     readonly divisor?: number
     readonly range?: Range
     readonly props?: PropsRule<$>
-    readonly class?: classOf<unknown>
+    readonly class?: constructor
     readonly narrow?: CollapsibleList<
         Narrow<Domain extends domain ? any : inferDomain<domain>>
     >
@@ -37,7 +40,7 @@ export type TraversalRuleEntry =
     | ["regex", RegExp]
     | ["divisor", number]
     | ["range", Range]
-    | ["class", classOf<unknown>]
+    | ["class", constructor]
     | TraversalRequiredProps
     | TraversalOptionalProps
     | ["narrow", Narrow]
@@ -64,7 +67,7 @@ type defineRuleSet<domain extends Domain, keys extends keyof Rules, $> = Pick<
 const narrowIntersection =
     composeIntersection<CollapsibleList<Narrow>>(collapsibleListUnion)
 
-export const rulesIntersection = composeKeyedOperation<Rules, PredicateContext>(
+export const rulesIntersection = composeKeyedOperation<Rules>(
     {
         subdomain: subdomainIntersection,
         divisor: divisorIntersection,
