@@ -1,18 +1,17 @@
 import type { ScopeRoot } from "../scope.ts"
 import { checkRules } from "../traverse/check.ts"
-import type { Domain, inferDomain, Subdomain } from "../utils/domains.ts"
+import type { Domain, inferDomain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
-import type {
-    CollapsibleList,
-    Dict,
-    extend,
-    stringKeyOf
-} from "../utils/generics.ts"
+import type { CollapsibleList, Dict, stringKeyOf } from "../utils/generics.ts"
 import { collapseIfSingleton, listFrom } from "../utils/generics.ts"
 import type { BranchesComparison } from "./branches.ts"
 import { compareBranches, isBranchComparison } from "./branches.ts"
 import type { KeyReducerFn, SetOperationResult } from "./compose.ts"
 import { empty, equal } from "./compose.ts"
+import type {
+    DiscriminatableRule,
+    DiscriminatedBranches
+} from "./discriminate.ts"
 import type { Identifier, ValidatorNode } from "./node.ts"
 import {
     isExactValuePredicate,
@@ -33,34 +32,9 @@ export type TraversalPredicate =
 
 export type TraversalBranchesEntry = ["branches", readonly TraversalCondition[]]
 
-export type DiscriminatableRuleName = "domain" | "subdomain" | "value"
-
 export type DiscriminatedTraversalBranchesEntry<
-    by extends DiscriminatableRuleName = DiscriminatableRuleName
-> = ["cases", DiscriminatedTraversalBranches<by>]
-
-export type DiscriminatedTraversalBranches<
-    by extends DiscriminatableRuleName = DiscriminatableRuleName
-> = {
-    readonly path: string[]
-    readonly by: by
-    readonly cases: TraversalCases<by>
-}
-
-export type TraversalCases<
-    key extends DiscriminatableRuleName = DiscriminatableRuleName
-> = {
-    [caseKey in CaseKeys[key]]?: TraversalPredicate
-}
-
-type CaseKeys = extend<
-    Record<DiscriminatableRuleName, unknown>,
-    {
-        domain: Domain
-        subdomain: Subdomain
-        value: string
-    }
->
+    rule extends DiscriminatableRule = DiscriminatableRule
+> = ["cases", DiscriminatedBranches<rule>]
 
 export const compilePredicate = (
     domain: Domain,
@@ -92,7 +66,7 @@ export const compilePredicate = (
                 "cases",
                 {
                     path: [],
-                    by: "domain",
+                    rule: "domain",
                     cases: {}
                 }
             ]
