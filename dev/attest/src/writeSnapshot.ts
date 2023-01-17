@@ -19,7 +19,7 @@ export type BenchFormat = {
     path?: string
 }
 
-export interface ExternalSnapshotArgs extends SnapshotArgs {
+export type ExternalSnapshotArgs = SnapshotArgs & {
     name: string
     customPath: string | undefined
 }

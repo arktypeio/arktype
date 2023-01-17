@@ -14,12 +14,12 @@ export const getCallStack = ({ offset = 0 }: GetCallStackOptions = {}) => {
     return frames
 }
 
-export interface LinePosition {
+export type LinePosition = {
     line: number
     char: number
 }
 
-export interface SourcePosition extends LinePosition {
+export type SourcePosition = LinePosition & {
     file: string
     method: string
 }
