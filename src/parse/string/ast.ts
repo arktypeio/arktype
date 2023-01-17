@@ -4,6 +4,7 @@ import type { asIn } from "../../type.ts"
 import type { subdomainOf } from "../../utils/domains.ts"
 import type {
     castOnError,
+    conform,
     Dict,
     downcast,
     Downcastable,
@@ -168,27 +169,37 @@ type discriminatableRecurse<
       >
     : never
 
+// TODO: use <const path extends List<string>> once prettier supports it (look
+// for other instances of downcast and try to do the same)
 export const writeDoubleMorphIntersectionMessage = <path>(
     path: downcast<path>
-): writeDoubleMorphIntersectionMessage<path> =>
+) =>
     `${withPathContext(
         "Intersection",
-        path
-    )} must have at least one non-morph operand`
+        path as string[]
+    )} must have at least one non-morph operand` as writeDoubleMorphIntersectionMessage<
+        conform<path, string[]>
+    >
 
-type writeDoubleMorphIntersectionMessage<path> = `${withPathContext<
-    "Intersection",
-    path
->} must have at least one non-morph operand`
+writeDoubleMorphIntersectionMessage(["string"])
+
+type writeDoubleMorphIntersectionMessage<path extends List<string>> =
+    `${withPathContext<
+        "Intersection",
+        path
+    >} must have at least one non-morph operand`
 
 export const undiscriminatableMorphUnionMessage = `A union of one or more morphs must be discriminatable`
 
-export const writeImplicitNeverMessage = <path>(
-    path: downcast<path>
-): writeImplicitNeverMessage<path> =>
-    `${withPathContext("Intersection", path)} results in an unsatisfiable type`
+export const writeImplicitNeverMessage = <path>(path: downcast<path>) =>
+    `${withPathContext(
+        "Intersection",
+        path as string[]
+    )} results in an unsatisfiable type` as writeImplicitNeverMessage<
+        conform<path, string[]>
+    >
 
-type writeImplicitNeverMessage<path> = `${withPathContext<
+type writeImplicitNeverMessage<path extends List<string>> = `${withPathContext<
     "Intersection",
     path
 >} results in an unsatisfiable type`

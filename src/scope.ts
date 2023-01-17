@@ -1,6 +1,6 @@
 import type { TypeNode } from "./nodes/node.ts"
 import { compileNode } from "./nodes/node.ts"
-import { resolveRoot } from "./nodes/resolve.ts"
+import { resolveIfIdentifier } from "./nodes/resolve.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
 import type { Type, TypeParser } from "./type.ts"
@@ -44,7 +44,7 @@ const composeScopeParser = <parent extends ScopeRoot>(parent?: parent) =>
 
 export const composeTypeParser = <$ extends ScopeRoot>($: $): TypeParser<$> =>
     lazyDynamicWrap((def, traits = {}) => {
-        const root = resolveRoot(parseDefinition(def, $), $)
+        const root = resolveIfIdentifier(parseDefinition(def, $), $)
         const flat = compileNode(root, $)
         return nodeToType(root, flat, $, traits)
     })

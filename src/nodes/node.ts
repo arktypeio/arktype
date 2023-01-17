@@ -5,6 +5,7 @@ import type { Domain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type {
     autocomplete,
+    CollapsibleList,
     Dict,
     mutable,
     stringKeyOf
@@ -23,7 +24,7 @@ import {
     predicateIntersection,
     predicateUnion
 } from "./predicate.ts"
-import { resolveFlat, resolveRoot, rootIsMorph } from "./resolve.ts"
+import { nodeIsMorph, resolveFlat, resolveIfIdentifier } from "./resolve.ts"
 import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | TypeResolution<$>
@@ -38,20 +39,21 @@ export type Identifier<$ = Dict> = string extends keyof $
     : Keyword | stringKeyOf<$>
 
 export type MorphNode<$ = Dict> = {
-    readonly input: TypeNode<$>
-    readonly morph: Morph
+    readonly input: Identifier<$> | ValidatorNode<$>
+    readonly morph: CollapsibleList<Morph>
 }
 
 export type ValidatorNode<$ = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, $>
 }
 
-export type TraversalNode =
+export type TraversalNode = ValidatorTraversalNode | MorphTraversalNode
+
+export type ValidatorTraversalNode =
     | Domain
     | SingleDomainTraversalNode
     | MultiDomainTraversalNode
     | CyclicReferenceNode
-    | MorphTraversalNode
 
 export type SingleDomainTraversalNode = readonly [
     ExplicitDomainEntry | ImplicitDomainEntry,
@@ -80,8 +82,8 @@ export type MorphTraversalNode = [
     [
         "morph",
         {
-            readonly input: TraversalNode
-            readonly morph: Morph
+            readonly input: ValidatorTraversalNode
+            readonly morph: CollapsibleList<Morph>
         }
     ]
 ]
@@ -94,13 +96,12 @@ export const compileNode = (node: TypeNode, $: ScopeRoot): TraversalNode => {
     if (typeof node === "string") {
         return resolveFlat(node, $)
     }
-    if (rootIsMorph(node)) {
-        // TODO: chained?
+    if (nodeIsMorph(node)) {
         return [
             [
                 "morph",
                 {
-                    input: compileNode(node.input, $),
+                    input: compileNode(node.input, $) as ValidatorTraversalNode,
                     morph: node.morph
                 }
             ]
@@ -155,13 +156,13 @@ export const composeNodeOperation =
         mixedOperation: MixedOperation
     ): SetOperation<TypeNode, ScopeRoot> =>
     (l, r, $) => {
-        const lRoot = resolveRoot(l, $)
-        const rRoot = resolveRoot(r, $)
-        const result = rootIsMorph(lRoot)
-            ? rootIsMorph(rRoot)
+        const lRoot = resolveIfIdentifier(l, $)
+        const rRoot = resolveIfIdentifier(r, $)
+        const result = nodeIsMorph(lRoot)
+            ? nodeIsMorph(rRoot)
                 ? morphOperation(lRoot, rRoot, $)
                 : mixedOperation(lRoot, rRoot, $)
-            : rootIsMorph(rRoot)
+            : nodeIsMorph(rRoot)
             ? mixedOperation(rRoot, lRoot, $)
             : validatorOperation(lRoot, rRoot, $)
         return result === lRoot ? l : result === rRoot ? r : result
@@ -189,7 +190,11 @@ export const nodeIntersection = composeNodeOperation(
     validatorIntersection,
     () => throwParseError(writeDoubleMorphIntersectionMessage([])),
     (morphNode, validatorNode, $) => {
-        const input = nodeIntersection(morphNode.input, validatorNode, $)
+        const input = nodeIntersection(
+            morphNode.input,
+            validatorNode,
+            $
+        ) as SetOperationResult<ValidatorNode>
         return input === morphNode.input || input === equal
             ? morphNode
             : input === empty
@@ -222,19 +227,8 @@ export const validatorUnion = composeKeyedOperation<ValidatorNode, ScopeRoot>(
 
 export const nodeUnion = composeNodeOperation(
     validatorUnion,
-    () =>
-        throwParseError(
-            `An intersection must have at least one non-morph operand.`
-        ),
+    () => throwParseError(writeDoubleMorphIntersectionMessage([])),
     (morphNode, validatorNode, $) => {
-        const input = nodeIntersection(morphNode.input, validatorNode, $)
-        return input === morphNode.input || input === equal
-            ? morphNode
-            : input === empty
-            ? empty
-            : {
-                  input,
-                  morph: morphNode.morph
-              }
+        return nodeUnion(morphNode.input, validatorNode, $) as any
     }
 )

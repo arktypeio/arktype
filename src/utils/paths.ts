@@ -1,4 +1,4 @@
-import type { downcast, List } from "./generics"
+import type { conform, downcast, List, NonEmptyList } from "./generics"
 
 export const pushKey = (path: string, key: string, delimiter = "/") =>
     path === "" ? key : `${path}${delimiter}${key}`
@@ -37,18 +37,16 @@ export type join<
 export const withPathContext = <base extends string, path>(
     base: base,
     path: downcast<path>,
-    delimiter = "/"
-): withPathContext<base, path> =>
+    delimiter = "/",
+    // temporary workaround for inability to infer narrowed List<string>
+    segments = path as List<string>
+) =>
     `${base}${
-        (path as string[]).length
-            ? ` at ${(path as string[]).join(delimiter)}`
-            : ("" as any)
-    }`
+        segments.length ? ` at ${segments.join(delimiter)}` : ""
+    }` as withPathContext<base, conform<path, List<string>>>
 
 export type withPathContext<
     base extends string,
-    path,
+    path extends List<string>,
     delimiter extends string = "/"
-> = `${base}${path extends [string, ...string[]]
-    ? ` at ${join<path, delimiter>}`
-    : ""}`
+> = `${base}${path extends NonEmptyList ? ` at ${join<path, delimiter>}` : ""}`

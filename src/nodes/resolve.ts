@@ -23,18 +23,21 @@ import type {
     TraversalPredicate
 } from "./predicate.ts"
 
-export const resolveRoot = (node: TypeNode, $: ScopeRoot): TypeResolution =>
+export const resolveIfIdentifier = (
+    node: TypeNode,
+    $: ScopeRoot
+): TypeResolution =>
     typeof node === "string" ? (resolve(node, $) as TypeResolution) : node
 
-export const rootIsMorph = (root: TypeResolution): root is MorphNode =>
-    (root as MorphNode).morph !== undefined
+export const nodeIsMorph = (node: TypeResolution): node is MorphNode =>
+    (node as MorphNode).morph !== undefined
 
-export const rootIsValidator = (root: TypeResolution): root is ValidatorNode =>
-    !rootIsMorph(root)
+export const nodeIsValidator = (node: TypeResolution): node is ValidatorNode =>
+    !nodeIsMorph(node)
 
 export const resolveInput = (node: TypeNode, $: ScopeRoot): ValidatorNode => {
-    const root = resolveRoot(node, $)
-    return rootIsMorph(root) ? resolveInput(root["input"], $) : root
+    const root = resolveIfIdentifier(node, $)
+    return nodeIsMorph(root) ? resolveInput(root.input, $) : root
 }
 
 export const resolvePredicateIfIdentifier = (

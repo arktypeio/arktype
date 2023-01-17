@@ -1,4 +1,7 @@
+import type { Identifier, ValidatorNode } from "../../nodes/node.ts"
+import { nodeIsMorph, resolveIfIdentifier } from "../../nodes/resolve.ts"
 import type { asOut } from "../../type.ts"
+import { hasSubdomain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type { nominal } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
@@ -6,14 +9,23 @@ import { parseDefinition } from "../definition.ts"
 import type { PostfixParser, TupleExpression } from "./tuple.ts"
 
 export const parseMorphTuple: PostfixParser<"=>"> = (def, $) => {
-    const inputNode = parseDefinition(def[0], $)
     if (typeof def[2] !== "function") {
         return throwParseError(writeMalformedMorphExpressionMessage(def[2]))
     }
-    return {
-        input: inputNode,
-        morph: def[2] as Morph
-    }
+    const parsedInput = parseDefinition(def[0], $)
+    const inputResolution = resolveIfIdentifier(parsedInput, $)
+    const parsedMorph = def[2] as Morph
+    return nodeIsMorph(inputResolution)
+        ? {
+              input: inputResolution.input,
+              morph: hasSubdomain(inputResolution.morph, "Array")
+                  ? [...inputResolution.morph, parsedMorph]
+                  : [inputResolution.morph, parsedMorph]
+          }
+        : {
+              input: parsedInput as Identifier | ValidatorNode,
+              morph: parsedMorph
+          }
 }
 
 export type Out<t = {}> = nominal<t, "out">
