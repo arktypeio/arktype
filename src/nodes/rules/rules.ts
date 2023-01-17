@@ -135,9 +135,9 @@ export const precedenceMap: {
     range: 1,
     // Deep: Performed if all shallow checks pass, even if one or more deep checks fail
     requiredProps: 2,
-    optionalProps: 3,
+    optionalProps: 2,
     // Narrow: Only performed if all shallow and deep checks pass
-    narrow: 4
+    narrow: 3
 }
 
 export const compileRules = (

@@ -3,11 +3,11 @@ import type {
     defineProblem,
     ProblemMessageWriter
 } from "../../traverse/problems.ts"
-import { composeIntersection, equal } from "../compose.ts"
+import { composeIntersection, equality } from "../compose.ts"
 
 export const divisorIntersection = composeIntersection<number>(
     (l: number, r: number) =>
-        l === r ? equal : Math.abs((l * r) / greatestCommonDivisor(l, r))
+        l === r ? equality() : Math.abs((l * r) / greatestCommonDivisor(l, r))
 )
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm

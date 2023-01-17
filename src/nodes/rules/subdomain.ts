@@ -9,7 +9,13 @@ import { subdomainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import type { Dict, List } from "../../utils/generics.ts"
 import { stringSerialize } from "../../utils/serialize.ts"
-import { composeIntersection, empty, equal } from "../compose.ts"
+import {
+    composeIntersection,
+    disjoint,
+    equality,
+    isDisjoint,
+    isEquality
+} from "../compose.ts"
 import type { TraversalNode, TypeNode } from "../node.ts"
 import { compileNode, nodeIntersection } from "../node.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
@@ -61,20 +67,22 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
     (l, r, context) => {
         if (typeof l === "string") {
             if (typeof r === "string") {
-                return l === r ? equal : empty
+                return l === r
+                    ? equality()
+                    : disjoint("subdomain", l, r, context)
             }
-            return l === r[0] ? r : empty
+            return l === r[0] ? r : disjoint("subdomain", l, r[0], context)
         }
         if (typeof r === "string") {
-            return l[0] === r ? l : empty
+            return l[0] === r ? l : disjoint("subdomain", l[0], r, context)
         }
         if (l[0] !== r[0]) {
-            return empty
+            return disjoint("subdomain", l[0], r[0], context)
         }
         const result = [l[0]] as unknown as Exclude<SubdomainRule, string>
         if (isTupleRule(l)) {
             if (isTupleRule(r) && l[2] !== r[2]) {
-                return empty
+                return disjoint("tupleLength", l[2], r[2], context)
             }
             result[2] = l[2]
         } else if (isTupleRule(r)) {
@@ -87,7 +95,7 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
             const lNode = l[i] as TypeNode
             const rNode = r[i] as TypeNode
             const parameterResult = nodeIntersection(lNode, rNode, context)
-            if (parameterResult === equal) {
+            if (isEquality(parameterResult)) {
                 result[i] = lNode
             } else if (parameterResult === l) {
                 result[i] = lNode
@@ -96,13 +104,14 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
                 result[i] = rNode
                 lImpliesR = false
             } else {
-                result[i] =
-                    parameterResult === empty ? "never" : parameterResult
+                result[i] = isDisjoint(parameterResult)
+                    ? "never"
+                    : parameterResult
                 lImpliesR = false
                 rImpliesL = false
             }
         }
-        return lImpliesR ? (rImpliesL ? equal : l) : rImpliesL ? r : result
+        return lImpliesR ? (rImpliesL ? equality() : l) : rImpliesL ? r : result
     }
 )
 

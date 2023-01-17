@@ -16,7 +16,13 @@ import type {
     SetOperation,
     SetOperationResult
 } from "./compose.ts"
-import { composeKeyedOperation, empty, equal } from "./compose.ts"
+import {
+    composeKeyedOperation,
+    equality,
+    Equality,
+    isDisjoint,
+    isEquality
+} from "./compose.ts"
 import type { Keyword } from "./keywords.ts"
 import type {
     ExactValueEntry,
@@ -175,12 +181,12 @@ export const composeNodeOperation =
 export const finalizeNodeOperation = (
     l: TypeNode,
     result: SetOperationResult<TypeNode>
-): TypeNode => (result === empty ? "never" : result === equal ? l : result)
+): TypeNode => (isDisjoint(result) ? "never" : isEquality(result) ? l : result)
 
 const validatorIntersection = composeKeyedOperation<ValidatorNode>(
     (domain, l, r, context) => {
         if (l === undefined) {
-            return r === undefined ? equal : undefined
+            return r === undefined ? equality() : undefined
         }
         if (r === undefined) {
             return undefined
@@ -194,17 +200,17 @@ export const nodeIntersection = composeNodeOperation(
     validatorIntersection,
     () => throwParseError(writeDoubleMorphIntersectionMessage([])),
     (morphNode, validatorNode, context) => {
-        const input = nodeIntersection(
+        const result = nodeIntersection(
             morphNode.input,
             validatorNode,
             context
         ) as SetOperationResult<ValidatorNode>
-        return input === morphNode.input || input === equal
+        return result === morphNode.input || isEquality(result)
             ? morphNode
-            : input === empty
-            ? empty
+            : isDisjoint(result)
+            ? result
             : {
-                  input,
+                  input: result,
                   morph: morphNode.morph
               }
     }
@@ -229,7 +235,7 @@ export const union = (l: TypeNode, r: TypeNode, $: ScopeRoot) =>
 export const validatorUnion = composeKeyedOperation<ValidatorNode>(
     (domain, l, r, context) => {
         if (l === undefined) {
-            return r === undefined ? equal : r
+            return r === undefined ? equality() : r
         }
         if (r === undefined) {
             return l

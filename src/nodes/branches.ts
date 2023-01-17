@@ -2,7 +2,7 @@ import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { OperationContext } from "./compose.ts"
-import { empty, equal } from "./compose.ts"
+import { isDisjoint, isEquality } from "./compose.ts"
 import type { Condition, Predicate, PredicateComparison } from "./predicate.ts"
 import { predicateIntersection } from "./predicate.ts"
 
@@ -48,49 +48,41 @@ export const compareBranches = (
                     return null
                 }
                 const r = rPairs.condition
-                const keyIntersection = predicateIntersection(
-                    domain,
-                    l,
-                    r,
-                    context
-                )
-                switch (keyIntersection) {
-                    case empty:
-                        // doesn't tell us about any redundancies or add a distinct pair
-                        return null
-                    case l:
-                        result.lSubconditionsOfR.push(lIndex)
-                        // If l is a subtype of the current r branch, intersections
-                        // with the remaining branches of r won't lead to distinct
-                        // branches, so we set a flag indicating we can skip them.
-                        lImpliesR = true
-                        return null
-                    case r:
-                        result.rSubconditionsOfL.push(rIndex)
-                        // If r is a subtype of the current l branch, it is removed
-                        // from pairsByR because future intersections won't lead to
-                        // distinct branches.
-                        rPairs.distinct = null
-                        return null
-                    case equal:
-                        // Combination of l and r subtype cases.
-                        result.equalities.push([lIndex, rIndex])
-                        lImpliesR = true
-                        rPairs.distinct = null
-                        return null
-                    default:
-                        // Neither branch is a subtype of the other, return
-                        // the result of the intersection as a candidate
-                        // branch for the final union
-                        if (hasDomain(keyIntersection, "object")) {
-                            return keyIntersection
-                        }
-                        return throwInternalError(
-                            `Unexpected predicate intersection result of type '${domainOf(
-                                keyIntersection
-                            )}'`
-                        )
+                const subresult = predicateIntersection(domain, l, r, context)
+                if (isDisjoint(subresult)) {
+                    // doesn't tell us about any redundancies or add a distinct pair
+                    return null
+                } else if (subresult === l) {
+                    result.lSubconditionsOfR.push(lIndex)
+                    // If l is a subtype of the current r branch, intersections
+                    // with the remaining branches of r won't lead to distinct
+                    // branches, so we set a flag indicating we can skip them.
+                    lImpliesR = true
+                    return null
+                } else if (subresult === r) {
+                    result.rSubconditionsOfL.push(rIndex)
+                    // If r is a subtype of the current l branch, it is removed
+                    // from pairsByR because future intersections won't lead to
+                    // distinct branches.
+                    rPairs.distinct = null
+                    return null
+                } else if (isEquality(subresult)) {
+                    // Combination of l and r subtype cases.
+                    result.equalities.push([lIndex, rIndex])
+                    lImpliesR = true
+                    rPairs.distinct = null
+                    return null
+                } else if (hasDomain(subresult, "object")) {
+                    // Neither branch is a subtype of the other, return
+                    // the result of the intersection as a candidate
+                    // branch for the final union
+                    return subresult
                 }
+                return throwInternalError(
+                    `Unexpected predicate intersection result of type '${domainOf(
+                        subresult
+                    )}'`
+                )
             }
         )
         if (!lImpliesR) {

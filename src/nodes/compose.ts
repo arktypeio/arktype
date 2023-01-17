@@ -34,16 +34,18 @@ export const composeIntersection = <
 const throwUndefinedOperandsError = () =>
     throwInternalError(`Unexpected intersection of two undefined operands`)
 
-export type SetOperationResult<t> = t | empty | equal
+export type SetOperationResult<t> = t | Disjoint | Equality
 
-export type EmptyIntersectionKinds = {
+export type DisjointKinds = {
     domain: Domain[]
-    subdomain: Subdomain[]
+    subdomain: Subdomain
     range: Range
     class: constructor
+    value: unknown
+    tupleLength: number
 }
 
-export type EmptyIntersectionKind = keyof EmptyIntersectionKinds
+export type DisjointKind = keyof DisjointKinds
 
 export type OperationContext = {
     $: ScopeRoot
@@ -52,16 +54,16 @@ export type OperationContext = {
     emptyResults: Record<string, EmptyIntersection>
 }
 
-export const empty = Symbol("empty")
+const empty = Symbol("empty")
 
-export type empty = typeof empty
+export type Disjoint = typeof empty
 
-export const addEmpty = <kind extends EmptyIntersectionKind>(
+export const disjoint = <kind extends DisjointKind>(
     kind: kind,
-    left: EmptyIntersectionKinds[kind],
-    right: EmptyIntersectionKinds[kind],
+    left: DisjointKinds[kind],
+    right: DisjointKinds[kind],
     context: OperationContext
-): empty => {
+): Disjoint => {
     context.emptyResults[context.path] = {
         kind,
         left,
@@ -70,17 +72,23 @@ export const addEmpty = <kind extends EmptyIntersectionKind>(
     return empty
 }
 
-export type EmptyIntersection<
-    kind extends EmptyIntersectionKind = EmptyIntersectionKind
-> = {
+export const isDisjoint = (result: unknown): result is Disjoint =>
+    result === empty
+
+export type EmptyIntersection<kind extends DisjointKind = DisjointKind> = {
     kind: kind
-    left: EmptyIntersectionKinds[kind]
-    right: EmptyIntersectionKinds[kind]
+    left: DisjointKinds[kind]
+    right: DisjointKinds[kind]
 }
 
-export const equal = Symbol("equal")
+const equal = Symbol("equal")
 
-export type equal = typeof equal
+export type Equality = typeof equal
+
+export const equality = (): Equality => equal
+
+export const isEquality = (result: unknown): result is Equality =>
+    result === equal
 
 export type KeyReducerMap<root extends Dict> = {
     [k in keyof root]-?: SetOperation<root[k]>
@@ -116,11 +124,11 @@ export const composeKeyedOperation =
                 typeof reducer === "function"
                     ? reducer(k, l[k], r[k], context)
                     : reducer[k](l[k], r[k], context)
-            if (keyResult === equal) {
+            if (isEquality(keyResult)) {
                 if (l[k] !== undefined) {
                     result[k] = l[k]
                 }
-            } else if (keyResult === empty) {
+            } else if (isDisjoint(keyResult)) {
                 if (config.onEmpty === "delete") {
                     delete result[k]
                     lImpliesR = false
@@ -140,5 +148,5 @@ export const composeKeyedOperation =
                 rImpliesL &&= keyResult === r[k]
             }
         }
-        return lImpliesR ? (rImpliesL ? equal : l) : rImpliesL ? r : result
+        return lImpliesR ? (rImpliesL ? equality() : l) : rImpliesL ? r : result
     }

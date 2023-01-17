@@ -1,17 +1,18 @@
 import { hasSubdomain } from "../../utils/domains.ts"
 import type { CollapsibleList, List } from "../../utils/generics.ts"
-import { equal } from "../compose.ts"
+import type { Equality } from "../compose.ts"
+import { equality } from "../compose.ts"
 
-export const collapsibleListUnion = <t>(
+export const collapsibleListUnion: <t>(
     l: CollapsibleList<t>,
     r: CollapsibleList<t>
-): CollapsibleList<t> | equal => {
+) => CollapsibleList<t> | Equality = (l, r) => {
     if (hasSubdomain(l, "Array")) {
         if (hasSubdomain(r, "Array")) {
             const result = listUnion(l, r)
             return result.length === l.length
                 ? result.length === r.length
-                    ? equal
+                    ? equality()
                     : l
                 : result.length === r.length
                 ? r
@@ -22,7 +23,7 @@ export const collapsibleListUnion = <t>(
     if (hasSubdomain(r, "Array")) {
         return r.includes(l) ? r : [...r, l]
     }
-    return l === r ? equal : [l, r]
+    return l === r ? equality() : [l, r]
 }
 
 export const listUnion = <t extends List>(l: t, r: t) => {

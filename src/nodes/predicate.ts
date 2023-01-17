@@ -11,7 +11,7 @@ import type {
     OperationContext,
     SetOperationResult
 } from "./compose.ts"
-import { empty, equal } from "./compose.ts"
+import { disjoint, equality } from "./compose.ts"
 import type {
     DiscriminatableRule,
     DiscriminatedBranches
@@ -117,7 +117,7 @@ export const comparePredicates = (
     const lResolution = resolvePredicateIfIdentifier(domain, l, context.$)
     const rResolution = resolvePredicateIfIdentifier(domain, r, context.$)
     if (lResolution === true) {
-        return rResolution === true ? equal : r
+        return rResolution === true ? equality() : r
     }
     if (rResolution === true) {
         return l
@@ -129,15 +129,21 @@ export const comparePredicates = (
         return isExactValuePredicate(lResolution)
             ? isExactValuePredicate(rResolution)
                 ? lResolution.value === rResolution.value
-                    ? equal
-                    : empty
+                    ? equality()
+                    : disjoint(
+                          "value",
+                          lResolution.value,
+                          rResolution.value,
+                          context
+                      )
                 : checkRules(domain, lResolution.value, rResolution, context)
                 ? l
-                : empty
+                : // TODO: fix
+                  disjoint("value", lResolution.value, "temp", context)
             : isExactValuePredicate(rResolution)
             ? checkRules(domain, rResolution.value, lResolution, context)
                 ? r
-                : empty
+                : disjoint("value", "temp", rResolution.value, context)
             : rulesIntersection(lResolution, rResolution, context)
     }
     const lComparisons = listFrom(lResolution)
@@ -152,7 +158,7 @@ export const comparePredicates = (
         comparison.equalities.length === lComparisons.length &&
         comparison.equalities.length === rComparisons.length
     ) {
-        return equal
+        return equality()
     }
     if (
         comparison.lSubconditionsOfR.length + comparison.equalities.length ===

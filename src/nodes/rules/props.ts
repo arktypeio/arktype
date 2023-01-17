@@ -6,11 +6,12 @@ import type {
 } from "../../traverse/problems.ts"
 import type { Dict } from "../../utils/generics.ts"
 import { hasKey } from "../../utils/generics.ts"
+import { pushKey, withoutLastKey } from "../../utils/paths.ts"
 import {
     composeIntersection,
     composeKeyedOperation,
-    empty,
-    equal
+    equality,
+    isDisjoint
 } from "../compose.ts"
 import type { TraversalNode, TypeNode } from "../node.ts"
 import { compileNode, nodeIntersection } from "../node.ts"
@@ -49,15 +50,17 @@ export const propsIntersection = composeIntersection<PropsRule>(
     composeKeyedOperation<PropsRule>(
         (propKey, l, r, context) => {
             if (l === undefined) {
-                return r === undefined ? equal : r
+                return r === undefined ? equality() : r
             }
             if (r === undefined) {
                 return l
             }
+            context.path = pushKey(context.path, propKey)
             const result = nodeIntersection(nodeFrom(l), nodeFrom(r), context)
+            context.path = withoutLastKey(context.path)
             const resultIsOptional = isOptional(l) && isOptional(r)
             if (
-                result === empty &&
+                isDisjoint(result) &&
                 (resultIsOptional || isMappedKey(propKey))
             ) {
                 // If an optional or mapped key has an empty intersection, the
@@ -68,6 +71,7 @@ export const propsIntersection = composeIntersection<PropsRule>(
             return result
         },
         {
+            // TODO: is this needed now that we have context?
             onEmpty: "bubble"
         }
     )
