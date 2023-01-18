@@ -3,6 +3,7 @@ import type { Domain, Subdomain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { constructor, Dict, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
+import type { Condition } from "./predicate.ts"
 import type { Range } from "./rules/range.ts"
 
 export type SetOperation<t> = (
@@ -34,15 +35,15 @@ export const composeIntersection = <
 const throwUndefinedOperandsError = () =>
     throwInternalError(`Unexpected intersection of two undefined operands`)
 
-export type SetOperationResult<t> = t | Disjoint | Equality
+export type SetOperationResult<t> = t | Empty | Equal
 
 export type DisjointKinds = {
-    domain: Domain[]
-    subdomain: Subdomain
-    range: Range
-    class: constructor
-    value: unknown
-    tupleLength: number
+    domain: [Domain[], Domain[]]
+    subdomain: [Subdomain, Subdomain]
+    range: [Range, Range]
+    class: [constructor, constructor]
+    tupleLength: [number, number]
+    value: [unknown, Condition]
 }
 
 export type DisjointKind = keyof DisjointKinds
@@ -50,44 +51,39 @@ export type DisjointKind = keyof DisjointKinds
 export type OperationContext = {
     $: ScopeRoot
     path: string
-    emptyResults: Record<string, EmptyIntersection>
+    disjoints: Record<string, DisjointContext>
 }
 
 const empty = Symbol("empty")
 
-export type Disjoint = typeof empty
+export type Empty = typeof empty
 
 export const disjoint = <kind extends DisjointKind>(
     kind: kind,
-    left: DisjointKinds[kind],
-    right: DisjointKinds[kind],
+    operands: DisjointKinds[kind],
     context: OperationContext
-): Disjoint => {
-    context.emptyResults[context.path] = {
+): Empty => {
+    context.disjoints[context.path] = {
         kind,
-        left,
-        right
+        operands
     }
     return empty
 }
 
-export const isDisjoint = (result: unknown): result is Disjoint =>
-    result === empty
+export const isDisjoint = (result: unknown): result is Empty => result === empty
 
-export type EmptyIntersection<kind extends DisjointKind = DisjointKind> = {
+export type DisjointContext<kind extends DisjointKind = DisjointKind> = {
     kind: kind
-    left: DisjointKinds[kind]
-    right: DisjointKinds[kind]
+    operands: DisjointKinds[kind]
 }
 
 const equal = Symbol("equal")
 
-export type Equality = typeof equal
+export type Equal = typeof equal
 
-export const equality = (): Equality => equal
+export const equality = (): Equal => equal
 
-export const isEquality = (result: unknown): result is Equality =>
-    result === equal
+export const isEquality = (result: unknown): result is Equal => result === equal
 
 export type KeyReducerMap<root extends Dict> = {
     [k in keyof root]-?: SetOperation<root[k]>

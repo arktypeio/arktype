@@ -24,24 +24,18 @@ import type {
 import { parseTuple } from "./tuple/tuple.ts"
 
 export const parseDefinition = (def: unknown, $: ScopeRoot): TypeNode => {
-    switch (subdomainOf(def)) {
-        case "string":
-            return parseString(def as string, $)
-        case "object":
-            return parseRecord(def as Dict, $)
-        case "Array":
-            return parseTuple(def as List, $)
-        case "RegExp":
-            return { string: { regex: (def as RegExp).source } }
-        case "Function":
-            return isType(def)
-                ? def.node
-                : throwParseError(writeBadDefinitionTypeMessage("Function"))
-        default:
-            return throwParseError(
-                writeBadDefinitionTypeMessage(subdomainOf(def))
-            )
-    }
+    const subdomain = subdomainOf(def)
+    return subdomain === "string"
+        ? parseString(def as string, $)
+        : subdomain === "object"
+        ? parseRecord(def as Dict, $)
+        : subdomain === "Array"
+        ? parseTuple(def as List, $)
+        : subdomain === "RegExp"
+        ? { string: { regex: (def as RegExp).source } }
+        : isType(def)
+        ? def.node
+        : throwParseError(writeBadDefinitionTypeMessage(subdomain))
 }
 
 export type inferDefinition<def, $> = isAny<def> extends true

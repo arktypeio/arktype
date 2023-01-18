@@ -70,20 +70,20 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
             if (typeof r === "string") {
                 return l === r
                     ? equality()
-                    : disjoint("subdomain", l, r, context)
+                    : disjoint("subdomain", [l, r], context)
             }
-            return l === r[0] ? r : disjoint("subdomain", l, r[0], context)
+            return l === r[0] ? r : disjoint("subdomain", [l, r[0]], context)
         }
         if (typeof r === "string") {
-            return l[0] === r ? l : disjoint("subdomain", l[0], r, context)
+            return l[0] === r ? l : disjoint("subdomain", [l[0], r], context)
         }
         if (l[0] !== r[0]) {
-            return disjoint("subdomain", l[0], r[0], context)
+            return disjoint("subdomain", [l[0], r[0]], context)
         }
         const result = [l[0]] as unknown as Exclude<SubdomainRule, string>
         if (isTupleRule(l)) {
             if (isTupleRule(r) && l[2] !== r[2]) {
-                return disjoint("tupleLength", l[2], r[2], context)
+                return disjoint("tupleLength", [l[2], r[2]], context)
             }
             result[2] = l[2]
         } else if (isTupleRule(r)) {

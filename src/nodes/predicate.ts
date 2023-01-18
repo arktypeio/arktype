@@ -132,18 +132,16 @@ export const comparePredicates = (
                     ? equality()
                     : disjoint(
                           "value",
-                          lResolution.value,
-                          rResolution.value,
+                          [lResolution.value, rResolution],
                           context
                       )
                 : checkRules(domain, lResolution.value, rResolution, context)
                 ? l
-                : // TODO: fix
-                  disjoint("value", lResolution.value, "temp", context)
+                : disjoint("value", [lResolution.value, rResolution], context)
             : isExactValuePredicate(rResolution)
             ? checkRules(domain, rResolution.value, lResolution, context)
                 ? r
-                : disjoint("value", "temp", rResolution.value, context)
+                : disjoint("value", [rResolution.value, lResolution], context)
             : rulesIntersection(lResolution, rResolution, context)
     }
     const lComparisons = listFrom(lResolution)

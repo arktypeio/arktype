@@ -14,7 +14,7 @@ import { checkOptionalProps, checkRequiredProps } from "../nodes/rules/props.ts"
 import type { BoundableData } from "../nodes/rules/range.ts"
 import { checkRange } from "../nodes/rules/range.ts"
 import { checkRegex } from "../nodes/rules/regex.ts"
-import type { TraversalRuleEntry } from "../nodes/rules/rules.ts"
+import type { Rules, TraversalRuleEntry } from "../nodes/rules/rules.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
 import { checkSubdomain } from "../nodes/rules/subdomain.ts"
 import type { ScopeRoot } from "../scope.ts"
@@ -28,7 +28,7 @@ import { Problems, Stringifiable } from "./problems.ts"
 export const checkRules = (
     domain: Domain,
     data: unknown,
-    attributes: unknown,
+    rules: Rules,
     context: OperationContext
 ) => {
     return true

@@ -209,8 +209,8 @@ const validatorIntersection = composeKeyedOperation<ValidatorNode>(
 export const nodeIntersection = composeNodeOperation(
     (l, r, context) => {
         const result = validatorIntersection(l, r, context)
-        if (!hasKeys(result)) {
-            return disjoint("domain", keysOf(l), keysOf(r), context)
+        if (typeof result === "object" && !hasKeys(result)) {
+            return disjoint("domain", [keysOf(l), keysOf(r)], context)
         }
         return result
     },
@@ -236,7 +236,7 @@ export const nodeIntersection = composeNodeOperation(
 const initializeOperationContext = ($: ScopeRoot): OperationContext => ({
     $,
     path: "",
-    emptyResults: {}
+    disjoints: {}
 })
 
 export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {

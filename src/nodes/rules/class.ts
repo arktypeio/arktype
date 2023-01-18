@@ -14,7 +14,7 @@ export const classIntersection = composeIntersection<constructor>(
             ? l
             : r instanceof l
             ? r
-            : disjoint("class", l, r, context)
+            : disjoint("class", [l, r], context)
 )
 
 export type ClassProblemContext = defineProblem<
