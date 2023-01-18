@@ -28,11 +28,15 @@ export const parseDefinition = (def: unknown, $: ScopeRoot): TypeNode => {
         case "string":
             return parseString(def as string, $)
         case "object":
-            return isType(def) ? def.node : parseRecord(def as Dict, $)
+            return parseRecord(def as Dict, $)
         case "Array":
             return parseTuple(def as List, $)
         case "RegExp":
             return { string: { regex: (def as RegExp).source } }
+        case "Function":
+            return isType(def)
+                ? def.node
+                : throwParseError(writeBadDefinitionTypeMessage("Function"))
         default:
             return throwParseError(
                 writeBadDefinitionTypeMessage(subdomainOf(def))

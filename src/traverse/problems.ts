@@ -109,7 +109,7 @@ const describeSubdomains = (subdomains: Subdomain[]) => {
             description += ", "
         }
     }
-    description += `or ${
+    description += ` or ${
         subdomainDescriptions[subdomains[subdomains.length - 1]]
     }`
     return description

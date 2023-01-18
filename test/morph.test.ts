@@ -108,7 +108,7 @@ describe("morph", () => {
                   a: Function
               }
         >
-        attest(types.c.node).snap()
+        attest(types.c.node).snap({})
     })
     it("chained", () => {
         const types = scope({

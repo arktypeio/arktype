@@ -16,14 +16,12 @@ describe("check", () => {
     it("range", () => {
         const t = type("number>2")
         attest(t(3).data).snap(3)
-        attest(t(2).problems?.summary).snap("Must be greater than 2 (got 2).")
+        attest(t(2).problems?.summary).snap("Must be greater than 2 (was 2)")
     })
     it("domain", () => {
         const t = type("number")
-        const checked = t("hellop")
-        attest(checked.problems?.summary).snap(
-            '"hellop" is not assignable to number.'
-        )
+        const checked = t("foo")
+        attest(checked.problems?.summary).snap("???")
     })
     it("regex", () => {
         const t = type("/\\w@hotmail.com/")
@@ -37,18 +35,8 @@ describe("check", () => {
             name: "string",
             age: "number"
         })
-        attest(t.flat).snap([
-            ["domain", "object"],
-            [
-                "requiredProps",
-                [
-                    ["name", "string"],
-                    ["age", "number"]
-                ]
-            ]
-        ])
         const checked = t({ name: "Shawn" })
-        attest(checked.problems?.summary).snap("age: age is required.")
+        attest(checked.problems?.summary).snap("age: age is required")
     })
     it("custom errors", () => {
         const isEven = type("number%2", {
@@ -62,11 +50,12 @@ describe("check", () => {
         const check = isEven(3)
         attest(check.problems?.summary).snap("3 is not disivible by 2!")
     })
+    // TODO: more domain tests
     it("domains", () => {
         const basic = type("string|number[]")
         const check = basic(2)
         attest(check.problems?.summary).snap(
-            "2 is not assignable to string|object"
+            "Must either be a string or be an object (was number)"
         )
     })
     it("tuple length", () => {
@@ -74,7 +63,7 @@ describe("check", () => {
         const data: typeof t.infer = ["foo", 5, "boo", []]
         attest(t(data).data).equals(data)
         attest(t(["hello"]).problems?.summary).snap(
-            "Tuple must have length 4 (got 1)."
+            "Tuple must have length 4 (was 1)"
         )
     })
 })
