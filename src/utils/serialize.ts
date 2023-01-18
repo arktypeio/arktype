@@ -22,8 +22,8 @@ export const literalSerialize = <T>(value: T): serialize<T> =>
 
 export const stringSerialize = (value: unknown) => serialize(value, true, [])
 
-const serialize = <T>(
-    value: T,
+const serialize = <t>(
+    value: t,
     alwaysStringify: boolean,
     seen: unknown[]
 ): any => {
