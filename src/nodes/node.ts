@@ -1,4 +1,7 @@
-import { writeDoubleMorphIntersectionMessage } from "../parse/string/ast.ts"
+import {
+    writeDoubleMorphIntersectionMessage,
+    writeImplicitNeverMessage
+} from "../parse/string/ast.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
@@ -10,7 +13,7 @@ import type {
     mutable,
     stringKeyOf
 } from "../utils/generics.ts"
-import { keysOf } from "../utils/generics.ts"
+import { hasKeys, keysOf } from "../utils/generics.ts"
 import type {
     OperationContext,
     SetOperation,
@@ -18,6 +21,7 @@ import type {
 } from "./compose.ts"
 import {
     composeKeyedOperation,
+    disjoint,
     equality,
     isDisjoint,
     isEquality
@@ -179,8 +183,15 @@ export const composeNodeOperation =
 
 export const finalizeNodeOperation = (
     l: TypeNode,
-    result: SetOperationResult<TypeNode>
-): TypeNode => (isDisjoint(result) ? "never" : isEquality(result) ? l : result)
+    result: SetOperationResult<TypeNode>,
+    context: OperationContext
+): TypeNode =>
+    isDisjoint(result)
+        ? // TODO: real errors here
+          throwParseError(writeImplicitNeverMessage(context.path))
+        : isEquality(result)
+        ? l
+        : result
 
 const validatorIntersection = composeKeyedOperation<ValidatorNode>(
     (domain, l, r, context) => {
@@ -196,8 +207,15 @@ const validatorIntersection = composeKeyedOperation<ValidatorNode>(
 )
 
 export const nodeIntersection = composeNodeOperation(
-    validatorIntersection,
-    () => throwParseError(writeDoubleMorphIntersectionMessage([])),
+    (l, r, context) => {
+        const result = validatorIntersection(l, r, context)
+        if (!hasKeys(result)) {
+            return disjoint("domain", keysOf(l), keysOf(r), context)
+        }
+        return result
+    },
+    (l, r, context) =>
+        throwParseError(writeDoubleMorphIntersectionMessage(context.path)),
     (morphNode, validatorNode, context) => {
         const result = nodeIntersection(
             morphNode.input,
@@ -218,18 +236,18 @@ export const nodeIntersection = composeNodeOperation(
 const initializeOperationContext = ($: ScopeRoot): OperationContext => ({
     $,
     path: "",
-    emptyResults: {},
-    domain: null
+    emptyResults: {}
 })
 
-export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) =>
-    finalizeNodeOperation(
-        l,
-        nodeIntersection(l, r, initializeOperationContext($))
-    )
+export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
+    const context = initializeOperationContext($)
+    return finalizeNodeOperation(l, nodeIntersection(l, r, context), context)
+}
 
-export const union = (l: TypeNode, r: TypeNode, $: ScopeRoot) =>
-    finalizeNodeOperation(l, nodeUnion(l, r, initializeOperationContext($)))
+export const union = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
+    const context = initializeOperationContext($)
+    return finalizeNodeOperation(l, nodeUnion(l, r, context), context)
+}
 
 export const validatorUnion = composeKeyedOperation<ValidatorNode>(
     (domain, l, r, context) => {
@@ -246,7 +264,7 @@ export const validatorUnion = composeKeyedOperation<ValidatorNode>(
 
 export const nodeUnion = composeNodeOperation(
     validatorUnion,
-    () => throwParseError(writeDoubleMorphIntersectionMessage([])),
+    () => throwParseError(writeDoubleMorphIntersectionMessage("")),
     (morphNode, validatorNode, $) => {
         return nodeUnion(morphNode.input, validatorNode, $) as any
     }

@@ -50,7 +50,6 @@ export type DisjointKind = keyof DisjointKinds
 export type OperationContext = {
     $: ScopeRoot
     path: string
-    domain: Domain | null
     emptyResults: Record<string, EmptyIntersection>
 }
 

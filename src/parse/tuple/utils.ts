@@ -32,26 +32,22 @@ export const writeMalformedDistributableFunctionMessage = (def: unknown) =>
         def
     )} was invalid)`
 
-export type DistributedFunctionNode<
-    f,
-    ruleKey extends keyof Rules | undefined = undefined
-> = {
-    [domain in Domain]?: DomainFunction<f, ruleKey>
+export type DistributedFunctionNode<f, ruleKey extends keyof Rules> = {
+    [domain in Domain]?: FunctionInDomain<f, ruleKey>
 }
 
-export type DomainFunction<
-    f,
-    ruleKey extends keyof Rules | undefined
-> = ruleKey extends keyof Rules ? { [k in ruleKey]: f } : f
+export type FunctionInDomain<f, ruleKey extends keyof Rules> = {
+    [k in ruleKey]: f
+}
 
 export const distributeFunctionToNode = <
     f extends UnaryFunction,
-    ruleKey extends keyof Rules | undefined = undefined
+    ruleKey extends keyof Rules
 >(
     distributableFunction: distributable<f>,
     inputNode: TypeNode,
     $: ScopeRoot,
-    ruleKey?: ruleKey
+    ruleKey: ruleKey
 ): DistributedFunctionNode<f, ruleKey> => {
     const domains = domainsOfNode(inputNode, $)
     if (!hasDomain(distributableFunction, "object")) {
@@ -61,29 +57,26 @@ export const distributeFunctionToNode = <
     }
     const distributed = {} as DistributedFunctionNode<f, ruleKey>
     if (typeof distributableFunction === "function") {
-        const domainFunction: DomainFunction<f, ruleKey> = (
-            ruleKey
-                ? { [ruleKey]: distributableFunction }
-                : distributableFunction
-        ) as any
+        const domainFunction = {
+            [ruleKey]: distributableFunction
+        } as unknown as FunctionInDomain<f, ruleKey>
         for (const domain of domains) {
             distributed[domain] = domainFunction
         }
     } else {
         for (const domain of domains) {
-            const domainFunction = distributableFunction[
-                domain
-            ] as DomainFunction<f, ruleKey>
-            if (domainFunction !== undefined) {
-                if (typeof domainFunction !== "function") {
-                    return throwParseError(
-                        writeMalformedDistributableFunctionMessage(
-                            domainFunction
-                        )
-                    )
-                }
-                distributed[domain] = domainFunction
+            if (distributableFunction[domain] === undefined) {
+                continue
             }
+            const functionInDomain = {
+                [ruleKey]: distributableFunction[domain]
+            } as FunctionInDomain<f, ruleKey>
+            if (typeof functionInDomain[ruleKey] !== "function") {
+                return throwParseError(
+                    writeMalformedDistributableFunctionMessage(functionInDomain)
+                )
+            }
+            distributed[domain] = functionInDomain
         }
     }
     return distributed

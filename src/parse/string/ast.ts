@@ -4,9 +4,7 @@ import type { asIn } from "../../type.ts"
 import type { subdomainOf } from "../../utils/domains.ts"
 import type {
     castOnError,
-    conform,
     Dict,
-    downcast,
     Downcastable,
     equals,
     error,
@@ -19,6 +17,7 @@ import type {
     stringKeyOf,
     tryCatch
 } from "../../utils/generics.ts"
+import type { join } from "../../utils/paths.ts"
 import { withPathContext } from "../../utils/paths.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
@@ -97,12 +96,12 @@ type inferIntersectionRecurse<
     : r extends never
     ? never
     : l & r extends never
-    ? error<writeImplicitNeverMessage<path>>
+    ? error<writeImplicitNeverMessage<join<path>>>
     : isAny<l | r> extends true
     ? any
     : l extends ParsedMorph<infer lIn, infer lOut>
     ? r extends ParsedMorph
-        ? error<writeDoubleMorphIntersectionMessage<path>>
+        ? error<writeDoubleMorphIntersectionMessage<join<path>>>
         : (In: evaluate<lIn & r>) => Out<lOut>
     : r extends ParsedMorph<infer rIn, infer rOut>
     ? (In: evaluate<rIn & l>) => Out<rOut>
@@ -171,19 +170,15 @@ type discriminatableRecurse<
 
 // TODO: use <const path extends List<string>> once prettier supports it (look
 // for other instances of downcast and try to do the same)
-export const writeDoubleMorphIntersectionMessage = <path>(
-    path: downcast<path>
+export const writeDoubleMorphIntersectionMessage = <path extends string>(
+    path: path
 ) =>
     `${withPathContext(
         "Intersection",
-        path as string[]
-    )} must have at least one non-morph operand` as writeDoubleMorphIntersectionMessage<
-        conform<path, string[]>
-    >
+        path
+    )} must have at least one non-morph operand` as writeDoubleMorphIntersectionMessage<path>
 
-writeDoubleMorphIntersectionMessage(["string"])
-
-type writeDoubleMorphIntersectionMessage<path extends List<string>> =
+type writeDoubleMorphIntersectionMessage<path extends string> =
     `${withPathContext<
         "Intersection",
         path
@@ -191,15 +186,13 @@ type writeDoubleMorphIntersectionMessage<path extends List<string>> =
 
 export const undiscriminatableMorphUnionMessage = `A union of one or more morphs must be discriminatable`
 
-export const writeImplicitNeverMessage = <path>(path: downcast<path>) =>
+export const writeImplicitNeverMessage = <path extends string>(path: path) =>
     `${withPathContext(
         "Intersection",
-        path as string[]
-    )} results in an unsatisfiable type` as writeImplicitNeverMessage<
-        conform<path, string[]>
-    >
+        path
+    )} results in an unsatisfiable type` as writeImplicitNeverMessage<path>
 
-type writeImplicitNeverMessage<path extends List<string>> = `${withPathContext<
+type writeImplicitNeverMessage<path extends string> = `${withPathContext<
     "Intersection",
     path
 >} results in an unsatisfiable type`

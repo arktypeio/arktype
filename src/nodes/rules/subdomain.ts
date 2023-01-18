@@ -8,6 +8,7 @@ import type { Subdomain } from "../../utils/domains.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import type { Dict, List } from "../../utils/generics.ts"
+import { pushKey, withoutLastKey } from "../../utils/paths.ts"
 import { stringSerialize } from "../../utils/serialize.ts"
 import {
     composeIntersection,
@@ -94,7 +95,12 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
         for (let i = 1; i <= maxNodeIndex; i++) {
             const lNode = l[i] as TypeNode
             const rNode = r[i] as TypeNode
+            context.path = pushKey(
+                context.path,
+                subdomainParameterToPathSegment(l[0], i)
+            )
             const parameterResult = nodeIntersection(lNode, rNode, context)
+            context.path = withoutLastKey(context.path)
             if (isEquality(parameterResult)) {
                 result[i] = lNode
             } else if (parameterResult === l) {
@@ -114,6 +120,24 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
         return lImpliesR ? (rImpliesL ? equality() : l) : rImpliesL ? r : result
     }
 )
+
+type ParameterizableSubdomainRuleName = Extract<SubdomainRule, List>[0]
+
+const subdomainParameterToPathSegment = (
+    subdomain: ParameterizableSubdomainRuleName,
+    i: number
+) =>
+    subdomain === "Array"
+        ? "${number}"
+        : subdomain === "Set"
+        ? "${item}"
+        : subdomain === "Map"
+        ? i === 1
+            ? "${key}"
+            : "${value}"
+        : throwInternalError(
+              `Unexpected parameterized subdomain '${subdomain}'`
+          )
 
 export const checkSubdomain: TraversalCheck<"subdomain"> = (
     state,
