@@ -126,9 +126,8 @@ export const writeMalformedFunctionalExpressionMessage = (
 
 export type TupleExpressionToken = PrefixToken | PostfixToken
 
-// TODO: = (Default value)
-// TODO: Pipe
-// TODO: Merge
+// TODO: = (Default value) (should also work in string)
+// TODO: Merge (maybe use  "+", should not only be tuple expression)
 type PostfixToken = "[]" | "&" | "|" | ":" | "=>"
 
 type PostfixExpression<token extends PostfixToken = PostfixToken> = [
