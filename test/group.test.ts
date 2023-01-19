@@ -2,8 +2,8 @@ import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import {
-    writeUnmatchedGroupCloseMessage,
-    unclosedGroupMessage
+    unclosedGroupMessage,
+    writeUnmatchedGroupCloseMessage
 } from "../src/parse/string/reduce/shared.ts"
 import { writeExpressionExpectedMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 

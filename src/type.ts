@@ -1,5 +1,6 @@
 import type { TraversalNode, TypeResolution } from "./nodes/node.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
+import { as } from "./parse/definition.ts"
 import type { ParsedMorph } from "./parse/tuple/morph.ts"
 import type { ScopeRoot } from "./scope.ts"
 import type { CheckConfig } from "./traverse/check.ts"
@@ -20,9 +21,9 @@ export const nodeToType = (
             return rootCheck(data, flat, $, config)
         },
         {
-            t: chainableNoOpProxy,
-            config,
+            [as]: chainableNoOpProxy,
             infer: chainableNoOpProxy,
+            config,
             node,
             flat
         }
@@ -59,7 +60,7 @@ export type Result<t> = xor<
 export type Checker<t> = (data: unknown) => Result<t>
 
 export type TypeRoot<t = unknown> = {
-    t: t
+    [as]: t
     infer: asOut<t>
     node: TypeResolution
     flat: TraversalNode

@@ -10,8 +10,7 @@ import type {
     evaluate,
     isAny,
     isUnknown,
-    List,
-    nominal
+    List
 } from "../utils/generics.ts"
 import type { inferRecord } from "./record.ts"
 import { parseRecord } from "./record.ts"
@@ -41,10 +40,7 @@ export const parseDefinition = (def: unknown, $: ScopeRoot): TypeNode => {
 
 export type inferDefinition<def, $> = isAny<def> extends true
     ? never
-    : def extends inferred<infer t>
-    ? t
-    : // TODO: test perf diff between Type/infer
-    def extends { t: infer t }
+    : def extends cast<infer t>
     ? t
     : def extends string
     ? inferString<def, $>
@@ -56,16 +52,12 @@ export type inferDefinition<def, $> = isAny<def> extends true
     ? inferRecord<def, $>
     : never
 
-export type validateDefinition<def, $> = def extends []
-    ? []
-    : def extends inferred<unknown>
+export type validateDefinition<def, $> = def extends TerminalObject
     ? def
     : def extends string
     ? validateString<def, $>
     : def extends TupleExpression
     ? validateTupleExpression<def, $>
-    : def extends TerminalObject
-    ? def
     : def extends BadDefinitionType
     ? writeBadDefinitionTypeMessage<subdomainOf<def>>
     : isUnknown<def> extends true
@@ -74,12 +66,16 @@ export type validateDefinition<def, $> = def extends []
           [k in keyof def]: validateDefinition<def[k], $>
       }>
 
-export type inferred<t> = nominal<t, "as">
+export const as = Symbol("as")
+
+export type cast<t> = {
+    [as]?: t
+}
 
 export type unknownDefinitionMessage =
     `Cannot statically parse a definition inferred as unknown. Use 'type.dynamic(...)' instead.`
 
-export type TerminalObject = Type | RegExp
+export type TerminalObject = Type | RegExp | cast<unknown>
 
 export type BadDefinitionType = Exclude<Primitive, string> | Function
 

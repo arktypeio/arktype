@@ -11,7 +11,7 @@ import type { Type } from "../src/type.ts"
 describe("morph", () => {
     it("base", () => {
         const t = type(["boolean", "=>", (data) => `${data}`])
-        attest(t.t).typed as Type<(In: boolean) => Out<string>>
+        attest(t).typed as Type<(In: boolean) => Out<string>>
         attest(t.infer).typed as Type<string>
         attest(t.node).snap({ input: "boolean", morph: "<function>" })
         attest(t(true).data).equals(true).typed as boolean
@@ -20,13 +20,13 @@ describe("morph", () => {
     })
     it("endomorph", () => {
         const t = type(["boolean", "=>", (data) => !data])
-        attest(t.t).typed as Type<(In: boolean) => Out<boolean>>
+        attest(t).typed as Type<(In: boolean) => Out<boolean>>
         attest(t(true).data).equals(true).typed as boolean
         attest(t(true).out).equals(false).typed as boolean
     })
     it("object inference", () => {
         const t = type([{ a: "string" }, "=>", (data) => `${data}`])
-        attest(t.t).typed as Type<(In: { a: string }) => Out<string>>
+        attest(t).typed as Type<(In: { a: string }) => Out<string>>
     })
     it("intersection", () => {
         const types = scope({
