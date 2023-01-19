@@ -44,8 +44,8 @@ export type inferRecord<def extends Dict, $> = evaluate<
 >
 
 type KeyParseResult<name extends string, isOptional extends boolean> = [
-    name: name,
-    isOptional: isOptional
+    name,
+    isOptional
 ]
 
 type parseKey<k> = k extends optionalKeyWithName<infer name>

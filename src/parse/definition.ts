@@ -66,10 +66,10 @@ export type validateDefinition<def, $> = def extends TerminalObject
           [k in keyof def]: validateDefinition<def[k], $>
       }>
 
-export const as = Symbol("as")
+export const t = Symbol()
 
 export type cast<t> = {
-    [as]?: t
+    [t]?: t
 }
 
 export type unknownDefinitionMessage =
