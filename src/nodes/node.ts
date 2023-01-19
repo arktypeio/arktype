@@ -143,6 +143,7 @@ export type CompiledScopeNodes<nodes extends ScopeNodes> = {
     readonly [k in keyof nodes]: TraversalNode
 }
 
+// TODO: separate all compile logic from nodes
 export const compileNodes = <nodes extends ScopeNodes>(
     nodes: nodes,
     $: ScopeRoot

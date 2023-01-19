@@ -77,10 +77,8 @@ export class Problems extends Array<Problem> {
     }
 }
 
-type codeToData<code extends ProblemCode> = ProblemContexts[code]["data"]["raw"]
-
-export class Stringifiable<Data = unknown> {
-    constructor(public raw: Data) {}
+export class Stringifiable<data = unknown> {
+    constructor(public raw: data) {}
 
     get domain() {
         return domainOf(this.raw)
