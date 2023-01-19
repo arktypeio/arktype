@@ -1,32 +1,33 @@
 import { describe, it } from "mocha"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import type { cast } from "../src/parse/definition.ts"
+import type { inferred } from "../src/parse/definition.ts"
 import type { Out } from "../src/parse/tuple/morph.ts"
 import type { Type } from "../src/type.ts"
 
 describe("cast", () => {
     it("primitive", () => {
-        attest(type("string" as cast<"foo">)).typed as Type<"foo">
+        attest(type("string" as inferred<"foo">)).typed as Type<"foo">
     })
     it("object", () => {
         // definitions that are cast can't be validated
-        attest(type({ a: "string" } as cast<{ a: "foo" }>)).typed as Type<{
+        attest(type({ a: "string" } as inferred<{ a: "foo" }>)).typed as Type<{
             a: "foo"
         }>
     })
     it("primitive to object", () => {
-        attest(type("string" as cast<{ a: "foo" }>)).typed as Type<{
+        attest(type("string" as inferred<{ a: "foo" }>)).typed as Type<{
             a: "foo"
         }>
     })
     it("object to primitive", () => {
-        attest(type({ a: "string" } as cast<"foo">)).typed as Type<"foo">
+        attest(type({ a: "string" } as inferred<"foo">)).typed as Type<"foo">
     })
     // These may not be needed once the following is resolved:
     // https://github.com/arktypeio/arktype/issues/577
     it("function returns", () => {
         const types = scope({
+            // TODO: can we throw a validation error here? don't cast if return type doesn't match
             a: [{ a: "1" }, "=>", (data) => `${data}`, "string"],
             b: [{ a: "number" }, ":", (data) => data.a === 1, { a: "1" }]
         })

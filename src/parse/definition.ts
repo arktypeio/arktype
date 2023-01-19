@@ -40,7 +40,7 @@ export const parseDefinition = (def: unknown, $: ScopeRoot): TypeNode => {
 
 export type inferDefinition<def, $> = isAny<def> extends true
     ? never
-    : def extends cast<infer t>
+    : def extends inferred<infer t>
     ? t
     : def extends string
     ? inferString<def, $>
@@ -68,14 +68,14 @@ export type validateDefinition<def, $> = def extends TerminalObject
 
 export const t = Symbol()
 
-export type cast<t> = {
+export type inferred<t> = {
     [t]?: t
 }
 
 export type unknownDefinitionMessage =
     `Cannot statically parse a definition inferred as unknown. Use 'type.dynamic(...)' instead.`
 
-export type TerminalObject = Type | RegExp | cast<unknown>
+export type TerminalObject = Type | RegExp | inferred<unknown>
 
 export type BadDefinitionType = Exclude<Primitive, string> | Function
 

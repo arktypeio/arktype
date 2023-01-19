@@ -6,7 +6,12 @@ import type {
 } from "../../traverse/problems.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import type { List } from "../../utils/generics.ts"
-import { composeIntersection, disjoint, equality } from "../compose.ts"
+import {
+    composeIntersection,
+    disjoint,
+    equality,
+    toComparator
+} from "../compose.ts"
 
 export type Range = {
     readonly min?: Bound
@@ -109,24 +114,12 @@ export const checkRange = ((data, range, state) => {
     }
 }) satisfies TraversalCheck<"range">
 
-export const writeEmptyRangeMessage = (min: Bound, max: Bound) =>
-    `the range bounded by ${stringifyBound("min", min)} and ${stringifyBound(
-        "max",
-        max
-    )} is empty`
-
-const stringifyBound = (kind: BoundKind, bound: Bound) =>
-    `${toComparator(kind, bound)}${bound.limit}` as const
-
-const toComparator = (kind: BoundKind, bound: Bound) =>
-    `${kind === "min" ? ">" : "<"}${bound.exclusive ? "" : "="}` as const
-
 const invertedKinds = {
     min: "max",
     max: "min"
 } as const
 
-type BoundKind = keyof typeof invertedKinds
+export type BoundKind = keyof typeof invertedKinds
 
 export const compareStrictness = (
     l: Bound | undefined,

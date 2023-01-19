@@ -1,8 +1,6 @@
+import { writeEmptyRangeMessage } from "../../../../nodes/compose.ts"
 import type { Bound, Range } from "../../../../nodes/rules/range.ts"
-import {
-    compareStrictness,
-    writeEmptyRangeMessage
-} from "../../../../nodes/rules/range.ts"
+import { compareStrictness } from "../../../../nodes/rules/range.ts"
 import type { error } from "../../../../utils/generics.ts"
 import { isKeyOf } from "../../../../utils/generics.ts"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.ts"

@@ -5,8 +5,7 @@ import type { constructor, Dict, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
 import { stringSerialize } from "../utils/serialize.ts"
 import type { Condition } from "./predicate.ts"
-import type { Bound } from "./rules/range.ts"
-import { writeEmptyRangeMessage } from "./rules/range.ts"
+import type { Bound, BoundKind } from "./rules/range.ts"
 
 export type SetOperation<t> = (
     l: t,
@@ -67,6 +66,18 @@ export const disjointMessageWriters = {
 } satisfies {
     [k in DisjointKind]: (context: DisjointContext<k>) => string
 }
+
+export const writeEmptyRangeMessage = (min: Bound, max: Bound) =>
+    `the range bounded by ${stringifyBound("min", min)} and ${stringifyBound(
+        "max",
+        max
+    )} is empty`
+
+export const stringifyBound = (kind: BoundKind, bound: Bound) =>
+    `${toComparator(kind, bound)}${bound.limit}` as const
+
+export const toComparator = (kind: BoundKind, bound: Bound) =>
+    `${kind === "min" ? ">" : "<"}${bound.exclusive ? "" : "="}` as const
 
 export type DisjointKind = keyof DisjointKinds
 
