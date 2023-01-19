@@ -22,6 +22,7 @@ import type {
 import {
     composeKeyedOperation,
     disjoint,
+    empty,
     equality,
     isDisjoint,
     isEquality
@@ -209,7 +210,9 @@ export const nodeIntersection = composeNodeOperation(
     (l, r, context) => {
         const result = validatorIntersection(l, r, context)
         if (typeof result === "object" && !hasKeys(result)) {
-            return disjoint("domain", [keysOf(l), keysOf(r)], context)
+            return context.disjoints[context.path]
+                ? empty
+                : disjoint("domain", [keysOf(l), keysOf(r)], context)
         }
         return result
     },

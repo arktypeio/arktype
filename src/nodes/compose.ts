@@ -51,10 +51,10 @@ export type DisjointKind = keyof DisjointKinds
 export type OperationContext = {
     $: ScopeRoot
     path: string
-    disjoints: Record<string, DisjointContext>
+    disjoints: DisjointsByPath
 }
 
-const empty = Symbol("empty")
+export const empty = Symbol("empty")
 
 export type Empty = typeof empty
 
@@ -71,6 +71,8 @@ export const disjoint = <kind extends DisjointKind>(
 }
 
 export const isDisjoint = (result: unknown): result is Empty => result === empty
+
+export type DisjointsByPath = Record<string, DisjointContext>
 
 export type DisjointContext<kind extends DisjointKind = DisjointKind> = {
     kind: kind
