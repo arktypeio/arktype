@@ -1,6 +1,6 @@
 import {
-    writeDoubleMorphIntersectionMessage,
-    writeImplicitNeverMessage
+    compileDisjointReasonsMessage,
+    writeDoubleMorphIntersectionMessage
 } from "../parse/string/ast.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
 import type { ScopeRoot } from "../scope.ts"
@@ -187,8 +187,7 @@ export const finalizeNodeOperation = (
     context: OperationContext
 ): TypeNode =>
     isDisjoint(result)
-        ? // TODO: real errors here
-          throwParseError(writeImplicitNeverMessage(context.path))
+        ? throwParseError(compileDisjointReasonsMessage(context.disjoints))
         : isEquality(result)
         ? l
         : result

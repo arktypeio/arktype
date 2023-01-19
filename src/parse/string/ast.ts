@@ -1,3 +1,5 @@
+import type { DisjointsByPath } from "../../nodes/compose.ts"
+import { disjointMessageWriters } from "../../nodes/compose.ts"
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
 import type { BootstrapScope } from "../../scope.ts"
 import type { asIn } from "../../type.ts"
@@ -186,11 +188,19 @@ type writeDoubleMorphIntersectionMessage<path extends string> =
 
 export const undiscriminatableMorphUnionMessage = `A union of one or more morphs must be discriminatable`
 
-export const writeImplicitNeverMessage = <path extends string>(path: path) =>
-    `${withPathContext(
-        "Intersection",
-        path
-    )} results in an unsatisfiable type` as writeImplicitNeverMessage<path>
+export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
+    let message = `
+        "Intersection results in an unsatisfiable type:\n`
+    for (const path in disjoints) {
+        message += `  ${withPathContext(
+            "Intersection",
+            path
+        )} ${disjointMessageWriters[disjoints[path].kind](
+            disjoints[path] as never
+        )}\n`
+    }
+    return message
+}
 
 type writeImplicitNeverMessage<path extends string> = `${withPathContext<
     "Intersection",

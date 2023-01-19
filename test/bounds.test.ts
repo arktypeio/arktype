@@ -2,7 +2,7 @@ import { describe, it } from "mocha"
 import type { TypeNode } from "../api.ts"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { writeImplicitNeverMessage } from "../src/parse/string/ast.ts"
+import { compileDisjointReasonsMessage } from "../src/parse/string/ast.ts"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
@@ -116,10 +116,26 @@ describe("bound", () => {
             })
             it("non-overlapping", () => {
                 attest(() => type("number>3&number<=3").node).throws(
-                    writeImplicitNeverMessage("")
+                    compileDisjointReasonsMessage({
+                        "": {
+                            kind: "range",
+                            operands: [
+                                { limit: 3, exclusive: true },
+                                { limit: 3 }
+                            ]
+                        }
+                    })
                 )
                 attest(() => type("-2<number<-1&1<number<2")).throws(
-                    writeImplicitNeverMessage("")
+                    compileDisjointReasonsMessage({
+                        "": {
+                            kind: "range",
+                            operands: [
+                                { limit: 1, exclusive: true },
+                                { limit: -1, exclusive: true }
+                            ]
+                        }
+                    })
                 )
             })
             it("greater min is stricter", () => {

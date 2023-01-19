@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { writeImplicitNeverMessage } from "../src/parse/string/ast.ts"
+import { compileDisjointReasonsMessage } from "../src/parse/string/ast.ts"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
@@ -82,7 +82,12 @@ describe("intersection", () => {
             it("implicit never", () => {
                 // @ts-expect-error
                 attest(() => type("string&number")).throwsAndHasTypeError(
-                    writeImplicitNeverMessage("")
+                    compileDisjointReasonsMessage({
+                        "": {
+                            kind: "domain",
+                            operands: [["string"], ["number"]]
+                        }
+                    })
                 )
             })
         })

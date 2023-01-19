@@ -47,6 +47,7 @@ export type DisjointKinds = {
     value: [unknown, Condition]
 }
 
+// TODO: add union reason
 export const disjointMessageWriters = {
     domain: ({ operands }) =>
         `${operands[0].join(", ")} ${
