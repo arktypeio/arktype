@@ -3,8 +3,10 @@ import type { Domain, Subdomain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { constructor, Dict, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
+import { stringSerialize } from "../utils/serialize.ts"
 import type { Condition } from "./predicate.ts"
-import type { Range } from "./rules/range.ts"
+import type { Bound } from "./rules/range.ts"
+import { writeEmptyRangeMessage } from "./rules/range.ts"
 
 export type SetOperation<t> = (
     l: t,
@@ -40,10 +42,30 @@ export type SetOperationResult<t> = t | Empty | Equal
 export type DisjointKinds = {
     domain: [Domain[], Domain[]]
     subdomain: [Subdomain, Subdomain]
-    range: [Range, Range]
+    range: [min: Bound, max: Bound]
     class: [constructor, constructor]
     tupleLength: [number, number]
     value: [unknown, Condition]
+}
+
+export const disjointMessageWriters = {
+    domain: ({ operands }) =>
+        `${operands[0].join(", ")} ${
+            operands[0].length > 1 ? "have" : "has"
+        } no overlap with ${operands[1].join(", ")}`,
+    subdomain: ({ operands }) =>
+        `${operands[0]} has no overlap with ${operands[1]}`,
+    range: ({ operands }) => writeEmptyRangeMessage(operands[0], operands[1]),
+    class: ({ operands }) =>
+        `${operands[0].name} has no overlap with ${operands[1].name}`,
+    tupleLength: ({ operands }) =>
+        `Tuple of length ${operands[0]} has no overlap with tuple of length ${operands[1]}`,
+    value: ({ operands }) =>
+        `Literal value ${stringSerialize(
+            operands[0]
+        )} has no overlap with ${stringSerialize(operands[1])}`
+} satisfies {
+    [k in DisjointKind]: (context: DisjointContext<k>) => string
 }
 
 export type DisjointKind = keyof DisjointKinds

@@ -24,7 +24,7 @@ export const rangeIntersection = composeIntersection<Range>((l, r, context) => {
     if (minComparison === "l") {
         if (maxComparison === "r") {
             return compareStrictness(l.min!, r.max!, "min") === "l"
-                ? disjoint("range", [l, r], context)
+                ? disjoint("range", [l.min!, r.max!], context)
                 : {
                       min: l.min!,
                       max: r.max!
@@ -35,7 +35,7 @@ export const rangeIntersection = composeIntersection<Range>((l, r, context) => {
     if (minComparison === "r") {
         if (maxComparison === "l") {
             return compareStrictness(l.max!, r.min!, "max") === "l"
-                ? disjoint("range", [l, r], context)
+                ? disjoint("range", [r.min!, l.max!], context)
                 : {
                       min: r.min!,
                       max: l.max!
