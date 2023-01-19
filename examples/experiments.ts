@@ -4,51 +4,6 @@
 import { type } from "../api"
 import { evaluate } from "../src/utils/generics"
 
-const user = type(
-    {
-        name: "string",
-        age: "number"
-    },
-    {
-        in: (s: string) => {
-            return JSON.parse(s)
-        },
-        out: {
-            out: (user): ValidatedUser => {
-                return { ...user, isInternal: true }
-            },
-            string: (user) => {
-                return JSON.stringify(user)
-            },
-            length: (user) => user.name.length,
-            admin: (user: User) => ({ ...user, isAdmin: true })
-        }
-    }
-)
-
-// All out morphs are attached alongside data
-const { string, admin, out, data, problems } = user({ name: "David", age: 29 })
-
-// Input if multiple named inputs are specified
-user.from("string", '{"name": "David", "age": 29}')
-
-// Default input ("in" key if named morphs)
-user.from('{"name": "David", "age": 29}')
-
-// Access out morphs on prevalidated data
-user.data({ name: "David", age: 29 }).out
-
-const user = type({
-    name: "string",
-    birthday: "Date"
-})
-
-type overlaps<t, u> = t & u extends never ? false : t & u
-
-type Z = overlaps<{ a?: boolean }, { a?: "foo" }>
-
-type Zzzz = evaluate<{ a: string } & { a: number }>
-
 const $ = scope({
     user: {
         name: "string",

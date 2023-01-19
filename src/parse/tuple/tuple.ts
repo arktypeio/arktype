@@ -6,6 +6,7 @@ import type { asIn, asOut } from "../../type.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type {
+    conform,
     constructor,
     error,
     List,
@@ -56,12 +57,7 @@ export type validateTupleExpression<
     : def[0] extends "==="
     ? ["===", def[1]]
     : def[0] extends "instanceof"
-    ? [
-          "instanceof",
-          def[1] extends constructor
-              ? def[1]
-              : "Expected a constructor following instanceof"
-      ]
+    ? ["instanceof", conform<def[1], constructor>]
     : never
 
 export type inferTuple<def extends List, $> = def extends TupleExpression

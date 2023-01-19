@@ -10,7 +10,8 @@ import type {
     evaluate,
     isAny,
     isUnknown,
-    List
+    List,
+    nominal
 } from "../utils/generics.ts"
 import type { inferRecord } from "./record.ts"
 import { parseRecord } from "./record.ts"
@@ -40,6 +41,8 @@ export const parseDefinition = (def: unknown, $: ScopeRoot): TypeNode => {
 
 export type inferDefinition<def, $> = isAny<def> extends true
     ? never
+    : def extends inferred<infer t>
+    ? t
     : // TODO: test perf diff between Type/infer
     def extends { t: infer t }
     ? t
@@ -55,6 +58,8 @@ export type inferDefinition<def, $> = isAny<def> extends true
 
 export type validateDefinition<def, $> = def extends []
     ? []
+    : def extends inferred<unknown>
+    ? def
     : def extends string
     ? validateString<def, $>
     : def extends TupleExpression
@@ -68,6 +73,8 @@ export type validateDefinition<def, $> = def extends []
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], $>
       }>
+
+export type inferred<t> = nominal<t, "as">
 
 export type unknownDefinitionMessage =
     `Cannot statically parse a definition inferred as unknown. Use 'type.dynamic(...)' instead.`

@@ -92,7 +92,6 @@ export const checkEntries = (
         const ruleName = entries[i][0]
         const ruleValidator = entries[i][1]
         if (
-            // TODO: path string
             state.problems.byPath[state.path] &&
             precedenceMap[ruleName] > precedenceLevel
         ) {
