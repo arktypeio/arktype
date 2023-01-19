@@ -53,11 +53,12 @@ export class Problems extends Array<Problem> {
 
     addProblem<code extends ProblemCode>(
         code: code,
+        data: unknown,
         context: Omit<ProblemContexts[code], keyof BaseProblemContext>,
-        state: CheckState<codeToData<code>>
+        state: CheckState
     ) {
         const compiledContext = Object.assign(context, {
-            data: new Stringifiable(state.data)
+            data: new Stringifiable(data)
         }) as ProblemContexts[code]
         const problemConfig = state.config.problems?.[code]
         const customMessageWriter =
@@ -65,7 +66,7 @@ export class Problems extends Array<Problem> {
                 ? (problemConfig as ProblemMessageWriter<code>)
                 : problemConfig?.message
         const problem = {
-            path: [...state.path].join("/"),
+            path: state.path,
             reason:
                 customMessageWriter?.(compiledContext) ??
                 defaultMessagesByCode[code](compiledContext)

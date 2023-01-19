@@ -32,9 +32,9 @@ export const getRegex = (source: string) => {
     return regexCache[source]
 }
 
-export const checkRegex = ((state, regex) => {
-    if (!regex.test(state.data)) {
-        state.problems.addProblem("regex", { regex }, state)
+export const checkRegex = ((data, regex, state) => {
+    if (!regex.test(data)) {
+        state.problems.addProblem("regex", data, { regex }, state)
     }
 }) satisfies TraversalCheck<"regex">
 

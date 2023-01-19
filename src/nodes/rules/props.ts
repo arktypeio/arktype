@@ -1,4 +1,4 @@
-import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
+import type { TraversalCheck } from "../../traverse/check.ts"
 import { checkNode } from "../../traverse/check.ts"
 import type {
     defineProblem,
@@ -103,28 +103,24 @@ export const compileProps: FlattenAndPushRule<PropsRule> = (
 const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
     propKind: propKind
 ) =>
-    ((state, props, scope) => {
-        const rootData = state.data
-        const rootNode = state.node
+    ((data, props, state) => {
+        const rootPath = state.path
         for (const [propKey, propNode] of props as TraversalPropEntry[]) {
-            state.path.push(propKey)
-            state.data = rootData[propKey] as any
-            state.node = propNode
-            if (!hasKey(rootData, propKey)) {
+            state.path = pushKey(rootPath, propKey)
+            if (!hasKey(data, propKey)) {
                 if (propKind !== "optionalProps") {
                     state.problems.addProblem(
                         "missing",
+                        undefined,
                         { key: propKey },
-                        state as CheckState<undefined>
+                        state
                     )
                 }
                 continue
             }
-            checkNode(state, scope)
-            state.path.pop()
+            checkNode(data[propKey], propNode, state)
         }
-        state.data = rootData
-        state.node = rootNode
+        state.path = rootPath
     }) as TraversalCheck<propKind>
 
 export const checkRequiredProps = createPropChecker("requiredProps")

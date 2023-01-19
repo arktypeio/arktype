@@ -2,6 +2,7 @@ import { describe, it } from "mocha"
 import type { TypeNode } from "../api.ts"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
+import { writeImplicitNeverMessage } from "../src/parse/string/ast.ts"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
@@ -114,9 +115,12 @@ describe("bound", () => {
                 })
             })
             it("non-overlapping", () => {
-                const expected: TypeNode = {}
-                attest(type("number>3&number<=3").node).equals(expected)
-                attest(type("-2<number<-1&1<number<2").node).equals(expected)
+                attest(() => type("number>3&number<=3").node).throws(
+                    writeImplicitNeverMessage("")
+                )
+                attest(() => type("-2<number<-1&1<number<2")).throws(
+                    writeImplicitNeverMessage("")
+                )
             })
             it("greater min is stricter", () => {
                 const expected: TypeNode = {

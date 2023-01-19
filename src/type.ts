@@ -48,9 +48,15 @@ export type TypeParser<$> = LazyDynamicWrap<
     DynamicTypeParser
 >
 
-export type Result<output> = xor<output, { problems: Problems }>
+export type Result<t> = xor<
+    {
+        data: asIn<t>
+        out: asOut<t>
+    },
+    { problems: Problems }
+>
 
-export type Checker<output> = (data: unknown) => Result<output>
+export type Checker<t> = (data: unknown) => Result<t>
 
 export type TypeRoot<t = unknown> = {
     t: t
@@ -59,13 +65,7 @@ export type TypeRoot<t = unknown> = {
     flat: TraversalNode
 }
 
-export type Type<t = unknown> = defer<
-    Checker<{
-        data: asIn<t>
-        out: asOut<t>
-    }> &
-        TypeRoot<t>
->
+export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
 
 export type TypeOptions = CheckConfig
 

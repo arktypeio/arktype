@@ -60,20 +60,20 @@ export type ValidatorNode<$ = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, $>
 }
 
-export type TraversalNode = ValidatorTraversalNode | MorphTraversalNode
+export type TraversalNode = ValidatorTraversalNode | [MorphTraversalEntry]
 
 export type ValidatorTraversalNode =
     | Domain
     | SingleDomainTraversalNode
-    | MultiDomainTraversalNode
-    | CyclicReferenceNode
+    | [MultiDomainEntry]
+    | [CyclicReferenceEntry]
 
 export type SingleDomainTraversalNode = readonly [
     ExplicitDomainEntry | ImplicitDomainEntry,
     ...TraversalPredicate
 ]
 
-export type CyclicReferenceNode = [["alias", string]]
+export type CyclicReferenceEntry = ["alias", string]
 
 export type ExplicitDomainEntry = ["domain", Domain]
 
@@ -91,14 +91,12 @@ export type MultiDomainTraversalNode = [MultiDomainEntry]
 
 export type MultiDomainEntry = ["domains", TraversalTypeSet]
 
-export type MorphTraversalNode = [
-    [
-        "morph",
-        {
-            readonly input: ValidatorTraversalNode
-            readonly morph: CollapsibleList<Morph>
-        }
-    ]
+export type MorphTraversalEntry = [
+    "morph",
+    {
+        readonly input: ValidatorTraversalNode
+        readonly morph: CollapsibleList<Morph>
+    }
 ]
 
 export type TraversalTypeSet = {

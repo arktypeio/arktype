@@ -1,5 +1,4 @@
 import type { ScopeRoot } from "../scope.ts"
-import { checkRules } from "../traverse/check.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
 import type { CollapsibleList, Dict, stringKeyOf } from "../utils/generics.ts"
@@ -23,7 +22,11 @@ import {
     resolvePredicateIfIdentifier
 } from "./resolve.ts"
 import type { RuleSet, TraversalRuleEntry } from "./rules/rules.ts"
-import { compileRules, rulesIntersection } from "./rules/rules.ts"
+import {
+    compileRules,
+    literalSatisfiesRules,
+    rulesIntersection
+} from "./rules/rules.ts"
 
 export type Predicate<domain extends Domain = Domain, $ = Dict> = Dict extends $
     ? true | CollapsibleList<Condition>
@@ -135,11 +138,15 @@ export const comparePredicates = (
                           [lResolution.value, rResolution],
                           context
                       )
-                : checkRules(domain, lResolution.value, rResolution, context)
+                : literalSatisfiesRules(
+                      lResolution.value,
+                      rResolution,
+                      context.$
+                  )
                 ? l
                 : disjoint("value", [lResolution.value, rResolution], context)
             : isExactValuePredicate(rResolution)
-            ? checkRules(domain, rResolution.value, lResolution, context)
+            ? literalSatisfiesRules(rResolution.value, lResolution, context.$)
                 ? r
                 : disjoint("value", [rResolution.value, lResolution], context)
             : rulesIntersection(lResolution, rResolution, context)

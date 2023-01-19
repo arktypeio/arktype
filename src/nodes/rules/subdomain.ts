@@ -1,4 +1,4 @@
-import type { CheckState, TraversalCheck } from "../../traverse/check.ts"
+import type { TraversalCheck } from "../../traverse/check.ts"
 import { checkNode } from "../../traverse/check.ts"
 import type {
     defineProblem,
@@ -140,15 +140,16 @@ const subdomainParameterToPathSegment = (
           )
 
 export const checkSubdomain: TraversalCheck<"subdomain"> = (
-    state,
+    data,
     rule,
-    scope
+    state
 ) => {
-    const dataSubdomain = subdomainOf(state.data)
+    const dataSubdomain = subdomainOf(data)
     if (typeof rule === "string") {
         if (dataSubdomain !== rule) {
             state.problems.addProblem(
                 "domain",
+                data,
                 {
                     expected: [rule]
                 },
@@ -160,6 +161,7 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     if (dataSubdomain !== rule[0]) {
         state.problems.addProblem(
             "domain",
+            data,
             {
                 expected: [rule[0]]
             },
@@ -168,31 +170,31 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         return
     }
     if (dataSubdomain === "Array" && typeof rule[2] === "number") {
-        const actual = (state.data as List).length
+        const actual = (data as List).length
         const expected = rule[2]
         if (expected !== actual) {
+            // TODO: addProblem API to state? Could all be one object
             return state.problems.addProblem(
                 "tupleLength",
+                data,
                 {
                     actual,
                     expected
                 },
-                state as CheckState<List>
+                state
             )
         }
     }
     if (dataSubdomain === "Array" || dataSubdomain === "Set") {
-        const rootData = state.data
-        const rootNode = state.node
-        state.node = rule[1]
-        for (const item of state.data as List | Set<unknown>) {
-            state.data = item
-            state.path.push(`${item}`)
-            checkNode(state, scope)
-            state.path.pop()
+        let i = 0
+        const rootPath = state.path
+        for (const item of data as List | Set<unknown>) {
+            // TODO: add path APIs to state
+            state.path = pushKey(rootPath, `${i}`)
+            checkNode(item, rule[1], state)
+            i++
         }
-        state.data = rootData
-        state.node = rootNode
+        state.path = rootPath
     } else {
         return throwInternalError(
             `Unexpected subdomain entry ${stringSerialize(rule)}`

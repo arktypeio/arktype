@@ -21,7 +21,7 @@ describe("check", () => {
     it("domain", () => {
         const t = type("number")
         const checked = t("foo")
-        attest(checked.problems?.summary).snap("???")
+        attest(checked.problems?.summary).snap("Must be a number (was string)")
     })
     it("regex", () => {
         const t = type("/\\w@hotmail.com/")

@@ -1,6 +1,7 @@
 import type { Narrow } from "../../parse/tuple/narrow.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import type { TraversalEntry } from "../../traverse/check.ts"
+import { rootCheck } from "../../traverse/check.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type {
     CollapsibleList,
@@ -128,6 +129,9 @@ export const precedenceMap: {
     domains: 0,
     branches: 0,
     subdomain: 0,
+    cases: 0,
+    alias: 0,
+    morph: 0,
     // Shallow: All shallow checks will be performed even if one or more fail
     class: 1,
     regex: 1,
@@ -151,3 +155,10 @@ export const compileRules = (
     }
     return entries.sort((l, r) => precedenceMap[l[0]] - precedenceMap[r[0]])
 }
+
+// TODO: Currently omits domain, simplify traversal node definition to be more flexible?
+export const literalSatisfiesRules = (
+    data: unknown,
+    rules: Rules,
+    $: ScopeRoot
+) => "data" in rootCheck(data, compileRules(rules, $) as any, $, {})

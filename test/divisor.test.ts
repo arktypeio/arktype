@@ -73,7 +73,9 @@ describe("divisibility", () => {
             attest(type("number%5&0").node).snap({ number: { value: 0 } })
         })
         it("invalid literal", () => {
-            attest(type("number%3&8").node).snap({ number: [] })
+            attest(() => type("number%3&8")).throws.snap(
+                "Error: Intersection results in an unsatisfiable type"
+            )
         })
     })
 })

@@ -68,8 +68,8 @@ export const writeRangeError: ProblemMessageWriter<"range"> = ({
         kind === "string" ? "characters " : kind === "Array" ? "items " : ""
     }(was ${size})`
 
-export const checkRange = ((state, range) => {
-    const size = typeof state.data === "number" ? state.data : state.data.length
+export const checkRange = ((data, range, state) => {
+    const size = typeof data === "number" ? data : data.length
     if (range.min) {
         if (
             size < range.min.limit ||
@@ -77,10 +77,12 @@ export const checkRange = ((state, range) => {
         ) {
             state.problems.addProblem(
                 "range",
+                data,
                 {
+                    // TODO: Add code here?
                     comparator: toComparator("min", range.min),
                     limit: range.min.limit,
-                    kind: subdomainOf(state.data),
+                    kind: subdomainOf(data),
                     size
                 },
                 state
@@ -94,10 +96,11 @@ export const checkRange = ((state, range) => {
         ) {
             state.problems.addProblem(
                 "range",
+                data,
                 {
                     comparator: toComparator("max", range.max),
                     limit: range.max.limit,
-                    kind: subdomainOf(state.data),
+                    kind: subdomainOf(data),
                     size
                 },
                 state

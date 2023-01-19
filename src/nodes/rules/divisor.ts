@@ -33,10 +33,11 @@ export const writeDivisorError: ProblemMessageWriter<"divisibility"> = ({
         ? `${data} is not an integer.`
         : `${data} is not divisible by ${divisor}.`
 
-export const checkDivisor = ((state, divisor) => {
-    if (state.data % divisor !== 0) {
+export const checkDivisor = ((data, divisor, state) => {
+    if (data % divisor !== 0) {
         state.problems.addProblem(
             "divisibility",
+            data,
             {
                 divisor
             },
