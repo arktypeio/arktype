@@ -126,18 +126,15 @@ export type IntersectionReducerMap<root extends Dict> = {
     [k in keyof root]-?: Intersector<root[k]>
 }
 
-export type KeyReducerFn<
-    root extends Dict,
-    includeSetResults extends boolean
-> = <key extends keyof root>(
+export type KeyIntersectionFn<root extends Dict> = <key extends keyof root>(
     key: key,
     l: root[key],
     r: root[key],
     context: IntersectionContext
-) => includeSetResults extends true ? IntersectionResult<root[key]> : root[key]
+) => IntersectionResult<root[key]>
 
 export type IntersectionReducer<root extends Dict> =
-    | KeyReducerFn<root, true>
+    | KeyIntersectionFn<root>
     | IntersectionReducerMap<root>
 
 export type KeyedOperationConfig = {

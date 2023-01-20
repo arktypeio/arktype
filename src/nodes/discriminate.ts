@@ -1,6 +1,5 @@
 import type {
     ResolvedCondition,
-    TraversalCondition,
     TraversalPredicate
 } from "../nodes/predicate.ts"
 import { conditionIntersection } from "../nodes/predicate.ts"

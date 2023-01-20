@@ -8,7 +8,7 @@ import { compareBranches, isBranchComparison } from "./branches.ts"
 import type {
     IntersectionContext,
     IntersectionResult,
-    KeyReducerFn
+    KeyIntersectionFn
 } from "./compose.ts"
 import { disjoint, equality, isEquality } from "./compose.ts"
 import type { DiscriminatedBranches } from "./discriminate.ts"
@@ -176,9 +176,8 @@ export const conditionIntersection = (
             : disjoint("value", [r.value, l], context)
         : rulesIntersection(l, r, context)
 
-export const predicateIntersection: KeyReducerFn<
-    Required<ValidatorNode>,
-    true
+export const predicateIntersection: KeyIntersectionFn<
+    Required<ValidatorNode>
 > = (domain, l, r, context) => {
     const comparison = comparePredicates(domain, l, r, context)
     if (!isBranchComparison(comparison)) {
