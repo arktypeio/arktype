@@ -141,7 +141,7 @@ export type IntersectionReducer<root extends Dict> =
     | IntersectionReducerMap<root>
 
 export type KeyedOperationConfig = {
-    onEmpty: "delete" | "bubble"
+    onEmpty: "omit" | "bubble"
 }
 
 export const composeKeyedIntersection =
@@ -160,17 +160,20 @@ export const composeKeyedIntersection =
                     ? reducer(k, l[k], r[k], context)
                     : reducer[k](l[k], r[k], context)
             if (isEquality(keyResult)) {
-                result[k] = l[k]
+                if (l[k] !== undefined) {
+                    result[k] = l[k]
+                }
             } else if (isDisjoint(keyResult)) {
-                if (config.onEmpty === "delete") {
-                    delete result[k]
+                if (config.onEmpty === "omit") {
                     lImpliesR = false
                     rImpliesL = false
                 } else {
                     return empty
                 }
             } else {
-                result[k] = keyResult
+                if (keyResult !== undefined) {
+                    result[k] = keyResult
+                }
                 lImpliesR &&= keyResult === l[k]
                 rImpliesL &&= keyResult === r[k]
             }

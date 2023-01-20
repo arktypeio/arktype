@@ -161,19 +161,6 @@ export const compileNodes = <nodes extends ScopeNodes>(
     return result
 }
 
-const validatorIntersection = composeKeyedIntersection<ValidatorNode>(
-    (domain, l, r, context) => {
-        if (l === undefined) {
-            return r === undefined ? throwUndefinedOperandsError() : undefined
-        }
-        if (r === undefined) {
-            return undefined
-        }
-        return predicateIntersection(domain, l, r, context)
-    },
-    { onEmpty: "delete" }
-)
-
 export const nodeIntersection: Intersector<TypeNode> = (l, r, context) => {
     const lRoot = resolveIfIdentifier(l, context.$)
     const rRoot = resolveIfIdentifier(r, context.$)
@@ -198,6 +185,19 @@ export const nodeIntersection: Intersector<TypeNode> = (l, r, context) => {
     }
     return result === lRoot ? l : result === rRoot ? r : result
 }
+
+const validatorIntersection = composeKeyedIntersection<ValidatorNode>(
+    (domain, l, r, context) => {
+        if (l === undefined) {
+            return r === undefined ? throwUndefinedOperandsError() : undefined
+        }
+        if (r === undefined) {
+            return undefined
+        }
+        return predicateIntersection(domain, l, r, context)
+    },
+    { onEmpty: "omit" }
+)
 
 const mixedIntersection = (
     morphNode: MorphNode,
@@ -238,13 +238,13 @@ export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
 }
 
 export const union = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
-    const lRoot = resolveIfIdentifier(l, $)
-    const rRoot = resolveIfIdentifier(r, $)
-    const result = nodeIsMorph(lRoot)
-        ? unionIncludingMorph(lRoot, rRoot, $)
-        : nodeIsMorph(rRoot)
-        ? unionIncludingMorph(rRoot, lRoot, $)
-        : validatorUnion(lRoot, rRoot, $)
+    const lResolution = resolveIfIdentifier(l, $)
+    const rResolution = resolveIfIdentifier(r, $)
+    const result = nodeIsMorph(lResolution)
+        ? unionIncludingMorph(lResolution, rResolution, $)
+        : nodeIsMorph(rResolution)
+        ? unionIncludingMorph(rResolution, lResolution, $)
+        : validatorUnion(lResolution, rResolution, $)
     return result
 }
 
@@ -262,12 +262,6 @@ export const validatorUnion = (
     const result = {} as mutable<ValidatorNode>
     const domains = keysOf({ ...l, ...r })
     for (const domain of domains) {
-        if (l === undefined) {
-            return r === undefined ? throwUndefinedOperandsError() : r
-        }
-        if (r === undefined) {
-            return l
-        }
         result[domain] = hasKey(l, domain)
             ? hasKey(r, domain)
                 ? predicateUnion(domain, l[domain], r[domain], $)
