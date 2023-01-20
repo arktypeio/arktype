@@ -1,7 +1,7 @@
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
-import type { CollapsibleList, Dict } from "../utils/generics.ts"
+import type { CollapsibleList, Dict, List } from "../utils/generics.ts"
 import { collapseIfSingleton, listFrom } from "../utils/generics.ts"
 import type { BranchesComparison } from "./branches.ts"
 import { compareBranches, isBranchComparison } from "./branches.ts"
@@ -11,10 +11,8 @@ import type {
     KeyReducerFn
 } from "./compose.ts"
 import { disjoint, equality, isEquality } from "./compose.ts"
-import type {
-    DiscriminatableRule,
-    DiscriminatedBranches
-} from "./discriminate.ts"
+import type { DiscriminatedBranches } from "./discriminate.ts"
+import { discriminate } from "./discriminate.ts"
 import type { Identifier, ValidatorNode } from "./node.ts"
 import { initializeIntersectionContext } from "./node.ts"
 import {
@@ -38,11 +36,12 @@ export type TraversalPredicate =
     | [TraversalBranchesEntry]
     | [DiscriminatedTraversalBranchesEntry]
 
-export type TraversalBranchesEntry = ["branches", readonly TraversalCondition[]]
+export type TraversalBranchesEntry = ["branches", List<TraversalCondition>]
 
-export type DiscriminatedTraversalBranchesEntry<
-    rule extends DiscriminatableRule = DiscriminatableRule
-> = ["cases", DiscriminatedBranches<rule>]
+export type DiscriminatedTraversalBranchesEntry = [
+    "cases",
+    DiscriminatedBranches
+]
 
 export const compilePredicate = (
     domain: Domain,
@@ -69,16 +68,7 @@ export const compilePredicate = (
         return flatBranches[0]
     }
     if (domain === "object") {
-        return [
-            [
-                "cases",
-                {
-                    path: [],
-                    rule: "domain",
-                    cases: {}
-                }
-            ]
-        ]
+        return [["cases", discriminate(branches as any, $)]]
     }
     return [["branches", flatBranches]]
 }
@@ -130,7 +120,7 @@ export const comparePredicates = (
         hasSubdomain(lResolution, "object") &&
         hasSubdomain(rResolution, "object")
     ) {
-        const result = conditionsIntersection(lResolution, rResolution, context)
+        const result = conditionIntersection(lResolution, rResolution, context)
         return result === lResolution ? l : result === rResolution ? r : result
     }
     const lComparisons = listFrom(lResolution)
@@ -167,7 +157,7 @@ export type ResolvedCondition<
     $ = Dict
 > = Exclude<Condition<domain, $>, string>
 
-const conditionsIntersection = (
+export const conditionIntersection = (
     l: ResolvedCondition,
     r: ResolvedCondition,
     context: IntersectionContext

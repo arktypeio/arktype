@@ -20,8 +20,24 @@ describe("discriminate", () => {
         })
         attest(t.flat).snap([
             ["domain", "object"],
-            ["cases", { path: [], rule: "domain", cases: {} }]
-        ])
+            [
+                "cases",
+                {
+                    path: "",
+                    kind: "domain",
+                    cases: {
+                        "0": {
+                            "1": {
+                                wet: {
+                                    kind: "value",
+                                    operands: [true, { value: false }]
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        ] as any)
     })
     // it("discriminate", () => {
     //     attest(

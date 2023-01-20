@@ -1,27 +1,43 @@
-import type { TraversalPredicate } from "../nodes/predicate.ts"
-import type { Domain, Subdomain } from "../utils/domains.ts"
+import type {
+    ResolvedCondition,
+    TraversalCondition,
+    TraversalPredicate
+} from "../nodes/predicate.ts"
+import { conditionIntersection } from "../nodes/predicate.ts"
+import type { ScopeRoot } from "../scope.ts"
+import type { List } from "../utils/generics.ts"
+import type { DisjointKind, DisjointsByPath } from "./compose.ts"
+import { initializeIntersectionContext } from "./node.ts"
 
-export type DiscriminatedBranches<
-    rule extends DiscriminatableRule = DiscriminatableRule
-> = {
-    readonly path: string[]
-    readonly rule: rule
-    readonly cases: TraversalCases<rule>
+export type DiscriminatedBranches<kind extends DisjointKind = DisjointKind> = {
+    readonly path: string
+    readonly kind: kind
+    readonly cases: DiscriminatedCases<kind>
 }
 
-export type TraversalCases<
-    ruleName extends DiscriminatableRule = DiscriminatableRule
-> = {
-    [caseKey in DiscriminatableRules[ruleName]]?: TraversalPredicate
+export type DiscriminatedCases<kind extends DisjointKind = DisjointKind> = {
+    [caseKey in string | kind]?: TraversalPredicate
 }
 
-type DiscriminatableRules = {
-    domain: Domain
-    subdomain: Subdomain
-    value: string
+export const discriminate = (
+    branches: List<ResolvedCondition>,
+    $: ScopeRoot
+): DiscriminatedBranches => {
+    const discriminants: Record<number, Record<number, DisjointsByPath>> = {}
+    for (let i = 0; i < branches.length - 1; i++) {
+        discriminants[i] = {}
+        for (let j = i + 1; j < branches.length; j++) {
+            const context = initializeIntersectionContext($)
+            conditionIntersection(branches[i], branches[j], context)
+            discriminants[i][j] = context.disjoints
+        }
+    }
+    return {
+        path: "",
+        kind: "domain",
+        cases: discriminants as any
+    }
 }
-
-export type DiscriminatableRule = keyof DiscriminatableRules
 
 // const discriminateBranches = (branches: TraversalCondition[]): Predicate => {
 //     const discriminant = greedyDiscriminant([], branches)
