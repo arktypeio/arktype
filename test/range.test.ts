@@ -2,7 +2,6 @@ import { describe, it } from "mocha"
 import type { TypeNode } from "../api.ts"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { compileDisjointReasonsMessage } from "../src/parse/string/ast.ts"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
@@ -10,7 +9,7 @@ import {
 } from "../src/parse/string/reduce/shared.ts"
 import { singleEqualsMessage } from "../src/parse/string/shift/operator/bounds.ts"
 
-describe("bound", () => {
+describe("range", () => {
     describe("parse", () => {
         describe("single", () => {
             it(">", () => {
@@ -115,27 +114,11 @@ describe("bound", () => {
                 })
             })
             it("non-overlapping", () => {
-                attest(() => type("number>3&number<=3").node).throws(
-                    compileDisjointReasonsMessage({
-                        "": {
-                            kind: "range",
-                            operands: [
-                                { limit: 3, exclusive: true },
-                                { limit: 3 }
-                            ]
-                        }
-                    })
+                attest(() => type("number>3&number<=3").node).throws.snap(
+                    "Error: Intersection of >3 and <=3 results in an unsatisfiable type"
                 )
-                attest(() => type("-2<number<-1&1<number<2")).throws(
-                    compileDisjointReasonsMessage({
-                        "": {
-                            kind: "range",
-                            operands: [
-                                { limit: 1, exclusive: true },
-                                { limit: -1, exclusive: true }
-                            ]
-                        }
-                    })
+                attest(() => type("-2<number<-1&1<number<2")).throws.snap(
+                    "Error: Intersection of >1 and <-1 results in an unsatisfiable type"
                 )
             })
             it("greater min is stricter", () => {

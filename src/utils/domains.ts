@@ -10,8 +10,7 @@ import { isKeyOf } from "./generics.ts"
 export const hasDomain = <data, domain extends Domain>(
     data: data,
     domain: domain
-): data is Extract<data, inferDomain<domain>> =>
-    domainOf(data as any) === domain
+): data is data & inferDomain<domain> => domainOf(data as any) === domain
 
 type DomainTypes = {
     bigint: bigint

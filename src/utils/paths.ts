@@ -34,12 +34,9 @@ export type join<
       >
     : result
 
-export const withPathContext = <base extends string, path extends string>(
-    base: base,
-    path: path
-) => `${base}${path && ` at ${path}`}` as withPathContext<base, path>
+export const describePath = <path extends string>(path: path) =>
+    path && (` at ${path}` as describePath<path>)
 
-export type withPathContext<
-    base extends string,
-    path extends string
-> = `${base}${path extends "" ? "" : ` at ${path}`}`
+export type describePath<path extends string> = path extends ""
+    ? ""
+    : ` at ${path}`

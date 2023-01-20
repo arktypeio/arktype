@@ -4,7 +4,10 @@ import type {
 } from "../nodes/predicate.ts"
 import { conditionIntersection } from "../nodes/predicate.ts"
 import type { ScopeRoot } from "../scope.ts"
-import type { List } from "../utils/generics.ts"
+import type { keySet, List } from "../utils/generics.ts"
+import { Dict, hasKey } from "../utils/generics.ts"
+import type { NumberLiteral } from "../utils/numericLiterals.ts"
+import { stringSerialize } from "../utils/serialize.ts"
 import type { DisjointKind, DisjointsByPath } from "./compose.ts"
 import { initializeIntersectionContext } from "./node.ts"
 
@@ -18,17 +21,35 @@ export type DiscriminatedCases<kind extends DisjointKind = DisjointKind> = {
     [caseKey in string | kind]?: TraversalPredicate
 }
 
+export type Discriminant = {}
+
 export const discriminate = (
     branches: List<ResolvedCondition>,
     $: ScopeRoot
 ): DiscriminatedBranches => {
-    const discriminants: Record<number, Record<number, DisjointsByPath>> = {}
-    for (let i = 0; i < branches.length - 1; i++) {
-        discriminants[i] = {}
-        for (let j = i + 1; j < branches.length; j++) {
+    const discriminants: Record<
+        string,
+        {
+            [k in DisjointKind]?: Record<string, Record<number, true>>
+        }
+    > = {}
+    for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
+        for (let rIndex = lIndex + 1; rIndex < branches.length; rIndex++) {
             const context = initializeIntersectionContext($)
-            conditionIntersection(branches[i], branches[j], context)
-            discriminants[i][j] = context.disjoints
+            conditionIntersection(branches[lIndex], branches[rIndex], context)
+            for (const path in context.disjoints) {
+                const disjoint = context.disjoints[path]
+                discriminants[path] ??= {}
+                const kinds = discriminants[path]
+                kinds[disjoint.kind] ??= {}
+                const cases = kinds[disjoint.kind]!
+                const lKey = stringSerialize(disjoint.operands[0])
+                const rKey = stringSerialize(disjoint.operands[1])
+                cases[lKey] ??= {}
+                cases[rKey] ??= {}
+                cases[lKey][lIndex] = true
+                cases[rKey][rIndex] = true
+            }
         }
     }
     return {

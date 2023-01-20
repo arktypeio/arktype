@@ -166,14 +166,14 @@ export const conditionIntersection = (
         ? isExactValuePredicate(r)
             ? l.value === r.value
                 ? equality()
-                : disjoint("value", [l.value, r], context)
+                : disjoint("value", [l.value, r.value], context)
             : literalSatisfiesRules(l.value, r, context.$)
             ? l
-            : disjoint("value", [l.value, r], context)
+            : disjoint("assignability", [l.value, r], context)
         : isExactValuePredicate(r)
         ? literalSatisfiesRules(r.value, l, context.$)
             ? r
-            : disjoint("value", [r.value, l], context)
+            : disjoint("assignability", [r.value, l], context)
         : rulesIntersection(l, r, context)
 
 export const predicateIntersection: KeyIntersectionFn<

@@ -45,30 +45,36 @@ export type DisjointKinds = {
     range: [min: Bound, max: Bound]
     class: [constructor, constructor]
     tupleLength: [number, number]
-    value: [unknown, Condition]
+    value: [unknown, unknown]
+    assignability: [unknown, Condition]
 }
 
-// TODO: add union reason
-export const disjointMessageWriters = {
-    domain: ({ operands }) =>
-        `${operands[0].join(", ")} ${
-            operands[0].length > 1 ? "have" : "has"
-        } no overlap with ${operands[1].join(", ")}`,
-    subdomain: ({ operands }) =>
-        `${operands[0]} has no overlap with ${operands[1]}`,
-    range: ({ operands }) => writeEmptyRangeMessage(operands[0], operands[1]),
-    class: ({ operands }) =>
-        `${operands[0].name} has no overlap with ${operands[1].name}`,
-    tupleLength: ({ operands }) =>
-        `Tuple of length ${operands[0]} has no overlap with tuple of length ${operands[1]}`,
-    value: ({ operands }) =>
-        `Literal value ${stringSerialize(
-            operands[0]
-        )} has no overlap with ${stringSerialize(operands[1])}`
+// TODO: add union
+export const disjointDescribers = {
+    domain: (operands) =>
+        `${operands[0].join(", ")} and ${operands[1].join(", ")}`,
+    subdomain: (operands) => `${operands[0]} and ${operands[1]}`,
+    range: (operands) =>
+        `${stringifyBound("min", operands[0])} and ${stringifyBound(
+            "max",
+            operands[1]
+        )}`,
+    class: (operands) => `classes ${operands[0].name} and ${operands[1].name}`,
+    tupleLength: (operands) =>
+        `tuples of length ${operands[0]} and ${operands[1]}`,
+    value: (operands) =>
+        `literal values ${stringSerialize(operands[0])} and ${stringSerialize(
+            operands[1]
+        )}`,
+    assignability: (operands) =>
+        `literal value ${stringSerialize(operands[0])} and ${stringSerialize(
+            operands[1]
+        )}`
 } satisfies {
-    [k in DisjointKind]: (context: DisjointContext<k>) => string
+    [k in DisjointKind]: (context: DisjointContext<k>["operands"]) => string
 }
 
+// TODO: move
 export const writeEmptyRangeMessage = (min: Bound, max: Bound) =>
     `the range bounded by ${stringifyBound("min", min)} and ${stringifyBound(
         "max",

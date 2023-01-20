@@ -39,9 +39,33 @@ describe("discriminate", () => {
             ]
         ] as any)
     })
-    // it("discriminate", () => {
-    //     attest(
-    //         type("ocean|sky|rainforest|desert", { scope: places }).root
-    //     ).snap({})
-    // })
+    it("n-ary", () => {
+        const t = places.$.type("ocean|sky|rainforest|desert")
+        attest(t.flat as any).snap([
+            ["domain", "object"],
+            [
+                "cases",
+                {
+                    path: "",
+                    kind: "domain",
+                    cases: {
+                        wet: {
+                            value: {
+                                true: { "0": true, "2": true },
+                                '{"value":"false"}': { "1": true, "3": true },
+                                false: { "1": true },
+                                '{"value":"true"}': { "2": true }
+                            }
+                        },
+                        blue: {
+                            value: {
+                                true: { "0": true, "1": true },
+                                '{"value":"false"}': { "2": true, "3": true }
+                            }
+                        }
+                    }
+                }
+            ]
+        ])
+    })
 })

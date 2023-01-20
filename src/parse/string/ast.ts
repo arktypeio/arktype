@@ -1,5 +1,5 @@
 import type { DisjointsByPath } from "../../nodes/compose.ts"
-import { disjointMessageWriters } from "../../nodes/compose.ts"
+import { disjointDescribers } from "../../nodes/compose.ts"
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
 import type { BootstrapScope } from "../../scope.ts"
 import type { asIn } from "../../type.ts"
@@ -19,8 +19,9 @@ import type {
     stringKeyOf,
     tryCatch
 } from "../../utils/generics.ts"
+import { keysOf } from "../../utils/generics.ts"
 import type { join } from "../../utils/paths.ts"
-import { withPathContext } from "../../utils/paths.ts"
+import { describePath } from "../../utils/paths.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
@@ -174,38 +175,34 @@ type discriminatableRecurse<
 // for other instances of downcast and try to do the same)
 export const writeDoubleMorphIntersectionMessage = <path extends string>(
     path: path
-) =>
-    `${withPathContext(
-        "Intersection",
-        path
-    )} must have at least one non-morph operand` as writeDoubleMorphIntersectionMessage<path>
+): writeDoubleMorphIntersectionMessage<path> =>
+    `Intersection${describePath(path)} must have at least one non-morph operand`
 
 type writeDoubleMorphIntersectionMessage<path extends string> =
-    `${withPathContext<
-        "Intersection",
-        path
-    >} must have at least one non-morph operand`
+    `Intersection${describePath<path>} must have at least one non-morph operand`
 
 export const undiscriminatableMorphUnionMessage = `A union of one or more morphs must be discriminatable`
 
 export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
+    const paths = keysOf(disjoints)
+    if (paths.length === 1) {
+        const path = paths[0]
+        return `Intersection${describePath(path)} of ${disjointDescribers[
+            disjoints[path].kind
+        ](disjoints[path].operands as never)} results in an unsatisfiable type`
+    }
     let message = `
-        "Intersection results in an unsatisfiable type:\n`
+        "Intersection results in unsatisfiable types at the following paths:\n`
     for (const path in disjoints) {
-        message += `  ${withPathContext(
-            "Intersection",
-            path
-        )} ${disjointMessageWriters[disjoints[path].kind](
-            disjoints[path] as never
-        )}\n`
+        message += `  ${path || "/"}: ${disjointDescribers[
+            disjoints[path].kind
+        ](disjoints[path].operands as never)}\n`
     }
     return message
 }
 
-type writeImplicitNeverMessage<path extends string> = `${withPathContext<
-    "Intersection",
-    path
->} results in an unsatisfiable type`
+type writeImplicitNeverMessage<path extends string> =
+    `Intersection${describePath<path>} results in an unsatisfiable type`
 
 type undiscriminatableMorphUnionMessage =
     typeof undiscriminatableMorphUnionMessage

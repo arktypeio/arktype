@@ -1,7 +1,6 @@
 import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { compileDisjointReasonsMessage } from "../src/parse/string/ast.ts"
 import { writeInvalidDivisorMessage } from "../src/parse/string/shift/operator/divisor.ts"
 
 describe("divisibility", () => {
@@ -74,11 +73,8 @@ describe("divisibility", () => {
             attest(type("number%5&0").node).snap({ number: { value: 0 } })
         })
         it("invalid literal", () => {
-            // TODO: add compile disjoint reasons test for direct snap
-            attest(() => type("number%3&8")).throws(
-                compileDisjointReasonsMessage({
-                    "": { kind: "value", operands: [8, { divisor: 3 }] }
-                })
+            attest(() => type("number%3&8")).throws.snap(
+                'Error: Intersection of literal value 8 and {"divisor":3} results in an unsatisfiable type'
             )
         })
     })

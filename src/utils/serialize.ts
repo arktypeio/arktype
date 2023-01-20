@@ -1,3 +1,5 @@
+import { hasDomain } from "./domains.ts"
+
 export const isRecursible = (value: unknown): value is object =>
     typeof value === "object" && value !== null
 
@@ -17,40 +19,35 @@ export type serialize<t> = t extends StringifiedValue
       }
     : t
 
-export const literalSerialize = <T>(value: T): serialize<T> =>
-    serialize(value, false, [])
+export const literalSerialize = <T>(value: T) =>
+    serialize(value, []) as serialize<T>
 
-export const stringSerialize = (value: unknown) => serialize(value, true, [])
+export const stringSerialize = (value: unknown) => {
+    const result = literalSerialize(value)
+    return hasDomain(result, "object") ? JSON.stringify(result)! : `${result}`
+}
 
-const serialize = <t>(
-    value: t,
-    alwaysStringify: boolean,
-    seen: unknown[]
-): any => {
+const serialize = <t>(value: t, seen: unknown[]): unknown => {
     if (isRecursible(value)) {
         if (seen.includes(value)) {
             return "<cyclic>"
         } else {
             const serializedObject = Array.isArray(value)
-                ? value.map((_) =>
-                      serialize(_, alwaysStringify, [...seen, value])
-                  )
+                ? value.map((_) => serialize(_, [...seen, value]))
                 : Object.fromEntries(
                       Object.entries(value).map(([k, v]) => [
                           k,
-                          serialize(v, alwaysStringify, [...seen, value])
+                          serialize(v, [...seen, value])
                       ])
                   )
-            return alwaysStringify
-                ? JSON.stringify(serializedObject)
-                : serializedObject
+            return serializedObject
         }
     } else {
-        return serializePrimitive(value, alwaysStringify)
+        return serializePrimitive(value)
     }
 }
 
-const serializePrimitive = (value: unknown, stringify?: boolean) => {
+const serializePrimitive = (value: unknown) => {
     switch (typeof value) {
         case "symbol":
             return `<symbol ${value.description ?? "(anonymous)"}>`
@@ -61,6 +58,6 @@ const serializePrimitive = (value: unknown, stringify?: boolean) => {
         case "bigint":
             return `<bigint ${value}>`
         default:
-            return stringify ? JSON.stringify(value) : value
+            return value
     }
 }
