@@ -13,19 +13,19 @@ import type {
     mutable,
     stringKeyOf
 } from "../utils/generics.ts"
-import { hasKeys, keysOf } from "../utils/generics.ts"
+import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
 import type {
-    OperationContext,
-    SetOperation,
-    SetOperationResult
+    IntersectionContext,
+    IntersectionResult,
+    Intersector
 } from "./compose.ts"
 import {
-    composeKeyedOperation,
+    composeKeyedIntersection,
     disjoint,
     empty,
-    equality,
     isDisjoint,
-    isEquality
+    isEquality,
+    throwUndefinedOperandsError
 } from "./compose.ts"
 import type { Keyword } from "./keywords.ts"
 import type {
@@ -38,7 +38,12 @@ import {
     predicateIntersection,
     predicateUnion
 } from "./predicate.ts"
-import { nodeIsMorph, resolveFlat, resolveIfIdentifier } from "./resolve.ts"
+import {
+    domainsOfNode,
+    nodeIsMorph,
+    resolveFlat,
+    resolveIfIdentifier
+} from "./resolve.ts"
 import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | TypeResolution<$>
@@ -156,46 +161,10 @@ export const compileNodes = <nodes extends ScopeNodes>(
     return result
 }
 
-export type MixedOperation = (
-    morphNode: MorphNode,
-    validator: ValidatorNode,
-    context: OperationContext
-) => SetOperationResult<MorphNode>
-
-export const composeNodeOperation =
-    (
-        validatorOperation: SetOperation<ValidatorNode>,
-        morphOperation: SetOperation<MorphNode>,
-        mixedOperation: MixedOperation
-    ): SetOperation<TypeNode> =>
-    (l, r, context) => {
-        const lRoot = resolveIfIdentifier(l, context.$)
-        const rRoot = resolveIfIdentifier(r, context.$)
-        const result = nodeIsMorph(lRoot)
-            ? nodeIsMorph(rRoot)
-                ? morphOperation(lRoot, rRoot, context)
-                : mixedOperation(lRoot, rRoot, context)
-            : nodeIsMorph(rRoot)
-            ? mixedOperation(rRoot, lRoot, context)
-            : validatorOperation(lRoot, rRoot, context)
-        return result === lRoot ? l : result === rRoot ? r : result
-    }
-
-export const finalizeNodeOperation = (
-    l: TypeNode,
-    result: SetOperationResult<TypeNode>,
-    context: OperationContext
-): TypeNode =>
-    isDisjoint(result)
-        ? throwParseError(compileDisjointReasonsMessage(context.disjoints))
-        : isEquality(result)
-        ? l
-        : result
-
-const validatorIntersection = composeKeyedOperation<ValidatorNode>(
+const validatorIntersection = composeKeyedIntersection<ValidatorNode>(
     (domain, l, r, context) => {
         if (l === undefined) {
-            return r === undefined ? equality() : undefined
+            return r === undefined ? throwUndefinedOperandsError() : undefined
         }
         if (r === undefined) {
             return undefined
@@ -205,68 +174,107 @@ const validatorIntersection = composeKeyedOperation<ValidatorNode>(
     { onEmpty: "delete" }
 )
 
-export const nodeIntersection = composeNodeOperation(
-    (l, r, context) => {
-        const result = validatorIntersection(l, r, context)
-        if (typeof result === "object" && !hasKeys(result)) {
-            return context.disjoints[context.path]
-                ? empty
-                : disjoint("domain", [keysOf(l), keysOf(r)], context)
-        }
-        return result
-    },
-    (l, r, context) =>
-        throwParseError(writeDoubleMorphIntersectionMessage(context.path)),
-    (morphNode, validatorNode, context) => {
-        const result = nodeIntersection(
-            morphNode.input,
-            validatorNode,
-            context
-        ) as SetOperationResult<ValidatorNode>
-        return result === morphNode.input || isEquality(result)
-            ? morphNode
-            : isDisjoint(result)
-            ? result
-            : {
-                  input: result,
-                  morph: morphNode.morph
-              }
+export const nodeIntersection: Intersector<TypeNode> = (l, r, context) => {
+    const lRoot = resolveIfIdentifier(l, context.$)
+    const rRoot = resolveIfIdentifier(r, context.$)
+    const result = nodeIsMorph(lRoot)
+        ? nodeIsMorph(rRoot)
+            ? throwParseError(writeDoubleMorphIntersectionMessage(context.path))
+            : mixedIntersection(lRoot, rRoot, context)
+        : nodeIsMorph(rRoot)
+        ? mixedIntersection(rRoot, lRoot, context)
+        : validatorIntersection(lRoot, rRoot, context)
+    if (typeof result === "object" && !hasKeys(result)) {
+        return context.disjoints[context.path]
+            ? empty
+            : disjoint(
+                  "domain",
+                  [
+                      domainsOfNode(lRoot, context.$),
+                      domainsOfNode(rRoot, context.$)
+                  ],
+                  context
+              )
     }
-)
+    return result === lRoot ? l : result === rRoot ? r : result
+}
 
-const initializeOperationContext = ($: ScopeRoot): OperationContext => ({
+const mixedIntersection = (
+    morphNode: MorphNode,
+    validator: ValidatorNode,
+    context: IntersectionContext
+): IntersectionResult<MorphNode> => {
+    const result = nodeIntersection(
+        morphNode.input,
+        validator,
+        context
+    ) as IntersectionResult<ValidatorNode>
+    return result === morphNode.input || isEquality(result)
+        ? morphNode
+        : isDisjoint(result)
+        ? result
+        : {
+              input: result,
+              morph: morphNode.morph
+          }
+}
+
+export const initializeIntersectionContext = (
+    $: ScopeRoot
+): IntersectionContext => ({
     $,
     path: "",
     disjoints: {}
 })
 
 export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
-    const context = initializeOperationContext($)
-    return finalizeNodeOperation(l, nodeIntersection(l, r, context), context)
+    const context = initializeIntersectionContext($)
+    const result = nodeIntersection(l, r, context)
+    return isDisjoint(result)
+        ? throwParseError(compileDisjointReasonsMessage(context.disjoints))
+        : isEquality(result)
+        ? l
+        : result
 }
 
 export const union = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
-    const context = initializeOperationContext($)
-    return finalizeNodeOperation(l, nodeUnion(l, r, context), context)
+    const lRoot = resolveIfIdentifier(l, $)
+    const rRoot = resolveIfIdentifier(r, $)
+    const result = nodeIsMorph(lRoot)
+        ? unionIncludingMorph(lRoot, rRoot, $)
+        : nodeIsMorph(rRoot)
+        ? unionIncludingMorph(rRoot, lRoot, $)
+        : validatorUnion(lRoot, rRoot, $)
+    return result
 }
 
-export const validatorUnion = composeKeyedOperation<ValidatorNode>(
-    (domain, l, r, context) => {
+export const unionIncludingMorph = (
+    morphNode: MorphNode,
+    pairedNode: TypeResolution,
+    $: ScopeRoot
+) => morphNode
+
+export const validatorUnion = (
+    l: ValidatorNode,
+    r: ValidatorNode,
+    $: ScopeRoot
+) => {
+    const result = {} as mutable<ValidatorNode>
+    const domains = keysOf({ ...l, ...r })
+    for (const domain of domains) {
         if (l === undefined) {
-            return r === undefined ? equality() : r
+            return r === undefined ? throwUndefinedOperandsError() : r
         }
         if (r === undefined) {
             return l
         }
-        return predicateUnion(domain, l, r, context)
-    },
-    { onEmpty: "throw" }
-)
-
-export const nodeUnion = composeNodeOperation(
-    validatorUnion,
-    () => throwParseError(writeDoubleMorphIntersectionMessage("")),
-    (morphNode, validatorNode, $) => {
-        return nodeUnion(morphNode.input, validatorNode, $) as any
+        result[domain] = hasKey(l, domain)
+            ? hasKey(r, domain)
+                ? predicateUnion(domain, l[domain], r[domain], $)
+                : l[domain]
+            : hasKey(r, domain)
+            ? r[domain]
+            : throwUndefinedOperandsError()
     }
-)
+    return result
+}

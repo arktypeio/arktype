@@ -9,7 +9,7 @@ import { hasKey } from "../../utils/generics.ts"
 import { pushKey, withoutLastKey } from "../../utils/paths.ts"
 import {
     composeIntersection,
-    composeKeyedOperation,
+    composeKeyedIntersection,
     equality,
     isDisjoint
 } from "../compose.ts"
@@ -47,7 +47,7 @@ const mappedKeyRegex = /^\[.*\]$/
 const isMappedKey = (propKey: string) => mappedKeyRegex.test(propKey)
 
 export const propsIntersection = composeIntersection<PropsRule>(
-    composeKeyedOperation<PropsRule>(
+    composeKeyedIntersection<PropsRule>(
         (propKey, l, r, context) => {
             if (l === undefined) {
                 return r === undefined ? equality() : r

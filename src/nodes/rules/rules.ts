@@ -8,7 +8,7 @@ import type {
     constructor,
     Dict
 } from "../../utils/generics.ts"
-import { composeIntersection, composeKeyedOperation } from "../compose.ts"
+import { composeIntersection, composeKeyedIntersection } from "../compose.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
@@ -68,7 +68,7 @@ type defineRuleSet<domain extends Domain, keys extends keyof Rules, $> = Pick<
 const narrowIntersection =
     composeIntersection<CollapsibleList<Narrow>>(collapsibleListUnion)
 
-export const rulesIntersection = composeKeyedOperation<Rules>(
+export const rulesIntersection = composeKeyedIntersection<Rules>(
     {
         subdomain: subdomainIntersection,
         divisor: divisorIntersection,

@@ -7,20 +7,21 @@ import { stringSerialize } from "../utils/serialize.ts"
 import type { Condition } from "./predicate.ts"
 import type { Bound, BoundKind } from "./rules/range.ts"
 
-export type SetOperation<t> = (
+export type Intersector<t> = (
     l: t,
     r: t,
-    context: OperationContext
-) => SetOperationResult<t>
+    context: IntersectionContext
+) => IntersectionResult<t>
 
-type allowUndefinedOperands<f extends SetOperation<any>> =
-    f extends SetOperation<infer operand>
-        ? SetOperation<operand | undefined>
-        : never
+type allowUndefinedOperands<f extends Intersector<any>> = f extends Intersector<
+    infer operand
+>
+    ? Intersector<operand | undefined>
+    : never
 
 export const composeIntersection = <
     t,
-    reducer extends SetOperation<t> = SetOperation<t>
+    reducer extends Intersector<t> = Intersector<t>
 >(
     reducer: reducer
 ) =>
@@ -33,10 +34,10 @@ export const composeIntersection = <
             ? l
             : reducer(l, r, context)) as allowUndefinedOperands<reducer>
 
-const throwUndefinedOperandsError = () =>
-    throwInternalError(`Unexpected intersection of two undefined operands`)
+export const throwUndefinedOperandsError = () =>
+    throwInternalError(`Unexpected operation two undefined operands`)
 
-export type SetOperationResult<t> = t | Empty | Equal
+export type IntersectionResult<t> = t | Empty | Equal
 
 export type DisjointKinds = {
     domain: [Domain[], Domain[]]
@@ -82,7 +83,7 @@ export const toComparator = (kind: BoundKind, bound: Bound) =>
 
 export type DisjointKind = keyof DisjointKinds
 
-export type OperationContext = {
+export type IntersectionContext = {
     $: ScopeRoot
     path: string
     disjoints: DisjointsByPath
@@ -95,7 +96,7 @@ export type Empty = typeof empty
 export const disjoint = <kind extends DisjointKind>(
     kind: kind,
     operands: DisjointKinds[kind],
-    context: OperationContext
+    context: IntersectionContext
 ): Empty => {
     context.disjoints[context.path] = {
         kind,
@@ -121,30 +122,33 @@ export const equality = (): Equal => equal
 
 export const isEquality = (result: unknown): result is Equal => result === equal
 
-export type KeyReducerMap<root extends Dict> = {
-    [k in keyof root]-?: SetOperation<root[k]>
+export type IntersectionReducerMap<root extends Dict> = {
+    [k in keyof root]-?: Intersector<root[k]>
 }
 
-export type KeyReducerFn<root extends Dict> = <key extends keyof root>(
+export type KeyReducerFn<
+    root extends Dict,
+    includeSetResults extends boolean
+> = <key extends keyof root>(
     key: key,
     l: root[key],
     r: root[key],
-    context: OperationContext
-) => SetOperationResult<root[key]>
+    context: IntersectionContext
+) => includeSetResults extends true ? IntersectionResult<root[key]> : root[key]
 
-export type KeyReducer<root extends Dict> =
-    | KeyReducerFn<root>
-    | KeyReducerMap<root>
+export type IntersectionReducer<root extends Dict> =
+    | KeyReducerFn<root, true>
+    | IntersectionReducerMap<root>
 
 export type KeyedOperationConfig = {
-    onEmpty: "delete" | "bubble" | "throw"
+    onEmpty: "delete" | "bubble"
 }
 
-export const composeKeyedOperation =
+export const composeKeyedIntersection =
     <root extends Dict>(
-        reducer: KeyReducer<root>,
+        reducer: IntersectionReducer<root>,
         config: KeyedOperationConfig
-    ): SetOperation<root> =>
+    ): Intersector<root> =>
     (l, r, context) => {
         const result = {} as mutable<root>
         const keys = keysOf({ ...l, ...r } as root)
@@ -156,25 +160,17 @@ export const composeKeyedOperation =
                     ? reducer(k, l[k], r[k], context)
                     : reducer[k](l[k], r[k], context)
             if (isEquality(keyResult)) {
-                if (l[k] !== undefined) {
-                    result[k] = l[k]
-                }
+                result[k] = l[k]
             } else if (isDisjoint(keyResult)) {
                 if (config.onEmpty === "delete") {
                     delete result[k]
                     lImpliesR = false
                     rImpliesL = false
-                } else if (config.onEmpty === "bubble") {
-                    return empty
                 } else {
-                    return throwInternalError(
-                        `Unexpected empty operation result at key '${k}'`
-                    )
+                    return empty
                 }
             } else {
-                if (keyResult !== undefined) {
-                    result[k] = keyResult
-                }
+                result[k] = keyResult
                 lImpliesR &&= keyResult === l[k]
                 rImpliesL &&= keyResult === r[k]
             }

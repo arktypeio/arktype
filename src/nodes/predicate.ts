@@ -1,21 +1,22 @@
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
-import type { CollapsibleList, Dict, stringKeyOf } from "../utils/generics.ts"
+import type { CollapsibleList, Dict } from "../utils/generics.ts"
 import { collapseIfSingleton, listFrom } from "../utils/generics.ts"
 import type { BranchesComparison } from "./branches.ts"
 import { compareBranches, isBranchComparison } from "./branches.ts"
 import type {
-    KeyReducerFn,
-    OperationContext,
-    SetOperationResult
+    IntersectionContext,
+    IntersectionResult,
+    KeyReducerFn
 } from "./compose.ts"
-import { disjoint, equality } from "./compose.ts"
+import { disjoint, equality, isEquality } from "./compose.ts"
 import type {
     DiscriminatableRule,
     DiscriminatedBranches
 } from "./discriminate.ts"
 import type { Identifier, ValidatorNode } from "./node.ts"
+import { initializeIntersectionContext } from "./node.ts"
 import {
     isExactValuePredicate,
     resolveFlatPredicate,
@@ -105,17 +106,17 @@ export type ExactValueEntry = ["value", unknown]
 export type ResolvedPredicate<
     domain extends Domain = Domain,
     $ = Dict
-> = Exclude<Predicate<domain, stringKeyOf<$>>, string>
+> = Exclude<Predicate<domain, $>, string>
 
 export type PredicateComparison =
-    | SetOperationResult<Predicate>
+    | IntersectionResult<Predicate>
     | BranchesComparison
 
 export const comparePredicates = (
     domain: Domain,
     l: Predicate,
     r: Predicate,
-    context: OperationContext
+    context: IntersectionContext
 ): PredicateComparison => {
     const lResolution = resolvePredicateIfIdentifier(domain, l, context.$)
     const rResolution = resolvePredicateIfIdentifier(domain, r, context.$)
@@ -129,27 +130,8 @@ export const comparePredicates = (
         hasSubdomain(lResolution, "object") &&
         hasSubdomain(rResolution, "object")
     ) {
-        return isExactValuePredicate(lResolution)
-            ? isExactValuePredicate(rResolution)
-                ? lResolution.value === rResolution.value
-                    ? equality()
-                    : disjoint(
-                          "value",
-                          [lResolution.value, rResolution],
-                          context
-                      )
-                : literalSatisfiesRules(
-                      lResolution.value,
-                      rResolution,
-                      context.$
-                  )
-                ? l
-                : disjoint("value", [lResolution.value, rResolution], context)
-            : isExactValuePredicate(rResolution)
-            ? literalSatisfiesRules(rResolution.value, lResolution, context.$)
-                ? r
-                : disjoint("value", [rResolution.value, lResolution], context)
-            : rulesIntersection(lResolution, rResolution, context)
+        const result = conditionsIntersection(lResolution, rResolution, context)
+        return result === lResolution ? l : result === rResolution ? r : result
     }
     const lComparisons = listFrom(lResolution)
     const rComparisons = listFrom(rResolution)
@@ -180,12 +162,34 @@ export const comparePredicates = (
     return comparison
 }
 
-export const predicateIntersection: KeyReducerFn<Required<ValidatorNode>> = (
-    domain,
-    l,
-    r,
-    context
-) => {
+export type ResolvedCondition<
+    domain extends Domain = Domain,
+    $ = Dict
+> = Exclude<Condition<domain, $>, string>
+
+const conditionsIntersection = (
+    l: ResolvedCondition,
+    r: ResolvedCondition,
+    context: IntersectionContext
+) =>
+    isExactValuePredicate(l)
+        ? isExactValuePredicate(r)
+            ? l.value === r.value
+                ? equality()
+                : disjoint("value", [l.value, r], context)
+            : literalSatisfiesRules(l.value, r, context.$)
+            ? l
+            : disjoint("value", [l.value, r], context)
+        : isExactValuePredicate(r)
+        ? literalSatisfiesRules(r.value, l, context.$)
+            ? r
+            : disjoint("value", [r.value, l], context)
+        : rulesIntersection(l, r, context)
+
+export const predicateIntersection: KeyReducerFn<
+    Required<ValidatorNode>,
+    true
+> = (domain, l, r, context) => {
     const comparison = comparePredicates(domain, l, r, context)
     if (!isBranchComparison(comparison)) {
         return comparison
@@ -204,19 +208,20 @@ export const predicateIntersection: KeyReducerFn<Required<ValidatorNode>> = (
     ])
 }
 
-export const predicateUnion: KeyReducerFn<Required<ValidatorNode>> = (
-    domain,
-    l,
-    r,
-    context
+export const predicateUnion = (
+    domain: Domain,
+    l: Predicate,
+    r: Predicate,
+    $: ScopeRoot
 ) => {
+    const context = initializeIntersectionContext($)
     const comparison = comparePredicates(domain, l, r, context)
     if (!isBranchComparison(comparison)) {
-        return comparison === l
+        return isEquality(comparison) || comparison === l
             ? r
             : comparison === r
             ? l
-            : // If a boolean has multiple branches, neither of which is a
+            : // if a boolean has multiple branches, neither of which is a
             // subtype of the other, it consists of two opposite literals
             // and can be simplified to a non-literal boolean.
             domain === "boolean"
