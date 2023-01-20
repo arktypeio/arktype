@@ -2,7 +2,7 @@ import { describe, it } from "mocha"
 import { scope } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
-describe("compile", () => {
+describe("discriminate", () => {
     const places = scope.lazy({
         ocean: { wet: "true", blue: "true", isOcean: "true" },
         sky: { wet: "false", blue: "true", isSky: "true" },
