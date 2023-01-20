@@ -67,16 +67,14 @@ export type inferTuple<def extends List, $> = def extends TupleExpression
       }
 
 type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
-    ? [unknown, 3] extends [def[2], keyof def]
+    ? "3" extends keyof def
         ? inferDefinition<def[3], $>
-        : def[2] extends (data: any) => data is infer narrowed
-        ? narrowed
         : inferDefinition<def[0], $>
     : def[1] extends "=>"
     ? (
           In: asIn<inferDefinition<def[0], $>>
       ) => Out<
-          [unknown, 3] extends [def[2], keyof def]
+          "3" extends keyof def
               ? asOut<inferDefinition<def[3], $>>
               : returnOf<def[2]>
       >

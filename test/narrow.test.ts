@@ -12,7 +12,7 @@ describe("narrow", () => {
         attest(t.node).equals({ number: { narrow: isOdd as any } })
     })
     it("functional narrowing", () => {
-        const t = type(["number", ":", (n): n is 1 => n === 1])
+        const t = type(["number", ":", (n) => n === 1, "1"])
         attest(t).typed as Type<1>
     })
     it("functional parameter inference", () => {
@@ -52,11 +52,12 @@ describe("narrow", () => {
             "string|number",
             ":",
             {
-                string: (s): s is "zero" => s === "zero",
-                number: (n): n is 0 => n === 0
-            }
+                string: (s) => s === "zero",
+                number: (n) => n === 0
+            },
+            "0|'zero'"
         ])
-        attest(t).typed as Type<"zero" | 0>
+        attest(t).typed as Type<0 | "zero">
     })
     it("distributed parameter inference", () => {
         const validateInferredAsZero = (input: 0) => !input
@@ -82,7 +83,6 @@ describe("narrow", () => {
         // @ts-expect-error
         type([["boolean", ":", (b) => b === true]]).infer
     })
-    // TODO: finalize API workarounds (something explicit like "as"?)
     it("functional inference in scope", () => {
         // https://github.com/arktypeio/arktype/issues/577
         // There is a problem inferring tuple expressions that

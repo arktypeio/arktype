@@ -33,7 +33,10 @@ export type Out<t = {}> = nominal<t, "out">
 export type validateMorphTuple<def extends TupleExpression, $> = [
     _: validateDefinition<def[0], $>,
     _: "=>",
-    _: Morph<asOut<inferDefinition<def[0], $>>>,
+    _: Morph<
+        asOut<inferDefinition<def[0], $>>,
+        "3" extends keyof def ? inferDefinition<def[3], $> : unknown
+    >,
     _?: validateDefinition<def[3], $>
 ]
 

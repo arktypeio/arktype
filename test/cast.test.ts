@@ -27,8 +27,7 @@ describe("cast", () => {
     // https://github.com/arktypeio/arktype/issues/577
     it("function returns", () => {
         const types = scope({
-            // TODO: can we throw a validation error here? don't cast if return type doesn't match
-            a: [{ a: "1" }, "=>", (data) => `${data}`, "string"],
+            a: [{ a: "1" }, "=>", (data) => `${data}`],
             b: [{ a: "number" }, ":", (data) => data.a === 1, { a: "1" }]
         })
         attest(types.a).typed as Type<(In: { a: 1 }) => Out<string>>
@@ -42,5 +41,13 @@ describe("cast", () => {
         attest(types.b.node).snap({
             object: { props: { a: "number" }, narrow: "<function>" as any }
         })
+    })
+    it("errors on bad function return cast", () => {
+        attest(() =>
+            scope({
+                // @ts-expect-error
+                a: [{ a: "1" }, "=>", (data) => `${data}`, "boolean"]
+            })
+        ).type.errors("Type 'string' is not assignable to type 'boolean'.")
     })
 })
