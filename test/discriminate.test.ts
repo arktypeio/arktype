@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { scope, type } from "../api.ts"
+import { scope } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
 describe("compile", () => {
@@ -10,10 +10,19 @@ describe("compile", () => {
         desert: { wet: "false", blue: "false", isDesert: "true" },
         anywhereWet: { wet: "true" }
     })
-    it("flatten", () => {})
-    // it("discriminate simple", () => {
-    //     attest(type("ocean|sky", { scope: places }).root).snap({})
-    // })
+    it("binary", () => {
+        const t = places.$.type("ocean|sky")
+        attest(t.node).snap({
+            object: [
+                { props: { wet: "true", blue: "true", isOcean: "true" } },
+                { props: { wet: "false", blue: "true", isSky: "true" } }
+            ]
+        })
+        attest(t.flat).snap([
+            ["domain", "object"],
+            ["cases", { path: [], rule: "domain", cases: {} }]
+        ])
+    })
     // it("discriminate", () => {
     //     attest(
     //         type("ocean|sky|rainforest|desert", { scope: places }).root
