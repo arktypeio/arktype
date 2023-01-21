@@ -3,9 +3,8 @@ import { conditionIntersection } from "../nodes/predicate.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import type { keySet, List, replaceProps } from "../utils/generics.ts"
+import type { keySet, List } from "../utils/generics.ts"
 import { isKeyOf } from "../utils/generics.ts"
-import type { NumberLiteral } from "../utils/numericLiterals.ts"
 import type { Path } from "../utils/paths.ts"
 import { popKey, pushKey } from "../utils/paths.ts"
 import type {
@@ -27,17 +26,16 @@ export type DiscriminatedSwitch = {
 
 export type DiscriminatedCases<
     kind extends DiscriminantKind = DiscriminantKind
-> = SerializedCases<kind> | EntryCases<kind>
+> = SerializedCases | CaseEntry<kind>[]
 
-export type SerializedCases<kind extends DiscriminantKind = DiscriminantKind> =
-    {
-        [caseKey in SerializedDiscriminants[kind]]?: TraversalEntry[]
-    }
+export type SerializedCases = {
+    [caseKey in string]?: TraversalEntry[]
+}
 
-export type EntryCases<kind extends DiscriminantKind = DiscriminantKind> = [
+export type CaseEntry<kind extends DiscriminantKind = DiscriminantKind> = [
     condition: DiscriminantKinds[kind],
     then: TraversalEntry[]
-][]
+]
 
 export const discriminate = (branches: List<Condition>, $: ScopeRoot) => {
     const discriminants = calculateDiscriminants(branches, $)
@@ -52,7 +50,7 @@ export const discriminate = (branches: List<Condition>, $: ScopeRoot) => {
 type IndexCases = SerializedIndexCases | EntryIndexCases
 
 type SerializedIndexCases = {
-    [caseKey in SerializedDiscriminants[DiscriminantKind]]: number[]
+    [caseKey in string]: number[]
 }
 
 type EntryIndexCases = [unknown, number[]][]
@@ -90,15 +88,24 @@ const discriminateRecurse = (
             ]
         ]
     }
-
-    const cases: DiscriminatedCases = {}
-    for (const caseKey in bestDiscriminant.indexCases) {
-        cases[caseKey] = discriminateRecurse(
-            originalBranches,
-            bestDiscriminant.indexCases[caseKey],
-            discriminants,
-            $
+    let cases
+    if (Array.isArray(bestDiscriminant.indexCases)) {
+        cases = bestDiscriminant.indexCases.map(
+            ([condition, indices]): CaseEntry => [
+                condition,
+                discriminateRecurse(originalBranches, indices, discriminants, $)
+            ]
         )
+    } else {
+        cases = {} as SerializedCases
+        for (const caseKey in bestDiscriminant.indexCases) {
+            cases[caseKey] = discriminateRecurse(
+                originalBranches,
+                bestDiscriminant.indexCases[caseKey],
+                discriminants,
+                $
+            )
+        }
     }
     const [path, kind] = popKey(bestDiscriminant.qualifiedDisjoint) as [
         Path,
@@ -118,12 +125,17 @@ const discriminateRecurse = (
 
 type Discriminants = {
     disjointsByPair: DisjointsByPair
-    casesByQualifiedDisjoint: CasesByDisjoint
+    serializedCasesByDisjoint: SerializedCasesByDisjoint
+    entryCasesByDisjoint: EntryCasesByDisjoint
 }
 
 type DisjointsByPair = Record<`${number}/${number}`, QualifiedDisjoint[]>
 
-type CasesByDisjoint = { [k in QualifiedDisjoint]: IndexCases }
+type SerializedCasesByDisjoint = {
+    [k in QualifiedDisjoint]: SerializedIndexCases
+}
+
+type EntryCasesByDisjoint = { [k in QualifiedDisjoint]: EntryIndexCases }
 
 export type DiscriminantKinds = {
     domain: Domain
@@ -131,14 +143,6 @@ export type DiscriminantKinds = {
     tupleLength: number
     value: unknown
 }
-
-type SerializedDiscriminants = replaceProps<
-    DiscriminantKinds,
-    {
-        tupleLength: NumberLiteral
-        value: SerializedPrimitive
-    }
->
 
 const discriminantKinds: keySet<DiscriminantKind> = {
     domain: true,
@@ -155,7 +159,8 @@ const calculateDiscriminants = (
 ): Discriminants => {
     const discriminants: Discriminants = {
         disjointsByPair: {},
-        casesByQualifiedDisjoint: {}
+        serializedCasesByDisjoint: {},
+        entryCasesByDisjoint: {}
     }
     for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
         for (let rIndex = lIndex + 1; rIndex < branches.length; rIndex++) {
@@ -167,18 +172,19 @@ const calculateDiscriminants = (
             let path: Path
             for (path in context.disjoints) {
                 const disjointContext = context.disjoints[path]
-                if (isKeyOf(disjointContext.kind, discriminantKinds)) {
+                if (!isKeyOf(disjointContext.kind, discriminantKinds)) {
                     continue
                 }
                 const qualifiedDisjoint = pushKey(path, disjointContext.kind)
                 discriminants.disjointsByPair[pairKey].push(qualifiedDisjoint)
-                discriminants.casesByQualifiedDisjoint[qualifiedDisjoint] ??= {}
-                addToCases(
-                    discriminants.casesByQualifiedDisjoint[qualifiedDisjoint],
-                    disjointContext,
+                addCases(discriminants, {
+                    qualifiedDisjoint,
+                    kind: disjointContext.kind,
+                    l: disjointContext.operands[0],
+                    r: disjointContext.operands[1],
                     lIndex,
                     rIndex
-                )
+                })
             }
         }
     }
@@ -204,7 +210,7 @@ const findBestDiscriminant = (
                 discriminants.disjointsByPair[`${lIndex}/${rIndex}`]
             for (const qualifiedDisjoint of candidates) {
                 const indexCases =
-                    discriminants.casesByQualifiedDisjoint[qualifiedDisjoint]
+                    discriminants.serializedCasesByDisjoint[qualifiedDisjoint]
                 const filteredCases: IndexCases = {}
                 let score = 0
                 for (const caseKey in indexCases) {
@@ -230,7 +236,8 @@ const findBestDiscriminant = (
     return bestDiscriminant
 }
 
-type DiscriminantContext = {
+type CandidateContext = {
+    qualifiedDisjoint: QualifiedDisjoint
     kind: DiscriminantKind
     l: unknown
     r: unknown
@@ -238,35 +245,62 @@ type DiscriminantContext = {
     rIndex: number
 }
 
-const addToCases = (cases: IndexCases, discriminant: DiscriminantContext) => {
-    if (Array.isArray(cases)) {
-        return addEntryIndexCases(cases, discriminant)
+const addCases = (
+    discriminants: Discriminants,
+    candidate: CandidateContext
+) => {
+    if (
+        candidate.qualifiedDisjoint in discriminants.serializedCasesByDisjoint
+    ) {
+        addSerializedIndexCases(
+            discriminants.serializedCasesByDisjoint[
+                candidate.qualifiedDisjoint
+            ],
+            candidate
+        )
+    } else if (
+        candidate.qualifiedDisjoint in discriminants.entryCasesByDisjoint
+    ) {
+        addEntryIndexCases(
+            discriminants.entryCasesByDisjoint[candidate.qualifiedDisjoint],
+            candidate
+        )
+    } else {
+        const cases: SerializedIndexCases = {}
+        discriminants.serializedCasesByDisjoint[candidate.qualifiedDisjoint] =
+            cases
+        addSerializedIndexCases(cases, candidate)
     }
-    const lSerialized = serializeIfAllowed(discriminant.l)
-    const rSerialized = serializeIfAllowed(discriminant.r)
+}
+
+const addSerializedIndexCases = (
+    cases: SerializedIndexCases,
+    candidate: CandidateContext
+) => {
+    const lSerialized = serializeIfAllowed(candidate.l)
+    const rSerialized = serializeIfAllowed(candidate.r)
     if (lSerialized === undefined || rSerialized === undefined) {
         const existing: EntryIndexCases = []
         for (const k in cases) {
-            existing.push([deserializeDiscriminant(discriminant.kind, k), []])
+            existing.push([deserializeDiscriminant(candidate.kind, k), []])
         }
-        return addEntryIndexCases(existing, discriminant)
+        return addEntryIndexCases(existing, candidate)
     }
     if (!cases[lSerialized]) {
-        cases[lSerialized] = [discriminant.lIndex]
-    } else if (!cases[lSerialized].includes(discriminant.lIndex)) {
-        cases[lSerialized].push(discriminant.lIndex)
+        cases[lSerialized] = [candidate.lIndex]
+    } else if (!cases[lSerialized].includes(candidate.lIndex)) {
+        cases[lSerialized].push(candidate.lIndex)
     }
     if (!cases[rSerialized]) {
-        cases[rSerialized] = [discriminant.rIndex]
-    } else if (!cases[rSerialized].includes(discriminant.rIndex)) {
-        cases[rSerialized].push(discriminant.rIndex)
+        cases[rSerialized] = [candidate.rIndex]
+    } else if (!cases[rSerialized].includes(candidate.rIndex)) {
+        cases[rSerialized].push(candidate.rIndex)
     }
-    return cases
 }
 
 const addEntryIndexCases = (
     cases: EntryIndexCases,
-    discriminant: DiscriminantContext
+    discriminant: CandidateContext
 ) => {
     let lIncluded = false
     let rIncluded = false
@@ -286,7 +320,6 @@ const addEntryIndexCases = (
     if (!rIncluded) {
         cases.push([discriminant.r, [discriminant.rIndex]])
     }
-    return cases
 }
 
 const serializeIfAllowed = (data: unknown) => {
