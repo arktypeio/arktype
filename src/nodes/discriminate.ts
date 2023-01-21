@@ -1,5 +1,5 @@
 import type { Condition } from "../nodes/predicate.ts"
-import { conditionIntersection } from "../nodes/predicate.ts"
+import { compileCondition, conditionIntersection } from "../nodes/predicate.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
@@ -27,7 +27,7 @@ export type DiscriminatedCases = {
 
 export const compileBranches = (branches: List<Condition>, $: ScopeRoot) => {
     const discriminants = calculateDiscriminants(branches, $)
-    return discriminateRecurse(
+    return discriminate(
         branches,
         branches.map((_, i) => i),
         discriminants,
@@ -41,15 +41,7 @@ type IndexCases = {
 
 export type QualifiedDisjoint = `/${string}${DiscriminantKind}`
 
-const compileCondition = (
-    condition: Condition,
-    $: ScopeRoot
-): TraversalEntry[] =>
-    isExactValuePredicate(condition)
-        ? [["value", { value: condition.value }]]
-        : compileRules(condition, $)
-
-const discriminateRecurse = (
+const discriminate = (
     originalBranches: List<Condition>,
     remainingIndices: number[],
     discriminants: Discriminants,
@@ -75,7 +67,7 @@ const discriminateRecurse = (
     const cases = {} as DiscriminatedCases
     // TODO: allow undiscriminatable
     for (const caseKey in bestDiscriminant.indexCases) {
-        cases[caseKey] = discriminateRecurse(
+        cases[caseKey] = discriminate(
             originalBranches,
             bestDiscriminant.indexCases[caseKey],
             discriminants,

@@ -25,9 +25,9 @@ describe("discriminate", () => {
                     path: "/",
                     kind: "value",
                     cases: {
-                        "'a'": [["value", { value: "a" }]],
-                        "'b'": [["value", { value: "b" }]],
-                        "'c'": [["value", { value: "c" }]]
+                        "'a'": [["value", "a"]],
+                        "'b'": [["value", "b"]],
+                        "'c'": [["value", "c"]]
                     }
                 }
             ]

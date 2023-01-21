@@ -34,15 +34,18 @@ export const compilePredicate = (
     if (predicate === true) {
         return []
     }
-    if (hasSubdomain(predicate, "object")) {
-        return [
-            isExactValuePredicate(predicate)
-                ? ["value", predicate.value]
-                : compileRules(predicate, $)
-        ] as TraversalEntry[]
-    }
-    return compileBranches(predicate, $)
+    return hasSubdomain(predicate, "Array")
+        ? compileBranches(predicate, $)
+        : compileCondition(predicate, $)
 }
+
+export const compileCondition = (
+    condition: Condition,
+    $: ScopeRoot
+): TraversalEntry[] =>
+    isExactValuePredicate(condition)
+        ? [["value", condition.value]]
+        : compileRules(condition, $)
 
 export type Condition<domain extends Domain = Domain, $ = Dict> =
     | RuleSet<domain, $>
