@@ -68,24 +68,27 @@ const snapshotRecurse = (
     }
 }
 
-// TODO: compare perf
 export const serialize = (data: unknown, opts: SerializationOptions = {}) => {
     const seen: unknown[] = []
     return JSON.stringify(data, (k, v) => {
-        const domain = domainOf(v)
-        if (domain === "object") {
-            if (seen.includes(v)) {
-                return opts.onCycle?.(v)
-            }
-            if (typeof v === "function") {
-                return opts.onFunction?.(v)
-            }
-            return v
+        switch (domainOf(v)) {
+            case "object":
+                if (seen.includes(v)) {
+                    return opts.onCycle?.(v)
+                }
+                if (typeof v === "function") {
+                    return opts.onFunction?.(v)
+                }
+                return v
+            case "undefined":
+                return "(undefined)"
+            case "symbol":
+                return opts.onSymbol?.(v)
+            case "bigint":
+                return `${v}n`
+            default:
+                return v
         }
-        if (domain === "symbol") {
-            return opts.onSymbol?.(v)
-        }
-        return serializePrimitive(v)
     })
 }
 
