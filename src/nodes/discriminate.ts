@@ -4,9 +4,12 @@ import type { ScopeRoot } from "../scope.ts"
 import type { List } from "../utils/generics.ts"
 import type { Path } from "../utils/paths.ts"
 import { popKey, pushKey } from "../utils/paths.ts"
-import { stringSerialize } from "../utils/serialize.ts"
+import { serialize } from "../utils/serialize.ts"
 import type { DisjointKind } from "./compose.ts"
 import { initializeIntersectionContext } from "./node.ts"
+import { isExactValuePredicate } from "./resolve.ts"
+import type { TraversalRuleEntry } from "./rules/rules.ts"
+import { compileRules } from "./rules/rules.ts"
 
 export type DiscriminatedBranches<kind extends DisjointKind = DisjointKind> = {
     readonly path: string
@@ -18,12 +21,24 @@ export type DiscriminatedCases<kind extends DisjointKind = DisjointKind> = {
     [caseKey in string | kind]?: TraversalPredicate
 }
 
+export type TraversalBranches =
+    | [TraversalBranchesEntry]
+    | [DiscriminatedTraversalBranchesEntry]
+
+export type TraversalBranchesEntry = ["branches", List<TraversalRuleEntry>]
+
+export type DiscriminatedTraversalBranchesEntry = [
+    "cases",
+    DiscriminatedBranches
+]
+
 export const discriminate = (branches: List<Condition>, $: ScopeRoot) => {
     const discriminants = calculateDiscriminants(branches, $)
     return discriminateRecurse(
         branches,
         branches.map((_, i) => i),
-        discriminants
+        discriminants,
+        $
     )
 }
 
@@ -31,20 +46,36 @@ type IndicesByCaseKey = { [caseKey in string]: number[] }
 
 export type QualifiedDisjoint = `/${string}${DisjointKind}`
 
+const compileCondition = (
+    condition: Condition,
+    $: ScopeRoot
+): List<TraversalRuleEntry> =>
+    isExactValuePredicate(condition)
+        ? [["value", { value: condition.value }]]
+        : compileRules(condition, $)
+
 const discriminateRecurse = (
     originalBranches: List<Condition>,
     remainingIndices: number[],
-    discriminants: Discriminants
-): any => {
+    discriminants: Discriminants,
+    $: ScopeRoot
+): TraversalPredicate => {
     if (remainingIndices.length === 1) {
-        return originalBranches[remainingIndices[0]]
+        return compileCondition(originalBranches[remainingIndices[0]], $)
     }
     const bestDiscriminant = findBestDiscriminant(
         remainingIndices,
         discriminants
     )
     if (!bestDiscriminant) {
-        return remainingIndices.map((i) => originalBranches[i])
+        return [
+            [
+                "branches",
+                remainingIndices.flatMap((i) =>
+                    compileCondition(originalBranches[i], $)
+                )
+            ]
+        ]
     }
 
     const cases: DiscriminatedCases = {}
@@ -52,15 +83,24 @@ const discriminateRecurse = (
         cases[caseKey] = discriminateRecurse(
             originalBranches,
             bestDiscriminant.indexCases[caseKey],
-            discriminants
+            discriminants,
+            $
         )
     }
-    const [path, kind] = popKey(bestDiscriminant.qualifiedDisjoint)
-    return {
-        path,
-        kind,
-        cases
-    }
+    const [path, kind] = popKey(bestDiscriminant.qualifiedDisjoint) as [
+        Path,
+        DisjointKind
+    ]
+    return [
+        [
+            "cases",
+            {
+                path,
+                kind,
+                cases
+            }
+        ]
+    ]
 }
 
 type Discriminants = {
@@ -95,8 +135,8 @@ const calculateDiscriminants = (
                 discriminants.casesByQualifiedDisjoint[qualifiedDisjoint] ??= {}
                 const disjoinedIndices =
                     discriminants.casesByQualifiedDisjoint[qualifiedDisjoint]
-                const lCaseKey = stringSerialize(disjointContext.operands[0])
-                const rCaseKey = stringSerialize(disjointContext.operands[1])
+                const lCaseKey = serialize(disjointContext.operands[0])
+                const rCaseKey = serialize(disjointContext.operands[1])
                 if (!disjoinedIndices[lCaseKey]) {
                     disjoinedIndices[lCaseKey] = [lIndex]
                 } else if (!disjoinedIndices[lCaseKey].includes(lIndex)) {

@@ -11,7 +11,7 @@ import type {
     KeyIntersectionFn
 } from "./compose.ts"
 import { disjoint, equality, isEquality } from "./compose.ts"
-import type { DiscriminatedBranches } from "./discriminate.ts"
+import type { TraversalBranches } from "./discriminate.ts"
 import { discriminate } from "./discriminate.ts"
 import type { ValidatorNode } from "./node.ts"
 import { initializeIntersectionContext } from "./node.ts"
@@ -27,17 +27,7 @@ export type Predicate<domain extends Domain = Domain, $ = Dict> = Dict extends $
     ? true | CollapsibleList<Condition>
     : true | CollapsibleList<Condition<domain, $>>
 
-export type TraversalPredicate =
-    | List<TraversalRuleEntry>
-    | [TraversalBranchesEntry]
-    | [DiscriminatedTraversalBranchesEntry]
-
-export type TraversalBranchesEntry = ["branches", List<TraversalRuleEntry>]
-
-export type DiscriminatedTraversalBranchesEntry = [
-    "cases",
-    DiscriminatedBranches
-]
+export type TraversalPredicate = List<TraversalRuleEntry> | TraversalBranches
 
 export const compilePredicate = (
     domain: Domain,
@@ -64,11 +54,6 @@ export type Condition<domain extends Domain = Domain, $ = Dict> =
 export type ExactValue<domain extends Domain = Domain> = {
     readonly value: inferDomain<domain>
 }
-
-export type ResolvedPredicate<
-    domain extends Domain = Domain,
-    $ = Dict
-> = Exclude<Predicate<domain, $>, string>
 
 export type PredicateComparison =
     | IntersectionResult<Predicate>

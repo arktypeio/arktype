@@ -18,7 +18,7 @@ export const pushKey = <path extends Path, key extends string>(
 export const popKey = (path: Path): [remaining: Path, popped: string] => {
     const lastDelimiterIndex = path.lastIndexOf("/")
     return [
-        path === "/" ? "/" : (path.slice(0, lastDelimiterIndex) as Path),
+        (path.slice(0, lastDelimiterIndex) || "/") as Path,
         path.slice(lastDelimiterIndex + 1)
     ]
 }

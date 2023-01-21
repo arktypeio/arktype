@@ -4,7 +4,7 @@ import { throwInternalError } from "../utils/errors.ts"
 import type { constructor, Dict, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
 import type { Path } from "../utils/paths.ts"
-import { stringSerialize } from "../utils/serialize.ts"
+import { serialize } from "../utils/serialize.ts"
 import type { Condition } from "./predicate.ts"
 import type { Bound, BoundKind } from "./rules/range.ts"
 
@@ -64,13 +64,11 @@ export const disjointDescribers = {
     tupleLength: (operands) =>
         `tuples of length ${operands[0]} and ${operands[1]}`,
     value: (operands) =>
-        `literal values ${stringSerialize(operands[0])} and ${stringSerialize(
+        `literal values ${serialize(operands[0])} and ${serialize(
             operands[1]
         )}`,
     assignability: (operands) =>
-        `literal value ${stringSerialize(operands[0])} and ${stringSerialize(
-            operands[1]
-        )}`
+        `literal value ${serialize(operands[0])} and ${serialize(operands[1])}`
 } satisfies {
     [k in DisjointKind]: (context: DisjointContext<k>["operands"]) => string
 }

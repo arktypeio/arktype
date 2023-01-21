@@ -13,7 +13,7 @@ import { writeTupleLengthError } from "../nodes/rules/subdomain.ts"
 import type { Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { evaluate } from "../utils/generics.ts"
-import { stringSerialize } from "../utils/serialize.ts"
+import { stringify } from "../utils/serialize.ts"
 import type { CheckState } from "./check.ts"
 
 export type Problem = {
@@ -37,7 +37,7 @@ export class Problems extends Array<Problem> {
     get summary() {
         if (this.length === 1) {
             const problem = this[0]
-            if (problem.path !== "") {
+            if (problem.path !== "/") {
                 return `${problem.path}: ${uncapitalize(problem.reason)}`
             }
             return problem.reason
@@ -85,7 +85,7 @@ export class Stringifiable<data = unknown> {
     }
 
     toString() {
-        return stringSerialize(this.raw)
+        return stringify(this.raw)
     }
 }
 

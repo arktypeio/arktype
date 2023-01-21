@@ -20,44 +20,58 @@ export type serialize<t> = t extends StringifiedValue
     : t
 
 export const literalSerialize = <T>(value: T) =>
-    serialize(value, []) as serialize<T>
+    serializeRecurse(value, false, []) as serialize<T>
 
-export const stringSerialize = (value: unknown) => {
-    const result = literalSerialize(value)
+export const serialize = (value: unknown) => {
+    const result = serializeRecurse(value, true, [])
     return hasDomain(result, "object") ? JSON.stringify(result)! : `${result}`
 }
 
+export const stringify = (value: unknown) => {
+    const result = serializeRecurse(value, false, [])
+    return hasDomain(result, "object") ? JSON.stringify(result)! : `${result}`
+}
+
+// TODO: fix deserialize
 // TODO: Refactor to use JSON stringify at top level?
-const serialize = <t>(value: t, seen: unknown[]): unknown => {
+const serializeRecurse = <t>(
+    value: t,
+    quoteStrings: boolean,
+    seen: unknown[]
+): unknown => {
     if (isRecursible(value)) {
         if (seen.includes(value)) {
-            return "<cyclic>"
+            return "(cyclic)"
         } else {
             const serializedObject = Array.isArray(value)
-                ? value.map((_) => serialize(_, [...seen, value]))
+                ? value.map((_) =>
+                      serializeRecurse(_, quoteStrings, [...seen, value])
+                  )
                 : Object.fromEntries(
                       Object.entries(value).map(([k, v]) => [
                           k,
-                          serialize(v, [...seen, value])
+                          serializeRecurse(v, quoteStrings, [...seen, value])
                       ])
                   )
             return serializedObject
         }
     } else {
-        return serializePrimitive(value)
+        return serializePrimitive(value, quoteStrings)
     }
 }
 
-const serializePrimitive = (value: unknown) => {
+const serializePrimitive = (value: unknown, quoteStrings: boolean) => {
     switch (typeof value) {
+        case "string":
+            return quoteStrings ? `'${value}'` : value
         case "symbol":
-            return `<symbol ${value.description ?? "(anonymous)"}>`
+            return `(symbol ${value.description ?? ""})`
         case "function":
-            return `<function${value.name ?? " (anonymous)"}>`
+            return `(function ${value.name ?? ""})`
         case "undefined":
-            return "<undefined>"
+            return "(undefined)"
         case "bigint":
-            return `<bigint ${value}>`
+            return `${value}n`
         default:
             return value
     }

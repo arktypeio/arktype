@@ -14,14 +14,27 @@ describe("discriminate", () => {
         desert: { climate: "'dry'", color: "'brown'", isDesert: "true" },
         anywhereWet: { wet: "true" }
     })
-    it("binary", () => {
-        const t = places.$.type("ocean|sky")
-        attest(t.node).snap()
-        attest(t.flat as any).snap()
+    it("shallow", () => {
+        const t = places.$.type("'a'|'b'|'c'")
+        attest(t.flat).snap([
+            ["domain", "string"],
+            [
+                "cases",
+                {
+                    path: "/",
+                    kind: "value",
+                    cases: {
+                        "'a'": [["value", { value: "a" }]],
+                        "'b'": [["value", { value: "b" }]],
+                        "'c'": [["value", { value: "c" }]]
+                    }
+                }
+            ]
+        ])
     })
     it("n-ary", () => {
         const t = places.$.type("ocean|sky|rainforest|desert")
-        attest(t.flat as any).snap([
+        attest(t.flat).snap([
             ["domain", "object"],
             [
                 "cases",
@@ -29,40 +42,72 @@ describe("discriminate", () => {
                     path: "/color",
                     kind: "value",
                     cases: {
-                        blue: {
-                            path: "/climate",
-                            kind: "value",
-                            cases: {
-                                wet: {
-                                    props: {
-                                        climate: { string: { value: "wet" } },
-                                        color: { string: { value: "blue" } },
-                                        isOcean: "true"
-                                    }
-                                },
-                                dry: {
-                                    props: {
-                                        climate: { string: { value: "dry" } },
-                                        color: { string: { value: "blue" } },
-                                        isSky: "true"
+                        "'blue'": [
+                            [
+                                "cases",
+                                {
+                                    path: "/climate",
+                                    kind: "value",
+                                    cases: {
+                                        "'wet'": [
+                                            [
+                                                "requiredProps",
+                                                [
+                                                    [
+                                                        "climate",
+                                                        [["value", "wet"]]
+                                                    ],
+                                                    [
+                                                        "color",
+                                                        [["value", "blue"]]
+                                                    ],
+                                                    [
+                                                        "isOcean",
+                                                        [["value", true]]
+                                                    ]
+                                                ]
+                                            ]
+                                        ],
+                                        "'dry'": [
+                                            [
+                                                "requiredProps",
+                                                [
+                                                    [
+                                                        "climate",
+                                                        [["value", "dry"]]
+                                                    ],
+                                                    [
+                                                        "color",
+                                                        [["value", "blue"]]
+                                                    ],
+                                                    ["isSky", [["value", true]]]
+                                                ]
+                                            ]
+                                        ]
                                     }
                                 }
-                            }
-                        },
-                        green: {
-                            props: {
-                                climate: { string: { value: "wet" } },
-                                color: { string: { value: "green" } },
-                                isRainforest: "true"
-                            }
-                        },
-                        brown: {
-                            props: {
-                                climate: { string: { value: "dry" } },
-                                color: { string: { value: "brown" } },
-                                isDesert: "true"
-                            }
-                        }
+                            ]
+                        ],
+                        "'green'": [
+                            [
+                                "requiredProps",
+                                [
+                                    ["climate", [["value", "wet"]]],
+                                    ["color", [["value", "green"]]],
+                                    ["isRainforest", [["value", true]]]
+                                ]
+                            ]
+                        ],
+                        "'brown'": [
+                            [
+                                "requiredProps",
+                                [
+                                    ["climate", [["value", "dry"]]],
+                                    ["color", [["value", "brown"]]],
+                                    ["isDesert", [["value", true]]]
+                                ]
+                            ]
+                        ]
                     }
                 }
             ]

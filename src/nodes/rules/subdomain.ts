@@ -9,7 +9,7 @@ import { subdomainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import type { Dict, List } from "../../utils/generics.ts"
 import { pushKey } from "../../utils/paths.ts"
-import { stringSerialize } from "../../utils/serialize.ts"
+import { stringify } from "../../utils/serialize.ts"
 import {
     composeIntersection,
     disjoint,
@@ -198,7 +198,7 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         state.path = rootPath
     } else {
         return throwInternalError(
-            `Unexpected subdomain entry ${stringSerialize(rule)}`
+            `Unexpected subdomain entry ${stringify(rule)}`
         )
     }
     return true

@@ -6,7 +6,7 @@ import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type { evaluate } from "../../utils/generics.ts"
-import { stringSerialize } from "../../utils/serialize.ts"
+import { stringify } from "../../utils/serialize.ts"
 
 export type UnaryFunction<input = any, output = unknown> = (
     input: input
@@ -28,7 +28,7 @@ type distributeFunction<f extends UnaryFunction> = f extends UnaryFunction<
     : never
 
 export const writeMalformedDistributableFunctionMessage = (def: unknown) =>
-    `Expected a Function or Record<Domain, Function> operand (${stringSerialize(
+    `Expected a Function or Record<Domain, Function> operand (${stringify(
         def
     )} was invalid)`
 
