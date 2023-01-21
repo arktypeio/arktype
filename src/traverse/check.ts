@@ -139,7 +139,7 @@ const checkers = {
     optionalProps: checkOptionalProps,
     branches: (data, branches, state) =>
         branches.some((condition) => {
-            checkEntries(data, condition, state)
+            checkEntries(data, condition as any, state)
             // TODO: fix
             return state.problems.length === 0 ? true : false
         }),

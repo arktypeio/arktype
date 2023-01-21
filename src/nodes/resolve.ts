@@ -16,12 +16,7 @@ import type {
     ValidatorNode
 } from "./node.ts"
 import { compileNode } from "./node.ts"
-import type {
-    ExactValue,
-    Predicate,
-    ResolvedPredicate,
-    TraversalPredicate
-} from "./predicate.ts"
+import type { ExactValue, Predicate } from "./predicate.ts"
 
 export const resolveIfIdentifier = (
     node: TypeNode,
@@ -39,15 +34,6 @@ export const resolveInput = (node: TypeNode, $: ScopeRoot): ValidatorNode => {
     const root = resolveIfIdentifier(node, $)
     return nodeIsMorph(root) ? resolveInput(root.input, $) : root
 }
-
-export const resolvePredicateIfIdentifier = (
-    domain: Domain,
-    predicate: Predicate,
-    $: ScopeRoot
-) =>
-    typeof predicate === "string"
-        ? resolvePredicate(predicate, domain, $)
-        : predicate
 
 export const isExactValue = <domain extends Domain>(
     node: TypeNode,
@@ -131,61 +117,6 @@ const resolveRecurse = (
     return root as TypeResolution
 }
 
-export const resolvePredicate = <domain extends Domain>(
-    name: string,
-    domain: domain,
-    $: ScopeRoot
-) => {
-    return resolvePredicateRecurse(name, domain, [], $)
-}
-
-export const resolveFlatPredicate = (
-    name: string,
-    domain: Domain,
-    $: ScopeRoot
-): TraversalPredicate => {
-    const flatResolution = resolveFlat(name, $)
-    if (typeof flatResolution === "string") {
-        if (flatResolution !== domain) {
-            return throwUnexpectedPredicateDomainError(name, domain)
-        }
-        // an empty predicate is satisfied by its domain alone
-        return []
-    }
-    if (flatResolution[0][0] === "domains") {
-        const predicate = flatResolution[0][1][domain]
-        if (predicate === undefined) {
-            return throwUnexpectedPredicateDomainError(name, domain)
-        }
-        return predicate
-    }
-    return (
-        flatResolution[0][0] === "domain"
-            ? flatResolution.slice(1)
-            : flatResolution
-    ) as TraversalPredicate
-}
-
-const resolvePredicateRecurse = <domain extends Domain>(
-    name: string,
-    domain: domain,
-    seen: string[],
-    $: ScopeRoot
-): ResolvedPredicate<domain, ScopeRoot> => {
-    const resolution = resolveInput(name, $)[domain]
-    if (resolution === undefined) {
-        return throwUnexpectedPredicateDomainError(name, domain)
-    }
-    if (typeof resolution !== "string") {
-        return resolution as any
-    }
-    if (seen.includes(resolution)) {
-        return throwParseError(writeShallowCycleErrorMessage(resolution, seen))
-    }
-    seen.push(resolution)
-    return resolvePredicateRecurse(resolution, domain, seen, $)
-}
-
 export const memoizedParse = (def: string, $: ScopeRoot): TypeNode => {
     if (def in $.cache) {
         return $.cache.nodes[def]
@@ -194,14 +125,6 @@ export const memoizedParse = (def: string, $: ScopeRoot): TypeNode => {
     $.cache.nodes[def] = deepFreeze(root)
     return root
 }
-
-const throwUnexpectedPredicateDomainError = (
-    name: string,
-    expectedDomain: Domain
-) =>
-    throwInternalError(
-        `Expected '${name}' to have a definition including '${expectedDomain}'`
-    )
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(

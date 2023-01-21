@@ -28,11 +28,7 @@ import {
     throwUndefinedOperandsError
 } from "./compose.ts"
 import type { Keyword } from "./keywords.ts"
-import type {
-    ExactValueEntry,
-    Predicate,
-    TraversalPredicate
-} from "./predicate.ts"
+import type { Predicate, TraversalPredicate } from "./predicate.ts"
 import {
     compilePredicate,
     predicateIntersection,
@@ -84,7 +80,7 @@ export type CyclicReferenceEntry = ["alias", string]
 export type ExplicitDomainEntry = ["domain", Domain]
 
 export type ImplicitDomainEntry =
-    | ExactValueEntry
+    | ["value", unknown]
     | ["subdomain", TraversalSubdomainRule]
 
 const hasImpliedDomain = (

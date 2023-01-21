@@ -1,7 +1,4 @@
-import type {
-    ResolvedCondition,
-    TraversalPredicate
-} from "../nodes/predicate.ts"
+import type { Condition, TraversalPredicate } from "../nodes/predicate.ts"
 import { conditionIntersection } from "../nodes/predicate.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { List } from "../utils/generics.ts"
@@ -21,10 +18,7 @@ export type DiscriminatedCases<kind extends DisjointKind = DisjointKind> = {
     [caseKey in string | kind]?: TraversalPredicate
 }
 
-export const discriminate = (
-    branches: List<ResolvedCondition>,
-    $: ScopeRoot
-) => {
+export const discriminate = (branches: List<Condition>, $: ScopeRoot) => {
     const discriminants = calculateDiscriminants(branches, $)
     return discriminateRecurse(
         branches,
@@ -38,7 +32,7 @@ type IndicesByCaseKey = { [caseKey in string]: number[] }
 export type QualifiedDisjoint = `/${string}${DisjointKind}`
 
 const discriminateRecurse = (
-    originalBranches: List<ResolvedCondition>,
+    originalBranches: List<Condition>,
     remainingIndices: number[],
     discriminants: Discriminants
 ): any => {
@@ -79,7 +73,7 @@ type DisjointsByPair = Record<`${number}/${number}`, QualifiedDisjoint[]>
 type CasesByDisjoint = { [k in QualifiedDisjoint]: IndicesByCaseKey }
 
 const calculateDiscriminants = (
-    branches: List<ResolvedCondition>,
+    branches: List<Condition>,
     $: ScopeRoot
 ): Discriminants => {
     const discriminants: Discriminants = {

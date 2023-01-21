@@ -45,6 +45,7 @@ export type TraversalRuleEntry =
     | TraversalRequiredProps
     | TraversalOptionalProps
     | ["narrow", Narrow]
+    | ["value", unknown]
 
 export type RuleSet<domain extends Domain, $> = Domain extends domain
     ? Rules

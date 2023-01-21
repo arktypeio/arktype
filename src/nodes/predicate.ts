@@ -13,13 +13,9 @@ import type {
 import { disjoint, equality, isEquality } from "./compose.ts"
 import type { DiscriminatedBranches } from "./discriminate.ts"
 import { discriminate } from "./discriminate.ts"
-import type { Identifier, ValidatorNode } from "./node.ts"
+import type { ValidatorNode } from "./node.ts"
 import { initializeIntersectionContext } from "./node.ts"
-import {
-    isExactValuePredicate,
-    resolveFlatPredicate,
-    resolvePredicateIfIdentifier
-} from "./resolve.ts"
+import { isExactValuePredicate } from "./resolve.ts"
 import type { RuleSet, TraversalRuleEntry } from "./rules/rules.ts"
 import {
     compileRules,
@@ -32,11 +28,11 @@ export type Predicate<domain extends Domain = Domain, $ = Dict> = Dict extends $
     : true | CollapsibleList<Condition<domain, $>>
 
 export type TraversalPredicate =
-    | TraversalCondition
+    | List<TraversalRuleEntry>
     | [TraversalBranchesEntry]
     | [DiscriminatedTraversalBranchesEntry]
 
-export type TraversalBranchesEntry = ["branches", List<TraversalCondition>]
+export type TraversalBranchesEntry = ["branches", List<TraversalRuleEntry>]
 
 export type DiscriminatedTraversalBranchesEntry = [
     "cases",
@@ -51,47 +47,23 @@ export const compilePredicate = (
     if (predicate === true) {
         return []
     }
-    const branches = listFrom(predicate)
-    const flatBranches: TraversalCondition[] = []
-    for (const condition of branches) {
-        if (typeof condition === "string") {
-            flatBranches.push(
-                ...branchesOf(resolveFlatPredicate(condition, domain, $))
-            )
-        } else if (isExactValuePredicate(condition)) {
-            flatBranches.push([["value", condition.value]])
-        } else {
-            flatBranches.push(compileRules(condition, $))
-        }
+    if (hasSubdomain(predicate, "object")) {
+        return [
+            isExactValuePredicate(predicate)
+                ? ["value", predicate.value]
+                : compileRules(predicate, $)
+        ] as TraversalPredicate
     }
-    if (flatBranches.length === 1) {
-        return flatBranches[0]
-    }
-    if (domain === "object") {
-        return [["cases", discriminate(branches as any, $)]]
-    }
-    return [["branches", flatBranches]]
+    return discriminate(predicate, $)
 }
-
-const branchesOf = (flatPredicate: TraversalPredicate) =>
-    (flatPredicate[0][0] === "branches"
-        ? flatPredicate.slice(1)
-        : [flatPredicate]) as TraversalCondition[]
 
 export type Condition<domain extends Domain = Domain, $ = Dict> =
     | RuleSet<domain, $>
     | ExactValue<domain>
-    | Identifier<$>
-
-export type TraversalCondition =
-    | readonly TraversalRuleEntry[]
-    | [ExactValueEntry]
 
 export type ExactValue<domain extends Domain = Domain> = {
     readonly value: inferDomain<domain>
 }
-
-export type ExactValueEntry = ["value", unknown]
 
 export type ResolvedPredicate<
     domain extends Domain = Domain,
@@ -108,23 +80,18 @@ export const comparePredicates = (
     r: Predicate,
     context: IntersectionContext
 ): PredicateComparison => {
-    const lResolution = resolvePredicateIfIdentifier(domain, l, context.$)
-    const rResolution = resolvePredicateIfIdentifier(domain, r, context.$)
-    if (lResolution === true) {
-        return rResolution === true ? equality() : r
+    if (l === true) {
+        return r === true ? equality() : r
     }
-    if (rResolution === true) {
+    if (r === true) {
         return l
     }
-    if (
-        hasSubdomain(lResolution, "object") &&
-        hasSubdomain(rResolution, "object")
-    ) {
-        const result = conditionIntersection(lResolution, rResolution, context)
-        return result === lResolution ? l : result === rResolution ? r : result
+    if (hasSubdomain(l, "object") && hasSubdomain(r, "object")) {
+        const result = conditionIntersection(l, r, context)
+        return result === l ? l : result === r ? r : result
     }
-    const lComparisons = listFrom(lResolution)
-    const rComparisons = listFrom(rResolution)
+    const lComparisons = listFrom(l)
+    const rComparisons = listFrom(r)
     const comparison = compareBranches(
         domain,
         lComparisons,
@@ -152,14 +119,9 @@ export const comparePredicates = (
     return comparison
 }
 
-export type ResolvedCondition<
-    domain extends Domain = Domain,
-    $ = Dict
-> = Exclude<Condition<domain, $>, string>
-
 export const conditionIntersection = (
-    l: ResolvedCondition,
-    r: ResolvedCondition,
+    l: Condition,
+    r: Condition,
     context: IntersectionContext
 ) =>
     isExactValuePredicate(l)
