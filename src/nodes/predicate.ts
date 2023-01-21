@@ -11,7 +11,7 @@ import type {
     KeyIntersectionFn
 } from "./compose.ts"
 import { disjoint, equality, isEquality } from "./compose.ts"
-import { discriminate } from "./discriminate.ts"
+import { compileBranches } from "./discriminate.ts"
 import type { TraversalEntry, ValidatorNode } from "./node.ts"
 import { initializeIntersectionContext } from "./node.ts"
 import { isExactValuePredicate } from "./resolve.ts"
@@ -41,7 +41,7 @@ export const compilePredicate = (
                 : compileRules(predicate, $)
         ] as TraversalEntry[]
     }
-    return discriminate(predicate, $)
+    return compileBranches(predicate, $)
 }
 
 export type Condition<domain extends Domain = Domain, $ = Dict> =

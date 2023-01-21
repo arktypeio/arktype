@@ -16,9 +16,9 @@ attest({ re: "dew" }, { updateSnapshots: true }).snap({ re: `dew` })
 // @ts-ignore (using internal updateSnapshots hook)
 attest(5, { updateSnapshots: true }).snap(5)
 
-attest(undefined).snap(`<undefined>`)
+attest(undefined).snap(`(undefined)`)
 
-attest({ a: undefined }).snap({ a: `<undefined>` })
+attest({ a: undefined }).snap({ a: `(undefined)` })
 
 attest("multiline\nmultiline").snap(`multiline
 multiline`)
