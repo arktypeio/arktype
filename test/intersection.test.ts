@@ -1,7 +1,6 @@
 import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { compileDisjointReasonsMessage } from "../src/parse/string/ast.ts"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
