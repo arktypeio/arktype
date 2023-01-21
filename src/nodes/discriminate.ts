@@ -4,7 +4,7 @@ import type { ScopeRoot } from "../scope.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { keySet, List } from "../utils/generics.ts"
-import { isKeyOf } from "../utils/generics.ts"
+import { isKeyOf, keysOf } from "../utils/generics.ts"
 import type { Path } from "../utils/paths.ts"
 import { popKey, pushKey } from "../utils/paths.ts"
 import type { SerializablePrimitive } from "../utils/serialize.ts"
@@ -12,8 +12,6 @@ import { serializePrimitive } from "../utils/serialize.ts"
 import type { DisjointKind } from "./compose.ts"
 import type { TraversalEntry } from "./node.ts"
 import { initializeIntersectionContext } from "./node.ts"
-import { isExactValuePredicate } from "./resolve.ts"
-import { compileRules } from "./rules/rules.ts"
 
 export type DiscriminatedSwitch = {
     readonly path: string
@@ -193,22 +191,40 @@ const findBestDiscriminant = (
                 const indexCases =
                     discriminants.casesByDisjoint[qualifiedDisjoint]
                 const filteredCases: IndexCases = {}
+                const defaultCases: Record<number, number> = [
+                    ...remainingIndices
+                ]
                 let score = 0
                 for (const caseKey in indexCases) {
-                    const filteredIndices = indexCases[caseKey].filter((i) =>
-                        remainingIndices.includes(i)
-                    )
+                    const filteredIndices = indexCases[caseKey].filter((i) => {
+                        const remainingIndex = remainingIndices.indexOf(i)
+                        if (remainingIndex !== -1) {
+                            delete defaultCases[remainingIndex]
+                            return true
+                        }
+                    })
                     if (filteredIndices.length === 0) {
                         continue
                     }
                     filteredCases[caseKey] = filteredIndices
                     score++
                 }
+                const defaultCaseKeys = keysOf(defaultCases)
+                if (defaultCaseKeys.length) {
+                    const defaultIndices = defaultCaseKeys.map((k) =>
+                        parseInt(k)
+                    )
+                    filteredCases["default"] = defaultIndices
+                }
                 if (!bestDiscriminant || score > bestDiscriminant.score) {
                     bestDiscriminant = {
                         qualifiedDisjoint,
                         indexCases: filteredCases,
                         score
+                    }
+                    if (score === remainingIndices.length) {
+                        // if we find a candidate that discriminates all branches, return early
+                        return bestDiscriminant
                     }
                 }
             }

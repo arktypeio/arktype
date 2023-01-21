@@ -33,6 +33,44 @@ describe("discriminate", () => {
             ]
         ])
     })
+    it("partial", () => {
+        const t = places.$.type("ocean|sky|anywhereWet")
+        attest(t.flat).unknown.snap([
+            ["domain", "object"],
+            [
+                "switch",
+                {
+                    path: "/climate",
+                    kind: "value",
+                    cases: {
+                        "'wet'": [
+                            [
+                                "requiredProps",
+                                [
+                                    ["climate", [["value", "wet"]]],
+                                    ["color", [["value", "blue"]]],
+                                    ["isOcean", [["value", true]]]
+                                ]
+                            ]
+                        ],
+                        "'dry'": [
+                            [
+                                "requiredProps",
+                                [
+                                    ["climate", [["value", "dry"]]],
+                                    ["color", [["value", "blue"]]],
+                                    ["isSky", [["value", true]]]
+                                ]
+                            ]
+                        ],
+                        default: [
+                            ["requiredProps", [["wet", [["value", true]]]]]
+                        ]
+                    }
+                }
+            ]
+        ])
+    })
     it("n-ary", () => {
         const t = places.$.type("ocean|sky|rainforest|desert")
         attest(t.flat).unknown.snap([
