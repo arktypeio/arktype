@@ -40,6 +40,7 @@ export const throwUndefinedOperandsError = () =>
 
 export type IntersectionResult<t> = t | Empty | Equal
 
+// TODO: add union
 export type DisjointKinds = {
     domain: [Domain[], Domain[]]
     subdomain: [Subdomain, Subdomain]
@@ -47,10 +48,9 @@ export type DisjointKinds = {
     class: [constructor, constructor]
     tupleLength: [number, number]
     value: [unknown, unknown]
-    assignability: [unknown, Condition]
+    assignability: [value: unknown, condition: Condition]
 }
 
-// TODO: add union
 export const disjointDescribers = {
     domain: (operands) =>
         `${operands[0].join(", ")} and ${operands[1].join(", ")}`,

@@ -130,7 +130,7 @@ export const precedenceMap: {
     domains: 0,
     branches: 0,
     subdomain: 0,
-    cases: 0,
+    switch: 0,
     alias: 0,
     morph: 0,
     // Shallow: All shallow checks will be performed even if one or more fail
