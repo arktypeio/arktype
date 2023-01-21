@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { scope } from "../api.ts"
+import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
 describe("discriminate", () => {
@@ -15,7 +15,7 @@ describe("discriminate", () => {
         anywhereWet: { wet: "true" }
     })
     it("shallow", () => {
-        const t = places.$.type("'a'|'b'|'c'")
+        const t = type("'a'|'b'|'c'")
         attest(t.flat).snap([
             ["domain", "string"],
             [
