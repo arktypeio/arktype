@@ -1,4 +1,8 @@
-import type { TraversalNode } from "../nodes/node.ts"
+import type {
+    TraversalEntry,
+    TraversalKey,
+    TraversalNode
+} from "../nodes/node.ts"
 import { resolveFlat } from "../nodes/resolve.ts"
 import { checkClass } from "../nodes/rules/class.ts"
 import { checkDivisor } from "../nodes/rules/divisor.ts"
@@ -11,15 +15,11 @@ import { checkSubdomain } from "../nodes/rules/subdomain.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Result, TypeOptions } from "../type.ts"
 import { domainOf } from "../utils/domains.ts"
-import type { Dict, evaluate, extend } from "../utils/generics.ts"
+import type { Dict, evaluate, extend, List } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
 import type { Path } from "../utils/paths.ts"
 import type { ProblemCode, ProblemMessageWriter } from "./problems.ts"
 import { Problems, Stringifiable } from "./problems.ts"
-
-export type TraversalEntry = Exclude<TraversalNode, string>[number]
-
-export type TraversalKey = TraversalEntry[0]
 
 export type TraversalState = {
     path: Path
@@ -85,7 +85,7 @@ export const checkNode = (
 
 export const checkEntries = (
     data: unknown,
-    entries: readonly TraversalEntry[],
+    entries: List<TraversalEntry>,
     state: CheckState
 ) => {
     let precedenceLevel = 0
@@ -143,7 +143,7 @@ const checkers = {
             // TODO: fix
             return state.problems.length === 0 ? true : false
         }),
-    cases: () => {},
+    switch: () => {},
     // TODO: keep track of cyclic data
     alias: (data, name, state) =>
         checkNode(data, resolveFlat(name, state.$), state),

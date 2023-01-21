@@ -1,6 +1,5 @@
 import type { Narrow } from "../../parse/tuple/narrow.ts"
 import type { ScopeRoot } from "../../scope.ts"
-import type { TraversalEntry } from "../../traverse/check.ts"
 import { rootCheck } from "../../traverse/check.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type {
@@ -9,6 +8,7 @@ import type {
     Dict
 } from "../../utils/generics.ts"
 import { composeIntersection, composeKeyedIntersection } from "../compose.ts"
+import type { TraversalEntry } from "../node.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
@@ -36,7 +36,7 @@ export type Rules<domain extends Domain = Domain, $ = Dict> = {
     >
 }
 
-export type TraversalRuleEntry =
+export type RuleEntry =
     | ["subdomain", TraversalSubdomainRule]
     | ["regex", RegExp]
     | ["divisor", number]
@@ -83,7 +83,7 @@ export const rulesIntersection = composeKeyedIntersection<Rules>(
 )
 
 export type FlattenAndPushRule<t> = (
-    entries: TraversalRuleEntry[],
+    entries: RuleEntry[],
     rule: t,
     $: ScopeRoot
 ) => void
@@ -145,11 +145,8 @@ export const precedenceMap: {
     narrow: 3
 }
 
-export const compileRules = (
-    rules: Rules,
-    $: ScopeRoot
-): readonly TraversalRuleEntry[] => {
-    const entries: TraversalRuleEntry[] = []
+export const compileRules = (rules: Rules, $: ScopeRoot): RuleEntry[] => {
+    const entries: RuleEntry[] = []
     let k: keyof Rules
     for (k in rules) {
         ruleCompilers[k](entries, rules[k] as any, $)

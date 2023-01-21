@@ -1,16 +1,22 @@
-import type { Condition, TraversalPredicate } from "../nodes/predicate.ts"
+import type { Condition } from "../nodes/predicate.ts"
 import { conditionIntersection } from "../nodes/predicate.ts"
 import type { ScopeRoot } from "../scope.ts"
-import type { Domain, inferDomain, Subdomain } from "../utils/domains.ts"
+import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import type { keySet, List } from "../utils/generics.ts"
+import type { keySet, List, replaceProps } from "../utils/generics.ts"
 import { isKeyOf } from "../utils/generics.ts"
+import type { NumberLiteral } from "../utils/numericLiterals.ts"
 import type { Path } from "../utils/paths.ts"
 import { popKey, pushKey } from "../utils/paths.ts"
-import type { DisjointContext, DisjointKind } from "./compose.ts"
+import type {
+    SerializablePrimitive,
+    SerializedPrimitive
+} from "../utils/serialize.ts"
+import { deserializePrimitive, serializePrimitive } from "../utils/serialize.ts"
+import type { DisjointKind } from "./compose.ts"
+import type { TraversalEntry } from "./node.ts"
 import { initializeIntersectionContext } from "./node.ts"
 import { isExactValuePredicate } from "./resolve.ts"
-import type { TraversalRuleEntry } from "./rules/rules.ts"
 import { compileRules } from "./rules/rules.ts"
 
 export type DiscriminatedSwitch = {
@@ -25,21 +31,13 @@ export type DiscriminatedCases<
 
 export type SerializedCases<kind extends DiscriminantKind = DiscriminantKind> =
     {
-        [caseKey in string]?: TraversalPredicate
+        [caseKey in SerializedDiscriminants[kind]]?: TraversalEntry[]
     }
 
 export type EntryCases<kind extends DiscriminantKind = DiscriminantKind> = [
     condition: DiscriminantKinds[kind],
-    then: TraversalPredicate
+    then: TraversalEntry[]
 ][]
-
-export type TraversalBranches =
-    | [TraversalBranchesEntry]
-    | [TraversalSwitchEntry]
-
-export type TraversalBranchesEntry = ["branches", List<TraversalRuleEntry>]
-
-export type TraversalSwitchEntry = ["switch", DiscriminatedSwitch]
 
 export const discriminate = (branches: List<Condition>, $: ScopeRoot) => {
     const discriminants = calculateDiscriminants(branches, $)
@@ -54,7 +52,7 @@ export const discriminate = (branches: List<Condition>, $: ScopeRoot) => {
 type IndexCases = SerializedIndexCases | EntryIndexCases
 
 type SerializedIndexCases = {
-    [caseKey in string]: number[]
+    [caseKey in SerializedDiscriminants[DiscriminantKind]]: number[]
 }
 
 type EntryIndexCases = [unknown, number[]][]
@@ -64,7 +62,7 @@ export type QualifiedDisjoint = `/${string}${DiscriminantKind}`
 const compileCondition = (
     condition: Condition,
     $: ScopeRoot
-): List<TraversalRuleEntry> =>
+): TraversalEntry[] =>
     isExactValuePredicate(condition)
         ? [["value", { value: condition.value }]]
         : compileRules(condition, $)
@@ -74,7 +72,7 @@ const discriminateRecurse = (
     remainingIndices: number[],
     discriminants: Discriminants,
     $: ScopeRoot
-): TraversalPredicate => {
+): TraversalEntry[] => {
     if (remainingIndices.length === 1) {
         return compileCondition(originalBranches[remainingIndices[0]], $)
     }
@@ -86,7 +84,7 @@ const discriminateRecurse = (
         return [
             [
                 "branches",
-                remainingIndices.flatMap((i) =>
+                remainingIndices.map((i) =>
                     compileCondition(originalBranches[i], $)
                 )
             ]
@@ -134,27 +132,19 @@ export type DiscriminantKinds = {
     value: unknown
 }
 
+type SerializedDiscriminants = replaceProps<
+    DiscriminantKinds,
+    {
+        tupleLength: NumberLiteral
+        value: SerializedPrimitive
+    }
+>
+
 const discriminantKinds: keySet<DiscriminantKind> = {
     domain: true,
     subdomain: true,
     tupleLength: true,
     value: true
-}
-
-const serializers = {
-    boolean: (data) => `${data}`,
-    bigint: (data) => `${data}n`,
-    number: (data) => `${data}`,
-    string: (data) => `'${data}'`,
-    undefined: () => "undefined",
-    null: () => "null"
-} satisfies { [domain in Domain]?: (data: inferDomain<domain>) => string }
-
-const serialize = (data: unknown) => {
-    const domain = domainOf(data)
-    return isKeyOf(domain, serializers)
-        ? serializers[domain](data as never)
-        : undefined
 }
 
 export type DiscriminantKind = keyof DiscriminantKinds
@@ -240,58 +230,73 @@ const findBestDiscriminant = (
     return bestDiscriminant
 }
 
-const addToCases = (
-    cases: IndexCases,
-    disjoint: DisjointContext,
-    lIndex: number,
+type DiscriminantContext = {
+    kind: DiscriminantKind
+    l: unknown
+    r: unknown
+    lIndex: number
     rIndex: number
-) => {
+}
+
+const addToCases = (cases: IndexCases, discriminant: DiscriminantContext) => {
     if (Array.isArray(cases)) {
-        return addEntryIndexCases(cases, disjoint, lIndex, rIndex)
+        return addEntryIndexCases(cases, discriminant)
     }
-    const [l, r] = disjoint.operands
-    const lSerialized = serialize(l)
-    const rSerialized = serialize(r)
+    const lSerialized = serializeIfAllowed(discriminant.l)
+    const rSerialized = serializeIfAllowed(discriminant.r)
     if (lSerialized === undefined || rSerialized === undefined) {
-        // TODO: add deserialize
-        return addEntryIndexCases([], disjoint, lIndex, rIndex)
+        const existing: EntryIndexCases = []
+        for (const k in cases) {
+            existing.push([deserializeDiscriminant(discriminant.kind, k), []])
+        }
+        return addEntryIndexCases(existing, discriminant)
     }
     if (!cases[lSerialized]) {
-        cases[lSerialized] = [lIndex]
-    } else if (!cases[lSerialized].includes(lIndex)) {
-        cases[lSerialized].push(lIndex)
+        cases[lSerialized] = [discriminant.lIndex]
+    } else if (!cases[lSerialized].includes(discriminant.lIndex)) {
+        cases[lSerialized].push(discriminant.lIndex)
     }
     if (!cases[rSerialized]) {
-        cases[rSerialized] = [rIndex]
-    } else if (!cases[rSerialized].includes(rIndex)) {
-        cases[rSerialized].push(rIndex)
+        cases[rSerialized] = [discriminant.rIndex]
+    } else if (!cases[rSerialized].includes(discriminant.rIndex)) {
+        cases[rSerialized].push(discriminant.rIndex)
     }
     return cases
 }
 
 const addEntryIndexCases = (
     cases: EntryIndexCases,
-    disjoint: DisjointContext,
-    lIndex: number,
-    rIndex: number
+    discriminant: DiscriminantContext
 ) => {
     let lIncluded = false
     let rIncluded = false
     for (const [condition, indices] of cases) {
-        if (disjoint.operands[0] === condition) {
-            indices.push(lIndex)
+        if (discriminant.l === condition) {
+            indices.push(discriminant.lIndex)
             lIncluded = true
         }
-        if (disjoint.operands[1] === condition) {
-            indices.push(rIndex)
+        if (discriminant.r === condition) {
+            indices.push(discriminant.rIndex)
             rIncluded = true
         }
     }
     if (!lIncluded) {
-        cases.push([disjoint.operands[0] as never, [lIndex]])
+        cases.push([discriminant.l, [discriminant.lIndex]])
     }
     if (!rIncluded) {
-        cases.push([disjoint.operands[0] as never, [lIndex]])
+        cases.push([discriminant.r, [discriminant.rIndex]])
     }
     return cases
 }
+
+const serializeIfAllowed = (data: unknown) => {
+    const domain = domainOf(data)
+    return domain === "object" || domain === "symbol"
+        ? undefined
+        : serializePrimitive(data as SerializablePrimitive)
+}
+
+const deserializeDiscriminant = (kind: DiscriminantKind, caseKey: string) =>
+    kind === "domain" || kind === "subdomain"
+        ? (caseKey as Subdomain)
+        : deserializePrimitive(caseKey as SerializedPrimitive)

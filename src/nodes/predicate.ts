@@ -1,7 +1,7 @@
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
-import type { CollapsibleList, Dict, List } from "../utils/generics.ts"
+import type { CollapsibleList, Dict } from "../utils/generics.ts"
 import { collapseIfSingleton, listFrom } from "../utils/generics.ts"
 import type { BranchesComparison } from "./branches.ts"
 import { compareBranches, isBranchComparison } from "./branches.ts"
@@ -11,12 +11,11 @@ import type {
     KeyIntersectionFn
 } from "./compose.ts"
 import { disjoint, equality, isEquality } from "./compose.ts"
-import type { TraversalBranches } from "./discriminate.ts"
 import { discriminate } from "./discriminate.ts"
-import type { ValidatorNode } from "./node.ts"
+import type { TraversalEntry, ValidatorNode } from "./node.ts"
 import { initializeIntersectionContext } from "./node.ts"
 import { isExactValuePredicate } from "./resolve.ts"
-import type { RuleSet, TraversalRuleEntry } from "./rules/rules.ts"
+import type { RuleSet } from "./rules/rules.ts"
 import {
     compileRules,
     literalSatisfiesRules,
@@ -27,13 +26,11 @@ export type Predicate<domain extends Domain = Domain, $ = Dict> = Dict extends $
     ? true | CollapsibleList<Condition>
     : true | CollapsibleList<Condition<domain, $>>
 
-export type TraversalPredicate = List<TraversalRuleEntry> | TraversalBranches
-
 export const compilePredicate = (
     domain: Domain,
     predicate: Predicate,
     $: ScopeRoot
-): TraversalPredicate => {
+): TraversalEntry[] => {
     if (predicate === true) {
         return []
     }
@@ -42,7 +39,7 @@ export const compilePredicate = (
             isExactValuePredicate(predicate)
                 ? ["value", predicate.value]
                 : compileRules(predicate, $)
-        ] as TraversalPredicate
+        ] as TraversalEntry[]
     }
     return discriminate(predicate, $)
 }

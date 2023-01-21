@@ -1,6 +1,6 @@
 import type { inferDomain, Primitive } from "./domains.ts"
 import { domainOf } from "./domains.ts"
-import type { Dict, isTopType, List } from "./generics.js"
+import type { Dict, isTopType } from "./generics.js"
 import { isKeyOf } from "./generics.js"
 import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
 import {
@@ -51,7 +51,7 @@ const snapshotRecurse = (
             if (typeof v === "function") {
                 return alwaysIncludeOptions.onFunction(v)
             }
-            context.seen.push(v)
+            context.seen = [...context.seen, v]
             if (Array.isArray(v)) {
                 return v.map((item) => snapshotRecurse(item, context))
             }

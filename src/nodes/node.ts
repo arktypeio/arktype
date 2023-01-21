@@ -10,6 +10,7 @@ import type {
     autocomplete,
     CollapsibleList,
     Dict,
+    List,
     mutable,
     stringKeyOf
 } from "../utils/generics.ts"
@@ -27,8 +28,9 @@ import {
     isEquality,
     throwUndefinedOperandsError
 } from "./compose.ts"
+import type { DiscriminatedSwitch } from "./discriminate.ts"
 import type { Keyword } from "./keywords.ts"
-import type { Predicate, TraversalPredicate } from "./predicate.ts"
+import type { Predicate } from "./predicate.ts"
 import {
     compilePredicate,
     predicateIntersection,
@@ -40,7 +42,7 @@ import {
     resolveFlat,
     resolveIfIdentifier
 } from "./resolve.ts"
-import type { TraversalSubdomainRule } from "./rules/subdomain.ts"
+import type { RuleEntry } from "./rules/rules.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | TypeResolution<$>
 
@@ -62,38 +64,37 @@ export type ValidatorNode<$ = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, $>
 }
 
-export type TraversalNode = ValidatorTraversalNode | [MorphTraversalEntry]
+export type TraversalNode = Domain | TraversalEntry[]
 
-export type ValidatorTraversalNode =
-    | Domain
-    | SingleDomainTraversalNode
-    | [MultiDomainEntry]
-    | [CyclicReferenceEntry]
+export type TraversalEntry =
+    | RuleEntry
+    | DomainsEntry
+    | CyclicReferenceEntry
+    | DomainEntry
+    | MorphEntry
+    | BranchesEntry
+    | SwitchEntry
 
-export type SingleDomainTraversalNode = readonly [
-    ExplicitDomainEntry | ImplicitDomainEntry,
-    ...TraversalPredicate
-]
+export type TraversalKey = TraversalEntry[0]
 
 export type CyclicReferenceEntry = ["alias", string]
 
-export type ExplicitDomainEntry = ["domain", Domain]
+export type DomainEntry = ["domain", Domain]
 
-export type ImplicitDomainEntry =
-    | ["value", unknown]
-    | ["subdomain", TraversalSubdomainRule]
-
-const hasImpliedDomain = (
-    flatPredicate: TraversalPredicate | SingleDomainTraversalNode
-): flatPredicate is SingleDomainTraversalNode =>
+const hasImpliedDomain = (flatPredicate: TraversalEntry[]) =>
     flatPredicate[0] &&
     (flatPredicate[0][0] === "subdomain" || flatPredicate[0][0] === "value")
 
-export type MultiDomainTraversalNode = [MultiDomainEntry]
+export type DomainsEntry = [
+    "domains",
+    {
+        readonly [domain in Domain]?: TraversalEntry[]
+    }
+]
 
-export type MultiDomainEntry = ["domains", TraversalTypeSet]
+type ValidatorTraversalNode = Exclude<TraversalNode, [["morph", unknown]]>
 
-export type MorphTraversalEntry = [
+export type MorphEntry = [
     "morph",
     {
         readonly input: ValidatorTraversalNode
@@ -101,9 +102,9 @@ export type MorphTraversalEntry = [
     }
 ]
 
-export type TraversalTypeSet = {
-    readonly [domain in Domain]?: TraversalPredicate
-}
+export type BranchesEntry = ["branches", TraversalEntry[][]]
+
+export type SwitchEntry = ["switch", DiscriminatedSwitch]
 
 export const compileNode = (node: TypeNode, $: ScopeRoot): TraversalNode => {
     if (typeof node === "string") {
@@ -132,7 +133,7 @@ export const compileNode = (node: TypeNode, $: ScopeRoot): TraversalNode => {
             ? flatPredicate
             : [["domain", domain], ...flatPredicate]
     }
-    const result: mutable<TraversalTypeSet> = {}
+    const result: mutable<DomainsEntry[1]> = {}
     for (const domain of domains) {
         result[domain] = compilePredicate(domain, node[domain]!, $)
     }
