@@ -4,40 +4,20 @@ import { attest } from "../dev/attest/api.ts"
 
 describe("discriminate", () => {
     const places = scope.lazy({
-        ocean: { wet: "true", blue: "true", isOcean: "true" },
-        sky: { wet: "false", blue: "true", isSky: "true" },
-        rainforest: { wet: "true", blue: "false", isRainforest: "true" },
-        desert: { wet: "false", blue: "false", isDesert: "true" },
+        ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" },
+        sky: { climate: "'dry'", color: "'blue'", isSky: "true" },
+        rainforest: {
+            climate: "'wet'",
+            color: "'green'",
+            isRainforest: "true"
+        },
+        desert: { climate: "'dry'", color: "'brown'", isDesert: "true" },
         anywhereWet: { wet: "true" }
     })
     it("binary", () => {
         const t = places.$.type("ocean|sky")
-        attest(t.node).snap({
-            object: [
-                { props: { wet: "true", blue: "true", isOcean: "true" } },
-                { props: { wet: "false", blue: "true", isSky: "true" } }
-            ]
-        })
-        attest(t.flat).snap([
-            ["domain", "object"],
-            [
-                "cases",
-                {
-                    path: "",
-                    kind: "domain",
-                    cases: {
-                        "0": {
-                            "1": {
-                                wet: {
-                                    kind: "value",
-                                    operands: [true, { value: false }]
-                                }
-                            }
-                        }
-                    }
-                }
-            ]
-        ] as any)
+        attest(t.node).snap()
+        attest(t.flat as any).snap()
     })
     it("n-ary", () => {
         const t = places.$.type("ocean|sky|rainforest|desert")
@@ -46,22 +26,34 @@ describe("discriminate", () => {
             [
                 "cases",
                 {
-                    path: "",
-                    kind: "domain",
-                    cases: {
+                    blue: {
                         wet: {
-                            value: {
-                                true: { "0": true, "2": true },
-                                '{"value":"false"}': { "1": true, "3": true },
-                                false: { "1": true },
-                                '{"value":"true"}': { "2": true }
+                            props: {
+                                climate: { string: { value: "wet" } },
+                                color: { string: { value: "blue" } },
+                                isOcean: "true"
                             }
                         },
-                        blue: {
-                            value: {
-                                true: { "0": true, "1": true },
-                                '{"value":"false"}': { "2": true, "3": true }
+                        dry: {
+                            props: {
+                                climate: { string: { value: "dry" } },
+                                color: { string: { value: "blue" } },
+                                isSky: "true"
                             }
+                        }
+                    },
+                    green: {
+                        props: {
+                            climate: { string: { value: "wet" } },
+                            color: { string: { value: "green" } },
+                            isRainforest: "true"
+                        }
+                    },
+                    brown: {
+                        props: {
+                            climate: { string: { value: "dry" } },
+                            color: { string: { value: "brown" } },
+                            isDesert: "true"
                         }
                     }
                 }

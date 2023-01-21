@@ -4,9 +4,8 @@ import type {
 } from "../nodes/predicate.ts"
 import { conditionIntersection } from "../nodes/predicate.ts"
 import type { ScopeRoot } from "../scope.ts"
-import type { keySet, List } from "../utils/generics.ts"
-import { Dict, hasKey } from "../utils/generics.ts"
-import type { NumberLiteral } from "../utils/numericLiterals.ts"
+import type { List } from "../utils/generics.ts"
+import { keyCount, keysOf } from "../utils/generics.ts"
 import { stringSerialize } from "../utils/serialize.ts"
 import type { DisjointKind, DisjointsByPath } from "./compose.ts"
 import { initializeIntersectionContext } from "./node.ts"
@@ -21,42 +20,110 @@ export type DiscriminatedCases<kind extends DisjointKind = DisjointKind> = {
     [caseKey in string | kind]?: TraversalPredicate
 }
 
-export type Discriminant = {}
-
 export const discriminate = (
     branches: List<ResolvedCondition>,
     $: ScopeRoot
 ): DiscriminatedBranches => {
-    const discriminants: Record<
-        string,
-        {
-            [k in DisjointKind]?: Record<string, Record<number, true>>
-        }
-    > = {}
+    const disjoints = getPairedDisjoints(branches, $)
+    const entries = discriminateRecurse(
+        branches,
+        branches.map((_, i) => i),
+        disjoints
+    )
+
+    return entries as any
+}
+
+const discriminateRecurse = (
+    originalBranches: List<ResolvedCondition>,
+    remainingIndices: number[],
+    disjoints: PairedDisjoints
+) => {
+    if (remainingIndices.length === 1) {
+        return originalBranches[remainingIndices[0]]
+    }
+    const bestDiscriminant = findBestDiscriminant(remainingIndices, disjoints)
+    const caseKeys = keysOf(bestDiscriminant)
+    if (caseKeys.length < 2) {
+        return remainingIndices.map((i) => originalBranches[i])
+    }
+    const discriminated = {} as any
+    for (const k of caseKeys) {
+        discriminated[k] = discriminateRecurse(
+            originalBranches,
+            bestDiscriminant[k],
+            disjoints
+        )
+    }
+    return discriminated
+}
+
+type Discriminants = { [k in DiscriminantKey]?: Discriminant }
+
+type IndicesWithValue = number[]
+
+type Discriminant = { [caseKey in string]: IndicesWithValue }
+
+export type DiscriminantKey = DisjointKind | `${string}/${DisjointKind}`
+
+type PairedDisjoints = Record<number, Record<number, DisjointsByPath>>
+
+const getPairedDisjoints = (
+    branches: List<ResolvedCondition>,
+    $: ScopeRoot
+): PairedDisjoints => {
+    const disjoints: PairedDisjoints = {}
     for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
+        disjoints[lIndex] = {}
         for (let rIndex = lIndex + 1; rIndex < branches.length; rIndex++) {
             const context = initializeIntersectionContext($)
             conditionIntersection(branches[lIndex], branches[rIndex], context)
-            for (const path in context.disjoints) {
-                const disjoint = context.disjoints[path]
-                discriminants[path] ??= {}
-                const kinds = discriminants[path]
-                kinds[disjoint.kind] ??= {}
-                const cases = kinds[disjoint.kind]!
-                const lKey = stringSerialize(disjoint.operands[0])
-                const rKey = stringSerialize(disjoint.operands[1])
-                cases[lKey] ??= {}
-                cases[rKey] ??= {}
-                cases[lKey][lIndex] = true
-                cases[rKey][rIndex] = true
+            disjoints[lIndex][rIndex] = context.disjoints
+        }
+    }
+    return disjoints
+}
+
+const findBestDiscriminant = (
+    indices: number[],
+    disjoints: PairedDisjoints
+): Discriminant => {
+    let bestKey: DiscriminantKey | undefined
+    let bestCaseCount = 0
+    const discriminants: Discriminants = {}
+    for (let i = 0; i < indices.length - 1; i++) {
+        const lIndex = indices[i]
+        for (let j = i + 1; j < indices.length; j++) {
+            const rIndex = indices[j]
+            const disjointsByPath = disjoints[lIndex][rIndex]
+            for (const path in disjointsByPath) {
+                const disjoint = disjointsByPath[path]
+                const key: DiscriminantKey = path
+                    ? `${path}/${disjoint.kind}`
+                    : disjoint.kind
+                discriminants[key] ??= {}
+                const discriminant = discriminants[key]!
+                const lCaseKey = stringSerialize(disjoint.operands[0])
+                const rCaseKey = stringSerialize(disjoint.operands[1])
+                if (!discriminant[lCaseKey]) {
+                    discriminant[lCaseKey] = [lIndex]
+                } else if (!discriminant[lCaseKey].includes(lIndex)) {
+                    discriminant[lCaseKey].push(lIndex)
+                }
+                if (!discriminant[rCaseKey]) {
+                    discriminant[rCaseKey] = [rIndex]
+                } else if (!discriminant[rCaseKey].includes(rIndex)) {
+                    discriminant[rCaseKey].push(rIndex)
+                }
+                const caseCount = keyCount(discriminant)
+                if (caseCount > bestCaseCount) {
+                    bestKey = key
+                    bestCaseCount = caseCount
+                }
             }
         }
     }
-    return {
-        path: "",
-        kind: "domain",
-        cases: discriminants as any
-    }
+    return discriminants[bestKey!]!
 }
 
 // const discriminateBranches = (branches: TraversalCondition[]): Predicate => {

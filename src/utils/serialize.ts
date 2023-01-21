@@ -27,6 +27,7 @@ export const stringSerialize = (value: unknown) => {
     return hasDomain(result, "object") ? JSON.stringify(result)! : `${result}`
 }
 
+// TODO: Refactor to use JSON stringify at top level?
 const serialize = <t>(value: t, seen: unknown[]): unknown => {
     if (isRecursible(value)) {
         if (seen.includes(value)) {

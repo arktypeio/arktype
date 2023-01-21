@@ -146,6 +146,7 @@ export type inferUnion<l, r> = isAny<l | r> extends true
         : error<undiscriminatableMorphUnionMessage>
     : never
 
+// TODO: check if this works for unions
 type discriminatable<l, r> = discriminatableRecurse<l, r, []> extends never
     ? false
     : true
