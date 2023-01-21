@@ -6,7 +6,7 @@ import type {
 } from "../../traverse/problems.ts"
 import type { Dict } from "../../utils/generics.ts"
 import { hasKey } from "../../utils/generics.ts"
-import { pushKey, withoutLastKey } from "../../utils/paths.ts"
+import { pushKey } from "../../utils/paths.ts"
 import {
     composeIntersection,
     composeKeyedIntersection,
@@ -55,9 +55,10 @@ export const propsIntersection = composeIntersection<PropsRule>(
             if (r === undefined) {
                 return l
             }
-            context.path = pushKey(context.path, propKey)
+            const rootPath = context.path
+            context.path = pushKey(rootPath, propKey)
             const result = nodeIntersection(nodeFrom(l), nodeFrom(r), context)
-            context.path = withoutLastKey(context.path)
+            context.path = rootPath
             const resultIsOptional = isOptional(l) && isOptional(r)
             if (
                 isDisjoint(result) &&
@@ -70,10 +71,7 @@ export const propsIntersection = composeIntersection<PropsRule>(
             }
             return result
         },
-        {
-            // TODO: is this needed now that we have context?
-            onEmpty: "bubble"
-        }
+        { onEmpty: "bubble" }
     )
 )
 

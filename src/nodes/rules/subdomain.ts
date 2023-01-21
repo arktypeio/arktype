@@ -8,7 +8,7 @@ import type { Subdomain } from "../../utils/domains.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import type { Dict, List } from "../../utils/generics.ts"
-import { pushKey, withoutLastKey } from "../../utils/paths.ts"
+import { pushKey } from "../../utils/paths.ts"
 import { stringSerialize } from "../../utils/serialize.ts"
 import {
     composeIntersection,
@@ -95,12 +95,13 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
         for (let i = 1; i <= maxNodeIndex; i++) {
             const lNode = l[i] as TypeNode
             const rNode = r[i] as TypeNode
+            const rootPath = context.path
             context.path = pushKey(
-                context.path,
+                rootPath,
                 subdomainParameterToPathSegment(l[0], i)
             )
             const parameterResult = nodeIntersection(lNode, rNode, context)
-            context.path = withoutLastKey(context.path)
+            context.path = rootPath
             if (isEquality(parameterResult)) {
                 result[i] = lNode
             } else if (parameterResult === l) {

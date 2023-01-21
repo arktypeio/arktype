@@ -11,7 +11,7 @@ import type {
     KeyIntersectionFn
 } from "./compose.ts"
 import { disjoint, equality, isEquality } from "./compose.ts"
-import type { DiscriminatedBranches } from "./discriminate.ts"
+import type { Discriminant } from "./discriminate.ts"
 import { discriminate } from "./discriminate.ts"
 import type { Identifier, ValidatorNode } from "./node.ts"
 import { initializeIntersectionContext } from "./node.ts"
@@ -38,10 +38,7 @@ export type TraversalPredicate =
 
 export type TraversalBranchesEntry = ["branches", List<TraversalCondition>]
 
-export type DiscriminatedTraversalBranchesEntry = [
-    "cases",
-    DiscriminatedBranches
-]
+export type DiscriminatedTraversalBranchesEntry = ["cases", Discriminant]
 
 export const compilePredicate = (
     domain: Domain,

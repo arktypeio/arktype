@@ -26,34 +26,42 @@ describe("discriminate", () => {
             [
                 "cases",
                 {
-                    blue: {
-                        wet: {
-                            props: {
-                                climate: { string: { value: "wet" } },
-                                color: { string: { value: "blue" } },
-                                isOcean: "true"
+                    path: "color",
+                    kind: "value",
+                    cases: {
+                        blue: {
+                            path: "climate",
+                            kind: "value",
+                            cases: {
+                                wet: {
+                                    props: {
+                                        climate: { string: { value: "wet" } },
+                                        color: { string: { value: "blue" } },
+                                        isOcean: "true"
+                                    }
+                                },
+                                dry: {
+                                    props: {
+                                        climate: { string: { value: "dry" } },
+                                        color: { string: { value: "blue" } },
+                                        isSky: "true"
+                                    }
+                                }
                             }
                         },
-                        dry: {
+                        green: {
+                            props: {
+                                climate: { string: { value: "wet" } },
+                                color: { string: { value: "green" } },
+                                isRainforest: "true"
+                            }
+                        },
+                        brown: {
                             props: {
                                 climate: { string: { value: "dry" } },
-                                color: { string: { value: "blue" } },
-                                isSky: "true"
+                                color: { string: { value: "brown" } },
+                                isDesert: "true"
                             }
-                        }
-                    },
-                    green: {
-                        props: {
-                            climate: { string: { value: "wet" } },
-                            color: { string: { value: "green" } },
-                            isRainforest: "true"
-                        }
-                    },
-                    brown: {
-                        props: {
-                            climate: { string: { value: "dry" } },
-                            color: { string: { value: "brown" } },
-                            isDesert: "true"
                         }
                     }
                 }

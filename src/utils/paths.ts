@@ -3,9 +3,17 @@ import type { List } from "./generics"
 export const pushKey = (path: string, key: string, delimiter = "/") =>
     path === "" ? key : `${path}${delimiter}${key}`
 
-export const withoutLastKey = (path: string, delimiter = "/") => {
+export const popKey = (
+    path: string,
+    delimiter = "/"
+): [remaining: string, removed: string | undefined] => {
     const lastDelimiterIndex = path.lastIndexOf(delimiter)
-    return lastDelimiterIndex === -1 ? "" : path.slice(0, lastDelimiterIndex)
+    return lastDelimiterIndex === -1
+        ? ["", undefined]
+        : [
+              path.slice(0, lastDelimiterIndex),
+              path.slice(lastDelimiterIndex + 1)
+          ]
 }
 
 export const getPath = (value: unknown, path: string[]): unknown => {
