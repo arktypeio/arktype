@@ -26,11 +26,11 @@ describe("discriminate", () => {
             [
                 "cases",
                 {
-                    path: "color",
+                    path: "/color",
                     kind: "value",
                     cases: {
                         blue: {
-                            path: "climate",
+                            path: "/climate",
                             kind: "value",
                             cases: {
                                 wet: {

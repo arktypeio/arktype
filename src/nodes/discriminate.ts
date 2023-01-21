@@ -5,10 +5,10 @@ import type {
 import { conditionIntersection } from "../nodes/predicate.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { List } from "../utils/generics.ts"
-import { keyCount } from "../utils/generics.ts"
-import { popKey } from "../utils/paths.ts"
+import type { Path } from "../utils/paths.ts"
+import { popKey, pushKey } from "../utils/paths.ts"
 import { stringSerialize } from "../utils/serialize.ts"
-import type { DisjointKind, DisjointsByPath } from "./compose.ts"
+import type { DisjointKind } from "./compose.ts"
 import { initializeIntersectionContext } from "./node.ts"
 
 export type DiscriminatedBranches<kind extends DisjointKind = DisjointKind> = {
@@ -25,42 +25,43 @@ export const discriminate = (
     branches: List<ResolvedCondition>,
     $: ScopeRoot
 ) => {
-    const disjoints = getPairedDisjoints(branches, $)
+    const discriminants = calculateDiscriminants(branches, $)
     return discriminateRecurse(
         branches,
         branches.map((_, i) => i),
-        disjoints
+        discriminants
     )
 }
 
 type IndicesByCaseKey = { [caseKey in string]: number[] }
 
-export type DiscriminantKey = DisjointKind | `${string}/${DisjointKind}`
-
-type PairedDisjoints = Record<number, Record<number, DisjointsByPath>>
+export type QualifiedDisjoint = `/${string}${DisjointKind}`
 
 const discriminateRecurse = (
     originalBranches: List<ResolvedCondition>,
     remainingIndices: number[],
-    disjoints: PairedDisjoints
+    discriminants: Discriminants
 ): any => {
     if (remainingIndices.length === 1) {
         return originalBranches[remainingIndices[0]]
     }
-    const bestDiscriminant = findBestDiscriminant(remainingIndices, disjoints)
+    const bestDiscriminant = findBestDiscriminant(
+        remainingIndices,
+        discriminants
+    )
     if (!bestDiscriminant) {
         return remainingIndices.map((i) => originalBranches[i])
     }
 
     const cases: DiscriminatedCases = {}
-    for (const caseKey in bestDiscriminant.indicesByCase) {
+    for (const caseKey in bestDiscriminant.indexCases) {
         cases[caseKey] = discriminateRecurse(
             originalBranches,
-            bestDiscriminant.indicesByCase[caseKey],
-            disjoints
+            bestDiscriminant.indexCases[caseKey],
+            discriminants
         )
     }
-    const [path, kind] = popKey(bestDiscriminant.key)
+    const [path, kind] = popKey(bestDiscriminant.qualifiedDisjoint)
     return {
         path,
         kind,
@@ -68,73 +69,97 @@ const discriminateRecurse = (
     }
 }
 
-const getPairedDisjoints = (
+type Discriminants = {
+    disjointsByPair: DisjointsByPair
+    casesByQualifiedDisjoint: CasesByDisjoint
+}
+
+type DisjointsByPair = Record<`${number}/${number}`, QualifiedDisjoint[]>
+
+type CasesByDisjoint = { [k in QualifiedDisjoint]: IndicesByCaseKey }
+
+const calculateDiscriminants = (
     branches: List<ResolvedCondition>,
     $: ScopeRoot
-): PairedDisjoints => {
-    const disjoints: PairedDisjoints = {}
+): Discriminants => {
+    const discriminants: Discriminants = {
+        disjointsByPair: {},
+        casesByQualifiedDisjoint: {}
+    }
     for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
-        disjoints[lIndex] = {}
         for (let rIndex = lIndex + 1; rIndex < branches.length; rIndex++) {
+            const pairKey = `${lIndex}/${rIndex}` as const
+            const pairDisjoints: QualifiedDisjoint[] = []
+            discriminants.disjointsByPair[pairKey] = pairDisjoints
             const context = initializeIntersectionContext($)
             conditionIntersection(branches[lIndex], branches[rIndex], context)
-            disjoints[lIndex][rIndex] = context.disjoints
-        }
-    }
-    return disjoints
-}
-
-type DiscriminantCandidates = { [k in DiscriminantKey]?: IndicesByCaseKey }
-
-type Discriminant = {
-    key: DiscriminantKey
-    indicesByCase: IndicesByCaseKey
-}
-
-const findBestDiscriminant = (
-    indices: number[],
-    disjoints: PairedDisjoints
-): Discriminant | undefined => {
-    let bestKey: DiscriminantKey | undefined
-    let bestCaseCount = 0
-    const discriminants: DiscriminantCandidates = {}
-    for (let i = 0; i < indices.length - 1; i++) {
-        const lIndex = indices[i]
-        for (let j = i + 1; j < indices.length; j++) {
-            const rIndex = indices[j]
-            const disjointsByPath = disjoints[lIndex][rIndex]
-            for (const path in disjointsByPath) {
-                const disjoint = disjointsByPath[path]
-                const key: DiscriminantKey = path
-                    ? `${path}/${disjoint.kind}`
-                    : disjoint.kind
-                discriminants[key] ??= {}
-                const discriminant = discriminants[key]!
-                // TODO: move this, some kinds aren't serializable
-                const lCaseKey = stringSerialize(disjoint.operands[0])
-                const rCaseKey = stringSerialize(disjoint.operands[1])
-                if (!discriminant[lCaseKey]) {
-                    discriminant[lCaseKey] = [lIndex]
-                } else if (!discriminant[lCaseKey].includes(lIndex)) {
-                    discriminant[lCaseKey].push(lIndex)
+            let path: Path
+            for (path in context.disjoints) {
+                const disjointContext = context.disjoints[path]
+                const qualifiedDisjoint = pushKey(path, disjointContext.kind)
+                discriminants.disjointsByPair[pairKey].push(qualifiedDisjoint)
+                discriminants.casesByQualifiedDisjoint[qualifiedDisjoint] ??= {}
+                const disjoinedIndices =
+                    discriminants.casesByQualifiedDisjoint[qualifiedDisjoint]
+                const lCaseKey = stringSerialize(disjointContext.operands[0])
+                const rCaseKey = stringSerialize(disjointContext.operands[1])
+                if (!disjoinedIndices[lCaseKey]) {
+                    disjoinedIndices[lCaseKey] = [lIndex]
+                } else if (!disjoinedIndices[lCaseKey].includes(lIndex)) {
+                    disjoinedIndices[lCaseKey].push(lIndex)
                 }
-                if (!discriminant[rCaseKey]) {
-                    discriminant[rCaseKey] = [rIndex]
-                } else if (!discriminant[rCaseKey].includes(rIndex)) {
-                    discriminant[rCaseKey].push(rIndex)
-                }
-                const caseCount = keyCount(discriminant)
-                if (caseCount > bestCaseCount) {
-                    bestKey = key
-                    bestCaseCount = caseCount
+                if (!disjoinedIndices[rCaseKey]) {
+                    disjoinedIndices[rCaseKey] = [rIndex]
+                } else if (!disjoinedIndices[rCaseKey].includes(rIndex)) {
+                    disjoinedIndices[rCaseKey].push(rIndex)
                 }
             }
         }
     }
-    if (bestKey !== undefined) {
-        return {
-            key: bestKey,
-            indicesByCase: discriminants[bestKey]!
+    return discriminants
+}
+
+type Discriminant = {
+    qualifiedDisjoint: QualifiedDisjoint
+    indexCases: IndicesByCaseKey
+    score: number
+}
+
+const findBestDiscriminant = (
+    remainingIndices: number[],
+    discriminants: Discriminants
+): Discriminant | undefined => {
+    let bestDiscriminant: Discriminant | undefined
+    for (let i = 0; i < remainingIndices.length - 1; i++) {
+        const lIndex = remainingIndices[i]
+        for (let j = i + 1; j < remainingIndices.length; j++) {
+            const rIndex = remainingIndices[j]
+            const candidates =
+                discriminants.disjointsByPair[`${lIndex}/${rIndex}`]
+            for (const qualifiedDisjoint of candidates) {
+                const indexCases =
+                    discriminants.casesByQualifiedDisjoint[qualifiedDisjoint]
+                const filteredCases: IndicesByCaseKey = {}
+                let score = 0
+                for (const caseKey in indexCases) {
+                    const filteredIndices = indexCases[caseKey].filter((i) =>
+                        remainingIndices.includes(i)
+                    )
+                    if (filteredIndices.length === 0) {
+                        continue
+                    }
+                    filteredCases[caseKey] = filteredIndices
+                    score++
+                }
+                if (!bestDiscriminant || score > bestDiscriminant.score) {
+                    bestDiscriminant = {
+                        qualifiedDisjoint,
+                        indexCases: filteredCases,
+                        score
+                    }
+                }
+            }
         }
     }
+    return bestDiscriminant
 }

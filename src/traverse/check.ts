@@ -13,6 +13,7 @@ import type { Result, TypeOptions } from "../type.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { Dict, evaluate, extend } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
+import type { Path } from "../utils/paths.ts"
 import type { ProblemCode, ProblemMessageWriter } from "./problems.ts"
 import { Problems, Stringifiable } from "./problems.ts"
 
@@ -21,7 +22,7 @@ export type TraversalEntry = Exclude<TraversalNode, string>[number]
 export type TraversalKey = TraversalEntry[0]
 
 export type TraversalState = {
-    path: string
+    path: Path
     $: ScopeRoot
     config: TypeOptions
 }
@@ -52,7 +53,7 @@ export const rootCheck = (
     config: TypeOptions
 ): Result<unknown> => {
     const state: CheckState = {
-        path: "",
+        path: "/",
         problems: new Problems(),
         $,
         config

@@ -1,19 +1,26 @@
 import type { List } from "./generics"
 
-export const pushKey = (path: string, key: string, delimiter = "/") =>
-    path === "" ? key : `${path}${delimiter}${key}`
+export type Path = `/${string}`
 
-export const popKey = (
-    path: string,
-    delimiter = "/"
-): [remaining: string, removed: string | undefined] => {
-    const lastDelimiterIndex = path.lastIndexOf(delimiter)
-    return lastDelimiterIndex === -1
-        ? ["", undefined]
-        : [
-              path.slice(0, lastDelimiterIndex),
-              path.slice(lastDelimiterIndex + 1)
-          ]
+export type pushKey<path extends Path, key extends string> = path extends "/"
+    ? `/${key}`
+    : `${path}/${key}`
+
+export const pushKey = <path extends Path, key extends string>(
+    path: path,
+    key: key
+) =>
+    ((path as Path) === "/" ? `/${key}` : `${path}/${key}`) as pushKey<
+        path,
+        key
+    >
+
+export const popKey = (path: Path): [remaining: Path, popped: string] => {
+    const lastDelimiterIndex = path.lastIndexOf("/")
+    return [
+        path === "/" ? "/" : (path.slice(0, lastDelimiterIndex) as Path),
+        path.slice(lastDelimiterIndex + 1)
+    ]
 }
 
 export const getPath = (value: unknown, path: string[]): unknown => {
@@ -27,9 +34,6 @@ export const getPath = (value: unknown, path: string[]): unknown => {
     return result
 }
 
-export const pathToSegments = (path: string, delimiter = "/") =>
-    path === "" ? [] : path.split(delimiter)
-
 export type join<
     segments extends List<string>,
     delimiter extends string = "/",
@@ -42,9 +46,9 @@ export type join<
       >
     : result
 
-export const describePath = <path extends string>(path: path) =>
-    path && (` at ${path}` as describePath<path>)
+export const pathPrefix = <path extends string>(path: path) =>
+    (path === ("/" as Path) ? "" : `At ${path}: `) as pathPrefix<path>
 
-export type describePath<path extends string> = path extends ""
+export type pathPrefix<path extends string> = path extends "/"
     ? ""
-    : ` at ${path}`
+    : `At ${path}: `

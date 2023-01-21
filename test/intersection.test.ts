@@ -82,12 +82,7 @@ describe("intersection", () => {
             it("implicit never", () => {
                 // @ts-expect-error
                 attest(() => type("string&number")).throwsAndHasTypeError(
-                    compileDisjointReasonsMessage({
-                        "": {
-                            kind: "domain",
-                            operands: [["string"], ["number"]]
-                        }
-                    })
+                    "results in an unsatisfiable type"
                 )
             })
         })

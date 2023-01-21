@@ -3,6 +3,7 @@ import type { Domain, Subdomain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { constructor, Dict, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
+import type { Path } from "../utils/paths.ts"
 import { stringSerialize } from "../utils/serialize.ts"
 import type { Condition } from "./predicate.ts"
 import type { Bound, BoundKind } from "./rules/range.ts"
@@ -91,7 +92,7 @@ export type DisjointKind = keyof DisjointKinds
 
 export type IntersectionContext = {
     $: ScopeRoot
-    path: string
+    path: Path
     disjoints: DisjointsByPath
 }
 
@@ -113,7 +114,7 @@ export const disjoint = <kind extends DisjointKind>(
 
 export const isDisjoint = (result: unknown): result is Empty => result === empty
 
-export type DisjointsByPath = Record<string, DisjointContext>
+export type DisjointsByPath = Record<Path, DisjointContext>
 
 export type DisjointContext<kind extends DisjointKind = DisjointKind> = {
     kind: kind

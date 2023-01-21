@@ -20,8 +20,8 @@ import type {
     tryCatch
 } from "../../utils/generics.ts"
 import { keysOf } from "../../utils/generics.ts"
-import type { join } from "../../utils/paths.ts"
-import { describePath } from "../../utils/paths.ts"
+import type { join, Path } from "../../utils/paths.ts"
+import { pathPrefix } from "../../utils/paths.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
@@ -177,10 +177,10 @@ type discriminatableRecurse<
 export const writeDoubleMorphIntersectionMessage = <path extends string>(
     path: path
 ): writeDoubleMorphIntersectionMessage<path> =>
-    `Intersection${describePath(path)} must have at least one non-morph operand`
+    `${pathPrefix(path)}Intersection must have at least one non-morph operand`
 
 type writeDoubleMorphIntersectionMessage<path extends string> =
-    `Intersection${describePath<path>} must have at least one non-morph operand`
+    `${pathPrefix<path>}Intersection must have at least one non-morph operand`
 
 export const undiscriminatableMorphUnionMessage = `A union of one or more morphs must be discriminatable`
 
@@ -188,14 +188,15 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
     const paths = keysOf(disjoints)
     if (paths.length === 1) {
         const path = paths[0]
-        return `Intersection${describePath(path)} of ${disjointDescribers[
+        return `${pathPrefix(path)}Intersection of ${disjointDescribers[
             disjoints[path].kind
         ](disjoints[path].operands as never)} results in an unsatisfiable type`
     }
     let message = `
         "Intersection results in unsatisfiable types at the following paths:\n`
-    for (const path in disjoints) {
-        message += `  ${path || "/"}: ${disjointDescribers[
+    let path: Path
+    for (path in disjoints) {
+        message += `  ${pathPrefix(path)}${disjointDescribers[
             disjoints[path].kind
         ](disjoints[path].operands as never)}\n`
     }
@@ -203,7 +204,7 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
 }
 
 type writeImplicitNeverMessage<path extends string> =
-    `Intersection${describePath<path>} results in an unsatisfiable type`
+    `${pathPrefix<path>}Intersection results in an unsatisfiable type`
 
 type undiscriminatableMorphUnionMessage =
     typeof undiscriminatableMorphUnionMessage

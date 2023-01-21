@@ -223,7 +223,7 @@ export const initializeIntersectionContext = (
     $: ScopeRoot
 ): IntersectionContext => ({
     $,
-    path: "",
+    path: "/",
     disjoints: {}
 })
 
