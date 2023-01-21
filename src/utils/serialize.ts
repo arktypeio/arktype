@@ -14,12 +14,8 @@ export type SerializationOptions = {
     onFunction?: (value: Function) => string
 }
 
-type SerializationContext = SerializationOptions & { seen: unknown[] }
-
-export const snapshot = <t>(data: t, opts: SerializationOptions = {}) => {
-    ;(opts as SerializationContext).seen = []
-    return snapshotRecurse(data, opts as SerializationContext) as snapshot<t>
-}
+export const snapshot = <t>(data: t, opts: SerializationOptions = {}) =>
+    snapshotRecurse(data, opts, []) as snapshot<t>
 
 export type snapshot<t> = isTopType<t> extends true
     ? unknown
@@ -32,7 +28,7 @@ export type snapshot<t> = isTopType<t> extends true
       }
 
 type snapshotPrimitive<t> = t extends undefined
-    ? "undefined"
+    ? "(undefined)"
     : t extends bigint
     ? `${t}n`
     : t extends symbol
@@ -41,31 +37,34 @@ type snapshotPrimitive<t> = t extends undefined
 
 const snapshotRecurse = (
     v: unknown,
-    context: SerializationContext
+    context: SerializationOptions,
+    seen: unknown[]
 ): unknown => {
     switch (domainOf(v)) {
         case "object":
-            if (context.seen.includes(v)) {
-                return "(cycle)"
-            }
             if (typeof v === "function") {
                 return alwaysIncludeOptions.onFunction(v)
             }
-            context.seen = [...context.seen, v]
+            if (seen.includes(v)) {
+                return "(cycle)"
+            }
+            const nextSeen = [...seen, v]
             if (Array.isArray(v)) {
-                return v.map((item) => snapshotRecurse(item, context))
+                return v.map((item) => snapshotRecurse(item, context, nextSeen))
             }
             const result: Record<string, unknown> = {}
             for (const k in v as Dict) {
-                result[k] = snapshotRecurse((v as any)[k], context)
+                result[k] = snapshotRecurse((v as any)[k], context, nextSeen)
             }
             return result
         case "symbol":
             return alwaysIncludeOptions.onSymbol(v as symbol)
         case "bigint":
             return `${v}n`
+        case "undefined":
+            return "(undefined)"
         default:
-            return `${v}`
+            return v
     }
 }
 

@@ -16,7 +16,7 @@ describe("discriminate", () => {
     })
     it("shallow", () => {
         const t = type("'a'|'b'|'c'")
-        // TODO: check if this type still causes infinite recursion if not using unknown
+        // TODO: fix snapshot infinite recursion when not using .unknown
         attest(t.flat).unknown.snap([
             ["domain", "string"],
             [
@@ -38,41 +38,79 @@ describe("discriminate", () => {
         attest(t.flat).unknown.snap([
             ["domain", "object"],
             [
-                "branches",
-                [
-                    [
-                        "requiredProps",
-                        [
-                            ["climate", [["value", "wet"]]],
-                            ["color", [["value", "blue"]]],
-                            ["isOcean", [["value", "true"]]]
+                "switch",
+                {
+                    path: "/color",
+                    kind: "value",
+                    cases: {
+                        "'blue'": [
+                            [
+                                "switch",
+                                {
+                                    path: "/climate",
+                                    kind: "value",
+                                    cases: {
+                                        "'wet'": [
+                                            [
+                                                "requiredProps",
+                                                [
+                                                    [
+                                                        "climate",
+                                                        [["value", "wet"]]
+                                                    ],
+                                                    [
+                                                        "color",
+                                                        [["value", "blue"]]
+                                                    ],
+                                                    [
+                                                        "isOcean",
+                                                        [["value", true]]
+                                                    ]
+                                                ]
+                                            ]
+                                        ],
+                                        "'dry'": [
+                                            [
+                                                "requiredProps",
+                                                [
+                                                    [
+                                                        "climate",
+                                                        [["value", "dry"]]
+                                                    ],
+                                                    [
+                                                        "color",
+                                                        [["value", "blue"]]
+                                                    ],
+                                                    ["isSky", [["value", true]]]
+                                                ]
+                                            ]
+                                        ]
+                                    }
+                                }
+                            ]
+                        ],
+                        "'green'": [
+                            [
+                                "requiredProps",
+                                [
+                                    ["climate", [["value", "wet"]]],
+                                    ["color", [["value", "green"]]],
+                                    ["isRainforest", [["value", true]]]
+                                ]
+                            ]
+                        ],
+                        "'brown'": [
+                            [
+                                "requiredProps",
+                                [
+                                    ["climate", [["value", "dry"]]],
+                                    ["color", [["value", "brown"]]],
+                                    ["isDesert", [["value", true]]]
+                                ]
+                            ]
                         ]
-                    ],
-                    [
-                        "requiredProps",
-                        [
-                            ["climate", [["value", "dry"]]],
-                            ["color", [["value", "blue"]]],
-                            ["isSky", "(cycle)"]
-                        ]
-                    ],
-                    [
-                        "requiredProps",
-                        [
-                            ["climate", [["value", "wet"]]],
-                            ["color", [["value", "green"]]],
-                            ["isRainforest", "(cycle)"]
-                        ]
-                    ],
-                    [
-                        "requiredProps",
-                        [
-                            ["climate", [["value", "dry"]]],
-                            ["color", [["value", "brown"]]],
-                            ["isDesert", "(cycle)"]
-                        ]
-                    ]
-                ]
+                    }
+                }
             ]
         ])
     })
