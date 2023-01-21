@@ -19,7 +19,7 @@ describe("discriminate", () => {
         attest(t.flat).snap([
             ["domain", "string"],
             [
-                "cases",
+                "switch",
                 {
                     path: "/",
                     kind: "value",
@@ -37,7 +37,7 @@ describe("discriminate", () => {
         attest(t.flat).snap([
             ["domain", "object"],
             [
-                "cases",
+                "switch",
                 {
                     path: "/color",
                     kind: "value",

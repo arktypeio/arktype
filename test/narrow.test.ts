@@ -42,7 +42,7 @@ describe("narrow", () => {
         }
         const t = type(["string|number", ":", distributedBlacklist])
         attest(t.infer).typed as string | number
-        attest(t.node).snap({
+        attest(t.node).equals({
             string: { narrow: distributedBlacklist.string },
             number: { narrow: distributedBlacklist.number }
         })

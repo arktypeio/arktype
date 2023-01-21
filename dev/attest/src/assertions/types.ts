@@ -1,5 +1,5 @@
 import type { downcast } from "../../../../src/utils/generics.ts"
-import type { serialize } from "../../../../src/utils/serialize.ts"
+import type { serialize, snapshot } from "../../../../src/utils/serialize.ts"
 
 export type RootAssertions<
     T,
@@ -58,7 +58,7 @@ export type TypeAssertionProps = {
 
 export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
     is: (value: T) => NextAssertions<AllowTypeAssertions>
-    snap: (value?: serialize<T>) => NextAssertions<AllowTypeAssertions>
+    snap: (value?: snapshot<T>) => NextAssertions<AllowTypeAssertions>
     snapToFile: (
         args: ExternalSnapshotArgs
     ) => NextAssertions<AllowTypeAssertions>

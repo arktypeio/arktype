@@ -1,7 +1,7 @@
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.ts"
-import { literalSerialize } from "../../../../src/utils/serialize.ts"
+import { snapshot } from "../../../../src/utils/serialize.ts"
 import { caller } from "../../../runtime/api.ts"
 import { assertEquals } from "../assertions.ts"
 import type { AssertionContext } from "../attest.ts"
@@ -34,7 +34,7 @@ export class Assertions implements AssertionRecord {
     constructor(private ctx: AssertionContext) {}
 
     private serialize(value: unknown) {
-        return literalSerialize(value)
+        return snapshot(value)
     }
 
     private get actual() {

@@ -36,10 +36,10 @@ describe("cast", () => {
         }>
         attest(types.a.node).snap({
             input: { object: { props: { a: { number: { value: 1 } } } } },
-            morph: "<function>"
+            morph: "(function)"
         })
         attest(types.b.node).snap({
-            object: { props: { a: "number" }, narrow: "<function>" as any }
+            object: { props: { a: "number" }, narrow: "(function)" }
         })
     })
     it("errors on bad function return cast", () => {

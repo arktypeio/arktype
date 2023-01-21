@@ -1,5 +1,5 @@
 import process from "node:process"
-import { literalSerialize } from "../../../../src/utils/serialize.ts"
+import { snapshot } from "../../../../src/utils/serialize.ts"
 import { queueInlineSnapshotWriteOnProcessExit } from "../snapshot.ts"
 import type { BenchAssertionContext, BenchContext } from "./bench.ts"
 import type {
@@ -18,7 +18,7 @@ export const queueBaselineUpdateIfNeeded = (
     if (baseline && !ctx.cfg.updateSnapshots) {
         return
     }
-    const serializedValue = literalSerialize(updated)
+    const serializedValue = snapshot(updated)
     if (!ctx.lastSnapCallPosition) {
         throw new Error(
             `Unable to update baseline for ${ctx.qualifiedName} ('lastSnapCallPosition' was unset).`

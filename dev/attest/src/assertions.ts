@@ -1,5 +1,5 @@
 import * as assert from "node:assert/strict"
-import { isRecursible } from "../../../src/utils/serialize.ts"
+import { hasDomain } from "../../../src/utils/domains.ts"
 import type { AssertionContext } from "./attest.ts"
 
 export type ThrowAsertionErrorContext = {
@@ -26,7 +26,7 @@ export const assertEquals = (
     if (expected === actual) {
         return
     }
-    if (isRecursible(expected) && isRecursible(actual)) {
+    if (hasDomain(expected, "object") && hasDomain(actual, "object")) {
         try {
             assert.deepStrictEqual(actual, expected)
         } catch (e: any) {
