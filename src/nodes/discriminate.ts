@@ -63,7 +63,6 @@ const discriminate = (
         ]
     }
     const cases = {} as DiscriminatedCases
-    // TODO: allow undiscriminatable
     for (const caseKey in bestDiscriminant.indexCases) {
         cases[caseKey] = discriminate(
             originalBranches,

@@ -4,15 +4,14 @@ import { attest } from "../dev/attest/api.ts"
 
 describe("discriminate", () => {
     const places = scope.lazy({
-        ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" },
-        sky: { climate: "'dry'", color: "'blue'", isSky: "true" },
         rainforest: {
             climate: "'wet'",
             color: "'green'",
             isRainforest: "true"
         },
         desert: { climate: "'dry'", color: "'brown'", isDesert: "true" },
-        anywhereWet: { wet: "true" }
+        sky: { climate: "'dry'", color: "'blue'", isSky: "true" },
+        ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" }
     })
     it("shallow", () => {
         const t = type("'a'|'b'|'c'")
@@ -28,44 +27,6 @@ describe("discriminate", () => {
                         "'a'": [["value", "a"]],
                         "'b'": [["value", "b"]],
                         "'c'": [["value", "c"]]
-                    }
-                }
-            ]
-        ])
-    })
-    it("partial", () => {
-        const t = places.$.type("ocean|sky|anywhereWet")
-        attest(t.flat).unknown.snap([
-            ["domain", "object"],
-            [
-                "switch",
-                {
-                    path: "/climate",
-                    kind: "value",
-                    cases: {
-                        "'wet'": [
-                            [
-                                "requiredProps",
-                                [
-                                    ["climate", [["value", "wet"]]],
-                                    ["color", [["value", "blue"]]],
-                                    ["isOcean", [["value", true]]]
-                                ]
-                            ]
-                        ],
-                        "'dry'": [
-                            [
-                                "requiredProps",
-                                [
-                                    ["climate", [["value", "dry"]]],
-                                    ["color", [["value", "blue"]]],
-                                    ["isSky", [["value", true]]]
-                                ]
-                            ]
-                        ],
-                        default: [
-                            ["requiredProps", [["wet", [["value", true]]]]]
-                        ]
                     }
                 }
             ]
@@ -145,6 +106,103 @@ describe("discriminate", () => {
                                     ["color", [["value", "brown"]]],
                                     ["isDesert", [["value", true]]]
                                 ]
+                            ]
+                        ]
+                    }
+                }
+            ]
+        ])
+    })
+    it("undiscriminatable", () => {
+        const t = places.$.type([
+            "ocean",
+            "|",
+            {
+                climate: "'wet'",
+                color: "'blue'",
+                indistinguishableFrom: "ocean"
+            }
+        ])
+        attest(t.flat).unknown.snap([
+            ["domain", "object"],
+            [
+                "branches",
+                [
+                    [
+                        [
+                            "requiredProps",
+                            [
+                                ["climate", [["value", "wet"]]],
+                                ["color", [["value", "blue"]]],
+                                ["isOcean", [["value", true]]]
+                            ]
+                        ]
+                    ],
+                    [
+                        [
+                            "requiredProps",
+                            [
+                                ["climate", [["value", "wet"]]],
+                                ["color", [["value", "blue"]]],
+                                [
+                                    "indistinguishableFrom",
+                                    [
+                                        ["domain", "object"],
+                                        [
+                                            "requiredProps",
+                                            [
+                                                ["climate", [["value", "wet"]]],
+                                                ["color", [["value", "blue"]]],
+                                                ["isOcean", [["value", true]]]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ])
+    })
+    it("default case", () => {
+        const t = places.$.type([
+            "ocean|rainforest",
+            "|",
+            { temperature: "'hot'" }
+        ])
+        attest(t.flat).unknown.snap([
+            ["domain", "object"],
+            [
+                "switch",
+                {
+                    path: "/color",
+                    kind: "value",
+                    cases: {
+                        "'blue'": [
+                            [
+                                "requiredProps",
+                                [
+                                    ["climate", [["value", "wet"]]],
+                                    ["color", [["value", "blue"]]],
+                                    ["isOcean", [["value", true]]]
+                                ]
+                            ]
+                        ],
+                        "'green'": [
+                            [
+                                "requiredProps",
+                                [
+                                    ["climate", [["value", "wet"]]],
+                                    ["color", [["value", "green"]]],
+                                    ["isRainforest", [["value", true]]]
+                                ]
+                            ]
+                        ],
+                        default: [
+                            [
+                                "requiredProps",
+                                [["temperature", [["value", "hot"]]]]
                             ]
                         ]
                     }
