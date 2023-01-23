@@ -3,16 +3,6 @@ import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
 describe("discriminate", () => {
-    const places = scope.lazy({
-        rainforest: {
-            climate: "'wet'",
-            color: "'green'",
-            isRainforest: "true"
-        },
-        desert: { climate: "'dry'", color: "'brown'", isDesert: "true" },
-        sky: { climate: "'dry'", color: "'blue'", isSky: "true" },
-        ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" }
-    })
     it("shallow", () => {
         const t = type("'a'|'b'|'c'")
         // TODO: fix snapshot infinite recursion when not using .unknown
@@ -23,6 +13,7 @@ describe("discriminate", () => {
                 {
                     path: "/",
                     kind: "value",
+                    // TODO: Prune
                     cases: {
                         "'a'": [["value", "a"]],
                         "'b'": [["value", "b"]],
@@ -32,7 +23,17 @@ describe("discriminate", () => {
             ]
         ])
     })
-    it("n-ary", () => {
+    const places = scope.lazy({
+        rainforest: {
+            climate: "'wet'",
+            color: "'green'",
+            isRainforest: "true"
+        },
+        desert: { climate: "'dry'", color: "'brown'", isDesert: "true" },
+        sky: { climate: "'dry'", color: "'blue'", isSky: "true" },
+        ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" }
+    })
+    it("nested", () => {
         const t = places.$.type("ocean|sky|rainforest|desert")
         attest(t.flat).unknown.snap([
             ["domain", "object"],
@@ -203,6 +204,86 @@ describe("discriminate", () => {
                             [
                                 "requiredProps",
                                 [["temperature", [["value", "hot"]]]]
+                            ]
+                        ]
+                    }
+                }
+            ]
+        ])
+    })
+    it("discriminatable default", () => {
+        const t = places.$.type([
+            { temperature: "'cold'" },
+            "|",
+            ["ocean|rainforest", "|", { temperature: "'hot'" }]
+        ])
+        attest(t.flat).unknown.snap([
+            ["domain", "object"],
+            [
+                "switch",
+                {
+                    path: "/temperature",
+                    kind: "value",
+                    cases: {
+                        "'cold'": [
+                            [
+                                "requiredProps",
+                                [["temperature", [["value", "cold"]]]]
+                            ]
+                        ],
+                        "'hot'": [
+                            [
+                                "requiredProps",
+                                [["temperature", [["value", "hot"]]]]
+                            ]
+                        ],
+                        default: [
+                            [
+                                "switch",
+                                {
+                                    path: "/color",
+                                    kind: "value",
+                                    cases: {
+                                        "'blue'": [
+                                            [
+                                                "requiredProps",
+                                                [
+                                                    [
+                                                        "climate",
+                                                        [["value", "wet"]]
+                                                    ],
+                                                    [
+                                                        "color",
+                                                        [["value", "blue"]]
+                                                    ],
+                                                    [
+                                                        "isOcean",
+                                                        [["value", true]]
+                                                    ]
+                                                ]
+                                            ]
+                                        ],
+                                        "'green'": [
+                                            [
+                                                "requiredProps",
+                                                [
+                                                    [
+                                                        "climate",
+                                                        [["value", "wet"]]
+                                                    ],
+                                                    [
+                                                        "color",
+                                                        [["value", "green"]]
+                                                    ],
+                                                    [
+                                                        "isRainforest",
+                                                        [["value", true]]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    }
+                                }
                             ]
                         ]
                     }
