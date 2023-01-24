@@ -125,6 +125,7 @@ export const predicateIntersection: KeyIntersectionFn<
     ])
 }
 
+// TODO: fix premature removal of morph branches.
 export const predicateUnion = (
     domain: Domain,
     l: Predicate,
