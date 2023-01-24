@@ -88,7 +88,7 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
     const dirs = {
         src: ["src"],
         test: ["test"],
-        dev: ["dev/attest", "dev/runtime"]
+        dev: ["dev/attest", "dev/runtime", "dev/scripts"]
     }
     for (const [baseDir, dirsToInclude] of Object.entries(dirs)) {
         shell(
