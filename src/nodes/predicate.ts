@@ -1,4 +1,3 @@
-import type { Morph } from "../parse/tuple/morph.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
@@ -24,23 +23,14 @@ import {
 } from "./rules/rules.ts"
 
 export type Predicate<domain extends Domain = Domain, $ = Dict> = Dict extends $
-    ? true | CollapsibleList<Branch>
-    : true | CollapsibleList<Branch<domain, $>>
-
-export type Branch<domain extends Domain = Domain, $ = Dict> =
-    | Condition<domain, $>
-    | MorphBranch<domain, $>
+    ? true | CollapsibleList<Condition>
+    : true | CollapsibleList<Condition<domain, $>>
 
 export type Condition<domain extends Domain = Domain, $ = Dict> =
     | RuleSet<domain, $>
-    | ExactValue<domain>
+    | Literal<domain>
 
-export type MorphBranch<domain extends Domain = Domain, $ = Dict> = {
-    readonly input: Condition<domain, $>
-    readonly morph: CollapsibleList<Morph>
-}
-
-export type ExactValue<domain extends Domain = Domain> = {
+export type Literal<domain extends Domain = Domain> = {
     readonly value: inferDomain<domain>
 }
 
@@ -128,7 +118,7 @@ export const predicateIntersection: KeyIntersectionFn<
             (lIndex) => comparison.lConditions[lIndex]
         ),
         ...comparison.rSubconditionsOfL.map(
-            (rIndex) => comparison.rBranches[rIndex]
+            (rIndex) => comparison.rConditions[rIndex]
         )
     ])
 }
@@ -161,7 +151,7 @@ export const predicateUnion = (
                     (indexPair) => indexPair[0] === lIndex
                 )
         ),
-        ...comparison.rBranches.filter(
+        ...comparison.rConditions.filter(
             (_, rIndex) =>
                 !comparison.rSubconditionsOfL.includes(rIndex) &&
                 !comparison.equalities.some(
@@ -180,21 +170,8 @@ export const compilePredicate = (
     }
     return hasSubdomain(predicate, "Array")
         ? compileBranches(predicate, $)
-        : compileBranch(predicate, $)
+        : compileCondition(predicate, $)
 }
-
-export const compileBranch = (branch: Branch, $: ScopeRoot): TraversalEntry[] =>
-    "morph" in branch
-        ? [
-              [
-                  "morph",
-                  {
-                      input: compileCondition(branch.input, $),
-                      morph: branch.morph
-                  }
-              ]
-          ]
-        : compileCondition(branch, $)
 
 export const compileCondition = (
     condition: Condition,

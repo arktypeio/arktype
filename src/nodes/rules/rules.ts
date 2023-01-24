@@ -1,12 +1,17 @@
+import { writeDoubleMorphIntersectionMessage } from "../../parse/string/ast.ts"
+import type { Morph } from "../../parse/tuple/morph.ts"
 import type { Narrow } from "../../parse/tuple/narrow.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import { rootCheck } from "../../traverse/check.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
+import { throwParseError } from "../../utils/errors.ts"
 import type {
     CollapsibleList,
     constructor,
     Dict
 } from "../../utils/generics.ts"
+import { listFrom } from "../../utils/generics.ts"
+import type { Intersector } from "../compose.ts"
 import { composeIntersection, composeKeyedIntersection } from "../compose.ts"
 import type { TraversalEntry } from "../node.ts"
 import { classIntersection } from "./class.ts"
@@ -31,9 +36,8 @@ export type Rules<domain extends Domain = Domain, $ = Dict> = {
     readonly range?: Range
     readonly props?: PropsRule<$>
     readonly class?: constructor
-    readonly narrow?: CollapsibleList<
-        Narrow<Domain extends domain ? any : inferDomain<domain>>
-    >
+    readonly narrow?: CollapsibleList<Narrow>
+    readonly morph?: CollapsibleList<Morph>
 }
 
 export type RuleEntry =
@@ -45,6 +49,7 @@ export type RuleEntry =
     | TraversalRequiredProps
     | TraversalOptionalProps
     | ["narrow", Narrow]
+    | ["morph", Morph]
     | ["value", unknown]
 
 export type RuleSet<domain extends Domain, $> = Domain extends domain
@@ -69,6 +74,11 @@ type defineRuleSet<domain extends Domain, keys extends keyof Rules, $> = Pick<
 const narrowIntersection =
     composeIntersection<CollapsibleList<Narrow>>(collapsibleListUnion)
 
+const morphIntersection = composeIntersection<CollapsibleList<Morph>>(
+    (l, r, context) =>
+        throwParseError(writeDoubleMorphIntersectionMessage(context.path))
+)
+
 export const rulesIntersection = composeKeyedIntersection<Rules>(
     {
         subdomain: subdomainIntersection,
@@ -77,7 +87,8 @@ export const rulesIntersection = composeKeyedIntersection<Rules>(
         props: propsIntersection,
         class: classIntersection,
         range: rangeIntersection,
-        narrow: narrowIntersection
+        narrow: narrowIntersection,
+        morph: morphIntersection
     },
     { onEmpty: "bubble" }
 )
@@ -93,12 +104,8 @@ const ruleCompilers: {
 } = {
     subdomain: compileSubdomain,
     regex: (entries, rule) => {
-        if (typeof rule === "string") {
-            entries.push(["regex", getRegex(rule)])
-        } else {
-            for (const source of rule) {
-                entries.push(["regex", getRegex(source)])
-            }
+        for (const source of listFrom(rule)) {
+            entries.push(["regex", getRegex(source)])
         }
     },
     divisor: (entries, rule) => {
@@ -112,12 +119,13 @@ const ruleCompilers: {
     },
     props: compileProps,
     narrow: (entries, rule) => {
-        if (typeof rule === "function") {
-            entries.push(["narrow", rule])
-        } else {
-            for (const narrow of rule) {
-                entries.push(["narrow", narrow])
-            }
+        for (const narrow of listFrom(rule)) {
+            entries.push(["narrow", narrow])
+        }
+    },
+    morph: (entries, rule) => {
+        for (const morph of listFrom(rule)) {
+            entries.push(["morph", morph])
         }
     }
 }
@@ -132,7 +140,6 @@ export const precedenceMap: {
     subdomain: 0,
     switch: 0,
     alias: 0,
-    morph: 0,
     // Shallow: All shallow checks will be performed even if one or more fail
     class: 1,
     regex: 1,
@@ -142,7 +149,9 @@ export const precedenceMap: {
     requiredProps: 2,
     optionalProps: 2,
     // Narrow: Only performed if all shallow and deep checks pass
-    narrow: 3
+    narrow: 3,
+    // Morph: Only performed if all validation passes
+    morph: 4
 }
 
 export const compileRules = (rules: Rules, $: ScopeRoot): RuleEntry[] => {
@@ -154,9 +163,8 @@ export const compileRules = (rules: Rules, $: ScopeRoot): RuleEntry[] => {
     return entries.sort((l, r) => precedenceMap[l[0]] - precedenceMap[r[0]])
 }
 
-// TODO: Currently omits domain, simplify traversal node definition to be more flexible?
 export const literalSatisfiesRules = (
     data: unknown,
     rules: Rules,
     $: ScopeRoot
-) => "data" in rootCheck(data, compileRules(rules, $) as any, $, {})
+) => "data" in rootCheck(data, compileRules(rules, $), $, {})

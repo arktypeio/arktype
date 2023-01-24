@@ -16,7 +16,7 @@ import type {
     ValidatorNode
 } from "./node.ts"
 import { compileNode } from "./node.ts"
-import type { ExactValue, Predicate } from "./predicate.ts"
+import type { Literal, Predicate } from "./predicate.ts"
 
 export const resolveIfIdentifier = (
     node: TypeNode,
@@ -39,7 +39,7 @@ export const isExactValue = <domain extends Domain>(
     node: TypeNode,
     domain: domain,
     $: ScopeRoot
-): node is { [_ in domain]: ExactValue<domain> } => {
+): node is { [_ in domain]: Literal<domain> } => {
     const resolution = resolveInput(node, $)
     return (
         nodeExtendsDomain(resolution, domain, $) &&
@@ -49,8 +49,7 @@ export const isExactValue = <domain extends Domain>(
 
 export const isExactValuePredicate = (
     predicate: Predicate
-): predicate is ExactValue =>
-    typeof predicate === "object" && "value" in predicate
+): predicate is Literal => typeof predicate === "object" && "value" in predicate
 
 export const domainsOfNode = (node: TypeNode, $: ScopeRoot): Domain[] =>
     keysOf(resolveInput(node, $))

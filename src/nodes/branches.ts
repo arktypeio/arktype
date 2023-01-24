@@ -4,12 +4,7 @@ import { throwInternalError } from "../utils/errors.ts"
 import type { List } from "../utils/generics.ts"
 import type { IntersectionContext } from "./compose.ts"
 import { isDisjoint, isEquality } from "./compose.ts"
-import type {
-    Branch,
-    Condition,
-    Predicate,
-    PredicateComparison
-} from "./predicate.ts"
+import type { Condition, Predicate, PredicateComparison } from "./predicate.ts"
 import { predicateIntersection } from "./predicate.ts"
 
 export const isBranchComparison = (
@@ -17,7 +12,7 @@ export const isBranchComparison = (
 ): comparison is BranchesComparison =>
     (comparison as BranchesComparison)?.lConditions !== undefined
 
-export type Branches = List<Branch>
+export type Branches = List<Condition>
 
 export type BranchesComparison = {
     lConditions: Branches

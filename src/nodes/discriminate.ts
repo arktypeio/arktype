@@ -125,12 +125,12 @@ const calculateDiscriminants = (
         casesByDisjoint: {}
     }
     const morphIndices: Record<number, true> = {}
-    const conditions = branches.map((branch, i) => {
-        if ("morph" in branch) {
+    const conditions = branches.map((condition, i) => {
+        if ("morph" in condition) {
             morphIndices[i] = true
-            return branch.input
+            return condition.input
         }
-        return branch
+        return condition
     })
     for (let lIndex = 0; lIndex < conditions.length - 1; lIndex++) {
         for (let rIndex = lIndex + 1; rIndex < conditions.length; rIndex++) {
