@@ -6,6 +6,7 @@ import type {
     CollapsibleList,
     constructor,
     Dict,
+    keySet,
     mutable
 } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
@@ -101,6 +102,7 @@ export type IntersectionContext = {
     $: ScopeRoot
     path: Path
     disjoints: DisjointsByPath
+    morphIntersections: keySet
 }
 
 export const empty = Symbol("empty")

@@ -27,7 +27,7 @@ import {
     predicateUnion
 } from "./predicate.ts"
 import { domainsOfNode, resolveFlat, resolveIfIdentifier } from "./resolve.ts"
-import type { RuleEntry } from "./rules/rules.ts"
+import type { BranchEntry } from "./rules/rules.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | TypeResolution<$>
 
@@ -79,7 +79,8 @@ export const initializeIntersectionContext = (
 ): IntersectionContext => ({
     $,
     path: "/",
-    disjoints: {}
+    disjoints: {},
+    morphIntersections: {}
 })
 
 export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
@@ -117,7 +118,7 @@ export const union = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
 export type TraversalNode = Domain | TraversalEntry[]
 
 export type TraversalEntry =
-    | RuleEntry
+    | BranchEntry
     | DomainsEntry
     | CyclicReferenceEntry
     | DomainEntry

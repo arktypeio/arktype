@@ -18,7 +18,6 @@ import {
     equality
 } from "../compose.ts"
 import type { TraversalEntry } from "../node.ts"
-import { isLiteralCondition } from "../resolve.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
@@ -50,9 +49,16 @@ export type LiteralRules<domain extends Domain = Domain> = {
 
 export type NarrowRule = CollapsibleList<Narrow>
 
-export type MorphRule = CollapsibleList<Morph>
+export type Branch<domain extends Domain = Domain, $ = Dict> =
+    | Rules<domain, $>
+    | MorphBranch<domain, $>
 
-export type RuleEntry =
+export type MorphBranch<domain extends Domain = Domain, $ = Dict> = {
+    input: Rules<domain, $>
+    morph: CollapsibleList<Morph>
+}
+
+export type BranchEntry =
     | ["subdomain", TraversalSubdomainRule]
     | ["regex", RegExp]
     | ["divisor", number]
@@ -68,7 +74,7 @@ export type Rules<
     domain extends Domain = Domain,
     $ = Dict
 > = Domain extends domain
-    ? xor<NarrowableRules, LiteralRules> & { readonly morph?: MorphRule }
+    ? xor<NarrowableRules, LiteralRules>
     : domain extends "object"
     ? defineRuleSet<
           domain,
@@ -85,9 +91,24 @@ type defineRuleSet<
     domain extends Domain,
     keys extends keyof NarrowableRules,
     $
-> =
-    | Pick<NarrowableRules<$>, keys>
-    | (LiteralRules<domain> & { readonly morph?: MorphRule })
+> = Pick<NarrowableRules<$>, keys> | LiteralRules<domain>
+
+export const branchIntersection = (
+    l: Branch,
+    r: Branch,
+    context: IntersectionContext
+) => {
+    if ("morph" in l) {
+        if ("morph" in r) {
+            return rulesIntersection(l.input, r.input, context)
+        }
+        return rulesIntersection(l.input, r, context)
+    }
+    if ("morph" in r) {
+        return rulesIntersection(l, r.input, context)
+    }
+    return rulesIntersection(l, r, context)
+}
 
 export const rulesIntersection = (
     l: Rules,
@@ -108,14 +129,11 @@ export const rulesIntersection = (
                 ? r
                 : disjoint("assignability", [r.value, l], context)
             : narrowableRulesIntersection(l, r, context)
+    return result
 }
 
 const narrowIntersection =
     composeIntersection<CollapsibleList<Narrow>>(collapsibleListUnion)
-
-const morphIntersection = composeIntersection<CollapsibleList<Morph>>(
-    (l, r, context) => (l === r ? equality : disjoint("morph", [l, r], context))
-)
 
 export const narrowableRulesIntersection =
     composeKeyedIntersection<NarrowableRules>(
@@ -126,19 +144,18 @@ export const narrowableRulesIntersection =
             props: propsIntersection,
             class: classIntersection,
             range: rangeIntersection,
-            narrow: narrowIntersection,
-            morph: morphIntersection
+            narrow: narrowIntersection
         },
         { onEmpty: "bubble" }
     )
 
 export type FlattenAndPushRule<t> = (
-    entries: RuleEntry[],
+    entries: BranchEntry[],
     rule: t,
     $: ScopeRoot
 ) => void
 
-const branchKeyCompilers: {
+const ruleCompilers: {
     [k in keyof Rules]-?: FlattenAndPushRule<Rules[k] & {}>
 } = {
     subdomain: compileSubdomain,
@@ -160,11 +177,6 @@ const branchKeyCompilers: {
     narrow: (entries, rule) => {
         for (const narrow of listFrom(rule)) {
             entries.push(["narrow", narrow])
-        }
-    },
-    morph: (entries, rule) => {
-        for (const morph of listFrom(rule)) {
-            entries.push(["morph", morph])
         }
     },
     value: (entries, rule) => {
@@ -197,11 +209,22 @@ export const precedenceMap: {
     morph: 4
 }
 
-export const compileRules = (branch: Rules, $: ScopeRoot): RuleEntry[] => {
-    const entries: RuleEntry[] = []
+export const compileBranch = (branch: Branch, $: ScopeRoot): BranchEntry[] => {
+    if ("morph" in branch) {
+        const result = compileRules(branch.input, $)
+        for (const morph of listFrom(branch.morph)) {
+            result.push(["morph", morph])
+        }
+        return result
+    }
+    return compileRules(branch, $)
+}
+
+export const compileRules = (rules: Rules, $: ScopeRoot): BranchEntry[] => {
+    const entries: BranchEntry[] = []
     let k: keyof Rules
-    for (k in branch) {
-        branchKeyCompilers[k](entries, branch[k] as any, $)
+    for (k in rules) {
+        ruleCompilers[k](entries, rules[k] as any, $)
     }
     return entries.sort((l, r) => precedenceMap[l[0]] - precedenceMap[r[0]])
 }
