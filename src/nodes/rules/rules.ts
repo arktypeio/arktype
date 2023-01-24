@@ -11,6 +11,7 @@ import type {
     xor
 } from "../../utils/generics.ts"
 import { listFrom } from "../../utils/generics.ts"
+import type { IntersectionContext } from "../compose.ts"
 import {
     composeIntersection,
     composeKeyedIntersection,
@@ -18,6 +19,7 @@ import {
     equality
 } from "../compose.ts"
 import type { TraversalEntry } from "../node.ts"
+import { isLiteralCondition } from "../resolve.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
@@ -53,9 +55,6 @@ type Morphable<t = {}> = t & {
     readonly morph?: MorphRule
 }
 
-// readonly morph?: MorphRule
-// readonly value?: unknown
-
 export type NarrowRule = CollapsibleList<Narrow>
 
 export type MorphRule = CollapsibleList<Morph>
@@ -69,9 +68,8 @@ export type RuleEntry =
     | TraversalRequiredProps
     | TraversalOptionalProps
     | ["narrow", Narrow]
-    // TODO: finalize how these fit into "Rules"
-    | ["morph", Morph]
     | ["value", unknown]
+    | ["morph", Morph]
 
 export type Rules<
     domain extends Domain = Domain,
@@ -95,6 +93,25 @@ type defineRuleSet<
     keys extends keyof NarrowableRules,
     $
 > = Morphable<Pick<NarrowableRules<$>, keys> | LiteralRules<domain>>
+
+export const validationRulesIntersection = (
+    l: BaseRules,
+    r: BaseRules,
+    context: IntersectionContext
+) =>
+    isLiteralCondition(l)
+        ? isLiteralCondition(r)
+            ? l.value === r.value
+                ? equality()
+                : disjoint("value", [l.value, r.value], context)
+            : literalSatisfiesRules(l.value, r, context.$)
+            ? l
+            : disjoint("assignability", [l.value, r], context)
+        : isLiteralCondition(r)
+        ? literalSatisfiesRules(r.value, l, context.$)
+            ? r
+            : disjoint("assignability", [r.value, l], context)
+        : narrowableRulesIntersection(l, r, context)
 
 const narrowIntersection =
     composeIntersection<CollapsibleList<Narrow>>(collapsibleListUnion)

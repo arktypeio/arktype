@@ -1,4 +1,4 @@
-import { conditionIntersection } from "../nodes/predicate.ts"
+import { rulesIntersection } from "../nodes/predicate.ts"
 import { undiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
@@ -131,7 +131,7 @@ const calculateDiscriminants = (
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
             const context = initializeIntersectionContext($)
-            conditionIntersection(branches[lIndex], branches[rIndex], context)
+            rulesIntersection(branches[lIndex], branches[rIndex], context)
             let path: Path
             for (path in context.disjoints) {
                 const disjointContext = context.disjoints[path]

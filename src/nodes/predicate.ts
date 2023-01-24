@@ -20,7 +20,8 @@ import type { BaseRules, Rules } from "./rules/rules.ts"
 import {
     compileRules,
     literalSatisfiesRules,
-    narrowableRulesIntersection
+    narrowableRulesIntersection,
+    validationRulesIntersection
 } from "./rules/rules.ts"
 
 export type Predicate<domain extends Domain = Domain, $ = Dict> = Dict extends $
@@ -44,7 +45,7 @@ export const comparePredicates = (
         return l
     }
     if (hasSubdomain(l, "object") && hasSubdomain(r, "object")) {
-        const result = conditionIntersection(l, r, context)
+        const result = validationRulesIntersection(l, r, context)
         return result === l ? l : result === r ? r : result
     }
     const lComparisons = listFrom(l)
@@ -75,25 +76,6 @@ export const comparePredicates = (
     }
     return comparison
 }
-
-export const conditionIntersection = (
-    l: BaseRules,
-    r: BaseRules,
-    context: IntersectionContext
-) =>
-    isLiteralCondition(l)
-        ? isLiteralCondition(r)
-            ? l.value === r.value
-                ? equality()
-                : disjoint("value", [l.value, r.value], context)
-            : literalSatisfiesRules(l.value, r, context.$)
-            ? l
-            : disjoint("assignability", [l.value, r], context)
-        : isLiteralCondition(r)
-        ? literalSatisfiesRules(r.value, l, context.$)
-            ? r
-            : disjoint("assignability", [r.value, l], context)
-        : narrowableRulesIntersection(l, r, context)
 
 export const predicateIntersection: KeyIntersectionFn<
     Required<TypeResolution>
