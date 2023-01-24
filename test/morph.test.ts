@@ -99,7 +99,21 @@ describe("morph", () => {
                   a: Function
               }
         >
-        attest(types.c.node).snap({})
+        attest(types.c.node).snap({
+            object: [
+                {
+                    props: {
+                        a: {
+                            number: {
+                                range: { min: { limit: 0, exclusive: true } },
+                                morph: "(function)"
+                            }
+                        }
+                    }
+                },
+                { props: { a: "Function" } }
+            ]
+        })
     })
     it("chained", () => {
         const types = scope({
@@ -156,12 +170,14 @@ describe("morph", () => {
     })
     it("undiscriminated union", () => {
         attest(() => {
-            scope({
+            // TODO: fix premature removal of morph branches.
+            const types = scope({
                 a: ["/.*/", "=>", (s) => s.trim()],
                 b: "string",
                 // @ts-expect-error
                 c: "a|b"
             })
+            console.log()
         }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
     })
     it("deep double intersection", () => {
