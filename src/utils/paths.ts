@@ -34,16 +34,11 @@ export const getPath = (value: unknown, path: string[]): unknown => {
     return result
 }
 
-export type join<
+export type pathToString<
     segments extends List<string>,
-    delimiter extends string = "/",
-    result extends string = ""
+    result extends Path = "/"
 > = segments extends [infer head extends string, ...infer tail extends string[]]
-    ? join<
-          tail,
-          delimiter,
-          result extends "" ? head : `${result}${delimiter}${head}`
-      >
+    ? pathToString<tail, pushKey<result, head>>
     : result
 
 export const pathPrefix = <path extends string>(path: path) =>

@@ -20,7 +20,7 @@ import type {
     tryCatch
 } from "../../utils/generics.ts"
 import { keysOf } from "../../utils/generics.ts"
-import type { join, Path } from "../../utils/paths.ts"
+import type { Path, pathToString } from "../../utils/paths.ts"
 import { pathPrefix } from "../../utils/paths.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
@@ -99,12 +99,12 @@ type inferIntersectionRecurse<
     : r extends never
     ? never
     : l & r extends never
-    ? error<writeImplicitNeverMessage<join<path>>>
+    ? error<writeImplicitNeverMessage<pathToString<path>>>
     : isAny<l | r> extends true
     ? any
     : l extends ParsedMorph<infer lIn, infer lOut>
     ? r extends ParsedMorph
-        ? error<writeDoubleMorphIntersectionMessage<join<path>>>
+        ? error<writeDoubleMorphIntersectionMessage<pathToString<path>>>
         : (In: evaluate<lIn & r>) => Out<lOut>
     : r extends ParsedMorph<infer rIn, infer rOut>
     ? (In: evaluate<rIn & l>) => Out<rOut>

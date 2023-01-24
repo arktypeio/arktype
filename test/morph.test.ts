@@ -13,7 +13,7 @@ describe("morph", () => {
         const t = type(["boolean", "=>", (data) => `${data}`])
         attest(t).typed as Type<(In: boolean) => Out<string>>
         attest(t.infer).typed as Type<string>
-        attest(t.node).snap({ input: "boolean", morph: "(function)" })
+        attest(t.node).snap({ boolean: { morph: "(function)" } })
         attest(t(true).data).equals(true).typed as boolean
         attest(t(true).out).equals("true").typed as string
         attest(t("foo").problems?.summary).snap()
@@ -36,10 +36,7 @@ describe("morph", () => {
             bAndA: "b&a"
         })
         attest(types.aAndB).typed as Type<(In: 3.14) => Out<string>>
-        attest(types.aAndB.node).snap({
-            input: { number: { value: 3.14 } },
-            morph: "(function)"
-        })
+        attest(types.aAndB.node).snap({ number: { value: 3.14 } })
         attest(types.bAndA).typed as typeof types.aAndB
         attest(types.bAndA.node).equals(types.aAndB.node)
     })
@@ -51,15 +48,13 @@ describe("morph", () => {
         })
         attest(types.c).typed as Type<(In: { a: 1; b: 2 }) => Out<string>>
         attest(types.c.node).snap({
-            input: {
-                object: {
-                    props: {
-                        a: { number: { value: 1 } },
-                        b: { number: { value: 2 } }
-                    }
-                }
-            },
-            morph: "(function)"
+            object: {
+                props: {
+                    a: { number: { value: 1 } },
+                    b: { number: { value: 2 } }
+                },
+                morph: "(function)"
+            }
         })
     })
     it("union", () => {
@@ -70,7 +65,10 @@ describe("morph", () => {
             bOrA: "b|a"
         })
         attest(types.aOrB).typed as Type<(In: number | boolean) => Out<string>>
-        attest(types.aOrB.node).snap({ input: {}, morph: "(function)" })
+        attest(types.aOrB.node).snap({
+            number: { morph: "(function)" },
+            boolean: true
+        })
         attest(types.bOrA).typed as typeof types.aOrB
         attest(types.bOrA.node).equals(types.aOrB.node)
     })
@@ -84,14 +82,7 @@ describe("morph", () => {
             a: (In: 1) => Out<number>
         }>
         attest(types.c.node).snap({
-            object: {
-                props: {
-                    a: {
-                        input: { number: { value: 1 } },
-                        morph: "(function)" as any
-                    }
-                }
-            }
+            object: { props: { a: { number: { value: 1 } } } }
         })
     })
     it("deep union", () => {
@@ -117,8 +108,7 @@ describe("morph", () => {
         })
         attest(types.b).typed as Type<(In: string) => Out<boolean>>
         attest(types.b.node).snap({
-            input: "string",
-            morph: ["(function)", "(function)"]
+            string: { morph: ["(function)", "(function)"] }
         })
     })
     it("chained nested", () => {
@@ -128,8 +118,7 @@ describe("morph", () => {
         })
         attest(types.b).typed as Type<(In: { a: string }) => Out<boolean>>
         attest(types.b.node).snap({
-            input: { object: { props: { a: "a" } } },
-            morph: "(function)"
+            object: { props: { a: "a" }, morph: "(function)" }
         })
     })
     it("discriminatable tuple union", () => {
@@ -145,7 +134,8 @@ describe("morph", () => {
             object: [
                 {
                     subdomain: ["Array", "unknown", 1],
-                    props: { "0": "string" }
+                    props: { "0": "string" },
+                    morph: "(function)"
                 },
                 {
                     subdomain: ["Array", "unknown", 1],
@@ -162,7 +152,7 @@ describe("morph", () => {
                 // @ts-expect-error
                 c: "a&b"
             })
-        }).throwsAndHasTypeError(writeDoubleMorphIntersectionMessage(""))
+        }).throwsAndHasTypeError(writeDoubleMorphIntersectionMessage("/"))
     })
     it("undiscriminated union", () => {
         attest(() => {

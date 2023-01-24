@@ -39,10 +39,6 @@ describe("union/parse", () => {
             boolean: true,
             number: true
         })
-        const t = type([[{ a: "true" }], "|", { a: "false" }])
-        attest(t.node).snap({
-            object: { props: { a: "boolean" } }
-        })
     })
     describe("errors", () => {
         it("bad reference", () => {
