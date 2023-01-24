@@ -58,7 +58,8 @@ export type validateTupleExpression<
     ? ["===", def[1]]
     : def[0] extends "instanceof"
     ? ["instanceof", conform<def[1], constructor>]
-    : never
+    : // TODOSHAWN: Add validation just like equality
+      never
 
 export type inferTuple<def extends List, $> = def extends TupleExpression
     ? inferTupleExpression<def, $>
@@ -90,7 +91,8 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
     ? def[1] extends constructor<infer t>
         ? t
         : never
-    : never
+    : // TODOSHAWN: keyof def[1]
+      never
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, $) => {
     if (def[2] === undefined) {
@@ -154,6 +156,7 @@ type PrefixExpression<token extends PrefixToken = PrefixToken> = [
     ...unknown[]
 ]
 
+// TODOSHAWN: add parseKeyOfTuple (should be imported from an adjacent file)
 const prefixParsers: {
     [token in PrefixToken]: PrefixParser<token>
 } = {
