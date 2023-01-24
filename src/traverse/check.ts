@@ -147,7 +147,7 @@ const checkers = {
     // TODO: keep track of cyclic data
     alias: (data, name, state) =>
         checkNode(data, resolveFlat(name, state.$), state),
-    morph: (data, morphNode, state) => checkNode(data, morphNode.input, state),
+    morph: () => {},
     class: checkClass,
     // TODO: add error message syntax.
     narrow: (data, validator) => validator(data),

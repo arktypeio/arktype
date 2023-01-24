@@ -1,24 +1,15 @@
-import {
-    compileDisjointReasonsMessage,
-    writeDoubleMorphIntersectionMessage
-} from "../parse/string/ast.ts"
-import type { Morph } from "../parse/tuple/morph.ts"
+import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type {
     autocomplete,
-    CollapsibleList,
     Dict,
     mutable,
     stringKeyOf
 } from "../utils/generics.ts"
 import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
-import type {
-    IntersectionContext,
-    IntersectionResult,
-    Intersector
-} from "./compose.ts"
+import type { IntersectionContext, Intersector } from "./compose.ts"
 import {
     composeKeyedIntersection,
     disjoint,
@@ -35,12 +26,7 @@ import {
     predicateIntersection,
     predicateUnion
 } from "./predicate.ts"
-import {
-    domainsOfNode,
-    nodeIsMorph,
-    resolveFlat,
-    resolveIfIdentifier
-} from "./resolve.ts"
+import { domainsOfNode, resolveFlat, resolveIfIdentifier } from "./resolve.ts"
 import type { RuleEntry } from "./rules/rules.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | TypeResolution<$>
@@ -48,19 +34,84 @@ export type TypeNode<$ = Dict> = Identifier<$> | TypeResolution<$>
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to
  * manipulate.*/
-export type TypeResolution<$ = Dict> = ValidatorNode<$> | MorphNode<$>
+export type TypeResolution<$ = Dict> = {
+    readonly [domain in Domain]?: Predicate<domain, $>
+}
 
 export type Identifier<$ = Dict> = string extends keyof $
     ? autocomplete<Keyword>
     : Keyword | stringKeyOf<$>
 
-export type MorphNode<$ = Dict> = {
-    readonly input: Identifier<$> | ValidatorNode<$>
-    readonly morph: CollapsibleList<Morph>
+export const nodeIntersection: Intersector<TypeNode> = (l, r, context) => {
+    const lResolution = resolveIfIdentifier(l, context.$)
+    const rResolution = resolveIfIdentifier(r, context.$)
+    const result = resolutionIntersection(lResolution, rResolution, context)
+    if (typeof result === "object" && !hasKeys(result)) {
+        return context.disjoints[context.path]
+            ? empty
+            : disjoint(
+                  "domain",
+                  [
+                      domainsOfNode(lResolution, context.$),
+                      domainsOfNode(rResolution, context.$)
+                  ],
+                  context
+              )
+    }
+    return result === lResolution ? l : result === rResolution ? r : result
 }
 
-export type ValidatorNode<$ = Dict> = {
-    readonly [domain in Domain]?: Predicate<domain, $>
+const resolutionIntersection = composeKeyedIntersection<TypeResolution>(
+    (domain, l, r, context) => {
+        if (l === undefined) {
+            return r === undefined ? throwUndefinedOperandsError() : undefined
+        }
+        if (r === undefined) {
+            return undefined
+        }
+        return predicateIntersection(domain, l, r, context)
+    },
+    { onEmpty: "omit" }
+)
+
+export const initializeIntersectionContext = (
+    $: ScopeRoot
+): IntersectionContext => ({
+    $,
+    path: "/",
+    disjoints: {}
+})
+
+export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
+    const context = initializeIntersectionContext($)
+    const result = nodeIntersection(l, r, context)
+    return isDisjoint(result)
+        ? throwParseError(compileDisjointReasonsMessage(context.disjoints))
+        : isEquality(result)
+        ? l
+        : result
+}
+
+export const union = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
+    const lResolution = resolveIfIdentifier(l, $)
+    const rResolution = resolveIfIdentifier(r, $)
+    const result = {} as mutable<TypeResolution>
+    const domains = keysOf({ ...lResolution, ...rResolution })
+    for (const domain of domains) {
+        result[domain] = hasKey(lResolution, domain)
+            ? hasKey(rResolution, domain)
+                ? predicateUnion(
+                      domain,
+                      lResolution[domain],
+                      rResolution[domain],
+                      $
+                  )
+                : lResolution[domain]
+            : hasKey(rResolution, domain)
+            ? rResolution[domain]
+            : throwUndefinedOperandsError()
+    }
+    return result
 }
 
 export type TraversalNode = Domain | TraversalEntry[]
@@ -70,7 +121,6 @@ export type TraversalEntry =
     | DomainsEntry
     | CyclicReferenceEntry
     | DomainEntry
-    | MorphEntry
     | BranchesEntry
     | SwitchEntry
 
@@ -91,16 +141,6 @@ export type DomainsEntry = [
     }
 ]
 
-type ValidatorTraversalNode = Exclude<TraversalNode, [["morph", unknown]]>
-
-export type MorphEntry = [
-    "morph",
-    {
-        readonly input: ValidatorTraversalNode
-        readonly morph: CollapsibleList<Morph>
-    }
-]
-
 export type BranchesEntry = ["branches", TraversalEntry[][]]
 
 export type SwitchEntry = ["switch", DiscriminatedSwitch]
@@ -108,17 +148,6 @@ export type SwitchEntry = ["switch", DiscriminatedSwitch]
 export const compileNode = (node: TypeNode, $: ScopeRoot): TraversalNode => {
     if (typeof node === "string") {
         return resolveFlat(node, $)
-    }
-    if (nodeIsMorph(node)) {
-        return [
-            [
-                "morph",
-                {
-                    input: compileNode(node.input, $) as ValidatorTraversalNode,
-                    morph: node.morph
-                }
-            ]
-        ]
     }
     const domains = keysOf(node)
     if (domains.length === 1) {
@@ -152,118 +181,6 @@ export const compileNodes = <nodes extends ScopeNodes>(
     const result = {} as mutable<CompiledScopeNodes<nodes>>
     for (const name in nodes) {
         result[name] = compileNode(nodes[name], $)
-    }
-    return result
-}
-
-export const nodeIntersection: Intersector<TypeNode> = (l, r, context) => {
-    const lRoot = resolveIfIdentifier(l, context.$)
-    const rRoot = resolveIfIdentifier(r, context.$)
-    const result = nodeIsMorph(lRoot)
-        ? nodeIsMorph(rRoot)
-            ? throwParseError(writeDoubleMorphIntersectionMessage(context.path))
-            : mixedIntersection(lRoot, rRoot, context)
-        : nodeIsMorph(rRoot)
-        ? mixedIntersection(rRoot, lRoot, context)
-        : validatorIntersection(lRoot, rRoot, context)
-    if (typeof result === "object" && !hasKeys(result)) {
-        return context.disjoints[context.path]
-            ? empty
-            : disjoint(
-                  "domain",
-                  [
-                      domainsOfNode(lRoot, context.$),
-                      domainsOfNode(rRoot, context.$)
-                  ],
-                  context
-              )
-    }
-    return result === lRoot ? l : result === rRoot ? r : result
-}
-
-const validatorIntersection = composeKeyedIntersection<ValidatorNode>(
-    (domain, l, r, context) => {
-        if (l === undefined) {
-            return r === undefined ? throwUndefinedOperandsError() : undefined
-        }
-        if (r === undefined) {
-            return undefined
-        }
-        return predicateIntersection(domain, l, r, context)
-    },
-    { onEmpty: "omit" }
-)
-
-const mixedIntersection = (
-    morphNode: MorphNode,
-    validator: ValidatorNode,
-    context: IntersectionContext
-): IntersectionResult<MorphNode> => {
-    const result = nodeIntersection(
-        morphNode.input,
-        validator,
-        context
-    ) as IntersectionResult<ValidatorNode>
-    return result === morphNode.input || isEquality(result)
-        ? morphNode
-        : isDisjoint(result)
-        ? result
-        : {
-              input: result,
-              morph: morphNode.morph
-          }
-}
-
-export const initializeIntersectionContext = (
-    $: ScopeRoot
-): IntersectionContext => ({
-    $,
-    path: "/",
-    disjoints: {}
-})
-
-export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
-    const context = initializeIntersectionContext($)
-    const result = nodeIntersection(l, r, context)
-    return isDisjoint(result)
-        ? throwParseError(compileDisjointReasonsMessage(context.disjoints))
-        : isEquality(result)
-        ? l
-        : result
-}
-
-export const union = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
-    const lResolution = resolveIfIdentifier(l, $)
-    const rResolution = resolveIfIdentifier(r, $)
-    const result = nodeIsMorph(lResolution)
-        ? unionIncludingMorph(lResolution, rResolution, $)
-        : nodeIsMorph(rResolution)
-        ? unionIncludingMorph(rResolution, lResolution, $)
-        : validatorUnion(lResolution, rResolution, $)
-    return result
-}
-
-export const unionIncludingMorph = (
-    morphNode: MorphNode,
-    pairedNode: TypeResolution,
-    $: ScopeRoot
-) => morphNode
-
-export const validatorUnion = (
-    l: ValidatorNode,
-    r: ValidatorNode,
-    $: ScopeRoot
-) => {
-    const result = {} as mutable<ValidatorNode>
-    const domains = keysOf({ ...l, ...r })
-    for (const domain of domains) {
-        result[domain] = hasKey(l, domain)
-            ? hasKey(r, domain)
-                ? predicateUnion(domain, l[domain], r[domain], $)
-                : l[domain]
-            : hasKey(r, domain)
-            ? r[domain]
-            : throwUndefinedOperandsError()
     }
     return result
 }

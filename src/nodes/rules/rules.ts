@@ -3,7 +3,7 @@ import type { Morph } from "../../parse/tuple/morph.ts"
 import type { Narrow } from "../../parse/tuple/narrow.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import { rootCheck } from "../../traverse/check.ts"
-import type { Domain, inferDomain } from "../../utils/domains.ts"
+import type { Domain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type {
     CollapsibleList,
@@ -11,7 +11,6 @@ import type {
     Dict
 } from "../../utils/generics.ts"
 import { listFrom } from "../../utils/generics.ts"
-import type { Intersector } from "../compose.ts"
 import { composeIntersection, composeKeyedIntersection } from "../compose.ts"
 import type { TraversalEntry } from "../node.ts"
 import { classIntersection } from "./class.ts"
@@ -49,6 +48,7 @@ export type RuleEntry =
     | TraversalRequiredProps
     | TraversalOptionalProps
     | ["narrow", Narrow]
+    // TODO: finalize how these fit into "Rules"
     | ["morph", Morph]
     | ["value", unknown]
 

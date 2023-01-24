@@ -1,3 +1,4 @@
+import type { Morph } from "../parse/tuple/morph.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
@@ -12,9 +13,9 @@ import type {
 } from "./compose.ts"
 import { disjoint, equality, isEquality } from "./compose.ts"
 import { compileBranches } from "./discriminate.ts"
-import type { TraversalEntry, ValidatorNode } from "./node.ts"
+import type { TraversalEntry, TypeResolution } from "./node.ts"
 import { initializeIntersectionContext } from "./node.ts"
-import { isExactValuePredicate } from "./resolve.ts"
+import { isLiteralCondition } from "./resolve.ts"
 import type { RuleSet } from "./rules/rules.ts"
 import {
     compileRules,
@@ -32,6 +33,7 @@ export type Condition<domain extends Domain = Domain, $ = Dict> =
 
 export type Literal<domain extends Domain = Domain> = {
     readonly value: inferDomain<domain>
+    readonly morph?: CollapsibleList<Morph>
 }
 
 export type PredicateComparison =
@@ -88,22 +90,22 @@ export const conditionIntersection = (
     r: Condition,
     context: IntersectionContext
 ) =>
-    isExactValuePredicate(l)
-        ? isExactValuePredicate(r)
+    isLiteralCondition(l)
+        ? isLiteralCondition(r)
             ? l.value === r.value
                 ? equality()
                 : disjoint("value", [l.value, r.value], context)
             : literalSatisfiesRules(l.value, r, context.$)
             ? l
             : disjoint("assignability", [l.value, r], context)
-        : isExactValuePredicate(r)
+        : isLiteralCondition(r)
         ? literalSatisfiesRules(r.value, l, context.$)
             ? r
             : disjoint("assignability", [r.value, l], context)
         : rulesIntersection(l, r, context)
 
 export const predicateIntersection: KeyIntersectionFn<
-    Required<ValidatorNode>
+    Required<TypeResolution>
 > = (domain, l, r, context) => {
     const comparison = comparePredicates(domain, l, r, context)
     if (!isBranchComparison(comparison)) {
@@ -177,6 +179,6 @@ export const compileCondition = (
     condition: Condition,
     $: ScopeRoot
 ): TraversalEntry[] =>
-    isExactValuePredicate(condition)
+    isLiteralCondition(condition)
         ? [["value", condition.value]]
         : compileRules(condition, $)

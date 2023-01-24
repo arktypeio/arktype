@@ -1,4 +1,4 @@
-import { compileBranch, conditionIntersection } from "../nodes/predicate.ts"
+import { compileCondition, conditionIntersection } from "../nodes/predicate.ts"
 import { undiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
@@ -48,7 +48,7 @@ const discriminate = (
     $: ScopeRoot
 ): TraversalEntry[] => {
     if (remainingIndices.length === 1) {
-        return compileBranch(originalBranches[remainingIndices[0]], $)
+        return compileCondition(originalBranches[remainingIndices[0]], $)
     }
     const bestDiscriminant = findBestDiscriminant(
         remainingIndices,
@@ -59,7 +59,7 @@ const discriminate = (
             [
                 "branches",
                 remainingIndices.map((i) =>
-                    compileBranch(originalBranches[i], $)
+                    compileCondition(originalBranches[i], $)
                 )
             ]
         ]
@@ -124,25 +124,13 @@ const calculateDiscriminants = (
         disjointsByPair: {},
         casesByDisjoint: {}
     }
-    const morphIndices: Record<number, true> = {}
-    const conditions = branches.map((condition, i) => {
-        if ("morph" in condition) {
-            morphIndices[i] = true
-            return condition.input
-        }
-        return condition
-    })
-    for (let lIndex = 0; lIndex < conditions.length - 1; lIndex++) {
-        for (let rIndex = lIndex + 1; rIndex < conditions.length; rIndex++) {
+    for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
+        for (let rIndex = lIndex + 1; rIndex < branches.length; rIndex++) {
             const pairKey = `${lIndex}/${rIndex}` as const
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
             const context = initializeIntersectionContext($)
-            conditionIntersection(
-                conditions[lIndex],
-                conditions[rIndex],
-                context
-            )
+            conditionIntersection(branches[lIndex], branches[rIndex], context)
             let path: Path
             for (path in context.disjoints) {
                 const disjointContext = context.disjoints[path]
@@ -179,7 +167,7 @@ const calculateDiscriminants = (
                 }
             }
             if (
-                (lIndex in morphIndices || rIndex in morphIndices) &&
+                (branches[lIndex].morph || branches[rIndex].morph) &&
                 pairDisjoints.length === 0
             ) {
                 return throwParseError(undiscriminatableMorphUnionMessage)
