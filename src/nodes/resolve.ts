@@ -11,7 +11,7 @@ import { getFlatKeywords, keywords } from "./keywords.ts"
 import type { TraversalNode, TypeNode, TypeResolution } from "./node.ts"
 import { compileNode } from "./node.ts"
 import type { Predicate } from "./predicate.ts"
-import type { BaseRules, LiteralRules, Rules } from "./rules/rules.ts"
+import type { LiteralRules } from "./rules/rules.ts"
 
 export const resolveIfIdentifier = (
     node: TypeNode,

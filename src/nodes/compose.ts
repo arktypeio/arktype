@@ -1,12 +1,18 @@
+import type { Morph } from "../parse/tuple/morph.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
-import type { constructor, Dict, mutable } from "../utils/generics.ts"
+import type {
+    CollapsibleList,
+    constructor,
+    Dict,
+    mutable
+} from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
 import type { Path } from "../utils/paths.ts"
 import { serialize } from "../utils/serialize.ts"
 import type { Bound, BoundKind } from "./rules/range.ts"
-import type { BaseRules, MorphRule } from "./rules/rules.ts"
+import type { Rules } from "./rules/rules.ts"
 
 export type Intersector<t> = (
     l: t,
@@ -48,9 +54,9 @@ export type DisjointKinds = {
     class: [constructor, constructor]
     tupleLength: [number, number]
     value: [unknown, unknown]
-    assignability: [value: unknown, condition: BaseRules]
+    assignability: [value: unknown, condition: Rules]
     // TODO: should this be included here? Or throw a top-level error so as not to be unintuitive?
-    morph: [MorphRule, MorphRule]
+    morph: [CollapsibleList<Morph>, CollapsibleList<Morph>]
 }
 
 export const disjointDescriptionWriters = {

@@ -3,7 +3,6 @@ import type { Narrow } from "../../parse/tuple/narrow.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import { rootCheck } from "../../traverse/check.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
-import { throwInternalError } from "../../utils/errors.ts"
 import type {
     CollapsibleList,
     constructor,
@@ -49,12 +48,6 @@ export type LiteralRules<domain extends Domain = Domain> = {
     readonly value: inferDomain<domain>
 }
 
-export type BaseRules = Morphable<xor<NarrowableRules, LiteralRules>>
-
-type Morphable<t = {}> = t & {
-    readonly morph?: MorphRule
-}
-
 export type NarrowRule = CollapsibleList<Narrow>
 
 export type MorphRule = CollapsibleList<Morph>
@@ -75,7 +68,7 @@ export type Rules<
     domain extends Domain = Domain,
     $ = Dict
 > = Domain extends domain
-    ? BaseRules
+    ? xor<NarrowableRules, LiteralRules> & { readonly morph?: MorphRule }
     : domain extends "object"
     ? defineRuleSet<
           domain,
@@ -92,26 +85,30 @@ type defineRuleSet<
     domain extends Domain,
     keys extends keyof NarrowableRules,
     $
-> = Morphable<Pick<NarrowableRules<$>, keys> | LiteralRules<domain>>
+> =
+    | Pick<NarrowableRules<$>, keys>
+    | (LiteralRules<domain> & { readonly morph?: MorphRule })
 
-export const validationRulesIntersection = (
-    l: BaseRules,
-    r: BaseRules,
+export const rulesIntersection = (
+    l: Rules,
+    r: Rules,
     context: IntersectionContext
-) =>
-    isLiteralCondition(l)
-        ? isLiteralCondition(r)
-            ? l.value === r.value
-                ? equality()
-                : disjoint("value", [l.value, r.value], context)
-            : literalSatisfiesRules(l.value, r, context.$)
-            ? l
-            : disjoint("assignability", [l.value, r], context)
-        : isLiteralCondition(r)
-        ? literalSatisfiesRules(r.value, l, context.$)
-            ? r
-            : disjoint("assignability", [r.value, l], context)
-        : narrowableRulesIntersection(l, r, context)
+) => {
+    const result =
+        "value" in l
+            ? "value" in r
+                ? l.value === r.value
+                    ? equality()
+                    : disjoint("value", [l.value, r.value], context)
+                : literalSatisfiesRules(l.value, r, context.$)
+                ? l
+                : disjoint("assignability", [l.value, r], context)
+            : "value" in r
+            ? literalSatisfiesRules(r.value, l, context.$)
+                ? r
+                : disjoint("assignability", [r.value, l], context)
+            : narrowableRulesIntersection(l, r, context)
+}
 
 const narrowIntersection =
     composeIntersection<CollapsibleList<Narrow>>(collapsibleListUnion)
@@ -129,7 +126,8 @@ export const narrowableRulesIntersection =
             props: propsIntersection,
             class: classIntersection,
             range: rangeIntersection,
-            narrow: narrowIntersection
+            narrow: narrowIntersection,
+            morph: morphIntersection
         },
         { onEmpty: "bubble" }
     )
@@ -140,7 +138,7 @@ export type FlattenAndPushRule<t> = (
     $: ScopeRoot
 ) => void
 
-const ruleCompilers: {
+const branchKeyCompilers: {
     [k in keyof Rules]-?: FlattenAndPushRule<Rules[k] & {}>
 } = {
     subdomain: compileSubdomain,
@@ -199,11 +197,11 @@ export const precedenceMap: {
     morph: 4
 }
 
-export const compileRules = (rules: Rules, $: ScopeRoot): RuleEntry[] => {
+export const compileRules = (branch: Rules, $: ScopeRoot): RuleEntry[] => {
     const entries: RuleEntry[] = []
     let k: keyof Rules
-    for (k in rules) {
-        ruleCompilers[k](entries, rules[k] as any, $)
+    for (k in branch) {
+        branchKeyCompilers[k](entries, branch[k] as any, $)
     }
     return entries.sort((l, r) => precedenceMap[l[0]] - precedenceMap[r[0]])
 }
