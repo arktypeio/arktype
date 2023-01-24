@@ -10,7 +10,8 @@ import { isKeyOf, keysOf } from "../utils/generics.ts"
 import { getFlatKeywords, keywords } from "./keywords.ts"
 import type { TraversalNode, TypeNode, TypeResolution } from "./node.ts"
 import { compileNode } from "./node.ts"
-import type { Literal, Predicate } from "./predicate.ts"
+import type { Predicate } from "./predicate.ts"
+import type { BaseRules, LiteralRules, Rules } from "./rules/rules.ts"
 
 export const resolveIfIdentifier = (
     node: TypeNode,
@@ -22,7 +23,7 @@ export const isLiteralNode = <domain extends Domain>(
     node: TypeNode,
     domain: domain,
     $: ScopeRoot
-): node is { [_ in domain]: Literal<domain> } => {
+): node is { [_ in domain]: LiteralRules<domain> } => {
     const resolution = resolveIfIdentifier(node, $)
     return (
         nodeExtendsDomain(resolution, domain, $) &&
@@ -32,7 +33,8 @@ export const isLiteralNode = <domain extends Domain>(
 
 export const isLiteralCondition = (
     predicate: Predicate
-): predicate is Literal => typeof predicate === "object" && "value" in predicate
+): predicate is LiteralRules =>
+    typeof predicate === "object" && "value" in predicate
 
 export const domainsOfNode = (node: TypeNode, $: ScopeRoot): Domain[] =>
     keysOf(resolveIfIdentifier(node, $))

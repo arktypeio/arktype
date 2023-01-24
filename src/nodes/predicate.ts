@@ -16,25 +16,16 @@ import { compileBranches } from "./discriminate.ts"
 import type { TraversalEntry, TypeResolution } from "./node.ts"
 import { initializeIntersectionContext } from "./node.ts"
 import { isLiteralCondition } from "./resolve.ts"
-import type { RuleSet } from "./rules/rules.ts"
+import type { BaseRules, Rules } from "./rules/rules.ts"
 import {
     compileRules,
     literalSatisfiesRules,
-    rulesIntersection
+    narrowableRulesIntersection
 } from "./rules/rules.ts"
 
 export type Predicate<domain extends Domain = Domain, $ = Dict> = Dict extends $
-    ? true | CollapsibleList<Condition>
-    : true | CollapsibleList<Condition<domain, $>>
-
-export type Condition<domain extends Domain = Domain, $ = Dict> =
-    | RuleSet<domain, $>
-    | Literal<domain>
-
-export type Literal<domain extends Domain = Domain> = {
-    readonly value: inferDomain<domain>
-    readonly morph?: CollapsibleList<Morph>
-}
+    ? true | CollapsibleList<Rules>
+    : true | CollapsibleList<Rules<domain, $>>
 
 export type PredicateComparison =
     | IntersectionResult<Predicate>
@@ -86,8 +77,8 @@ export const comparePredicates = (
 }
 
 export const conditionIntersection = (
-    l: Condition,
-    r: Condition,
+    l: BaseRules,
+    r: BaseRules,
     context: IntersectionContext
 ) =>
     isLiteralCondition(l)
@@ -102,7 +93,7 @@ export const conditionIntersection = (
         ? literalSatisfiesRules(r.value, l, context.$)
             ? r
             : disjoint("assignability", [r.value, l], context)
-        : rulesIntersection(l, r, context)
+        : narrowableRulesIntersection(l, r, context)
 
 export const predicateIntersection: KeyIntersectionFn<
     Required<TypeResolution>
@@ -144,7 +135,7 @@ export const predicateUnion = (
             // and can be simplified to a non-literal boolean.
             domain === "boolean"
             ? true
-            : ([l, r] as Condition[])
+            : ([l, r] as BaseRules[])
     }
     return collapseIfSingleton([
         ...comparison.lConditions.filter(
@@ -173,13 +164,5 @@ export const compilePredicate = (
     }
     return hasSubdomain(predicate, "Array")
         ? compileBranches(predicate, $)
-        : compileCondition(predicate, $)
+        : compileRules(predicate, $)
 }
-
-export const compileCondition = (
-    condition: Condition,
-    $: ScopeRoot
-): TraversalEntry[] =>
-    isLiteralCondition(condition)
-        ? [["value", condition.value]]
-        : compileRules(condition, $)

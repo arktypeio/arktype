@@ -4,15 +4,16 @@ import { throwInternalError } from "../utils/errors.ts"
 import type { List } from "../utils/generics.ts"
 import type { IntersectionContext } from "./compose.ts"
 import { isDisjoint, isEquality } from "./compose.ts"
-import type { Condition, Predicate, PredicateComparison } from "./predicate.ts"
+import type { Predicate, PredicateComparison } from "./predicate.ts"
 import { predicateIntersection } from "./predicate.ts"
+import type { BaseRules, Rules } from "./rules/rules.ts"
 
 export const isBranchComparison = (
     comparison: PredicateComparison
 ): comparison is BranchesComparison =>
     (comparison as BranchesComparison)?.lConditions !== undefined
 
-export type Branches = List<Condition>
+export type Branches = List<BaseRules>
 
 export type BranchesComparison = {
     lConditions: Branches
@@ -39,7 +40,7 @@ export const compareBranches = (
     }
     const pairs = rConditions.map((condition) => ({
         condition,
-        distinct: [] as Condition[] | null
+        distinct: [] as BaseRules[] | null
     }))
     lConditions.forEach((l, lIndex) => {
         let lImpliesR = false

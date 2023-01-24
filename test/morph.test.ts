@@ -177,7 +177,6 @@ describe("morph", () => {
                 // @ts-expect-error
                 c: "a|b"
             })
-            console.log()
         }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
     })
     it("deep double intersection", () => {

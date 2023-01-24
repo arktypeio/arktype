@@ -5,8 +5,8 @@ import type { constructor, Dict, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
 import type { Path } from "../utils/paths.ts"
 import { serialize } from "../utils/serialize.ts"
-import type { Condition } from "./predicate.ts"
 import type { Bound, BoundKind } from "./rules/range.ts"
+import type { BaseRules, MorphRule } from "./rules/rules.ts"
 
 export type Intersector<t> = (
     l: t,
@@ -48,10 +48,12 @@ export type DisjointKinds = {
     class: [constructor, constructor]
     tupleLength: [number, number]
     value: [unknown, unknown]
-    assignability: [value: unknown, condition: Condition]
+    assignability: [value: unknown, condition: BaseRules]
+    // TODO: should this be included here? Or throw a top-level error so as not to be unintuitive?
+    morph: [MorphRule, MorphRule]
 }
 
-export const disjointDescribers = {
+export const disjointDescriptionWriters = {
     domain: (operands) =>
         `${operands[0].join(", ")} and ${operands[1].join(", ")}`,
     subdomain: (operands) => `${operands[0]} and ${operands[1]}`,
@@ -68,7 +70,8 @@ export const disjointDescribers = {
             operands[1]
         )}`,
     assignability: (operands) =>
-        `literal value ${serialize(operands[0])} and ${serialize(operands[1])}`
+        `literal value ${serialize(operands[0])} and ${serialize(operands[1])}`,
+    morph: () => "morphs"
 } satisfies {
     [k in DisjointKind]: (context: DisjointContext<k>["operands"]) => string
 }

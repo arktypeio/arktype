@@ -1,6 +1,6 @@
 import type { TypeNode } from "../../nodes/node.ts"
 import { domainsOfNode } from "../../nodes/resolve.ts"
-import type { Rules } from "../../nodes/rules/rules.ts"
+import type { NarrowableRules } from "../../nodes/rules/rules.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
@@ -32,17 +32,20 @@ export const writeMalformedDistributableFunctionMessage = (def: unknown) =>
         def
     )} was invalid)`
 
-export type DistributedFunctionNode<f, ruleKey extends keyof Rules> = {
+export type DistributedFunctionNode<
+    f,
+    ruleKey extends keyof NarrowableRules
+> = {
     [domain in Domain]?: FunctionInDomain<f, ruleKey>
 }
 
-export type FunctionInDomain<f, ruleKey extends keyof Rules> = {
+export type FunctionInDomain<f, ruleKey extends keyof NarrowableRules> = {
     [k in ruleKey]: f
 }
 
 export const distributeFunctionToNode = <
     f extends UnaryFunction,
-    ruleKey extends keyof Rules
+    ruleKey extends keyof NarrowableRules
 >(
     distributableFunction: distributable<f>,
     inputNode: TypeNode,

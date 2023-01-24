@@ -1,4 +1,4 @@
-import { compileCondition, conditionIntersection } from "../nodes/predicate.ts"
+import { conditionIntersection } from "../nodes/predicate.ts"
 import { undiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
@@ -14,6 +14,7 @@ import type { Branches } from "./branches.ts"
 import type { DisjointKind } from "./compose.ts"
 import type { TraversalEntry } from "./node.ts"
 import { initializeIntersectionContext } from "./node.ts"
+import { compileRules } from "./rules/rules.ts"
 
 export type DiscriminatedSwitch = {
     readonly path: string
@@ -48,7 +49,7 @@ const discriminate = (
     $: ScopeRoot
 ): TraversalEntry[] => {
     if (remainingIndices.length === 1) {
-        return compileCondition(originalBranches[remainingIndices[0]], $)
+        return compileRules(originalBranches[remainingIndices[0]], $)
     }
     const bestDiscriminant = findBestDiscriminant(
         remainingIndices,
@@ -59,7 +60,7 @@ const discriminate = (
             [
                 "branches",
                 remainingIndices.map((i) =>
-                    compileCondition(originalBranches[i], $)
+                    compileRules(originalBranches[i], $)
                 )
             ]
         ]

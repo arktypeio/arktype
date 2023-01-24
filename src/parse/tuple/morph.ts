@@ -1,6 +1,6 @@
 import type { TypeResolution } from "../../nodes/node.ts"
-import type { Condition } from "../../nodes/predicate.ts"
 import { resolveIfIdentifier } from "../../nodes/resolve.ts"
+import type { BaseRules } from "../../nodes/rules/rules.ts"
 import type { asOut } from "../../type.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { hasSubdomain } from "../../utils/domains.ts"
@@ -38,7 +38,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, $) => {
     return result
 }
 
-const applyMorph = (condition: Condition, morph: Morph) => ({
+const applyMorph = (condition: BaseRules, morph: Morph) => ({
     ...condition,
     morph: condition.morph
         ? Array.isArray(condition.morph)

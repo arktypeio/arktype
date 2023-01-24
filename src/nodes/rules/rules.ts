@@ -1,17 +1,22 @@
-import { writeDoubleMorphIntersectionMessage } from "../../parse/string/ast.ts"
 import type { Morph } from "../../parse/tuple/morph.ts"
 import type { Narrow } from "../../parse/tuple/narrow.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import { rootCheck } from "../../traverse/check.ts"
-import type { Domain } from "../../utils/domains.ts"
-import { throwParseError } from "../../utils/errors.ts"
+import type { Domain, inferDomain } from "../../utils/domains.ts"
+import { throwInternalError } from "../../utils/errors.ts"
 import type {
     CollapsibleList,
     constructor,
-    Dict
+    Dict,
+    xor
 } from "../../utils/generics.ts"
 import { listFrom } from "../../utils/generics.ts"
-import { composeIntersection, composeKeyedIntersection } from "../compose.ts"
+import {
+    composeIntersection,
+    composeKeyedIntersection,
+    disjoint,
+    equality
+} from "../compose.ts"
 import type { TraversalEntry } from "../node.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
@@ -28,16 +33,32 @@ import { getRegex, regexIntersection } from "./regex.ts"
 import type { SubdomainRule, TraversalSubdomainRule } from "./subdomain.ts"
 import { compileSubdomain, subdomainIntersection } from "./subdomain.ts"
 
-export type Rules<domain extends Domain = Domain, $ = Dict> = {
+export type NarrowableRules<$ = Dict> = {
     readonly subdomain?: SubdomainRule<$>
     readonly regex?: CollapsibleList<string>
     readonly divisor?: number
     readonly range?: Range
     readonly props?: PropsRule<$>
     readonly class?: constructor
-    readonly narrow?: CollapsibleList<Narrow>
-    readonly morph?: CollapsibleList<Morph>
+    readonly narrow?: NarrowRule
 }
+
+export type LiteralRules<domain extends Domain = Domain> = {
+    readonly value: inferDomain<domain>
+}
+
+export type BaseRules = Morphable<xor<NarrowableRules, LiteralRules>>
+
+type Morphable<t = {}> = t & {
+    readonly morph?: MorphRule
+}
+
+// readonly morph?: MorphRule
+// readonly value?: unknown
+
+export type NarrowRule = CollapsibleList<Narrow>
+
+export type MorphRule = CollapsibleList<Morph>
 
 export type RuleEntry =
     | ["subdomain", TraversalSubdomainRule]
@@ -52,46 +73,49 @@ export type RuleEntry =
     | ["morph", Morph]
     | ["value", unknown]
 
-export type RuleSet<domain extends Domain, $> = Domain extends domain
-    ? Rules
+export type Rules<
+    domain extends Domain = Domain,
+    $ = Dict
+> = Domain extends domain
+    ? BaseRules
     : domain extends "object"
     ? defineRuleSet<
-          "object",
+          domain,
           "subdomain" | "props" | "range" | "narrow" | "class",
           $
       >
     : domain extends "string"
-    ? defineRuleSet<"string", "regex" | "range" | "narrow", $>
+    ? defineRuleSet<domain, "regex" | "range" | "narrow", $>
     : domain extends "number"
-    ? defineRuleSet<"number", "divisor" | "range" | "narrow", $>
+    ? defineRuleSet<domain, "divisor" | "range" | "narrow", $>
     : defineRuleSet<domain, "narrow", $>
 
-type defineRuleSet<domain extends Domain, keys extends keyof Rules, $> = Pick<
-    Rules<domain, $>,
-    keys
->
+type defineRuleSet<
+    domain extends Domain,
+    keys extends keyof NarrowableRules,
+    $
+> = Morphable<Pick<NarrowableRules<$>, keys> | LiteralRules<domain>>
 
 const narrowIntersection =
     composeIntersection<CollapsibleList<Narrow>>(collapsibleListUnion)
 
 const morphIntersection = composeIntersection<CollapsibleList<Morph>>(
-    (l, r, context) =>
-        throwParseError(writeDoubleMorphIntersectionMessage(context.path))
+    (l, r, context) => (l === r ? equality : disjoint("morph", [l, r], context))
 )
 
-export const rulesIntersection = composeKeyedIntersection<Rules>(
-    {
-        subdomain: subdomainIntersection,
-        divisor: divisorIntersection,
-        regex: regexIntersection,
-        props: propsIntersection,
-        class: classIntersection,
-        range: rangeIntersection,
-        narrow: narrowIntersection,
-        morph: morphIntersection
-    },
-    { onEmpty: "bubble" }
-)
+export const narrowableRulesIntersection =
+    composeKeyedIntersection<NarrowableRules>(
+        {
+            subdomain: subdomainIntersection,
+            divisor: divisorIntersection,
+            regex: regexIntersection,
+            props: propsIntersection,
+            class: classIntersection,
+            range: rangeIntersection,
+            narrow: narrowIntersection
+        },
+        { onEmpty: "bubble" }
+    )
 
 export type FlattenAndPushRule<t> = (
     entries: RuleEntry[],
@@ -127,8 +151,12 @@ const ruleCompilers: {
         for (const morph of listFrom(rule)) {
             entries.push(["morph", morph])
         }
+    },
+    value: (entries, rule) => {
+        entries.push(["value", rule])
     }
 }
+
 export const precedenceMap: {
     readonly [k in TraversalEntry[0]]: number
 } = {
@@ -165,6 +193,6 @@ export const compileRules = (rules: Rules, $: ScopeRoot): RuleEntry[] => {
 
 export const literalSatisfiesRules = (
     data: unknown,
-    rules: Rules,
+    rules: NarrowableRules,
     $: ScopeRoot
 ) => "data" in rootCheck(data, compileRules(rules, $), $, {})

@@ -1,5 +1,5 @@
 import type { DisjointsByPath } from "../../nodes/compose.ts"
-import { disjointDescribers } from "../../nodes/compose.ts"
+import { disjointDescriptionWriters } from "../../nodes/compose.ts"
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
 import type { BootstrapScope } from "../../scope.ts"
 import type { asIn } from "../../type.ts"
@@ -186,7 +186,7 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
     const paths = keysOf(disjoints)
     if (paths.length === 1) {
         const path = paths[0]
-        return `${pathPrefix(path)}Intersection of ${disjointDescribers[
+        return `${pathPrefix(path)}Intersection of ${disjointDescriptionWriters[
             disjoints[path].kind
         ](disjoints[path].operands as never)} results in an unsatisfiable type`
     }
@@ -194,7 +194,7 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
         "Intersection results in unsatisfiable types at the following paths:\n`
     let path: Path
     for (path in disjoints) {
-        message += `  ${pathPrefix(path)}${disjointDescribers[
+        message += `  ${pathPrefix(path)}${disjointDescriptionWriters[
             disjoints[path].kind
         ](disjoints[path].operands as never)}\n`
     }
