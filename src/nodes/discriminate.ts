@@ -1,14 +1,16 @@
-import type { Condition } from "../nodes/predicate.ts"
-import { compileCondition, conditionIntersection } from "../nodes/predicate.ts"
+import { compileBranch, conditionIntersection } from "../nodes/predicate.ts"
+import { undiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import type { keySet, List } from "../utils/generics.ts"
+import { throwParseError } from "../utils/errors.ts"
+import type { keySet } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
 import type { Path } from "../utils/paths.ts"
 import { popKey, pushKey } from "../utils/paths.ts"
 import type { SerializablePrimitive } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
+import type { Branches } from "./branches.ts"
 import type { DisjointKind } from "./compose.ts"
 import type { TraversalEntry } from "./node.ts"
 import { initializeIntersectionContext } from "./node.ts"
@@ -23,7 +25,7 @@ export type DiscriminatedCases = {
     [caseKey in string]?: TraversalEntry[]
 }
 
-export const compileBranches = (branches: List<Condition>, $: ScopeRoot) => {
+export const compileBranches = (branches: Branches, $: ScopeRoot) => {
     const discriminants = calculateDiscriminants(branches, $)
     return discriminate(
         branches,
@@ -40,13 +42,13 @@ type IndexCases = {
 export type QualifiedDisjoint = `/${string}${DiscriminantKind}`
 
 const discriminate = (
-    originalBranches: List<Condition>,
+    originalBranches: Branches,
     remainingIndices: number[],
     discriminants: Discriminants,
     $: ScopeRoot
 ): TraversalEntry[] => {
     if (remainingIndices.length === 1) {
-        return compileCondition(originalBranches[remainingIndices[0]], $)
+        return compileBranch(originalBranches[remainingIndices[0]], $)
     }
     const bestDiscriminant = findBestDiscriminant(
         remainingIndices,
@@ -57,7 +59,7 @@ const discriminate = (
             [
                 "branches",
                 remainingIndices.map((i) =>
-                    compileCondition(originalBranches[i], $)
+                    compileBranch(originalBranches[i], $)
                 )
             ]
         ]
@@ -115,20 +117,32 @@ const discriminantKinds: keySet<DiscriminantKind> = {
 export type DiscriminantKind = keyof DiscriminantKinds
 
 const calculateDiscriminants = (
-    branches: List<Condition>,
+    branches: Branches,
     $: ScopeRoot
 ): Discriminants => {
     const discriminants: Discriminants = {
         disjointsByPair: {},
         casesByDisjoint: {}
     }
-    for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
-        for (let rIndex = lIndex + 1; rIndex < branches.length; rIndex++) {
+    const morphIndices: Record<number, true> = {}
+    const conditions = branches.map((branch, i) => {
+        if ("morph" in branch) {
+            morphIndices[i] = true
+            return branch.input
+        }
+        return branch
+    })
+    for (let lIndex = 0; lIndex < conditions.length - 1; lIndex++) {
+        for (let rIndex = lIndex + 1; rIndex < conditions.length; rIndex++) {
             const pairKey = `${lIndex}/${rIndex}` as const
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
             const context = initializeIntersectionContext($)
-            conditionIntersection(branches[lIndex], branches[rIndex], context)
+            conditionIntersection(
+                conditions[lIndex],
+                conditions[rIndex],
+                context
+            )
             let path: Path
             for (path in context.disjoints) {
                 const disjointContext = context.disjoints[path]
@@ -163,6 +177,12 @@ const calculateDiscriminants = (
                 } else if (!cases[rSerialized].includes(rIndex)) {
                     cases[rSerialized].push(rIndex)
                 }
+            }
+            if (
+                (lIndex in morphIndices || rIndex in morphIndices) &&
+                pairDisjoints.length === 0
+            ) {
+                return throwParseError(undiscriminatableMorphUnionMessage)
             }
         }
     }

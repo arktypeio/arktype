@@ -10,7 +10,6 @@ import type {
     autocomplete,
     CollapsibleList,
     Dict,
-    List,
     mutable,
     stringKeyOf
 } from "../utils/generics.ts"
@@ -128,14 +127,14 @@ export const compileNode = (node: TypeNode, $: ScopeRoot): TraversalNode => {
         if (predicate === true) {
             return domain
         }
-        const flatPredicate = compilePredicate(domain, predicate, $)
+        const flatPredicate = compilePredicate(predicate, $)
         return hasImpliedDomain(flatPredicate)
             ? flatPredicate
             : [["domain", domain], ...flatPredicate]
     }
     const result: mutable<DomainsEntry[1]> = {}
     for (const domain of domains) {
-        result[domain] = compilePredicate(domain, node[domain]!, $)
+        result[domain] = compilePredicate(node[domain]!, $)
     }
     return [["domains", result]]
 }
@@ -146,7 +145,6 @@ export type CompiledScopeNodes<nodes extends ScopeNodes> = {
     readonly [k in keyof nodes]: TraversalNode
 }
 
-// TODO: separate all compile logic from nodes
 export const compileNodes = <nodes extends ScopeNodes>(
     nodes: nodes,
     $: ScopeRoot

@@ -1,3 +1,4 @@
+import type { Morph } from "../parse/tuple/morph.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
@@ -23,33 +24,21 @@ import {
 } from "./rules/rules.ts"
 
 export type Predicate<domain extends Domain = Domain, $ = Dict> = Dict extends $
-    ? true | CollapsibleList<Condition>
-    : true | CollapsibleList<Condition<domain, $>>
+    ? true | CollapsibleList<Branch>
+    : true | CollapsibleList<Branch<domain, $>>
 
-export const compilePredicate = (
-    domain: Domain,
-    predicate: Predicate,
-    $: ScopeRoot
-): TraversalEntry[] => {
-    if (predicate === true) {
-        return []
-    }
-    return hasSubdomain(predicate, "Array")
-        ? compileBranches(predicate, $)
-        : compileCondition(predicate, $)
-}
-
-export const compileCondition = (
-    condition: Condition,
-    $: ScopeRoot
-): TraversalEntry[] =>
-    isExactValuePredicate(condition)
-        ? [["value", condition.value]]
-        : compileRules(condition, $)
+export type Branch<domain extends Domain = Domain, $ = Dict> =
+    | Condition<domain, $>
+    | MorphBranch<domain, $>
 
 export type Condition<domain extends Domain = Domain, $ = Dict> =
     | RuleSet<domain, $>
     | ExactValue<domain>
+
+export type MorphBranch<domain extends Domain = Domain, $ = Dict> = {
+    readonly input: Condition<domain, $>
+    readonly morph: CollapsibleList<Morph>
+}
 
 export type ExactValue<domain extends Domain = Domain> = {
     readonly value: inferDomain<domain>
@@ -139,7 +128,7 @@ export const predicateIntersection: KeyIntersectionFn<
             (lIndex) => comparison.lConditions[lIndex]
         ),
         ...comparison.rSubconditionsOfL.map(
-            (rIndex) => comparison.rConditions[rIndex]
+            (rIndex) => comparison.rBranches[rIndex]
         )
     ])
 }
@@ -172,7 +161,7 @@ export const predicateUnion = (
                     (indexPair) => indexPair[0] === lIndex
                 )
         ),
-        ...comparison.rConditions.filter(
+        ...comparison.rBranches.filter(
             (_, rIndex) =>
                 !comparison.rSubconditionsOfL.includes(rIndex) &&
                 !comparison.equalities.some(
@@ -181,3 +170,36 @@ export const predicateUnion = (
         )
     ])
 }
+
+export const compilePredicate = (
+    predicate: Predicate,
+    $: ScopeRoot
+): TraversalEntry[] => {
+    if (predicate === true) {
+        return []
+    }
+    return hasSubdomain(predicate, "Array")
+        ? compileBranches(predicate, $)
+        : compileBranch(predicate, $)
+}
+
+export const compileBranch = (branch: Branch, $: ScopeRoot): TraversalEntry[] =>
+    "morph" in branch
+        ? [
+              [
+                  "morph",
+                  {
+                      input: compileCondition(branch.input, $),
+                      morph: branch.morph
+                  }
+              ]
+          ]
+        : compileCondition(branch, $)
+
+export const compileCondition = (
+    condition: Condition,
+    $: ScopeRoot
+): TraversalEntry[] =>
+    isExactValuePredicate(condition)
+        ? [["value", condition.value]]
+        : compileRules(condition, $)
