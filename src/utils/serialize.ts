@@ -17,16 +17,16 @@ export type SerializationOptions = {
 export const snapshot = <t>(data: t, opts: SerializationOptions = {}) =>
     snapshotRecurse(data, opts, []) as snapshot<t>
 
-export type snapshot<t, seen = never> = isTopType<t> extends true
+export type snapshot<t, seen extends unknown[] = []> = isTopType<t> extends true
     ? unknown
     : t extends Primitive
     ? snapshotPrimitive<t>
     : t extends Function
     ? `(function${string})`
-    : t extends seen
-    ? t | "(cyclic)"
+    : seen["length"] extends 10
+    ? unknown
     : {
-          [k in keyof t]: snapshot<t[k], seen | t>
+          [k in keyof t]: snapshot<t[k], [...seen, k]>
       }
 
 type snapshotPrimitive<t> = t extends undefined
