@@ -172,14 +172,12 @@ type discriminatableRecurse<
       >
     : never
 
-// TODO: use <const path extends List<string>> once prettier supports it (look
-// for other instances of downcast and try to do the same)
-export const writeDoubleMorphIntersectionMessage = <path extends string>(
+export const writeDoubleMorphIntersectionMessage = <path extends Path>(
     path: path
 ): writeDoubleMorphIntersectionMessage<path> =>
     `${pathPrefix(path)}Intersection must have at least one non-morph operand`
 
-type writeDoubleMorphIntersectionMessage<path extends string> =
+type writeDoubleMorphIntersectionMessage<path extends Path> =
     `${pathPrefix<path>}Intersection must have at least one non-morph operand`
 
 export const undiscriminatableMorphUnionMessage = `A union of one or more morphs must be discriminatable`
@@ -203,7 +201,7 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
     return message
 }
 
-type writeImplicitNeverMessage<path extends string> =
+type writeImplicitNeverMessage<path extends Path> =
     `${pathPrefix<path>}Intersection results in an unsatisfiable type`
 
 type undiscriminatableMorphUnionMessage =

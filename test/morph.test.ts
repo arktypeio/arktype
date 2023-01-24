@@ -188,7 +188,7 @@ describe("morph", () => {
                 // @ts-expect-error
                 c: "a&b"
             })
-        }).throwsAndHasTypeError(writeDoubleMorphIntersectionMessage("a"))
+        }).throwsAndHasTypeError(writeDoubleMorphIntersectionMessage("/a"))
     })
     it("deep undiscriminated union", () => {
         attest(() => {
@@ -209,7 +209,7 @@ describe("morph", () => {
                 c: "a[]&b[]"
             })
         }).throwsAndHasTypeError(
-            writeDoubleMorphIntersectionMessage("${number}/a")
+            writeDoubleMorphIntersectionMessage("/${number}/a")
         )
     })
 })

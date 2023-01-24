@@ -5,8 +5,7 @@ import { attest } from "../dev/attest/api.ts"
 describe("discriminate", () => {
     it("shallow", () => {
         const t = type("'a'|'b'|'c'")
-        // TODO: fix snapshot infinite recursion when not using .unknown
-        attest(t.flat).unknown.snap([
+        attest(t.flat).snap([
             ["domain", "string"],
             [
                 "switch",
@@ -35,7 +34,7 @@ describe("discriminate", () => {
     })
     it("nested", () => {
         const t = places.$.type("ocean|sky|rainforest|desert")
-        attest(t.flat).unknown.snap([
+        attest(t.flat).snap([
             ["domain", "object"],
             [
                 "switch",
@@ -124,7 +123,7 @@ describe("discriminate", () => {
                 indistinguishableFrom: "ocean"
             }
         ])
-        attest(t.flat).unknown.snap([
+        attest(t.flat).snap([
             ["domain", "object"],
             [
                 "branches",
@@ -172,7 +171,7 @@ describe("discriminate", () => {
             "|",
             { temperature: "'hot'" }
         ])
-        attest(t.flat).unknown.snap([
+        attest(t.flat).snap([
             ["domain", "object"],
             [
                 "switch",
@@ -217,7 +216,7 @@ describe("discriminate", () => {
             "|",
             ["ocean|rainforest", "|", { temperature: "'hot'" }]
         ])
-        attest(t.flat).unknown.snap([
+        attest(t.flat).snap([
             ["domain", "object"],
             [
                 "switch",
