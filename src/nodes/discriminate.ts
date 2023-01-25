@@ -4,7 +4,7 @@ import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { keySet } from "../utils/generics.ts"
-import { isKeyOf, keysOf } from "../utils/generics.ts"
+import { hasKeys, isKeyOf, keysOf } from "../utils/generics.ts"
 import type { Path } from "../utils/paths.ts"
 import { popKey, pushKey } from "../utils/paths.ts"
 import type { SerializablePrimitive } from "../utils/serialize.ts"
@@ -166,10 +166,7 @@ const calculateDiscriminants = (
                     cases[rSerialized].push(rIndex)
                 }
             }
-            if (
-                (branches[lIndex].morph || branches[rIndex].morph) &&
-                pairDisjoints.length === 0
-            ) {
+            if (hasKeys(context.morphs) && pairDisjoints.length === 0) {
                 return throwParseError(undiscriminatableMorphUnionMessage)
             }
         }

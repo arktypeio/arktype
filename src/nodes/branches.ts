@@ -4,7 +4,6 @@ import type { List } from "../utils/generics.ts"
 import type { IntersectionContext } from "./compose.ts"
 import { isDisjoint, isEquality } from "./compose.ts"
 import type { Branch, PredicateComparison } from "./predicate.ts"
-import type { Rules } from "./rules/rules.ts"
 import { branchIntersection } from "./rules/rules.ts"
 
 export const isBranchComparison = (

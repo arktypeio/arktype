@@ -110,10 +110,10 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
             } else if (parameterResult === r) {
                 result[i] = rNode
                 lImpliesR = false
+            } else if (isDisjoint(parameterResult)) {
+                return parameterResult
             } else {
-                result[i] = isDisjoint(parameterResult)
-                    ? "never"
-                    : parameterResult
+                result[i] = parameterResult
                 lImpliesR = false
                 rImpliesL = false
             }

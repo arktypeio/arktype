@@ -102,30 +102,36 @@ export const branchIntersection: Intersector<Branch> = (l, r, context) => {
     const lRules = rulesOf(l)
     const rRules = rulesOf(r)
     const rulesResult = rulesIntersection(lRules, rRules, context)
-    if (isDisjoint(rulesResult)) {
-        return rulesResult
-    }
     if ("morph" in l) {
         if ("morph" in r) {
-            return l.morph === r.morph
-                ? isEquality(rulesResult)
-                    ? equality()
+            if (l.morph === r.morph) {
+                context.morphs[context.path] = "="
+                return isEquality(rulesResult) || isDisjoint(rulesResult)
+                    ? rulesResult
                     : {
                           input: rulesResult,
                           morph: l.morph
                       }
-                : disjoint("morph", [l.morph, r.morph], context)
+            }
+            context.morphs[context.path] = "lr"
+            return disjoint("morph", [l.morph, r.morph], context)
         }
-        return {
-            input: isEquality(rulesResult) ? l.input : rulesResult,
-            morph: l.morph
-        }
+        context.morphs[context.path] = "l"
+        return isDisjoint(rulesResult)
+            ? rulesResult
+            : {
+                  input: isEquality(rulesResult) ? l.input : rulesResult,
+                  morph: l.morph
+              }
     }
     if ("morph" in r) {
-        return {
-            input: isEquality(rulesResult) ? r.input : rulesResult,
-            morph: r.morph
-        }
+        context.morphs[context.path] = "r"
+        return isDisjoint(rulesResult)
+            ? rulesResult
+            : {
+                  input: isEquality(rulesResult) ? r.input : rulesResult,
+                  morph: r.morph
+              }
     }
     return rulesResult
 }

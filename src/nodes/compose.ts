@@ -6,7 +6,6 @@ import type {
     CollapsibleList,
     constructor,
     Dict,
-    keySet,
     mutable
 } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
@@ -56,7 +55,6 @@ export type DisjointKinds = {
     tupleLength: [number, number]
     value: [unknown, unknown]
     assignability: [value: unknown, condition: Rules]
-    // TODO: should this be included here? Or throw a top-level error so as not to be unintuitive?
     morph: [CollapsibleList<Morph>, CollapsibleList<Morph>]
 }
 
@@ -102,12 +100,16 @@ export type IntersectionContext = {
     $: ScopeRoot
     path: Path
     disjoints: DisjointsByPath
-    morphIntersections: keySet
+    morphs: Record<string, MorphIntersectionKind>
 }
 
-export const empty = Symbol("empty")
+export type MorphIntersectionKind = "l" | "r" | "=" | "lr"
+
+const empty = Symbol("empty")
 
 export type Empty = typeof empty
+
+export const anonymousDisjoint = (): Empty => empty
 
 export const disjoint = <kind extends DisjointKind>(
     kind: kind,

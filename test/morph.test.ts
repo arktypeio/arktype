@@ -217,7 +217,7 @@ describe("morph", () => {
         attest(() => {
             scope({
                 a: { a: ["number>0", "=>", (data) => data + 1] },
-                b: { a: ["number>0", "=>", (data) => data + 1] },
+                b: { a: ["number>0", "=>", (data) => data + 2] },
                 // @ts-expect-error
                 c: "a[]&b[]"
             })

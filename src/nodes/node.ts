@@ -11,9 +11,9 @@ import type {
 import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
 import type { IntersectionContext, Intersector } from "./compose.ts"
 import {
+    anonymousDisjoint,
     composeKeyedIntersection,
     disjoint,
-    empty,
     isDisjoint,
     isEquality,
     throwUndefinedOperandsError
@@ -47,8 +47,8 @@ export const nodeIntersection: Intersector<TypeNode> = (l, r, context) => {
     const rResolution = resolveIfIdentifier(r, context.$)
     const result = resolutionIntersection(lResolution, rResolution, context)
     if (typeof result === "object" && !hasKeys(result)) {
-        return context.disjoints[context.path]
-            ? empty
+        return hasKeys(context.disjoints)
+            ? anonymousDisjoint()
             : disjoint(
                   "domain",
                   [
@@ -80,7 +80,7 @@ export const initializeIntersectionContext = (
     $,
     path: "/",
     disjoints: {},
-    morphIntersections: {}
+    morphs: {}
 })
 
 export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
