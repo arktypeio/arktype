@@ -13,7 +13,7 @@ describe("morph", () => {
         const t = type(["boolean", "=>", (data) => `${data}`])
         attest(t).typed as Type<(In: boolean) => Out<string>>
         attest(t.infer).typed as Type<string>
-        attest(t.node).snap({ boolean: { morph: "(function)" } })
+        attest(t.node).snap({ boolean: { input: {}, morph: "(function)" } })
         attest(t(true).data).equals(true).typed as boolean
         attest(t(true).out).equals("true").typed as string
         attest(t("foo").problems?.summary).snap()
@@ -36,7 +36,9 @@ describe("morph", () => {
             bAndA: "b&a"
         })
         attest(types.aAndB).typed as Type<(In: 3.14) => Out<string>>
-        attest(types.aAndB.node).snap({ number: { value: 3.14 } })
+        attest(types.aAndB.node).snap({
+            number: { input: { value: 3.14 }, morph: "(function)" }
+        })
         attest(types.bAndA).typed as typeof types.aAndB
         attest(types.bAndA.node).equals(types.aAndB.node)
     })
@@ -49,9 +51,11 @@ describe("morph", () => {
         attest(types.c).typed as Type<(In: { a: 1; b: 2 }) => Out<string>>
         attest(types.c.node).snap({
             object: {
-                props: {
-                    a: { number: { value: 1 } },
-                    b: { number: { value: 2 } }
+                input: {
+                    props: {
+                        a: { number: { value: 1 } },
+                        b: { number: { value: 2 } }
+                    }
                 },
                 morph: "(function)"
             }
@@ -66,7 +70,7 @@ describe("morph", () => {
         })
         attest(types.aOrB).typed as Type<(In: number | boolean) => Out<string>>
         attest(types.aOrB.node).snap({
-            number: { morph: "(function)" },
+            number: { input: {}, morph: "(function)" },
             boolean: true
         })
         attest(types.bOrA).typed as typeof types.aOrB
@@ -82,7 +86,11 @@ describe("morph", () => {
             a: (In: 1) => Out<number>
         }>
         attest(types.c.node).snap({
-            object: { props: { a: { number: { value: 1 } } } }
+            object: {
+                props: {
+                    a: { number: { input: { value: 1 }, morph: "(function)" } }
+                }
+            }
         })
     })
     it("deep union", () => {
@@ -105,7 +113,11 @@ describe("morph", () => {
                     props: {
                         a: {
                             number: {
-                                range: { min: { limit: 0, exclusive: true } },
+                                input: {
+                                    range: {
+                                        min: { limit: 0, exclusive: true }
+                                    }
+                                },
                                 morph: "(function)"
                             }
                         }
@@ -122,7 +134,7 @@ describe("morph", () => {
         })
         attest(types.b).typed as Type<(In: string) => Out<boolean>>
         attest(types.b.node).snap({
-            string: { morph: ["(function)", "(function)"] }
+            string: { input: {}, morph: ["(function)", "(function)"] }
         })
     })
     it("chained nested", () => {
@@ -132,7 +144,7 @@ describe("morph", () => {
         })
         attest(types.b).typed as Type<(In: { a: string }) => Out<boolean>>
         attest(types.b.node).snap({
-            object: { props: { a: "a" }, morph: "(function)" }
+            object: { input: { props: { a: "a" } }, morph: "(function)" }
         })
     })
     it("discriminatable tuple union", () => {
@@ -147,8 +159,10 @@ describe("morph", () => {
         attest(types.c.node).snap({
             object: [
                 {
-                    subdomain: ["Array", "unknown", 1],
-                    props: { "0": "string" },
+                    input: {
+                        subdomain: ["Array", "unknown", 1],
+                        props: { "0": "string" }
+                    },
                     morph: "(function)"
                 },
                 {
@@ -170,13 +184,13 @@ describe("morph", () => {
     })
     it("undiscriminated union", () => {
         attest(() => {
-            // TODO: fix premature removal of morph branches.
-            const types = scope({
+            scope({
                 a: ["/.*/", "=>", (s) => s.trim()],
                 b: "string",
                 // @ts-expect-error
                 c: "a|b"
             })
+            // TODO: add root path
         }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
     })
     it("deep double intersection", () => {

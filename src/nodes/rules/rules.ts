@@ -10,12 +10,14 @@ import type {
     xor
 } from "../../utils/generics.ts"
 import { listFrom } from "../../utils/generics.ts"
-import type { IntersectionContext } from "../compose.ts"
+import type { Intersector } from "../compose.ts"
 import {
     composeIntersection,
     composeKeyedIntersection,
     disjoint,
-    equality
+    equality,
+    isDisjoint,
+    isEquality
 } from "../compose.ts"
 import type { TraversalEntry } from "../node.ts"
 import { classIntersection } from "./class.ts"
@@ -93,44 +95,55 @@ type defineRuleSet<
     $
 > = Pick<NarrowableRules<$>, keys> | LiteralRules<domain>
 
-export const branchIntersection = (
-    l: Branch,
-    r: Branch,
-    context: IntersectionContext
-) => {
+const rulesOf = (branch: Branch): Rules =>
+    (branch as MorphBranch).input ?? branch
+
+export const branchIntersection: Intersector<Branch> = (l, r, context) => {
+    const lRules = rulesOf(l)
+    const rRules = rulesOf(r)
+    const rulesResult = rulesIntersection(lRules, rRules, context)
+    if (isDisjoint(rulesResult)) {
+        return rulesResult
+    }
     if ("morph" in l) {
         if ("morph" in r) {
-            return rulesIntersection(l.input, r.input, context)
+            return l.morph === r.morph
+                ? isEquality(rulesResult)
+                    ? equality()
+                    : {
+                          input: rulesResult,
+                          morph: l.morph
+                      }
+                : disjoint("morph", [l.morph, r.morph], context)
         }
-        return rulesIntersection(l.input, r, context)
+        return {
+            input: isEquality(rulesResult) ? l.input : rulesResult,
+            morph: l.morph
+        }
     }
     if ("morph" in r) {
-        return rulesIntersection(l, r.input, context)
+        return {
+            input: isEquality(rulesResult) ? r.input : rulesResult,
+            morph: r.morph
+        }
     }
-    return rulesIntersection(l, r, context)
+    return rulesResult
 }
 
-export const rulesIntersection = (
-    l: Rules,
-    r: Rules,
-    context: IntersectionContext
-) => {
-    const result =
-        "value" in l
-            ? "value" in r
-                ? l.value === r.value
-                    ? equality()
-                    : disjoint("value", [l.value, r.value], context)
-                : literalSatisfiesRules(l.value, r, context.$)
-                ? l
-                : disjoint("assignability", [l.value, r], context)
-            : "value" in r
-            ? literalSatisfiesRules(r.value, l, context.$)
-                ? r
-                : disjoint("assignability", [r.value, l], context)
-            : narrowableRulesIntersection(l, r, context)
-    return result
-}
+export const rulesIntersection: Intersector<Rules> = (l, r, context) =>
+    "value" in l
+        ? "value" in r
+            ? l.value === r.value
+                ? equality()
+                : disjoint("value", [l.value, r.value], context)
+            : literalSatisfiesRules(l.value, r, context.$)
+            ? l
+            : disjoint("assignability", [l.value, r], context)
+        : "value" in r
+        ? literalSatisfiesRules(r.value, l, context.$)
+            ? r
+            : disjoint("assignability", [r.value, l], context)
+        : narrowableRulesIntersection(l, r, context)
 
 const narrowIntersection =
     composeIntersection<CollapsibleList<Narrow>>(collapsibleListUnion)
@@ -220,7 +233,7 @@ export const compileBranch = (branch: Branch, $: ScopeRoot): BranchEntry[] => {
     return compileRules(branch, $)
 }
 
-export const compileRules = (rules: Rules, $: ScopeRoot): BranchEntry[] => {
+const compileRules = (rules: Rules, $: ScopeRoot): BranchEntry[] => {
     const entries: BranchEntry[] = []
     let k: keyof Rules
     for (k in rules) {

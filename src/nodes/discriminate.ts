@@ -1,4 +1,3 @@
-import { rulesIntersection } from "../nodes/predicate.ts"
 import { undiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
@@ -14,7 +13,7 @@ import type { Branches } from "./branches.ts"
 import type { DisjointKind } from "./compose.ts"
 import type { TraversalEntry } from "./node.ts"
 import { initializeIntersectionContext } from "./node.ts"
-import { compileRules } from "./rules/rules.ts"
+import { branchIntersection, compileBranch } from "./rules/rules.ts"
 
 export type DiscriminatedSwitch = {
     readonly path: string
@@ -49,7 +48,7 @@ const discriminate = (
     $: ScopeRoot
 ): TraversalEntry[] => {
     if (remainingIndices.length === 1) {
-        return compileRules(originalBranches[remainingIndices[0]], $)
+        return compileBranch(originalBranches[remainingIndices[0]], $)
     }
     const bestDiscriminant = findBestDiscriminant(
         remainingIndices,
@@ -60,7 +59,7 @@ const discriminate = (
             [
                 "branches",
                 remainingIndices.map((i) =>
-                    compileRules(originalBranches[i], $)
+                    compileBranch(originalBranches[i], $)
                 )
             ]
         ]
@@ -131,7 +130,7 @@ const calculateDiscriminants = (
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
             const context = initializeIntersectionContext($)
-            rulesIntersection(branches[lIndex], branches[rIndex], context)
+            branchIntersection(branches[lIndex], branches[rIndex], context)
             let path: Path
             for (path in context.disjoints) {
                 const disjointContext = context.disjoints[path]

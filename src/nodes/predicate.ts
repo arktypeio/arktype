@@ -9,7 +9,6 @@ import { compareBranches, isBranchComparison } from "./branches.ts"
 import type {
     IntersectionContext,
     IntersectionResult,
-    Intersector,
     KeyIntersectionFn
 } from "./compose.ts"
 import { equality, isEquality } from "./compose.ts"
@@ -17,7 +16,7 @@ import { compileBranches } from "./discriminate.ts"
 import type { TraversalEntry, TypeResolution } from "./node.ts"
 import { initializeIntersectionContext } from "./node.ts"
 import type { Rules } from "./rules/rules.ts"
-import { compileRules, rulesIntersection } from "./rules/rules.ts"
+import { branchIntersection, compileBranch } from "./rules/rules.ts"
 
 export type Predicate<domain extends Domain = Domain, $ = Dict> = Dict extends $
     ? true | CollapsibleList<Branch>
@@ -35,45 +34,43 @@ export type PredicateComparison =
     | IntersectionResult<Predicate>
     | BranchesComparison
 
+const emptyRulesIfTrue = <predicate extends Predicate>(predicate: predicate) =>
+    (predicate === true ? {} : predicate) as Exclude<predicate, true>
+
 export const comparePredicates = (
-    domain: Domain,
     l: Predicate,
     r: Predicate,
     context: IntersectionContext
 ): PredicateComparison => {
-    if (l === true) {
-        return r === true ? equality() : r
+    if (l === true && r === true) {
+        return equality()
     }
-    if (r === true) {
-        return l
-    }
-    if (hasSubdomain(l, "object") && hasSubdomain(r, "object")) {
-        const result = rulesIntersection(l, r, context)
+    if (!hasSubdomain(l, "Array") && !hasSubdomain(r, "Array")) {
+        const result = branchIntersection(
+            emptyRulesIfTrue(l),
+            emptyRulesIfTrue(r),
+            context
+        )
         return result === l ? l : result === r ? r : result
     }
-    const lComparisons = listFrom(l) as Branches
-    const rComparisons = listFrom(r) as Branches
-    const comparison = compareBranches(
-        domain,
-        lComparisons,
-        rComparisons,
-        context
-    )
+    const lBranches: Branches = listFrom(emptyRulesIfTrue(l))
+    const rBranches: Branches = listFrom(emptyRulesIfTrue(r))
+    const comparison = compareBranches(lBranches, rBranches, context)
     if (
-        comparison.equalities.length === lComparisons.length &&
-        comparison.equalities.length === rComparisons.length
+        comparison.equalities.length === lBranches.length &&
+        comparison.equalities.length === rBranches.length
     ) {
         return equality()
     }
     if (
         comparison.lSubconditionsOfR.length + comparison.equalities.length ===
-        lComparisons.length
+        lBranches.length
     ) {
         return l
     }
     if (
         comparison.rSubconditionsOfL.length + comparison.equalities.length ===
-        rComparisons.length
+        rBranches.length
     ) {
         return r
     }
@@ -83,7 +80,7 @@ export const comparePredicates = (
 export const predicateIntersection: KeyIntersectionFn<
     Required<TypeResolution>
 > = (domain, l, r, context) => {
-    const comparison = comparePredicates(domain, l, r, context)
+    const comparison = comparePredicates(l, r, context)
     if (!isBranchComparison(comparison)) {
         return comparison
     }
@@ -108,7 +105,7 @@ export const predicateUnion = (
     $: ScopeRoot
 ) => {
     const context = initializeIntersectionContext($)
-    const comparison = comparePredicates(domain, l, r, context)
+    const comparison = comparePredicates(l, r, context)
     if (!isBranchComparison(comparison)) {
         return isEquality(comparison) || comparison === l
             ? r
@@ -119,7 +116,7 @@ export const predicateUnion = (
             // and can be simplified to a non-literal boolean.
             domain === "boolean"
             ? true
-            : ([l, r] as Rules[])
+            : ([emptyRulesIfTrue(l), emptyRulesIfTrue(r)] as [Branch, Branch])
     }
     return collapseIfSingleton([
         ...comparison.lConditions.filter(
@@ -148,5 +145,5 @@ export const compilePredicate = (
     }
     return hasSubdomain(predicate, "Array")
         ? compileBranches(predicate, $)
-        : compileRules(predicate, $)
+        : compileBranch(predicate, $)
 }
