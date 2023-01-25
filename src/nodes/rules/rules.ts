@@ -1,7 +1,7 @@
 import type { Morph } from "../../parse/tuple/morph.ts"
 import type { Narrow } from "../../parse/tuple/narrow.ts"
 import type { ScopeRoot } from "../../scope.ts"
-import { rootCheck } from "../../traverse/check.ts"
+import { traverse } from "../../traverse/check.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type {
     CollapsibleList,
@@ -252,4 +252,4 @@ export const literalSatisfiesRules = (
     data: unknown,
     rules: NarrowableRules,
     $: ScopeRoot
-) => "data" in rootCheck(data, compileRules(rules, $), $, {})
+) => "data" in traverse(data, compileRules(rules, $), $, {})

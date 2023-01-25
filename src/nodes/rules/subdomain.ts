@@ -1,5 +1,5 @@
 import type { TraversalCheck } from "../../traverse/check.ts"
-import { checkNode } from "../../traverse/check.ts"
+import { traverseNode } from "../../traverse/check.ts"
 import type {
     defineProblem,
     ProblemMessageWriter
@@ -192,7 +192,7 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         for (const item of data as List | Set<unknown>) {
             // TODO: add path APIs to state
             state.path = pushKey(rootPath, `${i}`)
-            checkNode(item, rule[1], state)
+            traverseNode(item, rule[1], state)
             i++
         }
         state.path = rootPath

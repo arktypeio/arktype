@@ -1,5 +1,5 @@
 import type { TraversalCheck } from "../../traverse/check.ts"
-import { checkNode } from "../../traverse/check.ts"
+import { traverseNode } from "../../traverse/check.ts"
 import type {
     defineProblem,
     ProblemMessageWriter
@@ -116,7 +116,7 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
                 }
                 continue
             }
-            checkNode(data[propKey], propNode, state)
+            traverseNode(data[propKey], propNode, state)
         }
         state.path = rootPath
     }) as TraversalCheck<propKind>

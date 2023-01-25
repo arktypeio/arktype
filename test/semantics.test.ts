@@ -6,6 +6,8 @@ import {
     writeUnboundableMessage
 } from "../src/parse/string/ast.ts"
 
+// TODO: https://github.com/arktypeio/arktype/issues/585
+// change type.errors to throwsAndHasTypeError
 describe("semantics", () => {
     describe("bound", () => {
         it("number", () => {
@@ -23,7 +25,7 @@ describe("semantics", () => {
         describe("errors", () => {
             it("unboundable", () => {
                 // @ts-expect-error
-                attest(() => type("unknown<10")).throwsAndHasTypeError(
+                attest(() => type("unknown<10")).type.errors(
                     writeUnboundableMessage("unknown")
                 )
             })
@@ -31,7 +33,7 @@ describe("semantics", () => {
             // tested alongside other bound parse errors
             it("string literal", () => {
                 // @ts-expect-error
-                attest(() => type("1<'foo'<10")).throwsAndHasTypeError(
+                attest(() => type("1<'foo'<10")).type.errors(
                     writeUnboundableMessage("'foo'")
                 )
             })
@@ -47,13 +49,13 @@ describe("semantics", () => {
         describe("errors", () => {
             it("indivisible", () => {
                 // @ts-expect-error
-                attest(() => type("unknown%2")).throwsAndHasTypeError(
+                attest(() => type("unknown%2")).type.errors(
                     writeIndivisibleMessage("unknown")
                 )
             })
             it("number literal", () => {
                 // @ts-expect-error
-                attest(() => type("5%10")).throwsAndHasTypeError(
+                attest(() => type("5%10")).type.errors(
                     writeIndivisibleMessage("5")
                 )
             })

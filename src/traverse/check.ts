@@ -12,6 +12,7 @@ import { checkRange } from "../nodes/rules/range.ts"
 import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
 import { checkSubdomain } from "../nodes/rules/subdomain.ts"
+import type { Morph } from "../parse/tuple/morph.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Result, TypeOptions } from "../type.ts"
 import { domainOf } from "../utils/domains.ts"
@@ -46,7 +47,7 @@ export type BaseProblemOptions<code extends ProblemCode> =
           message?: ProblemMessageWriter<code>
       }
 
-export const rootCheck = (
+export const traverse = (
     data: unknown,
     node: TraversalNode,
     $: ScopeRoot,
@@ -58,11 +59,11 @@ export const rootCheck = (
         $,
         config
     }
-    const out = checkNode(data, node, state)
+    const out = traverseNode(data, node, state)
     return state.problems.length ? { problems: state.problems } : { data, out }
 }
 
-export const checkNode = (
+export const traverseNode = (
     data: unknown,
     node: TraversalNode,
     state: CheckState
@@ -80,7 +81,7 @@ export const checkNode = (
         }
         return
     }
-    checkEntries(data, node, state)
+    return checkEntries(data, node, state)
 }
 
 export const checkEntries = (
@@ -98,9 +99,20 @@ export const checkEntries = (
         ) {
             break
         }
-        ;(checkers[ruleName] as TraversalCheck<any>)(data, ruleValidator, state)
+
+        // TODO: improve
+        if (ruleName === "morph") {
+            data = (ruleValidator as Morph)(data)
+        } else {
+            ;(checkers[ruleName] as TraversalCheck<any>)(
+                data,
+                ruleValidator,
+                state
+            )
+        }
         precedenceLevel = precedenceMap[ruleName]
     }
+    return data
 }
 
 const checkers = {
@@ -146,8 +158,7 @@ const checkers = {
     switch: () => {},
     // TODO: keep track of cyclic data
     alias: (data, name, state) =>
-        checkNode(data, resolveFlat(name, state.$), state),
-    morph: () => {},
+        traverseNode(data, resolveFlat(name, state.$), state),
     class: checkClass,
     // TODO: add error message syntax.
     narrow: (data, validator) => validator(data),
@@ -164,7 +175,7 @@ const checkers = {
         }
     }
 } satisfies {
-    [k in TraversalKey]: TraversalCheck<k>
+    [k in Exclude<TraversalKey, "morph">]: TraversalCheck<k>
 }
 
 export type TraversalCheck<k extends TraversalKey> = (
