@@ -18,15 +18,15 @@ import type { Result, TypeOptions } from "../type.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { Dict, extend, List } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
-import { pathToString } from "../utils/paths.ts"
+import { Path, pathToString } from "../utils/paths.ts"
 import type { ProblemCode, ProblemMessageWriter } from "./problems.ts"
 import { Problems, Stringifiable } from "./problems.ts"
 
 export class TraversalState {
-    path: string[]
+    path: Path
 
     constructor(public $: ScopeRoot, public config: TypeOptions) {
-        this.path = []
+        this.path = new Path()
     }
 }
 
@@ -87,7 +87,7 @@ export const checkEntries = (
     state: DataTraversalState
 ) => {
     let precedenceLevel = 0
-    const pathKey = pathToString(state.path)
+    const pathKey = `${state.path}`
     for (let i = 0; i < entries.length; i++) {
         const ruleName = entries[i][0]
         const ruleValidator = entries[i][1]

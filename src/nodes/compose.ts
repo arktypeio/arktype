@@ -98,9 +98,9 @@ export const disjointDescriptionWriters = {
     tupleLength: ({ l, r }) => `tuples of length ${l} and ${r}`,
     value: ({ l, r }) => `literal values ${serialize(l)} and ${serialize(r)}`,
     leftAssignability: ({ l, r }) =>
-        `literal value ${serialize(l)} and ${serialize(r)}`,
+        `literal value ${serialize(l.value)} and ${serialize(r)}`,
     rightAssignability: ({ l, r }) =>
-        `literal value ${serialize(r)} and ${serialize(l)}`,
+        `literal value ${serialize(r.value)} and ${serialize(l)}`,
     morph: () => "morphs"
 } satisfies {
     [k in DisjointKind]: (context: DisjointContext<k>) => string

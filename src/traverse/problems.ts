@@ -13,7 +13,6 @@ import { writeTupleLengthError } from "../nodes/rules/subdomain.ts"
 import type { Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { evaluate } from "../utils/generics.ts"
-import { pathToString } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 import type { DataTraversalState } from "./check.ts"
 
@@ -67,7 +66,7 @@ export class Problems extends Array<Problem> {
                 ? (problemConfig as ProblemMessageWriter<code>)
                 : problemConfig?.message
         const problem: Problem = {
-            path: pathToString(state.path),
+            path: `${state.path}`,
             reason:
                 customMessageWriter?.(compiledContext) ??
                 defaultMessagesByCode[code](compiledContext)

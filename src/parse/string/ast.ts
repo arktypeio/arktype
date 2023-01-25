@@ -21,7 +21,6 @@ import type {
 } from "../../utils/generics.ts"
 import { keysOf } from "../../utils/generics.ts"
 import type { pathToString } from "../../utils/paths.ts"
-import { pathDescriptionPrefix } from "../../utils/paths.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
@@ -175,16 +174,18 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
     const paths = keysOf(disjoints)
     if (paths.length === 1) {
         const path = paths[0]
-        return `${pathPrefix(path)}Intersection of ${disjointDescriptionWriters[
-            disjoints[path].kind
-        ](disjoints[path].operands as never)} results in an unsatisfiable type`
+        return `${
+            path === "/" ? "" : `At ${path}: `
+        }Intersection of ${disjointDescriptionWriters[disjoints[path].kind](
+            disjoints[path] as never
+        )} results in an unsatisfiable type`
     }
     let message = `
         "Intersection results in unsatisfiable types at the following paths:\n`
     for (const path in disjoints) {
-        message += `  ${pathPrefix(path)}${disjointDescriptionWriters[
+        message += `  ${path}: ${disjointDescriptionWriters[
             disjoints[path].kind
-        ](disjoints[path].operands as never)}\n`
+        ](disjoints[path] as never)}\n`
     }
     return message
 }
@@ -192,9 +193,9 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
 type writeImplicitNeverMessage<
     path extends string[],
     description extends string = ""
-> = `${pathDescriptionPrefix<
-    pathToString<path>
->}Intersection ${description extends ""
+> = `${path extends []
+    ? ""
+    : `At ${pathToString<path>}: `}Intersection ${description extends ""
     ? ""
     : `${description} `}results in an unsatisfiable type`
 

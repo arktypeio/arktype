@@ -112,9 +112,10 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
                         state
                     )
                 }
-                continue
+            } else {
+                traverseNode(data[propKey], propNode, state)
             }
-            traverseNode(data[propKey], propNode, state)
+            state.path.pop()
         }
         state.path = rootPath
     }) as TraversalCheck<propKind>

@@ -1,54 +1,26 @@
-import type { List } from "./generics"
-
-export type PathString<delimiter extends string = "/"> =
-    | delimiter
-    | `${string}${delimiter}${string}`
-
-export class Path<delimiter extends string = "/"> extends Array<string> {
-    delimiter = "/" as delimiter
-
-    static from<
-        s extends PathString<delimiter>,
-        delimiter extends string = "/"
-    >(s: s, delimiter?: delimiter) {
-        const result: Path<delimiter> =
-            s === delimiter
-                ? new Path()
-                : new Path(...s.split(delimiter ?? "/"))
-        if (delimiter) {
-            result.delimiter = delimiter
-        }
-        return result
+export class Path extends Array<string> {
+    static fromString(s: string, delimiter = "/") {
+        return s === delimiter ? new Path() : new Path(...s.split(delimiter))
     }
 
-    toString() {
-        return (
-            this.length ? this.join(this.delimiter) : this.delimiter
-        ) as PathString
-    }
-
-    get descriptionPrefix() {
-        return this.length ? `At ${this.toString()}: ` : ""
+    toString(delimiter = "/") {
+        return this.length ? this.join(delimiter) : delimiter
     }
 }
 
 export type pathToString<
-    segments extends List<string>,
+    segments extends string[],
     delimiter extends string = "/",
     result extends string = ""
 > = segments extends [infer head extends string, ...infer tail extends string[]]
     ? pathToString<
           tail,
+          delimiter,
           result extends "" ? head : `${result}${delimiter}${head}`
       >
     : result extends ""
     ? "/"
     : result
-
-export type pathDescriptionPrefix<
-    path extends List<string>,
-    delimiter extends string = "/"
-> = path extends [] ? "" : `At ${pathToString<path, delimiter>}: `
 
 export const getPath = (value: unknown, path: string[]): unknown => {
     let result: any = value

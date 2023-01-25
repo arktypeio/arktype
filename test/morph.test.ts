@@ -202,7 +202,7 @@ describe("morph", () => {
             })
             // TODO: Add which alias the error occurred in
         }).throwsAndHasTypeError(
-            "At /a: Intersection of morphs results in an unsatisfiable type"
+            "At a: Intersection of morphs results in an unsatisfiable type"
         )
     })
     it("deep undiscriminated union", () => {
@@ -224,7 +224,7 @@ describe("morph", () => {
                 c: "a[]&b[]"
             })
         }).throwsAndHasTypeError(
-            "At /${number}/a: Intersection of morphs results in an unsatisfiable type"
+            "At ${number}/a: Intersection of morphs results in an unsatisfiable type"
         )
     })
 })

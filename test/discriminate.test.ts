@@ -5,14 +5,14 @@ import { attest } from "../dev/attest/api.ts"
 describe("discriminate", () => {
     it("shallow", () => {
         const t = type("'a'|'b'|'c'")
+        // TODO: Prune
         attest(t.flat).snap([
             ["domain", "string"],
             [
                 "switch",
                 {
-                    path: "/",
+                    path: [],
                     kind: "value",
-                    // TODO: Prune
                     cases: {
                         "'a'": [["value", "a"]],
                         "'b'": [["value", "b"]],
@@ -39,14 +39,14 @@ describe("discriminate", () => {
             [
                 "switch",
                 {
-                    path: "/color",
+                    path: ["color"],
                     kind: "value",
                     cases: {
                         "'blue'": [
                             [
                                 "switch",
                                 {
-                                    path: "/climate",
+                                    path: ["climate"],
                                     kind: "value",
                                     cases: {
                                         "'wet'": [
@@ -176,7 +176,7 @@ describe("discriminate", () => {
             [
                 "switch",
                 {
-                    path: "/color",
+                    path: ["color"],
                     kind: "value",
                     cases: {
                         "'blue'": [
@@ -221,7 +221,7 @@ describe("discriminate", () => {
             [
                 "switch",
                 {
-                    path: "/temperature",
+                    path: ["temperature"],
                     kind: "value",
                     cases: {
                         "'cold'": [
@@ -240,7 +240,7 @@ describe("discriminate", () => {
                             [
                                 "switch",
                                 {
-                                    path: "/color",
+                                    path: ["color"],
                                     kind: "value",
                                     cases: {
                                         "'blue'": [

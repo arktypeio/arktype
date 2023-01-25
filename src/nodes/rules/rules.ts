@@ -6,8 +6,7 @@ import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type {
     CollapsibleList,
     constructor,
-    Dict,
-    xor
+    Dict
 } from "../../utils/generics.ts"
 import { listFrom } from "../../utils/generics.ts"
 import type { Intersector } from "../compose.ts"
@@ -75,7 +74,7 @@ export type Rules<
     domain extends Domain = Domain,
     $ = Dict
 > = Domain extends domain
-    ? xor<NarrowableRules, LiteralRules>
+    ? NarrowableRules | LiteralRules
     : domain extends "object"
     ? defineRuleSet<
           domain,
@@ -104,7 +103,7 @@ export const branchIntersection: Intersector<Branch> = (l, r, state) => {
     if ("morph" in l) {
         if ("morph" in r) {
             if (l.morph === r.morph) {
-                state.morphs[state.path] = "="
+                state.addMorph("=")
                 return isEquality(rulesResult) || isDisjoint(rulesResult)
                     ? rulesResult
                     : {
@@ -112,10 +111,11 @@ export const branchIntersection: Intersector<Branch> = (l, r, state) => {
                           morph: l.morph
                       }
             }
-            state.morphs[state.path] = "lr"
-            return disjoint("morph", [l.morph, r.morph], state)
+            state.addMorph("lr")
+            // TODO: better way to throw an error on morph intersection
+            return state.addDisjoint("morph", l.morph, r.morph)
         }
-        state.morphs[state.path] = "l"
+        state.addMorph("l")
         return isDisjoint(rulesResult)
             ? rulesResult
             : {
@@ -124,7 +124,7 @@ export const branchIntersection: Intersector<Branch> = (l, r, state) => {
               }
     }
     if ("morph" in r) {
-        state.morphs[state.path] = "r"
+        state.addMorph("r")
         return isDisjoint(rulesResult)
             ? rulesResult
             : {
@@ -173,8 +173,10 @@ export type FlattenAndPushRule<t> = (
     $: ScopeRoot
 ) => void
 
+type UnknownRules = NarrowableRules & Partial<LiteralRules>
+
 const ruleCompilers: {
-    [k in keyof Rules]-?: FlattenAndPushRule<Rules[k] & {}>
+    [k in keyof UnknownRules]-?: FlattenAndPushRule<UnknownRules[k] & {}>
 } = {
     subdomain: compileSubdomain,
     regex: (entries, rule) => {
@@ -238,9 +240,9 @@ export const compileBranch = (branch: Branch, $: ScopeRoot): BranchEntry[] => {
     return compileRules(branch, $)
 }
 
-const compileRules = (rules: Rules, $: ScopeRoot): BranchEntry[] => {
+const compileRules = (rules: UnknownRules, $: ScopeRoot): BranchEntry[] => {
     const entries: BranchEntry[] = []
-    let k: keyof Rules
+    let k: keyof UnknownRules
     for (k in rules) {
         ruleCompilers[k](entries, rules[k] as any, $)
     }
