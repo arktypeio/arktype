@@ -104,7 +104,7 @@ type inferIntersectionRecurse<
     ? any
     : l extends ParsedMorph<infer lIn, infer lOut>
     ? r extends ParsedMorph
-        ? error<writeDoubleMorphIntersectionMessage<pathToString<path>>>
+        ? error<writeImplicitNeverMessage<pathToString<path>, "of morphs">>
         : (In: evaluate<lIn & r>) => Out<lOut>
     : r extends ParsedMorph<infer rIn, infer rOut>
     ? (In: evaluate<rIn & l>) => Out<rOut>
@@ -146,7 +146,6 @@ export type inferUnion<l, r> = isAny<l | r> extends true
         : error<undiscriminatableMorphUnionMessage>
     : never
 
-// TODO: check if this works for unions
 type discriminatable<l, r> = discriminatableRecurse<l, r, []> extends never
     ? false
     : true
@@ -191,11 +190,12 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
     return message
 }
 
-type writeDoubleMorphIntersectionMessage<path extends Path> =
-    `${pathPrefix<path>}Intersection of morphs results in an unsatisfiable type`
-
-type writeImplicitNeverMessage<path extends Path> =
-    `${pathPrefix<path>}Intersection results in an unsatisfiable type`
+type writeImplicitNeverMessage<
+    path extends Path,
+    description extends string = ""
+> = `${pathPrefix<path>}Intersection ${description extends ""
+    ? ""
+    : `${description} `}results in an unsatisfiable type`
 
 export const undiscriminatableMorphUnionMessage = `A union including one or more morphs must be discriminatable`
 
