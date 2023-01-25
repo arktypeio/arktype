@@ -172,16 +172,6 @@ type discriminatableRecurse<
       >
     : never
 
-export const writeDoubleMorphIntersectionMessage = <path extends Path>(
-    path: path
-): writeDoubleMorphIntersectionMessage<path> =>
-    `${pathPrefix(path)}Intersection must have at least one non-morph operand`
-
-type writeDoubleMorphIntersectionMessage<path extends Path> =
-    `${pathPrefix<path>}Intersection must have at least one non-morph operand`
-
-export const undiscriminatableMorphUnionMessage = `A union of one or more morphs must be discriminatable`
-
 export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
     const paths = keysOf(disjoints)
     if (paths.length === 1) {
@@ -201,8 +191,13 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
     return message
 }
 
+type writeDoubleMorphIntersectionMessage<path extends Path> =
+    `${pathPrefix<path>}Intersection of morphs results in an unsatisfiable type`
+
 type writeImplicitNeverMessage<path extends Path> =
     `${pathPrefix<path>}Intersection results in an unsatisfiable type`
+
+export const undiscriminatableMorphUnionMessage = `A union including one or more morphs must be discriminatable`
 
 type undiscriminatableMorphUnionMessage =
     typeof undiscriminatableMorphUnionMessage
