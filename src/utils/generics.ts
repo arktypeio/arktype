@@ -93,6 +93,7 @@ export type entriesOf<o extends object> = entryOf<o>[]
 export const entriesOf = <o extends object>(o: o) =>
     Object.entries(o) as entriesOf<o>
 
+/** Mimics the result of Object.keys(...) */
 export type keyOf<o extends object> = o extends readonly unknown[]
     ? any[] extends o
         ? `${number}`
