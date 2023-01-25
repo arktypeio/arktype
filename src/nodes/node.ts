@@ -9,11 +9,11 @@ import type {
     stringKeyOf
 } from "../utils/generics.ts"
 import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
-import type { IntersectionContext, Intersector } from "./compose.ts"
+import type { Intersector } from "./compose.ts"
 import {
+    anonymousDisjoint,
     composeKeyedIntersection,
-    disjoint,
-    empty,
+    IntersectionState,
     isDisjoint,
     isEquality,
     throwUndefinedOperandsError
@@ -27,7 +27,7 @@ import {
     predicateUnion
 } from "./predicate.ts"
 import { domainsOfNode, resolveFlat, resolveIfIdentifier } from "./resolve.ts"
-import type { RuleEntry } from "./rules/rules.ts"
+import type { BranchEntry } from "./rules/rules.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | TypeResolution<$>
 
@@ -42,20 +42,17 @@ export type Identifier<$ = Dict> = string extends keyof $
     ? autocomplete<Keyword>
     : Keyword | stringKeyOf<$>
 
-export const nodeIntersection: Intersector<TypeNode> = (l, r, context) => {
-    const lResolution = resolveIfIdentifier(l, context.$)
-    const rResolution = resolveIfIdentifier(r, context.$)
-    const result = resolutionIntersection(lResolution, rResolution, context)
+export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
+    const lResolution = resolveIfIdentifier(l, state.$)
+    const rResolution = resolveIfIdentifier(r, state.$)
+    const result = resolutionIntersection(lResolution, rResolution, state)
     if (typeof result === "object" && !hasKeys(result)) {
-        return context.disjoints[context.path]
-            ? empty
-            : disjoint(
+        return hasKeys(state.disjoints)
+            ? anonymousDisjoint()
+            : state.addDisjoint(
                   "domain",
-                  [
-                      domainsOfNode(lResolution, context.$),
-                      domainsOfNode(rResolution, context.$)
-                  ],
-                  context
+                  domainsOfNode(lResolution, state.$),
+                  domainsOfNode(rResolution, state.$)
               )
     }
     return result === lResolution ? l : result === rResolution ? r : result
@@ -74,19 +71,11 @@ const resolutionIntersection = composeKeyedIntersection<TypeResolution>(
     { onEmpty: "omit" }
 )
 
-export const initializeIntersectionContext = (
-    $: ScopeRoot
-): IntersectionContext => ({
-    $,
-    path: "/",
-    disjoints: {}
-})
-
 export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
-    const context = initializeIntersectionContext($)
-    const result = nodeIntersection(l, r, context)
+    const state = new IntersectionState($)
+    const result = nodeIntersection(l, r, state)
     return isDisjoint(result)
-        ? throwParseError(compileDisjointReasonsMessage(context.disjoints))
+        ? throwParseError(compileDisjointReasonsMessage(state.disjoints))
         : isEquality(result)
         ? l
         : result
@@ -117,7 +106,7 @@ export const union = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
 export type TraversalNode = Domain | TraversalEntry[]
 
 export type TraversalEntry =
-    | RuleEntry
+    | BranchEntry
     | DomainsEntry
     | CyclicReferenceEntry
     | DomainEntry

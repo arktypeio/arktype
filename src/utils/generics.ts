@@ -93,6 +93,7 @@ export type entriesOf<o extends object> = entryOf<o>[]
 export const entriesOf = <o extends object>(o: o) =>
     Object.entries(o) as entriesOf<o>
 
+/** Mimics the result of Object.keys(...) */
 export type keyOf<o extends object> = o extends readonly unknown[]
     ? any[] extends o
         ? `${number}`
@@ -243,10 +244,10 @@ export const collapseIfSingleton = <t extends List>(array: t): t | t[number] =>
     array.length === 1 ? array[0] : array
 
 /** Either:
- * A, with all properties of B as never
+ * A, with all properties of B undefined
  * OR
- * B, with all properties of A as never
+ * B, with all properties of A undefined
  **/
 export type xor<a, b> =
-    | evaluate<a & { [k in keyof b]?: never }>
-    | evaluate<b & { [k in keyof a]?: never }>
+    | evaluate<a & { [k in keyof b]?: undefined }>
+    | evaluate<b & { [k in keyof a]?: undefined }>

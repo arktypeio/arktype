@@ -4,17 +4,17 @@ import type {
     ProblemMessageWriter
 } from "../../traverse/problems.ts"
 import type { constructor } from "../../utils/generics.ts"
-import { composeIntersection, disjoint, equality } from "../compose.ts"
+import { composeIntersection, equality } from "../compose.ts"
 
 export const classIntersection = composeIntersection<constructor>(
-    (l, r, context) =>
+    (l, r, state) =>
         l === r
             ? equality()
             : l instanceof r
             ? l
             : r instanceof l
             ? r
-            : disjoint("class", [l, r], context)
+            : state.addDisjoint("class", l, r)
 )
 
 export type ClassProblemContext = defineProblem<

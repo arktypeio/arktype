@@ -1,12 +1,11 @@
 import type { TraversalCheck } from "../../traverse/check.ts"
-import { checkNode } from "../../traverse/check.ts"
+import { traverseNode } from "../../traverse/check.ts"
 import type {
     defineProblem,
     ProblemMessageWriter
 } from "../../traverse/problems.ts"
 import type { Dict } from "../../utils/generics.ts"
 import { hasKey } from "../../utils/generics.ts"
-import { pushKey } from "../../utils/paths.ts"
 import {
     composeIntersection,
     composeKeyedIntersection,
@@ -55,10 +54,9 @@ export const propsIntersection = composeIntersection<PropsRule>(
             if (r === undefined) {
                 return l
             }
-            const rootPath = context.path
-            context.path = pushKey(rootPath, propKey)
+            context.path.push(propKey)
             const result = nodeIntersection(nodeFrom(l), nodeFrom(r), context)
-            context.path = rootPath
+            context.path.pop()
             const resultIsOptional = isOptional(l) && isOptional(r)
             if (
                 isDisjoint(result) &&
@@ -104,7 +102,7 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
     ((data, props, state) => {
         const rootPath = state.path
         for (const [propKey, propNode] of props as TraversalPropEntry[]) {
-            state.path = pushKey(rootPath, propKey)
+            state.path.push(propKey)
             if (!hasKey(data, propKey)) {
                 if (propKind !== "optionalProps") {
                     state.problems.addProblem(
@@ -114,9 +112,10 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
                         state
                     )
                 }
-                continue
+            } else {
+                traverseNode(data[propKey], propNode, state)
             }
-            checkNode(data[propKey], propNode, state)
+            state.path.pop()
         }
         state.path = rootPath
     }) as TraversalCheck<propKind>
@@ -129,18 +128,3 @@ export type MissingKeyContext = defineProblem<undefined, { key: string }>
 export const writeMissingKeyError: ProblemMessageWriter<"missing"> = ({
     key
 }) => `${key} is required`
-
-// export type TraversalMappedPropsRule = [
-//     mappedEntries: readonly TraversalMappedPropEntry[],
-//     namedProps?: {
-//         readonly required?: TraversalPropSet
-//         readonly optional?: TraversalPropSet
-//     }
-// ]
-
-// export type TraversalMappedPropEntry = [
-//     ifKeySatisfies: TraversalNode,
-//     thenCheckValueAgainst: TraversalNode | ((key: string) => TraversalNode)
-// ]
-
-// export type TraversalPropSet = { readonly [propKey in string]: TraversalNode }

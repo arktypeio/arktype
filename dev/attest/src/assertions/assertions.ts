@@ -1,7 +1,7 @@
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.ts"
-import { snapshot } from "../../../../src/utils/serialize.ts"
+import { snapshot, stringify } from "../../../../src/utils/serialize.ts"
 import { caller } from "../../../runtime/api.ts"
 import { assertEquals } from "../assertions.ts"
 import type { AssertionContext } from "../attest.ts"
@@ -102,7 +102,17 @@ export class Assertions implements AssertionRecord {
                 }
             }
         } else {
-            assertEquals(expectedSerialized, this.serializedActual, this.ctx)
+            // compare as strings, but if match fails, compare again as objects
+            // to give a clearer error message. This avoid problems with objects
+            // like subtypes of array that do not pass node's deep equality test
+            // but serialize to the same value.
+            if (stringify(args[0]) !== stringify(this.actual)) {
+                assertEquals(
+                    expectedSerialized,
+                    this.serializedActual,
+                    this.ctx
+                )
+            }
         }
         return this
     }

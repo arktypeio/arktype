@@ -1,113 +1,81 @@
 import type { Morph } from "../parse/tuple/morph.ts"
 import type { ScopeRoot } from "../scope.ts"
-import type { Domain, inferDomain } from "../utils/domains.ts"
+import type { Domain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
-import type { CollapsibleList, Dict } from "../utils/generics.ts"
+import type { CollapsibleList, Dict, xor } from "../utils/generics.ts"
 import { collapseIfSingleton, listFrom } from "../utils/generics.ts"
-import type { BranchesComparison } from "./branches.ts"
+import type { Branches, BranchesComparison } from "./branches.ts"
 import { compareBranches, isBranchComparison } from "./branches.ts"
-import type {
-    IntersectionContext,
-    IntersectionResult,
-    KeyIntersectionFn
-} from "./compose.ts"
-import { disjoint, equality, isEquality } from "./compose.ts"
+import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
+import { equality, IntersectionState, isEquality } from "./compose.ts"
 import { compileBranches } from "./discriminate.ts"
 import type { TraversalEntry, TypeResolution } from "./node.ts"
-import { initializeIntersectionContext } from "./node.ts"
-import { isLiteralCondition } from "./resolve.ts"
-import type { RuleSet } from "./rules/rules.ts"
-import {
-    compileRules,
-    literalSatisfiesRules,
-    rulesIntersection
-} from "./rules/rules.ts"
+import type { Rules } from "./rules/rules.ts"
+import { branchIntersection, compileBranch } from "./rules/rules.ts"
 
 export type Predicate<domain extends Domain = Domain, $ = Dict> = Dict extends $
-    ? true | CollapsibleList<Condition>
-    : true | CollapsibleList<Condition<domain, $>>
+    ? true | CollapsibleList<Branch>
+    : true | CollapsibleList<Branch<domain, $>>
 
-export type Condition<domain extends Domain = Domain, $ = Dict> =
-    | RuleSet<domain, $>
-    | Literal<domain>
-
-export type Literal<domain extends Domain = Domain> = {
-    readonly value: inferDomain<domain>
-    readonly morph?: CollapsibleList<Morph>
-}
+export type Branch<domain extends Domain = Domain, $ = Dict> = xor<
+    Rules<domain, $>,
+    {
+        input: Rules<domain, $>
+        morph: CollapsibleList<Morph>
+    }
+>
 
 export type PredicateComparison =
     | IntersectionResult<Predicate>
     | BranchesComparison
 
+const emptyRulesIfTrue = <predicate extends Predicate>(predicate: predicate) =>
+    (predicate === true ? {} : predicate) as Exclude<predicate, true>
+
 export const comparePredicates = (
-    domain: Domain,
     l: Predicate,
     r: Predicate,
-    context: IntersectionContext
+    context: IntersectionState
 ): PredicateComparison => {
-    if (l === true) {
-        return r === true ? equality() : r
+    if (l === true && r === true) {
+        return equality()
     }
-    if (r === true) {
-        return l
-    }
-    if (hasSubdomain(l, "object") && hasSubdomain(r, "object")) {
-        const result = conditionIntersection(l, r, context)
+    if (!hasSubdomain(l, "Array") && !hasSubdomain(r, "Array")) {
+        const result = branchIntersection(
+            emptyRulesIfTrue(l),
+            emptyRulesIfTrue(r),
+            context
+        )
         return result === l ? l : result === r ? r : result
     }
-    const lComparisons = listFrom(l)
-    const rComparisons = listFrom(r)
-    const comparison = compareBranches(
-        domain,
-        lComparisons,
-        rComparisons,
-        context
-    )
+    const lBranches: Branches = listFrom(emptyRulesIfTrue(l))
+    const rBranches: Branches = listFrom(emptyRulesIfTrue(r))
+    const comparison = compareBranches(lBranches, rBranches, context)
     if (
-        comparison.equalities.length === lComparisons.length &&
-        comparison.equalities.length === rComparisons.length
+        comparison.equalities.length === lBranches.length &&
+        comparison.equalities.length === rBranches.length
     ) {
         return equality()
     }
     if (
         comparison.lSubconditionsOfR.length + comparison.equalities.length ===
-        lComparisons.length
+        lBranches.length
     ) {
         return l
     }
     if (
         comparison.rSubconditionsOfL.length + comparison.equalities.length ===
-        rComparisons.length
+        rBranches.length
     ) {
         return r
     }
     return comparison
 }
 
-export const conditionIntersection = (
-    l: Condition,
-    r: Condition,
-    context: IntersectionContext
-) =>
-    isLiteralCondition(l)
-        ? isLiteralCondition(r)
-            ? l.value === r.value
-                ? equality()
-                : disjoint("value", [l.value, r.value], context)
-            : literalSatisfiesRules(l.value, r, context.$)
-            ? l
-            : disjoint("assignability", [l.value, r], context)
-        : isLiteralCondition(r)
-        ? literalSatisfiesRules(r.value, l, context.$)
-            ? r
-            : disjoint("assignability", [r.value, l], context)
-        : rulesIntersection(l, r, context)
-
 export const predicateIntersection: KeyIntersectionFn<
     Required<TypeResolution>
-> = (domain, l, r, context) => {
-    const comparison = comparePredicates(domain, l, r, context)
+> = (domain, l, r, state) => {
+    const comparison = comparePredicates(l, r, state)
     if (!isBranchComparison(comparison)) {
         return comparison
     }
@@ -131,8 +99,8 @@ export const predicateUnion = (
     r: Predicate,
     $: ScopeRoot
 ) => {
-    const context = initializeIntersectionContext($)
-    const comparison = comparePredicates(domain, l, r, context)
+    const state = new IntersectionState($)
+    const comparison = comparePredicates(l, r, state)
     if (!isBranchComparison(comparison)) {
         return isEquality(comparison) || comparison === l
             ? r
@@ -143,7 +111,7 @@ export const predicateUnion = (
             // and can be simplified to a non-literal boolean.
             domain === "boolean"
             ? true
-            : ([l, r] as Condition[])
+            : ([emptyRulesIfTrue(l), emptyRulesIfTrue(r)] as [Branch, Branch])
     }
     return collapseIfSingleton([
         ...comparison.lConditions.filter(
@@ -172,13 +140,5 @@ export const compilePredicate = (
     }
     return hasSubdomain(predicate, "Array")
         ? compileBranches(predicate, $)
-        : compileCondition(predicate, $)
+        : compileBranch(predicate, $)
 }
-
-export const compileCondition = (
-    condition: Condition,
-    $: ScopeRoot
-): TraversalEntry[] =>
-    isLiteralCondition(condition)
-        ? [["value", condition.value]]
-        : compileRules(condition, $)

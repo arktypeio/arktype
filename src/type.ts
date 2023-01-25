@@ -3,8 +3,8 @@ import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import { t } from "./parse/definition.ts"
 import type { ParsedMorph } from "./parse/tuple/morph.ts"
 import type { ScopeRoot } from "./scope.ts"
-import type { CheckConfig } from "./traverse/check.ts"
-import { rootCheck } from "./traverse/check.ts"
+import type { ProblemsOptions } from "./traverse/check.ts"
+import { traverse } from "./traverse/check.ts"
 import type { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type { defer, xor } from "./utils/generics.ts"
@@ -18,7 +18,7 @@ export const nodeToType = (
 ) =>
     Object.assign(
         (data: unknown) => {
-            return rootCheck(data, flat, $, config)
+            return traverse(data, flat, $, config)
         },
         {
             [t]: chainableNoOpProxy,
@@ -68,7 +68,9 @@ export type TypeRoot<t = unknown> = {
 
 export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
 
-export type TypeOptions = CheckConfig
+export type TypeOptions = {
+    problems?: ProblemsOptions
+}
 
 export type asIn<t> = asIo<t, "in">
 

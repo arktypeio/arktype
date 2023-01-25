@@ -36,7 +36,8 @@ describe("check", () => {
             age: "number"
         })
         const checked = t({ name: "Shawn" })
-        attest(checked.problems?.summary).snap("/age: age is required")
+        // TODO: improve
+        attest(checked.problems?.summary).snap("age: age is required")
     })
     it("custom errors", () => {
         const isEven = type("number%2", {

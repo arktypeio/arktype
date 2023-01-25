@@ -36,7 +36,7 @@ describe("cast", () => {
         }>
         attest(types.a.node).snap({
             object: {
-                props: { a: { number: { value: 1 } } },
+                input: { props: { a: { number: { value: 1 } } } },
                 morph: "(function)"
             }
         })

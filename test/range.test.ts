@@ -118,7 +118,7 @@ describe("range", () => {
                     "Error: Intersection of >3 and <=3 results in an unsatisfiable type"
                 )
                 attest(() => type("-2<number<-1&1<number<2")).throws.snap(
-                    "Error: Intersection of >1 and <-1 results in an unsatisfiable type"
+                    "Error: Intersection of the range bounded by >-2 and <-1 and the range bounded by >1 and <2 results in an unsatisfiable type"
                 )
             })
             it("greater min is stricter", () => {

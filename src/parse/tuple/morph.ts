@@ -1,5 +1,5 @@
 import type { TypeResolution } from "../../nodes/node.ts"
-import type { Condition } from "../../nodes/predicate.ts"
+import type { Branch } from "../../nodes/predicate.ts"
 import { resolveIfIdentifier } from "../../nodes/resolve.ts"
 import type { asOut } from "../../type.ts"
 import type { Domain } from "../../utils/domains.ts"
@@ -22,7 +22,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, $) => {
     for (domain in resolution) {
         const predicate = resolution[domain]
         if (predicate === true) {
-            result[domain] = { morph }
+            result[domain] = { input: {}, morph }
         } else if (typeof predicate === "object") {
             result[domain] = hasSubdomain(predicate, "Array")
                 ? predicate.map((branch) => applyMorph(branch, morph))
@@ -38,14 +38,18 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, $) => {
     return result
 }
 
-const applyMorph = (condition: Condition, morph: Morph) => ({
-    ...condition,
-    morph: condition.morph
-        ? Array.isArray(condition.morph)
-            ? [...condition.morph, morph]
-            : [condition.morph, morph]
-        : morph
-})
+const applyMorph = (branch: Branch, morph: Morph) =>
+    branch.morph
+        ? {
+              input: branch.input,
+              morph: Array.isArray(branch.morph)
+                  ? [...branch.morph, morph]
+                  : [branch.morph, morph]
+          }
+        : {
+              input: branch,
+              morph
+          }
 
 export type Out<t = {}> = nominal<t, "out">
 

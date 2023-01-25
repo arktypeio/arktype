@@ -1,5 +1,5 @@
 import type { DisjointsByPath } from "../../nodes/compose.ts"
-import { disjointDescribers } from "../../nodes/compose.ts"
+import { disjointDescriptionWriters } from "../../nodes/compose.ts"
 import type { Keyword, Keywords } from "../../nodes/keywords.ts"
 import type { BootstrapScope } from "../../scope.ts"
 import type { asIn } from "../../type.ts"
@@ -20,8 +20,7 @@ import type {
     tryCatch
 } from "../../utils/generics.ts"
 import { keysOf } from "../../utils/generics.ts"
-import type { Path, pathToString } from "../../utils/paths.ts"
-import { pathPrefix } from "../../utils/paths.ts"
+import type { pathToString } from "../../utils/paths.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
@@ -99,12 +98,12 @@ type inferIntersectionRecurse<
     : r extends never
     ? never
     : l & r extends never
-    ? error<writeImplicitNeverMessage<pathToString<path>>>
+    ? error<writeImplicitNeverMessage<path>>
     : isAny<l | r> extends true
     ? any
     : l extends ParsedMorph<infer lIn, infer lOut>
     ? r extends ParsedMorph
-        ? error<writeDoubleMorphIntersectionMessage<pathToString<path>>>
+        ? error<writeImplicitNeverMessage<path, "of morphs">>
         : (In: evaluate<lIn & r>) => Out<lOut>
     : r extends ParsedMorph<infer rIn, infer rOut>
     ? (In: evaluate<rIn & l>) => Out<rOut>
@@ -146,7 +145,6 @@ export type inferUnion<l, r> = isAny<l | r> extends true
         : error<undiscriminatableMorphUnionMessage>
     : never
 
-// TODO: check if this works for unions
 type discriminatable<l, r> = discriminatableRecurse<l, r, []> extends never
     ? false
     : true
@@ -172,39 +170,36 @@ type discriminatableRecurse<
       >
     : never
 
-// TODO: use <const path extends List<string>> once prettier supports it (look
-// for other instances of downcast and try to do the same)
-export const writeDoubleMorphIntersectionMessage = <path extends string>(
-    path: path
-): writeDoubleMorphIntersectionMessage<path> =>
-    `${pathPrefix(path)}Intersection must have at least one non-morph operand`
-
-type writeDoubleMorphIntersectionMessage<path extends string> =
-    `${pathPrefix<path>}Intersection must have at least one non-morph operand`
-
-export const undiscriminatableMorphUnionMessage = `A union of one or more morphs must be discriminatable`
-
 export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
     const paths = keysOf(disjoints)
     if (paths.length === 1) {
         const path = paths[0]
-        return `${pathPrefix(path)}Intersection of ${disjointDescribers[
-            disjoints[path].kind
-        ](disjoints[path].operands as never)} results in an unsatisfiable type`
+        return `${
+            path === "/" ? "" : `At ${path}: `
+        }Intersection of ${disjointDescriptionWriters[disjoints[path].kind](
+            disjoints[path] as never
+        )} results in an unsatisfiable type`
     }
     let message = `
         "Intersection results in unsatisfiable types at the following paths:\n`
-    let path: Path
-    for (path in disjoints) {
-        message += `  ${pathPrefix(path)}${disjointDescribers[
+    for (const path in disjoints) {
+        message += `  ${path}: ${disjointDescriptionWriters[
             disjoints[path].kind
-        ](disjoints[path].operands as never)}\n`
+        ](disjoints[path] as never)}\n`
     }
     return message
 }
 
-type writeImplicitNeverMessage<path extends string> =
-    `${pathPrefix<path>}Intersection results in an unsatisfiable type`
+type writeImplicitNeverMessage<
+    path extends string[],
+    description extends string = ""
+> = `${path extends []
+    ? ""
+    : `At ${pathToString<path>}: `}Intersection ${description extends ""
+    ? ""
+    : `${description} `}results in an unsatisfiable type`
+
+export const undiscriminatableMorphUnionMessage = `A union including one or more morphs must be discriminatable`
 
 type undiscriminatableMorphUnionMessage =
     typeof undiscriminatableMorphUnionMessage
