@@ -1,6 +1,7 @@
 import { functorKeywords } from "../../nodes/keywords.ts"
 import type { TypeNode } from "../../nodes/node.ts"
 import { intersection, union } from "../../nodes/node.ts"
+import { domainsOfNode } from "../../nodes/resolve.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import type { asIn, asOut } from "../../type.ts"
 import { domainOf } from "../../utils/domains.ts"
@@ -10,13 +11,15 @@ import type {
     constructor,
     error,
     List,
-    returnOf
+    returnOf,
+    stringKeyOf
 } from "../../utils/generics.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { inferIntersection, inferUnion } from "../string/ast.ts"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
+import { parseKeyOfTuple } from "./keyof.ts"
 import type { Out, validateMorphTuple } from "./morph.ts"
 import { parseMorphTuple } from "./morph.ts"
 import type { validateNarrowTuple } from "./narrow.ts"
@@ -58,8 +61,9 @@ export type validateTupleExpression<
     ? ["===", def[1]]
     : def[0] extends "instanceof"
     ? ["instanceof", conform<def[1], constructor>]
-    : // TODOSHAWN: Add validation just like equality
-      never
+    : def[0] extends "keyof"
+    ? ["keyof", def[1]]
+    : never
 
 export type inferTuple<def extends List, $> = def extends TupleExpression
     ? inferTupleExpression<def, $>
@@ -91,8 +95,11 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
     ? def[1] extends constructor<infer t>
         ? t
         : never
-    : // TODOSHAWN: keyof def[1]
-      never
+    : def[0] extends "keyof"
+    ? def[1] extends infer A
+        ? stringKeyOf<A>
+        : never
+    : never
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, $) => {
     if (def[2] === undefined) {
@@ -149,7 +156,7 @@ const postfixParsers: {
     "=>": parseMorphTuple
 }
 
-type PrefixToken = "instanceof" | "==="
+type PrefixToken = "keyof" | "instanceof" | "==="
 
 type PrefixExpression<token extends PrefixToken = PrefixToken> = [
     token,
@@ -160,6 +167,9 @@ type PrefixExpression<token extends PrefixToken = PrefixToken> = [
 const prefixParsers: {
     [token in PrefixToken]: PrefixParser<token>
 } = {
+    keyof: (def) => {
+        parseKeyOfTuple(def, {})
+    },
     instanceof: (def) => {
         if (typeof def[1] !== "function") {
             return throwParseError(
