@@ -20,8 +20,8 @@ import type {
     tryCatch
 } from "../../utils/generics.ts"
 import { keysOf } from "../../utils/generics.ts"
-import type { Path, pathToString } from "../../utils/paths.ts"
-import { pathPrefix } from "../../utils/paths.ts"
+import type { pathToString } from "../../utils/paths.ts"
+import { pathDescriptionPrefix } from "../../utils/paths.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
@@ -99,12 +99,12 @@ type inferIntersectionRecurse<
     : r extends never
     ? never
     : l & r extends never
-    ? error<writeImplicitNeverMessage<pathToString<path>>>
+    ? error<writeImplicitNeverMessage<path>>
     : isAny<l | r> extends true
     ? any
     : l extends ParsedMorph<infer lIn, infer lOut>
     ? r extends ParsedMorph
-        ? error<writeImplicitNeverMessage<pathToString<path>, "of morphs">>
+        ? error<writeImplicitNeverMessage<path, "of morphs">>
         : (In: evaluate<lIn & r>) => Out<lOut>
     : r extends ParsedMorph<infer rIn, infer rOut>
     ? (In: evaluate<rIn & l>) => Out<rOut>
@@ -181,8 +181,7 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
     }
     let message = `
         "Intersection results in unsatisfiable types at the following paths:\n`
-    let path: Path
-    for (path in disjoints) {
+    for (const path in disjoints) {
         message += `  ${pathPrefix(path)}${disjointDescriptionWriters[
             disjoints[path].kind
         ](disjoints[path].operands as never)}\n`
@@ -191,9 +190,11 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
 }
 
 type writeImplicitNeverMessage<
-    path extends Path,
+    path extends string[],
     description extends string = ""
-> = `${pathPrefix<path>}Intersection ${description extends ""
+> = `${pathDescriptionPrefix<
+    pathToString<path>
+>}Intersection ${description extends ""
     ? ""
     : `${description} `}results in an unsatisfiable type`
 

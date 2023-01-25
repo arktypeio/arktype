@@ -1,7 +1,7 @@
 import { domainOf, hasDomain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { List } from "../utils/generics.ts"
-import type { IntersectionContext } from "./compose.ts"
+import type { IntersectionState } from "./compose.ts"
 import { isDisjoint, isEquality } from "./compose.ts"
 import type { Branch, PredicateComparison } from "./predicate.ts"
 import { branchIntersection } from "./rules/rules.ts"
@@ -25,7 +25,7 @@ export type BranchesComparison = {
 export const compareBranches = (
     lConditions: Branches,
     rConditions: Branches,
-    context: IntersectionContext
+    context: IntersectionState
 ): BranchesComparison => {
     const result: BranchesComparison = {
         lConditions,

@@ -5,14 +5,14 @@ import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { keySet } from "../utils/generics.ts"
 import { hasKeys, isKeyOf, keysOf } from "../utils/generics.ts"
-import type { Path } from "../utils/paths.ts"
-import { popKey, pushKey } from "../utils/paths.ts"
+import type { PathString } from "../utils/paths.ts"
+import { Path } from "../utils/paths.ts"
 import type { SerializablePrimitive } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
 import type { Branches } from "./branches.ts"
 import type { DisjointKind } from "./compose.ts"
+import { IntersectionState } from "./compose.ts"
 import type { TraversalEntry } from "./node.ts"
-import { initializeIntersectionContext } from "./node.ts"
 import { branchIntersection, compileBranch } from "./rules/rules.ts"
 
 export type DiscriminatedSwitch = {
@@ -39,7 +39,9 @@ type IndexCases = {
     [caseKey in string]: number[]
 }
 
-export type QualifiedDisjoint = `/${string}${DiscriminantKind}`
+export type QualifiedDisjoint =
+    | `/${DiscriminantKind}`
+    | `/${string}/${DiscriminantKind}`
 
 const discriminate = (
     originalBranches: Branches,
@@ -73,16 +75,12 @@ const discriminate = (
             $
         )
     }
-    const [path, kind] = popKey(bestDiscriminant.qualifiedDisjoint) as [
-        Path,
-        DisjointKind
-    ]
     return [
         [
             "switch",
             {
-                path,
-                kind,
+                path: bestDiscriminant.path,
+                kind: bestDiscriminant.kind,
                 cases
             }
         ]
@@ -97,7 +95,7 @@ type Discriminants = {
 type DisjointsByPair = Record<`${number}/${number}`, QualifiedDisjoint[]>
 
 type CasesByDisjoint = {
-    [k in QualifiedDisjoint]: IndexCases
+    [k in QualifiedDisjoint]?: IndexCases
 }
 
 export type DiscriminantKinds = {
@@ -129,11 +127,14 @@ const calculateDiscriminants = (
             const pairKey = `${lIndex}/${rIndex}` as const
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
-            const context = initializeIntersectionContext($)
-            branchIntersection(branches[lIndex], branches[rIndex], context)
-            let path: Path
-            for (path in context.disjoints) {
-                const disjointContext = context.disjoints[path]
+            const intersectionState = new IntersectionState($)
+            branchIntersection(
+                branches[lIndex],
+                branches[rIndex],
+                intersectionState
+            )
+            for (const path in intersectionState.disjoints) {
+                const disjointContext = intersectionState.disjoints[path]
                 const kind = disjointContext.kind
                 if (!isKeyOf(kind, discriminantKinds)) {
                     continue
@@ -166,7 +167,10 @@ const calculateDiscriminants = (
                     cases[rSerialized].push(rIndex)
                 }
             }
-            if (hasKeys(context.morphs) && pairDisjoints.length === 0) {
+            if (
+                hasKeys(intersectionState.morphs) &&
+                pairDisjoints.length === 0
+            ) {
                 return throwParseError(undiscriminatableMorphUnionMessage)
             }
         }
@@ -175,9 +179,15 @@ const calculateDiscriminants = (
 }
 
 type Discriminant = {
-    qualifiedDisjoint: QualifiedDisjoint
+    path: PathString
+    kind: DiscriminantKind
     indexCases: IndexCases
     score: number
+}
+
+const parseQualifiedDisjoint = (qualifiedDisjoint: QualifiedDisjoint) => {
+    const path = Path.from(qualifiedDisjoint)
+    return [path, path.pop()] as [path: Path, kind: DiscriminantKind]
 }
 
 const findBestDiscriminant = (

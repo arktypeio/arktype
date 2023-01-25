@@ -8,7 +8,6 @@ import type { Subdomain } from "../../utils/domains.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import type { Dict, List } from "../../utils/generics.ts"
-import { pushKey } from "../../utils/paths.ts"
 import { stringify } from "../../utils/serialize.ts"
 import {
     composeIntersection,
@@ -41,28 +40,6 @@ const isTupleRule = <rule extends List>(
     rule: rule
 ): rule is Extract<rule, ["Array", unknown, number]> =>
     typeof rule[2] === "number"
-
-export const compileSubdomain: FlattenAndPushRule<SubdomainRule> = (
-    entries,
-    rule,
-    $
-) =>
-    entries.push([
-        "subdomain",
-        typeof rule === "string"
-            ? rule
-            : ([
-                  rule[0],
-                  compileNode(rule[1], $),
-                  ...(rule.length === 3
-                      ? [
-                            typeof rule[2] === "number"
-                                ? rule[2]
-                                : compileNode(rule[2], $)
-                        ]
-                      : [])
-              ] as TraversalSubdomainRule)
-    ])
 
 export const subdomainIntersection = composeIntersection<SubdomainRule>(
     (l, r, context) => {
@@ -216,3 +193,25 @@ export const writeTupleLengthError: ProblemMessageWriter<"tupleLength"> = ({
     actual,
     expected
 }) => `Tuple must have length ${expected} (was ${actual})`
+
+export const compileSubdomain: FlattenAndPushRule<SubdomainRule> = (
+    entries,
+    rule,
+    $
+) =>
+    entries.push([
+        "subdomain",
+        typeof rule === "string"
+            ? rule
+            : ([
+                  rule[0],
+                  compileNode(rule[1], $),
+                  ...(rule.length === 3
+                      ? [
+                            typeof rule[2] === "number"
+                                ? rule[2]
+                                : compileNode(rule[2], $)
+                        ]
+                      : [])
+              ] as TraversalSubdomainRule)
+    ])

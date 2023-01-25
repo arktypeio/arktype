@@ -9,7 +9,7 @@ import type {
     mutable
 } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
-import type { Path } from "../utils/paths.ts"
+import { Path } from "../utils/paths.ts"
 import { serialize } from "../utils/serialize.ts"
 import type { Bound, BoundKind } from "./rules/range.ts"
 import type { Rules } from "./rules/rules.ts"
@@ -17,7 +17,7 @@ import type { Rules } from "./rules/rules.ts"
 export type Intersector<t> = (
     l: t,
     r: t,
-    context: IntersectionContext
+    state: IntersectionState
 ) => IntersectionResult<t>
 
 type allowUndefinedOperands<f extends Intersector<any>> = f extends Intersector<
@@ -96,12 +96,34 @@ export const toComparator = (kind: BoundKind, bound: Bound) =>
 
 export type DisjointKind = keyof DisjointKinds
 
-export type IntersectionContext = {
-    $: ScopeRoot
-    path: Path
-    disjoints: DisjointsByPath
-    morphs: Record<string, MorphIntersectionKind>
+export class IntersectionState {
+    path = new Path()
+    #morphs: MorphsByPath = {}
+    #disjoints: DisjointsByPath = {}
+
+    constructor(public $: ScopeRoot) {}
+
+    addDisjoint<kind extends DisjointKind>(
+        kind: kind,
+        operands: DisjointKinds[kind]
+    ): Empty {
+        this.#disjoints[`${this.path}`] = { kind, operands }
+        return empty
+    }
+
+    addMorph(kind: MorphIntersectionKind) {
+        this.#morphs[`${this.path}`] = kind
+    }
 }
+
+export type DisjointsByPath = Record<string, DisjointContext>
+
+export type DisjointContext<kind extends DisjointKind = DisjointKind> = {
+    kind: kind
+    operands: DisjointKinds[kind]
+}
+
+export type MorphsByPath = Record<string, MorphIntersectionKind>
 
 export type MorphIntersectionKind = "l" | "r" | "=" | "lr"
 
@@ -111,26 +133,7 @@ export type Empty = typeof empty
 
 export const anonymousDisjoint = (): Empty => empty
 
-export const disjoint = <kind extends DisjointKind>(
-    kind: kind,
-    operands: DisjointKinds[kind],
-    context: IntersectionContext
-): Empty => {
-    context.disjoints[context.path] = {
-        kind,
-        operands
-    }
-    return empty
-}
-
 export const isDisjoint = (result: unknown): result is Empty => result === empty
-
-export type DisjointsByPath = Record<Path, DisjointContext>
-
-export type DisjointContext<kind extends DisjointKind = DisjointKind> = {
-    kind: kind
-    operands: DisjointKinds[kind]
-}
 
 const equal = Symbol("equal")
 
@@ -148,7 +151,7 @@ export type KeyIntersectionFn<root extends Dict> = <key extends keyof root>(
     key: key,
     l: root[key],
     r: root[key],
-    context: IntersectionContext
+    state: IntersectionState
 ) => IntersectionResult<root[key]>
 
 export type IntersectionReducer<root extends Dict> =

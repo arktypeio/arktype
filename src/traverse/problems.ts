@@ -13,8 +13,9 @@ import { writeTupleLengthError } from "../nodes/rules/subdomain.ts"
 import type { Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { evaluate } from "../utils/generics.ts"
+import { pathToString } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { CheckState } from "./check.ts"
+import type { DataTraversalState } from "./check.ts"
 
 export type Problem = {
     path: string
@@ -55,7 +56,7 @@ export class Problems extends Array<Problem> {
         code: code,
         data: unknown,
         context: Omit<ProblemContexts[code], keyof BaseProblemContext>,
-        state: CheckState
+        state: DataTraversalState
     ) {
         const compiledContext = Object.assign(context, {
             data: new Stringifiable(data)
@@ -65,8 +66,8 @@ export class Problems extends Array<Problem> {
             typeof problemConfig === "function"
                 ? (problemConfig as ProblemMessageWriter<code>)
                 : problemConfig?.message
-        const problem = {
-            path: state.path,
+        const problem: Problem = {
+            path: pathToString(state.path),
             reason:
                 customMessageWriter?.(compiledContext) ??
                 defaultMessagesByCode[code](compiledContext)

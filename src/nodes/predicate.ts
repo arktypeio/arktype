@@ -6,15 +6,10 @@ import type { CollapsibleList, Dict, xor } from "../utils/generics.ts"
 import { collapseIfSingleton, listFrom } from "../utils/generics.ts"
 import type { Branches, BranchesComparison } from "./branches.ts"
 import { compareBranches, isBranchComparison } from "./branches.ts"
-import type {
-    IntersectionContext,
-    IntersectionResult,
-    KeyIntersectionFn
-} from "./compose.ts"
-import { equality, isEquality } from "./compose.ts"
+import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
+import { equality, IntersectionState, isEquality } from "./compose.ts"
 import { compileBranches } from "./discriminate.ts"
 import type { TraversalEntry, TypeResolution } from "./node.ts"
-import { initializeIntersectionContext } from "./node.ts"
 import type { Rules } from "./rules/rules.ts"
 import { branchIntersection, compileBranch } from "./rules/rules.ts"
 
@@ -40,7 +35,7 @@ const emptyRulesIfTrue = <predicate extends Predicate>(predicate: predicate) =>
 export const comparePredicates = (
     l: Predicate,
     r: Predicate,
-    context: IntersectionContext
+    context: IntersectionState
 ): PredicateComparison => {
     if (l === true && r === true) {
         return equality()
@@ -104,7 +99,7 @@ export const predicateUnion = (
     r: Predicate,
     $: ScopeRoot
 ) => {
-    const context = initializeIntersectionContext($)
+    const context = new IntersectionState($)
     const comparison = comparePredicates(l, r, context)
     if (!isBranchComparison(comparison)) {
         return isEquality(comparison) || comparison === l

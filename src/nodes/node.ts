@@ -9,11 +9,12 @@ import type {
     stringKeyOf
 } from "../utils/generics.ts"
 import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
-import type { IntersectionContext, Intersector } from "./compose.ts"
+import type { Intersector } from "./compose.ts"
 import {
     anonymousDisjoint,
     composeKeyedIntersection,
     disjoint,
+    IntersectionState,
     isDisjoint,
     isEquality,
     throwUndefinedOperandsError
@@ -74,17 +75,8 @@ const resolutionIntersection = composeKeyedIntersection<TypeResolution>(
     { onEmpty: "omit" }
 )
 
-export const initializeIntersectionContext = (
-    $: ScopeRoot
-): IntersectionContext => ({
-    $,
-    path: "/",
-    disjoints: {},
-    morphs: {}
-})
-
 export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
-    const context = initializeIntersectionContext($)
+    const context = new IntersectionState($)
     const result = nodeIntersection(l, r, context)
     return isDisjoint(result)
         ? throwParseError(compileDisjointReasonsMessage(context.disjoints))
