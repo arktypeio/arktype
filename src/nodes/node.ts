@@ -13,7 +13,6 @@ import type { Intersector } from "./compose.ts"
 import {
     anonymousDisjoint,
     composeKeyedIntersection,
-    disjoint,
     IntersectionState,
     isDisjoint,
     isEquality,
@@ -43,20 +42,17 @@ export type Identifier<$ = Dict> = string extends keyof $
     ? autocomplete<Keyword>
     : Keyword | stringKeyOf<$>
 
-export const nodeIntersection: Intersector<TypeNode> = (l, r, context) => {
-    const lResolution = resolveIfIdentifier(l, context.$)
-    const rResolution = resolveIfIdentifier(r, context.$)
-    const result = resolutionIntersection(lResolution, rResolution, context)
+export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
+    const lResolution = resolveIfIdentifier(l, state.$)
+    const rResolution = resolveIfIdentifier(r, state.$)
+    const result = resolutionIntersection(lResolution, rResolution, state)
     if (typeof result === "object" && !hasKeys(result)) {
-        return hasKeys(context.disjoints)
+        return hasKeys(state.disjoints)
             ? anonymousDisjoint()
-            : disjoint(
+            : state.addDisjoint(
                   "domain",
-                  [
-                      domainsOfNode(lResolution, context.$),
-                      domainsOfNode(rResolution, context.$)
-                  ],
-                  context
+                  domainsOfNode(lResolution, state.$),
+                  domainsOfNode(rResolution, state.$)
               )
     }
     return result === lResolution ? l : result === rResolution ? r : result
@@ -76,10 +72,10 @@ const resolutionIntersection = composeKeyedIntersection<TypeResolution>(
 )
 
 export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
-    const context = new IntersectionState($)
-    const result = nodeIntersection(l, r, context)
+    const state = new IntersectionState($)
+    const result = nodeIntersection(l, r, state)
     return isDisjoint(result)
-        ? throwParseError(compileDisjointReasonsMessage(context.disjoints))
+        ? throwParseError(compileDisjointReasonsMessage(state.disjoints))
         : isEquality(result)
         ? l
         : result

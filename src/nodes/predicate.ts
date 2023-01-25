@@ -74,8 +74,8 @@ export const comparePredicates = (
 
 export const predicateIntersection: KeyIntersectionFn<
     Required<TypeResolution>
-> = (domain, l, r, context) => {
-    const comparison = comparePredicates(l, r, context)
+> = (domain, l, r, state) => {
+    const comparison = comparePredicates(l, r, state)
     if (!isBranchComparison(comparison)) {
         return comparison
     }
@@ -99,8 +99,8 @@ export const predicateUnion = (
     r: Predicate,
     $: ScopeRoot
 ) => {
-    const context = new IntersectionState($)
-    const comparison = comparePredicates(l, r, context)
+    const state = new IntersectionState($)
+    const comparison = comparePredicates(l, r, state)
     if (!isBranchComparison(comparison)) {
         return isEquality(comparison) || comparison === l
             ? r

@@ -14,7 +14,6 @@ import type { Intersector } from "../compose.ts"
 import {
     composeIntersection,
     composeKeyedIntersection,
-    disjoint,
     equality,
     isDisjoint,
     isEquality
@@ -98,14 +97,14 @@ type defineRuleSet<
 const rulesOf = (branch: Branch): Rules =>
     (branch as MorphBranch).input ?? branch
 
-export const branchIntersection: Intersector<Branch> = (l, r, context) => {
+export const branchIntersection: Intersector<Branch> = (l, r, state) => {
     const lRules = rulesOf(l)
     const rRules = rulesOf(r)
-    const rulesResult = rulesIntersection(lRules, rRules, context)
+    const rulesResult = rulesIntersection(lRules, rRules, state)
     if ("morph" in l) {
         if ("morph" in r) {
             if (l.morph === r.morph) {
-                context.morphs[context.path] = "="
+                state.morphs[state.path] = "="
                 return isEquality(rulesResult) || isDisjoint(rulesResult)
                     ? rulesResult
                     : {
@@ -113,10 +112,10 @@ export const branchIntersection: Intersector<Branch> = (l, r, context) => {
                           morph: l.morph
                       }
             }
-            context.morphs[context.path] = "lr"
-            return disjoint("morph", [l.morph, r.morph], context)
+            state.morphs[state.path] = "lr"
+            return disjoint("morph", [l.morph, r.morph], state)
         }
-        context.morphs[context.path] = "l"
+        state.morphs[state.path] = "l"
         return isDisjoint(rulesResult)
             ? rulesResult
             : {
@@ -125,7 +124,7 @@ export const branchIntersection: Intersector<Branch> = (l, r, context) => {
               }
     }
     if ("morph" in r) {
-        context.morphs[context.path] = "r"
+        state.morphs[state.path] = "r"
         return isDisjoint(rulesResult)
             ? rulesResult
             : {
@@ -136,20 +135,20 @@ export const branchIntersection: Intersector<Branch> = (l, r, context) => {
     return rulesResult
 }
 
-export const rulesIntersection: Intersector<Rules> = (l, r, context) =>
+export const rulesIntersection: Intersector<Rules> = (l, r, state) =>
     "value" in l
         ? "value" in r
             ? l.value === r.value
                 ? equality()
-                : disjoint("value", [l.value, r.value], context)
-            : literalSatisfiesRules(l.value, r, context.$)
+                : state.addDisjoint("value", l.value, r.value)
+            : literalSatisfiesRules(l.value, r, state.$)
             ? l
-            : disjoint("assignability", [l.value, r], context)
+            : state.addDisjoint("leftAssignability", l, r)
         : "value" in r
-        ? literalSatisfiesRules(r.value, l, context.$)
+        ? literalSatisfiesRules(r.value, l, state.$)
             ? r
-            : disjoint("assignability", [r.value, l], context)
-        : narrowableRulesIntersection(l, r, context)
+            : state.addDisjoint("rightAssignability", l, r)
+        : narrowableRulesIntersection(l, r, state)
 
 const narrowIntersection =
     composeIntersection<CollapsibleList<Narrow>>(collapsibleListUnion)

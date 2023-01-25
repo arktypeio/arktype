@@ -146,7 +146,8 @@ const calculateDiscriminants = (
                 if (lSerialized === undefined || rSerialized === undefined) {
                     continue
                 }
-                const qualifiedDisjoint = pushKey(path, kind)
+                const qualifiedDisjoint: QualifiedDisjoint =
+                    path === "/" ? `/${kind}` : `/${path}/${kind}`
                 pairDisjoints.push(qualifiedDisjoint)
                 if (!discriminants.casesByDisjoint[qualifiedDisjoint]) {
                     discriminants.casesByDisjoint[qualifiedDisjoint] = {

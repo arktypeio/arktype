@@ -11,7 +11,6 @@ import type { Dict, List } from "../../utils/generics.ts"
 import { stringify } from "../../utils/serialize.ts"
 import {
     composeIntersection,
-    disjoint,
     equality,
     isDisjoint,
     isEquality
@@ -42,25 +41,25 @@ const isTupleRule = <rule extends List>(
     typeof rule[2] === "number"
 
 export const subdomainIntersection = composeIntersection<SubdomainRule>(
-    (l, r, context) => {
+    (l, r, state) => {
         if (typeof l === "string") {
             if (typeof r === "string") {
                 return l === r
                     ? equality()
-                    : disjoint("subdomain", [l, r], context)
+                    : state.addDisjoint("subdomain", l, r)
             }
-            return l === r[0] ? r : disjoint("subdomain", [l, r[0]], context)
+            return l === r[0] ? r : state.addDisjoint("subdomain", l, r[0])
         }
         if (typeof r === "string") {
-            return l[0] === r ? l : disjoint("subdomain", [l[0], r], context)
+            return l[0] === r ? l : state.addDisjoint("subdomain", l[0], r)
         }
         if (l[0] !== r[0]) {
-            return disjoint("subdomain", [l[0], r[0]], context)
+            return state.addDisjoint("subdomain", l[0], r[0])
         }
         const result = [l[0]] as unknown as Exclude<SubdomainRule, string>
         if (isTupleRule(l)) {
             if (isTupleRule(r) && l[2] !== r[2]) {
-                return disjoint("tupleLength", [l[2], r[2]], context)
+                return state.addDisjoint("tupleLength", l[2], r[2])
             }
             result[2] = l[2]
         } else if (isTupleRule(r)) {
@@ -72,13 +71,9 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
         for (let i = 1; i <= maxNodeIndex; i++) {
             const lNode = l[i] as TypeNode
             const rNode = r[i] as TypeNode
-            const rootPath = context.path
-            context.path = pushKey(
-                rootPath,
-                subdomainParameterToPathSegment(l[0], i)
-            )
-            const parameterResult = nodeIntersection(lNode, rNode, context)
-            context.path = rootPath
+            state.path.push(subdomainParameterToPathSegment(l[0], i))
+            const parameterResult = nodeIntersection(lNode, rNode, state)
+            state.path.pop()
             if (isEquality(parameterResult)) {
                 result[i] = lNode
             } else if (parameterResult === l) {
@@ -165,14 +160,12 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     }
     if (dataSubdomain === "Array" || dataSubdomain === "Set") {
         let i = 0
-        const rootPath = state.path
         for (const item of data as List | Set<unknown>) {
-            // TODO: add path APIs to state
-            state.path = pushKey(rootPath, `${i}`)
+            state.path.push(`${i}`)
             traverseNode(item, rule[1], state)
+            state.path.pop()
             i++
         }
-        state.path = rootPath
     } else {
         return throwInternalError(
             `Unexpected subdomain entry ${stringify(rule)}`

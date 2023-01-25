@@ -25,7 +25,7 @@ export type BranchesComparison = {
 export const compareBranches = (
     lConditions: Branches,
     rConditions: Branches,
-    context: IntersectionState
+    state: IntersectionState
 ): BranchesComparison => {
     const result: BranchesComparison = {
         lConditions,
@@ -46,7 +46,7 @@ export const compareBranches = (
                 return null
             }
             const r = rPairs.condition
-            const subresult = branchIntersection(l, r, context)
+            const subresult = branchIntersection(l, r, state)
             if (isDisjoint(subresult)) {
                 // doesn't tell us about any redundancies or add a distinct pair
                 return null
