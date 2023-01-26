@@ -35,7 +35,10 @@ const composeScopeParser = <parent>(parent?: ScopeRoot<parent>) =>
             }
             $ = new ScopeRoot(merged)
             // we can copy the parent cache because we don't allow overriding
-            $.cache = { ...parent.cache }
+            $.cache = {
+                nodes: { ...parent.cache.nodes },
+                types: { ...parent.cache.types }
+            }
         } else {
             $ = new ScopeRoot(aliases)
         }
@@ -140,16 +143,36 @@ export const tsKeywords = composeScopeParser()({
     void: ["node", { undefined: true }] as inferred<void>,
     undefined: ["node", { undefined: true }],
     // TODO: Add remaining JS object types
-    Function: { object: { subdomain: "Function" } }
+    Function: ["node", { object: { subdomain: "Function" } }]
 })
 
 export const defaultScope = tsKeywords.$.extend({
-    email: /^(.+)@(.+)\\.(.+)$/,
-    alphanumeric: /^[dA-Za-z]+$/,
-    alpha: /^[A-Za-z]+$/,
-    lowercase: /^[a-z]*$/,
-    uppercase: /^[A-Z]*$/,
-    integer: "number%1"
+    email: ["node", { string: { regex: "^(.+)@(.+)\\.(.+)$" } }],
+    alphanumeric: [
+        "node",
+        {
+            string: { regex: "^[dA-Za-z]+$" }
+        }
+    ],
+    alpha: [
+        "node",
+        {
+            string: { regex: "^[A-Za-z]+$" }
+        }
+    ],
+    lowercase: [
+        "node",
+        {
+            string: { regex: "^[a-z]*$" }
+        }
+    ],
+    uppercase: [
+        "node",
+        {
+            string: { regex: "^[A-Z]*$" }
+        }
+    ],
+    integer: ["node", { number: { divisor: 1 } }]
 })
 
 type DefaultScopeRoot = typeof defaultScope["$"]["infer"]

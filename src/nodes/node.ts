@@ -2,12 +2,7 @@ import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type {
-    autocomplete,
-    Dict,
-    mutable,
-    stringKeyOf
-} from "../utils/generics.ts"
+import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
 import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
 import type { Intersector } from "./compose.ts"
 import {
