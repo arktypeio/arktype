@@ -13,24 +13,32 @@ import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type { Domain } from "./utils/domains.ts"
 import { throwParseError } from "./utils/errors.ts"
 import type {
+    asConst,
+    conform,
     Dict,
     evaluate,
     extend,
-    mutable,
     nominal,
     stringKeyOf
 } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
-const composeScopeParser = <imports extends Scope[], exports extends Scope[]>(
-    opts?: ScopeOptions<imports, exports>
-) =>
+const composeScopeParser = <imports, exports>(opts?: {
+    imports?: asConst<imports>
+    exports?: asConst<exports>
+}) =>
     lazyDynamicWrap(
         (aliases: Dict) => new Scope(aliases, opts ?? {})
     ) as unknown as ScopeParser<mergeScopes<imports>, mergeScopes<exports>>
 
-export const composeTypeParser = <$ extends Scope<any>>($: $): TypeParser<$> =>
+const s = composeScopeParser()({ a: "'a'" })
+
+export const anotherDefault = composeScopeParser({ imports: [s] })({
+    foo: "'foo'"
+})
+
+export const composeTypeParser = <$ extends Scope>($: $): TypeParser<$> =>
     lazyDynamicWrap((def, traits = {}) => {
         const root = resolveNode(parseDefinition(def, $), $)
         const flat = compileNode(root, $)
@@ -45,9 +53,9 @@ type ScopeParser<imports, exports> = LazyDynamicWrap<
 // TODO: integrate scope imports/exports Maybe reintegrate thunks/compilation?
 // Could still be useful for narrowed defs in scope, would make types cleaner
 // for actually being able to assign scopes. test.
-export type ScopeOptions<imports extends Scope[], exports extends Scope[]> = {
-    imports?: imports
-    exports?: exports
+export type ScopeOptions<imports, exports> = {
+    imports?: { [i in keyof imports]: conform<imports[i], Scope> }
+    exports?: { [i in keyof exports]: conform<exports[i], Scope> }
 }
 
 type InferredScopeParser<imports, exports> = <aliases>(
@@ -98,7 +106,7 @@ export type Space<root = Dict> = { [k in keyof root]: Type<root[k]> }
 
 type aliasesOf<root = Dict> = { readonly [k in keyof root]: unknown }
 
-export class Scope<exports = Dict, imports = {}> {
+export class Scope<exports = any, imports = any> {
     aliases: aliasesOf<exports>
 
     cache: ScopeCache = {

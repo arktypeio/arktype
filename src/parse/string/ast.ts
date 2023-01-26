@@ -6,7 +6,7 @@ import type { subdomainOf } from "../../utils/domains.ts"
 import type {
     castOnError,
     Dict,
-    Downcastable,
+    Literalable,
     equals,
     error,
     evaluate,
@@ -251,7 +251,7 @@ export type astToString<ast, result extends string = ""> = ast extends [
     ...infer tail
 ]
     ? astToString<tail, `${result}${astToString<head>}`>
-    : ast extends Downcastable
+    : ast extends Literalable
     ? `${result}${ast extends bigint ? `${ast}n` : ast}`
     : "..."
 

@@ -1,4 +1,4 @@
-import type { downcast } from "../../../../src/utils/generics.ts"
+import type { asConst } from "../../../../src/utils/generics.ts"
 import type { snapshot } from "../../../../src/utils/serialize.ts"
 
 export type RootAssertions<

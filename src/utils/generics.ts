@@ -1,20 +1,18 @@
 import { hasDomain } from "./domains.ts"
 
-export type downcast<t> = castWithExclusion<t, downcastRecurse<t>, []>
+export type asConst<t> = castWithExclusion<t, asConstRecurse<t>, []>
 
-export const downcast = <t>(t: downcast<t>) => t
+export const asConst = <t>(t: asConst<t>) => t
 
-type downcastRecurse<t> = {
-    [k in keyof t]: t[k] extends Downcastable | []
-        ? t[k]
-        : downcastRecurse<t[k]>
+type asConstRecurse<t> = {
+    [k in keyof t]: t[k] extends Literalable | [] ? t[k] : asConstRecurse<t[k]>
 }
 
 export type castWithExclusion<t, castTo, excluded> = t extends excluded
     ? t
     : castTo
 
-export type Downcastable = string | boolean | number | bigint
+export type Literalable = string | boolean | number | bigint
 
 /**
  * Note: Similarly to downcast, trying to evaluate 'unknown'
