@@ -36,6 +36,7 @@ const composeScopeParser = <parent>(parent?: ScopeRoot<parent>) =>
             }
             $ = new ScopeRoot(merged)
             // we can copy the parent cache because we don't allow overriding
+            // TODO: do this in constructor
             $.cache = {
                 nodes: { ...parent.cache.nodes },
                 types: { ...parent.cache.types }
