@@ -53,15 +53,22 @@ export type validateTupleExpression<
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? [def[0], error<writeMissingRightOperandMessage<def[1], "">>]
-        : [validateDefinition<def[0], $>, def[1], validateDefinition<def[2], $>]
+        : conform<
+              def,
+              readonly [
+                  validateDefinition<def[0], $>,
+                  def[1],
+                  validateDefinition<def[2], $>
+              ]
+          >
     : def[1] extends "[]"
-    ? [validateDefinition<def[0], $>, "[]"]
+    ? conform<def, readonly [validateDefinition<def[0], $>, "[]"]>
     : def[0] extends "==="
-    ? ["===", def[1]]
+    ? conform<def, readonly ["===", unknown]>
     : def[0] extends "instanceof"
-    ? ["instanceof", conform<def[1], constructor>]
+    ? conform<def, readonly ["instanceof", constructor]>
     : def[0] extends "node"
-    ? ["node", conform<downcast<def[1]>, TypeNode<$>>]
+    ? conform<def, readonly ["node", TypeNode<$>]>
     : never
 
 export type inferTuple<def extends List, $> = def extends TupleExpression
@@ -136,7 +143,7 @@ export type TupleExpressionToken = PrefixToken | PostfixToken
 // TODO: Merge (maybe use  "+", should not only be tuple expression)
 type PostfixToken = "[]" | "&" | "|" | ":" | "=>"
 
-type PostfixExpression<token extends PostfixToken = PostfixToken> = [
+type PostfixExpression<token extends PostfixToken = PostfixToken> = readonly [
     unknown,
     token,
     ...unknown[]
@@ -157,7 +164,7 @@ const postfixParsers: {
 
 type PrefixToken = "instanceof" | "===" | "node"
 
-type PrefixExpression<token extends PrefixToken = PrefixToken> = [
+type PrefixExpression<token extends PrefixToken = PrefixToken> = readonly [
     token,
     ...unknown[]
 ]

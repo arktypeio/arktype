@@ -10,11 +10,12 @@ import { parseDefinition } from "./parse/definition.ts"
 import type { Type, TypeParser } from "./type.ts"
 import { nodeToType } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import type { Domain } from "./utils/domains.ts"
+import type { Domain, inferSubdomain } from "./utils/domains.ts"
 import { throwParseError } from "./utils/errors.ts"
 import type {
     Dict,
     evaluate,
+    extend,
     mutable,
     nominal,
     stringKeyOf
@@ -143,45 +144,63 @@ export const tsKeywords = composeScopeParser()({
     void: ["node", { undefined: true }] as inferred<void>,
     undefined: ["node", { undefined: true }],
     // TODO: Add remaining JS object types
-    Function: ["node", { object: { subdomain: "Function" } }]
+    Function: [
+        "node",
+        { object: { subdomain: "Function" } }
+    ] as inferred<Function>
 })
 
+const regexDefinition = (source: string) =>
+    ["node", { string: { regex: source } }] as const
+
 export const defaultScope = tsKeywords.$.extend({
-    email: ["node", { string: { regex: "^(.+)@(.+)\\.(.+)$" } }],
-    alphanumeric: [
-        "node",
-        {
-            string: { regex: "^[dA-Za-z]+$" }
-        }
-    ],
-    alpha: [
-        "node",
-        {
-            string: { regex: "^[A-Za-z]+$" }
-        }
-    ],
-    lowercase: [
-        "node",
-        {
-            string: { regex: "^[a-z]*$" }
-        }
-    ],
-    uppercase: [
-        "node",
-        {
-            string: { regex: "^[A-Z]*$" }
-        }
-    ],
+    email: regexDefinition("^(.+)@(.+)\\.(.+)$"),
+    alphanumeric: regexDefinition("^[dA-Za-z]+$"),
+    alpha: regexDefinition("^[A-Za-z]+$"),
+    lowercase: regexDefinition("^[a-z]*$"),
+    uppercase: regexDefinition("^[A-Z]*$"),
     integer: ["node", { number: { divisor: 1 } }]
 })
 
-type DefaultScopeRoot = typeof defaultScope["$"]["infer"]
+// This is just copied from the inference of defaultScope. Creating an explicit
+// type like this makes validation for the default type and scope functions feel
+// significantly more responsive.
+type PrecompiledDefaults = {
+    email: string
+    alphanumeric: string
+    alpha: string
+    lowercase: string
+    uppercase: string
+    integer: number
+    any: any
+    bigint: bigint
+    boolean: boolean
+    false: false
+    never: never
+    null: null
+    number: number
+    object: object
+    string: string
+    symbol: symbol
+    true: true
+    unknown: unknown
+    void: void
+    undefined: undefined
+    Function: Function
+}
 
-export const scope: ScopeParser<DefaultScopeRoot> = composeScopeParser(
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type ValidateDefaultScope = extend<
+    PrecompiledDefaults,
+    // if PrecompiledDefaults gets out of sync with defaultScope, there will be a type error here
+    typeof defaultScope["$"]["infer"]
+>
+
+export const scope: ScopeParser<PrecompiledDefaults> = composeScopeParser(
     defaultScope.$
 )
 
-export const type: TypeParser<DefaultScopeRoot> = composeTypeParser(
+export const type: TypeParser<PrecompiledDefaults> = composeTypeParser(
     defaultScope.$
 )
 

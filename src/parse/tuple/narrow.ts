@@ -22,7 +22,7 @@ export const parseNarrowTuple: PostfixParser<":"> = (def, scope) => {
 
 export type Narrow<data = any> = (data: data) => boolean
 
-export type validateNarrowTuple<def extends TupleExpression, $> = [
+export type validateNarrowTuple<def extends TupleExpression, $> = readonly [
     _: validateDefinition<def[0], $>,
     _: ":",
     _: distributable<Narrow<asIn<inferDefinition<def[0], $>>>>,

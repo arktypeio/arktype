@@ -53,7 +53,7 @@ const applyMorph = (branch: Branch, morph: Morph) =>
 
 export type Out<t = {}> = nominal<t, "out">
 
-export type validateMorphTuple<def extends TupleExpression, $> = [
+export type validateMorphTuple<def extends TupleExpression, $> = readonly [
     _: validateDefinition<def[0], $>,
     _: "=>",
     _: Morph<

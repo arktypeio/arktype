@@ -131,17 +131,4 @@ describe("narrow", () => {
         attest(workaround.b.infer).typed as { a: 1 }
         attest(workaround.c.infer).typed as string
     })
-    // TODO: try to fix or create issue
-    it("directly nested morph", () => {
-        type([
-            {
-                // @ts-expect-error
-                a: ["string", "=>", (s: string) => s.length, "number"] as const
-            },
-            "=>",
-            // @ts-expect-error
-            ({ a }) => a === 0,
-            "boolean"
-        ])
-    })
 })

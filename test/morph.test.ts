@@ -144,6 +144,24 @@ describe("morph", () => {
             object: { input: { props: { a: "a" } }, morph: "(function)" }
         })
     })
+    it("directly nested", () => {
+        const t = type([
+            {
+                a: ["string", "=>", (s: string) => s.length]
+            },
+            "=>",
+            ({ a }) => a === 0
+        ])
+        attest(t).typed as Type<(In: { a: string }) => Out<boolean>>
+        attest(t.node).snap({
+            object: {
+                input: {
+                    props: { a: { string: { input: {}, morph: "(function)" } } }
+                },
+                morph: "(function)"
+            }
+        })
+    })
     it("discriminatable tuple union", () => {
         const types = scope({
             a: [["string"], "=>", (s) => [...s, "!"], "string[]"],
