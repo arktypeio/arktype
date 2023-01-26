@@ -1,6 +1,6 @@
 import { parseDefinition } from "../parse/definition.ts"
 import { fullStringParse, maybeNaiveParse } from "../parse/string/string.ts"
-import type { ScopeRoot } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import type { Type } from "../type.ts"
 import { nodeToType } from "../type.ts"
 import type { Domain } from "../utils/domains.ts"
@@ -13,13 +13,13 @@ import { compileNode } from "./node.ts"
 import type { Predicate } from "./predicate.ts"
 import type { LiteralRules } from "./rules/rules.ts"
 
-export const resolveNode = (node: TypeNode, $: ScopeRoot): TypeResolution =>
+export const resolveNode = (node: TypeNode, $: Scope): TypeResolution =>
     typeof node === "string" ? resolve(node, $).node : node
 
 export const isLiteralNode = <domain extends Domain>(
     node: TypeNode,
     domain: domain,
-    $: ScopeRoot
+    $: Scope
 ): node is { [_ in domain]: LiteralRules<domain> } => {
     const resolution = resolveNode(node, $)
     return (
@@ -33,7 +33,7 @@ export const isLiteralCondition = (
 ): predicate is LiteralRules =>
     typeof predicate === "object" && "value" in predicate
 
-export const domainsOfNode = (node: TypeNode, $: ScopeRoot): Domain[] =>
+export const domainsOfNode = (node: TypeNode, $: Scope): Domain[] =>
     keysOf(resolveNode(node, $))
 
 export type DomainSubtypeNode<domain extends Domain> = {
@@ -43,22 +43,22 @@ export type DomainSubtypeNode<domain extends Domain> = {
 export const nodeExtendsDomain = <domain extends Domain>(
     node: TypeNode,
     domain: domain,
-    $: ScopeRoot
+    $: Scope
 ): node is DomainSubtypeNode<domain> => {
     const nodeDomains = domainsOfNode(node, $)
     return nodeDomains.length === 1 && nodeDomains[0] === domain
 }
 
 // TODO: Move to parse
-export const isResolvable = (name: string, $: ScopeRoot) => {
+export const isResolvable = (name: string, $: Scope) => {
     return $.aliases[name] ? true : false
 }
 
-export const resolve = (name: string, $: ScopeRoot) => {
+export const resolve = (name: string, $: Scope) => {
     return resolveRecurse(name, [], $)
 }
 
-const resolveRecurse = (name: string, seen: string[], $: ScopeRoot): Type => {
+const resolveRecurse = (name: string, seen: string[], $: Scope): Type => {
     if (hasKey($.cache.types, name)) {
         return $.cache.types[name]
     }
@@ -83,7 +83,7 @@ const resolveRecurse = (name: string, seen: string[], $: ScopeRoot): Type => {
     return type
 }
 
-export const memoizedParse = (def: string, $: ScopeRoot): TypeNode => {
+export const memoizedParse = (def: string, $: Scope): TypeNode => {
     if (hasKey($.cache.nodes, def)) {
         return $.cache.nodes[def]
     }

@@ -1,5 +1,5 @@
 import type { Morph } from "../parse/tuple/morph.ts"
-import type { ScopeRoot } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
 import type { CollapsibleList, Dict, xor } from "../utils/generics.ts"
@@ -100,7 +100,7 @@ export const predicateUnion = (
     domain: Domain,
     l: Predicate,
     r: Predicate,
-    $: ScopeRoot
+    $: Scope
 ) => {
     const state = new IntersectionState($)
     const comparison = comparePredicates(l, r, state)
@@ -136,7 +136,7 @@ export const predicateUnion = (
 
 export const compilePredicate = (
     predicate: Predicate,
-    $: ScopeRoot
+    $: Scope
 ): TraversalEntry[] => {
     if (predicate === true) {
         return []

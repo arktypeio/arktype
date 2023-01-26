@@ -1,5 +1,5 @@
 import type { TypeNode } from "../nodes/node.ts"
-import type { ScopeRoot } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import type { Type } from "../type.ts"
 import { isType } from "../type.ts"
 import type { Primitive, Subdomain } from "../utils/domains.ts"
@@ -23,7 +23,7 @@ import type {
 } from "./tuple/tuple.ts"
 import { parseTuple } from "./tuple/tuple.ts"
 
-export const parseDefinition = (def: unknown, $: ScopeRoot): TypeNode => {
+export const parseDefinition = (def: unknown, $: Scope): TypeNode => {
     const subdomain = subdomainOf(def)
     return subdomain === "string"
         ? parseString(def as string, $)

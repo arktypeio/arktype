@@ -1,7 +1,7 @@
 import type { TypeNode } from "../../nodes/node.ts"
 import { domainsOfNode } from "../../nodes/resolve.ts"
 import type { NarrowableRules } from "../../nodes/rules/rules.ts"
-import type { ScopeRoot } from "../../scope.ts"
+import type { Scope } from "../../scope.ts"
 import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
@@ -49,7 +49,7 @@ export const distributeFunctionToNode = <
 >(
     distributableFunction: distributable<f>,
     inputNode: TypeNode,
-    $: ScopeRoot,
+    $: Scope,
     ruleKey: ruleKey
 ): DistributedFunctionNode<f, ruleKey> => {
     const domains = domainsOfNode(inputNode, $)

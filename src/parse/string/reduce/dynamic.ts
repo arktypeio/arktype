@@ -2,7 +2,7 @@ import { functors } from "../../../nodes/functors.ts"
 import type { TypeNode } from "../../../nodes/node.ts"
 import { intersection, union } from "../../../nodes/node.ts"
 import { isLiteralNode } from "../../../nodes/resolve.ts"
-import type { ScopeRoot } from "../../../scope.ts"
+import type { Scope } from "../../../scope.ts"
 import { throwInternalError, throwParseError } from "../../../utils/errors.ts"
 import { isKeyOf } from "../../../utils/generics.ts"
 import { Scanner } from "../shift/scanner.ts"
@@ -27,7 +27,7 @@ export class DynamicState {
     private branches: BranchState = {}
     private groups: BranchState[] = []
 
-    constructor(def: string, public readonly $: ScopeRoot) {
+    constructor(def: string, public readonly $: Scope) {
         this.scanner = new Scanner(def)
     }
 

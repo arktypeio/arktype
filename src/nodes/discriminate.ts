@@ -1,5 +1,5 @@
 import { undiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
-import type { ScopeRoot } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
@@ -24,7 +24,7 @@ export type DiscriminatedCases = {
     [caseKey in string]?: TraversalEntry[]
 }
 
-export const compileBranches = (branches: Branches, $: ScopeRoot) => {
+export const compileBranches = (branches: Branches, $: Scope) => {
     const discriminants = calculateDiscriminants(branches, $)
     return discriminate(
         branches,
@@ -46,7 +46,7 @@ const discriminate = (
     originalBranches: Branches,
     remainingIndices: number[],
     discriminants: Discriminants,
-    $: ScopeRoot
+    $: Scope
 ): TraversalEntry[] => {
     if (remainingIndices.length === 1) {
         return compileBranch(originalBranches[remainingIndices[0]], $)
@@ -115,7 +115,7 @@ export type DiscriminantKind = keyof DiscriminantKinds
 
 const calculateDiscriminants = (
     branches: Branches,
-    $: ScopeRoot
+    $: Scope
 ): Discriminants => {
     const discriminants: Discriminants = {
         disjointsByPair: {},

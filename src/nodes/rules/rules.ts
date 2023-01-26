@@ -1,6 +1,6 @@
 import type { Morph } from "../../parse/tuple/morph.ts"
 import type { Narrow } from "../../parse/tuple/narrow.ts"
-import type { ScopeRoot } from "../../scope.ts"
+import type { Scope } from "../../scope.ts"
 import { traverse } from "../../traverse/check.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type {
@@ -170,7 +170,7 @@ export const narrowableRulesIntersection =
 export type FlattenAndPushRule<t> = (
     entries: BranchEntry[],
     rule: t,
-    $: ScopeRoot
+    $: Scope
 ) => void
 
 type UnknownRules = NarrowableRules & Partial<LiteralRules>
@@ -229,7 +229,7 @@ export const precedenceMap: {
     morph: 4
 }
 
-export const compileBranch = (branch: Branch, $: ScopeRoot): BranchEntry[] => {
+export const compileBranch = (branch: Branch, $: Scope): BranchEntry[] => {
     if ("morph" in branch) {
         const result = compileRules(branch.input, $)
         for (const morph of listFrom(branch.morph)) {
@@ -240,7 +240,7 @@ export const compileBranch = (branch: Branch, $: ScopeRoot): BranchEntry[] => {
     return compileRules(branch, $)
 }
 
-const compileRules = (rules: UnknownRules, $: ScopeRoot): BranchEntry[] => {
+const compileRules = (rules: UnknownRules, $: Scope): BranchEntry[] => {
     const entries: BranchEntry[] = []
     let k: keyof UnknownRules
     for (k in rules) {
@@ -252,5 +252,5 @@ const compileRules = (rules: UnknownRules, $: ScopeRoot): BranchEntry[] => {
 export const literalSatisfiesRules = (
     data: unknown,
     rules: NarrowableRules,
-    $: ScopeRoot
+    $: Scope
 ) => "data" in traverse(data, compileRules(rules, $), $, {})

@@ -1,5 +1,5 @@
 import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
-import type { ScopeRoot } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
@@ -23,6 +23,7 @@ import {
 import { domainsOfNode, resolve, resolveNode } from "./resolve.ts"
 import type { BranchEntry } from "./rules/rules.ts"
 
+// TODO: should Type be allowed as a node? would allow configs etc. during traversal
 export type TypeNode<$ = Dict> = Identifier<$> | TypeResolution<$>
 
 /** If scope is provided, we also narrow each predicate to match its domain.
@@ -77,7 +78,7 @@ type IntersectionResult<
 export const intersection = <l extends TypeNode, r extends TypeNode>(
     l: l,
     r: r,
-    $: ScopeRoot
+    $: Scope
 ) => {
     const state = new IntersectionState($)
     const result = nodeIntersection(l, r, state)
@@ -90,11 +91,7 @@ export const intersection = <l extends TypeNode, r extends TypeNode>(
     ) as IntersectionResult<l, r>
 }
 
-export const union = (
-    l: TypeNode,
-    r: TypeNode,
-    $: ScopeRoot
-): TypeResolution => {
+export const union = (l: TypeNode, r: TypeNode, $: Scope): TypeResolution => {
     const lResolution = resolveNode(l, $)
     const rResolution = resolveNode(r, $)
     const result = {} as mutable<TypeResolution>
@@ -147,7 +144,7 @@ export type BranchesEntry = ["branches", TraversalEntry[][]]
 
 export type SwitchEntry = ["switch", DiscriminatedSwitch]
 
-export const compileNode = (node: TypeNode, $: ScopeRoot): TraversalNode => {
+export const compileNode = (node: TypeNode, $: Scope): TraversalNode => {
     if (typeof node === "string") {
         return resolve(node, $).flat
     }
@@ -178,7 +175,7 @@ export type CompiledScopeNodes<nodes extends ScopeNodes> = {
 
 export const compileNodes = <nodes extends ScopeNodes>(
     nodes: nodes,
-    $: ScopeRoot
+    $: Scope
 ): CompiledScopeNodes<nodes> => {
     const result = {} as mutable<CompiledScopeNodes<nodes>>
     for (const name in nodes) {

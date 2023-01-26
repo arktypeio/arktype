@@ -2,7 +2,7 @@ import type { TraversalNode, TypeResolution } from "./nodes/node.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import { t } from "./parse/definition.ts"
 import type { ParsedMorph } from "./parse/tuple/morph.ts"
-import type { ScopeRoot } from "./scope.ts"
+import type { Scope } from "./scope.ts"
 import type { ProblemsOptions } from "./traverse/check.ts"
 import { traverse } from "./traverse/check.ts"
 import type { Problems } from "./traverse/problems.ts"
@@ -13,7 +13,7 @@ import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 export const nodeToType = (
     node: TypeResolution,
     flat: TraversalNode,
-    $: ScopeRoot,
+    $: Scope,
     config: TypeOptions
 ) =>
     Object.assign(

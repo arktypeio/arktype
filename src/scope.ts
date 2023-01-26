@@ -8,7 +8,7 @@ import type {
 } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
 import type { Type, TypeParser } from "./type.ts"
-import { nodeToType } from "./type.ts"
+import { isType, nodeToType } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type { Domain } from "./utils/domains.ts"
 import { throwParseError } from "./utils/errors.ts"
@@ -23,38 +23,12 @@ import type {
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
-const composeScopeParser = <parent>(parent?: ScopeRoot<parent>) =>
-    lazyDynamicWrap((aliases: Dict) => {
-        let $
-        if (parent) {
-            const merged: Record<string, unknown> = { ...parent.aliases }
-            for (const name in aliases) {
-                if (name in parent.aliases) {
-                    throwParseError(writeDuplicateAliasMessage(name))
-                }
-                merged[name] = aliases[name]
-            }
-            $ = new ScopeRoot(merged)
-            // we can copy the parent cache because we don't allow overriding
-            // TODO: do this in constructor
-            $.cache = {
-                nodes: { ...parent.cache.nodes },
-                types: { ...parent.cache.types }
-            }
-        } else {
-            $ = new ScopeRoot(aliases)
-        }
-        const types = {} as mutable<Scope>
-        for (const name in $.aliases) {
-            types[name] ??= $.type.dynamic($.aliases[name])
-        }
-        types.$ = $ as any
-        return types
-    }) as unknown as ScopeParser<unknown extends parent ? {} : parent>
+const composeScopeParser = <opts extends ScopeOptions>(opts?: opts) =>
+    lazyDynamicWrap(
+        (aliases: Dict) => new Scope(aliases, opts ?? {})
+    ) as unknown as ScopeParser<ScopeOptions extends opts ? {} : opts>
 
-export const composeTypeParser = <$ extends ScopeRoot<any>>(
-    $: $
-): TypeParser<$> =>
+export const composeTypeParser = <$ extends Scope<any>>($: $): TypeParser<$> =>
     lazyDynamicWrap((def, traits = {}) => {
         const root = resolveNode(parseDefinition(def, $), $)
         const flat = compileNode(root, $)
@@ -77,7 +51,7 @@ export type ScopeOptions = {
 type InferredScopeParser<parent> = <aliases>(
     aliases: validateScope<aliases, parent>,
     opts?: ScopeOptions
-) => Scope<inferScope<aliases, parent>>
+) => Space<inferScope<aliases, parent>>
 
 type validateScope<aliases, parent> = {
     [name in keyof aliases]: name extends stringKeyOf<parent>
@@ -96,19 +70,16 @@ type inferScope<aliases, parent> = evaluate<
 
 type DynamicScopeParser<parent> = <aliases extends Dict>(
     aliases: aliases
-) => Scope<Dict<stringKeyOf<parent> | stringKeyOf<aliases>>>
+) => Space<Dict<stringKeyOf<parent> | stringKeyOf<aliases>>>
 
 type ScopeCache = {
     nodes: { [def in string]?: TypeNode }
     types: { [name in string]?: Type }
 }
 
-// TODO: change names to Space/Scope?
-export type Scope<root = Dict> = { [k in keyof root]: Type<root[k]> } & {
-    $: ScopeRoot<root>
-}
+export type Space<root = Dict> = { [k in keyof root]: Type<root[k]> }
 
-export class ScopeRoot<root = Dict> {
+export class Scope<root = Dict> {
     cache: ScopeCache = {
         nodes: {},
         types: {}
@@ -117,13 +88,71 @@ export class ScopeRoot<root = Dict> {
     type: TypeParser<root>
     extend: ScopeParser<root>
 
-    constructor(public aliases: { readonly [k in keyof root]: unknown }) {
+    constructor(
+        aliases: { readonly [k in keyof root]: unknown },
+        public config: ScopeOptions
+    ) {
+        if (config.exports) {
+            const parent = config.exports[0]
+            const merged: Record<string, unknown> = {
+                ...parent.aliases
+            }
+            for (const name in aliases) {
+                if (name in parent.aliases) {
+                    throwParseError(writeDuplicateAliasMessage(name))
+                }
+                merged[name] = aliases[name]
+            }
+            $ = new Scope(merged)
+        }
         this.type = composeTypeParser(this as any)
         this.extend = composeScopeParser(this as any) as ScopeParser<root>
     }
 
     get infer(): root {
         return chainableNoOpProxy
+    }
+
+    compile() {
+        const types = {} as Space
+        for (const name in this.aliases) {
+            const def = this.aliases[name]
+            types[name] ??=
+                typeof def === "function"
+                    ? isType(def)
+                        ? def
+                        : def()
+                    : this.type.dynamic(this.aliases[name])
+        }
+        return types as Space<root>
+    }
+
+    oldCompile() {
+        let $
+        if (opts?.exports) {
+            const merged: Record<string, unknown> = { ...parent.aliases }
+            for (const name in aliases) {
+                if (name in parent.aliases) {
+                    throwParseError(writeDuplicateAliasMessage(name))
+                }
+                merged[name] = aliases[name]
+            }
+            $ = new Scope(merged)
+            // we can copy the parent cache because we don't allow overriding
+            // TODO: do this in constructor
+            $.cache = {
+                nodes: { ...parent.cache.nodes },
+                types: { ...parent.cache.types }
+            }
+        } else {
+            $ = new Scope(aliases)
+        }
+        const types = {} as mutable<Space>
+        for (const name in $.aliases) {
+            types[name] ??= $.type.dynamic($.aliases[name])
+        }
+        types.$ = $ as any
+        return types
     }
 }
 

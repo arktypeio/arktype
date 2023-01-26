@@ -13,7 +13,7 @@ import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
 import { checkSubdomain } from "../nodes/rules/subdomain.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
-import type { ScopeRoot } from "../scope.ts"
+import type { Scope } from "../scope.ts"
 import type { Result, TypeOptions } from "../type.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { Dict, extend, List } from "../utils/generics.ts"
@@ -25,7 +25,7 @@ import { Problems, Stringifiable } from "./problems.ts"
 export class TraversalState {
     path: Path
 
-    constructor(public $: ScopeRoot, public config: TypeOptions) {
+    constructor(public $: Scope, public config: TypeOptions) {
         this.path = new Path()
     }
 }
@@ -33,7 +33,7 @@ export class TraversalState {
 export class DataTraversalState extends TraversalState {
     problems: Problems
 
-    constructor($: ScopeRoot, config: TypeOptions) {
+    constructor($: Scope, config: TypeOptions) {
         super($, config)
         this.problems = new Problems()
     }
@@ -52,7 +52,7 @@ export type BaseProblemOptions<code extends ProblemCode> =
 export const traverse = (
     data: unknown,
     node: TraversalNode,
-    $: ScopeRoot,
+    $: Scope,
     config: TypeOptions
 ): Result<unknown> => {
     const state = new DataTraversalState($, config)

@@ -2,7 +2,7 @@ import { functors } from "../../nodes/functors.ts"
 import type { inferNode } from "../../nodes/infer.ts"
 import type { TypeNode, TypeResolution } from "../../nodes/node.ts"
 import { intersection, union } from "../../nodes/node.ts"
-import type { ScopeRoot } from "../../scope.ts"
+import type { Scope } from "../../scope.ts"
 import type { asIn, asOut } from "../../type.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
@@ -23,7 +23,7 @@ import { parseMorphTuple } from "./morph.ts"
 import type { validateNarrowTuple } from "./narrow.ts"
 import { parseNarrowTuple } from "./narrow.ts"
 
-export const parseTuple = (def: List, $: ScopeRoot): TypeNode => {
+export const parseTuple = (def: List, $: Scope): TypeNode => {
     if (isPostfixExpression(def)) {
         return postfixParsers[def[1]](def as never, $)
     }
@@ -120,12 +120,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
 
 export type PostfixParser<token extends PostfixToken> = (
     def: PostfixExpression<token>,
-    $: ScopeRoot
+    $: Scope
 ) => TypeNode
 
 export type PrefixParser<token extends PrefixToken> = (
     def: PrefixExpression<token>,
-    $: ScopeRoot
+    $: Scope
 ) => TypeNode
 
 export type TupleExpression = PrefixExpression | PostfixExpression
