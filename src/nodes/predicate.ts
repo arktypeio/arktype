@@ -2,7 +2,7 @@ import type { Morph } from "../parse/tuple/morph.ts"
 import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
-import type { CollapsibleList, Dict, xor } from "../utils/generics.ts"
+import type { CollapsibleList, Dict, equals, xor } from "../utils/generics.ts"
 import { collapseIfSingleton, listFrom } from "../utils/generics.ts"
 import type { Branches, BranchesComparison } from "./branches.ts"
 import { compareBranches, isBranchComparison } from "./branches.ts"
@@ -13,7 +13,10 @@ import type { TraversalEntry, TypeResolution } from "./node.ts"
 import type { Rules } from "./rules/rules.ts"
 import { branchIntersection, compileBranch } from "./rules/rules.ts"
 
-export type Predicate<domain extends Domain = Domain, $ = Dict> = Dict extends $
+export type Predicate<
+    domain extends Domain = Domain,
+    $ = Dict
+> = string extends keyof $
     ? true | CollapsibleList<Branch>
     : true | CollapsibleList<Branch<domain, $>>
 

@@ -2,6 +2,8 @@ import { hasDomain } from "./domains.ts"
 
 export type downcast<t> = castWithExclusion<t, downcastRecurse<t>, []>
 
+export const downcast = <t>(t: downcast<t>) => t
+
 type downcastRecurse<t> = {
     [k in keyof t]: t[k] extends Downcastable | []
         ? t[k]
@@ -135,6 +137,7 @@ export type deepImmutable<o> = [o] extends [object]
       }
     : o
 
+/** Check for type equality without breaking TS for this repo. Fails on some types like Dict/{} */
 export type equals<t, u> = identity<t> extends identity<u> ? true : false
 
 declare const id: unique symbol
@@ -147,7 +150,7 @@ export type assertEqual<t, u> = equals<t, u> extends true
     ? t
     : error<`types were not equivalent`>
 
-export type identity<t> = (_: t) => t
+export type identity<in out t> = (_: t) => t
 
 export type extend<t, u extends t> = u
 
@@ -235,8 +238,16 @@ export type List<t = unknown> = readonly t[]
 
 export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
 
+export type HomogenousTuple<
+    item,
+    length extends number,
+    result extends item[] = []
+> = result["length"] extends length
+    ? result
+    : HomogenousTuple<item, length, [...result, item]>
+
 export const listFrom = <t>(data: t) =>
-    (Array.isArray(data) ? data : [data]) as t extends List ? t : [t]
+    (Array.isArray(data) ? data : [data]) as t extends List ? t : readonly t[]
 
 export type CollapsibleList<t> = t | readonly t[]
 

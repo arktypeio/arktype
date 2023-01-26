@@ -230,7 +230,7 @@ type isBoundable<data> = isAny<data> extends true
     ? true
     : false
 
-type inferTerminal<token, $> = token extends Keyword
+export type inferTerminal<token, $> = token extends Keyword
     ? Keywords[token]
     : token extends keyof $
     ? $[token] extends BootstrapScope<infer def>

@@ -215,6 +215,16 @@ describe("morph", () => {
             })
         }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
     })
+    it("deep undiscriminated reference", () => {
+        attest(() => {
+            scope({
+                a: { a: ["string", "=>", (s) => s.trim()] },
+                b: { b: "boolean" },
+                // @ts-expect-error
+                c: "a|b"
+            })
+        }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
+    })
     it("array double intersection", () => {
         attest(() => {
             scope({

@@ -1,3 +1,4 @@
+import type { inferNode } from "../../nodes/infer.ts"
 import { functorKeywords } from "../../nodes/keywords.ts"
 import type { TypeNode } from "../../nodes/node.ts"
 import { intersection, union } from "../../nodes/node.ts"
@@ -8,6 +9,7 @@ import { throwParseError } from "../../utils/errors.ts"
 import type {
     conform,
     constructor,
+    downcast,
     error,
     List,
     returnOf
@@ -58,6 +60,8 @@ export type validateTupleExpression<
     ? ["===", def[1]]
     : def[0] extends "instanceof"
     ? ["instanceof", conform<def[1], constructor>]
+    : def[0] extends "node"
+    ? ["node", conform<downcast<def[1]>, TypeNode<$>>]
     : never
 
 export type inferTuple<def extends List, $> = def extends TupleExpression
@@ -89,6 +93,10 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
     : def[0] extends "instanceof"
     ? def[1] extends constructor<infer t>
         ? t
+        : never
+    : def[0] extends "node"
+    ? def[1] extends TypeNode<$>
+        ? inferNode<def[1], $>
         : never
     : never
 
@@ -147,7 +155,7 @@ const postfixParsers: {
     "=>": parseMorphTuple
 }
 
-type PrefixToken = "instanceof" | "==="
+type PrefixToken = "instanceof" | "===" | "node"
 
 type PrefixExpression<token extends PrefixToken = PrefixToken> = [
     token,
@@ -165,7 +173,8 @@ const prefixParsers: {
         }
         return { object: { class: def[1] as constructor } }
     },
-    "===": (def) => ({ [domainOf(def[1])]: { value: def[1] } })
+    "===": (def) => ({ [domainOf(def[1])]: { value: def[1] } }),
+    node: (def) => def[1] as TypeNode
 }
 
 const isPrefixExpression = (def: List): def is PrefixExpression =>

@@ -7,7 +7,7 @@ import type {
 import type { Subdomain } from "../../utils/domains.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
-import type { Dict, List } from "../../utils/generics.ts"
+import type { Dict, List, mutable } from "../../utils/generics.ts"
 import { stringify } from "../../utils/serialize.ts"
 import {
     composeIntersection,
@@ -23,17 +23,17 @@ import type { FlattenAndPushRule } from "./rules.ts"
 // nonsense TS circular reference issues.
 export type SubdomainRule<$ = Dict> =
     | Subdomain
-    | ["Array", TypeNode<$>]
-    | ["Array", TypeNode<$>, number]
-    | ["Set", TypeNode<$>]
-    | ["Map", TypeNode<$>, TypeNode<$>]
+    | readonly ["Array", TypeNode<$>]
+    | readonly ["Array", TypeNode<$>, number]
+    | readonly ["Set", TypeNode<$>]
+    | readonly ["Map", TypeNode<$>, TypeNode<$>]
 
 export type TraversalSubdomainRule =
     | Subdomain
-    | ["Array", TraversalNode]
-    | ["Array", TraversalNode, number]
-    | ["Set", TraversalNode]
-    | ["Map", TraversalNode, TraversalNode]
+    | readonly ["Array", TraversalNode]
+    | readonly ["Array", TraversalNode, number]
+    | readonly ["Set", TraversalNode]
+    | readonly ["Map", TraversalNode, TraversalNode]
 
 const isTupleRule = <rule extends List>(
     rule: rule
@@ -56,7 +56,9 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
         if (l[0] !== r[0]) {
             return state.addDisjoint("subdomain", l[0], r[0])
         }
-        const result = [l[0]] as unknown as Exclude<SubdomainRule, string>
+        const result = [l[0]] as unknown as mutable<
+            Exclude<SubdomainRule, string>
+        >
         if (isTupleRule(l)) {
             if (isTupleRule(r) && l[2] !== r[2]) {
                 return state.addDisjoint("tupleLength", l[2], r[2])
@@ -206,5 +208,5 @@ export const compileSubdomain: FlattenAndPushRule<SubdomainRule> = (
                                 : compileNode(rule[2], $)
                         ]
                       : [])
-              ] as TraversalSubdomainRule)
+              ] as any)
     ])
