@@ -20,7 +20,7 @@ import {
     predicateIntersection,
     predicateUnion
 } from "./predicate.ts"
-import { domainsOfNode, resolve, resolveIfIdentifier } from "./resolve.ts"
+import { domainsOfNode, resolve, resolveNode } from "./resolve.ts"
 import type { BranchEntry } from "./rules/rules.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | TypeResolution<$>
@@ -35,8 +35,8 @@ export type TypeResolution<$ = Dict> = {
 export type Identifier<$ = Dict> = stringKeyOf<$>
 
 export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
-    const lResolution = resolveIfIdentifier(l, state.$)
-    const rResolution = resolveIfIdentifier(r, state.$)
+    const lResolution = resolveNode(l, state.$)
+    const rResolution = resolveNode(r, state.$)
     const result = resolutionIntersection(lResolution, rResolution, state)
     if (typeof result === "object" && !hasKeys(result)) {
         return hasKeys(state.disjoints)
@@ -95,8 +95,8 @@ export const union = (
     r: TypeNode,
     $: ScopeRoot
 ): TypeResolution => {
-    const lResolution = resolveIfIdentifier(l, $)
-    const rResolution = resolveIfIdentifier(r, $)
+    const lResolution = resolveNode(l, $)
+    const rResolution = resolveNode(r, $)
     const result = {} as mutable<TypeResolution>
     const domains = keysOf({ ...lResolution, ...rResolution })
     for (const domain of domains) {

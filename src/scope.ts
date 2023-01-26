@@ -1,6 +1,6 @@
 import type { TypeNode } from "./nodes/node.ts"
 import { compileNode } from "./nodes/node.ts"
-import { resolveIfIdentifier } from "./nodes/resolve.ts"
+import { resolveNode } from "./nodes/resolve.ts"
 import type {
     inferDefinition,
     inferred,
@@ -56,7 +56,7 @@ export const composeTypeParser = <$ extends ScopeRoot<any>>(
     $: $
 ): TypeParser<$> =>
     lazyDynamicWrap((def, traits = {}) => {
-        const root = resolveIfIdentifier(parseDefinition(def, $), $)
+        const root = resolveNode(parseDefinition(def, $), $)
         const flat = compileNode(root, $)
         return nodeToType(root, flat, $, traits)
     })
@@ -66,8 +66,17 @@ type ScopeParser<parent> = LazyDynamicWrap<
     DynamicScopeParser<parent>
 >
 
+// TODO: integrate scope imports/exports Maybe reintegrate thunks/compilation?
+// Could still be useful for narrowed defs in scope, would make types cleaner
+// for actually being able to assign scopes. test.
+export type ScopeOptions = {
+    imports?: Scope[]
+    exports?: Scope[]
+}
+
 type InferredScopeParser<parent> = <aliases>(
-    aliases: validateScope<aliases, parent>
+    aliases: validateScope<aliases, parent>,
+    opts?: ScopeOptions
 ) => Scope<inferScope<aliases, parent>>
 
 type validateScope<aliases, parent> = {

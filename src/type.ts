@@ -59,6 +59,7 @@ export type Result<t> = xor<
 
 export type Checker<t> = (data: unknown) => Result<t>
 
+// TODO: add methods like .intersect, etc.
 export type TypeRoot<t = unknown> = {
     [t]: t
     infer: asOut<t>

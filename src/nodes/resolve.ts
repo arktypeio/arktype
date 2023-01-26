@@ -13,17 +13,15 @@ import { compileNode } from "./node.ts"
 import type { Predicate } from "./predicate.ts"
 import type { LiteralRules } from "./rules/rules.ts"
 
-export const resolveIfIdentifier = (
-    node: TypeNode,
-    $: ScopeRoot
-): TypeResolution => (typeof node === "string" ? resolve(node, $).node : node)
+export const resolveNode = (node: TypeNode, $: ScopeRoot): TypeResolution =>
+    typeof node === "string" ? resolve(node, $).node : node
 
 export const isLiteralNode = <domain extends Domain>(
     node: TypeNode,
     domain: domain,
     $: ScopeRoot
 ): node is { [_ in domain]: LiteralRules<domain> } => {
-    const resolution = resolveIfIdentifier(node, $)
+    const resolution = resolveNode(node, $)
     return (
         nodeExtendsDomain(resolution, domain, $) &&
         isLiteralCondition(resolution[domain])
@@ -36,7 +34,7 @@ export const isLiteralCondition = (
     typeof predicate === "object" && "value" in predicate
 
 export const domainsOfNode = (node: TypeNode, $: ScopeRoot): Domain[] =>
-    keysOf(resolveIfIdentifier(node, $))
+    keysOf(resolveNode(node, $))
 
 export type DomainSubtypeNode<domain extends Domain> = {
     readonly [k in domain]: defined<TypeResolution[domain]>
