@@ -1,13 +1,14 @@
 import { parseDefinition } from "../parse/definition.ts"
 import { fullStringParse, maybeNaiveParse } from "../parse/string/string.ts"
 import type { ScopeRoot } from "../scope.ts"
+import type { Type } from "../type.ts"
 import { nodeToType } from "../type.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import { deepFreeze } from "../utils/freeze.ts"
 import type { defined } from "../utils/generics.ts"
-import { isKeyOf, keysOf } from "../utils/generics.ts"
-import type { TraversalNode, TypeNode, TypeResolution } from "./node.ts"
+import { hasKey, keysOf } from "../utils/generics.ts"
+import type { TypeNode, TypeResolution } from "./node.ts"
 import { compileNode } from "./node.ts"
 import type { Predicate } from "./predicate.ts"
 import type { LiteralRules } from "./rules/rules.ts"
@@ -15,8 +16,7 @@ import type { LiteralRules } from "./rules/rules.ts"
 export const resolveIfIdentifier = (
     node: TypeNode,
     $: ScopeRoot
-): TypeResolution =>
-    typeof node === "string" ? (resolve(node, $) as TypeResolution) : node
+): TypeResolution => (typeof node === "string" ? resolve(node, $).node : node)
 
 export const isLiteralNode = <domain extends Domain>(
     node: TypeNode,
@@ -60,47 +60,38 @@ export const resolve = (name: string, $: ScopeRoot) => {
     return resolveRecurse(name, [], $)
 }
 
-export const resolveFlat = (name: string, $: ScopeRoot): TraversalNode => {
-    resolveRecurse(name, [], $)
-    return $.cache.types[name].flat
-}
-
-// TODO: change return to Type?
-const resolveRecurse = (
-    name: string,
-    seen: string[],
-    $: ScopeRoot
-): TypeResolution => {
-    if (isKeyOf(name, $.cache.types)) {
-        return $.cache.types[name].node
+const resolveRecurse = (name: string, seen: string[], $: ScopeRoot): Type => {
+    if (hasKey($.cache.types, name)) {
+        return $.cache.types[name]
     }
     if (!$.aliases[name]) {
         return throwInternalError(
             `Unexpectedly failed to resolve alias '${name}'`
         )
     }
-    let root = parseDefinition($.aliases[name], $)
-    if (typeof root === "string") {
-        if (seen.includes(root)) {
+    // TODO: Check shallow cycle errors
+    let resolution = parseDefinition($.aliases[name], $)
+    if (typeof resolution === "string") {
+        if (seen.includes(resolution)) {
             return throwParseError(writeShallowCycleErrorMessage(name, seen))
         }
-        seen.push(root)
-        root = resolveRecurse(root, seen, $)
+        seen.push(resolution)
+        resolution = resolveRecurse(resolution, seen, $).node
     }
     // temporarily set the TraversalNode to an alias that will be used for cyclic resolutions
-    const type = nodeToType(root, [["alias", name]], $, {})
+    const type = nodeToType(resolution, [["alias", name]], $, {})
     $.cache.types[name] = type
-    type.flat = compileNode(root, $)
-    return root as TypeResolution
+    type.flat = compileNode(resolution, $)
+    return type
 }
 
 export const memoizedParse = (def: string, $: ScopeRoot): TypeNode => {
-    if (def in $.cache) {
+    if (hasKey($.cache.nodes, def)) {
         return $.cache.nodes[def]
     }
-    const root = maybeNaiveParse(def, $) ?? fullStringParse(def, $)
-    $.cache.nodes[def] = deepFreeze(root)
-    return root
+    const resolution = maybeNaiveParse(def, $) ?? fullStringParse(def, $)
+    $.cache.nodes[def] = deepFreeze(resolution)
+    return resolution
 }
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>

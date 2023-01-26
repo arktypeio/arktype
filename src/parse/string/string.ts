@@ -1,5 +1,4 @@
 import { functors } from "../../nodes/functors.ts"
-import type { TypeNode } from "../../nodes/node.ts"
 import { isResolvable, memoizedParse } from "../../nodes/resolve.ts"
 import type { ScopeRoot } from "../../scope.ts"
 import type { error } from "../../utils/generics.ts"
@@ -43,10 +42,7 @@ type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
     ? def
     : fullStringParse<def, $>
 
-export const maybeNaiveParse = (
-    def: string,
-    $: ScopeRoot
-): TypeNode | undefined => {
+export const maybeNaiveParse = (def: string, $: ScopeRoot) => {
     if (isResolvable(def, $)) {
         return def
     }

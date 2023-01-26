@@ -10,7 +10,7 @@ import { parseDefinition } from "./parse/definition.ts"
 import type { Type, TypeParser } from "./type.ts"
 import { nodeToType } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import type { Domain, inferSubdomain } from "./utils/domains.ts"
+import type { Domain } from "./utils/domains.ts"
 import { throwParseError } from "./utils/errors.ts"
 import type {
     Dict,
@@ -49,7 +49,7 @@ const composeScopeParser = <parent>(parent?: ScopeRoot<parent>) =>
         }
         types.$ = $ as any
         return types
-    }) as unknown as ScopeParser<ScopeRoot extends parent ? {} : parent>
+    }) as unknown as ScopeParser<unknown extends parent ? {} : parent>
 
 export const composeTypeParser = <$ extends ScopeRoot<any>>(
     $: $
@@ -89,8 +89,8 @@ type DynamicScopeParser<parent> = <aliases extends Dict>(
 ) => Scope<Dict<stringKeyOf<parent> | stringKeyOf<aliases>>>
 
 type ScopeCache = {
-    nodes: { [def in string]: TypeNode }
-    types: { [name in string]: Type }
+    nodes: { [def in string]?: TypeNode }
+    types: { [name in string]?: Type }
 }
 
 // TODO: change names to Space/Scope?
@@ -150,15 +150,12 @@ export const tsKeywords = composeScopeParser()({
     ] as inferred<Function>
 })
 
-const regexDefinition = (source: string) =>
-    ["node", { string: { regex: source } }] as const
-
 export const defaultScope = tsKeywords.$.extend({
-    email: regexDefinition("^(.+)@(.+)\\.(.+)$"),
-    alphanumeric: regexDefinition("^[dA-Za-z]+$"),
-    alpha: regexDefinition("^[A-Za-z]+$"),
-    lowercase: regexDefinition("^[a-z]*$"),
-    uppercase: regexDefinition("^[A-Z]*$"),
+    email: /^(.+)@(.+)\.(.+)$/,
+    alphanumeric: /^[dA-Za-z]+$/,
+    alpha: /^[A-Za-z]+$/,
+    lowercase: /^[a-z]*$/,
+    uppercase: /^[A-Z]*$/,
     integer: ["node", { number: { divisor: 1 } }]
 })
 

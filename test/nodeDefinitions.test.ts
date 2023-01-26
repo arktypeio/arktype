@@ -4,9 +4,8 @@ import { attest } from "../dev/attest/api.ts"
 import type { Type } from "../src/type.ts"
 
 describe("node definitions", () => {
-    it("keyword", () => {
-        const t = type(["node", "string"])
-        attest(t).typed as Type<string>
+    it("base", () => {
+        const t = type(["node", { string: true }])
         attest(t.node).snap({ string: true })
         attest(t.flat).snap("string")
     })

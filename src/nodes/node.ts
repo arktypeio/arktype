@@ -20,7 +20,7 @@ import {
     predicateIntersection,
     predicateUnion
 } from "./predicate.ts"
-import { domainsOfNode, resolveFlat, resolveIfIdentifier } from "./resolve.ts"
+import { domainsOfNode, resolve, resolveIfIdentifier } from "./resolve.ts"
 import type { BranchEntry } from "./rules/rules.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | TypeResolution<$>
@@ -63,17 +63,38 @@ const resolutionIntersection = composeKeyedIntersection<TypeResolution>(
     { onEmpty: "omit" }
 )
 
-export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
+/** Reflects that an Idenitifier cannot be the result of any intersection
+ * including a TypeResolution  */
+type IntersectionResult<
+    l extends TypeNode,
+    r extends TypeNode
+> = l extends TypeResolution
+    ? TypeResolution
+    : r extends TypeResolution
+    ? TypeResolution
+    : TypeNode
+
+export const intersection = <l extends TypeNode, r extends TypeNode>(
+    l: l,
+    r: r,
+    $: ScopeRoot
+) => {
     const state = new IntersectionState($)
     const result = nodeIntersection(l, r, state)
-    return isDisjoint(result)
-        ? throwParseError(compileDisjointReasonsMessage(state.disjoints))
-        : isEquality(result)
-        ? l
-        : result
+    return (
+        isDisjoint(result)
+            ? throwParseError(compileDisjointReasonsMessage(state.disjoints))
+            : isEquality(result)
+            ? l
+            : result
+    ) as IntersectionResult<l, r>
 }
 
-export const union = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
+export const union = (
+    l: TypeNode,
+    r: TypeNode,
+    $: ScopeRoot
+): TypeResolution => {
     const lResolution = resolveIfIdentifier(l, $)
     const rResolution = resolveIfIdentifier(r, $)
     const result = {} as mutable<TypeResolution>
@@ -128,7 +149,7 @@ export type SwitchEntry = ["switch", DiscriminatedSwitch]
 
 export const compileNode = (node: TypeNode, $: ScopeRoot): TraversalNode => {
     if (typeof node === "string") {
-        return resolveFlat(node, $)
+        return resolve(node, $).flat
     }
     const domains = keysOf(node)
     if (domains.length === 1) {
