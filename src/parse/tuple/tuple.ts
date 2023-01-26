@@ -1,5 +1,5 @@
+import { functors } from "../../nodes/functors.ts"
 import type { inferNode } from "../../nodes/infer.ts"
-import { functorKeywords } from "../../nodes/keywords.ts"
 import type { TypeNode } from "../../nodes/node.ts"
 import { intersection, union } from "../../nodes/node.ts"
 import type { ScopeRoot } from "../../scope.ts"
@@ -110,7 +110,7 @@ const parseBranchTuple: PostfixParser<"|" | "&"> = (def, $) => {
 }
 
 const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
-    functorKeywords.Array(parseDefinition(def[0], scope))
+    functors.Array(parseDefinition(def[0], scope))
 
 export type PostfixParser<token extends PostfixToken> = (
     def: PostfixExpression<token>,

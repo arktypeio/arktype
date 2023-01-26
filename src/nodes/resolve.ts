@@ -7,7 +7,6 @@ import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import { deepFreeze } from "../utils/freeze.ts"
 import type { defined } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
-import { getFlatKeywords, keywords } from "./keywords.ts"
 import type { TraversalNode, TypeNode, TypeResolution } from "./node.ts"
 import { compileNode } from "./node.ts"
 import type { Predicate } from "./predicate.ts"
@@ -54,7 +53,7 @@ export const nodeExtendsDomain = <domain extends Domain>(
 
 // TODO: Move to parse
 export const isResolvable = (name: string, $: ScopeRoot) => {
-    return isKeyOf(name, keywords) || $.aliases[name] ? true : false
+    return $.aliases[name] ? true : false
 }
 
 export const resolve = (name: string, $: ScopeRoot) => {
@@ -62,9 +61,6 @@ export const resolve = (name: string, $: ScopeRoot) => {
 }
 
 export const resolveFlat = (name: string, $: ScopeRoot): TraversalNode => {
-    if (isKeyOf(name, keywords)) {
-        return getFlatKeywords()[name]
-    }
     resolveRecurse(name, [], $)
     return $.cache.types[name].flat
 }
@@ -75,9 +71,6 @@ const resolveRecurse = (
     seen: string[],
     $: ScopeRoot
 ): TypeResolution => {
-    if (isKeyOf(name, keywords)) {
-        return keywords[name]
-    }
     if (isKeyOf(name, $.cache.types)) {
         return $.cache.types[name].node
     }

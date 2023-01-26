@@ -1,4 +1,4 @@
-import { functorKeywords } from "../../../nodes/keywords.ts"
+import { functors } from "../../../nodes/functors.ts"
 import type { TypeNode } from "../../../nodes/node.ts"
 import { intersection, union } from "../../../nodes/node.ts"
 import { isLiteralNode } from "../../../nodes/resolve.ts"
@@ -74,7 +74,7 @@ export class DynamicState {
     }
 
     rootToArray() {
-        this.root = functorKeywords.Array(this.ejectRoot())
+        this.root = functors.Array(this.ejectRoot())
     }
 
     intersect(node: TypeNode) {

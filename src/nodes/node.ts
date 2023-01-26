@@ -19,7 +19,6 @@ import {
     throwUndefinedOperandsError
 } from "./compose.ts"
 import type { DiscriminatedSwitch } from "./discriminate.ts"
-import type { Keyword } from "./keywords.ts"
 import type { Predicate } from "./predicate.ts"
 import {
     compilePredicate,
@@ -38,9 +37,7 @@ export type TypeResolution<$ = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, $>
 }
 
-export type Identifier<$ = Dict> = string extends keyof $
-    ? autocomplete<Keyword>
-    : Keyword | stringKeyOf<$>
+export type Identifier<$ = Dict> = stringKeyOf<$>
 
 export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
     const lResolution = resolveIfIdentifier(l, state.$)

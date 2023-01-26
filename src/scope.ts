@@ -1,11 +1,16 @@
 import type { TypeNode } from "./nodes/node.ts"
 import { compileNode } from "./nodes/node.ts"
 import { resolveIfIdentifier } from "./nodes/resolve.ts"
-import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
+import type {
+    inferDefinition,
+    inferred,
+    validateDefinition
+} from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
 import type { Type, TypeParser } from "./type.ts"
 import { nodeToType } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
+import type { Domain } from "./utils/domains.ts"
 import { throwParseError } from "./utils/errors.ts"
 import type {
     Dict,
@@ -17,11 +22,11 @@ import type {
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
-const composeScopeParser = <parent extends ScopeRoot>(parent?: parent) =>
+const composeScopeParser = <parent>(parent?: ScopeRoot<parent>) =>
     lazyDynamicWrap((aliases: Dict) => {
         let $
         if (parent) {
-            const merged = { ...parent.aliases }
+            const merged: Record<string, unknown> = { ...parent.aliases }
             for (const name in aliases) {
                 if (name in parent.aliases) {
                     throwParseError(writeDuplicateAliasMessage(name))
@@ -42,7 +47,9 @@ const composeScopeParser = <parent extends ScopeRoot>(parent?: parent) =>
         return types
     }) as unknown as ScopeParser<ScopeRoot extends parent ? {} : parent>
 
-export const composeTypeParser = <$ extends ScopeRoot>($: $): TypeParser<$> =>
+export const composeTypeParser = <$ extends ScopeRoot<any>>(
+    $: $
+): TypeParser<$> =>
     lazyDynamicWrap((def, traits = {}) => {
         const root = resolveIfIdentifier(parseDefinition(def, $), $)
         const flat = compileNode(root, $)
@@ -106,11 +113,54 @@ export class ScopeRoot<root = Dict> {
     }
 }
 
-export const scope: ScopeParser<{}> = composeScopeParser()
+const always: Record<Domain, true> = {
+    bigint: true,
+    boolean: true,
+    null: true,
+    number: true,
+    object: true,
+    string: true,
+    symbol: true,
+    undefined: true
+}
 
-const rootScope = composeScopeParser()({})
+export const tsKeywords = composeScopeParser()({
+    any: ["node", always] as inferred<any>,
+    bigint: ["node", { bigint: true }],
+    boolean: ["node", { boolean: true }],
+    false: ["node", { boolean: { value: false } }],
+    never: ["node", {}],
+    null: ["node", { null: true }],
+    number: ["node", { number: true }],
+    object: ["node", { object: true }],
+    string: ["node", { string: true }],
+    symbol: ["node", { symbol: true }],
+    true: ["node", { boolean: { value: true } }],
+    unknown: ["node", always] as inferred<unknown>,
+    void: ["node", { undefined: true }] as inferred<void>,
+    undefined: ["node", { undefined: true }],
+    // TODO: Add remaining JS object types
+    Function: { object: { subdomain: "Function" } }
+})
 
-export const type: TypeParser<{}> = composeTypeParser(rootScope.$)
+export const defaultScope = tsKeywords.$.extend({
+    email: /^(.+)@(.+)\\.(.+)$/,
+    alphanumeric: /^[dA-Za-z]+$/,
+    alpha: /^[A-Za-z]+$/,
+    lowercase: /^[a-z]*$/,
+    uppercase: /^[A-Z]*$/,
+    integer: "number%1"
+})
+
+type DefaultScopeRoot = typeof defaultScope["$"]["infer"]
+
+export const scope: ScopeParser<DefaultScopeRoot> = composeScopeParser(
+    defaultScope.$
+)
+
+export const type: TypeParser<DefaultScopeRoot> = composeTypeParser(
+    defaultScope.$
+)
 
 export type BootstrapScope<$ = {}> = nominal<$, "bootstrap">
 

@@ -1,4 +1,4 @@
-import { functorKeywords } from "../../nodes/keywords.ts"
+import { functors } from "../../nodes/functors.ts"
 import type { TypeNode } from "../../nodes/node.ts"
 import { isResolvable, memoizedParse } from "../../nodes/resolve.ts"
 import type { ScopeRoot } from "../../scope.ts"
@@ -53,7 +53,7 @@ export const maybeNaiveParse = (
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
         if (isResolvable(elementDef, $)) {
-            return functorKeywords.Array(elementDef)
+            return functors.Array(elementDef)
         }
     }
 }

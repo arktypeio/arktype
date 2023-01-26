@@ -1,6 +1,5 @@
 import type { DisjointsByPath } from "../../nodes/compose.ts"
 import { disjointDescriptionWriters } from "../../nodes/compose.ts"
-import type { Keyword, Keywords } from "../../nodes/keywords.ts"
 import type { BootstrapScope } from "../../scope.ts"
 import type { asIn } from "../../type.ts"
 import type { subdomainOf } from "../../utils/domains.ts"
@@ -230,9 +229,7 @@ type isBoundable<data> = isAny<data> extends true
     ? true
     : false
 
-export type inferTerminal<token, $> = token extends Keyword
-    ? Keywords[token]
-    : token extends keyof $
+export type inferTerminal<token, $> = token extends keyof $
     ? $[token] extends BootstrapScope<infer def>
         ? // TODO: standardize tryCatch to deal with other types of defs like this
           isAny<$[token]> extends true
