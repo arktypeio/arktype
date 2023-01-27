@@ -87,7 +87,7 @@ describe("scope", () => {
                     b: "a[]",
                     c: "definedInScope"
                 },
-                { exports: [scope({ definedInScope: "boolean" })] }
+                { includes: [scope({ definedInScope: "boolean" })] }
             )
             attest($.infer).typed as {
                 a: string[]

@@ -51,7 +51,7 @@ export const nodeExtendsDomain = <domain extends Domain>(
 
 // TODO: Move to parse
 export const isResolvable = (name: string, $: Scope) => {
-    return $.resolutions[name] ? true : false
+    return $.cache.locals[name] || $.aliases[name] ? true : false
 }
 
 export const resolve = (name: string, $: Scope) => {
@@ -59,15 +59,15 @@ export const resolve = (name: string, $: Scope) => {
 }
 
 const resolveRecurse = (name: string, seen: string[], $: Scope): Type => {
-    if (hasKey($.cache.types, name)) {
-        return $.cache.types[name]
+    if (hasKey($.cache.locals, name)) {
+        return $.cache.locals[name]
     }
-    if (!$.resolutions[name]) {
+    if (!$.aliases[name]) {
         return throwInternalError(
             `Unexpectedly failed to resolve alias '${name}'`
         )
     }
-    let resolution = parseDefinition($.resolutions[name], $)
+    let resolution = parseDefinition($.aliases[name], $)
     if (typeof resolution === "string") {
         if (seen.includes(resolution)) {
             return throwParseError(writeShallowCycleErrorMessage(name, seen))
@@ -77,7 +77,7 @@ const resolveRecurse = (name: string, seen: string[], $: Scope): Type => {
     }
     // temporarily set the TraversalNode to an alias that will be used for cyclic resolutions
     const type = nodeToType(resolution, [["alias", name]], $, {})
-    $.cache.types[name] = type
+    $.cache.locals[name] = type
     type.flat = compileNode(resolution, $)
     return type
 }
