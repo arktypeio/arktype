@@ -13,7 +13,7 @@ describe("node definitions", () => {
         const types = scope({
             a: ["node", { object: { props: { b: "b" } } }],
             b: "boolean"
-        })
+        }).compile()
         attest(types.a).typed as Type<{ b: boolean }>
     })
     it("literals", () => {

@@ -70,7 +70,7 @@ export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
     >
     typedValue: (expected: T) => undefined
     narrowedValue: <Expected extends T>(
-        expected: downcast<Expected>
+        expected: asConst<Expected>
     ) => undefined
 }
 

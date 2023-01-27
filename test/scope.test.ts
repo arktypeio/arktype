@@ -7,7 +7,7 @@ import type { Type } from "../src/type.ts"
 
 describe("scope", () => {
     it("base definition", () => {
-        const types = scope({ a: "string" })
+        const types = scope({ a: "string" }).compile()
         attest(types.a.infer).typed as string
         attest(() =>
             // @ts-expect-error
@@ -15,7 +15,7 @@ describe("scope", () => {
         ).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
     })
     it("type definition", () => {
-        const types = scope({ a: type("string") })
+        const types = scope({ a: type("string") }).compile()
         attest(types.a.infer).typed as string
         attest(() =>
             // @ts-expect-error
@@ -27,7 +27,7 @@ describe("scope", () => {
             a: "string>5",
             b: "email<=10",
             c: "a&b"
-        })
+        }).compile()
         attest(types.c.infer).typed as string
         attest(types.c.node).equals({
             string: {
@@ -43,7 +43,7 @@ describe("scope", () => {
         })
     })
     it("cyclic", () => {
-        const types = scope({ a: { b: "b" }, b: { a: "a" } })
+        const types = scope({ a: { b: "b" }, b: { a: "a" } }).compile()
         attest(types.a.node).snap({
             object: { props: { b: "b" } }
         })
@@ -68,29 +68,31 @@ describe("scope", () => {
         )
     })
     it("object array", () => {
-        attest(scope({ a: "string", b: [{ c: "a" }] }).$.infer.b).typed as [
+        const types = scope({ a: "string", b: [{ c: "a" }] }).compile()
+        attest(types.b.infer).typed as [
             {
                 c: string
             }
         ]
     })
     it("doesn't try to validate any in scope", () => {
-        const types = scope({ a: {} as any })
-        attest(types.a).typed as Type
-        attest(types.$.type(["number", "a"]).infer).typed as [number, never]
+        const $ = scope({ a: {} as any })
+        attest($.infer).typed as { a: never }
+        attest($.type(["number", "a"]).infer).typed as [number, never]
     })
     describe("extension", () => {
         it("base", () => {
-            const types = scope({ definedInScope: "boolean" }).$.extend({
+            const $ = scope({ definedInScope: "boolean" }).extend({
                 a: "string[]",
                 b: "a[]",
                 c: "definedInScope"
             })
-            attest(types.$.infer).typed as {
+            attest($.infer).typed as {
                 a: string[]
                 b: string[][]
                 c: boolean
             }
+            const types = $.compile()
             attest(types.a.node).snap({
                 object: { subdomain: ["Array", "string"] }
             })

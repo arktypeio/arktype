@@ -12,6 +12,7 @@ import type { OptionalProp, PropsRule } from "./rules/props.js"
 import type { LiteralRules, NarrowableRules } from "./rules/rules.js"
 import type { SubdomainRule } from "./rules/subdomain.js"
 
+// TODO: Fix morph, narrow inference
 export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
     ? inferTerminal<node, $>
     : {
