@@ -13,7 +13,9 @@ import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type { Domain } from "./utils/domains.ts"
 import { throwParseError } from "./utils/errors.ts"
 import type {
+    conform,
     Dict,
+    error,
     evaluate,
     extend,
     nominal,
@@ -21,14 +23,7 @@ import type {
 } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
-
-const composeScopeParser = <config extends ScopeConfig = {}>(config?: config) =>
-    lazyDynamicWrap(
-        (aliases: Dict) => new Scope(aliases, config ?? {})
-    ) as unknown as ScopeParser<
-        mergeScopes<config["imports"]>,
-        mergeScopes<config["exports"]>
-    >
+import type { stringifyUnion } from "./utils/unionToTuple.ts"
 
 export const composeTypeParser = <$ extends Scope>($: $): TypeParser<$> =>
     lazyDynamicWrap((def, traits = {}) => {
@@ -37,58 +32,82 @@ export const composeTypeParser = <$ extends Scope>($: $): TypeParser<$> =>
         return nodeToType(root, flat, $, traits)
     })
 
-type ScopeParser<imports, exports> = LazyDynamicWrap<
-    InferredScopeParser<imports, exports>,
-    DynamicScopeParser<exports>
->
+type ScopeParser = LazyDynamicWrap<InferredScopeParser, DynamicScopeParser>
 
 // [] allows tuple inferences
 type ScopeList = [] | readonly Scope[]
 
 // TODO: Reintegrate thunks/compilation? Add utilities for narrowed defs
-export type ScopeConfig = {
+export type ScopeOptions = {
     imports?: ScopeList
     exports?: ScopeList
 }
 
-type InferredScopeParser<imports, exports> = <aliases>(
-    aliases: validateScope<aliases, imports, exports>
-) => Scope<inferScope<aliases, imports, exports>, imports>
+type validateOptions<opts extends ScopeOptions> = {
+    imports?: mergeScopes<opts["imports"]> extends error<infer e>
+        ? e
+        : opts["imports"]
+    exports?: mergeScopes<opts["exports"]> extends error<infer e>
+        ? e
+        : opts["exports"]
+}
 
-type DynamicScopeParser<exports> = <aliases extends Dict>(
-    aliases: aliases
-) => Scope<Dict<stringKeyOf<exports> | stringKeyOf<aliases>>>
+type compileConfig<opts extends ScopeOptions> = evaluate<{
+    exports: mergeScopes<opts["exports"]>
+    imports: unknown extends opts["imports"]
+        ? PrecompiledDefaults
+        : mergeScopes<opts["imports"], mergeScopes<opts["exports"]>>
+}>
+
+export type ScopeConfig = {
+    exports: Dict
+    imports: Dict
+}
+
+type InferredScopeParser = <aliases, opts extends ScopeOptions = {}>(
+    aliases: validateScope<aliases, compileConfig<opts>>,
+    opts?: conform<opts, validateOptions<opts>>
+) => Scope<inferAliases<aliases, compileConfig<opts>>, compileConfig<opts>>
+
+type DynamicScopeParser = <
+    aliases extends Dict,
+    opts extends ScopeOptions = {}
+>(
+    aliases: aliases,
+    opts?: validateOptions<opts>
+) => Scope<aliasesOf<aliases>, compileConfig<opts>>
+
+// TODO: defer to fix instanceof inference
 
 type mergeScopes<
+    // TODO: Slower if I check extends ScopeList?
     scopes extends ScopeList | undefined,
-    result = {}
+    base extends Dict = {}
 > = scopes extends readonly [Scope<infer head>, ...infer tail extends ScopeList]
-    ? keyof head & keyof result extends never
-        ? mergeScopes<tail, result & head>
-        : `Overlapping keys`
-    : result
+    ? keyof head & keyof base extends never
+        ? mergeScopes<tail, base & head>
+        : error<`Duplicates ${stringifyUnion<
+              keyof head & keyof base & string
+          >}`>
+    : base
 
-type validateScope<aliases, imports, exports> = {
-    // TODO: check imports/exports relative to each other
-    [name in keyof aliases]: name extends stringKeyOf<exports>
+type validateScope<aliases, config extends ScopeConfig> = {
+    [name in keyof aliases]: name extends stringKeyOf<config["imports"]>
         ? writeDuplicateAliasMessage<name>
         : validateDefinition<
               aliases[name],
-              inferScope<aliases, imports, exports> & imports
+              inferAliases<aliases, config> & config["imports"]
           >
 }
 
-type inferScope<definitions, imports, exports> = evaluate<
-    {
-        [k in keyof definitions]: inferDefinition<
-            definitions[k],
-            {
-                [k in keyof definitions]: BootstrapScope<definitions[k]>
-            } & exports &
-                imports
-        >
-    } & exports
->
+type inferAliases<aliases, config extends ScopeConfig> = evaluate<{
+    [k in keyof aliases]: inferDefinition<
+        aliases[k],
+        {
+            [k in keyof aliases]: BootstrapScope<aliases[k]>
+        } & config["imports"]
+    >
+}>
 
 type ScopeCache = {
     nodes: { [def in string]?: TypeNode }
@@ -99,43 +118,37 @@ export type Space<root = Dict> = { [k in keyof root]: Type<root[k]> }
 
 type aliasesOf<root = Dict> = { readonly [k in keyof root]: unknown }
 
-export class Scope<exports = any, imports = any> {
-    aliases: aliasesOf<exports>
-    locals: aliasesOf<exports & imports>
+// TODO: Figure out import caching
 
+// TODO: possible to use scope at type level as well?
+export class Scope<resolutions = any, config extends ScopeConfig = any> {
     cache: ScopeCache = {
         nodes: {},
         types: {}
     }
 
-    type: TypeParser<exports & imports>
-    extend: ScopeParser<imports, exports>
+    type: TypeParser<resolutions>
 
-    constructor(aliases: Dict, public config: ScopeConfig) {
+    constructor(public aliases: Dict, public opts: ScopeOptions) {
         this.type = composeTypeParser(this as any)
-        this.extend = composeScopeParser(this as any) as ScopeParser<
-            imports,
-            exports
-        >
         // TODO: improve the efficiency of this for defaultScope
-        if (!config.exports && !config.imports) {
-            this.aliases = aliases as aliasesOf<exports>
-            this.locals = aliases as aliasesOf<exports & imports>
+        if (!opts.exports && !opts.imports) {
+            this.aliases = aliases as any
             return
         }
         const mergedAliases = { ...aliases }
         const mergedLocals = { ...aliases }
         // TODO: improve
         for (const parent of [
-            ...(config.imports ?? []),
-            ...(config.exports ?? [])
+            ...(opts.imports ?? []),
+            ...(opts.exports ?? [])
         ]) {
             for (const name in parent.aliases) {
                 if (name in mergedAliases) {
                     throwParseError(writeDuplicateAliasMessage(name))
                 }
                 mergedLocals[name] = parent.aliases[name]
-                if (config.exports?.includes(parent as never)) {
+                if (opts.exports?.includes(parent as never)) {
                     mergedAliases[name] = parent.aliases[name]
                     this.cache.types[name] = parent.cache.types[name]
                 }
@@ -146,11 +159,13 @@ export class Scope<exports = any, imports = any> {
                 }
             }
         }
-        this.aliases = mergedAliases as aliasesOf<exports>
-        this.locals = mergedLocals as aliasesOf<exports & imports>
+        this.aliases = mergedAliases as any
+        this.resolutions = mergedLocals as any
     }
 
-    get infer(): exports {
+    get infer(): { [k in keyof resolutions]: resolutions[k] } & {
+        [k in keyof config["exports"]]: config["exports"][k]
+    } {
         return chainableNoOpProxy
     }
 
@@ -165,7 +180,7 @@ export class Scope<exports = any, imports = any> {
                         : def()
                     : this.type.dynamic(this.aliases[name])
         }
-        return types as Space<exports>
+        return types as Space<this["infer"]>
     }
 }
 
@@ -180,38 +195,58 @@ const always: Record<Domain, true> = {
     undefined: true
 }
 
-const emptyScope: ScopeParser<{}, {}> = composeScopeParser()
+export const scope = lazyDynamicWrap(
+    (aliases: Dict, opts: ScopeOptions = {}) => new Scope(aliases, opts)
+) as any as ScopeParser
 
-export const tsKeywords = emptyScope({
-    any: ["node", always] as inferred<any>,
-    bigint: ["node", { bigint: true }],
-    boolean: ["node", { boolean: true }],
-    false: ["node", { boolean: { value: false } }],
-    never: ["node", {}],
-    null: ["node", { null: true }],
-    number: ["node", { number: true }],
-    object: ["node", { object: true }],
-    string: ["node", { string: true }],
-    symbol: ["node", { symbol: true }],
-    true: ["node", { boolean: { value: true } }],
-    unknown: ["node", always] as inferred<unknown>,
-    void: ["node", { undefined: true }] as inferred<void>,
-    undefined: ["node", { undefined: true }],
-    // TODO: Add remaining JS object types
-    Function: [
-        "node",
-        { object: { subdomain: "Function" } }
-    ] as inferred<Function>
-})
+const ts = scope(
+    {
+        any: ["node", always] as inferred<any>,
+        bigint: ["node", { bigint: true }],
+        boolean: ["node", { boolean: true }],
+        false: ["node", { boolean: { value: false } }],
+        never: ["node", {}],
+        null: ["node", { null: true }],
+        number: ["node", { number: true }],
+        object: ["node", { object: true }],
+        string: ["node", { string: true }],
+        symbol: ["node", { symbol: true }],
+        true: ["node", { boolean: { value: true } }],
+        unknown: ["node", always] as inferred<unknown>,
+        void: ["node", { undefined: true }] as inferred<void>,
+        undefined: ["node", { undefined: true }],
+        // TODO: Add remaining JS object types
+        Function: [
+            "node",
+            { object: { subdomain: "Function" } }
+        ] as inferred<Function>
+    },
+    { imports: [] }
+)
 
-export const validation = emptyScope({
-    email: /^(.+)@(.+)\.(.+)$/,
-    alphanumeric: /^[dA-Za-z]+$/,
-    alpha: /^[A-Za-z]+$/,
-    lowercase: /^[a-z]*$/,
-    uppercase: /^[A-Z]*$/,
-    integer: ["node", { number: { divisor: 1 } }]
-})
+const validation = scope(
+    {
+        email: /^(.+)@(.+)\.(.+)$/,
+        alphanumeric: /^[dA-Za-z]+$/,
+        alpha: /^[A-Za-z]+$/,
+        lowercase: /^[a-z]*$/,
+        uppercase: /^[A-Z]*$/,
+        integer: ["node", { number: { divisor: 1 } }]
+    },
+    { imports: [] }
+)
+
+// TODO: how much startup time does this add?
+export const scopes = {
+    ts,
+    validation,
+    default: scope(
+        {},
+        {
+            exports: [ts, validation]
+        }
+    )
+}
 
 // This is just copied from the inference of defaultScope. Creating an explicit
 // type like this makes validation for the default type and scope functions feel
@@ -241,16 +276,11 @@ type PrecompiledDefaults = {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-type ValidateDefaultScope = extend<
-    PrecompiledDefaults,
-    // if PrecompiledDefaults gets out of sync with defaultScope, there will be a type error here
-    typeof tsKeywords["infer"] & typeof validation["infer"]
->
-
-// TODO: change to extend, include => exports/locals?
-export const scope: ScopeParser<PrecompiledDefaults, {}> = composeScopeParser({
-    imports: [tsKeywords, validation]
-})
+type ValidateDefaultScope = [
+    // if PrecompiledDefaults gets out of sync with scopes.default, there will be a type error here
+    extend<PrecompiledDefaults, typeof scopes["default"]["infer"]>,
+    extend<typeof scopes["default"]["infer"], PrecompiledDefaults>
+]
 
 export const type: TypeParser<PrecompiledDefaults> =
     composeTypeParser(validation)

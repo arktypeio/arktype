@@ -10,16 +10,19 @@ export class Path extends Array<string> {
 
 export type pathToString<
     segments extends string[],
+    delimiter extends string = "/"
+> = segments extends [] ? "/" : join<segments, delimiter>
+
+export type join<
+    segments extends string[],
     delimiter extends string = "/",
     result extends string = ""
 > = segments extends [infer head extends string, ...infer tail extends string[]]
-    ? pathToString<
+    ? join<
           tail,
           delimiter,
           result extends "" ? head : `${result}${delimiter}${head}`
       >
-    : result extends ""
-    ? "/"
     : result
 
 export const getPath = (value: unknown, path: string[]): unknown => {

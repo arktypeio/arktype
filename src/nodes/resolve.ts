@@ -51,7 +51,7 @@ export const nodeExtendsDomain = <domain extends Domain>(
 
 // TODO: Move to parse
 export const isResolvable = (name: string, $: Scope) => {
-    return $.locals[name] ? true : false
+    return $.resolutions[name] ? true : false
 }
 
 export const resolve = (name: string, $: Scope) => {
@@ -62,12 +62,12 @@ const resolveRecurse = (name: string, seen: string[], $: Scope): Type => {
     if (hasKey($.cache.types, name)) {
         return $.cache.types[name]
     }
-    if (!$.locals[name]) {
+    if (!$.resolutions[name]) {
         return throwInternalError(
             `Unexpectedly failed to resolve alias '${name}'`
         )
     }
-    let resolution = parseDefinition($.locals[name], $)
+    let resolution = parseDefinition($.resolutions[name], $)
     if (typeof resolution === "string") {
         if (seen.includes(resolution)) {
             return throwParseError(writeShallowCycleErrorMessage(name, seen))

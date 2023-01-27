@@ -3,7 +3,6 @@ import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import { writeUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 import { writeDuplicateAliasMessage } from "../src/scope.ts"
-import type { Type } from "../src/type.ts"
 
 describe("scope", () => {
     it("base definition", () => {
@@ -82,11 +81,14 @@ describe("scope", () => {
     })
     describe("extension", () => {
         it("base", () => {
-            const $ = scope({ definedInScope: "boolean" }).extend({
-                a: "string[]",
-                b: "a[]",
-                c: "definedInScope"
-            })
+            const $ = scope(
+                {
+                    a: "string[]",
+                    b: "a[]",
+                    c: "definedInScope"
+                },
+                { exports: [scope({ definedInScope: "boolean" })] }
+            )
             attest($.infer).typed as {
                 a: string[]
                 b: string[][]
