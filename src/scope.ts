@@ -19,7 +19,8 @@ import type {
     evaluate,
     extend,
     isAny,
-    nominal
+    nominal,
+    replaceProps
 } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
@@ -41,24 +42,37 @@ type ScopeList = [] | readonly Scope[]
 export type ScopeOptions = {
     imports?: ScopeList
     includes?: ScopeList
+    standard?: boolean
 }
 
-type validateOptions<opts extends ScopeOptions> = {
-    imports?: mergeScopes<opts["imports"]> extends error<infer e>
-        ? e
-        : opts["imports"]
-    includes?: mergeScopes<opts["includes"]> extends error<infer e>
-        ? e
-        : opts["includes"]
-}
+type validateOptions<opts extends ScopeOptions> = replaceProps<
+    opts,
+    {
+        imports?: mergeScopes<opts["imports"]> extends error<infer e>
+            ? e
+            : opts["imports"]
+        includes?: mergeScopes<opts["includes"]> extends error<infer e>
+            ? e
+            : opts["includes"]
+    }
+>
 
-export type ScopeConfig = {
+export type ScopeContext = {
     exports: Dict
-    imports: Dict
+    locals?: Dict
+    standard?: false
 }
+
+type toContext<aliases, opts extends ScopeOptions> = extend<
+    ScopeContext,
+    {
+        exports: inferExports<aliases, opts>
+    } & (unknown extends opts["imports"] ? {} : { locals: importsOf<opts> }) &
+        (opts["standard"] extends false ? { standard: false } : {})
+>
 
 type importsOf<opts extends ScopeOptions> = unknown extends opts["imports"]
-    ? PrecompiledDefaults
+    ? {}
     : mergeScopes<opts["imports"]>
 
 type includesOf<opts extends ScopeOptions> = unknown extends opts["includes"]
@@ -66,9 +80,9 @@ type includesOf<opts extends ScopeOptions> = unknown extends opts["includes"]
     : mergeScopes<opts["includes"]>
 
 type InferredScopeParser = <aliases, opts extends ScopeOptions = {}>(
-    aliases: validateAliases<aliases, importsOf<opts>, includesOf<opts>>,
+    aliases: validateAliases<aliases, opts>,
     opts?: conform<opts, validateOptions<opts>>
-) => Scope<inferExports<aliases, importsOf<opts>, includesOf<opts>>>
+) => Scope<toContext<aliases, opts>>
 
 type DynamicScopeParser = <
     aliases extends Dict,
@@ -76,15 +90,8 @@ type DynamicScopeParser = <
 >(
     aliases: aliases,
     opts?: validateOptions<opts>
-) => Scope<
-    inferExports<
-        { [k in keyof aliases]: inferred<unknown> },
-        importsOf<opts>,
-        includesOf<opts>
-    >
->
+) => Scope<toContext<{ [k in keyof aliases]: inferred<unknown> }, opts>>
 
-// TODO: Shallow cycle?
 export type resolve<name extends keyof $, $> = isAny<$[name]> extends true
     ? any
     : $[name] extends alias<infer def>
@@ -92,39 +99,39 @@ export type resolve<name extends keyof $, $> = isAny<$[name]> extends true
     : $[name]
 
 type mergeScopes<scopes, base extends Dict = {}> = scopes extends readonly [
-    Scope<infer head>,
+    Scope<infer context>,
     ...infer tail
 ]
-    ? keyof base & keyof head extends never
-        ? mergeScopes<tail, base & head>
+    ? keyof base & keyof context["exports"] extends never
+        ? mergeScopes<tail, base & context["exports"]>
         : error<`Duplicates ${stringifyUnion<
-              keyof base & keyof head & string
+              keyof base & keyof context["exports"] & string
           >}`>
     : base
 
-type validateAliases<aliases, imports, includes> = {
-    [name in keyof aliases]: name extends keyof imports | keyof includes
+type validateAliases<aliases, opts extends ScopeOptions> = {
+    [name in keyof aliases]: name extends keyof preresolved<opts>
         ? writeDuplicateAliasMessage<name & string>
-        : validateDefinition<
-              aliases[name],
-              bootstrapScope<aliases, imports, includes>
-          >
+        : validateDefinition<aliases[name], bootstrapScope<aliases, opts>>
 }
+
+type preresolved<opts extends ScopeOptions> = includesOf<opts> &
+    importsOf<opts> &
+    (opts["standard"] extends false ? {} : PrecompiledDefaults)
 
 type alias<def = {}> = nominal<def, "alias">
 
-type bootstrapScope<aliases, imports, includes> = {
+type bootstrapScope<aliases, opts extends ScopeOptions> = {
     [k in keyof aliases]: alias<aliases[k]>
-} & imports &
-    includes
+} & preresolved<opts>
 
-type inferExports<aliases, imports, includes> = evaluate<
+type inferExports<aliases, opts extends ScopeOptions> = evaluate<
     {
         [k in keyof aliases]: inferDefinition<
             aliases[k],
-            bootstrapScope<aliases, imports, includes>
+            bootstrapScope<aliases, opts>
         >
-    } & includes
+    } & includesOf<opts>
 >
 
 type ScopeCache = {
@@ -137,8 +144,11 @@ export type Space<resolutions = Dict> = {
     [k in keyof resolutions]: Type<resolutions[k]>
 }
 
-// TODO: possible to use scope at type level as well?
-export class Scope<exports = any, locals = any> {
+type resolvable<context extends ScopeContext> = context["exports"] &
+    (context["locals"] extends {} ? context["locals"] : {}) &
+    (context["standard"] extends false ? {} : PrecompiledDefaults)
+
+export class Scope<context extends ScopeContext = any> {
     cache: ScopeCache = {
         nodes: {},
         locals: {},
@@ -169,9 +179,9 @@ export class Scope<exports = any, locals = any> {
         }
     }
 
-    type: TypeParser<exports & locals> = composeTypeParser(this)
+    type: TypeParser<resolvable<context>> = composeTypeParser(this)
 
-    get infer(): exports {
+    get infer(): context["exports"] {
         return chainableNoOpProxy
     }
 
@@ -186,7 +196,7 @@ export class Scope<exports = any, locals = any> {
                         : def()
                     : this.type.dynamic(this.aliases[name])
         }
-        return types as Space<exports>
+        return types as Space<context["exports"]>
     }
 }
 
@@ -228,7 +238,7 @@ const ts = scope(
             // TODO: defer to fix instanceof inference
         ] as inferred<Function>
     },
-    { imports: [] }
+    { standard: false }
 )
 
 const validation = scope(
@@ -240,7 +250,7 @@ const validation = scope(
         uppercase: /^[A-Z]*$/,
         integer: ["node", { number: { divisor: 1 } }]
     },
-    { imports: [] }
+    { standard: false }
 )
 
 // TODO: how much startup time does this add?
