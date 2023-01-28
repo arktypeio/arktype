@@ -19,6 +19,7 @@ import type {
     evaluate,
     extend,
     isAny,
+    List,
     nominal,
     replaceProps
 } from "./utils/generics.ts"
@@ -57,19 +58,18 @@ type validateOptions<opts extends ScopeOptions> = replaceProps<
     }
 >
 
-export type ScopeContext = {
-    exports: Dict
-    locals?: Dict
-    standard?: false
-}
+export type ScopeContext = Dict | ScopeContextTuple
 
-type toContext<aliases, opts extends ScopeOptions> = extend<
-    ScopeContext,
-    {
-        exports: inferExports<aliases, opts>
-    } & (unknown extends opts["imports"] ? {} : { locals: importsOf<opts> }) &
-        (opts["standard"] extends false ? { standard: false } : {})
->
+type ScopeContextTuple = [exports: Dict, locals: Dict, standard?: false]
+
+type parseScope<
+    aliases,
+    opts extends ScopeOptions
+> = opts["standard"] extends false
+    ? [inferExports<aliases, opts>, importsOf<opts>, false]
+    : opts["imports"] extends ScopeList
+    ? [inferExports<aliases, opts>, importsOf<opts>]
+    : inferExports<aliases, opts>
 
 type importsOf<opts extends ScopeOptions> = unknown extends opts["imports"]
     ? {}
@@ -82,7 +82,7 @@ type includesOf<opts extends ScopeOptions> = unknown extends opts["includes"]
 type InferredScopeParser = <aliases, opts extends ScopeOptions = {}>(
     aliases: validateAliases<aliases, opts>,
     opts?: conform<opts, validateOptions<opts>>
-) => Scope<toContext<aliases, opts>>
+) => Scope<parseScope<aliases, opts>>
 
 type DynamicScopeParser = <
     aliases extends Dict,
@@ -90,7 +90,7 @@ type DynamicScopeParser = <
 >(
     aliases: aliases,
     opts?: validateOptions<opts>
-) => Scope<toContext<{ [k in keyof aliases]: inferred<unknown> }, opts>>
+) => Scope<parseScope<{ [k in keyof aliases]: inferred<unknown> }, opts>>
 
 export type resolve<name extends keyof $, $> = isAny<$[name]> extends true
     ? any
@@ -98,14 +98,25 @@ export type resolve<name extends keyof $, $> = isAny<$[name]> extends true
     ? inferDefinition<def, $>
     : $[name]
 
+type exportsOf<context extends ScopeContext> = context extends [
+    infer exports,
+    ...unknown[]
+]
+    ? exports
+    : context
+
+type localsOf<context extends ScopeContext> = context extends List
+    ? context["1"] & (context["2"] extends false ? {} : PrecompiledDefaults)
+    : PrecompiledDefaults
+
 type mergeScopes<scopes, base extends Dict = {}> = scopes extends readonly [
     Scope<infer context>,
     ...infer tail
 ]
-    ? keyof base & keyof context["exports"] extends never
-        ? mergeScopes<tail, base & context["exports"]>
+    ? keyof base & keyof exportsOf<context> extends never
+        ? mergeScopes<tail, base & exportsOf<context>>
         : error<`Duplicates ${stringifyUnion<
-              keyof base & keyof context["exports"] & string
+              keyof base & keyof exportsOf<context> & string
           >}`>
     : base
 
@@ -140,13 +151,12 @@ type ScopeCache = {
     exports: { [name in string]?: Type }
 }
 
-export type Space<resolutions = Dict> = {
-    [k in keyof resolutions]: Type<resolutions[k]>
+export type Space<exports = Dict> = {
+    [k in keyof exports]: Type<exports[k]>
 }
 
-type resolvable<context extends ScopeContext> = context["exports"] &
-    (context["locals"] extends {} ? context["locals"] : {}) &
-    (context["standard"] extends false ? {} : PrecompiledDefaults)
+type resolvablesOf<context extends ScopeContext> = localsOf<context> &
+    exportsOf<context>
 
 export class Scope<context extends ScopeContext = any> {
     cache: ScopeCache = {
@@ -179,9 +189,9 @@ export class Scope<context extends ScopeContext = any> {
         }
     }
 
-    type: TypeParser<resolvable<context>> = composeTypeParser(this)
+    type: TypeParser<resolvablesOf<context>> = composeTypeParser(this)
 
-    get infer(): context["exports"] {
+    get infer(): exportsOf<context> {
         return chainableNoOpProxy
     }
 
@@ -196,7 +206,7 @@ export class Scope<context extends ScopeContext = any> {
                         : def()
                     : this.type.dynamic(this.aliases[name])
         }
-        return types as Space<context["exports"]>
+        return types as Space<exportsOf<context>>
     }
 }
 
@@ -253,7 +263,6 @@ const validation = scope(
     { standard: false }
 )
 
-// TODO: how much startup time does this add?
 export const scopes = {
     ts,
     validation,
