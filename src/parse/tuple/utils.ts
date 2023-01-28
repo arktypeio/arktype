@@ -1,4 +1,4 @@
-import type { TypeNode } from "../../nodes/node.ts"
+import type { TypeReference } from "../../nodes/node.ts"
 import type { NarrowableRules } from "../../nodes/rules/rules.ts"
 import type { Scope } from "../../scope.ts"
 import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
@@ -48,7 +48,7 @@ export const distributeFunctionToNode = <
     ruleKey extends keyof NarrowableRules
 >(
     distributableFunction: distributable<f>,
-    inputNode: TypeNode,
+    inputNode: TypeReference,
     $: Scope,
     ruleKey: ruleKey
 ): DistributedFunctionNode<f, ruleKey> => {

@@ -1,4 +1,4 @@
-import type { TypeNode, TypeResolution } from "./nodes/node.ts"
+import type { TypeNode, TypeReference } from "./nodes/node.ts"
 import { flattenNode } from "./nodes/node.ts"
 import type {
     inferDefinition,
@@ -7,10 +7,11 @@ import type {
 } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
 import type { Type, TypeParser } from "./type.ts"
-import { isType, nodeToType } from "./type.ts"
+import { nodeToType } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type { Domain } from "./utils/domains.ts"
 import { throwInternalError, throwParseError } from "./utils/errors.ts"
+import { deepFreeze } from "./utils/freeze.ts"
 import type {
     conform,
     Dict,
@@ -147,9 +148,10 @@ type inferExports<aliases, opts extends ScopeOptions> = evaluate<
 >
 
 type ScopeCache = {
-    nodes: { [def in string]?: TypeNode }
-    locals: { [name in string]?: Type }
+    nodes: { [def in string]?: TypeReference }
+    resolutions: { [name in string]?: Type }
     exports: { [name in string]?: Type }
+    compiled: boolean
 }
 
 export type Space<exports = Dict> = {
@@ -162,31 +164,30 @@ type resolutions<context extends ScopeContext> = localsOf<context> &
 type name<context extends ScopeContext> = keyof resolutions<context> & string
 
 export class Scope<context extends ScopeContext = any> {
-    cache: ScopeCache = {
+    #cache: ScopeCache = {
         nodes: {},
-        locals: {},
-        exports: {}
+        resolutions: {},
+        exports: {},
+        compiled: false
     }
 
     constructor(public aliases: Dict, public opts: ScopeOptions) {
-        if (opts.imports) {
-            for (const $ of opts.imports) {
-                for (const name in $.cache.exports) {
-                    if (name in this.aliases || name in this.cache.locals) {
-                        throwParseError(writeDuplicateAliasMessage(name))
-                    }
-                    this.cache.locals[name] = $.cache.exports[name]
-                }
-            }
+        this.#cacheResolutions("imports")
+        this.#cacheResolutions("includes")
+    }
+
+    #cacheResolutions(kind: "imports" | "includes") {
+        if (!hasKey(this.opts, kind)) {
+            return
         }
-        if (opts.includes) {
-            for (const $ of opts.includes) {
-                for (const name in $.cache.exports) {
-                    if (name in this.aliases || name in this.cache.locals) {
-                        throwParseError(writeDuplicateAliasMessage(name))
-                    }
-                    this.cache.locals[name] = $.cache.exports[name]
-                    this.cache.exports[name] = $.cache.exports[name]
+        for (const space of this.opts[kind].map(($) => $.compile())) {
+            for (const name in space) {
+                if (this.isResolvable(name)) {
+                    throwParseError(writeDuplicateAliasMessage(name))
+                }
+                this.#cache.resolutions[name] = space[name]
+                if (kind === "includes") {
+                    this.#cache.exports[name] = space[name]
                 }
             }
         }
@@ -199,30 +200,30 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     compile() {
-        const types = {} as Space
-        for (const name in this.aliases) {
-            const def = this.aliases[name]
-            types[name] ??=
-                typeof def === "function"
-                    ? isType(def)
-                        ? def
-                        : def()
-                    : this.type.dynamic(this.aliases[name])
+        if (!this.#cache.compiled) {
+            for (const name in this.aliases) {
+                if (!this.#cache.exports[name]) {
+                    this.resolve(name)
+                }
+            }
+            this.#cache.compiled = true
         }
-        return types as Space<exportsOf<context>>
+        return this.#cache.exports as Space<exportsOf<context>>
     }
 
     isResolvable(name: string) {
-        return this.cache.locals[name] || this.aliases[name] ? true : false
+        return this.#cache.resolutions[name] || this.aliases[name]
+            ? true
+            : false
     }
 
     resolve(name: name<context>) {
-        return this.resolveRecurse(name, [])
+        return this.#resolveRecurse(name, [])
     }
 
-    private resolveRecurse(name: string, seen: string[]): Type {
-        if (hasKey(this.cache.locals, name)) {
-            return this.cache.locals[name]
+    #resolveRecurse(name: string, seen: string[]): Type {
+        if (hasKey(this.#cache.resolutions, name)) {
+            return this.#cache.resolutions[name]
         }
         if (!this.aliases[name]) {
             return throwInternalError(
@@ -237,17 +238,29 @@ export class Scope<context extends ScopeContext = any> {
                 )
             }
             seen.push(resolution)
-            resolution = this.resolveRecurse(resolution, seen).node
+            resolution = this.#resolveRecurse(resolution, seen).node
         }
         // temporarily set the TraversalNode to an alias that will be used for cyclic resolutions
         const type = nodeToType(resolution, [["alias", name]], this, {})
-        this.cache.locals[name] = type
+        this.#cache.resolutions[name] = type
         type.flat = flattenNode(resolution, this)
         return type
     }
 
-    resolveNode(node: TypeNode): TypeResolution {
+    resolveNode(node: TypeReference): TypeNode {
         return typeof node === "string" ? this.resolve(node).node : node
+    }
+
+    // TODO: cache class
+    getCached(def: string): TypeReference | undefined {
+        if (hasKey(this.#cache.nodes, def)) {
+            return this.#cache.nodes[def]
+        }
+    }
+
+    setCache(def: string, node: TypeReference) {
+        this.#cache.nodes[def] = deepFreeze(node)
+        return node
     }
 }
 

@@ -1,4 +1,4 @@
-import type { TypeNode } from "../../../../nodes/node.ts"
+import type { TypeReference } from "../../../../nodes/node.ts"
 import type { error, stringKeyOf } from "../../../../utils/generics.ts"
 import type {
     BigintLiteral,
@@ -41,7 +41,9 @@ const unenclosedToNode = (s: DynamicState, token: string) =>
                   : writeUnresolvableMessage(token)
           )
 
-const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
+const maybeParseUnenclosedLiteral = (
+    token: string
+): TypeReference | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
         return { number: { value: maybeNumber } }

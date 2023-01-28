@@ -6,14 +6,17 @@ import type {
     Subdomain
 } from "../utils/domains.js"
 import type { evaluate, HomogenousTuple, List } from "../utils/generics.js"
-import type { TypeNode } from "./node.js"
+import type { TypeReference } from "./node.js"
 import type { Predicate } from "./predicate.js"
 import type { OptionalProp, PropsRule } from "./rules/props.js"
 import type { LiteralRules, NarrowableRules } from "./rules/rules.js"
 import type { SubdomainRule } from "./rules/subdomain.js"
 
 // TODO: Fix morph, narrow inference
-export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
+export type inferNode<
+    node extends TypeReference<$>,
+    $ = {}
+> = node extends string
     ? inferTerminal<node, $>
     : {
           [domain in keyof node]: inferPredicate<
@@ -61,24 +64,24 @@ type inferSubdomainRule<rule extends SubdomainRule, $> = rule extends Subdomain
     ? inferSubdomain<rule>
     : rule extends readonly [
           "Array",
-          infer item extends TypeNode<$>,
+          infer item extends TypeReference<$>,
           ...infer tupleArgs
       ]
     ? tupleArgs extends [infer length extends number]
         ? HomogenousTuple<inferNode<item, $>, length>
         : inferNode<item, $>[]
-    : rule extends readonly ["Set", infer item extends TypeNode<$>]
+    : rule extends readonly ["Set", infer item extends TypeReference<$>]
     ? Set<inferNode<item, $>>
     : rule extends readonly [
           "Map",
-          infer k extends TypeNode<$>,
-          infer v extends TypeNode<$>
+          infer k extends TypeReference<$>,
+          infer v extends TypeReference<$>
       ]
     ? Map<inferNode<k, $>, inferNode<v, $>>
     : never
 
 type inferProps<props extends PropsRule, $> = {
-    [k in requiredKeyOf<props>]: props[k] extends TypeNode<$>
+    [k in requiredKeyOf<props>]: props[k] extends TypeReference<$>
         ? inferNode<props[k], $>
         : never
 } & {

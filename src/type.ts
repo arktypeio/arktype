@@ -1,4 +1,4 @@
-import type { TraversalNode, TypeResolution } from "./nodes/node.ts"
+import type { TraversalNode, TypeNode } from "./nodes/node.ts"
 import type { inferDefinition, validateDefinition } from "./parse/definition.ts"
 import { t } from "./parse/definition.ts"
 import type { ParsedMorph } from "./parse/tuple/morph.ts"
@@ -11,7 +11,7 @@ import type { defer, xor } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
 export const nodeToType = (
-    node: TypeResolution,
+    node: TypeNode,
     flat: TraversalNode,
     $: Scope,
     config: TypeOptions
@@ -63,7 +63,7 @@ export type Checker<t> = (data: unknown) => Result<t>
 export type TypeRoot<t = unknown> = {
     [t]: t
     infer: asOut<t>
-    node: TypeResolution
+    node: TypeNode
     flat: TraversalNode
 }
 

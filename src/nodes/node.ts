@@ -25,18 +25,18 @@ import {
 import type { BranchEntry, LiteralRules } from "./rules/rules.ts"
 
 // TODO: should Type be allowed as a node? would allow configs etc. during traversal
-export type TypeNode<$ = Dict> = Identifier<$> | TypeResolution<$>
+export type TypeReference<$ = Dict> = Identifier<$> | TypeNode<$>
 
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to
  * manipulate.*/
-export type TypeResolution<$ = Dict> = {
+export type TypeNode<$ = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, $>
 }
 
 export type Identifier<$ = Dict> = stringKeyOf<$>
 
-export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
+export const nodeIntersection: Intersector<TypeReference> = (l, r, state) => {
     const lResolution = state.$.resolveNode(l)
     const rResolution = state.$.resolveNode(r)
     const result = resolutionIntersection(lResolution, rResolution, state)
@@ -52,7 +52,7 @@ export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
     return result === lResolution ? l : result === rResolution ? r : result
 }
 
-const resolutionIntersection = composeKeyedIntersection<TypeResolution>(
+const resolutionIntersection = composeKeyedIntersection<TypeNode>(
     (domain, l, r, context) => {
         if (l === undefined) {
             return r === undefined ? throwUndefinedOperandsError() : undefined
@@ -68,15 +68,15 @@ const resolutionIntersection = composeKeyedIntersection<TypeResolution>(
 /** Reflects that an Idenitifier cannot be the result of any intersection
  * including a TypeResolution  */
 type IntersectionResult<
-    l extends TypeNode,
-    r extends TypeNode
-> = l extends TypeResolution
-    ? TypeResolution
-    : r extends TypeResolution
-    ? TypeResolution
-    : TypeNode
+    l extends TypeReference,
+    r extends TypeReference
+> = l extends TypeNode
+    ? TypeNode
+    : r extends TypeNode
+    ? TypeNode
+    : TypeReference
 
-export const intersection = <l extends TypeNode, r extends TypeNode>(
+export const intersection = <l extends TypeReference, r extends TypeReference>(
     l: l,
     r: r,
     $: Scope
@@ -92,10 +92,14 @@ export const intersection = <l extends TypeNode, r extends TypeNode>(
     ) as IntersectionResult<l, r>
 }
 
-export const union = (l: TypeNode, r: TypeNode, $: Scope): TypeResolution => {
+export const union = (
+    l: TypeReference,
+    r: TypeReference,
+    $: Scope
+): TypeNode => {
     const lResolution = $.resolveNode(l)
     const rResolution = $.resolveNode(r)
-    const result = {} as mutable<TypeResolution>
+    const result = {} as mutable<TypeNode>
     const domains = keysOf({ ...lResolution, ...rResolution })
     for (const domain of domains) {
         result[domain] = hasKey(lResolution, domain)
@@ -145,7 +149,7 @@ export type BranchesEntry = ["branches", TraversalEntry[][]]
 
 export type SwitchEntry = ["switch", DiscriminatedSwitch]
 
-export const flattenNode = (node: TypeNode, $: Scope): TraversalNode => {
+export const flattenNode = (node: TypeReference, $: Scope): TraversalNode => {
     if (typeof node === "string") {
         return $.resolve(node).flat
     }
@@ -168,7 +172,7 @@ export const flattenNode = (node: TypeNode, $: Scope): TraversalNode => {
     return [["domains", result]]
 }
 
-export type ScopeNodes = { readonly [k in string]: TypeResolution }
+export type ScopeNodes = { readonly [k in string]: TypeNode }
 
 export type CompiledScopeNodes<nodes extends ScopeNodes> = {
     readonly [k in keyof nodes]: TraversalNode
@@ -186,7 +190,7 @@ export const flattenNodes = <nodes extends ScopeNodes>(
 }
 
 export const isLiteralNode = <domain extends Domain>(
-    resolution: TypeResolution,
+    resolution: TypeNode,
     domain: domain
 ): resolution is { [_ in domain]: LiteralRules<domain> } => {
     return (

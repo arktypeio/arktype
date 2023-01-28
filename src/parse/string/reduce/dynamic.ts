@@ -1,5 +1,5 @@
 import { functors } from "../../../nodes/functors.ts"
-import type { TypeNode } from "../../../nodes/node.ts"
+import type { TypeReference } from "../../../nodes/node.ts"
 import { intersection, isLiteralNode, union } from "../../../nodes/node.ts"
 import type { Scope } from "../../../scope.ts"
 import { throwInternalError, throwParseError } from "../../../utils/errors.ts"
@@ -16,13 +16,13 @@ import {
 
 type BranchState = {
     range?: OpenRange
-    intersection?: TypeNode
-    union?: TypeNode
+    intersection?: TypeReference
+    union?: TypeReference
 }
 
 export class DynamicState {
     public readonly scanner: Scanner
-    private root: TypeNode | undefined
+    private root: TypeReference | undefined
     private branches: BranchState = {}
     private groups: BranchState[] = []
 
@@ -71,7 +71,7 @@ export class DynamicState {
         }
     }
 
-    setRoot(node: TypeNode) {
+    setRoot(node: TypeReference) {
         this.assertUnsetRoot()
         this.root = node
     }
@@ -80,7 +80,7 @@ export class DynamicState {
         this.root = functors.Array(this.ejectRoot())
     }
 
-    intersect(node: TypeNode) {
+    intersect(node: TypeReference) {
         this.root = intersection(this.ejectRoot(), node, this.$)
     }
 

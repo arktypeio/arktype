@@ -1,9 +1,6 @@
 import { functors } from "../../nodes/functors.ts"
-import type { TypeNode } from "../../nodes/node.ts"
 import type { Scope } from "../../scope.ts"
-import { deepFreeze } from "../../utils/freeze.ts"
 import type { error } from "../../utils/generics.ts"
-import { hasKey } from "../../utils/generics.ts"
 import type { inferAst, validateAstSemantics } from "./ast.ts"
 import { DynamicState } from "./reduce/dynamic.ts"
 import type { state, StaticState } from "./reduce/static.ts"
@@ -12,14 +9,9 @@ import type { isResolvableIdentifier } from "./shift/operand/unenclosed.ts"
 import { parseOperator } from "./shift/operator/operator.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
-export const parseString = (def: string, $: Scope): TypeNode => {
-    if (hasKey($.cache.nodes, def)) {
-        return $.cache.nodes[def]
-    }
-    const resolution = maybeNaiveParse(def, $) ?? fullStringParse(def, $)
-    $.cache.nodes[def] = deepFreeze(resolution)
-    return resolution
-}
+export const parseString = (def: string, $: Scope) =>
+    $.getCached(def) ??
+    $.setCache(def, maybeNaiveParse(def, $) ?? fullStringParse(def, $))
 
 export type parseString<def extends string, $> = maybeNaiveParse<def, $>
 

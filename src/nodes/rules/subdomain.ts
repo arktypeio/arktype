@@ -15,7 +15,7 @@ import {
     isDisjoint,
     isEquality
 } from "../compose.ts"
-import type { TraversalNode, TypeNode } from "../node.ts"
+import type { TraversalNode, TypeReference } from "../node.ts"
 import { flattenNode, nodeIntersection } from "../node.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
@@ -23,10 +23,10 @@ import type { FlattenAndPushRule } from "./rules.ts"
 // nonsense TS circular reference issues.
 export type SubdomainRule<$ = Dict> =
     | Subdomain
-    | readonly ["Array", TypeNode<$>]
-    | readonly ["Array", TypeNode<$>, number]
-    | readonly ["Set", TypeNode<$>]
-    | readonly ["Map", TypeNode<$>, TypeNode<$>]
+    | readonly ["Array", TypeReference<$>]
+    | readonly ["Array", TypeReference<$>, number]
+    | readonly ["Set", TypeReference<$>]
+    | readonly ["Map", TypeReference<$>, TypeReference<$>]
 
 export type TraversalSubdomainRule =
     | Subdomain
@@ -71,8 +71,8 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
         let rImpliesL = true
         const maxNodeIndex = l[0] === "Map" ? 2 : 1
         for (let i = 1; i <= maxNodeIndex; i++) {
-            const lNode = l[i] as TypeNode
-            const rNode = r[i] as TypeNode
+            const lNode = l[i] as TypeReference
+            const rNode = r[i] as TypeReference
             state.path.push(subdomainParameterToPathSegment(l[0], i))
             const parameterResult = nodeIntersection(lNode, rNode, state)
             state.path.pop()

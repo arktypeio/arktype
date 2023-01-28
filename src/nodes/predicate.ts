@@ -9,7 +9,7 @@ import { compareBranches, isBranchComparison } from "./branches.ts"
 import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
 import { equality, IntersectionState, isEquality } from "./compose.ts"
 import { flattenBranches } from "./discriminate.ts"
-import type { TraversalEntry, TypeResolution } from "./node.ts"
+import type { TraversalEntry, TypeNode } from "./node.ts"
 import type { LiteralRules, Rules } from "./rules/rules.ts"
 import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
@@ -75,9 +75,12 @@ export const comparePredicates = (
     return comparison
 }
 
-export const predicateIntersection: KeyIntersectionFn<
-    Required<TypeResolution>
-> = (domain, l, r, state) => {
+export const predicateIntersection: KeyIntersectionFn<Required<TypeNode>> = (
+    domain,
+    l,
+    r,
+    state
+) => {
     const comparison = comparePredicates(l, r, state)
     if (!isBranchComparison(comparison)) {
         return comparison
@@ -152,11 +155,11 @@ export const isLiteralCondition = (
     typeof predicate === "object" && "value" in predicate
 
 export type DomainSubtypeResolution<domain extends Domain> = {
-    readonly [k in domain]: defined<TypeResolution[domain]>
+    readonly [k in domain]: defined<TypeNode[domain]>
 }
 
 export const resolutionExtendsDomain = <domain extends Domain>(
-    resolution: TypeResolution,
+    resolution: TypeNode,
     domain: domain
 ): resolution is DomainSubtypeResolution<domain> => {
     const domains = keysOf(resolution)
