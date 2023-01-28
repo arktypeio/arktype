@@ -31,15 +31,19 @@ export type parseUnenclosed<
         : never
     : never
 
-const unenclosedToNode = (s: DynamicState, token: string) =>
-    s.ctx.$.isResolvable(token)
-        ? token
-        : maybeParseUnenclosedLiteral(token) ??
-          s.error(
-              token === ""
-                  ? writeMissingOperandMessage(s)
-                  : writeUnresolvableMessage(token)
-          )
+const unenclosedToNode = (s: DynamicState, token: string) => {
+    if (s.ctx.$.isResolvable(token)) {
+        return token
+    }
+    return (
+        maybeParseUnenclosedLiteral(token) ??
+        s.error(
+            token === ""
+                ? writeMissingOperandMessage(s)
+                : writeUnresolvableMessage(token)
+        )
+    )
+}
 
 const maybeParseUnenclosedLiteral = (
     token: string

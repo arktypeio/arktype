@@ -161,7 +161,6 @@ const calculateDiscriminants = (
                 }
             }
             if (
-                // TODO: would this work for morph references?
                 hasKeys(intersectionState.morphs) &&
                 pairDisjoints.length === 0
             ) {

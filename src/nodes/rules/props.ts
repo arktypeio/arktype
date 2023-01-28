@@ -41,10 +41,6 @@ const isOptional = (prop: Prop): prop is OptionalProp =>
 
 const nodeFrom = (prop: Prop) => (isOptional(prop) ? prop[1] : prop)
 
-const mappedKeyRegex = /^\[.*\]$/
-
-const isMappedKey = (propKey: string) => mappedKeyRegex.test(propKey)
-
 export const propsIntersection = composeIntersection<PropsRule>(
     composeKeyedIntersection<PropsRule>(
         (propKey, l, r, context) => {
@@ -58,14 +54,11 @@ export const propsIntersection = composeIntersection<PropsRule>(
             const result = nodeIntersection(nodeFrom(l), nodeFrom(r), context)
             context.path.pop()
             const resultIsOptional = isOptional(l) && isOptional(r)
-            if (
-                isDisjoint(result) &&
-                (resultIsOptional || isMappedKey(propKey))
-            ) {
-                // If an optional or mapped key has an empty intersection, the
-                // type can still be satisfied as long as the key is not included.
-                // Set the node to "never" rather than invalidating the type.
-                return "never"
+            if (isDisjoint(result) && resultIsOptional) {
+                // If an optional key has an empty intersection, the type can
+                // still be satisfied as long as the key is not included. Set
+                // the node to never rather than invalidating the type.
+                return {}
             }
             return result
         },
