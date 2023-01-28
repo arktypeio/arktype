@@ -29,11 +29,11 @@ import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import type { stringifyUnion } from "./utils/unionToTuple.ts"
 
 export const composeTypeParser = <$ extends Scope>($: $): TypeParser<$> =>
-    lazyDynamicWrap((def, traits = {}) => {
+    lazyDynamicWrap((def, opts = {}) => {
         // TODO: make parse return a type
         const root = $.resolveNode(parseDefinition(def, $))
         const flat = flattenNode(root, $)
-        return nodeToType(root, flat, $, traits)
+        return nodeToType(root, flat, $, opts)
     })
 
 type ScopeParser = LazyDynamicWrap<InferredScopeParser, DynamicScopeParser>
@@ -172,15 +172,25 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     constructor(public aliases: Dict, public opts: ScopeOptions) {
-        this.#cacheResolutions("imports")
-        this.#cacheResolutions("includes")
+        if (opts.standard !== false) {
+            this.#cacheResolutions([scopes.standard.compile()], "imports")
+        }
+        if (opts.imports) {
+            this.#cacheResolutions(
+                opts.imports.map(($) => $.compile()),
+                "imports"
+            )
+        }
+        if (opts.includes) {
+            this.#cacheResolutions(
+                opts.includes.map(($) => $.compile()),
+                "includes"
+            )
+        }
     }
 
-    #cacheResolutions(kind: "imports" | "includes") {
-        if (!hasKey(this.opts, kind)) {
-            return
-        }
-        for (const space of this.opts[kind].map(($) => $.compile())) {
+    #cacheResolutions(spaces: Space[], kind: "imports" | "includes") {
+        for (const space of spaces) {
             for (const name in space) {
                 if (this.isResolvable(name)) {
                     throwParseError(writeDuplicateAliasMessage(name))
@@ -203,7 +213,7 @@ export class Scope<context extends ScopeContext = any> {
         if (!this.#cache.compiled) {
             for (const name in this.aliases) {
                 if (!this.#cache.exports[name]) {
-                    this.resolve(name)
+                    this.#cache.exports[name] = this.resolve(name)
                 }
             }
             this.#cache.compiled = true
@@ -325,10 +335,11 @@ const validation = scope(
 export const scopes = {
     ts,
     validation,
-    default: scope(
+    standard: scope(
         {},
         {
-            includes: [ts, validation]
+            includes: [ts, validation],
+            standard: false
         }
     )
 }
@@ -362,13 +373,14 @@ type PrecompiledDefaults = {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type ValidateDefaultScope = [
-    // if PrecompiledDefaults gets out of sync with scopes.default, there will be a type error here
-    extend<PrecompiledDefaults, typeof scopes["default"]["infer"]>,
-    extend<typeof scopes["default"]["infer"], PrecompiledDefaults>
+    // if PrecompiledDefaults gets out of sync with scopes.standard, there will be a type error here
+    extend<PrecompiledDefaults, typeof scopes["standard"]["infer"]>,
+    extend<typeof scopes["standard"]["infer"], PrecompiledDefaults>
 ]
 
-export const type: TypeParser<PrecompiledDefaults> =
-    composeTypeParser(validation)
+export const type: TypeParser<PrecompiledDefaults> = composeTypeParser(
+    scopes.standard
+)
 
 export const writeDuplicateAliasMessage = <name extends string>(
     name: name
