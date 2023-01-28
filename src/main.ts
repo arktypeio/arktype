@@ -155,7 +155,6 @@ export class Scope<context extends ScopeContext = any> {
     parseCache = new FreezingCache<TypeReference>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
-    #compiled = false
 
     constructor(public aliases: Dict, public opts: ScopeOptions) {
         if (opts.standard !== false) {
@@ -195,6 +194,7 @@ export class Scope<context extends ScopeContext = any> {
         return chainableNoOpProxy
     }
 
+    #compiled = false
     compile() {
         if (!this.#compiled) {
             for (const name in this.aliases) {
