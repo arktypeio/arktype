@@ -6,7 +6,7 @@ import type {
     validateDefinition
 } from "./parse/definition.ts"
 import { parseDefinition } from "./parse/definition.ts"
-import type { Type, TypeParser } from "./type.ts"
+import type { Type, TypeOptions, TypeParser } from "./type.ts"
 import { nodeToType } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type { Domain } from "./utils/domains.ts"
@@ -24,19 +24,20 @@ import type {
     replaceProps
 } from "./utils/generics.ts"
 import { hasKey } from "./utils/generics.ts"
-import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
-import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import type { stringifyUnion } from "./utils/unionToTuple.ts"
 
-export const composeTypeParser = <$ extends Scope>($: $): TypeParser<$> =>
-    lazyDynamicWrap((def, opts = {}) => {
+export const composeTypeParser = <$ extends Scope>($: $) =>
+    ((def, opts: TypeOptions = {}) => {
         // TODO: make parse return a type
         const root = $.resolveNode(parseDefinition(def, $))
         const flat = flattenNode(root, $)
         return nodeToType(root, flat, $, opts)
-    })
+    }) as TypeParser<$>
 
-type ScopeParser = LazyDynamicWrap<InferredScopeParser, DynamicScopeParser>
+type ScopeParser = <aliases, opts extends ScopeOptions = {}>(
+    aliases: validateAliases<aliases, opts>,
+    opts?: conform<opts, validateOptions<opts>>
+) => Scope<parseScope<aliases, opts>>
 
 // [] allows tuple inferences
 type ScopeList = [] | readonly Scope[]
@@ -80,19 +81,6 @@ type importsOf<opts extends ScopeOptions> = unknown extends opts["imports"]
 type includesOf<opts extends ScopeOptions> = unknown extends opts["includes"]
     ? {}
     : mergeScopes<opts["includes"]>
-
-type InferredScopeParser = <aliases, opts extends ScopeOptions = {}>(
-    aliases: validateAliases<aliases, opts>,
-    opts?: conform<opts, validateOptions<opts>>
-) => Scope<parseScope<aliases, opts>>
-
-type DynamicScopeParser = <
-    aliases extends Dict,
-    opts extends ScopeOptions = {}
->(
-    aliases: aliases,
-    opts?: validateOptions<opts>
-) => Scope<parseScope<{ [k in keyof aliases]: inferred<unknown> }, opts>>
 
 export type resolve<name extends keyof $, $> = isAny<$[name]> extends true
     ? any
@@ -290,9 +278,8 @@ const always: Record<Domain, true> = {
     undefined: true
 }
 
-export const scope = lazyDynamicWrap(
-    (aliases: Dict, opts: ScopeOptions = {}) => new Scope(aliases, opts)
-) as any as ScopeParser
+export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>
+    new Scope(aliases, opts)) as any
 
 const ts = scope(
     {

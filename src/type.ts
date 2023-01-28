@@ -8,7 +8,6 @@ import { traverse } from "./traverse/check.ts"
 import type { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type { defer, xor } from "./utils/generics.ts"
-import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 
 export const nodeToType = (
     node: TypeNode,
@@ -32,7 +31,7 @@ export const nodeToType = (
 export const isType = (value: unknown): value is Type =>
     (value as Type)?.infer === chainableNoOpProxy
 
-export type InferredTypeParser<$> = {
+export type TypeParser<$> = {
     <def>(def: validateDefinition<def, $>): parseType<def, $>
 
     <def>(def: validateDefinition<def, $>, opts: TypeOptions): parseType<def, $>
@@ -41,13 +40,6 @@ export type InferredTypeParser<$> = {
 export type parseType<def, $> = def extends validateDefinition<def, $>
     ? Type<inferDefinition<def, $>>
     : never
-
-type DynamicTypeParser = (def: unknown, opts?: TypeOptions) => Type
-
-export type TypeParser<$> = LazyDynamicWrap<
-    InferredTypeParser<$>,
-    DynamicTypeParser
->
 
 export type Result<t> = xor<
     {
