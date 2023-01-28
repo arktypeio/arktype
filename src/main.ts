@@ -13,7 +13,7 @@ import type { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { Domain } from "./utils/domains.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
-import { deepFreeze } from "./utils/freeze.js"
+import { deepFreeze } from "./utils/freeze.ts"
 import type {
     conform,
     defer,
@@ -27,7 +27,6 @@ import type {
     replaceProps,
     xor
 } from "./utils/generics.js"
-import { hasKey } from "./utils/generics.js"
 import type { stringifyUnion } from "./utils/unionToTuple.js"
 
 type ScopeParser = {
@@ -143,13 +142,6 @@ type inferExports<aliases, opts extends ScopeOptions> = evaluate<
     } & includesOf<opts>
 >
 
-type ScopeCache = {
-    nodes: { [def in string]?: TypeReference }
-    resolutions: { [name in string]?: Type }
-    exports: { [name in string]?: Type }
-    compiled: boolean
-}
-
 export type Space<exports = Dict> = {
     [k in keyof exports]: Type<exports[k]>
 }
@@ -160,40 +152,34 @@ type resolutions<context extends ScopeContext> = localsOf<context> &
 type name<context extends ScopeContext> = keyof resolutions<context> & string
 
 export class Scope<context extends ScopeContext = any> {
-    #cache: ScopeCache = {
-        nodes: {},
-        resolutions: {},
-        exports: {},
-        compiled: false
-    }
+    parseCache = new FreezingCache<TypeReference>()
+    #resolutions = new Cache<Type>()
+    #exports = new Cache<Type>()
+    #compiled = false
 
     constructor(public aliases: Dict, public opts: ScopeOptions) {
         if (opts.standard !== false) {
-            this.#cacheResolutions([scopes.standard.compile()], "imports")
+            this.#cacheSpaces([standardSpace], "imports")
         }
         if (opts.imports) {
-            this.#cacheResolutions(
-                opts.imports.map(($) => $.compile()),
-                "imports"
-            )
+            const importedSpaces = opts.imports.map(($) => $.compile())
+            this.#cacheSpaces(importedSpaces, "imports")
         }
         if (opts.includes) {
-            this.#cacheResolutions(
-                opts.includes.map(($) => $.compile()),
-                "includes"
-            )
+            const includedSpaces = opts.includes.map(($) => $.compile())
+            this.#cacheSpaces(includedSpaces, "includes")
         }
     }
 
-    #cacheResolutions(spaces: Space[], kind: "imports" | "includes") {
+    #cacheSpaces(spaces: Space[], kind: "imports" | "includes") {
         for (const space of spaces) {
             for (const name in space) {
                 if (this.isResolvable(name)) {
                     throwParseError(writeDuplicateAliasMessage(name))
                 }
-                this.#cache.resolutions[name] = space[name]
+                this.#resolutions.set(name, space[name])
                 if (kind === "includes") {
-                    this.#cache.exports[name] = space[name]
+                    this.#exports.set(name, space[name])
                 }
             }
         }
@@ -210,21 +196,17 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     compile() {
-        if (!this.#cache.compiled) {
+        if (!this.#compiled) {
             for (const name in this.aliases) {
-                if (!this.#cache.exports[name]) {
-                    this.#cache.exports[name] = this.resolve(name)
-                }
+                this.resolve(name)
             }
-            this.#cache.compiled = true
+            this.#compiled = true
         }
-        return this.#cache.exports as Space<exportsOf<context>>
+        return this.#exports.root as Space<exportsOf<context>>
     }
 
     isResolvable(name: string) {
-        return this.#cache.resolutions[name] || this.aliases[name]
-            ? true
-            : false
+        return this.#resolutions.has(name) || name in this.aliases
     }
 
     resolve(name: name<context>) {
@@ -232,8 +214,9 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     #resolveRecurse(name: string, seen: string[]): Type {
-        if (hasKey(this.#cache.resolutions, name)) {
-            return this.#cache.resolutions[name]
+        const maybeCacheResult = this.#resolutions.get(name)
+        if (maybeCacheResult) {
+            return maybeCacheResult
         }
         if (!this.aliases[name]) {
             return throwInternalError(
@@ -253,7 +236,8 @@ export class Scope<context extends ScopeContext = any> {
         // TODO: Figure out type options here
         // temporarily set the TraversalNode to an alias that will be used for cyclic resolutions
         const type = this.#typeFrom(resolution, [["alias", name]], {})
-        this.#cache.resolutions[name] = type
+        this.#resolutions.set(name, type)
+        this.#exports.set(name, type)
         type.flat = flattenNode(resolution, this)
         return type
     }
@@ -276,17 +260,33 @@ export class Scope<context extends ScopeContext = any> {
             }
         ) as Type
     }
+}
 
-    // TODO: cache class
-    getCached(def: string): TypeReference | undefined {
-        if (hasKey(this.#cache.nodes, def)) {
-            return this.#cache.nodes[def]
-        }
+class Cache<item = unknown> {
+    protected cache: { [name in string]?: item } = {}
+
+    get root(): { readonly [name in string]?: item } {
+        return this.cache
     }
 
-    setCache(def: string, node: TypeReference) {
-        this.#cache.nodes[def] = deepFreeze(node)
-        return node
+    has(name: string) {
+        return name in this.cache
+    }
+
+    get(name: string) {
+        return this.cache[name]
+    }
+
+    set(name: string, item: item) {
+        this.cache[name] = item
+        return item
+    }
+}
+
+class FreezingCache<item = unknown> extends Cache<item> {
+    override set(name: string, item: item) {
+        this.cache[name] = deepFreeze(item) as item
+        return item
     }
 }
 
@@ -354,6 +354,8 @@ const standard = scope(
         standard: false
     }
 )
+
+const standardSpace = standard.compile()
 
 export const scopes = {
     ts,

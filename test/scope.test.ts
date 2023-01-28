@@ -105,13 +105,13 @@ describe("scope", () => {
         })
         describe("errors", () => {
             it("duplicate alias", () => {
-                attest(() => {
+                attest(() =>
                     scope(
                         // @ts-expect-error
                         { a: "string" },
                         { includes: [scope({ a: "string" })] }
-                    )
-                }).throwsAndHasTypeError(writeDuplicateAliasMessage("a"))
+                    ).compile()
+                ).throwsAndHasTypeError(writeDuplicateAliasMessage("a"))
             })
         })
     })

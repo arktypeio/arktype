@@ -10,8 +10,8 @@ import { parseOperator } from "./shift/operator/operator.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
 export const parseString = (def: string, $: Scope) =>
-    $.getCached(def) ??
-    $.setCache(def, maybeNaiveParse(def, $) ?? fullStringParse(def, $))
+    $.parseCache.get(def) ??
+    $.parseCache.set(def, maybeNaiveParse(def, $) ?? fullStringParse(def, $))
 
 export type parseString<def extends string, $> = maybeNaiveParse<def, $>
 
@@ -49,7 +49,7 @@ export const maybeNaiveParse = (def: string, $: Scope) => {
     }
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
-        if ($.isResolvable(elementDef)) {
+        if ($.isResolvable(def)) {
             return functors.Array(elementDef)
         }
     }
