@@ -42,7 +42,7 @@ export class DynamicState {
         this.assertHasRoot()
         const resolution =
             typeof this.root === "string"
-                ? this.$.resolveNode(this.root)
+                ? this.$.resolveIfIdentifier(this.root)
                 : this.root!
         if (isLiteralNode(resolution, "number")) {
             const limit = resolution.number.value

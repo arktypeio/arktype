@@ -37,8 +37,8 @@ export type TypeNode<$ = Dict> = {
 export type Identifier<$ = Dict> = stringKeyOf<$>
 
 export const nodeIntersection: Intersector<TypeReference> = (l, r, state) => {
-    const lResolution = state.$.resolveNode(l)
-    const rResolution = state.$.resolveNode(r)
+    const lResolution = state.$.resolveIfIdentifier(l)
+    const rResolution = state.$.resolveIfIdentifier(r)
     const result = resolutionIntersection(lResolution, rResolution, state)
     if (typeof result === "object" && !hasKeys(result)) {
         return hasKeys(state.disjoints)
@@ -97,8 +97,8 @@ export const union = (
     r: TypeReference,
     $: Scope
 ): TypeNode => {
-    const lResolution = $.resolveNode(l)
-    const rResolution = $.resolveNode(r)
+    const lResolution = $.resolveIfIdentifier(l)
+    const rResolution = $.resolveIfIdentifier(r)
     const result = {} as mutable<TypeNode>
     const domains = keysOf({ ...lResolution, ...rResolution })
     for (const domain of domains) {

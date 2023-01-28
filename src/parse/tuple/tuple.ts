@@ -1,9 +1,8 @@
+import type { asIn, asOut } from "../../main.ts"
 import { functors } from "../../nodes/functors.ts"
 import type { inferNode } from "../../nodes/infer.ts"
-import type { TypeReference, TypeNode } from "../../nodes/node.ts"
+import type { TypeNode, TypeReference } from "../../nodes/node.ts"
 import { intersection, union } from "../../nodes/node.ts"
-import type { Scope } from "../../main.ts"
-import type { asIn, asOut } from "../../main.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type {
@@ -13,7 +12,11 @@ import type {
     List,
     returnOf
 } from "../../utils/generics.ts"
-import type { inferDefinition, validateDefinition } from "../definition.ts"
+import type {
+    inferDefinition,
+    ParseContext,
+    validateDefinition
+} from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { inferIntersection, inferUnion } from "../string/ast.ts"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
@@ -23,16 +26,16 @@ import { parseMorphTuple } from "./morph.ts"
 import type { validateNarrowTuple } from "./narrow.ts"
 import { parseNarrowTuple } from "./narrow.ts"
 
-export const parseTuple = (def: List, $: Scope): TypeReference => {
+export const parseTuple = (def: List, ctx: ParseContext): TypeReference => {
     if (isPostfixExpression(def)) {
-        return postfixParsers[def[1]](def as never, $)
+        return postfixParsers[def[1]](def as never, ctx)
     }
     if (isPrefixExpression(def)) {
-        return prefixParsers[def[0]](def as never, $)
+        return prefixParsers[def[0]](def as never, ctx)
     }
     const props: Record<number, TypeReference> = {}
     for (let i = 0; i < def.length; i++) {
-        props[i] = parseDefinition(def[i], $)
+        props[i] = parseDefinition(def[i], ctx)
     }
     return {
         object: {
@@ -106,13 +109,13 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
         : never
     : never
 
-const parseBranchTuple: PostfixParser<"|" | "&"> = (def, $) => {
+const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
     if (def[2] === undefined) {
         return throwParseError(writeMissingRightOperandMessage(def[1], ""))
     }
-    const l = parseDefinition(def[0], $)
-    const r = parseDefinition(def[2], $)
-    return def[1] === "&" ? intersection(l, r, $) : union(l, r, $)
+    const l = parseDefinition(def[0], ctx)
+    const r = parseDefinition(def[2], ctx)
+    return def[1] === "&" ? intersection(l, r, ctx.$) : union(l, r, ctx.$)
 }
 
 const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
@@ -120,12 +123,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
 
 export type PostfixParser<token extends PostfixToken> = (
     def: PostfixExpression<token>,
-    $: Scope
+    ctx: ParseContext
 ) => TypeReference
 
 export type PrefixParser<token extends PrefixToken> = (
     def: PrefixExpression<token>,
-    $: Scope
+    ctx: ParseContext
 ) => TypeReference
 
 export type TupleExpression = PrefixExpression | PostfixExpression

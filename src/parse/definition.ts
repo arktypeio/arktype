@@ -11,6 +11,7 @@ import type {
     isUnknown,
     List
 } from "../utils/generics.ts"
+import type { Path } from "../utils/paths.ts"
 import type { inferRecord } from "./record.ts"
 import { parseRecord } from "./record.ts"
 import type { inferString, validateString } from "./string/string.ts"
@@ -22,14 +23,23 @@ import type {
 } from "./tuple/tuple.ts"
 import { parseTuple } from "./tuple/tuple.ts"
 
-export const parseDefinition = (def: unknown, $: Scope): TypeReference => {
+export type ParseContext = {
+    $: Scope
+    path: Path
+    name: string
+}
+
+export const parseDefinition = (
+    def: unknown,
+    ctx: ParseContext
+): TypeReference => {
     const subdomain = subdomainOf(def)
     return subdomain === "string"
-        ? parseString(def as string, $)
+        ? parseString(def as string, ctx)
         : subdomain === "object"
-        ? parseRecord(def as Dict, $)
+        ? parseRecord(def as Dict, ctx)
         : subdomain === "Array"
-        ? parseTuple(def as List, $)
+        ? parseTuple(def as List, ctx)
         : subdomain === "RegExp"
         ? { string: { regex: (def as RegExp).source } }
         : isType(def)

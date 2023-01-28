@@ -1,15 +1,14 @@
 import type { TypeNode } from "../nodes/node.ts"
 import type { PropsRule } from "../nodes/rules/props.ts"
-import type { Scope } from "../main.ts"
 import type { Dict, evaluate, mutable } from "../utils/generics.ts"
-import type { inferDefinition } from "./definition.ts"
+import type { inferDefinition, ParseContext } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"
 import { Scanner } from "./string/shift/scanner.ts"
 
-export const parseRecord = (def: Dict, $: Scope): TypeNode => {
+export const parseRecord = (def: Dict, ctx: ParseContext): TypeNode => {
     const props: mutable<PropsRule> = {}
     for (const definitionKey in def) {
-        const propNode = parseDefinition(def[definitionKey], $)
+        const propNode = parseDefinition(def[definitionKey], ctx)
         if (definitionKey.endsWith(`${Scanner.escapeToken}?`)) {
             props[`${definitionKey.slice(0, -2)}?`] = propNode
         } else if (definitionKey.endsWith("?")) {

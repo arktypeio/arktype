@@ -3,6 +3,7 @@ import { flattenNode } from "./nodes/node.js"
 import type {
     inferDefinition,
     inferred,
+    ParseContext,
     validateDefinition
 } from "./parse/definition.js"
 import { parseDefinition, t } from "./parse/definition.js"
@@ -27,6 +28,7 @@ import type {
     replaceProps,
     xor
 } from "./utils/generics.js"
+import { Path } from "./utils/paths.ts"
 import type { stringifyUnion } from "./utils/unionToTuple.js"
 
 type ScopeParser = {
@@ -185,10 +187,19 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     type = ((def, opts: TypeOptions = {}) => {
-        const root = this.resolveNode(parseDefinition(def, this))
+        const ctx = this.#initializeContext("(anonymous)")
+        const root = this.resolveIfIdentifier(parseDefinition(def, ctx))
         const flat = flattenNode(root, this)
         return this.#typeFrom(root, flat, opts)
     }) as TypeParser<resolutions<context>>
+
+    #initializeContext(name: string): ParseContext {
+        return {
+            $: this,
+            path: new Path(),
+            name
+        }
+    }
 
     get infer(): exportsOf<context> {
         return chainableNoOpProxy
@@ -223,7 +234,8 @@ export class Scope<context extends ScopeContext = any> {
                 `Unexpectedly failed to resolve alias '${name}'`
             )
         }
-        let resolution = parseDefinition(this.aliases[name], this)
+        const ctx = this.#initializeContext(name)
+        let resolution = parseDefinition(this.aliases[name], ctx)
         if (typeof resolution === "string") {
             if (seen.includes(resolution)) {
                 return throwParseError(
@@ -242,7 +254,7 @@ export class Scope<context extends ScopeContext = any> {
         return type
     }
 
-    resolveNode(node: TypeReference): TypeNode {
+    resolveIfIdentifier(node: TypeReference): TypeNode {
         return typeof node === "string" ? this.resolve(node).node : node
     }
 

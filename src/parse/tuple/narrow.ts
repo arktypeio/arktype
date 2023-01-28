@@ -1,22 +1,22 @@
-import { intersection } from "../../nodes/node.ts"
 import type { asIn } from "../../main.ts"
+import { intersection } from "../../nodes/node.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { PostfixParser, TupleExpression } from "./tuple.ts"
 import type { distributable } from "./utils.ts"
 import { distributeFunctionToNode } from "./utils.ts"
 
-export const parseNarrowTuple: PostfixParser<":"> = (def, scope) => {
-    const inputNode = parseDefinition(def[0], scope)
+export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
+    const inputNode = parseDefinition(def[0], ctx)
     return intersection(
         inputNode,
         distributeFunctionToNode(
             def[2] as distributable<Narrow>,
             inputNode,
-            scope,
+            ctx,
             "narrow"
         ),
-        scope
+        ctx.$
     )
 }
 
