@@ -30,15 +30,27 @@ import type {
 import { hasKey } from "./utils/generics.js"
 import type { stringifyUnion } from "./utils/unionToTuple.js"
 
-type ScopeParser = <aliases, opts extends ScopeOptions = {}>(
-    aliases: validateAliases<aliases, opts>,
-    opts?: conform<opts, validateOptions<opts>>
-) => Scope<parseScope<aliases, opts>>
+type ScopeParser = {
+    <aliases>(aliases: validateAliases<aliases, {}>): Scope<
+        parseScope<aliases, {}>
+    >
+
+    <aliases, opts extends ScopeOptions>(
+        aliases: validateAliases<aliases, opts>,
+        opts: conform<opts, validateOptions<opts>>
+    ): Scope<parseScope<aliases, opts>>
+}
+
+export type TypeParser<$> = {
+    <def>(def: validateDefinition<def, $>): parseType<def, $>
+
+    <def>(def: validateDefinition<def, $>, opts: TypeOptions): parseType<def, $>
+}
 
 // [] allows tuple inferences
 type ScopeList = [] | readonly Scope[]
 
-// TODO: Reintegrate thunks/compilation? Add utilities for narrowed defs
+// TODO: Reintegrate thunks/compilation, add utilities for narrowed defs
 export type ScopeOptions = {
     imports?: ScopeList
     includes?: ScopeList
@@ -395,12 +407,6 @@ type writeDuplicateAliasMessage<name extends string> =
 export const isType = (value: unknown): value is Type =>
     (value as Type)?.infer === chainableNoOpProxy
 
-export type TypeParser<$> = {
-    <def>(def: validateDefinition<def, $>): parseType<def, $>
-
-    <def>(def: validateDefinition<def, $>, opts: TypeOptions): parseType<def, $>
-}
-
 export type parseType<def, $> = def extends validateDefinition<def, $>
     ? Type<inferDefinition<def, $>>
     : never
@@ -413,10 +419,10 @@ export type Result<t> = xor<
     { problems: Problems }
 >
 
-export type Checker<t> = (data: unknown) => Result<t>
+type Checker<t> = (data: unknown) => Result<t>
 
 // TODO: add methods like .intersect, etc.
-export type TypeRoot<t = unknown> = {
+type TypeRoot<t = unknown> = {
     [t]: t
     infer: asOut<t>
     node: TypeNode
