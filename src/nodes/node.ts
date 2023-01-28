@@ -1,5 +1,5 @@
+import type { Scope } from "../main.ts"
 import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
-import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"

@@ -1,5 +1,5 @@
 import { intersection } from "../../nodes/node.ts"
-import type { asIn } from "../../type.ts"
+import type { asIn } from "../../main.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { PostfixParser, TupleExpression } from "./tuple.ts"

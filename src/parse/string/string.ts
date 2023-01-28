@@ -1,5 +1,5 @@
+import type { Scope } from "../../main.ts"
 import { functors } from "../../nodes/functors.ts"
-import type { Scope } from "../../scope.ts"
 import type { error } from "../../utils/generics.ts"
 import type { inferAst, validateAstSemantics } from "./ast.ts"
 import { DynamicState } from "./reduce/dynamic.ts"

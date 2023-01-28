@@ -1,5 +1,5 @@
 import { undiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
-import type { Scope } from "../scope.ts"
+import type { Scope } from "../main.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"

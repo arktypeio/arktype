@@ -1,7 +1,7 @@
 import type { DisjointsByPath } from "../../nodes/compose.ts"
 import { disjointDescriptionWriters } from "../../nodes/compose.ts"
-import type { resolve } from "../../scope.ts"
-import type { asIn } from "../../type.ts"
+import type { resolve } from "../../main.ts"
+import type { asIn } from "../../main.ts"
 import type { subdomainOf } from "../../utils/domains.ts"
 import type {
     castOnError,

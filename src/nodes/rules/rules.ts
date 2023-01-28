@@ -1,6 +1,6 @@
 import type { Morph } from "../../parse/tuple/morph.ts"
 import type { Narrow } from "../../parse/tuple/narrow.ts"
-import type { Scope } from "../../scope.ts"
+import type { Scope } from "../../main.ts"
 import { traverse } from "../../traverse/check.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type {

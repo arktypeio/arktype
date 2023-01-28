@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
+import { writeDuplicateAliasMessage } from "../src/main.ts"
 import { writeUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
-import { writeDuplicateAliasMessage } from "../src/scope.ts"
 
 describe("scope", () => {
     it("base definition", () => {

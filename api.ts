@@ -1,1 +1,2 @@
-export { scope, type } from "./src/scope.ts"
+export { scope, type } from "./src/main.ts"
+export type { Type } from "./src/main.ts"

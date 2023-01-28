@@ -1,19 +1,22 @@
-import type { TypeNode, TypeReference } from "./nodes/node.ts"
-import { flattenNode } from "./nodes/node.ts"
+import type { TraversalNode, TypeNode, TypeReference } from "./nodes/node.js"
+import { flattenNode } from "./nodes/node.js"
 import type {
     inferDefinition,
     inferred,
     validateDefinition
-} from "./parse/definition.ts"
-import { parseDefinition } from "./parse/definition.ts"
-import type { Type, TypeOptions, TypeParser } from "./type.ts"
-import { nodeToType } from "./type.ts"
-import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import type { Domain } from "./utils/domains.ts"
-import { throwInternalError, throwParseError } from "./utils/errors.ts"
-import { deepFreeze } from "./utils/freeze.ts"
+} from "./parse/definition.js"
+import { parseDefinition, t } from "./parse/definition.js"
+import type { ParsedMorph } from "./parse/tuple/morph.ts"
+import type { ProblemsOptions } from "./traverse/check.ts"
+import { traverse } from "./traverse/check.ts"
+import type { Problems } from "./traverse/problems.ts"
+import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
+import type { Domain } from "./utils/domains.js"
+import { throwInternalError, throwParseError } from "./utils/errors.js"
+import { deepFreeze } from "./utils/freeze.js"
 import type {
     conform,
+    defer,
     Dict,
     error,
     evaluate,
@@ -21,18 +24,11 @@ import type {
     isAny,
     List,
     nominal,
-    replaceProps
-} from "./utils/generics.ts"
-import { hasKey } from "./utils/generics.ts"
-import type { stringifyUnion } from "./utils/unionToTuple.ts"
-
-export const composeTypeParser = <$ extends Scope>($: $) =>
-    ((def, opts: TypeOptions = {}) => {
-        // TODO: make parse return a type
-        const root = $.resolveNode(parseDefinition(def, $))
-        const flat = flattenNode(root, $)
-        return nodeToType(root, flat, $, opts)
-    }) as TypeParser<$>
+    replaceProps,
+    xor
+} from "./utils/generics.js"
+import { hasKey } from "./utils/generics.js"
+import type { stringifyUnion } from "./utils/unionToTuple.js"
 
 type ScopeParser = <aliases, opts extends ScopeOptions = {}>(
     aliases: validateAliases<aliases, opts>,
@@ -191,7 +187,11 @@ export class Scope<context extends ScopeContext = any> {
         }
     }
 
-    type: TypeParser<resolutions<context>> = composeTypeParser(this)
+    type = ((def, opts: TypeOptions = {}) => {
+        const root = this.resolveNode(parseDefinition(def, this))
+        const flat = flattenNode(root, this)
+        return this.#typeFrom(root, flat, opts)
+    }) as TypeParser<resolutions<context>>
 
     get infer(): exportsOf<context> {
         return chainableNoOpProxy
@@ -238,8 +238,9 @@ export class Scope<context extends ScopeContext = any> {
             seen.push(resolution)
             resolution = this.#resolveRecurse(resolution, seen).node
         }
+        // TODO: Figure out type options here
         // temporarily set the TraversalNode to an alias that will be used for cyclic resolutions
-        const type = nodeToType(resolution, [["alias", name]], this, {})
+        const type = this.#typeFrom(resolution, [["alias", name]], {})
         this.#cache.resolutions[name] = type
         type.flat = flattenNode(resolution, this)
         return type
@@ -247,6 +248,21 @@ export class Scope<context extends ScopeContext = any> {
 
     resolveNode(node: TypeReference): TypeNode {
         return typeof node === "string" ? this.resolve(node).node : node
+    }
+
+    #typeFrom(node: TypeNode, flat: TraversalNode, config: TypeOptions) {
+        return Object.assign(
+            (data: unknown) => {
+                return traverse(data, flat, this, config)
+            },
+            {
+                [t]: chainableNoOpProxy,
+                infer: chainableNoOpProxy,
+                config,
+                node,
+                flat
+            }
+        ) as Type
     }
 
     // TODO: cache class
@@ -319,16 +335,18 @@ const validation = scope(
     { standard: false }
 )
 
+const standard = scope(
+    {},
+    {
+        includes: [ts, validation],
+        standard: false
+    }
+)
+
 export const scopes = {
     ts,
     validation,
-    standard: scope(
-        {},
-        {
-            includes: [ts, validation],
-            standard: false
-        }
-    )
+    standard
 }
 
 // This is just copied from the inference of defaultScope. Creating an explicit
@@ -365,9 +383,7 @@ type ValidateDefaultScope = [
     extend<typeof scopes["standard"]["infer"], PrecompiledDefaults>
 ]
 
-export const type: TypeParser<PrecompiledDefaults> = composeTypeParser(
-    scopes.standard
-)
+export const type: TypeParser<PrecompiledDefaults> = scopes.standard.type
 
 export const writeDuplicateAliasMessage = <name extends string>(
     name: name
@@ -375,3 +391,54 @@ export const writeDuplicateAliasMessage = <name extends string>(
 
 type writeDuplicateAliasMessage<name extends string> =
     `Alias '${name}' is already defined`
+
+export const isType = (value: unknown): value is Type =>
+    (value as Type)?.infer === chainableNoOpProxy
+
+export type TypeParser<$> = {
+    <def>(def: validateDefinition<def, $>): parseType<def, $>
+
+    <def>(def: validateDefinition<def, $>, opts: TypeOptions): parseType<def, $>
+}
+
+export type parseType<def, $> = def extends validateDefinition<def, $>
+    ? Type<inferDefinition<def, $>>
+    : never
+
+export type Result<t> = xor<
+    {
+        data: asIn<t>
+        out: asOut<t>
+    },
+    { problems: Problems }
+>
+
+export type Checker<t> = (data: unknown) => Result<t>
+
+// TODO: add methods like .intersect, etc.
+export type TypeRoot<t = unknown> = {
+    [t]: t
+    infer: asOut<t>
+    node: TypeNode
+    flat: TraversalNode
+}
+
+export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
+
+export type TypeOptions = {
+    problems?: ProblemsOptions
+}
+
+export type asIn<t> = asIo<t, "in">
+
+export type asOut<t> = asIo<t, "out">
+
+type asIo<t, io extends "in" | "out"> = t extends ParsedMorph<infer i, infer o>
+    ? io extends "in"
+        ? i
+        : o
+    : t extends object
+    ? t extends Function
+        ? t
+        : { [k in keyof t]: asIo<t[k], io> }
+    : t

@@ -1,6 +1,6 @@
 import type { TypeReference } from "../../nodes/node.ts"
 import type { NarrowableRules } from "../../nodes/rules/rules.ts"
-import type { Scope } from "../../scope.ts"
+import type { Scope } from "../../main.ts"
 import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"

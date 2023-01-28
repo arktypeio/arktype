@@ -1,7 +1,7 @@
 import { functors } from "../../../nodes/functors.ts"
 import type { TypeReference } from "../../../nodes/node.ts"
 import { intersection, isLiteralNode, union } from "../../../nodes/node.ts"
-import type { Scope } from "../../../scope.ts"
+import type { Scope } from "../../../main.ts"
 import { throwInternalError, throwParseError } from "../../../utils/errors.ts"
 import { isKeyOf } from "../../../utils/generics.ts"
 import { Scanner } from "../shift/scanner.ts"

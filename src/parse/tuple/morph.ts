@@ -1,6 +1,6 @@
 import type { TypeNode } from "../../nodes/node.ts"
 import type { Branch } from "../../nodes/predicate.ts"
-import type { asOut } from "../../type.ts"
+import type { asOut } from "../../main.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { hasSubdomain } from "../../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../../utils/errors.ts"

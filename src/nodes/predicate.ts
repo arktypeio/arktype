@@ -1,5 +1,5 @@
 import type { Morph } from "../parse/tuple/morph.ts"
-import type { Scope } from "../scope.ts"
+import type { Scope } from "../main.ts"
 import type { Domain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
 import type { CollapsibleList, defined, Dict, xor } from "../utils/generics.ts"

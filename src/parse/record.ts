@@ -1,6 +1,6 @@
 import type { TypeNode } from "../nodes/node.ts"
 import type { PropsRule } from "../nodes/rules/props.ts"
-import type { Scope } from "../scope.ts"
+import type { Scope } from "../main.ts"
 import type { Dict, evaluate, mutable } from "../utils/generics.ts"
 import type { inferDefinition } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"

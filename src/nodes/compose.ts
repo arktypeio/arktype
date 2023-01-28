@@ -1,5 +1,5 @@
 import type { Morph } from "../parse/tuple/morph.ts"
-import type { Scope } from "../scope.ts"
+import type { Scope } from "../main.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type {

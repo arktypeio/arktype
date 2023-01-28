@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
+import type { Type } from "../api.ts"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import type { Type } from "../src/type.ts"
 import type { assertEqual } from "../src/utils/generics.ts"
 
 describe("narrow", () => {

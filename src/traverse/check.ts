@@ -1,3 +1,4 @@
+import type { Result, Scope, TypeOptions } from "../main.ts"
 import type {
     TraversalEntry,
     TraversalKey,
@@ -12,8 +13,6 @@ import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
 import { checkSubdomain } from "../nodes/rules/subdomain.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
-import type { Scope } from "../scope.ts"
-import type { Result, TypeOptions } from "../type.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { Dict, extend, List } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
