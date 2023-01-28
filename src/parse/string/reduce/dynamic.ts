@@ -1,9 +1,10 @@
+import type { Scope } from "../../../main.ts"
 import { functors } from "../../../nodes/functors.ts"
 import type { TypeReference } from "../../../nodes/node.ts"
 import { intersection, isLiteralNode, union } from "../../../nodes/node.ts"
-import type { Scope } from "../../../main.ts"
 import { throwInternalError, throwParseError } from "../../../utils/errors.ts"
 import { isKeyOf } from "../../../utils/generics.ts"
+import type { ParseContext } from "../../definition.ts"
 import { Scanner } from "../shift/scanner.ts"
 import type { OpenRange } from "./shared.ts"
 import {
@@ -26,7 +27,7 @@ export class DynamicState {
     private branches: BranchState = {}
     private groups: BranchState[] = []
 
-    constructor(def: string, public readonly $: Scope) {
+    constructor(def: string, public readonly ctx: ParseContext) {
         this.scanner = new Scanner(def)
     }
 
@@ -42,7 +43,7 @@ export class DynamicState {
         this.assertHasRoot()
         const resolution =
             typeof this.root === "string"
-                ? this.$.resolveIfIdentifier(this.root)
+                ? this.ctx.$.resolveIfIdentifier(this.root)
                 : this.root!
         if (isLiteralNode(resolution, "number")) {
             const limit = resolution.number.value
@@ -81,7 +82,7 @@ export class DynamicState {
     }
 
     intersect(node: TypeReference) {
-        this.root = intersection(this.ejectRoot(), node, this.$)
+        this.root = intersection(this.ejectRoot(), node, this.ctx)
     }
 
     private ejectRoot() {
@@ -133,7 +134,7 @@ export class DynamicState {
                 intersection(
                     this.branches.intersection,
                     this.ejectRoot(),
-                    this.$
+                    this.ctx
                 )
             )
         }
@@ -153,11 +154,19 @@ export class DynamicState {
     pushRootToBranch(token: Scanner.BranchToken) {
         this.assertRangeUnset()
         this.branches.intersection = this.branches.intersection
-            ? intersection(this.branches.intersection, this.ejectRoot(), this.$)
+            ? intersection(
+                  this.branches.intersection,
+                  this.ejectRoot(),
+                  this.ctx
+              )
             : this.ejectRoot()
         if (token === "|") {
             this.branches.union = this.branches.union
-                ? union(this.branches.union, this.branches.intersection, this.$)
+                ? union(
+                      this.branches.union,
+                      this.branches.intersection,
+                      this.ctx
+                  )
                 : this.branches.intersection
             delete this.branches.intersection
         }

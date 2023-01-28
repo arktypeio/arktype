@@ -16,7 +16,7 @@ export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
             ctx,
             "narrow"
         ),
-        ctx.$
+        ctx
     )
 }
 

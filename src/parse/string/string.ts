@@ -59,7 +59,7 @@ export const maybeNaiveParse = (def: string, ctx: ParseContext) => {
 }
 
 export const fullStringParse = (def: string, ctx: ParseContext) => {
-    const s = new DynamicState(def, ctx.$)
+    const s = new DynamicState(def, ctx)
     parseOperand(s)
     return loop(s)
 }

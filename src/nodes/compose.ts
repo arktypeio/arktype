@@ -1,5 +1,5 @@
+import type { ParseContext } from "../parse/definition.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
-import type { Scope } from "../main.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type {
@@ -135,7 +135,7 @@ export class IntersectionState {
     #morphs: MorphsByPath = {}
     #disjoints: DisjointsByPath = {}
 
-    constructor(public $: Scope) {}
+    constructor(public ctx: ParseContext) {}
 
     get disjoints() {
         return this.#disjoints as Readonly<DisjointsByPath>

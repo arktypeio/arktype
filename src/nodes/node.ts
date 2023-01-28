@@ -1,4 +1,4 @@
-import type { Scope } from "../main.ts"
+import type { ParseContext } from "../parse/definition.ts"
 import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
@@ -37,8 +37,8 @@ export type TypeNode<$ = Dict> = {
 export type Identifier<$ = Dict> = stringKeyOf<$>
 
 export const nodeIntersection: Intersector<TypeReference> = (l, r, state) => {
-    const lResolution = state.$.resolveIfIdentifier(l)
-    const rResolution = state.$.resolveIfIdentifier(r)
+    const lResolution = state.ctx.$.resolveIfIdentifier(l)
+    const rResolution = state.ctx.$.resolveIfIdentifier(r)
     const result = resolutionIntersection(lResolution, rResolution, state)
     if (typeof result === "object" && !hasKeys(result)) {
         return hasKeys(state.disjoints)
@@ -79,9 +79,9 @@ type IntersectionResult<
 export const intersection = <l extends TypeReference, r extends TypeReference>(
     l: l,
     r: r,
-    $: Scope
+    ctx: ParseContext
 ) => {
-    const state = new IntersectionState($)
+    const state = new IntersectionState(ctx)
     const result = nodeIntersection(l, r, state)
     return (
         isDisjoint(result)
@@ -95,10 +95,10 @@ export const intersection = <l extends TypeReference, r extends TypeReference>(
 export const union = (
     l: TypeReference,
     r: TypeReference,
-    $: Scope
+    ctx: ParseContext
 ): TypeNode => {
-    const lResolution = $.resolveIfIdentifier(l)
-    const rResolution = $.resolveIfIdentifier(r)
+    const lResolution = ctx.$.resolveIfIdentifier(l)
+    const rResolution = ctx.$.resolveIfIdentifier(r)
     const result = {} as mutable<TypeNode>
     const domains = keysOf({ ...lResolution, ...rResolution })
     for (const domain of domains) {
@@ -108,7 +108,7 @@ export const union = (
                       domain,
                       lResolution[domain],
                       rResolution[domain],
-                      $
+                      ctx
                   )
                 : lResolution[domain]
             : hasKey(rResolution, domain)
@@ -149,9 +149,12 @@ export type BranchesEntry = ["branches", TraversalEntry[][]]
 
 export type SwitchEntry = ["switch", DiscriminatedSwitch]
 
-export const flattenNode = (node: TypeReference, $: Scope): TraversalNode => {
+export const flattenNode = (
+    node: TypeReference,
+    ctx: ParseContext
+): TraversalNode => {
     if (typeof node === "string") {
-        return $.resolve(node).flat
+        return ctx.$.resolve(node).flat
     }
     const domains = keysOf(node)
     if (domains.length === 1) {
@@ -160,14 +163,14 @@ export const flattenNode = (node: TypeReference, $: Scope): TraversalNode => {
         if (predicate === true) {
             return domain
         }
-        const flatPredicate = flattenPredicate(predicate, $)
+        const flatPredicate = flattenPredicate(predicate, ctx)
         return hasImpliedDomain(flatPredicate)
             ? flatPredicate
             : [["domain", domain], ...flatPredicate]
     }
     const result: mutable<DomainsEntry[1]> = {}
     for (const domain of domains) {
-        result[domain] = flattenPredicate(node[domain]!, $)
+        result[domain] = flattenPredicate(node[domain]!, ctx)
     }
     return [["domains", result]]
 }
@@ -180,11 +183,11 @@ export type CompiledScopeNodes<nodes extends ScopeNodes> = {
 
 export const flattenNodes = <nodes extends ScopeNodes>(
     nodes: nodes,
-    $: Scope
+    ctx: ParseContext
 ): CompiledScopeNodes<nodes> => {
     const result = {} as mutable<CompiledScopeNodes<nodes>>
     for (const name in nodes) {
-        result[name] = flattenNode(nodes[name], $)
+        result[name] = flattenNode(nodes[name], ctx)
     }
     return result
 }

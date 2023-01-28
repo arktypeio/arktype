@@ -1,6 +1,6 @@
+import type { ParseContext } from "../../parse/definition.ts"
 import type { Morph } from "../../parse/tuple/morph.ts"
 import type { Narrow } from "../../parse/tuple/narrow.ts"
-import type { Scope } from "../../main.ts"
 import { traverse } from "../../traverse/check.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type {
@@ -141,11 +141,11 @@ export const rulesIntersection: Intersector<Rules> = (l, r, state) =>
             ? l.value === r.value
                 ? equality()
                 : state.addDisjoint("value", l.value, r.value)
-            : literalSatisfiesRules(l.value, r, state.$)
+            : literalSatisfiesRules(l.value, r, state.ctx)
             ? l
             : state.addDisjoint("leftAssignability", l, r)
         : "value" in r
-        ? literalSatisfiesRules(r.value, l, state.$)
+        ? literalSatisfiesRules(r.value, l, state.ctx)
             ? r
             : state.addDisjoint("rightAssignability", l, r)
         : narrowableRulesIntersection(l, r, state)
@@ -170,7 +170,7 @@ export const narrowableRulesIntersection =
 export type FlattenAndPushRule<t> = (
     entries: BranchEntry[],
     rule: t,
-    $: Scope
+    ctx: ParseContext
 ) => void
 
 type UnknownRules = NarrowableRules & Partial<LiteralRules>
@@ -229,22 +229,28 @@ export const precedenceMap: {
     morph: 4
 }
 
-export const flattenBranch = (branch: Branch, $: Scope): BranchEntry[] => {
+export const flattenBranch = (
+    branch: Branch,
+    ctx: ParseContext
+): BranchEntry[] => {
     if ("morph" in branch) {
-        const result = flattenRules(branch.input, $)
+        const result = flattenRules(branch.input, ctx)
         for (const morph of listFrom(branch.morph)) {
             result.push(["morph", morph])
         }
         return result
     }
-    return flattenRules(branch, $)
+    return flattenRules(branch, ctx)
 }
 
-const flattenRules = (rules: UnknownRules, $: Scope): BranchEntry[] => {
+const flattenRules = (
+    rules: UnknownRules,
+    ctx: ParseContext
+): BranchEntry[] => {
     const entries: BranchEntry[] = []
     let k: keyof UnknownRules
     for (k in rules) {
-        ruleFlatteners[k](entries, rules[k] as any, $)
+        ruleFlatteners[k](entries, rules[k] as any, ctx)
     }
     return entries.sort((l, r) => precedenceMap[l[0]] - precedenceMap[r[0]])
 }
@@ -252,5 +258,5 @@ const flattenRules = (rules: UnknownRules, $: Scope): BranchEntry[] => {
 export const literalSatisfiesRules = (
     data: unknown,
     rules: NarrowableRules,
-    $: Scope
-) => "data" in traverse(data, flattenRules(rules, $), $, {})
+    ctx: ParseContext
+) => "data" in traverse(data, flattenRules(rules, ctx), ctx.$, {})

@@ -32,7 +32,7 @@ export type parseUnenclosed<
     : never
 
 const unenclosedToNode = (s: DynamicState, token: string) =>
-    s.$.isResolvable(token)
+    s.ctx.$.isResolvable(token)
         ? token
         : maybeParseUnenclosedLiteral(token) ??
           s.error(

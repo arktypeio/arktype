@@ -189,7 +189,7 @@ export class Scope<context extends ScopeContext = any> {
     type = ((def, opts: TypeOptions = {}) => {
         const ctx = this.#initializeContext("(anonymous)")
         const root = this.resolveIfIdentifier(parseDefinition(def, ctx))
-        const flat = flattenNode(root, this)
+        const flat = flattenNode(root, ctx)
         return this.#typeFrom(root, flat, opts)
     }) as TypeParser<resolutions<context>>
 
@@ -250,7 +250,7 @@ export class Scope<context extends ScopeContext = any> {
         const type = this.#typeFrom(resolution, [["alias", name]], {})
         this.#resolutions.set(name, type)
         this.#exports.set(name, type)
-        type.flat = flattenNode(resolution, this)
+        type.flat = flattenNode(resolution, ctx)
         return type
     }
 

@@ -1,5 +1,5 @@
+import type { ParseContext } from "../parse/definition.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
-import type { Scope } from "../main.ts"
 import type { Domain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
 import type { CollapsibleList, defined, Dict, xor } from "../utils/generics.ts"
@@ -103,9 +103,9 @@ export const predicateUnion = (
     domain: Domain,
     l: Predicate,
     r: Predicate,
-    $: Scope
+    ctx: ParseContext
 ) => {
-    const state = new IntersectionState($)
+    const state = new IntersectionState(ctx)
     const comparison = comparePredicates(l, r, state)
     if (!isBranchComparison(comparison)) {
         return isEquality(comparison) || comparison === l
@@ -139,14 +139,14 @@ export const predicateUnion = (
 
 export const flattenPredicate = (
     predicate: Predicate,
-    $: Scope
+    ctx: ParseContext
 ): TraversalEntry[] => {
     if (predicate === true) {
         return []
     }
     return hasSubdomain(predicate, "Array")
-        ? flattenBranches(predicate, $)
-        : flattenBranch(predicate, $)
+        ? flattenBranches(predicate, ctx)
+        : flattenBranch(predicate, ctx)
 }
 
 export const isLiteralCondition = (
