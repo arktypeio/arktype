@@ -10,6 +10,8 @@ import type {
     conform,
     constructor,
     error,
+    evaluate,
+    keyOf,
     List,
     returnOf,
     stringKeyOf
@@ -62,7 +64,7 @@ export type validateTupleExpression<
     : def[0] extends "instanceof"
     ? ["instanceof", conform<def[1], constructor>]
     : def[0] extends "keyof"
-    ? ["keyof", def[1]]
+    ? ["keyof", validateDefinition<def[1], $>]
     : never
 
 export type inferTuple<def extends List, $> = def extends TupleExpression
@@ -96,9 +98,7 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
         ? t
         : never
     : def[0] extends "keyof"
-    ? def[1] extends infer A
-        ? stringKeyOf<A>
-        : never
+    ? evaluate<keyOf<inferDefinition<def[1], $>>>
     : never
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, $) => {
@@ -163,13 +163,10 @@ type PrefixExpression<token extends PrefixToken = PrefixToken> = [
     ...unknown[]
 ]
 
-// TODOSHAWN: add parseKeyOfTuple (should be imported from an adjacent file)
 const prefixParsers: {
     [token in PrefixToken]: PrefixParser<token>
 } = {
-    keyof: (def) => {
-        parseKeyOfTuple(def, {})
-    },
+    keyof: parseKeyOfTuple,
     instanceof: (def) => {
         if (typeof def[1] !== "function") {
             return throwParseError(

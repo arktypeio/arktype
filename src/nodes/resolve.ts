@@ -26,7 +26,7 @@ export const isLiteralNode = <domain extends Domain>(
 ): node is { [_ in domain]: LiteralRules<domain> } => {
     const resolution = resolveIfIdentifier(node, $)
     return (
-        nodeExtendsDomain(resolution, domain, $) &&
+        resolutionExtendsDomain(resolution, domain, $) &&
         isLiteralCondition(resolution[domain])
     )
 }
@@ -43,12 +43,12 @@ export type DomainSubtypeNode<domain extends Domain> = {
     readonly [k in domain]: defined<TypeResolution[domain]>
 }
 
-export const nodeExtendsDomain = <domain extends Domain>(
-    node: TypeNode,
+export const resolutionExtendsDomain = <domain extends Domain>(
+    resolution: TypeResolution,
     domain: domain,
     $: ScopeRoot
-): node is DomainSubtypeNode<domain> => {
-    const nodeDomains = domainsOfNode(node, $)
+): resolution is DomainSubtypeNode<domain> => {
+    const nodeDomains = domainsOfNode(resolution, $)
     return nodeDomains.length === 1 && nodeDomains[0] === domain
 }
 

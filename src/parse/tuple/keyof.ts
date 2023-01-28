@@ -1,6 +1,13 @@
-import type { PrefixParser } from "./tuple"
-
-// TODOSHAWN: add "keyof" as a prefix token
+import { compileNode, compileNodes } from "../../nodes/node.ts"
+import {
+    domainsOfNode,
+    resolutionExtendsDomain,
+    resolveIfIdentifier
+} from "../../nodes/resolve.ts"
+import { throwParseError } from "../../utils/errors.ts"
+import { listFrom } from "../../utils/generics.ts"
+import { parseDefinition } from "../definition.ts"
+import type { PrefixParser } from "./tuple.ts"
 
 // Should accept a def, parse it, then return the "keys" of that def according
 // to the same logic as TypeScript. Some cases to consider:
@@ -14,4 +21,22 @@ import type { PrefixParser } from "./tuple"
 // maintaining a keySet of the required+optional props that have existed on
 // every branch. Once you get to the last branch, return a new node representing
 // a string union of the remaining keys.
-export const parseKeyOfTuple: PrefixParser<any> = (def, $) => ({})
+export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, $) => {
+    const resolution = resolveIfIdentifier(parseDefinition(def[1], $), $)
+
+    if (!resolutionExtendsDomain(resolution, "object", $)) {
+        return throwParseError("never")
+    }
+    if (resolution.object === true) {
+        return { string: true }
+    }
+    const keys = []
+    for (const branch of listFrom(resolution)) {
+        console.log("")
+    }
+    // listFrom
+    // Object.keys()
+    return {}
+}
+// tuple maybe poogers
+// arr => numberLiteral

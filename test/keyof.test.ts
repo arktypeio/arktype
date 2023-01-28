@@ -1,28 +1,36 @@
-import { type } from "../api.ts"
+import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-type z = keyof Function
-describe("instanceof", () => {
-    it("base", () => {
-        const t = type(["keyof", { a: "123", b: 123 }])
-        attest(t.node).snap()
-        // const e = new Error()
-        // attest(t(e).data).equals(e)
-        // attest(t({}).problems?.summary).snap(
-        //     "Must be an instance of Error (was Object)"
-        // )
+
+describe("keyof", () => {
+    it("object literal", () => {
+        const t = type(["keyof", { a: "123", b: "123" }])
+        attest(t.node).snap({})
     })
-    // it("inherited", () => {
-    // const t = type(["keyof", TypeError])
-    //     const e = new TypeError()
-    //     attest(t(e).data).equals(e)
-    //     attest(t(new Error()).problems?.summary).snap(
-    //         "Must be an instance of TypeError (was Error)"
-    //     )
+    it("non object error", () => {
+        const t = type(["keyof", "number"])
+        attest(t.node).snap({})
+    })
+    // it("keyof tuple union", () => {
+    //     const t = type(["keyof", [{ a: 1 }, "|", { b: 1 }]])
+    //     attest(t.node).snap()
     // })
-    // it("non-constructor", () => {
-    //     // @ts-expect-error
-    //     attest(() => type(["instanceof", () => {}])).type.errors(
-    //         "Type '() => void' is not assignable to type 'constructor'"
-    //     )
-    // })
+    it("scope intersection", () => {
+        const t = scope({
+            a: { first: "number" },
+            b: { second: "number" },
+            ab: "a&b",
+            keys: ["keyof", "ab"]
+        })
+        attest(t).snap()
+    })
+    //TODO: hi david
+    it("scope union", () => {
+        const t = scope({
+            a: { first: "number" },
+            b: { second: "123" },
+            ab: "a|b",
+            keys: ["keyof", "ab"]
+        })
+        attest(t).snap()
+    })
 })
