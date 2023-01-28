@@ -8,14 +8,22 @@ import { Scanner } from "./string/shift/scanner.ts"
 export const parseRecord = (def: Dict, ctx: ParseContext): TypeNode => {
     const props: mutable<PropsRule> = {}
     for (const definitionKey in def) {
-        const propNode = parseDefinition(def[definitionKey], ctx)
-        if (definitionKey.endsWith(`${Scanner.escapeToken}?`)) {
-            props[`${definitionKey.slice(0, -2)}?`] = propNode
-        } else if (definitionKey.endsWith("?")) {
-            props[definitionKey.slice(0, -1)] = ["?", propNode]
-        } else {
-            props[definitionKey] = propNode
+        let keyName = definitionKey
+        let isOptional = false
+        if (definitionKey[definitionKey.length - 1] === "?") {
+            if (
+                definitionKey[definitionKey.length - 2] === Scanner.escapeToken
+            ) {
+                keyName = `${definitionKey.slice(0, -2)}?`
+            } else {
+                keyName = definitionKey.slice(0, -1)
+                isOptional = true
+            }
         }
+        ctx.path.push(keyName)
+        const propNode = parseDefinition(def[definitionKey], ctx)
+        ctx.path.pop()
+        props[keyName] = isOptional ? ["?", propNode] : propNode
     }
     return {
         object: {

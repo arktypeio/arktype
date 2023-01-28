@@ -61,7 +61,7 @@ export type inferDefinition<def, $> = isAny<def> extends true
     ? inferRecord<def, $>
     : never
 
-export type validateDefinition<def, $> = def extends TerminalObject
+export type validateDefinition<def, $> = def extends Terminal
     ? def
     : def extends string
     ? validateString<def, $>
@@ -82,16 +82,16 @@ export type inferred<t> = {
 }
 
 export type unknownDefinitionMessage =
-    `Cannot statically parse a definition inferred as unknown. Use 'type.dynamic(...)' instead.`
+    `Cannot statically parse a definition inferred as unknown. Consider using 'as inferred<...>' to cast it.`
 
-export type TerminalObject = Type | RegExp | inferred<unknown>
+type Terminal = Type | RegExp | inferred<unknown>
 
-export type BadDefinitionType = Exclude<Primitive, string> | Function
+type BadDefinitionType = Exclude<Primitive, string> | Function
 
 export const writeBadDefinitionTypeMessage = <actual extends Subdomain>(
     actual: actual
 ): writeBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
-export type writeBadDefinitionTypeMessage<actual extends Subdomain> =
+type writeBadDefinitionTypeMessage<actual extends Subdomain> =
     `Type definitions must be strings or objects (was ${actual})`

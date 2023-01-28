@@ -1,4 +1,3 @@
-import type { Scope } from "../main.ts"
 import type { ParseContext } from "../parse/definition.ts"
 import { undiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
@@ -27,12 +26,8 @@ export type DiscriminatedCases = {
 
 export const flattenBranches = (branches: Branches, ctx: ParseContext) => {
     const discriminants = calculateDiscriminants(branches, ctx)
-    return discriminate(
-        branches,
-        branches.map((_, i) => i),
-        discriminants,
-        ctx
-    )
+    const indices = branches.map((_, i) => i)
+    return discriminate(branches, indices, discriminants, ctx)
 }
 
 type IndexCases = {

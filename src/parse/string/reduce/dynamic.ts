@@ -1,4 +1,3 @@
-import type { Scope } from "../../../main.ts"
 import { functors } from "../../../nodes/functors.ts"
 import type { TypeReference } from "../../../nodes/node.ts"
 import { intersection, isLiteralNode, union } from "../../../nodes/node.ts"

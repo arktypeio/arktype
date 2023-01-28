@@ -35,7 +35,9 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeReference => {
     }
     const props: Record<number, TypeReference> = {}
     for (let i = 0; i < def.length; i++) {
+        ctx.path.push(`${i}`)
         props[i] = parseDefinition(def[i], ctx)
+        ctx.path.pop()
     }
     return {
         object: {
