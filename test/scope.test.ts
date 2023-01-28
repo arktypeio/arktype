@@ -106,8 +106,11 @@ describe("scope", () => {
         describe("errors", () => {
             it("duplicate alias", () => {
                 attest(() => {
-                    // @ts-expect-error
-                    scope({ a: "string" }).$.extend({ a: "number" })
+                    scope(
+                        // @ts-expect-error
+                        { a: "string" },
+                        { includes: [scope({ a: "string" })] }
+                    )
                 }).throwsAndHasTypeError(writeDuplicateAliasMessage("a"))
             })
         })
