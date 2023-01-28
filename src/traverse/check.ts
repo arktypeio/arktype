@@ -3,7 +3,6 @@ import type {
     TraversalKey,
     TraversalNode
 } from "../nodes/node.ts"
-import { resolve } from "../nodes/resolve.ts"
 import { checkClass } from "../nodes/rules/class.ts"
 import { checkDivisor } from "../nodes/rules/divisor.ts"
 import { checkOptionalProps, checkRequiredProps } from "../nodes/rules/props.ts"
@@ -156,7 +155,7 @@ const checkers = {
     switch: () => {},
     // TODO: keep track of cyclic data
     alias: (data, name, state) =>
-        traverseNode(data, resolve(name, state.$).flat, state),
+        traverseNode(data, state.$.resolve(name).flat, state),
     class: checkClass,
     // TODO: add error message syntax.
     narrow: (data, validator) => validator(data),

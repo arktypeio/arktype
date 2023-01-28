@@ -1,6 +1,5 @@
 import type { TypeResolution } from "../../nodes/node.ts"
 import type { Branch } from "../../nodes/predicate.ts"
-import { resolveNode } from "../../nodes/resolve.ts"
 import type { asOut } from "../../type.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { hasSubdomain } from "../../utils/domains.ts"
@@ -15,7 +14,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, $) => {
     if (typeof def[2] !== "function") {
         return throwParseError(writeMalformedMorphExpressionMessage(def[2]))
     }
-    const resolution = resolveNode(parseDefinition(def[0], $), $)
+    const resolution = $.resolveNode(parseDefinition(def[0], $))
     const morph = def[2] as Morph
     let domain: Domain
     const result: mutable<TypeResolution> = {}

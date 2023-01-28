@@ -16,7 +16,7 @@ import {
     isEquality
 } from "../compose.ts"
 import type { TraversalNode, TypeNode } from "../node.ts"
-import { compileNode, nodeIntersection } from "../node.ts"
+import { flattenNode, nodeIntersection } from "../node.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
 // Unfortunately we can't easily abstract between these two rules because of
@@ -189,7 +189,7 @@ export const writeTupleLengthError: ProblemMessageWriter<"tupleLength"> = ({
     expected
 }) => `Tuple must have length ${expected} (was ${actual})`
 
-export const compileSubdomain: FlattenAndPushRule<SubdomainRule> = (
+export const flattenSubdomain: FlattenAndPushRule<SubdomainRule> = (
     entries,
     rule,
     $
@@ -200,12 +200,12 @@ export const compileSubdomain: FlattenAndPushRule<SubdomainRule> = (
             ? rule
             : ([
                   rule[0],
-                  compileNode(rule[1], $),
+                  flattenNode(rule[1], $),
                   ...(rule.length === 3
                       ? [
                             typeof rule[2] === "number"
                                 ? rule[2]
-                                : compileNode(rule[2], $)
+                                : flattenNode(rule[2], $)
                         ]
                       : [])
               ] as any)

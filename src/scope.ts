@@ -1,6 +1,5 @@
-import type { TypeNode } from "./nodes/node.ts"
-import { compileNode } from "./nodes/node.ts"
-import { resolveNode } from "./nodes/resolve.ts"
+import type { TypeNode, TypeResolution } from "./nodes/node.ts"
+import { flattenNode } from "./nodes/node.ts"
 import type {
     inferDefinition,
     inferred,
@@ -11,7 +10,7 @@ import type { Type, TypeParser } from "./type.ts"
 import { isType, nodeToType } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import type { Domain } from "./utils/domains.ts"
-import { throwParseError } from "./utils/errors.ts"
+import { throwInternalError, throwParseError } from "./utils/errors.ts"
 import type {
     conform,
     Dict,
@@ -23,14 +22,16 @@ import type {
     nominal,
     replaceProps
 } from "./utils/generics.ts"
+import { hasKey } from "./utils/generics.ts"
 import type { LazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import { lazyDynamicWrap } from "./utils/lazyDynamicWrap.ts"
 import type { stringifyUnion } from "./utils/unionToTuple.ts"
 
 export const composeTypeParser = <$ extends Scope>($: $): TypeParser<$> =>
     lazyDynamicWrap((def, traits = {}) => {
-        const root = resolveNode(parseDefinition(def, $), $)
-        const flat = compileNode(root, $)
+        // TODO: make parse return a type
+        const root = $.resolveNode(parseDefinition(def, $))
+        const flat = flattenNode(root, $)
         return nodeToType(root, flat, $, traits)
     })
 
@@ -155,8 +156,10 @@ export type Space<exports = Dict> = {
     [k in keyof exports]: Type<exports[k]>
 }
 
-type resolvablesOf<context extends ScopeContext> = localsOf<context> &
+type resolutions<context extends ScopeContext> = localsOf<context> &
     exportsOf<context>
+
+type name<context extends ScopeContext> = keyof resolutions<context> & string
 
 export class Scope<context extends ScopeContext = any> {
     cache: ScopeCache = {
@@ -189,7 +192,7 @@ export class Scope<context extends ScopeContext = any> {
         }
     }
 
-    type: TypeParser<resolvablesOf<context>> = composeTypeParser(this)
+    type: TypeParser<resolutions<context>> = composeTypeParser(this)
 
     get infer(): exportsOf<context> {
         return chainableNoOpProxy
@@ -208,7 +211,50 @@ export class Scope<context extends ScopeContext = any> {
         }
         return types as Space<exportsOf<context>>
     }
+
+    isResolvable(name: string) {
+        return this.cache.locals[name] || this.aliases[name] ? true : false
+    }
+
+    resolve(name: name<context>) {
+        return this.resolveRecurse(name, [])
+    }
+
+    private resolveRecurse(name: string, seen: string[]): Type {
+        if (hasKey(this.cache.locals, name)) {
+            return this.cache.locals[name]
+        }
+        if (!this.aliases[name]) {
+            return throwInternalError(
+                `Unexpectedly failed to resolve alias '${name}'`
+            )
+        }
+        let resolution = parseDefinition(this.aliases[name], this)
+        if (typeof resolution === "string") {
+            if (seen.includes(resolution)) {
+                return throwParseError(
+                    writeShallowCycleErrorMessage(name, seen)
+                )
+            }
+            seen.push(resolution)
+            resolution = this.resolveRecurse(resolution, seen).node
+        }
+        // temporarily set the TraversalNode to an alias that will be used for cyclic resolutions
+        const type = nodeToType(resolution, [["alias", name]], this, {})
+        this.cache.locals[name] = type
+        type.flat = flattenNode(resolution, this)
+        return type
+    }
+
+    resolveNode(node: TypeNode): TypeResolution {
+        return typeof node === "string" ? this.resolve(node).node : node
+    }
 }
+
+export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
+    `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
+        "=>"
+    )}`
 
 const always: Record<Domain, true> = {
     bigint: true,

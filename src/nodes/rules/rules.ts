@@ -26,12 +26,12 @@ import type {
     TraversalOptionalProps,
     TraversalRequiredProps
 } from "./props.ts"
-import { compileProps, propsIntersection } from "./props.ts"
+import { flattenProps, propsIntersection } from "./props.ts"
 import type { Range } from "./range.ts"
 import { rangeIntersection } from "./range.ts"
 import { getRegex, regexIntersection } from "./regex.ts"
 import type { SubdomainRule, TraversalSubdomainRule } from "./subdomain.ts"
-import { compileSubdomain, subdomainIntersection } from "./subdomain.ts"
+import { flattenSubdomain, subdomainIntersection } from "./subdomain.ts"
 
 export type NarrowableRules<$ = Dict> = {
     readonly subdomain?: SubdomainRule<$>
@@ -175,10 +175,10 @@ export type FlattenAndPushRule<t> = (
 
 type UnknownRules = NarrowableRules & Partial<LiteralRules>
 
-const ruleCompilers: {
+const ruleFlatteners: {
     [k in keyof UnknownRules]-?: FlattenAndPushRule<UnknownRules[k] & {}>
 } = {
-    subdomain: compileSubdomain,
+    subdomain: flattenSubdomain,
     regex: (entries, rule) => {
         for (const source of listFrom(rule)) {
             entries.push(["regex", getRegex(source)])
@@ -193,7 +193,7 @@ const ruleCompilers: {
     class: (entries, rule) => {
         entries.push(["class", rule])
     },
-    props: compileProps,
+    props: flattenProps,
     narrow: (entries, rule) => {
         for (const narrow of listFrom(rule)) {
             entries.push(["narrow", narrow])
@@ -229,22 +229,22 @@ export const precedenceMap: {
     morph: 4
 }
 
-export const compileBranch = (branch: Branch, $: Scope): BranchEntry[] => {
+export const flattenBranch = (branch: Branch, $: Scope): BranchEntry[] => {
     if ("morph" in branch) {
-        const result = compileRules(branch.input, $)
+        const result = flattenRules(branch.input, $)
         for (const morph of listFrom(branch.morph)) {
             result.push(["morph", morph])
         }
         return result
     }
-    return compileRules(branch, $)
+    return flattenRules(branch, $)
 }
 
-const compileRules = (rules: UnknownRules, $: Scope): BranchEntry[] => {
+const flattenRules = (rules: UnknownRules, $: Scope): BranchEntry[] => {
     const entries: BranchEntry[] = []
     let k: keyof UnknownRules
     for (k in rules) {
-        ruleCompilers[k](entries, rules[k] as any, $)
+        ruleFlatteners[k](entries, rules[k] as any, $)
     }
     return entries.sort((l, r) => precedenceMap[l[0]] - precedenceMap[r[0]])
 }
@@ -253,4 +253,4 @@ export const literalSatisfiesRules = (
     data: unknown,
     rules: NarrowableRules,
     $: Scope
-) => "data" in traverse(data, compileRules(rules, $), $, {})
+) => "data" in traverse(data, flattenRules(rules, $), $, {})

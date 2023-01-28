@@ -1,5 +1,4 @@
 import type { TypeNode } from "../../../../nodes/node.ts"
-import { isResolvable } from "../../../../nodes/resolve.ts"
 import type { error, stringKeyOf } from "../../../../utils/generics.ts"
 import type {
     BigintLiteral,
@@ -33,7 +32,7 @@ export type parseUnenclosed<
     : never
 
 const unenclosedToNode = (s: DynamicState, token: string) =>
-    isResolvable(token, s.$)
+    s.$.isResolvable(token)
         ? token
         : maybeParseUnenclosedLiteral(token) ??
           s.error(

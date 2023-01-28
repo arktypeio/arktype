@@ -16,12 +16,13 @@ import {
 import type { DiscriminatedSwitch } from "./discriminate.ts"
 import type { Predicate } from "./predicate.ts"
 import {
-    compilePredicate,
+    flattenPredicate,
+    isLiteralCondition,
     predicateIntersection,
-    predicateUnion
+    predicateUnion,
+    resolutionExtendsDomain
 } from "./predicate.ts"
-import { domainsOfNode, resolve, resolveNode } from "./resolve.ts"
-import type { BranchEntry } from "./rules/rules.ts"
+import type { BranchEntry, LiteralRules } from "./rules/rules.ts"
 
 // TODO: should Type be allowed as a node? would allow configs etc. during traversal
 export type TypeNode<$ = Dict> = Identifier<$> | TypeResolution<$>
@@ -36,16 +37,16 @@ export type TypeResolution<$ = Dict> = {
 export type Identifier<$ = Dict> = stringKeyOf<$>
 
 export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
-    const lResolution = resolveNode(l, state.$)
-    const rResolution = resolveNode(r, state.$)
+    const lResolution = state.$.resolveNode(l)
+    const rResolution = state.$.resolveNode(r)
     const result = resolutionIntersection(lResolution, rResolution, state)
     if (typeof result === "object" && !hasKeys(result)) {
         return hasKeys(state.disjoints)
             ? anonymousDisjoint()
             : state.addDisjoint(
                   "domain",
-                  domainsOfNode(lResolution, state.$),
-                  domainsOfNode(rResolution, state.$)
+                  keysOf(lResolution),
+                  keysOf(rResolution)
               )
     }
     return result === lResolution ? l : result === rResolution ? r : result
@@ -92,8 +93,8 @@ export const intersection = <l extends TypeNode, r extends TypeNode>(
 }
 
 export const union = (l: TypeNode, r: TypeNode, $: Scope): TypeResolution => {
-    const lResolution = resolveNode(l, $)
-    const rResolution = resolveNode(r, $)
+    const lResolution = $.resolveNode(l)
+    const rResolution = $.resolveNode(r)
     const result = {} as mutable<TypeResolution>
     const domains = keysOf({ ...lResolution, ...rResolution })
     for (const domain of domains) {
@@ -144,9 +145,9 @@ export type BranchesEntry = ["branches", TraversalEntry[][]]
 
 export type SwitchEntry = ["switch", DiscriminatedSwitch]
 
-export const compileNode = (node: TypeNode, $: Scope): TraversalNode => {
+export const flattenNode = (node: TypeNode, $: Scope): TraversalNode => {
     if (typeof node === "string") {
-        return resolve(node, $).flat
+        return $.resolve(node).flat
     }
     const domains = keysOf(node)
     if (domains.length === 1) {
@@ -155,14 +156,14 @@ export const compileNode = (node: TypeNode, $: Scope): TraversalNode => {
         if (predicate === true) {
             return domain
         }
-        const flatPredicate = compilePredicate(predicate, $)
+        const flatPredicate = flattenPredicate(predicate, $)
         return hasImpliedDomain(flatPredicate)
             ? flatPredicate
             : [["domain", domain], ...flatPredicate]
     }
     const result: mutable<DomainsEntry[1]> = {}
     for (const domain of domains) {
-        result[domain] = compilePredicate(node[domain]!, $)
+        result[domain] = flattenPredicate(node[domain]!, $)
     }
     return [["domains", result]]
 }
@@ -173,13 +174,23 @@ export type CompiledScopeNodes<nodes extends ScopeNodes> = {
     readonly [k in keyof nodes]: TraversalNode
 }
 
-export const compileNodes = <nodes extends ScopeNodes>(
+export const flattenNodes = <nodes extends ScopeNodes>(
     nodes: nodes,
     $: Scope
 ): CompiledScopeNodes<nodes> => {
     const result = {} as mutable<CompiledScopeNodes<nodes>>
     for (const name in nodes) {
-        result[name] = compileNode(nodes[name], $)
+        result[name] = flattenNode(nodes[name], $)
     }
     return result
+}
+
+export const isLiteralNode = <domain extends Domain>(
+    resolution: TypeResolution,
+    domain: domain
+): resolution is { [_ in domain]: LiteralRules<domain> } => {
+    return (
+        resolutionExtendsDomain(resolution, domain) &&
+        isLiteralCondition(resolution[domain])
+    )
 }

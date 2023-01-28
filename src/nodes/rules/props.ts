@@ -13,7 +13,7 @@ import {
     isDisjoint
 } from "../compose.ts"
 import type { TraversalNode, TypeNode } from "../node.ts"
-import { compileNode, nodeIntersection } from "../node.ts"
+import { flattenNode, nodeIntersection } from "../node.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
 export type PropsRule<$ = Dict> = {
@@ -73,7 +73,7 @@ export const propsIntersection = composeIntersection<PropsRule>(
     )
 )
 
-export const compileProps: FlattenAndPushRule<PropsRule> = (
+export const flattenProps: FlattenAndPushRule<PropsRule> = (
     entries,
     props,
     scope
@@ -83,9 +83,9 @@ export const compileProps: FlattenAndPushRule<PropsRule> = (
     for (const k in props) {
         const prop = props[k]
         if (isOptional(prop)) {
-            optionalProps.push([k, compileNode(prop[1], scope)])
+            optionalProps.push([k, flattenNode(prop[1], scope)])
         } else {
-            requiredProps.push([k, compileNode(prop, scope)])
+            requiredProps.push([k, flattenNode(prop, scope)])
         }
     }
     if (requiredProps.length) {

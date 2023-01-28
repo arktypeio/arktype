@@ -1,7 +1,6 @@
 import { functors } from "../../../nodes/functors.ts"
 import type { TypeNode } from "../../../nodes/node.ts"
-import { intersection, union } from "../../../nodes/node.ts"
-import { isLiteralNode } from "../../../nodes/resolve.ts"
+import { intersection, isLiteralNode, union } from "../../../nodes/node.ts"
 import type { Scope } from "../../../scope.ts"
 import { throwInternalError, throwParseError } from "../../../utils/errors.ts"
 import { isKeyOf } from "../../../utils/generics.ts"
@@ -41,8 +40,12 @@ export class DynamicState {
 
     ejectRootIfLimit() {
         this.assertHasRoot()
-        if (isLiteralNode(this.root!, "number", this.$)) {
-            const limit = this.root.number.value
+        const resolution =
+            typeof this.root === "string"
+                ? this.$.resolveNode(this.root)
+                : this.root!
+        if (isLiteralNode(resolution, "number")) {
+            const limit = resolution.number.value
             this.root = undefined
             return limit
         }

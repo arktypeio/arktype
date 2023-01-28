@@ -12,7 +12,7 @@ import type { Branches } from "./branches.ts"
 import type { DisjointKind } from "./compose.ts"
 import { IntersectionState } from "./compose.ts"
 import type { TraversalEntry } from "./node.ts"
-import { branchIntersection, compileBranch } from "./rules/rules.ts"
+import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
 export type DiscriminatedSwitch = {
     readonly path: Path
@@ -24,7 +24,7 @@ export type DiscriminatedCases = {
     [caseKey in string]?: TraversalEntry[]
 }
 
-export const compileBranches = (branches: Branches, $: Scope) => {
+export const flattenBranches = (branches: Branches, $: Scope) => {
     const discriminants = calculateDiscriminants(branches, $)
     return discriminate(
         branches,
@@ -49,7 +49,7 @@ const discriminate = (
     $: Scope
 ): TraversalEntry[] => {
     if (remainingIndices.length === 1) {
-        return compileBranch(originalBranches[remainingIndices[0]], $)
+        return flattenBranch(originalBranches[remainingIndices[0]], $)
     }
     const bestDiscriminant = findBestDiscriminant(
         remainingIndices,
@@ -60,7 +60,7 @@ const discriminate = (
             [
                 "branches",
                 remainingIndices.map((i) =>
-                    compileBranch(originalBranches[i], $)
+                    flattenBranch(originalBranches[i], $)
                 )
             ]
         ]

@@ -2,16 +2,16 @@ import type { Morph } from "../parse/tuple/morph.ts"
 import type { Scope } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
-import type { CollapsibleList, Dict, xor } from "../utils/generics.ts"
-import { collapseIfSingleton, listFrom } from "../utils/generics.ts"
+import type { CollapsibleList, defined, Dict, xor } from "../utils/generics.ts"
+import { collapseIfSingleton, keysOf, listFrom } from "../utils/generics.ts"
 import type { Branches, BranchesComparison } from "./branches.ts"
 import { compareBranches, isBranchComparison } from "./branches.ts"
 import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
 import { equality, IntersectionState, isEquality } from "./compose.ts"
-import { compileBranches } from "./discriminate.ts"
+import { flattenBranches } from "./discriminate.ts"
 import type { TraversalEntry, TypeResolution } from "./node.ts"
-import type { Rules } from "./rules/rules.ts"
-import { branchIntersection, compileBranch } from "./rules/rules.ts"
+import type { LiteralRules, Rules } from "./rules/rules.ts"
+import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
 export type Predicate<
     domain extends Domain = Domain,
@@ -134,7 +134,7 @@ export const predicateUnion = (
     ])
 }
 
-export const compilePredicate = (
+export const flattenPredicate = (
     predicate: Predicate,
     $: Scope
 ): TraversalEntry[] => {
@@ -142,6 +142,23 @@ export const compilePredicate = (
         return []
     }
     return hasSubdomain(predicate, "Array")
-        ? compileBranches(predicate, $)
-        : compileBranch(predicate, $)
+        ? flattenBranches(predicate, $)
+        : flattenBranch(predicate, $)
+}
+
+export const isLiteralCondition = (
+    predicate: Predicate
+): predicate is LiteralRules =>
+    typeof predicate === "object" && "value" in predicate
+
+export type DomainSubtypeResolution<domain extends Domain> = {
+    readonly [k in domain]: defined<TypeResolution[domain]>
+}
+
+export const resolutionExtendsDomain = <domain extends Domain>(
+    resolution: TypeResolution,
+    domain: domain
+): resolution is DomainSubtypeResolution<domain> => {
+    const domains = keysOf(resolution)
+    return domains.length === 1 && domains[0] === domain
 }
