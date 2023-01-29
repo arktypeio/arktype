@@ -16,7 +16,6 @@ import type { Domain } from "./utils/domains.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
 import { deepFreeze } from "./utils/freeze.ts"
 import type {
-    conform,
     defer,
     Dict,
     error,
@@ -25,7 +24,6 @@ import type {
     isAny,
     List,
     nominal,
-    replaceProps,
     xor
 } from "./utils/generics.js"
 import { Path } from "./utils/paths.ts"
@@ -38,7 +36,7 @@ type ScopeParser = {
 
     <aliases, opts extends ScopeOptions>(
         aliases: validateAliases<aliases, opts>,
-        opts: conform<opts, validateOptions<opts>>
+        opts: validateOptions<opts>
     ): Scope<parseScope<aliases, opts>>
 }
 
@@ -49,26 +47,22 @@ export type TypeParser<$> = {
 }
 
 // [] allows tuple inferences
-type ScopeList = [] | readonly Scope[]
+type SpaceList = [] | readonly Space[]
 
 // TODO: Reintegrate thunks/compilation, add utilities for narrowed defs
 export type ScopeOptions = {
-    imports?: ScopeList
-    includes?: ScopeList
+    imports?: SpaceList
+    includes?: SpaceList
     standard?: boolean
 }
 
-type validateOptions<opts extends ScopeOptions> = replaceProps<
-    opts,
-    {
-        imports?: mergeScopes<opts["imports"]> extends error<infer e>
+type validateOptions<opts extends ScopeOptions> = {
+    [k in keyof opts]: k extends "imports" | "includes"
+        ? mergeSpaces<opts[k]> extends error<infer e>
             ? e
-            : opts["imports"]
-        includes?: mergeScopes<opts["includes"]> extends error<infer e>
-            ? e
-            : opts["includes"]
-    }
->
+            : opts[k]
+        : opts[k]
+}
 
 export type ScopeContext = Dict | ScopeContextTuple
 
@@ -79,17 +73,17 @@ type parseScope<
     opts extends ScopeOptions
 > = opts["standard"] extends false
     ? [inferExports<aliases, opts>, importsOf<opts>, false]
-    : opts["imports"] extends ScopeList
+    : opts["imports"] extends SpaceList
     ? [inferExports<aliases, opts>, importsOf<opts>]
     : inferExports<aliases, opts>
 
 type importsOf<opts extends ScopeOptions> = unknown extends opts["imports"]
     ? {}
-    : mergeScopes<opts["imports"]>
+    : mergeSpaces<opts["imports"]>
 
 type includesOf<opts extends ScopeOptions> = unknown extends opts["includes"]
     ? {}
-    : mergeScopes<opts["includes"]>
+    : mergeSpaces<opts["includes"]>
 
 export type resolve<name extends keyof $, $> = isAny<$[name]> extends true
     ? any
@@ -108,14 +102,15 @@ type localsOf<context extends ScopeContext> = context extends List
     ? context["1"] & (context["2"] extends false ? {} : PrecompiledDefaults)
     : PrecompiledDefaults
 
-type mergeScopes<scopes, base extends Dict = {}> = scopes extends readonly [
-    Scope<infer context>,
+type mergeSpaces<scopes, base extends Dict = {}> = scopes extends readonly [
+    Space<infer head>,
     ...infer tail
 ]
-    ? keyof base & keyof exportsOf<context> extends never
-        ? mergeScopes<tail, base & exportsOf<context>>
-        : error<`Duplicates ${stringifyUnion<
-              keyof base & keyof exportsOf<context> & string
+    ? keyof base & keyof head extends never
+        ? mergeSpaces<tail, base & head>
+        : // TODO: add tests for this
+          error<`Duplicates ${stringifyUnion<
+              keyof base & keyof head & string
           >}`>
     : base
 
@@ -160,19 +155,17 @@ export class Scope<context extends ScopeContext = any> {
 
     constructor(public aliases: Dict, public opts: ScopeOptions) {
         if (opts.standard !== false) {
-            this.#cacheSpaces([standardSpace], "imports")
+            this.#cacheSpaces([standardTypes], "imports")
         }
         if (opts.imports) {
-            const importedSpaces = opts.imports.map(($) => $.compile())
-            this.#cacheSpaces(importedSpaces, "imports")
+            this.#cacheSpaces(opts.imports, "imports")
         }
         if (opts.includes) {
-            const includedSpaces = opts.includes.map(($) => $.compile())
-            this.#cacheSpaces(includedSpaces, "includes")
+            this.#cacheSpaces(opts.includes, "includes")
         }
     }
 
-    #cacheSpaces(spaces: Space[], kind: "imports" | "includes") {
+    #cacheSpaces(spaces: SpaceList, kind: "imports" | "includes") {
         for (const space of spaces) {
             for (const name in space) {
                 if (this.isResolvable(name)) {
@@ -258,7 +251,7 @@ export class Scope<context extends ScopeContext = any> {
         return typeof node === "string" ? this.resolve(node).node : node
     }
 
-    #typeFrom(node: TypeNode, flat: TraversalNode, config: TypeOptions) {
+    #typeFrom(node: TypeNode, flat: TraversalNode, config: TypeOptions): Type {
         return Object.assign(
             (data: unknown) => {
                 return traverse(data, flat, this, config)
@@ -270,7 +263,7 @@ export class Scope<context extends ScopeContext = any> {
                 node,
                 flat
             }
-        ) as Type
+        )
     }
 }
 
@@ -347,6 +340,8 @@ const ts = scope(
     { standard: false }
 )
 
+const tsTypes = ts.compile()
+
 const validation = scope(
     {
         email: /^(.+)@(.+)\.(.+)$/,
@@ -359,21 +354,29 @@ const validation = scope(
     { standard: false }
 )
 
+const validationTypes = validation.compile()
+
 const standard = scope(
     {},
     {
-        includes: [ts, validation],
+        includes: [tsTypes, validationTypes],
         standard: false
     }
 )
 
-const standardSpace = standard.compile()
+const standardTypes = standard.compile()
 
 export const scopes = {
     ts,
     validation,
     standard
 }
+
+export const spaces = {
+    ts: tsTypes,
+    validation: validationTypes,
+    standard: standardTypes
+} satisfies Record<keyof typeof scopes, Space>
 
 // This is just copied from the inference of defaultScope. Creating an explicit
 // type like this makes validation for the default type and scope functions feel

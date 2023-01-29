@@ -81,13 +81,14 @@ describe("scope", () => {
     })
     describe("extension", () => {
         it("base", () => {
+            const parent = scope({ definedInScope: "boolean" }).compile()
             const $ = scope(
                 {
                     a: "string[]",
                     b: "a[]",
                     c: "definedInScope"
                 },
-                { includes: [scope({ definedInScope: "boolean" })] }
+                { includes: [parent] }
             )
             attest($.infer).typed as {
                 a: string[]
@@ -109,7 +110,7 @@ describe("scope", () => {
                     scope(
                         // @ts-expect-error
                         { a: "string" },
-                        { includes: [scope({ a: "string" })] }
+                        { includes: [scope({ a: "string" }).compile()] }
                     ).compile()
                 ).throwsAndHasTypeError(writeDuplicateAliasMessage("a"))
             })
