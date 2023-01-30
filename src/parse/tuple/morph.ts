@@ -16,8 +16,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
     }
     const resolution = ctx.$.resolveNode(parseDefinition(def[0], ctx))
     const morph = def[2] as Morph
-    ctx.type.morphs ??= {}
-    ctx.type.morphs[`${ctx.path}`] = true
+    ctx.type.includesMorph = true
     let domain: Domain
     const result: mutable<ResolvedNode> = {}
     for (domain in resolution) {

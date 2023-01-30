@@ -215,10 +215,7 @@ export class Scope<context extends ScopeContext = any> {
         if (!resolution) {
             return false
         }
-        if (resolution.morphs) {
-            ctx.type.morphs ??= {}
-            ctx.type.morphs[`${ctx.path}`] = true
-        }
+        ctx.type.includesMorph ||= resolution.includesMorph
         return true
     }
 
@@ -270,22 +267,23 @@ export class Scope<context extends ScopeContext = any> {
         return this.resolveNode(this.resolve(node).node)
     }
 
-    /** temporarily set the TraversalNode to an alias that will be used for cyclic resolutions */
+    /** temporarily set the TypeNode+TraversalNode to an alias that will be used for cyclic resolutions */
     #initializeUnparsedType(alias: string, config: TypeOptions): Type {
-        const flat: TraversalNode = [["alias", alias]]
-        return Object.assign(
-            (data: unknown) => {
-                return traverse(data, flat, this, config)
-            },
-            {
-                [t]: chainableNoOpProxy,
-                infer: chainableNoOpProxy,
-                config,
-                node: alias,
-                flat,
-                alias
-            }
+        const root: TypeRoot = {
+            [t]: chainableNoOpProxy,
+            infer: chainableNoOpProxy,
+            config,
+            node: alias,
+            flat: [["alias", alias]],
+            alias,
+            includesMorph: false
+        }
+        const result = Object.assign(
+            // TODO: pass type to traverse
+            (data: unknown) => traverse(data, result.flat, this, result.config),
+            root
         )
+        return result
     }
 }
 
@@ -470,9 +468,10 @@ type TypeRoot<t = unknown> = {
     [t]: t
     infer: asOut<t>
     alias: string
-    morphs?: { [path in string]: true }
+    config: TypeOptions
     node: TypeNode
     flat: TraversalNode
+    includesMorph: boolean
 }
 
 export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>

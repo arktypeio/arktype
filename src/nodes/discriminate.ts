@@ -4,7 +4,7 @@ import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { keySet } from "../utils/generics.ts"
-import { hasKeys, isKeyOf, keysOf } from "../utils/generics.ts"
+import { isKeyOf, keysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { SerializablePrimitive } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
@@ -12,6 +12,7 @@ import type { Branches } from "./branches.ts"
 import type { DisjointKind } from "./compose.ts"
 import { IntersectionState } from "./compose.ts"
 import type { TraversalEntry } from "./node.ts"
+import { branchIncludesMorph } from "./node.ts"
 import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
 export type DiscriminatedSwitch = {
@@ -117,6 +118,9 @@ const calculateDiscriminants = (
         disjointsByPair: {},
         casesByDisjoint: {}
     }
+    const morphBranches = branches.map((branch) =>
+        branchIncludesMorph(branch, ctx.$)
+    )
     for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
         for (let rIndex = lIndex + 1; rIndex < branches.length; rIndex++) {
             const pairKey = `${lIndex}/${rIndex}` as const
@@ -161,7 +165,8 @@ const calculateDiscriminants = (
                 }
             }
             if (
-                hasKeys(intersectionState.morphs) &&
+                (morphBranches[lIndex] === true ||
+                    morphBranches[rIndex] === true) &&
                 pairDisjoints.length === 0
             ) {
                 return throwParseError(undiscriminatableMorphUnionMessage)

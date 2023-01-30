@@ -1,6 +1,8 @@
+import type { Scope } from "../main.ts"
 import type { ParseContext } from "../parse/definition.ts"
 import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
 import type { Domain } from "../utils/domains.ts"
+import { hasSubdomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
 import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
@@ -14,7 +16,7 @@ import {
     throwUndefinedOperandsError
 } from "./compose.ts"
 import type { DiscriminatedSwitch } from "./discriminate.ts"
-import type { Predicate } from "./predicate.ts"
+import type { Branch, Predicate } from "./predicate.ts"
 import {
     flattenPredicate,
     isLiteralCondition,
@@ -22,6 +24,7 @@ import {
     predicateUnion,
     resolutionExtendsDomain
 } from "./predicate.ts"
+import { isOptional } from "./rules/props.ts"
 import type { LiteralRules, MorphEntry, RuleEntry } from "./rules/rules.ts"
 
 // TODO: should Type be allowed as a node? would allow configs etc. during traversal
@@ -186,34 +189,22 @@ export const isLiteralNode = <domain extends Domain>(
     )
 }
 
-// export type BranchEntry = [Domain, Branch]
+export const nodeIncludesMorph = (node: TypeNode, $: Scope): boolean =>
+    typeof node === "string"
+        ? $.resolve(node).includesMorph
+        : Object.values(node).some((predicate) =>
+              predicate === true
+                  ? false
+                  : hasSubdomain(predicate, "Array")
+                  ? predicate.some((branch) => branchIncludesMorph(branch, $))
+                  : branchIncludesMorph(predicate, $)
+          )
 
-// export const branchesOf = (node: TypeNode) => {
-//     const result: Branch[] = []
-//     let domain: Domain
-//     for (domain in node) {
-//         if (node[domain] === true) {
-//             result.push({})
-//             continue
-//         }
-//         for (const branch of listFrom(node[domain]) as Branches) {
-//             result.push(branch)
-//         }
-//     }
-//     return result
-// }
-
-// export const nodeIncludesMorph = (node: TypeNode, $: Scope): boolean =>
-//     branchesOf(node).some((branch) => {
-//         if ("morph" in branch) {
-//             return true
-//         }
-//         if ("props" in branch) {
-//             return Object.values(branch.props!).some((prop) => {
-//                 const propReference = isOptional(prop) ? prop[1] : prop
-//                 const propNode = $.resolveIfIdentifier(propReference)
-//                 return nodeIncludesMorph(propNode, $)
-//             })
-//         }
-//         return false
-//     })
+export const branchIncludesMorph = (branch: Branch, $: Scope) =>
+    "morph" in branch
+        ? true
+        : "props" in branch
+        ? Object.values(branch.props!).some((prop) =>
+              nodeIncludesMorph(isOptional(prop) ? prop[1] : prop, $)
+          )
+        : false
