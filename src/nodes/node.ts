@@ -1,5 +1,4 @@
 import type { Scope, Type } from "../main.ts"
-import type { ParseContext } from "../parse/definition.ts"
 import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
 import type { Domain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
@@ -152,7 +151,7 @@ export type SwitchEntry = ["switch", DiscriminatedSwitch]
 
 export const flattenNode = (node: TypeNode, type: Type): TraversalNode => {
     if (typeof node === "string") {
-        return [["alias", node]]
+        return type.scope.resolve(node).flat
     }
     const domains = keysOf(node)
     if (domains.length === 1) {

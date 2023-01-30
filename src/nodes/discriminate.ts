@@ -1,5 +1,4 @@
 import type { Type } from "../main.ts"
-import type { ParseContext } from "../parse/definition.ts"
 import { undiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"

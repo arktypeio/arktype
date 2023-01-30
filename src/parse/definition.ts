@@ -1,4 +1,4 @@
-import type { Scope, Type } from "../main.ts"
+import type { Type } from "../main.ts"
 import { isType } from "../main.ts"
 import type { TypeNode } from "../nodes/node.ts"
 import type { Primitive, Subdomain } from "../utils/domains.ts"

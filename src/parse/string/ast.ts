@@ -195,7 +195,7 @@ export const writeImplicitNeverMessage = <
     path: asConst<path>,
     description?: description
 ) =>
-    `${path.length ? `At ${path}: ` : ""}Intersection${
+    `${path.length ? `At ${path}: ` : ""}Intersection ${
         description ? `${description} ` : ""
     }results in an unsatisfiable type` as writeImplicitNeverMessage<
         path,

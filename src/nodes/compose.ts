@@ -1,5 +1,4 @@
 import type { Type } from "../main.ts"
-import type { ParseContext } from "../parse/definition.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { constructor, Dict, extend, mutable } from "../utils/generics.ts"

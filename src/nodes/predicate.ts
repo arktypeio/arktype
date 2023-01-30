@@ -1,5 +1,4 @@
 import type { Type } from "../main.ts"
-import type { ParseContext } from "../parse/definition.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
 import type { Domain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
