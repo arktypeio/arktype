@@ -32,7 +32,7 @@ export type parseUnenclosed<
     : never
 
 const unenclosedToNode = (s: DynamicState, token: string) => {
-    if (s.ctx.$.maybeResolve(token)) {
+    if (s.ctx.$.addReferenceIfResolvable(token, s.ctx)) {
         return token
     }
     return (

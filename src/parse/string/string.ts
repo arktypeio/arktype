@@ -47,12 +47,12 @@ type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
     : fullStringParse<def, $>
 
 export const maybeNaiveParse = (def: string, ctx: ParseContext) => {
-    if (ctx.$.maybeResolve(def)) {
+    if (ctx.$.addReferenceIfResolvable(def, ctx)) {
         return def
     }
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
-        if (ctx.$.maybeResolve(def)) {
+        if (ctx.$.addReferenceIfResolvable(def, ctx)) {
             return functors.Array(elementDef)
         }
     }

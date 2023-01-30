@@ -24,9 +24,9 @@ import type {
 import { parseTuple } from "./tuple/tuple.ts"
 
 export type ParseContext = {
+    type: Type
     $: Scope
     path: Path
-    name: string
 }
 
 export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {

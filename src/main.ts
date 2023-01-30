@@ -180,17 +180,18 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     type = ((def, opts: TypeOptions = {}) => {
-        const ctx = this.#initializeContext("(anonymous)")
-        const root = this.resolveNode(parseDefinition(def, ctx))
-        const flat = flattenNode(root, ctx)
-        return this.#typeFrom(root, flat, opts)
+        const result = this.#initializeUnparsedType("(anonymous)", opts)
+        const ctx = this.#initializeContext(result)
+        result.node = this.resolveNode(parseDefinition(def, ctx))
+        result.flat = flattenNode(result.node, ctx)
+        return result
     }) as TypeParser<resolutions<context>>
 
-    #initializeContext(name: string): ParseContext {
+    #initializeContext(type: Type): ParseContext {
         return {
             $: this,
-            path: new Path(),
-            name
+            type,
+            path: new Path()
         }
     }
 
@@ -209,8 +210,16 @@ export class Scope<context extends ScopeContext = any> {
         return this.#exports.root as Space<exportsOf<context>>
     }
 
-    maybeResolve(name: name<context>) {
-        return this.#resolveRecurse(name, "undefined", [])
+    addReferenceIfResolvable(name: name<context>, ctx: ParseContext) {
+        const resolution = this.#resolveRecurse(name, "undefined", [])
+        if (!resolution) {
+            return false
+        }
+        if (resolution.morphs) {
+            ctx.type.morphs ??= {}
+            ctx.type.morphs[`${ctx.path}`] = true
+        }
+        return true
     }
 
     resolve(name: name<context>) {
@@ -235,11 +244,10 @@ export class Scope<context extends ScopeContext = any> {
                     : undefined
             ) as ResolveResult<onUnresolvable>
         }
-        // temporarily set the TraversalNode to an alias that will be used for cyclic resolutions
-        const type = this.#typeFrom(name, [["alias", name]], {})
-        this.#resolutions.set(name, type)
-        this.#exports.set(name, type)
-        const ctx = this.#initializeContext(name)
+        const result = this.#initializeUnparsedType(name, {})
+        this.#resolutions.set(name, result)
+        this.#exports.set(name, result)
+        const ctx = this.#initializeContext(result)
         let resolution = parseDefinition(this.aliases[name], ctx)
         if (typeof resolution === "string") {
             if (seen.includes(resolution)) {
@@ -250,9 +258,9 @@ export class Scope<context extends ScopeContext = any> {
             seen.push(resolution)
             resolution = this.#resolveRecurse(resolution, "throw", seen).node
         }
-        type.node = resolution
-        type.flat = flattenNode(resolution, ctx)
-        return type
+        result.node = resolution
+        result.flat = flattenNode(resolution, ctx)
+        return result
     }
 
     resolveNode(node: TypeNode): ResolvedNode {
@@ -262,7 +270,9 @@ export class Scope<context extends ScopeContext = any> {
         return this.resolveNode(this.resolve(node).node)
     }
 
-    #typeFrom(node: TypeNode, flat: TraversalNode, config: TypeOptions): Type {
+    /** temporarily set the TraversalNode to an alias that will be used for cyclic resolutions */
+    #initializeUnparsedType(alias: string, config: TypeOptions): Type {
+        const flat: TraversalNode = [["alias", alias]]
         return Object.assign(
             (data: unknown) => {
                 return traverse(data, flat, this, config)
@@ -271,8 +281,9 @@ export class Scope<context extends ScopeContext = any> {
                 [t]: chainableNoOpProxy,
                 infer: chainableNoOpProxy,
                 config,
-                node,
-                flat
+                node: alias,
+                flat,
+                alias
             }
         )
     }
@@ -458,6 +469,8 @@ type Checker<t> = (data: unknown) => Result<t>
 type TypeRoot<t = unknown> = {
     [t]: t
     infer: asOut<t>
+    alias: string
+    morphs?: { [path in string]: true }
     node: TypeNode
     flat: TraversalNode
 }
