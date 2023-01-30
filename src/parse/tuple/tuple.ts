@@ -1,7 +1,7 @@
 import type { asIn, asOut } from "../../main.ts"
 import { functors } from "../../nodes/functors.ts"
 import type { inferNode } from "../../nodes/infer.ts"
-import type { TypeNode, TypeReference } from "../../nodes/node.ts"
+import type { ResolvedNode, TypeNode } from "../../nodes/node.ts"
 import { intersection, union } from "../../nodes/node.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
@@ -26,14 +26,14 @@ import { parseMorphTuple } from "./morph.ts"
 import type { validateNarrowTuple } from "./narrow.ts"
 import { parseNarrowTuple } from "./narrow.ts"
 
-export const parseTuple = (def: List, ctx: ParseContext): TypeReference => {
+export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     if (isPostfixExpression(def)) {
         return postfixParsers[def[1]](def as never, ctx)
     }
     if (isPrefixExpression(def)) {
         return prefixParsers[def[0]](def as never, ctx)
     }
-    const props: Record<number, TypeReference> = {}
+    const props: Record<number, TypeNode> = {}
     for (let i = 0; i < def.length; i++) {
         ctx.path.push(`${i}`)
         props[i] = parseDefinition(def[i], ctx)
@@ -72,7 +72,7 @@ export type validateTupleExpression<
     : def[0] extends "instanceof"
     ? conform<def, readonly ["instanceof", constructor]>
     : def[0] extends "node"
-    ? conform<def, readonly ["node", TypeNode<$>]>
+    ? conform<def, readonly ["node", ResolvedNode<$>]>
     : never
 
 export type inferTuple<def extends List, $> = def extends TupleExpression
@@ -106,7 +106,7 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
         ? t
         : never
     : def[0] extends "node"
-    ? def[1] extends TypeNode<$>
+    ? def[1] extends ResolvedNode<$>
         ? inferNode<def[1], $>
         : never
     : never
@@ -126,12 +126,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
 export type PostfixParser<token extends PostfixToken> = (
     def: PostfixExpression<token>,
     ctx: ParseContext
-) => TypeReference
+) => TypeNode
 
 export type PrefixParser<token extends PrefixToken> = (
     def: PrefixExpression<token>,
     ctx: ParseContext
-) => TypeReference
+) => TypeNode
 
 export type TupleExpression = PrefixExpression | PostfixExpression
 
@@ -185,7 +185,7 @@ const prefixParsers: {
         return { object: { class: def[1] as constructor } }
     },
     "===": (def) => ({ [domainOf(def[1])]: { value: def[1] } }),
-    node: (def) => def[1] as TypeNode
+    node: (def) => def[1] as ResolvedNode
 }
 
 const isPrefixExpression = (def: List): def is PrefixExpression =>

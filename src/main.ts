@@ -1,4 +1,4 @@
-import type { TraversalNode, TypeNode, TypeReference } from "./nodes/node.js"
+import type { ResolvedNode, TraversalNode, TypeNode } from "./nodes/node.js"
 import { flattenNode } from "./nodes/node.js"
 import type {
     inferDefinition,
@@ -149,7 +149,7 @@ type resolutions<context extends ScopeContext> = localsOf<context> &
 type name<context extends ScopeContext> = keyof resolutions<context> & string
 
 export class Scope<context extends ScopeContext = any> {
-    parseCache = new FreezingCache<TypeReference>()
+    parseCache = new FreezingCache<TypeNode>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
 
@@ -168,7 +168,7 @@ export class Scope<context extends ScopeContext = any> {
     #cacheSpaces(spaces: SpaceList, kind: "imports" | "includes") {
         for (const space of spaces) {
             for (const name in space) {
-                if (this.isResolvable(name)) {
+                if (this.#resolutions.has(name) || name in this.aliases) {
                     throwParseError(writeDuplicateAliasMessage(name))
                 }
                 this.#resolutions.set(name, space[name])
@@ -181,7 +181,7 @@ export class Scope<context extends ScopeContext = any> {
 
     type = ((def, opts: TypeOptions = {}) => {
         const ctx = this.#initializeContext("(anonymous)")
-        const root = this.resolveIfIdentifier(parseDefinition(def, ctx))
+        const root = this.resolveNode(parseDefinition(def, ctx))
         const flat = flattenNode(root, ctx)
         return this.#typeFrom(root, flat, opts)
     }) as TypeParser<resolutions<context>>
@@ -209,24 +209,36 @@ export class Scope<context extends ScopeContext = any> {
         return this.#exports.root as Space<exportsOf<context>>
     }
 
-    isResolvable(name: string) {
-        return this.#resolutions.has(name) || name in this.aliases
+    maybeResolve(name: name<context>) {
+        return this.#resolveRecurse(name, "undefined", [])
     }
 
     resolve(name: name<context>) {
-        return this.#resolveRecurse(name, [])
+        return this.#resolveRecurse(name, "throw", [])
     }
 
-    #resolveRecurse(name: string, seen: string[]): Type {
+    #resolveRecurse<onUnresolvable extends "undefined" | "throw">(
+        name: string,
+        onUnresolvable: onUnresolvable,
+        seen: string[]
+    ): ResolveResult<onUnresolvable> {
         const maybeCacheResult = this.#resolutions.get(name)
         if (maybeCacheResult) {
             return maybeCacheResult
         }
         if (!this.aliases[name]) {
-            return throwInternalError(
-                `Unexpectedly failed to resolve alias '${name}'`
-            )
+            return (
+                onUnresolvable === "throw"
+                    ? throwInternalError(
+                          `Unexpectedly failed to resolve alias '${name}'`
+                      )
+                    : undefined
+            ) as ResolveResult<onUnresolvable>
         }
+        // temporarily set the TraversalNode to an alias that will be used for cyclic resolutions
+        const type = this.#typeFrom(name, [["alias", name]], {})
+        this.#resolutions.set(name, type)
+        this.#exports.set(name, type)
         const ctx = this.#initializeContext(name)
         let resolution = parseDefinition(this.aliases[name], ctx)
         if (typeof resolution === "string") {
@@ -236,19 +248,18 @@ export class Scope<context extends ScopeContext = any> {
                 )
             }
             seen.push(resolution)
-            resolution = this.#resolveRecurse(resolution, seen).node
+            resolution = this.#resolveRecurse(resolution, "throw", seen).node
         }
-        // TODO: Figure out type options here
-        // temporarily set the TraversalNode to an alias that will be used for cyclic resolutions
-        const type = this.#typeFrom(resolution, [["alias", name]], {})
-        this.#resolutions.set(name, type)
-        this.#exports.set(name, type)
+        type.node = resolution
         type.flat = flattenNode(resolution, ctx)
         return type
     }
 
-    resolveIfIdentifier(node: TypeReference): TypeNode {
-        return typeof node === "string" ? this.resolve(node).node : node
+    resolveNode(node: TypeNode): ResolvedNode {
+        if (typeof node === "object") {
+            return node
+        }
+        return this.resolveNode(this.resolve(node).node)
     }
 
     #typeFrom(node: TypeNode, flat: TraversalNode, config: TypeOptions): Type {
@@ -266,6 +277,11 @@ export class Scope<context extends ScopeContext = any> {
         )
     }
 }
+
+type OnUnresolvable = "throw" | "undefined"
+
+type ResolveResult<onUnresolvable extends OnUnresolvable> =
+    onUnresolvable extends "throw" ? Type : Type | undefined
 
 class Cache<item = unknown> {
     protected cache: { [name in string]?: item } = {}

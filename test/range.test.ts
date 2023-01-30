@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import type { TypeNode } from "../src/nodes/node.ts"
+import type { ResolvedNode } from "../src/nodes/node.ts"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
@@ -87,7 +87,7 @@ describe("range", () => {
         })
         describe("intersection", () => {
             it("overlapping", () => {
-                const expected: TypeNode = {
+                const expected: ResolvedNode = {
                     number: {
                         range: {
                             min: { limit: 2 },
@@ -122,21 +122,21 @@ describe("range", () => {
                 )
             })
             it("greater min is stricter", () => {
-                const expected: TypeNode = {
+                const expected: ResolvedNode = {
                     number: { range: { min: { limit: 3 } } }
                 }
                 attest(type("number>=3&number>2").node).equals(expected)
                 attest(type("number>2&number>=3").node).equals(expected)
             })
             it("lesser max is stricter", () => {
-                const expected: TypeNode = {
+                const expected: ResolvedNode = {
                     number: { range: { max: { limit: 3 } } }
                 }
                 attest(type("number<=3&number<4").node).equals(expected)
                 attest(type("number<4&number<=3").node).equals(expected)
             })
             it("exclusive included if limits equal", () => {
-                const expected: TypeNode = {
+                const expected: ResolvedNode = {
                     number: { range: { max: { limit: 3, exclusive: true } } }
                 }
                 attest(type("number<3&number<=3").node).equals(expected)

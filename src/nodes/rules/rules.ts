@@ -58,7 +58,9 @@ export type MorphBranch<domain extends Domain = Domain, $ = Dict> = {
     morph: CollapsibleList<Morph>
 }
 
-export type BranchEntry =
+export type FlatBranch = (RuleEntry | MorphEntry)[]
+
+export type RuleEntry =
     | ["subdomain", TraversalSubdomainRule]
     | ["regex", RegExp]
     | ["divisor", number]
@@ -68,7 +70,8 @@ export type BranchEntry =
     | TraversalOptionalProps
     | ["narrow", Narrow]
     | ["value", unknown]
-    | ["morph", Morph]
+
+export type MorphEntry = ["morph", Morph]
 
 export type Rules<
     domain extends Domain = Domain,
@@ -168,7 +171,7 @@ export const narrowableRulesIntersection =
     )
 
 export type FlattenAndPushRule<t> = (
-    entries: BranchEntry[],
+    entries: RuleEntry[],
     rule: t,
     ctx: ParseContext
 ) => void
@@ -232,7 +235,7 @@ export const precedenceMap: {
 export const flattenBranch = (
     branch: Branch,
     ctx: ParseContext
-): BranchEntry[] => {
+): FlatBranch => {
     if ("morph" in branch) {
         const result = flattenRules(branch.input, ctx)
         for (const morph of listFrom(branch.morph)) {
@@ -243,11 +246,8 @@ export const flattenBranch = (
     return flattenRules(branch, ctx)
 }
 
-const flattenRules = (
-    rules: UnknownRules,
-    ctx: ParseContext
-): BranchEntry[] => {
-    const entries: BranchEntry[] = []
+const flattenRules = (rules: UnknownRules, ctx: ParseContext): FlatBranch => {
+    const entries: RuleEntry[] = []
     let k: keyof UnknownRules
     for (k in rules) {
         ruleFlatteners[k](entries, rules[k] as any, ctx)

@@ -12,7 +12,7 @@ import {
     equality,
     isDisjoint
 } from "../compose.ts"
-import type { TraversalNode, TypeReference } from "../node.ts"
+import type { TraversalNode, TypeNode } from "../node.ts"
 import { flattenNode, nodeIntersection } from "../node.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
@@ -20,9 +20,9 @@ export type PropsRule<$ = Dict> = {
     [propKey in string]: Prop<$>
 }
 
-export type Prop<$ = Dict> = TypeReference<$> | OptionalProp<$>
+export type Prop<$ = Dict> = TypeNode<$> | OptionalProp<$>
 
-export type OptionalProp<$ = Dict> = ["?", TypeReference<$>]
+export type OptionalProp<$ = Dict> = ["?", TypeNode<$>]
 
 export type TraversalRequiredProps = [
     "requiredProps",
@@ -36,7 +36,7 @@ export type TraversalOptionalProps = [
 
 export type TraversalPropEntry = [propKey: string, node: TraversalNode]
 
-const isOptional = (prop: Prop): prop is OptionalProp =>
+export const isOptional = (prop: Prop): prop is OptionalProp =>
     (prop as OptionalProp)[0] === "?"
 
 const nodeFrom = (prop: Prop) => (isOptional(prop) ? prop[1] : prop)
