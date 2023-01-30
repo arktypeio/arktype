@@ -18,7 +18,7 @@ describe("intersection", () => {
             attest(t.infer).typed as true
             attest(t("shawn@arktype.io").data).snap("shawn@arktype.io")
             attest(t("shawn@arktype.oi").problems?.summary).snap(
-                '"shawn@arktype.oi" must match expression /@arktype.io$/.'
+                '"shawn@arktype.oi" must match expression /@arktype.io$/'
             )
         })
         it("several types", () => {

@@ -27,7 +27,7 @@ describe("check", () => {
         const t = type("/\\w@hotmail.com/")
         const checked = t("shawn@hotail.com")
         attest(checked.problems?.summary).snap(
-            '"shawn@hotail.com" must match expression /\\w@hotmail.com/.'
+            '"shawn@hotail.com" must match expression /\\w@hotmail.com/'
         )
     })
     it("required keys", () => {

@@ -98,12 +98,11 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
             state.path.push(propKey)
             if (!hasKey(data, propKey)) {
                 if (propKind !== "optionalProps") {
-                    state.problems.addProblem(
-                        "missing",
-                        undefined,
-                        { key: propKey },
-                        state
-                    )
+                    state.addProblem({
+                        code: "missing",
+                        data: undefined,
+                        key: propKey
+                    })
                 }
             } else {
                 traverseNode(data[propKey], propNode, state)
@@ -116,7 +115,11 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
 export const checkRequiredProps = createPropChecker("requiredProps")
 export const checkOptionalProps = createPropChecker("optionalProps")
 
-export type MissingKeyContext = defineProblem<undefined, { key: string }>
+export type MissingKeyContext = defineProblem<{
+    code: "missing"
+    data: undefined
+    key: string
+}>
 
 export const writeMissingKeyError: ProblemMessageWriter<"missing"> = ({
     key

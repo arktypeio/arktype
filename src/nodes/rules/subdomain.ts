@@ -122,42 +122,32 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     const dataSubdomain = subdomainOf(data)
     if (typeof rule === "string") {
         if (dataSubdomain !== rule) {
-            state.problems.addProblem(
-                "domain",
+            state.addProblem({
+                code: "domain",
                 data,
-                {
-                    expected: [rule]
-                },
-                state
-            )
+                expected: [rule]
+            })
         }
         return
     }
     if (dataSubdomain !== rule[0]) {
-        state.problems.addProblem(
-            "domain",
+        state.addProblem({
+            code: "domain",
             data,
-            {
-                expected: [rule[0]]
-            },
-            state
-        )
+            expected: [rule[0]]
+        })
         return
     }
     if (dataSubdomain === "Array" && typeof rule[2] === "number") {
         const actual = (data as List).length
         const expected = rule[2]
         if (expected !== actual) {
-            // TODO: addProblem API to state? Could all be one object
-            return state.problems.addProblem(
-                "tupleLength",
-                data,
-                {
-                    actual,
-                    expected
-                },
-                state
-            )
+            return state.addProblem({
+                code: "tupleLength",
+                data: data as List,
+                actual,
+                expected
+            })
         }
     }
     if (dataSubdomain === "Array" || dataSubdomain === "Set") {
@@ -176,13 +166,12 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     return true
 }
 
-export type TupleLengthProblemContext = defineProblem<
-    List,
-    {
-        actual: number
-        expected: number
-    }
->
+export type TupleLengthProblemContext = defineProblem<{
+    code: "tupleLength"
+    data: List
+    actual: number
+    expected: number
+}>
 
 export const writeTupleLengthError: ProblemMessageWriter<"tupleLength"> = ({
     actual,

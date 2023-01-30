@@ -13,12 +13,17 @@ import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
 import { checkSubdomain } from "../nodes/rules/subdomain.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
-import { domainOf } from "../utils/domains.ts"
+import { domainOf, hasSubdomain } from "../utils/domains.ts"
 import type { Dict, extend, List } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import type { ProblemCode, ProblemMessageWriter } from "./problems.ts"
-import { Problems, Stringifiable } from "./problems.ts"
+import type {
+    Problem,
+    ProblemCode,
+    ProblemInputs,
+    ProblemMessageWriter
+} from "./problems.ts"
+import { defaultMessagesByCode, Problems, Stringifiable } from "./problems.ts"
 
 export class TraversalState {
     path: Path
@@ -34,6 +39,24 @@ export class DataTraversalState extends TraversalState {
     constructor(type: Type) {
         super(type)
         this.problems = new Problems()
+    }
+
+    addProblem<code extends ProblemCode>(ctx: ProblemInputs[code]) {
+        ctx.data = new Stringifiable(ctx.data)
+        const problemConfig = this.type.config.problems?.[ctx.code]
+        const customMessageWriter =
+            typeof problemConfig === "function"
+                ? (problemConfig as ProblemMessageWriter<code>)
+                : problemConfig?.message
+        const problem: Problem = {
+            path: `${this.path}`,
+            reason:
+                customMessageWriter?.(ctx as never) ??
+                defaultMessagesByCode[ctx.code](ctx as never)
+        }
+        this.problems.push(problem)
+        // TODO: migrate multi-part errors
+        this.problems.byPath[problem.path] = problem
     }
 }
 
@@ -60,14 +83,11 @@ export const traverseNode = (
 ) => {
     if (typeof flat === "string") {
         if (domainOf(data) !== flat) {
-            state.problems.addProblem(
-                "domain",
+            state.addProblem({
+                code: "domain",
                 data,
-                {
-                    expected: [flat]
-                },
-                state
-            )
+                expected: [flat]
+            })
         }
         return
     }
@@ -82,28 +102,29 @@ export const checkEntries = (
     let precedenceLevel = 0
     const pathKey = `${state.path}`
     for (let i = 0; i < entries.length; i++) {
-        const ruleName = entries[i][0]
-        const ruleValidator = entries[i][1]
+        const k = entries[i][0]
+        const v = entries[i][1]
+
         if (
+            // Return problems? Nested props wouldn't work
             state.problems.byPath[pathKey] &&
-            precedenceMap[ruleName] > precedenceLevel
+            precedenceMap[k] > precedenceLevel
         ) {
             break
         }
-
-        // TODO: improve
-        if (ruleName === "morph") {
-            data = (ruleValidator as Morph)(data)
-        } else {
-            ;(checkers[ruleName] as TraversalCheck<any>)(
-                data,
-                ruleValidator,
-                state
-            )
+        if (k === "morph") {
+            if (hasSubdomain(v, "Array")) {
+                let out = data
+                for (const morph of v as List<Morph>) {
+                    out = morph(out)
+                }
+                return out
+            }
+            return (v as Morph)(data)
         }
-        precedenceLevel = precedenceMap[ruleName]
+        ;(checkers[k] as TraversalCheck<any>)(data, v, state)
+        precedenceLevel = precedenceMap[k]
     }
-    return data
 }
 
 const checkers = {
@@ -114,26 +135,20 @@ const checkers = {
         if (entries) {
             checkEntries(data, entries, state)
         } else {
-            state.problems.addProblem(
-                "domain",
+            state.addProblem({
+                code: "domain",
                 data,
-                {
-                    expected: keysOf(domains)
-                },
-                state
-            )
+                expected: keysOf(domains)
+            })
         }
     },
     domain: (data, domain, state) => {
         if (domainOf(data) !== domain) {
-            state.problems.addProblem(
-                "domain",
+            state.addProblem({
+                code: "domain",
                 data,
-                {
-                    expected: [domain]
-                },
-                state
-            )
+                expected: [domain]
+            })
         }
     },
     subdomain: checkSubdomain,
@@ -152,17 +167,14 @@ const checkers = {
         traverseNode(data, state.type.scope.resolve(name).flat, state),
     class: checkClass,
     // TODO: add error message syntax.
-    narrow: (data, validator) => validator(data),
+    narrow: (data, narrow) => narrow(data),
     value: (data, value, state) => {
         if (data !== value) {
-            state.problems.addProblem(
-                "value",
+            state.addProblem({
+                code: "value",
                 data,
-                {
-                    expected: new Stringifiable(value)
-                },
-                state
-            )
+                expected: new Stringifiable(value)
+            })
         }
     }
 } satisfies {

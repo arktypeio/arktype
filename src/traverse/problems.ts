@@ -12,9 +12,8 @@ import type { TupleLengthProblemContext } from "../nodes/rules/subdomain.ts"
 import { writeTupleLengthError } from "../nodes/rules/subdomain.ts"
 import type { Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import type { evaluate } from "../utils/generics.ts"
+import type { replaceProps } from "../utils/generics.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { DataTraversalState } from "./check.ts"
 
 export type Problem = {
     path: string
@@ -49,31 +48,6 @@ export class Problems extends Array<Problem> {
 
     throw(): never {
         throw new ArktypeError(this)
-    }
-
-    addProblem<code extends ProblemCode>(
-        code: code,
-        data: unknown,
-        context: Omit<ProblemContexts[code], keyof BaseProblemContext>,
-        state: DataTraversalState
-    ) {
-        const compiledContext = Object.assign(context, {
-            data: new Stringifiable(data)
-        }) as ProblemContexts[code]
-        const problemConfig = state.type.config.problems?.[code]
-        const customMessageWriter =
-            typeof problemConfig === "function"
-                ? (problemConfig as ProblemMessageWriter<code>)
-                : problemConfig?.message
-        const problem: Problem = {
-            path: `${state.path}`,
-            reason:
-                customMessageWriter?.(compiledContext) ??
-                defaultMessagesByCode[code](compiledContext)
-        }
-        state.problems.push(problem)
-        // TODO: migrate multi-part errors
-        this.byPath[problem.path] = problem
     }
 }
 
@@ -114,12 +88,11 @@ const describeSubdomains = (subdomains: Subdomain[]) => {
     return description
 }
 
-type DomainProblemContext = defineProblem<
-    unknown,
-    {
-        expected: Subdomain[]
-    }
->
+type DomainProblemContext = defineProblem<{
+    code: "domain"
+    data: unknown
+    expected: Subdomain[]
+}>
 
 /** Each Subdomain's completion for the phrase "Must _____" */
 const subdomainDescriptions = {
@@ -143,9 +116,12 @@ const subdomainDescriptions = {
 export const writeUnionError: ProblemMessageWriter<"union"> = ({ data }) =>
     `${data} does not satisfy any branches`
 
-export type UnionProblemContext = defineProblem<unknown, {}>
+export type UnionProblemContext = defineProblem<{
+    code: "union"
+    data: unknown
+}>
 
-export type ProblemContexts = {
+export type ProblemInputs = {
     divisibility: DivisibilityContext
     domain: DomainProblemContext
     missing: MissingKeyContext
@@ -157,23 +133,37 @@ export type ProblemContexts = {
     value: ValueProblemContext
 }
 
-export type ValueProblemContext = defineProblem<
-    unknown,
-    {
-        expected: Stringifiable
-    }
->
+export type BaseProblemInput<
+    code extends ProblemCode = ProblemCode,
+    data = unknown
+> = {
+    code: code
+    data: data
+}
+
+export type ProblemContexts = {
+    [k in keyof ProblemInputs]: replaceProps<
+        ProblemInputs[k],
+        { data: Stringifiable<ProblemInputs[k]["data"]> }
+    >
+}
+
+export type ValueProblemContext = defineProblem<{
+    code: "value"
+    data: unknown
+    expected: Stringifiable
+}>
 
 const writeValueProblem: ProblemMessageWriter<"value"> = ({ data, expected }) =>
     `Must be ${expected} (was ${data})`
 
-export type ProblemCode = keyof ProblemContexts
+export type ProblemCode = keyof ProblemInputs
 
 export type ProblemMessageWriter<code extends ProblemCode> = (
     context: ProblemContexts[code]
 ) => string
 
-const defaultMessagesByCode: {
+export const defaultMessagesByCode: {
     [code in ProblemCode]: ProblemMessageWriter<code>
 } = {
     divisibility: writeDivisorError,
@@ -187,8 +177,4 @@ const defaultMessagesByCode: {
     value: writeValueProblem
 }
 
-export type defineProblem<data, customContext = {}> = evaluate<
-    BaseProblemContext<data> & customContext
->
-
-type BaseProblemContext<data = unknown> = { data: Stringifiable<data> }
+export type defineProblem<input extends BaseProblemInput> = input

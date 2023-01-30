@@ -17,13 +17,12 @@ export const classIntersection = composeIntersection<constructor>(
             : state.addDisjoint("class", l, r)
 )
 
-export type ClassProblemContext = defineProblem<
-    unknown,
-    {
-        expected: string
-        actual: string
-    }
->
+export type ClassProblemContext = defineProblem<{
+    code: "class"
+    data: unknown
+    expected: string
+    actual: string
+}>
 
 export const writeClassProblem: ProblemMessageWriter<"class"> = ({
     actual,
@@ -32,14 +31,11 @@ export const writeClassProblem: ProblemMessageWriter<"class"> = ({
 
 export const checkClass = ((data, expectedClass, state) => {
     if (!(data instanceof expectedClass)) {
-        state.problems.addProblem(
-            "class",
+        state.addProblem({
+            code: "class",
             data,
-            {
-                expected: expectedClass.name,
-                actual: (data as Object).constructor.name
-            },
-            state
-        )
+            expected: expectedClass.name,
+            actual: (data as Object).constructor.name
+        })
     }
 }) satisfies TraversalCheck<"class">
