@@ -22,18 +22,19 @@ describe("discriminate", () => {
             ]
         ])
     })
-    const places = scope.lazy({
-        rainforest: {
-            climate: "'wet'",
-            color: "'green'",
-            isRainforest: "true"
-        },
-        desert: { climate: "'dry'", color: "'brown'", isDesert: "true" },
-        sky: { climate: "'dry'", color: "'blue'", isSky: "true" },
-        ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" }
-    })
+    const getPlaces = () =>
+        scope({
+            rainforest: {
+                climate: "'wet'",
+                color: "'green'",
+                isRainforest: "true"
+            },
+            desert: { climate: "'dry'", color: "'brown'", isDesert: "true" },
+            sky: { climate: "'dry'", color: "'blue'", isSky: "true" },
+            ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" }
+        })
     it("nested", () => {
-        const t = places.$.type("ocean|sky|rainforest|desert")
+        const t = getPlaces().type("ocean|sky|rainforest|desert")
         attest(t.flat).snap([
             ["domain", "object"],
             [
@@ -114,7 +115,7 @@ describe("discriminate", () => {
         ])
     })
     it("undiscriminatable", () => {
-        const t = places.$.type([
+        const t = getPlaces().type([
             "ocean",
             "|",
             {
@@ -166,7 +167,7 @@ describe("discriminate", () => {
         ])
     })
     it("default case", () => {
-        const t = places.$.type([
+        const t = getPlaces().type([
             "ocean|rainforest",
             "|",
             { temperature: "'hot'" }
@@ -211,7 +212,7 @@ describe("discriminate", () => {
         ])
     })
     it("discriminatable default", () => {
-        const t = places.$.type([
+        const t = getPlaces().type([
             { temperature: "'cold'" },
             "|",
             ["ocean|rainforest", "|", { temperature: "'hot'" }]

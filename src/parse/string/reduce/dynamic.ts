@@ -1,10 +1,9 @@
-import { functorKeywords } from "../../../nodes/keywords.ts"
-import type { TypeNode } from "../../../nodes/node.ts"
-import { intersection, union } from "../../../nodes/node.ts"
-import { isLiteralNode } from "../../../nodes/resolve.ts"
-import type { ScopeRoot } from "../../../scope.ts"
+import { functors } from "../../../nodes/functors.ts"
+import type { TypeReference } from "../../../nodes/node.ts"
+import { intersection, isLiteralNode, union } from "../../../nodes/node.ts"
 import { throwInternalError, throwParseError } from "../../../utils/errors.ts"
 import { isKeyOf } from "../../../utils/generics.ts"
+import type { ParseContext } from "../../definition.ts"
 import { Scanner } from "../shift/scanner.ts"
 import type { OpenRange } from "./shared.ts"
 import {
@@ -17,17 +16,17 @@ import {
 
 type BranchState = {
     range?: OpenRange
-    intersection?: TypeNode
-    union?: TypeNode
+    intersection?: TypeReference
+    union?: TypeReference
 }
 
 export class DynamicState {
     public readonly scanner: Scanner
-    private root: TypeNode | undefined
+    private root: TypeReference | undefined
     private branches: BranchState = {}
     private groups: BranchState[] = []
 
-    constructor(def: string, public readonly $: ScopeRoot) {
+    constructor(def: string, public readonly ctx: ParseContext) {
         this.scanner = new Scanner(def)
     }
 
@@ -41,8 +40,12 @@ export class DynamicState {
 
     ejectRootIfLimit() {
         this.assertHasRoot()
-        if (isLiteralNode(this.root!, "number", this.$)) {
-            const limit = this.root.number.value
+        const resolution =
+            typeof this.root === "string"
+                ? this.ctx.$.resolveIfIdentifier(this.root)
+                : this.root!
+        if (isLiteralNode(resolution, "number")) {
+            const limit = resolution.number.value
             this.root = undefined
             return limit
         }
@@ -68,17 +71,17 @@ export class DynamicState {
         }
     }
 
-    setRoot(node: TypeNode) {
+    setRoot(node: TypeReference) {
         this.assertUnsetRoot()
         this.root = node
     }
 
     rootToArray() {
-        this.root = functorKeywords.Array(this.ejectRoot())
+        this.root = functors.Array(this.ejectRoot())
     }
 
-    intersect(node: TypeNode) {
-        this.root = intersection(this.ejectRoot(), node, this.$)
+    intersect(node: TypeReference) {
+        this.root = intersection(this.ejectRoot(), node, this.ctx)
     }
 
     private ejectRoot() {
@@ -130,7 +133,7 @@ export class DynamicState {
                 intersection(
                     this.branches.intersection,
                     this.ejectRoot(),
-                    this.$
+                    this.ctx
                 )
             )
         }
@@ -150,11 +153,19 @@ export class DynamicState {
     pushRootToBranch(token: Scanner.BranchToken) {
         this.assertRangeUnset()
         this.branches.intersection = this.branches.intersection
-            ? intersection(this.branches.intersection, this.ejectRoot(), this.$)
+            ? intersection(
+                  this.branches.intersection,
+                  this.ejectRoot(),
+                  this.ctx
+              )
             : this.ejectRoot()
         if (token === "|") {
             this.branches.union = this.branches.union
-                ? union(this.branches.union, this.branches.intersection, this.$)
+                ? union(
+                      this.branches.union,
+                      this.branches.intersection,
+                      this.ctx
+                  )
                 : this.branches.intersection
             delete this.branches.intersection
         }

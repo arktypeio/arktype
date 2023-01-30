@@ -1,6 +1,4 @@
-import type { Keyword } from "../../../../nodes/keywords.ts"
-import type { TypeNode } from "../../../../nodes/node.ts"
-import { isResolvable } from "../../../../nodes/resolve.ts"
+import type { TypeReference } from "../../../../nodes/node.ts"
 import type { error, stringKeyOf } from "../../../../utils/generics.ts"
 import type {
     BigintLiteral,
@@ -33,17 +31,23 @@ export type parseUnenclosed<
         : never
     : never
 
-const unenclosedToNode = (s: DynamicState, token: string) =>
-    isResolvable(token, s.$)
-        ? token
-        : maybeParseUnenclosedLiteral(token) ??
-          s.error(
-              token === ""
-                  ? writeMissingOperandMessage(s)
-                  : writeUnresolvableMessage(token)
-          )
+const unenclosedToNode = (s: DynamicState, token: string) => {
+    if (s.ctx.$.isResolvable(token)) {
+        return token
+    }
+    return (
+        maybeParseUnenclosedLiteral(token) ??
+        s.error(
+            token === ""
+                ? writeMissingOperandMessage(s)
+                : writeUnresolvableMessage(token)
+        )
+    )
+}
 
-const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
+const maybeParseUnenclosedLiteral = (
+    token: string
+): TypeReference | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
         return { number: { value: maybeNumber } }
@@ -58,9 +62,7 @@ const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
     }
 }
 
-export type isResolvableIdentifier<token, $> = token extends Keyword
-    ? true
-    : token extends stringKeyOf<$>
+export type isResolvableIdentifier<token, $> = token extends stringKeyOf<$>
     ? true
     : false
 

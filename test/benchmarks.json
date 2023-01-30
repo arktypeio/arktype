@@ -271,6 +271,26 @@
     "scope": {
         "cyclic(10)": [
             {
+                "date": "1/28/2023",
+                "mark": {
+                    "type": [3065, "instantiations"]
+                }
+            },
+            {
+                "date": "1/28/2023",
+                "mark": {
+                    "type": [3038, "instantiations"],
+                    "median": [35.48, "us"]
+                }
+            },
+            {
+                "date": "1/28/2023",
+                "mark": {
+                    "type": [3038, "instantiations"],
+                    "median": [2.42, "us"]
+                }
+            },
+            {
                 "date": "11/11/2022",
                 "mark": {
                     "type": [2212, "instantiations"]
@@ -279,6 +299,26 @@
         ],
         "cyclic(100)": [
             {
+                "date": "1/28/2023",
+                "mark": {
+                    "type": [15197, "instantiations"]
+                }
+            },
+            {
+                "date": "1/28/2023",
+                "mark": {
+                    "type": [15170, "instantiations"],
+                    "median": [348.78, "us"]
+                }
+            },
+            {
+                "date": "1/28/2023",
+                "mark": {
+                    "type": [15170, "instantiations"],
+                    "median": [2.38, "us"]
+                }
+            },
+            {
                 "date": "11/11/2022",
                 "mark": {
                     "type": [11919, "instantiations"]
@@ -286,6 +326,26 @@
             }
         ],
         "cyclic(500)": [
+            {
+                "date": "1/28/2023",
+                "mark": {
+                    "type": [67493, "instantiations"]
+                }
+            },
+            {
+                "date": "1/28/2023",
+                "mark": {
+                    "type": [67466, "instantiations"],
+                    "median": [2.31, "ms"]
+                }
+            },
+            {
+                "date": "1/28/2023",
+                "mark": {
+                    "type": [67466, "instantiations"],
+                    "median": [2.45, "us"]
+                }
+            },
             {
                 "date": "11/11/2022",
                 "mark": {

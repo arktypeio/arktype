@@ -1,12 +1,12 @@
-import type { TypeNode } from "../../nodes/node.ts"
-import { domainsOfNode } from "../../nodes/resolve.ts"
+import type { TypeReference } from "../../nodes/node.ts"
 import type { NarrowableRules } from "../../nodes/rules/rules.ts"
-import type { ScopeRoot } from "../../scope.ts"
 import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type { evaluate } from "../../utils/generics.ts"
+import { keysOf } from "../../utils/generics.ts"
 import { stringify } from "../../utils/serialize.ts"
+import type { ParseContext } from "../definition.ts"
 
 export type UnaryFunction<input = any, output = unknown> = (
     input: input
@@ -48,11 +48,11 @@ export const distributeFunctionToNode = <
     ruleKey extends keyof NarrowableRules
 >(
     distributableFunction: distributable<f>,
-    inputNode: TypeNode,
-    $: ScopeRoot,
+    inputNode: TypeReference,
+    ctx: ParseContext,
     ruleKey: ruleKey
 ): DistributedFunctionNode<f, ruleKey> => {
-    const domains = domainsOfNode(inputNode, $)
+    const domains = keysOf(ctx.$.resolveIfIdentifier(inputNode))
     if (!hasDomain(distributableFunction, "object")) {
         return throwParseError(
             writeMalformedDistributableFunctionMessage(distributableFunction)

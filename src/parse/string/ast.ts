@@ -1,19 +1,18 @@
 import type { DisjointsByPath } from "../../nodes/compose.ts"
 import { disjointDescriptionWriters } from "../../nodes/compose.ts"
-import type { Keyword, Keywords } from "../../nodes/keywords.ts"
-import type { BootstrapScope } from "../../scope.ts"
-import type { asIn } from "../../type.ts"
+import type { resolve } from "../../main.ts"
+import type { asIn } from "../../main.ts"
 import type { subdomainOf } from "../../utils/domains.ts"
 import type {
     castOnError,
     Dict,
-    Downcastable,
     equals,
     error,
     evaluate,
     extractValues,
     isAny,
     List,
+    Literalable,
     RegexLiteral,
     requiredKeyOf,
     stringKeyOf,
@@ -21,7 +20,6 @@ import type {
 } from "../../utils/generics.ts"
 import { keysOf } from "../../utils/generics.ts"
 import type { pathToString } from "../../utils/paths.ts"
-import type { inferDefinition } from "../definition.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
 import type { Scanner } from "./shift/scanner.ts"
@@ -230,17 +228,8 @@ type isBoundable<data> = isAny<data> extends true
     ? true
     : false
 
-type inferTerminal<token, $> = token extends Keyword
-    ? Keywords[token]
-    : token extends keyof $
-    ? $[token] extends BootstrapScope<infer def>
-        ? // TODO: standardize tryCatch to deal with other types of defs like this
-          isAny<$[token]> extends true
-            ? any
-            : $[token] extends never
-            ? never
-            : inferDefinition<def, $>
-        : $[token]
+export type inferTerminal<token, $> = token extends keyof $
+    ? resolve<token, $>
     : token extends StringLiteral<infer Text>
     ? Text
     : token extends RegexLiteral
@@ -254,7 +243,7 @@ export type astToString<ast, result extends string = ""> = ast extends [
     ...infer tail
 ]
     ? astToString<tail, `${result}${astToString<head>}`>
-    : ast extends Downcastable
+    : ast extends Literalable
     ? `${result}${ast extends bigint ? `${ast}n` : ast}`
     : "..."
 

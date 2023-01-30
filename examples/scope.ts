@@ -1,4 +1,4 @@
-import { scope } from "../api.ts"
+import { scope } from "../api.js"
 
 // Scopes are collections of types that can reference each other.
 export const types = scope({
@@ -13,7 +13,7 @@ export const types = scope({
         email: "email",
         "packages?": "package[]"
     }
-})
+}).compile()
 
 // Cyclic types are inferred to arbitrary depth...
 export type Package = typeof types.package.infer

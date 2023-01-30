@@ -26,7 +26,7 @@ suite("parse/str/operator", () => {
 
         const largeUnionDef = writeBranchDef("|", 100)
         bench("100-ary", () => {
-            type.dynamic(largeUnionDef)
+            type(largeUnionDef)
         }).median()
     })
 
@@ -45,7 +45,7 @@ suite("parse/str/operator", () => {
 
         const largeIntersectionDef = writeBranchDef("&", 100)
         bench("100-ary", () => {
-            type.dynamic(largeIntersectionDef)
+            type(largeIntersectionDef)
         }).median()
     })
 

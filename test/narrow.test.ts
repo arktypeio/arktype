@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
+import type { Type } from "../api.ts"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import type { Type } from "../src/type.ts"
 import type { assertEqual } from "../src/utils/generics.ts"
 
 describe("narrow", () => {
@@ -95,7 +95,7 @@ describe("narrow", () => {
             a: [{ a: "1" }, "=>", (data) => `${data}`],
             // should be narrowed from {a: number} to {a: 1} but isn't
             b: [{ a: "number" }, ":", (data): data is { a: 1 } => true]
-        })
+        }).compile()
         // @ts-expect-error inferred as never
         attest(bad.a.infer).typed as string
 
@@ -104,7 +104,7 @@ describe("narrow", () => {
         const ok = scope({
             a: ["number", "=>", (data) => `${data}`],
             b: [["string"], "=>", (data) => data]
-        })
+        }).compile()
         attest(ok.a.infer).typed as number
         attest(ok.b.infer).typed as [string]
 
@@ -126,22 +126,9 @@ describe("narrow", () => {
             ],
             // can also avoid by explicitly annotating the input def, but that may be difficult if the scope is cyclic
             c: [{ a: "1" }, "=>", (data: { a: 1 }) => `${data}`]
-        })
+        }).compile()
         attest(workaround.a.infer).typed as string
         attest(workaround.b.infer).typed as { a: 1 }
         attest(workaround.c.infer).typed as string
-    })
-    // TODO: try to fix or create issue
-    it("directly nested morph", () => {
-        type([
-            {
-                // @ts-expect-error
-                a: ["string", "=>", (s: string) => s.length, "number"] as const
-            },
-            "=>",
-            // @ts-expect-error
-            ({ a }) => a === 0,
-            "boolean"
-        ])
     })
 })

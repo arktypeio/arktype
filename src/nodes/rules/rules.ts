@@ -1,6 +1,6 @@
+import type { ParseContext } from "../../parse/definition.ts"
 import type { Morph } from "../../parse/tuple/morph.ts"
 import type { Narrow } from "../../parse/tuple/narrow.ts"
-import type { ScopeRoot } from "../../scope.ts"
 import { traverse } from "../../traverse/check.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type {
@@ -26,12 +26,12 @@ import type {
     TraversalOptionalProps,
     TraversalRequiredProps
 } from "./props.ts"
-import { compileProps, propsIntersection } from "./props.ts"
+import { flattenProps, propsIntersection } from "./props.ts"
 import type { Range } from "./range.ts"
 import { rangeIntersection } from "./range.ts"
 import { getRegex, regexIntersection } from "./regex.ts"
 import type { SubdomainRule, TraversalSubdomainRule } from "./subdomain.ts"
-import { compileSubdomain, subdomainIntersection } from "./subdomain.ts"
+import { flattenSubdomain, subdomainIntersection } from "./subdomain.ts"
 
 export type NarrowableRules<$ = Dict> = {
     readonly subdomain?: SubdomainRule<$>
@@ -141,11 +141,11 @@ export const rulesIntersection: Intersector<Rules> = (l, r, state) =>
             ? l.value === r.value
                 ? equality()
                 : state.addDisjoint("value", l.value, r.value)
-            : literalSatisfiesRules(l.value, r, state.$)
+            : literalSatisfiesRules(l.value, r, state.ctx)
             ? l
             : state.addDisjoint("leftAssignability", l, r)
         : "value" in r
-        ? literalSatisfiesRules(r.value, l, state.$)
+        ? literalSatisfiesRules(r.value, l, state.ctx)
             ? r
             : state.addDisjoint("rightAssignability", l, r)
         : narrowableRulesIntersection(l, r, state)
@@ -170,15 +170,15 @@ export const narrowableRulesIntersection =
 export type FlattenAndPushRule<t> = (
     entries: BranchEntry[],
     rule: t,
-    $: ScopeRoot
+    ctx: ParseContext
 ) => void
 
 type UnknownRules = NarrowableRules & Partial<LiteralRules>
 
-const ruleCompilers: {
+const ruleFlatteners: {
     [k in keyof UnknownRules]-?: FlattenAndPushRule<UnknownRules[k] & {}>
 } = {
-    subdomain: compileSubdomain,
+    subdomain: flattenSubdomain,
     regex: (entries, rule) => {
         for (const source of listFrom(rule)) {
             entries.push(["regex", getRegex(source)])
@@ -193,7 +193,7 @@ const ruleCompilers: {
     class: (entries, rule) => {
         entries.push(["class", rule])
     },
-    props: compileProps,
+    props: flattenProps,
     narrow: (entries, rule) => {
         for (const narrow of listFrom(rule)) {
             entries.push(["narrow", narrow])
@@ -229,22 +229,28 @@ export const precedenceMap: {
     morph: 4
 }
 
-export const compileBranch = (branch: Branch, $: ScopeRoot): BranchEntry[] => {
+export const flattenBranch = (
+    branch: Branch,
+    ctx: ParseContext
+): BranchEntry[] => {
     if ("morph" in branch) {
-        const result = compileRules(branch.input, $)
+        const result = flattenRules(branch.input, ctx)
         for (const morph of listFrom(branch.morph)) {
             result.push(["morph", morph])
         }
         return result
     }
-    return compileRules(branch, $)
+    return flattenRules(branch, ctx)
 }
 
-const compileRules = (rules: UnknownRules, $: ScopeRoot): BranchEntry[] => {
+const flattenRules = (
+    rules: UnknownRules,
+    ctx: ParseContext
+): BranchEntry[] => {
     const entries: BranchEntry[] = []
     let k: keyof UnknownRules
     for (k in rules) {
-        ruleCompilers[k](entries, rules[k] as any, $)
+        ruleFlatteners[k](entries, rules[k] as any, ctx)
     }
     return entries.sort((l, r) => precedenceMap[l[0]] - precedenceMap[r[0]])
 }
@@ -252,5 +258,5 @@ const compileRules = (rules: UnknownRules, $: ScopeRoot): BranchEntry[] => {
 export const literalSatisfiesRules = (
     data: unknown,
     rules: NarrowableRules,
-    $: ScopeRoot
-) => "data" in traverse(data, compileRules(rules, $), $, {})
+    ctx: ParseContext
+) => "data" in traverse(data, flattenRules(rules, ctx), ctx.$, {})

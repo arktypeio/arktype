@@ -1,7 +1,6 @@
-import type { TypeResolution } from "../../nodes/node.ts"
+import type { asOut } from "../../main.ts"
+import type { TypeNode } from "../../nodes/node.ts"
 import type { Branch } from "../../nodes/predicate.ts"
-import { resolveIfIdentifier } from "../../nodes/resolve.ts"
-import type { asOut } from "../../type.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { hasSubdomain } from "../../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../../utils/errors.ts"
@@ -11,14 +10,14 @@ import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { PostfixParser, TupleExpression } from "./tuple.ts"
 
-export const parseMorphTuple: PostfixParser<"=>"> = (def, $) => {
+export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {
         return throwParseError(writeMalformedMorphExpressionMessage(def[2]))
     }
-    const resolution = resolveIfIdentifier(parseDefinition(def[0], $), $)
+    const resolution = ctx.$.resolveIfIdentifier(parseDefinition(def[0], ctx))
     const morph = def[2] as Morph
     let domain: Domain
-    const result: mutable<TypeResolution> = {}
+    const result: mutable<TypeNode> = {}
     for (domain in resolution) {
         const predicate = resolution[domain]
         if (predicate === true) {
@@ -53,7 +52,7 @@ const applyMorph = (branch: Branch, morph: Morph) =>
 
 export type Out<t = {}> = nominal<t, "out">
 
-export type validateMorphTuple<def extends TupleExpression, $> = [
+export type validateMorphTuple<def extends TupleExpression, $> = readonly [
     _: validateDefinition<def[0], $>,
     _: "=>",
     _: Morph<

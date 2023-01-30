@@ -7,7 +7,7 @@ import type {
 import type { Subdomain } from "../../utils/domains.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
-import type { Dict, List } from "../../utils/generics.ts"
+import type { Dict, List, mutable } from "../../utils/generics.ts"
 import { stringify } from "../../utils/serialize.ts"
 import {
     composeIntersection,
@@ -15,25 +15,25 @@ import {
     isDisjoint,
     isEquality
 } from "../compose.ts"
-import type { TraversalNode, TypeNode } from "../node.ts"
-import { compileNode, nodeIntersection } from "../node.ts"
+import type { TraversalNode, TypeReference } from "../node.ts"
+import { flattenNode, nodeIntersection } from "../node.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
 // Unfortunately we can't easily abstract between these two rules because of
 // nonsense TS circular reference issues.
 export type SubdomainRule<$ = Dict> =
     | Subdomain
-    | ["Array", TypeNode<$>]
-    | ["Array", TypeNode<$>, number]
-    | ["Set", TypeNode<$>]
-    | ["Map", TypeNode<$>, TypeNode<$>]
+    | readonly ["Array", TypeReference<$>]
+    | readonly ["Array", TypeReference<$>, number]
+    | readonly ["Set", TypeReference<$>]
+    | readonly ["Map", TypeReference<$>, TypeReference<$>]
 
 export type TraversalSubdomainRule =
     | Subdomain
-    | ["Array", TraversalNode]
-    | ["Array", TraversalNode, number]
-    | ["Set", TraversalNode]
-    | ["Map", TraversalNode, TraversalNode]
+    | readonly ["Array", TraversalNode]
+    | readonly ["Array", TraversalNode, number]
+    | readonly ["Set", TraversalNode]
+    | readonly ["Map", TraversalNode, TraversalNode]
 
 const isTupleRule = <rule extends List>(
     rule: rule
@@ -56,7 +56,9 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
         if (l[0] !== r[0]) {
             return state.addDisjoint("subdomain", l[0], r[0])
         }
-        const result = [l[0]] as unknown as Exclude<SubdomainRule, string>
+        const result = [l[0]] as unknown as mutable<
+            Exclude<SubdomainRule, string>
+        >
         if (isTupleRule(l)) {
             if (isTupleRule(r) && l[2] !== r[2]) {
                 return state.addDisjoint("tupleLength", l[2], r[2])
@@ -69,8 +71,8 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
         let rImpliesL = true
         const maxNodeIndex = l[0] === "Map" ? 2 : 1
         for (let i = 1; i <= maxNodeIndex; i++) {
-            const lNode = l[i] as TypeNode
-            const rNode = r[i] as TypeNode
+            const lNode = l[i] as TypeReference
+            const rNode = r[i] as TypeReference
             state.path.push(subdomainParameterToPathSegment(l[0], i))
             const parameterResult = nodeIntersection(lNode, rNode, state)
             state.path.pop()
@@ -187,7 +189,7 @@ export const writeTupleLengthError: ProblemMessageWriter<"tupleLength"> = ({
     expected
 }) => `Tuple must have length ${expected} (was ${actual})`
 
-export const compileSubdomain: FlattenAndPushRule<SubdomainRule> = (
+export const flattenSubdomain: FlattenAndPushRule<SubdomainRule> = (
     entries,
     rule,
     $
@@ -198,13 +200,13 @@ export const compileSubdomain: FlattenAndPushRule<SubdomainRule> = (
             ? rule
             : ([
                   rule[0],
-                  compileNode(rule[1], $),
+                  flattenNode(rule[1], $),
                   ...(rule.length === 3
                       ? [
                             typeof rule[2] === "number"
                                 ? rule[2]
-                                : compileNode(rule[2], $)
+                                : flattenNode(rule[2], $)
                         ]
                       : [])
-              ] as TraversalSubdomainRule)
+              ] as any)
     ])

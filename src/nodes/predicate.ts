@@ -1,19 +1,22 @@
+import type { ParseContext } from "../parse/definition.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
-import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
-import type { CollapsibleList, Dict, xor } from "../utils/generics.ts"
-import { collapseIfSingleton, listFrom } from "../utils/generics.ts"
+import type { CollapsibleList, defined, Dict, xor } from "../utils/generics.ts"
+import { collapseIfSingleton, keysOf, listFrom } from "../utils/generics.ts"
 import type { Branches, BranchesComparison } from "./branches.ts"
 import { compareBranches, isBranchComparison } from "./branches.ts"
 import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
 import { equality, IntersectionState, isEquality } from "./compose.ts"
-import { compileBranches } from "./discriminate.ts"
-import type { TraversalEntry, TypeResolution } from "./node.ts"
-import type { Rules } from "./rules/rules.ts"
-import { branchIntersection, compileBranch } from "./rules/rules.ts"
+import { flattenBranches } from "./discriminate.ts"
+import type { TraversalEntry, TypeNode } from "./node.ts"
+import type { LiteralRules, Rules } from "./rules/rules.ts"
+import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
-export type Predicate<domain extends Domain = Domain, $ = Dict> = Dict extends $
+export type Predicate<
+    domain extends Domain = Domain,
+    $ = Dict
+> = string extends keyof $
     ? true | CollapsibleList<Branch>
     : true | CollapsibleList<Branch<domain, $>>
 
@@ -72,9 +75,12 @@ export const comparePredicates = (
     return comparison
 }
 
-export const predicateIntersection: KeyIntersectionFn<
-    Required<TypeResolution>
-> = (domain, l, r, state) => {
+export const predicateIntersection: KeyIntersectionFn<Required<TypeNode>> = (
+    domain,
+    l,
+    r,
+    state
+) => {
     const comparison = comparePredicates(l, r, state)
     if (!isBranchComparison(comparison)) {
         return comparison
@@ -97,9 +103,9 @@ export const predicateUnion = (
     domain: Domain,
     l: Predicate,
     r: Predicate,
-    $: ScopeRoot
+    ctx: ParseContext
 ) => {
-    const state = new IntersectionState($)
+    const state = new IntersectionState(ctx)
     const comparison = comparePredicates(l, r, state)
     if (!isBranchComparison(comparison)) {
         return isEquality(comparison) || comparison === l
@@ -131,14 +137,31 @@ export const predicateUnion = (
     ])
 }
 
-export const compilePredicate = (
+export const flattenPredicate = (
     predicate: Predicate,
-    $: ScopeRoot
+    ctx: ParseContext
 ): TraversalEntry[] => {
     if (predicate === true) {
         return []
     }
     return hasSubdomain(predicate, "Array")
-        ? compileBranches(predicate, $)
-        : compileBranch(predicate, $)
+        ? flattenBranches(predicate, ctx)
+        : flattenBranch(predicate, ctx)
+}
+
+export const isLiteralCondition = (
+    predicate: Predicate
+): predicate is LiteralRules =>
+    typeof predicate === "object" && "value" in predicate
+
+export type DomainSubtypeResolution<domain extends Domain> = {
+    readonly [k in domain]: defined<TypeNode[domain]>
+}
+
+export const resolutionExtendsDomain = <domain extends Domain>(
+    resolution: TypeNode,
+    domain: domain
+): resolution is DomainSubtypeResolution<domain> => {
+    const domains = keysOf(resolution)
+    return domains.length === 1 && domains[0] === domain
 }

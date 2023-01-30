@@ -1,5 +1,5 @@
+import type { ParseContext } from "../parse/definition.ts"
 import { undiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
-import type { ScopeRoot } from "../scope.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
@@ -12,7 +12,7 @@ import type { Branches } from "./branches.ts"
 import type { DisjointKind } from "./compose.ts"
 import { IntersectionState } from "./compose.ts"
 import type { TraversalEntry } from "./node.ts"
-import { branchIntersection, compileBranch } from "./rules/rules.ts"
+import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
 export type DiscriminatedSwitch = {
     readonly path: Path
@@ -24,14 +24,10 @@ export type DiscriminatedCases = {
     [caseKey in string]?: TraversalEntry[]
 }
 
-export const compileBranches = (branches: Branches, $: ScopeRoot) => {
-    const discriminants = calculateDiscriminants(branches, $)
-    return discriminate(
-        branches,
-        branches.map((_, i) => i),
-        discriminants,
-        $
-    )
+export const flattenBranches = (branches: Branches, ctx: ParseContext) => {
+    const discriminants = calculateDiscriminants(branches, ctx)
+    const indices = branches.map((_, i) => i)
+    return discriminate(branches, indices, discriminants, ctx)
 }
 
 type IndexCases = {
@@ -46,10 +42,10 @@ const discriminate = (
     originalBranches: Branches,
     remainingIndices: number[],
     discriminants: Discriminants,
-    $: ScopeRoot
+    ctx: ParseContext
 ): TraversalEntry[] => {
     if (remainingIndices.length === 1) {
-        return compileBranch(originalBranches[remainingIndices[0]], $)
+        return flattenBranch(originalBranches[remainingIndices[0]], ctx)
     }
     const bestDiscriminant = findBestDiscriminant(
         remainingIndices,
@@ -60,7 +56,7 @@ const discriminate = (
             [
                 "branches",
                 remainingIndices.map((i) =>
-                    compileBranch(originalBranches[i], $)
+                    flattenBranch(originalBranches[i], ctx)
                 )
             ]
         ]
@@ -71,7 +67,7 @@ const discriminate = (
             originalBranches,
             bestDiscriminant.indexCases[caseKey],
             discriminants,
-            $
+            ctx
         )
     }
     return [
@@ -115,7 +111,7 @@ export type DiscriminantKind = keyof DiscriminantKinds
 
 const calculateDiscriminants = (
     branches: Branches,
-    $: ScopeRoot
+    ctx: ParseContext
 ): Discriminants => {
     const discriminants: Discriminants = {
         disjointsByPair: {},
@@ -126,7 +122,7 @@ const calculateDiscriminants = (
             const pairKey = `${lIndex}/${rIndex}` as const
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
-            const intersectionState = new IntersectionState($)
+            const intersectionState = new IntersectionState(ctx)
             branchIntersection(
                 branches[lIndex],
                 branches[rIndex],
@@ -165,7 +161,6 @@ const calculateDiscriminants = (
                 }
             }
             if (
-                // TODO: would this work for morph references?
                 hasKeys(intersectionState.morphs) &&
                 pairDisjoints.length === 0
             ) {

@@ -1,9 +1,9 @@
 import { describe, it } from "mocha"
+import type { Type } from "../api.ts"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import type { inferred } from "../src/parse/definition.ts"
 import type { Out } from "../src/parse/tuple/morph.ts"
-import type { Type } from "../src/type.ts"
 
 describe("cast", () => {
     it("primitive", () => {
@@ -29,7 +29,7 @@ describe("cast", () => {
         const types = scope({
             a: [{ a: "1" }, "=>", (data) => `${data}`],
             b: [{ a: "number" }, ":", (data) => data.a === 1, { a: "1" }]
-        })
+        }).compile()
         attest(types.a).typed as Type<(In: { a: 1 }) => Out<string>>
         attest(types.b).typed as Type<{
             a: 1

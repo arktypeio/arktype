@@ -1,11 +1,13 @@
-import { compileNode, compileNodes } from "../../nodes/node.ts"
-import {
-    domainsOfNode,
-    resolutionExtendsDomain,
-    resolveIfIdentifier
-} from "../../nodes/resolve.ts"
+import { resolutionExtendsDomain } from "../../nodes/predicate.ts"
+import { domainOf } from "../../utils/domains.ts"
+// import {
+//     domainsOfNode,
+//     resolutionExtendsDomain,
+//     resolveIfIdentifier
+// } from "../../nodes/resolve.ts"
 import { throwParseError } from "../../utils/errors.ts"
-import { listFrom } from "../../utils/generics.ts"
+import type { CollapsibleList } from "../../utils/generics.ts"
+import { hasKey, listFrom } from "../../utils/generics.ts"
 import { parseDefinition } from "../definition.ts"
 import type { PrefixParser } from "./tuple.ts"
 
@@ -22,21 +24,21 @@ import type { PrefixParser } from "./tuple.ts"
 // every branch. Once you get to the last branch, return a new node representing
 // a string union of the remaining keys.
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, $) => {
-    const resolution = resolveIfIdentifier(parseDefinition(def[1], $), $)
+    const resolution = parseDefinition(def[1], $)
 
-    if (!resolutionExtendsDomain(resolution, "object", $)) {
+    if (!resolutionExtendsDomain(resolution, "object")) {
         return throwParseError("never")
     }
     if (resolution.object === true) {
         return { string: true }
     }
-    const keys = []
+    const keys: string[] = []
     for (const branch of listFrom(resolution)) {
-        console.log("")
+        if (hasKey(branch.object, "props")) {
+            keys.push(...Object.keys(branch.object.props))
+        }
     }
-    // listFrom
-    // Object.keys()
-    return {}
+    return { object: { value: keys } }
 }
 // tuple maybe poogers
 // arr => numberLiteral

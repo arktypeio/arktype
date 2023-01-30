@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
-import type { TypeNode } from "../api.ts"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
+import type { TypeNode } from "../src/nodes/node.ts"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,

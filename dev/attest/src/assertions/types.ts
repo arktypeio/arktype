@@ -1,4 +1,4 @@
-import type { downcast } from "../../../../src/utils/generics.ts"
+import type { asConst } from "../../../../src/utils/generics.ts"
 import type { snapshot } from "../../../../src/utils/serialize.ts"
 
 export type RootAssertions<
@@ -70,7 +70,7 @@ export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
     >
     typedValue: (expected: T) => undefined
     narrowedValue: <Expected extends T>(
-        expected: downcast<Expected>
+        expected: asConst<Expected>
     ) => undefined
 }
 

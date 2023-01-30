@@ -1,7 +1,6 @@
-import type { TypeNode } from "../nodes/node.ts"
-import type { ScopeRoot } from "../scope.ts"
-import type { Type } from "../type.ts"
-import { isType } from "../type.ts"
+import type { Scope, Type } from "../main.ts"
+import { isType } from "../main.ts"
+import type { TypeReference } from "../nodes/node.ts"
 import type { Primitive, Subdomain } from "../utils/domains.ts"
 import { subdomainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
@@ -12,6 +11,7 @@ import type {
     isUnknown,
     List
 } from "../utils/generics.ts"
+import type { Path } from "../utils/paths.ts"
 import type { inferRecord } from "./record.ts"
 import { parseRecord } from "./record.ts"
 import type { inferString, validateString } from "./string/string.ts"
@@ -23,14 +23,23 @@ import type {
 } from "./tuple/tuple.ts"
 import { parseTuple } from "./tuple/tuple.ts"
 
-export const parseDefinition = (def: unknown, $: ScopeRoot): TypeNode => {
+export type ParseContext = {
+    $: Scope
+    path: Path
+    name: string
+}
+
+export const parseDefinition = (
+    def: unknown,
+    ctx: ParseContext
+): TypeReference => {
     const subdomain = subdomainOf(def)
     return subdomain === "string"
-        ? parseString(def as string, $)
+        ? parseString(def as string, ctx)
         : subdomain === "object"
-        ? parseRecord(def as Dict, $)
+        ? parseRecord(def as Dict, ctx)
         : subdomain === "Array"
-        ? parseTuple(def as List, $)
+        ? parseTuple(def as List, ctx)
         : subdomain === "RegExp"
         ? { string: { regex: (def as RegExp).source } }
         : isType(def)
@@ -52,7 +61,7 @@ export type inferDefinition<def, $> = isAny<def> extends true
     ? inferRecord<def, $>
     : never
 
-export type validateDefinition<def, $> = def extends TerminalObject
+export type validateDefinition<def, $> = def extends Terminal
     ? def
     : def extends string
     ? validateString<def, $>
@@ -73,16 +82,16 @@ export type inferred<t> = {
 }
 
 export type unknownDefinitionMessage =
-    `Cannot statically parse a definition inferred as unknown. Use 'type.dynamic(...)' instead.`
+    `Cannot statically parse a definition inferred as unknown. Consider using 'as inferred<...>' to cast it.`
 
-export type TerminalObject = Type | RegExp | inferred<unknown>
+type Terminal = Type | RegExp | inferred<unknown>
 
-export type BadDefinitionType = Exclude<Primitive, string> | Function
+type BadDefinitionType = Exclude<Primitive, string> | Function
 
 export const writeBadDefinitionTypeMessage = <actual extends Subdomain>(
     actual: actual
 ): writeBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
-export type writeBadDefinitionTypeMessage<actual extends Subdomain> =
+type writeBadDefinitionTypeMessage<actual extends Subdomain> =
     `Type definitions must be strings or objects (was ${actual})`

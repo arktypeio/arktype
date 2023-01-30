@@ -1,13 +1,8 @@
+import type { ParseContext } from "../parse/definition.ts"
 import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
-import type { ScopeRoot } from "../scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type {
-    autocomplete,
-    Dict,
-    mutable,
-    stringKeyOf
-} from "../utils/generics.ts"
+import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
 import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
 import type { Intersector } from "./compose.ts"
 import {
@@ -19,46 +14,45 @@ import {
     throwUndefinedOperandsError
 } from "./compose.ts"
 import type { DiscriminatedSwitch } from "./discriminate.ts"
-import type { Keyword } from "./keywords.ts"
 import type { Predicate } from "./predicate.ts"
 import {
-    compilePredicate,
+    flattenPredicate,
+    isLiteralCondition,
     predicateIntersection,
-    predicateUnion
+    predicateUnion,
+    resolutionExtendsDomain
 } from "./predicate.ts"
-import { domainsOfNode, resolveFlat, resolveIfIdentifier } from "./resolve.ts"
-import type { BranchEntry } from "./rules/rules.ts"
+import type { BranchEntry, LiteralRules } from "./rules/rules.ts"
 
-export type TypeNode<$ = Dict> = Identifier<$> | TypeResolution<$>
+// TODO: should Type be allowed as a node? would allow configs etc. during traversal
+export type TypeReference<$ = Dict> = Identifier<$> | TypeNode<$>
 
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to
  * manipulate.*/
-export type TypeResolution<$ = Dict> = {
+export type TypeNode<$ = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, $>
 }
 
-export type Identifier<$ = Dict> = string extends keyof $
-    ? autocomplete<Keyword>
-    : Keyword | stringKeyOf<$>
+export type Identifier<$ = Dict> = stringKeyOf<$>
 
-export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
-    const lResolution = resolveIfIdentifier(l, state.$)
-    const rResolution = resolveIfIdentifier(r, state.$)
+export const nodeIntersection: Intersector<TypeReference> = (l, r, state) => {
+    const lResolution = state.ctx.$.resolveIfIdentifier(l)
+    const rResolution = state.ctx.$.resolveIfIdentifier(r)
     const result = resolutionIntersection(lResolution, rResolution, state)
     if (typeof result === "object" && !hasKeys(result)) {
         return hasKeys(state.disjoints)
             ? anonymousDisjoint()
             : state.addDisjoint(
                   "domain",
-                  domainsOfNode(lResolution, state.$),
-                  domainsOfNode(rResolution, state.$)
+                  keysOf(lResolution),
+                  keysOf(rResolution)
               )
     }
     return result === lResolution ? l : result === rResolution ? r : result
 }
 
-const resolutionIntersection = composeKeyedIntersection<TypeResolution>(
+const resolutionIntersection = composeKeyedIntersection<TypeNode>(
     (domain, l, r, context) => {
         if (l === undefined) {
             return r === undefined ? throwUndefinedOperandsError() : undefined
@@ -71,20 +65,41 @@ const resolutionIntersection = composeKeyedIntersection<TypeResolution>(
     { onEmpty: "omit" }
 )
 
-export const intersection = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
-    const state = new IntersectionState($)
+/** Reflects that an Idenitifier cannot be the result of any intersection
+ * including a TypeResolution  */
+type IntersectionResult<
+    l extends TypeReference,
+    r extends TypeReference
+> = l extends TypeNode
+    ? TypeNode
+    : r extends TypeNode
+    ? TypeNode
+    : TypeReference
+
+export const intersection = <l extends TypeReference, r extends TypeReference>(
+    l: l,
+    r: r,
+    ctx: ParseContext
+) => {
+    const state = new IntersectionState(ctx)
     const result = nodeIntersection(l, r, state)
-    return isDisjoint(result)
-        ? throwParseError(compileDisjointReasonsMessage(state.disjoints))
-        : isEquality(result)
-        ? l
-        : result
+    return (
+        isDisjoint(result)
+            ? throwParseError(compileDisjointReasonsMessage(state.disjoints))
+            : isEquality(result)
+            ? l
+            : result
+    ) as IntersectionResult<l, r>
 }
 
-export const union = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
-    const lResolution = resolveIfIdentifier(l, $)
-    const rResolution = resolveIfIdentifier(r, $)
-    const result = {} as mutable<TypeResolution>
+export const union = (
+    l: TypeReference,
+    r: TypeReference,
+    ctx: ParseContext
+): TypeNode => {
+    const lResolution = ctx.$.resolveIfIdentifier(l)
+    const rResolution = ctx.$.resolveIfIdentifier(r)
+    const result = {} as mutable<TypeNode>
     const domains = keysOf({ ...lResolution, ...rResolution })
     for (const domain of domains) {
         result[domain] = hasKey(lResolution, domain)
@@ -93,7 +108,7 @@ export const union = (l: TypeNode, r: TypeNode, $: ScopeRoot) => {
                       domain,
                       lResolution[domain],
                       rResolution[domain],
-                      $
+                      ctx
                   )
                 : lResolution[domain]
             : hasKey(rResolution, domain)
@@ -134,9 +149,12 @@ export type BranchesEntry = ["branches", TraversalEntry[][]]
 
 export type SwitchEntry = ["switch", DiscriminatedSwitch]
 
-export const compileNode = (node: TypeNode, $: ScopeRoot): TraversalNode => {
+export const flattenNode = (
+    node: TypeReference,
+    ctx: ParseContext
+): TraversalNode => {
     if (typeof node === "string") {
-        return resolveFlat(node, $)
+        return ctx.$.resolve(node).flat
     }
     const domains = keysOf(node)
     if (domains.length === 1) {
@@ -145,31 +163,41 @@ export const compileNode = (node: TypeNode, $: ScopeRoot): TraversalNode => {
         if (predicate === true) {
             return domain
         }
-        const flatPredicate = compilePredicate(predicate, $)
+        const flatPredicate = flattenPredicate(predicate, ctx)
         return hasImpliedDomain(flatPredicate)
             ? flatPredicate
             : [["domain", domain], ...flatPredicate]
     }
     const result: mutable<DomainsEntry[1]> = {}
     for (const domain of domains) {
-        result[domain] = compilePredicate(node[domain]!, $)
+        result[domain] = flattenPredicate(node[domain]!, ctx)
     }
     return [["domains", result]]
 }
 
-export type ScopeNodes = { readonly [k in string]: TypeResolution }
+export type ScopeNodes = { readonly [k in string]: TypeNode }
 
 export type CompiledScopeNodes<nodes extends ScopeNodes> = {
     readonly [k in keyof nodes]: TraversalNode
 }
 
-export const compileNodes = <nodes extends ScopeNodes>(
+export const flattenNodes = <nodes extends ScopeNodes>(
     nodes: nodes,
-    $: ScopeRoot
+    ctx: ParseContext
 ): CompiledScopeNodes<nodes> => {
     const result = {} as mutable<CompiledScopeNodes<nodes>>
     for (const name in nodes) {
-        result[name] = compileNode(nodes[name], $)
+        result[name] = flattenNode(nodes[name], ctx)
     }
     return result
+}
+
+export const isLiteralNode = <domain extends Domain>(
+    resolution: TypeNode,
+    domain: domain
+): resolution is { [_ in domain]: LiteralRules<domain> } => {
+    return (
+        resolutionExtendsDomain(resolution, domain) &&
+        isLiteralCondition(resolution[domain])
+    )
 }

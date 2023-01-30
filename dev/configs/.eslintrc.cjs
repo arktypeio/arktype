@@ -78,9 +78,8 @@ module.exports = defineConfig({
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
         /**
-         * ESM support, clarity
+         * Ensure node imports are easily distinguished
          */
-        "unicorn/prefer-module": "warn",
         "unicorn/prefer-node-protocol": "warn",
         /**
          * Namespaces are useful for grouping generic types with related functionality

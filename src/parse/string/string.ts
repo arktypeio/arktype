@@ -1,8 +1,6 @@
-import { functorKeywords } from "../../nodes/keywords.ts"
-import type { TypeNode } from "../../nodes/node.ts"
-import { isResolvable, memoizedParse } from "../../nodes/resolve.ts"
-import type { ScopeRoot } from "../../scope.ts"
+import { functors } from "../../nodes/functors.ts"
 import type { error } from "../../utils/generics.ts"
+import type { ParseContext } from "../definition.ts"
 import type { inferAst, validateAstSemantics } from "./ast.ts"
 import { DynamicState } from "./reduce/dynamic.ts"
 import type { state, StaticState } from "./reduce/static.ts"
@@ -11,7 +9,12 @@ import type { isResolvableIdentifier } from "./shift/operand/unenclosed.ts"
 import { parseOperator } from "./shift/operator/operator.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
-export const parseString = (def: string, $: ScopeRoot) => memoizedParse(def, $)
+export const parseString = (def: string, ctx: ParseContext) =>
+    ctx.$.parseCache.get(def) ??
+    ctx.$.parseCache.set(
+        def,
+        maybeNaiveParse(def, ctx) ?? fullStringParse(def, ctx)
+    )
 
 export type parseString<def extends string, $> = maybeNaiveParse<def, $>
 
@@ -43,23 +46,20 @@ type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
     ? def
     : fullStringParse<def, $>
 
-export const maybeNaiveParse = (
-    def: string,
-    $: ScopeRoot
-): TypeNode | undefined => {
-    if (isResolvable(def, $)) {
+export const maybeNaiveParse = (def: string, ctx: ParseContext) => {
+    if (ctx.$.isResolvable(def)) {
         return def
     }
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
-        if (isResolvable(elementDef, $)) {
-            return functorKeywords.Array(elementDef)
+        if (ctx.$.isResolvable(def)) {
+            return functors.Array(elementDef)
         }
     }
 }
 
-export const fullStringParse = (def: string, $: ScopeRoot) => {
-    const s = new DynamicState(def, $)
+export const fullStringParse = (def: string, ctx: ParseContext) => {
+    const s = new DynamicState(def, ctx)
     parseOperand(s)
     return loop(s)
 }

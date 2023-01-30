@@ -1,9 +1,9 @@
 import { describe, it } from "mocha"
+import type { Type } from "../api.ts"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import { undiscriminatableMorphUnionMessage } from "../src/parse/string/ast.ts"
 import type { Out } from "../src/parse/tuple/morph.ts"
-import type { Type } from "../src/type.ts"
 
 describe("morph", () => {
     it("base", () => {
@@ -31,7 +31,7 @@ describe("morph", () => {
             b: "3.14",
             aAndB: "a&b",
             bAndA: "b&a"
-        })
+        }).compile()
         attest(types.aAndB).typed as Type<(In: 3.14) => Out<string>>
         attest(types.aAndB.node).snap({
             number: { input: { value: 3.14 }, morph: "(function)" }
@@ -44,7 +44,7 @@ describe("morph", () => {
             a: [{ a: "1" }, "=>", (data) => `${data}`, "string"],
             b: { b: "2" },
             c: "a&b"
-        })
+        }).compile()
         attest(types.c).typed as Type<(In: { a: 1; b: 2 }) => Out<string>>
         attest(types.c.node).snap({
             object: {
@@ -64,7 +64,7 @@ describe("morph", () => {
             b: "boolean",
             aOrB: "a|b",
             bOrA: "b|a"
-        })
+        }).compile()
         attest(types.aOrB).typed as Type<(In: number | boolean) => Out<string>>
         attest(types.aOrB.node).snap({
             number: { input: {}, morph: "(function)" },
@@ -78,7 +78,7 @@ describe("morph", () => {
             a: { a: ["number>0", "=>", (data) => data + 1] },
             b: { a: "1" },
             c: "a&b"
-        })
+        }).compile()
         attest(types.c).typed as Type<{
             a: (In: 1) => Out<number>
         }>
@@ -95,7 +95,7 @@ describe("morph", () => {
             a: { a: ["number>0", "=>", (data) => `${data}`] },
             b: { a: "Function" },
             c: "a|b"
-        })
+        }).compile()
         attest(types.c).typed as Type<
             | {
                   a: (In: number) => Out<string>
@@ -128,7 +128,7 @@ describe("morph", () => {
         const types = scope({
             a: ["string", "=>", (s) => s.length, "number"],
             b: ["a", "=>", (n) => n === 0]
-        })
+        }).compile()
         attest(types.b).typed as Type<(In: string) => Out<boolean>>
         attest(types.b.node).snap({
             string: { input: {}, morph: ["(function)", "(function)"] }
@@ -138,10 +138,28 @@ describe("morph", () => {
         const types = scope({
             a: ["string", "=>", (s) => s.length, "number"],
             b: [{ a: "a" }, "=>", ({ a }) => a === 0, "boolean"]
-        })
+        }).compile()
         attest(types.b).typed as Type<(In: { a: string }) => Out<boolean>>
         attest(types.b.node).snap({
             object: { input: { props: { a: "a" } }, morph: "(function)" }
+        })
+    })
+    it("directly nested", () => {
+        const t = type([
+            {
+                a: ["string", "=>", (s: string) => s.length]
+            },
+            "=>",
+            ({ a }) => a === 0
+        ])
+        attest(t).typed as Type<(In: { a: string }) => Out<boolean>>
+        attest(t.node).snap({
+            object: {
+                input: {
+                    props: { a: { string: { input: {}, morph: "(function)" } } }
+                },
+                morph: "(function)"
+            }
         })
     })
     it("discriminatable tuple union", () => {
@@ -149,7 +167,7 @@ describe("morph", () => {
             a: [["string"], "=>", (s) => [...s, "!"], "string[]"],
             b: ["boolean"],
             c: "a|b"
-        })
+        }).compile()
         attest(types.c).typed as Type<
             [boolean] | ((In: [string]) => Out<string[]>)
         >
@@ -176,7 +194,7 @@ describe("morph", () => {
                 b: ["boolean", "=>", (data) => `${data}!!!`],
                 // @ts-expect-error
                 c: "a&b"
-            })
+            }).compile()
         }).throwsAndHasTypeError(
             "Intersection of morphs results in an unsatisfiable type"
         )
@@ -188,7 +206,7 @@ describe("morph", () => {
                 b: "string",
                 // @ts-expect-error
                 c: "a|b"
-            })
+            }).compile()
             // TODO: add root path
         }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
     })
@@ -199,7 +217,7 @@ describe("morph", () => {
                 b: { a: ["boolean", "=>", (data) => `${data}!!!`] },
                 // @ts-expect-error
                 c: "a&b"
-            })
+            }).compile()
             // TODO: Add which alias the error occurred in
         }).throwsAndHasTypeError(
             "At a: Intersection of morphs results in an unsatisfiable type"
@@ -212,9 +230,20 @@ describe("morph", () => {
                 b: { a: "'foo'" },
                 // @ts-expect-error
                 c: "a|b"
-            })
+            }).compile()
         }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
     })
+    // TODO: fix
+    // it("deep undiscriminated reference", () => {
+    //     attest(() => {
+    //         scope({
+    //             a: { a: ["string", "=>", (s) => s.trim()] },
+    //             b: { b: "boolean" },
+    //             // @ts-expect-error
+    //             c: "a|b"
+    //         }).compile()
+    //     }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
+    // })
     it("array double intersection", () => {
         attest(() => {
             scope({
@@ -222,7 +251,7 @@ describe("morph", () => {
                 b: { a: ["number>0", "=>", (data) => data + 2] },
                 // @ts-expect-error
                 c: "a[]&b[]"
-            })
+            }).compile()
         }).throwsAndHasTypeError(
             "At ${number}/a: Intersection of morphs results in an unsatisfiable type"
         )
