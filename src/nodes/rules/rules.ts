@@ -60,7 +60,11 @@ export type MorphBranch<domain extends Domain = Domain, $ = Dict> = {
     morph: CollapsibleList<Morph>
 }
 
-export type FlatBranch = (RuleEntry | MorphEntry)[]
+export type FlatBranch = FlatRules | FlatMorphedBranch
+
+type FlatRules = RuleEntry[]
+
+type FlatMorphedBranch = [...rules: FlatRules, morph: MorphEntry]
 
 export type RuleEntry =
     | ["subdomain", TraversalSubdomainRule]
@@ -73,7 +77,7 @@ export type RuleEntry =
     | ["narrow", Narrow]
     | ["value", unknown]
 
-export type MorphEntry = ["morph", Morph]
+export type MorphEntry = ["morph", CollapsibleList<Morph>]
 
 export type Rules<
     domain extends Domain = Domain,
@@ -235,10 +239,8 @@ export const precedenceMap: {
 
 export const flattenBranch = (branch: Branch, type: Type): FlatBranch => {
     if ("morph" in branch) {
-        const result = flattenRules(branch.input, type)
-        for (const morph of listFrom(branch.morph)) {
-            result.push(["morph", morph])
-        }
+        const result = flattenRules(branch.input, type) as FlatMorphedBranch
+        result.push(["morph", branch.morph])
         return result
     }
     return flattenRules(branch, type)

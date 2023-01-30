@@ -12,10 +12,9 @@ import { checkRange } from "../nodes/rules/range.ts"
 import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
 import { checkSubdomain } from "../nodes/rules/subdomain.ts"
-import type { Morph } from "../parse/tuple/morph.ts"
-import { domainOf, hasSubdomain } from "../utils/domains.ts"
+import { domainOf, hasDomain } from "../utils/domains.ts"
 import type { Dict, extend, List } from "../utils/generics.ts"
-import { keysOf } from "../utils/generics.ts"
+import { hasKey, keysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type {
     Problem,
@@ -28,17 +27,41 @@ import { defaultMessagesByCode, Problems, Stringifiable } from "./problems.ts"
 export class TraversalState {
     path: Path
 
-    constructor(public type: Type) {
+    constructor(protected type: Type) {
         this.path = new Path()
     }
 }
 
 export class DataTraversalState extends TraversalState {
     problems: Problems
+    // TODO: name by scope (scope registry?)
+    #seen: { [name in string]?: object[] } = {}
 
     constructor(type: Type) {
         super(type)
         this.problems = new Problems()
+    }
+
+    traverseResolution(data: unknown, name: string) {
+        const lastType = this.type
+        if (hasDomain(data, "object")) {
+            if (hasKey(this.#seen, name)) {
+                if (
+                    this.#seen[name].some((checkedData) => data === checkedData)
+                ) {
+                    // If data has already been checked by this alias during this
+                    // traversal, it must be valid or we wouldn't be here, so we can
+                    // stop traversing.
+                    return
+                }
+                this.#seen[name].push(data)
+            } else {
+                this.#seen[name] = [data]
+            }
+        }
+        this.type = this.type.scope.resolve(name)
+        traverseNode(data, this.type.flat, this)
+        this.type = lastType
     }
 
     addProblem<code extends ProblemCode>(ctx: ProblemInputs[code]) {
@@ -99,32 +122,29 @@ export const checkEntries = (
     entries: List<TraversalEntry>,
     state: DataTraversalState
 ) => {
-    let precedenceLevel = 0
-    const pathKey = `${state.path}`
-    for (let i = 0; i < entries.length; i++) {
-        const k = entries[i][0]
-        const v = entries[i][1]
-
-        if (
-            // Return problems? Nested props wouldn't work
-            state.problems.byPath[pathKey] &&
-            precedenceMap[k] > precedenceLevel
-        ) {
-            break
+    let problemsPrecedence = Number.POSITIVE_INFINITY
+    const initialProblemsCount = state.problems.length
+    for (const [k, v] of entries) {
+        if (precedenceMap[k] > problemsPrecedence) {
+            return
         }
         if (k === "morph") {
-            if (hasSubdomain(v, "Array")) {
-                let out = data
-                for (const morph of v as List<Morph>) {
-                    out = morph(out)
-                }
-                return out
+            if (typeof v === "function") {
+                return v(data)
             }
-            return (v as Morph)(data)
+            let out = data
+            for (const morph of v) {
+                out = morph(out)
+            }
+            return out
+        } else {
+            dynamicCheckers[k](data, v, state)
+            if (state.problems.length > initialProblemsCount) {
+                problemsPrecedence = precedenceMap[k]
+            }
         }
-        ;(checkers[k] as TraversalCheck<any>)(data, v, state)
-        precedenceLevel = precedenceMap[k]
     }
+    return data
 }
 
 const checkers = {
@@ -162,23 +182,28 @@ const checkers = {
             return state.problems.length === 0 ? true : false
         }),
     switch: () => {},
-    // TODO: keep track of cyclic data
-    alias: (data, name, state) =>
-        traverseNode(data, state.type.scope.resolve(name).flat, state),
+    alias: (data, name, state) => state.traverseResolution(data, name),
     class: checkClass,
     // TODO: add error message syntax.
     narrow: (data, narrow) => narrow(data),
     value: (data, value, state) => {
         if (data !== value) {
-            state.addProblem({
+            return state.addProblem({
                 code: "value",
                 data,
                 expected: new Stringifiable(value)
             })
         }
+        return data
     }
 } satisfies {
     [k in Exclude<TraversalKey, "morph">]: TraversalCheck<k>
+}
+
+type Checkers = typeof checkers
+
+const dynamicCheckers = checkers as {
+    [k in keyof Checkers]: TraversalCheck<any>
 }
 
 export type TraversalCheck<k extends TraversalKey> = (
