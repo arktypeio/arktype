@@ -192,7 +192,7 @@ export const writeTupleLengthError: ProblemMessageWriter<"tupleLength"> = ({
 export const flattenSubdomain: FlattenAndPushRule<SubdomainRule> = (
     entries,
     rule,
-    $
+    type
 ) =>
     entries.push([
         "subdomain",
@@ -200,12 +200,12 @@ export const flattenSubdomain: FlattenAndPushRule<SubdomainRule> = (
             ? rule
             : ([
                   rule[0],
-                  flattenNode(rule[1], $),
+                  flattenNode(rule[1], type),
                   ...(rule.length === 3
                       ? [
                             typeof rule[2] === "number"
                                 ? rule[2]
-                                : flattenNode(rule[2], $)
+                                : flattenNode(rule[2], type)
                         ]
                       : [])
               ] as any)

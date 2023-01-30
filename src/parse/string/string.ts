@@ -10,8 +10,8 @@ import { parseOperator } from "./shift/operator/operator.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
 export const parseString = (def: string, ctx: ParseContext) =>
-    ctx.$.parseCache.get(def) ??
-    ctx.$.parseCache.set(
+    ctx.type.scope.parseCache.get(def) ??
+    ctx.type.scope.parseCache.set(
         def,
         maybeNaiveParse(def, ctx) ?? fullStringParse(def, ctx)
     )
@@ -47,12 +47,12 @@ type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
     : fullStringParse<def, $>
 
 export const maybeNaiveParse = (def: string, ctx: ParseContext) => {
-    if (ctx.$.addReferenceIfResolvable(def, ctx)) {
+    if (ctx.type.scope.addReferenceIfResolvable(def, ctx)) {
         return def
     }
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
-        if (ctx.$.addReferenceIfResolvable(def, ctx)) {
+        if (ctx.type.scope.addReferenceIfResolvable(def, ctx)) {
             return functors.Array(elementDef)
         }
     }

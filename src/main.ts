@@ -46,13 +46,11 @@ export type TypeParser<$> = {
     <def>(def: validateDefinition<def, $>, opts: TypeOptions): parseType<def, $>
 }
 
-// [] allows tuple inferences
-type SpaceList = [] | readonly Space[]
-
 // TODO: Reintegrate thunks/compilation, add utilities for narrowed defs
 export type ScopeOptions = {
-    imports?: SpaceList
-    includes?: SpaceList
+    // [] allows narrowed tuple inference
+    imports?: Space[] | []
+    includes?: Space[] | []
     standard?: boolean
 }
 
@@ -73,7 +71,7 @@ type parseScope<
     opts extends ScopeOptions
 > = opts["standard"] extends false
     ? [inferExports<aliases, opts>, importsOf<opts>, false]
-    : opts["imports"] extends SpaceList
+    : opts["imports"] extends Space[]
     ? [inferExports<aliases, opts>, importsOf<opts>]
     : inferExports<aliases, opts>
 
@@ -165,7 +163,7 @@ export class Scope<context extends ScopeContext = any> {
         }
     }
 
-    #cacheSpaces(spaces: SpaceList, kind: "imports" | "includes") {
+    #cacheSpaces(spaces: Space[], kind: "imports" | "includes") {
         for (const space of spaces) {
             for (const name in space) {
                 if (this.#resolutions.has(name) || name in this.aliases) {
@@ -180,16 +178,15 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     type = ((def, opts: TypeOptions = {}) => {
-        const result = this.#initializeUnparsedType("(anonymous)", opts)
+        const result = this.#initializeUnparsedType(opts)
         const ctx = this.#initializeContext(result)
         result.node = this.resolveNode(parseDefinition(def, ctx))
-        result.flat = flattenNode(result.node, ctx)
+        result.flat = flattenNode(result.node, result)
         return result
     }) as TypeParser<resolutions<context>>
 
     #initializeContext(type: Type): ParseContext {
         return {
-            $: this,
             type,
             path: new Path()
         }
@@ -241,7 +238,7 @@ export class Scope<context extends ScopeContext = any> {
                     : undefined
             ) as ResolveResult<onUnresolvable>
         }
-        const result = this.#initializeUnparsedType(name, {})
+        const result = this.#initializeUnparsedType({ alias: name })
         this.#resolutions.set(name, result)
         this.#exports.set(name, result)
         const ctx = this.#initializeContext(result)
@@ -256,7 +253,7 @@ export class Scope<context extends ScopeContext = any> {
             resolution = this.#resolveRecurse(resolution, "throw", seen).node
         }
         result.node = resolution
-        result.flat = flattenNode(resolution, ctx)
+        result.flat = flattenNode(resolution, result)
         return result
     }
 
@@ -268,20 +265,20 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     /** temporarily set the TypeNode+TraversalNode to an alias that will be used for cyclic resolutions */
-    #initializeUnparsedType(alias: string, config: TypeOptions): Type {
-        const root: TypeRoot = {
-            [t]: chainableNoOpProxy,
-            infer: chainableNoOpProxy,
-            config,
-            node: alias,
-            flat: [["alias", alias]],
-            alias,
-            includesMorph: false
-        }
+    #initializeUnparsedType(config: TypeOptions): Type {
+        const alias = config.alias ?? "(anonymous)"
         const result = Object.assign(
-            // TODO: pass type to traverse
-            (data: unknown) => traverse(data, result.flat, this, result.config),
-            root
+            (data: unknown) => traverse(data, result),
+            {
+                alias,
+                node: alias,
+                flat: [["alias", alias]],
+                config,
+                [t]: chainableNoOpProxy,
+                infer: chainableNoOpProxy,
+                includesMorph: false,
+                scope: this
+            } satisfies TypeRoot
         )
         return result
     }
@@ -472,11 +469,14 @@ type TypeRoot<t = unknown> = {
     node: TypeNode
     flat: TraversalNode
     includesMorph: boolean
+    scope: Scope
 }
 
 export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
 
 export type TypeOptions = {
+    // TODO: validate not already a name
+    alias?: string
     problems?: ProblemsOptions
 }
 

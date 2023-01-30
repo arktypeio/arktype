@@ -1,3 +1,4 @@
+import type { Type } from "../main.ts"
 import type { ParseContext } from "../parse/definition.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
 import type { Domain } from "../utils/domains.ts"
@@ -78,6 +79,7 @@ export const comparePredicates = (
 export const predicateIntersection: KeyIntersectionFn<
     Required<ResolvedNode>
 > = (domain, l, r, state) => {
+    state.domain = domain
     const comparison = comparePredicates(l, r, state)
     if (!isBranchComparison(comparison)) {
         return comparison
@@ -100,9 +102,9 @@ export const predicateUnion = (
     domain: Domain,
     l: Predicate,
     r: Predicate,
-    ctx: ParseContext
+    type: Type
 ) => {
-    const state = new IntersectionState(ctx)
+    const state = new IntersectionState(type, "|")
     const comparison = comparePredicates(l, r, state)
     if (!isBranchComparison(comparison)) {
         return isEquality(comparison) || comparison === l
@@ -136,14 +138,14 @@ export const predicateUnion = (
 
 export const flattenPredicate = (
     predicate: Predicate,
-    ctx: ParseContext
+    type: Type
 ): TraversalEntry[] => {
     if (predicate === true) {
         return []
     }
     return hasSubdomain(predicate, "Array")
-        ? flattenBranches(predicate, ctx)
-        : flattenBranch(predicate, ctx)
+        ? flattenBranches(predicate, type)
+        : flattenBranch(predicate, type)
 }
 
 export const isLiteralCondition = (

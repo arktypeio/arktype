@@ -52,7 +52,7 @@ export const distributeFunctionToNode = <
     ctx: ParseContext,
     ruleKey: ruleKey
 ): DistributedFunctionNode<f, ruleKey> => {
-    const domains = keysOf(ctx.$.resolveNode(inputNode))
+    const domains = keysOf(ctx.type.scope.resolveNode(inputNode))
     if (!hasDomain(distributableFunction, "object")) {
         return throwParseError(
             writeMalformedDistributableFunctionMessage(distributableFunction)

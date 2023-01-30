@@ -42,7 +42,7 @@ export class DynamicState {
         this.assertHasRoot()
         const resolution =
             typeof this.root === "string"
-                ? this.ctx.$.resolveNode(this.root)
+                ? this.ctx.type.scope.resolveNode(this.root)
                 : this.root!
         if (isLiteralNode(resolution, "number")) {
             const limit = resolution.number.value
@@ -81,7 +81,7 @@ export class DynamicState {
     }
 
     intersect(node: TypeNode) {
-        this.root = intersection(this.ejectRoot(), node, this.ctx)
+        this.root = intersection(this.ejectRoot(), node, this.ctx.type)
     }
 
     private ejectRoot() {
@@ -133,7 +133,7 @@ export class DynamicState {
                 intersection(
                     this.branches.intersection,
                     this.ejectRoot(),
-                    this.ctx
+                    this.ctx.type
                 )
             )
         }
@@ -156,7 +156,7 @@ export class DynamicState {
             ? intersection(
                   this.branches.intersection,
                   this.ejectRoot(),
-                  this.ctx
+                  this.ctx.type
               )
             : this.ejectRoot()
         if (token === "|") {
@@ -164,7 +164,7 @@ export class DynamicState {
                 ? union(
                       this.branches.union,
                       this.branches.intersection,
-                      this.ctx
+                      this.ctx.type
                   )
                 : this.branches.intersection
             delete this.branches.intersection

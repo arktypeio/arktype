@@ -14,7 +14,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {
         return throwParseError(writeMalformedMorphExpressionMessage(def[2]))
     }
-    const resolution = ctx.$.resolveNode(parseDefinition(def[0], ctx))
+    const resolution = ctx.type.scope.resolveNode(parseDefinition(def[0], ctx))
     const morph = def[2] as Morph
     ctx.type.includesMorph = true
     let domain: Domain

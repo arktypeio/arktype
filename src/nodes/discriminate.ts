@@ -1,3 +1,4 @@
+import type { Type } from "../main.ts"
 import type { ParseContext } from "../parse/definition.ts"
 import { undiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
@@ -25,10 +26,10 @@ export type DiscriminatedCases = {
     [caseKey in string]?: TraversalEntry[]
 }
 
-export const flattenBranches = (branches: Branches, ctx: ParseContext) => {
-    const discriminants = calculateDiscriminants(branches, ctx)
+export const flattenBranches = (branches: Branches, type: Type) => {
+    const discriminants = calculateDiscriminants(branches, type)
     const indices = branches.map((_, i) => i)
-    return discriminate(branches, indices, discriminants, ctx)
+    return discriminate(branches, indices, discriminants, type)
 }
 
 type IndexCases = {
@@ -43,10 +44,10 @@ const discriminate = (
     originalBranches: Branches,
     remainingIndices: number[],
     discriminants: Discriminants,
-    ctx: ParseContext
+    type: Type
 ): TraversalEntry[] => {
     if (remainingIndices.length === 1) {
-        return flattenBranch(originalBranches[remainingIndices[0]], ctx)
+        return flattenBranch(originalBranches[remainingIndices[0]], type)
     }
     const bestDiscriminant = findBestDiscriminant(
         remainingIndices,
@@ -57,7 +58,7 @@ const discriminate = (
             [
                 "branches",
                 remainingIndices.map((i) =>
-                    flattenBranch(originalBranches[i], ctx)
+                    flattenBranch(originalBranches[i], type)
                 )
             ]
         ]
@@ -68,7 +69,7 @@ const discriminate = (
             originalBranches,
             bestDiscriminant.indexCases[caseKey],
             discriminants,
-            ctx
+            type
         )
     }
     return [
@@ -112,21 +113,21 @@ export type DiscriminantKind = keyof DiscriminantKinds
 
 const calculateDiscriminants = (
     branches: Branches,
-    ctx: ParseContext
+    type: Type
 ): Discriminants => {
     const discriminants: Discriminants = {
         disjointsByPair: {},
         casesByDisjoint: {}
     }
     const morphBranches = branches.map((branch) =>
-        branchIncludesMorph(branch, ctx.$)
+        branchIncludesMorph(branch, type.scope)
     )
     for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
         for (let rIndex = lIndex + 1; rIndex < branches.length; rIndex++) {
             const pairKey = `${lIndex}/${rIndex}` as const
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
-            const intersectionState = new IntersectionState(ctx)
+            const intersectionState = new IntersectionState(type, "|")
             branchIntersection(
                 branches[lIndex],
                 branches[rIndex],

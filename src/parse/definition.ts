@@ -25,7 +25,6 @@ import { parseTuple } from "./tuple/tuple.ts"
 
 export type ParseContext = {
     type: Type
-    $: Scope
     path: Path
 }
 

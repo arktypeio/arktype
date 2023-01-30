@@ -69,16 +69,16 @@ export const propsIntersection = composeIntersection<PropsRule>(
 export const flattenProps: FlattenAndPushRule<PropsRule> = (
     entries,
     props,
-    scope
+    type
 ) => {
     const requiredProps: TraversalPropEntry[] = []
     const optionalProps: TraversalPropEntry[] = []
     for (const k in props) {
         const prop = props[k]
         if (isOptional(prop)) {
-            optionalProps.push([k, flattenNode(prop[1], scope)])
+            optionalProps.push([k, flattenNode(prop[1], type)])
         } else {
-            requiredProps.push([k, flattenNode(prop, scope)])
+            requiredProps.push([k, flattenNode(prop, type)])
         }
     }
     if (requiredProps.length) {

@@ -117,7 +117,7 @@ const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
     }
     const l = parseDefinition(def[0], ctx)
     const r = parseDefinition(def[2], ctx)
-    return def[1] === "&" ? intersection(l, r, ctx) : union(l, r, ctx)
+    return def[1] === "&" ? intersection(l, r, ctx.type) : union(l, r, ctx.type)
 }
 
 const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
