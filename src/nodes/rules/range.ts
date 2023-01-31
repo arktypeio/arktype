@@ -48,15 +48,14 @@ export const rangeIntersection = composeIntersection<Range>((l, r, state) => {
 
 export type BoundableData = number | string | List
 
-export type RangeProblemContext = defineProblem<
-    BoundableData,
-    {
-        comparator: Scanner.Comparator
-        limit: number
-        size: number
-        kind: subdomainOf<BoundableData>
-    }
->
+export type RangeProblemContext = defineProblem<{
+    code: "range"
+    data: BoundableData
+    comparator: Scanner.Comparator
+    limit: number
+    size: number
+    kind: subdomainOf<BoundableData>
+}>
 
 export const writeRangeError: ProblemMessageWriter<"range"> = ({
     comparator,
@@ -75,18 +74,14 @@ export const checkRange = ((data, range, state) => {
             size < range.min.limit ||
             (size === range.min.limit && range.min.exclusive)
         ) {
-            state.problems.addProblem(
-                "range",
+            state.addProblem({
+                code: "range",
+                comparator: toComparator("min", range.min),
+                limit: range.min.limit,
+                kind: subdomainOf(data),
                 data,
-                {
-                    // TODO: Add code here?
-                    comparator: toComparator("min", range.min),
-                    limit: range.min.limit,
-                    kind: subdomainOf(data),
-                    size
-                },
-                state
-            )
+                size
+            })
         }
     }
     if (range.max) {
@@ -94,17 +89,14 @@ export const checkRange = ((data, range, state) => {
             size > range.max.limit ||
             (size === range.max.limit && range.max.exclusive)
         ) {
-            state.problems.addProblem(
-                "range",
+            state.addProblem({
+                code: "range",
+                comparator: toComparator("max", range.max),
+                limit: range.max.limit,
+                kind: subdomainOf(data),
                 data,
-                {
-                    comparator: toComparator("max", range.max),
-                    limit: range.max.limit,
-                    kind: subdomainOf(data),
-                    size
-                },
-                state
-            )
+                size
+            })
         }
     }
 }) satisfies TraversalCheck<"range">

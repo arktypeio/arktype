@@ -1,10 +1,9 @@
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
-import { Box, Container, Stack, ThemeProvider, Typography } from "@mui/material"
+import { Stack, ThemeProvider, Typography } from "@mui/material"
 import Layout from "@theme/Layout"
 import React from "react"
-import { Ark } from "../components/ark"
+import { Boat } from "../components/boat"
 import { Features } from "../components/features"
-import { Features2 } from "../components/features2"
 import { Demo } from "../components/homepageDemo"
 import { getTheme } from "../components/index"
 import { LogoCloud } from "../components/logoCloud"
@@ -14,50 +13,8 @@ const Contents = () => {
     return (
         <ThemeProvider theme={getTheme()}>
             <Header title={siteConfig.title} tagline={siteConfig.tagline} />
-            <main
-                style={{
-                    position: "relative",
-                    padding: "0 24px",
-                    width: "100%"
-                }}
-            >
-                <Container
-                    sx={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        minWidth: "100%",
-                        position: "relative",
-                        justifyContent: "center"
-                    }}
-                >
-                    <Box
-                        sx={{
-                            margin: "0 auto",
-                            minWidth: "500px",
-                            maxWidth: "800px",
-                            display: "flex",
-                            //TODOSHAWN: investigate up()
-                            justifyContent: {
-                                xs: "center",
-                                sm: "center",
-                                md: "center",
-                                lg: "right",
-                                xl: "right"
-                            },
-                            flex: 3
-                        }}
-                    >
-                        <img
-                            style={{
-                                height: "500px",
-                                width: "800px"
-                            }}
-                            src="https://via.placeholder.com/800x500?text=Arktype.io+is+super+POOGERS"
-                        />
-                    </Box>
-                </Container>
+            <main>
                 <Features />
-                {/* <Features2 /> */}
                 <Demo />
             </main>
         </ThemeProvider>
@@ -94,7 +51,7 @@ const Header = ({ title, tagline }: Record<string, string>) => {
                 </Typography>
             </Stack>
             <LogoCloud names={["javascript", "chromium", "node", "deno"]} />
-            <Ark />
+            <Boat />
         </header>
     )
 }

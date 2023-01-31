@@ -1,11 +1,4 @@
-import {
-    Box,
-    Container,
-    Paper,
-    Stack,
-    SvgIcon,
-    Typography
-} from "@mui/material"
+import { Grid, Typography, useTheme } from "@mui/material"
 import React from "react"
 
 const details = [
@@ -15,12 +8,18 @@ const details = [
             "Define types using TS syntax. Infer them 1:1. Use them to validate your data at runtime."
     },
     {
-        title: "Native TS",
+        title: "Native JS/TS",
         description: "No extensions, plugins or compilers required"
     },
     {
         title: "Concise",
         description: "Say more with less"
+    },
+    {
+        // add image of intersections with divisors/range etc.
+        title: "Powerful",
+        description:
+            "As a full type system, ArkType understands your data in ways other validators never could"
     },
     {
         title: "Fast",
@@ -34,95 +33,48 @@ const details = [
 ]
 
 type FeatureProps = {
-    //TODOSHAWN images removed for now but kept this as placeholder
     image?: JSX.Element
     title: string
     description: string
 }
 
-const Feature = ({ image, title, description }: FeatureProps) => (
-    <Box
-        id="feature"
-        flex="1 0 45%"
-        sx={{
-            minWidth: "400px",
-            minHeight: "300px",
-            position: "relative",
-            textAlign: "center"
-        }}
-    >
-        <SvgIcon
-            sx={{
-                height: 100
-            }}
-        ></SvgIcon>
-        <Box
-            sx={{
-                width: "100%"
-            }}
-        >
-            <Typography component="h3" variant="h5" id="title" fontWeight={600}>
-                {title}
-            </Typography>
-            <Typography
-                component="h3"
-                variant="h6"
-                sx={{
-                    lineHeight: "1.2em",
-                    paddingBottom: "10px",
-                    position: "relative"
-                }}
-            >
-                {description}
-            </Typography>
-        </Box>
-    </Box>
-)
-
-const feats = details.map((feature, i) => (
-    <Feature title={feature.title} description={feature.description} key={i} />
-))
-
 export const Features = () => {
     return (
-        <Container
-            sx={{
-                height: "fit-content",
-                flexWrap: "wrap",
-                display: "flex",
-                minWidth: "100%",
-                padding: "0 !important",
-                justifyContent: "center"
+        <Grid container direction="row">
+            {details.map((feature, i) => (
+                <Grid item key={i} xs={12} md={6}>
+                    <Feature
+                        title={feature.title}
+                        description={feature.description}
+                    />
+                </Grid>
+            ))}
+        </Grid>
+    )
+}
+
+const Feature = (props: FeatureProps) => {
+    const theme = useTheme()
+    return (
+        <div
+            style={{
+                textAlign: "center",
+                margin: "auto",
+                paddingTop: "1em"
             }}
         >
-            <Stack
-                elevation={4}
-                sx={{
-                    marginTop: "1em"
-                }}
+            <Typography
+                component="h3"
+                variant="h5"
+                fontWeight="700"
+                width="100%"
+                color={theme.palette.info.main}
             >
-                <Typography
-                    component="h3"
-                    variant="h2"
-                    id="title"
-                    align="center"
-                    fontWeight={600}
-                >
-                    Features
-                </Typography>
-                <Stack
-                    justifyContent="space-evenly"
-                    direction="row"
-                    flexWrap="wrap"
-                    id="featuresComponent"
-                    sx={{
-                        width: "100%",
-                        display: "relative"
-                    }}
-                >
-                    {feats}
-                </Stack>
-            </Stack>
-        </Container>
+                {props.title}
+            </Typography>
+            <Typography component="p" variant="body1" fontWeight="300">
+                {props.description}
+            </Typography>
+        </div>
     )
 }

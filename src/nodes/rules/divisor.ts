@@ -23,25 +23,26 @@ const greatestCommonDivisor = (l: number, r: number) => {
     return greatestCommonDivisor
 }
 
-export type DivisibilityContext = defineProblem<number, { divisor: number }>
+export type DivisibilityContext = defineProblem<{
+    code: "divisibility"
+    data: number
+    divisor: number
+}>
 
 export const writeDivisorError: ProblemMessageWriter<"divisibility"> = ({
     data,
     divisor
 }) =>
     divisor === 1
-        ? `${data} is not an integer.`
-        : `${data} is not divisible by ${divisor}.`
+        ? `${data} is not an integer`
+        : `${data} is not divisible by ${divisor}`
 
 export const checkDivisor = ((data, divisor, state) => {
     if (data % divisor !== 0) {
-        state.problems.addProblem(
-            "divisibility",
+        state.addProblem({
+            code: "divisibility",
             data,
-            {
-                divisor
-            },
-            state
-        )
+            divisor
+        })
     }
 }) satisfies TraversalCheck<"divisor">

@@ -25,8 +25,8 @@ export type join<
       >
     : result
 
-export const getPath = (value: unknown, path: string[]): unknown => {
-    let result: any = value
+export const getPath = (root: unknown, path: string[]): unknown => {
+    let result: any = root
     for (const segment of path) {
         if (typeof result !== "object" || result === null) {
             return undefined

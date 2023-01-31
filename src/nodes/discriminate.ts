@@ -1,28 +1,34 @@
-import type { Type } from "../main.ts"
+import type { Scope, Type } from "../main.ts"
 import { undiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
-import { domainOf } from "../utils/domains.ts"
+import { domainOf, hasSubdomain, subdomainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type { keySet } from "../utils/generics.ts"
-import { isKeyOf, keysOf } from "../utils/generics.ts"
+import type { evaluate, keySet } from "../utils/generics.ts"
+import { hasKey, isKeyOf, keysOf } from "../utils/generics.ts"
+import type { NumberLiteral } from "../utils/numericLiterals.ts"
 import { Path } from "../utils/paths.ts"
-import type { SerializablePrimitive } from "../utils/serialize.ts"
+import type {
+    SerializablePrimitive,
+    SerializedPrimitive
+} from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
 import type { Branches } from "./branches.ts"
-import type { DisjointKind } from "./compose.ts"
 import { IntersectionState } from "./compose.ts"
-import type { TraversalEntry } from "./node.ts"
-import { branchIncludesMorph } from "./node.ts"
+import type { TraversalEntry, TypeNode } from "./node.ts"
+import type { Branch } from "./predicate.ts"
+import { isOptional } from "./rules/props.ts"
 import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
 export type DiscriminatedSwitch = {
     readonly path: Path
-    readonly kind: DisjointKind
+    readonly kind: DiscriminantKind
     readonly cases: DiscriminatedCases
 }
 
-export type DiscriminatedCases = {
-    [caseKey in string]?: TraversalEntry[]
+export type DiscriminatedCases<
+    kind extends DiscriminantKind = DiscriminantKind
+> = {
+    [caseKey in CaseKey<kind>]?: TraversalEntry[]
 }
 
 export const flattenBranches = (branches: Branches, type: Type) => {
@@ -32,7 +38,7 @@ export const flattenBranches = (branches: Branches, type: Type) => {
 }
 
 type IndexCases = {
-    [caseKey in string]: number[]
+    [caseKey in CaseKey]?: number[]
 }
 
 export type QualifiedDisjoint =
@@ -63,10 +69,12 @@ const discriminate = (
         ]
     }
     const cases = {} as DiscriminatedCases
-    for (const caseKey in bestDiscriminant.indexCases) {
+    let caseKey: CaseKey
+    for (caseKey in bestDiscriminant.indexCases) {
+        const nextIndices = bestDiscriminant.indexCases[caseKey]!
         cases[caseKey] = discriminate(
             originalBranches,
-            bestDiscriminant.indexCases[caseKey],
+            nextIndices,
             discriminants,
             type
         )
@@ -108,7 +116,7 @@ const discriminantKinds: keySet<DiscriminantKind> = {
     value: true
 }
 
-export type DiscriminantKind = keyof DiscriminantKinds
+export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 const calculateDiscriminants = (
     branches: Branches,
@@ -153,12 +161,12 @@ const calculateDiscriminants = (
                     continue
                 }
                 const cases = discriminants.casesByDisjoint[qualifiedDisjoint]!
-                if (!cases[lSerialized]) {
+                if (!hasKey(cases, lSerialized)) {
                     cases[lSerialized] = [lIndex]
                 } else if (!cases[lSerialized].includes(lIndex)) {
                     cases[lSerialized].push(lIndex)
                 }
-                if (!cases[rSerialized]) {
+                if (!hasKey(cases, rSerialized)) {
                     cases[rSerialized] = [rIndex]
                 } else if (!cases[rSerialized].includes(rIndex)) {
                     cases[rSerialized].push(rIndex)
@@ -201,14 +209,15 @@ const findBestDiscriminant = (
                 discriminants.disjointsByPair[`${lIndex}/${rIndex}`]
             for (const qualifiedDisjoint of candidates) {
                 const indexCases =
-                    discriminants.casesByDisjoint[qualifiedDisjoint]
+                    discriminants.casesByDisjoint[qualifiedDisjoint]!
                 const filteredCases: IndexCases = {}
                 const defaultCases: Record<number, number> = [
                     ...remainingIndices
                 ]
                 let score = 0
-                for (const caseKey in indexCases) {
-                    const filteredIndices = indexCases[caseKey].filter((i) => {
+                let caseKey: CaseKey
+                for (caseKey in indexCases) {
+                    const filteredIndices = indexCases[caseKey]!.filter((i) => {
                         const remainingIndex = remainingIndices.indexOf(i)
                         if (remainingIndex !== -1) {
                             delete defaultCases[remainingIndex]
@@ -248,15 +257,56 @@ const findBestDiscriminant = (
     return bestDiscriminant
 }
 
-const serializeIfAllowed = <kind extends DiscriminantKind>(
+export const serializeIfAllowed = <kind extends DiscriminantKind>(
     kind: kind,
     data: DiscriminantKinds[kind]
-) => {
-    if (kind === "value") {
-        const domain = domainOf(data)
-        return domain === "object" || domain === "symbol"
-            ? undefined
-            : serializePrimitive(data as SerializablePrimitive)
-    }
-    return `${data}`
+) =>
+    (kind === "value" ? serializeIfPrimitive(data) : `${data}`) as
+        | CaseKey<kind>
+        | undefined
+
+const serializeIfPrimitive = (data: unknown) => {
+    const domain = domainOf(data)
+    return domain === "object" || domain === "symbol"
+        ? undefined
+        : serializePrimitive(data as SerializablePrimitive)
 }
+
+const caseSerializers: Record<DiscriminantKind, (data: unknown) => string> = {
+    value: (data) => serializeIfPrimitive(data) ?? "default",
+    subdomain: subdomainOf,
+    domain: domainOf,
+    tupleLength: (data) => (Array.isArray(data) ? `${data}` : "default")
+}
+
+export const serializeCase = <kind extends DiscriminantKind>(
+    kind: kind,
+    data: unknown
+) => caseSerializers[kind](data) as CaseKey<kind>
+
+type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
+    kind extends "value"
+        ? SerializedPrimitive | "default"
+        : kind extends "tupleLength"
+        ? NumberLiteral | "default"
+        : DiscriminantKinds[kind]
+
+const branchIncludesMorph = (branch: Branch, $: Scope) =>
+    "morph" in branch
+        ? true
+        : "props" in branch
+        ? Object.values(branch.props!).some((prop) =>
+              nodeIncludesMorph(isOptional(prop) ? prop[1] : prop, $)
+          )
+        : false
+
+const nodeIncludesMorph = (node: TypeNode, $: Scope): boolean =>
+    typeof node === "string"
+        ? $.resolve(node).includesMorph
+        : Object.values(node).some((predicate) =>
+              predicate === true
+                  ? false
+                  : hasSubdomain(predicate, "Array")
+                  ? predicate.some((branch) => branchIncludesMorph(branch, $))
+                  : branchIncludesMorph(predicate, $)
+          )

@@ -34,21 +34,20 @@ export const getRegex = (source: string) => {
 
 export const checkRegex = ((data, regex, state) => {
     if (!regex.test(data)) {
-        state.problems.addProblem("regex", data, { regex }, state)
+        state.addProblem({ code: "regex", data, regex })
     }
 }) satisfies TraversalCheck<"regex">
 
-export type RegexProblemContext = defineProblem<
-    string,
-    {
-        regex: RegExp
-    }
->
+export type RegexProblemContext = defineProblem<{
+    code: "regex"
+    data: string
+    regex: RegExp
+}>
 
 export const writeRegexError: ProblemMessageWriter<"regex"> = ({
     data,
     regex
-}) => `${data} must match expression ${regex}.`
+}) => `${data} must match expression ${regex}`
 
 export const regexIntersection = composeIntersection<CollapsibleList<string>>(
     collapsibleListUnion<string>

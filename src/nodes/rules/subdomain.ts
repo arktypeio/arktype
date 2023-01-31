@@ -1,14 +1,10 @@
-import type { TraversalCheck } from "../../traverse/check.ts"
-import { traverseNode } from "../../traverse/check.ts"
 import type {
     defineProblem,
     ProblemMessageWriter
 } from "../../traverse/problems.ts"
 import type { Subdomain } from "../../utils/domains.ts"
-import { subdomainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import type { Dict, List, mutable } from "../../utils/generics.ts"
-import { stringify } from "../../utils/serialize.ts"
 import {
     composeIntersection,
     equality,
@@ -114,75 +110,12 @@ const subdomainParameterToPathSegment = (
               `Unexpected parameterized subdomain '${subdomain}'`
           )
 
-export const checkSubdomain: TraversalCheck<"subdomain"> = (
-    data,
-    rule,
-    state
-) => {
-    const dataSubdomain = subdomainOf(data)
-    if (typeof rule === "string") {
-        if (dataSubdomain !== rule) {
-            state.problems.addProblem(
-                "domain",
-                data,
-                {
-                    expected: [rule]
-                },
-                state
-            )
-        }
-        return
-    }
-    if (dataSubdomain !== rule[0]) {
-        state.problems.addProblem(
-            "domain",
-            data,
-            {
-                expected: [rule[0]]
-            },
-            state
-        )
-        return
-    }
-    if (dataSubdomain === "Array" && typeof rule[2] === "number") {
-        const actual = (data as List).length
-        const expected = rule[2]
-        if (expected !== actual) {
-            // TODO: addProblem API to state? Could all be one object
-            return state.problems.addProblem(
-                "tupleLength",
-                data,
-                {
-                    actual,
-                    expected
-                },
-                state
-            )
-        }
-    }
-    if (dataSubdomain === "Array" || dataSubdomain === "Set") {
-        let i = 0
-        for (const item of data as List | Set<unknown>) {
-            state.path.push(`${i}`)
-            traverseNode(item, rule[1], state)
-            state.path.pop()
-            i++
-        }
-    } else {
-        return throwInternalError(
-            `Unexpected subdomain entry ${stringify(rule)}`
-        )
-    }
-    return true
-}
-
-export type TupleLengthProblemContext = defineProblem<
-    List,
-    {
-        actual: number
-        expected: number
-    }
->
+export type TupleLengthProblemContext = defineProblem<{
+    code: "tupleLength"
+    data: List
+    actual: number
+    expected: number
+}>
 
 export const writeTupleLengthError: ProblemMessageWriter<"tupleLength"> = ({
     actual,

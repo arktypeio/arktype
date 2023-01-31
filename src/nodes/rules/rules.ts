@@ -2,7 +2,6 @@ import type { Type } from "../../main.ts"
 import { writeImplicitNeverMessage } from "../../parse/string/ast.ts"
 import type { Morph } from "../../parse/tuple/morph.ts"
 import type { Narrow } from "../../parse/tuple/narrow.ts"
-import { traverse } from "../../traverse/check.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type {
@@ -60,7 +59,11 @@ export type MorphBranch<domain extends Domain = Domain, $ = Dict> = {
     morph: CollapsibleList<Morph>
 }
 
-export type FlatBranch = (RuleEntry | MorphEntry)[]
+export type FlatBranch = FlatRules | FlatMorphedBranch
+
+export type FlatRules = RuleEntry[]
+
+type FlatMorphedBranch = [...rules: FlatRules, morph: MorphEntry]
 
 export type RuleEntry =
     | ["subdomain", TraversalSubdomainRule]
@@ -73,7 +76,7 @@ export type RuleEntry =
     | ["narrow", Narrow]
     | ["value", unknown]
 
-export type MorphEntry = ["morph", Morph]
+export type MorphEntry = ["morph", CollapsibleList<Morph>]
 
 export type Rules<
     domain extends Domain = Domain,
@@ -235,10 +238,8 @@ export const precedenceMap: {
 
 export const flattenBranch = (branch: Branch, type: Type): FlatBranch => {
     if ("morph" in branch) {
-        const result = flattenRules(branch.input, type)
-        for (const morph of listFrom(branch.morph)) {
-            result.push(["morph", morph])
-        }
+        const result = flattenRules(branch.input, type) as FlatMorphedBranch
+        result.push(["morph", branch.morph])
         return result
     }
     return flattenRules(branch, type)
@@ -257,6 +258,4 @@ export const literalSatisfiesRules = (
     data: unknown,
     rules: NarrowableRules,
     state: IntersectionState
-) =>
-    "data" in
-    traverse(data, state.type.scope.type(["node", { [state.domain!]: rules }]))
+) => "data" in state.type.scope.type(["node", { [state.domain!]: rules }])(data)

@@ -1,12 +1,12 @@
 import { describe, it } from "mocha"
-import { type } from "../api.ts"
-import { attest } from "../dev/attest/api.ts"
+import { type } from "../api.js"
+import { attest } from "../dev/attest/api.js"
 
-describe("check", () => {
+describe("traverse", () => {
     it("divisible", () => {
         const t = type("number%2")
         attest(t(4).data).snap(4)
-        attest(t(5).problems?.summary).snap("5 is not divisible by 2.")
+        attest(t(5).problems?.summary).snap("5 is not divisible by 2")
     })
     it("string length", () => {
         const gte3 = type("string>=3")
@@ -27,7 +27,7 @@ describe("check", () => {
         const t = type("/\\w@hotmail.com/")
         const checked = t("shawn@hotail.com")
         attest(checked.problems?.summary).snap(
-            '"shawn@hotail.com" must match expression /\\w@hotmail.com/.'
+            '"shawn@hotail.com" must match expression /\\w@hotmail.com/'
         )
     })
     it("required keys", () => {
@@ -65,6 +65,27 @@ describe("check", () => {
         attest(t(data).data).equals(data)
         attest(t(["hello"]).problems?.summary).snap(
             "Tuple must have length 4 (was 1)"
+        )
+    })
+    // TODO: improve error message, include subproblems
+    it("branches", () => {
+        const t = type([{ a: "string" }, "|", { b: "boolean" }])
+        attest(t({ a: "ok" }).data).snap({ a: "ok" })
+        attest(t({ b: true }).data).snap({ b: true })
+
+        attest(t({}).problems?.summary).snap("{} does not satisfy any branches")
+    })
+    it("switch", () => {
+        const t = type([{ a: "string" }, "|", { a: "boolean" }])
+        attest(t({ a: "ok" }).data).snap({ a: "ok" })
+        attest(t({ a: true }).data).snap({ a: true })
+        // value isn't present
+        attest(t({}).problems?.summary).snap(
+            'a: "(undefined)" does not satisfy any branches'
+        )
+        // unsatisfying value
+        attest(t({ a: 5 }).problems?.summary).snap(
+            "a: 5 does not satisfy any branches"
         )
     })
 })

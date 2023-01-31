@@ -1,7 +1,6 @@
-import type { Scope, Type } from "../main.ts"
+import type { Type } from "../main.ts"
 import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
 import type { Domain } from "../utils/domains.ts"
-import { hasSubdomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
 import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
@@ -15,7 +14,7 @@ import {
     throwUndefinedOperandsError
 } from "./compose.ts"
 import type { DiscriminatedSwitch } from "./discriminate.ts"
-import type { Branch, Predicate } from "./predicate.ts"
+import type { Predicate } from "./predicate.ts"
 import {
     flattenPredicate,
     isLiteralCondition,
@@ -23,11 +22,11 @@ import {
     predicateUnion,
     resolutionExtendsDomain
 } from "./predicate.ts"
-import { isOptional } from "./rules/props.ts"
 import type { LiteralRules, MorphEntry, RuleEntry } from "./rules/rules.ts"
 
-// TODO: should Type be allowed as a node? would allow configs etc. during traversal
 export type TypeNode<$ = Dict> = Identifier<$> | ResolvedNode<$>
+
+export type Identifier<$ = Dict> = stringKeyOf<$>
 
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to
@@ -35,8 +34,6 @@ export type TypeNode<$ = Dict> = Identifier<$> | ResolvedNode<$>
 export type ResolvedNode<$ = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, $>
 }
-
-export type Identifier<$ = Dict> = stringKeyOf<$>
 
 export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
     state.domain = undefined
@@ -68,31 +65,18 @@ const resolutionIntersection = composeKeyedIntersection<ResolvedNode>(
     { onEmpty: "omit" }
 )
 
-/** Reflects that an Idenitifier cannot be the result of any intersection
- * including a TypeResolution  */
-type IntersectionResult<
-    l extends TypeNode,
-    r extends TypeNode
-> = l extends ResolvedNode
-    ? ResolvedNode
-    : r extends ResolvedNode
-    ? ResolvedNode
-    : TypeNode
-
-export const intersection = <l extends TypeNode, r extends TypeNode>(
-    l: l,
-    r: r,
+export const intersection = (
+    l: TypeNode,
+    r: TypeNode,
     type: Type
-) => {
+): TypeNode => {
     const state = new IntersectionState(type, "&")
     const result = nodeIntersection(l, r, state)
-    return (
-        isDisjoint(result)
-            ? throwParseError(compileDisjointReasonsMessage(state.disjoints))
-            : isEquality(result)
-            ? l
-            : result
-    ) as IntersectionResult<l, r>
+    return isDisjoint(result)
+        ? throwParseError(compileDisjointReasonsMessage(state.disjoints))
+        : isEquality(result)
+        ? l
+        : result
 }
 
 export const union = (l: TypeNode, r: TypeNode, type: Type): ResolvedNode => {
@@ -181,23 +165,3 @@ export const isLiteralNode = <domain extends Domain>(
         isLiteralCondition(node[domain])
     )
 }
-
-export const nodeIncludesMorph = (node: TypeNode, $: Scope): boolean =>
-    typeof node === "string"
-        ? $.resolve(node).includesMorph
-        : Object.values(node).some((predicate) =>
-              predicate === true
-                  ? false
-                  : hasSubdomain(predicate, "Array")
-                  ? predicate.some((branch) => branchIncludesMorph(branch, $))
-                  : branchIncludesMorph(predicate, $)
-          )
-
-export const branchIncludesMorph = (branch: Branch, $: Scope) =>
-    "morph" in branch
-        ? true
-        : "props" in branch
-        ? Object.values(branch.props!).some((prop) =>
-              nodeIncludesMorph(isOptional(prop) ? prop[1] : prop, $)
-          )
-        : false
