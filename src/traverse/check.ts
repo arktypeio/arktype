@@ -77,8 +77,8 @@ export class DataTraversalState extends TraversalState {
             }
             subproblems.push(this.problems)
         }
-        this.addProblem({ code: "union", data, subproblems })
         this.problems = baseProblems
+        this.addProblem({ code: "union", data, subproblems })
     }
 
     addProblem<code extends ProblemCode>(ctx: ProblemInputs[code]) {

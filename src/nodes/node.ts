@@ -26,8 +26,9 @@ import {
 import { isOptional } from "./rules/props.ts"
 import type { LiteralRules, MorphEntry, RuleEntry } from "./rules/rules.ts"
 
-// TODO: should Type be allowed as a node? would allow configs etc. during traversal
 export type TypeNode<$ = Dict> = Identifier<$> | ResolvedNode<$>
+
+export type Identifier<$ = Dict> = stringKeyOf<$>
 
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to
@@ -35,8 +36,6 @@ export type TypeNode<$ = Dict> = Identifier<$> | ResolvedNode<$>
 export type ResolvedNode<$ = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, $>
 }
-
-export type Identifier<$ = Dict> = stringKeyOf<$>
 
 export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
     state.domain = undefined
@@ -68,31 +67,18 @@ const resolutionIntersection = composeKeyedIntersection<ResolvedNode>(
     { onEmpty: "omit" }
 )
 
-/** Reflects that an Idenitifier cannot be the result of any intersection
- * including a TypeResolution  */
-type IntersectionResult<
-    l extends TypeNode,
-    r extends TypeNode
-> = l extends ResolvedNode
-    ? ResolvedNode
-    : r extends ResolvedNode
-    ? ResolvedNode
-    : TypeNode
-
-export const intersection = <l extends TypeNode, r extends TypeNode>(
-    l: l,
-    r: r,
+export const intersection = (
+    l: TypeNode,
+    r: TypeNode,
     type: Type
-) => {
+): TypeNode => {
     const state = new IntersectionState(type, "&")
     const result = nodeIntersection(l, r, state)
-    return (
-        isDisjoint(result)
-            ? throwParseError(compileDisjointReasonsMessage(state.disjoints))
-            : isEquality(result)
-            ? l
-            : result
-    ) as IntersectionResult<l, r>
+    return isDisjoint(result)
+        ? throwParseError(compileDisjointReasonsMessage(state.disjoints))
+        : isEquality(result)
+        ? l
+        : result
 }
 
 export const union = (l: TypeNode, r: TypeNode, type: Type): ResolvedNode => {
