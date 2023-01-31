@@ -1,7 +1,4 @@
-import { Card, Paper, Stack, Typography } from "@mui/material"
-
-import CardContent from "@mui/material/CardContent"
-import CardMedia from "@mui/material/CardMedia"
+import { Grid, Typography, useTheme } from "@mui/material"
 import React from "react"
 
 const details = [
@@ -35,48 +32,49 @@ const details = [
     }
 ]
 
-const Feature = (props: {
+type FeatureProps = {
+    image?: JSX.Element
     title: string
     description: string
-    index: number
-}) => (
-    <Card
-        sx={{
-            width: "80%",
-            backgroundColor: "#fff"
-        }}
-    >
-        <CardContent>
-            <Typography variant="h4">{props.title}</Typography>
-            <Typography variant="body1" fontSize="1.3em">
+}
+
+export const Features = () => {
+    return (
+        <Grid container direction="row">
+            {details.map((feature, i) => (
+                <Grid item key={i} xs={12} md={6}>
+                    <Feature
+                        title={feature.title}
+                        description={feature.description}
+                    />
+                </Grid>
+            ))}
+        </Grid>
+    )
+}
+
+const Feature = (props: FeatureProps) => {
+    const theme = useTheme()
+    return (
+        <div
+            style={{
+                textAlign: "center",
+                margin: "auto",
+                paddingTop: "1em"
+            }}
+        >
+            <Typography
+                component="h3"
+                variant="h5"
+                fontWeight="700"
+                width="100%"
+                color={theme.palette.info.main}
+            >
+                {props.title}
+            </Typography>
+            <Typography component="p" variant="body1" fontWeight="300">
                 {props.description}
             </Typography>
-        </CardContent>
-        <CardMedia
-            component="img"
-            image="https://via.placeholder.com/800x200?text=Arktype.io+is+super+POOGERS"
-            alt="Arktype Gif"
-        />
-    </Card>
-)
-
-const feats = details.map((feature, i) => (
-    <Feature
-        title={feature.title}
-        description={feature.description}
-        index={i}
-        key={`${feature.title}-${i}`}
-    />
-))
-
-export const Features = () => (
-    <Paper
-        elevation={5}
-        sx={{ marginTop: "1em", backgroundColor: "primary.main" }}
-    >
-        <Typography component="h2" variant="h2" align="center">
-            <b>Features</b>
-        </Typography>
-        <Stack sx={{ display: "flex" }}>{feats}</Stack>
-    </Paper>
-)
+        </div>
+    )
+}

@@ -1,46 +1,29 @@
 import Collapse from "@mui/icons-material/ExpandLess"
 import Expand from "@mui/icons-material/ExpandMore"
 import Terminal from "@mui/icons-material/Terminal"
-import { Button, Stack, Typography, Box } from "@mui/material"
+import { Button, Stack } from "@mui/material"
 import CircularProgress from "@mui/material/CircularProgress"
 import React, { useRef, useState } from "react"
 import { StackBlitzDemo } from "../../docs/demos/index"
 
 export const Demo = () => {
-    const [activeDemo, setActiveDemo] = useState<boolean>(false)
+    const [activeDemo, setActiveDemo] = useState<null | JSX.Element>(null)
     const [loading, setLoading] = useState<boolean>(false)
     const ref = useRef<null | HTMLSpanElement>(null)
     return (
-        <Stack
-            spacing={2}
-            sx={{
-                position: "relative",
-                width: "100%",
-                display: "flex"
-            }}
-        >
-            <Typography component="h4" variant="h2" align="center">
-                Experience Greatness!
-            </Typography>
-            <Typography component="p" align="center">
-                Don't just take our word for it, experience it yourself!
-            </Typography>
+        <Stack spacing={2}>
             <HomepageDemo
+                buttonColor="info"
+                activeDemo={activeDemo}
                 setActiveDemo={setActiveDemo}
                 setLoading={setLoading}
-                activeDemo={activeDemo}
                 demoElement={<StackBlitzDemo embedId="type" />}
                 demoRef={ref}
             />
             {loading && (
-                <CircularProgress
-                    color="secondary"
-                    sx={{
-                        position: "absolute",
-                        left: "49%",
-                        top: "49%"
-                    }}
-                />
+                <Stack direction="row" justifyContent="center">
+                    <CircularProgress color="secondary" />
+                </Stack>
             )}
             <span ref={ref} style={{ opacity: loading ? 0 : 100 }}>
                 {activeDemo}
@@ -48,32 +31,32 @@ export const Demo = () => {
         </Stack>
     )
 }
-const HomepageDemo = (props: any) => {
+
+type HomepageDemoProps = {
+    buttonColor: "info"
+    activeDemo: JSX.Element | null
+    demoElement: JSX.Element
+    setActiveDemo: (demo: JSX.Element | null) => void
+    setLoading: (isLoading: boolean) => void
+    demoRef: React.MutableRefObject<null | HTMLSpanElement>
+}
+
+const HomepageDemo = (props: HomepageDemoProps) => {
     return (
-        <Box
-            sx={{
-                position: "relative",
-                width: "100%",
-                display: "flex",
-                justifyContent: "center"
-            }}
-        >
+        <Stack direction="row" justifyContent="center" sx={{ margin: "1em" }}>
             <Button
                 color={props.buttonColor}
                 variant="contained"
-                sx={{
-                    width: "fit-content",
-                    margin: "0 auto"
-                }}
+                sx={{ whiteSpace: "nowrap" }}
                 onClick={() => {
                     setTimeout(() => {
                         props.setLoading(false)
                     }, 1000)
                     props.setLoading(props.activeDemo ? false : true)
                     props.setActiveDemo(
-                        props.activeDemo ? null : props.demoElement!
+                        props.activeDemo ? null : props.demoElement
                     )
-                    !props.activeDemo &&
+                    !props.demoElement &&
                         setTimeout(() => {
                             props.demoRef.current?.scrollIntoView({
                                 behavior: "smooth",
@@ -90,6 +73,6 @@ const HomepageDemo = (props: any) => {
             >
                 {props.activeDemo ? "All done?" : "Try it here!"}
             </Button>
-        </Box>
+        </Stack>
     )
 }

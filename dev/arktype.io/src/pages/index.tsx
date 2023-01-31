@@ -13,44 +13,7 @@ const Contents = () => {
     return (
         <ThemeProvider theme={getTheme()}>
             <Header title={siteConfig.title} tagline={siteConfig.tagline} />
-            <main
-                style={{
-                    position: "relative",
-                    padding: "0 24px",
-                    width: "100%"
-                }}
-            >
-                <Container
-                    sx={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        minWidth: "100%",
-                        position: "relative",
-                        justifyContent: "center"
-                    }}
-                >
-                    <Box
-                        sx={{
-                            margin: "0 auto",
-                            minWidth: "500px",
-                            maxWidth: "800px",
-                            display: "flex",
-                            justifyContent: {
-                                xs: "center",
-                                lg: "right"
-                            },
-                            flex: 3
-                        }}
-                    >
-                        <img
-                            style={{
-                                height: "500px",
-                                width: "800px"
-                            }}
-                            src="https://via.placeholder.com/800x500?text=Arktype.io+is+super+POOGERS"
-                        />
-                    </Box>
-                </Container>
+            <main>
                 <Features />
                 <Demo />
             </main>
