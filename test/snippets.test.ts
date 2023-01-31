@@ -6,13 +6,13 @@ describe("snippets", () => {
         const typeSnippet = await import("../examples/type.ts")
         attest(typeSnippet.user.infer).typed as {
             name: string
-            browser: {
-                kind: "chrome" | "firefox" | "safari"
-                version?: number | undefined
+            device: {
+                platform: "android" | "ios"
+                version?: number
             }
         }
         attest(typeSnippet.problems?.summary).snap(
-            '"Internet Explorer" does not satisfy any branches'
+            '"enigma" does not satisfy any branches'
         )
     })
     it("scope", async () => {

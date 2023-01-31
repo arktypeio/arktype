@@ -10,7 +10,7 @@ for (let i = 0; i < LOOP_DURATION / BOB_INTERVAL; i++) {
     bobFrames.push(i % 2 ? BOB_HEIGHT : 0)
 }
 
-export const Ark = () => {
+export const Boat = () => {
     return (
         <motion.div
             style={{

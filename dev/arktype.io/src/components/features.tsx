@@ -1,11 +1,7 @@
-import {
-    Box,
-    Container,
-    Paper,
-    Stack,
-    SvgIcon,
-    Typography
-} from "@mui/material"
+import { Card, Paper, Stack, Typography } from "@mui/material"
+
+import CardContent from "@mui/material/CardContent"
+import CardMedia from "@mui/material/CardMedia"
 import React from "react"
 
 const details = [
@@ -15,12 +11,18 @@ const details = [
             "Define types using TS syntax. Infer them 1:1. Use them to validate your data at runtime."
     },
     {
-        title: "Native TS",
+        title: "Native JS/TS",
         description: "No extensions, plugins or compilers required"
     },
     {
         title: "Concise",
         description: "Say more with less"
+    },
+    {
+        // add image of intersections with divisors/range etc.
+        title: "Powerful",
+        description:
+            "As a full type system, ArkType understands your data in ways other validators never could"
     },
     {
         title: "Fast",
@@ -33,96 +35,48 @@ const details = [
     }
 ]
 
-type FeatureProps = {
-    //TODOSHAWN images removed for now but kept this as placeholder
-    image?: JSX.Element
+const Feature = (props: {
     title: string
     description: string
-}
-
-const Feature = ({ image, title, description }: FeatureProps) => (
-    <Box
-        id="feature"
-        flex="1 0 45%"
+    index: number
+}) => (
+    <Card
         sx={{
-            minWidth: "400px",
-            minHeight: "300px",
-            position: "relative",
-            textAlign: "center"
+            width: "80%",
+            backgroundColor: "#fff"
         }}
     >
-        <SvgIcon
-            sx={{
-                height: 100
-            }}
-        ></SvgIcon>
-        <Box
-            sx={{
-                width: "100%"
-            }}
-        >
-            <Typography component="h3" variant="h5" id="title" fontWeight={600}>
-                {title}
+        <CardContent>
+            <Typography variant="h4">{props.title}</Typography>
+            <Typography variant="body1" fontSize="1.3em">
+                {props.description}
             </Typography>
-            <Typography
-                component="h3"
-                variant="h6"
-                sx={{
-                    lineHeight: "1.2em",
-                    paddingBottom: "10px",
-                    position: "relative"
-                }}
-            >
-                {description}
-            </Typography>
-        </Box>
-    </Box>
+        </CardContent>
+        <CardMedia
+            component="img"
+            image="https://via.placeholder.com/800x200?text=Arktype.io+is+super+POOGERS"
+            alt="Arktype Gif"
+        />
+    </Card>
 )
 
 const feats = details.map((feature, i) => (
-    <Feature title={feature.title} description={feature.description} key={i} />
+    <Feature
+        title={feature.title}
+        description={feature.description}
+        index={i}
+        key={`${feature.title}-${i}`}
+    />
 ))
 
-export const Features = () => {
-    return (
-        <Container
-            sx={{
-                height: "fit-content",
-                flexWrap: "wrap",
-                display: "flex",
-                minWidth: "100%",
-                padding: "0 !important",
-                justifyContent: "center"
-            }}
-        >
-            <Stack
-                elevation={4}
-                sx={{
-                    marginTop: "1em"
-                }}
-            >
-                <Typography
-                    component="h3"
-                    variant="h2"
-                    id="title"
-                    align="center"
-                    fontWeight={600}
-                >
-                    Features
-                </Typography>
-                <Stack
-                    justifyContent="space-evenly"
-                    direction="row"
-                    flexWrap="wrap"
-                    id="featuresComponent"
-                    sx={{
-                        width: "100%",
-                        display: "relative"
-                    }}
-                >
-                    {feats}
-                </Stack>
-            </Stack>
-        </Container>
-    )
-}
+export const Features = () => (
+    <Paper
+        elevation={5}
+        sx={{ marginTop: "1em", backgroundColor: "primary.main" }}
+    >
+        <Typography component="h2" variant="h2" align="center">
+            <b>Features</b>
+        </Typography>
+        <Stack sx={{ display: "flex" }}>{feats}</Stack>
+    </Paper>
+)

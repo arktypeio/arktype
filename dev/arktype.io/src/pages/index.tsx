@@ -2,9 +2,8 @@ import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import { Box, Container, Stack, ThemeProvider, Typography } from "@mui/material"
 import Layout from "@theme/Layout"
 import React from "react"
-import { Ark } from "../components/ark"
+import { Boat } from "../components/boat"
 import { Features } from "../components/features"
-import { Features2 } from "../components/features2"
 import { Demo } from "../components/homepageDemo"
 import { getTheme } from "../components/index"
 import { LogoCloud } from "../components/logoCloud"
@@ -36,13 +35,9 @@ const Contents = () => {
                             minWidth: "500px",
                             maxWidth: "800px",
                             display: "flex",
-                            //TODOSHAWN: investigate up()
                             justifyContent: {
                                 xs: "center",
-                                sm: "center",
-                                md: "center",
-                                lg: "right",
-                                xl: "right"
+                                lg: "right"
                             },
                             flex: 3
                         }}
@@ -57,7 +52,6 @@ const Contents = () => {
                     </Box>
                 </Container>
                 <Features />
-                {/* <Features2 /> */}
                 <Demo />
             </main>
         </ThemeProvider>
@@ -94,7 +88,7 @@ const Header = ({ title, tagline }: Record<string, string>) => {
                 </Typography>
             </Stack>
             <LogoCloud names={["javascript", "chromium", "node", "deno"]} />
-            <Ark />
+            <Boat />
         </header>
     )
 }
