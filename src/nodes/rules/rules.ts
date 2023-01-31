@@ -2,7 +2,6 @@ import type { Type } from "../../main.ts"
 import { writeImplicitNeverMessage } from "../../parse/string/ast.ts"
 import type { Morph } from "../../parse/tuple/morph.ts"
 import type { Narrow } from "../../parse/tuple/narrow.ts"
-import { traverse } from "../../traverse/check.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type {
@@ -259,6 +258,4 @@ export const literalSatisfiesRules = (
     data: unknown,
     rules: NarrowableRules,
     state: IntersectionState
-) =>
-    "data" in
-    traverse(data, state.type.scope.type(["node", { [state.domain!]: rules }]))
+) => "data" in state.type.scope.type(["node", { [state.domain!]: rules }])(data)

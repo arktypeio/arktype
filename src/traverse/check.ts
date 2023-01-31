@@ -1,4 +1,4 @@
-import type { Result, Type } from "../main.ts"
+import type { Type } from "../main.ts"
 import { caseSerializers } from "../nodes/discriminate.ts"
 import type {
     TraversalEntry,
@@ -20,6 +20,7 @@ import { getPath, Path } from "../utils/paths.ts"
 import type {
     Problem,
     ProblemCode,
+    ProblemContexts,
     ProblemInputs,
     ProblemMessageWriter
 } from "./problems.ts"
@@ -65,6 +66,7 @@ export class DataTraversalState extends TraversalState {
         this.type = lastType
     }
 
+    // TODO: add fast fail mode, use for unions
     traverseBranches(data: unknown, branches: TraversalEntry[][]) {
         const baseProblems = this.problems
         const subproblems: Problems[] = []
@@ -81,22 +83,44 @@ export class DataTraversalState extends TraversalState {
         this.addProblem({ code: "union", data, subproblems })
     }
 
-    addProblem<code extends ProblemCode>(ctx: ProblemInputs[code]) {
-        ctx.data = new Stringifiable(ctx.data)
-        const problemConfig = this.type.config.problems?.[ctx.code]
-        const customMessageWriter =
-            typeof problemConfig === "function"
-                ? (problemConfig as ProblemMessageWriter<code>)
-                : problemConfig?.message
-        const problem: Problem = {
-            path: `${this.path}`,
-            reason:
-                customMessageWriter?.(ctx as never) ??
-                defaultMessagesByCode[ctx.code](ctx as never)
+    // TODO: Don't calculate problem strings until necessary
+    addProblem<code extends ProblemCode>(input: ProblemInputs[code]) {
+        const data = new Stringifiable(input.data)
+        // copy path so future mutations don't affect it
+        const path = Path.from(this.path)
+        const ctx = Object.assign(input, {
+            data,
+            path
+        }) as unknown as ProblemContexts[ProblemCode]
+        const pathKey = `${this.path}`
+        const existing = this.problems.byPath[pathKey]
+        if (existing) {
+            existing.parts ??= [existing.reason]
+            existing.parts.push(this.#writeMessage(ctx))
+            existing.reason = this.#writeMessage({
+                code: "multi",
+                data,
+                path,
+                parts: existing.parts
+            })
+        } else {
+            const problem: Problem = {
+                path,
+                reason: this.#writeMessage(ctx)
+            }
+            this.problems.byPath[pathKey] = problem
+            this.problems.push(problem)
         }
-        this.problems.push(problem)
-        // TODO: migrate multi-part errors
-        this.problems.byPath[problem.path] = problem
+    }
+
+    #writeMessage(ctx: ProblemContexts[ProblemCode]) {
+        const problemConfig = this.type.config.problems?.[ctx.code]
+        const writer = (
+            typeof problemConfig === "function"
+                ? problemConfig
+                : problemConfig?.message ?? defaultMessagesByCode[ctx.code]
+        ) as ProblemMessageWriter
+        return writer(ctx)
     }
 }
 
@@ -109,12 +133,6 @@ export type BaseProblemOptions<code extends ProblemCode> =
     | {
           message?: ProblemMessageWriter<code>
       }
-
-export const traverse = (data: unknown, type: Type): Result<unknown> => {
-    const state = new DataTraversalState(type)
-    const out = traverseNode(data, type.flat, state)
-    return state.problems.length ? { problems: state.problems } : { data, out }
-}
 
 export const traverseNode = (
     data: unknown,
@@ -155,7 +173,7 @@ export const checkEntries = (
             }
             return out
         } else {
-            dynamicCheckers[k](data, v, state)
+            checkers[k](data, v, state)
             if (state.problems.length > initialProblemsCount) {
                 problemsPrecedence = precedenceMap[k]
             }
@@ -222,14 +240,12 @@ const checkers = {
         }
     }
 } satisfies {
-    [k in Exclude<TraversalKey, "morph">]: TraversalCheck<k>
+    [k in ValidationKey]: TraversalCheck<k>
+} as {
+    [k in ValidationKey]: TraversalCheck<any>
 }
 
-type Checkers = typeof checkers
-
-const dynamicCheckers = checkers as {
-    [k in keyof Checkers]: TraversalCheck<any>
-}
+type ValidationKey = Exclude<TraversalKey, "morph">
 
 export type TraversalCheck<k extends TraversalKey> = (
     data: RuleInput<k>,

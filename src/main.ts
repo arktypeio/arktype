@@ -9,7 +9,7 @@ import type {
 import { parseDefinition, t } from "./parse/definition.js"
 import type { ParsedMorph } from "./parse/tuple/morph.ts"
 import type { ProblemsOptions } from "./traverse/check.ts"
-import { traverse } from "./traverse/check.ts"
+import { DataTraversalState, traverseNode } from "./traverse/check.ts"
 import type { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { Domain } from "./utils/domains.js"
@@ -192,6 +192,33 @@ export class Scope<context extends ScopeContext = any> {
         }
     }
 
+    #initializeUnparsedType(config: TypeOptions): Type {
+        const name = config.alias ?? "(anonymous)"
+        // dynamically assign a name to the primary traversal function
+        const namedTraverse: Checker<unknown> = {
+            [name]: (data: unknown) => {
+                const state = new DataTraversalState(type)
+                const out = traverseNode(data, type.flat, state)
+                return state.problems.length
+                    ? { problems: state.problems }
+                    : { data, out }
+            }
+        }[name]
+        const type = Object.assign(namedTraverse, {
+            // temporarily set node/flat to aliases that will be included in
+            // the final type in case of cyclic resolutions
+            node: name,
+            flat: [["alias", name]],
+            config,
+            // TODO: remove this at runtime
+            [t]: chainableNoOpProxy,
+            infer: chainableNoOpProxy,
+            includesMorph: false,
+            scope: this
+        } satisfies TypeRoot)
+        return type
+    }
+
     get infer(): exportsOf<context> {
         return chainableNoOpProxy
     }
@@ -262,25 +289,6 @@ export class Scope<context extends ScopeContext = any> {
             return node
         }
         return this.resolveNode(this.resolve(node).node)
-    }
-
-    /** temporarily set the TypeNode+TraversalNode to an alias that will be used for cyclic resolutions */
-    #initializeUnparsedType(config: TypeOptions): Type {
-        const alias = config.alias ?? "(anonymous)"
-        const result = Object.assign(
-            (data: unknown) => traverse(data, result),
-            {
-                alias,
-                node: alias,
-                flat: [["alias", alias]],
-                config,
-                [t]: chainableNoOpProxy,
-                infer: chainableNoOpProxy,
-                includesMorph: false,
-                scope: this
-            } satisfies TypeRoot
-        )
-        return result
     }
 }
 
@@ -464,7 +472,6 @@ type Checker<t> = (data: unknown) => Result<t>
 type TypeRoot<t = unknown> = {
     [t]: t
     infer: asOut<t>
-    alias: string
     config: TypeOptions
     node: TypeNode
     flat: TraversalNode
