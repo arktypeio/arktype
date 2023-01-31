@@ -1,7 +1,5 @@
 {
     "//": "This directory was generated from the following files (see dev/scripts/docgen/mapDir.ts for details)",
-    "constraints.ts": "examples/constraints.ts",
-    "experimental.ts": "examples/experimental.ts",
     "scope.ts": "examples/scope.ts",
     "type.ts": "examples/type.ts",
     "demo.css.ts": "dev/arktype.io/docs/demos/layout/demo.css",

@@ -9,6 +9,8 @@ import type {
     conform,
     constructor,
     error,
+    evaluate,
+    keyOf,
     List,
     returnOf
 } from "../../utils/generics.ts"
@@ -21,6 +23,7 @@ import { parseDefinition } from "../definition.ts"
 import type { inferIntersection, inferUnion } from "../string/ast.ts"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
+import { parseKeyOfTuple } from "./keyof.ts"
 import type { Out, validateMorphTuple } from "./morph.ts"
 import { parseMorphTuple } from "./morph.ts"
 import type { validateNarrowTuple } from "./narrow.ts"
@@ -73,6 +76,8 @@ export type validateTupleExpression<
     ? conform<def, readonly ["instanceof", constructor]>
     : def[0] extends "node"
     ? conform<def, readonly ["node", ResolvedNode<$>]>
+    : def[0] extends "keyof"
+    ? ["keyof", validateDefinition<def[1], $>]
     : never
 
 export type inferTuple<def extends List, $> = def extends TupleExpression
@@ -109,6 +114,9 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
     ? def[1] extends ResolvedNode<$>
         ? inferNode<def[1], $>
         : never
+    : def[0] extends "keyof"
+    ? //TODO: keyof vs keyOf
+      evaluate<keyof inferDefinition<def[1], $>>
     : never
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
@@ -166,7 +174,7 @@ const postfixParsers: {
     "=>": parseMorphTuple
 }
 
-type PrefixToken = "instanceof" | "===" | "node"
+type PrefixToken = "keyof" | "instanceof" | "===" | "node"
 
 type PrefixExpression<token extends PrefixToken = PrefixToken> = readonly [
     token,
@@ -176,6 +184,7 @@ type PrefixExpression<token extends PrefixToken = PrefixToken> = readonly [
 const prefixParsers: {
     [token in PrefixToken]: PrefixParser<token>
 } = {
+    keyof: parseKeyOfTuple,
     instanceof: (def) => {
         if (typeof def[1] !== "function") {
             return throwParseError(

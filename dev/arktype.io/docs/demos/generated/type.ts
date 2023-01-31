@@ -3,8 +3,8 @@ export default `import { type } from "arktype"
 // Define a type...
 export const user = type({
     name: "string",
-    browser: {
-        kind: "'chrome'|'firefox'|'safari'",
+    device: {
+        platform: "'android'|'ios'",
         "version?": "number"
     }
 })
@@ -12,18 +12,15 @@ export const user = type({
 // Infer it...
 export type User = typeof user.infer
 
-export const fetchUser = () => ({
-    name: "Dan Abramov",
-    browser: {
-        kind: "Internet Explorer" // R.I.P.
+// Validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
+export const { data, problems } = user({
+    name: "Alan Turing",
+    device: {
+        platform: "enigma"
     }
 })
 
-// Types can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
-export const { problems, data } = user.check(fetchUser())
-
 if (problems) {
-    // TODO: Add actual error
     console.log(problems.summary)
 }
 `
