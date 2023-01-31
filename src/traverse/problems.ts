@@ -119,6 +119,7 @@ export const writeUnionError: ProblemMessageWriter<"union"> = ({ data }) =>
 export type UnionProblemContext = defineProblem<{
     code: "union"
     data: unknown
+    subproblems: Problems[]
 }>
 
 export type ProblemInputs = {

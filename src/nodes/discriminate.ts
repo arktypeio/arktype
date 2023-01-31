@@ -1,15 +1,14 @@
 import type { Type } from "../main.ts"
 import { undiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
-import { domainOf } from "../utils/domains.ts"
+import { domainOf, subdomainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type { keySet } from "../utils/generics.ts"
+import type { evaluate, keySet } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { SerializablePrimitive } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
 import type { Branches } from "./branches.ts"
-import type { DisjointKind } from "./compose.ts"
 import { IntersectionState } from "./compose.ts"
 import type { TraversalEntry } from "./node.ts"
 import { branchIncludesMorph } from "./node.ts"
@@ -17,7 +16,7 @@ import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
 export type DiscriminatedSwitch = {
     readonly path: Path
-    readonly kind: DisjointKind
+    readonly kind: DiscriminantKind
     readonly cases: DiscriminatedCases
 }
 
@@ -108,7 +107,7 @@ const discriminantKinds: keySet<DiscriminantKind> = {
     value: true
 }
 
-export type DiscriminantKind = keyof DiscriminantKinds
+export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 const calculateDiscriminants = (
     branches: Branches,
@@ -248,15 +247,24 @@ const findBestDiscriminant = (
     return bestDiscriminant
 }
 
-const serializeIfAllowed = <kind extends DiscriminantKind>(
+export const serializeIfAllowed = <kind extends DiscriminantKind>(
     kind: kind,
     data: DiscriminantKinds[kind]
-) => {
-    if (kind === "value") {
-        const domain = domainOf(data)
-        return domain === "object" || domain === "symbol"
-            ? undefined
-            : serializePrimitive(data as SerializablePrimitive)
-    }
-    return `${data}`
+) => (kind === "value" ? serializeIfPrimitive(data) : `${data}`)
+
+const serializeIfPrimitive = (data: unknown) => {
+    const domain = domainOf(data)
+    return domain === "object" || domain === "symbol"
+        ? undefined
+        : serializePrimitive(data as SerializablePrimitive)
+}
+
+export const caseSerializers: Record<
+    DiscriminantKind,
+    (data: unknown) => string
+> = {
+    value: (data) => serializeIfPrimitive(data) ?? "default",
+    subdomain: subdomainOf,
+    domain: domainOf,
+    tupleLength: (data) => (Array.isArray(data) ? `${data}` : "default")
 }

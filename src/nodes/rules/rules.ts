@@ -62,7 +62,7 @@ export type MorphBranch<domain extends Domain = Domain, $ = Dict> = {
 
 export type FlatBranch = FlatRules | FlatMorphedBranch
 
-type FlatRules = RuleEntry[]
+export type FlatRules = RuleEntry[]
 
 type FlatMorphedBranch = [...rules: FlatRules, morph: MorphEntry]
 

@@ -1,4 +1,5 @@
 import type { Result, Type } from "../main.ts"
+import { caseSerializers } from "../nodes/discriminate.ts"
 import type {
     TraversalEntry,
     TraversalKey,
@@ -15,7 +16,7 @@ import { checkSubdomain } from "../nodes/rules/subdomain.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
 import type { Dict, extend, List } from "../utils/generics.ts"
 import { hasKey, keysOf } from "../utils/generics.ts"
-import { Path } from "../utils/paths.ts"
+import { getPath, Path } from "../utils/paths.ts"
 import type {
     Problem,
     ProblemCode,
@@ -62,6 +63,22 @@ export class DataTraversalState extends TraversalState {
         this.type = this.type.scope.resolve(name)
         traverseNode(data, this.type.flat, this)
         this.type = lastType
+    }
+
+    traverseBranches(data: unknown, branches: TraversalEntry[][]) {
+        const baseProblems = this.problems
+        const subproblems: Problems[] = []
+        for (const branch of branches) {
+            this.problems = new Problems()
+            checkEntries(data, branch, this)
+            if (!this.problems.length) {
+                this.problems = baseProblems
+                return
+            }
+            subproblems.push(this.problems)
+        }
+        this.addProblem({ code: "union", data, subproblems })
+        this.problems = baseProblems
     }
 
     addProblem<code extends ProblemCode>(ctx: ProblemInputs[code]) {
@@ -175,26 +192,34 @@ const checkers = {
     range: checkRange,
     requiredProps: checkRequiredProps,
     optionalProps: checkOptionalProps,
-    branches: (data, branches, state) =>
-        branches.some((condition) => {
-            checkEntries(data, condition as any, state)
-            // TODO: fix
-            return state.problems.length === 0 ? true : false
-        }),
-    switch: () => {},
+    branches: (data, branches, state) => state.traverseBranches(data, branches),
+    switch: (data, rule, state) => {
+        const dataAtPath = getPath(data, rule.path)
+        const caseKey = caseSerializers[rule.kind](dataAtPath) ?? "default"
+        if (hasKey(rule.cases, caseKey)) {
+            return checkEntries(data, rule.cases[caseKey], state)
+        }
+        const lastPath = state.path
+        state.path = rule.path
+        state.addProblem({
+            code: "union",
+            data: dataAtPath,
+            subproblems: [new Problems()]
+        })
+        state.path = lastPath
+    },
     alias: (data, name, state) => state.traverseResolution(data, name),
     class: checkClass,
     // TODO: add error message syntax.
     narrow: (data, narrow) => narrow(data),
     value: (data, value, state) => {
         if (data !== value) {
-            return state.addProblem({
+            state.addProblem({
                 code: "value",
                 data,
                 expected: new Stringifiable(value)
             })
         }
-        return data
     }
 } satisfies {
     [k in Exclude<TraversalKey, "morph">]: TraversalCheck<k>
