@@ -62,6 +62,8 @@ module.exports = defineConfig({
                 }
             }
         ],
+        // Generally too strict but can be enabled for hints about actual circular import problems
+        // "import/no-cycle": "warn",
         // Sort destructured variables within a single import statement
         "sort-imports": [
             "warn",

@@ -1,7 +1,7 @@
-import type { Type } from "../main.ts"
+import type { Scope, Type } from "../main.ts"
 import { undiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
-import { domainOf, subdomainOf } from "../utils/domains.ts"
+import { domainOf, hasSubdomain, subdomainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { evaluate, keySet } from "../utils/generics.ts"
 import { hasKey, isKeyOf, keysOf } from "../utils/generics.ts"
@@ -14,8 +14,9 @@ import type {
 import { serializePrimitive } from "../utils/serialize.ts"
 import type { Branches } from "./branches.ts"
 import { IntersectionState } from "./compose.ts"
-import type { TraversalEntry } from "./node.ts"
-import { branchIncludesMorph } from "./node.ts"
+import type { TraversalEntry, TypeNode } from "./node.ts"
+import type { Branch } from "./predicate.ts"
+import { isOptional } from "./rules/props.ts"
 import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
 export type DiscriminatedSwitch = {
@@ -289,3 +290,23 @@ type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
         : kind extends "tupleLength"
         ? NumberLiteral | "default"
         : DiscriminantKinds[kind]
+
+const branchIncludesMorph = (branch: Branch, $: Scope) =>
+    "morph" in branch
+        ? true
+        : "props" in branch
+        ? Object.values(branch.props!).some((prop) =>
+              nodeIncludesMorph(isOptional(prop) ? prop[1] : prop, $)
+          )
+        : false
+
+const nodeIncludesMorph = (node: TypeNode, $: Scope): boolean =>
+    typeof node === "string"
+        ? $.resolve(node).includesMorph
+        : Object.values(node).some((predicate) =>
+              predicate === true
+                  ? false
+                  : hasSubdomain(predicate, "Array")
+                  ? predicate.some((branch) => branchIncludesMorph(branch, $))
+                  : branchIncludesMorph(predicate, $)
+          )

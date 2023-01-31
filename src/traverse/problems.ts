@@ -133,7 +133,7 @@ export type ProblemInputs = {
     tupleLength: TupleLengthProblemContext
     union: UnionProblemContext
     value: ValueProblemContext
-    multi: MultiProblemContext
+    multi: MultiPartContext
 }
 
 export type BaseProblemInput<
@@ -163,13 +163,13 @@ export type ValueProblemContext = defineProblem<{
 const writeValueProblem: ProblemMessageWriter<"value"> = ({ data, expected }) =>
     `Must be ${expected} (was ${data})`
 
-type MultiProblemContext = defineProblem<{
+type MultiPartContext = defineProblem<{
     code: "multi"
     data: unknown
     parts: string[]
 }>
 
-const writeMultiError: ProblemMessageWriter<"multi"> = ({ parts }) =>
+const writeMultiPartError: ProblemMessageWriter<"multi"> = ({ parts }) =>
     "• " + parts.join("\n• ")
 
 export type ProblemCode = keyof ProblemInputs
@@ -181,14 +181,14 @@ export type ProblemMessageWriter<code extends ProblemCode = any> = (
 export const defaultMessagesByCode = {
     divisibility: writeDivisorError,
     domain: writeDomainError,
-    missing: writeMissingKeyError,
     range: writeRangeError,
     class: writeClassProblem,
     regex: writeRegexError,
+    missing: writeMissingKeyError,
     tupleLength: writeTupleLengthError,
     union: writeUnionError,
     value: writeValueProblem,
-    multi: writeMultiError
+    multi: writeMultiPartError
 } satisfies {
     [code in ProblemCode]: ProblemMessageWriter<code>
 } as {

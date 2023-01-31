@@ -7,16 +7,17 @@ import type {
 } from "../nodes/node.ts"
 import { checkClass } from "../nodes/rules/class.ts"
 import { checkDivisor } from "../nodes/rules/divisor.ts"
-import { checkOptionalProps, checkRequiredProps } from "../nodes/rules/props.ts"
+import type { TraversalPropEntry } from "../nodes/rules/props.ts"
 import type { BoundableData } from "../nodes/rules/range.ts"
 import { checkRange } from "../nodes/rules/range.ts"
 import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
-import { checkSubdomain } from "../nodes/rules/subdomain.ts"
-import { domainOf, hasDomain } from "../utils/domains.ts"
+import { domainOf, hasDomain, subdomainOf } from "../utils/domains.ts"
+import { throwInternalError } from "../utils/errors.ts"
 import type { Dict, extend, List } from "../utils/generics.ts"
 import { hasKey, keysOf } from "../utils/generics.ts"
 import { getPath, Path } from "../utils/paths.ts"
+import { stringify } from "../utils/serialize.ts"
 import type {
     Problem,
     ProblemCode,
@@ -180,6 +181,84 @@ export const checkEntries = (
         }
     }
     return data
+}
+
+const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
+    propKind: propKind
+) =>
+    ((data, props, state) => {
+        const rootPath = state.path
+        for (const [propKey, propNode] of props as TraversalPropEntry[]) {
+            state.path.push(propKey)
+            if (!hasKey(data, propKey)) {
+                if (propKind !== "optionalProps") {
+                    state.addProblem({
+                        code: "missing",
+                        data: undefined,
+                        key: propKey
+                    })
+                }
+            } else {
+                traverseNode(data[propKey], propNode, state)
+            }
+            state.path.pop()
+        }
+        state.path = rootPath
+    }) as TraversalCheck<propKind>
+
+const checkRequiredProps = createPropChecker("requiredProps")
+const checkOptionalProps = createPropChecker("optionalProps")
+
+export const checkSubdomain: TraversalCheck<"subdomain"> = (
+    data,
+    rule,
+    state
+) => {
+    const dataSubdomain = subdomainOf(data)
+    if (typeof rule === "string") {
+        if (dataSubdomain !== rule) {
+            state.addProblem({
+                code: "domain",
+                data,
+                expected: [rule]
+            })
+        }
+        return
+    }
+    if (dataSubdomain !== rule[0]) {
+        state.addProblem({
+            code: "domain",
+            data,
+            expected: [rule[0]]
+        })
+        return
+    }
+    if (dataSubdomain === "Array" && typeof rule[2] === "number") {
+        const actual = (data as List).length
+        const expected = rule[2]
+        if (expected !== actual) {
+            return state.addProblem({
+                code: "tupleLength",
+                data: data as List,
+                actual,
+                expected
+            })
+        }
+    }
+    if (dataSubdomain === "Array" || dataSubdomain === "Set") {
+        let i = 0
+        for (const item of data as List | Set<unknown>) {
+            state.path.push(`${i}`)
+            traverseNode(item, rule[1], state)
+            state.path.pop()
+            i++
+        }
+    } else {
+        return throwInternalError(
+            `Unexpected subdomain entry ${stringify(rule)}`
+        )
+    }
+    return true
 }
 
 const checkers = {
