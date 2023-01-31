@@ -1,5 +1,5 @@
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
-import { Box, Container, Stack, ThemeProvider, Typography } from "@mui/material"
+import { Stack, ThemeProvider, Typography } from "@mui/material"
 import Layout from "@theme/Layout"
 import React from "react"
 import { Boat } from "../components/boat"
