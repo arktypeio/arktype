@@ -6,16 +6,14 @@ describe("keyof", () => {
         const t = type(["keyof", { a: "123", b: "123" }])
         attest(t.node).snap({ string: [{ value: "a" }, { value: "b" }] })
     })
-    it("node tuple expression", () => {
+    it("node tuple union", () => {
         const t = type(["keyof", [{ a: "number" }, "|", { b: "number" }]])
-        attest(t.node).snap()
+        attest(t.node).snap({ string: [] })
     })
-    // it("non object error", () => {
-    //     attest(() =>
-    //         //@ts-expect-error
-    //         type(["keyof", "number"])
-    //     ).throwsAndHasTypeError()
-    // })
+    it("node tuple intersection", () => {
+        const t = type(["keyof", [{ a: "number" }, "&", { b: "number" }]])
+        attest(t.node).snap({ string: [{ value: "a" }, { value: "b" }] })
+    })
     it("scope intersection", () => {
         const space = scope({
             a: { first: "number" },
@@ -27,7 +25,7 @@ describe("keyof", () => {
             string: [{ value: "first" }, { value: "second" }]
         })
     })
-    it("scope intersection2", () => {
+    it("Not sure if this is right", () => {
         const space = scope({
             a: { first: "number" },
             b: { second: "number" },

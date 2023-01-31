@@ -27,16 +27,25 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
     if (resolution.object === true) {
         return { string: true }
     }
-    let keys: string[] = []
-    //inital value
-    //filter and make sure all other branches have the goods
+
+    const keysOfBranches: string[][] = []
+
     for (const branch of listFrom(resolution.object)) {
         if (hasKey(branch, "props")) {
-            keys.push(...Object.keys(branch.props))
+            keysOfBranches.push(getPropsFromBranch(branch.props))
         }
     }
+    const initialValue = [...keysOfBranches[0]]
+    const result: string[] = []
+    initialValue.forEach((key) => {
+        const hasKey = keysOfBranches.every((keySet) => keySet.includes(key))
+        if (hasKey) {
+            result.push(key)
+        }
+    })
+
     return {
-        string: keys.map((key) => ({
+        string: result.map((key) => ({
             value: key
         }))
     }
