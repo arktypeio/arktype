@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
-import { type } from "../api.ts"
-import { attest } from "../dev/attest/api.ts"
+import { type } from "../api.js"
+import { attest } from "../dev/attest/api.js"
 
-describe("check", () => {
+describe("traverse", () => {
     it("divisible", () => {
         const t = type("number%2")
         attest(t(4).data).snap(4)

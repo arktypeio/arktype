@@ -1,5 +1,5 @@
 import type { Type } from "../main.ts"
-import { caseSerializers } from "../nodes/discriminate.ts"
+import { serializeCase } from "../nodes/discriminate.ts"
 import type {
     TraversalEntry,
     TraversalKey,
@@ -213,7 +213,7 @@ const checkers = {
     branches: (data, branches, state) => state.traverseBranches(data, branches),
     switch: (data, rule, state) => {
         const dataAtPath = getPath(data, rule.path)
-        const caseKey = caseSerializers[rule.kind](dataAtPath) ?? "default"
+        const caseKey = serializeCase(rule.kind, dataAtPath)
         if (hasKey(rule.cases, caseKey)) {
             return checkEntries(data, rule.cases[caseKey], state)
         }
