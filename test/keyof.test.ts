@@ -4,7 +4,11 @@ import { attest } from "../dev/attest/api.ts"
 describe("keyof", () => {
     it("object literal", () => {
         const t = type(["keyof", { a: "123", b: "123" }])
-        attest(t.node).snap({ object: { value: ["a", "b"] } })
+        attest(t.node).snap({ string: [{ value: "a" }, { value: "b" }] })
+    })
+    it("node tuple expression", () => {
+        const t = type(["keyof", [{ a: "number" }, "|", { b: "number" }]])
+        attest(t.node).snap()
     })
     // it("non object error", () => {
     //     attest(() =>
@@ -13,21 +17,33 @@ describe("keyof", () => {
     //     ).throwsAndHasTypeError()
     // })
     it("scope intersection", () => {
-        const t = scope({
+        const space = scope({
             a: { first: "number" },
             b: { second: "number" },
             ab: "a&b",
             keys: ["keyof", "ab"]
+        }).compile()
+        attest(space.keys.node).snap({
+            string: [{ value: "first" }, { value: "second" }]
         })
-        attest(t).snap()
+    })
+    it("scope intersection2", () => {
+        const space = scope({
+            a: { first: "number" },
+            b: { second: "number" },
+            c: { first: "number" },
+            ab: "c|a&b",
+            keys: ["keyof", "ab"]
+        }).compile()
+        attest(space.keys.node).snap({ string: [{ value: "first" }] })
     })
     it("scope union", () => {
-        const t = scope({
+        const space = scope({
             a: { first: "number" },
             b: { second: "123" },
             ab: "a|b",
             keys: ["keyof", "ab"]
-        })
-        attest(t).snap()
+        }).compile()
+        attest(space.keys.node).snap({ string: [] })
     })
 })

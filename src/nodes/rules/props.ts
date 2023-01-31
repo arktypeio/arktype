@@ -12,7 +12,7 @@ import {
     equality,
     isDisjoint
 } from "../compose.ts"
-import type { TraversalNode, TypeReference } from "../node.ts"
+import type { TraversalNode, TypeNode } from "../node.ts"
 import { flattenNode, nodeIntersection } from "../node.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
@@ -20,9 +20,9 @@ export type PropsRule<$ = Dict> = {
     [propKey in string]: Prop<$>
 }
 
-export type Prop<$ = Dict> = TypeReference<$> | OptionalProp<$>
+export type Prop<$ = Dict> = TypeNode<$> | OptionalProp<$>
 
-export type OptionalProp<$ = Dict> = ["?", TypeReference<$>]
+export type OptionalProp<$ = Dict> = ["?", TypeNode<$>]
 
 export type TraversalRequiredProps = [
     "requiredProps",
@@ -36,7 +36,7 @@ export type TraversalOptionalProps = [
 
 export type TraversalPropEntry = [propKey: string, node: TraversalNode]
 
-const isOptional = (prop: Prop): prop is OptionalProp =>
+export const isOptional = (prop: Prop): prop is OptionalProp =>
     (prop as OptionalProp)[0] === "?"
 
 const nodeFrom = (prop: Prop) => (isOptional(prop) ? prop[1] : prop)
@@ -69,16 +69,16 @@ export const propsIntersection = composeIntersection<PropsRule>(
 export const flattenProps: FlattenAndPushRule<PropsRule> = (
     entries,
     props,
-    scope
+    type
 ) => {
     const requiredProps: TraversalPropEntry[] = []
     const optionalProps: TraversalPropEntry[] = []
     for (const k in props) {
         const prop = props[k]
         if (isOptional(prop)) {
-            optionalProps.push([k, flattenNode(prop[1], scope)])
+            optionalProps.push([k, flattenNode(prop[1], type)])
         } else {
-            requiredProps.push([k, flattenNode(prop, scope)])
+            requiredProps.push([k, flattenNode(prop, type)])
         }
     }
     if (requiredProps.length) {

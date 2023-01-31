@@ -60,7 +60,7 @@ export class Problems extends Array<Problem> {
         const compiledContext = Object.assign(context, {
             data: new Stringifiable(data)
         }) as ProblemContexts[code]
-        const problemConfig = state.config.problems?.[code]
+        const problemConfig = state.type.config.problems?.[code]
         const customMessageWriter =
             typeof problemConfig === "function"
                 ? (problemConfig as ProblemMessageWriter<code>)

@@ -1,4 +1,4 @@
-import type { ParseContext } from "../parse/definition.ts"
+import type { Type } from "../main.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
 import type { Domain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
@@ -9,7 +9,7 @@ import { compareBranches, isBranchComparison } from "./branches.ts"
 import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
 import { equality, IntersectionState, isEquality } from "./compose.ts"
 import { flattenBranches } from "./discriminate.ts"
-import type { TraversalEntry, TypeNode } from "./node.ts"
+import type { ResolvedNode, TraversalEntry } from "./node.ts"
 import type { LiteralRules, Rules } from "./rules/rules.ts"
 import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
@@ -75,12 +75,10 @@ export const comparePredicates = (
     return comparison
 }
 
-export const predicateIntersection: KeyIntersectionFn<Required<TypeNode>> = (
-    domain,
-    l,
-    r,
-    state
-) => {
+export const predicateIntersection: KeyIntersectionFn<
+    Required<ResolvedNode>
+> = (domain, l, r, state) => {
+    state.domain = domain
     const comparison = comparePredicates(l, r, state)
     if (!isBranchComparison(comparison)) {
         return comparison
@@ -103,9 +101,9 @@ export const predicateUnion = (
     domain: Domain,
     l: Predicate,
     r: Predicate,
-    ctx: ParseContext
+    type: Type
 ) => {
-    const state = new IntersectionState(ctx)
+    const state = new IntersectionState(type, "|")
     const comparison = comparePredicates(l, r, state)
     if (!isBranchComparison(comparison)) {
         return isEquality(comparison) || comparison === l
@@ -139,14 +137,14 @@ export const predicateUnion = (
 
 export const flattenPredicate = (
     predicate: Predicate,
-    ctx: ParseContext
+    type: Type
 ): TraversalEntry[] => {
     if (predicate === true) {
         return []
     }
     return hasSubdomain(predicate, "Array")
-        ? flattenBranches(predicate, ctx)
-        : flattenBranch(predicate, ctx)
+        ? flattenBranches(predicate, type)
+        : flattenBranch(predicate, type)
 }
 
 export const isLiteralCondition = (
@@ -155,11 +153,11 @@ export const isLiteralCondition = (
     typeof predicate === "object" && "value" in predicate
 
 export type DomainSubtypeResolution<domain extends Domain> = {
-    readonly [k in domain]: defined<TypeNode[domain]>
+    readonly [k in domain]: defined<ResolvedNode[domain]>
 }
 
 export const resolutionExtendsDomain = <domain extends Domain>(
-    resolution: TypeNode,
+    resolution: ResolvedNode,
     domain: domain
 ): resolution is DomainSubtypeResolution<domain> => {
     const domains = keysOf(resolution)

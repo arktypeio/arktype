@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import type { TypeNode } from "../src/nodes/node.ts"
+import type { ResolvedNode } from "../src/nodes/node.ts"
 import { writeUnterminatedEnclosedMessage } from "../src/parse/string/shift/operand/enclosed.ts"
 import {
     writeExpressionExpectedMessage,
@@ -58,7 +58,7 @@ describe("regex intersections", () => {
         })
     })
     it("redundant string and list", () => {
-        const expected: TypeNode = {
+        const expected: ResolvedNode = {
             string: {
                 regex: ["a", "b", "c"]
             }

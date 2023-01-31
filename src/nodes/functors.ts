@@ -1,18 +1,18 @@
-import type { TypeReference, TypeNode } from "./node"
+import type { ResolvedNode, TypeNode } from "./node"
 
 // TODO: integrate with default scope
 export const functors = {
-    Array: (node: TypeReference): TypeNode => ({
+    Array: (node: TypeNode): ResolvedNode => ({
         object: {
             subdomain: ["Array", node]
         }
     }),
-    Set: (node: TypeReference): TypeNode => ({
+    Set: (node: TypeNode): ResolvedNode => ({
         object: {
             subdomain: ["Set", node]
         }
     }),
-    Map: (k: TypeReference, v: TypeReference): TypeNode => ({
+    Map: (k: TypeNode, v: TypeNode): ResolvedNode => ({
         object: {
             subdomain: ["Map", k, v]
         }

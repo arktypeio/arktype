@@ -1,6 +1,6 @@
-import type { Scope, Type } from "../main.ts"
+import type { Type } from "../main.ts"
 import { isType } from "../main.ts"
-import type { TypeReference } from "../nodes/node.ts"
+import type { TypeNode } from "../nodes/node.ts"
 import type { Primitive, Subdomain } from "../utils/domains.ts"
 import { subdomainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
@@ -24,15 +24,11 @@ import type {
 import { parseTuple } from "./tuple/tuple.ts"
 
 export type ParseContext = {
-    $: Scope
+    type: Type
     path: Path
-    name: string
 }
 
-export const parseDefinition = (
-    def: unknown,
-    ctx: ParseContext
-): TypeReference => {
+export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
     const subdomain = subdomainOf(def)
     return subdomain === "string"
         ? parseString(def as string, ctx)

@@ -1,14 +1,7 @@
-import type { ParseContext } from "../parse/definition.ts"
-import type { Morph } from "../parse/tuple/morph.ts"
+import type { Type } from "../main.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
-import type {
-    CollapsibleList,
-    constructor,
-    Dict,
-    extend,
-    mutable
-} from "../utils/generics.ts"
+import type { constructor, Dict, extend, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import { serialize } from "../utils/serialize.ts"
@@ -83,10 +76,6 @@ export type DisjointKinds = extend<
             l: NarrowableRules
             r: LiteralRules
         }
-        morph: {
-            l: CollapsibleList<Morph>
-            r: CollapsibleList<Morph>
-        }
     }
 >
 
@@ -100,8 +89,7 @@ export const disjointDescriptionWriters = {
     leftAssignability: ({ l, r }) =>
         `literal value ${serialize(l.value)} and ${serialize(r)}`,
     rightAssignability: ({ l, r }) =>
-        `literal value ${serialize(r.value)} and ${serialize(l)}`,
-    morph: () => "morphs"
+        `literal value ${serialize(r.value)} and ${serialize(l)}`
 } satisfies {
     [k in DisjointKind]: (context: DisjointContext<k>) => string
 }
@@ -132,10 +120,10 @@ export type DisjointKind = keyof DisjointKinds
 
 export class IntersectionState {
     path = new Path()
-    #morphs: MorphsByPath = {}
+    domain: Domain | undefined
     #disjoints: DisjointsByPath = {}
 
-    constructor(public ctx: ParseContext) {}
+    constructor(public type: Type, public lastOperator: "|" | "&") {}
 
     get disjoints() {
         return this.#disjoints as Readonly<DisjointsByPath>
@@ -149,14 +137,6 @@ export class IntersectionState {
         this.#disjoints[`${this.path}`] = { kind, l, r }
         return empty
     }
-
-    addMorph(kind: MorphIntersectionKind) {
-        this.#morphs[`${this.path}`] = kind
-    }
-
-    get morphs() {
-        return this.#morphs as Readonly<MorphsByPath>
-    }
 }
 
 export type DisjointsByPath = Record<string, DisjointContext>
@@ -164,10 +144,6 @@ export type DisjointsByPath = Record<string, DisjointContext>
 export type DisjointContext<kind extends DisjointKind = DisjointKind> = {
     kind: kind
 } & DisjointKinds[kind]
-
-export type MorphsByPath = Record<string, MorphIntersectionKind>
-
-export type MorphIntersectionKind = "l" | "r" | "=" | "lr"
 
 const empty = Symbol("empty")
 

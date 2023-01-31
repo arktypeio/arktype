@@ -1,4 +1,4 @@
-import type { Result, Scope, TypeOptions } from "../main.ts"
+import type { Result, Type } from "../main.ts"
 import type {
     TraversalEntry,
     TraversalKey,
@@ -23,7 +23,7 @@ import { Problems, Stringifiable } from "./problems.ts"
 export class TraversalState {
     path: Path
 
-    constructor(public $: Scope, public config: TypeOptions) {
+    constructor(public type: Type) {
         this.path = new Path()
     }
 }
@@ -31,8 +31,8 @@ export class TraversalState {
 export class DataTraversalState extends TraversalState {
     problems: Problems
 
-    constructor($: Scope, config: TypeOptions) {
-        super($, config)
+    constructor(type: Type) {
+        super(type)
         this.problems = new Problems()
     }
 }
@@ -47,36 +47,31 @@ export type BaseProblemOptions<code extends ProblemCode> =
           message?: ProblemMessageWriter<code>
       }
 
-export const traverse = (
-    data: unknown,
-    node: TraversalNode,
-    $: Scope,
-    config: TypeOptions
-): Result<unknown> => {
-    const state = new DataTraversalState($, config)
-    const out = traverseNode(data, node, state)
+export const traverse = (data: unknown, type: Type): Result<unknown> => {
+    const state = new DataTraversalState(type)
+    const out = traverseNode(data, type.flat, state)
     return state.problems.length ? { problems: state.problems } : { data, out }
 }
 
 export const traverseNode = (
     data: unknown,
-    node: TraversalNode,
+    flat: TraversalNode,
     state: DataTraversalState
 ) => {
-    if (typeof node === "string") {
-        if (domainOf(data) !== node) {
+    if (typeof flat === "string") {
+        if (domainOf(data) !== flat) {
             state.problems.addProblem(
                 "domain",
                 data,
                 {
-                    expected: [node]
+                    expected: [flat]
                 },
                 state
             )
         }
         return
     }
-    return checkEntries(data, node, state)
+    return checkEntries(data, flat, state)
 }
 
 export const checkEntries = (
@@ -154,7 +149,7 @@ const checkers = {
     switch: () => {},
     // TODO: keep track of cyclic data
     alias: (data, name, state) =>
-        traverseNode(data, state.$.resolve(name).flat, state),
+        traverseNode(data, state.type.scope.resolve(name).flat, state),
     class: checkClass,
     // TODO: add error message syntax.
     narrow: (data, validator) => validator(data),

@@ -1,15 +1,17 @@
-import type { ParseContext } from "../../parse/definition.ts"
+import type { Type } from "../../main.ts"
+import { writeImplicitNeverMessage } from "../../parse/string/ast.ts"
 import type { Morph } from "../../parse/tuple/morph.ts"
 import type { Narrow } from "../../parse/tuple/narrow.ts"
 import { traverse } from "../../traverse/check.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
+import { throwParseError } from "../../utils/errors.ts"
 import type {
     CollapsibleList,
     constructor,
     Dict
 } from "../../utils/generics.ts"
 import { listFrom } from "../../utils/generics.ts"
-import type { Intersector } from "../compose.ts"
+import type { IntersectionState, Intersector } from "../compose.ts"
 import {
     composeIntersection,
     composeKeyedIntersection,
@@ -58,7 +60,9 @@ export type MorphBranch<domain extends Domain = Domain, $ = Dict> = {
     morph: CollapsibleList<Morph>
 }
 
-export type BranchEntry =
+export type FlatBranch = (RuleEntry | MorphEntry)[]
+
+export type RuleEntry =
     | ["subdomain", TraversalSubdomainRule]
     | ["regex", RegExp]
     | ["divisor", number]
@@ -68,7 +72,8 @@ export type BranchEntry =
     | TraversalOptionalProps
     | ["narrow", Narrow]
     | ["value", unknown]
-    | ["morph", Morph]
+
+export type MorphEntry = ["morph", Morph]
 
 export type Rules<
     domain extends Domain = Domain,
@@ -103,7 +108,6 @@ export const branchIntersection: Intersector<Branch> = (l, r, state) => {
     if ("morph" in l) {
         if ("morph" in r) {
             if (l.morph === r.morph) {
-                state.addMorph("=")
                 return isEquality(rulesResult) || isDisjoint(rulesResult)
                     ? rulesResult
                     : {
@@ -111,11 +115,12 @@ export const branchIntersection: Intersector<Branch> = (l, r, state) => {
                           morph: l.morph
                       }
             }
-            state.addMorph("lr")
-            // TODO: better way to throw an error on morph intersection
-            return state.addDisjoint("morph", l.morph, r.morph)
+            return state.lastOperator === "&"
+                ? throwParseError(
+                      writeImplicitNeverMessage(state.path, "of morphs")
+                  )
+                : {}
         }
-        state.addMorph("l")
         return isDisjoint(rulesResult)
             ? rulesResult
             : {
@@ -124,7 +129,6 @@ export const branchIntersection: Intersector<Branch> = (l, r, state) => {
               }
     }
     if ("morph" in r) {
-        state.addMorph("r")
         return isDisjoint(rulesResult)
             ? rulesResult
             : {
@@ -141,11 +145,11 @@ export const rulesIntersection: Intersector<Rules> = (l, r, state) =>
             ? l.value === r.value
                 ? equality()
                 : state.addDisjoint("value", l.value, r.value)
-            : literalSatisfiesRules(l.value, r, state.ctx)
+            : literalSatisfiesRules(l.value, r, state)
             ? l
             : state.addDisjoint("leftAssignability", l, r)
         : "value" in r
-        ? literalSatisfiesRules(r.value, l, state.ctx)
+        ? literalSatisfiesRules(r.value, l, state)
             ? r
             : state.addDisjoint("rightAssignability", l, r)
         : narrowableRulesIntersection(l, r, state)
@@ -168,9 +172,9 @@ export const narrowableRulesIntersection =
     )
 
 export type FlattenAndPushRule<t> = (
-    entries: BranchEntry[],
+    entries: RuleEntry[],
     rule: t,
-    ctx: ParseContext
+    type: Type
 ) => void
 
 type UnknownRules = NarrowableRules & Partial<LiteralRules>
@@ -229,28 +233,22 @@ export const precedenceMap: {
     morph: 4
 }
 
-export const flattenBranch = (
-    branch: Branch,
-    ctx: ParseContext
-): BranchEntry[] => {
+export const flattenBranch = (branch: Branch, type: Type): FlatBranch => {
     if ("morph" in branch) {
-        const result = flattenRules(branch.input, ctx)
+        const result = flattenRules(branch.input, type)
         for (const morph of listFrom(branch.morph)) {
             result.push(["morph", morph])
         }
         return result
     }
-    return flattenRules(branch, ctx)
+    return flattenRules(branch, type)
 }
 
-const flattenRules = (
-    rules: UnknownRules,
-    ctx: ParseContext
-): BranchEntry[] => {
-    const entries: BranchEntry[] = []
+const flattenRules = (rules: UnknownRules, type: Type): FlatBranch => {
+    const entries: RuleEntry[] = []
     let k: keyof UnknownRules
     for (k in rules) {
-        ruleFlatteners[k](entries, rules[k] as any, ctx)
+        ruleFlatteners[k](entries, rules[k] as any, type)
     }
     return entries.sort((l, r) => precedenceMap[l[0]] - precedenceMap[r[0]])
 }
@@ -258,5 +256,7 @@ const flattenRules = (
 export const literalSatisfiesRules = (
     data: unknown,
     rules: NarrowableRules,
-    ctx: ParseContext
-) => "data" in traverse(data, flattenRules(rules, ctx), ctx.$, {})
+    state: IntersectionState
+) =>
+    "data" in
+    traverse(data, state.type.scope.type(["node", { [state.domain!]: rules }]))

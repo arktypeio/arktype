@@ -1,4 +1,4 @@
-import type { TraversalNode, TypeNode, TypeReference } from "./nodes/node.js"
+import type { ResolvedNode, TraversalNode, TypeNode } from "./nodes/node.js"
 import { flattenNode } from "./nodes/node.js"
 import type {
     inferDefinition,
@@ -16,7 +16,6 @@ import type { Domain } from "./utils/domains.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
 import { deepFreeze } from "./utils/freeze.ts"
 import type {
-    conform,
     defer,
     Dict,
     error,
@@ -25,7 +24,6 @@ import type {
     isAny,
     List,
     nominal,
-    replaceProps,
     xor
 } from "./utils/generics.js"
 import { Path } from "./utils/paths.ts"
@@ -38,7 +36,7 @@ type ScopeParser = {
 
     <aliases, opts extends ScopeOptions>(
         aliases: validateAliases<aliases, opts>,
-        opts: conform<opts, validateOptions<opts>>
+        opts: validateOptions<opts>
     ): Scope<parseScope<aliases, opts>>
 }
 
@@ -48,27 +46,21 @@ export type TypeParser<$> = {
     <def>(def: validateDefinition<def, $>, opts: TypeOptions): parseType<def, $>
 }
 
-// [] allows tuple inferences
-type ScopeList = [] | readonly Scope[]
-
 // TODO: Reintegrate thunks/compilation, add utilities for narrowed defs
 export type ScopeOptions = {
-    imports?: ScopeList
-    includes?: ScopeList
+    // [] allows narrowed tuple inference
+    imports?: Space[] | []
+    includes?: Space[] | []
     standard?: boolean
 }
 
-type validateOptions<opts extends ScopeOptions> = replaceProps<
-    opts,
-    {
-        imports?: mergeScopes<opts["imports"]> extends error<infer e>
+type validateOptions<opts extends ScopeOptions> = {
+    [k in keyof opts]: k extends "imports" | "includes"
+        ? mergeSpaces<opts[k]> extends error<infer e>
             ? e
-            : opts["imports"]
-        includes?: mergeScopes<opts["includes"]> extends error<infer e>
-            ? e
-            : opts["includes"]
-    }
->
+            : opts[k]
+        : opts[k]
+}
 
 export type ScopeContext = Dict | ScopeContextTuple
 
@@ -79,17 +71,17 @@ type parseScope<
     opts extends ScopeOptions
 > = opts["standard"] extends false
     ? [inferExports<aliases, opts>, importsOf<opts>, false]
-    : opts["imports"] extends ScopeList
+    : opts["imports"] extends Space[]
     ? [inferExports<aliases, opts>, importsOf<opts>]
     : inferExports<aliases, opts>
 
 type importsOf<opts extends ScopeOptions> = unknown extends opts["imports"]
     ? {}
-    : mergeScopes<opts["imports"]>
+    : mergeSpaces<opts["imports"]>
 
 type includesOf<opts extends ScopeOptions> = unknown extends opts["includes"]
     ? {}
-    : mergeScopes<opts["includes"]>
+    : mergeSpaces<opts["includes"]>
 
 export type resolve<name extends keyof $, $> = isAny<$[name]> extends true
     ? any
@@ -108,14 +100,15 @@ type localsOf<context extends ScopeContext> = context extends List
     ? context["1"] & (context["2"] extends false ? {} : PrecompiledDefaults)
     : PrecompiledDefaults
 
-type mergeScopes<scopes, base extends Dict = {}> = scopes extends readonly [
-    Scope<infer context>,
+type mergeSpaces<scopes, base extends Dict = {}> = scopes extends readonly [
+    Space<infer head>,
     ...infer tail
 ]
-    ? keyof base & keyof exportsOf<context> extends never
-        ? mergeScopes<tail, base & exportsOf<context>>
-        : error<`Duplicates ${stringifyUnion<
-              keyof base & keyof exportsOf<context> & string
+    ? keyof base & keyof head extends never
+        ? mergeSpaces<tail, base & head>
+        : // TODO: add tests for this
+          error<`Duplicates ${stringifyUnion<
+              keyof base & keyof head & string
           >}`>
     : base
 
@@ -154,28 +147,26 @@ type resolutions<context extends ScopeContext> = localsOf<context> &
 type name<context extends ScopeContext> = keyof resolutions<context> & string
 
 export class Scope<context extends ScopeContext = any> {
-    parseCache = new FreezingCache<TypeReference>()
+    parseCache = new FreezingCache<TypeNode>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
 
     constructor(public aliases: Dict, public opts: ScopeOptions) {
         if (opts.standard !== false) {
-            this.#cacheSpaces([standardSpace], "imports")
+            this.#cacheSpaces([standardTypes], "imports")
         }
         if (opts.imports) {
-            const importedSpaces = opts.imports.map(($) => $.compile())
-            this.#cacheSpaces(importedSpaces, "imports")
+            this.#cacheSpaces(opts.imports, "imports")
         }
         if (opts.includes) {
-            const includedSpaces = opts.includes.map(($) => $.compile())
-            this.#cacheSpaces(includedSpaces, "includes")
+            this.#cacheSpaces(opts.includes, "includes")
         }
     }
 
     #cacheSpaces(spaces: Space[], kind: "imports" | "includes") {
         for (const space of spaces) {
             for (const name in space) {
-                if (this.isResolvable(name)) {
+                if (this.#resolutions.has(name) || name in this.aliases) {
                     throwParseError(writeDuplicateAliasMessage(name))
                 }
                 this.#resolutions.set(name, space[name])
@@ -187,17 +178,17 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     type = ((def, opts: TypeOptions = {}) => {
-        const ctx = this.#initializeContext("(anonymous)")
-        const root = this.resolveIfIdentifier(parseDefinition(def, ctx))
-        const flat = flattenNode(root, ctx)
-        return this.#typeFrom(root, flat, opts)
+        const result = this.#initializeUnparsedType(opts)
+        const ctx = this.#initializeContext(result)
+        result.node = this.resolveNode(parseDefinition(def, ctx))
+        result.flat = flattenNode(result.node, result)
+        return result
     }) as TypeParser<resolutions<context>>
 
-    #initializeContext(name: string): ParseContext {
+    #initializeContext(type: Type): ParseContext {
         return {
-            $: this,
-            path: new Path(),
-            name
+            type,
+            path: new Path()
         }
     }
 
@@ -216,25 +207,41 @@ export class Scope<context extends ScopeContext = any> {
         return this.#exports.root as Space<exportsOf<context>>
     }
 
-    isResolvable(name: string) {
-        return this.#resolutions.has(name) || name in this.aliases
+    addReferenceIfResolvable(name: name<context>, ctx: ParseContext) {
+        const resolution = this.#resolveRecurse(name, "undefined", [])
+        if (!resolution) {
+            return false
+        }
+        ctx.type.includesMorph ||= resolution.includesMorph
+        return true
     }
 
     resolve(name: name<context>) {
-        return this.#resolveRecurse(name, [])
+        return this.#resolveRecurse(name, "throw", [])
     }
 
-    #resolveRecurse(name: string, seen: string[]): Type {
+    #resolveRecurse<onUnresolvable extends "undefined" | "throw">(
+        name: string,
+        onUnresolvable: onUnresolvable,
+        seen: string[]
+    ): ResolveResult<onUnresolvable> {
         const maybeCacheResult = this.#resolutions.get(name)
         if (maybeCacheResult) {
             return maybeCacheResult
         }
         if (!this.aliases[name]) {
-            return throwInternalError(
-                `Unexpectedly failed to resolve alias '${name}'`
-            )
+            return (
+                onUnresolvable === "throw"
+                    ? throwInternalError(
+                          `Unexpectedly failed to resolve alias '${name}'`
+                      )
+                    : undefined
+            ) as ResolveResult<onUnresolvable>
         }
-        const ctx = this.#initializeContext(name)
+        const result = this.#initializeUnparsedType({ alias: name })
+        this.#resolutions.set(name, result)
+        this.#exports.set(name, result)
+        const ctx = this.#initializeContext(result)
         let resolution = parseDefinition(this.aliases[name], ctx)
         if (typeof resolution === "string") {
             if (seen.includes(resolution)) {
@@ -243,36 +250,44 @@ export class Scope<context extends ScopeContext = any> {
                 )
             }
             seen.push(resolution)
-            resolution = this.#resolveRecurse(resolution, seen).node
+            resolution = this.#resolveRecurse(resolution, "throw", seen).node
         }
-        // TODO: Figure out type options here
-        // temporarily set the TraversalNode to an alias that will be used for cyclic resolutions
-        const type = this.#typeFrom(resolution, [["alias", name]], {})
-        this.#resolutions.set(name, type)
-        this.#exports.set(name, type)
-        type.flat = flattenNode(resolution, ctx)
-        return type
+        result.node = resolution
+        result.flat = flattenNode(resolution, result)
+        return result
     }
 
-    resolveIfIdentifier(node: TypeReference): TypeNode {
-        return typeof node === "string" ? this.resolve(node).node : node
+    resolveNode(node: TypeNode): ResolvedNode {
+        if (typeof node === "object") {
+            return node
+        }
+        return this.resolveNode(this.resolve(node).node)
     }
 
-    #typeFrom(node: TypeNode, flat: TraversalNode, config: TypeOptions) {
-        return Object.assign(
-            (data: unknown) => {
-                return traverse(data, flat, this, config)
-            },
+    /** temporarily set the TypeNode+TraversalNode to an alias that will be used for cyclic resolutions */
+    #initializeUnparsedType(config: TypeOptions): Type {
+        const alias = config.alias ?? "(anonymous)"
+        const result = Object.assign(
+            (data: unknown) => traverse(data, result),
             {
+                alias,
+                node: alias,
+                flat: [["alias", alias]],
+                config,
                 [t]: chainableNoOpProxy,
                 infer: chainableNoOpProxy,
-                config,
-                node,
-                flat
-            }
-        ) as Type
+                includesMorph: false,
+                scope: this
+            } satisfies TypeRoot
+        )
+        return result
     }
 }
+
+type OnUnresolvable = "throw" | "undefined"
+
+type ResolveResult<onUnresolvable extends OnUnresolvable> =
+    onUnresolvable extends "throw" ? Type : Type | undefined
 
 class Cache<item = unknown> {
     protected cache: { [name in string]?: item } = {}
@@ -347,6 +362,8 @@ const ts = scope(
     { standard: false }
 )
 
+const tsTypes = ts.compile()
+
 const validation = scope(
     {
         email: /^(.+)@(.+)\.(.+)$/,
@@ -359,21 +376,29 @@ const validation = scope(
     { standard: false }
 )
 
+const validationTypes = validation.compile()
+
 const standard = scope(
     {},
     {
-        includes: [ts, validation],
+        includes: [tsTypes, validationTypes],
         standard: false
     }
 )
 
-const standardSpace = standard.compile()
+const standardTypes = standard.compile()
 
 export const scopes = {
     ts,
     validation,
     standard
 }
+
+export const spaces = {
+    ts: tsTypes,
+    validation: validationTypes,
+    standard: standardTypes
+} satisfies Record<keyof typeof scopes, Space>
 
 // This is just copied from the inference of defaultScope. Creating an explicit
 // type like this makes validation for the default type and scope functions feel
@@ -439,13 +464,19 @@ type Checker<t> = (data: unknown) => Result<t>
 type TypeRoot<t = unknown> = {
     [t]: t
     infer: asOut<t>
+    alias: string
+    config: TypeOptions
     node: TypeNode
     flat: TraversalNode
+    includesMorph: boolean
+    scope: Scope
 }
 
 export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
 
 export type TypeOptions = {
+    // TODO: validate not already a name
+    alias?: string
     problems?: ProblemsOptions
 }
 

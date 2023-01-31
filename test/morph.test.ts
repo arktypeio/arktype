@@ -233,17 +233,16 @@ describe("morph", () => {
             }).compile()
         }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
     })
-    // TODO: fix
-    // it("deep undiscriminated reference", () => {
-    //     attest(() => {
-    //         scope({
-    //             a: { a: ["string", "=>", (s) => s.trim()] },
-    //             b: { b: "boolean" },
-    //             // @ts-expect-error
-    //             c: "a|b"
-    //         }).compile()
-    //     }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
-    // })
+    it("deep undiscriminated reference", () => {
+        attest(() => {
+            scope({
+                a: { a: ["string", "=>", (s) => s.trim()] },
+                b: { b: "boolean" },
+                // @ts-expect-error
+                c: "a|b"
+            }).compile()
+        }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
+    })
     it("array double intersection", () => {
         attest(() => {
             scope({

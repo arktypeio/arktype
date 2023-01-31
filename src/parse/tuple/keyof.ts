@@ -1,12 +1,6 @@
+import type { Branch } from "../../nodes/predicate.ts"
 import { resolutionExtendsDomain } from "../../nodes/predicate.ts"
-import { domainOf } from "../../utils/domains.ts"
-// import {
-//     domainsOfNode,
-//     resolutionExtendsDomain,
-//     resolveIfIdentifier
-// } from "../../nodes/resolve.ts"
 import { throwParseError } from "../../utils/errors.ts"
-import type { CollapsibleList } from "../../utils/generics.ts"
 import { hasKey, listFrom } from "../../utils/generics.ts"
 import { parseDefinition } from "../definition.ts"
 import type { PrefixParser } from "./tuple.ts"
@@ -23,8 +17,9 @@ import type { PrefixParser } from "./tuple.ts"
 // maintaining a keySet of the required+optional props that have existed on
 // every branch. Once you get to the last branch, return a new node representing
 // a string union of the remaining keys.
-export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, $) => {
-    const resolution = parseDefinition(def[1], $)
+//string version is operand - parse unenclosed
+export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
+    const resolution = ctx.type.scope.resolveNode(parseDefinition(def[1], ctx))
 
     if (!resolutionExtendsDomain(resolution, "object")) {
         return throwParseError("never")
@@ -32,13 +27,19 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, $) => {
     if (resolution.object === true) {
         return { string: true }
     }
-    const keys: string[] = []
-    for (const branch of listFrom(resolution)) {
-        if (hasKey(branch.object, "props")) {
-            keys.push(...Object.keys(branch.object.props))
+    let keys: string[] = []
+    //inital value
+    //filter and make sure all other branches have the goods
+    for (const branch of listFrom(resolution.object)) {
+        if (hasKey(branch, "props")) {
+            keys.push(...Object.keys(branch.props))
         }
     }
-    return { object: { value: keys } }
+    return {
+        string: keys.map((key) => ({
+            value: key
+        }))
+    }
 }
-// tuple maybe poogers
-// arr => numberLiteral
+
+const getPropsFromBranch = (branch: Branch) => Object.keys(branch)

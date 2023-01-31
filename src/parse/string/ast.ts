@@ -1,9 +1,9 @@
+import type { asIn, resolve } from "../../main.ts"
 import type { DisjointsByPath } from "../../nodes/compose.ts"
 import { disjointDescriptionWriters } from "../../nodes/compose.ts"
-import type { resolve } from "../../main.ts"
-import type { asIn } from "../../main.ts"
 import type { subdomainOf } from "../../utils/domains.ts"
 import type {
+    asConst,
     castOnError,
     Dict,
     equals,
@@ -19,7 +19,7 @@ import type {
     tryCatch
 } from "../../utils/generics.ts"
 import { keysOf } from "../../utils/generics.ts"
-import type { pathToString } from "../../utils/paths.ts"
+import type { Path, pathToString } from "../../utils/paths.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
 import type { Scanner } from "./shift/scanner.ts"
@@ -187,6 +187,20 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
     }
     return message
 }
+
+export const writeImplicitNeverMessage = <
+    path extends Path | [],
+    description extends string = ""
+>(
+    path: asConst<path>,
+    description?: description
+) =>
+    `${path.length ? `At ${path}: ` : ""}Intersection ${
+        description ? `${description} ` : ""
+    }results in an unsatisfiable type` as writeImplicitNeverMessage<
+        path,
+        description
+    >
 
 type writeImplicitNeverMessage<
     path extends string[],
