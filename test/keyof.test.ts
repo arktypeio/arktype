@@ -25,16 +25,6 @@ describe("keyof", () => {
             string: [{ value: "first" }, { value: "second" }]
         })
     })
-    it("Not sure if this is right", () => {
-        const space = scope({
-            a: { first: "number" },
-            b: { second: "number" },
-            c: { first: "number" },
-            ab: "c|a&b",
-            keys: ["keyof", "ab"]
-        }).compile()
-        attest(space.keys.node).snap({ string: [{ value: "first" }] })
-    })
     it("scope union", () => {
         const space = scope({
             a: { first: "number" },

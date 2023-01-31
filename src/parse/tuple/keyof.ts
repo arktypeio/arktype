@@ -5,19 +5,6 @@ import { hasKey, listFrom } from "../../utils/generics.ts"
 import { parseDefinition } from "../definition.ts"
 import type { PrefixParser } from "./tuple.ts"
 
-// Should accept a def, parse it, then return the "keys" of that def according
-// to the same logic as TypeScript. Some cases to consider:
-
-// If the type is a union, either of multiple domains or within a single domain,
-// the only keys that get returned are the keys that are present on every branch
-// of the union
-
-// First, check if the node (i.e. parse result) has any domains other than
-// object. If so, return never. Otherwise, iterate over all object branches,
-// maintaining a keySet of the required+optional props that have existed on
-// every branch. Once you get to the last branch, return a new node representing
-// a string union of the remaining keys.
-//string version is operand - parse unenclosed
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
     const resolution = ctx.type.scope.resolveNode(parseDefinition(def[1], ctx))
 
@@ -28,27 +15,32 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
         return { string: true }
     }
 
-    const keysOfBranches: string[][] = []
+    const branchKeys: string[][] = []
 
-    for (const branch of listFrom(resolution.object)) {
-        if (hasKey(branch, "props")) {
-            keysOfBranches.push(getPropsFromBranch(branch.props))
+    const objectBranches = listFrom(resolution.object)
+    const initialKeys = getPropsFromBranch(objectBranches[0])
+
+    for (let i = 1; i < objectBranches.length; i++) {
+        const keys = getPropsFromBranch(objectBranches[i])
+        if (!keys.length) {
+            return throwParseError("never")
         }
+        branchKeys.push(keys)
     }
-    const initialValue = [...keysOfBranches[0]]
-    const result: string[] = []
-    initialValue.forEach((key) => {
-        const hasKey = keysOfBranches.every((keySet) => keySet.includes(key))
+
+    const result: Branch[] = []
+
+    initialKeys.forEach((key) => {
+        const hasKey = branchKeys.every((keySet) => keySet.includes(key))
         if (hasKey) {
-            result.push(key)
+            result.push({ value: key })
         }
     })
 
     return {
-        string: result.map((key) => ({
-            value: key
-        }))
+        string: result
     }
 }
 
-const getPropsFromBranch = (branch: Branch) => Object.keys(branch)
+const getPropsFromBranch = (branch: Branch) =>
+    hasKey(branch, "props") ? Object.keys(branch.props) : []

@@ -115,7 +115,8 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
         ? inferNode<def[1], $>
         : never
     : def[0] extends "keyof"
-    ? evaluate<keyOf<inferDefinition<def[1], $>>>
+    ? //TODO: keyof vs keyOf
+      evaluate<keyof inferDefinition<def[1], $>>
     : never
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {

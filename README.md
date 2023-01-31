@@ -26,8 +26,8 @@ import { type } from "arktype"
 // Define a type...
 export const user = type({
     name: "string",
-    browser: {
-        kind: "'chrome'|'firefox'|'safari'",
+    device: {
+        platform: "'android'|'ios'",
         "version?": "number"
     }
 })
@@ -35,18 +35,15 @@ export const user = type({
 // Infer it...
 export type User = typeof user.infer
 
-export const fetchUser = () => ({
-    name: "Dan Abramov",
-    browser: {
-        kind: "Internet Explorer" // R.I.P.
+// Validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
+export const { data, problems } = user({
+    name: "Alan Turing",
+    device: {
+        platform: "enigma"
     }
 })
 
-// Types can validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
-export const { problems, data } = user.check(fetchUser())
-
 if (problems) {
-    // TODO: Add actual error
     console.log(problems.summary)
 }
 ```
@@ -56,7 +53,7 @@ if (problems) {
 [Try it out.](https://arktype.io/type/spaces)
 
 ```ts @blockFrom:examples/scope.ts
-import { scope } from "arktype"
+import { scope } from "../api.js"
 
 // Scopes are collections of types that can reference each other.
 export const types = scope({
@@ -71,7 +68,7 @@ export const types = scope({
         email: "email",
         "packages?": "package[]"
     }
-})
+}).compile()
 
 // Cyclic types are inferred to arbitrary depth...
 export type Package = typeof types.package.infer
@@ -81,7 +78,7 @@ export const readPackageData = () => {
     const packageData: Package = {
         name: "arktype",
         dependencies: [],
-        devDependencies: [{ name: "@arktype/test" }],
+        devDependencies: [{ name: "typescript" }],
         contributors: [{ email: "david@sharktypeio" }]
     }
     packageData.devDependencies![0].dependencies = [packageData]
@@ -92,7 +89,7 @@ export const readPackageData = () => {
 // `Encountered errors at the following paths:
 //   dependencies/0/contributors: Required value of type contributor[] was missing.
 //   contributors/0/email: "david@sharktypeio" is not assignable to email.`
-export const { problems } = types.package.check(readPackageData())
+export const { problems } = types.package(readPackageData())
 ```
 
 ### Declarations
@@ -107,7 +104,7 @@ TypeScript can do a lot, but sometimes things you care about at runtime shouldn'
 
 [**Constraints** have you covered.](https://arktype.io/type/constraints)
 
-```ts @blockFrom:examples/constraints.ts
+```ts
 import { type } from "arktype"
 
 export const employee = type({

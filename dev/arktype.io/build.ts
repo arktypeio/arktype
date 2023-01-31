@@ -17,7 +17,7 @@ export const shell = (
         stdio: returnOutput ? "pipe" : "inherit",
         env: { ...process.env, ...env },
         ...otherOptions
-    })
+    })!
 //@blockEnd
 
 rmSync("dist", { recursive: true, force: true })
