@@ -1,7 +1,4 @@
-import type {
-    defineProblem,
-    ProblemMessageWriter
-} from "../../traverse/problems.ts"
+import type { defineProblem } from "../../traverse/problems.ts"
 import type { Dict } from "../../utils/generics.ts"
 import {
     composeIntersection,
@@ -91,10 +88,3 @@ export type MissingKeyContext = defineProblem<{
     data: undefined
     key: string
 }>
-
-export const writeMissingKeyError: ProblemMessageWriter<"missing"> = ({
-    key
-}) => ({
-    mustBe: "be set",
-    was: "missing"
-})

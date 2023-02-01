@@ -1,7 +1,4 @@
-import type {
-    defineProblem,
-    ProblemMessageWriter
-} from "../../traverse/problems.ts"
+import type { defineProblem } from "../../traverse/problems.ts"
 import type { Subdomain } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import type { Dict, List, mutable } from "../../utils/generics.ts"
