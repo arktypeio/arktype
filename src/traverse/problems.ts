@@ -7,16 +7,15 @@ import type { TupleLengthProblemContext } from "../nodes/rules/subdomain.ts"
 import type { Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
-import type { evaluate, extend, replaceProps } from "../utils/generics.ts"
+import type {
+    defined,
+    evaluate,
+    extend,
+    replaceProps
+} from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { DataTraversalState } from "./check.ts"
-
-export type Problem = {
-    path: Path
-    reason: string
-    parts?: string[]
-}
+import type { DataTraversalState, ProblemsOptions } from "./check.ts"
 
 export class ArktypeError extends TypeError {
     cause: Problems
@@ -92,28 +91,59 @@ export class Problems extends Array<Problem> {
         }
     }
 
-    #writeMessage(ctx: ProblemContexts[ProblemCode]) {
-        this.#assertHasState()
-        // TODO: includes actual
-        const problemConfig = this.state.config.problems?.[ctx.code]
-        const writer = (
-            typeof problemConfig === "function"
-                ? problemConfig
-                : problemConfig?.message
-        ) as ProblemMessageWriter | undefined
-        return writer?.(ctx) ?? `Must be ${ctx.description}`
-    }
-
-    #assertHasState(): asserts this is Problems & {
-        state: DataTraversalState
-    } {
-        if (!this.state) {
-            throwInternalError(`Unexpected unset state in Problems`)
-        }
-    }
-
     throw(): never {
         throw new ArktypeError(this)
+    }
+}
+
+export abstract class Problem<code extends ProblemCode> {
+    path: Path
+    config: ProblemsOptions[ProblemCode]
+
+    abstract code: code
+
+    constructor(
+        private data: ProblemInputs[code]["data"],
+        state: DataTraversalState
+    ) {
+        // copy path so future mutations don't affect it
+        this.path = Path.from(state.path)
+        this.config = state.config.problems?.[code]
+    }
+
+    get data() {
+        return new Stringifiable(this.rawData)
+    }
+
+    get defaultMessage() {
+        let message = `Must be ${this.type.description}`
+        if (!this.config.omitActual) {
+            if ("actual" in context) {
+                message += ` (was ${context.actual})`
+            } else if (
+                !this.omitActualByDefault &&
+                // If we're in a union, don't redundandtly include data (other
+                // "actual" context is still included)
+                !this.branchPath.length
+            ) {
+                message += ` (was ${this.data.toString()})`
+            }
+        }
+        return message
+    }
+
+    get message() {
+        const writer = (
+            typeof this.config === "function"
+                ? this.config
+                : this.config?.message
+        ) as ProblemMessageWriter | undefined
+        let result = writer?.(this) ?? this.defaultMessage
+        if (this.branchPath.length) {
+            const branchIndentation = "  ".repeat(this.branchPath.length)
+            result = branchIndentation + result
+        }
+        return result
     }
 }
 
