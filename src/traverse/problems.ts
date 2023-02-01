@@ -6,9 +6,11 @@ import type { RegexProblemContext } from "../nodes/rules/regex.ts"
 import type { TupleLengthProblemContext } from "../nodes/rules/subdomain.ts"
 import type { Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
+import { throwInternalError } from "../utils/errors.ts"
 import type { evaluate, extend, replaceProps } from "../utils/generics.ts"
-import type { Path } from "../utils/paths.ts"
+import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
+import type { DataTraversalState } from "./check.ts"
 
 export type Problem = {
     path: Path
@@ -25,8 +27,10 @@ export class ArktypeError extends TypeError {
     }
 }
 
+// TODO: make readonly
 export class Problems extends Array<Problem> {
-    byPath: Record<string, Problem> = {}
+    byPath: Record<string, ProblemContexts[ProblemCode][]> = {}
+    state: DataTraversalState | undefined
 
     get summary() {
         if (this.length === 1) {
@@ -39,6 +43,73 @@ export class Problems extends Array<Problem> {
         return this.map((problem) => `${problem.path}: ${problem.reason}`).join(
             "\n"
         )
+    }
+
+    get messages() {
+        this.#assertHasState()
+        const problems: Problem[] = []
+        for (const path in this.byPath) {
+            const contexts = this.byPath[path]
+            const firstContext = contexts[0]
+            if (contexts.length === 1) {
+                problems.push({
+                    path: firstContext.path,
+                    reason: this.#writeMessage(firstContext)
+                })
+            } else {
+                problems.push({
+                    path: firstContext.path,
+                    reason: this.#writeMessage({
+                        code: "multi",
+                        data: firstContext.data as any,
+                        path: firstContext.path,
+                        parts: contexts.map((context) =>
+                            this.#writeMessage(context)
+                        ),
+                        description: "parts error"
+                    })
+                })
+            }
+        }
+        return problems
+    }
+
+    addProblem<code extends ProblemCode>(input: ProblemInputs[code]) {
+        this.#assertHasState()
+        const data = new Stringifiable(input.data)
+        // copy path so future mutations don't affect it
+        const path = Path.from(this.state.path)
+        const ctx = Object.assign(input, {
+            data,
+            path
+        }) as unknown as ProblemContexts[ProblemCode]
+        const pathKey = `${this.state.path}`
+        const existing = this.byPath[pathKey]
+        if (existing) {
+            existing.push(ctx)
+        } else {
+            this.byPath[pathKey] = [ctx]
+        }
+    }
+
+    #writeMessage(ctx: ProblemContexts[ProblemCode]) {
+        this.#assertHasState()
+        // TODO: includes actual
+        const problemConfig = this.state.config.problems?.[ctx.code]
+        const writer = (
+            typeof problemConfig === "function"
+                ? problemConfig
+                : problemConfig?.message
+        ) as ProblemMessageWriter | undefined
+        return writer?.(ctx) ?? `Must be ${ctx.description}`
+    }
+
+    #assertHasState(): asserts this is Problems & {
+        state: DataTraversalState
+    } {
+        if (!this.state) {
+            throwInternalError(`Unexpected unset state in Problems`)
+        }
     }
 
     throw(): never {

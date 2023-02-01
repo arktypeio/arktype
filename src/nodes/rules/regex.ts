@@ -32,7 +32,7 @@ export const getRegex = (source: string) => {
 export const checkRegex = ((data, regex, state) => {
     if (!regex.test(data)) {
         // TODO: add alias descirptions
-        state.addProblem({
+        state.problems.addProblem({
             code: "regex",
             data,
             regex,

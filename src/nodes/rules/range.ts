@@ -87,7 +87,7 @@ const addRangeProblem = (
     const comparator = toComparator(boundKind, bound)
     const limit = bound.limit
     const kind = subdomainOf(data)
-    state.addProblem({
+    state.problems.addProblem({
         code: "range",
         comparator,
         limit,

@@ -28,7 +28,7 @@ export type DivisibilityContext = defineProblem<{
 
 export const checkDivisor = ((data, divisor, state) => {
     if (data % divisor !== 0) {
-        state.addProblem({
+        state.problems.addProblem({
             code: "divisibility",
             data,
             divisor,

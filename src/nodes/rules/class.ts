@@ -25,7 +25,7 @@ export const checkClass = ((data, expectedClass, state) => {
     if (!(data instanceof expectedClass)) {
         const expected = expectedClass.name
         const actual = (data as Object).constructor.name
-        state.addProblem({
+        state.problems.addProblem({
             code: "class",
             data,
             expected,
