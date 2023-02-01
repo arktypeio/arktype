@@ -25,7 +25,12 @@ import type {
     ProblemInputs,
     ProblemMessageWriter
 } from "./problems.ts"
-import { defaultWritersByCode, Problems, Stringifiable } from "./problems.ts"
+import {
+    describeSubdomains,
+    Problems,
+    Stringifiable,
+    subdomainDescriptions
+} from "./problems.ts"
 
 export class TraversalState {
     path: Path
@@ -81,7 +86,12 @@ export class DataTraversalState extends TraversalState {
             subproblems.push(this.problems)
         }
         this.problems = baseProblems
-        this.addProblem({ code: "union", data, subproblems })
+        this.addProblem({
+            code: "union",
+            data,
+            subproblems,
+            description: "branch error"
+        })
     }
 
     // TODO: Don't calculate problem strings until necessary
@@ -102,7 +112,8 @@ export class DataTraversalState extends TraversalState {
                 code: "multi",
                 data,
                 path,
-                parts: existing.parts
+                parts: existing.parts,
+                description: "parts error"
             })
         } else {
             const problem: Problem = {
@@ -119,7 +130,8 @@ export class DataTraversalState extends TraversalState {
         const writer = (
             typeof problemConfig === "function"
                 ? problemConfig
-                : problemConfig?.message ?? defaultWritersByCode[ctx.code]
+                : //defaultWritersByCode[ctx.code]
+                  problemConfig?.message ?? "error"
         ) as ProblemMessageWriter
         return writer(ctx)
     }
@@ -146,7 +158,8 @@ export const traverseNode = (
             state.addProblem({
                 code: "domain",
                 data,
-                expected: [flat]
+                expected: [flat],
+                description: subdomainDescriptions[flat]
             })
         }
         return
@@ -196,7 +209,8 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
                     state.addProblem({
                         code: "missing",
                         data: undefined,
-                        key: propKey
+                        key: propKey,
+                        description: "defined"
                     })
                 }
             } else {
@@ -221,7 +235,8 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
             state.addProblem({
                 code: "domain",
                 data,
-                expected: [rule]
+                expected: [rule],
+                description: subdomainDescriptions[rule]
             })
         }
         return
@@ -230,7 +245,8 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         state.addProblem({
             code: "domain",
             data,
-            expected: [rule[0]]
+            expected: [rule[0]],
+            description: subdomainDescriptions[rule[0]]
         })
         return
     }
@@ -242,7 +258,8 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
                 code: "tupleLength",
                 data: data as List,
                 actual,
-                expected
+                expected,
+                description: `an array of length ${expected}`
             })
         }
     }
@@ -270,10 +287,12 @@ const checkers = {
         if (entries) {
             checkEntries(data, entries, state)
         } else {
+            const expected = keysOf(domains)
             state.addProblem({
                 code: "domain",
                 data,
-                expected: keysOf(domains)
+                expected,
+                description: describeSubdomains(expected)
             })
         }
     },
@@ -282,7 +301,8 @@ const checkers = {
             state.addProblem({
                 code: "domain",
                 data,
-                expected: [domain]
+                expected: [domain],
+                description: subdomainDescriptions[domain]
             })
         }
     },
@@ -302,7 +322,8 @@ const checkers = {
         state.addProblem({
             code: "union",
             data: dataAtPath,
-            subproblems: [new Problems()]
+            subproblems: [new Problems()],
+            description: "branches"
         })
         state.path = lastPath
     },
@@ -315,7 +336,8 @@ const checkers = {
             state.addProblem({
                 code: "value",
                 data,
-                expected: new Stringifiable(value)
+                expected: new Stringifiable(value),
+                description: stringify(value)
             })
         }
     }

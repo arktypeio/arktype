@@ -1,9 +1,9 @@
 import { Scanner } from "../../parse/string/shift/scanner.ts"
-import type { TraversalCheck } from "../../traverse/check.ts"
 import type {
-    defineProblem,
-    ProblemMessageWriter
-} from "../../traverse/problems.ts"
+    DataTraversalState,
+    TraversalCheck
+} from "../../traverse/check.ts"
+import type { defineProblem } from "../../traverse/problems.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import type { List } from "../../utils/generics.ts"
 import { composeIntersection, equality, toComparator } from "../compose.ts"
@@ -57,18 +57,6 @@ export type RangeProblemContext = defineProblem<{
     kind: subdomainOf<BoundableData>
 }>
 
-export const writeRangeError: ProblemMessageWriter<"range"> = ({
-    comparator,
-    limit,
-    kind,
-    size
-}) => ({
-    must: `be ${Scanner.comparatorDescriptions[comparator]} ${limit} ${
-        kind === "string" ? "characters " : kind === "Array" ? "items " : ""
-    }`,
-    was: `${size}`
-})
-
 export const checkRange = ((data, range, state) => {
     const size = typeof data === "number" ? data : data.length
     if (range.min) {
@@ -76,14 +64,7 @@ export const checkRange = ((data, range, state) => {
             size < range.min.limit ||
             (size === range.min.limit && range.min.exclusive)
         ) {
-            state.addProblem({
-                code: "range",
-                comparator: toComparator("min", range.min),
-                limit: range.min.limit,
-                kind: subdomainOf(data),
-                data,
-                size
-            })
+            addRangeProblem(data, range.min, "min", size, state)
         }
     }
     if (range.max) {
@@ -91,17 +72,33 @@ export const checkRange = ((data, range, state) => {
             size > range.max.limit ||
             (size === range.max.limit && range.max.exclusive)
         ) {
-            state.addProblem({
-                code: "range",
-                comparator: toComparator("max", range.max),
-                limit: range.max.limit,
-                kind: subdomainOf(data),
-                data,
-                size
-            })
+            addRangeProblem(data, range.max, "max", size, state)
         }
     }
 }) satisfies TraversalCheck<"range">
+
+const addRangeProblem = (
+    data: BoundableData,
+    bound: Bound,
+    boundKind: "min" | "max",
+    size: number,
+    state: DataTraversalState
+) => {
+    const comparator = toComparator(boundKind, bound)
+    const limit = bound.limit
+    const kind = subdomainOf(data)
+    state.addProblem({
+        code: "range",
+        comparator,
+        limit,
+        kind,
+        data,
+        size,
+        description: `${Scanner.comparatorDescriptions[comparator]} ${limit} ${
+            kind === "string" ? "characters " : kind === "Array" ? "items " : ""
+        }`
+    })
+}
 
 const invertedKinds = {
     min: "max",

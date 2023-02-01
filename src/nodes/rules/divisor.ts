@@ -33,7 +33,7 @@ export const writeDivisorError: ProblemMessageWriter<"divisibility"> = ({
     data,
     divisor
 }) => ({
-    must: divisor === 1 ? `be an integer` : `be divisible by ${divisor}`,
+    mustBe: divisor === 1 ? `be an integer` : `be divisible by ${divisor}`,
     was: `${data}`
 })
 

@@ -1,18 +1,12 @@
 import type { ClassProblemContext } from "../nodes/rules/class.ts"
-import { writeClassProblem } from "../nodes/rules/class.ts"
 import type { DivisibilityContext } from "../nodes/rules/divisor.ts"
-import { writeDivisorError } from "../nodes/rules/divisor.ts"
 import type { MissingKeyContext } from "../nodes/rules/props.ts"
-import { writeMissingKeyError } from "../nodes/rules/props.ts"
 import type { RangeProblemContext } from "../nodes/rules/range.ts"
-import { writeRangeError } from "../nodes/rules/range.ts"
 import type { RegexProblemContext } from "../nodes/rules/regex.ts"
-import { writeRegexError } from "../nodes/rules/regex.ts"
 import type { TupleLengthProblemContext } from "../nodes/rules/subdomain.ts"
-import { writeTupleLengthError } from "../nodes/rules/subdomain.ts"
 import type { Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import type { extend, replaceProps } from "../utils/generics.ts"
+import type { evaluate, extend, replaceProps } from "../utils/generics.ts"
 import type { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 
@@ -66,31 +60,27 @@ export class Stringifiable<data = unknown> {
 
 const uncapitalize = (s: string) => s[0].toLowerCase() + s.slice(1)
 
-const writeDomainError: ProblemMessageWriter<"domain"> = ({
-    data,
-    expected
-}) => ({
-    must: describeSubdomains(expected),
-    was: data.domain
-})
-
-const describeSubdomains = (subdomains: Subdomain[]) => {
+export const describeSubdomains = (subdomains: Subdomain[]) => {
     if (subdomains.length === 1) {
         return subdomainDescriptions[subdomains[0]]
     }
     if (subdomains.length === 0) {
         return "never"
     }
+    return describeBranches(
+        subdomains.map((subdomain) => subdomainDescriptions[subdomain])
+    )
+}
+
+const describeBranches = (descriptions: string[]) => {
     let description = "either "
-    for (let i = 0; i < subdomains.length - 1; i++) {
-        description += subdomainDescriptions[subdomains[i]]
-        if (i < subdomains.length - 2) {
+    for (let i = 0; i < descriptions.length - 1; i++) {
+        description += descriptions[i]
+        if (i < descriptions.length - 2) {
             description += ", "
         }
     }
-    description += ` or ${
-        subdomainDescriptions[subdomains[subdomains.length - 1]]
-    }`
+    description += ` or ${descriptions[descriptions.length - 1]}`
     return description
 }
 
@@ -100,29 +90,24 @@ type DomainProblemContext = defineProblem<{
     expected: Subdomain[]
 }>
 
-/** Each Subdomain's completion for the phrase "Must _____" */
-const subdomainDescriptions = {
-    bigint: "be a bigint",
-    boolean: "be boolean",
-    null: "be null",
-    number: "be a number",
-    object: "be an object",
-    string: "be a string",
-    symbol: "be a symbol",
-    undefined: "be undefined",
-    Array: "be an array",
-    Function: "be a function",
-    Date: "extend Date",
-    RegExp: "extend RegExp",
-    Error: "extend Error",
-    Map: "extend Map",
-    Set: "extend Set"
+/** Each Subdomain's completion for the phrase "Must be _____" */
+export const subdomainDescriptions = {
+    bigint: "a bigint",
+    boolean: "boolean",
+    null: "null",
+    number: "a number",
+    object: "an object",
+    string: "a string",
+    symbol: "a symbol",
+    undefined: "undefined",
+    Array: "an array",
+    Function: "a function",
+    Date: "a Date",
+    RegExp: "a RegExp",
+    Error: "an Error",
+    Map: "a Map",
+    Set: "a Set"
 } as const satisfies Record<Subdomain, string>
-
-export const writeUnionError: ProblemMessageWriter<"union"> = ({ data }) => ({
-    must: "be branches",
-    was: `${data}`
-})
 
 export type UnionProblemContext = defineProblem<{
     code: "union"
@@ -145,19 +130,22 @@ type ProblemDefinitions = {
 
 export type ProblemCode = keyof ProblemDefinitions
 
-export type ProblemInputs = extend<
-    { [code in ProblemCode]: BaseProblemInput<code> },
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type validateProblemDefinitions = extend<
+    {
+        [code in ProblemCode]: ProblemDefinition<code>
+    },
     // if one or more codes is not mapped to a context including its own name,
     // there will be a type error here
     ProblemDefinitions
 >
 
-export type BaseProblemInput<
-    code extends ProblemCode = ProblemCode,
-    data = unknown
-> = {
-    code: code
-    data: data
+export type ProblemInputs = {
+    [code in ProblemCode]: evaluate<
+        ProblemDefinitions[code] & {
+            description: string
+        }
+    >
 }
 
 export type ProblemContexts = {
@@ -175,48 +163,25 @@ export type ValueProblemContext = defineProblem<{
     expected: Stringifiable
 }>
 
-const writeValueProblem: ProblemMessageWriter<"value"> = ({
-    data,
-    expected
-}) => ({
-    must: `be ${expected}`,
-    was: `${data}`
-})
-
 type MultiPartContext = defineProblem<{
     code: "multi"
     data: unknown
     parts: string[]
 }>
 
-const writeMultiPartError: ProblemMessageWriter<"multi"> = ({ parts }) =>
+export const writeMultiPartError: ProblemMessageWriter<"multi"> = ({ parts }) =>
     "• " + parts.join("\n• ")
 
 export type ProblemMessageWriter<code extends ProblemCode = any> = (
     context: ProblemContexts[code]
-) => {
-    must: string
-    was: string
+) => string
+
+type ProblemDefinition<
+    code extends ProblemCode = ProblemCode,
+    data = unknown
+> = {
+    code: code
+    data: data
 }
 
-export const defaultWritersByCode = {
-    divisibility: writeDivisorError,
-    domain: writeDomainError,
-    range: writeRangeError,
-    class: writeClassProblem,
-    regex: writeRegexError,
-    missing: writeMissingKeyError,
-    tupleLength: writeTupleLengthError,
-    union: writeUnionError,
-    value: writeValueProblem,
-    multi: writeMultiPartError
-} satisfies {
-    [code in ProblemCode]: ProblemMessageWriter<code>
-} as {
-    // the input type for an arbitrary ProblemCode would be never, so we
-    // validate that each code is mapped to a writer of the appropriate type
-    // then cast to a more permissive type
-    [code in ProblemCode]: ProblemMessageWriter
-}
-
-export type defineProblem<input extends BaseProblemInput> = input
+export type defineProblem<input extends ProblemDefinition> = input
