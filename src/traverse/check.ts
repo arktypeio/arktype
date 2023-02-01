@@ -25,7 +25,7 @@ import type {
     ProblemInputs,
     ProblemMessageWriter
 } from "./problems.ts"
-import { defaultMessagesByCode, Problems, Stringifiable } from "./problems.ts"
+import { defaultWritersByCode, Problems, Stringifiable } from "./problems.ts"
 
 export class TraversalState {
     path: Path
@@ -119,7 +119,7 @@ export class DataTraversalState extends TraversalState {
         const writer = (
             typeof problemConfig === "function"
                 ? problemConfig
-                : problemConfig?.message ?? defaultMessagesByCode[ctx.code]
+                : problemConfig?.message ?? defaultWritersByCode[ctx.code]
         ) as ProblemMessageWriter
         return writer(ctx)
     }
@@ -133,6 +133,7 @@ export type BaseProblemOptions<code extends ProblemCode> =
     | ProblemMessageWriter<code>
     | {
           message?: ProblemMessageWriter<code>
+          includeActual?: boolean
       }
 
 export const traverseNode = (

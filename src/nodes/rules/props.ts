@@ -94,4 +94,7 @@ export type MissingKeyContext = defineProblem<{
 
 export const writeMissingKeyError: ProblemMessageWriter<"missing"> = ({
     key
-}) => `${key} is required`
+}) => ({
+    must: "be set",
+    was: "missing"
+})

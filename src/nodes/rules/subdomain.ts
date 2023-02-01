@@ -120,7 +120,10 @@ export type TupleLengthProblemContext = defineProblem<{
 export const writeTupleLengthError: ProblemMessageWriter<"tupleLength"> = ({
     actual,
     expected
-}) => `Tuple must have length ${expected} (was ${actual})`
+}) => ({
+    must: `have length ${expected}`,
+    was: `${actual}`
+})
 
 export const flattenSubdomain: FlattenAndPushRule<SubdomainRule> = (
     entries,

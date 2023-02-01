@@ -32,10 +32,10 @@ export type DivisibilityContext = defineProblem<{
 export const writeDivisorError: ProblemMessageWriter<"divisibility"> = ({
     data,
     divisor
-}) =>
-    divisor === 1
-        ? `${data} is not an integer`
-        : `${data} is not divisible by ${divisor}`
+}) => ({
+    must: divisor === 1 ? `be an integer` : `be divisible by ${divisor}`,
+    was: `${data}`
+})
 
 export const checkDivisor = ((data, divisor, state) => {
     if (data % divisor !== 0) {

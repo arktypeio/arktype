@@ -62,10 +62,12 @@ export const writeRangeError: ProblemMessageWriter<"range"> = ({
     limit,
     kind,
     size
-}) =>
-    `Must be ${Scanner.comparatorDescriptions[comparator]} ${limit} ${
+}) => ({
+    must: `be ${Scanner.comparatorDescriptions[comparator]} ${limit} ${
         kind === "string" ? "characters " : kind === "Array" ? "items " : ""
-    }(was ${size})`
+    }`,
+    was: `${size}`
+})
 
 export const checkRange = ((data, range, state) => {
     const size = typeof data === "number" ? data : data.length

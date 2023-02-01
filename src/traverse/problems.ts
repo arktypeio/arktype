@@ -12,7 +12,7 @@ import type { TupleLengthProblemContext } from "../nodes/rules/subdomain.ts"
 import { writeTupleLengthError } from "../nodes/rules/subdomain.ts"
 import type { Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import type { replaceProps } from "../utils/generics.ts"
+import type { extend, replaceProps } from "../utils/generics.ts"
 import type { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 
@@ -66,8 +66,13 @@ export class Stringifiable<data = unknown> {
 
 const uncapitalize = (s: string) => s[0].toLowerCase() + s.slice(1)
 
-const writeDomainError: ProblemMessageWriter<"domain"> = ({ data, expected }) =>
-    `Must ${describeSubdomains(expected)} (was ${data.domain})`
+const writeDomainError: ProblemMessageWriter<"domain"> = ({
+    data,
+    expected
+}) => ({
+    must: describeSubdomains(expected),
+    was: data.domain
+})
 
 const describeSubdomains = (subdomains: Subdomain[]) => {
     if (subdomains.length === 1) {
@@ -114,8 +119,10 @@ const subdomainDescriptions = {
     Set: "extend Set"
 } as const satisfies Record<Subdomain, string>
 
-export const writeUnionError: ProblemMessageWriter<"union"> = ({ data }) =>
-    `${data} does not satisfy any branches`
+export const writeUnionError: ProblemMessageWriter<"union"> = ({ data }) => ({
+    must: "be branches",
+    was: `${data}`
+})
 
 export type UnionProblemContext = defineProblem<{
     code: "union"
@@ -123,7 +130,7 @@ export type UnionProblemContext = defineProblem<{
     subproblems: Problems[]
 }>
 
-export type ProblemInputs = {
+type ProblemDefinitions = {
     divisibility: DivisibilityContext
     domain: DomainProblemContext
     missing: MissingKeyContext
@@ -135,6 +142,15 @@ export type ProblemInputs = {
     value: ValueProblemContext
     multi: MultiPartContext
 }
+
+export type ProblemCode = keyof ProblemDefinitions
+
+export type ProblemInputs = extend<
+    { [code in ProblemCode]: BaseProblemInput<code> },
+    // if one or more codes is not mapped to a context including its own name,
+    // there will be a type error here
+    ProblemDefinitions
+>
 
 export type BaseProblemInput<
     code extends ProblemCode = ProblemCode,
@@ -159,9 +175,13 @@ export type ValueProblemContext = defineProblem<{
     expected: Stringifiable
 }>
 
-// TODO: write in parts (expected, actual)
-const writeValueProblem: ProblemMessageWriter<"value"> = ({ data, expected }) =>
-    `Must be ${expected} (was ${data})`
+const writeValueProblem: ProblemMessageWriter<"value"> = ({
+    data,
+    expected
+}) => ({
+    must: `be ${expected}`,
+    was: `${data}`
+})
 
 type MultiPartContext = defineProblem<{
     code: "multi"
@@ -172,13 +192,14 @@ type MultiPartContext = defineProblem<{
 const writeMultiPartError: ProblemMessageWriter<"multi"> = ({ parts }) =>
     "• " + parts.join("\n• ")
 
-export type ProblemCode = keyof ProblemInputs
-
 export type ProblemMessageWriter<code extends ProblemCode = any> = (
     context: ProblemContexts[code]
-) => string
+) => {
+    must: string
+    was: string
+}
 
-export const defaultMessagesByCode = {
+export const defaultWritersByCode = {
     divisibility: writeDivisorError,
     domain: writeDomainError,
     range: writeRangeError,
@@ -192,7 +213,10 @@ export const defaultMessagesByCode = {
 } satisfies {
     [code in ProblemCode]: ProblemMessageWriter<code>
 } as {
-    [code in ProblemCode]: ProblemMessageWriter<any>
+    // the input type for an arbitrary ProblemCode would be never, so we
+    // validate that each code is mapped to a writer of the appropriate type
+    // then cast to a more permissive type
+    [code in ProblemCode]: ProblemMessageWriter
 }
 
 export type defineProblem<input extends BaseProblemInput> = input

@@ -27,7 +27,10 @@ export type ClassProblemContext = defineProblem<{
 export const writeClassProblem: ProblemMessageWriter<"class"> = ({
     actual,
     expected
-}) => `Must be an instance of ${expected} (was ${actual})`
+}) => ({
+    must: `extend ${expected}`,
+    was: actual
+})
 
 export const checkClass = ((data, expectedClass, state) => {
     if (!(data instanceof expectedClass)) {

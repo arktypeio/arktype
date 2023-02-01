@@ -47,7 +47,10 @@ export type RegexProblemContext = defineProblem<{
 export const writeRegexError: ProblemMessageWriter<"regex"> = ({
     data,
     regex
-}) => `${data} must match expression ${regex}`
+}) => ({
+    must: `match expression ${regex}`,
+    was: `${data}`
+})
 
 export const regexIntersection = composeIntersection<CollapsibleList<string>>(
     collapsibleListUnion<string>
