@@ -21,22 +21,19 @@ export const checkClass = ((data, expectedClass, state) => {
 }) satisfies TraversalCheck<"class">
 
 export class ClassProblem extends Problem<"class", object> {
-    expected: string
-    actualClass: constructor
-    actual: string
+    actual: constructor
 
     constructor(
-        public expectedClass: constructor,
+        public expected: constructor,
         state: TraversalState,
         data: object
     ) {
         super("class", state, data)
-        this.expected = expectedClass.name
-        this.actualClass = data.constructor as constructor
-        this.actual = this.actualClass.name
+        this.actual = data.constructor as constructor
+        this.was = this.actual.name
     }
 
-    get description() {
-        return `an instance of ${this.expected}`
+    get mustBe() {
+        return `an instance of ${this.expected.name}`
     }
 }

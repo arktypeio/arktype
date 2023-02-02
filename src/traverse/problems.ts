@@ -6,7 +6,6 @@ import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { evaluate, extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import type { SerializablePrimitive } from "../utils/serialize.ts"
 import { stringify } from "../utils/serialize.ts"
 import type {
     MissingKeyProblem,
@@ -73,8 +72,8 @@ export abstract class Problem<
     config: ProblemsConfig | undefined
     data: Stringifiable<data>
 
-    abstract description: string
-    actual?: SerializablePrimitive | Stringifiable
+    abstract mustBe: string
+    was?: string
 
     constructor(code: code, initial: Problem)
     constructor(code: code, state: TraversalState, data: data)
@@ -96,10 +95,10 @@ export abstract class Problem<
     }
 
     get defaultMessage() {
-        let message = `Must be ${this.description}`
+        let message = `Must be ${this.mustBe}`
         // TODO: Distribute config to codes
         if (!this.config?.[this.code]?.omitActual) {
-            message += ` (was ${this.actual ?? this.data})`
+            message += ` (was ${this.was ?? this.data})`
         }
         return message
     }
@@ -136,7 +135,7 @@ export class CompoundProblem extends Problem<"compound"> {
         this.subproblems = [initial, intersected]
     }
 
-    get description() {
+    get mustBe() {
         return "...\n• " + this.subproblems.join("\n• ")
     }
 }
@@ -213,8 +212,9 @@ type ProblemsByCode = {
 
 export type ProblemCode = evaluate<keyof ProblemsByCode>
 
+// TODO: split into domain and subdomain
 export class DomainProblem extends Problem<"domain"> {
-    actual: Domain
+    was: Subdomain
 
     constructor(
         public expected: Subdomain[],
@@ -222,10 +222,10 @@ export class DomainProblem extends Problem<"domain"> {
         data: unknown
     ) {
         super("domain", state, data)
-        this.actual = domainOf(data)
+        this.was = domainOf(data)
     }
 
-    get description() {
+    get mustBe() {
         return describeSubdomains(this.expected)
     }
 }

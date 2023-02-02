@@ -41,7 +41,7 @@ export class RegexProblem extends Problem<"regex", string> {
         super("regex", state, data)
     }
 
-    get description() {
+    get mustBe() {
         return `a string matching /${this.regex.source}/`
     }
 }

@@ -282,7 +282,7 @@ export class ValueProblem extends Problem<"value"> {
         this.expected = new Stringifiable(expected)
     }
 
-    get description() {
+    get mustBe() {
         return `${this.expected}`
     }
 }
@@ -295,32 +295,30 @@ export class UnionProblem extends Problem<"union"> {
         this.expected = new Stringifiable(expected)
     }
 
-    get description() {
+    get mustBe() {
         return `${this.expected}`
     }
 }
 
 export class TupleLengthProblem extends Problem<"tupleLength", List> {
-    actual: number
-
     constructor(public expected: number, state: TraversalState, data: List) {
         super("tupleLength", state, data)
-        this.actual = data.length
+        this.was = `${data.length}`
     }
 
-    get description() {
+    get mustBe() {
         return `exactly ${this.expected} items`
     }
 }
 
 export class MissingKeyProblem extends Problem<"missing", undefined> {
-    actual = "missing"
+    was = "missing"
 
     constructor(public key: string, state: TraversalState) {
         super("missing", state, undefined)
     }
 
-    get description() {
+    get mustBe() {
         return "defined"
     }
 }

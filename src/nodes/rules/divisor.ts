@@ -31,7 +31,7 @@ export class DivisibilityProblem extends Problem<"divisibility", number> {
         super("divisibility", state, data)
     }
 
-    get description() {
+    get mustBe() {
         return this.divisor === 1
             ? `an integer`
             : `divisible by ${this.divisor}`
