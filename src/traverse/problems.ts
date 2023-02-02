@@ -4,9 +4,8 @@ import type { MissingKeyContext } from "../nodes/rules/props.ts"
 import type { RangeProblemContext } from "../nodes/rules/range.ts"
 import type { RegexProblemContext } from "../nodes/rules/regex.ts"
 import type { TupleLengthProblemContext } from "../nodes/rules/subdomain.ts"
-import type { Subdomain } from "../utils/domains.ts"
+import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import { throwInternalError } from "../utils/errors.ts"
 import type {
     defined,
     evaluate,
@@ -15,7 +14,7 @@ import type {
 } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { DataTraversalState, ProblemsOptions } from "./check.ts"
+import type { ProblemsOptions, TraversalState } from "./check.ts"
 
 export class ArktypeError extends TypeError {
     cause: Problems
@@ -26,68 +25,25 @@ export class ArktypeError extends TypeError {
     }
 }
 
-// TODO: make readonly
 export class Problems extends Array<Problem> {
-    byPath: Record<string, ProblemContexts[ProblemCode][]> = {}
-    state: DataTraversalState | undefined
+    byPath: Record<string, Problem> = {}
 
     get summary() {
         if (this.length === 1) {
             const problem = this[0]
-            if (problem.path.length) {
-                return `${problem.path}: ${uncapitalize(problem.reason)}`
-            }
-            return problem.reason
+            return problem.path.length
+                ? `At ${problem.path}, ${uncapitalize(`${problem}`)}`
+                : `${problem}`
         }
-        return this.map((problem) => `${problem.path}: ${problem.reason}`).join(
-            "\n"
-        )
+        return this.map((problem) => `${problem.path}: ${problem}`).join("\n")
     }
 
-    get messages() {
-        this.#assertHasState()
-        const problems: Problem[] = []
-        for (const path in this.byPath) {
-            const contexts = this.byPath[path]
-            const firstContext = contexts[0]
-            if (contexts.length === 1) {
-                problems.push({
-                    path: firstContext.path,
-                    reason: this.#writeMessage(firstContext)
-                })
-            } else {
-                problems.push({
-                    path: firstContext.path,
-                    reason: this.#writeMessage({
-                        code: "multi",
-                        data: firstContext.data as any,
-                        path: firstContext.path,
-                        parts: contexts.map((context) =>
-                            this.#writeMessage(context)
-                        ),
-                        description: "parts error"
-                    })
-                })
-            }
-        }
-        return problems
-    }
-
-    addProblem<code extends ProblemCode>(input: ProblemInputs[code]) {
-        this.#assertHasState()
-        const data = new Stringifiable(input.data)
-        // copy path so future mutations don't affect it
-        const path = Path.from(this.state.path)
-        const ctx = Object.assign(input, {
-            data,
-            path
-        }) as unknown as ProblemContexts[ProblemCode]
-        const pathKey = `${this.state.path}`
-        const existing = this.byPath[pathKey]
-        if (existing) {
-            existing.push(ctx)
+    add(problem: Problem) {
+        const pathKey = `${problem.path}`
+        if (this.byPath[pathKey]) {
+            this.byPath[pathKey].intersection(problem)
         } else {
-            this.byPath[pathKey] = [ctx]
+            this.byPath[pathKey] = problem
         }
     }
 
@@ -96,27 +52,28 @@ export class Problems extends Array<Problem> {
     }
 }
 
-export abstract class Problem<code extends ProblemCode> {
+export abstract class Problem {
     path: Path
-    config: ProblemsOptions[ProblemCode]
+    config: defined<ProblemsOptions[ProblemCode]>
 
-    abstract code: code
+    abstract description: string
 
     constructor(
-        private data: ProblemInputs[code]["data"],
-        state: DataTraversalState
+        public code: ProblemCode,
+        private data: unknown,
+        state: TraversalState
     ) {
         // copy path so future mutations don't affect it
         this.path = Path.from(state.path)
-        this.config = state.config.problems?.[code]
+        this.config = (state.config.problems?.[code] ?? {}) as this["config"]
     }
 
-    get data() {
-        return new Stringifiable(this.rawData)
+    intersection(problem: Problem) {
+        return {} as Problem
     }
 
     get defaultMessage() {
-        let message = `Must be ${this.type.description}`
+        let message = `Must be ${this.description}`
         if (!this.config.omitActual) {
             if ("actual" in context) {
                 message += ` (was ${context.actual})`
@@ -126,10 +83,14 @@ export abstract class Problem<code extends ProblemCode> {
                 // "actual" context is still included)
                 !this.branchPath.length
             ) {
-                message += ` (was ${this.data.toString()})`
+                message += ` (was ${this.data})`
             }
         }
         return message
+    }
+
+    toString() {
+        return this.message
     }
 
     get message() {
@@ -227,6 +188,20 @@ type ProblemDefinitions = {
     union: UnionProblemContext
     value: ValueProblemContext
     multi: MultiPartContext
+}
+
+export class DomainProblem extends Problem {
+    constructor(
+        public expected: Subdomain[],
+        data: unknown,
+        state: TraversalState
+    ) {
+        super("domain", data, state)
+    }
+
+    get description() {
+        return describeSubdomains(this.expected)
+    }
 }
 
 export type ProblemCode = keyof ProblemDefinitions

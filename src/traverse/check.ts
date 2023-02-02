@@ -19,28 +19,16 @@ import { hasKey, keysOf } from "../utils/generics.ts"
 import { getPath, Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 import type { ProblemCode, ProblemMessageWriter } from "./problems.ts"
-import {
-    describeSubdomains,
-    Problems,
-    Stringifiable,
-    subdomainDescriptions
-} from "./problems.ts"
+import { DomainProblem, Problems, Stringifiable } from "./problems.ts"
 
 export class TraversalState {
-    path: Path
-
-    constructor(protected type: Type) {
-        this.path = new Path()
-    }
-}
-
-export class DataTraversalState extends TraversalState {
+    path = new Path()
     problems: Problems
+
     // TODO: name by scope (scope registry?)
     #seen: { [name in string]?: object[] } = {}
 
-    constructor(type: Type) {
-        super(type)
+    constructor(private type: Type) {
         this.problems = new Problems()
     }
 
@@ -66,7 +54,7 @@ export class DataTraversalState extends TraversalState {
             }
         }
         this.type = this.type.scope.resolve(name)
-        traverseNode(data, this.type.flat, this)
+        traverse(data, this.type.flat, this)
         this.type = lastType
     }
 
@@ -84,7 +72,7 @@ export class DataTraversalState extends TraversalState {
             subproblems.push(this.problems)
         }
         this.problems = baseProblems
-        this.problems.addProblem({
+        this.problems.add({
             code: "union",
             data,
             subproblems,
@@ -104,29 +92,24 @@ export type BaseProblemOptions<code extends ProblemCode> =
           includeActual?: boolean
       }
 
-export const traverseNode = (
+export const traverse = (
     data: unknown,
-    flat: TraversalNode,
-    state: DataTraversalState
+    node: TraversalNode,
+    state: TraversalState
 ) => {
-    if (typeof flat === "string") {
-        if (domainOf(data) !== flat) {
-            state.problems.addProblem({
-                code: "domain",
-                data,
-                expected: [flat],
-                description: subdomainDescriptions[flat]
-            })
+    if (typeof node === "string") {
+        if (domainOf(data) !== node) {
+            return state.problems.add(new DomainProblem([node], data, state))
         }
         return
     }
-    return checkEntries(data, flat, state)
+    return checkEntries(data, node, state)
 }
 
 export const checkEntries = (
     data: unknown,
     entries: List<TraversalEntry>,
-    state: DataTraversalState
+    state: TraversalState
 ) => {
     let problemsPrecedence = Number.POSITIVE_INFINITY
     const initialProblemsCount = state.problems.length
@@ -162,7 +145,7 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
             state.path.push(propKey)
             if (!hasKey(data, propKey)) {
                 if (propKind !== "optionalProps") {
-                    state.problems.addProblem({
+                    state.problems.add({
                         code: "missing",
                         data: undefined,
                         key: propKey,
@@ -170,7 +153,7 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
                     })
                 }
             } else {
-                traverseNode(data[propKey], propNode, state)
+                traverse(data[propKey], propNode, state)
             }
             state.path.pop()
         }
@@ -188,29 +171,18 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     const dataSubdomain = subdomainOf(data)
     if (typeof rule === "string") {
         if (dataSubdomain !== rule) {
-            state.problems.addProblem({
-                code: "domain",
-                data,
-                expected: [rule],
-                description: subdomainDescriptions[rule]
-            })
+            return state.problems.add(new DomainProblem([rule], data, state))
         }
         return
     }
     if (dataSubdomain !== rule[0]) {
-        state.problems.addProblem({
-            code: "domain",
-            data,
-            expected: [rule[0]],
-            description: subdomainDescriptions[rule[0]]
-        })
-        return
+        return state.problems.add(new DomainProblem([rule[0]], data, state))
     }
     if (dataSubdomain === "Array" && typeof rule[2] === "number") {
         const actual = (data as List).length
         const expected = rule[2]
         if (expected !== actual) {
-            return state.problems.addProblem({
+            return state.problems.add({
                 code: "tupleLength",
                 data: data as List,
                 actual,
@@ -223,7 +195,7 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         let i = 0
         for (const item of data as List | Set<unknown>) {
             state.path.push(`${i}`)
-            traverseNode(item, rule[1], state)
+            traverse(item, rule[1], state)
             state.path.pop()
             i++
         }
@@ -243,23 +215,12 @@ const checkers = {
         if (entries) {
             checkEntries(data, entries, state)
         } else {
-            const expected = keysOf(domains)
-            state.problems.addProblem({
-                code: "domain",
-                data,
-                expected,
-                description: describeSubdomains(expected)
-            })
+            state.problems.add(new DomainProblem(keysOf(domains), data, state))
         }
     },
     domain: (data, domain, state) => {
         if (domainOf(data) !== domain) {
-            state.problems.addProblem({
-                code: "domain",
-                data,
-                expected: [domain],
-                description: subdomainDescriptions[domain]
-            })
+            state.problems.add(new DomainProblem([domain], data, state))
         }
     },
     subdomain: checkSubdomain,
@@ -275,7 +236,7 @@ const checkers = {
         }
         const lastPath = state.path
         state.path = rule.path
-        state.problems.addProblem({
+        state.problems.add({
             code: "union",
             data: dataAtPath,
             subproblems: [new Problems()],
@@ -289,7 +250,7 @@ const checkers = {
     narrow: (data, narrow) => narrow(data),
     value: (data, value, state) => {
         if (data !== value) {
-            state.problems.addProblem({
+            state.problems.add({
                 code: "value",
                 data,
                 expected: new Stringifiable(value),
@@ -308,7 +269,7 @@ type ValidationKey = Exclude<TraversalKey, "morph">
 export type TraversalCheck<k extends TraversalKey> = (
     data: RuleInput<k>,
     value: Extract<TraversalEntry, [k, unknown]>[1],
-    state: DataTraversalState
+    state: TraversalState
 ) => void
 
 export type ConstrainedRuleInputs = extend<
@@ -319,6 +280,7 @@ export type ConstrainedRuleInputs = extend<
         range: BoundableData
         requiredProps: Dict
         optionalProps: Dict
+        class: object
     }
 >
 

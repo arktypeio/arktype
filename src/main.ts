@@ -9,7 +9,7 @@ import type {
 import { parseDefinition, t } from "./parse/definition.js"
 import type { ParsedMorph } from "./parse/tuple/morph.ts"
 import type { ProblemsOptions } from "./traverse/check.ts"
-import { DataTraversalState, traverseNode } from "./traverse/check.ts"
+import { TraversalState, traverse } from "./traverse/check.ts"
 import type { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { Domain } from "./utils/domains.js"
@@ -197,8 +197,8 @@ export class Scope<context extends ScopeContext = any> {
         // dynamically assign a name to the primary traversal function
         const namedTraverse: Checker<unknown> = {
             [name]: (data: unknown) => {
-                const state = new DataTraversalState(type)
-                const out = traverseNode(data, type.flat, state)
+                const state = new TraversalState(type)
+                const out = traverse(data, type.flat, state)
                 return state.problems.length
                     ? { problems: state.problems }
                     : { data, out }

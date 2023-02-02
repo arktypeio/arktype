@@ -1,5 +1,6 @@
-import type { TraversalCheck } from "../../traverse/check.ts"
+import type { TraversalCheck, TraversalState } from "../../traverse/check.ts"
 import type { defineProblem } from "../../traverse/problems.ts"
+import { Problem } from "../../traverse/problems.ts"
 import type { constructor } from "../../utils/generics.ts"
 import { composeIntersection, equality } from "../compose.ts"
 
@@ -23,14 +24,23 @@ export type ClassProblemContext = defineProblem<{
 
 export const checkClass = ((data, expectedClass, state) => {
     if (!(data instanceof expectedClass)) {
-        const expected = expectedClass.name
-        const actual = (data as Object).constructor.name
-        state.problems.addProblem({
-            code: "class",
-            data,
-            expected,
-            actual,
-            description: `a subclass of ${expected}`
-        })
+        state.problems.add(new ClassProblem(expectedClass, data, state))
     }
 }) satisfies TraversalCheck<"class">
+
+export class ClassProblem extends Problem {
+    actual: constructor
+
+    constructor(
+        public expected: constructor,
+        data: object,
+        state: TraversalState
+    ) {
+        super("class", data, state)
+        this.actual = data.constructor as constructor
+    }
+
+    get description() {
+        return `a subclass of ${this.expected.name}`
+    }
+}

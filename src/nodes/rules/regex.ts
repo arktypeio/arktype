@@ -1,5 +1,6 @@
-import type { TraversalCheck } from "../../traverse/check.ts"
+import type { TraversalCheck, TraversalState } from "../../traverse/check.ts"
 import type { defineProblem } from "../../traverse/problems.ts"
+import { Problem } from "../../traverse/problems.ts"
 import type { CollapsibleList } from "../../utils/generics.ts"
 import { composeIntersection } from "../compose.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
@@ -32,12 +33,7 @@ export const getRegex = (source: string) => {
 export const checkRegex = ((data, regex, state) => {
     if (!regex.test(data)) {
         // TODO: add alias descirptions
-        state.problems.addProblem({
-            code: "regex",
-            data,
-            regex,
-            description: `a string matching ${regex.source}`
-        })
+        state.problems.add(new RegexProblem(regex, data, state))
     }
 }) satisfies TraversalCheck<"regex">
 
@@ -46,6 +42,16 @@ export type RegexProblemContext = defineProblem<{
     data: string
     regex: RegExp
 }>
+
+export class RegexProblem extends Problem {
+    constructor(public regex: RegExp, data: string, state: TraversalState) {
+        super("regex", data, state)
+    }
+
+    get description() {
+        return `a string matching ${this.regex.source}`
+    }
+}
 
 export const regexIntersection = composeIntersection<CollapsibleList<string>>(
     collapsibleListUnion<string>

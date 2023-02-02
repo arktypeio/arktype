@@ -1,9 +1,7 @@
 import { Scanner } from "../../parse/string/shift/scanner.ts"
-import type {
-    DataTraversalState,
-    TraversalCheck
-} from "../../traverse/check.ts"
+import type { TraversalCheck, TraversalState } from "../../traverse/check.ts"
 import type { defineProblem } from "../../traverse/problems.ts"
+import { Problem } from "../../traverse/problems.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import type { List } from "../../utils/generics.ts"
 import { composeIntersection, equality, toComparator } from "../compose.ts"
@@ -64,7 +62,7 @@ export const checkRange = ((data, range, state) => {
             size < range.min.limit ||
             (size === range.min.limit && range.min.exclusive)
         ) {
-            addRangeProblem(data, range.min, "min", size, state)
+            state.problems.add(new RangeProblem(range.min, "min", data, state))
         }
     }
     if (range.max) {
@@ -72,32 +70,44 @@ export const checkRange = ((data, range, state) => {
             size > range.max.limit ||
             (size === range.max.limit && range.max.exclusive)
         ) {
-            addRangeProblem(data, range.max, "max", size, state)
+            state.problems.add(new RangeProblem(range.max, "max", data, state))
         }
     }
 }) satisfies TraversalCheck<"range">
 
-const addRangeProblem = (
-    data: BoundableData,
-    bound: Bound,
-    boundKind: "min" | "max",
-    size: number,
-    state: DataTraversalState
-) => {
-    const comparator = toComparator(boundKind, bound)
-    const limit = bound.limit
-    const kind = subdomainOf(data)
-    state.problems.addProblem({
-        code: "range",
-        comparator,
-        limit,
-        kind,
-        data,
-        size,
-        description: `${Scanner.comparatorDescriptions[comparator]} ${limit} ${
-            kind === "string" ? "characters " : kind === "Array" ? "items " : ""
+// TODO: flatten these so they can directly use comparators
+export class RangeProblem extends Problem {
+    comparator: Scanner.Comparator
+    limit: number
+    units: string
+
+    constructor(
+        bound: Bound,
+        boundKind: "min" | "max",
+        data: BoundableData,
+        state: TraversalState
+    ) {
+        super("range", data, state)
+        this.comparator = toComparator(boundKind, bound)
+        this.limit = bound.limit
+        const subdomain = subdomainOf(data)
+        this.units =
+            subdomain === "string"
+                ? "characters"
+                : subdomain === "Array"
+                ? "items"
+                : ""
+    }
+
+    get description() {
+        let description = `${Scanner.comparatorDescriptions[this.comparator]} ${
+            this.limit
         }`
-    })
+        if (this.units) {
+            description += ` ${this.units}`
+        }
+        return description
+    }
 }
 
 const invertedKinds = {
