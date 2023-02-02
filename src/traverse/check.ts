@@ -19,7 +19,7 @@ import { hasKey, keysOf } from "../utils/generics.ts"
 import { getPath, Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 import type { ProblemCode, ProblemMessageWriter } from "./problems.ts"
-import { DomainProblem, Problems, Stringifiable } from "./problems.ts"
+import { DomainProblem, Problem, Problems, Stringifiable } from "./problems.ts"
 
 export class TraversalState {
     path = new Path()
@@ -72,12 +72,7 @@ export class TraversalState {
             subproblems.push(this.problems)
         }
         this.problems = baseProblems
-        this.problems.add({
-            code: "union",
-            data,
-            subproblems,
-            description: "branch error"
-        })
+        this.problems.add(new UnionProblem("union", data, this))
     }
 }
 
@@ -145,12 +140,7 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
             state.path.push(propKey)
             if (!hasKey(data, propKey)) {
                 if (propKind !== "optionalProps") {
-                    state.problems.add({
-                        code: "missing",
-                        data: undefined,
-                        key: propKey,
-                        description: "defined"
-                    })
+                    state.problems.add(new MissingKeyProblem(propKey, state))
                 }
             } else {
                 traverse(data[propKey], propNode, state)
@@ -182,13 +172,9 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         const actual = (data as List).length
         const expected = rule[2]
         if (expected !== actual) {
-            return state.problems.add({
-                code: "tupleLength",
-                data: data as List,
-                actual,
-                expected,
-                description: `an array of length ${expected}`
-            })
+            return state.problems.add(
+                new TupleLengthProblem(expected, data as List, state)
+            )
         }
     }
     if (dataSubdomain === "Array" || dataSubdomain === "Set") {
@@ -236,12 +222,7 @@ const checkers = {
         }
         const lastPath = state.path
         state.path = rule.path
-        state.problems.add({
-            code: "union",
-            data: dataAtPath,
-            subproblems: [new Problems()],
-            description: "branches"
-        })
+        state.problems.add(new UnionProblem("switch", data, state))
         state.path = lastPath
     },
     alias: (data, name, state) => state.traverseResolution(data, name),
@@ -250,12 +231,7 @@ const checkers = {
     narrow: (data, narrow) => narrow(data),
     value: (data, value, state) => {
         if (data !== value) {
-            state.problems.add({
-                code: "value",
-                data,
-                expected: new Stringifiable(value),
-                description: stringify(value)
-            })
+            state.problems.add(new ValueProblem(value, data, state))
         }
     }
 } satisfies {
@@ -286,3 +262,53 @@ export type ConstrainedRuleInputs = extend<
 
 export type RuleInput<k extends TraversalKey> =
     k extends keyof ConstrainedRuleInputs ? ConstrainedRuleInputs[k] : unknown
+
+export class ValueProblem extends Problem {
+    expected: Stringifiable
+
+    constructor(expected: unknown, data: unknown, state: TraversalState) {
+        super("value", data, state)
+        this.expected = new Stringifiable(expected)
+    }
+
+    get description() {
+        return `${this.expected}`
+    }
+}
+
+export class UnionProblem extends Problem {
+    expected: Stringifiable
+
+    constructor(expected: unknown, data: unknown, state: TraversalState) {
+        super("union", data, state)
+        this.expected = new Stringifiable(expected)
+    }
+
+    get description() {
+        return `${this.expected}`
+    }
+}
+
+export class TupleLengthProblem extends Problem {
+    constructor(
+        public expected: number,
+        data: readonly unknown[],
+        state: TraversalState
+    ) {
+        super("tupleLength", data, state)
+    }
+
+    get description() {
+        return `a tuple of length ${this.expected}`
+    }
+}
+
+export class MissingKeyProblem extends Problem {
+    constructor(public key: string, state: TraversalState) {
+        super("missing", undefined, state)
+    }
+
+    get description() {
+        return "defined"
+    }
+}

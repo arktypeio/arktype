@@ -40,11 +40,14 @@ export class Problems extends Array<Problem> {
 
     add(problem: Problem) {
         const pathKey = `${problem.path}`
-        if (this.byPath[pathKey]) {
-            this.byPath[pathKey].intersection(problem)
-        } else {
-            this.byPath[pathKey] = problem
-        }
+        // if (this.byPath[pathKey]) {
+        //     this.byPath[pathKey] = new MultipartProblem(
+        //         this.byPath[pathKey],
+        //         problem
+        //     )
+        // } else {
+        //     this.byPath[pathKey] = problem
+        // }
     }
 
     throw(): never {
@@ -52,40 +55,47 @@ export class Problems extends Array<Problem> {
     }
 }
 
-export abstract class Problem {
+type ProblemSourceArgs<code extends ProblemCode = ProblemCode> =
+    code extends "multi"
+        ? [initial: Problem]
+        : [data: unknown, state: TraversalState]
+
+export abstract class Problem<code extends ProblemCode = ProblemCode> {
     path: Path
-    config: defined<ProblemsOptions[ProblemCode]>
+    config: ProblemsOptions | undefined
+    data: Stringifiable
 
     abstract description: string
 
-    constructor(
-        public code: ProblemCode,
-        private data: unknown,
-        state: TraversalState
-    ) {
-        // copy path so future mutations don't affect it
-        this.path = Path.from(state.path)
-        this.config = (state.config.problems?.[code] ?? {}) as this["config"]
-    }
-
-    intersection(problem: Problem) {
-        return {} as Problem
+    constructor(code: code, ...args: ProblemSourceArgs<code>) {
+        if (code === "multi") {
+            const initial = args[0] as Problem
+            this.path = initial.path
+            this.config = initial.config
+            this.data = initial.data
+        } else {
+            const [data, state] = args
+            // copy path so future mutations don't affect it
+            this.path = Path.from(state!.path)
+            this.config = state!.config.problems
+            this.data = new Stringifiable(data)
+        }
     }
 
     get defaultMessage() {
         let message = `Must be ${this.description}`
-        if (!this.config.omitActual) {
-            if ("actual" in context) {
-                message += ` (was ${context.actual})`
-            } else if (
-                !this.omitActualByDefault &&
-                // If we're in a union, don't redundandtly include data (other
-                // "actual" context is still included)
-                !this.branchPath.length
-            ) {
-                message += ` (was ${this.data})`
-            }
-        }
+        // if (!this.config.omitActual) {
+        //     if ("actual" in context) {
+        //         message += ` (was ${context.actual})`
+        //     } else if (
+        //         !this.omitActualByDefault &&
+        //         // If we're in a union, don't redundandtly include data (other
+        //         // "actual" context is still included)
+        //         !this.branchPath.length
+        //     ) {
+        //         message += ` (was ${this.data})`
+        //     }
+        // }
         return message
     }
 
@@ -94,17 +104,31 @@ export abstract class Problem {
     }
 
     get message() {
-        const writer = (
-            typeof this.config === "function"
-                ? this.config
-                : this.config?.message
-        ) as ProblemMessageWriter | undefined
-        let result = writer?.(this) ?? this.defaultMessage
-        if (this.branchPath.length) {
-            const branchIndentation = "  ".repeat(this.branchPath.length)
-            result = branchIndentation + result
-        }
-        return result
+        // const writer = (
+        //     typeof this.config === "function"
+        //         ? this.config
+        //         : this.config?.message
+        // ) as ProblemMessageWriter | undefined
+        // let result = writer?.(this) ?? this.defaultMessage
+        // if (this.branchPath.length) {
+        //     const branchIndentation = "  ".repeat(this.branchPath.length)
+        //     result = branchIndentation + result
+        // }
+        // return result
+        return ""
+    }
+}
+
+export class MultipartProblem extends Problem {
+    subproblems: Problem[]
+
+    constructor(initial: Problem, intersected: Problem, state: TraversalState) {
+        super("multi", initial.data.raw, state)
+        this.subproblems = [initial, intersected]
+    }
+
+    get description() {
+        return "...\n• " + this.subproblems.join("\n• ")
     }
 }
 
@@ -244,9 +268,6 @@ type MultiPartContext = defineProblem<{
     data: unknown
     parts: string[]
 }>
-
-export const writeMultiPartError: ProblemMessageWriter<"multi"> = ({ parts }) =>
-    "• " + parts.join("\n• ")
 
 export type ProblemMessageWriter<code extends ProblemCode = any> = (
     context: ProblemContexts[code]
