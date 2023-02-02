@@ -8,8 +8,9 @@ import type { extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 import type {
+    BaseProblemConfig,
     MissingKeyProblem,
-    ProblemsOptions,
+    ProblemsConfig,
     TraversalState,
     TupleLengthProblem,
     UnionProblem,
@@ -25,6 +26,7 @@ export class ArktypeError extends TypeError {
     }
 }
 
+// TODO: to readonly
 export class Problems extends Array<Problem> {
     byPath: Record<string, Problem> = {}
 
@@ -42,7 +44,7 @@ export class Problems extends Array<Problem> {
         const pathKey = `${problem.path}`
         const existing = this.byPath[pathKey]
         if (existing) {
-            if (existing instanceof MultipartProblem) {
+            if (existing.hasCode("multi")) {
                 existing.subproblems.push(problem)
             } else {
                 this.byPath[pathKey] = new MultipartProblem(existing, problem)
@@ -50,6 +52,8 @@ export class Problems extends Array<Problem> {
         } else {
             this.byPath[pathKey] = problem
         }
+        // TODO: Should we include multi-part in lists?
+        this.push(problem)
     }
 
     throw(): never {
@@ -62,49 +66,50 @@ export abstract class Problem<
     data = any
 > {
     path: Path
-    config: ProblemsOptions | undefined
+    config: ProblemsConfig
     data: Stringifiable<data>
 
     abstract description: string
+    actual?: unknown
 
     constructor(code: code, initial: Problem)
     constructor(code: code, state: TraversalState, data: data)
     constructor(
         public code: code,
-        source: Problem | TraversalState,
+        contextSource: Problem | TraversalState,
         data?: data
     ) {
-        if (source instanceof Problem) {
-            this.path = source.path
-            this.config = source.config
-            this.data = source.data as Stringifiable<data>
+        if (contextSource instanceof Problem) {
+            this.path = contextSource.path
+            this.config = contextSource.config
+            this.data = contextSource.data as Stringifiable<data>
         } else {
             // copy path so future mutations don't affect it
-            this.path = Path.from(source.path)
-            this.config = source.config.problems
+            this.path = Path.from(contextSource.path)
+            this.config = contextSource.config.problems
             this.data = new Stringifiable(data as data)
         }
     }
 
     get defaultMessage() {
         let message = `Must be ${this.description}`
-        // if (!this.config.omitActual) {
-        //     if ("actual" in context) {
-        //         message += ` (was ${context.actual})`
-        //     } else if (
-        //         !this.omitActualByDefault &&
-        //         // If we're in a union, don't redundandtly include data (other
-        //         // "actual" context is still included)
-        //         !this.branchPath.length
-        //     ) {
-        //         message += ` (was ${this.data})`
-        //     }
-        // }
+        if (
+            "actual" in this &&
+            !this.config?.omitActual &&
+            !(this.config?.[this.code] as BaseProblemConfig<code> | undefined)
+                ?.omitActual
+        ) {
+            message += ` (was ${this.actual})`
+        }
         return message
     }
 
     toString() {
         return this.message
+    }
+
+    hasCode<name extends code>(name: name): this is ProblemsByCode[name] {
+        return this.code === name
     }
 
     get message() {
@@ -119,7 +124,7 @@ export abstract class Problem<
         //     result = branchIndentation + result
         // }
         // return result
-        return ""
+        return this.defaultMessage
     }
 }
 

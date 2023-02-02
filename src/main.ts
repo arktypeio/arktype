@@ -8,7 +8,7 @@ import type {
 } from "./parse/definition.js"
 import { parseDefinition, t } from "./parse/definition.js"
 import type { ParsedMorph } from "./parse/tuple/morph.ts"
-import type { ProblemsOptions } from "./traverse/check.ts"
+import type { ProblemsConfig } from "./traverse/check.ts"
 import { TraversalState, traverse } from "./traverse/check.ts"
 import type { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
@@ -178,7 +178,8 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     type = ((def, opts: TypeOptions = {}) => {
-        const result = this.#initializeUnparsedType(opts)
+        // TODO: fix
+        const result = this.#initializeUnparsedType(opts as TypeConfig)
         const ctx = this.#initializeContext(result)
         result.node = this.resolveNode(parseDefinition(def, ctx))
         result.flat = flattenNode(result.node, result)
@@ -192,7 +193,7 @@ export class Scope<context extends ScopeContext = any> {
         }
     }
 
-    #initializeUnparsedType(config: TypeOptions): Type {
+    #initializeUnparsedType(config: TypeConfig): Type {
         const name = config.alias ?? "(anonymous)"
         // dynamically assign a name to the primary traversal function
         const namedTraverse: Checker<unknown> = {
@@ -265,7 +266,11 @@ export class Scope<context extends ScopeContext = any> {
                     : undefined
             ) as ResolveResult<onUnresolvable>
         }
-        const result = this.#initializeUnparsedType({ alias: name })
+        // TODO: opts?
+        const result = this.#initializeUnparsedType({
+            alias: name,
+            problems: {}
+        })
         this.#resolutions.set(name, result)
         this.#exports.set(name, result)
         const ctx = this.#initializeContext(result)
@@ -472,7 +477,7 @@ type Checker<t> = (data: unknown) => Result<t>
 type TypeRoot<t = unknown> = {
     [t]: t
     infer: asOut<t>
-    config: TypeOptions
+    config: TypeConfig
     node: TypeNode
     flat: TraversalNode
     includesMorph: boolean
@@ -484,8 +489,11 @@ export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
 export type TypeOptions = {
     // TODO: validate not already a name
     alias?: string
-    problems?: ProblemsOptions
+    problems?: ProblemsConfig
 }
+
+// TODO: add compilation step
+export type TypeConfig = Required<TypeOptions>
 
 export type asIn<t> = asIo<t, "in">
 

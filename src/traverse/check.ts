@@ -14,7 +14,7 @@ import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
 import { domainOf, hasDomain, subdomainOf } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
-import type { Dict, extend, List } from "../utils/generics.ts"
+import type { Dict, evaluate, extend, List } from "../utils/generics.ts"
 import { hasKey, keysOf } from "../utils/generics.ts"
 import { getPath, Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
@@ -76,16 +76,25 @@ export class TraversalState {
     }
 }
 
-export type ProblemsOptions = {
-    [code in ProblemCode]?: BaseProblemOptions<code>
-}
+export type ProblemsOptions = evaluate<
+    {
+        [code in ProblemCode]?:
+            | ProblemMessageWriter<code>
+            | BaseProblemConfig<code>
+    } & BaseProblemConfig
+>
 
-export type BaseProblemOptions<code extends ProblemCode> =
-    | ProblemMessageWriter<code>
-    | {
-          message?: ProblemMessageWriter<code>
-          includeActual?: boolean
-      }
+// TODO: Add problems config compiler
+export type ProblemsConfig = evaluate<
+    {
+        [code in ProblemCode]?: Exclude<ProblemsOptions[code], Function>
+    } & BaseProblemConfig
+>
+
+export type BaseProblemConfig<code extends ProblemCode = ProblemCode> = {
+    message?: ProblemMessageWriter<code>
+    omitActual?: boolean
+}
 
 export const traverse = (
     data: unknown,
@@ -237,18 +246,20 @@ const checkers = {
 } satisfies {
     [k in ValidationKey]: TraversalCheck<k>
 } as {
+    // after validating that each checker has the appropriate type, cast to a
+    // more permissive type that avoids inferring input as never
     [k in ValidationKey]: TraversalCheck<any>
 }
 
 type ValidationKey = Exclude<TraversalKey, "morph">
 
 export type TraversalCheck<k extends TraversalKey> = (
-    data: RuleInput<k>,
-    value: Extract<TraversalEntry, [k, unknown]>[1],
+    data: RuleData<k>,
+    rule: Extract<TraversalEntry, [k, unknown]>[1],
     state: TraversalState
 ) => void
 
-export type ConstrainedRuleInputs = extend<
+export type ConstrainedRuleData = extend<
     { [k in TraversalKey]?: unknown },
     {
         regex: string
@@ -260,8 +271,8 @@ export type ConstrainedRuleInputs = extend<
     }
 >
 
-export type RuleInput<k extends TraversalKey> =
-    k extends keyof ConstrainedRuleInputs ? ConstrainedRuleInputs[k] : unknown
+export type RuleData<k extends TraversalKey> =
+    k extends keyof ConstrainedRuleData ? ConstrainedRuleData[k] : unknown
 
 export class ValueProblem extends Problem<"value"> {
     expected: Stringifiable
@@ -278,10 +289,12 @@ export class ValueProblem extends Problem<"value"> {
 
 export class UnionProblem extends Problem<"union"> {
     expected: Stringifiable
+    actual: Stringifiable
 
     constructor(expected: unknown, state: TraversalState, data: unknown) {
         super("union", state, data)
         this.expected = new Stringifiable(expected)
+        this.actual = this.data
     }
 
     get description() {
@@ -290,8 +303,11 @@ export class UnionProblem extends Problem<"union"> {
 }
 
 export class TupleLengthProblem extends Problem<"tupleLength", List> {
+    actual: number
+
     constructor(public expected: number, state: TraversalState, data: List) {
         super("tupleLength", state, data)
+        this.actual = data.length
     }
 
     get description() {

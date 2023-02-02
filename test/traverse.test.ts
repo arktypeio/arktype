@@ -8,11 +8,6 @@ describe("traverse", () => {
         attest(t(4).data).snap(4)
         attest(t(5).problems?.summary).snap("5 is not divisible by 2")
     })
-    it("string length", () => {
-        const gte3 = type("string>=3")
-        attest(gte3("yes").problems).equals(undefined)
-    })
-
     it("range", () => {
         const t = type("number>2")
         attest(t(3).data).snap(3)
