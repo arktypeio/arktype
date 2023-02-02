@@ -42,7 +42,7 @@ export class RegexProblem extends Problem<"regex", string> {
     }
 
     get description() {
-        return `a string matching ${this.regex.source}`
+        return `a string matching /${this.regex.source}/`
     }
 }
 

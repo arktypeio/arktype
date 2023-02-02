@@ -67,6 +67,7 @@ export const checkRange = ((data, range, state) => {
 
 // TODO: flatten these so they can directly use comparators
 export class RangeProblem extends Problem<"range"> {
+    actual: number
     comparator: Scanner.Comparator
     limit: number
     units: string
@@ -78,6 +79,7 @@ export class RangeProblem extends Problem<"range"> {
         state: TraversalState
     ) {
         super("range", state, data)
+        this.actual = typeof data === "number" ? data : data.length
         this.comparator = toComparator(boundKind, bound)
         this.limit = bound.limit
         const subdomain = subdomainOf(data)

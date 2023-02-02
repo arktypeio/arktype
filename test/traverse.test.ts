@@ -6,7 +6,7 @@ describe("traverse", () => {
     it("divisible", () => {
         const t = type("number%2")
         attest(t(4).data).snap(4)
-        attest(t(5).problems?.summary).snap("5 is not divisible by 2")
+        attest(t(5).problems?.summary).snap("Must be divisible by 2 (was 5)")
     })
     it("range", () => {
         const t = type("number>2")
@@ -19,10 +19,10 @@ describe("traverse", () => {
         attest(checked.problems?.summary).snap("Must be a number (was string)")
     })
     it("regex", () => {
-        const t = type("/\\w@hotmail.com/")
-        const checked = t("shawn@hotail.com")
+        const t = type("/.*@arktype.io/")
+        const checked = t("shawn@hotmail.com")
         attest(checked.problems?.summary).snap(
-            '"shawn@hotail.com" must match expression /\\w@hotmail.com/'
+            'Must be a string matching /.*@arktype.io/ (was "shawn@hotmail.com")'
         )
     })
     it("required keys", () => {
@@ -31,8 +31,9 @@ describe("traverse", () => {
             age: "number"
         })
         const checked = t({ name: "Shawn" })
-        // TODO: improve
-        attest(checked.problems?.summary).snap("age: age is required")
+        attest(checked.problems?.summary).snap(
+            "age must be defined (was missing)"
+        )
     })
     it("custom errors", () => {
         const isEven = type("number%2", {
@@ -51,7 +52,7 @@ describe("traverse", () => {
         const basic = type("string|number[]")
         const check = basic(2)
         attest(check.problems?.summary).snap(
-            "Must either be a string or be an object (was number)"
+            "Must be either a string or an object (was number)"
         )
     })
     it("tuple length", () => {
@@ -59,7 +60,7 @@ describe("traverse", () => {
         const data: typeof t.infer = ["foo", 5, "boo", []]
         attest(t(data).data).equals(data)
         attest(t(["hello"]).problems?.summary).snap(
-            "Tuple must have length 4 (was 1)"
+            "Must be exactly 4 items (was 1)"
         )
     })
     // TODO: improve error message, include subproblems

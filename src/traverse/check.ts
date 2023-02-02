@@ -289,12 +289,10 @@ export class ValueProblem extends Problem<"value"> {
 
 export class UnionProblem extends Problem<"union"> {
     expected: Stringifiable
-    actual: Stringifiable
 
     constructor(expected: unknown, state: TraversalState, data: unknown) {
         super("union", state, data)
         this.expected = new Stringifiable(expected)
-        this.actual = this.data
     }
 
     get description() {
@@ -311,11 +309,13 @@ export class TupleLengthProblem extends Problem<"tupleLength", List> {
     }
 
     get description() {
-        return `a tuple of length ${this.expected}`
+        return `exactly ${this.expected} items`
     }
 }
 
 export class MissingKeyProblem extends Problem<"missing", undefined> {
+    actual = "missing"
+
     constructor(public key: string, state: TraversalState) {
         super("missing", state, undefined)
     }

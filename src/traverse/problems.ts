@@ -2,13 +2,13 @@ import type { ClassProblem } from "../nodes/rules/class.ts"
 import type { DivisibilityProblem } from "../nodes/rules/divisor.ts"
 import type { RangeProblem } from "../nodes/rules/range.ts"
 import type { RegexProblem } from "../nodes/rules/regex.ts"
-import type { Subdomain } from "../utils/domains.ts"
+import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import type { extend } from "../utils/generics.ts"
+import type { evaluate, extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
+import type { SerializablePrimitive } from "../utils/serialize.ts"
 import { stringify } from "../utils/serialize.ts"
 import type {
-    BaseProblemConfig,
     MissingKeyProblem,
     ProblemsConfig,
     TraversalState,
@@ -34,7 +34,7 @@ export class Problems extends Array<Problem> {
         if (this.length === 1) {
             const problem = this[0]
             return problem.path.length
-                ? `At ${problem.path}, ${uncapitalize(`${problem}`)}`
+                ? `${problem.path} ${uncapitalize(`${problem}`)}`
                 : `${problem}`
         }
         return this.map((problem) => `${problem.path}: ${problem}`).join("\n")
@@ -44,16 +44,20 @@ export class Problems extends Array<Problem> {
         const pathKey = `${problem.path}`
         const existing = this.byPath[pathKey]
         if (existing) {
-            if (existing.hasCode("multi")) {
+            if (existing.hasCode("compound")) {
                 existing.subproblems.push(problem)
             } else {
-                this.byPath[pathKey] = new MultipartProblem(existing, problem)
+                this.byPath[pathKey] = new CompoundProblem(existing, problem)
             }
         } else {
             this.byPath[pathKey] = problem
         }
         // TODO: Should we include multi-part in lists?
         this.push(problem)
+    }
+
+    toString() {
+        return this.summary
     }
 
     throw(): never {
@@ -66,11 +70,11 @@ export abstract class Problem<
     data = any
 > {
     path: Path
-    config: ProblemsConfig
+    config: ProblemsConfig | undefined
     data: Stringifiable<data>
 
     abstract description: string
-    actual?: unknown
+    actual?: SerializablePrimitive | Stringifiable
 
     constructor(code: code, initial: Problem)
     constructor(code: code, state: TraversalState, data: data)
@@ -93,13 +97,9 @@ export abstract class Problem<
 
     get defaultMessage() {
         let message = `Must be ${this.description}`
-        if (
-            "actual" in this &&
-            !this.config?.omitActual &&
-            !(this.config?.[this.code] as BaseProblemConfig<code> | undefined)
-                ?.omitActual
-        ) {
-            message += ` (was ${this.actual})`
+        // TODO: Distribute config to codes
+        if (!this.config?.[this.code]?.omitActual) {
+            message += ` (was ${this.actual ?? this.data})`
         }
         return message
     }
@@ -128,11 +128,11 @@ export abstract class Problem<
     }
 }
 
-export class MultipartProblem extends Problem<"multi"> {
+export class CompoundProblem extends Problem<"compound"> {
     subproblems: Problem[]
 
     constructor(initial: Problem, intersected: Problem) {
-        super("multi", initial)
+        super("compound", initial)
         this.subproblems = [initial, intersected]
     }
 
@@ -208,18 +208,21 @@ type ProblemsByCode = {
     tupleLength: TupleLengthProblem
     union: UnionProblem
     value: ValueProblem
-    multi: MultipartProblem
+    compound: CompoundProblem
 }
 
-export type ProblemCode = keyof ProblemsByCode
+export type ProblemCode = evaluate<keyof ProblemsByCode>
 
 export class DomainProblem extends Problem<"domain"> {
+    actual: Domain
+
     constructor(
         public expected: Subdomain[],
         state: TraversalState,
         data: unknown
     ) {
         super("domain", state, data)
+        this.actual = domainOf(data)
     }
 
     get description() {

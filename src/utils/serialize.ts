@@ -66,7 +66,7 @@ const snapshotRecurse = (
         case "bigint":
             return `${v}n`
         case "undefined":
-            return "(undefined)"
+            return "undefined"
         default:
             return v
     }
@@ -85,7 +85,7 @@ export const serialize = (data: unknown, opts: SerializationOptions = {}) => {
                 }
                 return v
             case "undefined":
-                return "(undefined)"
+                return "undefined"
             case "symbol":
                 return opts.onSymbol?.(v)
             case "bigint":
@@ -102,8 +102,16 @@ const alwaysIncludeOptions = {
     onFunction: (v) => `(function${v.name && ` ${v.name}`})`
 } satisfies SerializationOptions
 
-export const stringify = (data: unknown) =>
-    serialize(data, alwaysIncludeOptions)
+export const stringify = (data: unknown) => {
+    switch (domainOf(data)) {
+        case "object":
+            return serialize(data, alwaysIncludeOptions)
+        case "symbol":
+            return alwaysIncludeOptions.onSymbol(data as symbol)
+        default:
+            return serializePrimitive(data as SerializablePrimitive)
+    }
+}
 
 type SerializedString = `'${string}'`
 

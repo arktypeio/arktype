@@ -31,7 +31,6 @@ export class DivisibilityProblem extends Problem<"divisibility", number> {
         super("divisibility", state, data)
     }
 
-    // TODO: better to pass to Problem constructor?
     get description() {
         return this.divisor === 1
             ? `an integer`
