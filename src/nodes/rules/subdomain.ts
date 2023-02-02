@@ -1,4 +1,3 @@
-import type { defineProblem } from "../../traverse/problems.ts"
 import type { Subdomain } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import type { Dict, List, mutable } from "../../utils/generics.ts"
@@ -106,13 +105,6 @@ const subdomainParameterToPathSegment = (
         : throwInternalError(
               `Unexpected parameterized subdomain '${subdomain}'`
           )
-
-export type TupleLengthProblemContext = defineProblem<{
-    code: "tupleLength"
-    data: List
-    actual: number
-    expected: number
-}>
 
 export const flattenSubdomain: FlattenAndPushRule<SubdomainRule> = (
     entries,

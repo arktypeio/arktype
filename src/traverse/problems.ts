@@ -1,20 +1,20 @@
-import type { ClassProblemContext } from "../nodes/rules/class.ts"
-import type { DivisibilityContext } from "../nodes/rules/divisor.ts"
-import type { MissingKeyContext } from "../nodes/rules/props.ts"
-import type { RangeProblemContext } from "../nodes/rules/range.ts"
-import type { RegexProblemContext } from "../nodes/rules/regex.ts"
-import type { TupleLengthProblemContext } from "../nodes/rules/subdomain.ts"
-import type { Domain, Subdomain } from "../utils/domains.ts"
+import type { ClassProblem } from "../nodes/rules/class.ts"
+import type { DivisibilityProblem } from "../nodes/rules/divisor.ts"
+import type { RangeProblem } from "../nodes/rules/range.ts"
+import type { RegexProblem } from "../nodes/rules/regex.ts"
+import type { Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import type {
-    defined,
-    evaluate,
-    extend,
-    replaceProps
-} from "../utils/generics.ts"
+import type { extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { ProblemsOptions, TraversalState } from "./check.ts"
+import type {
+    MissingKeyProblem,
+    ProblemsOptions,
+    TraversalState,
+    TupleLengthProblem,
+    UnionProblem,
+    ValueProblem
+} from "./check.ts"
 
 export class ArktypeError extends TypeError {
     cause: Problems
@@ -63,11 +63,12 @@ type ProblemSourceArgs<code extends ProblemCode = ProblemCode> =
 export abstract class Problem<code extends ProblemCode = ProblemCode> {
     path: Path
     config: ProblemsOptions | undefined
+    // add type
     data: Stringifiable
 
     abstract description: string
 
-    constructor(code: code, ...args: ProblemSourceArgs<code>) {
+    constructor(public code: code, ...args: ProblemSourceArgs<code>) {
         if (code === "multi") {
             const initial = args[0] as Problem
             this.path = initial.path
@@ -119,7 +120,7 @@ export abstract class Problem<code extends ProblemCode = ProblemCode> {
     }
 }
 
-export class MultipartProblem extends Problem {
+export class MultipartProblem extends Problem<"multi"> {
     subproblems: Problem[]
 
     constructor(initial: Problem, intersected: Problem, state: TraversalState) {
@@ -170,12 +171,6 @@ const describeBranches = (descriptions: string[]) => {
     return description
 }
 
-type DomainProblemContext = defineProblem<{
-    code: "domain"
-    data: unknown
-    expected: Subdomain[]
-}>
-
 /** Each Subdomain's completion for the phrase "Must be _____" */
 export const subdomainDescriptions = {
     bigint: "a bigint",
@@ -195,26 +190,22 @@ export const subdomainDescriptions = {
     Set: "a Set"
 } as const satisfies Record<Subdomain, string>
 
-export type UnionProblemContext = defineProblem<{
-    code: "union"
-    data: unknown
-    subproblems: Problems[]
-}>
-
-type ProblemDefinitions = {
-    divisibility: DivisibilityContext
-    domain: DomainProblemContext
-    missing: MissingKeyContext
-    range: RangeProblemContext
-    class: ClassProblemContext
-    regex: RegexProblemContext
-    tupleLength: TupleLengthProblemContext
-    union: UnionProblemContext
-    value: ValueProblemContext
-    multi: MultiPartContext
+type ProblemsByCode = {
+    divisibility: DivisibilityProblem
+    domain: DomainProblem
+    missing: MissingKeyProblem
+    range: RangeProblem
+    class: ClassProblem
+    regex: RegexProblem
+    tupleLength: TupleLengthProblem
+    union: UnionProblem
+    value: ValueProblem
+    multi: MultipartProblem
 }
 
-export class DomainProblem extends Problem {
+export type ProblemCode = keyof ProblemsByCode
+
+export class DomainProblem extends Problem<"domain"> {
     constructor(
         public expected: Subdomain[],
         data: unknown,
@@ -228,57 +219,16 @@ export class DomainProblem extends Problem {
     }
 }
 
-export type ProblemCode = keyof ProblemDefinitions
-
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-type validateProblemDefinitions = extend<
+type validateProblems = extend<
     {
-        [code in ProblemCode]: ProblemDefinition<code>
+        [code in ProblemCode]: Problem<code>
     },
     // if one or more codes is not mapped to a context including its own name,
     // there will be a type error here
-    ProblemDefinitions
+    ProblemsByCode
 >
 
-export type ProblemInputs = {
-    [code in ProblemCode]: evaluate<
-        ProblemDefinitions[code] & {
-            description: string
-        }
-    >
-}
-
-export type ProblemContexts = {
-    [k in keyof ProblemInputs]: replaceProps<
-        ProblemInputs[k],
-        { data: Stringifiable<ProblemInputs[k]["data"]> }
-    > & {
-        path: Path
-    }
-}
-
-export type ValueProblemContext = defineProblem<{
-    code: "value"
-    data: unknown
-    expected: Stringifiable
-}>
-
-type MultiPartContext = defineProblem<{
-    code: "multi"
-    data: unknown
-    parts: string[]
-}>
-
 export type ProblemMessageWriter<code extends ProblemCode = any> = (
-    context: ProblemContexts[code]
+    context: Omit<ProblemsByCode[code], "message">
 ) => string
-
-type ProblemDefinition<
-    code extends ProblemCode = ProblemCode,
-    data = unknown
-> = {
-    code: code
-    data: data
-}
-
-export type defineProblem<input extends ProblemDefinition> = input

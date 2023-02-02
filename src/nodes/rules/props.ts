@@ -1,4 +1,3 @@
-import type { defineProblem } from "../../traverse/problems.ts"
 import type { Dict } from "../../utils/generics.ts"
 import {
     composeIntersection,
@@ -82,9 +81,3 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
         entries.push(["optionalProps", optionalProps])
     }
 }
-
-export type MissingKeyContext = defineProblem<{
-    code: "missing"
-    data: undefined
-    key: string
-}>

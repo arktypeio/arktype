@@ -1,5 +1,4 @@
 import type { TraversalCheck, TraversalState } from "../../traverse/check.ts"
-import type { defineProblem } from "../../traverse/problems.ts"
 import { Problem } from "../../traverse/problems.ts"
 import type { CollapsibleList } from "../../utils/generics.ts"
 import { composeIntersection } from "../compose.ts"
@@ -37,13 +36,7 @@ export const checkRegex = ((data, regex, state) => {
     }
 }) satisfies TraversalCheck<"regex">
 
-export type RegexProblemContext = defineProblem<{
-    code: "regex"
-    data: string
-    regex: RegExp
-}>
-
-export class RegexProblem extends Problem {
+export class RegexProblem extends Problem<"regex"> {
     constructor(public regex: RegExp, data: string, state: TraversalState) {
         super("regex", data, state)
     }

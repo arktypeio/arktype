@@ -263,7 +263,7 @@ export type ConstrainedRuleInputs = extend<
 export type RuleInput<k extends TraversalKey> =
     k extends keyof ConstrainedRuleInputs ? ConstrainedRuleInputs[k] : unknown
 
-export class ValueProblem extends Problem {
+export class ValueProblem extends Problem<"value"> {
     expected: Stringifiable
 
     constructor(expected: unknown, data: unknown, state: TraversalState) {
@@ -276,7 +276,7 @@ export class ValueProblem extends Problem {
     }
 }
 
-export class UnionProblem extends Problem {
+export class UnionProblem extends Problem<"union"> {
     expected: Stringifiable
 
     constructor(expected: unknown, data: unknown, state: TraversalState) {
@@ -289,7 +289,7 @@ export class UnionProblem extends Problem {
     }
 }
 
-export class TupleLengthProblem extends Problem {
+export class TupleLengthProblem extends Problem<"tupleLength"> {
     constructor(
         public expected: number,
         data: readonly unknown[],
@@ -303,7 +303,7 @@ export class TupleLengthProblem extends Problem {
     }
 }
 
-export class MissingKeyProblem extends Problem {
+export class MissingKeyProblem extends Problem<"missing"> {
     constructor(public key: string, state: TraversalState) {
         super("missing", undefined, state)
     }

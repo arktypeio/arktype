@@ -1,6 +1,5 @@
 import { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { TraversalCheck, TraversalState } from "../../traverse/check.ts"
-import type { defineProblem } from "../../traverse/problems.ts"
 import { Problem } from "../../traverse/problems.ts"
 import { subdomainOf } from "../../utils/domains.ts"
 import type { List } from "../../utils/generics.ts"
@@ -46,15 +45,6 @@ export const rangeIntersection = composeIntersection<Range>((l, r, state) => {
 
 export type BoundableData = number | string | List
 
-export type RangeProblemContext = defineProblem<{
-    code: "range"
-    data: BoundableData
-    comparator: Scanner.Comparator
-    limit: number
-    size: number
-    kind: subdomainOf<BoundableData>
-}>
-
 export const checkRange = ((data, range, state) => {
     const size = typeof data === "number" ? data : data.length
     if (range.min) {
@@ -76,7 +66,7 @@ export const checkRange = ((data, range, state) => {
 }) satisfies TraversalCheck<"range">
 
 // TODO: flatten these so they can directly use comparators
-export class RangeProblem extends Problem {
+export class RangeProblem extends Problem<"range"> {
     comparator: Scanner.Comparator
     limit: number
     units: string

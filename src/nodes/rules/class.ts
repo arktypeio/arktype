@@ -1,5 +1,4 @@
 import type { TraversalCheck, TraversalState } from "../../traverse/check.ts"
-import type { defineProblem } from "../../traverse/problems.ts"
 import { Problem } from "../../traverse/problems.ts"
 import type { constructor } from "../../utils/generics.ts"
 import { composeIntersection, equality } from "../compose.ts"
@@ -15,20 +14,13 @@ export const classIntersection = composeIntersection<constructor>(
             : state.addDisjoint("class", l, r)
 )
 
-export type ClassProblemContext = defineProblem<{
-    code: "class"
-    data: unknown
-    expected: string
-    actual: string
-}>
-
 export const checkClass = ((data, expectedClass, state) => {
     if (!(data instanceof expectedClass)) {
         state.problems.add(new ClassProblem(expectedClass, data, state))
     }
 }) satisfies TraversalCheck<"class">
 
-export class ClassProblem extends Problem {
+export class ClassProblem extends Problem<"class"> {
     actual: constructor
 
     constructor(

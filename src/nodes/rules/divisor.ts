@@ -1,5 +1,4 @@
 import type { TraversalCheck, TraversalState } from "../../traverse/check.ts"
-import type { defineProblem } from "../../traverse/problems.ts"
 import { Problem } from "../../traverse/problems.ts"
 import { composeIntersection, equality } from "../compose.ts"
 
@@ -21,19 +20,13 @@ const greatestCommonDivisor = (l: number, r: number) => {
     return greatestCommonDivisor
 }
 
-export type DivisibilityContext = defineProblem<{
-    code: "divisibility"
-    data: number
-    divisor: number
-}>
-
 export const checkDivisor = ((data, divisor, state) => {
     if (data % divisor !== 0) {
         state.problems.add(new DivisibilityProblem(divisor, data, state))
     }
 }) satisfies TraversalCheck<"divisor">
 
-export class DivisibilityProblem extends Problem {
+export class DivisibilityProblem extends Problem<"divisibility"> {
     constructor(public divisor: number, data: number, state: TraversalState) {
         super("divisibility", data, state)
     }
