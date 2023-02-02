@@ -27,8 +27,13 @@ export const checkDivisor = ((data, divisor, state) => {
 }) satisfies TraversalCheck<"divisor">
 
 export class DivisibilityProblem extends Problem<"divisibility", number> {
-    constructor(public divisor: number, state: TraversalState, data: number) {
-        super("divisibility", state, data)
+    constructor(
+        public divisor: number,
+        state: TraversalState,
+        // TODO: how often do I need data to be Stringifiable
+        rawData: number
+    ) {
+        super("divisibility", state, rawData)
     }
 
     get mustBe() {

@@ -2,8 +2,7 @@ import type { ClassProblem } from "../nodes/rules/class.ts"
 import type { DivisibilityProblem } from "../nodes/rules/divisor.ts"
 import type { RangeProblem } from "../nodes/rules/range.ts"
 import type { RegexProblem } from "../nodes/rules/regex.ts"
-import type { Subdomain } from "../utils/domains.ts"
-import { domainOf } from "../utils/domains.ts"
+import type { Domain, Subdomain } from "../utils/domains.ts"
 import type { evaluate, extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import { Stringifiable } from "../utils/serialize.ts"
@@ -76,7 +75,7 @@ export abstract class Problem<
     was?: string
 
     constructor(code: code, initial: Problem)
-    constructor(code: code, state: TraversalState, data: data)
+    constructor(code: code, state: TraversalState, rawData: data)
     constructor(
         public code: code,
         contextSource: Problem | TraversalState,
@@ -188,6 +187,7 @@ export const subdomainDescriptions = {
 type ProblemsByCode = {
     divisibility: DivisibilityProblem
     domain: DomainProblem
+    subdomain: SubdomainProblem
     missing: MissingKeyProblem
     range: RangeProblem
     class: ClassProblem
@@ -200,15 +200,30 @@ type ProblemsByCode = {
 
 export type ProblemCode = evaluate<keyof ProblemsByCode>
 
-// TODO: split into domain and subdomain
 export class DomainProblem extends Problem<"domain"> {
+    constructor(
+        public expected: Domain[],
+        state: TraversalState,
+        rawData: unknown
+    ) {
+        super("domain", state, rawData)
+        this.was = this.data.domain
+    }
+
+    get mustBe() {
+        return describeSubdomains(this.expected)
+    }
+}
+
+// TODO: is object kind?
+export class SubdomainProblem extends Problem<"subdomain"> {
     constructor(
         public expected: Subdomain[],
         state: TraversalState,
-        data: unknown
+        rawData: unknown
     ) {
-        super("domain", state, data)
-        this.was = domainOf(data)
+        super("subdomain", state, rawData)
+        this.was = this.data.subdomain
     }
 
     get mustBe() {

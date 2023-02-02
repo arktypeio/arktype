@@ -52,7 +52,7 @@ export const checkRange = ((data, range, state) => {
             size < range.min.limit ||
             (size === range.min.limit && range.min.exclusive)
         ) {
-            state.problems.add(new RangeProblem(range.min, "min", data, state))
+            state.problems.add(new RangeProblem(range.min, "min", state, data))
         }
     }
     if (range.max) {
@@ -60,7 +60,7 @@ export const checkRange = ((data, range, state) => {
             size > range.max.limit ||
             (size === range.max.limit && range.max.exclusive)
         ) {
-            state.problems.add(new RangeProblem(range.max, "max", data, state))
+            state.problems.add(new RangeProblem(range.max, "max", state, data))
         }
     }
 }) satisfies TraversalCheck<"range">
@@ -74,14 +74,14 @@ export class RangeProblem extends Problem<"range"> {
     constructor(
         bound: Bound,
         boundKind: "min" | "max",
-        data: BoundableData,
-        state: TraversalState
+        state: TraversalState,
+        rawData: BoundableData
     ) {
-        super("range", state, data)
-        this.was = `${typeof data === "number" ? data : data.length}`
+        super("range", state, rawData)
+        this.was = `${typeof rawData === "number" ? rawData : rawData.length}`
         this.comparator = toComparator(boundKind, bound)
         this.limit = bound.limit
-        const subdomain = subdomainOf(data)
+        const subdomain = subdomainOf(rawData)
         this.units =
             subdomain === "string"
                 ? "characters"

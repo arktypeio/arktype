@@ -19,7 +19,12 @@ import { hasKey, keysOf } from "../utils/generics.ts"
 import { getPath, Path } from "../utils/paths.ts"
 import { Stringifiable, stringify } from "../utils/serialize.ts"
 import type { ProblemCode, ProblemMessageWriter } from "./problems.ts"
-import { DomainProblem, Problem, Problems } from "./problems.ts"
+import {
+    DomainProblem,
+    Problem,
+    Problems,
+    SubdomainProblem
+} from "./problems.ts"
 
 export class TraversalState {
     path = new Path()
@@ -170,12 +175,12 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     const dataSubdomain = subdomainOf(data)
     if (typeof rule === "string") {
         if (dataSubdomain !== rule) {
-            return state.problems.add(new DomainProblem([rule], state, data))
+            return state.problems.add(new SubdomainProblem([rule], state, data))
         }
         return
     }
     if (dataSubdomain !== rule[0]) {
-        return state.problems.add(new DomainProblem([rule[0]], state, data))
+        return state.problems.add(new SubdomainProblem([rule[0]], state, data))
     }
     if (dataSubdomain === "Array" && typeof rule[2] === "number") {
         const actual = (data as List).length
@@ -277,8 +282,8 @@ export type RuleData<k extends TraversalKey> =
 export class ValueProblem extends Problem<"value"> {
     expected: Stringifiable
 
-    constructor(expected: unknown, state: TraversalState, data: unknown) {
-        super("value", state, data)
+    constructor(expected: unknown, state: TraversalState, rawData: unknown) {
+        super("value", state, rawData)
         this.expected = new Stringifiable(expected)
     }
 
@@ -290,8 +295,8 @@ export class ValueProblem extends Problem<"value"> {
 export class UnionProblem extends Problem<"union"> {
     expected: Stringifiable
 
-    constructor(expected: unknown, state: TraversalState, data: unknown) {
-        super("union", state, data)
+    constructor(expected: unknown, state: TraversalState, rawData: unknown) {
+        super("union", state, rawData)
         this.expected = new Stringifiable(expected)
     }
 
@@ -301,9 +306,9 @@ export class UnionProblem extends Problem<"union"> {
 }
 
 export class TupleLengthProblem extends Problem<"tupleLength", List> {
-    constructor(public expected: number, state: TraversalState, data: List) {
-        super("tupleLength", state, data)
-        this.was = `${data.length}`
+    constructor(public expected: number, state: TraversalState, rawData: List) {
+        super("tupleLength", state, rawData)
+        this.was = `${rawData.length}`
     }
 
     get mustBe() {

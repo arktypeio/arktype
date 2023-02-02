@@ -37,8 +37,8 @@ export const checkRegex = ((data, regex, state) => {
 }) satisfies TraversalCheck<"regex">
 
 export class RegexProblem extends Problem<"regex", string> {
-    constructor(public regex: RegExp, state: TraversalState, data: string) {
-        super("regex", state, data)
+    constructor(public regex: RegExp, state: TraversalState, rawData: string) {
+        super("regex", state, rawData)
     }
 
     get mustBe() {
