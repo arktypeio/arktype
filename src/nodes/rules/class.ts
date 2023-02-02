@@ -16,19 +16,19 @@ export const classIntersection = composeIntersection<constructor>(
 
 export const checkClass = ((data, expectedClass, state) => {
     if (!(data instanceof expectedClass)) {
-        state.problems.add(new ClassProblem(expectedClass, data, state))
+        state.problems.add(new ClassProblem(expectedClass, state, data))
     }
 }) satisfies TraversalCheck<"class">
 
-export class ClassProblem extends Problem<"class"> {
+export class ClassProblem extends Problem<"class", object> {
     actual: constructor
 
     constructor(
         public expected: constructor,
-        data: object,
-        state: TraversalState
+        state: TraversalState,
+        data: object
     ) {
-        super("class", data, state)
+        super("class", state, data)
         this.actual = data.constructor as constructor
     }
 

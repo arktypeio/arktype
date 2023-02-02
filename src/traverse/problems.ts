@@ -40,14 +40,16 @@ export class Problems extends Array<Problem> {
 
     add(problem: Problem) {
         const pathKey = `${problem.path}`
-        // if (this.byPath[pathKey]) {
-        //     this.byPath[pathKey] = new MultipartProblem(
-        //         this.byPath[pathKey],
-        //         problem
-        //     )
-        // } else {
-        //     this.byPath[pathKey] = problem
-        // }
+        const existing = this.byPath[pathKey]
+        if (existing) {
+            if (existing instanceof MultipartProblem) {
+                existing.subproblems.push(problem)
+            } else {
+                this.byPath[pathKey] = new MultipartProblem(existing, problem)
+            }
+        } else {
+            this.byPath[pathKey] = problem
+        }
     }
 
     throw(): never {
@@ -55,31 +57,32 @@ export class Problems extends Array<Problem> {
     }
 }
 
-type ProblemSourceArgs<code extends ProblemCode = ProblemCode> =
-    code extends "multi"
-        ? [initial: Problem]
-        : [data: unknown, state: TraversalState]
-
-export abstract class Problem<code extends ProblemCode = ProblemCode> {
+export abstract class Problem<
+    code extends ProblemCode = ProblemCode,
+    data = any
+> {
     path: Path
     config: ProblemsOptions | undefined
-    // add type
-    data: Stringifiable
+    data: Stringifiable<data>
 
     abstract description: string
 
-    constructor(public code: code, ...args: ProblemSourceArgs<code>) {
-        if (code === "multi") {
-            const initial = args[0] as Problem
-            this.path = initial.path
-            this.config = initial.config
-            this.data = initial.data
+    constructor(code: code, initial: Problem)
+    constructor(code: code, state: TraversalState, data: data)
+    constructor(
+        public code: code,
+        source: Problem | TraversalState,
+        data?: data
+    ) {
+        if (source instanceof Problem) {
+            this.path = source.path
+            this.config = source.config
+            this.data = source.data as Stringifiable<data>
         } else {
-            const [data, state] = args
             // copy path so future mutations don't affect it
-            this.path = Path.from(state!.path)
-            this.config = state!.config.problems
-            this.data = new Stringifiable(data)
+            this.path = Path.from(source.path)
+            this.config = source.config.problems
+            this.data = new Stringifiable(data as data)
         }
     }
 
@@ -123,8 +126,8 @@ export abstract class Problem<code extends ProblemCode = ProblemCode> {
 export class MultipartProblem extends Problem<"multi"> {
     subproblems: Problem[]
 
-    constructor(initial: Problem, intersected: Problem, state: TraversalState) {
-        super("multi", initial.data.raw, state)
+    constructor(initial: Problem, intersected: Problem) {
+        super("multi", initial)
         this.subproblems = [initial, intersected]
     }
 
@@ -208,10 +211,10 @@ export type ProblemCode = keyof ProblemsByCode
 export class DomainProblem extends Problem<"domain"> {
     constructor(
         public expected: Subdomain[],
-        data: unknown,
-        state: TraversalState
+        state: TraversalState,
+        data: unknown
     ) {
-        super("domain", data, state)
+        super("domain", state, data)
     }
 
     get description() {

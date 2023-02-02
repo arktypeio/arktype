@@ -32,13 +32,13 @@ export const getRegex = (source: string) => {
 export const checkRegex = ((data, regex, state) => {
     if (!regex.test(data)) {
         // TODO: add alias descirptions
-        state.problems.add(new RegexProblem(regex, data, state))
+        state.problems.add(new RegexProblem(regex, state, data))
     }
 }) satisfies TraversalCheck<"regex">
 
-export class RegexProblem extends Problem<"regex"> {
-    constructor(public regex: RegExp, data: string, state: TraversalState) {
-        super("regex", data, state)
+export class RegexProblem extends Problem<"regex", string> {
+    constructor(public regex: RegExp, state: TraversalState, data: string) {
+        super("regex", state, data)
     }
 
     get description() {

@@ -22,13 +22,13 @@ const greatestCommonDivisor = (l: number, r: number) => {
 
 export const checkDivisor = ((data, divisor, state) => {
     if (data % divisor !== 0) {
-        state.problems.add(new DivisibilityProblem(divisor, data, state))
+        state.problems.add(new DivisibilityProblem(divisor, state, data))
     }
 }) satisfies TraversalCheck<"divisor">
 
-export class DivisibilityProblem extends Problem<"divisibility"> {
-    constructor(public divisor: number, data: number, state: TraversalState) {
-        super("divisibility", data, state)
+export class DivisibilityProblem extends Problem<"divisibility", number> {
+    constructor(public divisor: number, state: TraversalState, data: number) {
+        super("divisibility", state, data)
     }
 
     // TODO: better to pass to Problem constructor?

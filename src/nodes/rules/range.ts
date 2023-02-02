@@ -77,7 +77,7 @@ export class RangeProblem extends Problem<"range"> {
         data: BoundableData,
         state: TraversalState
     ) {
-        super("range", data, state)
+        super("range", state, data)
         this.comparator = toComparator(boundKind, bound)
         this.limit = bound.limit
         const subdomain = subdomainOf(data)
