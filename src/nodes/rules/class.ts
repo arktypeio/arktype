@@ -37,6 +37,6 @@ export class ClassProblem extends Problem<"class", object> {
     }
 
     get description() {
-        return `a subclass of ${this.expected}`
+        return `an instance of ${this.expected}`
     }
 }

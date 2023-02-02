@@ -15,23 +15,27 @@ describe("traverse", () => {
     })
     it("domain", () => {
         const t = type("number")
-        const checked = t("foo")
-        attest(checked.problems?.summary).snap("Must be a number (was string)")
+        attest(t(5).data).snap(5)
+        attest(t("foo").problems?.summary).snap("Must be a number (was string)")
     })
     it("regex", () => {
         const t = type("/.*@arktype.io/")
-        const checked = t("shawn@hotmail.com")
-        attest(checked.problems?.summary).snap(
-            'Must be a string matching /.*@arktype.io/ (was "shawn@hotmail.com")'
+        attest(t("shawn@arktype.io").data).snap("shawn@arktype.io")
+        attest(t("shawn@hotmail.com").problems?.summary).snap(
+            "Must be a string matching /.*@arktype.io/ (was 'shawn@hotmail.com')"
         )
     })
     it("required keys", () => {
         const t = type({
             name: "string",
-            age: "number"
+            age: "number",
+            "title?": "string"
         })
-        const checked = t({ name: "Shawn" })
-        attest(checked.problems?.summary).snap(
+        attest(t({ name: "Shawn", age: 99 }).data).snap({
+            name: "Shawn",
+            age: 99
+        })
+        attest(t({ name: "Shawn" }).problems?.summary).snap(
             "age must be defined (was missing)"
         )
     })
@@ -68,7 +72,6 @@ describe("traverse", () => {
         const t = type([{ a: "string" }, "|", { b: "boolean" }])
         attest(t({ a: "ok" }).data).snap({ a: "ok" })
         attest(t({ b: true }).data).snap({ b: true })
-
         attest(t({}).problems?.summary).snap("{} does not satisfy any branches")
     })
     it("switch", () => {

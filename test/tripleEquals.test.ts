@@ -10,7 +10,7 @@ describe("===", () => {
         attest(t.node).equals({ symbol: { value: s } })
         attest(t(s).data).equals(s)
         attest(t(Symbol("test")).problems?.summary).snap(
-            'Must be "(symbol test)" (was "(symbol test)")'
+            "Must be (symbol test) (was (symbol test))"
         )
     })
 })
