@@ -1,5 +1,5 @@
 import type { inferDomain, Primitive } from "./domains.ts"
-import { domainOf } from "./domains.ts"
+import { domainOf, subdomainOf } from "./domains.ts"
 import type { Dict, isTopType, List } from "./generics.js"
 import { isKeyOf } from "./generics.js"
 import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
@@ -110,6 +110,22 @@ export const stringify = (data: unknown) => {
             return alwaysIncludeOptions.onSymbol(data as symbol)
         default:
             return serializePrimitive(data as SerializablePrimitive)
+    }
+}
+
+export class Stringifiable<data = unknown> {
+    constructor(public raw: data) {}
+
+    toString() {
+        return stringify(this.raw)
+    }
+
+    get domain() {
+        return domainOf(this.raw)
+    }
+
+    get subdomain() {
+        return subdomainOf(this.raw)
     }
 }
 

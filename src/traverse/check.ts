@@ -17,9 +17,9 @@ import { throwInternalError } from "../utils/errors.ts"
 import type { Dict, evaluate, extend, List } from "../utils/generics.ts"
 import { hasKey, keysOf } from "../utils/generics.ts"
 import { getPath, Path } from "../utils/paths.ts"
-import { stringify } from "../utils/serialize.ts"
+import { Stringifiable, stringify } from "../utils/serialize.ts"
 import type { ProblemCode, ProblemMessageWriter } from "./problems.ts"
-import { DomainProblem, Problem, Problems, Stringifiable } from "./problems.ts"
+import { DomainProblem, Problem, Problems } from "./problems.ts"
 
 export class TraversalState {
     path = new Path()

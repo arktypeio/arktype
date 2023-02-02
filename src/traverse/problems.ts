@@ -2,11 +2,11 @@ import type { ClassProblem } from "../nodes/rules/class.ts"
 import type { DivisibilityProblem } from "../nodes/rules/divisor.ts"
 import type { RangeProblem } from "../nodes/rules/range.ts"
 import type { RegexProblem } from "../nodes/rules/regex.ts"
-import type { Domain, Subdomain } from "../utils/domains.ts"
+import type { Subdomain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { evaluate, extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import { stringify } from "../utils/serialize.ts"
+import { Stringifiable } from "../utils/serialize.ts"
 import type {
     MissingKeyProblem,
     ProblemsConfig,
@@ -140,18 +140,6 @@ export class CompoundProblem extends Problem<"compound"> {
     }
 }
 
-export class Stringifiable<data = unknown> {
-    constructor(public raw: data) {}
-
-    get domain() {
-        return domainOf(this.raw)
-    }
-
-    toString() {
-        return stringify(this.raw)
-    }
-}
-
 const uncapitalize = (s: string) => s[0].toLowerCase() + s.slice(1)
 
 export const describeSubdomains = (subdomains: Subdomain[]) => {
@@ -214,8 +202,6 @@ export type ProblemCode = evaluate<keyof ProblemsByCode>
 
 // TODO: split into domain and subdomain
 export class DomainProblem extends Problem<"domain"> {
-    was: Subdomain
-
     constructor(
         public expected: Subdomain[],
         state: TraversalState,
