@@ -8,9 +8,16 @@ import type {
 } from "./parse/definition.js"
 import { parseDefinition, t } from "./parse/definition.js"
 import type { ParsedMorph } from "./parse/tuple/morph.ts"
-import type { ProblemsOptions } from "./traverse/check.ts"
 import { TraversalState, traverse } from "./traverse/check.ts"
-import type { Problems } from "./traverse/problems.ts"
+import type {
+    Problems,
+    ProblemsConfig,
+    ProblemsOptions
+} from "./traverse/problems.ts"
+import {
+    compileProblemOptions,
+    defaultProblemWriters
+} from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { Domain } from "./utils/domains.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
@@ -178,13 +185,22 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     type = ((def, opts: TypeOptions = {}) => {
-        // TODO: fix
-        const result = this.#initializeUnparsedType(opts as TypeConfig)
+        const result = this.#initializeUnparsedType(
+            this.#compileTypeConfig(opts)
+        )
         const ctx = this.#initializeContext(result)
         result.node = this.resolveNode(parseDefinition(def, ctx))
         result.flat = flattenNode(result.node, result)
         return result
     }) as TypeParser<resolutions<context>>
+
+    #compileTypeConfig(opts: TypeOptions): TypeConfig {
+        // TODO: merge scope options?
+        return {
+            name: opts.alias ?? "(anonymous)",
+            problems: compileProblemOptions(opts.problems)
+        }
+    }
 
     #initializeContext(type: Type): ParseContext {
         return {
@@ -194,7 +210,7 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     #initializeUnparsedType(config: TypeConfig): Type {
-        const name = config.alias ?? "(anonymous)"
+        const name = config.name
         // dynamically assign a name to the primary traversal function
         const namedTraverse: Checker<unknown> = {
             [name]: (data: unknown) => {
@@ -268,8 +284,8 @@ export class Scope<context extends ScopeContext = any> {
         }
         // TODO: opts?
         const result = this.#initializeUnparsedType({
-            alias: name,
-            problems: {}
+            name,
+            problems: defaultProblemWriters
         })
         this.#resolutions.set(name, result)
         this.#exports.set(name, result)
@@ -492,8 +508,10 @@ export type TypeOptions = {
     problems?: ProblemsOptions
 }
 
-// TODO: add compilation step
-export type TypeConfig = Required<TypeOptions>
+export type TypeConfig = {
+    name: string
+    problems: ProblemsConfig
+}
 
 export type asIn<t> = asIo<t, "in">
 

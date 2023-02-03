@@ -8,7 +8,13 @@ import {
     subdomainOf,
     unitsOf
 } from "../utils/domains.ts"
-import type { constructor, evaluate, extend } from "../utils/generics.ts"
+import type {
+    constructor,
+    evaluate,
+    extend,
+    requireKeys
+} from "../utils/generics.ts"
+import { keysOf } from "../utils/generics.ts"
 import { stringify } from "../utils/serialize.ts"
 import type { Problem } from "./check.ts"
 
@@ -151,14 +157,19 @@ export const writeMessage = <code extends ProblemCode>(
     )
 }
 
-export type ProblemWriterDefinition<code extends ProblemCode> = {
+export type ProblemOptions<code extends ProblemCode> = {
     mustBe: ProblemDescriptionWriter<code>
     was?: ProblemDescriptionWriter<code> | "omit"
     message?: ProblemMessageWriter
 }
 
-export type ProblemWriter<code extends ProblemCode> = extend<
-    ProblemWriterDefinition<code>,
+type ProblemDefinition<code extends ProblemCode> = requireKeys<
+    ProblemOptions<code>,
+    "mustBe"
+>
+
+export type ProblemWriterConfig<code extends ProblemCode> = extend<
+    ProblemOptions<code>,
     {
         mustBe: ProblemDescriptionWriter<code>
         was?: ProblemDescriptionWriter<code>
@@ -265,19 +276,18 @@ const writeDefaultWasDescription: ProblemDescriptionWriter<ProblemCode> = (
 const writeDefaultProblemMessage: ProblemMessageWriter = (mustBe, was) =>
     `Must be ${mustBe}${was ? ` (was ${was})` : ""}`
 
-const compileProblemWriters = (definitions: {
-    [code in ProblemCode]: ProblemWriterDefinition<code>
+const compileDefaultProblemWriters = (definitions: {
+    [code in ProblemCode]: ProblemDefinition<code>
 }) => {
     let code: ProblemCode
-    const result = {} as { [code in ProblemCode]: ProblemWriter<code> }
     for (code in definitions) {
-        result[code].was ??= writeDefaultWasDescription
-        result[code].message = writeDefaultProblemMessage
+        definitions[code].was ??= writeDefaultWasDescription
+        definitions[code].message = writeDefaultProblemMessage
     }
-    return result
+    return definitions as ProblemsConfig
 }
 
-export const defaultProblemWriters = compileProblemWriters({
+export const defaultProblemWriters = compileDefaultProblemWriters({
     divisibility: {
         mustBe: (input) =>
             input.divisor === 1 ? `an integer` : `divisible by ${input.divisor}`
@@ -324,3 +334,48 @@ export const defaultProblemWriters = compileProblemWriters({
         mustBe: (ctx) => "...\n• " + ctx.problems.join("\n• ")
     }
 })
+
+export type ProblemsOptions = evaluate<
+    { all?: ProblemOptions<ProblemCode> } & {
+        [code in ProblemCode]?: ProblemOptions<code>
+    }
+>
+
+export type ProblemsConfig = {
+    [code in ProblemCode]: ProblemWriterConfig<code>
+}
+
+const codes = keysOf(defaultProblemWriters)
+
+export const compileProblemOptions = (
+    opts: ProblemsOptions | undefined,
+    base = defaultProblemWriters
+) => {
+    if (!opts) {
+        return base
+    }
+    const { all, ...byCode } = opts
+    const result = {} as ProblemsConfig
+    let code: ProblemCode
+    if (all) {
+        for (code of codes) {
+            result[code] = {
+                ...base[code],
+                ...all,
+                ...byCode[code]
+            } as ProblemWriterConfig<ProblemCode>
+        }
+    } else {
+        for (code of codes) {
+            result[code] = (
+                byCode[code]
+                    ? {
+                          ...base[code],
+                          ...byCode[code]
+                      }
+                    : base[code]
+            ) as ProblemWriterConfig<ProblemCode>
+        }
+    }
+    return result
+}

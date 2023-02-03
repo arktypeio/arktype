@@ -14,15 +14,11 @@ import { precedenceMap } from "../nodes/rules/rules.ts"
 import type { SizedData } from "../utils/domains.ts"
 import { domainOf, hasDomain, subdomainOf } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
-import type { Dict, evaluate, extend, List } from "../utils/generics.ts"
+import type { Dict, extend, List } from "../utils/generics.ts"
 import { hasKey, keysOf } from "../utils/generics.ts"
 import { getPath, Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type {
-    ProblemCode,
-    ProblemDescriptionWriter,
-    ProblemInput
-} from "./problems.ts"
+import type { ProblemCode, ProblemInput } from "./problems.ts"
 import { addStateDerivedContext, Problems, writeMessage } from "./problems.ts"
 
 export type Problem = {
@@ -106,26 +102,6 @@ export class TraversalState {
         this.problems = baseProblems
         this.problem("union", { data })
     }
-}
-
-export type ProblemsOptions = evaluate<
-    {
-        [code in ProblemCode]?:
-            | ProblemDescriptionWriter<code>
-            | BaseProblemConfig<code>
-    } & BaseProblemConfig
->
-
-// TODO: Add problems config compiler
-export type ProblemsConfig = evaluate<
-    {
-        [code in ProblemCode]?: Exclude<ProblemsOptions[code], Function>
-    } & BaseProblemConfig
->
-
-export type BaseProblemConfig<code extends ProblemCode = ProblemCode> = {
-    message?: ProblemDescriptionWriter<code>
-    omitActual?: boolean
 }
 
 export const traverse = (
