@@ -158,3 +158,22 @@ export const hasSubdomain = <subdomain extends Subdomain>(
     data: unknown,
     subdomain: subdomain
 ): data is inferSubdomain<subdomain> => subdomainOf(data) === subdomain
+
+export const sizeOf = <data>(data: data) =>
+    sizedSubdomains[subdomainOf(data)]?.(data) ?? 0
+
+const sizedSubdomains = {
+    number: (data) => data,
+    string: (data) => data.length,
+    Array: (data) => data.length
+} satisfies {
+    [subdomain in SizedSubdomain]: (data: inferSubdomain<subdomain>) => number
+} as {
+    [subdomain in Subdomain]?: (data: unknown) => number
+}
+
+export type SizedSubdomain = "number" | "string" | "Array"
+
+export type SizedData = inferSubdomain<SizedSubdomain>
+
+export const classNameOf = <data>(data: data) => Object(data).constructor.name

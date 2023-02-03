@@ -1,19 +1,13 @@
-import type { ClassProblem } from "../nodes/rules/class.ts"
-import type { DivisibilityProblem } from "../nodes/rules/divisor.ts"
-import type { RangeProblem } from "../nodes/rules/range.ts"
-import type { RegexProblem } from "../nodes/rules/regex.ts"
+import type { ClassProblemContext as ClassProblemInput } from "../nodes/rules/class.ts"
+import type { DivisibilityContext as DivisibilityProblemInput } from "../nodes/rules/divisor.ts"
+import type { RangeProblemInput } from "../nodes/rules/range.ts"
+import type { RegexProblemInput } from "../nodes/rules/regex.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
-import type { evaluate, extend } from "../utils/generics.ts"
+import { classNameOf, domainOf, sizeOf, subdomainOf } from "../utils/domains.ts"
+import type { evaluate, replaceProps } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import { Stringifiable } from "../utils/serialize.ts"
-import type {
-    MissingKeyProblem,
-    ProblemsConfig,
-    TraversalState,
-    TupleLengthProblem,
-    UnionProblem,
-    ValueProblem
-} from "./check.ts"
+import { stringify } from "../utils/serialize.ts"
+import type { ProblemsConfig, TraversalState } from "./check.ts"
 
 export class ArktypeError extends TypeError {
     cause: Problems
@@ -69,7 +63,7 @@ export abstract class Problem<
 > {
     path: Path
     config: ProblemsConfig | undefined
-    data: Stringifiable<data>
+    data: DataWrapper<data>
 
     abstract mustBe: string
     was?: string
@@ -84,12 +78,12 @@ export abstract class Problem<
         if (contextSource instanceof Problem) {
             this.path = contextSource.path
             this.config = contextSource.config
-            this.data = contextSource.data as Stringifiable<data>
+            this.data = contextSource.data as DataWrapper<data>
         } else {
             // copy path so future mutations don't affect it
             this.path = Path.from(contextSource.path)
             this.config = contextSource.config.problems
-            this.data = new Stringifiable(data as data)
+            this.data = new DataWrapper(data as data)
         }
     }
 
@@ -123,19 +117,6 @@ export abstract class Problem<
         // }
         // return result
         return this.defaultMessage
-    }
-}
-
-export class CompoundProblem extends Problem<"compound"> {
-    subproblems: Problem[]
-
-    constructor(initial: Problem, intersected: Problem) {
-        super("compound", initial)
-        this.subproblems = [initial, intersected]
-    }
-
-    get mustBe() {
-        return "...\n• " + this.subproblems.join("\n• ")
     }
 }
 
@@ -184,21 +165,76 @@ export const subdomainDescriptions = {
     Set: "a Set"
 } as const satisfies Record<Subdomain, string>
 
-type ProblemsByCode = {
-    divisibility: DivisibilityProblem
-    domain: DomainProblem
-    subdomain: SubdomainProblem
-    missing: MissingKeyProblem
-    range: RangeProblem
-    class: ClassProblem
-    regex: RegexProblem
-    tupleLength: TupleLengthProblem
-    union: UnionProblem
-    value: ValueProblem
-    compound: CompoundProblem
+type ProblemInputsByCode = {
+    divisibility: DivisibilityProblemInput
+    class: ClassProblemInput
+    domain: DomainProblemInput
+    subdomain: SubdomainProblemInput
+    missing: MissingKeyProblemInput
+    range: RangeProblemInput
+    regex: RegexProblemInput
+    tupleLength: TupleLengthProblemInput
+    union: UnionProblemInput
+    value: ValueProblemInput
+    multi: MultiProblemInput
 }
 
-export type ProblemCode = evaluate<keyof ProblemsByCode>
+export type ProblemCode = evaluate<keyof ProblemInputsByCode>
+
+type toProblemContext<input> = "data" extends keyof input
+    ? replaceProps<input, { data: DataWrapper<input["data"]> }>
+    : input
+
+type toDescribedContext<context> = context & ProblemDescriptions
+
+type ProblemDescriptions = {
+    mustBe: string
+    was?: string | false
+}
+
+export type ProblemDescriptionsWriter<code extends ProblemCode> = (
+    input: toProblemContext<ProblemInputsByCode[code]>
+) => ProblemDescriptions
+
+export type ProblemMessageWriter<code extends ProblemCode> = (
+    context: toDescribedContext<toProblemContext<ProblemInputsByCode[code]>>
+) => string
+
+export class DataWrapper<value = unknown> {
+    constructor(public value: value) {}
+
+    toString() {
+        return stringify(this.value)
+    }
+
+    get domain() {
+        return domainOf(this.value)
+    }
+
+    get subdomain() {
+        return subdomainOf(this.value)
+    }
+
+    get size() {
+        return sizeOf(this.value)
+    }
+
+    get className() {
+        return classNameOf(this.value)
+    }
+}
+
+export type MultiProblemInput = {
+    data: unknown
+    problems: Problem[]
+}
+
+export const describeCompoundProblem: ProblemDescriptionsWriter<"multi"> = (
+    input
+) => ({
+    mustBe: "...\n• " + input.problems.join("\n• "),
+    was: `${input.data}`
+})
 
 export class DomainProblem extends Problem<"domain"> {
     constructor(
@@ -215,32 +251,73 @@ export class DomainProblem extends Problem<"domain"> {
     }
 }
 
-// TODO: is object kind?
-export class SubdomainProblem extends Problem<"subdomain"> {
-    constructor(
-        public expected: Subdomain[],
-        state: TraversalState,
-        rawData: unknown
-    ) {
-        super("subdomain", state, rawData)
-        this.was = this.data.subdomain
-    }
-
-    get mustBe() {
-        return describeSubdomains(this.expected)
-    }
+export type DomainProblemInput = {
+    domains: Domain[]
+    data: unknown
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type validateProblems = extend<
-    {
-        [code in ProblemCode]: Problem<code>
-    },
-    // if one or more codes is not mapped to a context including its own name,
-    // there will be a type error here
-    ProblemsByCode
->
+export const describeDomainProblem: ProblemDescriptionsWriter<"domain"> = (
+    input
+) => ({
+    mustBe: describeSubdomains(input.domains),
+    was: input.data.domain
+})
 
-export type ProblemMessageWriter<code extends ProblemCode = any> = (
-    context: Omit<ProblemsByCode[code], "message">
-) => string
+// TODO: is object kind?
+export type SubdomainProblemInput = {
+    domains: Subdomain[]
+    data: unknown
+}
+
+export const describeSubdomainProblem: ProblemDescriptionsWriter<"domain"> = (
+    input
+) => ({
+    mustBe: describeSubdomains(input.domains),
+    was: input.data.subdomain
+})
+
+export type ValueProblemInput = {
+    value: unknown
+    data: unknown
+}
+
+export const describeValueProblem: ProblemDescriptionsWriter<"value"> = (
+    input
+) => ({
+    mustBe: stringify(input.value),
+    was: `${input.data}`
+})
+
+export type UnionProblemInput = {
+    data: unknown
+}
+
+export const describeUnionProblem: ProblemDescriptionsWriter<"union"> = (
+    input
+) => ({
+    mustBe: `branches`,
+    was: `${input.data}`
+})
+
+export type TupleLengthProblemInput = {
+    length: number
+    data: readonly unknown[]
+}
+
+export const describeTupleLengthProblem: ProblemDescriptionsWriter<
+    "tupleLength"
+> = (input) => ({
+    mustBe: `exactly ${input.length} items`,
+    was: `${input.data.value.length}`
+})
+
+export type MissingKeyProblemInput = {
+    domains: Domain[]
+}
+
+export const describeMissingKeyProblem: ProblemDescriptionsWriter<"missing"> = (
+    input
+) => ({
+    mustBe: describeSubdomains(input.domains),
+    was: false
+})

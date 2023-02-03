@@ -8,23 +8,18 @@ import type {
 import { checkClass } from "../nodes/rules/class.ts"
 import { checkDivisor } from "../nodes/rules/divisor.ts"
 import type { TraversalPropEntry } from "../nodes/rules/props.ts"
-import type { BoundableData } from "../nodes/rules/range.ts"
 import { checkRange } from "../nodes/rules/range.ts"
 import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
+import type { SizedData } from "../utils/domains.ts"
 import { domainOf, hasDomain, subdomainOf } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { Dict, evaluate, extend, List } from "../utils/generics.ts"
 import { hasKey, keysOf } from "../utils/generics.ts"
 import { getPath, Path } from "../utils/paths.ts"
-import { Stringifiable, stringify } from "../utils/serialize.ts"
-import type { ProblemCode, ProblemMessageWriter } from "./problems.ts"
-import {
-    DomainProblem,
-    Problem,
-    Problems,
-    SubdomainProblem
-} from "./problems.ts"
+import { stringify } from "../utils/serialize.ts"
+import type { ProblemCode, ProblemDescriptionsWriter } from "./problems.ts"
+import { DomainProblem, Problems } from "./problems.ts"
 
 export class TraversalState {
     path = new Path()
@@ -84,7 +79,7 @@ export class TraversalState {
 export type ProblemsOptions = evaluate<
     {
         [code in ProblemCode]?:
-            | ProblemMessageWriter<code>
+            | ProblemDescriptionsWriter<code>
             | BaseProblemConfig<code>
     } & BaseProblemConfig
 >
@@ -97,7 +92,7 @@ export type ProblemsConfig = evaluate<
 >
 
 export type BaseProblemConfig<code extends ProblemCode = ProblemCode> = {
-    message?: ProblemMessageWriter<code>
+    message?: ProblemDescriptionsWriter<code>
     omitActual?: boolean
 }
 
@@ -269,7 +264,7 @@ export type ConstrainedRuleData = extend<
     {
         regex: string
         divisor: number
-        range: BoundableData
+        range: SizedData
         requiredProps: Dict
         optionalProps: Dict
         class: object
@@ -278,52 +273,3 @@ export type ConstrainedRuleData = extend<
 
 export type RuleData<k extends TraversalKey> =
     k extends keyof ConstrainedRuleData ? ConstrainedRuleData[k] : unknown
-
-export class ValueProblem extends Problem<"value"> {
-    expected: Stringifiable
-
-    constructor(expected: unknown, state: TraversalState, rawData: unknown) {
-        super("value", state, rawData)
-        this.expected = new Stringifiable(expected)
-    }
-
-    get mustBe() {
-        return `${this.expected}`
-    }
-}
-
-export class UnionProblem extends Problem<"union"> {
-    expected: Stringifiable
-
-    constructor(expected: unknown, state: TraversalState, rawData: unknown) {
-        super("union", state, rawData)
-        this.expected = new Stringifiable(expected)
-    }
-
-    get mustBe() {
-        return `${this.expected}`
-    }
-}
-
-export class TupleLengthProblem extends Problem<"tupleLength", List> {
-    constructor(public expected: number, state: TraversalState, rawData: List) {
-        super("tupleLength", state, rawData)
-        this.was = `${rawData.length}`
-    }
-
-    get mustBe() {
-        return `exactly ${this.expected} items`
-    }
-}
-
-export class MissingKeyProblem extends Problem<"missing", undefined> {
-    was = "missing"
-
-    constructor(public key: string, state: TraversalState) {
-        super("missing", state, undefined)
-    }
-
-    get mustBe() {
-        return "defined"
-    }
-}

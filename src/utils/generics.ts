@@ -15,7 +15,7 @@ export type castWithExclusion<t, castTo, excluded> = t extends excluded
 export type Literalable = string | boolean | number | bigint
 
 /**
- * Note: Similarly to downcast, trying to evaluate 'unknown'
+ * Note: Similarly to asConst, trying to evaluate 'unknown'
  * directly (i.e. not nested in an object) leads to the type '{}',
  * but I'm unsure how to fix this without breaking the types that rely on it.
  */

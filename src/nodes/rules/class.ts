@@ -1,4 +1,5 @@
 import type { TraversalCheck, TraversalState } from "../../traverse/check.ts"
+import type { ProblemDescriptionsWriter } from "../../traverse/problems.ts"
 import { Problem } from "../../traverse/problems.ts"
 import type { constructor } from "../../utils/generics.ts"
 import { composeIntersection, equality } from "../compose.ts"
@@ -20,20 +21,14 @@ export const checkClass = ((data, expectedClass, state) => {
     }
 }) satisfies TraversalCheck<"class">
 
-export class ClassProblem extends Problem<"class", object> {
-    actual: constructor
-
-    constructor(
-        public expected: constructor,
-        state: TraversalState,
-        data: object
-    ) {
-        super("class", state, data)
-        this.actual = data.constructor as constructor
-        this.was = this.actual.name
-    }
-
-    get mustBe() {
-        return `an instance of ${this.expected.name}`
-    }
+export type ClassProblemContext = {
+    class: constructor
+    data: object
 }
+
+export const describeClassProblem: ProblemDescriptionsWriter<"class"> = (
+    input
+) => ({
+    mustBe: `an instance of ${input.class.name}`,
+    was: input.data.className
+})

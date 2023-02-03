@@ -1,8 +1,9 @@
 import { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { TraversalCheck, TraversalState } from "../../traverse/check.ts"
+import type { ProblemDescriptionsWriter } from "../../traverse/problems.ts"
 import { Problem } from "../../traverse/problems.ts"
+import type { SizedData } from "../../utils/domains.ts"
 import { subdomainOf } from "../../utils/domains.ts"
-import type { List } from "../../utils/generics.ts"
 import { composeIntersection, equality, toComparator } from "../compose.ts"
 
 export type Range = {
@@ -43,8 +44,6 @@ export const rangeIntersection = composeIntersection<Range>((l, r, state) => {
     return maxComparison === "l" ? l : maxComparison === "r" ? r : equality()
 })
 
-export type BoundableData = number | string | List
-
 export const checkRange = ((data, range, state) => {
     const size = typeof data === "number" ? data : data.length
     if (range.min) {
@@ -65,6 +64,29 @@ export const checkRange = ((data, range, state) => {
     }
 }) satisfies TraversalCheck<"range">
 
+export type RangeProblemInput = {
+    comparator: Scanner.Comparator
+    limit: number
+    data: unknown
+    size?: number
+    units?: string
+}
+
+export const describeRangeProblem: ProblemDescriptionsWriter<"range"> = (
+    input
+) => {
+    let mustBe = `${Scanner.comparatorDescriptions[input.comparator]} ${
+        input.limit
+    }`
+    if (input.units) {
+        mustBe += ` ${input.units}`
+    }
+    return {
+        mustBe,
+        was: `${input.size ?? input.data.size}`
+    }
+}
+
 // TODO: flatten these so they can directly use comparators
 export class RangeProblem extends Problem<"range"> {
     comparator: Scanner.Comparator
@@ -75,7 +97,7 @@ export class RangeProblem extends Problem<"range"> {
         bound: Bound,
         boundKind: "min" | "max",
         state: TraversalState,
-        rawData: BoundableData
+        rawData: SizedData
     ) {
         super("range", state, rawData)
         this.was = `${typeof rawData === "number" ? rawData : rawData.length}`

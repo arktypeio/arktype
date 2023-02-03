@@ -1,4 +1,5 @@
 import type { TraversalCheck, TraversalState } from "../../traverse/check.ts"
+import type { ProblemDescriptionsWriter } from "../../traverse/problems.ts"
 import { Problem } from "../../traverse/problems.ts"
 import { composeIntersection, equality } from "../compose.ts"
 
@@ -26,19 +27,13 @@ export const checkDivisor = ((data, divisor, state) => {
     }
 }) satisfies TraversalCheck<"divisor">
 
-export class DivisibilityProblem extends Problem<"divisibility", number> {
-    constructor(
-        public divisor: number,
-        state: TraversalState,
-        // TODO: how often do I need data to be Stringifiable
-        rawData: number
-    ) {
-        super("divisibility", state, rawData)
-    }
-
-    get mustBe() {
-        return this.divisor === 1
-            ? `an integer`
-            : `divisible by ${this.divisor}`
-    }
+export type DivisibilityContext = {
+    data: number
+    divisor: number
 }
+
+export const describeDivisibility: ProblemDescriptionsWriter<"divisibility"> = (
+    input
+) => ({
+    mustBe: input.divisor === 1 ? `an integer` : `divisible by ${input.divisor}`
+})
