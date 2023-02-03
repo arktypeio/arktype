@@ -105,17 +105,52 @@ export const subdomainDescriptions = {
 } as const satisfies Record<Subdomain, string>
 
 type ProblemInputs = {
-    divisibility: DivisibilityProblemInput
-    class: ClassProblemInput
-    domain: DomainProblemInput
-    missing: MissingKeyProblemInput
-    range: RangeProblemInput
-    regex: RegexProblemInput
-    tupleLength: TupleLengthProblemInput
-    union: UnionProblemInput
-    value: ValueProblemInput
-    multi: MultiProblemInput
+    divisibility: {
+        data: number
+        divisor: number
+    }
+
+    class: {
+        class: constructor
+        data: object
+    }
+    domain: {
+        domains: Subdomain[]
+        data: unknown
+    }
+    missing: {
+        domains: Domain[]
+    }
+    range: {
+        comparator: Scanner.Comparator
+        limit: number
+        data: unknown
+        size?: number
+        units?: string
+    }
+    regex: {
+        regex: RegExp
+        data: string
+    }
+    tupleLength: {
+        length: number
+        data: readonly unknown[]
+    }
+    union: {
+        data: unknown
+    }
+    value: {
+        value: unknown
+        data: unknown
+    }
+    multi: {
+        data: unknown
+        problems: ProblemInput[]
+    }
 }
+
+export type ProblemInput<code extends ProblemCode = ProblemCode> =
+    ProblemInputs[code]
 
 export type ProblemCode = evaluate<keyof ProblemInputs>
 
@@ -225,60 +260,6 @@ export class DataWrapper<value = unknown> {
     }
 }
 
-export type ProblemInput<code extends ProblemCode = ProblemCode> =
-    ProblemInputs[code]
-
-export type MultiProblemInput = {
-    data: unknown
-    problems: ProblemInput[]
-}
-
-export type DomainProblemInput = {
-    domains: Subdomain[]
-    data: unknown
-}
-
-export type ValueProblemInput = {
-    value: unknown
-    data: unknown
-}
-
-export type UnionProblemInput = {
-    data: unknown
-}
-
-export type TupleLengthProblemInput = {
-    length: number
-    data: readonly unknown[]
-}
-
-export type MissingKeyProblemInput = {
-    domains: Domain[]
-}
-
-export type RangeProblemInput = {
-    comparator: Scanner.Comparator
-    limit: number
-    data: unknown
-    size?: number
-    units?: string
-}
-
-export type RegexProblemInput = {
-    regex: RegExp
-    data: string
-}
-
-export type DivisibilityProblemInput = {
-    data: number
-    divisor: number
-}
-
-export type ClassProblemInput = {
-    class: constructor
-    data: object
-}
-
 const writeDefaultWasDescription: ProblemDescriptionWriter<ProblemCode> = (
     context
 ) => `${context.data}`
@@ -357,6 +338,7 @@ export type ProblemsConfig = {
 
 const codes = keysOf(defaultProblemWriters)
 
+// TODO: remove all copy from codes?
 export const compileProblemOptions = (
     opts: ProblemsOptions | undefined,
     base = defaultProblemWriters
