@@ -19,19 +19,13 @@ import { hasKey, keysOf } from "../utils/generics.ts"
 import { getPath, Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 import type {
-    DescribedProblemContext,
     ProblemCode,
-    ProblemContext,
     ProblemDescriptionWriter,
     ProblemInput
 } from "./problems.ts"
-import {
-    addStateDerivedContext,
-    DataWrapper,
-    defaultProblemWriters
-} from "./problems.ts"
+import { addStateDerivedContext, Problems, writeMessage } from "./problems.ts"
 
-type Problem = {
+export type Problem = {
     path: Path
     code: ProblemCode
     reason: string
@@ -39,6 +33,7 @@ type Problem = {
 
 export class TraversalState {
     path = new Path()
+    problems = new Problems()
     problemsByPath: { [path in string]?: Problem } = {}
 
     // TODO: name by scope (scope registry?)
@@ -47,26 +42,13 @@ export class TraversalState {
     constructor(public type: Type) {}
 
     problem<code extends ProblemCode>(code: code, input: ProblemInput<code>) {
-        const context = addStateDerivedContext(
+        const context = addStateDerivedContext(code, input, this.type)
+        const problem: Problem = {
             code,
-            input,
-            this.type,
-            this.path
-        )
-        const describedContext = context as unknown as DescribedProblemContext
-        const writers = defaultProblemWriters[code]
-        describedContext.mustBe = writers.mustBe(
-            context as ProblemContext<code>
-        )
-        if (writers.was !== "omit") {
-            describedContext.was =
-                writers.was?.(context as ProblemContext<code>) ??
-                stringify((input as Dict)?.data)
+            // copy the path to avoid mutations affecting it
+            path: Path.from(this.path),
+            reason: writeMessage(context)
         }
-        const problem = describedContext as unknown as Problem
-        problem.reason = writers.message(
-            describedContext as DescribedProblemContext<code>
-        )
         const pathKey = `${this.path}`
         const existing = this.problemsByPath[pathKey]
         if (existing) {
@@ -82,6 +64,7 @@ export class TraversalState {
         } else {
             this.problemsByPath[pathKey] = problem
         }
+        this.problems.push(problem)
     }
 
     traverseResolution(data: unknown, name: string) {
@@ -109,6 +92,7 @@ export class TraversalState {
     // TODO: add fast fail mode, use for unions
     traverseBranches(data: unknown, branches: TraversalEntry[][]) {
         const baseProblems = this.problems
+        // TODO: Fix
         const subproblems: Problems[] = []
         for (const branch of branches) {
             this.problems = new Problems()

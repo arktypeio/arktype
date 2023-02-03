@@ -8,7 +8,7 @@ import type {
 } from "./parse/definition.js"
 import { parseDefinition, t } from "./parse/definition.js"
 import type { ParsedMorph } from "./parse/tuple/morph.ts"
-import type { ProblemsConfig } from "./traverse/check.ts"
+import type { ProblemsOptions } from "./traverse/check.ts"
 import { TraversalState, traverse } from "./traverse/check.ts"
 import type { Problems } from "./traverse/problems.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
@@ -489,7 +489,7 @@ export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
 export type TypeOptions = {
     // TODO: validate not already a name
     alias?: string
-    problems?: ProblemsConfig
+    problems?: ProblemsOptions
 }
 
 // TODO: add compilation step
