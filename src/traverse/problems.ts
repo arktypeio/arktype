@@ -37,6 +37,7 @@ export type Problem = {
 export class Problems extends Array<Problem> {
     byPath: Record<string, Problem> = {}
 
+    // TODO: add some customization options for this
     get summary() {
         if (this.length === 1) {
             const problem = this[0]
