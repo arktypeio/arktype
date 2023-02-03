@@ -1,6 +1,5 @@
-import type { TraversalCheck, TraversalState } from "../../traverse/check.ts"
-import type { ProblemDescriptionsWriter } from "../../traverse/problems.ts"
-import { Problem } from "../../traverse/problems.ts"
+import type { TraversalCheck } from "../../traverse/check.ts"
+import type { ProblemConfig } from "../../traverse/problems.ts"
 import { composeIntersection, equality } from "../compose.ts"
 
 export const divisorIntersection = composeIntersection<number>(
@@ -23,7 +22,7 @@ const greatestCommonDivisor = (l: number, r: number) => {
 
 export const checkDivisor = ((data, divisor, state) => {
     if (data % divisor !== 0) {
-        state.problems.add(new DivisibilityProblem(divisor, state, data))
+        state.problem("divisibility", { divisor, data })
     }
 }) satisfies TraversalCheck<"divisor">
 
@@ -32,8 +31,7 @@ export type DivisibilityContext = {
     divisor: number
 }
 
-export const describeDivisibility: ProblemDescriptionsWriter<"divisibility"> = (
-    input
-) => ({
-    mustBe: input.divisor === 1 ? `an integer` : `divisible by ${input.divisor}`
-})
+export const describeDivisibility: ProblemConfig<"divisibility"> = {
+    mustBe: (input) =>
+        input.divisor === 1 ? `an integer` : `divisible by ${input.divisor}`
+}

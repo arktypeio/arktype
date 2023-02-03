@@ -18,22 +18,51 @@ import type { Dict, evaluate, extend, List } from "../utils/generics.ts"
 import { hasKey, keysOf } from "../utils/generics.ts"
 import { getPath, Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { ProblemCode, ProblemDescriptionsWriter } from "./problems.ts"
-import { DomainProblem, Problems } from "./problems.ts"
+import type {
+    ProblemCode,
+    ProblemContext,
+    ProblemDescriptionWriter,
+    ProblemInput
+} from "./problems.ts"
+import { DataWrapper } from "./problems.ts"
 
 export class TraversalState {
     path = new Path()
-    problems: Problems
+    problemsByPath: { [path in string]?: ProblemContext } = {}
 
-    // TODO: name by scope (scope registry?)
+    // TODO: name by scope (scope registry?) Weakmap perf?
     #seen: { [name in string]?: object[] } = {}
 
-    constructor(private type: Type) {
-        this.problems = new Problems()
-    }
+    constructor(private type: Type) {}
 
     get config() {
         return this.type.config
+    }
+
+    problem<code extends ProblemCode>(code: code, input: ProblemInput<code>) {
+        const pathKey = `${this.path}`
+        const existing = this.problemsByPath[pathKey]
+        if (existing) {
+            if (existing.code === "multi") {
+                existing.problems.push(problem)
+            } else {
+                this.problemsByPath[pathKey] = {
+                    problems: [existing]
+                }
+            }
+        } else {
+            this.problemsByPath[pathKey] = Object.assign(
+                input,
+                "data" in input
+                    ? {
+                          code,
+                          data: new DataWrapper(input.data)
+                      }
+                    : { code }
+            )
+        }
+        // TODO: Should we include multi-part in lists?
+        this.push(problem)
     }
 
     traverseResolution(data: unknown, name: string) {
@@ -72,14 +101,14 @@ export class TraversalState {
             subproblems.push(this.problems)
         }
         this.problems = baseProblems
-        this.problems.add(new UnionProblem("union", this, data))
+        this.problem("union", { data })
     }
 }
 
 export type ProblemsOptions = evaluate<
     {
         [code in ProblemCode]?:
-            | ProblemDescriptionsWriter<code>
+            | ProblemDescriptionWriter<code>
             | BaseProblemConfig<code>
     } & BaseProblemConfig
 >
@@ -92,7 +121,7 @@ export type ProblemsConfig = evaluate<
 >
 
 export type BaseProblemConfig<code extends ProblemCode = ProblemCode> = {
-    message?: ProblemDescriptionsWriter<code>
+    message?: ProblemDescriptionWriter<code>
     omitActual?: boolean
 }
 
@@ -103,7 +132,7 @@ export const traverse = (
 ) => {
     if (typeof node === "string") {
         if (domainOf(data) !== node) {
-            return state.problems.add(new DomainProblem([node], state, data))
+            return state.problem("domain", { domains: [node], data })
         }
         return
     }
@@ -149,7 +178,8 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
             state.path.push(propKey)
             if (!hasKey(data, propKey)) {
                 if (propKind !== "optionalProps") {
-                    state.problems.add(new MissingKeyProblem(propKey, state))
+                    // TODO: resolve domains
+                    state.problem("missing", { domains: [] })
                 }
             } else {
                 traverse(data[propKey], propNode, state)
@@ -170,20 +200,21 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     const dataSubdomain = subdomainOf(data)
     if (typeof rule === "string") {
         if (dataSubdomain !== rule) {
-            return state.problems.add(new SubdomainProblem([rule], state, data))
+            return state.problem("domain", { domains: [rule], data })
         }
         return
     }
     if (dataSubdomain !== rule[0]) {
-        return state.problems.add(new SubdomainProblem([rule[0]], state, data))
+        return state.problem("domain", { domains: [rule[0]], data })
     }
     if (dataSubdomain === "Array" && typeof rule[2] === "number") {
         const actual = (data as List).length
         const expected = rule[2]
         if (expected !== actual) {
-            return state.problems.add(
-                new TupleLengthProblem(expected, state, data as List)
-            )
+            return state.problem("tupleLength", {
+                length: expected,
+                data: data as List
+            })
         }
     }
     if (dataSubdomain === "Array" || dataSubdomain === "Set") {
@@ -210,12 +241,12 @@ const checkers = {
         if (entries) {
             checkEntries(data, entries, state)
         } else {
-            state.problems.add(new DomainProblem(keysOf(domains), state, data))
+            state.problem("domain", { domains: keysOf(domains), data })
         }
     },
     domain: (data, domain, state) => {
         if (domainOf(data) !== domain) {
-            state.problems.add(new DomainProblem([domain], state, data))
+            state.problem("domain", { domains: [domain], data })
         }
     },
     subdomain: checkSubdomain,
@@ -231,7 +262,7 @@ const checkers = {
         }
         const lastPath = state.path
         state.path = rule.path
-        state.problems.add(new UnionProblem("switch", state, data))
+        state.problem("union", { data })
         state.path = lastPath
     },
     alias: (data, name, state) => state.traverseResolution(data, name),
@@ -240,7 +271,7 @@ const checkers = {
     narrow: (data, narrow) => narrow(data),
     value: (data, value, state) => {
         if (data !== value) {
-            state.problems.add(new ValueProblem(value, state, data))
+            state.problem("value", { value, data })
         }
     }
 } satisfies {

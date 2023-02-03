@@ -1,6 +1,5 @@
-import type { TraversalCheck, TraversalState } from "../../traverse/check.ts"
-import type { ProblemDescriptionsWriter } from "../../traverse/problems.ts"
-import { Problem } from "../../traverse/problems.ts"
+import type { TraversalCheck } from "../../traverse/check.ts"
+import type { ProblemConfig } from "../../traverse/problems.ts"
 import type { constructor } from "../../utils/generics.ts"
 import { composeIntersection, equality } from "../compose.ts"
 
@@ -17,7 +16,7 @@ export const classIntersection = composeIntersection<constructor>(
 
 export const checkClass = ((data, expectedClass, state) => {
     if (!(data instanceof expectedClass)) {
-        state.problems.add(new ClassProblem(expectedClass, state, data))
+        state.problem("class", { class: expectedClass, data })
     }
 }) satisfies TraversalCheck<"class">
 
@@ -26,9 +25,7 @@ export type ClassProblemContext = {
     data: object
 }
 
-export const describeClassProblem: ProblemDescriptionsWriter<"class"> = (
-    input
-) => ({
-    mustBe: `an instance of ${input.class.name}`,
-    was: input.data.className
-})
+export const describeClassProblem: ProblemConfig<"class"> = {
+    mustBe: (input) => `an instance of ${input.class.name}`,
+    was: (input) => input.data.className
+}

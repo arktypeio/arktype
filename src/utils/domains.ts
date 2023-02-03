@@ -172,6 +172,16 @@ const sizedSubdomains = {
     [subdomain in Subdomain]?: (data: unknown) => number
 }
 
+export const unitsOf = <data>(data: data) => sizeUnits[subdomainOf(data)] ?? ""
+
+const sizeUnits = {
+    number: "",
+    string: "characters",
+    Array: "items"
+} satisfies Record<SizedSubdomain, string> as {
+    [subdomain in Subdomain]?: string
+}
+
 export type SizedSubdomain = "number" | "string" | "Array"
 
 export type SizedData = inferSubdomain<SizedSubdomain>

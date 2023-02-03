@@ -1,9 +1,7 @@
 import { Scanner } from "../../parse/string/shift/scanner.ts"
-import type { TraversalCheck, TraversalState } from "../../traverse/check.ts"
-import type { ProblemDescriptionsWriter } from "../../traverse/problems.ts"
-import { Problem } from "../../traverse/problems.ts"
-import type { SizedData } from "../../utils/domains.ts"
-import { subdomainOf } from "../../utils/domains.ts"
+import type { TraversalCheck } from "../../traverse/check.ts"
+import type { ProblemConfig } from "../../traverse/problems.ts"
+import { unitsOf } from "../../utils/domains.ts"
 import { composeIntersection, equality, toComparator } from "../compose.ts"
 
 export type Range = {
@@ -51,7 +49,13 @@ export const checkRange = ((data, range, state) => {
             size < range.min.limit ||
             (size === range.min.limit && range.min.exclusive)
         ) {
-            state.problems.add(new RangeProblem(range.min, "min", state, data))
+            state.problem("range", {
+                comparator: toComparator("min", range.min),
+                limit: range.min.limit,
+                data,
+                size,
+                units: unitsOf(data)
+            })
         }
     }
     if (range.max) {
@@ -59,7 +63,13 @@ export const checkRange = ((data, range, state) => {
             size > range.max.limit ||
             (size === range.max.limit && range.max.exclusive)
         ) {
-            state.problems.add(new RangeProblem(range.max, "max", state, data))
+            state.problem("range", {
+                comparator: toComparator("max", range.max),
+                limit: range.max.limit,
+                data,
+                size,
+                units: unitsOf(data)
+            })
         }
     }
 }) satisfies TraversalCheck<"range">
@@ -72,55 +82,19 @@ export type RangeProblemInput = {
     units?: string
 }
 
-export const describeRangeProblem: ProblemDescriptionsWriter<"range"> = (
-    input
-) => {
-    let mustBe = `${Scanner.comparatorDescriptions[input.comparator]} ${
-        input.limit
-    }`
-    if (input.units) {
-        mustBe += ` ${input.units}`
-    }
-    return {
-        mustBe,
-        was: `${input.size ?? input.data.size}`
-    }
-}
-
 // TODO: flatten these so they can directly use comparators
-export class RangeProblem extends Problem<"range"> {
-    comparator: Scanner.Comparator
-    limit: number
-    units: string
-
-    constructor(
-        bound: Bound,
-        boundKind: "min" | "max",
-        state: TraversalState,
-        rawData: SizedData
-    ) {
-        super("range", state, rawData)
-        this.was = `${typeof rawData === "number" ? rawData : rawData.length}`
-        this.comparator = toComparator(boundKind, bound)
-        this.limit = bound.limit
-        const subdomain = subdomainOf(rawData)
-        this.units =
-            subdomain === "string"
-                ? "characters"
-                : subdomain === "Array"
-                ? "items"
-                : ""
-    }
-
-    get mustBe() {
-        let description = `${Scanner.comparatorDescriptions[this.comparator]} ${
-            this.limit
-        }`
-        if (this.units) {
-            description += ` ${this.units}`
+export const rangeProblemConfig: ProblemConfig<"range"> = {
+    mustBe: (input) => {
+        let description = `${
+            Scanner.comparatorDescriptions[input.comparator]
+        } ${input.limit}`
+        const units = input.units ?? input.data.units
+        if (units) {
+            description += ` ${units}`
         }
         return description
-    }
+    },
+    was: (input) => `${input.size ?? input.data.size}`
 }
 
 const invertedKinds = {

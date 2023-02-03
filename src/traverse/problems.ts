@@ -3,124 +3,112 @@ import type { DivisibilityContext as DivisibilityProblemInput } from "../nodes/r
 import type { RangeProblemInput } from "../nodes/rules/range.ts"
 import type { RegexProblemInput } from "../nodes/rules/regex.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
-import { classNameOf, domainOf, sizeOf, subdomainOf } from "../utils/domains.ts"
+import {
+    classNameOf,
+    domainOf,
+    sizeOf,
+    subdomainOf,
+    unitsOf
+} from "../utils/domains.ts"
 import type { evaluate, replaceProps } from "../utils/generics.ts"
-import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { ProblemsConfig, TraversalState } from "./check.ts"
 
-export class ArktypeError extends TypeError {
-    cause: Problems
+// export class ArkTypeError extends TypeError {
+//     cause: Problems
 
-    constructor(problems: Problems) {
-        super(problems.summary)
-        this.cause = problems
-    }
-}
+//     constructor(problems: Problems) {
+//         super(problems.summary)
+//         this.cause = problems
+//     }
+// }
 
-// TODO: to readonly
-export class Problems extends Array<Problem> {
-    byPath: Record<string, Problem> = {}
+// // TODO: to readonly
+// export class Problems extends Array<Problem> {
+//     byPath: Record<string, Problem> = {}
 
-    get summary() {
-        if (this.length === 1) {
-            const problem = this[0]
-            return problem.path.length
-                ? `${problem.path} ${uncapitalize(`${problem}`)}`
-                : `${problem}`
-        }
-        return this.map((problem) => `${problem.path}: ${problem}`).join("\n")
-    }
+//     get summary() {
+//         if (this.length === 1) {
+//             const problem = this[0]
+//             return problem.path.length
+//                 ? `${problem.path} ${uncapitalize(`${problem}`)}`
+//                 : `${problem}`
+//         }
+//         return this.map((problem) => `${problem.path}: ${problem}`).join("\n")
+//     }
 
-    add(problem: Problem) {
-        const pathKey = `${problem.path}`
-        const existing = this.byPath[pathKey]
-        if (existing) {
-            if (existing.hasCode("compound")) {
-                existing.subproblems.push(problem)
-            } else {
-                this.byPath[pathKey] = new CompoundProblem(existing, problem)
-            }
-        } else {
-            this.byPath[pathKey] = problem
-        }
-        // TODO: Should we include multi-part in lists?
-        this.push(problem)
-    }
+//     toString() {
+//         return this.summary
+//     }
 
-    toString() {
-        return this.summary
-    }
+//     throw(): never {
+//         throw new ArkTypeError(this)
+//     }
+// }
 
-    throw(): never {
-        throw new ArktypeError(this)
-    }
-}
+// export abstract class Problem<
+//     code extends ProblemCode = ProblemCode,
+//     data = any
+// > {
+//     path: Path
+//     config: ProblemsConfig | undefined
+//     data: DataWrapper<data>
 
-export abstract class Problem<
-    code extends ProblemCode = ProblemCode,
-    data = any
-> {
-    path: Path
-    config: ProblemsConfig | undefined
-    data: DataWrapper<data>
+//     abstract mustBe: string
+//     was?: string
 
-    abstract mustBe: string
-    was?: string
+//     constructor(code: code, initial: Problem)
+//     constructor(code: code, state: TraversalState, rawData: data)
+//     constructor(
+//         public code: code,
+//         contextSource: Problem | TraversalState,
+//         data?: data
+//     ) {
+//         if (contextSource instanceof Problem) {
+//             this.path = contextSource.path
+//             this.config = contextSource.config
+//             this.data = contextSource.data as DataWrapper<data>
+//         } else {
+//             // copy path so future mutations don't affect it
+//             this.path = Path.from(contextSource.path)
+//             this.config = contextSource.config.problems
+//             this.data = new DataWrapper(data as data)
+//         }
+//     }
 
-    constructor(code: code, initial: Problem)
-    constructor(code: code, state: TraversalState, rawData: data)
-    constructor(
-        public code: code,
-        contextSource: Problem | TraversalState,
-        data?: data
-    ) {
-        if (contextSource instanceof Problem) {
-            this.path = contextSource.path
-            this.config = contextSource.config
-            this.data = contextSource.data as DataWrapper<data>
-        } else {
-            // copy path so future mutations don't affect it
-            this.path = Path.from(contextSource.path)
-            this.config = contextSource.config.problems
-            this.data = new DataWrapper(data as data)
-        }
-    }
+//     toString() {
+//         return this.message
+//     }
 
-    get defaultMessage() {
-        let message = `Must be ${this.mustBe}`
-        // TODO: Distribute config to codes
-        if (!this.config?.[this.code]?.omitActual) {
-            message += ` (was ${this.was ?? this.data})`
-        }
-        return message
-    }
+//     hasCode<name extends code>(name: name): this is ProblemsByCode[name] {
+//         return this.code === name
+//     }
 
-    toString() {
-        return this.message
-    }
+//     get defaultMessage() {
+//         let message = `Must be ${this.mustBe}`
+//         // TODO: Distribute config to codes
+//         if (!this.config?.[this.code]?.omitActual) {
+//             message += ` (was ${this.was ?? this.data})`
+//         }
+//         return message
+//     }
 
-    hasCode<name extends code>(name: name): this is ProblemsByCode[name] {
-        return this.code === name
-    }
+//     get message() {
+//         // const writer = (
+//         //     typeof this.config === "function"
+//         //         ? this.config
+//         //         : this.config?.message
+//         // ) as ProblemMessageWriter | undefined
+//         // let result = writer?.(this) ?? this.defaultMessage
+//         // if (this.branchPath.length) {
+//         //     const branchIndentation = "  ".repeat(this.branchPath.length)
+//         //     result = branchIndentation + result
+//         // }
+//         // return result
+//         return this.defaultMessage
+//     }
+// }
 
-    get message() {
-        // const writer = (
-        //     typeof this.config === "function"
-        //         ? this.config
-        //         : this.config?.message
-        // ) as ProblemMessageWriter | undefined
-        // let result = writer?.(this) ?? this.defaultMessage
-        // if (this.branchPath.length) {
-        //     const branchIndentation = "  ".repeat(this.branchPath.length)
-        //     result = branchIndentation + result
-        // }
-        // return result
-        return this.defaultMessage
-    }
-}
-
-const uncapitalize = (s: string) => s[0].toLowerCase() + s.slice(1)
+// const uncapitalize = (s: string) => s[0].toLowerCase() + s.slice(1)
 
 export const describeSubdomains = (subdomains: Subdomain[]) => {
     if (subdomains.length === 1) {
@@ -165,11 +153,10 @@ export const subdomainDescriptions = {
     Set: "a Set"
 } as const satisfies Record<Subdomain, string>
 
-type ProblemInputsByCode = {
+type ProblemInputs = {
     divisibility: DivisibilityProblemInput
     class: ClassProblemInput
     domain: DomainProblemInput
-    subdomain: SubdomainProblemInput
     missing: MissingKeyProblemInput
     range: RangeProblemInput
     regex: RegexProblemInput
@@ -179,25 +166,47 @@ type ProblemInputsByCode = {
     multi: MultiProblemInput
 }
 
-export type ProblemCode = evaluate<keyof ProblemInputsByCode>
+export type ProblemCode = evaluate<keyof ProblemInputs>
 
-type toProblemContext<input> = "data" extends keyof input
-    ? replaceProps<input, { data: DataWrapper<input["data"]> }>
-    : input
-
-type toDescribedContext<context> = context & ProblemDescriptions
-
-type ProblemDescriptions = {
-    mustBe: string
-    was?: string | false
+export type ProblemContexts = {
+    [code in ProblemCode]: evaluate<
+        { code: code } & wrapDataIfPresent<ProblemInputs[code]>
+    >
 }
 
-export type ProblemDescriptionsWriter<code extends ProblemCode> = (
-    input: toProblemContext<ProblemInputsByCode[code]>
-) => ProblemDescriptions
+type wrapDataIfPresent<input> = "data" extends keyof input
+    ? replaceProps<
+          input,
+          {
+              data: DataWrapper<input["data"]>
+          }
+      >
+    : input
+
+export type ProblemContext<code extends ProblemCode = ProblemCode> =
+    ProblemContexts[code]
+
+export type DescribedProblemContexts = {
+    [code in ProblemCode]: ProblemContexts[code] & {
+        mustBe: string
+        was?: string
+    }
+}
+
+export type DescribedProblemContext<code extends ProblemCode = ProblemCode> =
+    DescribedProblemContexts[code]
+
+export type ProblemConfig<code extends ProblemCode> = {
+    mustBe: ProblemDescriptionWriter<code>
+    was?: ProblemDescriptionWriter<code> | null
+}
+
+export type ProblemDescriptionWriter<code extends ProblemCode> = (
+    input: ProblemContexts[code]
+) => string
 
 export type ProblemMessageWriter<code extends ProblemCode> = (
-    context: toDescribedContext<toProblemContext<ProblemInputsByCode[code]>>
+    context: DescribedProblemContexts[code]
 ) => string
 
 export class DataWrapper<value = unknown> {
@@ -211,6 +220,7 @@ export class DataWrapper<value = unknown> {
         return domainOf(this.value)
     }
 
+    // TODO: object kind?
     get subdomain() {
         return subdomainOf(this.value)
     }
@@ -219,105 +229,72 @@ export class DataWrapper<value = unknown> {
         return sizeOf(this.value)
     }
 
+    get units() {
+        return unitsOf(this.value)
+    }
+
     get className() {
         return classNameOf(this.value)
     }
 }
 
+export type Problem<code extends ProblemCode = ProblemCode> =
+    ProblemInputs[code]
+
+export type ProblemInput<code extends ProblemCode = ProblemCode> =
+    ProblemInputs[code]
+
 export type MultiProblemInput = {
     data: unknown
-    problems: Problem[]
+    problems: ProblemInput[]
 }
 
-export const describeCompoundProblem: ProblemDescriptionsWriter<"multi"> = (
-    input
-) => ({
-    mustBe: "...\n• " + input.problems.join("\n• "),
-    was: `${input.data}`
-})
-
-export class DomainProblem extends Problem<"domain"> {
-    constructor(
-        public expected: Domain[],
-        state: TraversalState,
-        rawData: unknown
-    ) {
-        super("domain", state, rawData)
-        this.was = this.data.domain
-    }
-
-    get mustBe() {
-        return describeSubdomains(this.expected)
-    }
+export const multiProblemConfig: ProblemConfig<"multi"> = {
+    mustBe: (input) => "...\n• " + input.problems.join("\n• ")
 }
 
 export type DomainProblemInput = {
-    domains: Domain[]
-    data: unknown
-}
-
-export const describeDomainProblem: ProblemDescriptionsWriter<"domain"> = (
-    input
-) => ({
-    mustBe: describeSubdomains(input.domains),
-    was: input.data.domain
-})
-
-// TODO: is object kind?
-export type SubdomainProblemInput = {
     domains: Subdomain[]
     data: unknown
 }
 
-export const describeSubdomainProblem: ProblemDescriptionsWriter<"domain"> = (
-    input
-) => ({
-    mustBe: describeSubdomains(input.domains),
-    was: input.data.subdomain
-})
+export const describeDomainProblem: ProblemConfig<"domain"> = {
+    mustBe: (input) => describeSubdomains(input.domains),
+    was: (input) => input.data.domain
+}
 
 export type ValueProblemInput = {
     value: unknown
     data: unknown
 }
 
-export const describeValueProblem: ProblemDescriptionsWriter<"value"> = (
-    input
-) => ({
-    mustBe: stringify(input.value),
-    was: `${input.data}`
-})
+export const valueProblemConfig: ProblemConfig<"value"> = {
+    mustBe: (input) => stringify(input.value)
+}
 
 export type UnionProblemInput = {
     data: unknown
 }
 
-export const describeUnionProblem: ProblemDescriptionsWriter<"union"> = (
-    input
-) => ({
-    mustBe: `branches`,
-    was: `${input.data}`
-})
+export const unionProblemConfig: ProblemConfig<"union"> = {
+    mustBe: () => `branches`
+}
 
 export type TupleLengthProblemInput = {
     length: number
     data: readonly unknown[]
 }
 
-export const describeTupleLengthProblem: ProblemDescriptionsWriter<
-    "tupleLength"
-> = (input) => ({
-    mustBe: `exactly ${input.length} items`,
-    was: `${input.data.value.length}`
-})
+export const tupleLengthProblemConfig: ProblemConfig<"tupleLength"> = {
+    mustBe: (input) => `exactly ${input.length} items`,
+    was: (input) => `${input.data.value.length}`
+}
 
 export type MissingKeyProblemInput = {
     domains: Domain[]
 }
 
-export const describeMissingKeyProblem: ProblemDescriptionsWriter<"missing"> = (
-    input
-) => ({
-    mustBe: describeSubdomains(input.domains),
-    was: false
-})
+export const missingKeyProblemConfig: ProblemConfig<"missing"> = {
+    mustBe: (input) => describeSubdomains(input.domains),
+    was: null
+}
