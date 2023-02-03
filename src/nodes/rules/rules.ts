@@ -194,6 +194,7 @@ const ruleFlatteners: {
     divisor: (entries, rule) => {
         entries.push(["divisor", rule])
     },
+    // TODO: flatten these so they can directly use comparators
     range: (entries, rule) => {
         entries.push(["range", rule])
     },

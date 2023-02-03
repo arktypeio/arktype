@@ -1,12 +1,5 @@
 import type { Type } from "../main.ts"
-import type { ClassProblemContext as ClassProblemInput } from "../nodes/rules/class.ts"
-import { classProblemConfig } from "../nodes/rules/class.ts"
-import type { DivisibilityContext as DivisibilityProblemInput } from "../nodes/rules/divisor.ts"
-import { divisibilityProblemConfig } from "../nodes/rules/divisor.ts"
-import type { RangeProblemInput } from "../nodes/rules/range.ts"
-import { rangeProblemConfig } from "../nodes/rules/range.ts"
-import type { RegexProblemInput } from "../nodes/rules/regex.ts"
-import { regexProblemConfig } from "../nodes/rules/regex.ts"
+import { Scanner } from "../parse/string/shift/scanner.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import {
     classNameOf,
@@ -15,7 +8,7 @@ import {
     subdomainOf,
     unitsOf
 } from "../utils/domains.ts"
-import type { evaluate, replaceProps } from "../utils/generics.ts"
+import type { constructor, evaluate, replaceProps } from "../utils/generics.ts"
 import type { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 
@@ -175,17 +168,19 @@ type ProblemInputs = {
 export type ProblemCode = evaluate<keyof ProblemInputs>
 
 export type ProblemContexts = {
-    [code in ProblemCode]: evaluate<{
+    [code in ProblemCode]: toContext<code, ProblemInputs[code]>
+}
+
+type toContext<code extends ProblemCode, input> = evaluate<
+    {
         code: code
         type: Type
         path: Path
         data: DataWrapper<
-            "data" extends keyof ProblemInputs[code]
-                ? ProblemInputs[code]["data"]
-                : undefined
+            "data" extends keyof input ? input["data"] : undefined
         >
-    }>
-}
+    } & Omit<input, "data">
+>
 
 export type ProblemContext<code extends ProblemCode = ProblemCode> =
     ProblemContexts[code]
@@ -200,32 +195,15 @@ export type DescribedProblemContexts = {
 export type DescribedProblemContext<code extends ProblemCode = ProblemCode> =
     DescribedProblemContexts[code]
 
-export type ProblemOptions<code extends ProblemCode> = {
+export type ProblemWriterDefinition<code extends ProblemCode> = {
     mustBe: ProblemDescriptionWriter<code>
-    was?: ProblemDescriptionWriter<code> | null
+    was?: ProblemDescriptionWriter<code> | "omit"
     message?: ProblemMessageWriter<code>
 }
 
-export type ProblemConfig<code extends ProblemCode> = {
-    mustBe: ProblemDescriptionWriter<code>
-    was: ProblemDescriptionWriter<code> | null
-    message: ProblemMessageWriter<code>
+export type ProblemWriters<code extends ProblemCode> = {
+    [k in keyof ProblemWriterDefinition<code>]-?: ProblemWriterDefinition<code>[k]
 }
-
-const writeDefaultProblemMessage: ProblemMessageWriter<ProblemCode> = (
-    context
-) => `Must be ${context.mustBe}${context.was ? ` ${context.was}` : ""}`
-
-export const defineProblem = <
-    opts extends ProblemOptions<code>,
-    code extends ProblemCode
->(
-    opts: opts
-): ProblemConfig<code> => ({
-    message: writeDefaultProblemMessage,
-    was: (context) => `${context.data}`,
-    ...opts
-})
 
 export type ProblemDescriptionWriter<code extends ProblemCode> = (
     input: ProblemContexts[code]
@@ -280,26 +258,13 @@ export type DomainProblemInput = {
     data: unknown
 }
 
-export const domainProblemConfig: ProblemConfig<"domain"> = {
-    mustBe: (input) => describeSubdomains(input.domains),
-    was: (input) => input.data.domain
-}
-
 export type ValueProblemInput = {
     value: unknown
     data: unknown
 }
 
-export const valueProblemConfig: ProblemConfig<"value"> = {
-    mustBe: (input) => stringify(input.value)
-}
-
 export type UnionProblemInput = {
     data: unknown
-}
-
-export const unionProblemConfig: ProblemConfig<"union"> = {
-    mustBe: () => `branches`
 }
 
 export type TupleLengthProblemInput = {
@@ -307,32 +272,97 @@ export type TupleLengthProblemInput = {
     data: readonly unknown[]
 }
 
-export const tupleLengthProblemConfig: ProblemConfig<"tupleLength"> = {
-    mustBe: (input) => `exactly ${input.length} items`,
-    was: (input) => `${input.data.value.length}`
-}
-
 export type MissingKeyProblemInput = {
     domains: Domain[]
 }
 
-export const missingKeyProblemConfig: ProblemConfig<"missing"> = {
-    mustBe: (input) => describeSubdomains(input.domains),
-    was: null
+export type RangeProblemInput = {
+    comparator: Scanner.Comparator
+    limit: number
+    data: unknown
+    size?: number
+    units?: string
 }
 
-// TODO: change to define problem config, include was/write
-export const problemConfigs: { [code in ProblemCode]: ProblemConfig<code> } = {
-    divisibility: divisibilityProblemConfig,
-    class: classProblemConfig,
-    domain: domainProblemConfig,
-    missing: missingKeyProblemConfig,
-    range: rangeProblemConfig,
-    regex: regexProblemConfig,
-    tupleLength: tupleLengthProblemConfig,
-    union: unionProblemConfig,
-    value: valueProblemConfig,
-    multi: defineProblem({
-        mustBe: (ctx) => "...\n• " + ctx.problems.join("\n• ")
-    })
+export type RegexProblemInput = {
+    regex: RegExp
+    data: string
 }
+
+export type DivisibilityProblemInput = {
+    data: number
+    divisor: number
+}
+
+export type ClassProblemInput = {
+    class: constructor
+    data: object
+}
+
+const writeDefaultWasDescription: ProblemDescriptionWriter<ProblemCode> = (
+    context
+) => `${context.data}`
+
+const writeDefaultProblemMessage: ProblemMessageWriter<ProblemCode> = (
+    context
+) => `Must be ${context.mustBe}${context.was ? ` (was ${context.was})` : ""}`
+
+const compileProblemWriters = (definitions: {
+    [code in ProblemCode]: ProblemWriterDefinition<code>
+}) => {
+    let code: ProblemCode
+    const result = {} as { [code in ProblemCode]: ProblemWriters<code> }
+    for (code in definitions) {
+        result[code].was ??= writeDefaultWasDescription
+        result[code].message = writeDefaultProblemMessage
+    }
+    return result
+}
+
+export const defaultProblemWriters = compileProblemWriters({
+    divisibility: {
+        mustBe: (input) =>
+            input.divisor === 1 ? `an integer` : `divisible by ${input.divisor}`
+    },
+    class: {
+        mustBe: (input) => `an instance of ${input.class.name}`,
+        was: (input) => input.data.className
+    },
+    domain: {
+        mustBe: (input) => describeSubdomains(input.domains),
+        was: (input) => input.data.domain
+    },
+    missing: {
+        mustBe: (input) => describeSubdomains(input.domains),
+        was: "omit"
+    },
+    range: {
+        mustBe: (input) => {
+            let description = `${
+                Scanner.comparatorDescriptions[input.comparator]
+            } ${input.limit}`
+            const units = input.units ?? input.data.units
+            if (units) {
+                description += ` ${units}`
+            }
+            return description
+        },
+        was: (input) => `${input.size ?? input.data.size}`
+    },
+    regex: {
+        mustBe: (input) => `a string matching /${input.regex.source}/`
+    },
+    tupleLength: {
+        mustBe: (input) => `exactly ${input.length} items`,
+        was: (input) => `${input.data.value.length}`
+    },
+    union: {
+        mustBe: () => `branches`
+    },
+    value: {
+        mustBe: (input) => stringify(input.value)
+    },
+    multi: {
+        mustBe: (ctx) => "...\n• " + ctx.problems.join("\n• ")
+    }
+})

@@ -1,6 +1,6 @@
 import { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { TraversalCheck } from "../../traverse/check.ts"
-import type { ProblemConfig } from "../../traverse/problems.ts"
+import type { ProblemWriters } from "../../traverse/problems.ts"
 import { unitsOf } from "../../utils/domains.ts"
 import { composeIntersection, equality, toComparator } from "../compose.ts"
 
@@ -73,29 +73,6 @@ export const checkRange = ((data, range, state) => {
         }
     }
 }) satisfies TraversalCheck<"range">
-
-export type RangeProblemInput = {
-    comparator: Scanner.Comparator
-    limit: number
-    data: unknown
-    size?: number
-    units?: string
-}
-
-// TODO: flatten these so they can directly use comparators
-export const rangeProblemConfig: ProblemConfig<"range"> = {
-    mustBe: (input) => {
-        let description = `${
-            Scanner.comparatorDescriptions[input.comparator]
-        } ${input.limit}`
-        const units = input.units ?? input.data.units
-        if (units) {
-            description += ` ${units}`
-        }
-        return description
-    },
-    was: (input) => `${input.size ?? input.data.size}`
-}
 
 const invertedKinds = {
     min: "max",

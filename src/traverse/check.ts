@@ -25,7 +25,7 @@ import type {
     ProblemDescriptionWriter,
     ProblemInput
 } from "./problems.ts"
-import { DataWrapper, problemConfigs } from "./problems.ts"
+import { DataWrapper, defaultProblemWriterOptions } from "./problems.ts"
 
 type Problem = {
     path: Path
@@ -52,7 +52,7 @@ export class TraversalState {
             ;(context as any).data = new DataWrapper(input.data)
         }
         const describedContext = context as DescribedProblemContext
-        const config = problemConfigs[code]
+        const config = defaultProblemWriterOptions[code]
         describedContext.mustBe = config.mustBe(context as ProblemContext<code>)
         if (config.was !== null) {
             describedContext.was =

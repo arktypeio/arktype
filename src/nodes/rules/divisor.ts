@@ -1,5 +1,5 @@
 import type { TraversalCheck } from "../../traverse/check.ts"
-import type { ProblemConfig } from "../../traverse/problems.ts"
+import type { ProblemWriters } from "../../traverse/problems.ts"
 import { composeIntersection, equality } from "../compose.ts"
 
 export const divisorIntersection = composeIntersection<number>(
@@ -25,13 +25,3 @@ export const checkDivisor = ((data, divisor, state) => {
         state.problem("divisibility", { divisor, data })
     }
 }) satisfies TraversalCheck<"divisor">
-
-export type DivisibilityContext = {
-    data: number
-    divisor: number
-}
-
-export const divisibilityProblemConfig: ProblemConfig<"divisibility"> = {
-    mustBe: (input) =>
-        input.divisor === 1 ? `an integer` : `divisible by ${input.divisor}`
-}
