@@ -25,7 +25,7 @@ export type ClassProblemContext = {
     data: object
 }
 
-export const describeClassProblem: ProblemConfig<"class"> = {
+export const classProblemConfig: ProblemConfig<"class"> = {
     mustBe: (input) => `an instance of ${input.class.name}`,
     was: (input) => input.data.className
 }

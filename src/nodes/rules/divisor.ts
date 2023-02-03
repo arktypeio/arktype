@@ -31,7 +31,7 @@ export type DivisibilityContext = {
     divisor: number
 }
 
-export const describeDivisibility: ProblemConfig<"divisibility"> = {
+export const divisibilityProblemConfig: ProblemConfig<"divisibility"> = {
     mustBe: (input) =>
         input.divisor === 1 ? `an integer` : `divisible by ${input.divisor}`
 }

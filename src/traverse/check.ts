@@ -19,50 +19,58 @@ import { hasKey, keysOf } from "../utils/generics.ts"
 import { getPath, Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 import type {
+    DescribedProblemContext,
     ProblemCode,
     ProblemContext,
     ProblemDescriptionWriter,
     ProblemInput
 } from "./problems.ts"
-import { DataWrapper } from "./problems.ts"
+import { DataWrapper, problemConfigs } from "./problems.ts"
+
+type Problem = {
+    path: Path
+    code: ProblemCode
+    reason: string
+}
 
 export class TraversalState {
     path = new Path()
-    problemsByPath: { [path in string]?: ProblemContext } = {}
+    problemsByPath: { [path in string]?: Problem } = {}
 
-    // TODO: name by scope (scope registry?) Weakmap perf?
+    // TODO: name by scope (scope registry?)
     #seen: { [name in string]?: object[] } = {}
 
-    constructor(private type: Type) {}
-
-    get config() {
-        return this.type.config
-    }
+    constructor(public type: Type) {}
 
     problem<code extends ProblemCode>(code: code, input: ProblemInput<code>) {
+        const context = input as ProblemContext
+        context.code = code
+        context.type = this.type
+        // copy path so future mutations don't affect it
+        context.path = Path.from(this.path)
+        if ("data" in input) {
+            ;(context as any).data = new DataWrapper(input.data)
+        }
+        const describedContext = context as DescribedProblemContext
+        const config = problemConfigs[code]
+        describedContext.mustBe = config.mustBe(context as ProblemContext<code>)
+        if (config.was !== null) {
+            describedContext.was =
+                config.was?.(context as ProblemContext<code>) ??
+                stringify((input as Dict)?.data)
+        }
+        const problem = describedContext as unknown as Problem
+        problem.reason = {}
         const pathKey = `${this.path}`
         const existing = this.problemsByPath[pathKey]
         if (existing) {
             if (existing.code === "multi") {
-                existing.problems.push(problem)
-            } else {
-                this.problemsByPath[pathKey] = {
-                    problems: [existing]
-                }
+                existing.reason += `\n• ...`
             }
+            existing.push(context)
         } else {
-            this.problemsByPath[pathKey] = Object.assign(
-                input,
-                "data" in input
-                    ? {
-                          code,
-                          data: new DataWrapper(input.data)
-                      }
-                    : { code }
-            )
+            this.problemsByPath[pathKey] = [context]
         }
-        // TODO: Should we include multi-part in lists?
-        this.push(problem)
     }
 
     traverseResolution(data: unknown, name: string) {

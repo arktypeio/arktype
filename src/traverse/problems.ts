@@ -1,7 +1,12 @@
+import type { Type } from "../main.ts"
 import type { ClassProblemContext as ClassProblemInput } from "../nodes/rules/class.ts"
+import { classProblemConfig } from "../nodes/rules/class.ts"
 import type { DivisibilityContext as DivisibilityProblemInput } from "../nodes/rules/divisor.ts"
+import { divisibilityProblemConfig } from "../nodes/rules/divisor.ts"
 import type { RangeProblemInput } from "../nodes/rules/range.ts"
+import { rangeProblemConfig } from "../nodes/rules/range.ts"
 import type { RegexProblemInput } from "../nodes/rules/regex.ts"
+import { regexProblemConfig } from "../nodes/rules/regex.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import {
     classNameOf,
@@ -11,6 +16,7 @@ import {
     unitsOf
 } from "../utils/domains.ts"
 import type { evaluate, replaceProps } from "../utils/generics.ts"
+import type { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 
 // export class ArkTypeError extends TypeError {
@@ -170,7 +176,11 @@ export type ProblemCode = evaluate<keyof ProblemInputs>
 
 export type ProblemContexts = {
     [code in ProblemCode]: evaluate<
-        { code: code } & wrapDataIfPresent<ProblemInputs[code]>
+        {
+            code: code
+            type: Type
+            path: Path
+        } & wrapDataIfPresent<ProblemInputs[code]>
     >
 }
 
@@ -258,7 +268,7 @@ export type DomainProblemInput = {
     data: unknown
 }
 
-export const describeDomainProblem: ProblemConfig<"domain"> = {
+export const domainProblemConfig: ProblemConfig<"domain"> = {
     mustBe: (input) => describeSubdomains(input.domains),
     was: (input) => input.data.domain
 }
@@ -297,4 +307,18 @@ export type MissingKeyProblemInput = {
 export const missingKeyProblemConfig: ProblemConfig<"missing"> = {
     mustBe: (input) => describeSubdomains(input.domains),
     was: null
+}
+
+// TODO: change to define problem config, include was/write
+export const problemConfigs: { [code in ProblemCode]: ProblemConfig<code> } = {
+    divisibility: divisibilityProblemConfig,
+    class: classProblemConfig,
+    domain: domainProblemConfig,
+    missing: missingKeyProblemConfig,
+    range: rangeProblemConfig,
+    regex: regexProblemConfig,
+    tupleLength: tupleLengthProblemConfig,
+    union: unionProblemConfig,
+    value: valueProblemConfig,
+    multi: multiProblemConfig
 }
