@@ -15,8 +15,8 @@ import type {
     requireKeys
 } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
+import type { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { Problem } from "./check.ts"
 
 export class ArkTypeError extends TypeError {
     cause: Problems
@@ -27,6 +27,13 @@ export class ArkTypeError extends TypeError {
     }
 }
 
+// TODO: convert to class with toString?
+export type Problem = {
+    path: Path
+    code: ProblemCode
+    reason: string
+}
+
 export class Problems extends Array<Problem> {
     byPath: Record<string, Problem> = {}
 
@@ -34,10 +41,12 @@ export class Problems extends Array<Problem> {
         if (this.length === 1) {
             const problem = this[0]
             return problem.path.length
-                ? `${problem.path} ${uncapitalize(`${problem}`)}`
-                : `${problem}`
+                ? `${problem.path} ${uncapitalize(`${problem.reason}`)}`
+                : `${problem.reason}`
         }
-        return this.map((problem) => `${problem.path}: ${problem}`).join("\n")
+        return this.map((problem) => `${problem.path}: ${problem.reason}`).join(
+            "\n"
+        )
     }
 
     toString() {
@@ -150,7 +159,7 @@ export type DescribedProblemContexts = {
 export const writeMessage = <code extends ProblemCode>(
     context: ProblemContext<code>
 ) => {
-    const writers = defaultProblemWriters[context.code]
+    const writers = context.type.config.problems[context.code]
     return writers.message(
         writers.mustBe(context as never),
         writers.was?.(context as never)

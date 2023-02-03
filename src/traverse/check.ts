@@ -18,14 +18,8 @@ import type { Dict, extend, List } from "../utils/generics.ts"
 import { hasKey, keysOf } from "../utils/generics.ts"
 import { getPath, Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { ProblemCode, ProblemInput } from "./problems.ts"
+import type { Problem, ProblemCode, ProblemInput } from "./problems.ts"
 import { addStateDerivedContext, Problems, writeMessage } from "./problems.ts"
-
-export type Problem = {
-    path: Path
-    code: ProblemCode
-    reason: string
-}
 
 export class TraversalState {
     path = new Path()
@@ -37,6 +31,7 @@ export class TraversalState {
 
     constructor(public type: Type) {}
 
+    // TODO: move back to Problems with private state
     problem<code extends ProblemCode>(code: code, input: ProblemInput<code>) {
         const context = addStateDerivedContext(code, input, this.type)
         const problem: Problem = {

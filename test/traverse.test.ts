@@ -48,7 +48,6 @@ describe("traverse", () => {
                 }
             }
         })
-        const result = isEven(3)
         attest(isEven(3).problems?.summary).snap("3 is not disivible by 2!")
     })
     // TODO: more domain tests
