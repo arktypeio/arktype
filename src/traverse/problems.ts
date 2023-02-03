@@ -175,23 +175,17 @@ type ProblemInputs = {
 export type ProblemCode = evaluate<keyof ProblemInputs>
 
 export type ProblemContexts = {
-    [code in ProblemCode]: evaluate<
-        {
-            code: code
-            type: Type
-            path: Path
-        } & wrapDataIfPresent<ProblemInputs[code]>
-    >
+    [code in ProblemCode]: evaluate<{
+        code: code
+        type: Type
+        path: Path
+        data: DataWrapper<
+            "data" extends keyof ProblemInputs[code]
+                ? ProblemInputs[code]["data"]
+                : undefined
+        >
+    }>
 }
-
-type wrapDataIfPresent<input> = "data" extends keyof input
-    ? replaceProps<
-          input,
-          {
-              data: DataWrapper<input["data"]>
-          }
-      >
-    : input
 
 export type ProblemContext<code extends ProblemCode = ProblemCode> =
     ProblemContexts[code]
@@ -206,10 +200,32 @@ export type DescribedProblemContexts = {
 export type DescribedProblemContext<code extends ProblemCode = ProblemCode> =
     DescribedProblemContexts[code]
 
-export type ProblemConfig<code extends ProblemCode> = {
+export type ProblemOptions<code extends ProblemCode> = {
     mustBe: ProblemDescriptionWriter<code>
     was?: ProblemDescriptionWriter<code> | null
+    message?: ProblemMessageWriter<code>
 }
+
+export type ProblemConfig<code extends ProblemCode> = {
+    mustBe: ProblemDescriptionWriter<code>
+    was: ProblemDescriptionWriter<code> | null
+    message: ProblemMessageWriter<code>
+}
+
+const writeDefaultProblemMessage: ProblemMessageWriter<ProblemCode> = (
+    context
+) => `Must be ${context.mustBe}${context.was ? ` ${context.was}` : ""}`
+
+export const defineProblem = <
+    opts extends ProblemOptions<code>,
+    code extends ProblemCode
+>(
+    opts: opts
+): ProblemConfig<code> => ({
+    message: writeDefaultProblemMessage,
+    was: (context) => `${context.data}`,
+    ...opts
+})
 
 export type ProblemDescriptionWriter<code extends ProblemCode> = (
     input: ProblemContexts[code]
@@ -257,10 +273,6 @@ export type ProblemInput<code extends ProblemCode = ProblemCode> =
 export type MultiProblemInput = {
     data: unknown
     problems: ProblemInput[]
-}
-
-export const multiProblemConfig: ProblemConfig<"multi"> = {
-    mustBe: (input) => "...\n• " + input.problems.join("\n• ")
 }
 
 export type DomainProblemInput = {
@@ -320,5 +332,7 @@ export const problemConfigs: { [code in ProblemCode]: ProblemConfig<code> } = {
     tupleLength: tupleLengthProblemConfig,
     union: unionProblemConfig,
     value: valueProblemConfig,
-    multi: multiProblemConfig
+    multi: defineProblem({
+        mustBe: (ctx) => "...\n• " + ctx.problems.join("\n• ")
+    })
 }
