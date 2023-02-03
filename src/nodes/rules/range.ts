@@ -1,6 +1,4 @@
-import { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { TraversalCheck } from "../../traverse/check.ts"
-import type { ProblemWriters } from "../../traverse/problems.ts"
 import { unitsOf } from "../../utils/domains.ts"
 import { composeIntersection, equality, toComparator } from "../compose.ts"
 

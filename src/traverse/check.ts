@@ -25,7 +25,11 @@ import type {
     ProblemDescriptionWriter,
     ProblemInput
 } from "./problems.ts"
-import { DataWrapper, defaultProblemWriterOptions } from "./problems.ts"
+import {
+    addStateDerivedContext,
+    DataWrapper,
+    defaultProblemWriters
+} from "./problems.ts"
 
 type Problem = {
     path: Path
@@ -43,33 +47,40 @@ export class TraversalState {
     constructor(public type: Type) {}
 
     problem<code extends ProblemCode>(code: code, input: ProblemInput<code>) {
-        const context = input as ProblemContext
-        context.code = code
-        context.type = this.type
-        // copy path so future mutations don't affect it
-        context.path = Path.from(this.path)
-        if ("data" in input) {
-            ;(context as any).data = new DataWrapper(input.data)
-        }
-        const describedContext = context as DescribedProblemContext
-        const config = defaultProblemWriterOptions[code]
-        describedContext.mustBe = config.mustBe(context as ProblemContext<code>)
-        if (config.was !== null) {
+        const context = addStateDerivedContext(
+            code,
+            input,
+            this.type,
+            this.path
+        )
+        const describedContext = context as unknown as DescribedProblemContext
+        const writers = defaultProblemWriters[code]
+        describedContext.mustBe = writers.mustBe(
+            context as ProblemContext<code>
+        )
+        if (writers.was !== "omit") {
             describedContext.was =
-                config.was?.(context as ProblemContext<code>) ??
+                writers.was?.(context as ProblemContext<code>) ??
                 stringify((input as Dict)?.data)
         }
         const problem = describedContext as unknown as Problem
-        problem.reason = {}
+        problem.reason = writers.message(
+            describedContext as DescribedProblemContext<code>
+        )
         const pathKey = `${this.path}`
         const existing = this.problemsByPath[pathKey]
         if (existing) {
             if (existing.code === "multi") {
-                existing.reason += `\n• ...`
+                existing.reason += `\n• ${problem.reason}`
+            } else {
+                this.problemsByPath[pathKey] = {
+                    code: "multi",
+                    path: existing.path,
+                    reason: `• ${existing.reason}\n• ${problem.reason}`
+                }
             }
-            existing.push(context)
         } else {
-            this.problemsByPath[pathKey] = [context]
+            this.problemsByPath[pathKey] = problem
         }
     }
 

@@ -1,5 +1,4 @@
 import type { TraversalCheck } from "../../traverse/check.ts"
-import type { ProblemWriters } from "../../traverse/problems.ts"
 import { composeIntersection, equality } from "../compose.ts"
 
 export const divisorIntersection = composeIntersection<number>(

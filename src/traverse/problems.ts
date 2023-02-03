@@ -9,7 +9,7 @@ import {
     unitsOf
 } from "../utils/domains.ts"
 import type { constructor, evaluate, replaceProps } from "../utils/generics.ts"
-import type { Path } from "../utils/paths.ts"
+import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 
 // export class ArkTypeError extends TypeError {
@@ -168,19 +168,38 @@ type ProblemInputs = {
 export type ProblemCode = evaluate<keyof ProblemInputs>
 
 export type ProblemContexts = {
-    [code in ProblemCode]: toContext<code, ProblemInputs[code]>
+    [code in ProblemCode]: problemInputToContext<code, ProblemInputs[code]>
 }
 
-type toContext<code extends ProblemCode, input> = evaluate<
-    {
-        code: code
-        type: Type
-        path: Path
-        data: DataWrapper<
-            "data" extends keyof input ? input["data"] : undefined
-        >
-    } & Omit<input, "data">
+type problemInputToContext<code extends ProblemCode, input> = evaluate<
+    StateDerivedProblemContext<code> & Omit<input, "data">
 >
+
+export type StateDerivedProblemContext<code extends ProblemCode> = {
+    code: code
+    type: Type
+    path: Path
+    data: DataWrapper<
+        "data" extends keyof ProblemInputs[code]
+            ? ProblemInputs[code]["data"]
+            : undefined
+    >
+}
+
+export const addStateDerivedContext = <code extends ProblemCode>(
+    code: code,
+    input: ProblemInput<code>,
+    type: Type,
+    path: Path
+) => {
+    const context = input as ProblemContext
+    context.code = code
+    context.type = type
+    // copy path so future mutations don't affect it
+    context.path = Path.from(path)
+    context.data = new DataWrapper("data" in input ? input.data : undefined)
+    return context as ProblemContext<code>
+}
 
 export type ProblemContext<code extends ProblemCode = ProblemCode> =
     ProblemContexts[code]
