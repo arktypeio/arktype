@@ -4,7 +4,7 @@ import { TraversalState } from "./check"
 
 const state = new TraversalState()
 
-state.problems.add("divisibility", {
+state.problems.add("divisor", {
     data: 3,
     divisor: 2
 })

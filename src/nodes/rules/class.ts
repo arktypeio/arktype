@@ -15,6 +15,6 @@ export const classIntersection = composeIntersection<constructor>(
 
 export const checkClass = ((data, expectedClass, state) => {
     if (!(data instanceof expectedClass)) {
-        state.problem("class", { rule: expectedClass, data })
+        state.problems.add("class", data, expectedClass)
     }
 }) satisfies TraversalCheck<"class">

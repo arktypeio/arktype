@@ -21,6 +21,6 @@ const greatestCommonDivisor = (l: number, r: number) => {
 
 export const checkDivisor = ((data, divisor, state) => {
     if (data % divisor !== 0) {
-        state.problem("divisibility", { rule: divisor, data })
+        state.problems.add("divisor", data, divisor)
     }
 }) satisfies TraversalCheck<"divisor">

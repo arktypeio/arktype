@@ -114,6 +114,11 @@ export type TraversalEntry =
 
 export type TraversalKey = TraversalEntry[0]
 
+export type TraversalRule<k extends TraversalKey> = Extract<
+    TraversalEntry,
+    [k, unknown]
+>[1]
+
 export type CyclicReferenceEntry = ["alias", string]
 
 export type DomainEntry = ["domain", Domain]
@@ -144,14 +149,14 @@ export const flattenNode = (node: TypeNode, type: Type): TraversalNode => {
         if (predicate === true) {
             return domain
         }
-        const flatPredicate = flattenPredicate(predicate, type)
+        const flatPredicate = flattenPredicate(predicate, { domain, type })
         return hasImpliedDomain(flatPredicate)
             ? flatPredicate
             : [["domain", domain], ...flatPredicate]
     }
     const result: mutable<DomainsEntry[1]> = {}
     for (const domain of domains) {
-        result[domain] = flattenPredicate(node[domain]!, type)
+        result[domain] = flattenPredicate(node[domain]!, { domain, type })
     }
     return [["domains", result]]
 }

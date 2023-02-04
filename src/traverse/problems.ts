@@ -1,6 +1,6 @@
-import type { Type } from "../main.ts"
+import type { FlatBound } from "../nodes/rules/range.ts"
 import { Scanner } from "../parse/string/shift/scanner.ts"
-import type { Domain, Subdomain } from "../utils/domains.ts"
+import type { Subdomain } from "../utils/domains.ts"
 import {
     classNameOf,
     domainOf,
@@ -11,14 +11,13 @@ import {
 import type {
     constructor,
     evaluate,
-    extend,
     instanceOf,
     requireKeys
 } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { TraversalState } from "./check.ts"
+import type { ConstrainedRuleData, TraversalState } from "./check.ts"
 
 export class ArkTypeError extends TypeError {
     cause: Problems
@@ -48,13 +47,20 @@ class ProblemArray extends Array<Problem> {
         super()
     }
 
-    add<code extends ProblemCode>(code: code, input: ProblemInput<code>) {
-        const context = addStateDerivedContext(code, input, this.state.type)
+    add<code extends ProblemCode>(
+        code: code,
+        data: ProblemDataInput<code>,
+        input: ProblemRuleInput<code>
+    ) {
         const problem: Problem = {
             code,
             // copy the path to avoid mutations affecting it
             path: Path.from(this.state.path),
-            reason: writeMessage(context)
+            reason: writeReason(
+                data,
+                input,
+                this.state.type.config.problems[code]
+            )
         }
         const pathKey = `${this.state.path}`
         const existing = this.byPath[pathKey]
@@ -147,88 +153,47 @@ export const subdomainDescriptions = {
     Set: "a Set"
 } as const satisfies Record<Subdomain, string>
 
-// TODO: Split up inputs. Take multiple args, or have data in state?
-type ProblemInputs = {
-    divisibility: {
-        data: number
-        rule: {
-            divisor: number
-        }
-    }
-    class: {
-        data: object
-        rule: {
-            class: constructor
-        }
-    }
-    domain: {
-        data: unknown
-        rule: {
-            domains: Subdomain[]
-        }
-    }
-    missing: {
-        data: undefined
-        rule: {
-            domains: Domain[]
-        }
-    }
-    range: {
-        data: unknown
-        rule: {
-            comparator: Scanner.Comparator
-            limit: number
-            size?: number
-            units?: string
-        }
-    }
-    regex: {
-        data: string
-        rule: { regex: RegExp }
-    }
-    value: {
-        data: unknown
-        rule: { value: unknown }
-    }
-    union: {
-        data: unknown
-        rule: { branches: string }
-    }
-    multi: {
-        data: unknown
-        rule: { problems: Problem[] }
-    }
+type ProblemRuleInputs = {
+    divisor: number
+    class: constructor
+    domain: Subdomain
+    domains: Subdomain[]
+    missing: undefined
+    range: FlatBound
+    regex: RegExp
+    value: unknown
+    multi: Problem[]
+    branches: Problem[]
 }
 
-export type ProblemCode = evaluate<keyof ProblemInputs>
+export type ProblemCode = evaluate<keyof ProblemRuleInputs>
 
-export type ProblemInput<code extends ProblemCode = ProblemCode> =
-    ProblemInputs[code]
+export type ProblemRuleInput<code extends ProblemCode = ProblemCode> =
+    ProblemRuleInputs[code]
 
-export const addStateDerivedContext = <code extends ProblemCode>(
-    code: code,
-    input: ProblemInput<code>,
-    type: Type
-) => {
-    const result = input as ProblemContext
-    result.code = code
-    result.type = type
-    return result as ProblemContext<code>
+type ProblemDataInputs = {
+    [code in ProblemCode]: code extends keyof ConstrainedRuleData
+        ? ConstrainedRuleData[code]
+        : unknown
 }
 
-export const writeMessage = <code extends ProblemCode>(
-    context: ProblemContext<code>
+export type ProblemDataInput<code extends ProblemCode = ProblemCode> =
+    ProblemDataInputs[code]
+
+export const writeReason = <code extends ProblemCode>(
+    data: ProblemDataInput<code>,
+    rule: ProblemRuleInput<code>,
+    writers: ProblemWriterConfig<code>
 ) => {
-    const writers = context.type.config.problems[context.code]
     return writers.reason(
-        writers.mustBe(context as never),
-        writers.was?.(context as never)
+        writers.mustBe(rule as never),
+        writers.was(new DataWrapper(data) as never)
     )
 }
 
 export type ProblemOptions<code extends ProblemCode> = {
     mustBe?: RuleWriter<code>
-    was?: DataWriter<code> | "omit"
+    was?: DataWriter<code>
     reason?: ReasonWriter
 }
 
@@ -237,21 +202,20 @@ type ProblemDefinition<code extends ProblemCode> = requireKeys<
     "mustBe"
 >
 
-export type ProblemWriterConfig<code extends ProblemCode> = extend<
-    Required<ProblemOptions<code>>,
-    {
-        mustBe: RuleWriter<code>
-        was: DataWriter<code>
-        reason: ReasonWriter
-    }
+export type ProblemWriterConfig<code extends ProblemCode> = Required<
+    ProblemOptions<code>
 >
 
 export type RuleWriter<code extends ProblemCode> = (
-    context: ProblemInputs[code]["rule"]
+    context: ProblemRuleInputs[code]
 ) => string
 
 export type DataWriter<code extends ProblemCode> = (
-    data: DataWrapper<ProblemInputs[code]["data"]>
+    data: DataWrapper<
+        code extends keyof ConstrainedRuleData
+            ? ConstrainedRuleData[code]
+            : unknown
+    >
 ) => string
 
 export type ReasonWriter = (rule: string, data: string) => string
@@ -285,11 +249,10 @@ export class DataWrapper<value = unknown> {
     }
 }
 
-const writeDefaultWasDescription: DataWriter<ProblemCode> = (context) =>
-    `${context.data}`
+const writeDefaultWasDescription: DataWriter<any> = (data) => `${data}`
 
 const writeDefaultProblemMessage: ReasonWriter = (mustBe, was) =>
-    `Must be ${mustBe}${was ? ` (was ${was})` : ""}`
+    `Must be ${mustBe}${was && ` (was ${was})`}`
 
 const compileDefaultProblemWriters = (definitions: {
     [code in ProblemCode]: ProblemDefinition<code>
@@ -303,50 +266,45 @@ const compileDefaultProblemWriters = (definitions: {
 }
 
 export const defaultProblemWriters = compileDefaultProblemWriters({
-    divisibility: {
-        mustBe: (input) =>
-            input.rule === 1 ? `an integer` : `divisible by ${input.rule}`
+    divisor: {
+        mustBe: (divisor) =>
+            divisor === 1 ? `an integer` : `divisible by ${divisor}`
     },
     class: {
-        mustBe: (rule) => `an instance of ${rule.class.name}`,
-        was: (input) => input.data.className
+        mustBe: (constructor) => `an instance of ${constructor.name}`,
+        was: (data) => data.className
     },
     domain: {
-        mustBe: (input) => describeSubdomains(input.rule),
-        was: (input) => input.data.domain
+        mustBe: (domain) => subdomainDescriptions[domain],
+        was: (data) => data.domain
+    },
+    domains: {
+        mustBe: (domains) => describeSubdomains(domains),
+        was: (data) => data.domain
     },
     missing: {
-        mustBe: (input) => describeSubdomains(input.rule),
-        was: "omit"
+        mustBe: () => "defined",
+        was: () => ""
     },
     range: {
-        mustBe: (input) => {
-            let description = `${
-                Scanner.comparatorDescriptions[input.comparator]
-            } ${input.limit}`
-            const units = input.units ?? input.data.units
-            if (units) {
-                description += ` ${units}`
-            }
-            return description
-        },
-        was: (input) => `${input.size ?? input.data.size}`
+        mustBe: (bound) =>
+            `${Scanner.comparatorDescriptions[bound.comparator]} ${
+                bound.limit
+            }${bound.units && " " + bound.units}`,
+
+        was: (data) => `${data.size}`
     },
     regex: {
-        mustBe: (input) => `a string matching /${input.regex.source}/`
+        mustBe: (regex) => `a string matching /${regex.source}/`
     },
-    tupleLength: {
-        mustBe: (input) => `exactly ${input.rule} items`,
-        was: (input) => `${input.data.value.length}`
-    },
-    union: {
+    branches: {
         mustBe: () => `branches`
     },
     value: {
-        mustBe: (input) => stringify(input.rule)
+        mustBe: (value) => stringify(value)
     },
     multi: {
-        mustBe: (ctx) => "...\n• " + ctx.rule.join("\n• ")
+        mustBe: (problems) => "...\n• " + problems.join("\n• ")
     }
 })
 
@@ -379,7 +337,7 @@ export const compileProblemOptions = (
                 ...base[code],
                 ...all,
                 ...byCode[code]
-            } as ProblemWriterConfig<ProblemCode>
+            } as ProblemWriterConfig<any>
         }
     } else {
         for (code of codes) {
@@ -390,7 +348,7 @@ export const compileProblemOptions = (
                           ...byCode[code]
                       }
                     : base[code]
-            ) as ProblemWriterConfig<ProblemCode>
+            ) as ProblemWriterConfig<any>
         }
     }
     return result

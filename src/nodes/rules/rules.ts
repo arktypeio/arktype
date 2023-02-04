@@ -19,6 +19,7 @@ import {
     isEquality
 } from "../compose.ts"
 import type { TraversalEntry } from "../node.ts"
+import type { PredicateContext } from "../predicate.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
@@ -177,7 +178,10 @@ export const narrowableRulesIntersection =
 export type FlattenAndPushRule<t> = (
     entries: RuleEntry[],
     rule: t,
-    type: Type
+    context: {
+        domain: Domain
+        type: Type
+    }
 ) => void
 
 type UnknownRules = NarrowableRules & Partial<LiteralRules>
@@ -234,20 +238,26 @@ export const precedenceMap: {
     morph: 4
 }
 
-export const flattenBranch = (branch: Branch, type: Type): FlatBranch => {
+export const flattenBranch = (
+    branch: Branch,
+    ctx: PredicateContext
+): FlatBranch => {
     if ("morph" in branch) {
-        const result = flattenRules(branch.input, type) as FlatMorphedBranch
+        const result = flattenRules(branch.input, ctx) as FlatMorphedBranch
         result.push(["morph", branch.morph])
         return result
     }
-    return flattenRules(branch, type)
+    return flattenRules(branch, ctx)
 }
 
-const flattenRules = (rules: UnknownRules, type: Type): FlatBranch => {
+const flattenRules = (
+    rules: UnknownRules,
+    ctx: PredicateContext
+): FlatBranch => {
     const entries: RuleEntry[] = []
     let k: keyof UnknownRules
     for (k in rules) {
-        ruleFlatteners[k](entries, rules[k] as any, type)
+        ruleFlatteners[k](entries, rules[k] as any, ctx)
     }
     return entries.sort((l, r) => precedenceMap[l[0]] - precedenceMap[r[0]])
 }

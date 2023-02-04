@@ -1,4 +1,4 @@
-import type { Type } from "../main.ts"
+import type { QualifiedTypeName, Type } from "../main.ts"
 import { serializeCase } from "../nodes/discriminate.ts"
 import type {
     TraversalEntry,
@@ -24,31 +24,35 @@ export class TraversalState {
     path = new Path()
     problems = new Problems(this)
 
-    // TODO: name by scope (scope registry?)
-    #seen: { [name in string]?: object[] } = {}
+    #seen: { [name in QualifiedTypeName]?: object[] } = {}
 
     constructor(public type: Type) {}
 
     traverseResolution(data: unknown, name: string) {
-        const lastType = this.type
-        if (hasDomain(data, "object")) {
-            if (hasKey(this.#seen, name)) {
-                if (
-                    this.#seen[name].some((checkedData) => data === checkedData)
-                ) {
-                    // If data has already been checked by this alias during this
-                    // traversal, it must be valid or we wouldn't be here, so we can
-                    // stop traversing.
+        const resolution = this.type.scope.resolve(name)
+        const id = resolution.config.id
+        const isObject = hasDomain(data, "object")
+        if (isObject) {
+            if (hasKey(this.#seen, id)) {
+                if (this.#seen[id].includes(data)) {
+                    // if data has already been checked by this alias as part of
+                    // a resolution higher up on the call stack, it must be valid
+                    // or we wouldn't be here
                     return
                 }
-                this.#seen[name].push(data)
+                this.#seen[id].push(data)
             } else {
-                this.#seen[name] = [data]
+                this.#seen[id] = [data]
             }
         }
-        this.type = this.type.scope.resolve(name)
-        traverse(data, this.type.flat, this)
+        // TODO: type not an accurate reflection of context because not always included
+        const lastType = this.type
+        this.type = resolution
+        traverse(data, resolution.flat, this)
         this.type = lastType
+        if (isObject) {
+            this.#seen[id]!.pop()
+        }
     }
 
     // TODO: add fast fail mode, use for unions
@@ -66,7 +70,7 @@ export class TraversalState {
             subproblems.push(this.problems)
         }
         this.problems = baseProblems
-        this.problems.add("union", { data })
+        this.problems.add("branches", data, [])
     }
 }
 
@@ -77,7 +81,7 @@ export const traverse = (
 ) => {
     if (typeof node === "string") {
         if (domainOf(data) !== node) {
-            return state.problems.add("domain", { rule: [node], data })
+            return state.problems.add("domain", data, node)
         }
         return
     }
@@ -105,7 +109,7 @@ export const checkEntries = (
             }
             return out
         } else {
-            checkers[k](data, v, state)
+            checkers[k](data as never, v as never, state)
             if (state.problems.length > initialProblemsCount) {
                 problemsPrecedence = precedenceMap[k]
             }
@@ -123,8 +127,7 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
             state.path.push(propKey)
             if (!hasKey(data, propKey)) {
                 if (propKind !== "optionalProps") {
-                    // TODO: resolve domains
-                    state.problems.add("missing", { rule: [] })
+                    state.problems.add("missing", undefined, undefined)
                 }
             } else {
                 traverse(data[propKey], propNode, state)
@@ -145,20 +148,21 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     const dataSubdomain = subdomainOf(data)
     if (typeof rule === "string") {
         if (dataSubdomain !== rule) {
-            return state.problems.add("domain", { rule: [rule], data })
+            return state.problems.add("domain", data, rule)
         }
         return
     }
     if (dataSubdomain !== rule[0]) {
-        return state.problems.add("domain", { rule: [rule[0]], data })
+        return state.problems.add("domain", data, rule[0])
     }
     if (dataSubdomain === "Array" && typeof rule[2] === "number") {
         const actual = (data as List).length
         const expected = rule[2]
         if (expected !== actual) {
-            return state.problems.add("tupleLength", {
-                rule: expected,
-                data: data as List
+            return state.problems.add("range", data as List, {
+                comparator: "==",
+                limit: expected,
+                units: "items"
             })
         }
     }
@@ -186,16 +190,16 @@ const checkers = {
         if (entries) {
             checkEntries(data, entries, state)
         } else {
-            state.problems.add("domain", { rule: keysOf(domains), data })
+            state.problems.add("domains", data, keysOf(domains))
         }
     },
     domain: (data, domain, state) => {
         if (domainOf(data) !== domain) {
-            state.problems.add("domain", { rule: [domain], data })
+            state.problems.add("domain", data, domain)
         }
     },
     subdomain: checkSubdomain,
-    range: checkBound,
+    bound: checkBound,
     requiredProps: checkRequiredProps,
     optionalProps: checkOptionalProps,
     branches: (data, branches, state) => state.traverseBranches(data, branches),
@@ -207,7 +211,7 @@ const checkers = {
         }
         const lastPath = state.path
         state.path = rule.path
-        state.problems.add("union", { data })
+        state.problems.add("branches", data, [])
         state.path = lastPath
     },
     alias: (data, name, state) => state.traverseResolution(data, name),
@@ -216,15 +220,11 @@ const checkers = {
     narrow: (data, narrow) => narrow(data),
     value: (data, value, state) => {
         if (data !== value) {
-            state.problems.add("value", { rule: value, data })
+            state.problems.add("value", data, value)
         }
     }
 } satisfies {
     [k in ValidationKey]: TraversalCheck<k>
-} as {
-    // after validating that each checker has the appropriate type, cast to a
-    // more permissive type that avoids inferring input as never
-    [k in ValidationKey]: TraversalCheck<any>
 }
 
 type ValidationKey = Exclude<TraversalKey, "morph">

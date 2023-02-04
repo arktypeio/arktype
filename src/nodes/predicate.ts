@@ -135,16 +135,21 @@ export const predicateUnion = (
     ])
 }
 
+export type PredicateContext = {
+    domain: Domain
+    type: Type
+}
+
 export const flattenPredicate = (
     predicate: Predicate,
-    type: Type
+    context: PredicateContext
 ): TraversalEntry[] => {
     if (predicate === true) {
         return []
     }
     return hasSubdomain(predicate, "Array")
-        ? flattenBranches(predicate, type)
-        : flattenBranch(predicate, type)
+        ? flattenBranches(predicate, context)
+        : flattenBranch(predicate, context)
 }
 
 export const isLiteralCondition = (

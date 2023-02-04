@@ -36,14 +36,14 @@ describe("traverse", () => {
             age: 99
         })
         attest(t({ name: "Shawn" }).problems?.summary).snap(
-            "age must be defined (was missing)"
+            "age must be defined"
         )
     })
     it("custom errors", () => {
         const isEven = type("number%2", {
             problems: {
-                divisibility: {
-                    mustBe: ({ rule }) => `a multiple of ${rule}`,
+                divisor: {
+                    mustBe: (divisor) => `a multiple of ${divisor}`,
                     reason: (mustBe, was) => `${was} is not ${mustBe}!`
                 }
             }

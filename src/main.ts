@@ -59,6 +59,7 @@ export type ScopeOptions = {
     imports?: Space[] | []
     includes?: Space[] | []
     standard?: boolean
+    name?: string
 }
 
 type validateOptions<opts extends ScopeOptions> = {
@@ -153,12 +154,17 @@ type resolutions<context extends ScopeContext> = localsOf<context> &
 
 type name<context extends ScopeContext> = keyof resolutions<context> & string
 
+let anonymousScopeCount = 0
+const scopeRegistry: Record<string, Scope | undefined> = {}
+
 export class Scope<context extends ScopeContext = any> {
+    name: string
     parseCache = new FreezingCache<TypeNode>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
 
     constructor(public aliases: Dict, public opts: ScopeOptions) {
+        this.name = this.#register(opts)
         if (opts.standard !== false) {
             this.#cacheSpaces([standardTypes], "imports")
         }
@@ -168,6 +174,16 @@ export class Scope<context extends ScopeContext = any> {
         if (opts.includes) {
             this.#cacheSpaces(opts.includes, "includes")
         }
+    }
+
+    #register(opts: ScopeOptions) {
+        const name: string = opts.name
+            ? scopeRegistry[opts.name]
+                ? throwParseError(`A scope named '${opts.name}' already exists`)
+                : opts.name
+            : `scope${++anonymousScopeCount}`
+        scopeRegistry[name] = this
+        return name
     }
 
     #cacheSpaces(spaces: Space[], kind: "imports" | "includes") {
@@ -196,8 +212,10 @@ export class Scope<context extends ScopeContext = any> {
 
     #compileTypeConfig(opts: TypeOptions): TypeConfig {
         // TODO: merge scope options?
+        const typeName = opts.name ?? "(anonymous)"
         return {
-            name: opts.alias ?? "(anonymous)",
+            name: typeName,
+            id: `${this.name}.${typeName}`,
             problems: compileProblemOptions(opts.problems)
         }
     }
@@ -285,6 +303,7 @@ export class Scope<context extends ScopeContext = any> {
         // TODO: opts?
         const result = this.#initializeUnparsedType({
             name,
+            id: `${this.name}.${name}`,
             problems: defaultProblemWriters
         })
         this.#resolutions.set(name, result)
@@ -388,7 +407,7 @@ const ts = scope(
             // TODO: defer to fix instanceof inference
         ] as inferred<Function>
     },
-    { standard: false }
+    { name: "ts", standard: false }
 )
 
 const tsTypes = ts.compile()
@@ -402,7 +421,7 @@ const validation = scope(
         uppercase: /^[A-Z]*$/,
         integer: ["node", { number: { divisor: 1 } }]
     },
-    { standard: false }
+    { name: "validation", standard: false }
 )
 
 const validationTypes = validation.compile()
@@ -410,6 +429,7 @@ const validationTypes = validation.compile()
 const standard = scope(
     {},
     {
+        name: "standard",
         includes: [tsTypes, validationTypes],
         standard: false
     }
@@ -490,6 +510,7 @@ export type Result<t> = xor<
 type Checker<t> = (data: unknown) => Result<t>
 
 // TODO: add methods like .intersect, etc.
+// TODO: to class?
 type TypeRoot<t = unknown> = {
     [t]: t
     infer: asOut<t>
@@ -504,12 +525,15 @@ export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
 
 export type TypeOptions = {
     // TODO: validate not already a name
-    alias?: string
+    name?: string
     problems?: ProblemsOptions
 }
 
+export type QualifiedTypeName = `${string}.${string}`
+
 export type TypeConfig = {
     name: string
+    id: QualifiedTypeName
     problems: ProblemsConfig
 }
 

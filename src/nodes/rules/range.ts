@@ -1,6 +1,6 @@
 import type { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { TraversalCheck } from "../../traverse/check.ts"
-import { sizeOf, unitsOf } from "../../utils/domains.ts"
+import { sizeOf } from "../../utils/domains.ts"
 import { composeIntersection, equality, toComparator } from "../compose.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
@@ -45,21 +45,33 @@ export const rangeIntersection = composeIntersection<Range>((l, r, state) => {
 export type FlatBound = {
     comparator: Scanner.Comparator
     limit: number
+    units: string
 }
 
-export const flattenRange: FlattenAndPushRule<Range> = (entries, range) => {
+export const flattenRange: FlattenAndPushRule<Range> = (
+    entries,
+    range,
+    ctx
+) => {
+    const units =
+        ctx.domain === "string"
+            ? "characters"
+            : ctx.domain === "object"
+            ? "items"
+            : ""
     if (range.min) {
         if (range.min.limit === range.max?.limit) {
             return entries.push([
                 "bound",
-                { comparator: "==", limit: range.min.limit }
+                { comparator: "==", limit: range.min.limit, units }
             ])
         }
         entries.push([
             "bound",
             {
                 comparator: toComparator("min", range.min),
-                limit: range.min.limit
+                limit: range.min.limit,
+                units
             }
         ])
     }
@@ -68,7 +80,8 @@ export const flattenRange: FlattenAndPushRule<Range> = (entries, range) => {
             "bound",
             {
                 comparator: toComparator("max", range.max),
-                limit: range.max.limit
+                limit: range.max.limit,
+                units
             }
         ])
     }
@@ -76,7 +89,7 @@ export const flattenRange: FlattenAndPushRule<Range> = (entries, range) => {
 
 export const checkBound = ((data, bound, state) => {
     if (!comparatorCheckers[bound.comparator](sizeOf(data), bound.limit)) {
-        state.problems.add("bound", bound)
+        state.problems.add("bound", data, bound)
     }
 }) satisfies TraversalCheck<"bound">
 
