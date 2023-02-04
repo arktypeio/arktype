@@ -27,11 +27,16 @@ export class ArkTypeError extends TypeError {
     }
 }
 
-// TODO: convert to class with toString?
-export type Problem = {
-    path: Path
-    code: ProblemCode
-    reason: string
+export class Problem {
+    constructor(
+        public code: ProblemCode,
+        public path: Path,
+        public reason: string
+    ) {}
+
+    toString() {
+        return this.reason
+    }
 }
 
 export class Problems extends Array<Problem> {
@@ -104,71 +109,67 @@ export const subdomainDescriptions = {
     Set: "a Set"
 } as const satisfies Record<Subdomain, string>
 
+// TODO: Split up inputs. Take multiple args, or have data in state?
 type ProblemInputs = {
     divisibility: {
         data: number
-        divisor: number
+        rule: {
+            divisor: number
+        }
     }
-
     class: {
-        class: constructor
         data: object
+        rule: {
+            class: constructor
+        }
     }
     domain: {
-        domains: Subdomain[]
         data: unknown
+        rule: {
+            domains: Subdomain[]
+        }
     }
     missing: {
-        domains: Domain[]
+        data: undefined
+        rule: {
+            domains: Domain[]
+        }
     }
     range: {
-        comparator: Scanner.Comparator
-        limit: number
         data: unknown
-        size?: number
-        units?: string
+        rule: {
+            comparator: Scanner.Comparator
+            limit: number
+            size?: number
+            units?: string
+        }
     }
     regex: {
-        regex: RegExp
         data: string
+        rule: { regex: RegExp }
     }
     tupleLength: {
-        length: number
         data: readonly unknown[]
+        rule: { length: number }
     }
     union: {
         data: unknown
+        rule: { branches: string }
     }
     value: {
-        value: unknown
         data: unknown
+        rule: { value: unknown }
     }
     multi: {
         data: unknown
-        problems: ProblemInput[]
+        rule: { problems: ProblemInput[] }
     }
 }
 
-export type ProblemInput<code extends ProblemCode = ProblemCode> =
-    ProblemInputs[code]
-
 export type ProblemCode = evaluate<keyof ProblemInputs>
 
-export type ProblemContexts = {
-    [code in ProblemCode]: evaluate<
-        StateDerivedProblemContext<code> & Omit<ProblemInputs[code], "data">
-    >
-}
-
-export type StateDerivedProblemContext<code extends ProblemCode> = {
-    code: code
-    type: Type
-    data: DataWrapper<
-        "data" extends keyof ProblemInputs[code]
-            ? ProblemInputs[code]["data"]
-            : undefined
-    >
-}
+export type ProblemInput<code extends ProblemCode = ProblemCode> =
+    ProblemInputs[code]
 
 export const addStateDerivedContext = <code extends ProblemCode>(
     code: code,
@@ -178,34 +179,23 @@ export const addStateDerivedContext = <code extends ProblemCode>(
     const result = input as ProblemContext
     result.code = code
     result.type = type
-    result.data = new DataWrapper("data" in input ? input.data : undefined)
     return result as ProblemContext<code>
-}
-
-export type ProblemContext<code extends ProblemCode = ProblemCode> =
-    ProblemContexts[code]
-
-export type DescribedProblemContexts = {
-    [code in ProblemCode]: ProblemContexts[code] & {
-        mustBe: string
-        was?: string
-    }
 }
 
 export const writeMessage = <code extends ProblemCode>(
     context: ProblemContext<code>
 ) => {
     const writers = context.type.config.problems[context.code]
-    return writers.message(
+    return writers.reason(
         writers.mustBe(context as never),
         writers.was?.(context as never)
     )
 }
 
 export type ProblemOptions<code extends ProblemCode> = {
-    mustBe: ProblemDescriptionWriter<code>
-    was?: ProblemDescriptionWriter<code> | "omit"
-    message?: ProblemMessageWriter
+    mustBe?: RuleWriter<code>
+    was?: DataWriter<code> | "omit"
+    reason?: ReasonWriter
 }
 
 type ProblemDefinition<code extends ProblemCode> = requireKeys<
@@ -214,22 +204,23 @@ type ProblemDefinition<code extends ProblemCode> = requireKeys<
 >
 
 export type ProblemWriterConfig<code extends ProblemCode> = extend<
-    ProblemOptions<code>,
+    Required<ProblemOptions<code>>,
     {
-        mustBe: ProblemDescriptionWriter<code>
-        was?: ProblemDescriptionWriter<code>
-        message: ProblemMessageWriter
+        mustBe: RuleWriter<code>
+        was: DataWriter<code>
+        reason: ReasonWriter
     }
 >
 
-export type ProblemDescriptionWriter<code extends ProblemCode> = (
-    input: ProblemContexts[code]
+export type RuleWriter<code extends ProblemCode> = (
+    context: ProblemInputs[code]["rule"]
 ) => string
 
-export type ProblemMessageWriter = (
-    mustBe: string,
-    was: string | undefined
+export type DataWriter<code extends ProblemCode> = (
+    data: DataWrapper<ProblemInputs[code]["data"]>
 ) => string
+
+export type ReasonWriter = (rule: string, data: string) => string
 
 export class DataWrapper<value = unknown> {
     constructor(public value: value) {}
@@ -260,11 +251,10 @@ export class DataWrapper<value = unknown> {
     }
 }
 
-const writeDefaultWasDescription: ProblemDescriptionWriter<ProblemCode> = (
-    context
-) => `${context.data}`
+const writeDefaultWasDescription: DataWriter<ProblemCode> = (context) =>
+    `${context.data}`
 
-const writeDefaultProblemMessage: ProblemMessageWriter = (mustBe, was) =>
+const writeDefaultProblemMessage: ReasonWriter = (mustBe, was) =>
     `Must be ${mustBe}${was ? ` (was ${was})` : ""}`
 
 const compileDefaultProblemWriters = (definitions: {
@@ -273,7 +263,7 @@ const compileDefaultProblemWriters = (definitions: {
     let code: ProblemCode
     for (code in definitions) {
         definitions[code].was ??= writeDefaultWasDescription
-        definitions[code].message = writeDefaultProblemMessage
+        definitions[code].reason = writeDefaultProblemMessage
     }
     return definitions as ProblemsConfig
 }
@@ -281,18 +271,18 @@ const compileDefaultProblemWriters = (definitions: {
 export const defaultProblemWriters = compileDefaultProblemWriters({
     divisibility: {
         mustBe: (input) =>
-            input.divisor === 1 ? `an integer` : `divisible by ${input.divisor}`
+            input.rule === 1 ? `an integer` : `divisible by ${input.rule}`
     },
     class: {
-        mustBe: (input) => `an instance of ${input.class.name}`,
+        mustBe: (rule) => `an instance of ${rule.class.name}`,
         was: (input) => input.data.className
     },
     domain: {
-        mustBe: (input) => describeSubdomains(input.domains),
+        mustBe: (input) => describeSubdomains(input.rule),
         was: (input) => input.data.domain
     },
     missing: {
-        mustBe: (input) => describeSubdomains(input.domains),
+        mustBe: (input) => describeSubdomains(input.rule),
         was: "omit"
     },
     range: {
@@ -312,17 +302,17 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
         mustBe: (input) => `a string matching /${input.regex.source}/`
     },
     tupleLength: {
-        mustBe: (input) => `exactly ${input.length} items`,
+        mustBe: (input) => `exactly ${input.rule} items`,
         was: (input) => `${input.data.value.length}`
     },
     union: {
         mustBe: () => `branches`
     },
     value: {
-        mustBe: (input) => stringify(input.value)
+        mustBe: (input) => stringify(input.rule)
     },
     multi: {
-        mustBe: (ctx) => "...\n• " + ctx.problems.join("\n• ")
+        mustBe: (ctx) => "...\n• " + ctx.rule.join("\n• ")
     }
 })
 

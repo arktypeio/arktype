@@ -43,12 +43,12 @@ describe("traverse", () => {
         const isEven = type("number%2", {
             problems: {
                 divisibility: {
-                    mustBe: ({ divisor }) => `disivible by ${divisor}`,
-                    message: (mustBe, was) => `${was} is not ${mustBe}!`
+                    mustBe: ({ rule }) => `a multiple of ${rule}`,
+                    reason: (mustBe, was) => `${was} is not ${mustBe}!`
                 }
             }
         })
-        attest(isEven(3).problems?.summary).snap("3 is not disivible by 2!")
+        attest(isEven(3).problems?.summary).snap("3 is not a multiple of 2!")
     })
     // TODO: more domain tests
     it("domains", () => {

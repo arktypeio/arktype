@@ -18,8 +18,13 @@ import type { Dict, extend, List } from "../utils/generics.ts"
 import { hasKey, keysOf } from "../utils/generics.ts"
 import { getPath, Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { Problem, ProblemCode, ProblemInput } from "./problems.ts"
-import { addStateDerivedContext, Problems, writeMessage } from "./problems.ts"
+import type { ProblemCode, ProblemInput } from "./problems.ts"
+import {
+    addStateDerivedContext,
+    Problem,
+    Problems,
+    writeMessage
+} from "./problems.ts"
 
 export class TraversalState {
     path = new Path()
@@ -46,11 +51,11 @@ export class TraversalState {
             if (existing.code === "multi") {
                 existing.reason += `\n• ${problem.reason}`
             } else {
-                this.problemsByPath[pathKey] = {
-                    code: "multi",
-                    path: existing.path,
-                    reason: `• ${existing.reason}\n• ${problem.reason}`
-                }
+                this.problemsByPath[pathKey] = new Problem(
+                    "multi",
+                    existing.path,
+                    `• ${existing.reason}\n• ${problem.reason}`
+                )
             }
         } else {
             this.problemsByPath[pathKey] = problem
@@ -106,7 +111,7 @@ export const traverse = (
 ) => {
     if (typeof node === "string") {
         if (domainOf(data) !== node) {
-            return state.problem("domain", { domains: [node], data })
+            return state.problem("domain", { rule: [node], data })
         }
         return
     }
@@ -153,7 +158,7 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
             if (!hasKey(data, propKey)) {
                 if (propKind !== "optionalProps") {
                     // TODO: resolve domains
-                    state.problem("missing", { domains: [] })
+                    state.problem("missing", { rule: [] })
                 }
             } else {
                 traverse(data[propKey], propNode, state)
@@ -174,19 +179,19 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     const dataSubdomain = subdomainOf(data)
     if (typeof rule === "string") {
         if (dataSubdomain !== rule) {
-            return state.problem("domain", { domains: [rule], data })
+            return state.problem("domain", { rule: [rule], data })
         }
         return
     }
     if (dataSubdomain !== rule[0]) {
-        return state.problem("domain", { domains: [rule[0]], data })
+        return state.problem("domain", { rule: [rule[0]], data })
     }
     if (dataSubdomain === "Array" && typeof rule[2] === "number") {
         const actual = (data as List).length
         const expected = rule[2]
         if (expected !== actual) {
             return state.problem("tupleLength", {
-                length: expected,
+                rule: expected,
                 data: data as List
             })
         }
@@ -215,12 +220,12 @@ const checkers = {
         if (entries) {
             checkEntries(data, entries, state)
         } else {
-            state.problem("domain", { domains: keysOf(domains), data })
+            state.problem("domain", { rule: keysOf(domains), data })
         }
     },
     domain: (data, domain, state) => {
         if (domainOf(data) !== domain) {
-            state.problem("domain", { domains: [domain], data })
+            state.problem("domain", { rule: [domain], data })
         }
     },
     subdomain: checkSubdomain,
@@ -245,7 +250,7 @@ const checkers = {
     narrow: (data, narrow) => narrow(data),
     value: (data, value, state) => {
         if (data !== value) {
-            state.problem("value", { value, data })
+            state.problem("value", { rule: value, data })
         }
     }
 } satisfies {
