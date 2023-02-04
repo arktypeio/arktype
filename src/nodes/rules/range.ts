@@ -62,12 +62,12 @@ export const flattenRange: FlattenAndPushRule<Range> = (
     if (range.min) {
         if (range.min.limit === range.max?.limit) {
             return entries.push([
-                "bound",
+                "range",
                 { comparator: "==", limit: range.min.limit, units }
             ])
         }
         entries.push([
-            "bound",
+            "range",
             {
                 comparator: toComparator("min", range.min),
                 limit: range.min.limit,
@@ -77,7 +77,7 @@ export const flattenRange: FlattenAndPushRule<Range> = (
     }
     if (range.max) {
         entries.push([
-            "bound",
+            "range",
             {
                 comparator: toComparator("max", range.max),
                 limit: range.max.limit,
@@ -87,11 +87,11 @@ export const flattenRange: FlattenAndPushRule<Range> = (
     }
 }
 
-export const checkBound = ((data, bound, state) => {
+export const checkRange = ((data, bound, state) => {
     if (!comparatorCheckers[bound.comparator](sizeOf(data), bound.limit)) {
-        state.problems.add("bound", data, bound)
+        state.problems.add("range", data, bound)
     }
-}) satisfies TraversalCheck<"bound">
+}) satisfies TraversalCheck<"range">
 
 const comparatorCheckers: Record<
     Scanner.Comparator,

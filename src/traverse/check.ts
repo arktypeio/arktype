@@ -8,7 +8,7 @@ import type {
 import { checkClass } from "../nodes/rules/class.ts"
 import { checkDivisor } from "../nodes/rules/divisor.ts"
 import type { TraversalPropEntry } from "../nodes/rules/props.ts"
-import { checkBound } from "../nodes/rules/range.ts"
+import { checkRange } from "../nodes/rules/range.ts"
 import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
 import type { SizedData } from "../utils/domains.ts"
@@ -199,7 +199,7 @@ const checkers = {
         }
     },
     subdomain: checkSubdomain,
-    bound: checkBound,
+    range: checkRange,
     requiredProps: checkRequiredProps,
     optionalProps: checkOptionalProps,
     branches: (data, branches, state) => state.traverseBranches(data, branches),

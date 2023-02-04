@@ -70,7 +70,7 @@ export type RuleEntry =
     | ["subdomain", TraversalSubdomainRule]
     | ["regex", RegExp]
     | ["divisor", number]
-    | ["bound", FlatBound]
+    | ["range", FlatBound]
     | ["class", constructor]
     | TraversalRequiredProps
     | TraversalOptionalProps
@@ -228,7 +228,7 @@ export const precedenceMap: {
     class: 1,
     regex: 1,
     divisor: 1,
-    bound: 1,
+    range: 1,
     // Deep: Performed if all shallow checks pass, even if one or more deep checks fail
     requiredProps: 2,
     optionalProps: 2,
