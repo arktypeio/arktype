@@ -8,7 +8,7 @@ import type {
 import { checkClass } from "../nodes/rules/class.ts"
 import { checkDivisor } from "../nodes/rules/divisor.ts"
 import type { TraversalPropEntry } from "../nodes/rules/props.ts"
-import { checkRange } from "../nodes/rules/range.ts"
+import { checkBound } from "../nodes/rules/range.ts"
 import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
 import type { SizedData } from "../utils/domains.ts"
@@ -18,50 +18,16 @@ import type { Dict, extend, List } from "../utils/generics.ts"
 import { hasKey, keysOf } from "../utils/generics.ts"
 import { getPath, Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { ProblemCode, ProblemInput } from "./problems.ts"
-import {
-    addStateDerivedContext,
-    Problem,
-    Problems,
-    writeMessage
-} from "./problems.ts"
+import { Problems } from "./problems.ts"
 
 export class TraversalState {
     path = new Path()
-    problems = new Problems()
-    problemsByPath: { [path in string]?: Problem } = {}
+    problems = new Problems(this)
 
     // TODO: name by scope (scope registry?)
     #seen: { [name in string]?: object[] } = {}
 
     constructor(public type: Type) {}
-
-    // TODO: move back to Problems with private state
-    problem<code extends ProblemCode>(code: code, input: ProblemInput<code>) {
-        const context = addStateDerivedContext(code, input, this.type)
-        const problem: Problem = {
-            code,
-            // copy the path to avoid mutations affecting it
-            path: Path.from(this.path),
-            reason: writeMessage(context)
-        }
-        const pathKey = `${this.path}`
-        const existing = this.problemsByPath[pathKey]
-        if (existing) {
-            if (existing.code === "multi") {
-                existing.reason += `\n• ${problem.reason}`
-            } else {
-                this.problemsByPath[pathKey] = new Problem(
-                    "multi",
-                    existing.path,
-                    `• ${existing.reason}\n• ${problem.reason}`
-                )
-            }
-        } else {
-            this.problemsByPath[pathKey] = problem
-        }
-        this.problems.push(problem)
-    }
 
     traverseResolution(data: unknown, name: string) {
         const lastType = this.type
@@ -91,7 +57,7 @@ export class TraversalState {
         // TODO: Fix
         const subproblems: Problems[] = []
         for (const branch of branches) {
-            this.problems = new Problems()
+            this.problems = new Problems(this)
             checkEntries(data, branch, this)
             if (!this.problems.length) {
                 this.problems = baseProblems
@@ -100,7 +66,7 @@ export class TraversalState {
             subproblems.push(this.problems)
         }
         this.problems = baseProblems
-        this.problem("union", { data })
+        this.problems.add("union", { data })
     }
 }
 
@@ -111,7 +77,7 @@ export const traverse = (
 ) => {
     if (typeof node === "string") {
         if (domainOf(data) !== node) {
-            return state.problem("domain", { rule: [node], data })
+            return state.problems.add("domain", { rule: [node], data })
         }
         return
     }
@@ -158,7 +124,7 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
             if (!hasKey(data, propKey)) {
                 if (propKind !== "optionalProps") {
                     // TODO: resolve domains
-                    state.problem("missing", { rule: [] })
+                    state.problems.add("missing", { rule: [] })
                 }
             } else {
                 traverse(data[propKey], propNode, state)
@@ -179,18 +145,18 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
     const dataSubdomain = subdomainOf(data)
     if (typeof rule === "string") {
         if (dataSubdomain !== rule) {
-            return state.problem("domain", { rule: [rule], data })
+            return state.problems.add("domain", { rule: [rule], data })
         }
         return
     }
     if (dataSubdomain !== rule[0]) {
-        return state.problem("domain", { rule: [rule[0]], data })
+        return state.problems.add("domain", { rule: [rule[0]], data })
     }
     if (dataSubdomain === "Array" && typeof rule[2] === "number") {
         const actual = (data as List).length
         const expected = rule[2]
         if (expected !== actual) {
-            return state.problem("tupleLength", {
+            return state.problems.add("tupleLength", {
                 rule: expected,
                 data: data as List
             })
@@ -220,16 +186,16 @@ const checkers = {
         if (entries) {
             checkEntries(data, entries, state)
         } else {
-            state.problem("domain", { rule: keysOf(domains), data })
+            state.problems.add("domain", { rule: keysOf(domains), data })
         }
     },
     domain: (data, domain, state) => {
         if (domainOf(data) !== domain) {
-            state.problem("domain", { rule: [domain], data })
+            state.problems.add("domain", { rule: [domain], data })
         }
     },
     subdomain: checkSubdomain,
-    range: checkRange,
+    range: checkBound,
     requiredProps: checkRequiredProps,
     optionalProps: checkOptionalProps,
     branches: (data, branches, state) => state.traverseBranches(data, branches),
@@ -241,7 +207,7 @@ const checkers = {
         }
         const lastPath = state.path
         state.path = rule.path
-        state.problem("union", { data })
+        state.problems.add("union", { data })
         state.path = lastPath
     },
     alias: (data, name, state) => state.traverseResolution(data, name),
@@ -250,7 +216,7 @@ const checkers = {
     narrow: (data, narrow) => narrow(data),
     value: (data, value, state) => {
         if (data !== value) {
-            state.problem("value", { rule: value, data })
+            state.problems.add("value", { rule: value, data })
         }
     }
 } satisfies {

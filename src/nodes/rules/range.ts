@@ -1,6 +1,8 @@
+import type { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { TraversalCheck } from "../../traverse/check.ts"
-import { unitsOf } from "../../utils/domains.ts"
+import { sizeOf, unitsOf } from "../../utils/domains.ts"
 import { composeIntersection, equality, toComparator } from "../compose.ts"
+import type { FlattenAndPushRule } from "./rules.ts"
 
 export type Range = {
     readonly min?: Bound
@@ -40,37 +42,54 @@ export const rangeIntersection = composeIntersection<Range>((l, r, state) => {
     return maxComparison === "l" ? l : maxComparison === "r" ? r : equality()
 })
 
-export const checkRange = ((data, range, state) => {
-    const size = typeof data === "number" ? data : data.length
+export type FlatBound = {
+    comparator: Scanner.Comparator
+    limit: number
+}
+
+export const flattenRange: FlattenAndPushRule<Range> = (entries, range) => {
     if (range.min) {
-        if (
-            size < range.min.limit ||
-            (size === range.min.limit && range.min.exclusive)
-        ) {
-            state.problem("range", {
-                comparator: toComparator("min", range.min),
-                limit: range.min.limit,
-                data,
-                size,
-                units: unitsOf(data)
-            })
+        if (range.min.limit === range.max?.limit) {
+            return entries.push([
+                "bound",
+                { comparator: "==", limit: range.min.limit }
+            ])
         }
+        entries.push([
+            "bound",
+            {
+                comparator: toComparator("min", range.min),
+                limit: range.min.limit
+            }
+        ])
     }
     if (range.max) {
-        if (
-            size > range.max.limit ||
-            (size === range.max.limit && range.max.exclusive)
-        ) {
-            state.problem("range", {
+        entries.push([
+            "bound",
+            {
                 comparator: toComparator("max", range.max),
-                limit: range.max.limit,
-                data,
-                size,
-                units: unitsOf(data)
-            })
-        }
+                limit: range.max.limit
+            }
+        ])
     }
-}) satisfies TraversalCheck<"range">
+}
+
+export const checkBound = ((data, bound, state) => {
+    if (!comparatorCheckers[bound.comparator](sizeOf(data), bound.limit)) {
+        state.problems.add("bound", bound)
+    }
+}) satisfies TraversalCheck<"bound">
+
+const comparatorCheckers: Record<
+    Scanner.Comparator,
+    (size: number, limit: number) => boolean
+> = {
+    "<": (size, limit) => size < limit,
+    ">": (size, limit) => size > limit,
+    "<=": (size, limit) => size <= limit,
+    ">=": (size, limit) => size >= limit,
+    "==": (size, limit) => size === limit
+}
 
 const invertedKinds = {
     min: "max",

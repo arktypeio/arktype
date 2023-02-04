@@ -12,11 +12,13 @@ import type {
     constructor,
     evaluate,
     extend,
+    instanceOf,
     requireKeys
 } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
-import type { Path } from "../utils/paths.ts"
+import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
+import type { TraversalState } from "./check.ts"
 
 export class ArkTypeError extends TypeError {
     cause: Problems
@@ -39,8 +41,38 @@ export class Problem {
     }
 }
 
-export class Problems extends Array<Problem> {
+class ProblemArray extends Array<Problem> {
     byPath: Record<string, Problem> = {}
+
+    constructor(private state: TraversalState) {
+        super()
+    }
+
+    add<code extends ProblemCode>(code: code, input: ProblemInput<code>) {
+        const context = addStateDerivedContext(code, input, this.state.type)
+        const problem: Problem = {
+            code,
+            // copy the path to avoid mutations affecting it
+            path: Path.from(this.state.path),
+            reason: writeMessage(context)
+        }
+        const pathKey = `${this.state.path}`
+        const existing = this.byPath[pathKey]
+        if (existing) {
+            if (existing.code === "multi") {
+                existing.reason += `\n• ${problem.reason}`
+            } else {
+                this.byPath[pathKey] = new Problem(
+                    "multi",
+                    existing.path,
+                    `• ${existing.reason}\n• ${problem.reason}`
+                )
+            }
+        } else {
+            this.byPath[pathKey] = problem
+        }
+        this.push(problem)
+    }
 
     // TODO: add some customization options for this
     get summary() {
@@ -63,6 +95,12 @@ export class Problems extends Array<Problem> {
         throw new ArkTypeError(this)
     }
 }
+
+export const Problems: new (state: TraversalState) => readonly Problem[] & {
+    [k in Exclude<keyof ProblemArray, keyof unknown[]>]: ProblemArray[k]
+} = ProblemArray
+
+export type Problems = instanceOf<typeof Problems>
 
 const uncapitalize = (s: string) => s[0].toLowerCase() + s.slice(1)
 
@@ -148,21 +186,17 @@ type ProblemInputs = {
         data: string
         rule: { regex: RegExp }
     }
-    tupleLength: {
-        data: readonly unknown[]
-        rule: { length: number }
+    value: {
+        data: unknown
+        rule: { value: unknown }
     }
     union: {
         data: unknown
         rule: { branches: string }
     }
-    value: {
-        data: unknown
-        rule: { value: unknown }
-    }
     multi: {
         data: unknown
-        rule: { problems: ProblemInput[] }
+        rule: { problems: Problem[] }
     }
 }
 

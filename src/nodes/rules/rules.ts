@@ -28,8 +28,8 @@ import type {
     TraversalRequiredProps
 } from "./props.ts"
 import { flattenProps, propsIntersection } from "./props.ts"
-import type { Range } from "./range.ts"
-import { rangeIntersection } from "./range.ts"
+import type { FlatBound, Range } from "./range.ts"
+import { flattenRange, rangeIntersection } from "./range.ts"
 import { getRegex, regexIntersection } from "./regex.ts"
 import type { SubdomainRule, TraversalSubdomainRule } from "./subdomain.ts"
 import { flattenSubdomain, subdomainIntersection } from "./subdomain.ts"
@@ -69,7 +69,7 @@ export type RuleEntry =
     | ["subdomain", TraversalSubdomainRule]
     | ["regex", RegExp]
     | ["divisor", number]
-    | ["range", Range]
+    | ["bound", FlatBound]
     | ["class", constructor]
     | TraversalRequiredProps
     | TraversalOptionalProps
@@ -194,10 +194,7 @@ const ruleFlatteners: {
     divisor: (entries, rule) => {
         entries.push(["divisor", rule])
     },
-    // TODO: flatten these so they can directly use comparators
-    range: (entries, rule) => {
-        entries.push(["range", rule])
-    },
+    range: flattenRange,
     class: (entries, rule) => {
         entries.push(["class", rule])
     },
@@ -227,7 +224,7 @@ export const precedenceMap: {
     class: 1,
     regex: 1,
     divisor: 1,
-    range: 1,
+    bound: 1,
     // Deep: Performed if all shallow checks pass, even if one or more deep checks fail
     requiredProps: 2,
     optionalProps: 2,
