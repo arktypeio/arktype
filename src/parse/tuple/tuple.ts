@@ -45,8 +45,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
         object: {
             subdomain: "Array",
             props,
-            // TODO: change to comparator
-            range: { min: { limit: def.length }, max: { limit: def.length } }
+            range: { comparator: "==", limit: def.length }
         }
     }
 }

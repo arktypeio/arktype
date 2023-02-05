@@ -1,25 +1,60 @@
 import type { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { TraversalCheck } from "../../traverse/traverse.ts"
 import { sizeOf } from "../../utils/domains.ts"
-import { composeIntersection, equality, toComparator } from "../compose.ts"
+import { composeIntersection, equality } from "../compose.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
-export type Range = {
-    readonly min?: Bound
-    readonly max?: Bound
+export type Range = DoubleBound | Bound<"==">
+
+export type DoubleBound = {
+    min?: LowerBound
+    max?: UpperBound
 }
 
-export type Bound = {
-    readonly limit: number
-    readonly exclusive?: true
-}
+export const minComparators = {
+    ">": true,
+    ">=": true
+} as const
+
+export type MinComparator = keyof typeof minComparators
+
+export type LowerBound = Bound<MinComparator>
+
+export const maxComparators = {
+    "<": true,
+    "<=": true
+} as const
+
+export type MaxComparator = keyof typeof maxComparators
+
+export type UpperBound = Bound<MaxComparator>
+
+export type Bound<comparator extends Scanner.Comparator = Scanner.Comparator> =
+    {
+        comparator: comparator
+        limit: number
+    }
+
+export const isEqualityRange = (range: Range): range is Bound<"=="> =>
+    "comparator" in range
 
 export const rangeIntersection = composeIntersection<Range>((l, r, state) => {
-    const minComparison = compareStrictness(l.min, r.min, "min")
-    const maxComparison = compareStrictness(l.max, r.max, "max")
-    if (minComparison === "l") {
-        if (maxComparison === "r") {
-            return compareStrictness(l.min!, r.max!, "min") === "l"
+    if (isEqualityRange(l)) {
+        if (isEqualityRange(r)) {
+            return l.limit === r.limit
+                ? equality()
+                : state.addDisjoint("range", l, r)
+        }
+        return rangeAllows(r, l.limit) ? l : state.addDisjoint("range", l, r)
+    }
+    if (isEqualityRange(r)) {
+        return rangeAllows(l, r.limit) ? r : state.addDisjoint("range", l, r)
+    }
+    const stricterMin = compareStrictness("min", l.min, r.min)
+    const stricterMax = compareStrictness("max", l.max, r.max)
+    if (stricterMin === "l") {
+        if (stricterMax === "r") {
+            return compareStrictness("min", l.min!, r.max!) === "l"
                 ? state.addDisjoint("range", l, r)
                 : {
                       min: l.min!,
@@ -28,9 +63,9 @@ export const rangeIntersection = composeIntersection<Range>((l, r, state) => {
         }
         return l
     }
-    if (minComparison === "r") {
-        if (maxComparison === "l") {
-            return compareStrictness(l.max!, r.min!, "max") === "l"
+    if (stricterMin === "r") {
+        if (stricterMax === "l") {
+            return compareStrictness("max", l.max!, r.min!) === "l"
                 ? state.addDisjoint("range", l, r)
                 : {
                       min: r.min!,
@@ -39,14 +74,21 @@ export const rangeIntersection = composeIntersection<Range>((l, r, state) => {
         }
         return r
     }
-    return maxComparison === "l" ? l : maxComparison === "r" ? r : equality()
+    return stricterMax === "l" ? l : stricterMax === "r" ? r : equality()
 })
 
-export type FlatBound = {
-    comparator: Scanner.Comparator
-    limit: number
-    units: string
-}
+const rangeAllows = (range: Range, n: number) =>
+    isEqualityRange(range)
+        ? n === range.limit
+        : minAllows(range.min, n) && maxAllows(range.max, n)
+
+const minAllows = (min: DoubleBound["min"], n: number) =>
+    !min || n < min.limit || (n === min.limit && !isExclusive(min.comparator))
+
+const maxAllows = (max: DoubleBound["max"], n: number) =>
+    !max || n > max.limit || (n === max.limit && !isExclusive(max.comparator))
+
+export type FlatBound = Bound & { units?: string }
 
 export const flattenRange: FlattenAndPushRule<Range> = (
     entries,
@@ -58,32 +100,15 @@ export const flattenRange: FlattenAndPushRule<Range> = (
             ? "characters"
             : ctx.domain === "object"
             ? "items"
-            : ""
+            : undefined
+    if (isEqualityRange(range)) {
+        return entries.push(["bound", units ? { ...range, units } : range])
+    }
     if (range.min) {
-        if (range.min.limit === range.max?.limit) {
-            return entries.push([
-                "range",
-                { comparator: "==", limit: range.min.limit, units }
-            ])
-        }
-        entries.push([
-            "range",
-            {
-                comparator: toComparator("min", range.min),
-                limit: range.min.limit,
-                units
-            }
-        ])
+        entries.push(["bound", units ? { ...range.min, units } : range.min])
     }
     if (range.max) {
-        entries.push([
-            "range",
-            {
-                comparator: toComparator("max", range.max),
-                limit: range.max.limit,
-                units
-            }
-        ])
+        entries.push(["bound", units ? { ...range.max, units } : range.max])
     }
 }
 
@@ -91,7 +116,7 @@ export const checkRange = ((data, bound, state) => {
     if (!comparatorCheckers[bound.comparator](sizeOf(data), bound.limit)) {
         state.problems.add("range", data, bound)
     }
-}) satisfies TraversalCheck<"range">
+}) satisfies TraversalCheck<"bound">
 
 const comparatorCheckers: Record<
     Scanner.Comparator,
@@ -104,17 +129,10 @@ const comparatorCheckers: Record<
     "==": (size, limit) => size === limit
 }
 
-const invertedKinds = {
-    min: "max",
-    max: "min"
-} as const
-
-export type BoundKind = keyof typeof invertedKinds
-
 export const compareStrictness = (
+    kind: "min" | "max",
     l: Bound | undefined,
-    r: Bound | undefined,
-    kind: BoundKind
+    r: Bound | undefined
 ) =>
     !l
         ? !r
@@ -123,11 +141,11 @@ export const compareStrictness = (
         : !r
         ? "l"
         : l.limit === r.limit
-        ? l.exclusive
-            ? r.exclusive
+        ? isExclusive(l.comparator)
+            ? isExclusive(r.comparator)
                 ? "="
                 : "l"
-            : r.exclusive
+            : isExclusive(r.comparator)
             ? "r"
             : "="
         : kind === "min"
@@ -137,3 +155,6 @@ export const compareStrictness = (
         : l.limit < r.limit
         ? "l"
         : "r"
+
+const isExclusive = (comparator: Scanner.Comparator): comparator is ">" | "<" =>
+    comparator.length === 1

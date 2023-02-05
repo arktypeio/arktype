@@ -211,7 +211,7 @@ const checkers = {
         }
     },
     subdomain: checkSubdomain,
-    range: checkRange,
+    bound: checkRange,
     requiredProps: checkRequiredProps,
     optionalProps: checkOptionalProps,
     branches: (data, branches, state) => state.traverseBranches(data, branches),
@@ -262,12 +262,12 @@ export type TraversalCheck<k extends TraversalKey> = (
     state: TraversalState
 ) => void
 
-export type ConstrainedRuleData = extend<
+export type ConstrainedRuleTraversalData = extend<
     { [k in TraversalKey]?: unknown },
     {
         regex: string
         divisor: number
-        range: SizedData
+        bound: SizedData
         requiredProps: Dict
         optionalProps: Dict
         class: object
@@ -275,4 +275,6 @@ export type ConstrainedRuleData = extend<
 >
 
 export type RuleData<k extends TraversalKey> =
-    k extends keyof ConstrainedRuleData ? ConstrainedRuleData[k] : unknown
+    k extends keyof ConstrainedRuleTraversalData
+        ? ConstrainedRuleTraversalData[k]
+        : unknown

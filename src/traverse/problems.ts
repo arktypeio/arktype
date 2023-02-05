@@ -17,7 +17,10 @@ import type {
 import { keysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { ConstrainedRuleData, TraversalState } from "./traverse.ts"
+import type {
+    ConstrainedRuleTraversalData,
+    TraversalState
+} from "./traverse.ts"
 
 export class ArkTypeError extends TypeError {
     cause: Problems
@@ -187,8 +190,8 @@ export type ProblemRuleInput<code extends ProblemCode = ProblemCode> =
     ProblemRuleInputs[code]
 
 type ProblemDataInputs = {
-    [code in ProblemCode]: code extends keyof ConstrainedRuleData
-        ? ConstrainedRuleData[code]
+    [code in ProblemCode]: code extends keyof ConstrainedRuleTraversalData
+        ? ConstrainedRuleTraversalData[code]
         : unknown
 }
 
@@ -217,8 +220,8 @@ export type RuleWriter<code extends ProblemCode> = (
 
 export type DataWriter<code extends ProblemCode> = (
     data: DataWrapper<
-        code extends keyof ConstrainedRuleData
-            ? ConstrainedRuleData[code]
+        code extends keyof ConstrainedRuleTraversalData
+            ? ConstrainedRuleTraversalData[code]
             : unknown
     >
 ) => string

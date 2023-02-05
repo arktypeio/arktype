@@ -16,7 +16,7 @@ describe("range", () => {
                 const t = type("number>0")
                 attest(t.infer).typed as number
                 attest(t.node).snap({
-                    number: { range: { min: { limit: 0, exclusive: true } } }
+                    number: { range: { min: { limit: 0, comparator: ">" } } }
                 })
             })
             it("<", () => {
@@ -24,7 +24,7 @@ describe("range", () => {
                 attest(t.infer).typed as number
                 attest(t.node).snap({
                     number: {
-                        range: { max: { limit: 10, exclusive: true } }
+                        range: { max: { limit: 10, comparator: "<" } }
                     }
                 })
             })
@@ -33,7 +33,7 @@ describe("range", () => {
                 attest(t.infer).typed as number
                 attest(t.node).snap({
                     number: {
-                        range: { max: { limit: -49 } }
+                        range: { max: { limit: -49, comparator: "<=" } }
                     }
                 })
             })
@@ -43,8 +43,8 @@ describe("range", () => {
                 attest(t.node).snap({
                     number: {
                         range: {
-                            min: { limit: 3211993 },
-                            max: { limit: 3211993 }
+                            limit: 3211993,
+                            comparator: "=="
                         }
                     }
                 })
@@ -57,8 +57,8 @@ describe("range", () => {
                 attest(t.node).snap({
                     number: {
                         range: {
-                            min: { limit: -5, exclusive: true },
-                            max: { limit: 5 }
+                            min: { limit: -5, comparator: ">" },
+                            max: { limit: 5, comparator: "<=" }
                         }
                     }
                 })
@@ -69,8 +69,8 @@ describe("range", () => {
                 attest(t.node).snap({
                     number: {
                         range: {
-                            min: { limit: -3.23 },
-                            max: { limit: 4.654, exclusive: true }
+                            min: { limit: -3.23, comparator: ">=" },
+                            max: { limit: 4.654, comparator: "<" }
                         }
                     }
                 })
@@ -81,7 +81,7 @@ describe("range", () => {
             attest(t.infer).typed as number
             attest(t.node).snap({
                 number: {
-                    range: { min: { limit: 3, exclusive: true } }
+                    range: { min: { limit: 3, comparator: ">" } }
                 }
             })
         })
@@ -90,8 +90,8 @@ describe("range", () => {
                 const expected: ResolvedNode = {
                     number: {
                         range: {
-                            min: { limit: 2 },
-                            max: { limit: 3, exclusive: true }
+                            min: { limit: 2, comparator: ">=" },
+                            max: { limit: 3, comparator: "<" }
                         }
                     }
                 }
@@ -104,10 +104,12 @@ describe("range", () => {
                     number: {
                         range: {
                             min: {
-                                limit: 1
+                                limit: 1,
+                                comparator: ">="
                             },
                             max: {
-                                limit: 1
+                                limit: 1,
+                                comparator: "<="
                             }
                         }
                     }
@@ -123,21 +125,21 @@ describe("range", () => {
             })
             it("greater min is stricter", () => {
                 const expected: ResolvedNode = {
-                    number: { range: { min: { limit: 3 } } }
+                    number: { range: { min: { limit: 3, comparator: ">=" } } }
                 }
                 attest(type("number>=3&number>2").node).equals(expected)
                 attest(type("number>2&number>=3").node).equals(expected)
             })
             it("lesser max is stricter", () => {
                 const expected: ResolvedNode = {
-                    number: { range: { max: { limit: 3 } } }
+                    number: { range: { max: { limit: 3, comparator: "<=" } } }
                 }
                 attest(type("number<=3&number<4").node).equals(expected)
                 attest(type("number<4&number<=3").node).equals(expected)
             })
             it("exclusive included if limits equal", () => {
                 const expected: ResolvedNode = {
-                    number: { range: { max: { limit: 3, exclusive: true } } }
+                    number: { range: { max: { limit: 3, comparator: "<" } } }
                 }
                 attest(type("number<3&number<=3").node).equals(expected)
                 attest(type("number<=3&number<3").node).equals(expected)
@@ -171,7 +173,7 @@ describe("range", () => {
             it("double left", () => {
                 // @ts-expect-error
                 attest(() => type("3<5<8")).throwsAndHasTypeError(
-                    writeMultipleLeftBoundsMessage(3, "<", 5, "<")
+                    writeMultipleLeftBoundsMessage(3, ">", 5, ">")
                 )
             })
             it("empty range", () => {

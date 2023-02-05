@@ -29,7 +29,7 @@ import type {
     TraversalRequiredProps
 } from "./props.ts"
 import { flattenProps, propsIntersection } from "./props.ts"
-import type { FlatBound, Range } from "./range.ts"
+import type { Bound, FlatBound, Range } from "./range.ts"
 import { flattenRange, rangeIntersection } from "./range.ts"
 import { getRegex, regexIntersection } from "./regex.ts"
 import type { SubdomainRule, TraversalSubdomainRule } from "./subdomain.ts"
@@ -70,7 +70,7 @@ export type RuleEntry =
     | ["subdomain", TraversalSubdomainRule]
     | ["regex", RegExp]
     | ["divisor", number]
-    | ["range", FlatBound]
+    | ["bound", FlatBound]
     | ["class", constructor]
     | TraversalRequiredProps
     | TraversalOptionalProps

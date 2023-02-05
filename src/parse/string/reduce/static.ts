@@ -1,8 +1,8 @@
+import type { LowerBound, MinComparator } from "../../../nodes/rules/range.ts"
 import type { defined, error } from "../../../utils/generics.ts"
 import type { astToString } from "../ast.ts"
 import type { Scanner } from "../shift/scanner.ts"
 import type {
-    OpenRange,
     unclosedGroupMessage,
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
@@ -18,7 +18,7 @@ export type StaticState = {
 }
 
 type BranchState = {
-    range: OpenRange | undefined
+    range: LowerBound | undefined
     "&": unknown
     "|": unknown
 }
@@ -70,20 +70,23 @@ export namespace state {
         limit extends number,
         comparator extends Scanner.Comparator,
         unscanned extends string
-    > = comparator extends Scanner.PairableComparator
+    > = comparator extends "<" | "<="
         ? s["branches"]["range"] extends {}
             ? error<
                   writeMultipleLeftBoundsMessage<
-                      s["branches"]["range"][0],
-                      s["branches"]["range"][1],
+                      s["branches"]["range"]["limit"],
+                      s["branches"]["range"]["comparator"],
                       limit,
-                      comparator
+                      Scanner.InvertedComparators[comparator]
                   >
               >
             : from<{
                   root: undefined
                   branches: {
-                      range: [limit, comparator]
+                      range: {
+                          limit: limit
+                          comparator: Scanner.InvertedComparators[comparator]
+                      }
                       "&": s["branches"]["&"]
                       "|": s["branches"]["|"]
                   }
@@ -95,7 +98,7 @@ export namespace state {
     export type reduceRange<
         s extends StaticState,
         minLimit extends number,
-        minComparator extends Scanner.PairableComparator,
+        minComparator extends MinComparator,
         maxComparator extends Scanner.Comparator,
         maxLimit extends number,
         unscanned extends string
@@ -175,12 +178,12 @@ export namespace state {
         : error<unclosedGroupMessage>
 
     type openRangeError<range extends defined<BranchState["range"]>> = error<
-        writeOpenRangeMessage<range[0], range[1]>
+        writeOpenRangeMessage<range["limit"], range["comparator"]>
     >
 
     export type previousOperator<s extends StaticState> =
         s["branches"]["range"] extends {}
-            ? s["branches"]["range"][1]
+            ? s["branches"]["range"]["comparator"]
             : s["branches"]["&"] extends {}
             ? "&"
             : s["branches"]["|"] extends {}

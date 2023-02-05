@@ -1,7 +1,16 @@
 import { writeEmptyRangeMessage } from "../../../../nodes/compose.ts"
-import type { Bound, Range } from "../../../../nodes/rules/range.ts"
-import { compareStrictness } from "../../../../nodes/rules/range.ts"
-import type { error } from "../../../../utils/generics.ts"
+import type {
+    Bound,
+    MaxComparator,
+    Range
+} from "../../../../nodes/rules/range.ts"
+import {
+    compareStrictness,
+    maxComparators,
+    minComparators
+} from "../../../../nodes/rules/range.ts"
+import { throwInternalError } from "../../../../utils/errors.ts"
+import type { error, keySet } from "../../../../utils/generics.ts"
 import { isKeyOf } from "../../../../utils/generics.ts"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
@@ -67,24 +76,40 @@ export const parseRightBound = (
         writeInvalidLimitMessage(comparator, limitToken + s.scanner.unscanned)
     )
     const openRange = s.ejectRangeIfOpen()
-    let range
-    if (openRange) {
-        if (!isKeyOf(comparator, Scanner.pairableComparators)) {
-            return s.error(writeUnpairableComparatorMessage(comparator))
-        }
-        range = deserializeRange(openRange[0], openRange[1], comparator, limit)
-        if (compareStrictness(range.min, range.max, "min") === "l") {
-            return s.error(writeEmptyRangeMessage(range.min!, range.max!))
-        }
-    } else {
-        range = deserializeBound(comparator, limit)
-    }
+    const rightBound = { comparator, limit }
+    const range: Range = openRange
+        ? !hasComparatorIn(rightBound, maxComparators)
+            ? s.error(writeUnpairableComparatorMessage(comparator))
+            : compareStrictness("min", openRange, rightBound) === "l"
+            ? s.error(writeEmptyRangeMessage(openRange, rightBound))
+            : {
+                  min: openRange,
+                  max: rightBound
+              }
+        : hasComparator(rightBound, "==")
+        ? rightBound
+        : hasComparatorIn(rightBound, minComparators)
+        ? { min: rightBound }
+        : hasComparatorIn(rightBound, maxComparators)
+        ? { max: rightBound }
+        : throwInternalError(`Unexpected comparator '${rightBound.comparator}'`)
     s.intersect({
         number: { range },
         string: { range },
         object: { subdomain: "Array", range }
     })
 }
+
+const hasComparator = <comparator extends Scanner.Comparator>(
+    bound: Bound,
+    comparator: comparator
+): bound is Bound<comparator> => bound.comparator === comparator
+
+const hasComparatorIn = <comparators extends keySet<Scanner.Comparator>>(
+    bound: Bound,
+    comparators: comparators
+): bound is Bound<keyof comparators & Scanner.Comparator> =>
+    bound.comparator in comparators
 
 export type parseRightBound<
     s extends StaticState,
@@ -100,11 +125,11 @@ export type parseRightBound<
       > extends infer limit
         ? limit extends number
             ? s["branches"]["range"] extends {}
-                ? comparator extends Scanner.PairableComparator
+                ? comparator extends MaxComparator
                     ? state.reduceRange<
                           s,
-                          s["branches"]["range"][0],
-                          s["branches"]["range"][1],
+                          s["branches"]["range"]["limit"],
+                          s["branches"]["range"]["comparator"],
                           comparator,
                           limit,
                           nextUnscanned
@@ -128,53 +153,3 @@ export type writeInvalidLimitMessage<
     comparator extends Scanner.Comparator,
     limit extends string
 > = `Comparator ${comparator} must be followed by a number literal (was '${limit}')`
-
-const deserializeBound = (
-    comparator: Scanner.Comparator,
-    limit: number
-): Range => {
-    const bound: Bound =
-        comparator.length === 1
-            ? {
-                  limit,
-                  exclusive: true
-              }
-            : { limit }
-    if (comparator === "==") {
-        return { min: bound, max: bound }
-    } else if (comparator === ">" || comparator === ">=") {
-        return {
-            min: bound
-        }
-    } else {
-        return {
-            max: bound
-        }
-    }
-}
-
-const deserializeRange = (
-    minLimit: number,
-    minComparator: Scanner.PairableComparator,
-    maxComparator: Scanner.PairableComparator,
-    maxLimit: number
-): Range => {
-    const min: Bound =
-        minComparator === "<"
-            ? {
-                  limit: minLimit,
-                  exclusive: true
-              }
-            : { limit: minLimit }
-    const max: Bound =
-        maxComparator === "<"
-            ? {
-                  limit: maxLimit,
-                  exclusive: true
-              }
-            : { limit: maxLimit }
-    return {
-        min,
-        max
-    }
-}

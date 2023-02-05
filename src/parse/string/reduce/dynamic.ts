@@ -1,11 +1,12 @@
 import { functors } from "../../../nodes/functors.ts"
 import type { TypeNode } from "../../../nodes/node.ts"
 import { intersection, isLiteralNode, union } from "../../../nodes/node.ts"
+import type { LowerBound } from "../../../nodes/rules/range.ts"
+import { minComparators } from "../../../nodes/rules/range.ts"
 import { throwInternalError, throwParseError } from "../../../utils/errors.ts"
 import { isKeyOf } from "../../../utils/generics.ts"
 import type { ParseContext } from "../../definition.ts"
 import { Scanner } from "../shift/scanner.ts"
-import type { OpenRange } from "./shared.ts"
 import {
     unclosedGroupMessage,
     writeMultipleLeftBoundsMessage,
@@ -15,7 +16,7 @@ import {
 } from "./shared.ts"
 
 type BranchState = {
-    range?: OpenRange
+    range?: LowerBound
     intersection?: TypeNode
     union?: TypeNode
 }
@@ -107,20 +108,24 @@ export class DynamicState {
     }
 
     reduceLeftBound(limit: number, comparator: Scanner.Comparator) {
-        if (!isKeyOf(comparator, Scanner.pairableComparators)) {
+        const invertedComparator = Scanner.invertedComparators[comparator]
+        if (!isKeyOf(invertedComparator, minComparators)) {
             return this.error(writeUnpairableComparatorMessage(comparator))
         }
         if (this.branches.range) {
             return this.error(
                 writeMultipleLeftBoundsMessage(
-                    this.branches.range[0],
-                    this.branches.range[1],
+                    this.branches.range.limit,
+                    this.branches.range.comparator,
                     limit,
-                    comparator
+                    invertedComparator
                 )
             )
         }
-        this.branches.range = [limit, comparator]
+        this.branches.range = {
+            limit,
+            comparator: invertedComparator
+        }
     }
 
     finalizeBranches() {
@@ -175,8 +180,8 @@ export class DynamicState {
         if (this.branches.range) {
             return this.error(
                 writeOpenRangeMessage(
-                    this.branches.range[0],
-                    this.branches.range[1]
+                    this.branches.range.limit,
+                    this.branches.range.comparator
                 )
             )
         }
@@ -188,7 +193,7 @@ export class DynamicState {
     }
 
     previousOperator() {
-        return this.branches.range?.[1] ?? this.branches.intersection
+        return this.branches.range?.comparator ?? this.branches.intersection
             ? "&"
             : this.branches.union
             ? "|"

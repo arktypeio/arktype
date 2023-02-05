@@ -98,13 +98,6 @@ export namespace Scanner {
 
     export type Comparator = keyof typeof comparators
 
-    export const pairableComparators = {
-        "<": true,
-        "<=": true
-    } as const
-
-    export type PairableComparator = keyof typeof pairableComparators
-
     export type ComparatorStartChar = keyof typeof comparatorStartChars
 
     export const oneCharComparators = {
@@ -130,7 +123,7 @@ export namespace Scanner {
         "==": "=="
     } as const
 
-    export type invertedComparators = typeof invertedComparators
+    export type InvertedComparators = typeof invertedComparators
 
     export const branchTokens = {
         "|": true,
