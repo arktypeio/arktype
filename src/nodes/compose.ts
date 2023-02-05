@@ -94,7 +94,6 @@ export const disjointDescriptionWriters = {
     [k in DisjointKind]: (context: DisjointContext<k>) => string
 }
 
-// TODO: move
 export const writeEmptyRangeMessage = (min: Bound, max: Bound) =>
     `${stringifyRange({ min, max })} is empty`
 

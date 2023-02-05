@@ -66,7 +66,6 @@ export const fullStringParse = (def: string, ctx: ParseContext) => {
 
 type fullStringParse<def extends string, $> = loop<state.initialize<def>, $>
 
-// TODO: Recursion perf?
 const loop = (s: DynamicState) => {
     while (!s.scanner.finalized) {
         next(s)

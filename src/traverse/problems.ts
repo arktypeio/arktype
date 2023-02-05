@@ -97,7 +97,6 @@ class ProblemArray extends Array<Problem> {
         this.push(problem)
     }
 
-    // TODO: add some customization options for this
     get summary() {
         if (this.length === 1) {
             return this[0].message

@@ -48,7 +48,6 @@ export type FlatBound = {
     units: string
 }
 
-// TODO: flatten to individual comparators
 export const flattenRange: FlattenAndPushRule<Range> = (
     entries,
     range,

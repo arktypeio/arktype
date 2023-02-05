@@ -1,6 +1,5 @@
 import type { ResolvedNode, TypeNode } from "./node"
 
-// TODO: integrate with default scope
 export const functors = {
     Array: (node: TypeNode): ResolvedNode => ({
         object: {
