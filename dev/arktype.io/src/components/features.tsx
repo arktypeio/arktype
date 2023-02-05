@@ -23,7 +23,8 @@ const details = [
     },
     {
         title: "Fast",
-        description: "..."
+        description:
+            "Types are optimized for traversal and can validate your data 2-10x faster than existing validators (details to come)"
     },
     {
         title: "Portable",
@@ -60,7 +61,8 @@ const Feature = (props: FeatureProps) => {
             style={{
                 textAlign: "center",
                 margin: "auto",
-                paddingTop: "1em"
+                paddingTop: "1em",
+                maxWidth: "40em"
             }}
         >
             <Typography
