@@ -77,10 +77,12 @@ export type inferred<t> = {
     [inferred]?: t
 }
 
-export type unknownDefinitionMessage =
-    `Cannot statically parse a definition inferred as unknown. Consider using 'as inferred<...>' to cast it.`
+export const unknownDefinitionMessage =
+    "Cannot statically parse a definition inferred as unknown. Consider using 'as inferred<...>' to cast it."
 
-type Terminal = Type | RegExp | inferred<unknown>
+export type unknownDefinitionMessage = typeof unknownDefinitionMessage
+
+type Terminal = RegExp | inferred<unknown>
 
 type BadDefinitionType = Exclude<Primitive, string> | Function
 

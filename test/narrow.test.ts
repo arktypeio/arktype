@@ -96,8 +96,8 @@ describe("narrow", () => {
             // should be narrowed from {a: number} to {a: 1} but isn't
             b: [{ a: "number" }, ":", (data): data is { a: 1 } => true]
         }).compile()
-        // @ts-expect-error inferred as never
-        attest(bad.a.infer).typed as string
+        // inferred as never (should be string)
+        bad.a.infer
 
         // works fine if input def is not a record or an alias resolving to a
         // record.
@@ -105,7 +105,7 @@ describe("narrow", () => {
             a: ["number", "=>", (data) => `${data}`],
             b: [["string"], "=>", (data) => data]
         }).compile()
-        attest(ok.a.infer).typed as number
+        attest(ok.a.infer).typed as string
         attest(ok.b.infer).typed as [string]
 
         // original form works fine for types

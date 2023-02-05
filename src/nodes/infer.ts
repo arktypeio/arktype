@@ -60,7 +60,9 @@ type inferBranch<domain extends Domain, branch, $> = branch extends MorphBranch
               ? returnOf<tail>
               : returnOf<branch["morph"]>
       >
-    : branch extends LiteralRules
+    : inferRules<domain, branch, $>
+
+type inferRules<domain extends Domain, branch, $> = branch extends LiteralRules
     ? branch["value"]
     : domain extends "object"
     ? branch extends NarrowableRules

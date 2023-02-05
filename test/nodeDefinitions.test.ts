@@ -48,7 +48,7 @@ describe("node definitions", () => {
         ])
         attest(t.infer).typed as {
             a: string
-            b?: boolean | undefined
+            b?: boolean
         }
     })
     it("arrays", () => {
@@ -100,6 +100,7 @@ describe("node definitions", () => {
     })
     it("morph", () => {
         const t = type([
+            //^?
             "node",
             {
                 object: {
@@ -119,7 +120,7 @@ describe("node definitions", () => {
     it("bad shallow reference", () => {
         // @ts-expect-error
         attest(() => type(["node", "whoops"])).type.errors(
-            `Type '"whoops"' is not assignable to type 'TypeNode<{}>'`
+            `Type 'string' has no properties in common with type 'ResolvedNode<PrecompiledDefaults>'`
         )
     })
     it("bad prop reference", () => {
@@ -135,7 +136,9 @@ describe("node definitions", () => {
                     }
                 }
             ])
-        ).type.errors(`Type '"whoops"' is not assignable to type 'Prop<{}>'`)
+        ).type.errors(
+            `Type '"whoops"' is not assignable to type 'Prop<PrecompiledDefaults>'`
+        )
     })
     it("rule in wrong domain", () => {
         attest(() =>

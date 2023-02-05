@@ -63,7 +63,7 @@ describe("scope", () => {
         }
         // @ts-expect-error
         attest(types.a.infer.b.a.b.c).type.errors.snap(
-            `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
+            `Property 'c' does not exist on type '{ a: { b: any; }; }'.`
         )
     })
     it("object array", () => {
@@ -79,7 +79,7 @@ describe("scope", () => {
         attest($.infer).typed as { a: never }
         attest($.type(["number", "a"]).infer).typed as [number, never]
     })
-    describe("extension", () => {
+    describe("includes", () => {
         it("base", () => {
             const parent = scope({ definedInScope: "boolean" }).compile()
             const $ = scope(
@@ -94,6 +94,7 @@ describe("scope", () => {
                 a: string[]
                 b: string[][]
                 c: boolean
+                definedInScope: boolean
             }
             const types = $.compile()
             attest(types.a.node).snap({

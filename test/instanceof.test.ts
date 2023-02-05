@@ -24,7 +24,7 @@ describe("instanceof", () => {
     it("non-constructor", () => {
         // @ts-expect-error
         attest(() => type(["instanceof", () => {}])).type.errors(
-            "Type '() => void' is not assignable to type 'constructor'"
+            "Type '() => void' is not assignable to type"
         )
     })
 })

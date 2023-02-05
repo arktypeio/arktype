@@ -1,14 +1,15 @@
 import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { writeBadDefinitionTypeMessage } from "../src/parse/definition.ts"
+import {
+    unknownDefinitionMessage,
+    writeBadDefinitionTypeMessage
+} from "../src/parse/definition.ts"
 
 describe("bad definition types", () => {
     it("unknown", () => {
         // @ts-expect-error
-        attest(type({} as unknown)).type.errors(
-            "Cannot statically parse a definition inferred as unknown. Use 'type.dynamic(...)' instead."
-        )
+        attest(type({} as unknown)).type.errors(unknownDefinitionMessage)
     })
     it("undefined", () => {
         // @ts-expect-error

@@ -9,17 +9,17 @@ describe("morph", () => {
     it("base", () => {
         const t = type(["boolean", "=>", (data) => `${data}`])
         attest(t).typed as Type<(In: boolean) => Out<string>>
-        attest(t.infer).typed as Type<string>
+        attest(t.infer).typed as string
         attest(t.node).snap({ boolean: { input: {}, morph: "(function)" } })
-        attest(t(true).data).equals(true).typed as boolean
-        attest(t(true).out).equals("true").typed as string
+        attest(t(true).data).equals(true).typed as boolean | undefined
+        attest(t(true).out).equals("true").typed as string | undefined
         attest(t("foo").problems?.summary).snap("Must be boolean (was string)")
     })
     it("endomorph", () => {
         const t = type(["boolean", "=>", (data) => !data])
         attest(t).typed as Type<(In: boolean) => Out<boolean>>
-        attest(t(true).data).equals(true).typed as boolean
-        attest(t(true).out).equals(false).typed as boolean
+        attest(t(true).data).equals(true).typed as boolean | undefined
+        attest(t(true).out).equals(false).typed as boolean | undefined
     })
     it("object inference", () => {
         const t = type([{ a: "string" }, "=>", (data) => `${data}`])
@@ -65,7 +65,9 @@ describe("morph", () => {
             aOrB: "a|b",
             bOrA: "b|a"
         }).compile()
-        attest(types.aOrB).typed as Type<(In: number | boolean) => Out<string>>
+        attest(types.aOrB).typed as Type<
+            boolean | ((In: number) => Out<string>)
+        >
         attest(types.aOrB.node).snap({
             number: { input: {}, morph: "(function)" },
             boolean: true

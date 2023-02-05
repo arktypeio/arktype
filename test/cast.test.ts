@@ -27,7 +27,7 @@ describe("cast", () => {
     // https://github.com/arktypeio/arktype/issues/577
     it("function returns", () => {
         const types = scope({
-            a: [{ a: "1" }, "=>", (data) => `${data}`],
+            a: [{ a: "1" }, "=>", (data) => `${data}`, "string"],
             b: [{ a: "number" }, ":", (data) => data.a === 1, { a: "1" }]
         }).compile()
         attest(types.a).typed as Type<(In: { a: 1 }) => Out<string>>
