@@ -79,7 +79,7 @@ type ParameterizableSubdomainRuleName = Extract<SubdomainRule, List>[0]
 const subdomainParameterToPathSegment = (
     subdomain: ParameterizableSubdomainRuleName,
     i: number
-) =>
+): SubdomainPathSegment =>
     subdomain === "Array"
         ? "${number}"
         : subdomain === "Set"
@@ -91,6 +91,15 @@ const subdomainParameterToPathSegment = (
         : throwInternalError(
               `Unexpected parameterized subdomain '${subdomain}'`
           )
+
+export const subdomainPathSegments = {
+    "${number}": true,
+    "${item}": true,
+    "${key}": true,
+    "${value}": true
+} as const
+
+export type SubdomainPathSegment = keyof typeof subdomainPathSegments
 
 export const flattenSubdomain: FlattenAndPushRule<SubdomainRule> = (
     entries,

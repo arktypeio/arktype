@@ -141,6 +141,13 @@ const calculateDiscriminants = (
                 intersectionState
             )
             for (const path in intersectionState.disjoints) {
+                // designed to match subdomain path segments like "${number}"
+                if (path.includes("${")) {
+                    // containers could be empty and therefore their elements cannot be used to discriminate
+                    // allowing this via a special case where both are length >0 tracked here:
+                    // https://github.com/arktypeio/arktype/issues/593
+                    continue
+                }
                 const { l, r, kind } = intersectionState.disjoints[path]
                 if (!isKeyOf(kind, discriminantKinds)) {
                     continue

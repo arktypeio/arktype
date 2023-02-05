@@ -176,13 +176,15 @@ describe("morph", () => {
                 {
                     input: {
                         subdomain: "Array",
-                        props: { "0": "string" }
+                        props: { "0": "string" },
+                        range: { comparator: "==", limit: 1 }
                     },
                     morph: "(function)"
                 },
                 {
                     subdomain: "Array",
-                    props: { "0": "boolean" }
+                    props: { "0": "boolean" },
+                    range: { comparator: "==", limit: 1 }
                 }
             ]
         })
