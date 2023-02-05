@@ -21,7 +21,7 @@ describe("divisibility", () => {
             it("with bound", () => {
                 attest(type("number<3&number%8").node).snap({
                     number: {
-                        range: { max: { limit: 3, exclusive: true } },
+                        range: { max: { limit: 3, comparator: "<" } },
                         divisor: 8
                     }
                 })

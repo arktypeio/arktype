@@ -112,7 +112,7 @@ describe("morph", () => {
                             number: {
                                 input: {
                                     range: {
-                                        min: { limit: 0, exclusive: true }
+                                        min: { limit: 0, comparator: ">" }
                                     }
                                 },
                                 morph: "(function)"

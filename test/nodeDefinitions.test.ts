@@ -70,8 +70,7 @@ describe("node definitions", () => {
             {
                 object: {
                     subdomain: ["Array", "string"],
-                    // TODO: allow comparators in nodes
-                    range: { min: { limit: 5 }, max: { limit: 5 } }
+                    range: { limit: 5, comparator: "==" }
                 }
             } as const
         ])

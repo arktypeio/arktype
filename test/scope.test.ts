@@ -34,9 +34,9 @@ describe("scope", () => {
                 range: {
                     min: {
                         limit: 5,
-                        exclusive: true
+                        comparator: ">"
                     },
-                    max: { limit: 10 }
+                    max: { limit: 10, comparator: "<=" }
                 }
             }
         })

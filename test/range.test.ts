@@ -167,7 +167,7 @@ describe("range", () => {
             it("unpaired left", () => {
                 // @ts-expect-error
                 attest(() => type("3<number")).throwsAndHasTypeError(
-                    writeOpenRangeMessage(3, "<")
+                    writeOpenRangeMessage(3, ">")
                 )
             })
             it("double left", () => {

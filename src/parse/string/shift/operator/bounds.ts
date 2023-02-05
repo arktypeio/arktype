@@ -1,4 +1,4 @@
-import { writeEmptyRangeMessage } from "../../../../nodes/compose.ts"
+import { stringifyRange } from "../../../../nodes/compose.ts"
 import type {
     Bound,
     MaxComparator,
@@ -81,7 +81,9 @@ export const parseRightBound = (
         ? !hasComparatorIn(rightBound, maxComparators)
             ? s.error(writeUnpairableComparatorMessage(comparator))
             : compareStrictness("min", openRange, rightBound) === "l"
-            ? s.error(writeEmptyRangeMessage(openRange, rightBound))
+            ? s.error(
+                  writeEmptyRangeMessage({ min: openRange, max: rightBound })
+              )
             : {
                   min: openRange,
                   max: rightBound
@@ -153,3 +155,6 @@ export type writeInvalidLimitMessage<
     comparator extends Scanner.Comparator,
     limit extends string
 > = `Comparator ${comparator} must be followed by a number literal (was '${limit}')`
+
+export const writeEmptyRangeMessage = (range: Range) =>
+    `${stringifyRange(range)} is empty`

@@ -1,6 +1,7 @@
 import type { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { TraversalCheck } from "../../traverse/traverse.ts"
 import { sizeOf } from "../../utils/domains.ts"
+import type { evaluate } from "../../utils/generics.ts"
 import { composeIntersection, equality } from "../compose.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
@@ -10,6 +11,8 @@ export type DoubleBound = {
     min?: LowerBound
     max?: UpperBound
 }
+
+export type BoundKind = evaluate<keyof DoubleBound>
 
 export const minComparators = {
     ">": true,
@@ -31,8 +34,8 @@ export type UpperBound = Bound<MaxComparator>
 
 export type Bound<comparator extends Scanner.Comparator = Scanner.Comparator> =
     {
-        comparator: comparator
-        limit: number
+        readonly comparator: comparator
+        readonly limit: number
     }
 
 export const isEqualityRange = (range: Range): range is Bound<"=="> =>

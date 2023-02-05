@@ -5,7 +5,7 @@ import type { constructor, Dict, extend, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import { serialize } from "../utils/serialize.ts"
-import type { Bound, BoundKind, Range } from "./rules/range.ts"
+import type { Range } from "./rules/range.ts"
 import type { LiteralRules, NarrowableRules } from "./rules/rules.ts"
 
 export type Intersector<t> = (
@@ -94,26 +94,16 @@ export const disjointDescriptionWriters = {
     [k in DisjointKind]: (context: DisjointContext<k>) => string
 }
 
-export const writeEmptyRangeMessage = (min: Bound, max: Bound) =>
-    `${stringifyRange({ min, max })} is empty`
-
 export const stringifyRange = (range: Range) =>
-    range.min
+    "limit" in range
+        ? `the range of exactly ${range.limit}`
+        : range.min
         ? range.max
-            ? `the range bounded by ${stringifyBound(
-                  "min",
-                  range.min
-              )} and ${stringifyBound("max", range.max)}`
-            : stringifyBound("min", range.min)
+            ? `the range bounded by ${range.min.comparator}${range.min.limit} and ${range.max.comparator}${range.max.limit}`
+            : `${range.min.comparator}${range.min.limit}`
         : range.max
-        ? stringifyBound("max", range.max)
-        : "unbounded range"
-
-export const stringifyBound = (kind: BoundKind, bound: Bound) =>
-    `${toComparator(kind, bound)}${bound.limit}` as const
-
-export const toComparator = (kind: BoundKind, bound: Bound) =>
-    `${kind === "min" ? ">" : "<"}${bound.exclusive ? "" : "="}` as const
+        ? `${range.max.comparator}${range.max.limit}`
+        : "the unbounded range"
 
 export type DisjointKind = keyof DisjointKinds
 

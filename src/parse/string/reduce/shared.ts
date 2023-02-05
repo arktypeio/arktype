@@ -15,25 +15,27 @@ export type unclosedGroupMessage = typeof unclosedGroupMessage
 
 export const writeOpenRangeMessage = <
     min extends number,
-    comparator extends Scanner.Comparator
+    comparator extends MinComparator
 >(
     min: min,
     comparator: comparator
 ): writeOpenRangeMessage<min, comparator> =>
-    `Left bounds are only valid when paired with right bounds (try ...${Scanner.invertedComparators[comparator]}${min})`
+    `Left bounds are only valid when paired with right bounds (try ...${comparator}${min})`
 
 export type writeOpenRangeMessage<
     min extends number,
-    comparator extends Scanner.Comparator
-> = `Left bounds are only valid when paired with right bounds (try ...${Scanner.InvertedComparators[comparator]}${min})`
+    comparator extends MinComparator
+> = `Left bounds are only valid when paired with right bounds (try ...${comparator}${min})`
+
+type UnpairableComparator = Exclude<Scanner.Comparator, "<" | "<=">
 
 export type writeUnpairableComparatorMessage<
-    comparator extends Scanner.Comparator
+    comparator extends UnpairableComparator
 > =
     `Left-bounded expressions must specify their limits using < or <= (was ${comparator})`
 
 export const writeUnpairableComparatorMessage = <
-    comparator extends Scanner.Comparator
+    comparator extends UnpairableComparator
 >(
     comparator: comparator
 ): writeUnpairableComparatorMessage<comparator> =>

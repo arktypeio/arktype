@@ -9,7 +9,7 @@ import type { evaluate, HomogenousTuple, List } from "../utils/generics.js"
 import type { TypeNode } from "./node.js"
 import type { Predicate } from "./predicate.js"
 import type { OptionalProp, PropsRule } from "./rules/props.js"
-import type { Range } from "./rules/range.js"
+import type { Bound, Range } from "./rules/range.js"
 import type { LiteralRules, NarrowableRules } from "./rules/rules.js"
 import type { SubdomainRule } from "./rules/subdomain.js"
 
@@ -65,12 +65,8 @@ type inferSubdomainRule<
 > = rule extends Subdomain
     ? inferSubdomain<rule>
     : rule extends readonly ["Array", infer item extends TypeNode<$>]
-    ? // TODO: change to comparator
-      possibleRange extends {
-          min: { limit: infer length extends number }
-          max: { limit: infer length extends number }
-      }
-        ? HomogenousTuple<inferNode<item, $>, length>
+    ? possibleRange extends Bound<"==">
+        ? HomogenousTuple<inferNode<item, $>, possibleRange["limit"]>
         : inferNode<item, $>[]
     : rule extends readonly ["Set", infer item extends TypeNode<$>]
     ? Set<inferNode<item, $>>
