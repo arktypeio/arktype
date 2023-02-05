@@ -1,44 +1,110 @@
 <div align="center">
-  <img src="./redo.dev/static/img/logo.svg" height="120px" />
-  <h1>re-do</h1>
+  <img src="./dev/arktype.io/static/img/logo.svg" height="64px" />
+  <h1>ArkType</h1>
 </div>
 <div align="center">
 
-Redo is a set of devtools that make it easier to build and test JS/TS. Their shared goal is to abstract some of the ecosystem's ugliest problems behind beautiful code that is fun to write and intuitive to read so that you can focus on creating something new instead of understanding something old.
-
-In other words, you can finally get back to doing what you love.
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![Code style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)
-[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.1%20adopted-ff69b4.svg)](./CODE_OF_CONDUCT.md)
+Isomorphic type syntax for TS/JS
 
 </div>
 
-## re-po
+## Installation 📦
 
-We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages. You might want to make changes to one or more of them depending on the goals of your contribution. Take a look at any of them individually to learn more:
+`npm install arktype`
 
--   [@re-/type](@re-/type): Type-first validation from editor to runtime 🧬
+If you're using TypeScript, you'll need at least `4.8`
 
-You might also find parts of these packages useful, but they are mostly for internal use and/or are missing documentation:
+_Note: This package is under active development. APIs have largely stabilized, but may still change prior to our upcoming 1.0-beta release. Stay tuned!🛶_
 
--   [@re-/assert](@re-/assert): Seamless testing for types and code ✅
--   [@re-/tools](@re-/tools): Lightweight utilities and types shared across Redo packages 🧰
--   [@re-/node](@re-/node): Node-based utilities, scripts, and configs for Redo packages ⚙️
--   [redo.dev](./redo.dev): Source code for [redo.dev](https://redo.dev) 🔁
+### Your first type
+
+[Try it out.](https://arktype.io/docs/#your-first-type)
+
+```ts @blockFrom:examples/type.ts
+import { type } from "arktype"
+
+// Define a type...
+export const user = type({
+    name: "string",
+    device: {
+        platform: "'android'|'ios'",
+        "version?": "number"
+    }
+})
+
+// Infer it...
+export type User = typeof user.infer
+
+// Validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
+export const { data, problems } = user({
+    name: "Alan Turing",
+    device: {
+        platform: "enigma"
+    }
+})
+
+if (problems) {
+    // "device/platform must be 'android' or 'ios' (was 'enigma')"
+    console.log(problems.summary)
+}
+```
+
+### Scopes
+
+[Try it out.](https://arktype.io/docs/scopes)
+
+```ts @blockFrom:examples/scope.ts
+import { scope } from "../api.js"
+
+// Scopes are collections of types that can reference each other.
+export const types = scope({
+    package: {
+        name: "string",
+        "dependencies?": "package[]",
+        "devDependencies?": "package[]",
+        "contributors?": "contributor[]"
+    },
+    contributor: {
+        // Subtypes like 'email' are inferred like 'string' but provide additional validation at runtime.
+        email: "email",
+        "packages?": "package[]"
+    }
+}).compile()
+
+// Cyclic types are inferred to arbitrary depth...
+export type Package = typeof types.package.infer
+
+// And can validate cyclic data.
+export const readPackageData = () => {
+    const packageData: Package = {
+        name: "arktype",
+        dependencies: [],
+        devDependencies: [{ name: "typescript" }],
+        contributors: [{ email: "david@sharktypeio" }]
+    }
+    packageData.devDependencies![0].dependencies = [packageData]
+    return packageData
+}
+
+// TODO: Update
+// `Encountered errors at the following paths:
+//   dependencies/0/contributors: Required value of type contributor[] was missing.
+//   contributors/0/email: "david@sharktypeio" is not assignable to email.`
+export const { problems } = types.package(readPackageData())
+```
+
+## API
+
+ArkType supports many of TypeScript's built-in types and operators, as well as some new nes dedicated exclusively to runtime validation. In fact, we got a little ahead of ourselves and built a ton of cool features, but we're still working on getting caught up syntax and API docs. Keep an eye out for more in the next couple weeks! In the meantime, check out the examples from this README and use the type hints you get to learn how you can customize your types and scopes. If you have any questions, don't hesitate to reach out on the [dedicated Discord channel](https://discord.gg/WSNF3Kc4xh)!
 
 ## Contributing
 
-If you're interested in contributing to one of our packages for the first time:
+If you're interested in contributing to ArkType...
 
-1. Thank you 😍 We'll do everything we can to make this as straightforward as possible, regardless of your experience.
-2. Check out our [guide](/CONTRIBUTING.md) to get started!
-
-## Project
-
-Our current and planned work can always be found [here](https://github.com/re-do/re-po/projects/1).
+1.  Thank you! We'll do everything we can to make this as straightforward as possible, regardless of your level of experience.
+2.  Check out our [guide](./CONTRIBUTING.md) to get started!
 
 ## License
 
-This project is licensed under the terms of the [MIT license](/LICENSE).
+This project is licensed under the terms of the
+[MIT license](./LICENSE).

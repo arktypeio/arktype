@@ -1,29 +1,10 @@
 # Contributing
 
-Thank you so much for making it this far ❤️ If you're intersted in contributing to one of the packages in the Redo repository, we want to make sure we do everything we can to make that process as straightforward and fruitful as possible.
-
-We've put together this guide to cover some of that, but please don't hesitate to comment on any of GitHub issues, create your own, or reach out to me directly at david@redo.dev 😻
-
-## Code of Conduct
-
-Redo has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) as its Code of Conduct, and we expect project participants to adhere to it.
-Please read [the full text](/CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
-
-## Your first Pull Request
-
-Working on your first Pull Request? You can learn how from this free video series:
-
-[How to Contribute to an Open Source Project on GitHub](https://egghead.io/courses/how-to-contribute-to-an-open-source-project-on-github)
-
-To help you get your feet wet and get you familiar with our contribution process, we have a list of [easy issues](https://github.com/re-do/re-po/issues?q=is:open+is:issue+label:"easy") that contain changes that have a relatively limited scope. This is a great place to get started.
-
-If you decide to fix an issue, please be sure to check the comment thread in case somebody is already working on a fix. If nobody is working on it at the moment, please leave a comment stating that you have started to work on it so other people don’t accidentally duplicate your effort.
-
-If somebody claims an issue but doesn’t follow up for more than a week, it’s fine to take it over but you should still leave a comment.
+ArkType values the time of its users and contributors as much as its maintainers, so our goal is for the process to be as efficient and straightforward as possible. Whether this is your first pull request or you're a seasoned open source contributor, this guide is the perfect place to start. If you have any other questions, please don't hesitate to [create an issue on GitHub](https://github.com/arktypeio/arktype/issues/new) or reach out [on our Discord](https://discord.gg/WSNF3Kc4xh).
 
 ## Sending a Pull Request
 
-Redo is a community project, so Pull Requests are always welcome, but, before working on a large change, it is best to open an issue first to discuss it with the maintainers.
+ArkType is a community project, so Pull Requests are always welcome, but, before working on a large change, it is best to open an issue first to discuss it with the maintainers.
 
 When in doubt, keep your Pull Requests small. To give a Pull Request the best chance of getting accepted, don't bundle more than one feature or bug fix per Pull Request. It's often best to create two smaller Pull Requests than one big one.
 
@@ -32,7 +13,7 @@ When in doubt, keep your Pull Requests small. To give a Pull Request the best ch
 2. Clone the fork to your local machine and add upstream remote:
 
 ```sh
-git clone git@github.com:<yourname>/re-po.git && cd redo && git remote add upstream git@github.com:re-do/re-po.git
+git clone git@github.com:<yourname>/arktype.git && cd arktype && git remote add upstream git@github.com:arktypeio/arktype.git
 ```
 
 3. Synchronize your local `main` branch with the upstream one:
@@ -53,70 +34,75 @@ npm i -g pnpm
 then:
 
 ```sh
-pnpm i # install package.json dependencies across all packages
-pnpm build # builds all packages
+pnpm i # install package.json dependencies
+pnpm build # builds the package
 ```
 
-We use a pnpm workspace to manage our packages. The most important things to keep in mind are:
-
--   The `package.json` at the re-po root contains devDependencies which are not directly imported (like `typescript`, `eslint`, etc.) and scripts that operate on the workspace as a whole (like `build`, which sequentially builds each package in the re-po).
--   Each package has its own `package.json`. These are used the usual way: to manage dependencies directly imported by the code, and to define scripts that run within the scope of that package (those scripts are sometimes called from scripts at the monorepo root).
-
-Take a look at [their documentation](https://pnpm.io/workspaces) if you are confused about the way packages are linked together or need to learn more.
+Make sure you are using our repo's pinned version of TypeScript and not one that comes bundled with your editor. In VSCode, you should be automatically prompted to allow this when you open the repo, but otherwise take a look at this explanation for how it can be done [from the VSCode docs](https://code.visualstudio.com/docs/typescript/typescript-compiling#_using-the-workspace-version-of-typescript).
 
 5. Create a new topic branch:
 
 ```sh
-git checkout -b my-topic-branch
+git checkout -b amazing-feature
 ```
 
-6. Once you've made the changes you want to and added corresponding unit tests, run the `pr-checks` command in the project root and address any problems:
+6. Do your best to write code that is stylistically consistent with its context. The linter will help with this, but it won't catch everything. Here's a few general guidelines:
+
+    - Favor functions over classes
+    - Favor arrow functions outside of classes
+    - Favor types over interfaces
+    - Favor mutation over copying objects in perf-sensitive contexts
+    - Favor clarity in naming with the following exceptions:
+        - Ubiquitous variables/types. For example, use `s` over `dynamicParserState` for a variable of type DynamicParserState that is used in the same way across many functions.
+        - Ephemeral variables whose contents can be trivially inferred from context. For example, prefer `rawKeyDefinitions.map(_ => _.trim())` to `rawKeyDefinitions.map(rawKeyDefinition => rawKeyDefinition.trim())`.
+
+We also have some unique casing rules for our TypeScript types to making writing isomorphic code easier:
+
+-   Use `CapitalCase` for...
+
+    -   Non-generic types (e.g. `SomeData`)
+    -   Generic types with noun names, like `Array<t>`. As a rule of thumb, your generic should be named this way if all its parameters have defaults (unfortunately TS's builtin `Array` type doesn't have a default parameter, but it should have been `unknown`!)
+
+-   Use `camelCase` for...
+
+    -   Generic types with verb names like `inferDomain<t>`. Types named this way should always have at least one required parameter.
+    -   Parameter names, e.g. `t` in `Array<t>`
+
+7. Once you've made the changes you want to and added corresponding unit tests, run the `prChecks` command in the project root and address any problems:
 
 ```sh
-pnpm pr-checks
+pnpm prChecks
 ```
 
-You can also run any of the commands individually:
+You can also run any of these commands individually:
 
-```sh
-pnpm install
-pnpm build
-pnpm lint
-pnpm test
-pnpm bench
-pnpm build-pages
+```sh @lineFrom:package.json:scripts/prChecks =>{?}
+"pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test && pnpm buildDocs"
 ```
 
-All of these command will run as part of our CI process and must succeed in order for us to accept your Pull Request.
+All of these commands will run as part of our CI process and must succeed in order for us to accept your Pull Request.
 
-7. Once everything is passing, commit your changes and ensure your fork is up to date:
+The new ".ts" extension resolution in TS 5.0 in conjunction with our [import_map.json](./dev/configs/import_map.json) allows us to support editing the same source using either standard Node tooling or via Deno. Since `arktype` has no dependencies, you generally shouldn't have to worry about compatibility, but you will need to at least [install Deno](https://deno.land/manual/getting_started/installation) to make sure the tests pass there, too.
+
+8. Once everything is passing, commit your changes and ensure your fork is up to date:
 
 ```sh
 git push -u
 ```
 
-8. Go to [the repository](https://github.com/re-do/re-po) and make a Pull Request.
+9. Go to [the repository](https://github.com/arktypeio/arktype) and make a Pull Request.
 
 The core team is monitoring for Pull Requests. We will review your Pull Request and either merge it, request changes to it, or close it with an explanation.
 
-## Packages
-
-We use a [pnpm workspace](https://pnpm.io/workspaces) to manage our packages. You might want to make changes to one or more of them depending on the goals of your contribution. Take a look at any of them individually to learn more:
-
--   [@re-/type](@re-/type): Beautiful types from IDE to runtime 🧬
--   [@re-/assert](@re-/assert): Seamless testing for types and code ✅
--   [@re-/tools](@re-/tools): Lightweight utilities and types shared across Redo packages 🧰
--   [@re-/node](@re-/node): Node-based utilities, scripts, and configs for Redo packages ⚙️
--   [redo.dev](./redo.dev): Source code for [redo.dev](https://redo.dev) 🔁
-
 ## Project
 
-Our current and planned work can always be found [here](https://github.com/re-do/re-po/projects/1). If you want to contribute but aren't sure where to get started, see if any of the issues in our backlog sound interesting! Not all are well-documented, so it usually makes sense to comment on the issue with any questions you may have before you start coding.
+Our current and planned work can always be found [here](https://github.com/arktypeio/arktype/projects/1). If you want to contribute but aren't sure where to get started, see if any of the issues in our backlog sound interesting! Not all are well-documented, so it usually makes sense to comment on the issue with any questions you may have before you start coding.
+
+## Code of Conduct
+
+ArkType has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) as its Code of Conduct, and we expect project participants to adhere to it.
+Please read [the full text](/dev/CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
 
 ## License
 
-By contributing your code to the re-do/re-po GitHub repository, you agree to license your contribution under the MIT license.
-
-### Attribution note
-
-At Redo, we're huge fans of [material-ui](https://mui.com/). In addition to depending on them for many of our React components, we borrowed parts of this contributing guide from their repo.
+By contributing your code to the arktypeio/arktype GitHub repository, you agree to license your contribution under the MIT license.

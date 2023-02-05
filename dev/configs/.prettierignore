@@ -1,0 +1,19 @@
+# @blockFrom:.gitignore
+dist
+node_modules
+temp
+tmp
+*.temp.*
+*.log
+*.tsbuildinfo
+.DS_Store
+.docusaurus
+.cache-loader
+.attest
+coverage
+
+# @blockEnd 
+
+# @snipStart:unformatted
+pnpm-lock.yaml
+# @snipEnd

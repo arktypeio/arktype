@@ -1,5 +1,5 @@
-name: Setup re-po
-description: Install dependencies and perform setup re-do/re-po
+name: Setup repo
+description: Install dependencies and perform setup for https://github.com/arktypeio/arktype
 
 inputs:
     node:
@@ -20,10 +20,14 @@ runs:
               registry-url: "https://registry.npmjs.org"
               cache: "pnpm"
 
+        - uses: denoland/setup-deno@v1
+          with:
+              deno-version: v1.x
+
         - name: Install dependencies
           shell: bash
           run: pnpm install
 
-        - name: Build packages
+        - name: Build
           shell: bash
           run: pnpm build

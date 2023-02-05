@@ -1,0 +1,18 @@
+{
+    "extends": "../../tsconfig",
+    "compilerOptions": {
+        "noEmit": true,
+        "module": "NodeNext",
+        "moduleResolution": "bundler",
+        "target": "ES2017",
+        "jsx": "react",
+        "types": [
+            "@types/node",
+            "@docusaurus/module-type-aliases",
+            "@docusaurus/preset-classic"
+        ],
+        "lib": ["DOM"]
+    },
+    "include": ["src", "docs"],
+    "exclude": ["node_modules", "dist"]
+}

@@ -13,12 +13,12 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 20
         steps:
-            - name: Checkout re-po
+            - name: Checkout repo
               uses: actions/checkout@v3
               with:
                   fetch-depth: 0
 
-            - name: Setup re-po
+            - name: Setup repo
               uses: ./.github/actions/setup
 
             - name: Lint
@@ -26,9 +26,6 @@ jobs:
 
             - name: Test
               run: pnpm test
-
-            - name: Website
-              run: pnpm build-pages
 
     compatibility:
         needs: core
@@ -45,12 +42,12 @@ jobs:
 
         runs-on: ${{ matrix.os }}
         steps:
-            - name: Checkout re-po
+            - name: Checkout repo
               uses: actions/checkout@v3
               with:
                   fetch-depth: 0
 
-            - name: Setup re-po
+            - name: Setup repo
               uses: ./.github/actions/setup
               with:
                   node: ${{ matrix.node }}
@@ -58,9 +55,9 @@ jobs:
             - name: Test
               run: pnpm test
 
-    pr-checks:
+    prChecks:
         needs: compatibility
         timeout-minutes: 1
         runs-on: ubuntu-latest
         steps:
-            - run: echo All checks succeeded! 🚢
+            - run: echo All checks succeeded! ⛵
