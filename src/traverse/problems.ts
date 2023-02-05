@@ -148,8 +148,6 @@ export const describeBranches = (descriptions: string[]) => {
     return description
 }
 
-// TODO: Could precompile (could maybe precompile mustBe in general?)
-
 /** Each Subdomain's completion for the phrase "Must be _____" */
 export const subdomainDescriptions = {
     bigint: "a bigint",
@@ -259,7 +257,6 @@ export class DataWrapper<value = unknown> {
     }
 }
 
-// TODO: clause?
 const writeDefaultWasDescription: DataWriter<any> = (data) => `${data}`
 
 const writeDefaultProblemReason: ReasonWriter = (mustBe, was) =>

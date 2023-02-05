@@ -138,7 +138,7 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
             state.path.push(propKey)
             if (!hasKey(data, propKey)) {
                 if (propKind !== "optionalProps") {
-                    // TODO: update?
+                    // TODO: update
                     state.problems.add("missing", undefined, undefined)
                 }
             } else {
@@ -243,8 +243,7 @@ const checkers = {
     },
     alias: (data, name, state) => state.traverseResolution(data, name),
     class: checkClass,
-    // TODO: add error message syntax.
-    narrow: (data, narrow) => narrow(data),
+    narrow: (data, narrow, state) => narrow(data, state.problems),
     value: (data, value, state) => {
         if (data !== value) {
             state.problems.add("value", data, value)
