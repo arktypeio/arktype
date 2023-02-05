@@ -18,7 +18,7 @@ If you're using TypeScript, you'll need at least `4.8`.
 
 ### Your first type (⏱️30s)
 
-[Try it out.](https://arktype.io/type/intro#start-quick-%EF%B8%8F)
+[Try it out.](https://arktype.io/docs/#your-first-type)
 
 ```ts @blockFrom:examples/type.ts
 import { type } from "arktype"
@@ -51,7 +51,7 @@ if (problems) {
 
 ### Scopes
 
-[Try it out.](https://arktype.io/type/spaces)
+[Try it out.](https://arktype.io/docs/scopes)
 
 ```ts @blockFrom:examples/scope.ts
 import { scope } from "../api.js"
