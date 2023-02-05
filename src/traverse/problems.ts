@@ -176,7 +176,7 @@ type ProblemRuleInputs = {
     domain: Subdomain
     domainBranches: Subdomain[]
     missing: undefined
-    range: FlatBound
+    bound: FlatBound
     regex: RegExp
     value: unknown
     valueBranches: unknown[]
@@ -301,11 +301,11 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
         mustBe: () => "defined",
         was: () => ""
     },
-    range: {
+    bound: {
         mustBe: (bound) =>
             `${Scanner.comparatorDescriptions[bound.comparator]} ${
                 bound.limit
-            }${bound.units && " " + bound.units}`,
+            }${bound.units ? ` ${bound.units}` : ""}`,
 
         was: (data) => `${data.size}`
     },

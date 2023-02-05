@@ -8,7 +8,7 @@ import type {
 import { checkClass } from "../nodes/rules/class.js"
 import { checkDivisor } from "../nodes/rules/divisor.js"
 import type { TraversalPropEntry } from "../nodes/rules/props.js"
-import { checkRange } from "../nodes/rules/range.js"
+import { checkBound } from "../nodes/rules/range.js"
 import { checkRegex } from "../nodes/rules/regex.js"
 import { precedenceMap } from "../nodes/rules/rules.js"
 import type { SizedData, Subdomain } from "../utils/domains.js"
@@ -171,7 +171,7 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         const actual = (data as List).length
         const expected = rule[2]
         if (expected !== actual) {
-            return state.problems.add("range", data as List, {
+            return state.problems.add("bound", data as List, {
                 comparator: "==",
                 limit: expected,
                 units: "items"
@@ -211,7 +211,7 @@ const checkers = {
         }
     },
     subdomain: checkSubdomain,
-    bound: checkRange,
+    bound: checkBound,
     requiredProps: checkRequiredProps,
     optionalProps: checkOptionalProps,
     branches: (data, branches, state) => state.traverseBranches(data, branches),
@@ -223,7 +223,7 @@ const checkers = {
         }
         const caseKeys = keysOf(rule.cases)
         const lastPath = state.path
-        state.path = rule.path
+        state.path = state.path.concat(rule.path)
         if (rule.kind === "value") {
             state.problems.add(
                 "valueBranches",

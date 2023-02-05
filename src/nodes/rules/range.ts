@@ -115,9 +115,9 @@ export const flattenRange: FlattenAndPushRule<Range> = (
     }
 }
 
-export const checkRange = ((data, bound, state) => {
+export const checkBound = ((data, bound, state) => {
     if (!comparatorCheckers[bound.comparator](sizeOf(data), bound.limit)) {
-        state.problems.add("range", data, bound)
+        state.problems.add("bound", data, bound)
     }
 }) satisfies TraversalCheck<"bound">
 

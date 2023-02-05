@@ -12,7 +12,7 @@ describe("snippets", () => {
             }
         }
         attest(typeSnippet.problems?.summary).snap(
-            '"enigma" does not satisfy any branches'
+            "device/platform must be 'android' or 'ios' (was 'enigma')"
         )
     })
     it("scope", async () => {
@@ -27,7 +27,7 @@ describe("snippets", () => {
             }[]
         }
         attest(scopeSnippet.problems?.summary).snap(
-            'devDependencies/0/dependencies/0/contributors/0/email: "david@sharktypeio" must match expression /^(.+)@(.+)\\.(.+)$/\ncontributors/0/email: "david@sharktypeio" must match expression /^(.+)@(.+)\\.(.+)$/'
+            "devDependencies/0/dependencies/0/contributors/0/email must be a string matching /^(.+)@(.+)\\.(.+)$/ (was 'david@sharktypeio')\ncontributors/0/email must be a string matching /^(.+)@(.+)\\.(.+)$/ (was 'david@sharktypeio')"
         )
     })
 })

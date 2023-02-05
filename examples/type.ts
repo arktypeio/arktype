@@ -21,5 +21,6 @@ export const { data, problems } = user({
 })
 
 if (problems) {
+    // "device/platform must be 'android' or 'ios' (was 'enigma')"
     console.log(problems.summary)
 }
