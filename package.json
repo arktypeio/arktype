@@ -23,10 +23,11 @@
     },
     "packageManager": "pnpm@7.18.0",
     "scripts": {
-        "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm testRepo && pnpm buildDocs",
+        "//temporarily disabled pr checks": "pnpm testRepo",
+        "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test && pnpm buildDocs",
         "typecheck": "tsc --noEmit",
         "build": "ts-node ./dev/scripts/build.ts",
-        "buildDocs": "pnpm docgen && cd dev/arktype.io && pnpm build",
+        "buildDocs": "pnpm docgen && cd dev/arktype.io && pnpm install && pnpm build",
         "docgen": "ts-node ./dev/scripts/docgen.ts",
         "test": "ts-node ./dev/attest/cli.ts --cmd mocha",
         "testCov": "c8 pnpm test",

@@ -77,7 +77,7 @@ pnpm prChecks
 You can also run any of these commands individually:
 
 ```sh @lineFrom:package.json:scripts/prChecks =>{?}
-"pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm testRepo && pnpm buildDocs"
+"pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test && pnpm buildDocs"
 ```
 
 All of these commands will run as part of our CI process and must succeed in order for us to accept your Pull Request.

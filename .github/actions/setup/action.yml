@@ -28,6 +28,6 @@ runs:
           shell: bash
           run: pnpm install
 
-        - name: Build packages
+        - name: Build
           shell: bash
-          run: pnpm buildRepo
+          run: pnpm build

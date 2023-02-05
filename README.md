@@ -12,11 +12,11 @@ Isomorphic type syntax for TS/JS
 
 `npm install arktype`
 
-(feel free to substitute `yarn`, `pnpm`, et al.)
+If you're using TypeScript, you'll need at least `4.8`
 
-If you're using TypeScript, you'll need at least `4.8`.
+_Note: This package is under active development. APIs have largely stabilized, but may still change prior to our upcoming 1.0-beta release. Stay tuned!🛶_
 
-### Your first type (⏱️30s)
+### Your first type
 
 [Try it out.](https://arktype.io/docs/#your-first-type)
 

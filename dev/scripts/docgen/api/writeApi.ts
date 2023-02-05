@@ -1,6 +1,6 @@
-import { rmSync } from "node:fs"
+import { appendFileSync, rmSync } from "node:fs"
 import { join } from "node:path"
-import { ensureDir, shell, writeFile } from "../../../runtime/api.ts"
+import { ensureDir, shell } from "../../../runtime/api.ts"
 import type { DocGenApiConfig } from "../main.ts"
 import type {
     ApiEntryPoint,
@@ -37,10 +37,15 @@ const writeEntryPoint = (
     entryNames: string[]
 ) => {
     for (const exported of entryPoint.exports) {
-        const mdFilePath = join(entryPointOutDir, `${exported.name}.md`)
+        const mdFilePath = join(
+            entryPointOutDir,
+            `${exported.name.toLowerCase()}.md`
+        )
         transformLinkTagToURL(mdFilePath, exported, entryNames)
         const data = packTsDocTags(exported.tsDocs ?? [])
-        writeFile(mdFilePath, generateMarkdownForExport(exported, data))
+        // items with same name write to same file for now (e.g. type/Type) to
+        // avoid a docusaurus build failure
+        appendFileSync(mdFilePath, generateMarkdownForExport(exported, data))
     }
 }
 
