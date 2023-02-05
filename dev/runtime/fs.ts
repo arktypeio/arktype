@@ -138,7 +138,7 @@ export const tsFileMatcher = /^.*\.(c|m)?tsx?$/
 const inFileFilter: WalkOptions = {
     include: (path) =>
         tsFileMatcher.test(path) &&
-        /(^api\.ts|src|test|dev\/attest|dev\/runtime)\/?/.test(path) &&
+        /(^api\.ts|src|test|examples|dev\/attest|dev\/runtime)\/?/.test(path) &&
         !/dev\/attest\/test/.test(path),
     ignoreDirsMatching: /node_modules|dist|docgen/
 }
