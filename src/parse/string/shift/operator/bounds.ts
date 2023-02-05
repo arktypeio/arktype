@@ -1,4 +1,5 @@
 import { stringifyRange } from "../../../../nodes/compose.ts"
+import type { ResolvedNode } from "../../../../nodes/node.ts"
 import type {
     Bound,
     MaxComparator,
@@ -9,10 +10,22 @@ import {
     maxComparators,
     minComparators
 } from "../../../../nodes/rules/range.ts"
+import type { SubdomainRule } from "../../../../nodes/rules/subdomain.ts"
 import { throwInternalError } from "../../../../utils/errors.ts"
-import type { error, keySet } from "../../../../utils/generics.ts"
-import { isKeyOf } from "../../../../utils/generics.ts"
+import type {
+    error,
+    keySet,
+    List,
+    mutable
+} from "../../../../utils/generics.ts"
+import {
+    hasKey,
+    isKeyOf,
+    keysOf,
+    listFrom
+} from "../../../../utils/generics.ts"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.ts"
+import { writeUnboundableMessage } from "../../ast.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import { writeUnpairableComparatorMessage } from "../../reduce/shared.ts"
 import type { state, StaticState } from "../../reduce/static.ts"
@@ -95,11 +108,43 @@ export const parseRightBound = (
         : hasComparatorIn(rightBound, maxComparators)
         ? { max: rightBound }
         : throwInternalError(`Unexpected comparator '${rightBound.comparator}'`)
-    s.intersect({
-        number: { range },
-        string: { range },
-        object: { subdomain: "Array", range }
+    s.intersect(distributeRange(range, s))
+}
+
+const distributeRange = (range: Range, s: DynamicState) => {
+    const resolution = s.resolveRoot()
+    const domains = keysOf(resolution)
+    const distributedRange: mutable<ResolvedNode> = {}
+    const rangePredicate = { range } as const
+    const isBoundable = domains.every((domain) => {
+        switch (domain) {
+            case "string":
+                distributedRange.string = rangePredicate
+                return true
+            case "number":
+                distributedRange.number = rangePredicate
+                return true
+            case "object":
+                distributedRange.object = rangePredicate
+                if (resolution.object === true) {
+                    return false
+                }
+                return listFrom(resolution.object!).every(
+                    (branch) =>
+                        hasKey(branch, "subdomain") &&
+                        (branch.subdomain === "Array" ||
+                            (
+                                branch.subdomain as Extract<SubdomainRule, List>
+                            )[0] === "Array")
+                )
+            default:
+                return false
+        }
     })
+    if (!isBoundable) {
+        s.error(writeUnboundableMessage(s.rootToString()))
+    }
+    return distributedRange
 }
 
 const hasComparator = <comparator extends Scanner.Comparator>(
@@ -158,3 +203,5 @@ export type writeInvalidLimitMessage<
 
 export const writeEmptyRangeMessage = (range: Range) =>
     `${stringifyRange(range)} is empty`
+
+export type BoundableDomain = "string" | "number" | "object"

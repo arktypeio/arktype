@@ -6,8 +6,6 @@ import {
     writeUnboundableMessage
 } from "../src/parse/string/ast.ts"
 
-// TODO: https://github.com/arktypeio/arktype/issues/585
-// change type.errors to throwsAndHasTypeError
 describe("semantics", () => {
     describe("bound", () => {
         it("number", () => {
@@ -19,22 +17,24 @@ describe("semantics", () => {
         it("array", () => {
             attest(type("87<=boolean[]<89").infer).typed as boolean[]
         })
-        it("any", () => {
-            attest(type("any>5").infer).typed as any
-        })
+
         describe("errors", () => {
             it("unboundable", () => {
                 // @ts-expect-error
-                attest(() => type("unknown<10")).type.errors(
-                    writeUnboundableMessage("unknown")
+                attest(() => type("unknown<10")).throwsAndHasTypeError(
+                    writeUnboundableMessage("'unknown'")
                 )
             })
-            // Note: Bounding a number literal results in a syntax error and is
-            // tested alongside other bound parse errors
-            it("string literal", () => {
+            it("any", () => {
                 // @ts-expect-error
-                attest(() => type("1<'foo'<10")).type.errors(
-                    writeUnboundableMessage("'foo'")
+                attest(() => type("any>10")).throwsAndHasTypeError(
+                    writeUnboundableMessage("'any'")
+                )
+            })
+            it("overlapping", () => {
+                // @ts-expect-error
+                attest(() => type("1<(number|boolean)<10")).throws.snap(
+                    'Error: Bounded expression {"number":true,"boolean":true} must be a number, string or array'
                 )
             })
         })
@@ -43,20 +43,23 @@ describe("semantics", () => {
         it("number", () => {
             attest(type("number%2").infer).typed as number
         })
-        it("any", () => {
-            attest(type("any%1").infer).typed as any
-        })
         describe("errors", () => {
             it("indivisible", () => {
                 // @ts-expect-error
-                attest(() => type("unknown%2")).type.errors(
-                    writeIndivisibleMessage("unknown")
+                attest(() => type("unknown%2")).throwsAndHasTypeError(
+                    writeIndivisibleMessage("'unknown'")
                 )
             })
-            it("number literal", () => {
+            it("indivisible", () => {
                 // @ts-expect-error
-                attest(() => type("5%10")).type.errors(
-                    writeIndivisibleMessage("5")
+                attest(() => type("any%1")).throwsAndHasTypeError(
+                    writeIndivisibleMessage("'any'")
+                )
+            })
+            it("overlapping", () => {
+                // @ts-expect-error
+                attest(() => type("(number|string)%10")).throws.snap(
+                    'Error: Divisibility operand {"number":true,"string":true} must be a number'
                 )
             })
         })

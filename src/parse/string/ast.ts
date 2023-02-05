@@ -1,7 +1,7 @@
 import type { asIn, resolve } from "../../main.ts"
 import type { DisjointsByPath } from "../../nodes/compose.ts"
 import { disjointDescriptionWriters } from "../../nodes/compose.ts"
-import type { subdomainOf } from "../../utils/domains.ts"
+import type { SizedData, subdomainOf } from "../../utils/domains.ts"
 import type {
     asConst,
     castOnError,
@@ -221,29 +221,15 @@ export const writeUndiscriminatableMorphUnionMessage = <path extends string>(
 type undiscriminatableMorphUnionMessage =
     `A union including one or more morphs must be discriminatable`
 
-type isNonLiteralNumber<t> = t extends number
-    ? number extends t
-        ? true
-        : false
-    : false
-
-type isNonLiteralString<t> = t extends string
-    ? string extends t
-        ? true
-        : false
-    : false
-
 type isDivisible<data> = isAny<data> extends true
+    ? false
+    : [data] extends [number]
     ? true
-    : isNonLiteralNumber<data>
+    : false
 
 type isBoundable<data> = isAny<data> extends true
-    ? true
-    : isNonLiteralNumber<data> extends true
-    ? true
-    : isNonLiteralString<data> extends true
-    ? true
-    : data extends List
+    ? false
+    : [data] extends [SizedData]
     ? true
     : false
 
@@ -257,11 +243,13 @@ export type inferTerminal<token, $> = token extends keyof $
     ? token
     : never
 
-export type astToString<ast, result extends string = ""> = ast extends [
+export type astToString<ast> = `'${astToStringRecurse<ast, "">}'`
+
+type astToStringRecurse<ast, result extends string> = ast extends [
     infer head,
     ...infer tail
 ]
-    ? astToString<tail, `${result}${astToString<head>}`>
+    ? astToStringRecurse<tail, `${result}${astToStringRecurse<head, "">}`>
     : ast extends Literalable
     ? `${result}${ast extends bigint ? `${ast}n` : ast}`
     : "..."
@@ -269,15 +257,15 @@ export type astToString<ast, result extends string = ""> = ast extends [
 export const writeIndivisibleMessage = <root extends string>(
     root: root
 ): writeIndivisibleMessage<root> =>
-    `Divisibility operand ${root} must be a non-literal number`
+    `Divisibility operand ${root} must be a number`
 
 type writeIndivisibleMessage<root extends string> =
-    `Divisibility operand ${root} must be a non-literal number`
+    `Divisibility operand ${root} must be a number`
 
 export const writeUnboundableMessage = <root extends string>(
     root: root
 ): writeUnboundableMessage<root> =>
-    `Bounded expression ${root} must be a non-literal number, string or array`
+    `Bounded expression ${root} must be a number, string or array`
 
 type writeUnboundableMessage<root extends string> =
-    `Bounded expression ${root} must be a non-literal number, string or array`
+    `Bounded expression ${root} must be a number, string or array`

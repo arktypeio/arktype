@@ -5,6 +5,7 @@ import type { LowerBound } from "../../../nodes/rules/range.ts"
 import { minComparators } from "../../../nodes/rules/range.ts"
 import { throwInternalError, throwParseError } from "../../../utils/errors.ts"
 import { isKeyOf } from "../../../utils/generics.ts"
+import { stringify } from "../../../utils/serialize.ts"
 import type { ParseContext } from "../../definition.ts"
 import { Scanner } from "../shift/scanner.ts"
 import {
@@ -37,6 +38,16 @@ export class DynamicState {
 
     hasRoot() {
         return this.root !== undefined
+    }
+
+    resolveRoot() {
+        this.assertHasRoot()
+        return this.ctx.type.scope.resolveNode(this.root!)
+    }
+
+    rootToString() {
+        this.assertHasRoot()
+        return stringify(this.root)
     }
 
     ejectRootIfLimit() {

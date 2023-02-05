@@ -1,5 +1,7 @@
 import type { error } from "../../../../utils/generics.ts"
+import { keysOf } from "../../../../utils/generics.ts"
 import { tryParseWellFormedInteger } from "../../../../utils/numericLiterals.ts"
+import { writeIndivisibleMessage } from "../../ast.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { state, StaticState } from "../../reduce/static.ts"
 import type { Scanner } from "../scanner.ts"
@@ -13,7 +15,12 @@ export const parseDivisor = (s: DynamicState) => {
     if (divisor === 0) {
         s.error(writeInvalidDivisorMessage(0))
     }
-    s.intersect({ number: { divisor } })
+    const rootDomains = keysOf(s.resolveRoot())
+    if (rootDomains.length === 1 && rootDomains[0] === "number") {
+        s.intersect({ number: { divisor } })
+    } else {
+        s.error(writeIndivisibleMessage(s.rootToString()))
+    }
 }
 
 export type parseDivisor<
