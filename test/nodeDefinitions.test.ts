@@ -67,7 +67,13 @@ describe("node definitions", () => {
     it("tuples", () => {
         const t = type([
             "node",
-            { object: { subdomain: ["Array", "string", 5] } } as const
+            {
+                object: {
+                    subdomain: ["Array", "string"],
+                    // TODO: allow comparators in nodes
+                    range: { min: { limit: 5 }, max: { limit: 5 } }
+                }
+            } as const
         ])
         attest(t.infer).typed as [string, string, string, string, string]
     })

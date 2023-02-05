@@ -55,7 +55,7 @@ describe("traverse", () => {
         const basic = type("string|number[]")
         const check = basic(2)
         attest(check.problems?.summary).snap(
-            "Must be either a string or an object (was number)"
+            "Must be a string or an object (was number)"
         )
     })
     it("tuple length", () => {
@@ -66,12 +66,21 @@ describe("traverse", () => {
             "Must be exactly 4 items (was 1)"
         )
     })
-    // TODO: improve error message, include subproblems
     it("branches", () => {
         const t = type([{ a: "string" }, "|", { b: "boolean" }])
         attest(t({ a: "ok" }).data).snap({ a: "ok" })
         attest(t({ b: true }).data).snap({ b: true })
-        attest(t({}).problems?.summary).snap("{} does not satisfy any branches")
+        attest(t({}).problems?.summary).snap(
+            "a must be defined or b must be defined (was {})"
+        )
+    })
+    it("branches at path", () => {
+        const t = type({ key: [{ a: "string" }, "|", { b: "boolean" }] })
+        attest(t({ key: { a: "ok" } }).data).snap({ key: { a: "ok" } })
+        attest(t({ key: { b: true } }).data).snap({ key: { b: true } })
+        attest(t({ key: {} }).problems?.summary).snap(
+            "At key, a must be defined or b must be defined (was {})"
+        )
     })
     it("switch", () => {
         const t = type([{ a: "string" }, "|", { a: "boolean" }])
@@ -79,11 +88,11 @@ describe("traverse", () => {
         attest(t({ a: true }).data).snap({ a: true })
         // value isn't present
         attest(t({}).problems?.summary).snap(
-            'a: "(undefined)" does not satisfy any branches'
+            "a must be a string or boolean (was undefined)"
         )
         // unsatisfying value
         attest(t({ a: 5 }).problems?.summary).snap(
-            "a: 5 does not satisfy any branches"
+            "a must be a string or boolean (was number)"
         )
     })
 })

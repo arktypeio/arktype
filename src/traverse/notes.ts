@@ -1,6 +1,6 @@
 // @ts-nocheck
 
-import { TraversalState } from "./check"
+import { TraversalState } from "./traverse"
 
 const state = new TraversalState()
 

@@ -17,7 +17,7 @@ import type {
 import { keysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { ConstrainedRuleData, TraversalState } from "./check.ts"
+import type { ConstrainedRuleData, TraversalState } from "./traverse.ts"
 
 export class ArkTypeError extends TypeError {
     cause: Problems
@@ -32,11 +32,29 @@ export class Problem {
     constructor(
         public code: ProblemCode,
         public path: Path,
-        public reason: string
+        private data: ProblemDataInput,
+        private rule: ProblemRuleInput,
+        private writers: ProblemWriterConfig<any>
     ) {}
 
     toString() {
-        return this.reason
+        return this.message
+    }
+
+    get message() {
+        return this.writers.message(this.reason, this.path)
+    }
+
+    get reason() {
+        return this.writers.reason(this.mustBe, this.was)
+    }
+
+    get mustBe() {
+        return this.writers.mustBe(this.rule)
+    }
+
+    get was() {
+        return this.writers.was(new DataWrapper(this.data) as never)
     }
 }
 
@@ -52,45 +70,39 @@ class ProblemArray extends Array<Problem> {
         data: ProblemDataInput<code>,
         input: ProblemRuleInput<code>
     ) {
-        const problem: Problem = {
+        const problem: Problem = new Problem(
             code,
-            // copy the path to avoid mutations affecting it
-            path: Path.from(this.state.path),
-            reason: writeReason(
-                data,
-                input,
-                this.state.type.config.problems[code]
-            )
-        }
+            // copy the path to avoid future mutations affecting it
+            Path.from(this.state.path),
+            data,
+            input,
+            this.state.type.config.problems[code]
+        )
         const pathKey = `${this.state.path}`
-        const existing = this.byPath[pathKey]
-        if (existing) {
-            if (existing.code === "multi") {
-                existing.reason += `\n• ${problem.reason}`
-            } else {
-                this.byPath[pathKey] = new Problem(
-                    "multi",
-                    existing.path,
-                    `• ${existing.reason}\n• ${problem.reason}`
-                )
-            }
-        } else {
-            this.byPath[pathKey] = problem
-        }
+        // TODO: Fix multi
+        // const existing = this.byPath[pathKey]
+        // if (existing) {
+        //     if (existing.code === "multi") {
+        //         existing.message += `\n• ${problem.message}`
+        //     } else {
+        //         this.byPath[pathKey] = new Problem(
+        //             "multi",
+        //             existing.path,
+        //             `• ${existing.message}\n• ${problem.message}`
+        //         )
+        //     }
+        // } else {
+        // }
+        this.byPath[pathKey] = problem
         this.push(problem)
     }
 
     // TODO: add some customization options for this
     get summary() {
         if (this.length === 1) {
-            const problem = this[0]
-            return problem.path.length
-                ? `${problem.path} ${uncapitalize(`${problem.reason}`)}`
-                : `${problem.reason}`
+            return this[0].message
         }
-        return this.map((problem) => `${problem.path}: ${problem.reason}`).join(
-            "\n"
-        )
+        return this.join("\n")
     }
 
     toString() {
@@ -110,6 +122,8 @@ export type Problems = instanceOf<typeof Problems>
 
 const uncapitalize = (s: string) => s[0].toLowerCase() + s.slice(1)
 
+const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1)
+
 export const describeSubdomains = (subdomains: Subdomain[]) => {
     if (subdomains.length === 1) {
         return subdomainDescriptions[subdomains[0]]
@@ -122,8 +136,8 @@ export const describeSubdomains = (subdomains: Subdomain[]) => {
     )
 }
 
-const describeBranches = (descriptions: string[]) => {
-    let description = "either "
+export const describeBranches = (descriptions: string[]) => {
+    let description = ""
     for (let i = 0; i < descriptions.length - 1; i++) {
         description += descriptions[i]
         if (i < descriptions.length - 2) {
@@ -133,6 +147,8 @@ const describeBranches = (descriptions: string[]) => {
     description += ` or ${descriptions[descriptions.length - 1]}`
     return description
 }
+
+// TODO: Could precompile (could maybe precompile mustBe in general?)
 
 /** Each Subdomain's completion for the phrase "Must be _____" */
 export const subdomainDescriptions = {
@@ -153,16 +169,18 @@ export const subdomainDescriptions = {
     Set: "a Set"
 } as const satisfies Record<Subdomain, string>
 
+// TODO: change to input args
 type ProblemRuleInputs = {
     divisor: number
     class: constructor
     domain: Subdomain
-    domains: Subdomain[]
+    domainBranches: Subdomain[]
     missing: undefined
     range: FlatBound
     regex: RegExp
     value: unknown
-    multi: Problem[]
+    valueBranches: unknown[]
+    multi: string[]
     branches: Problem[]
 }
 
@@ -180,21 +198,11 @@ type ProblemDataInputs = {
 export type ProblemDataInput<code extends ProblemCode = ProblemCode> =
     ProblemDataInputs[code]
 
-export const writeReason = <code extends ProblemCode>(
-    data: ProblemDataInput<code>,
-    rule: ProblemRuleInput<code>,
-    writers: ProblemWriterConfig<code>
-) => {
-    return writers.reason(
-        writers.mustBe(rule as never),
-        writers.was(new DataWrapper(data) as never)
-    )
-}
-
 export type ProblemOptions<code extends ProblemCode> = {
     mustBe?: RuleWriter<code>
     was?: DataWriter<code>
     reason?: ReasonWriter
+    message?: MessageWriter
 }
 
 type ProblemDefinition<code extends ProblemCode> = requireKeys<
@@ -219,6 +227,8 @@ export type DataWriter<code extends ProblemCode> = (
 ) => string
 
 export type ReasonWriter = (rule: string, data: string) => string
+
+export type MessageWriter = (reason: string, path: Path) => string
 
 export class DataWrapper<value = unknown> {
     constructor(public value: value) {}
@@ -249,10 +259,14 @@ export class DataWrapper<value = unknown> {
     }
 }
 
+// TODO: clause?
 const writeDefaultWasDescription: DataWriter<any> = (data) => `${data}`
 
-const writeDefaultProblemMessage: ReasonWriter = (mustBe, was) =>
-    `Must be ${mustBe}${was && ` (was ${was})`}`
+const writeDefaultProblemReason: ReasonWriter = (mustBe, was) =>
+    `must be ${mustBe}${was && ` (was ${was})`}`
+
+const writeDefaultProblemMessage: MessageWriter = (reason, path) =>
+    path.length ? `${path} ${reason}` : capitalize(reason)
 
 const compileDefaultProblemWriters = (definitions: {
     [code in ProblemCode]: ProblemDefinition<code>
@@ -260,7 +274,8 @@ const compileDefaultProblemWriters = (definitions: {
     let code: ProblemCode
     for (code in definitions) {
         definitions[code].was ??= writeDefaultWasDescription
-        definitions[code].reason = writeDefaultProblemMessage
+        definitions[code].reason ??= writeDefaultProblemReason
+        definitions[code].message ??= writeDefaultProblemMessage
     }
     return definitions as ProblemsConfig
 }
@@ -278,7 +293,7 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
         mustBe: (domain) => subdomainDescriptions[domain],
         was: (data) => data.domain
     },
-    domains: {
+    domainBranches: {
         mustBe: (domains) => describeSubdomains(domains),
         was: (data) => data.domain
     },
@@ -297,14 +312,38 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
     regex: {
         mustBe: (regex) => `a string matching /${regex.source}/`
     },
-    branches: {
-        mustBe: () => `branches`
-    },
     value: {
-        mustBe: (value) => stringify(value)
+        mustBe: stringify
+    },
+    valueBranches: {
+        mustBe: (values) => describeBranches(values.map(stringify))
+    },
+    branches: {
+        mustBe: (branchProblems) => {
+            const clausesByPath: Record<string, string[]> = {}
+            for (const problem of branchProblems) {
+                const pathKey = `${problem.path}`
+                clausesByPath[pathKey] ??= []
+                clausesByPath[pathKey].push(problem.mustBe)
+            }
+            return describeBranches(
+                Object.entries(clausesByPath).map(
+                    ([path, clauses]) =>
+                        `${path} must be ${
+                            clauses.length === 1
+                                ? clauses[0]
+                                : describeBranches(clauses)
+                        }`
+                )
+            )
+        },
+        reason: (mustBe, data) => `${mustBe} (was ${data})`,
+        message: (reason, path) =>
+            path.length ? `At ${path}, ${reason}` : reason
     },
     multi: {
-        mustBe: (problems) => "...\n• " + problems.join("\n• ")
+        mustBe: (problems) => "• " + problems.join("\n• "),
+        reason: (mustBe) => mustBe
     }
 })
 

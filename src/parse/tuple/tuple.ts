@@ -10,7 +10,6 @@ import type {
     constructor,
     error,
     evaluate,
-    keyOf,
     List,
     returnOf
 } from "../../utils/generics.ts"
@@ -44,8 +43,10 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     }
     return {
         object: {
-            subdomain: ["Array", "unknown", def.length],
-            props
+            subdomain: "Array",
+            props,
+            // TODO: change to comparator
+            range: { min: { limit: def.length }, max: { limit: def.length } }
         }
     }
 }

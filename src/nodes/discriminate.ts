@@ -19,10 +19,12 @@ import type { Branch, PredicateContext } from "./predicate.ts"
 import { isOptional } from "./rules/props.ts"
 import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
-export type DiscriminatedSwitch = {
+export type DiscriminatedSwitch<
+    kind extends DiscriminantKind = DiscriminantKind
+> = {
     readonly path: Path
-    readonly kind: DiscriminantKind
-    readonly cases: DiscriminatedCases
+    readonly kind: kind
+    readonly cases: DiscriminatedCases<kind>
 }
 
 export type DiscriminatedCases<
@@ -105,14 +107,12 @@ type CasesByDisjoint = {
 export type DiscriminantKinds = {
     domain: Domain
     subdomain: Subdomain
-    tupleLength: number
     value: unknown
 }
 
 const discriminantKinds: keySet<DiscriminantKind> = {
     domain: true,
     subdomain: true,
-    tupleLength: true,
     value: true
 }
 
@@ -275,8 +275,7 @@ const serializeIfPrimitive = (data: unknown) => {
 const caseSerializers: Record<DiscriminantKind, (data: unknown) => string> = {
     value: (data) => serializeIfPrimitive(data) ?? "default",
     subdomain: subdomainOf,
-    domain: domainOf,
-    tupleLength: (data) => (Array.isArray(data) ? `${data}` : "default")
+    domain: domainOf
 }
 
 export const serializeCase = <kind extends DiscriminantKind>(

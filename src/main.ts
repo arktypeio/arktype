@@ -2,13 +2,11 @@ import type { ResolvedNode, TraversalNode, TypeNode } from "./nodes/node.js"
 import { flattenNode } from "./nodes/node.js"
 import type {
     inferDefinition,
-    inferred,
     ParseContext,
     validateDefinition
 } from "./parse/definition.js"
-import { parseDefinition, t } from "./parse/definition.js"
+import { inferred, parseDefinition } from "./parse/definition.js"
 import type { ParsedMorph } from "./parse/tuple/morph.ts"
-import { TraversalState, traverse } from "./traverse/check.ts"
 import type {
     Problems,
     ProblemsConfig,
@@ -18,6 +16,7 @@ import {
     compileProblemOptions,
     defaultProblemWriters
 } from "./traverse/problems.ts"
+import { TraversalState, traverse } from "./traverse/traverse.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { Domain } from "./utils/domains.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
@@ -239,18 +238,8 @@ export class Scope<context extends ScopeContext = any> {
                     : { data, out }
             }
         }[name]
-        const type = Object.assign(namedTraverse, {
-            // temporarily set node/flat to aliases that will be included in
-            // the final type in case of cyclic resolutions
-            node: name,
-            flat: [["alias", name]],
-            config,
-            // TODO: remove this at runtime
-            [t]: chainableNoOpProxy,
-            infer: chainableNoOpProxy,
-            includesMorph: false,
-            scope: this
-        } satisfies TypeRoot)
+        // we need to assign this to a variable so we can reference it in namedTraverse
+        const type = Object.assign(namedTraverse, new TypeRoot(config, this))
         return type
     }
 
@@ -329,6 +318,21 @@ export class Scope<context extends ScopeContext = any> {
             return node
         }
         return this.resolveNode(this.resolve(node).node)
+    }
+}
+
+class TypeRoot<t = unknown> {
+    declare [inferred]: t
+    node: TypeNode
+    flat: TraversalNode
+    includesMorph = false
+    infer: asOut<t> = chainableNoOpProxy
+
+    constructor(public config: TypeConfig, public scope: Scope) {
+        // temporarily set node/flat to aliases that will be included in
+        // the final type in case of cyclic resolutions
+        this.node = config.name
+        this.flat = [["alias", config.name]]
     }
 }
 
@@ -508,18 +512,6 @@ export type Result<t> = xor<
 >
 
 type Checker<t> = (data: unknown) => Result<t>
-
-// TODO: add methods like .intersect, etc.
-// TODO: to class?
-type TypeRoot<t = unknown> = {
-    [t]: t
-    infer: asOut<t>
-    config: TypeConfig
-    node: TypeNode
-    flat: TraversalNode
-    includesMorph: boolean
-    scope: Scope
-}
 
 export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
 

@@ -1,5 +1,5 @@
 import type { Scanner } from "../../parse/string/shift/scanner.ts"
-import type { TraversalCheck } from "../../traverse/check.ts"
+import type { TraversalCheck } from "../../traverse/traverse.ts"
 import { sizeOf } from "../../utils/domains.ts"
 import { composeIntersection, equality, toComparator } from "../compose.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
@@ -48,6 +48,7 @@ export type FlatBound = {
     units: string
 }
 
+// TODO: flatten to individual comparators
 export const flattenRange: FlattenAndPushRule<Range> = (
     entries,
     range,

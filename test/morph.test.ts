@@ -175,13 +175,13 @@ describe("morph", () => {
             object: [
                 {
                     input: {
-                        subdomain: ["Array", "unknown", 1],
+                        subdomain: "Array",
                         props: { "0": "string" }
                     },
                     morph: "(function)"
                 },
                 {
-                    subdomain: ["Array", "unknown", 1],
+                    subdomain: "Array",
                     props: { "0": "boolean" }
                 }
             ]

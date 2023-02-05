@@ -16,21 +16,16 @@ import type { FlattenAndPushRule } from "./rules.ts"
 export type SubdomainRule<$ = Dict> =
     | Subdomain
     | readonly ["Array", TypeNode<$>]
-    | readonly ["Array", TypeNode<$>, number]
+    | readonly ["Array", TypeNode<$>]
     | readonly ["Set", TypeNode<$>]
     | readonly ["Map", TypeNode<$>, TypeNode<$>]
 
 export type TraversalSubdomainRule =
     | Subdomain
     | readonly ["Array", TraversalNode]
-    | readonly ["Array", TraversalNode, number]
+    | readonly ["Array", TraversalNode]
     | readonly ["Set", TraversalNode]
     | readonly ["Map", TraversalNode, TraversalNode]
-
-const isTupleRule = <rule extends List>(
-    rule: rule
-): rule is Extract<rule, ["Array", unknown, number]> =>
-    typeof rule[2] === "number"
 
 export const subdomainIntersection = composeIntersection<SubdomainRule>(
     (l, r, state) => {
@@ -51,18 +46,9 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
         const result = [l[0]] as unknown as mutable<
             Exclude<SubdomainRule, string>
         >
-        if (isTupleRule(l)) {
-            if (isTupleRule(r) && l[2] !== r[2]) {
-                return state.addDisjoint("tupleLength", l[2], r[2])
-            }
-            result[2] = l[2]
-        } else if (isTupleRule(r)) {
-            result[2] = r[2]
-        }
         let lImpliesR = true
         let rImpliesL = true
-        const maxNodeIndex = l[0] === "Map" ? 2 : 1
-        for (let i = 1; i <= maxNodeIndex; i++) {
+        for (let i = 1; i <= l.length; i++) {
             const lNode = l[i] as TypeNode
             const rNode = r[i] as TypeNode
             state.path.push(subdomainParameterToPathSegment(l[0], i))

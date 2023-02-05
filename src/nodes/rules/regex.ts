@@ -1,4 +1,4 @@
-import type { TraversalCheck } from "../../traverse/check.ts"
+import type { TraversalCheck } from "../../traverse/traverse.ts"
 import type { CollapsibleList } from "../../utils/generics.ts"
 import { composeIntersection } from "../compose.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"

@@ -71,10 +71,10 @@ export type validateDefinition<def, $> = def extends Terminal
           [k in keyof def]: validateDefinition<def[k], $>
       }>
 
-export const t = Symbol()
+export const inferred = Symbol()
 
 export type inferred<t> = {
-    [t]?: t
+    [inferred]?: t
 }
 
 export type unknownDefinitionMessage =

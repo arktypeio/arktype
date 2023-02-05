@@ -1,4 +1,4 @@
-import type { TraversalCheck } from "../../traverse/check.ts"
+import type { TraversalCheck } from "../../traverse/traverse.ts"
 import type { constructor } from "../../utils/generics.ts"
 import { composeIntersection, equality } from "../compose.ts"
 

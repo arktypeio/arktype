@@ -1,28 +1,31 @@
-import type { QualifiedTypeName, Type } from "../main.ts"
-import { serializeCase } from "../nodes/discriminate.ts"
+import type { QualifiedTypeName, Type } from "../main.js"
+import { serializeCase } from "../nodes/discriminate.js"
 import type {
     TraversalEntry,
     TraversalKey,
     TraversalNode
-} from "../nodes/node.ts"
-import { checkClass } from "../nodes/rules/class.ts"
-import { checkDivisor } from "../nodes/rules/divisor.ts"
-import type { TraversalPropEntry } from "../nodes/rules/props.ts"
-import { checkRange } from "../nodes/rules/range.ts"
-import { checkRegex } from "../nodes/rules/regex.ts"
-import { precedenceMap } from "../nodes/rules/rules.ts"
-import type { SizedData } from "../utils/domains.ts"
-import { domainOf, hasDomain, subdomainOf } from "../utils/domains.ts"
-import { throwInternalError } from "../utils/errors.ts"
-import type { Dict, extend, List } from "../utils/generics.ts"
-import { hasKey, keysOf } from "../utils/generics.ts"
-import { getPath, Path } from "../utils/paths.ts"
-import { stringify } from "../utils/serialize.ts"
-import { Problems } from "./problems.ts"
+} from "../nodes/node.js"
+import { checkClass } from "../nodes/rules/class.js"
+import { checkDivisor } from "../nodes/rules/divisor.js"
+import type { TraversalPropEntry } from "../nodes/rules/props.js"
+import { checkRange } from "../nodes/rules/range.js"
+import { checkRegex } from "../nodes/rules/regex.js"
+import { precedenceMap } from "../nodes/rules/rules.js"
+import type { SizedData, Subdomain } from "../utils/domains.js"
+import { domainOf, hasDomain, subdomainOf } from "../utils/domains.js"
+import { throwInternalError } from "../utils/errors.js"
+import type { Dict, extend, List } from "../utils/generics.js"
+import { hasKey, keysOf } from "../utils/generics.js"
+import { getPath, Path } from "../utils/paths.js"
+import type { SerializedPrimitive } from "../utils/serialize.js"
+import { deserializePrimitive, stringify } from "../utils/serialize.js"
+import type { Problem } from "./problems.js"
+import { Problems } from "./problems.js"
 
 export class TraversalState {
     path = new Path()
     problems = new Problems(this)
+    failFast = false
 
     #seen: { [name in QualifiedTypeName]?: object[] } = {}
 
@@ -55,22 +58,27 @@ export class TraversalState {
         }
     }
 
-    // TODO: add fast fail mode, use for unions
     traverseBranches(data: unknown, branches: TraversalEntry[][]) {
-        const baseProblems = this.problems
-        // TODO: Fix
-        const subproblems: Problems[] = []
+        const lastProblems = this.problems
+        const lastPath = this.path
+        const lastFailFast = this.failFast
+        this.failFast = true
+        const branchProblems: Problem[] = []
         for (const branch of branches) {
             this.problems = new Problems(this)
+            this.path = new Path()
             checkEntries(data, branch, this)
             if (!this.problems.length) {
-                this.problems = baseProblems
-                return
+                break
             }
-            subproblems.push(this.problems)
+            branchProblems.push(this.problems[0])
         }
-        this.problems = baseProblems
-        this.problems.add("branches", data, [])
+        this.failFast = lastFailFast
+        this.path = lastPath
+        this.problems = lastProblems
+        if (branchProblems.length === branches.length) {
+            this.problems.add("branches", data, branchProblems)
+        }
     }
 }
 
@@ -111,6 +119,9 @@ export const checkEntries = (
         } else {
             checkers[k](data as never, v as never, state)
             if (state.problems.length > initialProblemsCount) {
+                if (state.failFast) {
+                    return
+                }
                 problemsPrecedence = precedenceMap[k]
             }
         }
@@ -127,6 +138,7 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
             state.path.push(propKey)
             if (!hasKey(data, propKey)) {
                 if (propKind !== "optionalProps") {
+                    // TODO: update?
                     state.problems.add("missing", undefined, undefined)
                 }
             } else {
@@ -190,7 +202,7 @@ const checkers = {
         if (entries) {
             checkEntries(data, entries, state)
         } else {
-            state.problems.add("domains", data, keysOf(domains))
+            state.problems.add("domainBranches", data, keysOf(domains))
         }
     },
     domain: (data, domain, state) => {
@@ -209,9 +221,24 @@ const checkers = {
         if (hasKey(rule.cases, caseKey)) {
             return checkEntries(data, rule.cases[caseKey], state)
         }
+        const caseKeys = keysOf(rule.cases)
         const lastPath = state.path
         state.path = rule.path
-        state.problems.add("branches", data, [])
+        if (rule.kind === "value") {
+            state.problems.add(
+                "valueBranches",
+                dataAtPath,
+                caseKeys.map((k) =>
+                    deserializePrimitive(k as SerializedPrimitive)
+                )
+            )
+        } else {
+            state.problems.add(
+                "domainBranches",
+                dataAtPath,
+                caseKeys as Subdomain[]
+            )
+        }
         state.path = lastPath
     },
     alias: (data, name, state) => state.traverseResolution(data, name),
