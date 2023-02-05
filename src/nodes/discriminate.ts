@@ -1,5 +1,5 @@
 import type { Scope } from "../main.ts"
-import { undiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
+import { writeUndiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
 import type { Domain, Subdomain } from "../utils/domains.ts"
 import { domainOf, hasSubdomain, subdomainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
@@ -14,8 +14,8 @@ import type {
 import { serializePrimitive } from "../utils/serialize.ts"
 import type { Branches } from "./branches.ts"
 import { IntersectionState } from "./compose.ts"
-import type { TraversalEntry, TypeNode } from "./node.ts"
-import type { Branch, PredicateContext } from "./predicate.ts"
+import type { FlattenContext, TraversalEntry, TypeNode } from "./node.ts"
+import type { Branch } from "./predicate.ts"
 import { isOptional } from "./rules/props.ts"
 import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
@@ -33,7 +33,7 @@ export type DiscriminatedCases<
     [caseKey in CaseKey<kind>]?: TraversalEntry[]
 }
 
-export const flattenBranches = (branches: Branches, ctx: PredicateContext) => {
+export const flattenBranches = (branches: Branches, ctx: FlattenContext) => {
     const discriminants = calculateDiscriminants(branches, ctx)
     const indices = branches.map((_, i) => i)
     return discriminate(branches, indices, discriminants, ctx)
@@ -51,7 +51,7 @@ const discriminate = (
     originalBranches: Branches,
     remainingIndices: number[],
     discriminants: Discriminants,
-    ctx: PredicateContext
+    ctx: FlattenContext
 ): TraversalEntry[] => {
     if (remainingIndices.length === 1) {
         return flattenBranch(originalBranches[remainingIndices[0]], ctx)
@@ -120,7 +120,7 @@ export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 const calculateDiscriminants = (
     branches: Branches,
-    ctx: PredicateContext
+    ctx: FlattenContext
 ): Discriminants => {
     const discriminants: Discriminants = {
         disjointsByPair: {},
@@ -177,7 +177,9 @@ const calculateDiscriminants = (
                     morphBranches[rIndex] === true) &&
                 pairDisjoints.length === 0
             ) {
-                return throwParseError(undiscriminatableMorphUnionMessage)
+                return throwParseError(
+                    writeUndiscriminatableMorphUnionMessage(`${ctx.path}`)
+                )
             }
         }
     }

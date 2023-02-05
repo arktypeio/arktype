@@ -1,9 +1,11 @@
 import type { Type } from "../main.ts"
+import type { ParseContext } from "../parse/definition.ts"
 import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
 import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
+import { Path } from "../utils/paths.ts"
 import type { Intersector } from "./compose.ts"
 import {
     anonymousDisjoint,
@@ -138,9 +140,25 @@ export type BranchesEntry = ["branches", TraversalEntry[][]]
 
 export type SwitchEntry = ["switch", DiscriminatedSwitch]
 
-export const flattenNode = (node: TypeNode, type: Type): TraversalNode => {
+export type FlattenContext = ParseContext & {
+    lastDomain: Domain
+}
+
+export const flattenType = (type: Type) => {
+    const ctx: FlattenContext = {
+        type,
+        path: new Path(),
+        lastDomain: "undefined"
+    }
+    return flattenNode(type.node, ctx)
+}
+
+export const flattenNode = (
+    node: TypeNode,
+    ctx: FlattenContext
+): TraversalNode => {
     if (typeof node === "string") {
-        return type.scope.resolve(node).flat
+        return ctx.type.scope.resolve(node).flat
     }
     const domains = keysOf(node)
     if (domains.length === 1) {
@@ -149,14 +167,16 @@ export const flattenNode = (node: TypeNode, type: Type): TraversalNode => {
         if (predicate === true) {
             return domain
         }
-        const flatPredicate = flattenPredicate(predicate, { domain, type })
+        ctx.lastDomain = domain
+        const flatPredicate = flattenPredicate(predicate, ctx)
         return hasImpliedDomain(flatPredicate)
             ? flatPredicate
             : [["domain", domain], ...flatPredicate]
     }
     const result: mutable<DomainsEntry[1]> = {}
     for (const domain of domains) {
-        result[domain] = flattenPredicate(node[domain]!, { domain, type })
+        ctx.lastDomain = domain
+        result[domain] = flattenPredicate(node[domain]!, ctx)
     }
     return [["domains", result]]
 }

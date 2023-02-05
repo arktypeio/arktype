@@ -27,15 +27,13 @@ export type writeOpenRangeMessage<
     comparator extends MinComparator
 > = `Left bounds are only valid when paired with right bounds (try ...${comparator}${min})`
 
-type UnpairableComparator = Exclude<Scanner.Comparator, "<" | "<=">
-
 export type writeUnpairableComparatorMessage<
-    comparator extends UnpairableComparator
+    comparator extends Scanner.Comparator
 > =
     `Left-bounded expressions must specify their limits using < or <= (was ${comparator})`
 
 export const writeUnpairableComparatorMessage = <
-    comparator extends UnpairableComparator
+    comparator extends Scanner.Comparator
 >(
     comparator: comparator
 ): writeUnpairableComparatorMessage<comparator> =>

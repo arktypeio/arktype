@@ -101,15 +101,7 @@ export const flattenSubdomain: FlattenAndPushRule<SubdomainRule> = (
         "subdomain",
         typeof rule === "string"
             ? rule
-            : ([
-                  rule[0],
-                  flattenNode(rule[1], ctx.type),
-                  ...(rule.length === 3
-                      ? [
-                            typeof rule[2] === "number"
-                                ? rule[2]
-                                : flattenNode(rule[2], ctx.type)
-                        ]
-                      : [])
-              ] as any)
+            : rule[0] === "Map"
+            ? [rule[0], flattenNode(rule[1], ctx), flattenNode(rule[2], ctx)]
+            : [rule[0], flattenNode(rule[1], ctx)]
     ])

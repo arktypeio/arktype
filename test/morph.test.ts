@@ -2,7 +2,7 @@ import { describe, it } from "mocha"
 import type { Type } from "../api.ts"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { undiscriminatableMorphUnionMessage } from "../src/parse/string/ast.ts"
+import { writeUndiscriminatableMorphUnionMessage } from "../src/parse/string/ast.ts"
 import type { Out } from "../src/parse/tuple/morph.ts"
 
 describe("morph", () => {
@@ -207,8 +207,7 @@ describe("morph", () => {
                 // @ts-expect-error
                 c: "a|b"
             }).compile()
-            // TODO: add root path
-        }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
+        }).throwsAndHasTypeError(writeUndiscriminatableMorphUnionMessage("/"))
     })
     it("deep double intersection", () => {
         attest(() => {
@@ -218,7 +217,6 @@ describe("morph", () => {
                 // @ts-expect-error
                 c: "a&b"
             }).compile()
-            // TODO: Add which alias the error occurred in
         }).throwsAndHasTypeError(
             "At a: Intersection of morphs results in an unsatisfiable type"
         )
@@ -231,7 +229,7 @@ describe("morph", () => {
                 // @ts-expect-error
                 c: "a|b"
             }).compile()
-        }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
+        }).throwsAndHasTypeError(writeUndiscriminatableMorphUnionMessage("/"))
     })
     it("deep undiscriminated reference", () => {
         attest(() => {
@@ -241,7 +239,7 @@ describe("morph", () => {
                 // @ts-expect-error
                 c: "a|b"
             }).compile()
-        }).throwsAndHasTypeError(undiscriminatableMorphUnionMessage)
+        }).throwsAndHasTypeError(writeUndiscriminatableMorphUnionMessage("/"))
     })
     it("array double intersection", () => {
         attest(() => {
@@ -254,5 +252,17 @@ describe("morph", () => {
         }).throwsAndHasTypeError(
             "At ${number}/a: Intersection of morphs results in an unsatisfiable type"
         )
+    })
+    it("undiscriminated morph at path", () => {
+        attest(() => {
+            scope({
+                a: { a: ["string", "=>", (s) => s.trim()] },
+                b: { b: "boolean" },
+                // @ts-expect-error
+                c: { key: "a|b" }
+            }).compile()
+        })
+            .throws(writeUndiscriminatableMorphUnionMessage("key"))
+            .type.errors(writeUndiscriminatableMorphUnionMessage("/"))
     })
 })

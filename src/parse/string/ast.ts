@@ -211,10 +211,15 @@ type writeImplicitNeverMessage<
     ? ""
     : `${description} `}results in an unsatisfiable type`
 
-export const undiscriminatableMorphUnionMessage = `A union including one or more morphs must be discriminatable`
+export const writeUndiscriminatableMorphUnionMessage = <path extends string>(
+    path: path
+) =>
+    `${
+        path === "/" ? "A" : `At ${path}, a`
+    } union including one or more morphs must be discriminatable`
 
 type undiscriminatableMorphUnionMessage =
-    typeof undiscriminatableMorphUnionMessage
+    `A union including one or more morphs must be discriminatable`
 
 type isNonLiteralNumber<t> = t extends number
     ? number extends t

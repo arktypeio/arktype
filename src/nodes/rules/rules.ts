@@ -1,4 +1,3 @@
-import type { Type } from "../../main.ts"
 import { writeImplicitNeverMessage } from "../../parse/string/ast.ts"
 import type { Morph } from "../../parse/tuple/morph.ts"
 import type { Narrow } from "../../parse/tuple/narrow.ts"
@@ -18,8 +17,8 @@ import {
     isDisjoint,
     isEquality
 } from "../compose.ts"
-import type { TraversalEntry } from "../node.ts"
-import type { PredicateContext } from "../predicate.ts"
+import type { FlattenContext, TraversalEntry } from "../node.ts"
+
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
@@ -178,10 +177,7 @@ export const narrowableRulesIntersection =
 export type FlattenAndPushRule<t> = (
     entries: RuleEntry[],
     rule: t,
-    context: {
-        domain: Domain
-        type: Type
-    }
+    ctx: FlattenContext
 ) => void
 
 type UnknownRules = NarrowableRules & Partial<LiteralRules>
@@ -240,7 +236,7 @@ export const precedenceMap: {
 
 export const flattenBranch = (
     branch: Branch,
-    ctx: PredicateContext
+    ctx: FlattenContext
 ): FlatBranch => {
     if ("morph" in branch) {
         const result = flattenRules(branch.input, ctx) as FlatMorphedBranch
@@ -250,10 +246,7 @@ export const flattenBranch = (
     return flattenRules(branch, ctx)
 }
 
-const flattenRules = (
-    rules: UnknownRules,
-    ctx: PredicateContext
-): FlatBranch => {
+const flattenRules = (rules: UnknownRules, ctx: FlattenContext): FlatBranch => {
     const entries: RuleEntry[] = []
     let k: keyof UnknownRules
     for (k in rules) {

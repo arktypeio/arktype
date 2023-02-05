@@ -1,5 +1,5 @@
 import type { ResolvedNode, TraversalNode, TypeNode } from "./nodes/node.js"
-import { flattenNode } from "./nodes/node.js"
+import { flattenType } from "./nodes/node.js"
 import type {
     inferDefinition,
     ParseContext,
@@ -205,7 +205,7 @@ export class Scope<context extends ScopeContext = any> {
         )
         const ctx = this.#initializeContext(result)
         result.node = this.resolveNode(parseDefinition(def, ctx))
-        result.flat = flattenNode(result.node, result)
+        result.flat = flattenType(result)
         return result
     }) as TypeParser<resolutions<context>>
 
@@ -309,7 +309,7 @@ export class Scope<context extends ScopeContext = any> {
             resolution = this.#resolveRecurse(resolution, "throw", seen).node
         }
         result.node = resolution
-        result.flat = flattenNode(resolution, result)
+        result.flat = flattenType(result)
         return result
     }
 

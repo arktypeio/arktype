@@ -68,11 +68,13 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
     const optionalProps: TraversalPropEntry[] = []
     for (const k in props) {
         const prop = props[k]
+        ctx.path.push(k)
         if (isOptional(prop)) {
-            optionalProps.push([k, flattenNode(prop[1], ctx.type)])
+            optionalProps.push([k, flattenNode(prop[1], ctx)])
         } else {
-            requiredProps.push([k, flattenNode(prop, ctx.type)])
+            requiredProps.push([k, flattenNode(prop, ctx)])
         }
+        ctx.path.pop()
     }
     if (requiredProps.length) {
         entries.push(["requiredProps", requiredProps])

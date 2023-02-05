@@ -9,7 +9,7 @@ import { compareBranches, isBranchComparison } from "./branches.ts"
 import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
 import { equality, IntersectionState, isEquality } from "./compose.ts"
 import { flattenBranches } from "./discriminate.ts"
-import type { ResolvedNode, TraversalEntry } from "./node.ts"
+import type { FlattenContext, ResolvedNode, TraversalEntry } from "./node.ts"
 import type { LiteralRules, Rules } from "./rules/rules.ts"
 import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
@@ -135,14 +135,9 @@ export const predicateUnion = (
     ])
 }
 
-export type PredicateContext = {
-    domain: Domain
-    type: Type
-}
-
 export const flattenPredicate = (
     predicate: Predicate,
-    context: PredicateContext
+    context: FlattenContext
 ): TraversalEntry[] => {
     if (predicate === true) {
         return []
