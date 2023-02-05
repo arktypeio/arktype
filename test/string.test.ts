@@ -48,7 +48,6 @@ describe("regex intersections", () => {
             }
         })
     })
-    // TODO: Use set comparisons https://github.com/arktypeio/arktype/issues/557
     it("string and list", () => {
         attest(type(["/a/", "&", "/b/&/c/"]).node).snap({
             string: { regex: ["b", "c", "a"] }

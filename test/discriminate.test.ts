@@ -5,7 +5,6 @@ import { attest } from "../dev/attest/api.ts"
 describe("discriminate", () => {
     it("shallow", () => {
         const t = type("'a'|'b'|'c'")
-        // TODO: Prune
         attest(t.flat).snap([
             ["domain", "string"],
             [

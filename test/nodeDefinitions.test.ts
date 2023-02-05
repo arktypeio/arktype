@@ -2,6 +2,7 @@ import { describe, it } from "mocha"
 import type { Type } from "../api.ts"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
+import type { Out } from "../src/parse/tuple/morph.ts"
 
 describe("node definitions", () => {
     it("base", () => {
@@ -97,6 +98,24 @@ describe("node definitions", () => {
               }
             | number[]
     })
+    it("morph", () => {
+        const t = type([
+            "node",
+            {
+                object: {
+                    input: { props: { a: "string" } },
+                    morph: (input: { a: string }) => ({
+                        b: input.a.length
+                    })
+                }
+            }
+        ])
+        attest(t).typed as Type<
+            (In: { a: string }) => Out<{
+                b: number
+            }>
+        >
+    })
     it("bad shallow reference", () => {
         // @ts-expect-error
         attest(() => type(["node", "whoops"])).type.errors(
@@ -117,5 +136,20 @@ describe("node definitions", () => {
                 }
             ])
         ).type.errors(`Type '"whoops"' is not assignable to type 'Prop<{}>'`)
+    })
+    it("rule in wrong domain", () => {
+        attest(() =>
+            type([
+                "node",
+                {
+                    number: {
+                        // @ts-expect-error
+                        regex: "/.*/"
+                    }
+                }
+            ])
+        ).type.errors(
+            `'regex' does not exist in type 'CollapsibleList<Branch<"number", PrecompiledDefaults>>'`
+        )
     })
 })

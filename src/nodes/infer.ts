@@ -1,29 +1,44 @@
 import type { inferTerminal } from "../parse/string/ast.js"
+import type { Morph, Out } from "../parse/tuple/morph.js"
 import type {
     Domain,
     inferDomain,
     inferSubdomain,
     Subdomain
 } from "../utils/domains.js"
-import type { evaluate, HomogenousTuple, List } from "../utils/generics.js"
-import type { TypeNode } from "./node.js"
+import type {
+    evaluate,
+    HomogenousTuple,
+    List,
+    returnOf
+} from "../utils/generics.js"
+import type { ResolvedNode, TypeNode } from "./node.js"
 import type { Predicate } from "./predicate.js"
 import type { OptionalProp, PropsRule } from "./rules/props.js"
 import type { Bound, Range } from "./rules/range.js"
-import type { LiteralRules, NarrowableRules } from "./rules/rules.js"
+import type {
+    LiteralRules,
+    MorphBranch,
+    NarrowableRules
+} from "./rules/rules.js"
 import type { SubdomainRule } from "./rules/subdomain.js"
 
-// TODO: Fix morph, narrow inference
 export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
     ? inferTerminal<node, $>
-    : {
-          [domain in keyof node]: inferPredicate<
-              // @ts-expect-error Some very odd inference behavior related to domain I can't resolve
-              domain,
-              node[domain],
-              $
-          >
-      }[keyof node]
+    : node extends ResolvedNode<$>
+    ? inferResolution<node, $>
+    : never
+
+export type inferResolution<node extends ResolvedNode<$>, $> = evaluate<
+    {
+        [domain in keyof node]: inferPredicate<
+            // @ts-expect-error Some very odd inference behavior related to domain I can't resolve
+            domain,
+            node[domain],
+            $
+        >
+    }[keyof node]
+>
 
 type inferPredicate<
     domain extends Domain,
@@ -31,25 +46,29 @@ type inferPredicate<
     $
 > = predicate extends true
     ? inferDomain<domain>
-    : inferCondition<domain, conditionFrom<predicate>, $>
+    : inferBranch<domain, conditionFrom<predicate>, $>
 
 type conditionFrom<predicate extends Predicate> = predicate extends List
     ? predicate[number]
     : predicate
 
-type inferCondition<
-    domain extends Domain,
-    condition,
-    $
-> = condition extends LiteralRules
-    ? condition["value"]
+type inferBranch<domain extends Domain, branch, $> = branch extends MorphBranch
+    ? (
+          In: inferBranch<domain, branch["input"], $>
+      ) => Out<
+          branch["morph"] extends [...unknown[], infer tail extends Morph]
+              ? returnOf<tail>
+              : returnOf<branch["morph"]>
+      >
+    : branch extends LiteralRules
+    ? branch["value"]
     : domain extends "object"
-    ? condition extends NarrowableRules
-        ? inferObject<condition, $>
+    ? branch extends NarrowableRules
+        ? inferObjectRules<branch, $>
         : object
     : inferDomain<domain>
 
-type inferObject<rules extends NarrowableRules, $> = evaluate<
+type inferObjectRules<rules extends NarrowableRules, $> = evaluate<
     (rules["subdomain"] extends SubdomainRule
         ? inferSubdomainRule<rules["subdomain"], rules["range"], $>
         : unknown) &

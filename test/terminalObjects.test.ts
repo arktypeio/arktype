@@ -8,12 +8,11 @@ describe("terminal objects", () => {
         attest(t.infer).typed as string
         attest(t.node).equals({ string: { regex: ".*" } })
     })
-    // TODO: fix
-    // it("type", () => {
-    //     const t = type({
-    //         a: type("string")
-    //     })
-    //     attest(t.infer).typed as { a: string }
-    //     attest(t.root).equals({ object: { props: { a: "string" } } })
-    // })
+    it("type", () => {
+        const t = type({
+            a: type("string")
+        })
+        attest(t.infer).typed as { a: string }
+        attest(t.node).equals({ object: { props: { a: { string: true } } } })
+    })
 })

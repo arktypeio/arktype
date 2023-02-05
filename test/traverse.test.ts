@@ -50,7 +50,6 @@ describe("traverse", () => {
         })
         attest(isEven(3).problems?.summary).snap("3 is not a multiple of 2!")
     })
-    // TODO: more domain tests
     it("domains", () => {
         const basic = type("string|number[]")
         const check = basic(2)

@@ -37,7 +37,6 @@ describe("tuple expression", () => {
             bigint: true
         })
     })
-    // TODO: Add tuple expression semantic validation test
     describe("errors", () => {
         it("missing right operand", () => {
             // @ts-expect-error
