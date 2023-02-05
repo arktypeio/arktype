@@ -101,7 +101,7 @@ ArkType supports many of TypeScript's built-in types and operators, as well as s
 
 If you're interested in contributing to ArkType...
 
-1.  Thank you 😍 We'll do everything we can to make this as straightforward as possible, regardless of your level of experience.
+1.  Thank you! We'll do everything we can to make this as straightforward as possible, regardless of your level of experience.
 2.  Check out our [guide](./CONTRIBUTING.md) to get started!
 
 ## License

@@ -25,7 +25,7 @@ jobs:
               run: pnpm lint
 
             - name: Test
-              run: pnpm testRepo
+              run: pnpm test
 
     compatibility:
         needs: core
@@ -53,11 +53,11 @@ jobs:
                   node: ${{ matrix.node }}
 
             - name: Test
-              run: pnpm testRepo
+              run: pnpm test
 
     prChecks:
         needs: compatibility
         timeout-minutes: 1
         runs-on: ubuntu-latest
         steps:
-            - run: echo All checks succeeded! 🚢
+            - run: echo All checks succeeded! ⛵
