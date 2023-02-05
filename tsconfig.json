@@ -2,17 +2,24 @@
     "compilerOptions": {
         "module": "NodeNext",
         "target": "ESNext",
-        "moduleResolution": "NodeNext",
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
         "skipLibCheck": true,
         "strict": true,
         "isolatedModules": true,
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "composite": true,
-        "jsx": "react",
-        "lib": ["ESNext"]
+        "exactOptionalPropertyTypes": true,
+        "noErrorTruncation": true,
+        "lib": ["ESNext"],
+        "paths": {
+            "get-current-line": [
+                "./node_modules/get-current-line/compiled-types/index.d.ts"
+            ]
+        }
     },
-    "exclude": ["**/node_modules", "**/dist"],
+    "exclude": ["dev/arktype.io", "**/node_modules", "**/dist"],
     "ts-node": {
         "esm": true,
         "swc": true,

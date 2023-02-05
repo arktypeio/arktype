@@ -5,15 +5,26 @@
     "eslint.codeActionsOnSave.rules": [
         "import/order",
         "sort-imports",
-        "unicorn/prefer-node-protocol"
+        "import/no-duplicates",
+        "unicorn/prefer-node-protocol",
+        "@typescript-eslint/consistent-type-imports",
+        "object-shorthand"
     ],
-    "typescript.tsdk": "./node_modules/typescript/lib",
-    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "prettier.ignorePath": "dev/configs/.prettierignore",
     "mochaExplorer.nodeArgv": [
         "--loader=ts-node/esm",
         "--no-warnings=ExperimentalWarning"
     ],
     "mochaExplorer.env": {
-        "RE_ASSERT_CMD": "--skipTypes"
-    }
+        "ARKTYPE_CHECK_CMD": "--skipTypes"
+    },
+    "testExplorer.useNativeTesting": true,
+    "typescript.tsdk": "./node_modules/typescript/lib",
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "typescript.tsserver.experimental.enableProjectDiagnostics": true,
+    "typescript.preferences.autoImportFileExcludePatterns": [
+        "dist",
+        "node_modules"
+    ],
+    "deno.enable": false
 }
