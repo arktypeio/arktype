@@ -120,8 +120,6 @@ export const Problems: new (state: TraversalState) => readonly Problem[] & {
 
 export type Problems = instanceOf<typeof Problems>
 
-const uncapitalize = (s: string) => s[0].toLowerCase() + s.slice(1)
-
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1)
 
 export const describeSubdomains = (subdomains: Subdomain[]) => {

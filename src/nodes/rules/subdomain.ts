@@ -48,7 +48,7 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
         >
         let lImpliesR = true
         let rImpliesL = true
-        for (let i = 1; i <= l.length; i++) {
+        for (let i = 1; i < l.length; i++) {
             const lNode = l[i] as TypeNode
             const rNode = r[i] as TypeNode
             state.path.push(subdomainParameterToPathSegment(l[0], i))

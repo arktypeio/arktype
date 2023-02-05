@@ -16,7 +16,14 @@ describe("parse array", () => {
 
     it("subdomain intersection", () => {
         const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
-        attest(t.node).snap()
+        attest(t.node).snap({
+            object: {
+                subdomain: [
+                    "Array",
+                    { object: { props: { a: "string", b: "number" } } }
+                ]
+            }
+        })
     })
 
     describe("errors", () => {
