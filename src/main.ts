@@ -200,7 +200,7 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     type = ((def, opts: TypeOptions = {}) => {
-        const result = initializeType(opts, this)
+        const result = initializeType(def, opts, this)
         const ctx = this.#initializeContext(result)
         result.node = this.resolveNode(parseDefinition(def, ctx))
         result.flat = flattenType(result)
@@ -265,11 +265,11 @@ export class Scope<context extends ScopeContext = any> {
             ) as ResolveResult<onUnresolvable>
         }
         // TODO: opts?
-        const result = initializeType({ name }, this)
-        this.#resolutions.set(name, result)
-        this.#exports.set(name, result)
-        const ctx = this.#initializeContext(result)
-        let resolution = parseDefinition(this.aliases[name], ctx)
+        const type = initializeType(this.aliases[name], { name }, this)
+        this.#resolutions.set(name, type)
+        this.#exports.set(name, type)
+        const ctx = this.#initializeContext(type)
+        let resolution = parseDefinition(type.meta.definition, ctx)
         if (typeof resolution === "string") {
             if (seen.includes(resolution)) {
                 return throwParseError(
@@ -279,9 +279,9 @@ export class Scope<context extends ScopeContext = any> {
             seen.push(resolution)
             resolution = this.#resolveRecurse(resolution, "throw", seen).node
         }
-        result.node = resolution
-        result.flat = flattenType(result)
-        return result
+        type.node = resolution
+        type.flat = flattenType(type)
+        return type
     }
 
     resolveNode(node: TypeNode): ResolvedNode {
@@ -292,9 +292,9 @@ export class Scope<context extends ScopeContext = any> {
     }
 }
 
-type TypeRoot<inferred = unknown> = {
-    [as]: inferred
-    infer: asOut<inferred>
+type TypeRoot<t = unknown> = {
+    [as]: t
+    infer: asOut<t>
     node: TypeNode
     flat: TraversalNode
     meta: TypeMeta
@@ -303,20 +303,26 @@ type TypeRoot<inferred = unknown> = {
 type TypeMeta = {
     name: string
     id: QualifiedTypeName
+    definition: unknown
     scope: Scope
     problems: ProblemsConfig
     includesMorph: boolean
 }
 
 // TODO: merge scope options
-const initializeType = (opts: TypeOptions, scope: Scope) => {
+const initializeType = (
+    definition: unknown,
+    opts: TypeOptions,
+    scope: Scope
+) => {
     const name = opts.name ?? scope.createAnonymousTypeName()
     const meta: TypeMeta = {
         name,
         id: `${scope.name}.${name}`,
+        definition,
+        scope,
         problems: compileProblemOptions(opts.problems),
-        includesMorph: false,
-        scope
+        includesMorph: false
     }
 
     const root = {
