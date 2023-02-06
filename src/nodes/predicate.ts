@@ -3,7 +3,7 @@ import type { Morph } from "../parse/tuple/morph.ts"
 import type { Domain } from "../utils/domains.ts"
 import { hasSubdomain } from "../utils/domains.ts"
 import type { CollapsibleList, defined, Dict, xor } from "../utils/generics.ts"
-import { collapseIfSingleton, keysOf, listFrom } from "../utils/generics.ts"
+import { keysOf, listFrom } from "../utils/generics.ts"
 import type { Branches, BranchesComparison } from "./branches.ts"
 import { compareBranches, isBranchComparison } from "./branches.ts"
 import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
@@ -61,13 +61,13 @@ export const comparePredicates = (
         return equality()
     }
     if (
-        comparison.lSubconditionsOfR.length + comparison.equalities.length ===
+        comparison.lExtendsR.length + comparison.equalities.length ===
         lBranches.length
     ) {
         return l
     }
     if (
-        comparison.rSubconditionsOfL.length + comparison.equalities.length ===
+        comparison.rExtendsL.length + comparison.equalities.length ===
         rBranches.length
     ) {
         return r
@@ -83,18 +83,18 @@ export const predicateIntersection: KeyIntersectionFn<
     if (!isBranchComparison(comparison)) {
         return comparison
     }
-    return collapseIfSingleton([
+    const resultBranches = [
         ...comparison.distinctIntersections,
         ...comparison.equalities.map(
-            (indices) => comparison.lConditions[indices[0]]
+            (indices) => comparison.lBranches[indices[0]]
         ),
-        ...comparison.lSubconditionsOfR.map(
-            (lIndex) => comparison.lConditions[lIndex]
-        ),
-        ...comparison.rSubconditionsOfL.map(
-            (rIndex) => comparison.rConditions[rIndex]
-        )
-    ])
+        ...comparison.lExtendsR.map((lIndex) => comparison.lBranches[lIndex]),
+        ...comparison.rExtendsL.map((rIndex) => comparison.rBranches[rIndex])
+    ]
+    if (resultBranches.length === 0) {
+        state.addDisjoint("union", comparison.lBranches, comparison.rBranches)
+    }
+    return resultBranches.length === 1 ? resultBranches[0] : resultBranches
 }
 
 export const predicateUnion = (
@@ -117,22 +117,23 @@ export const predicateUnion = (
             ? true
             : ([emptyRulesIfTrue(l), emptyRulesIfTrue(r)] as [Branch, Branch])
     }
-    return collapseIfSingleton([
-        ...comparison.lConditions.filter(
+    const resultBranches = [
+        ...comparison.lBranches.filter(
             (_, lIndex) =>
-                !comparison.lSubconditionsOfR.includes(lIndex) &&
+                !comparison.lExtendsR.includes(lIndex) &&
                 !comparison.equalities.some(
                     (indexPair) => indexPair[0] === lIndex
                 )
         ),
-        ...comparison.rConditions.filter(
+        ...comparison.rBranches.filter(
             (_, rIndex) =>
-                !comparison.rSubconditionsOfL.includes(rIndex) &&
+                !comparison.rExtendsL.includes(rIndex) &&
                 !comparison.equalities.some(
                     (indexPair) => indexPair[1] === rIndex
                 )
         )
-    ])
+    ]
+    return resultBranches.length === 1 ? resultBranches[0] : resultBranches
 }
 
 export const flattenPredicate = (
