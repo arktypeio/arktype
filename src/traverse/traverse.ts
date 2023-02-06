@@ -32,8 +32,8 @@ export class TraversalState {
     constructor(public type: Type) {}
 
     traverseResolution(data: unknown, name: string) {
-        const resolution = this.type.scope.resolve(name)
-        const id = resolution.config.id
+        const resolution = this.type.meta.scope.resolve(name)
+        const id = resolution.meta.id
         const isObject = hasDomain(data, "object")
         if (isObject) {
             if (hasKey(this.#seen, id)) {

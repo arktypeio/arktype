@@ -79,7 +79,7 @@ class ProblemArray extends Array<Problem> {
             Path.from(this.state.path),
             data,
             input,
-            this.state.type.config.problems[code]
+            this.state.type.meta.problems[code]
         )
         const pathKey = `${this.state.path}`
         // TODO: Fix multi

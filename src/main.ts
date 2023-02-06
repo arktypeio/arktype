@@ -1,21 +1,20 @@
 import type { ResolvedNode, TraversalNode, TypeNode } from "./nodes/node.js"
 import { flattenType } from "./nodes/node.js"
 import type {
+    as,
     inferDefinition,
+    inferred,
     ParseContext,
     validateDefinition
 } from "./parse/definition.js"
-import { inferred, parseDefinition } from "./parse/definition.js"
+import { parseDefinition } from "./parse/definition.js"
 import type { ParsedMorph } from "./parse/tuple/morph.ts"
 import type {
     Problems,
     ProblemsConfig,
     ProblemsOptions
 } from "./traverse/problems.ts"
-import {
-    compileProblemOptions,
-    defaultProblemWriters
-} from "./traverse/problems.ts"
+import { compileProblemOptions } from "./traverse/problems.ts"
 import { TraversalState, traverse } from "./traverse/traverse.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import type { Domain } from "./utils/domains.js"
@@ -161,6 +160,7 @@ export class Scope<context extends ScopeContext = any> {
     parseCache = new FreezingCache<TypeNode>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
+    #anonymousTypeCount = 0
 
     constructor(public aliases: Dict, public opts: ScopeOptions) {
         this.name = this.#register(opts)
@@ -180,7 +180,7 @@ export class Scope<context extends ScopeContext = any> {
             ? scopeRegistry[opts.name]
                 ? throwParseError(`A scope named '${opts.name}' already exists`)
                 : opts.name
-            : `scope${++anonymousScopeCount}`
+            : `anonymousScope${++anonymousScopeCount}`
         scopeRegistry[name] = this
         return name
     }
@@ -200,24 +200,12 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     type = ((def, opts: TypeOptions = {}) => {
-        const result = this.#initializeUnparsedType(
-            this.#compileTypeConfig(opts)
-        )
+        const result = initializeType(opts, this)
         const ctx = this.#initializeContext(result)
         result.node = this.resolveNode(parseDefinition(def, ctx))
         result.flat = flattenType(result)
         return result
     }) as TypeParser<resolutions<context>>
-
-    #compileTypeConfig(opts: TypeOptions): TypeConfig {
-        // TODO: merge scope options?
-        const typeName = opts.name ?? "(anonymous)"
-        return {
-            name: typeName,
-            id: `${this.name}.${typeName}`,
-            problems: compileProblemOptions(opts.problems)
-        }
-    }
 
     #initializeContext(type: Type): ParseContext {
         return {
@@ -226,21 +214,8 @@ export class Scope<context extends ScopeContext = any> {
         }
     }
 
-    #initializeUnparsedType(config: TypeConfig): Type {
-        const name = config.name
-        // dynamically assign a name to the primary traversal function
-        const namedTraverse: Checker<unknown> = {
-            [name]: (data: unknown) => {
-                const state = new TraversalState(type)
-                const out = traverse(data, type.flat, state)
-                return state.problems.length
-                    ? { problems: state.problems }
-                    : { data, out }
-            }
-        }[name]
-        // we need to assign this to a variable so we can reference it in namedTraverse
-        const type = Object.assign(namedTraverse, new TypeRoot(config, this))
-        return type
+    createAnonymousTypeName() {
+        return `anonymousType${++this.#anonymousTypeCount}`
     }
 
     get infer(): exportsOf<context> {
@@ -263,7 +238,7 @@ export class Scope<context extends ScopeContext = any> {
         if (!resolution) {
             return false
         }
-        ctx.type.includesMorph ||= resolution.includesMorph
+        ctx.type.meta.includesMorph ||= resolution.meta.includesMorph
         return true
     }
 
@@ -290,11 +265,7 @@ export class Scope<context extends ScopeContext = any> {
             ) as ResolveResult<onUnresolvable>
         }
         // TODO: opts?
-        const result = this.#initializeUnparsedType({
-            name,
-            id: `${this.name}.${name}`,
-            problems: defaultProblemWriters
-        })
+        const result = initializeType({ name }, this)
         this.#resolutions.set(name, result)
         this.#exports.set(name, result)
         const ctx = this.#initializeContext(result)
@@ -321,19 +292,59 @@ export class Scope<context extends ScopeContext = any> {
     }
 }
 
-class TypeRoot<t = unknown> {
-    declare [inferred]: t
+type TypeRoot<inferred = unknown> = {
+    [as]: inferred
+    infer: asOut<inferred>
     node: TypeNode
     flat: TraversalNode
-    includesMorph = false
-    infer: asOut<t> = chainableNoOpProxy
+    meta: TypeMeta
+}
 
-    constructor(public config: TypeConfig, public scope: Scope) {
-        // temporarily set node/flat to aliases that will be included in
-        // the final type in case of cyclic resolutions
-        this.node = config.name
-        this.flat = [["alias", config.name]]
+type TypeMeta = {
+    name: string
+    id: QualifiedTypeName
+    scope: Scope
+    problems: ProblemsConfig
+    includesMorph: boolean
+}
+
+// TODO: merge scope options
+const initializeType = (opts: TypeOptions, scope: Scope) => {
+    const name = opts.name ?? scope.createAnonymousTypeName()
+    const meta: TypeMeta = {
+        name,
+        id: `${scope.name}.${name}`,
+        problems: compileProblemOptions(opts.problems),
+        includesMorph: false,
+        scope
     }
+
+    const root = {
+        // temporarily initialize node/flat to aliases that will be included in
+        // the final type in case of cyclic resolutions
+        node: name,
+        flat: [["alias", name]],
+        meta,
+        infer: chainableNoOpProxy
+        // the "as" symbol from inferred is not used at runtime, so we check
+        // that the rest of the type is correct then cast it
+    } satisfies Omit<TypeRoot, typeof as> as TypeRoot
+
+    // dynamically assign a name to the primary traversal function
+    const namedTraverse: Checker<unknown> = {
+        [name]: (data: unknown) => {
+            const state = new TraversalState(type)
+            const out = traverse(data, type.flat, state)
+            return state.problems.length
+                ? { problems: state.problems }
+                : { data, out }
+        }
+    }[name]
+
+    // we need to assign this to a variable before returning so we can reference
+    // it in namedTraverse
+    const type: Type = Object.assign(namedTraverse, root)
+    return type
 }
 
 type OnUnresolvable = "throw" | "undefined"

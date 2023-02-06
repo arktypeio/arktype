@@ -6,7 +6,9 @@ import { parseDefinition } from "../definition.ts"
 import type { PrefixParser } from "./tuple.ts"
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
-    const resolution = ctx.type.scope.resolveNode(parseDefinition(def[1], ctx))
+    const resolution = ctx.type.meta.scope.resolveNode(
+        parseDefinition(def[1], ctx)
+    )
 
     if (!resolutionExtendsDomain(resolution, "object")) {
         return throwParseError("never")
