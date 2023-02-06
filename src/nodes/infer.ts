@@ -1,5 +1,5 @@
 import type { inferTerminal } from "../parse/string/ast.js"
-import type { Morph, Out } from "../parse/tuple/morph.js"
+import type { Out } from "../parse/tuple/morph.js"
 import type {
     Domain,
     inferDomain,
@@ -46,21 +46,23 @@ type inferPredicate<
     $
 > = predicate extends true
     ? inferDomain<domain>
-    : inferBranch<domain, conditionFrom<predicate>, $>
+    : inferBranch<domain, branchFrom<predicate>, $>
 
-type conditionFrom<predicate extends Predicate> = predicate extends List
+type branchFrom<predicate extends Predicate> = predicate extends List
     ? predicate[number]
     : predicate
 
 type inferBranch<domain extends Domain, branch, $> = branch extends MorphBranch
-    ? (
-          In: inferBranch<domain, branch["input"], $>
-      ) => Out<
-          branch["morph"] extends [...unknown[], infer tail extends Morph]
-              ? returnOf<tail>
-              : returnOf<branch["morph"]>
-      >
+    ? inferMorph<domain, branch, $>
     : inferRules<domain, branch, $>
+
+type inferMorph<domain extends Domain, branch extends MorphBranch, $> = (
+    In: inferBranch<domain, branch["input"], $>
+) => Out<
+    branch["morph"] extends [...unknown[], infer tail]
+        ? returnOf<tail>
+        : returnOf<branch["morph"]>
+>
 
 type inferRules<domain extends Domain, branch, $> = branch extends LiteralRules
     ? branch["value"]

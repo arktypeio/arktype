@@ -11,15 +11,23 @@ describe("morph", () => {
         attest(t).typed as Type<(In: boolean) => Out<string>>
         attest(t.infer).typed as string
         attest(t.node).snap({ boolean: { input: {}, morph: "(function)" } })
-        attest(t(true).data).equals(true).typed as boolean | undefined
-        attest(t(true).out).equals("true").typed as string | undefined
+        const result = t(true)
+        if (result.problems) {
+            return result.problems.throw()
+        }
+        attest(result.data).equals(true).typed as boolean
+        attest(result.out).equals("true").typed as string
         attest(t("foo").problems?.summary).snap("Must be boolean (was string)")
     })
     it("endomorph", () => {
         const t = type(["boolean", "=>", (data) => !data])
         attest(t).typed as Type<(In: boolean) => Out<boolean>>
-        attest(t(true).data).equals(true).typed as boolean | undefined
-        attest(t(true).out).equals(false).typed as boolean | undefined
+        const result = t(true)
+        if (result.problems) {
+            return result.problems.throw()
+        }
+        attest(result.data).equals(true).typed as boolean
+        attest(result.out).equals(false).typed as boolean
     })
     it("object inference", () => {
         const t = type([{ a: "string" }, "=>", (data) => `${data}`])

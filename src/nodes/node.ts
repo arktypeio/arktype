@@ -39,8 +39,8 @@ export type ResolvedNode<$ = Dict> = {
 
 export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
     state.domain = undefined
-    const lResolution = state.type.scope.resolveNode(l)
-    const rResolution = state.type.scope.resolveNode(r)
+    const lResolution = state.type.meta.scope.resolveNode(l)
+    const rResolution = state.type.meta.scope.resolveNode(r)
     const result = resolutionIntersection(lResolution, rResolution, state)
     if (typeof result === "object" && !hasKeys(result)) {
         return hasKeys(state.disjoints)
@@ -82,8 +82,8 @@ export const intersection = (
 }
 
 export const union = (l: TypeNode, r: TypeNode, type: Type): ResolvedNode => {
-    const lResolution = type.scope.resolveNode(l)
-    const rResolution = type.scope.resolveNode(r)
+    const lResolution = type.meta.scope.resolveNode(l)
+    const rResolution = type.meta.scope.resolveNode(r)
     const result = {} as mutable<ResolvedNode>
     const domains = keysOf({ ...lResolution, ...rResolution })
     for (const domain of domains) {
@@ -158,7 +158,7 @@ export const flattenNode = (
     ctx: FlattenContext
 ): TraversalNode => {
     if (typeof node === "string") {
-        return ctx.type.scope.resolve(node).flat
+        return ctx.type.meta.scope.resolve(node).flat
     }
     const domains = keysOf(node)
     if (domains.length === 1) {

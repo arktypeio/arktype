@@ -11,6 +11,7 @@ import {
 import type {
     constructor,
     evaluate,
+    evaluateObject,
     instanceOf,
     requireKeys
 } from "../utils/generics.ts"
@@ -79,7 +80,7 @@ class ProblemArray extends Array<Problem> {
             Path.from(this.state.path),
             data,
             input,
-            this.state.type.config.problems[code]
+            this.state.type.meta.problems[code]
         )
         const pathKey = `${this.state.path}`
         // TODO: Fix multi
@@ -344,7 +345,7 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
     }
 })
 
-export type ProblemsOptions = evaluate<
+export type ProblemsOptions = evaluateObject<
     { all?: ProblemOptions<ProblemCode> } & {
         [code in ProblemCode]?: ProblemOptions<code>
     }

@@ -9,6 +9,7 @@ import type {
     equals,
     error,
     evaluate,
+    evaluateObject,
     extractValues,
     isAny,
     List,
@@ -107,7 +108,7 @@ type inferIntersectionRecurse<
     ? (In: evaluate<rIn & l>) => Out<rOut>
     : [l, r] extends [Dict, Dict]
     ? bubblePropErrors<
-          evaluate<
+          evaluateObject<
               {
                   [k in stringKeyOf<l>]: k extends keyof r
                       ? inferIntersectionRecurse<l[k], r[k], [...path, k]>
