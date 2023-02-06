@@ -25,10 +25,10 @@ type DemoAdapter = [importFromDemo: string, dataFromImports: string]
 const demoAdapters: Record<EmbedId, DemoAdapter> = {
     type: [
         `const { user, data, problems } = await import("./type")`,
-        `{ definition: user.meta.definition, data, error: problems?.summary }`
+        `{ type: user, data, problems }`
     ],
     scope: [
         `const { types, data, problems } = await import("./scope")`,
-        "{ definition: types.package.meta.definition, data, error: problems?.summary }"
+        "{ type: types.package, data, problems }"
     ]
 }
