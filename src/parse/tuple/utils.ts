@@ -3,7 +3,7 @@ import type { NarrowableRules } from "../../nodes/rules/rules.ts"
 import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
-import type { evaluate } from "../../utils/generics.ts"
+import type { evaluateObject } from "../../utils/generics.ts"
 import { keysOf } from "../../utils/generics.ts"
 import { stringify } from "../../utils/serialize.ts"
 import type { ParseContext } from "../definition.ts"
@@ -20,7 +20,7 @@ export type distributable<f extends DistributableFunction> =
 
 type distributeFunction<f extends DistributableFunction> =
     f extends DistributableFunction<infer input, infer args, infer output>
-        ? evaluate<{
+        ? evaluateObject<{
               [domain in domainOf<input>]?: (
                   input: unknown extends input
                       ? unknown

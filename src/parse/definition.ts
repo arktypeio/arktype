@@ -6,7 +6,7 @@ import { subdomainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type {
     Dict,
-    evaluate,
+    evaluateObject,
     isAny,
     isUnknown,
     List
@@ -67,7 +67,7 @@ export type validateDefinition<def, $> = def extends Terminal
     ? writeBadDefinitionTypeMessage<subdomainOf<def>>
     : isUnknown<def> extends true
     ? unknownDefinitionMessage
-    : evaluate<{
+    : evaluateObject<{
           [k in keyof def]: validateDefinition<def[k], $>
       }>
 

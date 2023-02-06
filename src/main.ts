@@ -24,7 +24,7 @@ import type {
     defer,
     Dict,
     error,
-    evaluate,
+    evaluateObject,
     extend,
     isAny,
     List,
@@ -134,7 +134,7 @@ type bootstrapScope<aliases, opts extends ScopeOptions> = {
     [k in keyof aliases]: alias<aliases[k]>
 } & preresolved<opts>
 
-type inferExports<aliases, opts extends ScopeOptions> = evaluate<
+type inferExports<aliases, opts extends ScopeOptions> = evaluateObject<
     {
         [k in keyof aliases]: inferDefinition<
             aliases[k],
@@ -467,7 +467,7 @@ export const spaces = {
 // This is just copied from the inference of defaultScope. Creating an explicit
 // type like this makes validation for the default type and scope functions feel
 // significantly more responsive.
-type PrecompiledDefaults = {
+export type PrecompiledDefaults = {
     email: string
     alphanumeric: string
     alpha: string

@@ -11,6 +11,7 @@ import {
 import type {
     constructor,
     evaluate,
+    evaluateObject,
     instanceOf,
     requireKeys
 } from "../utils/generics.ts"
@@ -344,7 +345,7 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
     }
 })
 
-export type ProblemsOptions = evaluate<
+export type ProblemsOptions = evaluateObject<
     { all?: ProblemOptions<ProblemCode> } & {
         [code in ProblemCode]?: ProblemOptions<code>
     }
