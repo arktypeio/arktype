@@ -260,5 +260,5 @@ export const literalSatisfiesRules = (
     rules: NarrowableRules,
     state: IntersectionState
 ) =>
-    "data" in
-    state.type.meta.scope.type(["node", { [state.domain!]: rules }])(data)
+    !state.type.meta.scope.type(["node", { [state.domain!]: rules }])(data)
+        .problems
