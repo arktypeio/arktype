@@ -47,7 +47,7 @@ const snapshotRecurse = (
     switch (domainOf(v)) {
         case "object":
             if (typeof v === "function") {
-                return alwaysIncludeOptions.onFunction(v)
+                return stringifyOpts.onFunction(v)
             }
             if (seen.includes(v)) {
                 return "(cycle)"
@@ -62,7 +62,7 @@ const snapshotRecurse = (
             }
             return result
         case "symbol":
-            return alwaysIncludeOptions.onSymbol(v as symbol)
+            return stringifyOpts.onSymbol(v as symbol)
         case "bigint":
             return `${v}n`
         case "undefined":
@@ -72,42 +72,50 @@ const snapshotRecurse = (
     }
 }
 
-export const serialize = (data: unknown, opts: SerializationOptions = {}) => {
+export const serialize = (
+    data: unknown,
+    opts: SerializationOptions = {},
+    indent?: number
+) => {
     const seen: unknown[] = []
-    return JSON.stringify(data, (k, v) => {
-        switch (domainOf(v)) {
-            case "object":
-                if (seen.includes(v)) {
-                    return opts.onCycle?.(v)
-                }
-                if (typeof v === "function") {
-                    return opts.onFunction?.(v)
-                }
-                return v
-            case "undefined":
-                return "undefined"
-            case "symbol":
-                return opts.onSymbol?.(v)
-            case "bigint":
-                return `${v}n`
-            default:
-                return v
-        }
-    })
+    return JSON.stringify(
+        data,
+        (k, v) => {
+            switch (domainOf(v)) {
+                case "object":
+                    if (seen.includes(v)) {
+                        return opts.onCycle?.(v)
+                    }
+                    if (typeof v === "function") {
+                        return opts.onFunction?.(v)
+                    }
+                    return v
+                case "undefined":
+                    return "undefined"
+                case "symbol":
+                    return opts.onSymbol?.(v)
+                case "bigint":
+                    return `${v}n`
+                default:
+                    return v
+            }
+        },
+        indent
+    )
 }
 
-const alwaysIncludeOptions = {
+const stringifyOpts = {
     onCycle: () => "(cycle)",
     onSymbol: (v) => `(symbol${v.description && ` ${v.description}`})`,
     onFunction: (v) => `(function${v.name && ` ${v.name}`})`
 } satisfies SerializationOptions
 
-export const stringify = (data: unknown) => {
+export const stringify = (data: unknown, indent?: number) => {
     switch (domainOf(data)) {
         case "object":
-            return serialize(data, alwaysIncludeOptions)
+            return serialize(data, stringifyOpts, indent)
         case "symbol":
-            return alwaysIncludeOptions.onSymbol(data as symbol)
+            return stringifyOpts.onSymbol(data as symbol)
         default:
             return serializePrimitive(data as SerializablePrimitive)
     }

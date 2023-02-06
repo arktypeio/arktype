@@ -26,6 +26,7 @@
         "framer-motion": "6.5.1"
     },
     "devDependencies": {
+        "arktype": "link:../..",
         "@docusaurus/module-type-aliases": "2.3.1",
         "@docusaurus/types": "2.3.1",
         "@tsconfig/docusaurus": "1.0.6",
