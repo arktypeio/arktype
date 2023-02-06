@@ -422,12 +422,15 @@ const ts = scope(
         unknown: ["node", always] as inferred<unknown>,
         void: ["node", { undefined: true }] as inferred<void>,
         undefined: ["node", { undefined: true }],
-        // TODO: Add remaining JS object types
         Function: [
             "node",
             { object: { subdomain: "Function" } }
             // TODO: defer to fix instanceof inference
-        ] as inferred<Function>
+        ] as inferred<Function>,
+        Array: ["node", { object: { subdomain: "Array" } }] as inferred<
+            Array<unknown>
+        >,
+        Date: ["node", { object: { subdomain: "Date" } }] as inferred<Date>
     },
     { name: "ts", standard: false }
 )
@@ -496,6 +499,8 @@ export type PrecompiledDefaults = {
     void: void
     undefined: undefined
     Function: Function
+    Array: unknown[]
+    Date: Date
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
