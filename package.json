@@ -30,6 +30,7 @@
         "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test && pnpm buildDocs",
         "typecheck": "tsc --noEmit",
         "build": "ts-node ./dev/scripts/build.ts",
+        "buildRepo": "pnpm build && pnpm buildDocs",
         "buildDocs": "pnpm docgen && cd dev/arktype.io && pnpm install && pnpm build",
         "docgen": "ts-node ./dev/scripts/docgen.ts",
         "test": "ts-node ./dev/attest/cli.ts --cmd mocha",
