@@ -28,8 +28,7 @@ import type {
     extend,
     isAny,
     List,
-    nominal,
-    xor
+    nominal
 } from "./utils/generics.js"
 import { Path } from "./utils/paths.ts"
 import type { stringifyUnion } from "./utils/unionToTuple.js"
@@ -341,9 +340,11 @@ const initializeType = (
         [name]: (data: unknown) => {
             const state = new TraversalState(type)
             const out = traverse(data, type.flat, state)
-            return state.problems.length
-                ? { problems: state.problems }
-                : { data, out }
+            return (
+                state.problems.length
+                    ? { data, problems: state.problems }
+                    : { data, out }
+            ) as CheckResult<unknown>
         }
     }[name]
 
@@ -520,15 +521,21 @@ export type parseType<def, $> = def extends validateDefinition<def, $>
     ? Type<inferDefinition<def, $>>
     : never
 
-export type Result<t> = xor<
-    {
-        data: asIn<t>
-        out: asOut<t>
-    },
-    { problems: Problems }
->
+export type CheckResult<t> = ValidCheckResult<t> | InvalidCheckResult
 
-type Checker<t> = (data: unknown) => Result<t>
+type ValidCheckResult<t> = {
+    data: asIn<t>
+    out: asOut<t>
+    problems?: never
+}
+
+type InvalidCheckResult = {
+    data: unknown
+    problems: Problems
+    out?: never
+}
+
+type Checker<t> = (data: unknown) => CheckResult<t>
 
 export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
 
