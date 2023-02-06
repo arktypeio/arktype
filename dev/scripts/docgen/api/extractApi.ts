@@ -111,11 +111,6 @@ const extractExportData = (
     name: string,
     declarations: ExportedDeclarations[]
 ): ExportData => {
-    if (declarations.length > 1) {
-        throw new Error(
-            `More than one declaration for ${name} is not supported.`
-        )
-    }
     const declaration = declarations[0]
     return {
         name,
