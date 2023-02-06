@@ -1,5 +1,11 @@
 # arktype
 
+## 0.1.2
+
+### Patch Changes
+
+-   6956bae: allow access to internal API through arktype/internal
+
 ## 0.1.1
 
 ### Patch Changes
