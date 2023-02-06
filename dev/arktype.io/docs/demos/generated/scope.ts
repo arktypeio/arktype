@@ -1,11 +1,10 @@
-export default `import { scope } from "../api.js"
+export default `import { scope } from "arktype"
 
 // Scopes are collections of types that can reference each other.
 export const types = scope({
     package: {
         name: "string",
         "dependencies?": "package[]",
-        "devDependencies?": "package[]",
         "contributors?": "contributor[]"
     },
     contributor: {
@@ -19,16 +18,12 @@ export const types = scope({
 export type Package = typeof types.package.infer
 
 // And can validate cyclic data.
-export const readPackageData = () => {
-    const packageData: Package = {
-        name: "arktype",
-        dependencies: [],
-        devDependencies: [{ name: "typescript" }],
-        contributors: [{ email: "david@sharktypeio" }]
-    }
-    packageData.devDependencies![0].dependencies = [packageData]
-    return packageData
+const packageData: Package = {
+    name: "arktype",
+    dependencies: [{ name: "typescript" }],
+    contributors: [{ email: "david@sharktypeio" }]
 }
+packageData.dependencies![0].dependencies = [packageData]
 
-export const { problems } = types.package(readPackageData())
+export const { data, problems } = types.package(packageData)
 `

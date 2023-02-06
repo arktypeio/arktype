@@ -42,7 +42,7 @@ export class DynamicState {
 
     resolveRoot() {
         this.assertHasRoot()
-        return this.ctx.type.scope.resolveNode(this.root!)
+        return this.ctx.type.meta.scope.resolveNode(this.root!)
     }
 
     rootToString() {
@@ -54,7 +54,7 @@ export class DynamicState {
         this.assertHasRoot()
         const resolution =
             typeof this.root === "string"
-                ? this.ctx.type.scope.resolveNode(this.root)
+                ? this.ctx.type.meta.scope.resolveNode(this.root)
                 : this.root!
         if (isLiteralNode(resolution, "number")) {
             const limit = resolution.number.value

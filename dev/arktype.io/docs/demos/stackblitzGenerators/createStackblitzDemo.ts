@@ -1,18 +1,19 @@
 import sdk from "@stackblitz/sdk"
+import scopeContents from "../generated/scope"
+import typeContents from "../generated/type"
 import { buildStackblitzIndexText } from "./buildStackblitzIndexText"
 import { defaultStaticFiles } from "./defaultFiles"
-import {
-    addonFilesByEmdedId,
-    contentsByEmbedId,
-    getAddonFiles
-} from "./rawDemoFiles"
 
 export const embedIds = { type: 1, scope: 1 }
 export type EmbedId = keyof typeof embedIds
-export type AddonFile = never
+
 export type DemoProps = {
     embedId: EmbedId
-    addonFiles?: AddonFile[]
+}
+
+export const contentsByEmbedId: Record<EmbedId, string> = {
+    type: typeContents,
+    scope: scopeContents
 }
 
 export const DEMO_ELEMENT_ID = "arktype-demo"
@@ -24,11 +25,10 @@ export const createStackblitzDemo = async ({ embedId }: DemoProps) =>
             files: {
                 [`${embedId}.ts`]: contentsByEmbedId[embedId],
                 "index.ts": buildStackblitzIndexText(embedId),
-                ...defaultStaticFiles,
-                ...getAddonFiles(addonFilesByEmdedId[embedId] ?? [])
+                ...defaultStaticFiles
             },
             title: embedId,
-            description: `Demo for ${embedId}`,
+            description: `ArkType ${embedId} demo`,
             template: "typescript",
             dependencies: {
                 // @lineFrom:package.json:version => "arktype": {?},

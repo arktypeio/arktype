@@ -14,27 +14,28 @@ export type castWithExclusion<t, castTo, excluded> = t extends excluded
 
 export type Literalable = string | boolean | number | bigint
 
-/**
- * Note: Similarly to asConst, trying to evaluate 'unknown'
- * directly (i.e. not nested in an object) leads to the type '{}',
- * but I'm unsure how to fix this without breaking the types that rely on it.
- */
-export type evaluate<t> = {
-    [k in keyof t]: t[k]
-} & unknown
+export type evaluate<t> = isTopType<t> extends true
+    ? t
+    : t extends (...args: infer args) => infer ret
+    ? (...args: args) => ret
+    : evaluateObject<t>
+
+export type evaluateObject<t> = { [k in keyof t]: t[k] } & unknown
 
 /** Causes a type that would be eagerly calculated to be displayed as-is.
  *  WARNING: Makes t NonNullable as a side effect.
  */
 export type defer<t> = t & {}
 
-export type merge<base, merged> = evaluate<Omit<base, keyof merged> & merged>
+export type merge<base, merged> = evaluateObject<
+    Omit<base, keyof merged> & merged
+>
 
 /** Replace existing keys of o without altering readonly or optional modifiers  */
 export type replaceProps<
     o,
     replacements extends { -readonly [k in keyof o]?: unknown }
-> = evaluate<{
+> = evaluateObject<{
     [k in keyof o]: k extends keyof replacements ? replacements[k] : o[k]
 }>
 
@@ -260,5 +261,5 @@ export const collapseIfSingleton = <t extends List>(array: t): t | t[number] =>
  * B, with all properties of A undefined
  **/
 export type xor<a, b> =
-    | evaluate<a & { [k in keyof b]?: undefined }>
-    | evaluate<b & { [k in keyof a]?: undefined }>
+    | evaluateObject<a & { [k in keyof b]?: undefined }>
+    | evaluateObject<b & { [k in keyof a]?: undefined }>

@@ -127,7 +127,7 @@ const calculateDiscriminants = (
         casesByDisjoint: {}
     }
     const morphBranches = branches.map((branch) =>
-        branchIncludesMorph(branch, ctx.type.scope)
+        branchIncludesMorph(branch, ctx.type.meta.scope)
     )
     for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
         for (let rIndex = lIndex + 1; rIndex < branches.length; rIndex++) {
@@ -310,7 +310,7 @@ const branchIncludesMorph = (branch: Branch, $: Scope) =>
 
 const nodeIncludesMorph = (node: TypeNode, $: Scope): boolean =>
     typeof node === "string"
-        ? $.resolve(node).includesMorph
+        ? $.resolve(node).meta.includesMorph
         : Object.values(node).some((predicate) =>
               predicate === true
                   ? false

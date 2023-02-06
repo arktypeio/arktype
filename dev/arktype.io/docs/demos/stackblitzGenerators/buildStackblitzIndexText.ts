@@ -24,11 +24,11 @@ type DemoAdapter = [importFromDemo: string, dataFromImports: string]
 
 const demoAdapters: Record<EmbedId, DemoAdapter> = {
     type: [
-        `const { user, fetchUser, errors } = await import("./type")`,
-        `{ definition: user.definition, data: fetchUser(), error: errors?.summary }`
+        `const { user, data, problems } = await import("./type")`,
+        `{ definition: user.definition, data, error: problems?.summary }`
     ],
     scope: [
-        `const { types, readPackageData, errors } = await import("./scope")`,
-        "{ definition: types.$root.dictionary, data: readPackageData(), error: errors?.summary }"
+        `const { types, data, problems } = await import("./scope")`,
+        "{ definition: types.package.meta.definition, data, error: problems?.summary }"
     ]
 }
