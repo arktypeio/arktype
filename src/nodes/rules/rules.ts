@@ -120,7 +120,11 @@ export const branchIntersection: Intersector<Branch> = (l, r, state) => {
             }
             return state.lastOperator === "&"
                 ? throwParseError(
-                      writeImplicitNeverMessage(state.path, "of morphs")
+                      writeImplicitNeverMessage(
+                          state.path,
+                          "Intersection",
+                          "of morphs"
+                      )
                   )
                 : {}
         }

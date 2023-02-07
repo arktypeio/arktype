@@ -1,6 +1,7 @@
-import type { Type } from "../api.ts"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
+import { writeImplicitNeverMessage } from "../src/parse/string/ast.ts"
+import { Path } from "../src/utils/paths.ts"
 
 describe("keyof", () => {
     it("object literal", () => {
@@ -16,20 +17,27 @@ describe("keyof", () => {
         attest(t.infer).typed as "b"
         attest(t.node).snap({ string: [{ value: "b" }] })
     })
+    const expectedNeverKeyOfMessage = writeImplicitNeverMessage(
+        new Path(),
+        "keyof"
+    )
     it("non-overlapping union", () => {
-        const t = type(["keyof", [{ a: "number" }, "|", { b: "number" }]])
-        attest(t).typed as Type<never>
-        attest(t.node).snap({ string: [] })
+        attest(() =>
+            // @ts-expect-error
+            type(["keyof", [{ a: "number" }, "|", { b: "number" }]])
+        ).throwsAndHasTypeError(expectedNeverKeyOfMessage)
     })
     it("non-object", () => {
-        const t = type(["keyof", "string"])
-        attest(t).typed as Type<never>
-        attest(t.node).snap({ string: [] })
+        // @ts-expect-error
+        attest(() => type(["keyof", "string"])).throwsAndHasTypeError(
+            expectedNeverKeyOfMessage
+        )
     })
     it("union including non-object", () => {
-        const t = type(["keyof", [{ a: "number" }, "|", "string"]])
-        attest(t).typed as Type<never>
-        attest(t.node).snap({ string: [] })
+        attest(() =>
+            // @ts-expect-error
+            type(["keyof", [{ a: "number" }, "|", "string"]])
+        ).throwsAndHasTypeError(expectedNeverKeyOfMessage)
     })
     it("tuple", () => {
         const t = type(["keyof", ["string", "number"]])
@@ -38,8 +46,9 @@ describe("keyof", () => {
     })
     it("array", () => {
         // conservatively inferred as never pending https://github.com/arktypeio/arktype/issues/605
-        const t = type(["keyof", "unknown[]"])
-        attest(t).typed as Type<never>
-        attest(t.node).snap({ string: [] })
+        attest(() =>
+            // @ts-expect-error
+            type(["keyof", "unknown[]"])
+        ).throwsAndHasTypeError(expectedNeverKeyOfMessage)
     })
 })
