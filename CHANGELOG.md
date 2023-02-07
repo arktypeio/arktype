@@ -1,5 +1,12 @@
 # arktype
 
+## 0.1.4
+
+### Patch Changes
+
+-   27f2ec8c: improve duplicate alias error messages for scope imports
+-   27f2ec8c: add validation for keyof operands
+
 ## 0.1.3
 
 ### Patch Changes
