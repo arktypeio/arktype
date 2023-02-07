@@ -1,4 +1,4 @@
-export default `import "./demo.css"
+import "./demo.css"
 import type { Problems, Type } from "arktype"
 import { stringify } from "arktype/internal/utils/serialize.js"
 
@@ -18,12 +18,12 @@ export const populateDemo = ({ data, type, problems }: PopulateDemoArgs) => {
 
     const resultElement = document.querySelector("#result")!
     if (problems) {
-        resultElement.textContent = \`❌ Problems:\n\n\${problems}\`
+        resultElement.textContent = `❌ Problems:\n\n${problems}`
     } else {
-        resultElement.textContent = \`✅ Output:\n\n\${stringify(
+        resultElement.textContent = `✅ Output:\n\n${stringify(
             type(data).out,
             2
-        )}\`
+        )}`
         resultElement.innerHTML = recolor(resultElement.innerHTML)
     }
 }
@@ -34,7 +34,7 @@ const recolor = (input: string) => {
     for (const line of lines) {
         if (line.includes(":")) {
             const parts = line.split(":")
-            fixedInput.push(\`\${buildKey(parts[0])}: \${buildVal(parts[1])}\`)
+            fixedInput.push(`${buildKey(parts[0])}: ${buildVal(parts[1])}`)
         } else {
             fixedInput.push(line)
         }
@@ -43,15 +43,14 @@ const recolor = (input: string) => {
 }
 
 const buildKey = (key: string) => {
-    return \`<span class='key'>\${key}</span>\`
+    return `<span class='key'>${key}</span>`
 }
 const buildVal = (val: string) => {
     const formatted = val.trim()
     if (formatted[formatted.length - 1] === ",") {
-        return \`<span class='val'>\${formatted.replace(",", "")}</span>,\`
+        return `<span class='val'>${formatted.replace(",", "")}</span>,`
     } else if (formatted[formatted.length - 1] === "{") {
         return "{"
     }
-    return \`<span class='val'>\${formatted}</span>\`
+    return `<span class='val'>${formatted}</span>`
 }
-`
