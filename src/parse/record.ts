@@ -67,10 +67,13 @@ type optionalKeyOf<def> = {
     [k in keyof def]: parseKey<k> extends KeyParseResult<infer name, true>
         ? name
         : never
-}[keyof def]
+}[keyof def] &
+    // ensure keyof is fully evaluated for inferred types
+    unknown
 
 type requiredKeyOf<def> = {
     [k in keyof def]: parseKey<k> extends KeyParseResult<infer name, false>
         ? name
         : never
-}[keyof def]
+}[keyof def] &
+    unknown
