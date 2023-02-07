@@ -4,7 +4,7 @@
 </div>
 <div align="center">
 
-Isomorphic type syntax for TS/JS
+Isomorphic types for TS/JS
 
 </div>
 

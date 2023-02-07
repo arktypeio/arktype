@@ -170,6 +170,12 @@ describe("range", () => {
                     writeOpenRangeMessage(3, ">")
                 )
             })
+            it("unpaired left group", () => {
+                // @ts-expect-error
+                attest(() => type("(-1<=number)")).throws(
+                    writeOpenRangeMessage(-1, ">=")
+                )
+            })
             it("double left", () => {
                 // @ts-expect-error
                 attest(() => type("3<5<8")).throwsAndHasTypeError(

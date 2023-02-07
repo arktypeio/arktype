@@ -10,6 +10,7 @@ import type {
     requireKeys
 } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
+import { isWellFormedInteger } from "../utils/numericLiterals.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { objectKindDescriptions, objectKindOf } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
@@ -248,7 +249,11 @@ const writeDefaultProblemReason: ReasonWriter = (mustBe, was) =>
     `must be ${mustBe}${was && ` (was ${was})`}`
 
 const writeDefaultProblemMessage: MessageWriter = (reason, path) =>
-    path.length ? `${path} ${reason}` : capitalize(reason)
+    path.length === 0
+        ? capitalize(reason)
+        : path.length === 1 && isWellFormedInteger(path[0])
+        ? `Item at index ${path[0]} ${reason}`
+        : `${path} ${reason}`
 
 const compileDefaultProblemWriters = (definitions: {
     [code in ProblemCode]: ProblemDefinition<code>
