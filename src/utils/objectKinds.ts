@@ -1,5 +1,5 @@
 import { domainOf } from "./domains.ts"
-import type { constructor, Dict, instanceOf, isTopType } from "./generics.ts"
+import type { constructor, instanceOf, isTopType } from "./generics.ts"
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
@@ -19,6 +19,30 @@ const defaultObjectKinds = {
     WeakSet,
     Promise
 } satisfies ObjectKindSet
+
+export type InferredObjectKinds = {
+    [kind in DefaultObjectKind]: inferObjectKind<kind>
+}
+
+export type inferObjectKind<
+    kind extends keyof kinds,
+    kinds extends ObjectKindSet = DefaultObjectKindSet
+> = kind extends "Function"
+    ? (...args: any[]) => unknown
+    : kind extends "Object"
+    ? Record<string, unknown>
+    : instanceOf<kinds[kind]>
+
+export type BuiltinClassName = Exclude<
+    DefaultObjectKind,
+    "Object" | "Function" | "Array"
+>
+
+type BuiltinClassesByName = {
+    [kind in BuiltinClassName]: instanceOf<DefaultObjectKindSet[kind]>
+}
+
+export type BuiltinClass = BuiltinClassesByName[BuiltinClassName]
 
 export type ObjectKindSet = Record<string, constructor>
 
@@ -64,15 +88,6 @@ export const objectKindOf = <
     }
     return prototype?.constructor?.name as objectKindOf<data, kinds>
 }
-
-export type inferObjectKind<
-    kind extends keyof kinds,
-    kinds extends ObjectKindSet = DefaultObjectKindSet
-> = kind extends "Function"
-    ? (...args: any[]) => unknown
-    : kind extends "Object"
-    ? Dict
-    : instanceOf<kinds[kind]>
 
 export const hasObjectKind = <
     kind extends keyof kinds,

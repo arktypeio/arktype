@@ -1,4 +1,3 @@
-import type { PrecompiledDefaults } from "../main.js"
 import type { inferTerminal } from "../parse/string/ast.js"
 import type { Out } from "../parse/tuple/morph.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
@@ -6,15 +5,13 @@ import type {
     evaluate,
     evaluateObject,
     HomogenousTuple,
-    instanceOf,
     List,
     returnOf
 } from "../utils/generics.js"
 import type {
+    BuiltinClass,
     DefaultObjectKind,
-    DefaultObjectKindSet,
-    inferObjectKind,
-    objectKindOf
+    inferObjectKind
 } from "../utils/objectKinds.js"
 import type { ResolvedNode, TypeNode } from "./node.js"
 import type { Predicate } from "./predicate.js"
@@ -26,14 +23,6 @@ import type {
     MorphBranch,
     NarrowableRules
 } from "./rules/rules.js"
-
-type BuiltinClassName = Exclude<DefaultObjectKind, "Object" | "Function">
-
-type BuiltinClassesByName = {
-    [kind in BuiltinClassName]: instanceOf<DefaultObjectKindSet[kind]>
-}
-
-type BuiltinClass = BuiltinClassesByName[BuiltinClassName]
 
 export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
     ? inferTerminal<node, $>

@@ -15,23 +15,23 @@ while (i < 50) {
 suite("scope", () => {
     bench("validate recursive", () => {
         recursive.dejaVu(dejaVu)
-    }).median()
+    }).median([11.21, "us"])
 
     bench("cyclic(10)", () => {
         const types = scope(cyclic10).compile()
     })
-        .median([35.48, "us"])
-        .type([3065, "instantiations"])
+        .median([47.02, "us"])
+        .type([2467, "instantiations"])
 
     bench("cyclic(100)", () => {
         const types = scope(cyclic100).compile()
     })
-        .median([348.78, "us"])
-        .type([15197, "instantiations"])
+        .median([417.71, "us"])
+        .type([14599, "instantiations"])
 
     bench("cyclic(500)", () => {
         const types = scope(cyclic500).compile()
     })
-        .median([2.31, "ms"])
-        .type([67493, "instantiations"])
+        .median([2.62, "ms"])
+        .type([66895, "instantiations"])
 })
