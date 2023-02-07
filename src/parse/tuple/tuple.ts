@@ -9,7 +9,6 @@ import type {
     conform,
     constructor,
     error,
-    evaluate,
     List,
     returnOf
 } from "../../utils/generics.ts"
@@ -22,6 +21,7 @@ import { parseDefinition } from "../definition.ts"
 import type { inferIntersection, inferUnion } from "../string/ast.ts"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
+import type { inferKeyOfExpression, validateKeyOfExpression } from "./keyof.ts"
 import { parseKeyOfTuple } from "./keyof.ts"
 import type { Out, validateMorphTuple } from "./morph.ts"
 import { parseMorphTuple } from "./morph.ts"
@@ -77,7 +77,7 @@ export type validateTupleExpression<
     : def[0] extends "node"
     ? conform<def, readonly ["node", ResolvedNode<$>]>
     : def[0] extends "keyof"
-    ? ["keyof", validateDefinition<def[1], $>]
+    ? validateKeyOfExpression<def[1], $>
     : never
 
 export type inferTuple<def extends List, $> = def extends TupleExpression
@@ -86,7 +86,10 @@ export type inferTuple<def extends List, $> = def extends TupleExpression
           [i in keyof def]: inferDefinition<def[i], $>
       }
 
-type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
+export type inferTupleExpression<
+    def extends TupleExpression,
+    $
+> = def[1] extends ":"
     ? "3" extends keyof def
         ? inferDefinition<def[3], $>
         : inferDefinition<def[0], $>
@@ -115,8 +118,7 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
         ? inferNode<def[1], $>
         : never
     : def[0] extends "keyof"
-    ? //TODO: keyof vs keyOf
-      evaluate<keyof inferDefinition<def[1], $>>
+    ? inferKeyOfExpression<def[1], $>
     : never
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
@@ -153,11 +155,8 @@ export type TupleExpressionToken = PrefixToken | PostfixToken
 
 type PostfixToken = "[]" | "&" | "|" | ":" | "=>"
 
-type PostfixExpression<token extends PostfixToken = PostfixToken> = readonly [
-    unknown,
-    token,
-    ...unknown[]
-]
+export type PostfixExpression<token extends PostfixToken = PostfixToken> =
+    readonly [unknown, token, ...unknown[]]
 
 const isPostfixExpression = (def: List): def is PostfixExpression =>
     postfixParsers[def[1] as PostfixToken] !== undefined
@@ -174,10 +173,8 @@ const postfixParsers: {
 
 type PrefixToken = "keyof" | "instanceof" | "===" | "node"
 
-type PrefixExpression<token extends PrefixToken = PrefixToken> = readonly [
-    token,
-    ...unknown[]
-]
+export type PrefixExpression<token extends PrefixToken = PrefixToken> =
+    readonly [token, ...unknown[]]
 
 const prefixParsers: {
     [token in PrefixToken]: PrefixParser<token>

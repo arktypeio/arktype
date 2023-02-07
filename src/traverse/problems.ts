@@ -145,7 +145,6 @@ export const describeBranches = (descriptions: string[]) => {
     return description
 }
 
-// TODO: change to input args
 type ProblemRuleInputs = {
     divisor: number
     class: constructor

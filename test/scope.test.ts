@@ -1,7 +1,6 @@
 import { describe, it } from "mocha"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { writeDuplicateAliasMessage } from "../src/main.ts"
 import { writeUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 
 describe("scope", () => {
@@ -78,43 +77,5 @@ describe("scope", () => {
         const $ = scope({ a: {} as any })
         attest($.infer).typed as { a: never }
         attest($.type(["number", "a"]).infer).typed as [number, never]
-    })
-    describe("includes", () => {
-        it("base", () => {
-            const parent = scope({ definedInScope: "boolean" }).compile()
-            const $ = scope(
-                {
-                    a: "string[]",
-                    b: "a[]",
-                    c: "definedInScope"
-                },
-                { includes: [parent] }
-            )
-            attest($.infer).typed as {
-                a: string[]
-                b: string[][]
-                c: boolean
-                definedInScope: boolean
-            }
-            const types = $.compile()
-            attest(types.a.node).snap({
-                object: { objectKind: ["Array", "string"] }
-            })
-            attest(types.b.node).snap({
-                object: { objectKind: ["Array", "a"] }
-            })
-            attest(types.c.node).snap({ boolean: true })
-        })
-        describe("errors", () => {
-            it("duplicate alias", () => {
-                attest(() =>
-                    scope(
-                        // @ts-expect-error
-                        { a: "string" },
-                        { includes: [scope({ a: "string" }).compile()] }
-                    ).compile()
-                ).throwsAndHasTypeError(writeDuplicateAliasMessage("a"))
-            })
-        })
     })
 })

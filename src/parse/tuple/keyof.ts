@@ -1,8 +1,11 @@
 import type { Branch } from "../../nodes/predicate.ts"
 import { resolutionExtendsDomain } from "../../nodes/predicate.ts"
 import { throwParseError } from "../../utils/errors.ts"
+import type { nonArrayKeyOf } from "../../utils/generics.ts"
 import { hasKey, listFrom } from "../../utils/generics.ts"
+import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
+import { writeImplicitNeverMessage } from "../string/ast.ts"
 import type { PrefixParser } from "./tuple.ts"
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
@@ -11,10 +14,10 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
     )
 
     if (!resolutionExtendsDomain(resolution, "object")) {
-        return throwParseError("never")
+        return throwParseError(writeImplicitNeverMessage(ctx.path, "keyof"))
     }
     if (resolution.object === true) {
-        return { string: true }
+        return writeImplicitNeverMessage(ctx.path, "keyof")
     }
 
     const branchKeys: string[][] = []
@@ -25,7 +28,7 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
     for (let i = 1; i < objectBranches.length; i++) {
         const keys = getPropsFromBranch(objectBranches[i])
         if (!keys.length) {
-            return throwParseError("never")
+            return writeImplicitNeverMessage(ctx.path, "keyof")
         }
         branchKeys.push(keys)
     }
@@ -39,10 +42,23 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
         }
     })
 
-    return {
-        string: result
-    }
+    return result.length
+        ? {
+              string: result
+          }
+        : writeImplicitNeverMessage(ctx.path, "keyof")
 }
 
 const getPropsFromBranch = (branch: Branch) =>
     hasKey(branch, "props") ? Object.keys(branch.props) : []
+
+export type inferKeyOfExpression<operandDef, $> = nonArrayKeyOf<
+    inferDefinition<operandDef, $>
+>
+
+export type validateKeyOfExpression<operandDef, $> = [
+    "keyof",
+    inferKeyOfExpression<operandDef, $> extends never
+        ? writeImplicitNeverMessage<[], "keyof">
+        : validateDefinition<operandDef, $>
+]

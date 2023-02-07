@@ -99,12 +99,12 @@ type inferIntersectionRecurse<
     : r extends never
     ? never
     : l & r extends never
-    ? error<writeImplicitNeverMessage<path>>
+    ? error<writeImplicitNeverMessage<path, "Intersection">>
     : isAny<l | r> extends true
     ? any
     : l extends ParsedMorph<infer lIn, infer lOut>
     ? r extends ParsedMorph
-        ? error<writeImplicitNeverMessage<path, "of morphs">>
+        ? error<writeImplicitNeverMessage<path, "Intersection", "of morphs">>
         : (In: evaluate<lIn & r>) => Out<lOut>
     : r extends ParsedMorph<infer rIn, infer rOut>
     ? (In: evaluate<rIn & l>) => Out<rOut>
@@ -195,24 +195,28 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
 
 export const writeImplicitNeverMessage = <
     path extends Path | [],
+    operator extends "Intersection" | "keyof",
     description extends string = ""
 >(
     path: asConst<path>,
+    operator: operator,
     description?: description
 ) =>
-    `${path.length ? `At ${path}: ` : ""}Intersection ${
+    `${path.length ? `At ${path}: ` : ""}${operator} ${
         description ? `${description} ` : ""
     }results in an unsatisfiable type` as writeImplicitNeverMessage<
         path,
+        operator,
         description
     >
 
-type writeImplicitNeverMessage<
+export type writeImplicitNeverMessage<
     path extends string[],
+    operator extends "Intersection" | "keyof",
     description extends string = ""
 > = `${path extends []
     ? ""
-    : `At ${pathToString<path>}: `}Intersection ${description extends ""
+    : `At ${pathToString<path>}: `}${operator} ${description extends ""
     ? ""
     : `${description} `}results in an unsatisfiable type`
 

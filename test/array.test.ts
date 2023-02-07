@@ -1,5 +1,5 @@
-import { type } from "arktype"
 import { describe, it } from "mocha"
+import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import { incompleteArrayTokenMessage } from "../src/parse/string/shift/operator/operator.ts"
 
@@ -13,8 +13,7 @@ describe("parse array", () => {
             }
         })
     })
-
-    it("objectKind intersection", () => {
+    it("array intersection", () => {
         const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
         attest(t.node).snap({
             object: {
