@@ -214,7 +214,7 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     createAnonymousTypeName() {
-        return `anonymousType${++this.#anonymousTypeCount}`
+        return `type${++this.#anonymousTypeCount}`
     }
 
     get infer(): exportsOf<context> {
@@ -314,10 +314,12 @@ const initializeType = (
     opts: TypeOptions,
     scope: Scope
 ) => {
-    const name = opts.name ?? scope.createAnonymousTypeName()
+    const name = opts.name ?? "type"
     const meta: TypeMeta = {
         name,
-        id: `${scope.name}.${name}`,
+        id: `${scope.name}.${
+            opts.name ? name : scope.createAnonymousTypeName()
+        }`,
         definition,
         scope,
         problems: compileProblemOptions(opts.problems),
@@ -422,6 +424,7 @@ const ts = scope(
         unknown: ["node", always] as inferred<unknown>,
         void: ["node", { undefined: true }] as inferred<void>,
         undefined: ["node", { undefined: true }],
+        // TODO: finish adding object kinds
         Function: [
             "node",
             { object: { objectKind: "Function" } }

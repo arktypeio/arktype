@@ -1,9 +1,9 @@
 import type { Type } from "../main.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
 import type { Domain } from "../utils/domains.ts"
-import { hasKind } from "../utils/domains.ts"
 import type { CollapsibleList, defined, Dict, xor } from "../utils/generics.ts"
 import { keysOf, listFrom } from "../utils/generics.ts"
+import { isArray } from "../utils/objectKinds.ts"
 import type { Branches, BranchesComparison } from "./branches.ts"
 import { compareBranches, isBranchComparison } from "./branches.ts"
 import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
@@ -43,7 +43,7 @@ export const comparePredicates = (
     if (l === true && r === true) {
         return equality()
     }
-    if (!hasKind(l, "Array") && !hasKind(r, "Array")) {
+    if (!isArray(l) && !isArray(r)) {
         const result = branchIntersection(
             emptyRulesIfTrue(l),
             emptyRulesIfTrue(r),
@@ -143,7 +143,7 @@ export const flattenPredicate = (
     if (predicate === true) {
         return []
     }
-    return hasKind(predicate, "Array")
+    return isArray(predicate)
         ? flattenBranches(predicate, context)
         : flattenBranch(predicate, context)
 }

@@ -1,6 +1,6 @@
-import type { DefaultObjectKind } from "../../utils/domains.js"
 import { throwInternalError } from "../../utils/errors.js"
 import type { Dict, List, mutable } from "../../utils/generics.js"
+import type { DefaultObjectKind } from "../../utils/objectKinds.js"
 import {
     composeIntersection,
     equality,

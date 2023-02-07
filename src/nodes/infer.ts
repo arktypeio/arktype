@@ -1,17 +1,16 @@
 import type { inferTerminal } from "../parse/string/ast.js"
 import type { Out } from "../parse/tuple/morph.js"
-import type {
-    DefaultObjectKind,
-    Domain,
-    inferDomain,
-    inferKind
-} from "../utils/domains.js"
+import type { Domain, inferDomain } from "../utils/domains.js"
 import type {
     evaluate,
     HomogenousTuple,
     List,
     returnOf
 } from "../utils/generics.js"
+import type {
+    DefaultObjectKind,
+    inferObjectKind
+} from "../utils/objectKinds.js"
 import type { ResolvedNode, TypeNode } from "./node.js"
 import type { Predicate } from "./predicate.js"
 import type { ObjectKindRule } from "./rules/objectKind.js"
@@ -86,7 +85,7 @@ type inferObjectKindRule<
     possibleRange extends Range | undefined,
     $
 > = rule extends DefaultObjectKind
-    ? inferKind<rule>
+    ? inferObjectKind<rule>
     : rule extends readonly ["Array", infer item extends TypeNode<$>]
     ? possibleRange extends Bound<"==">
         ? HomogenousTuple<inferNode<item, $>, possibleRange["limit"]>

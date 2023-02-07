@@ -11,14 +11,16 @@ import type { TraversalPropEntry } from "../nodes/rules/props.js"
 import { checkBound } from "../nodes/rules/range.js"
 import { checkRegex } from "../nodes/rules/regex.js"
 import { precedenceMap } from "../nodes/rules/rules.js"
-import type { DefaultObjectKind, SizedData } from "../utils/domains.js"
-import { domainOf, hasDomain, objectKindOf } from "../utils/domains.js"
+import type { Domain } from "../utils/domains.js"
+import { domainOf, hasDomain } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dict, extend, List } from "../utils/generics.js"
 import { hasKey, keysOf } from "../utils/generics.js"
+import { objectKindOf } from "../utils/objectKinds.js"
 import { getPath, Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import { deserializePrimitive, stringify } from "../utils/serialize.js"
+import type { SizedData } from "../utils/size.js"
 import type { Problem } from "./problems.js"
 import { Problems } from "./problems.js"
 
@@ -159,12 +161,12 @@ export const checkObjectKind: TraversalCheck<"objectKind"> = (
     const dataObjectKind = objectKindOf(data)
     if (typeof rule === "string") {
         if (dataObjectKind !== rule) {
-            return state.problems.add("domain", data, rule)
+            return state.problems.add("objectKind", data, rule)
         }
         return
     }
     if (dataObjectKind !== rule[0]) {
-        return state.problems.add("domain", data, rule[0])
+        return state.problems.add("objectKind", data, rule[0])
     }
     if (dataObjectKind === "Array" && typeof rule[2] === "number") {
         const actual = (data as List).length
@@ -235,7 +237,7 @@ const checkers = {
             state.problems.add(
                 "domainBranches",
                 dataAtPath,
-                caseKeys as DefaultObjectKind[]
+                caseKeys as Domain[]
             )
         }
         state.path = lastPath
@@ -268,6 +270,7 @@ export type ConstrainedRuleTraversalData = extend<
         bound: SizedData
         requiredProps: Dict
         optionalProps: Dict
+        objectKind: object
         class: object
     }
 >

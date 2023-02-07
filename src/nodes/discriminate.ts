@@ -1,11 +1,13 @@
 import type { Scope } from "../main.ts"
 import { writeUndiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
-import type { DefaultObjectKind, Domain } from "../utils/domains.ts"
-import { domainOf, hasKind, objectKindOf } from "../utils/domains.ts"
+import type { Domain } from "../utils/domains.ts"
+import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { evaluate, keySet } from "../utils/generics.ts"
 import { hasKey, isKeyOf, keysOf } from "../utils/generics.ts"
 import type { NumberLiteral } from "../utils/numericLiterals.ts"
+import type { DefaultObjectKind } from "../utils/objectKinds.ts"
+import { isArray, objectKindOf } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
 import type {
     SerializablePrimitive,
@@ -283,7 +285,7 @@ const serializeIfPrimitive = (data: unknown) => {
 
 const caseSerializers: Record<DiscriminantKind, (data: unknown) => string> = {
     value: (data) => serializeIfPrimitive(data) ?? "default",
-    objectKind: objectKindOf,
+    objectKind: (data) => objectKindOf(data) ?? "default",
     domain: domainOf
 }
 
@@ -314,7 +316,7 @@ const nodeIncludesMorph = (node: TypeNode, $: Scope): boolean =>
         : Object.values(node).some((predicate) =>
               predicate === true
                   ? false
-                  : hasKind(predicate, "Array")
+                  : isArray(predicate)
                   ? predicate.some((branch) => branchIncludesMorph(branch, $))
                   : branchIncludesMorph(predicate, $)
           )

@@ -1,3 +1,4 @@
+import { domainOf } from "./domains.ts"
 import type { constructor, isTopType } from "./generics.ts"
 
 // Built-in object constructors based on a subset of:
@@ -23,50 +24,79 @@ export type ObjectKindSet = Record<string, constructor>
 
 export type DefaultObjectKindSet = typeof defaultObjectKinds
 
-export type DefaultObjectKinds = {
-    [kind in keyof DefaultObjectKindSet]: DefaultObjectKindSet[kind] extends constructor<
-        infer t
-    >
-        ? t
-        : never
-}
-
-export type DefaultObjectKind = keyof DefaultObjectKinds
+export type DefaultObjectKind = keyof DefaultObjectKindSet
 
 export type objectKindOf<
-    data extends object,
+    data,
     kinds extends ObjectKindSet = DefaultObjectKindSet
 > = isTopType<data> extends true
-    ? keyof kinds
-    : object extends data
-    ? keyof kinds
-    : {
-          [kind in keyof kinds]: kinds[kind] extends constructor<data>
-              ? kind
-              : never
-      }[keyof kinds]
+    ? undefined | keyof kinds
+    : data extends object
+    ? object extends data
+        ? keyof kinds
+        : {
+              [kind in keyof kinds]: kinds[kind] extends constructor<data>
+                  ? kind
+                  : data extends (...args: any[]) => unknown
+                  ? "Function"
+                  : "Object"
+          }[keyof kinds]
+    : undefined
 
 export const objectKindOf = <
-    o extends object,
+    data,
     kinds extends ObjectKindSet = DefaultObjectKindSet
 >(
-    o: o,
+    data: data,
     kinds?: kinds
 ) => {
+    if (domainOf(data) !== "object") {
+        return undefined
+    }
     const kindSet: ObjectKindSet = kinds ?? defaultObjectKinds
-    let constructor: constructor
-    do {
-        constructor = Object(o).constructor
-    } while (
-        !kindSet[constructor.name] ||
-        !(o instanceof kindSet[constructor.name])
-    )
-    return constructor.name as objectKindOf<o, kinds>
+    let prototype: Partial<Object> = Object.getPrototypeOf(data)
+    while (
+        prototype?.constructor &&
+        (!kindSet[prototype.constructor.name] ||
+            !(data instanceof kindSet[prototype.constructor.name]))
+    ) {
+        prototype = Object.getPrototypeOf(prototype)
+    }
+    return prototype?.constructor?.name as objectKindOf<data, kinds>
 }
 
-export type inferKind<kind extends DefaultObjectKind> = DefaultObjectKinds[kind]
+export type inferObjectKind<
+    kind extends keyof kinds,
+    kinds extends ObjectKindSet = DefaultObjectKindSet
+> = kinds[kind]
 
-export const hasKind = <objectKind extends DefaultObjectKind>(
+export const hasObjectKind = <
+    kind extends keyof kinds,
+    kinds extends ObjectKindSet = DefaultObjectKindSet
+>(
     data: unknown,
-    objectKind: objectKind
-): data is inferKind<objectKind> => objectKindOf(data) === objectKind
+    kind: kind,
+    kinds?: kinds
+): data is inferObjectKind<kind, kinds> => objectKindOf(data, kinds) === kind
+
+export const isArray = <data>(
+    data: data
+): data is Extract<data, readonly unknown[]> => Array.isArray(data)
+
+/** Each defaultObjectKind's completion for the phrase "Must be _____" */
+export const objectKindDescriptions = {
+    Object: "an object",
+    Array: "an array",
+    Function: "a function",
+    Date: "a Date",
+    RegExp: "a RegExp",
+    Error: "an Error",
+    Map: "a Map",
+    Set: "a Set",
+    String: "a String object",
+    Number: "a Number object",
+    Boolean: "a Boolean object",
+    Promise: "a Promise",
+    WeakMap: "a WeakMap",
+    WeakSet: "a WeakSet"
+} as const satisfies Record<DefaultObjectKind, string>

@@ -1,4 +1,3 @@
-import { hasKind } from "../../utils/domains.ts"
 import type { CollapsibleList, List } from "../../utils/generics.ts"
 import type { Equal } from "../compose.ts"
 import { equality } from "../compose.ts"
@@ -7,8 +6,8 @@ export const collapsibleListUnion: <t>(
     l: CollapsibleList<t>,
     r: CollapsibleList<t>
 ) => CollapsibleList<t> | Equal = (l, r) => {
-    if (hasKind(l, "Array")) {
-        if (hasKind(r, "Array")) {
+    if (Array.isArray(l)) {
+        if (Array.isArray(r)) {
             const result = listUnion(l, r)
             return result.length === l.length
                 ? result.length === r.length
@@ -20,7 +19,7 @@ export const collapsibleListUnion: <t>(
         }
         return l.includes(r) ? l : [...l, r]
     }
-    if (hasKind(r, "Array")) {
+    if (Array.isArray(r)) {
         return r.includes(l) ? r : [...r, l]
     }
     return l === r ? equality() : [l, r]
