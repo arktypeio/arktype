@@ -1,5 +1,12 @@
 # arktype
 
+## 0.1.3
+
+### Patch Changes
+
+-   f3776be1: add new default jsObjects space
+-   f3776be1: replace subdomain with objectKind, allow configurable instanceof checks
+
 ## 0.1.2
 
 ### Patch Changes
