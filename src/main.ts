@@ -62,7 +62,15 @@ export type ScopeOptions = {
 
 type validateOptions<opts extends ScopeOptions> = {
     [k in keyof opts]: k extends "imports" | "includes"
-        ? mergeSpaces<opts[k]> extends error<infer e>
+        ? mergeSpaces<
+              opts[k],
+              // if includes and imports are both defined, ensure no spaces from
+              // includes duplicate aliases from imports by using merged imports
+              // as a base
+              [k, "imports"] extends ["includes", keyof opts]
+                  ? mergeSpaces<opts["includes"]>
+                  : {}
+          > extends error<infer e>
             ? e
             : opts[k]
         : opts[k]
@@ -112,15 +120,16 @@ type mergeSpaces<scopes, base extends Dict = {}> = scopes extends readonly [
 ]
     ? keyof base & keyof head extends never
         ? mergeSpaces<tail, base & head>
-        : // TODO: add tests for this
-          error<`Duplicates ${stringifyUnion<
-              keyof base & keyof head & string
-          >}`>
+        : error<
+              writeDuplicateAliasesMessage<
+                  stringifyUnion<keyof base & keyof head & string>
+              >
+          >
     : base
 
 type validateAliases<aliases, opts extends ScopeOptions> = {
     [name in keyof aliases]: name extends keyof preresolved<opts>
-        ? writeDuplicateAliasMessage<name & string>
+        ? writeDuplicateAliasesMessage<name & string>
         : validateDefinition<aliases[name], bootstrapScope<aliases, opts>>
 }
 
@@ -189,7 +198,7 @@ export class Scope<context extends ScopeContext = any> {
         for (const space of spaces) {
             for (const name in space) {
                 if (this.#resolutions.has(name) || name in this.aliases) {
-                    throwParseError(writeDuplicateAliasMessage(name))
+                    throwParseError(writeDuplicateAliasesMessage(name))
                 }
                 this.#resolutions.set(name, space[name])
                 if (kind === "includes") {
@@ -201,7 +210,7 @@ export class Scope<context extends ScopeContext = any> {
 
     type = ((def, opts: TypeOptions = {}) => {
         if (opts.name && this.aliases[opts.name]) {
-            return throwParseError(writeDuplicateAliasMessage(opts.name))
+            return throwParseError(writeDuplicateAliasesMessage(opts.name))
         }
         const result = initializeType(def, opts, this)
         const ctx = this.#initializeContext(result)
@@ -530,11 +539,11 @@ type ValidateDefaultScope = [
 
 export const type: TypeParser<PrecompiledDefaults> = scopes.standard.type
 
-export const writeDuplicateAliasMessage = <name extends string>(
+export const writeDuplicateAliasesMessage = <name extends string>(
     name: name
-): writeDuplicateAliasMessage<name> => `Alias '${name}' is already defined`
+): writeDuplicateAliasesMessage<name> => `Alias '${name}' is already defined`
 
-type writeDuplicateAliasMessage<name extends string> =
+type writeDuplicateAliasesMessage<name extends string> =
     `Alias '${name}' is already defined`
 
 export const isType = (value: unknown): value is Type =>
