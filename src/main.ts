@@ -425,15 +425,9 @@ const ts = scope(
         void: ["node", { undefined: true }] as inferred<void>,
         undefined: ["node", { undefined: true }],
         // TODO: finish adding object kinds
-        Function: [
-            "node",
-            { object: { objectKind: "Function" } }
-            // TODO: defer to fix instanceof inference
-        ] as inferred<Function>,
-        Array: ["node", { object: { objectKind: "Array" } }] as inferred<
-            Array<unknown>
-        >,
-        Date: ["node", { object: { objectKind: "Date" } }] as inferred<Date>
+        Function: ["node", { object: { objectKind: "Function" } }],
+        Array: ["node", { object: { objectKind: "Array" } }],
+        Date: ["node", { object: { objectKind: "Date" } }]
     },
     { name: "ts", standard: false }
 )

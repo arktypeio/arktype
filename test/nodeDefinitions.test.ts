@@ -116,6 +116,17 @@ describe("node definitions", () => {
             }>
         >
     })
+    it("doesn't evaluate builtins", () => {
+        const t = type([
+            "node",
+            {
+                object: {
+                    objectKind: "Date"
+                }
+            }
+        ])
+        attest(t).type.toString("Date")
+    })
     it("bad shallow reference", () => {
         // @ts-expect-error
         attest(() => type(["node", "whoops"])).type.errors(

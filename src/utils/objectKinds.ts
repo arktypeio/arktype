@@ -1,5 +1,5 @@
 import { domainOf } from "./domains.ts"
-import type { constructor, isTopType } from "./generics.ts"
+import type { constructor, Dict, instanceOf, isTopType } from "./generics.ts"
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
@@ -68,7 +68,11 @@ export const objectKindOf = <
 export type inferObjectKind<
     kind extends keyof kinds,
     kinds extends ObjectKindSet = DefaultObjectKindSet
-> = kinds[kind]
+> = kind extends "Function"
+    ? (...args: any[]) => unknown
+    : kind extends "Object"
+    ? Dict
+    : instanceOf<kinds[kind]>
 
 export const hasObjectKind = <
     kind extends keyof kinds,
