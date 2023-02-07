@@ -180,7 +180,7 @@ export class Scope<context extends ScopeContext = any> {
             ? scopeRegistry[opts.name]
                 ? throwParseError(`A scope named '${opts.name}' already exists`)
                 : opts.name
-            : `anonymousScope${++anonymousScopeCount}`
+            : `scope${++anonymousScopeCount}`
         scopeRegistry[name] = this
         return name
     }
@@ -200,6 +200,9 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     type = ((def, opts: TypeOptions = {}) => {
+        if (opts.name && this.aliases[opts.name]) {
+            return throwParseError(writeDuplicateAliasMessage(opts.name))
+        }
         const result = initializeType(def, opts, this)
         const ctx = this.#initializeContext(result)
         result.node = this.resolveNode(parseDefinition(def, ctx))
@@ -214,8 +217,8 @@ export class Scope<context extends ScopeContext = any> {
         }
     }
 
-    createAnonymousTypeName() {
-        return `type${++this.#anonymousTypeCount}`
+    createAnonymousTypeSuffix() {
+        return ++this.#anonymousTypeCount
     }
 
     get infer(): exportsOf<context> {
@@ -315,23 +318,12 @@ const initializeType = (
     opts: TypeOptions,
     scope: Scope
 ) => {
-    let name: string
-    let id: QualifiedTypeName
-    if (opts.name) {
-        name = opts.name
-        if (scope.aliases[name]) {
-            return throwParseError(
-                `Duplicate name ${name} in scope ${scope.name}`
-            )
-        }
-        id = `${scope.name}.${name}`
-    } else {
-        name = "type"
-        id = `${scope.name}.${scope.createAnonymousTypeName()}`
-    }
+    const name = opts.name ?? "type"
     const meta: TypeMeta = {
         name,
-        id,
+        id: `${scope.name}.${
+            opts.name ? name : `type${scope.createAnonymousTypeSuffix()}`
+        }`,
         definition,
         scope,
         problems: compileProblemOptions(opts.problems),
