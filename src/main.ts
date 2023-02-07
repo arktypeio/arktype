@@ -315,12 +315,23 @@ const initializeType = (
     opts: TypeOptions,
     scope: Scope
 ) => {
-    const name = opts.name ?? "type"
+    let name: string
+    let id: QualifiedTypeName
+    if (opts.name) {
+        name = opts.name
+        if (scope.aliases[name]) {
+            return throwParseError(
+                `Duplicate name ${name} in scope ${scope.name}`
+            )
+        }
+        id = `${scope.name}.${name}`
+    } else {
+        name = "type"
+        id = `${scope.name}.${scope.createAnonymousTypeName()}`
+    }
     const meta: TypeMeta = {
         name,
-        id: `${scope.name}.${
-            opts.name ? name : scope.createAnonymousTypeName()
-        }`,
+        id,
         definition,
         scope,
         problems: compileProblemOptions(opts.problems),
@@ -560,7 +571,6 @@ type Checker<t> = (data: unknown) => CheckResult<t>
 export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
 
 export type TypeOptions = {
-    // TODO: validate not already a name
     name?: string
     problems?: ProblemsOptions
 }
