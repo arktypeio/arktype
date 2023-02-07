@@ -9,8 +9,8 @@ import type {
     conform,
     constructor,
     error,
-    evaluate,
     List,
+    nonArrayKeyOf,
     returnOf
 } from "../../utils/generics.ts"
 import type {
@@ -115,8 +115,7 @@ type inferTupleExpression<def extends TupleExpression, $> = def[1] extends ":"
         ? inferNode<def[1], $>
         : never
     : def[0] extends "keyof"
-    ? //TODO: keyof vs keyOf
-      evaluate<keyof inferDefinition<def[1], $>>
+    ? nonArrayKeyOf<inferDefinition<def[1], $>>
     : never
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {

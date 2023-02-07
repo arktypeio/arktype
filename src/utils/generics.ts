@@ -95,7 +95,7 @@ export const entriesOf = <o extends object>(o: o) =>
     Object.entries(o) as entriesOf<o>
 
 /** Mimics the result of Object.keys(...) */
-export type keyOf<o> = o extends object
+export type keyOf<o> = [o] extends [object]
     ? o extends readonly unknown[]
         ? any[] extends o
             ? `${number}`
@@ -103,6 +103,14 @@ export type keyOf<o> = o extends object
         : keyof o extends number
         ? `${keyof o}`
         : Exclude<keyof o, symbol>
+    : never
+
+export type nonArrayKeyOf<o> = keyOf<o> extends infer result
+    ? result extends `${number}`
+        ? `${number}` extends result
+            ? never
+            : result
+        : result
     : never
 
 export const keysOf = <o extends object>(o: o) => Object.keys(o) as keyOf<o>[]
