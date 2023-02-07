@@ -2,7 +2,7 @@ import type { asOut } from "../../main.ts"
 import type { ResolvedNode } from "../../nodes/node.ts"
 import type { Branch } from "../../nodes/predicate.ts"
 import type { Domain } from "../../utils/domains.ts"
-import { hasSubdomain } from "../../utils/domains.ts"
+import { hasKind } from "../../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../../utils/errors.ts"
 import type { mutable, nominal } from "../../utils/generics.ts"
 import { stringify } from "../../utils/serialize.ts"
@@ -26,7 +26,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
         if (predicate === true) {
             result[domain] = { input: {}, morph }
         } else if (typeof predicate === "object") {
-            result[domain] = hasSubdomain(predicate, "Array")
+            result[domain] = hasKind(predicate, "Array")
                 ? predicate.map((branch) => applyMorph(branch, morph))
                 : applyMorph(predicate, morph)
         } else {

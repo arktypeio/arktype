@@ -1,8 +1,8 @@
 import type { Type } from "../main.ts"
 import { isType } from "../main.ts"
 import type { TypeNode } from "../nodes/node.ts"
-import type { Primitive, Subdomain } from "../utils/domains.ts"
-import { subdomainOf } from "../utils/domains.ts"
+import type { DefaultObjectKind, Primitive } from "../utils/domains.ts"
+import { objectKindOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type {
     Dict,
@@ -29,18 +29,18 @@ export type ParseContext = {
 }
 
 export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
-    const subdomain = subdomainOf(def)
-    return subdomain === "string"
+    const objectKind = objectKindOf(def)
+    return objectKind === "string"
         ? parseString(def as string, ctx)
-        : subdomain === "object"
+        : objectKind === "object"
         ? parseRecord(def as Dict, ctx)
-        : subdomain === "Array"
+        : objectKind === "Array"
         ? parseTuple(def as List, ctx)
-        : subdomain === "RegExp"
+        : objectKind === "RegExp"
         ? { string: { regex: (def as RegExp).source } }
         : isType(def)
         ? def.node
-        : throwParseError(writeBadDefinitionTypeMessage(subdomain))
+        : throwParseError(writeBadDefinitionTypeMessage(objectKind))
 }
 
 export type inferDefinition<def, $> = isAny<def> extends true
@@ -64,7 +64,7 @@ export type validateDefinition<def, $> = def extends Terminal
     : def extends TupleExpression
     ? validateTupleExpression<def, $>
     : def extends BadDefinitionType
-    ? writeBadDefinitionTypeMessage<subdomainOf<def>>
+    ? writeBadDefinitionTypeMessage<kindOf<def>>
     : isUnknown<def> extends true
     ? unknownDefinitionMessage
     : evaluateObject<{
@@ -86,10 +86,10 @@ type Terminal = RegExp | inferred<unknown>
 
 type BadDefinitionType = Exclude<Primitive, string> | Function
 
-export const writeBadDefinitionTypeMessage = <actual extends Subdomain>(
+export const writeBadDefinitionTypeMessage = <actual extends DefaultObjectKind>(
     actual: actual
 ): writeBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
-type writeBadDefinitionTypeMessage<actual extends Subdomain> =
+type writeBadDefinitionTypeMessage<actual extends DefaultObjectKind> =
     `Type definitions must be strings or objects (was ${actual})`

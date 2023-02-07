@@ -1,7 +1,7 @@
 import type { Scope } from "../main.ts"
 import { writeUndiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
-import type { Domain, Subdomain } from "../utils/domains.ts"
-import { domainOf, hasSubdomain, subdomainOf } from "../utils/domains.ts"
+import type { DefaultObjectKind, Domain } from "../utils/domains.ts"
+import { domainOf, hasKind, objectKindOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { evaluate, keySet } from "../utils/generics.ts"
 import { hasKey, isKeyOf, keysOf } from "../utils/generics.ts"
@@ -106,13 +106,13 @@ type CasesByDisjoint = {
 
 export type DiscriminantKinds = {
     domain: Domain
-    subdomain: Subdomain
+    objectKind: DefaultObjectKind
     value: unknown
 }
 
 const discriminantKinds: keySet<DiscriminantKind> = {
     domain: true,
-    subdomain: true,
+    objectKind: true,
     value: true
 }
 
@@ -141,7 +141,7 @@ const calculateDiscriminants = (
                 intersectionState
             )
             for (const path in intersectionState.disjoints) {
-                // designed to match subdomain path segments like "${number}"
+                // designed to match objectKind path segments like "${number}"
                 if (path.includes("${")) {
                     // containers could be empty and therefore their elements cannot be used to discriminate
                     // allowing this via a special case where both are length >0 tracked here:
@@ -283,7 +283,7 @@ const serializeIfPrimitive = (data: unknown) => {
 
 const caseSerializers: Record<DiscriminantKind, (data: unknown) => string> = {
     value: (data) => serializeIfPrimitive(data) ?? "default",
-    subdomain: subdomainOf,
+    objectKind: objectKindOf,
     domain: domainOf
 }
 
@@ -314,7 +314,7 @@ const nodeIncludesMorph = (node: TypeNode, $: Scope): boolean =>
         : Object.values(node).some((predicate) =>
               predicate === true
                   ? false
-                  : hasSubdomain(predicate, "Array")
+                  : hasKind(predicate, "Array")
                   ? predicate.some((branch) => branchIncludesMorph(branch, $))
                   : branchIncludesMorph(predicate, $)
           )

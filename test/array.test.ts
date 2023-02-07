@@ -1,5 +1,5 @@
+import { type } from "arktype"
 import { describe, it } from "mocha"
-import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import { incompleteArrayTokenMessage } from "../src/parse/string/shift/operator/operator.ts"
 
@@ -9,16 +9,16 @@ describe("parse array", () => {
         attest(t.infer).typed as string[]
         attest(t.node).snap({
             object: {
-                subdomain: ["Array", "string"]
+                objectKind: ["Array", "string"]
             }
         })
     })
 
-    it("subdomain intersection", () => {
+    it("objectKind intersection", () => {
         const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
         attest(t.node).snap({
             object: {
-                subdomain: [
+                objectKind: [
                     "Array",
                     { object: { props: { a: "string", b: "number" } } }
                 ]

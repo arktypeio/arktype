@@ -1,10 +1,10 @@
 import type { inferTerminal } from "../parse/string/ast.js"
 import type { Out } from "../parse/tuple/morph.js"
 import type {
+    DefaultObjectKind,
     Domain,
     inferDomain,
-    inferSubdomain,
-    Subdomain
+    inferKind
 } from "../utils/domains.js"
 import type {
     evaluate,
@@ -14,6 +14,7 @@ import type {
 } from "../utils/generics.js"
 import type { ResolvedNode, TypeNode } from "./node.js"
 import type { Predicate } from "./predicate.js"
+import type { ObjectKindRule } from "./rules/objectKind.js"
 import type { OptionalProp, PropsRule } from "./rules/props.js"
 import type { Bound, Range } from "./rules/range.js"
 import type {
@@ -21,7 +22,6 @@ import type {
     MorphBranch,
     NarrowableRules
 } from "./rules/rules.js"
-import type { SubdomainRule } from "./rules/subdomain.js"
 
 export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
     ? inferTerminal<node, $>
@@ -73,20 +73,20 @@ type inferRules<domain extends Domain, branch, $> = branch extends LiteralRules
     : inferDomain<domain>
 
 type inferObjectRules<rules extends NarrowableRules, $> = evaluate<
-    (rules["subdomain"] extends SubdomainRule
-        ? inferSubdomainRule<rules["subdomain"], rules["range"], $>
+    (rules["objectKind"] extends ObjectKindRule
+        ? inferObjectKindRule<rules["objectKind"], rules["range"], $>
         : unknown) &
         (rules["props"] extends PropsRule
             ? inferProps<rules["props"], $>
             : unknown)
 >
 
-type inferSubdomainRule<
-    rule extends SubdomainRule,
+type inferObjectKindRule<
+    rule extends ObjectKindRule,
     possibleRange extends Range | undefined,
     $
-> = rule extends Subdomain
-    ? inferSubdomain<rule>
+> = rule extends DefaultObjectKind
+    ? inferKind<rule>
     : rule extends readonly ["Array", infer item extends TypeNode<$>]
     ? possibleRange extends Bound<"==">
         ? HomogenousTuple<inferNode<item, $>, possibleRange["limit"]>

@@ -424,13 +424,13 @@ const ts = scope(
         undefined: ["node", { undefined: true }],
         Function: [
             "node",
-            { object: { subdomain: "Function" } }
+            { object: { objectKind: "Function" } }
             // TODO: defer to fix instanceof inference
         ] as inferred<Function>,
-        Array: ["node", { object: { subdomain: "Array" } }] as inferred<
+        Array: ["node", { object: { objectKind: "Array" } }] as inferred<
             Array<unknown>
         >,
-        Date: ["node", { object: { subdomain: "Date" } }] as inferred<Date>
+        Date: ["node", { object: { objectKind: "Date" } }] as inferred<Date>
     },
     { name: "ts", standard: false }
 )

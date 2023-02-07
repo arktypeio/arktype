@@ -11,8 +11,8 @@ import type { TraversalPropEntry } from "../nodes/rules/props.js"
 import { checkBound } from "../nodes/rules/range.js"
 import { checkRegex } from "../nodes/rules/regex.js"
 import { precedenceMap } from "../nodes/rules/rules.js"
-import type { SizedData, Subdomain } from "../utils/domains.js"
-import { domainOf, hasDomain, subdomainOf } from "../utils/domains.js"
+import type { DefaultObjectKind, SizedData } from "../utils/domains.js"
+import { domainOf, hasDomain, objectKindOf } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { Dict, extend, List } from "../utils/generics.js"
 import { hasKey, keysOf } from "../utils/generics.js"
@@ -151,22 +151,22 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
 const checkRequiredProps = createPropChecker("requiredProps")
 const checkOptionalProps = createPropChecker("optionalProps")
 
-export const checkSubdomain: TraversalCheck<"subdomain"> = (
+export const checkObjectKind: TraversalCheck<"objectKind"> = (
     data,
     rule,
     state
 ) => {
-    const dataSubdomain = subdomainOf(data)
+    const dataObjectKind = objectKindOf(data)
     if (typeof rule === "string") {
-        if (dataSubdomain !== rule) {
+        if (dataObjectKind !== rule) {
             return state.problems.add("domain", data, rule)
         }
         return
     }
-    if (dataSubdomain !== rule[0]) {
+    if (dataObjectKind !== rule[0]) {
         return state.problems.add("domain", data, rule[0])
     }
-    if (dataSubdomain === "Array" && typeof rule[2] === "number") {
+    if (dataObjectKind === "Array" && typeof rule[2] === "number") {
         const actual = (data as List).length
         const expected = rule[2]
         if (expected !== actual) {
@@ -177,7 +177,7 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
             })
         }
     }
-    if (dataSubdomain === "Array" || dataSubdomain === "Set") {
+    if (dataObjectKind === "Array" || dataObjectKind === "Set") {
         let i = 0
         for (const item of data as List | Set<unknown>) {
             state.path.push(`${i}`)
@@ -187,7 +187,7 @@ export const checkSubdomain: TraversalCheck<"subdomain"> = (
         }
     } else {
         return throwInternalError(
-            `Unexpected subdomain entry ${stringify(rule)}`
+            `Unexpected objectKind entry ${stringify(rule)}`
         )
     }
     return true
@@ -209,7 +209,7 @@ const checkers = {
             state.problems.add("domain", data, domain)
         }
     },
-    subdomain: checkSubdomain,
+    objectKind: checkObjectKind,
     bound: checkBound,
     requiredProps: checkRequiredProps,
     optionalProps: checkOptionalProps,
@@ -235,7 +235,7 @@ const checkers = {
             state.problems.add(
                 "domainBranches",
                 dataAtPath,
-                caseKeys as Subdomain[]
+                caseKeys as DefaultObjectKind[]
             )
         }
         state.path = lastPath

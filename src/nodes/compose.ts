@@ -1,5 +1,5 @@
 import type { Type } from "../main.ts"
-import type { Domain, Subdomain } from "../utils/domains.ts"
+import type { Domain, DefaultObjectKind } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { constructor, Dict, extend, mutable } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
@@ -48,9 +48,9 @@ export type DisjointKinds = extend<
             l: Domain[]
             r: Domain[]
         }
-        subdomain: {
-            l: Subdomain
-            r: Subdomain
+        objectKind: {
+            l: DefaultObjectKind
+            r: DefaultObjectKind
         }
         range: {
             l: Range
@@ -85,7 +85,7 @@ export type DisjointKinds = extend<
 
 export const disjointDescriptionWriters = {
     domain: ({ l, r }) => `${l.join(", ")} and ${r.join(", ")}`,
-    subdomain: ({ l, r }) => `${l} and ${r}`,
+    objectKind: ({ l, r }) => `${l} and ${r}`,
     range: ({ l, r }) => `${stringifyRange(l)} and ${stringifyRange(r)}`,
     class: ({ l, r }) => `classes ${l.name} and ${r.name}`,
     tupleLength: ({ l, r }) => `tuples of length ${l} and ${r}`,

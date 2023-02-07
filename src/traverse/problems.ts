@@ -1,11 +1,11 @@
 import type { FlatBound } from "../nodes/rules/range.ts"
 import { Scanner } from "../parse/string/shift/scanner.ts"
-import type { Subdomain } from "../utils/domains.ts"
+import type { DefaultObjectKind } from "../utils/domains.ts"
 import {
     classNameOf,
     domainOf,
+    objectKindOf,
     sizeOf,
-    subdomainOf,
     unitsOf
 } from "../utils/domains.ts"
 import type {
@@ -125,15 +125,15 @@ export type Problems = instanceOf<typeof Problems>
 
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1)
 
-export const describeSubdomains = (subdomains: Subdomain[]) => {
-    if (subdomains.length === 1) {
-        return subdomainDescriptions[subdomains[0]]
+export const describeObjectKinds = (objectKinds: DefaultObjectKind[]) => {
+    if (objectKinds.length === 1) {
+        return objectKindDescriptions[objectKinds[0]]
     }
-    if (subdomains.length === 0) {
+    if (objectKinds.length === 0) {
         return "never"
     }
     return describeBranches(
-        subdomains.map((subdomain) => subdomainDescriptions[subdomain])
+        objectKinds.map((objectKind) => objectKindDescriptions[objectKind])
     )
 }
 
@@ -149,8 +149,8 @@ export const describeBranches = (descriptions: string[]) => {
     return description
 }
 
-/** Each Subdomain's completion for the phrase "Must be _____" */
-export const subdomainDescriptions = {
+/** Each ObjectKind's completion for the phrase "Must be _____" */
+export const objectKindDescriptions = {
     bigint: "a bigint",
     boolean: "boolean",
     null: "null",
@@ -166,14 +166,14 @@ export const subdomainDescriptions = {
     Error: "an Error",
     Map: "a Map",
     Set: "a Set"
-} as const satisfies Record<Subdomain, string>
+} as const satisfies Record<DefaultObjectKind, string>
 
 // TODO: change to input args
 type ProblemRuleInputs = {
     divisor: number
     class: constructor
-    domain: Subdomain
-    domainBranches: Subdomain[]
+    domain: DefaultObjectKind
+    domainBranches: DefaultObjectKind[]
     missing: undefined
     bound: FlatBound
     regex: RegExp
@@ -241,8 +241,8 @@ export class DataWrapper<value = unknown> {
     }
 
     // TODO: object kind?
-    get subdomain() {
-        return subdomainOf(this.value)
+    get objectKind() {
+        return objectKindOf(this.value)
     }
 
     get size() {
@@ -288,11 +288,11 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
         was: (data) => data.className
     },
     domain: {
-        mustBe: (domain) => subdomainDescriptions[domain],
+        mustBe: (domain) => objectKindDescriptions[domain],
         was: (data) => data.domain
     },
     domainBranches: {
-        mustBe: (domains) => describeSubdomains(domains),
+        mustBe: (domains) => describeObjectKinds(domains),
         was: (data) => data.domain
     },
     missing: {

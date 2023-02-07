@@ -10,7 +10,7 @@ describe("record", () => {
             object: {
                 props: {
                     a: "string",
-                    b: { object: { subdomain: ["Array", "boolean"] } }
+                    b: { object: { objectKind: ["Array", "boolean"] } }
                 }
             }
         })
@@ -22,7 +22,7 @@ describe("record", () => {
             object: {
                 props: {
                     a: ["?", "string"],
-                    b: { object: { subdomain: ["Array", "boolean"] } }
+                    b: { object: { objectKind: ["Array", "boolean"] } }
                 }
             }
         })

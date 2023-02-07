@@ -1,7 +1,7 @@
 import type { asIn, resolve } from "../../main.ts"
 import type { DisjointsByPath } from "../../nodes/compose.ts"
 import { disjointDescriptionWriters } from "../../nodes/compose.ts"
-import type { SizedData, subdomainOf } from "../../utils/domains.ts"
+import type { objectKindOf, SizedData } from "../../utils/domains.ts"
 import type {
     asConst,
     castOnError,
@@ -156,9 +156,9 @@ type discriminatableRecurse<
     ? never
     : l & r extends never
     ? path
-    : subdomainOf<l> & subdomainOf<r> extends never
+    : kindOf<l> & kindOf<r> extends never
     ? path
-    : [subdomainOf<l>, subdomainOf<r>] extends ["object", "object"]
+    : [kindOf<l>, kindOf<r>] extends ["object", "object"]
     ? extractValues<
           {
               [k in requiredKeyOf<l>]: k extends requiredKeyOf<r>
