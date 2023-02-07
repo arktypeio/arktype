@@ -22,6 +22,8 @@ import type { FlattenContext, TraversalEntry } from "../node.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
+import type { ObjectKindRule, TraversalObjectKindRule } from "./objectKind.ts"
+import { flattenObjectKind, objectKindIntersection } from "./objectKind.ts"
 import type {
     PropsRule,
     TraversalOptionalProps,
@@ -31,11 +33,9 @@ import { flattenProps, propsIntersection } from "./props.ts"
 import type { FlatBound, Range } from "./range.ts"
 import { flattenRange, rangeIntersection } from "./range.ts"
 import { getRegex, regexIntersection } from "./regex.ts"
-import type { SubdomainRule, TraversalSubdomainRule } from "./subdomain.ts"
-import { flattenSubdomain, subdomainIntersection } from "./subdomain.ts"
 
 export type NarrowableRules<$ = Dict> = {
-    readonly subdomain?: SubdomainRule<$>
+    readonly objectKind?: ObjectKindRule<$>
     readonly regex?: CollapsibleList<string>
     readonly divisor?: number
     readonly range?: Range
@@ -66,7 +66,7 @@ export type FlatRules = RuleEntry[]
 type FlatMorphedBranch = [...rules: FlatRules, morph: MorphEntry]
 
 export type RuleEntry =
-    | ["subdomain", TraversalSubdomainRule]
+    | ["objectKind", TraversalObjectKindRule]
     | ["regex", RegExp]
     | ["divisor", number]
     | ["bound", FlatBound]
@@ -86,7 +86,7 @@ export type Rules<
     : domain extends "object"
     ? defineRuleSet<
           domain,
-          "subdomain" | "props" | "range" | "narrow" | "class",
+          "objectKind" | "props" | "range" | "narrow" | "class",
           $
       >
     : domain extends "string"
@@ -163,7 +163,7 @@ const narrowIntersection =
 export const narrowableRulesIntersection =
     composeKeyedIntersection<NarrowableRules>(
         {
-            subdomain: subdomainIntersection,
+            objectKind: objectKindIntersection,
             divisor: divisorIntersection,
             regex: regexIntersection,
             props: propsIntersection,
@@ -185,7 +185,7 @@ type UnknownRules = NarrowableRules & Partial<LiteralRules>
 const ruleFlatteners: {
     [k in keyof UnknownRules]-?: FlattenAndPushRule<UnknownRules[k] & {}>
 } = {
-    subdomain: flattenSubdomain,
+    objectKind: flattenObjectKind,
     regex: (entries, rule) => {
         for (const source of listFrom(rule)) {
             entries.push(["regex", getRegex(source)])
@@ -217,7 +217,7 @@ export const precedenceMap: {
     value: 0,
     domains: 0,
     branches: 0,
-    subdomain: 0,
+    objectKind: 0,
     switch: 0,
     alias: 0,
     // Shallow: All shallow checks will be performed even if one or more fail

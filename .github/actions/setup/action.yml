@@ -29,4 +29,4 @@ runs:
 
         - name: Build
           shell: bash
-          run: pnpm buildRepo
+          run: pnpm build

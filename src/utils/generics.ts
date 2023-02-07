@@ -252,9 +252,6 @@ export const listFrom = <t>(data: t) =>
 
 export type CollapsibleList<t> = t | readonly t[]
 
-export const collapseIfSingleton = <t extends List>(array: t): t | t[number] =>
-    array.length === 1 ? array[0] : array
-
 /** Either:
  * A, with all properties of B undefined
  * OR

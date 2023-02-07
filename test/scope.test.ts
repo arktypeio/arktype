@@ -98,10 +98,10 @@ describe("scope", () => {
             }
             const types = $.compile()
             attest(types.a.node).snap({
-                object: { subdomain: ["Array", "string"] }
+                object: { objectKind: ["Array", "string"] }
             })
             attest(types.b.node).snap({
-                object: { subdomain: ["Array", "a"] }
+                object: { objectKind: ["Array", "a"] }
             })
             attest(types.c.node).snap({ boolean: true })
         })

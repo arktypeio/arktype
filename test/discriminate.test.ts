@@ -296,8 +296,8 @@ describe("discriminate", () => {
             [
                 "branches",
                 [
-                    [["subdomain", ["Array", "string"]]],
-                    [["subdomain", ["Array", "boolean"]]]
+                    [["objectKind", ["Array", "string"]]],
+                    [["objectKind", ["Array", "boolean"]]]
                 ]
             ]
         ])

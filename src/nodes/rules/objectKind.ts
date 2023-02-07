@@ -1,57 +1,55 @@
-import type { Subdomain } from "../../utils/domains.ts"
-import { throwInternalError } from "../../utils/errors.ts"
-import type { Dict, List, mutable } from "../../utils/generics.ts"
+import { throwInternalError } from "../../utils/errors.js"
+import type { Dict, List, mutable } from "../../utils/generics.js"
+import type { DefaultObjectKind } from "../../utils/objectKinds.js"
 import {
     composeIntersection,
     equality,
     isDisjoint,
     isEquality
-} from "../compose.ts"
-import type { TraversalNode, TypeNode } from "../node.ts"
-import { flattenNode, nodeIntersection } from "../node.ts"
-import type { FlattenAndPushRule } from "./rules.ts"
+} from "../compose.js"
+import type { TraversalNode, TypeNode } from "../node.js"
+import { flattenNode, nodeIntersection } from "../node.js"
+import type { FlattenAndPushRule } from "./rules.js"
 
 // Unfortunately we can't easily abstract between these two rules because of
 // nonsense TS circular reference issues.
-export type SubdomainRule<$ = Dict> =
-    | Subdomain
+export type ObjectKindRule<$ = Dict> =
+    | DefaultObjectKind
     | readonly ["Array", TypeNode<$>]
     | readonly ["Array", TypeNode<$>]
     | readonly ["Set", TypeNode<$>]
     | readonly ["Map", TypeNode<$>, TypeNode<$>]
 
-export type TraversalSubdomainRule =
-    | Subdomain
+export type TraversalObjectKindRule =
+    | DefaultObjectKind
     | readonly ["Array", TraversalNode]
     | readonly ["Array", TraversalNode]
     | readonly ["Set", TraversalNode]
     | readonly ["Map", TraversalNode, TraversalNode]
 
-export const subdomainIntersection = composeIntersection<SubdomainRule>(
+export const objectKindIntersection = composeIntersection<ObjectKindRule>(
     (l, r, state) => {
         if (typeof l === "string") {
             if (typeof r === "string") {
                 return l === r
                     ? equality()
-                    : state.addDisjoint("subdomain", l, r)
+                    : state.addDisjoint("objectKind", l, r)
             }
-            return l === r[0] ? r : state.addDisjoint("subdomain", l, r[0])
+            return l === r[0] ? r : state.addDisjoint("objectKind", l, r[0])
         }
         if (typeof r === "string") {
-            return l[0] === r ? l : state.addDisjoint("subdomain", l[0], r)
+            return l[0] === r ? l : state.addDisjoint("objectKind", l[0], r)
         }
         if (l[0] !== r[0]) {
-            return state.addDisjoint("subdomain", l[0], r[0])
+            return state.addDisjoint("objectKind", l[0], r[0])
         }
-        const result = [l[0]] as unknown as mutable<
-            Exclude<SubdomainRule, string>
-        >
+        const result = [l[0]] as any as mutable<Exclude<ObjectKindRule, string>>
         let lImpliesR = true
         let rImpliesL = true
         for (let i = 1; i < l.length; i++) {
             const lNode = l[i] as TypeNode
             const rNode = r[i] as TypeNode
-            state.path.push(subdomainParameterToPathSegment(l[0], i))
+            state.path.push(objectKindParameterToPathSegment(l[0], i))
             const parameterResult = nodeIntersection(lNode, rNode, state)
             state.path.pop()
             if (isEquality(parameterResult)) {
@@ -74,40 +72,40 @@ export const subdomainIntersection = composeIntersection<SubdomainRule>(
     }
 )
 
-type ParameterizableSubdomainRuleName = Extract<SubdomainRule, List>[0]
+type ParameterizableObjectKindRuleName = Extract<ObjectKindRule, List>[0]
 
-const subdomainParameterToPathSegment = (
-    subdomain: ParameterizableSubdomainRuleName,
+const objectKindParameterToPathSegment = (
+    objectKind: ParameterizableObjectKindRuleName,
     i: number
-): SubdomainPathSegment =>
-    subdomain === "Array"
+): ObjectKindPathSegment =>
+    objectKind === "Array"
         ? "${number}"
-        : subdomain === "Set"
+        : objectKind === "Set"
         ? "${item}"
-        : subdomain === "Map"
+        : objectKind === "Map"
         ? i === 1
             ? "${key}"
             : "${value}"
         : throwInternalError(
-              `Unexpected parameterized subdomain '${subdomain}'`
+              `Unexpected parameterized objectKind '${objectKind}'`
           )
 
-export const subdomainPathSegments = {
+export const objectKindPathSegments = {
     "${number}": true,
     "${item}": true,
     "${key}": true,
     "${value}": true
 } as const
 
-export type SubdomainPathSegment = keyof typeof subdomainPathSegments
+export type ObjectKindPathSegment = keyof typeof objectKindPathSegments
 
-export const flattenSubdomain: FlattenAndPushRule<SubdomainRule> = (
+export const flattenObjectKind: FlattenAndPushRule<ObjectKindRule> = (
     entries,
     rule,
     ctx
 ) =>
     entries.push([
-        "subdomain",
+        "objectKind",
         typeof rule === "string"
             ? rule
             : rule[0] === "Map"

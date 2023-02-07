@@ -111,7 +111,7 @@ describe("morph", () => {
                   a: (In: number) => Out<string>
               }
             | {
-                  a: Function
+                  a: (...args: any[]) => unknown
               }
         >
         attest(types.c.node).snap({
@@ -185,14 +185,14 @@ describe("morph", () => {
             object: [
                 {
                     input: {
-                        subdomain: "Array",
+                        objectKind: "Array",
                         props: { "0": "string" },
                         range: { comparator: "==", limit: 1 }
                     },
                     morph: "(function)"
                 },
                 {
-                    subdomain: "Array",
+                    objectKind: "Array",
                     props: { "0": "boolean" },
                     range: { comparator: "==", limit: 1 }
                 }

@@ -56,7 +56,7 @@ const HomepageDemo = (props: HomepageDemoProps) => {
                     props.setActiveDemo(
                         props.activeDemo ? null : props.demoElement
                     )
-                    !props.demoElement &&
+                    !props.activeDemo &&
                         setTimeout(() => {
                             props.demoRef.current?.scrollIntoView({
                                 behavior: "smooth",

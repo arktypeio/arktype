@@ -1,7 +1,7 @@
 import type { asIn, resolve } from "../../main.ts"
 import type { DisjointsByPath } from "../../nodes/compose.ts"
 import { disjointDescriptionWriters } from "../../nodes/compose.ts"
-import type { SizedData, subdomainOf } from "../../utils/domains.ts"
+import type { domainOf } from "../../utils/domains.ts"
 import type {
     asConst,
     castOnError,
@@ -20,7 +20,9 @@ import type {
     tryCatch
 } from "../../utils/generics.ts"
 import { keysOf } from "../../utils/generics.ts"
+import type { objectKindOf } from "../../utils/objectKinds.ts"
 import type { Path, pathToString } from "../../utils/paths.ts"
+import type { SizedData } from "../../utils/size.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
 import type { Scanner } from "./shift/scanner.ts"
@@ -156,9 +158,11 @@ type discriminatableRecurse<
     ? never
     : l & r extends never
     ? path
-    : subdomainOf<l> & subdomainOf<r> extends never
+    : domainOf<l> & domainOf<r> extends never
     ? path
-    : [subdomainOf<l>, subdomainOf<r>] extends ["object", "object"]
+    : objectKindOf<l> & objectKindOf<r> extends never
+    ? path
+    : [objectKindOf<l>, objectKindOf<r>] extends ["Object", "Object"]
     ? extractValues<
           {
               [k in requiredKeyOf<l>]: k extends requiredKeyOf<r>
