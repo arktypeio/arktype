@@ -1,5 +1,6 @@
 import type { ResolvedNode, TraversalNode, TypeNode } from "./nodes/node.js"
 import { flattenType } from "./nodes/node.js"
+import { regexValidators } from "./nodes/rules/regex.ts"
 import type {
     as,
     inferDefinition,
@@ -467,11 +468,7 @@ const jsObjectsSpace = jsObjects.compile()
 
 const validation = scope(
     {
-        email: /^(.+)@(.+)\.(.+)$/,
-        alphanumeric: /^[dA-Za-z]+$/,
-        alpha: /^[A-Za-z]+$/,
-        lowercase: /^[a-z]*$/,
-        uppercase: /^[A-Z]*$/,
+        ...regexValidators,
         integer: ["node", { number: { divisor: 1 } }]
     },
     { name: "validation", standard: false }
@@ -508,12 +505,7 @@ export const spaces = {
 // type like this makes validation for the default type and scope functions feel
 // significantly more responsive.
 export type PrecompiledDefaults = {
-    email: string
-    alphanumeric: string
-    alpha: string
-    lowercase: string
-    uppercase: string
-    integer: number
+    // tsKeywords
     any: any
     bigint: bigint
     boolean: boolean
@@ -528,10 +520,20 @@ export type PrecompiledDefaults = {
     unknown: unknown
     void: void
     undefined: undefined
+    // validation
+    integer: number
+    alpha: string
+    alphanumeric: string
+    lowercase: string
+    uppercase: string
+    creditCard: string
+    email: string
+    uuid: string
+    // jsObects
 } & InferredObjectKinds
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-type ValidateDefaultScope = [
+type ValidateStandardScope = [
     // if PrecompiledDefaults gets out of sync with scopes.standard, there will be a type error here
     extend<PrecompiledDefaults, typeof scopes["standard"]["infer"]>,
     extend<typeof scopes["standard"]["infer"], PrecompiledDefaults>

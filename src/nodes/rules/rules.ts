@@ -32,7 +32,7 @@ import type {
 import { flattenProps, propsIntersection } from "./props.ts"
 import type { FlatBound, Range } from "./range.ts"
 import { flattenRange, rangeIntersection } from "./range.ts"
-import { getRegex, regexIntersection } from "./regex.ts"
+import { regexIntersection } from "./regex.ts"
 
 export type NarrowableRules<$ = Dict> = {
     readonly objectKind?: ObjectKindRule<$>
@@ -67,7 +67,7 @@ type FlatMorphedBranch = [...rules: FlatRules, morph: MorphEntry]
 
 export type RuleEntry =
     | ["objectKind", TraversalObjectKindRule]
-    | ["regex", RegExp]
+    | ["regex", string]
     | ["divisor", number]
     | ["bound", FlatBound]
     | ["class", constructor]
@@ -192,7 +192,7 @@ const ruleFlatteners: {
     objectKind: flattenObjectKind,
     regex: (entries, rule) => {
         for (const source of listFrom(rule)) {
-            entries.push(["regex", getRegex(source)])
+            entries.push(["regex", source])
         }
     },
     divisor: (entries, rule) => {

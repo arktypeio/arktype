@@ -5,8 +5,9 @@ import { collapsibleListUnion } from "./collapsibleSet.ts"
 
 const regexCache: Record<string, RegExp> = {}
 
+// TODO: integrate custom errors
 // Non-trivial expressions should have an explanation or atttribution
-export const sources = {
+export const regexValidators = {
     // Character sets
     alpha: /^[A-Z]*$/i,
     alphanumeric: /^[A-Z\d]*$/i,
@@ -28,9 +29,15 @@ export const getRegex = (source: string) => {
     return regexCache[source]
 }
 
-export const checkRegex = ((data, regex, state) => {
-    if (!regex.test(data)) {
-        state.problems.add("regex", data, regex)
+export const checkRegex = ((data, source, state) => {
+    if (!getRegex(source).test(data)) {
+        state.problems.add(
+            "regex",
+            data,
+            state.path.length === 0 && state.type.name !== "type"
+                ? state.type.name
+                : `/${source}/`
+        )
     }
 }) satisfies TraversalCheck<"regex">
 

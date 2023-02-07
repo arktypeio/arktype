@@ -154,7 +154,7 @@ type ProblemRuleInputs = {
     objectKind: DefaultObjectKind
     missing: undefined
     bound: FlatBound
-    regex: RegExp
+    regex: string
     value: unknown
     valueBranches: unknown[]
     multi: string[]
@@ -301,7 +301,10 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
         was: (data) => `${data.size}`
     },
     regex: {
-        mustBe: (regex) => `a string matching /${regex.source}/`
+        mustBe: (expression) =>
+            expression[0] === "/"
+                ? `a string matching ${expression}`
+                : `a valid ${expression}`
     },
     value: {
         mustBe: stringify
