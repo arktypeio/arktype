@@ -71,7 +71,10 @@ const existingVersions: string[] = readJson(
     join(repoDirs.arktypeIo, `versions.json`)
 )
 if (!existingVersions.includes(packageJson.version)) {
-    shell(`pnpm docusaurus docs:version ${packageJson.version} && pnpm build`, {
-        cwd: repoDirs.arktypeIo
-    })
+    shell(
+        `pnpm install && pnpm docusaurus docs:version ${packageJson.version} && pnpm build`,
+        {
+            cwd: repoDirs.arktypeIo
+        }
+    )
 }
