@@ -1,4 +1,4 @@
-<head>
+export default `<head>
     <link href="http://fonts.cdnfonts.com/css/cascadia-code" rel="stylesheet" />
 </head>
 <div id="demo">
@@ -19,7 +19,8 @@
     <div class="section">
         <h3>Result</h3>
         <div class="card">
-            <pre id="result"></pre>
+            <p id="result"></p>
         </div>
     </div>
 </div>
+`

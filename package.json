@@ -1,7 +1,7 @@
 {
     "name": "arktype",
     "description": "Isomorphic type syntax for TS/JS",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "author": {
         "name": "David Blass",
         "email": "david@arktype.io",
@@ -19,12 +19,17 @@
             "types": "./dist/api.d.ts",
             "import": "./dist/api.mjs",
             "require": "./dist/api.cjs"
+        },
+        "./internal/*": {
+            "types": "./dist/types/*",
+            "import": "./dist/mjs/*",
+            "require": "./dist/cjs/*"
         }
     },
-    "packageManager": "pnpm@7.18.0",
     "files": [
         "dist"
     ],
+    "packageManager": "pnpm@7.18.0",
     "scripts": {
         "//temporarily disabled pr checks": "pnpm testRepo",
         "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test && pnpm buildDocs",

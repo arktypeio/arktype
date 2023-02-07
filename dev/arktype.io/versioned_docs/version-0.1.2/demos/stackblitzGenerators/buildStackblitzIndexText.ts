@@ -12,12 +12,10 @@ export const buildStackblitzIndexText = (embedId: EmbedId) => {
         populateDemo(${dataObject})
     } catch(e) {
         populateDemo({ 
-            type: {
-                meta: {definition: ""}
-            },
-            data: "",
-            problems: "ParseError: " + e.originalErr.message
-          } as any)
+            definition: {},
+            data: {},
+            error: "ParseError: " + e.originalErr.message,
+          })
     }
 })()`
 }
