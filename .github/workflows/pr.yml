@@ -27,6 +27,12 @@ jobs:
             - name: Test
               run: pnpm test
 
+            - name: Docgen
+              run: pnpm docgen
+
+            - name: Site
+              run: pnpm buildSite
+
     compatibility:
         needs: core
         timeout-minutes: 20
@@ -54,6 +60,9 @@ jobs:
 
             - name: Test
               run: pnpm test
+
+            - name: Site
+              run: pnpm buildSite
 
     prChecks:
         needs: compatibility

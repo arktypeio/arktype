@@ -71,12 +71,12 @@ class MarkdownSection {
 
     options(options: {}) {
         if (!this.optionsAdded) {
-            const optionStuff = ["---"]
+            const optionLines = ["---"]
             for (const [k, v] of Object.entries(options)) {
-                optionStuff.push(`${k}: ${v}`)
+                optionLines.push(`${k}: ${v}`)
             }
-            optionStuff.push("---\n")
-            this.contents.unshift(optionStuff.join("\n"))
+            optionLines.push("---\n")
+            this.contents.unshift(optionLines.join("\n"))
         }
         this.optionsAdded = true
     }
