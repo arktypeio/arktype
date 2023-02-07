@@ -111,7 +111,7 @@ describe("morph", () => {
                   a: (In: number) => Out<string>
               }
             | {
-                  a: Function
+                  a: (...args: any[]) => unknown
               }
         >
         attest(types.c.node).snap({

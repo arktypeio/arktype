@@ -125,7 +125,7 @@ describe("node definitions", () => {
                 }
             }
         ])
-        attest(t).type.toString("Date")
+        attest(t.infer).type.toString("Date")
     })
     it("bad shallow reference", () => {
         // @ts-expect-error
