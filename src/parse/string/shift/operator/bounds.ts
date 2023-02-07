@@ -1,5 +1,6 @@
 import { stringifyRange } from "../../../../nodes/compose.ts"
 import type { ResolvedNode } from "../../../../nodes/node.ts"
+import type { ObjectKindRule } from "../../../../nodes/rules/objectKind.ts"
 import type {
     Bound,
     MaxComparator,
@@ -10,7 +11,6 @@ import {
     maxComparators,
     minComparators
 } from "../../../../nodes/rules/range.ts"
-import type { SubdomainRule } from "../../../../nodes/rules/subdomain.ts"
 import { throwInternalError } from "../../../../utils/errors.ts"
 import type {
     error,
@@ -131,10 +131,13 @@ const distributeRange = (range: Range, s: DynamicState) => {
                 }
                 return listFrom(resolution.object!).every(
                     (branch) =>
-                        hasKey(branch, "subdomain") &&
-                        (branch.subdomain === "Array" ||
+                        hasKey(branch, "objectKind") &&
+                        (branch.objectKind === "Array" ||
                             (
-                                branch.subdomain as Extract<SubdomainRule, List>
+                                branch.objectKind as Extract<
+                                    ObjectKindRule,
+                                    List
+                                >
                             )[0] === "Array")
                 )
             default:

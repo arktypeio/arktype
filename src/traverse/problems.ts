@@ -1,13 +1,7 @@
 import type { FlatBound } from "../nodes/rules/range.ts"
 import { Scanner } from "../parse/string/shift/scanner.ts"
-import type { Subdomain } from "../utils/domains.ts"
-import {
-    classNameOf,
-    domainOf,
-    sizeOf,
-    subdomainOf,
-    unitsOf
-} from "../utils/domains.ts"
+import type { Domain } from "../utils/domains.ts"
+import { domainDescriptions, domainOf } from "../utils/domains.ts"
 import type {
     constructor,
     evaluate,
@@ -16,6 +10,8 @@ import type {
     requireKeys
 } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
+import type { DefaultObjectKind } from "../utils/objectKinds.ts"
+import { objectKindDescriptions, objectKindOf } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 import type {
@@ -125,15 +121,15 @@ export type Problems = instanceOf<typeof Problems>
 
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1)
 
-export const describeSubdomains = (subdomains: Subdomain[]) => {
-    if (subdomains.length === 1) {
-        return subdomainDescriptions[subdomains[0]]
+export const describeDomains = (domains: Domain[]) => {
+    if (domains.length === 1) {
+        return domainDescriptions[domains[0]]
     }
-    if (subdomains.length === 0) {
+    if (domains.length === 0) {
         return "never"
     }
     return describeBranches(
-        subdomains.map((subdomain) => subdomainDescriptions[subdomain])
+        domains.map((objectKind) => domainDescriptions[objectKind])
     )
 }
 
@@ -149,31 +145,13 @@ export const describeBranches = (descriptions: string[]) => {
     return description
 }
 
-/** Each Subdomain's completion for the phrase "Must be _____" */
-export const subdomainDescriptions = {
-    bigint: "a bigint",
-    boolean: "boolean",
-    null: "null",
-    number: "a number",
-    object: "an object",
-    string: "a string",
-    symbol: "a symbol",
-    undefined: "undefined",
-    Array: "an array",
-    Function: "a function",
-    Date: "a Date",
-    RegExp: "a RegExp",
-    Error: "an Error",
-    Map: "a Map",
-    Set: "a Set"
-} as const satisfies Record<Subdomain, string>
-
 // TODO: change to input args
 type ProblemRuleInputs = {
     divisor: number
     class: constructor
-    domain: Subdomain
-    domainBranches: Subdomain[]
+    domain: Domain
+    domainBranches: Domain[]
+    objectKind: DefaultObjectKind
     missing: undefined
     bound: FlatBound
     regex: RegExp
@@ -240,21 +218,28 @@ export class DataWrapper<value = unknown> {
         return domainOf(this.value)
     }
 
-    // TODO: object kind?
-    get subdomain() {
-        return subdomainOf(this.value)
+    get objectKind() {
+        return objectKindOf(this.value) ?? "non-object"
     }
 
     get size() {
-        return sizeOf(this.value)
+        return typeof this.value === "string" || Array.isArray(this.value)
+            ? this.value.length
+            : typeof this.value === "number"
+            ? this.value
+            : 0
     }
 
     get units() {
-        return unitsOf(this.value)
+        return typeof this.value === "string"
+            ? "characters"
+            : Array.isArray(this.value)
+            ? "items"
+            : ""
     }
 
     get className() {
-        return classNameOf(this.value)
+        return Object(this.value).constructor.name
     }
 }
 
@@ -288,12 +273,16 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
         was: (data) => data.className
     },
     domain: {
-        mustBe: (domain) => subdomainDescriptions[domain],
+        mustBe: (domain) => domainDescriptions[domain],
         was: (data) => data.domain
     },
     domainBranches: {
-        mustBe: (domains) => describeSubdomains(domains),
+        mustBe: (domains) => describeDomains(domains),
         was: (data) => data.domain
+    },
+    objectKind: {
+        mustBe: (kind: DefaultObjectKind) => objectKindDescriptions[kind],
+        was: (data) => data.objectKind
     },
     missing: {
         mustBe: () => "defined",

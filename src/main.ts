@@ -30,6 +30,7 @@ import type {
     List,
     nominal
 } from "./utils/generics.js"
+import type { BuiltinClass, InferredObjectKinds } from "./utils/objectKinds.ts"
 import { Path } from "./utils/paths.ts"
 import type { stringifyUnion } from "./utils/unionToTuple.js"
 
@@ -214,7 +215,7 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     createAnonymousTypeName() {
-        return `anonymousType${++this.#anonymousTypeCount}`
+        return `type${++this.#anonymousTypeCount}`
     }
 
     get infer(): exportsOf<context> {
@@ -314,10 +315,12 @@ const initializeType = (
     opts: TypeOptions,
     scope: Scope
 ) => {
-    const name = opts.name ?? scope.createAnonymousTypeName()
+    const name = opts.name ?? "type"
     const meta: TypeMeta = {
         name,
-        id: `${scope.name}.${name}`,
+        id: `${scope.name}.${
+            opts.name ? name : scope.createAnonymousTypeName()
+        }`,
         definition,
         scope,
         problems: compileProblemOptions(opts.problems),
@@ -406,7 +409,7 @@ const always: Record<Domain, true> = {
 export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>
     new Scope(aliases, opts)) as any
 
-const ts = scope(
+const tsKeywords = scope(
     {
         any: ["node", always] as inferred<any>,
         bigint: ["node", { bigint: true }],
@@ -421,18 +424,34 @@ const ts = scope(
         true: ["node", { boolean: { value: true } }],
         unknown: ["node", always] as inferred<unknown>,
         void: ["node", { undefined: true }] as inferred<void>,
-        undefined: ["node", { undefined: true }],
-        // TODO: Add remaining JS object types
-        Function: [
-            "node",
-            { object: { subdomain: "Function" } }
-            // TODO: defer to fix instanceof inference
-        ] as inferred<Function>
+        undefined: ["node", { undefined: true }]
     },
     { name: "ts", standard: false }
 )
 
-const tsTypes = ts.compile()
+const tsKeywordsSpace = tsKeywords.compile()
+
+const jsObjects = scope(
+    {
+        Function: ["node", { object: { objectKind: "Function" } }],
+        Array: ["node", { object: { objectKind: "Array" } }],
+        Date: ["node", { object: { objectKind: "Date" } }],
+        Error: ["node", { object: { objectKind: "Error" } }],
+        Map: ["node", { object: { objectKind: "Map" } }],
+        RegExp: ["node", { object: { objectKind: "RegExp" } }],
+        Set: ["node", { object: { objectKind: "Set" } }],
+        Object: ["node", { object: { objectKind: "Object" } }],
+        String: ["node", { object: { objectKind: "String" } }],
+        Number: ["node", { object: { objectKind: "Number" } }],
+        Boolean: ["node", { object: { objectKind: "Boolean" } }],
+        WeakMap: ["node", { object: { objectKind: "WeakMap" } }],
+        WeakSet: ["node", { object: { objectKind: "WeakSet" } }],
+        Promise: ["node", { object: { objectKind: "Promise" } }]
+    },
+    { name: "jsObjects", standard: false }
+)
+
+const jsObjectsSpace = jsObjects.compile()
 
 const validation = scope(
     {
@@ -446,13 +465,13 @@ const validation = scope(
     { name: "validation", standard: false }
 )
 
-const validationTypes = validation.compile()
+const validationSpace = validation.compile()
 
 const standard = scope(
     {},
     {
         name: "standard",
-        includes: [tsTypes, validationTypes],
+        includes: [tsKeywordsSpace, jsObjectsSpace, validationSpace],
         standard: false
     }
 )
@@ -460,14 +479,16 @@ const standard = scope(
 const standardTypes = standard.compile()
 
 export const scopes = {
-    ts,
+    tsKeywords,
+    jsObjects,
     validation,
     standard
 }
 
 export const spaces = {
-    ts: tsTypes,
-    validation: validationTypes,
+    tsKeywords: tsKeywordsSpace,
+    jsObjects: jsObjectsSpace,
+    validation: validationSpace,
     standard: standardTypes
 } satisfies Record<keyof typeof scopes, Space>
 
@@ -495,8 +516,7 @@ export type PrecompiledDefaults = {
     unknown: unknown
     void: void
     undefined: undefined
-    Function: Function
-}
+} & InferredObjectKinds
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type ValidateDefaultScope = [
@@ -562,7 +582,7 @@ type asIo<t, io extends "in" | "out"> = t extends ParsedMorph<infer i, infer o>
         ? i
         : o
     : t extends object
-    ? t extends Function
+    ? t extends Function | BuiltinClass
         ? t
         : { [k in keyof t]: asIo<t[k], io> }
     : t

@@ -9,15 +9,15 @@ import { branchIntersection } from "./rules/rules.ts"
 export const isBranchComparison = (
     comparison: PredicateComparison
 ): comparison is BranchesComparison =>
-    (comparison as BranchesComparison)?.lConditions !== undefined
+    (comparison as BranchesComparison)?.lBranches !== undefined
 
 export type Branches = List<Branch>
 
 export type BranchesComparison = {
-    lConditions: Branches
-    rConditions: Branches
-    lSubconditionsOfR: number[]
-    rSubconditionsOfL: number[]
+    lBranches: Branches
+    rBranches: Branches
+    lExtendsR: number[]
+    rExtendsL: number[]
     equalities: [lIndex: number, rIndex: number][]
     distinctIntersections: Branches
 }
@@ -28,10 +28,10 @@ export const compareBranches = (
     state: IntersectionState
 ): BranchesComparison => {
     const result: BranchesComparison = {
-        lConditions,
-        rConditions,
-        lSubconditionsOfR: [],
-        rSubconditionsOfL: [],
+        lBranches: lConditions,
+        rBranches: rConditions,
+        lExtendsR: [],
+        rExtendsL: [],
         equalities: [],
         distinctIntersections: []
     }
@@ -51,14 +51,14 @@ export const compareBranches = (
                 // doesn't tell us about any redundancies or add a distinct pair
                 return null
             } else if (subresult === l) {
-                result.lSubconditionsOfR.push(lIndex)
+                result.lExtendsR.push(lIndex)
                 // If l is a subtype of the current r branch, intersections
                 // with the remaining branches of r won't lead to distinct
                 // branches, so we set a flag indicating we can skip them.
                 lImpliesR = true
                 return null
             } else if (subresult === r) {
-                result.rSubconditionsOfL.push(rIndex)
+                result.rExtendsL.push(rIndex)
                 // If r is a subtype of the current l branch, it is removed
                 // from pairsByR because future intersections won't lead to
                 // distinct branches.

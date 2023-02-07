@@ -65,7 +65,7 @@ export const distributeFunctionToNode = <
     if (typeof distributableFunction === "function") {
         const domainFunction = {
             [ruleKey]: distributableFunction
-        } as unknown as FunctionInDomain<f, ruleKey>
+        } as any as FunctionInDomain<f, ruleKey>
         for (const domain of domains) {
             distributed[domain] = domainFunction
         }

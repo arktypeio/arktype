@@ -127,7 +127,7 @@ export type DomainEntry = ["domain", Domain]
 
 const hasImpliedDomain = (flatPredicate: TraversalEntry[]) =>
     flatPredicate[0] &&
-    (flatPredicate[0][0] === "subdomain" || flatPredicate[0][0] === "value")
+    (flatPredicate[0][0] === "objectKind" || flatPredicate[0][0] === "value")
 
 export type DomainsEntry = [
     "domains",

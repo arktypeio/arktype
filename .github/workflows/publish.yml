@@ -4,6 +4,10 @@ on:
     push:
         branches: [main]
 
+defaults:
+    run:
+        shell: bash
+
 jobs:
     update-gh-pages:
         runs-on: ubuntu-latest
@@ -17,9 +21,11 @@ jobs:
             - name: Setup repo
               uses: ./.github/actions/setup
 
-            - name: Build docs
-              shell: bash
-              run: pnpm buildDocs
+            - name: Docgen
+              run: pnpm docgen
+
+            - name: Site
+              run: pnpm buildSite
 
             - name: Deploy to GitHub Pages
               uses: peaceiris/actions-gh-pages@v3

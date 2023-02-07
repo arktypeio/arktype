@@ -15,7 +15,6 @@ export const parseOperand = (s: DynamicState): void =>
         ? parseEnclosed(s, s.scanner.shift())
         : parseUnenclosed(s)
 
-// TODO: try adding aliases string extends where possible
 export type parseOperand<
     s extends StaticState,
     $

@@ -56,7 +56,7 @@ describe("node definitions", () => {
             "node",
             {
                 object: {
-                    subdomain: [
+                    objectKind: [
                         "Array",
                         { object: { props: { name: "string" } } }
                     ]
@@ -70,7 +70,7 @@ describe("node definitions", () => {
             "node",
             {
                 object: {
-                    subdomain: ["Array", "string"],
+                    objectKind: ["Array", "string"],
                     range: { limit: 5, comparator: "==" }
                 }
             } as const
@@ -85,7 +85,7 @@ describe("node definitions", () => {
                 boolean: true,
                 object: [
                     { props: { a: "string" } },
-                    { subdomain: ["Array", "number"] }
+                    { objectKind: ["Array", "number"] }
                 ]
             } as const
         ])
@@ -115,6 +115,17 @@ describe("node definitions", () => {
                 b: number
             }>
         >
+    })
+    it("doesn't evaluate builtins", () => {
+        const t = type([
+            "node",
+            {
+                object: {
+                    objectKind: "Date"
+                }
+            }
+        ])
+        attest(t.infer).type.toString("Date")
     })
     it("bad shallow reference", () => {
         // @ts-expect-error

@@ -1,8 +1,8 @@
 import type { Type } from "../main.ts"
 import { isType } from "../main.ts"
 import type { TypeNode } from "../nodes/node.ts"
-import type { Primitive, Subdomain } from "../utils/domains.ts"
-import { subdomainOf } from "../utils/domains.ts"
+import type { Primitive } from "../utils/domains.ts"
+import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type {
     Dict,
@@ -11,7 +11,9 @@ import type {
     isUnknown,
     List
 } from "../utils/generics.ts"
+import { objectKindOf } from "../utils/objectKinds.ts"
 import type { Path } from "../utils/paths.ts"
+import { stringify } from "../utils/serialize.ts"
 import type { inferRecord } from "./record.ts"
 import { parseRecord } from "./record.ts"
 import type { inferString, validateString } from "./string/string.ts"
@@ -29,18 +31,30 @@ export type ParseContext = {
 }
 
 export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
-    const subdomain = subdomainOf(def)
-    return subdomain === "string"
-        ? parseString(def as string, ctx)
-        : subdomain === "object"
-        ? parseRecord(def as Dict, ctx)
-        : subdomain === "Array"
-        ? parseTuple(def as List, ctx)
-        : subdomain === "RegExp"
-        ? { string: { regex: (def as RegExp).source } }
-        : isType(def)
-        ? def.node
-        : throwParseError(writeBadDefinitionTypeMessage(subdomain))
+    const domain = domainOf(def)
+    if (domain === "string") {
+        return parseString(def as string, ctx)
+    }
+    if (domain !== "object") {
+        return throwParseError(writeBadDefinitionTypeMessage(domain))
+    }
+    const objectKind = objectKindOf(def)
+    switch (objectKind) {
+        case "Object":
+            return parseRecord(def as Dict, ctx)
+        case "Array":
+            return parseTuple(def as List, ctx)
+        case "RegExp":
+            return { string: { regex: (def as RegExp).source } }
+        case "Function":
+            return isType(def)
+                ? def.node
+                : throwParseError(writeBadDefinitionTypeMessage("Function"))
+        default:
+            return throwParseError(
+                writeBadDefinitionTypeMessage(objectKind ?? stringify(def))
+            )
+    }
 }
 
 export type inferDefinition<def, $> = isAny<def> extends true
@@ -64,7 +78,9 @@ export type validateDefinition<def, $> = def extends Terminal
     : def extends TupleExpression
     ? validateTupleExpression<def, $>
     : def extends BadDefinitionType
-    ? writeBadDefinitionTypeMessage<subdomainOf<def>>
+    ? writeBadDefinitionTypeMessage<
+          objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
+      >
     : isUnknown<def> extends true
     ? unknownDefinitionMessage
     : evaluateObject<{
@@ -86,10 +102,10 @@ type Terminal = RegExp | inferred<unknown>
 
 type BadDefinitionType = Exclude<Primitive, string> | Function
 
-export const writeBadDefinitionTypeMessage = <actual extends Subdomain>(
+export const writeBadDefinitionTypeMessage = <actual extends string>(
     actual: actual
 ): writeBadDefinitionTypeMessage<actual> =>
     `Type definitions must be strings or objects (was ${actual})`
 
-type writeBadDefinitionTypeMessage<actual extends Subdomain> =
+type writeBadDefinitionTypeMessage<actual extends string> =
     `Type definitions must be strings or objects (was ${actual})`

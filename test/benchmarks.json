@@ -271,6 +271,13 @@
     "scope": {
         "cyclic(10)": [
             {
+                "date": "2/7/2023",
+                "mark": {
+                    "median": [47.02, "us"],
+                    "type": [2467, "instantiations"]
+                }
+            },
+            {
                 "date": "1/28/2023",
                 "mark": {
                     "type": [3065, "instantiations"]
@@ -298,6 +305,13 @@
             }
         ],
         "cyclic(100)": [
+            {
+                "date": "2/7/2023",
+                "mark": {
+                    "median": [417.71, "us"],
+                    "type": [14599, "instantiations"]
+                }
+            },
             {
                 "date": "1/28/2023",
                 "mark": {
@@ -327,6 +341,13 @@
         ],
         "cyclic(500)": [
             {
+                "date": "2/7/2023",
+                "mark": {
+                    "median": [2.62, "ms"],
+                    "type": [66895, "instantiations"]
+                }
+            },
+            {
                 "date": "1/28/2023",
                 "mark": {
                     "type": [67493, "instantiations"]
@@ -350,6 +371,20 @@
                 "date": "11/11/2022",
                 "mark": {
                     "type": [53550, "instantiations"]
+                }
+            }
+        ],
+        "validate recursive": [
+            {
+                "date": "2/7/2023",
+                "mark": {
+                    "median": [11.21, "us"]
+                }
+            },
+            {
+                "date": "2/7/2023",
+                "mark": {
+                    "median": [11.08, "us"]
                 }
             }
         ]
