@@ -39,18 +39,12 @@ export type TypeOptions = evaluateObject<
 
 export type TypeConfig = ProblemsOptions
 
-export type TraversalStartConfigs =
-    | []
-    | [TypeConfig]
-    | [scope: TypeConfig, type: TypeConfig]
-
 type TypeMeta = {
     name: string
     id: QualifiedTypeName
     definition: unknown
     scope: Scope
     config: TypeConfig | undefined
-    traversalStartConfigs: TraversalStartConfigs
     includesMorph: boolean
 }
 
@@ -73,13 +67,6 @@ export const initializeType = (
 ) => {
     const name = opts?.name ?? "type"
     const config = compileTypeConfig(opts)
-    const traversalStartConfigs: TraversalStartConfigs = config
-        ? scope.config
-            ? [scope.config, config]
-            : [config]
-        : scope.config
-        ? [scope.config]
-        : []
     const meta: TypeMeta = {
         name,
         id: `${scope.name}.${
@@ -88,7 +75,6 @@ export const initializeType = (
         definition,
         scope,
         config,
-        traversalStartConfigs,
         includesMorph: false
     }
 

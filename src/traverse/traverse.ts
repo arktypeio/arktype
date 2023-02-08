@@ -27,14 +27,12 @@ import { Problems } from "./problems.js"
 export class TraversalState {
     path = new Path()
     problems = new Problems(this)
-    configs: TypeConfig[]
+    configs: TypeConfig[] = []
     failFast = false
 
     #seen: { [name in QualifiedTypeName]?: object[] } = {}
 
-    constructor(public type: Type) {
-        this.configs = type.meta.traversalStartConfigs
-    }
+    constructor(public type: Type) {}
 
     traverseResolution(data: unknown, name: string) {
         const resolution = this.type.meta.scope.resolve(name)
@@ -53,25 +51,10 @@ export class TraversalState {
                 this.#seen[id] = [data]
             }
         }
-        const updatedScopeConfig =
-            resolution.meta.scope !== this.type.meta.scope &&
-            resolution.meta.scope.config
-        if (updatedScopeConfig) {
-            this.configs.push(updatedScopeConfig)
-        }
-        if (resolution.meta.config) {
-            this.configs.push(resolution.meta.config)
-        }
         const lastResolution = this.type
         this.type = resolution
         traverse(data, resolution.flat, this)
         this.type = lastResolution
-        if (resolution.meta.config) {
-            this.configs.pop()
-        }
-        if (updatedScopeConfig) {
-            this.configs.pop()
-        }
         if (isObject) {
             this.#seen[id]!.pop()
         }
@@ -262,12 +245,18 @@ const checkers = {
     alias: (data, name, state) => state.traverseResolution(data, name),
     class: checkClass,
     narrow: (data, narrow, state) => narrow(data, state.problems),
+    config: (data, { config, node }, state) => {
+        state.configs.push(config)
+        traverse(data, node, state)
+        state.configs.pop()
+    },
     value: (data, value, state) => {
         if (data !== value) {
             state.problems.add("value", data, value)
         }
     }
 } satisfies {
+    // TODO: out morphs not always returned? e.g. config?
     [k in ValidationKey]: TraversalCheck<k>
 }
 

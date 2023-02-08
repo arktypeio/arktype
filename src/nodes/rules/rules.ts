@@ -208,6 +208,7 @@ export const precedenceMap: {
     readonly [k in TraversalEntry[0]]: number
 } = {
     // Critical: No other checks are performed if these fail
+    config: 0,
     domain: 0,
     value: 0,
     domains: 0,
