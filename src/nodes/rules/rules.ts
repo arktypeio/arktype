@@ -1,5 +1,4 @@
 import { writeImplicitNeverMessage } from "../../parse/string/ast.ts"
-import type { Morph } from "../../parse/tuple/morph.ts"
 import type { Narrow } from "../../parse/tuple/narrow.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
@@ -18,6 +17,13 @@ import {
     isEquality
 } from "../compose.ts"
 import type { FlattenContext, TraversalEntry } from "../node.ts"
+import type {
+    Branch,
+    BranchWithMetadata,
+    FlatBranch,
+    FlatMorphedBranch
+} from "../predicate.ts"
+import { branchHasMetadata } from "../predicate.ts"
 
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
@@ -50,20 +56,7 @@ export type LiteralRules<domain extends Domain = Domain> = {
 
 export type NarrowRule = CollapsibleList<Narrow>
 
-export type Branch<domain extends Domain = Domain, $ = Dict> =
-    | Rules<domain, $>
-    | MorphBranch<domain, $>
-
-export type MorphBranch<domain extends Domain = Domain, $ = Dict> = {
-    input: Rules<domain, $>
-    morph: CollapsibleList<Morph>
-}
-
-export type FlatBranch = FlatRules | FlatMorphedBranch
-
 export type FlatRules = RuleEntry[]
-
-type FlatMorphedBranch = [...rules: FlatRules, morph: MorphEntry]
 
 export type RuleEntry =
     | ["objectKind", TraversalObjectKindRule]
@@ -75,8 +68,6 @@ export type RuleEntry =
     | TraversalOptionalProps
     | ["narrow", Narrow]
     | ["value", unknown]
-
-export type MorphEntry = ["morph", CollapsibleList<Morph>]
 
 export type Rules<
     domain extends Domain = Domain,
@@ -102,7 +93,7 @@ type defineRuleSet<
 > = Pick<NarrowableRules<$>, keys> | LiteralRules<domain>
 
 const rulesOf = (branch: Branch): Rules =>
-    (branch as MorphBranch).input ?? branch
+    (branch as BranchWithMetadata).rules ?? branch
 
 export const branchIntersection: Intersector<Branch> = (l, r, state) => {
     const lRules = rulesOf(l)
@@ -114,7 +105,7 @@ export const branchIntersection: Intersector<Branch> = (l, r, state) => {
                 return isEquality(rulesResult) || isDisjoint(rulesResult)
                     ? rulesResult
                     : {
-                          input: rulesResult,
+                          rules: rulesResult,
                           morph: l.morph
                       }
             }
@@ -131,7 +122,7 @@ export const branchIntersection: Intersector<Branch> = (l, r, state) => {
         return isDisjoint(rulesResult)
             ? rulesResult
             : {
-                  input: isEquality(rulesResult) ? l.input : rulesResult,
+                  rules: isEquality(rulesResult) ? l.rules : rulesResult,
                   morph: l.morph
               }
     }
@@ -139,7 +130,7 @@ export const branchIntersection: Intersector<Branch> = (l, r, state) => {
         return isDisjoint(rulesResult)
             ? rulesResult
             : {
-                  input: isEquality(rulesResult) ? r.input : rulesResult,
+                  rules: isEquality(rulesResult) ? r.rules : rulesResult,
                   morph: r.morph
               }
     }
@@ -242,9 +233,11 @@ export const flattenBranch = (
     branch: Branch,
     ctx: FlattenContext
 ): FlatBranch => {
-    if ("morph" in branch) {
-        const result = flattenRules(branch.input, ctx) as FlatMorphedBranch
-        result.push(["morph", branch.morph])
+    if (branchHasMetadata(branch)) {
+        const result = flattenRules(branch.rules, ctx) as FlatMorphedBranch
+        if (branch.morph) {
+            result.push(["morph", branch.morph])
+        }
         return result
     }
     return flattenRules(branch, ctx)

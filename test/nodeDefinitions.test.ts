@@ -103,7 +103,7 @@ describe("node definitions", () => {
             "node",
             {
                 object: {
-                    input: { props: { a: "string" } },
+                    rules: { props: { a: "string" } },
                     morph: (input: { a: string }) => ({
                         b: input.a.length
                     })

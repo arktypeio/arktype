@@ -16,7 +16,7 @@ import {
     throwUndefinedOperandsError
 } from "./compose.ts"
 import type { DiscriminatedSwitch } from "./discriminate.ts"
-import type { Predicate } from "./predicate.ts"
+import type { MorphEntry, Predicate } from "./predicate.ts"
 import {
     flattenPredicate,
     isLiteralCondition,
@@ -24,9 +24,7 @@ import {
     predicateUnion,
     resolutionExtendsDomain
 } from "./predicate.ts"
-import type { LiteralRules, MorphEntry, RuleEntry } from "./rules/rules.ts"
-
-// TODO: Add type root with options as a node that can be intersected?
+import type { LiteralRules, RuleEntry } from "./rules/rules.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | ResolvedNode<$>
 
