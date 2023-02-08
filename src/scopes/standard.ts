@@ -1,11 +1,11 @@
-import type { extend } from "../utils/generics"
-import type { InferredObjectKinds } from "../utils/objectKinds"
-import { jsObjects, jsObjectsScope } from "./jsObjects"
-import type { Space } from "./scope"
-import { scope } from "./scope"
-import { tsKeywords, tsKeywordsScope } from "./tsKeywords"
-import type { TypeParser } from "./type"
-import { validation, validationScope } from "./validation"
+import type { extend } from "../utils/generics.ts"
+import type { InferredObjectKinds } from "../utils/objectKinds.ts"
+import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
+import type { Space } from "./scope.ts"
+import { scope } from "./scope.ts"
+import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
+import type { TypeParser } from "./type.ts"
+import { validation, validationScope } from "./validation.ts"
 
 export const standardScope = scope(
     {},

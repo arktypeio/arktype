@@ -1,4 +1,4 @@
-import { scope } from "./scope"
+import { scope } from "./scope.ts"
 
 export const jsObjectsScope = scope(
     {

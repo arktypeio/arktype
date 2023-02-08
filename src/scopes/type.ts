@@ -1,17 +1,17 @@
-import type { TraversalNode, TypeNode } from "../nodes/node"
+import type { TraversalNode, TypeNode } from "../nodes/node.ts"
 import type {
     as,
     inferDefinition,
     validateDefinition
-} from "../parse/definition"
-import type { ParsedMorph } from "../parse/tuple/morph"
-import type { Problems, ProblemsOptions } from "../traverse/problems"
-import { TraversalState, traverse } from "../traverse/traverse"
-import { chainableNoOpProxy } from "../utils/chainableNoOpProxy"
-import type { defer, evaluateObject } from "../utils/generics"
-import { hasKeys } from "../utils/generics"
-import type { BuiltinClass } from "../utils/objectKinds"
-import type { Scope } from "./scope"
+} from "../parse/definition.ts"
+import type { ParsedMorph } from "../parse/tuple/morph.ts"
+import type { Problems, ProblemsConfig } from "../traverse/problems.ts"
+import { TraversalState, traverse } from "../traverse/traverse.ts"
+import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
+import type { defer, evaluateObject } from "../utils/generics.ts"
+import { hasKeys } from "../utils/generics.ts"
+import type { BuiltinClass } from "../utils/objectKinds.ts"
+import type { Scope } from "./scope.ts"
 
 export type TypeParser<$> = {
     <def>(def: validateDefinition<def, $>): parseType<def, $>
@@ -34,10 +34,10 @@ type TypeRoot<t = unknown> = {
 export type TypeOptions = evaluateObject<
     {
         name?: string
-    } & TypeConfig
+    } & ProblemsConfig
 >
 
-export type TypeConfig = ProblemsOptions
+export type TypeConfig = ProblemsConfig
 
 type TypeMeta = {
     name: string

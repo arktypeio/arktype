@@ -21,18 +21,38 @@ import { getPath, Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import { deserializePrimitive, stringify } from "../utils/serialize.js"
 import type { SizedData } from "../utils/size.js"
-import type { Problem } from "./problems.js"
-import { Problems } from "./problems.js"
+import type { Problem, ProblemCode, ProblemWriterConfig } from "./problems.js"
+import { defaultProblemWriters, Problems } from "./problems.js"
 
 export class TraversalState {
     path = new Path()
     problems = new Problems(this)
-    configs: TypeConfig[] = []
+    configs: TypeConfig[]
     failFast = false
 
     #seen: { [name in QualifiedTypeName]?: object[] } = {}
 
-    constructor(public type: Type) {}
+    constructor(public type: Type) {
+        this.configs = type.meta.scope.config ? [type.meta.scope.config] : []
+    }
+
+    getConfigForProblemCode<code extends ProblemCode>(
+        code: code
+    ): ProblemWriterConfig<code> {
+        if (!this.configs.length) {
+            return defaultProblemWriters[code]
+        }
+        for (let i = this.configs.length - 1; i >= 0; i--) {
+            if (this.configs[i][code] || this.configs[i]["defaults"]) {
+                return {
+                    ...defaultProblemWriters[code],
+                    ...this.configs[i]["defaults"],
+                    ...this.configs[i][code]
+                }
+            }
+        }
+        return defaultProblemWriters[code]
+    }
 
     traverseResolution(data: unknown, name: string) {
         const resolution = this.type.meta.scope.resolve(name)

@@ -1,13 +1,13 @@
-import type { ResolvedNode, TypeNode } from "../nodes/node.js"
-import { flattenType } from "../nodes/node.js"
+import type { ResolvedNode, TypeNode } from "../nodes/node.ts"
+import { flattenType } from "../nodes/node.ts"
 import type {
     inferDefinition,
     ParseContext,
     validateDefinition
-} from "../parse/definition.js"
-import { parseDefinition } from "../parse/definition.js"
-import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.js"
-import { throwInternalError, throwParseError } from "../utils/errors.js"
+} from "../parse/definition.ts"
+import { parseDefinition } from "../parse/definition.ts"
+import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
+import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import type {
     Dict,
     error,
@@ -15,14 +15,13 @@ import type {
     isAny,
     List,
     nominal
-} from "../utils/generics.js"
-import { Path } from "../utils/paths.js"
-import type { stringifyUnion } from "../utils/unionToTuple.js"
-import { Cache, FreezingCache } from "./cache.js"
-import type { PrecompiledDefaults } from "./standard.js"
-import { standard } from "./standard.js"
-import type { Type, TypeConfig, TypeOptions, TypeParser } from "./type.js"
-import { initializeType } from "./type.js"
+} from "../utils/generics.ts"
+import { Path } from "../utils/paths.ts"
+import type { stringifyUnion } from "../utils/unionToTuple.ts"
+import { Cache, FreezingCache } from "./cache.ts"
+import type { PrecompiledDefaults } from "./standard.ts"
+import type { Type, TypeConfig, TypeOptions, TypeParser } from "./type.ts"
+import { initializeType } from "./type.ts"
 
 type ScopeParser = {
     <aliases>(aliases: validateAliases<aliases, {}>): Scope<
@@ -148,6 +147,7 @@ type name<context extends ScopeContext> = keyof resolutions<context> & string
 
 let anonymousScopeCount = 0
 const scopeRegistry: Record<string, Scope | undefined> = {}
+const spaceRegistry: Record<string, Space | undefined> = {}
 
 export class Scope<context extends ScopeContext = any> {
     name: string
@@ -160,7 +160,7 @@ export class Scope<context extends ScopeContext = any> {
     constructor(public aliases: Dict, public opts: ScopeOptions) {
         this.name = this.#register(opts)
         if (opts.standard !== false) {
-            this.#cacheSpaces([standard], "imports")
+            this.#cacheSpaces([spaceRegistry["standard"]!], "imports")
         }
         if (opts.imports) {
             this.#cacheSpaces(opts.imports, "imports")
@@ -223,13 +223,14 @@ export class Scope<context extends ScopeContext = any> {
         return chainableNoOpProxy
     }
 
-    #compiled = false
     compile() {
-        if (!this.#compiled) {
+        if (!spaceRegistry[this.name]) {
             for (const name in this.aliases) {
                 this.resolve(name)
             }
-            this.#compiled = true
+            spaceRegistry[this.name] = this.#exports.root as Space<
+                exportsOf<context>
+            >
         }
         return this.#exports.root as Space<exportsOf<context>>
     }

@@ -27,16 +27,13 @@ describe("scope", () => {
             c: "a&b"
         }).compile()
         attest(types.c.infer).typed as string
-        attest(types.c.node).equals({
+        attest(types.c.node).snap({
             string: {
-                regex: "^(.+)@(.+)\\.(.+)$",
                 range: {
-                    min: {
-                        limit: 5,
-                        comparator: ">"
-                    },
-                    max: { limit: 10, comparator: "<=" }
-                }
+                    min: { comparator: ">", limit: 5 },
+                    max: { comparator: "<=", limit: 10 }
+                },
+                regex: "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
             }
         })
     })

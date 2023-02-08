@@ -1,4 +1,4 @@
-import { scope } from "./scope"
+import { scope } from "./scope.ts"
 
 // https://github.com/validatorjs/validator.js
 export const isLuhnValid = (creditCardInput: string) => {
@@ -29,17 +29,17 @@ export const isLuhnValid = (creditCardInput: string) => {
 export const validationScope = scope(
     {
         // Character sets
-        alpha: /^[A-Z]*$/i,
-        alphanumeric: /^[A-Z\d]*$/i,
+        alpha: /^[A-Za-z]*$/,
+        alphanumeric: /^[A-Za-z\d]*$/,
         lowercase: /^[a-z]*$/,
         uppercase: /^[A-Z]*$/,
         // https://github.com/validatorjs/validator.js
         creditCard:
             /^(?:4[0-9]{12}(?:[0-9]{3,6})?|5[1-5][0-9]{14}|(222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}|6(?:011|5[0-9][0-9])[0-9]{12,15}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11}|6[27][0-9]{14}|^(81[0-9]{14,17}))$/,
         // https://www.regular-expressions.info
-        email: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+        email: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
         // https://github.com/validatorjs/validator.js
-        uuid: /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i,
+        uuid: /^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/,
         integer: ["node", { number: { divisor: 1 } }]
     },
     { name: "validation", standard: false }

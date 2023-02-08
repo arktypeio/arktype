@@ -1,4 +1,4 @@
-import { deepFreeze } from "../utils/freeze"
+import { deepFreeze } from "../utils/freeze.ts"
 
 export class Cache<item = unknown> {
     protected cache: { [name in string]?: item } = {}

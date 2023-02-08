@@ -9,7 +9,6 @@ import type {
     instanceOf,
     requireKeys
 } from "../utils/generics.ts"
-import { keysOf } from "../utils/generics.ts"
 import { isWellFormedInteger } from "../utils/numericLiterals.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { objectKindDescriptions, objectKindOf } from "../utils/objectKinds.ts"
@@ -77,7 +76,7 @@ class ProblemArray extends Array<Problem> {
             Path.from(this.state.path),
             data,
             input,
-            this.state.type.meta.config.codes[code]
+            this.state.getConfigForProblemCode(code)
         )
         const pathKey = `${this.state.path}`
         // TODO: Fix multi
@@ -257,13 +256,13 @@ const compileDefaultProblemWriters = (definitions: {
         definitions[code].reason ??= writeDefaultProblemReason
         definitions[code].message ??= writeDefaultProblemMessage
     }
-    return definitions as ProblemsConfig
+    return definitions as DefaultProblemsConfig
 }
 
 export const defaultProblemWriters = compileDefaultProblemWriters({
     divisor: {
         mustBe: (divisor) =>
-            divisor === 1 ? `an integer` : `divisible by ${divisor}`
+            divisor === 1 ? `an integer` : `a multiple of ${divisor}`
     },
     class: {
         mustBe: (constructor) => `an instance of ${constructor.name}`,
@@ -334,10 +333,6 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
     }
 })
 
-export type ProblemsOptions = evaluateObject<
-    { defaults?: ProblemOptions } & ProblemOptionsByCode
->
-
 // TODO: mustBe should be start, was and all others should build off of that
 export type ProblemOptions<code extends ProblemCode = ProblemCode> = {
     mustBe?: MustBeWriter<code>
@@ -346,10 +341,12 @@ export type ProblemOptions<code extends ProblemCode = ProblemCode> = {
     message?: MessageWriter
 }
 
-export type ProblemOptionsByCode = {
-    [code in ProblemCode]?: ProblemOptions<code>
-}
+export type ProblemsConfig = evaluateObject<
+    { defaults?: ProblemOptions<ProblemCode> } & {
+        [code in ProblemCode]?: ProblemOptions<code>
+    }
+>
 
-export type ProblemsConfig = {
+export type DefaultProblemsConfig = {
     [code in ProblemCode]: ProblemWriterConfig<code>
 }

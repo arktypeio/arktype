@@ -1,6 +1,6 @@
-import type { inferred } from "../parse/definition"
-import type { Domain } from "../utils/domains"
-import { scope } from "./scope"
+import type { inferred } from "../parse/definition.ts"
+import type { Domain } from "../utils/domains.ts"
+import { scope } from "./scope.ts"
 
 const always: Record<Domain, true> = {
     bigint: true,
