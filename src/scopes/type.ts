@@ -5,15 +5,11 @@ import type {
     validateDefinition
 } from "../parse/definition"
 import type { ParsedMorph } from "../parse/tuple/morph"
-import type {
-    Problems,
-    ProblemsConfig,
-    ProblemsOptions
-} from "../traverse/problems"
-import { compileProblemOptions } from "../traverse/problems"
+import type { Problems, ProblemsOptions } from "../traverse/problems"
 import { TraversalState, traverse } from "../traverse/traverse"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy"
-import type { defer } from "../utils/generics"
+import type { defer, evaluateObject } from "../utils/generics"
+import { hasKeys } from "../utils/generics"
 import type { BuiltinClass } from "../utils/objectKinds"
 import type { Scope } from "./scope"
 
@@ -35,30 +31,64 @@ type TypeRoot<t = unknown> = {
     meta: TypeMeta
 }
 
+export type TypeOptions = evaluateObject<
+    {
+        name?: string
+    } & TypeConfig
+>
+
+export type TypeConfig = ProblemsOptions
+
+export type TraversalStartConfigs =
+    | []
+    | [TypeConfig]
+    | [scope: TypeConfig, type: TypeConfig]
+
 type TypeMeta = {
     name: string
     id: QualifiedTypeName
     definition: unknown
     scope: Scope
-    problems: ProblemsConfig
+    config: TypeConfig | undefined
+    traversalStartConfigs: TraversalStartConfigs
     includesMorph: boolean
 }
 
-// TODO: merge scope options
+const compileTypeConfig = (
+    opts: TypeOptions | undefined
+): TypeConfig | undefined => {
+    if (opts === undefined) {
+        return
+    }
+    const { name, ...config } = opts
+    if (hasKeys(config)) {
+        return config
+    }
+}
+
 export const initializeType = (
     definition: unknown,
-    opts: TypeOptions,
+    opts: TypeOptions | undefined,
     scope: Scope
 ) => {
-    const name = opts.name ?? "type"
+    const name = opts?.name ?? "type"
+    const config = compileTypeConfig(opts)
+    const traversalStartConfigs: TraversalStartConfigs = config
+        ? scope.config
+            ? [scope.config, config]
+            : [config]
+        : scope.config
+        ? [scope.config]
+        : []
     const meta: TypeMeta = {
         name,
         id: `${scope.name}.${
-            opts.name ? name : `type${scope.createAnonymousTypeSuffix()}`
+            opts?.name ? name : `type${scope.createAnonymousTypeSuffix()}`
         }`,
         definition,
         scope,
-        problems: compileProblemOptions(opts.problems),
+        config,
+        traversalStartConfigs,
         includesMorph: false
     }
 
@@ -113,18 +143,7 @@ type Checker<t> = (data: unknown) => CheckResult<t>
 
 export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
 
-export type TypeOptions = {
-    name?: string
-    problems?: ProblemsOptions
-}
-
 export type QualifiedTypeName = `${string}.${string}`
-
-export type TypeConfig = {
-    name: string
-    id: QualifiedTypeName
-    problems: ProblemsConfig
-}
 
 export type asIn<t> = asIo<t, "in">
 

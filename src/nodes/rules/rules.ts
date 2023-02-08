@@ -19,11 +19,11 @@ import {
 import type { FlattenContext, TraversalEntry } from "../node.ts"
 import type {
     Branch,
-    BranchWithMetadata,
     FlatBranch,
-    FlatMorphedBranch
+    FlatTransformationBranch,
+    TransformationBranch
 } from "../predicate.ts"
-import { branchHasMetadata } from "../predicate.ts"
+import { branchIsTransformation } from "../predicate.ts"
 
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
@@ -93,7 +93,7 @@ type defineRuleSet<
 > = Pick<NarrowableRules<$>, keys> | LiteralRules<domain>
 
 const rulesOf = (branch: Branch): Rules =>
-    (branch as BranchWithMetadata).rules ?? branch
+    (branch as TransformationBranch).rules ?? branch
 
 export const branchIntersection: Intersector<Branch> = (l, r, state) => {
     const lRules = rulesOf(l)
@@ -233,8 +233,11 @@ export const flattenBranch = (
     branch: Branch,
     ctx: FlattenContext
 ): FlatBranch => {
-    if (branchHasMetadata(branch)) {
-        const result = flattenRules(branch.rules, ctx) as FlatMorphedBranch
+    if (branchIsTransformation(branch)) {
+        const result = flattenRules(
+            branch.rules,
+            ctx
+        ) as FlatTransformationBranch
         if (branch.morph) {
             result.push(["morph", branch.morph])
         }

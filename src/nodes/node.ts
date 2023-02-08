@@ -30,9 +30,6 @@ export type TypeNode<$ = Dict> = Identifier<$> | ResolvedNode<$>
 
 export type Identifier<$ = Dict> = stringKeyOf<$>
 
-/** If scope is provided, we also narrow each predicate to match its domain.
- * Otherwise, we use a base predicate for all types, which is easier to
- * manipulate.*/
 export type ResolvedNode<$ = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, $>
 }
@@ -122,6 +119,8 @@ export type TraversalRule<k extends TraversalKey> = Extract<
 >[1]
 
 export type CyclicReferenceEntry = ["alias", string]
+
+export type ConfigEntry = ["config"]
 
 export type DomainEntry = ["domain", Domain]
 

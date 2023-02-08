@@ -14,7 +14,7 @@ import type {
     inferObjectKind
 } from "../utils/objectKinds.js"
 import type { ResolvedNode, TypeNode } from "./node.js"
-import type { BranchWithMetadata, Predicate } from "./predicate.js"
+import type { Predicate, TransformationBranch } from "./predicate.js"
 import type { ObjectKindRule } from "./rules/objectKind.js"
 import type { OptionalProp, PropsRule } from "./rules/props.js"
 import type { Bound, Range } from "./rules/range.js"
@@ -56,11 +56,15 @@ type inferBranch<
     domain extends Domain,
     branch,
     $
-> = branch extends BranchWithMetadata
+> = branch extends TransformationBranch
     ? inferMorph<domain, branch, $>
     : inferRules<domain, branch, $>
 
-type inferMorph<domain extends Domain, branch extends BranchWithMetadata, $> = (
+type inferMorph<
+    domain extends Domain,
+    branch extends TransformationBranch,
+    $
+> = (
     In: inferBranch<domain, branch["rules"], $>
 ) => Out<
     branch["morph"] extends [...unknown[], infer tail]

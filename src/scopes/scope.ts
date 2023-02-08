@@ -21,7 +21,7 @@ import type { stringifyUnion } from "../utils/unionToTuple.js"
 import { Cache, FreezingCache } from "./cache.js"
 import type { PrecompiledDefaults } from "./standard.js"
 import { standard } from "./standard.js"
-import type { Type, TypeOptions, TypeParser } from "./type.js"
+import type { Type, TypeConfig, TypeOptions, TypeParser } from "./type.js"
 import { initializeType } from "./type.js"
 
 type ScopeParser = {
@@ -42,6 +42,7 @@ export type ScopeOptions = {
     includes?: Space[] | []
     standard?: boolean
     name?: string
+    config?: TypeConfig
 }
 
 type validateOptions<opts extends ScopeOptions> = {
@@ -150,6 +151,7 @@ const scopeRegistry: Record<string, Scope | undefined> = {}
 
 export class Scope<context extends ScopeContext = any> {
     name: string
+    config: TypeConfig | undefined
     parseCache = new FreezingCache<TypeNode>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
@@ -165,6 +167,9 @@ export class Scope<context extends ScopeContext = any> {
         }
         if (opts.includes) {
             this.#cacheSpaces(opts.includes, "includes")
+        }
+        if (opts.config) {
+            this.config = opts.config
         }
     }
 

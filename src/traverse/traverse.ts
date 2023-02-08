@@ -10,7 +10,7 @@ import type { TraversalPropEntry } from "../nodes/rules/props.js"
 import { checkBound } from "../nodes/rules/range.js"
 import { checkRegex } from "../nodes/rules/regex.js"
 import { precedenceMap } from "../nodes/rules/rules.js"
-import type { QualifiedTypeName, Type } from "../scopes/type.js"
+import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf, hasDomain } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
@@ -27,11 +27,14 @@ import { Problems } from "./problems.js"
 export class TraversalState {
     path = new Path()
     problems = new Problems(this)
+    configs: TypeConfig[]
     failFast = false
 
     #seen: { [name in QualifiedTypeName]?: object[] } = {}
 
-    constructor(public type: Type) {}
+    constructor(public type: Type) {
+        this.configs = type.meta.traversalStartConfigs
+    }
 
     traverseResolution(data: unknown, name: string) {
         const resolution = this.type.meta.scope.resolve(name)
@@ -50,11 +53,25 @@ export class TraversalState {
                 this.#seen[id] = [data]
             }
         }
-        // TODO: type not an accurate reflection of context because not always included
-        const lastType = this.type
+        const updatedScopeConfig =
+            resolution.meta.scope !== this.type.meta.scope &&
+            resolution.meta.scope.config
+        if (updatedScopeConfig) {
+            this.configs.push(updatedScopeConfig)
+        }
+        if (resolution.meta.config) {
+            this.configs.push(resolution.meta.config)
+        }
+        const lastResolution = this.type
         this.type = resolution
         traverse(data, resolution.flat, this)
-        this.type = lastType
+        this.type = lastResolution
+        if (resolution.meta.config) {
+            this.configs.pop()
+        }
+        if (updatedScopeConfig) {
+            this.configs.pop()
+        }
         if (isObject) {
             this.#seen[id]!.pop()
         }

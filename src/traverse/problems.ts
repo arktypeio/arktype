@@ -77,7 +77,7 @@ class ProblemArray extends Array<Problem> {
             Path.from(this.state.path),
             data,
             input,
-            this.state.type.meta.problems[code]
+            this.state.type.meta.config.codes[code]
         )
         const pathKey = `${this.state.path}`
         // TODO: Fix multi
@@ -175,13 +175,6 @@ type ProblemDataInputs = {
 export type ProblemDataInput<code extends ProblemCode = ProblemCode> =
     ProblemDataInputs[code]
 
-export type ProblemOptions<code extends ProblemCode> = {
-    mustBe?: RuleWriter<code>
-    was?: DataWriter<code>
-    reason?: ReasonWriter
-    message?: MessageWriter
-}
-
 type ProblemDefinition<code extends ProblemCode> = requireKeys<
     ProblemOptions<code>,
     "mustBe"
@@ -191,7 +184,7 @@ export type ProblemWriterConfig<code extends ProblemCode> = Required<
     ProblemOptions<code>
 >
 
-export type RuleWriter<code extends ProblemCode> = (
+export type MustBeWriter<code extends ProblemCode> = (
     context: ProblemRuleInputs[code]
 ) => string
 
@@ -342,47 +335,20 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
 })
 
 export type ProblemsOptions = evaluateObject<
-    { all?: ProblemOptions<ProblemCode> } & {
-        [code in ProblemCode]?: ProblemOptions<code>
-    }
+    { defaults?: ProblemOptions } & ProblemOptionsByCode
 >
+
+export type ProblemOptions<code extends ProblemCode = ProblemCode> = {
+    mustBe?: MustBeWriter<code>
+    was?: DataWriter<code>
+    reason?: ReasonWriter
+    message?: MessageWriter
+}
+
+export type ProblemOptionsByCode = {
+    [code in ProblemCode]?: ProblemOptions<code>
+}
 
 export type ProblemsConfig = {
     [code in ProblemCode]: ProblemWriterConfig<code>
-}
-
-const codes = keysOf(defaultProblemWriters)
-
-// TODO: remove all copy from codes?
-export const compileProblemOptions = (
-    opts: ProblemsOptions | undefined,
-    base = defaultProblemWriters
-) => {
-    if (!opts) {
-        return base
-    }
-    const { all, ...byCode } = opts
-    const result = {} as ProblemsConfig
-    let code: ProblemCode
-    if (all) {
-        for (code of codes) {
-            result[code] = {
-                ...base[code],
-                ...all,
-                ...byCode[code]
-            } as ProblemWriterConfig<any>
-        }
-    } else {
-        for (code of codes) {
-            result[code] = (
-                byCode[code]
-                    ? {
-                          ...base[code],
-                          ...byCode[code]
-                      }
-                    : base[code]
-            ) as ProblemWriterConfig<any>
-        }
-    }
-    return result
 }
