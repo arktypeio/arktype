@@ -26,6 +26,8 @@ import {
 } from "./predicate.ts"
 import type { LiteralRules, MorphEntry, RuleEntry } from "./rules/rules.ts"
 
+// TODO: Add type root with options as a node that can be intersected?
+
 export type TypeNode<$ = Dict> = Identifier<$> | ResolvedNode<$>
 
 export type Identifier<$ = Dict> = stringKeyOf<$>
