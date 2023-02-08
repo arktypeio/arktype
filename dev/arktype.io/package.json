@@ -22,7 +22,7 @@
         "@emotion/styled": "11.9.3",
         "@mui/icons-material": "5.8.4",
         "@mui/material": "5.8.5",
-        "@stackblitz/sdk": "1.8.0",
+        "@stackblitz/sdk": "1.8.2",
         "framer-motion": "6.5.1"
     },
     "devDependencies": {
