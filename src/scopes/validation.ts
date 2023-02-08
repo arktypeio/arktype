@@ -25,7 +25,7 @@ export const isLuhnValid = (creditCardInput: string) => {
     return !!(sum % 10 === 0 ? sanitized : false)
 }
 
-// Non-trivial expressions should have an explanation or atttribution
+// Non-trivial expressions should have an explanation or attribution
 export const validationScope = scope(
     {
         // Character sets
