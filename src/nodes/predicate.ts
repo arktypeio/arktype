@@ -1,5 +1,5 @@
-import type { Type } from "../main.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
+import type { Type } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
 import type { CollapsibleList, defined, Dict, xor } from "../utils/generics.ts"
 import { keysOf, listFrom } from "../utils/generics.ts"

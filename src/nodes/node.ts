@@ -1,6 +1,6 @@
-import type { Type } from "../main.ts"
 import type { ParseContext } from "../parse/definition.ts"
 import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
+import type { Type } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"

@@ -1,5 +1,5 @@
-import type { asIn } from "../../main.ts"
 import { intersection } from "../../nodes/node.ts"
+import type { asIn } from "../../scopes/type.ts"
 import type { Problems } from "../../traverse/problems.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"

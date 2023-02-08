@@ -1,4 +1,3 @@
-import type { QualifiedTypeName, Type } from "../main.js"
 import { serializeCase } from "../nodes/discriminate.js"
 import type {
     TraversalEntry,
@@ -11,6 +10,7 @@ import type { TraversalPropEntry } from "../nodes/rules/props.js"
 import { checkBound } from "../nodes/rules/range.js"
 import { checkRegex } from "../nodes/rules/regex.js"
 import { precedenceMap } from "../nodes/rules/rules.js"
+import type { QualifiedTypeName, Type } from "../scopes/type.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf, hasDomain } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
