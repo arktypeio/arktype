@@ -2,7 +2,6 @@ import type { FlatBound } from "../nodes/rules/range.ts"
 import { Scanner } from "../parse/string/shift/scanner.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainDescriptions, domainOf } from "../utils/domains.ts"
-import { throwInternalError } from "../utils/errors.ts"
 import type {
     constructor,
     evaluate,
