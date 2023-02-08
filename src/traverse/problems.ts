@@ -338,6 +338,7 @@ export type ProblemsOptions = evaluateObject<
     { defaults?: ProblemOptions } & ProblemOptionsByCode
 >
 
+// TODO: mustBe should be start, was and all others should build off of that
 export type ProblemOptions<code extends ProblemCode = ProblemCode> = {
     mustBe?: MustBeWriter<code>
     was?: DataWriter<code>
