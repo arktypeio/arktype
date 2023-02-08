@@ -1,38 +1,27 @@
-import type { ResolvedNode, TraversalNode, TypeNode } from "./nodes/node.js"
-import { flattenType } from "./nodes/node.js"
+import type { ResolvedNode, TypeNode } from "../nodes/node.ts"
+import { flattenType } from "../nodes/node.ts"
 import type {
-    as,
     inferDefinition,
-    inferred,
     ParseContext,
     validateDefinition
-} from "./parse/definition.js"
-import { parseDefinition } from "./parse/definition.js"
-import type { ParsedMorph } from "./parse/tuple/morph.ts"
+} from "../parse/definition.ts"
+import { parseDefinition } from "../parse/definition.ts"
+import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
+import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import type {
-    Problems,
-    ProblemsConfig,
-    ProblemsOptions
-} from "./traverse/problems.ts"
-import { compileProblemOptions } from "./traverse/problems.ts"
-import { TraversalState, traverse } from "./traverse/traverse.ts"
-import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
-import type { Domain } from "./utils/domains.js"
-import { throwInternalError, throwParseError } from "./utils/errors.js"
-import { deepFreeze } from "./utils/freeze.ts"
-import type {
-    defer,
     Dict,
     error,
     evaluateObject,
-    extend,
     isAny,
     List,
     nominal
-} from "./utils/generics.js"
-import type { BuiltinClass, InferredObjectKinds } from "./utils/objectKinds.ts"
-import { Path } from "./utils/paths.ts"
-import type { stringifyUnion } from "./utils/unionToTuple.js"
+} from "../utils/generics.ts"
+import { Path } from "../utils/paths.ts"
+import type { stringifyUnion } from "../utils/unionToTuple.ts"
+import { Cache, FreezingCache } from "./cache.ts"
+import type { PrecompiledDefaults } from "./standard.ts"
+import type { Type, TypeConfig, TypeOptions, TypeParser } from "./type.ts"
+import { initializeType } from "./type.ts"
 
 type ScopeParser = {
     <aliases>(aliases: validateAliases<aliases, {}>): Scope<
@@ -45,12 +34,6 @@ type ScopeParser = {
     ): Scope<parseScope<aliases, opts>>
 }
 
-export type TypeParser<$> = {
-    <def>(def: validateDefinition<def, $>): parseType<def, $>
-
-    <def>(def: validateDefinition<def, $>, opts: TypeOptions): parseType<def, $>
-}
-
 // TODO: Reintegrate thunks/compilation, add utilities for narrowed defs
 export type ScopeOptions = {
     // [] allows narrowed tuple inference
@@ -58,6 +41,7 @@ export type ScopeOptions = {
     includes?: Space[] | []
     standard?: boolean
     name?: string
+    config?: TypeConfig
 }
 
 type validateOptions<opts extends ScopeOptions> = {
@@ -163,9 +147,11 @@ type name<context extends ScopeContext> = keyof resolutions<context> & string
 
 let anonymousScopeCount = 0
 const scopeRegistry: Record<string, Scope | undefined> = {}
+const spaceRegistry: Record<string, Space | undefined> = {}
 
 export class Scope<context extends ScopeContext = any> {
     name: string
+    config: TypeConfig | undefined
     parseCache = new FreezingCache<TypeNode>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
@@ -174,13 +160,16 @@ export class Scope<context extends ScopeContext = any> {
     constructor(public aliases: Dict, public opts: ScopeOptions) {
         this.name = this.#register(opts)
         if (opts.standard !== false) {
-            this.#cacheSpaces([standardTypes], "imports")
+            this.#cacheSpaces([spaceRegistry["standard"]!], "imports")
         }
         if (opts.imports) {
             this.#cacheSpaces(opts.imports, "imports")
         }
         if (opts.includes) {
             this.#cacheSpaces(opts.includes, "includes")
+        }
+        if (opts.config) {
+            this.config = opts.config
         }
     }
 
@@ -234,13 +223,14 @@ export class Scope<context extends ScopeContext = any> {
         return chainableNoOpProxy
     }
 
-    #compiled = false
     compile() {
-        if (!this.#compiled) {
+        if (!spaceRegistry[this.name]) {
             for (const name in this.aliases) {
                 this.resolve(name)
             }
-            this.#compiled = true
+            spaceRegistry[this.name] = this.#exports.root as Space<
+                exportsOf<context>
+            >
         }
         return this.#exports.root as Space<exportsOf<context>>
     }
@@ -276,7 +266,6 @@ export class Scope<context extends ScopeContext = any> {
                     : undefined
             ) as ResolveResult<onUnresolvable>
         }
-        // TODO: opts?
         const type = initializeType(this.aliases[name], { name }, this)
         this.#resolutions.set(name, type)
         this.#exports.set(name, type)
@@ -304,240 +293,18 @@ export class Scope<context extends ScopeContext = any> {
     }
 }
 
-type TypeRoot<t = unknown> = {
-    [as]: t
-    infer: asOut<t>
-    node: TypeNode
-    flat: TraversalNode
-    meta: TypeMeta
-}
-
-type TypeMeta = {
-    name: string
-    id: QualifiedTypeName
-    definition: unknown
-    scope: Scope
-    problems: ProblemsConfig
-    includesMorph: boolean
-}
-
-// TODO: merge scope options
-const initializeType = (
-    definition: unknown,
-    opts: TypeOptions,
-    scope: Scope
-) => {
-    const name = opts.name ?? "type"
-    const meta: TypeMeta = {
-        name,
-        id: `${scope.name}.${
-            opts.name ? name : `type${scope.createAnonymousTypeSuffix()}`
-        }`,
-        definition,
-        scope,
-        problems: compileProblemOptions(opts.problems),
-        includesMorph: false
-    }
-
-    const root = {
-        // temporarily initialize node/flat to aliases that will be included in
-        // the final type in case of cyclic resolutions
-        node: name,
-        flat: [["alias", name]],
-        meta,
-        infer: chainableNoOpProxy
-        // the "as" symbol from inferred is not used at runtime, so we check
-        // that the rest of the type is correct then cast it
-    } satisfies Omit<TypeRoot, typeof as> as TypeRoot
-
-    // dynamically assign a name to the primary traversal function
-    const namedTraverse: Checker<unknown> = {
-        [name]: (data: unknown) => {
-            const state = new TraversalState(type)
-            const out = traverse(data, type.flat, state)
-            return (
-                state.problems.length
-                    ? { data, problems: state.problems }
-                    : { data, out }
-            ) as CheckResult<unknown>
-        }
-    }[name]
-
-    // we need to assign this to a variable before returning so we can reference
-    // it in namedTraverse
-    const type: Type = Object.assign(namedTraverse, root)
-    return type
-}
-
 type OnUnresolvable = "throw" | "undefined"
 
 type ResolveResult<onUnresolvable extends OnUnresolvable> =
     onUnresolvable extends "throw" ? Type : Type | undefined
-
-class Cache<item = unknown> {
-    protected cache: { [name in string]?: item } = {}
-
-    get root(): { readonly [name in string]?: item } {
-        return this.cache
-    }
-
-    has(name: string) {
-        return name in this.cache
-    }
-
-    get(name: string) {
-        return this.cache[name]
-    }
-
-    set(name: string, item: item) {
-        this.cache[name] = item
-        return item
-    }
-}
-
-class FreezingCache<item = unknown> extends Cache<item> {
-    override set(name: string, item: item) {
-        this.cache[name] = deepFreeze(item) as item
-        return item
-    }
-}
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
         "=>"
     )}`
 
-const always: Record<Domain, true> = {
-    bigint: true,
-    boolean: true,
-    null: true,
-    number: true,
-    object: true,
-    string: true,
-    symbol: true,
-    undefined: true
-}
-
 export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>
     new Scope(aliases, opts)) as any
-
-const tsKeywords = scope(
-    {
-        any: ["node", always] as inferred<any>,
-        bigint: ["node", { bigint: true }],
-        boolean: ["node", { boolean: true }],
-        false: ["node", { boolean: { value: false } }],
-        never: ["node", {}],
-        null: ["node", { null: true }],
-        number: ["node", { number: true }],
-        object: ["node", { object: true }],
-        string: ["node", { string: true }],
-        symbol: ["node", { symbol: true }],
-        true: ["node", { boolean: { value: true } }],
-        unknown: ["node", always] as inferred<unknown>,
-        void: ["node", { undefined: true }] as inferred<void>,
-        undefined: ["node", { undefined: true }]
-    },
-    { name: "ts", standard: false }
-)
-
-const tsKeywordsSpace = tsKeywords.compile()
-
-const jsObjects = scope(
-    {
-        Function: ["node", { object: { objectKind: "Function" } }],
-        Array: ["node", { object: { objectKind: "Array" } }],
-        Date: ["node", { object: { objectKind: "Date" } }],
-        Error: ["node", { object: { objectKind: "Error" } }],
-        Map: ["node", { object: { objectKind: "Map" } }],
-        RegExp: ["node", { object: { objectKind: "RegExp" } }],
-        Set: ["node", { object: { objectKind: "Set" } }],
-        Object: ["node", { object: { objectKind: "Object" } }],
-        String: ["node", { object: { objectKind: "String" } }],
-        Number: ["node", { object: { objectKind: "Number" } }],
-        Boolean: ["node", { object: { objectKind: "Boolean" } }],
-        WeakMap: ["node", { object: { objectKind: "WeakMap" } }],
-        WeakSet: ["node", { object: { objectKind: "WeakSet" } }],
-        Promise: ["node", { object: { objectKind: "Promise" } }]
-    },
-    { name: "jsObjects", standard: false }
-)
-
-const jsObjectsSpace = jsObjects.compile()
-
-const validation = scope(
-    {
-        email: /^(.+)@(.+)\.(.+)$/,
-        alphanumeric: /^[dA-Za-z]+$/,
-        alpha: /^[A-Za-z]+$/,
-        lowercase: /^[a-z]*$/,
-        uppercase: /^[A-Z]*$/,
-        integer: ["node", { number: { divisor: 1 } }]
-    },
-    { name: "validation", standard: false }
-)
-
-const validationSpace = validation.compile()
-
-const standard = scope(
-    {},
-    {
-        name: "standard",
-        includes: [tsKeywordsSpace, jsObjectsSpace, validationSpace],
-        standard: false
-    }
-)
-
-const standardTypes = standard.compile()
-
-export const scopes = {
-    tsKeywords,
-    jsObjects,
-    validation,
-    standard
-}
-
-export const spaces = {
-    tsKeywords: tsKeywordsSpace,
-    jsObjects: jsObjectsSpace,
-    validation: validationSpace,
-    standard: standardTypes
-} satisfies Record<keyof typeof scopes, Space>
-
-// This is just copied from the inference of defaultScope. Creating an explicit
-// type like this makes validation for the default type and scope functions feel
-// significantly more responsive.
-export type PrecompiledDefaults = {
-    email: string
-    alphanumeric: string
-    alpha: string
-    lowercase: string
-    uppercase: string
-    integer: number
-    any: any
-    bigint: bigint
-    boolean: boolean
-    false: false
-    never: never
-    null: null
-    number: number
-    object: object
-    string: string
-    symbol: symbol
-    true: true
-    unknown: unknown
-    void: void
-    undefined: undefined
-} & InferredObjectKinds
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type ValidateDefaultScope = [
-    // if PrecompiledDefaults gets out of sync with scopes.standard, there will be a type error here
-    extend<PrecompiledDefaults, typeof scopes["standard"]["infer"]>,
-    extend<typeof scopes["standard"]["infer"], PrecompiledDefaults>
-]
-
-export const type: TypeParser<PrecompiledDefaults> = scopes.standard.type
 
 export const writeDuplicateAliasesMessage = <name extends string>(
     name: name
@@ -545,55 +312,3 @@ export const writeDuplicateAliasesMessage = <name extends string>(
 
 type writeDuplicateAliasesMessage<name extends string> =
     `Alias '${name}' is already defined`
-
-export const isType = (value: unknown): value is Type =>
-    (value as Type)?.infer === chainableNoOpProxy
-
-export type parseType<def, $> = def extends validateDefinition<def, $>
-    ? Type<inferDefinition<def, $>>
-    : never
-
-export type CheckResult<t> = ValidCheckResult<t> | InvalidCheckResult
-
-type ValidCheckResult<t> = {
-    data: asIn<t>
-    out: asOut<t>
-    problems?: never
-}
-
-type InvalidCheckResult = {
-    data: unknown
-    problems: Problems
-    out?: never
-}
-
-type Checker<t> = (data: unknown) => CheckResult<t>
-
-export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
-
-export type TypeOptions = {
-    name?: string
-    problems?: ProblemsOptions
-}
-
-export type QualifiedTypeName = `${string}.${string}`
-
-export type TypeConfig = {
-    name: string
-    id: QualifiedTypeName
-    problems: ProblemsConfig
-}
-
-export type asIn<t> = asIo<t, "in">
-
-export type asOut<t> = asIo<t, "out">
-
-type asIo<t, io extends "in" | "out"> = t extends ParsedMorph<infer i, infer o>
-    ? io extends "in"
-        ? i
-        : o
-    : t extends object
-    ? t extends Function | BuiltinClass
-        ? t
-        : { [k in keyof t]: asIo<t[k], io> }
-    : t

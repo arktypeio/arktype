@@ -1,5 +1,4 @@
 import { writeImplicitNeverMessage } from "../../parse/string/ast.ts"
-import type { Morph } from "../../parse/tuple/morph.ts"
 import type { Narrow } from "../../parse/tuple/narrow.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
@@ -18,6 +17,13 @@ import {
     isEquality
 } from "../compose.ts"
 import type { FlattenContext, TraversalEntry } from "../node.ts"
+import type {
+    Branch,
+    FlatBranch,
+    FlatTransformationBranch,
+    TransformationBranch
+} from "../predicate.ts"
+import { branchIsTransformation } from "../predicate.ts"
 
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
@@ -32,7 +38,7 @@ import type {
 import { flattenProps, propsIntersection } from "./props.ts"
 import type { FlatBound, Range } from "./range.ts"
 import { flattenRange, rangeIntersection } from "./range.ts"
-import { getRegex, regexIntersection } from "./regex.ts"
+import { regexIntersection } from "./regex.ts"
 
 export type NarrowableRules<$ = Dict> = {
     readonly objectKind?: ObjectKindRule<$>
@@ -50,24 +56,11 @@ export type LiteralRules<domain extends Domain = Domain> = {
 
 export type NarrowRule = CollapsibleList<Narrow>
 
-export type Branch<domain extends Domain = Domain, $ = Dict> =
-    | Rules<domain, $>
-    | MorphBranch<domain, $>
-
-export type MorphBranch<domain extends Domain = Domain, $ = Dict> = {
-    input: Rules<domain, $>
-    morph: CollapsibleList<Morph>
-}
-
-export type FlatBranch = FlatRules | FlatMorphedBranch
-
 export type FlatRules = RuleEntry[]
-
-type FlatMorphedBranch = [...rules: FlatRules, morph: MorphEntry]
 
 export type RuleEntry =
     | ["objectKind", TraversalObjectKindRule]
-    | ["regex", RegExp]
+    | ["regex", string]
     | ["divisor", number]
     | ["bound", FlatBound]
     | ["class", constructor]
@@ -75,8 +68,6 @@ export type RuleEntry =
     | TraversalOptionalProps
     | ["narrow", Narrow]
     | ["value", unknown]
-
-export type MorphEntry = ["morph", CollapsibleList<Morph>]
 
 export type Rules<
     domain extends Domain = Domain,
@@ -102,7 +93,7 @@ type defineRuleSet<
 > = Pick<NarrowableRules<$>, keys> | LiteralRules<domain>
 
 const rulesOf = (branch: Branch): Rules =>
-    (branch as MorphBranch).input ?? branch
+    (branch as TransformationBranch).rules ?? branch
 
 export const branchIntersection: Intersector<Branch> = (l, r, state) => {
     const lRules = rulesOf(l)
@@ -114,7 +105,7 @@ export const branchIntersection: Intersector<Branch> = (l, r, state) => {
                 return isEquality(rulesResult) || isDisjoint(rulesResult)
                     ? rulesResult
                     : {
-                          input: rulesResult,
+                          rules: rulesResult,
                           morph: l.morph
                       }
             }
@@ -131,7 +122,7 @@ export const branchIntersection: Intersector<Branch> = (l, r, state) => {
         return isDisjoint(rulesResult)
             ? rulesResult
             : {
-                  input: isEquality(rulesResult) ? l.input : rulesResult,
+                  rules: isEquality(rulesResult) ? l.rules : rulesResult,
                   morph: l.morph
               }
     }
@@ -139,7 +130,7 @@ export const branchIntersection: Intersector<Branch> = (l, r, state) => {
         return isDisjoint(rulesResult)
             ? rulesResult
             : {
-                  input: isEquality(rulesResult) ? r.input : rulesResult,
+                  rules: isEquality(rulesResult) ? r.rules : rulesResult,
                   morph: r.morph
               }
     }
@@ -192,7 +183,7 @@ const ruleFlatteners: {
     objectKind: flattenObjectKind,
     regex: (entries, rule) => {
         for (const source of listFrom(rule)) {
-            entries.push(["regex", getRegex(source)])
+            entries.push(["regex", source])
         }
     },
     divisor: (entries, rule) => {
@@ -217,6 +208,7 @@ export const precedenceMap: {
     readonly [k in TraversalEntry[0]]: number
 } = {
     // Critical: No other checks are performed if these fail
+    config: 0,
     domain: 0,
     value: 0,
     domains: 0,
@@ -242,9 +234,14 @@ export const flattenBranch = (
     branch: Branch,
     ctx: FlattenContext
 ): FlatBranch => {
-    if ("morph" in branch) {
-        const result = flattenRules(branch.input, ctx) as FlatMorphedBranch
-        result.push(["morph", branch.morph])
+    if (branchIsTransformation(branch)) {
+        const result = flattenRules(
+            branch.rules,
+            ctx
+        ) as FlatTransformationBranch
+        if (branch.morph) {
+            result.push(["morph", branch.morph])
+        }
         return result
     }
     return flattenRules(branch, ctx)

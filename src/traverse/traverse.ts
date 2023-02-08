@@ -1,4 +1,3 @@
-import type { QualifiedTypeName, Type } from "../main.js"
 import { serializeCase } from "../nodes/discriminate.js"
 import type {
     TraversalEntry,
@@ -11,6 +10,7 @@ import type { TraversalPropEntry } from "../nodes/rules/props.js"
 import { checkBound } from "../nodes/rules/range.js"
 import { checkRegex } from "../nodes/rules/regex.js"
 import { precedenceMap } from "../nodes/rules/rules.js"
+import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf, hasDomain } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
@@ -21,17 +21,38 @@ import { getPath, Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import { deserializePrimitive, stringify } from "../utils/serialize.js"
 import type { SizedData } from "../utils/size.js"
-import type { Problem } from "./problems.js"
-import { Problems } from "./problems.js"
+import type { Problem, ProblemCode, ProblemWriters } from "./problems.js"
+import { defaultProblemWriters, Problems } from "./problems.js"
 
 export class TraversalState {
     path = new Path()
     problems = new Problems(this)
+    configs: TypeConfig[]
     failFast = false
 
     #seen: { [name in QualifiedTypeName]?: object[] } = {}
 
-    constructor(public type: Type) {}
+    constructor(public type: Type) {
+        this.configs = type.meta.scope.config ? [type.meta.scope.config] : []
+    }
+
+    getConfigForProblemCode<code extends ProblemCode>(
+        code: code
+    ): ProblemWriters<code> {
+        if (!this.configs.length) {
+            return defaultProblemWriters[code]
+        }
+        for (let i = this.configs.length - 1; i >= 0; i--) {
+            if (this.configs[i][code] || this.configs[i]["defaults"]) {
+                return {
+                    ...defaultProblemWriters[code],
+                    ...this.configs[i]["defaults"],
+                    ...this.configs[i][code]
+                }
+            }
+        }
+        return defaultProblemWriters[code]
+    }
 
     traverseResolution(data: unknown, name: string) {
         const resolution = this.type.meta.scope.resolve(name)
@@ -50,11 +71,10 @@ export class TraversalState {
                 this.#seen[id] = [data]
             }
         }
-        // TODO: type not an accurate reflection of context because not always included
-        const lastType = this.type
+        const lastResolution = this.type
         this.type = resolution
         traverse(data, resolution.flat, this)
-        this.type = lastType
+        this.type = lastResolution
         if (isObject) {
             this.#seen[id]!.pop()
         }
@@ -245,12 +265,18 @@ const checkers = {
     alias: (data, name, state) => state.traverseResolution(data, name),
     class: checkClass,
     narrow: (data, narrow, state) => narrow(data, state.problems),
+    config: (data, { config, node }, state) => {
+        state.configs.push(config)
+        traverse(data, node, state)
+        state.configs.pop()
+    },
     value: (data, value, state) => {
         if (data !== value) {
             state.problems.add("value", data, value)
         }
     }
 } satisfies {
+    // TODO: out morphs not always returned? e.g. config?
     [k in ValidationKey]: TraversalCheck<k>
 }
 

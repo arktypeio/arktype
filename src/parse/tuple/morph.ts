@@ -1,6 +1,7 @@
-import type { asOut } from "../../main.ts"
 import type { ResolvedNode } from "../../nodes/node.ts"
-import type { Branch } from "../../nodes/predicate.ts"
+import type { Branch, TransformationBranch } from "../../nodes/predicate.ts"
+import { branchIsTransformation } from "../../nodes/predicate.ts"
+import type { asOut } from "../../scopes/type.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../../utils/errors.ts"
 import type { mutable, nominal } from "../../utils/generics.ts"
@@ -24,7 +25,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
     for (domain in resolution) {
         const predicate = resolution[domain]
         if (predicate === true) {
-            result[domain] = { input: {}, morph }
+            result[domain] = { rules: {}, morph }
         } else if (typeof predicate === "object") {
             result[domain] = isArray(predicate)
                 ? predicate.map((branch) => applyMorph(branch, morph))
@@ -40,16 +41,18 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
     return result
 }
 
-const applyMorph = (branch: Branch, morph: Morph) =>
-    branch.morph
+const applyMorph = (branch: Branch, morph: Morph): TransformationBranch =>
+    branchIsTransformation(branch)
         ? {
-              input: branch.input,
-              morph: Array.isArray(branch.morph)
-                  ? [...branch.morph, morph]
-                  : [branch.morph, morph]
+              ...branch,
+              morph: branch.morph
+                  ? Array.isArray(branch.morph)
+                      ? [...branch.morph, morph]
+                      : [branch.morph, morph]
+                  : morph
           }
         : {
-              input: branch,
+              rules: branch,
               morph
           }
 

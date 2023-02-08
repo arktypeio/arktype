@@ -1,6 +1,6 @@
-import type { Type } from "../main.ts"
-import { isType } from "../main.ts"
 import type { TypeNode } from "../nodes/node.ts"
+import type { Type } from "../scopes/type.ts"
+import { isType } from "../scopes/type.ts"
 import type { Primitive } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"

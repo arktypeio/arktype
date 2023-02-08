@@ -6,7 +6,7 @@ describe("traverse", () => {
     it("divisible", () => {
         const t = type("number%2")
         attest(t(4).data).snap(4)
-        attest(t(5).problems?.summary).snap("Must be divisible by 2 (was 5)")
+        attest(t(5).problems?.summary).snap("Must be a multiple of 2 (was 5)")
     })
     it("range", () => {
         const t = type("number>2")
@@ -41,11 +41,9 @@ describe("traverse", () => {
     })
     it("custom errors", () => {
         const isEven = type("number%2", {
-            problems: {
-                divisor: {
-                    mustBe: (divisor) => `a multiple of ${divisor}`,
-                    reason: (mustBe, was) => `${was} is not ${mustBe}!`
-                }
+            divisor: {
+                mustBe: (divisor) => `a multiple of ${divisor}`,
+                writeReason: (mustBe, was) => `${was} is not ${mustBe}!`
             }
         })
         attest(isEven(3).problems?.summary).snap("3 is not a multiple of 2!")
@@ -92,6 +90,18 @@ describe("traverse", () => {
         // unsatisfying value
         attest(t({ a: 5 }).problems?.summary).snap(
             "a must be a string or boolean (was number)"
+        )
+    })
+    it("multi", () => {
+        const naturalNumber = type("integer>0")
+        attest(naturalNumber(-1.2).problems?.summary).snap(
+            "-1.2 must be...\n• an integer\n• greater than 0"
+        )
+        const naturalAtPath = type({
+            natural: naturalNumber
+        })
+        attest(naturalAtPath({ natural: -0.1 }).problems?.summary).snap(
+            "At natural, -0.1 must be...\n• an integer\n• greater than 0"
         )
     })
 })
