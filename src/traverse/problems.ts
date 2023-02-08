@@ -2,6 +2,7 @@ import type { FlatBound } from "../nodes/rules/range.ts"
 import { Scanner } from "../parse/string/shift/scanner.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainDescriptions, domainOf } from "../utils/domains.ts"
+import { throwInternalError } from "../utils/errors.ts"
 import type {
     constructor,
     evaluate,
@@ -28,32 +29,38 @@ export class ArkTypeError extends TypeError {
     }
 }
 
-export class Problem {
+export class Problem<code extends ProblemCode = any> {
+    parts?: Problem[]
+
     constructor(
-        public code: ProblemCode,
+        public code: code,
         public path: Path,
-        private data: ProblemDataInput,
-        private rule: ProblemRuleInput,
-        private writers: ProblemWriterConfig<any>
-    ) {}
+        protected data: ProblemData<code>,
+        protected source: ProblemSource<code>,
+        protected writers: ProblemWriters<code>
+    ) {
+        if (this.code === "multi") {
+            this.parts = this.source as any
+        }
+    }
 
     toString() {
         return this.message
     }
 
     get message() {
-        return this.writers.message(this.reason, this.path)
+        return this.writers.addContext(this.reason, this.path)
     }
 
     get reason() {
-        return this.writers.reason(
+        return this.writers.writeReason(
             this.mustBe,
             new DataWrapper(this.data) as never
         )
     }
 
     get mustBe() {
-        return this.writers.mustBe(this.rule)
+        return this.writers.mustBe(this.source)
     }
 }
 
@@ -66,34 +73,42 @@ class ProblemArray extends Array<Problem> {
 
     add<code extends ProblemCode>(
         code: code,
-        data: ProblemDataInput<code>,
-        input: ProblemRuleInput<code>
+        data: ProblemData<code>,
+        source: ProblemSource<code>
     ) {
         const problem: Problem = new Problem(
             code,
             // copy the path to avoid future mutations affecting it
             Path.from(this.state.path),
             data,
-            input,
+            source,
             this.state.getConfigForProblemCode(code)
         )
         const pathKey = `${this.state.path}`
-        // TODO: Fix multi
-        // const existing = this.byPath[pathKey]
-        // if (existing) {
-        //     if (existing.code === "multi") {
-        //         existing.message += `\n• ${problem.message}`
-        //     } else {
-        //         this.byPath[pathKey] = new Problem(
-        //             "multi",
-        //             existing.path,
-        //             `• ${existing.message}\n• ${problem.message}`
-        //         )
-        //     }
-        // } else {
-        // }
-        this.byPath[pathKey] = problem
-        this.push(problem)
+        const existing = this.byPath[pathKey]
+        if (existing) {
+            if (existing.parts) {
+                existing.parts.push(problem)
+            } else {
+                const problemIntersection = new Problem(
+                    "multi",
+                    existing.path,
+                    data,
+                    [existing, problem],
+                    this.state.getConfigForProblemCode("multi")
+                )
+                const existingIndex = this.indexOf(existing)
+                // If existing is found (which it always should be unless this was externally mutated),
+                // replace it with the new problem intersection. In case it isn't for whatever reason,
+                // just append the intersection.
+                this[existingIndex === -1 ? this.length : existingIndex] =
+                    problemIntersection
+                this.byPath[pathKey] = problemIntersection
+            }
+        } else {
+            this.byPath[pathKey] = problem
+            this.push(problem)
+        }
     }
 
     get summary() {
@@ -144,7 +159,7 @@ export const describeBranches = (descriptions: string[]) => {
     return description
 }
 
-type ProblemRuleInputs = {
+type ProblemSources = {
     divisor: number
     class: constructor
     domain: Domain
@@ -155,39 +170,35 @@ type ProblemRuleInputs = {
     regex: string
     value: unknown
     valueBranches: unknown[]
-    multi: string[]
+    multi: Problem[]
     branches: Problem[]
 }
 
-export type ProblemCode = evaluate<keyof ProblemRuleInputs>
+export type ProblemCode = evaluate<keyof ProblemSources>
 
-export type ProblemRuleInput<code extends ProblemCode = ProblemCode> =
-    ProblemRuleInputs[code]
+export type ProblemSource<code extends ProblemCode = ProblemCode> =
+    ProblemSources[code]
 
-type ProblemDataInputs = {
+type ProblemDataByCode = {
     [code in ProblemCode]: code extends keyof ConstrainedRuleTraversalData
         ? ConstrainedRuleTraversalData[code]
         : unknown
 }
 
-export type ProblemDataInput<code extends ProblemCode = ProblemCode> =
-    ProblemDataInputs[code]
+export type ProblemData<code extends ProblemCode = ProblemCode> =
+    ProblemDataByCode[code]
 
 type ProblemDefinition<code extends ProblemCode> = requireKeys<
     ProblemOptions<code>,
     "mustBe"
 >
 
-export type ProblemWriterConfig<code extends ProblemCode> = Required<
-    ProblemOptions<code>
->
-
 export type MustBeWriter<code extends ProblemCode> = (
-    context: ProblemRuleInputs[code]
+    source: ProblemSources[code]
 ) => string
 
 export type ReasonWriter<code extends ProblemCode = ProblemCode> = (
-    rule: string,
+    mustBe: string,
     data: DataWrapper<
         code extends keyof ConstrainedRuleTraversalData
             ? ConstrainedRuleTraversalData[code]
@@ -195,7 +206,7 @@ export type ReasonWriter<code extends ProblemCode = ProblemCode> = (
     >
 ) => string
 
-export type MessageWriter = (reason: string, path: Path) => string
+export type ContextWriter = (reason: string, path: Path) => string
 
 export class DataWrapper<value = unknown> {
     constructor(public value: value) {}
@@ -236,7 +247,7 @@ export class DataWrapper<value = unknown> {
 const writeDefaultReason = (mustBe: string, was: DataWrapper | string) =>
     `must be ${mustBe}${was && ` (was ${was})`}`
 
-const writeDefaultProblemMessage: MessageWriter = (reason, path) =>
+const writeDefaultProblemMessage: ContextWriter = (reason, path) =>
     path.length === 0
         ? capitalize(reason)
         : path.length === 1 && isWellFormedInteger(path[0])
@@ -248,10 +259,10 @@ const compileDefaultProblemWriters = (definitions: {
 }) => {
     let code: ProblemCode
     for (code in definitions) {
-        definitions[code].reason ??= writeDefaultReason
-        definitions[code].message ??= writeDefaultProblemMessage
+        definitions[code].writeReason ??= writeDefaultReason
+        definitions[code].addContext ??= writeDefaultProblemMessage
     }
-    return definitions as DefaultProblemsConfig
+    return definitions as DefaultProblemsWriters
 }
 
 export const defaultProblemWriters = compileDefaultProblemWriters({
@@ -261,30 +272,33 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
     },
     class: {
         mustBe: (constructor) => `an instance of ${constructor.name}`,
-        reason: (mustBe, data) => writeDefaultReason(mustBe, data.className)
+        writeReason: (mustBe, data) =>
+            writeDefaultReason(mustBe, data.className)
     },
     domain: {
         mustBe: (domain) => domainDescriptions[domain],
-        reason: (mustBe, data) => writeDefaultReason(mustBe, data.domain)
+        writeReason: (mustBe, data) => writeDefaultReason(mustBe, data.domain)
     },
     domainBranches: {
         mustBe: (domains) => describeDomains(domains),
-        reason: (mustBe, data) => writeDefaultReason(mustBe, data.domain)
+        writeReason: (mustBe, data) => writeDefaultReason(mustBe, data.domain)
     },
     objectKind: {
         mustBe: (kind: DefaultObjectKind) => objectKindDescriptions[kind],
-        reason: (mustBe, data) => writeDefaultReason(mustBe, data.objectKind)
+        writeReason: (mustBe, data) =>
+            writeDefaultReason(mustBe, data.objectKind)
     },
     missing: {
         mustBe: () => "defined",
-        reason: (mustBe) => writeDefaultReason(mustBe, "")
+        writeReason: (mustBe) => writeDefaultReason(mustBe, "")
     },
     bound: {
         mustBe: (bound) =>
             `${Scanner.comparatorDescriptions[bound.comparator]} ${
                 bound.limit
             }${bound.units ? ` ${bound.units}` : ""}`,
-        reason: (mustBe, data) => writeDefaultReason(mustBe, `${data.size}`)
+        writeReason: (mustBe, data) =>
+            writeDefaultReason(mustBe, `${data.size}`)
     },
     regex: {
         mustBe: (expression) =>
@@ -317,20 +331,22 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
                 )
             )
         },
-        reason: (mustBe, data) => `${mustBe} (was ${data})`,
-        message: (reason, path) =>
+        writeReason: (mustBe, data) => `${mustBe} (was ${data})`,
+        addContext: (reason, path) =>
             path.length ? `At ${path}, ${reason}` : reason
     },
     multi: {
-        mustBe: (problems) => "• " + problems.join("\n• "),
-        reason: (mustBe) => mustBe
+        mustBe: (problems) => "• " + problems.map((_) => _.mustBe).join("\n• "),
+        writeReason: (mustBe, data) => `${data} must be...\n${mustBe}`,
+        addContext: (reason, path) =>
+            path.length ? `At ${path}, ${reason}` : reason
     }
 })
 
 export type ProblemOptions<code extends ProblemCode = ProblemCode> = {
     mustBe?: MustBeWriter<code>
-    reason?: ReasonWriter<code>
-    message?: MessageWriter
+    writeReason?: ReasonWriter<code>
+    addContext?: ContextWriter
 }
 
 export type ProblemsConfig = evaluateObject<
@@ -339,6 +355,10 @@ export type ProblemsConfig = evaluateObject<
     }
 >
 
-export type DefaultProblemsConfig = {
-    [code in ProblemCode]: ProblemWriterConfig<code>
+export type DefaultProblemsWriters = {
+    [code in ProblemCode]: ProblemWriters<code>
 }
+
+export type ProblemWriters<code extends ProblemCode> = Required<
+    ProblemOptions<code>
+>

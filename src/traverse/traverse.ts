@@ -21,7 +21,7 @@ import { getPath, Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import { deserializePrimitive, stringify } from "../utils/serialize.js"
 import type { SizedData } from "../utils/size.js"
-import type { Problem, ProblemCode, ProblemWriterConfig } from "./problems.js"
+import type { Problem, ProblemCode, ProblemWriters } from "./problems.js"
 import { defaultProblemWriters, Problems } from "./problems.js"
 
 export class TraversalState {
@@ -38,7 +38,7 @@ export class TraversalState {
 
     getConfigForProblemCode<code extends ProblemCode>(
         code: code
-    ): ProblemWriterConfig<code> {
+    ): ProblemWriters<code> {
         if (!this.configs.length) {
             return defaultProblemWriters[code]
         }
