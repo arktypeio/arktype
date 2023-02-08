@@ -1,7 +1,7 @@
 {
     "name": "arktype",
     "description": "Isomorphic types for TS/JS",
-    "version": "0.1.4",
+    "version": "0.2.0",
     "author": {
         "name": "David Blass",
         "email": "david@arktype.io",
@@ -31,7 +31,6 @@
     ],
     "packageManager": "pnpm@7.18.0",
     "scripts": {
-        "//temporarily disabled pr checks": "pnpm testRepo",
         "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test && pnpm docgen && pnpm buildSite",
         "typecheck": "tsc --noEmit",
         "build": "ts-node ./dev/scripts/build.ts",

@@ -1,5 +1,16 @@
 # arktype
 
+## 0.2.0
+
+### Minor Changes
+
+-   37aa4054: improve problem configs, make them available at type and scope levels
+-   37aa4054: keep track of configs during traversal, query most specific relevant options
+
+### Patch Changes
+
+-   37aa4054: fix multi-part error message writers
+
 ## 0.1.4
 
 ### Patch Changes
