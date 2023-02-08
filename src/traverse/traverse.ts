@@ -276,7 +276,6 @@ const checkers = {
         }
     }
 } satisfies {
-    // TODO: out morphs not always returned? e.g. config?
     [k in ValidationKey]: TraversalCheck<k>
 }
 

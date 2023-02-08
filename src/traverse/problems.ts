@@ -111,9 +111,6 @@ class ProblemArray extends Array<Problem> {
     }
 
     get summary() {
-        if (this.length === 1) {
-            return this[0].message
-        }
         return this.join("\n")
     }
 

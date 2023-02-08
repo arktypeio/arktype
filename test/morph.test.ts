@@ -29,6 +29,22 @@ describe("morph", () => {
         attest(result.data).equals(true).typed as boolean
         attest(result.out).equals(false).typed as boolean
     })
+    it("at path", () => {
+        const t = type({ a: ["string", "=>", (data) => data.length] })
+        attest(t).typed as Type<{
+            a: (In: string) => Out<number>
+        }>
+        const result = t({ a: "four" })
+        if (result.problems) {
+            return result.problems.throw()
+        }
+        attest(result.data).equals({ a: "four" }).typed as {
+            a: string
+        }
+        attest(result.out).equals({ a: 4 }).typed as {
+            a: number
+        }
+    })
     it("object inference", () => {
         const t = type([{ a: "string" }, "=>", (data) => `${data}`])
         attest(t).typed as Type<(In: { a: string }) => Out<string>>

@@ -22,6 +22,7 @@ export const checkRegex = ((data, source, state) => {
                 : `/${source}/`
         )
     }
+    return data
 }) satisfies TraversalCheck<"regex">
 
 export const regexIntersection = composeIntersection<CollapsibleList<string>>(

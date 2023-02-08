@@ -23,4 +23,5 @@ export const checkDivisor = ((data, divisor, state) => {
     if (data % divisor !== 0) {
         state.problems.add("divisor", data, divisor)
     }
+    return data
 }) satisfies TraversalCheck<"divisor">
