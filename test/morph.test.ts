@@ -10,7 +10,7 @@ describe("morph", () => {
         const t = type(["boolean", "=>", (data) => `${data}`])
         attest(t).typed as Type<(In: boolean) => Out<string>>
         attest(t.infer).typed as string
-        attest(t.node).snap({ boolean: { input: {}, morph: "(function)" } })
+        attest(t.node).snap({ boolean: { rules: {}, morph: "(function)" } })
         const result = t(true)
         if (result.problems) {
             return result.problems.throw()
@@ -42,7 +42,7 @@ describe("morph", () => {
         }).compile()
         attest(types.aAndB).typed as Type<(In: 3.14) => Out<string>>
         attest(types.aAndB.node).snap({
-            number: { input: { value: 3.14 }, morph: "(function)" }
+            number: { rules: { value: 3.14 }, morph: "(function)" }
         })
         attest(types.bAndA).typed as typeof types.aAndB
         attest(types.bAndA.node).equals(types.aAndB.node)
@@ -56,7 +56,7 @@ describe("morph", () => {
         attest(types.c).typed as Type<(In: { a: 1; b: 2 }) => Out<string>>
         attest(types.c.node).snap({
             object: {
-                input: {
+                rules: {
                     props: {
                         a: { number: { value: 1 } },
                         b: { number: { value: 2 } }
@@ -77,7 +77,7 @@ describe("morph", () => {
             boolean | ((In: number) => Out<string>)
         >
         attest(types.aOrB.node).snap({
-            number: { input: {}, morph: "(function)" },
+            number: { rules: {}, morph: "(function)" },
             boolean: true
         })
         attest(types.bOrA).typed as typeof types.aOrB
@@ -95,7 +95,7 @@ describe("morph", () => {
         attest(types.c.node).snap({
             object: {
                 props: {
-                    a: { number: { input: { value: 1 }, morph: "(function)" } }
+                    a: { number: { rules: { value: 1 }, morph: "(function)" } }
                 }
             }
         })
@@ -120,7 +120,7 @@ describe("morph", () => {
                     props: {
                         a: {
                             number: {
-                                input: {
+                                rules: {
                                     range: {
                                         min: { limit: 0, comparator: ">" }
                                     }
@@ -141,7 +141,7 @@ describe("morph", () => {
         }).compile()
         attest(types.b).typed as Type<(In: string) => Out<boolean>>
         attest(types.b.node).snap({
-            string: { input: {}, morph: ["(function)", "(function)"] }
+            string: { rules: {}, morph: ["(function)", "(function)"] }
         })
     })
     it("chained nested", () => {
@@ -151,7 +151,7 @@ describe("morph", () => {
         }).compile()
         attest(types.b).typed as Type<(In: { a: string }) => Out<boolean>>
         attest(types.b.node).snap({
-            object: { input: { props: { a: "a" } }, morph: "(function)" }
+            object: { rules: { props: { a: "a" } }, morph: "(function)" }
         })
     })
     it("directly nested", () => {
@@ -165,8 +165,8 @@ describe("morph", () => {
         attest(t).typed as Type<(In: { a: string }) => Out<boolean>>
         attest(t.node).snap({
             object: {
-                input: {
-                    props: { a: { string: { input: {}, morph: "(function)" } } }
+                rules: {
+                    props: { a: { string: { rules: {}, morph: "(function)" } } }
                 },
                 morph: "(function)"
             }
@@ -184,7 +184,7 @@ describe("morph", () => {
         attest(types.c.node).snap({
             object: [
                 {
-                    input: {
+                    rules: {
                         objectKind: "Array",
                         props: { "0": "string" },
                         range: { comparator: "==", limit: 1 }

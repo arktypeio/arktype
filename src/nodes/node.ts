@@ -1,6 +1,6 @@
-import type { Type } from "../main.ts"
 import type { ParseContext } from "../parse/definition.ts"
 import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
+import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
@@ -16,7 +16,7 @@ import {
     throwUndefinedOperandsError
 } from "./compose.ts"
 import type { DiscriminatedSwitch } from "./discriminate.ts"
-import type { Predicate } from "./predicate.ts"
+import type { MorphEntry, Predicate } from "./predicate.ts"
 import {
     flattenPredicate,
     isLiteralCondition,
@@ -24,15 +24,12 @@ import {
     predicateUnion,
     resolutionExtendsDomain
 } from "./predicate.ts"
-import type { LiteralRules, MorphEntry, RuleEntry } from "./rules/rules.ts"
+import type { LiteralRules, RuleEntry } from "./rules/rules.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | ResolvedNode<$>
 
 export type Identifier<$ = Dict> = stringKeyOf<$>
 
-/** If scope is provided, we also narrow each predicate to match its domain.
- * Otherwise, we use a base predicate for all types, which is easier to
- * manipulate.*/
 export type ResolvedNode<$ = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, $>
 }
@@ -113,6 +110,7 @@ export type TraversalEntry =
     | DomainEntry
     | BranchesEntry
     | SwitchEntry
+    | ConfigEntry
 
 export type TraversalKey = TraversalEntry[0]
 
@@ -122,6 +120,14 @@ export type TraversalRule<k extends TraversalKey> = Extract<
 >[1]
 
 export type CyclicReferenceEntry = ["alias", string]
+
+export type ConfigEntry = [
+    "config",
+    {
+        config: TypeConfig
+        node: TraversalNode
+    }
+]
 
 export type DomainEntry = ["domain", Domain]
 
@@ -144,13 +150,23 @@ export type FlattenContext = ParseContext & {
     lastDomain: Domain
 }
 
-export const flattenType = (type: Type) => {
+export const flattenType = (type: Type): TraversalNode => {
     const ctx: FlattenContext = {
         type,
         path: new Path(),
         lastDomain: "undefined"
     }
-    return flattenNode(type.node, ctx)
+    return type.meta.config
+        ? [
+              [
+                  "config",
+                  {
+                      config: type.meta.config,
+                      node: flattenNode(type.node, ctx)
+                  }
+              ]
+          ]
+        : flattenNode(type.node, ctx)
 }
 
 export const flattenNode = (
@@ -158,7 +174,21 @@ export const flattenNode = (
     ctx: FlattenContext
 ): TraversalNode => {
     if (typeof node === "string") {
-        return ctx.type.meta.scope.resolve(node).flat
+        const resolution = ctx.type.meta.scope.resolve(node)
+        const updatedScopeConfig =
+            resolution.meta.scope !== ctx.type.meta.scope &&
+            resolution.meta.scope.config
+        return updatedScopeConfig
+            ? [
+                  [
+                      "config",
+                      {
+                          config: updatedScopeConfig,
+                          node: resolution.flat
+                      }
+                  ]
+              ]
+            : resolution.flat
     }
     const domains = keysOf(node)
     if (domains.length === 1) {

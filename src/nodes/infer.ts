@@ -14,15 +14,11 @@ import type {
     inferObjectKind
 } from "../utils/objectKinds.js"
 import type { ResolvedNode, TypeNode } from "./node.js"
-import type { Predicate } from "./predicate.js"
+import type { Predicate, TransformationBranch } from "./predicate.js"
 import type { ObjectKindRule } from "./rules/objectKind.js"
 import type { OptionalProp, PropsRule } from "./rules/props.js"
 import type { Bound, Range } from "./rules/range.js"
-import type {
-    LiteralRules,
-    MorphBranch,
-    NarrowableRules
-} from "./rules/rules.js"
+import type { LiteralRules, NarrowableRules } from "./rules/rules.js"
 
 export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
     ? inferTerminal<node, $>
@@ -56,12 +52,20 @@ type branchFrom<predicate extends Predicate> = predicate extends List
     ? predicate[number]
     : predicate
 
-type inferBranch<domain extends Domain, branch, $> = branch extends MorphBranch
+type inferBranch<
+    domain extends Domain,
+    branch,
+    $
+> = branch extends TransformationBranch
     ? inferMorph<domain, branch, $>
     : inferRules<domain, branch, $>
 
-type inferMorph<domain extends Domain, branch extends MorphBranch, $> = (
-    In: inferBranch<domain, branch["input"], $>
+type inferMorph<
+    domain extends Domain,
+    branch extends TransformationBranch,
+    $
+> = (
+    In: inferBranch<domain, branch["rules"], $>
 ) => Out<
     branch["morph"] extends [...unknown[], infer tail]
         ? returnOf<tail>

@@ -34,7 +34,8 @@ const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
  *    2. The value may not be "-0"
  */
 export const wellFormedIntegerMatcher = /^(?:0|(?:-?[1-9]\d*))$/
-const isWellFormedInteger = (s: string) => wellFormedIntegerMatcher.test(s)
+export const isWellFormedInteger = (s: string) =>
+    wellFormedIntegerMatcher.test(s)
 
 const integerLikeMatcher = /^-?\d+$/
 const isIntegerLike = (s: string) => integerLikeMatcher.test(s)

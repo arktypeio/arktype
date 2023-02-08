@@ -147,7 +147,9 @@ export namespace state {
     export type finalizeGroup<
         s extends StaticState,
         unscanned extends string
-    > = s["groups"] extends popGroup<infer stack, infer top>
+    > = s["branches"]["range"] extends {}
+        ? openRangeError<s["branches"]["range"]>
+        : s["groups"] extends popGroup<infer stack, infer top>
         ? from<{
               groups: stack
               branches: top

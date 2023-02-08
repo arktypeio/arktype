@@ -1,7 +1,7 @@
-import type { Type } from "../main.ts"
 import type { Morph } from "../parse/tuple/morph.ts"
+import type { Type } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
-import type { CollapsibleList, defined, Dict, xor } from "../utils/generics.ts"
+import type { CollapsibleList, defined, Dict } from "../utils/generics.ts"
 import { keysOf, listFrom } from "../utils/generics.ts"
 import { isArray } from "../utils/objectKinds.ts"
 import type { Branches, BranchesComparison } from "./branches.ts"
@@ -10,9 +10,12 @@ import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
 import { equality, IntersectionState, isEquality } from "./compose.ts"
 import { flattenBranches } from "./discriminate.ts"
 import type { FlattenContext, ResolvedNode, TraversalEntry } from "./node.ts"
-import type { LiteralRules, Rules } from "./rules/rules.ts"
+import type { FlatRules, LiteralRules, Rules } from "./rules/rules.ts"
 import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
+/** If scope is provided, we also narrow each predicate to match its domain.
+ * Otherwise, we use a base predicate for all types, which is easier to
+ * manipulate.*/
 export type Predicate<
     domain extends Domain = Domain,
     $ = Dict
@@ -20,13 +23,24 @@ export type Predicate<
     ? true | CollapsibleList<Branch>
     : true | CollapsibleList<Branch<domain, $>>
 
-export type Branch<domain extends Domain = Domain, $ = Dict> = xor<
-    Rules<domain, $>,
-    {
-        input: Rules<domain, $>
-        morph: CollapsibleList<Morph>
-    }
->
+export type Branch<domain extends Domain = Domain, $ = Dict> =
+    | Rules<domain, $>
+    | TransformationBranch<domain, $>
+
+export type TransformationBranch<domain extends Domain = Domain, $ = Dict> = {
+    rules: Rules<domain, $>
+    morph?: CollapsibleList<Morph>
+}
+
+export const branchIsTransformation = (
+    branch: Branch
+): branch is TransformationBranch => "rules" in branch
+
+export type FlatBranch = FlatRules | FlatTransformationBranch
+
+export type FlatTransformationBranch = [...rules: FlatRules, morph: MorphEntry]
+
+export type MorphEntry = ["morph", CollapsibleList<Morph>]
 
 export type PredicateComparison =
     | IntersectionResult<Predicate>

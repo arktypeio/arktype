@@ -1,4 +1,4 @@
-import type { Type } from "../main.ts"
+import type { Type } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { constructor, Dict, extend, mutable } from "../utils/generics.ts"

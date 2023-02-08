@@ -13,7 +13,7 @@ specifiers:
   '@mdx-js/react': 1.6.22
   '@mui/icons-material': 5.8.4
   '@mui/material': 5.8.5
-  '@stackblitz/sdk': 1.8.0
+  '@stackblitz/sdk': 1.8.2
   '@tsconfig/docusaurus': 1.0.6
   '@types/react': 17.0.2
   '@types/react-dom': 17.0.2
@@ -36,7 +36,7 @@ dependencies:
   '@mdx-js/react': 1.6.22_react@17.0.2
   '@mui/icons-material': 5.8.4_5qfrwnjn6xxyyarrfc6ztsm4ja
   '@mui/material': 5.8.5_z4kvkwsbfdgm6jnqwikdrrmpfa
-  '@stackblitz/sdk': 1.8.0
+  '@stackblitz/sdk': 1.8.2
   framer-motion: 6.5.1_sfoxds7t5ydpegc3knd667wn6m
   prism-react-renderer: 1.3.5_react@17.0.2
   react: 17.0.2
@@ -3111,8 +3111,8 @@ packages:
       webpack-sources: 3.2.3
     dev: false
 
-  /@stackblitz/sdk/1.8.0:
-    resolution: {integrity: sha512-hbS4CpQVF3bxJ+ZD8qu8lAjTZVLTPToLbMtgxbxUmp1AIgqm7i0gMFM1POBA8BqY84CT1A3z74gdCd1bsro7qA==}
+  /@stackblitz/sdk/1.8.2:
+    resolution: {integrity: sha512-3aTg0Tb9dNs1huPkpdYxPEX/yc8A28eZneUMOEJzOLi7EJwl5onr9gCAVjIOkN4WLYu1iBSiJiGBYT629bZIJQ==}
     dev: false
 
   /@svgr/babel-plugin-add-jsx-attribute/6.5.1_@babel+core@7.20.2:
