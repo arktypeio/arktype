@@ -46,15 +46,14 @@ export class Problem {
     }
 
     get reason() {
-        return this.writers.reason(this.mustBe, this.was)
+        return this.writers.reason(
+            this.mustBe,
+            new DataWrapper(this.data) as never
+        )
     }
 
     get mustBe() {
         return this.writers.mustBe(this.rule)
-    }
-
-    get was() {
-        return this.writers.was(new DataWrapper(this.data) as never)
     }
 }
 
@@ -187,15 +186,14 @@ export type MustBeWriter<code extends ProblemCode> = (
     context: ProblemRuleInputs[code]
 ) => string
 
-export type DataWriter<code extends ProblemCode> = (
+export type ReasonWriter<code extends ProblemCode = ProblemCode> = (
+    rule: string,
     data: DataWrapper<
         code extends keyof ConstrainedRuleTraversalData
             ? ConstrainedRuleTraversalData[code]
             : unknown
     >
 ) => string
-
-export type ReasonWriter = (rule: string, data: string) => string
 
 export type MessageWriter = (reason: string, path: Path) => string
 
@@ -235,9 +233,7 @@ export class DataWrapper<value = unknown> {
     }
 }
 
-const writeDefaultWasDescription: DataWriter<any> = (data) => `${data}`
-
-const writeDefaultProblemReason: ReasonWriter = (mustBe, was) =>
+const writeDefaultReason = (mustBe: string, was: DataWrapper | string) =>
     `must be ${mustBe}${was && ` (was ${was})`}`
 
 const writeDefaultProblemMessage: MessageWriter = (reason, path) =>
@@ -252,8 +248,7 @@ const compileDefaultProblemWriters = (definitions: {
 }) => {
     let code: ProblemCode
     for (code in definitions) {
-        definitions[code].was ??= writeDefaultWasDescription
-        definitions[code].reason ??= writeDefaultProblemReason
+        definitions[code].reason ??= writeDefaultReason
         definitions[code].message ??= writeDefaultProblemMessage
     }
     return definitions as DefaultProblemsConfig
@@ -266,31 +261,30 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
     },
     class: {
         mustBe: (constructor) => `an instance of ${constructor.name}`,
-        was: (data) => data.className
+        reason: (mustBe, data) => writeDefaultReason(mustBe, data.className)
     },
     domain: {
         mustBe: (domain) => domainDescriptions[domain],
-        was: (data) => data.domain
+        reason: (mustBe, data) => writeDefaultReason(mustBe, data.domain)
     },
     domainBranches: {
         mustBe: (domains) => describeDomains(domains),
-        was: (data) => data.domain
+        reason: (mustBe, data) => writeDefaultReason(mustBe, data.domain)
     },
     objectKind: {
         mustBe: (kind: DefaultObjectKind) => objectKindDescriptions[kind],
-        was: (data) => data.objectKind
+        reason: (mustBe, data) => writeDefaultReason(mustBe, data.objectKind)
     },
     missing: {
         mustBe: () => "defined",
-        was: () => ""
+        reason: (mustBe) => writeDefaultReason(mustBe, "")
     },
     bound: {
         mustBe: (bound) =>
             `${Scanner.comparatorDescriptions[bound.comparator]} ${
                 bound.limit
             }${bound.units ? ` ${bound.units}` : ""}`,
-
-        was: (data) => `${data.size}`
+        reason: (mustBe, data) => writeDefaultReason(mustBe, `${data.size}`)
     },
     regex: {
         mustBe: (expression) =>
@@ -333,11 +327,9 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
     }
 })
 
-// TODO: mustBe should be start, was and all others should build off of that
 export type ProblemOptions<code extends ProblemCode = ProblemCode> = {
     mustBe?: MustBeWriter<code>
-    was?: DataWriter<code>
-    reason?: ReasonWriter
+    reason?: ReasonWriter<code>
     message?: MessageWriter
 }
 

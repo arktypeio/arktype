@@ -266,7 +266,6 @@ export class Scope<context extends ScopeContext = any> {
                     : undefined
             ) as ResolveResult<onUnresolvable>
         }
-        // TODO: opts?
         const type = initializeType(this.aliases[name], { name }, this)
         this.#resolutions.set(name, type)
         this.#exports.set(name, type)
