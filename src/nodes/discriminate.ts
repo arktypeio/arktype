@@ -243,10 +243,9 @@ const findBestDiscriminant = (
                 }
                 const defaultCaseKeys = keysOf(defaultCases)
                 if (defaultCaseKeys.length) {
-                    const defaultIndices = defaultCaseKeys.map((k) =>
+                    filteredCases["default"] = defaultCaseKeys.map((k) =>
                         parseInt(k)
                     )
-                    filteredCases["default"] = defaultIndices
                 }
                 if (!bestDiscriminant || score > bestDiscriminant.score) {
                     const [path, kind] =

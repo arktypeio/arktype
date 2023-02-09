@@ -1,7 +1,7 @@
-import { functors } from "../../nodes/functors.ts"
 import type { inferNode } from "../../nodes/infer.ts"
 import type { ResolvedNode, TypeNode } from "../../nodes/node.ts"
 import { intersection, union } from "../../nodes/node.ts"
+import { arrayOf } from "../../nodes/rules/objectKind.ts"
 import type { asIn, asOut } from "../../scopes/type.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
@@ -131,7 +131,7 @@ const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
 }
 
 const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
-    functors.Array(parseDefinition(def[0], scope))
+    arrayOf(parseDefinition(def[0], scope))
 
 export type PostfixParser<token extends PostfixToken> = (
     def: PostfixExpression<token>,

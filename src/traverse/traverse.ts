@@ -2,7 +2,8 @@ import { serializeCase } from "../nodes/discriminate.js"
 import type {
     TraversalEntry,
     TraversalKey,
-    TraversalNode
+    TraversalNode,
+    TraversalValue
 } from "../nodes/node.js"
 import { checkClass } from "../nodes/rules/class.js"
 import { checkDivisor } from "../nodes/rules/divisor.js"
@@ -21,8 +22,8 @@ import { getPath, Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import { deserializePrimitive, stringify } from "../utils/serialize.js"
 import type { SizedData } from "../utils/size.js"
-import type { Problem, ProblemCode, ProblemWriters } from "./problems.js"
-import { defaultProblemWriters, Problems } from "./problems.js"
+import type { ProblemCode, ProblemWriters } from "./problems.js"
+import { defaultProblemWriters, Problem, Problems } from "./problems.js"
 
 export class TraversalState {
     path = new Path()
@@ -54,7 +55,7 @@ export class TraversalState {
         return defaultProblemWriters[code]
     }
 
-    traverseResolution(data: unknown, name: string) {
+    traverseResolution(data: unknown, name: string): TraversalReturn {
         const resolution = this.type.meta.scope.resolve(name)
         const id = resolution.meta.id
         const isObject = hasDomain(data, "object")
@@ -64,7 +65,7 @@ export class TraversalState {
                     // if data has already been checked by this alias as part of
                     // a resolution higher up on the call stack, it must be valid
                     // or we wouldn't be here
-                    return
+                    return data
                 }
                 this.#seen[id].push(data)
             } else {
@@ -73,34 +74,43 @@ export class TraversalState {
         }
         const lastResolution = this.type
         this.type = resolution
-        traverse(data, resolution.flat, this)
+        const result = traverse(data, resolution.flat, this)
         this.type = lastResolution
         if (isObject) {
             this.#seen[id]!.pop()
         }
+        return result
     }
 
     traverseBranches(data: unknown, branches: TraversalEntry[][]) {
-        const lastProblems = this.problems
-        const lastPath = this.path
+        if (!branches.length) {
+            // we shouldn't normally have an empty set of branches after
+            // compilation, but in case we do, return a problem immediately (an
+            // empty set of branches is equivalent to never).
+            return this.problems.add("branches", data, [])
+        }
         const lastFailFast = this.failFast
+        // TODO: does this propagate correctly? props errors? others?
         this.failFast = true
-        const branchProblems: Problem[] = []
+        const lastProblems = this.problems
+        const branchProblems = new Problems(this)
+        this.problems = branchProblems
+        const lastPath = this.path
+        let result: TraversalReturn
         for (const branch of branches) {
-            this.problems = new Problems(this)
             this.path = new Path()
-            checkEntries(data, branch, this)
-            if (!this.problems.length) {
+            result = checkEntries(data, branch, this)
+            if (!(result instanceof Problem)) {
                 break
             }
-            branchProblems.push(this.problems[0])
         }
-        this.failFast = lastFailFast
         this.path = lastPath
         this.problems = lastProblems
-        if (branchProblems.length === branches.length) {
-            this.problems.add("branches", data, branchProblems)
-        }
+        this.failFast = lastFailFast
+        // we've already checked that branches is non-empty, so result must have been assigned here
+        return result! instanceof Problem
+            ? this.problems.add("branches", data, branchProblems)
+            : result!
     }
 }
 
@@ -108,53 +118,58 @@ export const traverse = (
     data: unknown,
     node: TraversalNode,
     state: TraversalState
-) => {
+): TraversalReturn => {
     if (typeof node === "string") {
         if (domainOf(data) !== node) {
             return state.problems.add("domain", data, node)
         }
-        return
+        return data!
     }
     return checkEntries(data, node, state)
 }
 
 export const checkEntries = (
     data: unknown,
-    entries: List<TraversalEntry>,
+    entries: TraversalEntry[],
     state: TraversalState
-) => {
-    let problemsPrecedence = Number.POSITIVE_INFINITY
-    const initialProblemsCount = state.problems.length
-    for (const [k, v] of entries) {
-        if (precedenceMap[k] > problemsPrecedence) {
-            return
-        }
-        if (k === "morph") {
-            if (typeof v === "function") {
-                return v(data)
+): TraversalReturn => {
+    // lastOut should never be set to a Problem so that we can continue
+    // traversing within the same precedence level even if there is a problem.
+    let lastOut: TraversalReturn = data!
+    let lastProblem: Problem | undefined
+    for (let i = 0; i < entries.length - 1; i++) {
+        const result = entryTraversals[entries[i][0]](
+            data as never,
+            entries[i][1] as never,
+            state
+        )
+        if (result instanceof Problem) {
+            if (state.failFast) {
+                return result
             }
-            let out = data
-            for (const morph of v) {
-                out = morph(out)
-            }
-            return out
+            lastProblem = result
         } else {
-            checkers[k](data as never, v as never, state)
-            if (state.problems.length > initialProblemsCount) {
-                if (state.failFast) {
-                    return
-                }
-                problemsPrecedence = precedenceMap[k]
-            }
+            lastOut = result!
+        }
+        if (
+            lastProblem &&
+            i < entries.length - 1 &&
+            precedenceMap[entries[i][0]] < precedenceMap[entries[i + 1][0]]
+        ) {
+            // if we've encountered a problem, there is at least one entry
+            // remaining, and the next entry is of a higher precedence level
+            // than the current entry, return immediately
+            return lastProblem
         }
     }
-    return data
+    return lastOut
 }
 
-const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
-    propKind: propKind
-) =>
-    ((data, props, state) => {
+const createPropChecker =
+    <propKind extends "requiredProps" | "optionalProps">(
+        propKind: propKind
+    ): EntryTraversal<propKind> =>
+    (data, props, state) => {
         const rootPath = state.path
         for (const [propKey, propNode] of props as TraversalPropEntry[]) {
             state.path.push(propKey)
@@ -168,12 +183,12 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
             state.path.pop()
         }
         state.path = rootPath
-    }) as TraversalCheck<propKind>
+    }
 
 const checkRequiredProps = createPropChecker("requiredProps")
 const checkOptionalProps = createPropChecker("optionalProps")
 
-export const checkObjectKind: TraversalCheck<"objectKind"> = (
+export const checkObjectKind: EntryTraversal<"objectKind"> = (
     data,
     rule,
     state
@@ -183,54 +198,39 @@ export const checkObjectKind: TraversalCheck<"objectKind"> = (
         if (dataObjectKind !== rule) {
             return state.problems.add("objectKind", data, rule)
         }
-        return
+        return data
     }
     if (dataObjectKind !== rule[0]) {
         return state.problems.add("objectKind", data, rule[0])
     }
-    if (dataObjectKind === "Array" && typeof rule[2] === "number") {
-        const actual = (data as List).length
-        const expected = rule[2]
-        if (expected !== actual) {
-            return state.problems.add("bound", data as List, {
-                comparator: "==",
-                limit: expected,
-                units: "items"
-            })
-        }
-    }
-    if (dataObjectKind === "Array" || dataObjectKind === "Set") {
-        let i = 0
-        for (const item of data as List | Set<unknown>) {
+    if (dataObjectKind === "Array") {
+        const dataList = data as List
+        let lastProblem: Problem | undefined
+        const outList: TraversalReturn[] = []
+        for (let i = 0; i < dataList.length; i++) {
             state.path.push(`${i}`)
-            traverse(item, rule[1], state)
+            const result = outList.push(traverse(dataList[i], rule[1], state))
             state.path.pop()
             i++
         }
-    } else {
-        return throwInternalError(
-            `Unexpected objectKind entry ${stringify(rule)}`
-        )
+        return outList
     }
-    return true
+    return throwInternalError(`Unexpected objectKind entry ${stringify(rule)}`)
 }
 
-const checkers = {
+const entryTraversals = {
     regex: checkRegex,
     divisor: checkDivisor,
     domains: (data, domains, state) => {
         const entries = domains[domainOf(data)]
-        if (entries) {
-            checkEntries(data, entries, state)
-        } else {
-            state.problems.add("domainBranches", data, keysOf(domains))
-        }
+        return entries
+            ? checkEntries(data, entries, state)
+            : state.problems.add("domainBranches", data, keysOf(domains))
     },
-    domain: (data, domain, state) => {
-        if (domainOf(data) !== domain) {
-            state.problems.add("domain", data, domain)
-        }
-    },
+    domain: (data, domain, state) =>
+        domainOf(data) === domain
+            ? data!
+            : state.problems.add("domain", data, domain),
     objectKind: checkObjectKind,
     bound: checkBound,
     requiredProps: checkRequiredProps,
@@ -267,26 +267,48 @@ const checkers = {
     narrow: (data, narrow, state) => narrow(data, state.problems),
     config: (data, { config, node }, state) => {
         state.configs.push(config)
-        traverse(data, node, state)
+        const result = traverse(data, node, state)
         state.configs.pop()
+        return result
     },
-    value: (data, value, state) => {
-        if (data !== value) {
-            state.problems.add("value", data, value)
+    value: (data, value, state) =>
+        data === value ? data! : state.problems.add("value", data, value),
+    morph: (data, morph) => {
+        if (typeof morph === "function") {
+            return morph(data)!
         }
+        let out = data as TraversalReturn
+        for (const chainedMorph of morph) {
+            out = chainedMorph(out)!
+        }
+        return out
     }
 } satisfies {
     // TODO: out morphs not always returned? e.g. config?
-    [k in ValidationKey]: TraversalCheck<k>
+    [k in TraversalKey]: EntryTraversal<k>
 }
 
-type ValidationKey = Exclude<TraversalKey, "morph">
+type MorphableKey = extend<
+    TraversalKey,
+    | "morph"
+    | "alias"
+    | "branches"
+    | "config"
+    | "domains"
+    | "optionalProps"
+    | "requiredProps"
+    | "switch"
+>
 
-export type TraversalCheck<k extends TraversalKey> = (
-    data: RuleData<k>,
-    rule: Extract<TraversalEntry, [k, unknown]>[1],
+// a morphable key could actually return anything, but we use {} to ensure
+// an explicit return. Use ! as needed.
+type TraversalReturn = {}
+
+export type EntryTraversal<k extends TraversalKey> = <data extends RuleData<k>>(
+    data: data,
+    constraint: TraversalValue<k>,
     state: TraversalState
-) => void
+) => k extends MorphableKey ? TraversalReturn : data | Problem
 
 export type ConstrainedRuleTraversalData = extend<
     { [k in TraversalKey]?: unknown },

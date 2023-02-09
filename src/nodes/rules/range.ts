@@ -1,5 +1,5 @@
 import type { Scanner } from "../../parse/string/shift/scanner.ts"
-import type { TraversalCheck } from "../../traverse/traverse.ts"
+import type { EntryTraversal } from "../../traverse/traverse.ts"
 import type { evaluate } from "../../utils/generics.ts"
 import { sizeOf } from "../../utils/size.ts"
 import { composeIntersection, equality } from "../compose.ts"
@@ -115,11 +115,10 @@ export const flattenRange: FlattenAndPushRule<Range> = (
     }
 }
 
-export const checkBound = ((data, bound, state) => {
-    if (!comparatorCheckers[bound.comparator](sizeOf(data), bound.limit)) {
-        state.problems.add("bound", data, bound)
-    }
-}) satisfies TraversalCheck<"bound">
+export const checkBound: EntryTraversal<"bound"> = (data, bound, state) =>
+    comparatorCheckers[bound.comparator](sizeOf(data), bound.limit)
+        ? data
+        : state.problems.add("bound", data, bound)
 
 const comparatorCheckers: Record<
     Scanner.Comparator,

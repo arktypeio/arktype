@@ -102,22 +102,22 @@ export const union = (l: TypeNode, r: TypeNode, type: Type): ResolvedNode => {
 
 export type TraversalNode = Domain | TraversalEntry[]
 
+export type TraversalKey = TraversalEntry[0]
+
+export type TraversalValue<k extends TraversalKey> = Extract<
+    TraversalEntry,
+    [k, unknown]
+>[1]
+
 export type TraversalEntry =
     | RuleEntry
-    | MorphEntry
     | DomainsEntry
+    | MorphEntry
     | CyclicReferenceEntry
     | DomainEntry
     | BranchesEntry
     | SwitchEntry
     | ConfigEntry
-
-export type TraversalKey = TraversalEntry[0]
-
-export type TraversalRule<k extends TraversalKey> = Extract<
-    TraversalEntry,
-    [k, unknown]
->[1]
 
 export type CyclicReferenceEntry = ["alias", string]
 

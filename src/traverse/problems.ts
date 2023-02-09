@@ -7,6 +7,7 @@ import type {
     evaluate,
     evaluateObject,
     instanceOf,
+    RegexLiteral,
     requireKeys
 } from "../utils/generics.ts"
 import { isWellFormedInteger } from "../utils/numericLiterals.ts"
@@ -108,6 +109,7 @@ class ProblemArray extends Array<Problem> {
             this.byPath[pathKey] = problem
             this.push(problem)
         }
+        return problem
     }
 
     get summary() {
@@ -163,11 +165,11 @@ type ProblemSources = {
     objectKind: DefaultObjectKind
     missing: undefined
     bound: FlatBound
-    regex: string
+    regex: RegexLiteral
     value: unknown
     valueBranches: unknown[]
     multi: Problem[]
-    branches: Problem[]
+    branches: readonly Problem[]
 }
 
 export type ProblemCode = evaluate<keyof ProblemSources>
@@ -297,10 +299,7 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
             writeDefaultReason(mustBe, `${data.size}`)
     },
     regex: {
-        mustBe: (expression) =>
-            expression[0] === "/"
-                ? `a string matching ${expression}`
-                : `a valid ${expression}`
+        mustBe: (expression) => `a string matching ${expression}`
     },
     value: {
         mustBe: stringify
@@ -309,6 +308,7 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
         mustBe: (values) => describeBranches(values.map(stringify))
     },
     branches: {
+        // TODO: translate to use problem intersections
         mustBe: (branchProblems) => {
             const clausesByPath: Record<string, string[]> = {}
             for (const problem of branchProblems) {

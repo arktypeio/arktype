@@ -1,4 +1,4 @@
-import { functors } from "../../nodes/functors.ts"
+import { arrayOf } from "../../nodes/rules/objectKind.ts"
 import type { error } from "../../utils/generics.ts"
 import type { ParseContext } from "../definition.ts"
 import type { inferAst, validateAstSemantics } from "./ast.ts"
@@ -53,7 +53,7 @@ export const maybeNaiveParse = (def: string, ctx: ParseContext) => {
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
         if (ctx.type.meta.scope.addReferenceIfResolvable(def, ctx)) {
-            return functors.Array(elementDef)
+            return arrayOf(elementDef)
         }
     }
 }

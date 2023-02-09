@@ -10,7 +10,7 @@ import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
 import { equality, IntersectionState, isEquality } from "./compose.ts"
 import { flattenBranches } from "./discriminate.ts"
 import type { FlattenContext, ResolvedNode, TraversalEntry } from "./node.ts"
-import type { FlatRules, LiteralRules, Rules } from "./rules/rules.ts"
+import type { LiteralRules, Rules } from "./rules/rules.ts"
 import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
 /** If scope is provided, we also narrow each predicate to match its domain.
@@ -35,10 +35,6 @@ export type TransformationBranch<domain extends Domain = Domain, $ = Dict> = {
 export const branchIsTransformation = (
     branch: Branch
 ): branch is TransformationBranch => "rules" in branch
-
-export type FlatBranch = FlatRules | FlatTransformationBranch
-
-export type FlatTransformationBranch = [...rules: FlatRules, morph: MorphEntry]
 
 export type MorphEntry = ["morph", CollapsibleList<Morph>]
 

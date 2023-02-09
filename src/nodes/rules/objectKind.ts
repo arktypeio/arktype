@@ -7,25 +7,21 @@ import {
     isDisjoint,
     isEquality
 } from "../compose.js"
-import type { TraversalNode, TypeNode } from "../node.js"
+import type { ResolvedNode, TraversalNode, TypeNode } from "../node.js"
 import { flattenNode, nodeIntersection } from "../node.js"
 import type { FlattenAndPushRule } from "./rules.js"
 
-// Unfortunately we can't easily abstract between these two rules because of
-// nonsense TS circular reference issues.
 export type ObjectKindRule<$ = Dict> =
     | DefaultObjectKind
     | readonly ["Array", TypeNode<$>]
-    | readonly ["Array", TypeNode<$>]
-    | readonly ["Set", TypeNode<$>]
-    | readonly ["Map", TypeNode<$>, TypeNode<$>]
+// | readonly ["Set", TypeNode<$>]
+// | readonly ["Map", TypeNode<$>, TypeNode<$>]
 
 export type TraversalObjectKindRule =
     | DefaultObjectKind
     | readonly ["Array", TraversalNode]
-    | readonly ["Array", TraversalNode]
-    | readonly ["Set", TraversalNode]
-    | readonly ["Map", TraversalNode, TraversalNode]
+// | readonly ["Set", TraversalNode]
+// | readonly ["Map", TraversalNode, TraversalNode]
 
 export const objectKindIntersection = composeIntersection<ObjectKindRule>(
     (l, r, state) => {
@@ -106,9 +102,11 @@ export const flattenObjectKind: FlattenAndPushRule<ObjectKindRule> = (
 ) =>
     entries.push([
         "objectKind",
-        typeof rule === "string"
-            ? rule
-            : rule[0] === "Map"
-            ? [rule[0], flattenNode(rule[1], ctx), flattenNode(rule[2], ctx)]
-            : [rule[0], flattenNode(rule[1], ctx)]
+        typeof rule === "string" ? rule : [rule[0], flattenNode(rule[1], ctx)]
     ])
+
+export const arrayOf = (node: TypeNode): ResolvedNode => ({
+    object: {
+        objectKind: ["Array", node]
+    }
+})

@@ -1,4 +1,4 @@
-import type { TraversalCheck } from "../../traverse/traverse.ts"
+import type { EntryTraversal } from "../../traverse/traverse.ts"
 import type { CollapsibleList } from "../../utils/generics.ts"
 import { composeIntersection } from "../compose.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
@@ -12,18 +12,10 @@ export const getRegex = (source: string) => {
     return regexCache[source]
 }
 
-export const checkRegex = ((data, source, state) => {
-    if (!getRegex(source).test(data)) {
-        state.problems.add(
-            "regex",
-            data,
-            state.path.length === 0 && state.type.name !== "type"
-                ? state.type.name
-                : `/${source}/`
-        )
-    }
-    return data
-}) satisfies TraversalCheck<"regex">
+export const checkRegex: EntryTraversal<"regex"> = (data, source, state) =>
+    getRegex(source).test(data)
+        ? data
+        : state.problems.add("regex", data, `/${source}/`)
 
 export const regexIntersection = composeIntersection<CollapsibleList<string>>(
     collapsibleListUnion<string>

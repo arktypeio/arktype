@@ -16,13 +16,8 @@ import {
     isDisjoint,
     isEquality
 } from "../compose.ts"
-import type { FlattenContext, TraversalEntry } from "../node.ts"
-import type {
-    Branch,
-    FlatBranch,
-    FlatTransformationBranch,
-    TransformationBranch
-} from "../predicate.ts"
+import type { FlattenContext, TraversalEntry, TraversalKey } from "../node.ts"
+import type { Branch, TransformationBranch } from "../predicate.ts"
 import { branchIsTransformation } from "../predicate.ts"
 
 import { classIntersection } from "./class.ts"
@@ -205,7 +200,7 @@ const ruleFlatteners: {
 }
 
 export const precedenceMap: {
-    readonly [k in TraversalEntry[0]]: number
+    readonly [k in TraversalKey]: number
 } = {
     // Critical: No other checks are performed if these fail
     config: 0,
@@ -230,15 +225,9 @@ export const precedenceMap: {
     morph: 4
 }
 
-export const flattenBranch = (
-    branch: Branch,
-    ctx: FlattenContext
-): FlatBranch => {
+export const flattenBranch = (branch: Branch, ctx: FlattenContext) => {
     if (branchIsTransformation(branch)) {
-        const result = flattenRules(
-            branch.rules,
-            ctx
-        ) as FlatTransformationBranch
+        const result = flattenRules(branch.rules, ctx)
         if (branch.morph) {
             result.push(["morph", branch.morph])
         }
@@ -247,7 +236,10 @@ export const flattenBranch = (
     return flattenRules(branch, ctx)
 }
 
-const flattenRules = (rules: UnknownRules, ctx: FlattenContext): FlatBranch => {
+const flattenRules = (
+    rules: UnknownRules,
+    ctx: FlattenContext
+): TraversalEntry[] => {
     const entries: RuleEntry[] = []
     let k: keyof UnknownRules
     for (k in rules) {
