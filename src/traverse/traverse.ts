@@ -164,42 +164,6 @@ export const checkEntries = (
     return firstProblem ?? lastOut
 }
 
-const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
-    propKind: propKind
-) =>
-    ((data, props, state) => {
-        let firstProblem: Problem | undefined
-        const outProps: Record<string, unknown> = {}
-        for (const [propKey, propNode] of props as TraversalProp[]) {
-            let result: TraversalReturn
-            if (propKey in data) {
-                state.path.push(propKey)
-                result = traverse(data[propKey], propNode, state)
-                state.path.pop()
-            } else if (propKind === "optionalProps") {
-                continue
-            } else {
-                result = state.problems.add("missing", undefined, undefined, {
-                    path: state.path.concat(propKey)
-                })
-            }
-            if (!firstProblem) {
-                if (result instanceof Problem) {
-                    if (state.failFast) {
-                        return result
-                    }
-                    firstProblem = result
-                } else {
-                    outProps[propKey] = result
-                }
-            }
-        }
-        return firstProblem ?? outProps
-    }) as EntryTraversal<any>
-
-const checkRequiredProps = createPropChecker("requiredProps")
-const checkOptionalProps = createPropChecker("optionalProps")
-
 const checkProps: EntryTraversal<"props"> = (data, propSets, state) => {
     let firstProblem: Problem | undefined
     const outList: TraversalReturn[] = []
@@ -220,6 +184,41 @@ const checkProps: EntryTraversal<"props"> = (data, propSets, state) => {
         i++
     }
     return firstProblem ?? outList
+}
+
+const checkNamedProps = (
+    data: Dict,
+    props: TraversalProp[],
+    state: TraversalState,
+    out: Record<string, unknown>,
+    kind: "optional" | "required"
+) => {
+    let firstProblem: Problem | undefined
+    for (const [propKey, propNode] of props as TraversalProp[]) {
+        let result: TraversalReturn
+        if (propKey in data) {
+            state.path.push(propKey)
+            result = traverse(data[propKey], propNode, state)
+            state.path.pop()
+        } else if (kind === "optional") {
+            continue
+        } else {
+            result = state.problems.add("missing", undefined, undefined, {
+                path: state.path.concat(propKey)
+            })
+        }
+        if (!firstProblem) {
+            if (result instanceof Problem) {
+                if (state.failFast) {
+                    return result
+                }
+                firstProblem = result
+            } else {
+                out[propKey] = result
+            }
+        }
+    }
+    return firstProblem ?? out
 }
 
 const entryTraversals = {

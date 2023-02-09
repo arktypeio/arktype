@@ -34,7 +34,9 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     if (isPrefixExpression(def)) {
         return prefixParsers[def[0]](def as never, ctx)
     }
-    const props: Record<number, TypeNode> = {}
+    const props: Record<number | "length", TypeNode> = {
+        length: { number: { value: def.length } }
+    }
     for (let i = 0; i < def.length; i++) {
         ctx.path.push(`${i}`)
         props[i] = parseDefinition(def[i], ctx)
@@ -43,8 +45,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     return {
         object: {
             class: "Array",
-            props,
-            range: { comparator: "==", limit: def.length }
+            props
         }
     }
 }
