@@ -45,14 +45,29 @@ describe("morph", () => {
             a: number
         }
     })
+    it("in array", () => {
+        const types = scope({
+            lengthOfString: ["string", "=>", (data) => data.length],
+            mapToLengths: "lengthOfString[]"
+        }).compile()
+        attest(types.mapToLengths).typed as Type<
+            ((In: string) => Out<number>)[]
+        >
+        const result = types.mapToLengths(["", "1", "22", "333"])
+        if (result.problems) {
+            return result.problems.throw()
+        }
+        attest(result.data).equals(["", "1", "22", "333"]).typed as string[]
+        attest(result.out).equals([0, 1, 2, 3]).typed as number[]
+    })
     it("object inference", () => {
         const t = type([{ a: "string" }, "=>", (data) => `${data}`])
         attest(t).typed as Type<(In: { a: string }) => Out<string>>
     })
     it("intersection", () => {
         const types = scope({
-            a: ["number", "=>", (data) => `${data}`, "string"],
             b: "3.14",
+            a: ["number", "=>", (data) => `${data}`, "string"],
             aAndB: "a&b",
             bAndA: "b&a"
         }).compile()

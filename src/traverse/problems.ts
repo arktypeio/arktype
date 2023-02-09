@@ -79,15 +79,16 @@ class ProblemArray extends Array<Problem> {
         source: ProblemSource<code>,
         opts?: AddProblemOptions
     ) {
+        // copy the path to avoid future mutations affecting it
+        const path = opts?.path ?? Path.from(this.state.path)
         const problem: Problem = new Problem(
             code,
-            // copy the path to avoid future mutations affecting it
-            opts?.path ?? Path.from(this.state.path),
+            path,
             data,
             source,
             this.state.getConfigForProblemCode(code)
         )
-        const pathKey = `${this.state.path}`
+        const pathKey = `${path}`
         const existing = this.byPath[pathKey]
         if (existing) {
             if (existing.parts) {

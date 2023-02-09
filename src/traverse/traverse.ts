@@ -86,7 +86,7 @@ export class TraversalState {
             // we shouldn't normally have an empty set of branches after
             // compilation, but in case we do, return a problem immediately (an
             // empty set of branches is equivalent to never).
-            return this.problems.add("branches", data, [])
+            return this.problems.add("value", data, "never")
         }
         const lastFailFast = this.failFast
         this.failFast = true
@@ -150,7 +150,9 @@ export const checkEntries = (
             } else {
                 lastOut = result!
             }
-        } else if (
+        }
+        if (
+            firstProblem &&
             i < entries.length - 1 &&
             precedenceMap[entries[i][0]] < precedenceMap[entries[i + 1][0]]
         ) {
