@@ -64,6 +64,8 @@ export class Problem<code extends ProblemCode = any> {
     }
 }
 
+export type AddProblemOptions = { path?: Path }
+
 class ProblemArray extends Array<Problem> {
     byPath: Record<string, Problem> = {}
 
@@ -74,12 +76,13 @@ class ProblemArray extends Array<Problem> {
     add<code extends ProblemCode>(
         code: code,
         data: ProblemData<code>,
-        source: ProblemSource<code>
+        source: ProblemSource<code>,
+        opts?: AddProblemOptions
     ) {
         const problem: Problem = new Problem(
             code,
             // copy the path to avoid future mutations affecting it
-            Path.from(this.state.path),
+            opts?.path ?? Path.from(this.state.path),
             data,
             source,
             this.state.getConfigForProblemCode(code)
@@ -245,7 +248,7 @@ export class DataWrapper<value = unknown> {
 const writeDefaultReason = (mustBe: string, was: DataWrapper | string) =>
     `must be ${mustBe}${was && ` (was ${was})`}`
 
-const writeDefaultProblemMessage: ContextWriter = (reason, path) =>
+const addDefaultContext: ContextWriter = (reason, path) =>
     path.length === 0
         ? capitalize(reason)
         : path.length === 1 && isWellFormedInteger(path[0])
@@ -258,7 +261,7 @@ const compileDefaultProblemWriters = (definitions: {
     let code: ProblemCode
     for (code in definitions) {
         definitions[code].writeReason ??= writeDefaultReason
-        definitions[code].addContext ??= writeDefaultProblemMessage
+        definitions[code].addContext ??= addDefaultContext
     }
     return definitions as DefaultProblemsWriters
 }
@@ -308,25 +311,19 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
         mustBe: (values) => describeBranches(values.map(stringify))
     },
     branches: {
-        // TODO: translate to use problem intersections
-        mustBe: (branchProblems) => {
-            const clausesByPath: Record<string, string[]> = {}
-            for (const problem of branchProblems) {
-                const pathKey = `${problem.path}`
-                clausesByPath[pathKey] ??= []
-                clausesByPath[pathKey].push(problem.mustBe)
-            }
-            return describeBranches(
-                Object.entries(clausesByPath).map(
-                    ([path, clauses]) =>
-                        `${path} must be ${
-                            clauses.length === 1
-                                ? clauses[0]
-                                : describeBranches(clauses)
+        mustBe: (branchProblems) =>
+            describeBranches(
+                branchProblems.map(
+                    (problem) =>
+                        `${problem.path} must be ${
+                            problem.parts
+                                ? describeBranches(
+                                      problem.parts.map((part) => part.mustBe)
+                                  )
+                                : problem.mustBe
                         }`
                 )
-            )
-        },
+            ),
         writeReason: (mustBe, data) => `${mustBe} (was ${data})`,
         addContext: (reason, path) =>
             path.length ? `At ${path}, ${reason}` : reason

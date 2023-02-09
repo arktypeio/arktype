@@ -90,7 +90,6 @@ export class TraversalState {
             return this.problems.add("branches", data, [])
         }
         const lastFailFast = this.failFast
-        // TODO: does this propagate correctly? props errors? others?
         this.failFast = true
         const lastProblems = this.problems
         const branchProblems = new Problems(this)
@@ -136,54 +135,67 @@ export const checkEntries = (
     // lastOut should never be set to a Problem so that we can continue
     // traversing within the same precedence level even if there is a problem.
     let lastOut: TraversalReturn = data!
-    let lastProblem: Problem | undefined
-    for (let i = 0; i < entries.length - 1; i++) {
-        const result = entryTraversals[entries[i][0]](
-            data as never,
-            entries[i][1] as never,
+    let firstProblem: Problem | undefined
+    for (let i = 0; i < entries.length; i++) {
+        const result = (entryTraversals[entries[i][0]] as EntryTraversal<any>)(
+            lastOut,
+            entries[i][1],
             state
         )
-        if (result instanceof Problem) {
-            if (state.failFast) {
-                return result
+        if (!firstProblem) {
+            if (result instanceof Problem) {
+                if (state.failFast) {
+                    return result
+                }
+                firstProblem = result
+            } else {
+                lastOut = result!
             }
-            lastProblem = result
-        } else {
-            lastOut = result!
-        }
-        if (
-            lastProblem &&
+        } else if (
             i < entries.length - 1 &&
             precedenceMap[entries[i][0]] < precedenceMap[entries[i + 1][0]]
         ) {
             // if we've encountered a problem, there is at least one entry
             // remaining, and the next entry is of a higher precedence level
             // than the current entry, return immediately
-            return lastProblem
+            return firstProblem
         }
     }
-    return lastOut
+    return firstProblem ?? lastOut
 }
 
-const createPropChecker =
-    <propKind extends "requiredProps" | "optionalProps">(
-        propKind: propKind
-    ): EntryTraversal<propKind> =>
-    (data, props, state) => {
-        const rootPath = state.path
+const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
+    propKind: propKind
+) =>
+    ((data, props, state) => {
+        let firstProblem: Problem | undefined
+        const outProps: Record<string, unknown> = {}
         for (const [propKey, propNode] of props as TraversalPropEntry[]) {
-            state.path.push(propKey)
-            if (!hasKey(data, propKey)) {
-                if (propKind !== "optionalProps") {
-                    state.problems.add("missing", undefined, undefined)
-                }
+            let result: TraversalReturn
+            if (propKey in data) {
+                state.path.push(propKey)
+                result = traverse(data[propKey], propNode, state)
+                state.path.pop()
+            } else if (propKind === "optionalProps") {
+                continue
             } else {
-                traverse(data[propKey], propNode, state)
+                result = state.problems.add("missing", undefined, undefined, {
+                    path: state.path.concat(propKey)
+                })
             }
-            state.path.pop()
+            if (!firstProblem) {
+                if (result instanceof Problem) {
+                    if (state.failFast) {
+                        return result
+                    }
+                    firstProblem = result
+                } else {
+                    outProps[propKey] = result
+                }
+            }
         }
-        state.path = rootPath
-    }
+        return firstProblem ?? outProps
+    }) satisfies EntryTraversal<any> as EntryTraversal<propKind>
 
 const checkRequiredProps = createPropChecker("requiredProps")
 const checkOptionalProps = createPropChecker("optionalProps")
@@ -205,15 +217,25 @@ export const checkObjectKind: EntryTraversal<"objectKind"> = (
     }
     if (dataObjectKind === "Array") {
         const dataList = data as List
-        let lastProblem: Problem | undefined
+        let firstProblem: Problem | undefined
         const outList: TraversalReturn[] = []
         for (let i = 0; i < dataList.length; i++) {
             state.path.push(`${i}`)
-            const result = outList.push(traverse(dataList[i], rule[1], state))
+            const itemResult = traverse(dataList[i], rule[1], state)
             state.path.pop()
+            if (!firstProblem) {
+                if (itemResult instanceof Problem) {
+                    if (state.failFast) {
+                        return itemResult
+                    }
+                    firstProblem = itemResult
+                } else {
+                    outList.push(itemResult)
+                }
+            }
             i++
         }
-        return outList
+        return firstProblem ?? outList
     }
     return throwInternalError(`Unexpected objectKind entry ${stringify(rule)}`)
 }
@@ -229,7 +251,7 @@ const entryTraversals = {
     },
     domain: (data, domain, state) =>
         domainOf(data) === domain
-            ? data!
+            ? data
             : state.problems.add("domain", data, domain),
     objectKind: checkObjectKind,
     bound: checkBound,
@@ -243,28 +265,28 @@ const entryTraversals = {
             return checkEntries(data, rule.cases[caseKey], state)
         }
         const caseKeys = keysOf(rule.cases)
-        const lastPath = state.path
-        state.path = state.path.concat(rule.path)
-        if (rule.kind === "value") {
-            state.problems.add(
-                "valueBranches",
-                dataAtPath,
-                caseKeys.map((k) =>
-                    deserializePrimitive(k as SerializedPrimitive)
-                )
-            )
-        } else {
-            state.problems.add(
-                "domainBranches",
-                dataAtPath,
-                caseKeys as Domain[]
-            )
-        }
-        state.path = lastPath
+        const missingCasePath = state.path.concat(rule.path)
+        return rule.kind === "value"
+            ? state.problems.add(
+                  "valueBranches",
+                  dataAtPath,
+                  caseKeys.map((k) =>
+                      deserializePrimitive(k as SerializedPrimitive)
+                  ),
+                  { path: missingCasePath }
+              )
+            : state.problems.add(
+                  "domainBranches",
+                  dataAtPath,
+                  caseKeys as Domain[],
+                  { path: missingCasePath }
+              )
     },
     alias: (data, name, state) => state.traverseResolution(data, name),
     class: checkClass,
-    narrow: (data, narrow, state) => narrow(data, state.problems),
+    // TODO: fix
+    narrow: (data, narrow, state) =>
+        narrow(data, state.problems) ? data : state.problems[0],
     config: (data, { config, node }, state) => {
         state.configs.push(config)
         const result = traverse(data, node, state)
@@ -272,7 +294,7 @@ const entryTraversals = {
         return result
     },
     value: (data, value, state) =>
-        data === value ? data! : state.problems.add("value", data, value),
+        data === value ? data : state.problems.add("value", data, value),
     morph: (data, morph) => {
         if (typeof morph === "function") {
             return morph(data)!
@@ -284,7 +306,6 @@ const entryTraversals = {
         return out
     }
 } satisfies {
-    // TODO: out morphs not always returned? e.g. config?
     [k in TraversalKey]: EntryTraversal<k>
 }
 
@@ -298,6 +319,7 @@ type MorphableKey = extend<
     | "optionalProps"
     | "requiredProps"
     | "switch"
+    | "objectKind"
 >
 
 // a morphable key could actually return anything, but we use {} to ensure
