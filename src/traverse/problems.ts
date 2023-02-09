@@ -12,7 +12,7 @@ import type {
 } from "../utils/generics.ts"
 import { isWellFormedInteger } from "../utils/numericLiterals.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
-import { objectKindDescriptions, objectKindOf } from "../utils/objectKinds.ts"
+import { objectKindDescriptions } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 import type {
@@ -163,10 +163,9 @@ export const describeBranches = (descriptions: string[]) => {
 
 type ProblemSources = {
     divisor: number
-    class: constructor
+    class: DefaultObjectKind | constructor
     domain: Domain
     domainBranches: Domain[]
-    objectKind: DefaultObjectKind
     missing: undefined
     bound: FlatBound
     regex: RegexLiteral
@@ -221,10 +220,6 @@ export class DataWrapper<value = unknown> {
         return domainOf(this.value)
     }
 
-    get objectKind() {
-        return objectKindOf(this.value) ?? "non-object"
-    }
-
     get size() {
         return typeof this.value === "string" || Array.isArray(this.value)
             ? this.value.length
@@ -273,7 +268,10 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
             divisor === 1 ? `an integer` : `a multiple of ${divisor}`
     },
     class: {
-        mustBe: (constructor) => `an instance of ${constructor.name}`,
+        mustBe: (expected) =>
+            typeof expected === "string"
+                ? objectKindDescriptions[expected]
+                : `an instance of ${expected.name}`,
         writeReason: (mustBe, data) =>
             writeDefaultReason(mustBe, data.className)
     },
@@ -284,11 +282,6 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
     domainBranches: {
         mustBe: (domains) => describeDomains(domains),
         writeReason: (mustBe, data) => writeDefaultReason(mustBe, data.domain)
-    },
-    objectKind: {
-        mustBe: (kind: DefaultObjectKind) => objectKindDescriptions[kind],
-        writeReason: (mustBe, data) =>
-            writeDefaultReason(mustBe, data.objectKind)
     },
     missing: {
         mustBe: () => "defined",

@@ -1,6 +1,6 @@
 import type { TypeNode } from "../../../nodes/node.ts"
 import { intersection, isLiteralNode, union } from "../../../nodes/node.ts"
-import { arrayOf } from "../../../nodes/rules/objectKind.ts"
+import { arrayOf } from "../../../nodes/rules/container.ts/index.ts"
 import type { LowerBound } from "../../../nodes/rules/range.ts"
 import { minComparators } from "../../../nodes/rules/range.ts"
 import { throwInternalError, throwParseError } from "../../../utils/errors.ts"

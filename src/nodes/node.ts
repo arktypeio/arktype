@@ -133,9 +133,7 @@ export type DomainEntry = ["domain", Domain]
 
 const hasImpliedDomain = (flatPredicate: TraversalEntry[]) =>
     flatPredicate[0] &&
-    (flatPredicate[0][0] === "objectKind" ||
-        flatPredicate[0][0] === "value" ||
-        flatPredicate[0][0] === "class")
+    (flatPredicate[0][0] === "value" || flatPredicate[0][0] === "class")
 
 export type DomainsEntry = [
     "domains",
@@ -222,3 +220,9 @@ export const isLiteralNode = <domain extends Domain>(
         isLiteralCondition(node[domain])
     )
 }
+
+export const arrayOf = (node: TypeNode): ResolvedNode => ({
+    object: {
+        container: ["Array", node]
+    }
+})

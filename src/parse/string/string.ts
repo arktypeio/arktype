@@ -1,4 +1,4 @@
-import { arrayOf } from "../../nodes/rules/objectKind.ts"
+import { arrayOf } from "../../nodes/rules/container.ts/index.ts"
 import type { error } from "../../utils/generics.ts"
 import type { ParseContext } from "../definition.ts"
 import type { inferAst, validateAstSemantics } from "./ast.ts"

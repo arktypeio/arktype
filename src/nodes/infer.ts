@@ -15,8 +15,8 @@ import type {
 } from "../utils/objectKinds.js"
 import type { ResolvedNode, TypeNode } from "./node.js"
 import type { Predicate, TransformationBranch } from "./predicate.js"
-import type { ObjectKindRule } from "./rules/objectKind.js"
-import type { OptionalProp, PropsRule } from "./rules/props.js"
+import type { ContainerRule } from "./rules/container.ts/index.js"
+import type { OptionalProp, PropSet } from "./rules/props.js"
 import type { Bound, Range } from "./rules/range.js"
 import type { LiteralRules, NarrowableRules } from "./rules/rules.js"
 
@@ -83,17 +83,17 @@ type inferRules<domain extends Domain, branch, $> = branch extends LiteralRules
 type inferObjectRules<
     rules extends NarrowableRules,
     $
-> = rules["objectKind"] extends ObjectKindRule
-    ? rules["props"] extends PropsRule
+> = rules["objectKind"] extends ContainerRule
+    ? rules["props"] extends PropSet
         ? inferProps<rules["props"], $> &
               inferObjectKindRule<rules["objectKind"], rules["range"], $>
         : inferObjectKindRule<rules["objectKind"], rules["range"], $>
-    : rules["props"] extends PropsRule
+    : rules["props"] extends PropSet
     ? inferProps<rules["props"], $>
     : unknown
 
 type inferObjectKindRule<
-    rule extends ObjectKindRule,
+    rule extends ContainerRule,
     possibleRange extends Range | undefined,
     $
 > = rule extends DefaultObjectKind
@@ -112,7 +112,7 @@ type inferObjectKindRule<
     ? Map<inferNode<k, $>, inferNode<v, $>>
     : never
 
-type inferProps<props extends PropsRule, $> = evaluateObject<
+type inferProps<props extends PropSet, $> = evaluateObject<
     {
         [k in requiredKeyOf<props>]: props[k] extends TypeNode<$>
             ? inferNode<props[k], $>
@@ -124,11 +124,11 @@ type inferProps<props extends PropsRule, $> = evaluateObject<
     }
 >
 
-type optionalKeyOf<props extends PropsRule> = {
+type optionalKeyOf<props extends PropSet> = {
     [k in keyof props]: props[k] extends OptionalProp ? k : never
 }[keyof props]
 
-type requiredKeyOf<props extends PropsRule> = Exclude<
+type requiredKeyOf<props extends PropSet> = Exclude<
     keyof props,
     optionalKeyOf<props>
 >

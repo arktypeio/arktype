@@ -1,7 +1,7 @@
 import type { inferNode } from "../../nodes/infer.ts"
 import type { ResolvedNode, TypeNode } from "../../nodes/node.ts"
 import { intersection, union } from "../../nodes/node.ts"
-import { arrayOf } from "../../nodes/rules/objectKind.ts"
+import { arrayOf } from "../../nodes/rules/container.ts/index.ts"
 import type { asIn, asOut } from "../../scopes/type.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
@@ -43,7 +43,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     }
     return {
         object: {
-            objectKind: "Array",
+            container: "Array",
             props,
             range: { comparator: "==", limit: def.length }
         }

@@ -58,7 +58,7 @@ describe("intersection", () => {
             }[]
             attest(t.node).snap({
                 object: {
-                    objectKind: [
+                    container: [
                         "Array",
                         { object: { props: { a: "string", b: "boolean" } } }
                     ]

@@ -1,6 +1,6 @@
 import { stringifyRange } from "../../../../nodes/compose.ts"
 import type { ResolvedNode } from "../../../../nodes/node.ts"
-import type { ObjectKindRule } from "../../../../nodes/rules/objectKind.ts"
+import type { ContainerRule } from "../../../../nodes/rules/container.ts/index.ts"
 import type {
     Bound,
     MaxComparator,
@@ -132,12 +132,9 @@ const distributeRange = (range: Range, s: DynamicState) => {
                 return listFrom(resolution.object!).every(
                     (branch) =>
                         hasKey(branch, "objectKind") &&
-                        (branch.objectKind === "Array" ||
+                        (branch.container === "Array" ||
                             (
-                                branch.objectKind as Extract<
-                                    ObjectKindRule,
-                                    List
-                                >
+                                branch.container as Extract<ContainerRule, List>
                             )[0] === "Array")
                 )
             default:

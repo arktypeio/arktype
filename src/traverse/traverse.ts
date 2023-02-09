@@ -7,7 +7,7 @@ import type {
 } from "../nodes/node.js"
 import { checkClass } from "../nodes/rules/class.js"
 import { checkDivisor } from "../nodes/rules/divisor.js"
-import type { TraversalPropEntry } from "../nodes/rules/props.js"
+import type { TraversalProp } from "../nodes/rules/props.js"
 import { checkBound } from "../nodes/rules/range.js"
 import { checkRegex } from "../nodes/rules/regex.js"
 import { precedenceMap } from "../nodes/rules/rules.js"
@@ -16,7 +16,6 @@ import type { Domain } from "../utils/domains.js"
 import { domainOf, hasDomain } from "../utils/domains.js"
 import type { Dict, extend, List } from "../utils/generics.js"
 import { hasKey, keysOf } from "../utils/generics.js"
-import { objectKindOf } from "../utils/objectKinds.js"
 import { getPath, Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import { deserializePrimitive } from "../utils/serialize.js"
@@ -165,14 +164,13 @@ export const checkEntries = (
     return firstProblem ?? lastOut
 }
 
-// TODO: combine prop checks + arrayOf into a single "children" entry
 const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
     propKind: propKind
 ) =>
     ((data, props, state) => {
         let firstProblem: Problem | undefined
         const outProps: Record<string, unknown> = {}
-        for (const [propKey, propNode] of props as TraversalPropEntry[]) {
+        for (const [propKey, propNode] of props as TraversalProp[]) {
             let result: TraversalReturn
             if (propKey in data) {
                 state.path.push(propKey)
@@ -197,12 +195,12 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
             }
         }
         return firstProblem ?? outProps
-    }) as EntryTraversal<propKind>
+    }) as EntryTraversal<any>
 
 const checkRequiredProps = createPropChecker("requiredProps")
 const checkOptionalProps = createPropChecker("optionalProps")
 
-const checkArrayOf: EntryTraversal<"arrayOf"> = (data, node, state) => {
+const checkProps: EntryTraversal<"props"> = (data, propSets, state) => {
     let firstProblem: Problem | undefined
     const outList: TraversalReturn[] = []
     for (let i = 0; i < data.length; i++) {
@@ -237,13 +235,8 @@ const entryTraversals = {
         domainOf(data) === domain
             ? data
             : state.problems.add("domain", data, domain),
-    objectKind: (data, kind, state) =>
-        objectKindOf(data) === kind
-            ? data
-            : state.problems.add("objectKind", data, kind),
     bound: checkBound,
-    requiredProps: checkRequiredProps,
-    optionalProps: checkOptionalProps,
+    props: checkProps,
     branches: (data, branches, state) => state.traverseBranches(data, branches),
     switch: (data, rule, state) => {
         const dataAtPath = getPath(data, rule.path)
@@ -271,7 +264,6 @@ const entryTraversals = {
     },
     alias: (data, name, state) => state.traverseResolution(data, name),
     class: checkClass,
-    arrayOf: checkArrayOf,
     // TODO: fix
     narrow: (data, narrow, state) =>
         narrow(data, state.problems) ? data : state.problems[0],
@@ -299,15 +291,7 @@ const entryTraversals = {
 
 type MorphableKey = extend<
     TraversalKey,
-    | "morph"
-    | "alias"
-    | "branches"
-    | "config"
-    | "domains"
-    | "optionalProps"
-    | "requiredProps"
-    | "switch"
-    | "arrayOf"
+    "morph" | "alias" | "branches" | "config" | "domains" | "props" | "switch"
 >
 
 // a morphable key could actually return anything, but we use {} to ensure

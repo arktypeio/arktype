@@ -216,14 +216,14 @@ describe("morph", () => {
             object: [
                 {
                     rules: {
-                        objectKind: "Array",
+                        container: "Array",
                         props: { "0": "string" },
                         range: { comparator: "==", limit: 1 }
                     },
                     morph: "(function)"
                 },
                 {
-                    objectKind: "Array",
+                    container: "Array",
                     props: { "0": "boolean" },
                     range: { comparator: "==", limit: 1 }
                 }

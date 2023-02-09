@@ -9,7 +9,7 @@ describe("parse array", () => {
         attest(t.infer).typed as string[]
         attest(t.node).snap({
             object: {
-                objectKind: ["Array", "string"]
+                container: ["Array", "string"]
             }
         })
     })
@@ -17,7 +17,7 @@ describe("parse array", () => {
         const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
         attest(t.node).snap({
             object: {
-                objectKind: [
+                container: [
                     "Array",
                     { object: { props: { a: "string", b: "number" } } }
                 ]

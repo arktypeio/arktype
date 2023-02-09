@@ -5,7 +5,7 @@ import {
     equality,
     isDisjoint
 } from "../compose.ts"
-import type { TraversalNode, TypeNode } from "../node.ts"
+import type { TraversalNode, TraversalValue, TypeNode } from "../node.ts"
 import { flattenNode, nodeIntersection } from "../node.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
@@ -17,20 +17,25 @@ export type Prop<$ = Dict> = TypeNode<$> | OptionalProp<$>
 
 export type OptionalProp<$ = Dict> = ["?", TypeNode<$>]
 
-export type TraversalRequiredProps = [
-    "requiredProps",
-    readonly TraversalPropEntry[]
+export type PropsEntry = [
+    "props",
+    {
+        required?: TraversalProp[]
+        optional?: TraversalProp[]
+        mapped?: TraversalProp[]
+    }
 ]
 
-export type TraversalOptionalProps = [
-    "optionalProps",
-    readonly TraversalPropEntry[]
-]
+export type TraversalProps = {}
 
-export type TraversalPropEntry = [propKey: string, node: TraversalNode]
+export type TraversalProp = [propKey: string, node: TraversalNode]
 
 export const isOptional = (prop: Prop): prop is OptionalProp =>
     (prop as OptionalProp)[0] === "?"
+
+export const mappedPropKeys = {
+    "[number]": true
+} as const
 
 const nodeFrom = (prop: Prop) => (isOptional(prop) ? prop[1] : prop)
 
@@ -64,22 +69,30 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
     props,
     ctx
 ) => {
-    const requiredProps: TraversalPropEntry[] = []
-    const optionalProps: TraversalPropEntry[] = []
+    const required: TraversalProp[] = []
+    const optional: TraversalProp[] = []
+    const mapped: TraversalProp[] = []
     for (const k in props) {
         const prop = props[k]
         ctx.path.push(k)
-        if (isOptional(prop)) {
-            optionalProps.push([k, flattenNode(prop[1], ctx)])
+        if (k in mappedPropKeys) {
+            mapped.push([k, flattenNode(nodeFrom(prop), ctx)])
+        } else if (isOptional(prop)) {
+            optional.push([k, flattenNode(prop[1], ctx)])
         } else {
-            requiredProps.push([k, flattenNode(prop, ctx)])
+            required.push([k, flattenNode(prop, ctx)])
         }
         ctx.path.pop()
     }
-    if (requiredProps.length) {
-        entries.push(["requiredProps", requiredProps])
+    const result: TraversalValue<"props"> = {}
+    if (required.length) {
+        result.required = required
     }
-    if (optionalProps.length) {
-        entries.push(["optionalProps", optionalProps])
+    if (optional.length) {
+        result.optional = optional
     }
+    if (mapped.length) {
+        result.mapped = mapped
+    }
+    return result
 }
