@@ -14,13 +14,12 @@ import { precedenceMap } from "../nodes/rules/rules.js"
 import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf, hasDomain } from "../utils/domains.js"
-import { throwInternalError } from "../utils/errors.js"
 import type { Dict, extend, List } from "../utils/generics.js"
 import { hasKey, keysOf } from "../utils/generics.js"
 import { objectKindOf } from "../utils/objectKinds.js"
 import { getPath, Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
-import { deserializePrimitive, stringify } from "../utils/serialize.js"
+import { deserializePrimitive } from "../utils/serialize.js"
 import type { SizedData } from "../utils/size.js"
 import type { ProblemCode, ProblemWriters } from "./problems.js"
 import { defaultProblemWriters, Problem, Problems } from "./problems.js"
@@ -200,44 +199,26 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
 const checkRequiredProps = createPropChecker("requiredProps")
 const checkOptionalProps = createPropChecker("optionalProps")
 
-export const checkObjectKind: EntryTraversal<"objectKind"> = (
-    data,
-    rule,
-    state
-) => {
-    const dataObjectKind = objectKindOf(data)
-    if (typeof rule === "string") {
-        if (dataObjectKind !== rule) {
-            return state.problems.add("objectKind", data, rule)
-        }
-        return data
-    }
-    if (dataObjectKind !== rule[0]) {
-        return state.problems.add("objectKind", data, rule[0])
-    }
-    if (dataObjectKind === "Array") {
-        const dataList = data as List
-        let firstProblem: Problem | undefined
-        const outList: TraversalReturn[] = []
-        for (let i = 0; i < dataList.length; i++) {
-            state.path.push(`${i}`)
-            const itemResult = traverse(dataList[i], rule[1], state)
-            state.path.pop()
-            if (!firstProblem) {
-                if (itemResult instanceof Problem) {
-                    if (state.failFast) {
-                        return itemResult
-                    }
-                    firstProblem = itemResult
-                } else {
-                    outList.push(itemResult)
+const checkArrayOf: EntryTraversal<"arrayOf"> = (data, node, state) => {
+    let firstProblem: Problem | undefined
+    const outList: TraversalReturn[] = []
+    for (let i = 0; i < data.length; i++) {
+        state.path.push(`${i}`)
+        const itemResult = traverse(data[i], node, state)
+        state.path.pop()
+        if (!firstProblem) {
+            if (itemResult instanceof Problem) {
+                if (state.failFast) {
+                    return itemResult
                 }
+                firstProblem = itemResult
+            } else {
+                outList.push(itemResult)
             }
-            i++
         }
-        return firstProblem ?? outList
+        i++
     }
-    return throwInternalError(`Unexpected objectKind entry ${stringify(rule)}`)
+    return firstProblem ?? outList
 }
 
 const entryTraversals = {
@@ -253,7 +234,10 @@ const entryTraversals = {
         domainOf(data) === domain
             ? data
             : state.problems.add("domain", data, domain),
-    objectKind: checkObjectKind,
+    objectKind: (data, kind, state) =>
+        objectKindOf(data) === kind
+            ? data
+            : state.problems.add("objectKind", data, kind),
     bound: checkBound,
     requiredProps: checkRequiredProps,
     optionalProps: checkOptionalProps,
@@ -284,6 +268,7 @@ const entryTraversals = {
     },
     alias: (data, name, state) => state.traverseResolution(data, name),
     class: checkClass,
+    arrayOf: checkArrayOf,
     // TODO: fix
     narrow: (data, narrow, state) =>
         narrow(data, state.problems) ? data : state.problems[0],
@@ -319,7 +304,7 @@ type MorphableKey = extend<
     | "optionalProps"
     | "requiredProps"
     | "switch"
-    | "objectKind"
+    | "arrayOf"
 >
 
 // a morphable key could actually return anything, but we use {} to ensure
@@ -340,8 +325,7 @@ export type ConstrainedRuleTraversalData = extend<
         bound: SizedData
         requiredProps: Dict
         optionalProps: Dict
-        objectKind: object
-        class: object
+        arrayOf: List
     }
 >
 

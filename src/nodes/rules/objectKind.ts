@@ -7,7 +7,7 @@ import {
     isDisjoint,
     isEquality
 } from "../compose.js"
-import type { ResolvedNode, TraversalNode, TypeNode } from "../node.js"
+import type { ResolvedNode, TypeNode } from "../node.js"
 import { flattenNode, nodeIntersection } from "../node.js"
 import type { FlattenAndPushRule } from "./rules.js"
 
@@ -16,12 +16,6 @@ export type ObjectKindRule<$ = Dict> =
     | readonly ["Array", TypeNode<$>]
 // | readonly ["Set", TypeNode<$>]
 // | readonly ["Map", TypeNode<$>, TypeNode<$>]
-
-export type TraversalObjectKindRule =
-    | DefaultObjectKind
-    | readonly ["Array", TraversalNode]
-// | readonly ["Set", TraversalNode]
-// | readonly ["Map", TraversalNode, TraversalNode]
 
 export const objectKindIntersection = composeIntersection<ObjectKindRule>(
     (l, r, state) => {
@@ -99,11 +93,14 @@ export const flattenObjectKind: FlattenAndPushRule<ObjectKindRule> = (
     entries,
     rule,
     ctx
-) =>
-    entries.push([
-        "objectKind",
-        typeof rule === "string" ? rule : [rule[0], flattenNode(rule[1], ctx)]
-    ])
+) => {
+    if (typeof rule === "string") {
+        entries.push(["objectKind", rule])
+        return
+    }
+    entries.push(["objectKind", rule[0]])
+    entries.push(["arrayOf", flattenNode(rule[1], ctx)])
+}
 
 export const arrayOf = (node: TypeNode): ResolvedNode => ({
     object: {

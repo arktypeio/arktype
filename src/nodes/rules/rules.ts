@@ -8,6 +8,7 @@ import type {
     Dict
 } from "../../utils/generics.ts"
 import { listFrom } from "../../utils/generics.ts"
+import type { DefaultObjectKind } from "../../utils/objectKinds.ts"
 import type { IntersectionState, Intersector } from "../compose.ts"
 import {
     composeIntersection,
@@ -16,14 +17,19 @@ import {
     isDisjoint,
     isEquality
 } from "../compose.ts"
-import type { FlattenContext, TraversalEntry, TraversalKey } from "../node.ts"
+import type {
+    FlattenContext,
+    TraversalEntry,
+    TraversalKey,
+    TraversalNode
+} from "../node.ts"
 import type { Branch, TransformationBranch } from "../predicate.ts"
 import { branchIsTransformation } from "../predicate.ts"
 
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
-import type { ObjectKindRule, TraversalObjectKindRule } from "./objectKind.ts"
+import type { ObjectKindRule } from "./objectKind.ts"
 import { flattenObjectKind, objectKindIntersection } from "./objectKind.ts"
 import type {
     PropsRule,
@@ -54,15 +60,16 @@ export type NarrowRule = CollapsibleList<Narrow>
 export type FlatRules = RuleEntry[]
 
 export type RuleEntry =
-    | ["objectKind", TraversalObjectKindRule]
     | ["regex", string]
     | ["divisor", number]
     | ["bound", FlatBound]
     | ["class", constructor]
+    | ["objectKind", DefaultObjectKind]
     | TraversalRequiredProps
     | TraversalOptionalProps
     | ["narrow", Narrow]
     | ["value", unknown]
+    | ["arrayOf", TraversalNode]
 
 export type Rules<
     domain extends Domain = Domain,
@@ -219,6 +226,7 @@ export const precedenceMap: {
     // Deep: Performed if all shallow checks pass, even if one or more deep checks fail
     requiredProps: 2,
     optionalProps: 2,
+    arrayOf: 2,
     // Narrow: Only performed if all shallow and deep checks pass
     narrow: 3,
     // Morph: Only performed if all validation passes
