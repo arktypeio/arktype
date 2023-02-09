@@ -225,7 +225,7 @@ export const arrayOf = (node: TypeNode): ResolvedNode => ({
     object: {
         class: "Array",
         props: {
-            "[number]": node
+            "[index]": node
         }
     }
 })
