@@ -4,7 +4,6 @@ import type { Domain, inferDomain } from "../utils/domains.js"
 import type {
     evaluate,
     evaluateObject,
-    HomogenousTuple,
     List,
     returnOf
 } from "../utils/generics.js"
@@ -15,9 +14,7 @@ import type {
 } from "../utils/objectKinds.js"
 import type { ResolvedNode, TypeNode } from "./node.js"
 import type { Predicate, TransformationBranch } from "./predicate.js"
-import type { ContainerRule } from "./rules/container.ts/index.js"
-import type { OptionalProp, PropSet } from "./rules/props.js"
-import type { Bound, Range } from "./rules/range.js"
+import type { MappedPropKey, OptionalProp, PropsRule } from "./rules/props.js"
 import type { LiteralRules, NarrowableRules } from "./rules/rules.js"
 
 export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
@@ -83,36 +80,13 @@ type inferRules<domain extends Domain, branch, $> = branch extends LiteralRules
 type inferObjectRules<
     rules extends NarrowableRules,
     $
-> = rules["objectKind"] extends ContainerRule
-    ? rules["props"] extends PropSet
-        ? inferProps<rules["props"], $> &
-              inferObjectKindRule<rules["objectKind"], rules["range"], $>
-        : inferObjectKindRule<rules["objectKind"], rules["range"], $>
-    : rules["props"] extends PropSet
-    ? inferProps<rules["props"], $>
-    : unknown
+    // TODO: fix arrays
+> = (rules["class"] extends DefaultObjectKind
+    ? inferObjectKind<rules["class"]>
+    : unknown) &
+    (rules["props"] extends PropsRule ? inferProps<rules["props"], $> : unknown)
 
-type inferObjectKindRule<
-    rule extends ContainerRule,
-    possibleRange extends Range | undefined,
-    $
-> = rule extends DefaultObjectKind
-    ? inferObjectKind<rule>
-    : rule extends readonly ["Array", infer item extends TypeNode<$>]
-    ? possibleRange extends Bound<"==">
-        ? HomogenousTuple<inferNode<item, $>, possibleRange["limit"]>
-        : inferNode<item, $>[]
-    : rule extends readonly ["Set", infer item extends TypeNode<$>]
-    ? Set<inferNode<item, $>>
-    : rule extends readonly [
-          "Map",
-          infer k extends TypeNode<$>,
-          infer v extends TypeNode<$>
-      ]
-    ? Map<inferNode<k, $>, inferNode<v, $>>
-    : never
-
-type inferProps<props extends PropSet, $> = evaluateObject<
+type inferProps<props extends PropsRule, $> = evaluateObject<
     {
         [k in requiredKeyOf<props>]: props[k] extends TypeNode<$>
             ? inferNode<props[k], $>
@@ -124,11 +98,13 @@ type inferProps<props extends PropSet, $> = evaluateObject<
     }
 >
 
-type optionalKeyOf<props extends PropSet> = {
+type optionalKeyOf<props extends PropsRule> = {
     [k in keyof props]: props[k] extends OptionalProp ? k : never
 }[keyof props]
 
-type requiredKeyOf<props extends PropSet> = Exclude<
+type mappedKeyOf<props extends PropsRule> = Extract<keyof props, MappedPropKey>
+
+type requiredKeyOf<props extends PropsRule> = Exclude<
     keyof props,
-    optionalKeyOf<props>
+    optionalKeyOf<props> | mappedKeyOf<props>
 >

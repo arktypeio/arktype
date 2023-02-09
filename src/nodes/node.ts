@@ -223,6 +223,9 @@ export const isLiteralNode = <domain extends Domain>(
 
 export const arrayOf = (node: TypeNode): ResolvedNode => ({
     object: {
-        container: ["Array", node]
+        class: "Array",
+        props: {
+            "[number]": node
+        }
     }
 })

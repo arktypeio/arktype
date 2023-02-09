@@ -1,12 +1,13 @@
 import type { ResolvedNode } from "../nodes/node.ts"
-import type { PropSet } from "../nodes/rules/props.ts"
+import type { PropsRule } from "../nodes/rules/props.ts"
+
 import type { Dict, evaluateObject, mutable } from "../utils/generics.ts"
 import type { inferDefinition, ParseContext } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"
 import { Scanner } from "./string/shift/scanner.ts"
 
 export const parseRecord = (def: Dict, ctx: ParseContext): ResolvedNode => {
-    const props: mutable<PropSet> = {}
+    const props: mutable<PropsRule> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
         let isOptional = false

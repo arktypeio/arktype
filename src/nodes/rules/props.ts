@@ -37,6 +37,8 @@ export const mappedPropKeys = {
     "[number]": true
 } as const
 
+export type MappedPropKey = keyof typeof mappedPropKeys
+
 const nodeFrom = (prop: Prop) => (isOptional(prop) ? prop[1] : prop)
 
 export const propsIntersection = composeIntersection<PropsRule>(
