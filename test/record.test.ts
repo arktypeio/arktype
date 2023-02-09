@@ -10,7 +10,12 @@ describe("record", () => {
             object: {
                 props: {
                     a: "string",
-                    b: { object: { container: ["Array", "boolean"] } }
+                    b: {
+                        object: {
+                            class: "Array",
+                            props: { "[index]": "boolean" }
+                        }
+                    }
                 }
             }
         })
@@ -22,7 +27,12 @@ describe("record", () => {
             object: {
                 props: {
                     a: ["?", "string"],
-                    b: { object: { container: ["Array", "boolean"] } }
+                    b: {
+                        object: {
+                            class: "Array",
+                            props: { "[index]": "boolean" }
+                        }
+                    }
                 }
             }
         })

@@ -14,7 +14,7 @@ import { precedenceMap } from "../nodes/rules/rules.js"
 import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf, hasDomain } from "../utils/domains.js"
-import type { Dict, extend, List } from "../utils/generics.js"
+import type { extend } from "../utils/generics.js"
 import { hasKey, keysOf } from "../utils/generics.js"
 import { getPath, Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
@@ -165,32 +165,58 @@ export const checkEntries = (
 }
 
 const checkProps: EntryTraversal<"props"> = (data, propSets, state) => {
-    let firstProblem: Problem | undefined
-    const outList: TraversalReturn[] = []
-    for (let i = 0; i < data.length; i++) {
-        state.path.push(`${i}`)
-        const itemResult = traverse(data[i], node, state)
-        state.path.pop()
-        if (!firstProblem) {
-            if (itemResult instanceof Problem) {
-                if (state.failFast) {
-                    return itemResult
-                }
-                firstProblem = itemResult
-            } else {
-                outList.push(itemResult)
-            }
+    let requiredProps = propSets.required
+    let out: Record<string | number, unknown>
+    if (propSets.index) {
+        if (!Array.isArray(data)) {
+            return state.problems.add("class", data, "Array")
         }
-        i++
+        if (requiredProps) {
+            // copy requiredProps so we can mutate it with ephemeral entries
+            // representing index nodes
+            const updatedRequiredProps: TraversalProp[] = []
+            const existingKeys: Record<string, true> = {}
+            for (let i = 0; i < requiredProps.length; i++) {
+                existingKeys[requiredProps[i][0]] = true
+                updatedRequiredProps.push(requiredProps[i])
+            }
+            for (let i = 0; i < data.length; i++) {
+                if (!existingKeys[i]) {
+                    updatedRequiredProps.push([`${i}`, propSets.index])
+                }
+            }
+            requiredProps = updatedRequiredProps
+        } else {
+            requiredProps = data.map((_, i) => [`${i}`, propSets.index!])
+        }
+        out = [] as Record<number, unknown>
+    } else {
+        out = {}
     }
-    return firstProblem ?? outList
+    let result: TraversalReturn = out
+    if (requiredProps) {
+        result = checkNamedProps(data, requiredProps, state, out, "required")
+        if (result instanceof Problem && state.failFast) {
+            return result
+        }
+    }
+    if (propSets.optional) {
+        result = checkNamedProps(
+            data,
+            propSets.optional,
+            state,
+            out,
+            "optional"
+        )
+    }
+    return result
 }
 
 const checkNamedProps = (
-    data: Dict,
+    data: Record<string | number, unknown>,
     props: TraversalProp[],
     state: TraversalState,
-    out: Record<string, unknown>,
+    out: Record<string | number, unknown>,
     kind: "optional" | "required"
 ) => {
     let firstProblem: Problem | undefined
@@ -309,9 +335,7 @@ export type ConstrainedRuleTraversalData = extend<
         regex: string
         divisor: number
         bound: SizedData
-        requiredProps: Dict
-        optionalProps: Dict
-        arrayOf: List
+        props: Record<string | number, unknown>
     }
 >
 

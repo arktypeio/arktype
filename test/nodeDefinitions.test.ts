@@ -56,10 +56,10 @@ describe("node definitions", () => {
             "node",
             {
                 object: {
-                    objectKind: [
-                        "Array",
-                        { object: { props: { name: "string" } } }
-                    ]
+                    class: "Array",
+                    props: {
+                        "[index]": { object: { props: { name: "string" } } }
+                    }
                 }
             }
         ])
@@ -70,8 +70,11 @@ describe("node definitions", () => {
             "node",
             {
                 object: {
-                    objectKind: ["Array", "string"],
-                    range: { limit: 5, comparator: "==" }
+                    class: "Array",
+                    props: {
+                        "[index]": "string",
+                        length: { number: { value: 5 } }
+                    }
                 }
             } as const
         ])
@@ -85,7 +88,7 @@ describe("node definitions", () => {
                 boolean: true,
                 object: [
                     { props: { a: "string" } },
-                    { objectKind: ["Array", "number"] }
+                    { class: "Array", props: { "[index]": "number" } }
                 ]
             } as const
         ])
@@ -121,7 +124,7 @@ describe("node definitions", () => {
             "node",
             {
                 object: {
-                    objectKind: "Date"
+                    class: "Date"
                 }
             }
         ])

@@ -1,5 +1,5 @@
 import type { Dict } from "../../utils/generics.ts"
-import { hasKey, isKeyOf } from "../../utils/generics.ts"
+import { hasKey } from "../../utils/generics.ts"
 import {
     composeIntersection,
     composeKeyedIntersection,
@@ -24,7 +24,7 @@ export type PropsEntry = [
     {
         required?: TraversalProp[]
         optional?: TraversalProp[]
-        mapped?: TraversalProp<MappedPropKey>[]
+        index?: TraversalNode
     }
 ]
 
@@ -128,9 +128,8 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
     for (const k in props) {
         const prop = props[k]
         ctx.path.push(k)
-        if (isKeyOf(k, mappedPropKeys)) {
-            result.mapped ??= []
-            result.mapped.push([k, flattenNode(nodeFrom(prop), ctx)])
+        if (k === "[index]") {
+            result.index = flattenNode(nodeFrom(prop), ctx)
         } else if (isOptional(prop)) {
             result.optional ??= []
             result.optional.push([k, flattenNode(prop[1], ctx)])

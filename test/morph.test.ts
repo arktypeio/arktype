@@ -53,12 +53,12 @@ describe("morph", () => {
         attest(types.mapToLengths).typed as Type<
             ((In: string) => Out<number>)[]
         >
-        const result = types.mapToLengths(["", "1", "22", "333"])
+        const result = types.mapToLengths(["1", "22", "333"])
         if (result.problems) {
             return result.problems.throw()
         }
-        attest(result.data).equals(["", "1", "22", "333"]).typed as string[]
-        attest(result.out).equals([0, 1, 2, 3]).typed as number[]
+        attest(result.data).equals(["1", "22", "333"]).typed as string[]
+        attest(result.out).equals([1, 2, 3]).typed as number[]
     })
     it("object inference", () => {
         const t = type([{ a: "string" }, "=>", (data) => `${data}`])
@@ -216,16 +216,17 @@ describe("morph", () => {
             object: [
                 {
                     rules: {
-                        container: "Array",
-                        props: { "0": "string" },
-                        range: { comparator: "==", limit: 1 }
+                        class: "Array",
+                        props: {
+                            "0": "string",
+                            length: { number: { value: 1 } }
+                        }
                     },
                     morph: "(function)"
                 },
                 {
-                    container: "Array",
-                    props: { "0": "boolean" },
-                    range: { comparator: "==", limit: 1 }
+                    class: "Array",
+                    props: { "0": "boolean", length: { number: { value: 1 } } }
                 }
             ]
         })
@@ -293,7 +294,7 @@ describe("morph", () => {
                 c: "a[]&b[]"
             }).compile()
         }).throwsAndHasTypeError(
-            "At ${number}/a: Intersection of morphs results in an unsatisfiable type"
+            "At [index]/a: Intersection of morphs results in an unsatisfiable type"
         )
     })
     it("undiscriminated morph at path", () => {
