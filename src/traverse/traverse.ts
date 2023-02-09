@@ -165,6 +165,7 @@ export const checkEntries = (
     return firstProblem ?? lastOut
 }
 
+// TODO: combine prop checks + arrayOf into a single "children" entry
 const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
     propKind: propKind
 ) =>
@@ -196,7 +197,7 @@ const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
             }
         }
         return firstProblem ?? outProps
-    }) satisfies EntryTraversal<any> as EntryTraversal<propKind>
+    }) as EntryTraversal<propKind>
 
 const checkRequiredProps = createPropChecker("requiredProps")
 const checkOptionalProps = createPropChecker("optionalProps")
