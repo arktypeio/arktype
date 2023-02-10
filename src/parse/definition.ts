@@ -47,9 +47,16 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
         case "RegExp":
             return { string: { regex: (def as RegExp).source } }
         case "Function":
-            return isType(def)
-                ? def.node
-                : throwParseError(writeBadDefinitionTypeMessage("Function"))
+            if (isType(def)) {
+                return def.node
+            }
+            if (isThunk(def)) {
+                const returned = def()
+                if (isType(returned)) {
+                    return returned.node
+                }
+            }
+            return throwParseError(writeBadDefinitionTypeMessage("Function"))
         default:
             return throwParseError(
                 writeBadDefinitionTypeMessage(objectKind ?? stringify(def))
@@ -59,7 +66,7 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
 
 export type inferDefinition<def, $> = isAny<def> extends true
     ? never
-    : def extends inferred<infer t>
+    : def extends inferred<infer t> | Thunk<inferred<infer t>>
     ? t
     : def extends string
     ? inferString<def, $>
@@ -98,7 +105,13 @@ export const unknownDefinitionMessage =
 
 export type unknownDefinitionMessage = typeof unknownDefinitionMessage
 
-type Terminal = RegExp | inferred<unknown>
+const isThunk = (def: unknown): def is Thunk =>
+    typeof def === "function" && def.length === 0
+
+// using any as the return type here allows us to validate without a circular reference error
+type Thunk<returnType = any> = () => returnType
+
+type Terminal = RegExp | inferred<unknown> | Thunk
 
 type BadDefinitionType = Exclude<Primitive, string> | Function
 

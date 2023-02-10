@@ -87,7 +87,12 @@ class ProblemArray extends Array<Problem> {
     ): false {
         // copy the path to avoid future mutations affecting it
         const path = opts?.path ?? Path.from(this.#state.path)
-        const data = opts?.data ?? (this.#state.data as ProblemData<code>)
+        const data =
+            // we have to check for the presence of the key explicitly since the
+            // data could be undefined or null
+            opts && "data" in opts
+                ? opts.data
+                : (this.#state.data as ProblemData<code>)
         return this.add(
             new Problem(
                 code,

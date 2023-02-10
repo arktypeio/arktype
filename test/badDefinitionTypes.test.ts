@@ -49,7 +49,7 @@ describe("bad definition types", () => {
     })
     it("objects", () => {
         // @ts-expect-error
-        attest(() => type({ bad: () => {} })).throwsAndHasTypeError(
+        attest(() => type({ bad: (s: string) => s })).throwsAndHasTypeError(
             writeBadDefinitionTypeMessage("Function")
         )
     })

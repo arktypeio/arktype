@@ -129,19 +129,6 @@ export const checkEntries = (
     let isValid = true
     for (let i = 0; i < entries.length; i++) {
         const [k, v] = entries[i]
-        if (k === "morph") {
-            if (typeof v === "function") {
-                const out = v(state.data)
-                if (out instanceof Problem) {
-                    state.problems
-                }
-            } else {
-                for (const morph of v) {
-                    state.data = morph(state.data)
-                }
-            }
-            return true
-        }
         const entryAllowsData = (entryCheckers[k] as EntryChecker<any>)(
             v,
             state
@@ -173,7 +160,8 @@ export const checkRequiredProp = (
         return state.traverseKey(prop[0], prop[1])
     }
     return state.problems.create("missing", undefined, {
-        path: state.path.concat(prop[0])
+        path: state.path.concat(prop[0]),
+        data: undefined
     })
 }
 
@@ -245,9 +233,17 @@ const entryCheckers = {
         return result
     },
     value: (value, state) =>
-        state.data === value || state.problems.create("value", value)
+        state.data === value || state.problems.create("value", value),
+    morph: (morph, state) => {
+        const out = morph(state.data)
+        if (out instanceof Problem) {
+            return state.problems.add(out)
+        }
+        state.data = out
+        return true
+    }
 } satisfies {
-    [k in ValidationTraversalKey]: EntryChecker<k>
+    [k in TraversalKey]: EntryChecker<k>
 }
 
 export type ValidationTraversalKey = Exclude<TraversalKey, "morph">

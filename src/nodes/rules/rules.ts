@@ -111,6 +111,10 @@ export const flattenRules = (
     for (k in rules) {
         ruleFlatteners[k](entries, rules[k] as any, ctx)
     }
+    // Some entries with the same precedence, e.g. morphs flattened from a list,
+    // rely on the fact that JS's builtin sort is stable to behave as expected
+    // when traversed:
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort
     return entries.sort((l, r) => precedenceMap[l[0]] - precedenceMap[r[0]])
 }
 
