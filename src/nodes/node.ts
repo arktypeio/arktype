@@ -66,7 +66,7 @@ const resolutionIntersection = composeKeyedIntersection<ResolvedNode>(
     { onEmpty: "omit" }
 )
 
-export const intersection = (
+export const rootIntersection = (
     l: TypeNode,
     r: TypeNode,
     type: Type
@@ -80,7 +80,11 @@ export const intersection = (
         : result
 }
 
-export const union = (l: TypeNode, r: TypeNode, type: Type): ResolvedNode => {
+export const rootUnion = (
+    l: TypeNode,
+    r: TypeNode,
+    type: Type
+): ResolvedNode => {
     const lResolution = type.meta.scope.resolveNode(l)
     const rResolution = type.meta.scope.resolveNode(r)
     const result = {} as mutable<ResolvedNode>

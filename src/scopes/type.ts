@@ -13,6 +13,7 @@ import { hasKeys } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import type { Scope } from "./scope.ts"
 
+// TODO: add config entries when resolving a type
 export type TypeParser<$> = {
     <def>(def: validateDefinition<def, $>): parseType<def, $>
 
@@ -21,6 +22,26 @@ export type TypeParser<$> = {
 
 export type parseType<def, $> = def extends validateDefinition<def, $>
     ? Type<inferDefinition<def, $>>
+    : never
+
+export type IntersectionParser<$> = {
+    <l, r>(
+        l: validateDefinition<l, $>,
+        r: validateDefinition<r, $>
+    ): parseIntersection<l, r, $>
+
+    <l, r>(
+        l: validateDefinition<l, $>,
+        r: validateDefinition<r, $>,
+        opts: TypeOptions
+    ): parseIntersection<l, r, $>
+}
+
+export type parseIntersection<l, r, $> = [l, r] extends [
+    validateDefinition<l, $>,
+    validateDefinition<r, $>
+]
+    ? Type<inferDefinition<l, $> & inferDefinition<r, $>>
     : never
 
 type TypeRoot<t = unknown> = {

@@ -2,6 +2,7 @@ import type { ResolvedNode, TypeNode } from "../nodes/node.ts"
 import { flattenType } from "../nodes/node.ts"
 import type {
     inferDefinition,
+    inferred,
     ParseContext,
     validateDefinition
 } from "../parse/definition.ts"
@@ -20,7 +21,13 @@ import { Path } from "../utils/paths.ts"
 import type { stringifyUnion } from "../utils/unionToTuple.ts"
 import { Cache, FreezingCache } from "./cache.ts"
 import type { PrecompiledDefaults } from "./standard.ts"
-import type { Type, TypeConfig, TypeOptions, TypeParser } from "./type.ts"
+import type {
+    IntersectionParser,
+    Type,
+    TypeConfig,
+    TypeOptions,
+    TypeParser
+} from "./type.ts"
 import { initializeType } from "./type.ts"
 
 type ScopeParser = {
@@ -207,6 +214,12 @@ export class Scope<context extends ScopeContext = any> {
         result.flat = flattenType(result)
         return result
     }) as TypeParser<resolutions<context>>
+
+    intersection = ((l, r, opts) =>
+        this.type(
+            [l, "&", r] as inferred<unknown>,
+            opts
+        )) as IntersectionParser<resolutions<context>>
 
     #initializeContext(type: Type): ParseContext {
         return {

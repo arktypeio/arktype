@@ -1,6 +1,6 @@
 import type { inferNode } from "../../nodes/infer.ts"
 import type { ResolvedNode, TypeNode } from "../../nodes/node.ts"
-import { arrayOf, intersection, union } from "../../nodes/node.ts"
+import { arrayOf, rootIntersection, rootUnion } from "../../nodes/node.ts"
 import type { Prop } from "../../nodes/rules/props.ts"
 import type { asIn, asOut } from "../../scopes/type.ts"
 import { domainOf } from "../../utils/domains.ts"
@@ -131,7 +131,9 @@ const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
     }
     const l = parseDefinition(def[0], ctx)
     const r = parseDefinition(def[2], ctx)
-    return def[1] === "&" ? intersection(l, r, ctx.type) : union(l, r, ctx.type)
+    return def[1] === "&"
+        ? rootIntersection(l, r, ctx.type)
+        : rootUnion(l, r, ctx.type)
 }
 
 const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>

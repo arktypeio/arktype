@@ -1,4 +1,4 @@
-import { intersection } from "../../nodes/node.ts"
+import { rootIntersection } from "../../nodes/node.ts"
 import type { asIn } from "../../scopes/type.ts"
 import type { Problems } from "../../traverse/problems.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
@@ -9,7 +9,7 @@ import { distributeFunctionToNode } from "./utils.ts"
 
 export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
     const inputNode = parseDefinition(def[0], ctx)
-    return intersection(
+    return rootIntersection(
         inputNode,
         distributeFunctionToNode(
             def[2] as distributable<Narrow>,
