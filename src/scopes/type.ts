@@ -92,9 +92,9 @@ export const initializeType = (
     // dynamically assign a name to the primary traversal function
     const namedTraverse: Checker<unknown> = {
         [name]: (data: unknown) => {
-            const state = new TraversalState(type)
+            const state = new TraversalState(data, type)
             return (
-                traverse(data, type.flat, state)
+                traverse(type.flat, state)
                     ? { data: state.data }
                     : { problems: state.problems }
             ) as CheckResult<unknown>

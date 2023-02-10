@@ -22,7 +22,7 @@ import type { Branch, MorphBranch } from "../predicate.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
-import type { PropsEntry, PropsRule } from "./props.ts"
+import type { PropEntry, PropsRule } from "./props.ts"
 import { flattenProps, propsIntersection } from "./props.ts"
 import type { FlatBound, Range } from "./range.ts"
 import { flattenRange, rangeIntersection } from "./range.ts"
@@ -50,7 +50,7 @@ export type RuleEntry =
     | ["divisor", number]
     | ["bound", FlatBound]
     | ["class", DefaultObjectKind | constructor]
-    | PropsEntry
+    | PropEntry
     | ["narrow", Narrow]
     | ["value", unknown]
 
@@ -200,7 +200,9 @@ export const precedenceMap: {
     divisor: 1,
     bound: 1,
     // Deep: Performed if all shallow checks pass, even if one or more deep checks fail
-    props: 2,
+    requiredProp: 2,
+    optionalProp: 2,
+    indexProp: 2,
     // Narrow: Only performed if all shallow and deep checks pass
     narrow: 3,
     // Morph: Only performed if all validation passes

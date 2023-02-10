@@ -7,7 +7,7 @@ import {
     isDisjoint,
     isEquality
 } from "../compose.ts"
-import type { TraversalNode, TraversalValue, TypeNode } from "../node.ts"
+import type { TraversalNode, TypeNode } from "../node.ts"
 import { flattenNode, isLiteralNode, nodeIntersection } from "../node.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
@@ -19,14 +19,13 @@ export type Prop<$ = Dict> = TypeNode<$> | OptionalProp<$>
 
 export type OptionalProp<$ = Dict> = ["?", TypeNode<$>]
 
-export type PropsEntry = [
-    "props",
-    {
-        required?: TraversalProp[]
-        optional?: TraversalProp[]
-        index?: TraversalNode
-    }
-]
+export type PropEntry = RequiredPropEntry | OptionalPropEntry | IndexPropEntry
+
+export type RequiredPropEntry = ["requiredProp", TraversalProp]
+
+export type OptionalPropEntry = ["optionalProp", TraversalProp]
+
+export type IndexPropEntry = ["indexProp", TraversalNode]
 
 export type TraversalProp<
     key extends string = string,
@@ -124,20 +123,17 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
     props,
     ctx
 ) => {
-    const result: TraversalValue<"props"> = {}
     for (const k in props) {
         const prop = props[k]
         ctx.path.push(k)
         if (k === "[index]") {
-            result.index = flattenNode(nodeFrom(prop), ctx)
+            // TODO: include an extra numeric props
+            entries.push(["indexProp", flattenNode(nodeFrom(prop), ctx)])
         } else if (isOptional(prop)) {
-            result.optional ??= []
-            result.optional.push([k, flattenNode(prop[1], ctx)])
+            entries.push(["optionalProp", [k, flattenNode(prop[1], ctx)]])
         } else {
-            result.required ??= []
-            result.required.push([k, flattenNode(prop, ctx)])
+            entries.push(["requiredProp", [k, flattenNode(prop, ctx)]])
         }
         ctx.path.pop()
     }
-    entries.push(["props", result])
 }

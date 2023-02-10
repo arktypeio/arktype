@@ -337,6 +337,21 @@ describe("discriminate", () => {
         ])
     })
     it("won't discriminate between possibly empty arrays", () => {
-        attest(type("string[]|boolean[]").flat).snap()
+        attest(type("string[]|boolean[]").flat).snap([
+            ["domain", "object"],
+            [
+                "branches",
+                [
+                    [
+                        ["class", "Array"],
+                        ["indexProp", "string"]
+                    ],
+                    [
+                        ["class", "Array"],
+                        ["indexProp", "boolean"]
+                    ]
+                ]
+            ]
+        ])
     })
 })

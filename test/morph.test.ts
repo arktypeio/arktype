@@ -15,8 +15,7 @@ describe("morph", () => {
         if (result.problems) {
             return result.problems.throw()
         }
-        attest(result.data).equals(true).typed as boolean
-        attest(result.out).equals("true").typed as string
+        attest(result.data).equals("true").typed as string
         attest(t("foo").problems?.summary).snap("Must be boolean (was string)")
     })
     it("endomorph", () => {
@@ -26,8 +25,7 @@ describe("morph", () => {
         if (result.problems) {
             return result.problems.throw()
         }
-        attest(result.data).equals(true).typed as boolean
-        attest(result.out).equals(false).typed as boolean
+        attest(result.data).equals(false).typed as boolean
     })
     it("at path", () => {
         const t = type({ a: ["string", "=>", (data) => data.length] })
@@ -38,10 +36,7 @@ describe("morph", () => {
         if (result.problems) {
             return result.problems.throw()
         }
-        attest(result.data).equals({ a: "four" }).typed as {
-            a: string
-        }
-        attest(result.out).equals({ a: 4 }).typed as {
+        attest(result.data).equals({ a: 4 }).typed as {
             a: number
         }
     })
@@ -57,8 +52,7 @@ describe("morph", () => {
         if (result.problems) {
             return result.problems.throw()
         }
-        attest(result.data).equals(["1", "22", "333"]).typed as string[]
-        attest(result.out).equals([1, 2, 3]).typed as number[]
+        attest(result.data).equals([1, 2, 3]).typed as number[]
     })
     it("object inference", () => {
         const t = type([{ a: "string" }, "=>", (data) => `${data}`])
