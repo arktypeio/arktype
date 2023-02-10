@@ -1,7 +1,7 @@
 import type { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { EntryChecker } from "../../traverse/traverse.ts"
+import { sizeOf } from "../../utils/data.ts"
 import type { evaluate } from "../../utils/generics.ts"
-import { sizeOf } from "../../utils/size.ts"
 import { composeIntersection, equality } from "../compose.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 

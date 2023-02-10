@@ -3,6 +3,7 @@ import { disjointDescriptionWriters } from "../../nodes/compose.ts"
 import type { MappedKeys } from "../../nodes/rules/props.ts"
 import type { resolve } from "../../scopes/scope.ts"
 import type { asIn } from "../../scopes/type.ts"
+import type { SizedData } from "../../utils/data.ts"
 import type { domainOf } from "../../utils/domains.ts"
 import type {
     asConst,
@@ -24,7 +25,6 @@ import type {
 import { keysOf } from "../../utils/generics.ts"
 import type { objectKindOf } from "../../utils/objectKinds.ts"
 import type { Path, pathToString } from "../../utils/paths.ts"
-import type { SizedData } from "../../utils/size.ts"
 import type { Out, ParsedMorph } from "../tuple/morph.ts"
 import type { StringLiteral } from "./shift/operand/enclosed.ts"
 import type { Scanner } from "./shift/scanner.ts"

@@ -1,3 +1,5 @@
+import type { arraySubclassToReadonly } from "./generics"
+
 export class Path extends Array<string> {
     static fromString(s: string, delimiter = "/") {
         return s === delimiter ? new Path() : new Path(...s.split(delimiter))
@@ -7,6 +9,8 @@ export class Path extends Array<string> {
         return this.length ? this.join(delimiter) : delimiter
     }
 }
+
+export type ReadonlyPath = arraySubclassToReadonly<Path>
 
 export type pathToString<
     segments extends string[],

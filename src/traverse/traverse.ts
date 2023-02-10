@@ -12,6 +12,7 @@ import { checkBound } from "../nodes/rules/range.js"
 import { checkRegex } from "../nodes/rules/regex.js"
 import { precedenceMap } from "../nodes/rules/rules.js"
 import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.js"
+import type { SizedData } from "../utils/data.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf, hasDomain } from "../utils/domains.js"
 import type { extend, stringKeyOf } from "../utils/generics.js"
@@ -19,11 +20,9 @@ import { hasKey, keysOf } from "../utils/generics.js"
 import { getPath, Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import { deserializePrimitive } from "../utils/serialize.js"
-import type { SizedData } from "../utils/size.js"
 import type { ProblemCode, ProblemWriters } from "./problems.js"
 import { defaultProblemWriters, Problems } from "./problems.js"
 
-// TODO: include data wrapper in state
 export class TraversalState<data = unknown> {
     path = new Path()
     problems = new Problems(this as any)
@@ -57,7 +56,6 @@ export class TraversalState<data = unknown> {
     traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {
         const lastData = this.data
         this.data = this.data[key] as data
-        // TODO: make path externally readonly
         this.path.push(key)
         const isValid = traverse(node, this)
         this.path.pop()

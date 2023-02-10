@@ -245,6 +245,11 @@ export type Dict<k extends string = string, v = unknown> = {
 
 export type List<t = unknown> = readonly t[]
 
+export type arraySubclassToReadonly<t extends unknown[]> =
+    readonly t[number][] & {
+        [k in Exclude<keyof t, keyof unknown[]>]: t[k]
+    }
+
 export type HomogenousTuple<
     item,
     length extends number,
