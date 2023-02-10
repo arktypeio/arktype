@@ -18,15 +18,9 @@ export const classIntersection = composeIntersection<
         : state.addDisjoint("class", l, r)
 })
 
-export const checkClass: EntryTraversal<"class"> = (
-    data,
-    expectedClass,
-    state
-) =>
+export const checkClass: EntryTraversal<"class"> = (expectedClass, state) =>
     typeof expectedClass === "string"
-        ? objectKindOf(data) === expectedClass
-            ? data
-            : state.problems.add("class", data, expectedClass)
-        : data instanceof expectedClass
-        ? data
-        : state.problems.add("class", data, expectedClass)
+        ? objectKindOf(state.data) === expectedClass ||
+          state.problems.add("class", state.data, expectedClass)
+        : state.data instanceof expectedClass ||
+          state.problems.add("class", state.data, expectedClass)

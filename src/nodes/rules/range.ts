@@ -115,10 +115,9 @@ export const flattenRange: FlattenAndPushRule<Range> = (
     }
 }
 
-export const checkBound: EntryTraversal<"bound"> = (data, bound, state) =>
-    comparatorCheckers[bound.comparator](sizeOf(data), bound.limit)
-        ? data
-        : state.problems.add("bound", data, bound)
+export const checkBound: EntryTraversal<"bound"> = (bound, state) =>
+    comparatorCheckers[bound.comparator](sizeOf(state.data), bound.limit) ||
+    state.problems.add("bound", state.data, bound)
 
 const comparatorCheckers: Record<
     Scanner.Comparator,

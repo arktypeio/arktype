@@ -113,7 +113,7 @@ class ProblemArray extends Array<Problem> {
             this.byPath[pathKey] = problem
             this.push(problem)
         }
-        return problem
+        return false
     }
 
     get summary() {

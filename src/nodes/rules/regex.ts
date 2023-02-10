@@ -12,10 +12,9 @@ export const getRegex = (source: string) => {
     return regexCache[source]
 }
 
-export const checkRegex: EntryTraversal<"regex"> = (data, source, state) =>
-    getRegex(source).test(data)
-        ? data
-        : state.problems.add("regex", data, `/${source}/`)
+export const checkRegex: EntryTraversal<"regex"> = (source, state) =>
+    getRegex(source).test(state.data) ||
+    state.problems.add("regex", state.data, `/${source}/`)
 
 export const regexIntersection = composeIntersection<CollapsibleList<string>>(
     collapsibleListUnion<string>

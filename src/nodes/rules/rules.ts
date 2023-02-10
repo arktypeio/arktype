@@ -18,9 +18,7 @@ import {
     isEquality
 } from "../compose.ts"
 import type { FlattenContext, TraversalEntry, TraversalKey } from "../node.ts"
-import type { Branch, TransformationBranch } from "../predicate.ts"
-import { branchIsTransformation } from "../predicate.ts"
-
+import type { Branch, MorphBranch } from "../predicate.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
@@ -76,7 +74,7 @@ type defineRuleSet<
 > = Pick<NarrowableRules<$>, keys> | LiteralRules<domain>
 
 const rulesOf = (branch: Branch): Rules =>
-    (branch as TransformationBranch).rules ?? branch
+    (branch as MorphBranch).rules ?? branch
 
 export const branchIntersection: Intersector<Branch> = (l, r, state) => {
     const lRules = rulesOf(l)
@@ -209,8 +207,11 @@ export const precedenceMap: {
     morph: 4
 }
 
+export const isMorphBranch = (branch: Branch): branch is MorphBranch =>
+    "morph" in branch
+
 export const flattenBranch = (branch: Branch, ctx: FlattenContext) => {
-    if (branchIsTransformation(branch)) {
+    if (isMorphBranch(branch)) {
         const result = flattenRules(branch.rules, ctx)
         if (branch.morph) {
             result.push(["morph", branch.morph])

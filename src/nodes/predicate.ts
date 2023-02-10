@@ -25,16 +25,12 @@ export type Predicate<
 
 export type Branch<domain extends Domain = Domain, $ = Dict> =
     | Rules<domain, $>
-    | TransformationBranch<domain, $>
+    | MorphBranch<domain, $>
 
-export type TransformationBranch<domain extends Domain = Domain, $ = Dict> = {
+export type MorphBranch<domain extends Domain = Domain, $ = Dict> = {
     rules: Rules<domain, $>
-    morph?: CollapsibleList<Morph>
+    morph: CollapsibleList<Morph>
 }
-
-export const branchIsTransformation = (
-    branch: Branch
-): branch is TransformationBranch => "rules" in branch
 
 export type MorphEntry = ["morph", CollapsibleList<Morph>]
 
