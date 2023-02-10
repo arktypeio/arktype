@@ -186,7 +186,6 @@ const entryCheckers = {
             ? checkEntries(entries, state)
             : state.problems.create("domainBranches", keysOf(domains))
     },
-    // TODO: remove data from problem params
     domain: (domain, state) =>
         domainOf(state.data) === domain ||
         state.problems.create("domain", domain),
@@ -238,7 +237,6 @@ const entryCheckers = {
     },
     alias: (name, state) => state.traverseResolution(name),
     class: checkClass,
-    // TODO: fix
     narrow: (narrow, state) => narrow(state.data, state.problems),
     config: ({ config, node }, state) => {
         state.configs.push(config)
