@@ -1,6 +1,7 @@
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import { writeImplicitNeverMessage } from "../src/parse/string/ast.ts"
+import { wellFormedNonNegativeIntegerMatcher } from "../src/utils/numericLiterals.ts"
 import { Path } from "../src/utils/paths.ts"
 
 describe("keyof", () => {
@@ -15,10 +16,10 @@ describe("keyof", () => {
             [{ a: "number", b: "boolean" }, "|", { b: "number", c: "string" }]
         ])
         attest(t.infer).typed as "b"
-        attest(t.node).snap({ string: [{ value: "b" }] })
+        attest(t.node).snap({ string: { value: "b" } })
     })
     const expectedNeverKeyOfMessage = writeImplicitNeverMessage(
-        new Path(),
+        new Path() as [],
         "keyof"
     )
     it("non-overlapping union", () => {
@@ -42,13 +43,15 @@ describe("keyof", () => {
     it("tuple", () => {
         const t = type(["keyof", ["string", "number"]])
         attest(t.infer).typed as "0" | "1"
-        attest(t.node).snap({ string: [{ value: "0" }, { value: "1" }] })
+        attest(t.node).snap({
+            string: [{ value: "0" }, { value: "1" }]
+        })
     })
     it("array", () => {
-        // conservatively inferred as never pending https://github.com/arktypeio/arktype/issues/605
-        attest(() =>
-            // @ts-expect-error
-            type(["keyof", "unknown[]"])
-        ).throwsAndHasTypeError(expectedNeverKeyOfMessage)
+        const t = type(["keyof", "unknown[]"])
+        attest(t.node).equals({
+            string: { regex: wellFormedNonNegativeIntegerMatcher.source }
+        })
+        attest(t.infer).typed as `${number}`
     })
 })

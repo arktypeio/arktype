@@ -3,7 +3,7 @@ import type { constructor, instanceOf, isTopType } from "./generics.ts"
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-const defaultObjectKinds = {
+export const defaultObjectKinds = {
     Array,
     Date,
     Error,
@@ -18,7 +18,7 @@ const defaultObjectKinds = {
     WeakMap,
     WeakSet,
     Promise
-} satisfies ObjectKindSet
+} as const satisfies ObjectKindSet
 
 export type InferredObjectKinds = {
     [kind in DefaultObjectKind]: inferObjectKind<kind>

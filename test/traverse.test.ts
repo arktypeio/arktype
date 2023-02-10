@@ -59,9 +59,7 @@ describe("traverse", () => {
         const t = type(["string", "number", "string", "string[]"])
         const data: typeof t.infer = ["foo", 5, "boo", []]
         attest(t(data).data).equals(data)
-        attest(t(["hello"]).problems?.summary).snap(
-            "Must be exactly 4 items (was 1)"
-        )
+        attest(t(["hello"]).problems?.summary).snap("length must be 4 (was 1)")
     })
     it("branches", () => {
         const t = type([{ a: "string" }, "|", { b: "boolean" }])

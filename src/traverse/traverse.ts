@@ -2,37 +2,37 @@ import { serializeCase } from "../nodes/discriminate.js"
 import type {
     TraversalEntry,
     TraversalKey,
-    TraversalNode
+    TraversalNode,
+    TraversalValue
 } from "../nodes/node.js"
 import { checkClass } from "../nodes/rules/class.js"
 import { checkDivisor } from "../nodes/rules/divisor.js"
-import type { TraversalPropEntry } from "../nodes/rules/props.js"
+import type { TraversalProp } from "../nodes/rules/props.js"
 import { checkBound } from "../nodes/rules/range.js"
 import { checkRegex } from "../nodes/rules/regex.js"
 import { precedenceMap } from "../nodes/rules/rules.js"
 import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf, hasDomain } from "../utils/domains.js"
-import { throwInternalError } from "../utils/errors.js"
-import type { Dict, extend, List } from "../utils/generics.js"
+import type { extend, stringKeyOf } from "../utils/generics.js"
 import { hasKey, keysOf } from "../utils/generics.js"
-import { objectKindOf } from "../utils/objectKinds.js"
 import { getPath, Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
-import { deserializePrimitive, stringify } from "../utils/serialize.js"
+import { deserializePrimitive } from "../utils/serialize.js"
 import type { SizedData } from "../utils/size.js"
-import type { Problem, ProblemCode, ProblemWriters } from "./problems.js"
+import type { ProblemCode, ProblemWriters } from "./problems.js"
 import { defaultProblemWriters, Problems } from "./problems.js"
 
-export class TraversalState {
+// TODO: include data wrapper in state
+export class TraversalState<data = unknown> {
     path = new Path()
-    problems = new Problems(this)
+    problems = new Problems(this as any)
     configs: TypeConfig[]
     failFast = false
 
     #seen: { [name in QualifiedTypeName]?: object[] } = {}
 
-    constructor(public type: Type) {
+    constructor(public data: data, public type: Type) {
         this.configs = type.meta.scope.config ? [type.meta.scope.config] : []
     }
 
@@ -54,9 +54,23 @@ export class TraversalState {
         return defaultProblemWriters[code]
     }
 
-    traverseResolution(data: unknown, name: string) {
+    traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {
+        const lastData = this.data
+        this.data = this.data[key] as data
+        // TODO: make path externally readonly
+        this.path.push(key)
+        const isValid = traverse(node, this)
+        this.path.pop()
+        lastData[key] = this.data as any
+        this.data = lastData
+        return isValid
+    }
+
+    traverseResolution(name: string): boolean {
         const resolution = this.type.meta.scope.resolve(name)
         const id = resolution.meta.id
+        // this assignment helps with narrowing
+        const data = this.data
         const isObject = hasDomain(data, "object")
         if (isObject) {
             if (hasKey(this.#seen, id)) {
@@ -64,7 +78,7 @@ export class TraversalState {
                     // if data has already been checked by this alias as part of
                     // a resolution higher up on the call stack, it must be valid
                     // or we wouldn't be here
-                    return
+                    return true
                 }
                 this.#seen[id].push(data)
             } else {
@@ -73,220 +87,184 @@ export class TraversalState {
         }
         const lastResolution = this.type
         this.type = resolution
-        traverse(data, resolution.flat, this)
+        const isValid = traverse(resolution.flat, this)
         this.type = lastResolution
         if (isObject) {
             this.#seen[id]!.pop()
         }
+        return isValid
     }
 
-    traverseBranches(data: unknown, branches: TraversalEntry[][]) {
-        const lastProblems = this.problems
-        const lastPath = this.path
+    traverseBranches(branches: TraversalEntry[][]): boolean {
         const lastFailFast = this.failFast
         this.failFast = true
-        const branchProblems: Problem[] = []
+        const lastProblems = this.problems
+        const branchProblems = new Problems(this)
+        this.problems = branchProblems
+        const lastPath = this.path
+        let hasValidBranch = false
         for (const branch of branches) {
-            this.problems = new Problems(this)
             this.path = new Path()
-            checkEntries(data, branch, this)
-            if (!this.problems.length) {
+            if (checkEntries(branch, this)) {
+                hasValidBranch = true
                 break
             }
-            branchProblems.push(this.problems[0])
         }
-        this.failFast = lastFailFast
         this.path = lastPath
         this.problems = lastProblems
-        if (branchProblems.length === branches.length) {
-            this.problems.add("branches", data, branchProblems)
-        }
-    }
-}
-
-export const traverse = (
-    data: unknown,
-    node: TraversalNode,
-    state: TraversalState
-) => {
-    if (typeof node === "string") {
-        if (domainOf(data) !== node) {
-            return state.problems.add("domain", data, node)
-        }
-        return
-    }
-    return checkEntries(data, node, state)
-}
-
-export const checkEntries = (
-    data: unknown,
-    entries: List<TraversalEntry>,
-    state: TraversalState
-) => {
-    let problemsPrecedence = Number.POSITIVE_INFINITY
-    const initialProblemsCount = state.problems.length
-    for (const [k, v] of entries) {
-        if (precedenceMap[k] > problemsPrecedence) {
-            return
-        }
-        if (k === "morph") {
-            if (typeof v === "function") {
-                return v(data)
-            }
-            let out = data
-            for (const morph of v) {
-                out = morph(out)
-            }
-            return out
-        } else {
-            checkers[k](data as never, v as never, state)
-            if (state.problems.length > initialProblemsCount) {
-                if (state.failFast) {
-                    return
-                }
-                problemsPrecedence = precedenceMap[k]
-            }
-        }
-    }
-    return data
-}
-
-const createPropChecker = <propKind extends "requiredProps" | "optionalProps">(
-    propKind: propKind
-) =>
-    ((data, props, state) => {
-        const rootPath = state.path
-        for (const [propKey, propNode] of props as TraversalPropEntry[]) {
-            state.path.push(propKey)
-            if (!hasKey(data, propKey)) {
-                if (propKind !== "optionalProps") {
-                    state.problems.add("missing", undefined, undefined)
-                }
-            } else {
-                traverse(data[propKey], propNode, state)
-            }
-            state.path.pop()
-        }
-        state.path = rootPath
-    }) as TraversalCheck<propKind>
-
-const checkRequiredProps = createPropChecker("requiredProps")
-const checkOptionalProps = createPropChecker("optionalProps")
-
-export const checkObjectKind: TraversalCheck<"objectKind"> = (
-    data,
-    rule,
-    state
-) => {
-    const dataObjectKind = objectKindOf(data)
-    if (typeof rule === "string") {
-        if (dataObjectKind !== rule) {
-            return state.problems.add("objectKind", data, rule)
-        }
-        return
-    }
-    if (dataObjectKind !== rule[0]) {
-        return state.problems.add("objectKind", data, rule[0])
-    }
-    if (dataObjectKind === "Array" && typeof rule[2] === "number") {
-        const actual = (data as List).length
-        const expected = rule[2]
-        if (expected !== actual) {
-            return state.problems.add("bound", data as List, {
-                comparator: "==",
-                limit: expected,
-                units: "items"
-            })
-        }
-    }
-    if (dataObjectKind === "Array" || dataObjectKind === "Set") {
-        let i = 0
-        for (const item of data as List | Set<unknown>) {
-            state.path.push(`${i}`)
-            traverse(item, rule[1], state)
-            state.path.pop()
-            i++
-        }
-    } else {
-        return throwInternalError(
-            `Unexpected objectKind entry ${stringify(rule)}`
+        this.failFast = lastFailFast
+        return (
+            hasValidBranch ||
+            this.problems.add("branches", this.data, branchProblems)
         )
     }
-    return true
 }
 
-const checkers = {
-    regex: checkRegex,
-    divisor: checkDivisor,
-    domains: (data, domains, state) => {
-        const entries = domains[domainOf(data)]
-        if (entries) {
-            checkEntries(data, entries, state)
-        } else {
-            state.problems.add("domainBranches", data, keysOf(domains))
+export const traverse = (node: TraversalNode, state: TraversalState): boolean =>
+    typeof node === "string"
+        ? domainOf(state.data) === node ||
+          state.problems.add("domain", state.data, node)
+        : checkEntries(node, state)
+
+export const checkEntries = (
+    entries: TraversalEntry[],
+    state: TraversalState
+): boolean => {
+    let isValid = true
+    for (let i = 0; i < entries.length; i++) {
+        const [k, v] = entries[i]
+        if (k === "morph") {
+            if (typeof v === "function") {
+                // TODO: allow problem from morph
+                state.data = v(state.data)
+            } else {
+                for (const morph of v) {
+                    state.data = morph(state.data)
+                }
+            }
+            return true
         }
-    },
-    domain: (data, domain, state) => {
-        if (domainOf(data) !== domain) {
-            state.problems.add("domain", data, domain)
-        }
-    },
-    objectKind: checkObjectKind,
-    bound: checkBound,
-    requiredProps: checkRequiredProps,
-    optionalProps: checkOptionalProps,
-    branches: (data, branches, state) => state.traverseBranches(data, branches),
-    switch: (data, rule, state) => {
-        const dataAtPath = getPath(data, rule.path)
-        const caseKey = serializeCase(rule.kind, dataAtPath)
-        if (hasKey(rule.cases, caseKey)) {
-            return checkEntries(data, rule.cases[caseKey], state)
-        }
-        const caseKeys = keysOf(rule.cases)
-        const lastPath = state.path
-        state.path = state.path.concat(rule.path)
-        if (rule.kind === "value") {
-            state.problems.add(
-                "valueBranches",
-                dataAtPath,
-                caseKeys.map((k) =>
-                    deserializePrimitive(k as SerializedPrimitive)
-                )
-            )
-        } else {
-            state.problems.add(
-                "domainBranches",
-                dataAtPath,
-                caseKeys as Domain[]
-            )
-        }
-        state.path = lastPath
-    },
-    alias: (data, name, state) => state.traverseResolution(data, name),
-    class: checkClass,
-    narrow: (data, narrow, state) => narrow(data, state.problems),
-    config: (data, { config, node }, state) => {
-        state.configs.push(config)
-        traverse(data, node, state)
-        state.configs.pop()
-    },
-    value: (data, value, state) => {
-        if (data !== value) {
-            state.problems.add("value", data, value)
+        const entryAllowsData = (entryCheckers[k] as EntryChecker<any>)(
+            v,
+            state
+        )
+        isValid &&= entryAllowsData
+        if (!isValid) {
+            if (state.failFast) {
+                return false
+            }
+            if (
+                i < entries.length - 1 &&
+                precedenceMap[k] < precedenceMap[entries[i + 1][0]]
+            ) {
+                // if we've encountered a problem, there is at least one entry
+                // remaining, and the next entry is of a higher precedence level
+                // than the current entry, return immediately
+                return false
+            }
         }
     }
-} satisfies {
-    // TODO: out morphs not always returned? e.g. config?
-    [k in ValidationKey]: TraversalCheck<k>
+    return isValid
 }
 
-type ValidationKey = Exclude<TraversalKey, "morph">
+export const checkRequiredProp = (
+    prop: TraversalProp,
+    state: TraversalState<TraversableData>
+) => {
+    if (prop[0] in state.data) {
+        return state.traverseKey(prop[0], prop[1])
+    }
+    return state.problems.add("missing", undefined, undefined, {
+        path: state.path.concat(prop[0])
+    })
+}
 
-export type TraversalCheck<k extends TraversalKey> = (
-    data: RuleData<k>,
-    rule: Extract<TraversalEntry, [k, unknown]>[1],
-    state: TraversalState
-) => void
+const entryCheckers = {
+    regex: checkRegex,
+    divisor: checkDivisor,
+    domains: (domains, state) => {
+        const entries = domains[domainOf(state.data)]
+        return entries
+            ? checkEntries(entries, state)
+            : state.problems.add("domainBranches", state.data, keysOf(domains))
+    },
+    // TODO: remove data from problem params
+    domain: (domain, state) =>
+        domainOf(state.data) === domain ||
+        state.problems.add("domain", state.data, domain),
+    bound: checkBound,
+    optionalProp: (prop, state) => {
+        if (prop[0] in state.data) {
+            return state.traverseKey(prop[0], prop[1])
+        }
+        return true
+    },
+    // these checks work the same way, the keys are only distinct so that
+    // prerequisite props can have a higher precedence
+    requiredProp: checkRequiredProp,
+    prerequisiteProp: checkRequiredProp,
+    indexProp: (node, state) => {
+        if (!Array.isArray(state.data)) {
+            return state.problems.add("class", state.data, "Array")
+        }
+        let isValid = true
+        for (let i = 0; i < state.data.length; i++) {
+            isValid &&= state.traverseKey(`${i}`, node)
+            if (!isValid && state.failFast) {
+                return false
+            }
+        }
+        return isValid
+    },
+    branches: (branches, state) => state.traverseBranches(branches),
+    switch: (rule, state) => {
+        const dataAtPath = getPath(state.data, rule.path)
+        const caseKey = serializeCase(rule.kind, dataAtPath)
+        if (hasKey(rule.cases, caseKey)) {
+            return checkEntries(rule.cases[caseKey], state)
+        }
+        const caseKeys = keysOf(rule.cases)
+        const missingCasePath = state.path.concat(rule.path)
+        return rule.kind === "value"
+            ? state.problems.add(
+                  "valueBranches",
+                  dataAtPath,
+                  caseKeys.map((k) =>
+                      deserializePrimitive(k as SerializedPrimitive)
+                  ),
+                  { path: missingCasePath }
+              )
+            : state.problems.add(
+                  "domainBranches",
+                  dataAtPath,
+                  caseKeys as Domain[],
+                  { path: missingCasePath }
+              )
+    },
+    alias: (name, state) => state.traverseResolution(name),
+    class: checkClass,
+    // TODO: fix
+    narrow: (narrow, state) => narrow(state.data, state.problems),
+    config: ({ config, node }, state) => {
+        state.configs.push(config)
+        const result = traverse(node, state)
+        state.configs.pop()
+        return result
+    },
+    value: (value, state) =>
+        state.data === value || state.problems.add("value", state.data, value)
+} satisfies {
+    [k in ValidationTraversalKey]: EntryChecker<k>
+}
+
+export type ValidationTraversalKey = Exclude<TraversalKey, "morph">
+
+export type EntryChecker<k extends TraversalKey> = (
+    constraint: TraversalValue<k>,
+    state: TraversalState<RuleData<k>>
+) => boolean
+
+export type TraversableData = Record<string | number, unknown>
 
 export type ConstrainedRuleTraversalData = extend<
     { [k in TraversalKey]?: unknown },
@@ -294,10 +272,10 @@ export type ConstrainedRuleTraversalData = extend<
         regex: string
         divisor: number
         bound: SizedData
-        requiredProps: Dict
-        optionalProps: Dict
-        objectKind: object
-        class: object
+        prerequisiteProp: TraversableData
+        optionalProp: TraversableData
+        requiredProp: TraversableData
+        indexProp: TraversableData
     }
 >
 

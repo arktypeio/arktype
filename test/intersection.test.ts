@@ -58,10 +58,12 @@ describe("intersection", () => {
             }[]
             attest(t.node).snap({
                 object: {
-                    objectKind: [
-                        "Array",
-                        { object: { props: { a: "string", b: "boolean" } } }
-                    ]
+                    class: "Array",
+                    props: {
+                        "[index]": {
+                            object: { props: { a: "string", b: "boolean" } }
+                        }
+                    }
                 }
             })
         })

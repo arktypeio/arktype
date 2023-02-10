@@ -8,21 +8,36 @@ describe("parse array", () => {
         const t = type("string[]")
         attest(t.infer).typed as string[]
         attest(t.node).snap({
-            object: {
-                objectKind: ["Array", "string"]
-            }
+            object: { class: "Array", props: { "[index]": "string" } }
         })
+        attest(t.flat).snap([
+            ["class", "Array"],
+            ["indexProp", "string"]
+        ])
     })
     it("array intersection", () => {
         const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
         attest(t.node).snap({
             object: {
-                objectKind: [
-                    "Array",
-                    { object: { props: { a: "string", b: "number" } } }
-                ]
+                class: "Array",
+                props: {
+                    "[index]": {
+                        object: { props: { a: "string", b: "number" } }
+                    }
+                }
             }
         })
+        attest(t.flat).snap([
+            ["class", "Array"],
+            [
+                "indexProp",
+                [
+                    ["domain", "object"],
+                    ["requiredProp", ["a", "string"]],
+                    ["requiredProp", ["b", "number"]]
+                ]
+            ]
+        ])
     })
 
     describe("errors", () => {

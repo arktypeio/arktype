@@ -25,7 +25,9 @@ describe("tuple expression", () => {
     it("list", () => {
         const t = type(["string", "[]"])
         attest(t.infer).typed as string[]
-        attest(t.node).snap({ object: { objectKind: ["Array", "string"] } })
+        attest(t.node).snap({
+            object: { class: "Array", props: { "[index]": "string" } }
+        })
     })
     it("nested union", () => {
         const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
