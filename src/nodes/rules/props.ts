@@ -50,7 +50,9 @@ export const mappedKeys = {
     index: "[index]"
 } as const
 
-export type MappedPropKey = typeof mappedKeys[keyof typeof mappedKeys]
+export type MappedKeys = typeof mappedKeys
+
+export type MappedPropKey = MappedKeys[keyof MappedKeys]
 
 export const propToNode = (prop: Prop) =>
     isOptional(prop) || isPrerequisite(prop) ? prop[1] : prop

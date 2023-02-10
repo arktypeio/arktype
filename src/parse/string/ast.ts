@@ -1,5 +1,6 @@
 import type { DisjointsByPath } from "../../nodes/compose.ts"
 import { disjointDescriptionWriters } from "../../nodes/compose.ts"
+import type { MappedKeys } from "../../nodes/rules/props.ts"
 import type { resolve } from "../../scopes/scope.ts"
 import type { asIn } from "../../scopes/type.ts"
 import type { domainOf } from "../../utils/domains.ts"
@@ -123,7 +124,7 @@ type inferIntersectionRecurse<
     ? inferIntersectionRecurse<
           lItem,
           rItem,
-          [...path, "${number}"]
+          [...path, MappedKeys["index"]]
       > extends infer result
         ? tryCatch<result, result[]>
         : never
