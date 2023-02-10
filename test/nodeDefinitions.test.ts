@@ -150,7 +150,7 @@ describe("node definitions", () => {
                 }
             ])
         ).type.errors(
-            `Type '"whoops"' is not assignable to type 'Prop<PrecompiledDefaults>'`
+            `Type '"whoops"' is not assignable to type 'Prop<PrecompiledDefaults, TypeNode<PrecompiledDefaults>>'`
         )
     })
     it("rule in wrong domain", () => {

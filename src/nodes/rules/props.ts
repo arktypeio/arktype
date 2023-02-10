@@ -15,11 +15,20 @@ export type PropsRule<$ = Dict> = {
     [propKey in string]: Prop<$>
 }
 
-export type Prop<$ = Dict> = TypeNode<$> | OptionalProp<$> | PrerequisiteProp<$>
+export type Prop<$ = Dict, node extends TypeNode<$> = TypeNode<$>> =
+    | node
+    | OptionalProp<$, node>
+    | PrerequisiteProp<$, node>
 
-export type OptionalProp<$ = Dict> = ["?", TypeNode<$>]
+export type OptionalProp<$ = Dict, node extends TypeNode<$> = TypeNode<$>> = [
+    "?",
+    node
+]
 
-export type PrerequisiteProp<$ = Dict> = ["!", TypeNode<$>]
+export type PrerequisiteProp<
+    $ = Dict,
+    node extends TypeNode<$> = TypeNode<$>
+> = ["!", node]
 
 export type PropEntry =
     | RequiredPropEntry

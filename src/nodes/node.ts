@@ -1,7 +1,7 @@
 import type { ParseContext } from "../parse/definition.ts"
 import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
-import type { Domain } from "../utils/domains.ts"
+import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
 import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
@@ -213,10 +213,17 @@ export const flattenNode = (
     return [["domains", result]]
 }
 
+export type LiteralNode<
+    domain extends Domain = Domain,
+    value extends inferDomain<domain> = inferDomain<domain>
+> = {
+    [k in domain]: LiteralRules<domain, value>
+}
+
 export const isLiteralNode = <domain extends Domain>(
     node: ResolvedNode,
     domain: domain
-): node is { [_ in domain]: LiteralRules<domain> } => {
+): node is LiteralNode<domain> => {
     return (
         resolutionExtendsDomain(node, domain) &&
         isLiteralCondition(node[domain])

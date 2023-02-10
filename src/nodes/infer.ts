@@ -2,8 +2,10 @@ import type { inferTerminal } from "../parse/string/ast.js"
 import type { Out } from "../parse/tuple/morph.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import type {
+    constructor,
     evaluate,
     evaluateObject,
+    HomogenousTuple,
     List,
     returnOf
 } from "../utils/generics.js"
@@ -13,9 +15,14 @@ import type {
     inferObjectKind
 } from "../utils/objectKinds.js"
 import type { MorphBranch } from "./branch.js"
-import type { ResolvedNode, TypeNode } from "./node.js"
+import type { LiteralNode, ResolvedNode, TypeNode } from "./node.js"
 import type { Predicate } from "./predicate.js"
-import type { MappedPropKey, OptionalProp, PropsRule } from "./rules/props.js"
+import type {
+    MappedPropKey,
+    OptionalProp,
+    Prop,
+    PropsRule
+} from "./rules/props.js"
 import type { LiteralRules, NarrowableRules } from "./rules/rules.js"
 
 export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
@@ -73,16 +80,28 @@ type inferRules<domain extends Domain, branch, $> = branch extends LiteralRules
 type inferObjectRules<
     rules extends NarrowableRules,
     $
-    // TODO: fix arrays
-> = (rules["class"] extends DefaultObjectKind
-    ? inferObjectKind<rules["class"]>
-    : unknown) &
-    (rules["props"] extends PropsRule ? inferProps<rules["props"], $> : unknown)
+> = rules["class"] extends DefaultObjectKind
+    ? [rules["class"], rules["props"]] extends [
+          "Array",
+          {
+              "[index]": Prop<$, infer indexNode>
+              length?: Prop<$, infer lengthNode>
+          }
+      ]
+        ? lengthNode extends LiteralNode<"number", infer value>
+            ? HomogenousTuple<inferNode<indexNode, $>, value>
+            : inferNode<indexNode, $>[]
+        : inferObjectKind<rules["class"]>
+    : rules["class"] extends constructor<infer instance>
+    ? instance
+    : rules["props"] extends PropsRule
+    ? inferProps<rules["props"], $>
+    : object
 
 type inferProps<props extends PropsRule, $> = evaluateObject<
     {
-        [k in requiredKeyOf<props>]: props[k] extends TypeNode<$>
-            ? inferNode<props[k], $>
+        [k in requiredKeyOf<props>]: props[k] extends Prop<$, infer node>
+            ? inferNode<node, $>
             : never
     } & {
         [k in optionalKeyOf<props>]?: props[k] extends OptionalProp<$>

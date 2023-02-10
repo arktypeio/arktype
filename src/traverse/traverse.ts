@@ -188,9 +188,9 @@ const entryCheckers = {
             ? checkEntries(entries, state)
             : state.problems.add("domainBranches", state.data, keysOf(domains))
     },
+    // TODO: remove data from problem params
     domain: (domain, state) =>
         domainOf(state.data) === domain ||
-        // TODO: remove data from problem params
         state.problems.add("domain", state.data, domain),
     bound: checkBound,
     optionalProp: (prop, state) => {

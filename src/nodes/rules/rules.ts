@@ -32,8 +32,11 @@ export type NarrowableRules<$ = Dict> = {
     readonly narrow?: NarrowRule
 }
 
-export type LiteralRules<domain extends Domain = Domain> = {
-    readonly value: inferDomain<domain>
+export type LiteralRules<
+    domain extends Domain = Domain,
+    value extends inferDomain<domain> = inferDomain<domain>
+> = {
+    readonly value: value
 }
 
 export type NarrowRule = CollapsibleList<Narrow>
