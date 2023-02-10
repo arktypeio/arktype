@@ -78,7 +78,7 @@ class ProblemArray extends Array<Problem> {
         data: ProblemData<code>,
         source: ProblemSource<code>,
         opts?: AddProblemOptions
-    ) {
+    ): false {
         // copy the path to avoid future mutations affecting it
         const path = opts?.path ?? Path.from(this.state.path)
         const problem: Problem = new Problem(

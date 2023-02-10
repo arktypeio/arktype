@@ -30,7 +30,6 @@ export class TraversalState<data = unknown> {
     failFast = false
 
     #seen: { [name in QualifiedTypeName]?: object[] } = {}
-    #traversalStack: any[] = []
 
     constructor(public data: data, public type: Type) {
         this.configs = type.meta.scope.config ? [type.meta.scope.config] : []
@@ -55,13 +54,14 @@ export class TraversalState<data = unknown> {
     }
 
     traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {
-        this.#traversalStack.push(this.data)
+        const lastData = this.data
         this.data = this.data[key] as data
         // TODO: make path externally readonly
         this.path.push(key)
         const isValid = traverse(node, this)
         this.path.pop()
-        this.data = this.#traversalStack.pop()
+        lastData[key] = this.data as any
+        this.data = lastData
         return isValid
     }
 
@@ -134,11 +134,12 @@ export const checkEntries = (
         const [k, v] = entries[i]
         if (k === "morph") {
             if (typeof v === "function") {
-                v(state.data)
-                return true
-            }
-            for (const morph of v) {
-                morph(state.data)
+                // TODO: allow problem from morph
+                state.data = v(state.data)
+            } else {
+                for (const morph of v) {
+                    state.data = morph(state.data)
+                }
             }
             return true
         }

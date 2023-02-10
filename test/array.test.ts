@@ -12,7 +12,7 @@ describe("parse array", () => {
         })
         attest(t.flat).snap([
             ["class", "Array"],
-            ["props", { index: "string" }]
+            ["indexProp", "string"]
         ])
     })
     it("array intersection", () => {
@@ -30,21 +30,12 @@ describe("parse array", () => {
         attest(t.flat).snap([
             ["class", "Array"],
             [
-                "props",
-                {
-                    index: [
-                        ["domain", "object"],
-                        [
-                            "props",
-                            {
-                                required: [
-                                    ["a", "string"],
-                                    ["b", "number"]
-                                ]
-                            }
-                        ]
-                    ]
-                }
+                "indexProp",
+                [
+                    ["domain", "object"],
+                    ["requiredProp", ["a", "string"]],
+                    ["requiredProp", ["b", "number"]]
+                ]
             ]
         ])
     })
