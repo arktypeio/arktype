@@ -143,7 +143,11 @@ export const checkEntries = (
             }
             return true
         }
-        isValid ||= (entryTraversals[k] as EntryTraversal<any>)(v, state)
+        const entryAllowsData = (entryCheckers[k] as EntryChecker<any>)(
+            v,
+            state
+        )
+        isValid &&= entryAllowsData
         if (!isValid) {
             if (state.failFast) {
                 return false
@@ -162,90 +166,7 @@ export const checkEntries = (
     return isValid
 }
 
-// const checkProps: EntryTraversal<"props"> = (propSets, state) => {
-//     return true
-// let requiredProps = propSets.required
-// let out: Record<string | number, unknown>
-// if (propSets.index) {
-//     if (!Array.isArray(data)) {
-//         return state.problems.add("class", data, "Array")
-//     }
-//     if (requiredProps) {
-//         // copy requiredProps so we can mutate it with ephemeral entries
-//         // representing index nodes
-//         const updatedRequiredProps: TraversalProp[] = []
-//         const existingKeys: Record<string, true> = {}
-//         for (let i = 0; i < requiredProps.length; i++) {
-//             existingKeys[requiredProps[i][0]] = true
-//             updatedRequiredProps.push(requiredProps[i])
-//         }
-//         for (let i = 0; i < data.length; i++) {
-//             if (!existingKeys[i]) {
-//                 updatedRequiredProps.push([`${i}`, propSets.index])
-//             }
-//         }
-//         requiredProps = updatedRequiredProps
-//     } else {
-//         requiredProps = data.map((_, i) => [`${i}`, propSets.index!])
-//     }
-//     out = [] as Record<number, unknown>
-// } else {
-//     out = {}
-// }
-// if (requiredProps) {
-//     result = checkNamedProps(data, requiredProps, state, out, "required")
-//     if (result instanceof Problem && state.failFast) {
-//         return result
-//     }
-// }
-// if (propSets.optional) {
-//     result = checkNamedProps(
-//         data,
-//         propSets.optional,
-//         state,
-//         out,
-//         "optional"
-//     )
-// }
-// return result
-//}
-
-// const checkNamedProps = (
-//     data: Record<string | number, unknown>,
-//     props: TraversalProp[],
-//     state: TraversalState,
-//     out: Record<string | number, unknown>,
-//     kind: "optional" | "required"
-// ) => {
-//     let firstProblem: Problem | undefined
-//     for (const [propKey, propNode] of props as TraversalProp[]) {
-//         let result: TraversalReturn
-//         if (propKey in data) {
-//             state.path.push(propKey)
-//             result = traverse(data[propKey], propNode, state)
-//             state.path.pop()
-//         } else if (kind === "optional") {
-//             continue
-//         } else {
-//             result = state.problems.add("missing", undefined, undefined, {
-//                 path: state.path.concat(propKey)
-//             })
-//         }
-//         if (!firstProblem) {
-//             if (result instanceof Problem) {
-//                 if (state.failFast) {
-//                     return result
-//                 }
-//                 firstProblem = result
-//             } else {
-//                 out[propKey] = result
-//             }
-//         }
-//     }
-//     return firstProblem ?? out
-// }
-
-const entryTraversals = {
+const entryCheckers = {
     regex: checkRegex,
     divisor: checkDivisor,
     domains: (domains, state) => {
@@ -324,12 +245,12 @@ const entryTraversals = {
     value: (value, state) =>
         state.data === value || state.problems.add("value", state.data, value)
 } satisfies {
-    [k in ValidationTraversalKey]: EntryTraversal<k>
+    [k in ValidationTraversalKey]: EntryChecker<k>
 }
 
 export type ValidationTraversalKey = Exclude<TraversalKey, "morph">
 
-export type EntryTraversal<k extends TraversalKey> = (
+export type EntryChecker<k extends TraversalKey> = (
     constraint: TraversalValue<k>,
     state: TraversalState<RuleData<k>>
 ) => boolean

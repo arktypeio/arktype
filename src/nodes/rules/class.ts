@@ -1,4 +1,4 @@
-import type { EntryTraversal } from "../../traverse/traverse.ts"
+import type { EntryChecker } from "../../traverse/traverse.ts"
 import type { constructor } from "../../utils/generics.ts"
 import type { DefaultObjectKind } from "../../utils/objectKinds.ts"
 import { defaultObjectKinds, objectKindOf } from "../../utils/objectKinds.ts"
@@ -18,7 +18,7 @@ export const classIntersection = composeIntersection<
         : state.addDisjoint("class", l, r)
 })
 
-export const checkClass: EntryTraversal<"class"> = (expectedClass, state) => {
+export const checkClass: EntryChecker<"class"> = (expectedClass, state) => {
     if (typeof expectedClass === "string") {
         return (
             objectKindOf(state.data) === expectedClass ||

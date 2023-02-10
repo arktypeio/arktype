@@ -1,4 +1,4 @@
-import type { EntryTraversal } from "../../traverse/traverse.ts"
+import type { EntryChecker } from "../../traverse/traverse.ts"
 import type { CollapsibleList } from "../../utils/generics.ts"
 import { composeIntersection } from "../compose.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
@@ -12,7 +12,7 @@ export const getRegex = (source: string) => {
     return regexCache[source]
 }
 
-export const checkRegex: EntryTraversal<"regex"> = (source, state) =>
+export const checkRegex: EntryChecker<"regex"> = (source, state) =>
     getRegex(source).test(state.data) ||
     state.problems.add("regex", state.data, `/${source}/`)
 

@@ -1,4 +1,4 @@
-import type { EntryTraversal } from "../../traverse/traverse.ts"
+import type { EntryChecker } from "../../traverse/traverse.ts"
 import { composeIntersection, equality } from "../compose.ts"
 
 export const divisorIntersection = composeIntersection<number>(
@@ -19,6 +19,6 @@ const greatestCommonDivisor = (l: number, r: number) => {
     return greatestCommonDivisor
 }
 
-export const checkDivisor: EntryTraversal<"divisor"> = (divisor, state) =>
+export const checkDivisor: EntryChecker<"divisor"> = (divisor, state) =>
     state.data % divisor === 0 ||
     state.problems.add("divisor", state.data, divisor)

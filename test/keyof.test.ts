@@ -42,7 +42,9 @@ describe("keyof", () => {
     it("tuple", () => {
         const t = type(["keyof", ["string", "number"]])
         attest(t.infer).typed as "0" | "1"
-        attest(t.node).snap({ string: [{ value: "0" }, { value: "1" }] })
+        attest(t.node).snap({
+            string: [{ value: "0" }, { value: "1" }, { value: "length" }]
+        })
     })
     it("array", () => {
         // conservatively inferred as never pending https://github.com/arktypeio/arktype/issues/605

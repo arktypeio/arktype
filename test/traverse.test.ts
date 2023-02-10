@@ -60,7 +60,7 @@ describe("traverse", () => {
         const data: typeof t.infer = ["foo", 5, "boo", []]
         attest(t(data).data).equals(data)
         attest(t(["hello"]).problems?.summary).snap(
-            "Must be exactly 4 items (was 1)"
+            "Item at index 1 must be defined\nItem at index 2 must be defined\nItem at index 3 must be defined\nlength must be 4 (was 1)"
         )
     })
     it("branches", () => {
