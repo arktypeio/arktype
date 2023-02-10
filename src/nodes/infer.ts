@@ -12,8 +12,9 @@ import type {
     DefaultObjectKind,
     inferObjectKind
 } from "../utils/objectKinds.js"
+import type { MorphBranch } from "./branch.js"
 import type { ResolvedNode, TypeNode } from "./node.js"
-import type { MorphBranch, Predicate } from "./predicate.js"
+import type { Predicate } from "./predicate.js"
 import type { MappedPropKey, OptionalProp, PropsRule } from "./rules/props.js"
 import type { LiteralRules, NarrowableRules } from "./rules/rules.js"
 

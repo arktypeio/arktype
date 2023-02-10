@@ -6,7 +6,7 @@ import { keysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
 import { serialize } from "../utils/serialize.ts"
-import type { Branches } from "./branches.ts"
+import type { Branches } from "./branch.ts"
 import type { Range } from "./rules/range.ts"
 import type { LiteralRules, NarrowableRules } from "./rules/rules.ts"
 

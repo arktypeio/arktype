@@ -14,12 +14,11 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
-import type { Branches } from "./branches.ts"
+import type { Branch, Branches } from "./branch.ts"
+import { branchIntersection, flattenBranch } from "./branch.ts"
 import { IntersectionState } from "./compose.ts"
 import type { FlattenContext, TraversalEntry, TypeNode } from "./node.ts"
-import type { Branch } from "./predicate.ts"
-import { isOptional, mappedKeys } from "./rules/props.ts"
-import { branchIntersection, flattenBranch } from "./rules/rules.ts"
+import { mappedKeys, propToNode } from "./rules/props.ts"
 
 export type DiscriminatedSwitch<
     kind extends DiscriminantKind = DiscriminantKind
@@ -301,7 +300,7 @@ const branchIncludesMorph = (branch: Branch, $: Scope) =>
         ? true
         : "props" in branch
         ? Object.values(branch.props!).some((prop) =>
-              nodeIncludesMorph(isOptional(prop) ? prop[1] : prop, $)
+              nodeIncludesMorph(propToNode(prop), $)
           )
         : false
 

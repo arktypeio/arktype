@@ -7,6 +7,7 @@ import type {
 } from "../nodes/node.js"
 import { checkClass } from "../nodes/rules/class.js"
 import { checkDivisor } from "../nodes/rules/divisor.js"
+import type { TraversalProp } from "../nodes/rules/props.js"
 import { checkBound } from "../nodes/rules/range.js"
 import { checkRegex } from "../nodes/rules/regex.js"
 import { precedenceMap } from "../nodes/rules/rules.js"
@@ -166,6 +167,18 @@ export const checkEntries = (
     return isValid
 }
 
+export const checkRequiredProp = (
+    prop: TraversalProp,
+    state: TraversalState<TraversableData>
+) => {
+    if (prop[0] in state.data) {
+        return state.traverseKey(prop[0], prop[1])
+    }
+    return state.problems.add("missing", undefined, undefined, {
+        path: state.path.concat(prop[0])
+    })
+}
+
 const entryCheckers = {
     regex: checkRegex,
     divisor: checkDivisor,
@@ -186,14 +199,10 @@ const entryCheckers = {
         }
         return true
     },
-    requiredProp: (prop, state) => {
-        if (prop[0] in state.data) {
-            return state.traverseKey(prop[0], prop[1])
-        }
-        return state.problems.add("missing", undefined, undefined, {
-            path: state.path.concat(prop[0])
-        })
-    },
+    // these checks work the same way, the keys are only distinct so that
+    // prerequisite props can have a higher precedence
+    requiredProp: checkRequiredProp,
+    prerequisiteProp: checkRequiredProp,
     indexProp: (node, state) => {
         if (!Array.isArray(state.data)) {
             return state.problems.add("class", state.data, "Array")
@@ -263,6 +272,7 @@ export type ConstrainedRuleTraversalData = extend<
         regex: string
         divisor: number
         bound: SizedData
+        prerequisiteProp: TraversableData
         optionalProp: TraversableData
         requiredProp: TraversableData
         indexProp: TraversableData

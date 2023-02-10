@@ -1,4 +1,5 @@
-import type { Branch, Predicate } from "../../nodes/predicate.ts"
+import type { Branch } from "../../nodes/branch.ts"
+import type { Predicate } from "../../nodes/predicate.ts"
 import { resolutionExtendsDomain } from "../../nodes/predicate.ts"
 import { mappedKeys } from "../../nodes/rules/props.ts"
 import type { LiteralRules, Rules } from "../../nodes/rules/rules.ts"

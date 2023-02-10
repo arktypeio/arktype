@@ -6,6 +6,7 @@ import { throwParseError } from "../utils/errors.ts"
 import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
 import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
+import type { MorphEntry } from "./branch.ts"
 import type { Intersector } from "./compose.ts"
 import {
     anonymousDisjoint,
@@ -16,7 +17,7 @@ import {
     throwUndefinedOperandsError
 } from "./compose.ts"
 import type { DiscriminatedSwitch } from "./discriminate.ts"
-import type { MorphEntry, Predicate } from "./predicate.ts"
+import type { Predicate } from "./predicate.ts"
 import {
     flattenPredicate,
     isLiteralCondition,

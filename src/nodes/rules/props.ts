@@ -15,11 +15,19 @@ export type PropsRule<$ = Dict> = {
     [propKey in string]: Prop<$>
 }
 
-export type Prop<$ = Dict> = TypeNode<$> | OptionalProp<$>
+export type Prop<$ = Dict> = TypeNode<$> | OptionalProp<$> | PrerequisiteProp<$>
 
 export type OptionalProp<$ = Dict> = ["?", TypeNode<$>]
 
-export type PropEntry = RequiredPropEntry | OptionalPropEntry | IndexPropEntry
+export type PrerequisiteProp<$ = Dict> = ["!", TypeNode<$>]
+
+export type PropEntry =
+    | RequiredPropEntry
+    | OptionalPropEntry
+    | IndexPropEntry
+    | PrerequisitePropEntry
+
+export type PrerequisitePropEntry = ["prerequisiteProp", TraversalProp]
 
 export type RequiredPropEntry = ["requiredProp", TraversalProp]
 
@@ -35,21 +43,26 @@ export type TraversalProp<
 export const isOptional = (prop: Prop): prop is OptionalProp =>
     (prop as OptionalProp)[0] === "?"
 
+export const isPrerequisite = (prop: Prop): prop is PrerequisiteProp =>
+    (prop as PrerequisiteProp)[0] === "!"
+
 export const mappedKeys = {
     index: "[index]"
 } as const
 
 export type MappedPropKey = typeof mappedKeys[keyof typeof mappedKeys]
 
-const nodeFrom = (prop: Prop) => (isOptional(prop) ? prop[1] : prop)
+export const propToNode = (prop: Prop) =>
+    isOptional(prop) || isPrerequisite(prop) ? prop[1] : prop
 
-const getLengthIfPresent = (result: PropsRule) => {
+const getTupleLengthIfPresent = (result: PropsRule) => {
     if (
         typeof result.length === "object" &&
-        !isOptional(result.length) &&
-        isLiteralNode(result.length, "number")
+        isPrerequisite(result.length) &&
+        typeof result.length[1] !== "string" &&
+        isLiteralNode(result.length[1], "number")
     ) {
-        return result.length.number.value
+        return result.length[1].number.value
     }
 }
 
@@ -59,7 +72,7 @@ export const propsIntersection = composeIntersection<PropsRule>(
         if (typeof result === "symbol") {
             return result
         }
-        const lengthValue = getLengthIfPresent(result)
+        const lengthValue = getTupleLengthIfPresent(result)
         if (lengthValue === undefined || !hasKey(result, mappedKeys.index)) {
             return result
         }
@@ -68,13 +81,13 @@ export const propsIntersection = composeIntersection<PropsRule>(
         // the index signature node and remove the index signature via a new
         // updated result, copied from result to avoid mutating existing references.
         const { [mappedKeys.index]: indexProp, ...updatedResult } = result
-        const indexNode = nodeFrom(indexProp)
+        const indexNode = propToNode(indexProp)
         for (let i = 0; i < lengthValue; i++) {
             if (!updatedResult[i]) {
                 updatedResult[i] = indexNode
                 continue
             }
-            const existingNodeAtIndex = nodeFrom(updatedResult[i])
+            const existingNodeAtIndex = propToNode(updatedResult[i])
             state.path.push(`${i}`)
             const updatedResultAtIndex = nodeIntersection(
                 existingNodeAtIndex,
@@ -104,7 +117,7 @@ const propKeysIntersection = composeKeyedIntersection<PropsRule>(
             return l
         }
         context.path.push(propKey)
-        const result = nodeIntersection(nodeFrom(l), nodeFrom(r), context)
+        const result = nodeIntersection(propToNode(l), propToNode(r), context)
         context.path.pop()
         const resultIsOptional = isOptional(l) && isOptional(r)
         if (isDisjoint(result) && resultIsOptional) {
@@ -127,9 +140,11 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
         const prop = props[k]
         ctx.path.push(k)
         if (k === mappedKeys.index) {
-            entries.push(["indexProp", flattenNode(nodeFrom(prop), ctx)])
+            entries.push(["indexProp", flattenNode(propToNode(prop), ctx)])
         } else if (isOptional(prop)) {
             entries.push(["optionalProp", [k, flattenNode(prop[1], ctx)]])
+        } else if (isPrerequisite(prop)) {
+            entries.push(["prerequisiteProp", [k, flattenNode(prop[1], ctx)]])
         } else {
             entries.push(["requiredProp", [k, flattenNode(prop, ctx)]])
         }

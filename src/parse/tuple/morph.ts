@@ -1,6 +1,6 @@
+import type { Branch, MorphBranch } from "../../nodes/branch.ts"
+import { isMorphBranch } from "../../nodes/branch.ts"
 import type { ResolvedNode } from "../../nodes/node.ts"
-import type { Branch, MorphBranch } from "../../nodes/predicate.ts"
-import { isMorphBranch } from "../../nodes/rules/rules.ts"
 import type { asOut } from "../../scopes/type.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../../utils/errors.ts"

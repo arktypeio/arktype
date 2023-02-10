@@ -213,17 +213,43 @@ describe("morph", () => {
                         class: "Array",
                         props: {
                             "0": "string",
-                            length: { number: { value: 1 } }
+                            length: ["!", { number: { value: 1 } }]
                         }
                     },
                     morph: "(function)"
                 },
                 {
                     class: "Array",
-                    props: { "0": "boolean", length: { number: { value: 1 } } }
+                    props: {
+                        "0": "boolean",
+                        length: ["!", { number: { value: 1 } }]
+                    }
                 }
             ]
         })
+        attest(types.c.flat).snap([
+            ["domain", "object"],
+            [
+                "switch",
+                {
+                    path: ["0"],
+                    kind: "domain",
+                    cases: {
+                        string: [
+                            ["class", "Array"],
+                            ["prerequisiteProp", ["length", [["value", 1]]]],
+                            ["requiredProp", ["0", "string"]],
+                            ["morph", "(function)"]
+                        ],
+                        boolean: [
+                            ["class", "Array"],
+                            ["prerequisiteProp", ["length", [["value", 1]]]],
+                            ["requiredProp", ["0", "boolean"]]
+                        ]
+                    }
+                }
+            ]
+        ])
     })
     it("double intersection", () => {
         attest(() => {
