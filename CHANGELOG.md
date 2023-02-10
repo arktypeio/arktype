@@ -1,5 +1,19 @@
 # arktype
 
+## 0.3.0
+
+### Minor Changes
+
+-   db9379ee: improve problem configs, make them available at type and scope levels
+-   db9379ee: add prerequisite props (props that must be valid for others to check)
+-   db9379ee: keep track of configs during traversal, query most specific relevant options
+-   db9379ee: fix return values for nested morphs
+-   db9379ee: infer keyof array types as `${number}`
+
+### Patch Changes
+
+-   db9379ee: fix multi-part error message writers
+
 ## 0.2.0
 
 ### Minor Changes
