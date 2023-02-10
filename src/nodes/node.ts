@@ -24,6 +24,7 @@ import {
     predicateUnion,
     resolutionExtendsDomain
 } from "./predicate.ts"
+import { mappedKeys } from "./rules/props.ts"
 import type { LiteralRules, RuleEntry } from "./rules/rules.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | ResolvedNode<$>
@@ -225,7 +226,7 @@ export const arrayOf = (node: TypeNode): ResolvedNode => ({
     object: {
         class: "Array",
         props: {
-            "[index]": node
+            [mappedKeys.index]: node
         }
     }
 })

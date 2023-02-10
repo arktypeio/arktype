@@ -35,11 +35,11 @@ export type TraversalProp<
 export const isOptional = (prop: Prop): prop is OptionalProp =>
     (prop as OptionalProp)[0] === "?"
 
-export const mappedPropKeys = {
-    "[index]": true
+export const mappedKeys = {
+    index: "[index]"
 } as const
 
-export type MappedPropKey = keyof typeof mappedPropKeys
+export type MappedPropKey = typeof mappedKeys[keyof typeof mappedKeys]
 
 const nodeFrom = (prop: Prop) => (isOptional(prop) ? prop[1] : prop)
 
@@ -60,14 +60,14 @@ export const propsIntersection = composeIntersection<PropsRule>(
             return result
         }
         const lengthValue = getLengthIfPresent(result)
-        if (lengthValue === undefined || !hasKey(result, "[index]")) {
+        if (lengthValue === undefined || !hasKey(result, mappedKeys.index)) {
             return result
         }
         // if we are at this point, we have an array with an exact length (i.e.
         // a tuple) and an index signature. Intersection each tuple item with
         // the index signature node and remove the index signature via a new
         // updated result, copied from result to avoid mutating existing references.
-        const { "[index]": indexProp, ...updatedResult } = result
+        const { [mappedKeys.index]: indexProp, ...updatedResult } = result
         const indexNode = nodeFrom(indexProp)
         for (let i = 0; i < lengthValue; i++) {
             if (!updatedResult[i]) {
@@ -126,8 +126,7 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
     for (const k in props) {
         const prop = props[k]
         ctx.path.push(k)
-        if (k === "[index]") {
-            // TODO: include an extra numeric props
+        if (k === mappedKeys.index) {
             entries.push(["indexProp", flattenNode(nodeFrom(prop), ctx)])
         } else if (isOptional(prop)) {
             entries.push(["optionalProp", [k, flattenNode(prop[1], ctx)]])

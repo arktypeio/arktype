@@ -18,7 +18,7 @@ import type { Branches } from "./branches.ts"
 import { IntersectionState } from "./compose.ts"
 import type { FlattenContext, TraversalEntry, TypeNode } from "./node.ts"
 import type { Branch } from "./predicate.ts"
-import { isOptional } from "./rules/props.ts"
+import { isOptional, mappedKeys } from "./rules/props.ts"
 import { branchIntersection, flattenBranch } from "./rules/rules.ts"
 
 export type DiscriminatedSwitch<
@@ -149,7 +149,7 @@ const calculateDiscriminants = (
                 intersectionState
             )
             for (const path in intersectionState.disjoints) {
-                if (path.includes("[index]")) {
+                if (path.includes(mappedKeys.index)) {
                     // containers could be empty and therefore their elements cannot be used to discriminate
                     // allowing this via a special case where both are length >0 tracked here:
                     // https://github.com/arktypeio/arktype/issues/593
