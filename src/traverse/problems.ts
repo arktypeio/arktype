@@ -37,9 +37,9 @@ export class Problem<code extends ProblemCode = any> {
     constructor(
         public code: code,
         public path: Path,
-        protected data: ProblemData<code>,
-        protected source: ProblemSource<code>,
-        protected writers: ProblemWriters<code>
+        private data: ProblemData<code>,
+        private source: ProblemSource<code>,
+        private writers: ProblemWriters<code>
     ) {
         if (this.code === "multi") {
             this.parts = this.source as any
@@ -66,7 +66,10 @@ export class Problem<code extends ProblemCode = any> {
     }
 }
 
-export type AddProblemOptions = { path?: Path }
+export type AddProblemOptions<code extends ProblemCode = ProblemCode> = {
+    data?: ProblemData<code>
+    path?: Path
+}
 
 class ProblemArray extends Array<Problem> {
     byPath: Record<string, Problem> = {}
@@ -77,22 +80,27 @@ class ProblemArray extends Array<Problem> {
         this.#state = state
     }
 
-    add<code extends ProblemCode>(
+    create<code extends ProblemCode>(
         code: code,
-        data: ProblemData<code>,
         source: ProblemSource<code>,
-        opts?: AddProblemOptions
+        opts?: AddProblemOptions<code>
     ): false {
         // copy the path to avoid future mutations affecting it
         const path = opts?.path ?? Path.from(this.#state.path)
-        const problem: Problem = new Problem(
-            code,
-            path,
-            data,
-            source,
-            this.#state.getConfigForProblemCode(code)
+        const data = opts?.data ?? (this.#state.data as ProblemData<code>)
+        return this.add(
+            new Problem(
+                code,
+                path,
+                data,
+                source,
+                this.#state.getConfigForProblemCode(code)
+            )
         )
-        const pathKey = `${path}`
+    }
+
+    add(problem: Problem): false {
+        const pathKey = `${problem.path}`
         const existing = this.byPath[pathKey]
         if (existing) {
             if (existing.parts) {
@@ -101,7 +109,7 @@ class ProblemArray extends Array<Problem> {
                 const problemIntersection = new Problem(
                     "multi",
                     existing.path,
-                    data,
+                    (existing as any).data,
                     [existing, problem],
                     this.#state.getConfigForProblemCode("multi")
                 )
