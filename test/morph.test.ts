@@ -15,8 +15,7 @@ describe("morph", () => {
         if (result.problems) {
             return result.problems.throw()
         }
-        attest(result.data).equals(true).typed as boolean
-        attest(result.out).equals("true").typed as string
+        attest(result.data).equals("true").typed as string
         attest(t("foo").problems?.summary).snap("Must be boolean (was string)")
     })
     it("endomorph", () => {
@@ -26,8 +25,34 @@ describe("morph", () => {
         if (result.problems) {
             return result.problems.throw()
         }
-        attest(result.data).equals(true).typed as boolean
-        attest(result.out).equals(false).typed as boolean
+        attest(result.data).equals(false).typed as boolean
+    })
+    it("at path", () => {
+        const t = type({ a: ["string", "=>", (data) => data.length] })
+        attest(t).typed as Type<{
+            a: (In: string) => Out<number>
+        }>
+        const result = t({ a: "four" })
+        if (result.problems) {
+            return result.problems.throw()
+        }
+        attest(result.data).equals({ a: 4 }).typed as {
+            a: number
+        }
+    })
+    it("in array", () => {
+        const types = scope({
+            lengthOfString: ["string", "=>", (data) => data.length],
+            mapToLengths: "lengthOfString[]"
+        }).compile()
+        attest(types.mapToLengths).typed as Type<
+            ((In: string) => Out<number>)[]
+        >
+        const result = types.mapToLengths(["1", "22", "333"])
+        if (result.problems) {
+            return result.problems.throw()
+        }
+        attest(result.data).equals([1, 2, 3]).typed as number[]
     })
     it("object inference", () => {
         const t = type([{ a: "string" }, "=>", (data) => `${data}`])
@@ -35,8 +60,8 @@ describe("morph", () => {
     })
     it("intersection", () => {
         const types = scope({
-            a: ["number", "=>", (data) => `${data}`, "string"],
             b: "3.14",
+            a: ["number", "=>", (data) => `${data}`, "string"],
             aAndB: "a&b",
             bAndA: "b&a"
         }).compile()
@@ -185,19 +210,46 @@ describe("morph", () => {
             object: [
                 {
                     rules: {
-                        objectKind: "Array",
-                        props: { "0": "string" },
-                        range: { comparator: "==", limit: 1 }
+                        class: "Array",
+                        props: {
+                            "0": "string",
+                            length: ["!", { number: { value: 1 } }]
+                        }
                     },
                     morph: "(function)"
                 },
                 {
-                    objectKind: "Array",
-                    props: { "0": "boolean" },
-                    range: { comparator: "==", limit: 1 }
+                    class: "Array",
+                    props: {
+                        "0": "boolean",
+                        length: ["!", { number: { value: 1 } }]
+                    }
                 }
             ]
         })
+        attest(types.c.flat).snap([
+            ["domain", "object"],
+            [
+                "switch",
+                {
+                    path: ["0"],
+                    kind: "domain",
+                    cases: {
+                        string: [
+                            ["class", "Array"],
+                            ["prerequisiteProp", ["length", [["value", 1]]]],
+                            ["requiredProp", ["0", "string"]],
+                            ["morph", "(function)"]
+                        ],
+                        boolean: [
+                            ["class", "Array"],
+                            ["prerequisiteProp", ["length", [["value", 1]]]],
+                            ["requiredProp", ["0", "boolean"]]
+                        ]
+                    }
+                }
+            ]
+        ])
     })
     it("double intersection", () => {
         attest(() => {
@@ -262,7 +314,7 @@ describe("morph", () => {
                 c: "a[]&b[]"
             }).compile()
         }).throwsAndHasTypeError(
-            "At ${number}/a: Intersection of morphs results in an unsatisfiable type"
+            "At [index]/a: Intersection of morphs results in an unsatisfiable type"
         )
     })
     it("undiscriminated morph at path", () => {

@@ -1,6 +1,10 @@
-import { functors } from "../../../nodes/functors.ts"
 import type { TypeNode } from "../../../nodes/node.ts"
-import { intersection, isLiteralNode, union } from "../../../nodes/node.ts"
+import {
+    arrayOf,
+    intersection,
+    isLiteralNode,
+    union
+} from "../../../nodes/node.ts"
 import type { LowerBound } from "../../../nodes/rules/range.ts"
 import { minComparators } from "../../../nodes/rules/range.ts"
 import { throwInternalError, throwParseError } from "../../../utils/errors.ts"
@@ -89,7 +93,7 @@ export class DynamicState {
     }
 
     rootToArray() {
-        this.root = functors.Array(this.ejectRoot())
+        this.root = arrayOf(this.ejectRoot())
     }
 
     intersect(node: TypeNode) {

@@ -1,7 +1,7 @@
-import { functors } from "../../nodes/functors.ts"
 import type { inferNode } from "../../nodes/infer.ts"
 import type { ResolvedNode, TypeNode } from "../../nodes/node.ts"
-import { intersection, union } from "../../nodes/node.ts"
+import { arrayOf, intersection, union } from "../../nodes/node.ts"
+import type { Prop } from "../../nodes/rules/props.ts"
 import type { asIn, asOut } from "../../scopes/type.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
@@ -35,7 +35,12 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     if (isPrefixExpression(def)) {
         return prefixParsers[def[0]](def as never, ctx)
     }
-    const props: Record<number, TypeNode> = {}
+    const props: Record<number | "length", Prop> = {
+        //  length is created as a prerequisite prop, ensuring if it is invalid,
+        //  no other props will be checked, which is usually desirable for tuple
+        //  definitions.
+        length: ["!", { number: { value: def.length } }]
+    }
     for (let i = 0; i < def.length; i++) {
         ctx.path.push(`${i}`)
         props[i] = parseDefinition(def[i], ctx)
@@ -43,9 +48,8 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     }
     return {
         object: {
-            objectKind: "Array",
-            props,
-            range: { comparator: "==", limit: def.length }
+            class: "Array",
+            props
         }
     }
 }
@@ -131,7 +135,7 @@ const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
 }
 
 const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
-    functors.Array(parseDefinition(def[0], scope))
+    arrayOf(parseDefinition(def[0], scope))
 
 export type PostfixParser<token extends PostfixToken> = (
     def: PostfixExpression<token>,

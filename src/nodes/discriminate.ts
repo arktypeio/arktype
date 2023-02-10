@@ -14,12 +14,11 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
-import type { Branches } from "./branches.ts"
+import type { Branch, Branches } from "./branch.ts"
+import { branchIntersection, flattenBranch } from "./branch.ts"
 import { IntersectionState } from "./compose.ts"
 import type { FlattenContext, TraversalEntry, TypeNode } from "./node.ts"
-import type { Branch } from "./predicate.ts"
-import { isOptional } from "./rules/props.ts"
-import { branchIntersection, flattenBranch } from "./rules/rules.ts"
+import { mappedKeys, propToNode } from "./rules/props.ts"
 
 export type DiscriminatedSwitch<
     kind extends DiscriminantKind = DiscriminantKind
@@ -67,7 +66,16 @@ const discriminate = (
             [
                 "branches",
                 remainingIndices.map((i) =>
-                    flattenBranch(originalBranches[i], ctx)
+                    branchIncludesMorph(
+                        originalBranches[i],
+                        ctx.type.meta.scope
+                    )
+                        ? throwParseError(
+                              writeUndiscriminatableMorphUnionMessage(
+                                  `${ctx.path}`
+                              )
+                          )
+                        : flattenBranch(originalBranches[i], ctx)
                 )
             ]
         ]
@@ -128,9 +136,6 @@ const calculateDiscriminants = (
         disjointsByPair: {},
         casesByDisjoint: {}
     }
-    const morphBranches = branches.map((branch) =>
-        branchIncludesMorph(branch, ctx.type.meta.scope)
-    )
     for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
         for (let rIndex = lIndex + 1; rIndex < branches.length; rIndex++) {
             const pairKey = `${lIndex}/${rIndex}` as const
@@ -143,8 +148,7 @@ const calculateDiscriminants = (
                 intersectionState
             )
             for (const path in intersectionState.disjoints) {
-                // designed to match objectKind path segments like "${number}"
-                if (path.includes("${")) {
+                if (path.includes(mappedKeys.index)) {
                     // containers could be empty and therefore their elements cannot be used to discriminate
                     // allowing this via a special case where both are length >0 tracked here:
                     // https://github.com/arktypeio/arktype/issues/593
@@ -180,15 +184,6 @@ const calculateDiscriminants = (
                 } else if (!cases[rSerialized].includes(rIndex)) {
                     cases[rSerialized].push(rIndex)
                 }
-            }
-            if (
-                (morphBranches[lIndex] === true ||
-                    morphBranches[rIndex] === true) &&
-                pairDisjoints.length === 0
-            ) {
-                return throwParseError(
-                    writeUndiscriminatableMorphUnionMessage(`${ctx.path}`)
-                )
             }
         }
     }
@@ -243,10 +238,9 @@ const findBestDiscriminant = (
                 }
                 const defaultCaseKeys = keysOf(defaultCases)
                 if (defaultCaseKeys.length) {
-                    const defaultIndices = defaultCaseKeys.map((k) =>
+                    filteredCases["default"] = defaultCaseKeys.map((k) =>
                         parseInt(k)
                     )
-                    filteredCases["default"] = defaultIndices
                 }
                 if (!bestDiscriminant || score > bestDiscriminant.score) {
                     const [path, kind] =
@@ -306,7 +300,7 @@ const branchIncludesMorph = (branch: Branch, $: Scope) =>
         ? true
         : "props" in branch
         ? Object.values(branch.props!).some((prop) =>
-              nodeIncludesMorph(isOptional(prop) ? prop[1] : prop, $)
+              nodeIncludesMorph(propToNode(prop), $)
           )
         : false
 

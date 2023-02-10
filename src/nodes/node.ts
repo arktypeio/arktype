@@ -1,11 +1,12 @@
 import type { ParseContext } from "../parse/definition.ts"
 import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
-import type { Domain } from "../utils/domains.ts"
+import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
 import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
+import type { MorphEntry } from "./branch.ts"
 import type { Intersector } from "./compose.ts"
 import {
     anonymousDisjoint,
@@ -16,7 +17,7 @@ import {
     throwUndefinedOperandsError
 } from "./compose.ts"
 import type { DiscriminatedSwitch } from "./discriminate.ts"
-import type { MorphEntry, Predicate } from "./predicate.ts"
+import type { Predicate } from "./predicate.ts"
 import {
     flattenPredicate,
     isLiteralCondition,
@@ -24,6 +25,7 @@ import {
     predicateUnion,
     resolutionExtendsDomain
 } from "./predicate.ts"
+import { mappedKeys } from "./rules/props.ts"
 import type { LiteralRules, RuleEntry } from "./rules/rules.ts"
 
 export type TypeNode<$ = Dict> = Identifier<$> | ResolvedNode<$>
@@ -102,22 +104,22 @@ export const union = (l: TypeNode, r: TypeNode, type: Type): ResolvedNode => {
 
 export type TraversalNode = Domain | TraversalEntry[]
 
+export type TraversalKey = TraversalEntry[0]
+
+export type TraversalValue<k extends TraversalKey> = Extract<
+    TraversalEntry,
+    [k, unknown]
+>[1]
+
 export type TraversalEntry =
     | RuleEntry
-    | MorphEntry
     | DomainsEntry
+    | MorphEntry
     | CyclicReferenceEntry
     | DomainEntry
     | BranchesEntry
     | SwitchEntry
     | ConfigEntry
-
-export type TraversalKey = TraversalEntry[0]
-
-export type TraversalRule<k extends TraversalKey> = Extract<
-    TraversalEntry,
-    [k, unknown]
->[1]
 
 export type CyclicReferenceEntry = ["alias", string]
 
@@ -133,7 +135,7 @@ export type DomainEntry = ["domain", Domain]
 
 const hasImpliedDomain = (flatPredicate: TraversalEntry[]) =>
     flatPredicate[0] &&
-    (flatPredicate[0][0] === "objectKind" || flatPredicate[0][0] === "value")
+    (flatPredicate[0][0] === "value" || flatPredicate[0][0] === "class")
 
 export type DomainsEntry = [
     "domains",
@@ -211,12 +213,28 @@ export const flattenNode = (
     return [["domains", result]]
 }
 
+export type LiteralNode<
+    domain extends Domain = Domain,
+    value extends inferDomain<domain> = inferDomain<domain>
+> = {
+    [k in domain]: LiteralRules<domain, value>
+}
+
 export const isLiteralNode = <domain extends Domain>(
     node: ResolvedNode,
     domain: domain
-): node is { [_ in domain]: LiteralRules<domain> } => {
+): node is LiteralNode<domain> => {
     return (
         resolutionExtendsDomain(node, domain) &&
         isLiteralCondition(node[domain])
     )
 }
+
+export const arrayOf = (node: TypeNode): ResolvedNode => ({
+    object: {
+        class: "Array",
+        props: {
+            [mappedKeys.index]: node
+        }
+    }
+})
