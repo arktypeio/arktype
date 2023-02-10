@@ -66,7 +66,7 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
 
 export type inferDefinition<def, $> = isAny<def> extends true
     ? never
-    : def extends inferred<infer t> | Thunk<inferred<infer t>>
+    : def extends inferred<infer t> | InferredThunk<infer t>
     ? t
     : def extends string
     ? inferString<def, $>
@@ -78,7 +78,10 @@ export type inferDefinition<def, $> = isAny<def> extends true
     ? inferRecord<def, $>
     : never
 
-export type validateDefinition<def, $> = def extends Terminal
+// we ignore functions in validation so that cyclic thunk definitions can be inferred in scopes
+export type validateDefinition<def, $> = def extends (...args: any[]) => any
+    ? def
+    : def extends Terminal
     ? def
     : def extends string
     ? validateString<def, $>
@@ -105,15 +108,14 @@ export const unknownDefinitionMessage =
 
 export type unknownDefinitionMessage = typeof unknownDefinitionMessage
 
-const isThunk = (def: unknown): def is Thunk =>
+const isThunk = (def: unknown): def is () => unknown =>
     typeof def === "function" && def.length === 0
 
-// using any as the return type here allows us to validate without a circular reference error
-type Thunk<returnType = any> = () => returnType
+type InferredThunk<t = unknown> = () => inferred<t>
 
-type Terminal = RegExp | inferred<unknown> | Thunk
+type Terminal = RegExp | inferred<unknown> | InferredThunk
 
-type BadDefinitionType = Exclude<Primitive, string> | Function
+type BadDefinitionType = Exclude<Primitive, string>
 
 export const writeBadDefinitionTypeMessage = <actual extends string>(
     actual: actual

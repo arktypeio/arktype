@@ -1,9 +1,10 @@
 import { describe, it } from "mocha"
-import { type } from "../api.js"
+import { scope, type } from "../api.js"
 import { attest } from "../dev/attest/api.js"
+import { writeBadDefinitionTypeMessage } from "../src/parse/definition.js"
 import { writeUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.js"
 
-describe("inferred", () => {
+describe("type and thunk definitions", () => {
     it("shallow", () => {
         const t = type(type("boolean"))
         attest(t.infer).typed as boolean
@@ -27,5 +28,85 @@ describe("inferred", () => {
             // @ts-expect-error
             type(() => type("moolean"))
         }).throwsAndHasTypeError(writeUnresolvableMessage("moolean"))
+    })
+    it("thunks in scope", () => {
+        const $ = scope({
+            a: () => $.type({ b: "b" }),
+            b: { a: () => $.type({ a: "string" }) }
+        })
+        attest($.infer).typed as {
+            a: {
+                b: {
+                    a: {
+                        a: string
+                    }
+                }
+            }
+            b: {
+                a: {
+                    a: string
+                }
+            }
+        }
+        const types = $.compile()
+        attest(types.a.infer).typed as {
+            b: {
+                a: {
+                    a: string
+                }
+            }
+        }
+        attest(types.a.node).snap({ object: { props: { b: "b" } } })
+        attest(types.b.infer).typed as {
+            a: {
+                a: string
+            }
+        }
+        attest(types.b.node).snap({
+            object: { props: { a: { object: { props: { a: "string" } } } } }
+        })
+    })
+    it("cyclic thunks in scope", () => {
+        const $ = scope({
+            a: () => $.type({ b: "b" }),
+            b: () => $.type({ a: "a" })
+        })
+        const types = $.compile()
+        attest(types.a.infer).typed as {
+            b: {
+                a: any
+            }
+        }
+        attest(types.a.node).snap({ object: { props: { b: "b" } } })
+        attest(types.b.infer).typed as {
+            a: {
+                b: any
+            }
+        }
+        attest(types.b.node).snap({ object: { props: { a: "a" } } })
+    })
+    it("function requiring args in scope", () => {
+        // @ts-expect-error it would be better if the error were in the def (instead we get a cyclic reference issue)
+        const $ = scope({
+            a: (t: true) => t && $.type("string")
+        })
+        attest(() => $.compile()).throws(
+            writeBadDefinitionTypeMessage("Function")
+        )
+    })
+    it("non-type thunk in scope", () => {
+        const $ = scope({
+            a: () => 42
+        })
+        attest(() => $.compile()).throws(
+            writeBadDefinitionTypeMessage("Function")
+        )
+    })
+    it("parse error in thunk in scope", () => {
+        const $ = scope({
+            // @ts-expect-error
+            a: () => $.type("bad")
+        })
+        attest(() => $.compile()).throws(writeUnresolvableMessage("bad"))
     })
 })

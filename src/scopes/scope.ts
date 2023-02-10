@@ -34,7 +34,13 @@ type ScopeParser = {
     ): Scope<parseScope<aliases, opts>>
 }
 
-// TODO: Reintegrate thunks/compilation, add utilities for narrowed defs
+type validateAliases<aliases, opts extends ScopeOptions> = {
+    [name in keyof aliases]: name extends keyof preresolved<opts>
+        ? writeDuplicateAliasesMessage<name & string>
+        : validateDefinition<aliases[name], bootstrapScope<aliases, opts>>
+}
+
+// TODO: Add utilities for narrowed defs
 export type ScopeOptions = {
     // [] allows narrowed tuple inference
     imports?: Space[] | []
@@ -110,12 +116,6 @@ type mergeSpaces<scopes, base extends Dict = {}> = scopes extends readonly [
               >
           >
     : base
-
-type validateAliases<aliases, opts extends ScopeOptions> = {
-    [name in keyof aliases]: name extends keyof preresolved<opts>
-        ? writeDuplicateAliasesMessage<name & string>
-        : validateDefinition<aliases[name], bootstrapScope<aliases, opts>>
-}
 
 type preresolved<opts extends ScopeOptions> = includesOf<opts> &
     importsOf<opts> &
