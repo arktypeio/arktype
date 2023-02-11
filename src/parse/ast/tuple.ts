@@ -180,10 +180,6 @@ const postfixParsers: {
 
 type PrefixOperator = "keyof" | "instanceof" | "===" | "node"
 
-export type UnaryOperator = PrefixOperator | "[]"
-
-export type BinaryOperator = Exclude<PostfixOperator, UnaryOperator>
-
 export type PrefixExpression<token extends PrefixOperator = PrefixOperator> =
     readonly [token, ...unknown[]]
 

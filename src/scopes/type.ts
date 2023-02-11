@@ -1,6 +1,10 @@
 import type { TraversalNode, TypeNode } from "../nodes/node.ts"
 import type { ParsedMorph } from "../parse/ast/morph.ts"
-import type { BinaryOperator } from "../parse/ast/tuple.ts"
+import type {
+    inferTupleExpression,
+    TupleExpression,
+    validateTupleExpression
+} from "../parse/ast/tuple.ts"
 import type {
     as,
     inferDefinition,
@@ -21,18 +25,25 @@ export type TypeParser<$> = {
     <def>(def: validateDefinition<def, $>, opts: TypeOptions): parseType<def, $>
 }
 
-// export type ParseBinaryExpression<$, operator extends BinaryOperator> = {
-//     <l, r>(
-//         l: validateDefinition<l, $>,
-//         r: validateDefinition<r, $>
-//     ): inferBinaryExpression<l, r, operator, $>
+export type BinaryExpressionParser<$, operator extends "&" | "|"> = {
+    <l, r>(
+        l: validateDefinition<l, $>,
+        r: validateDefinition<r, $>
+    ): parseTupleExpression<[l, operator, r], $>
 
-//     <l, r>(
-//         l: validateDefinition<l, $>,
-//         r: validateDefinition<r, $>,
-//         opts: TypeOptions
-//     ): inferBinaryExpression<l, r, operator, $>
-// }
+    <l, r>(
+        l: validateDefinition<l, $>,
+        r: validateDefinition<r, $>,
+        opts: TypeOptions
+    ): parseTupleExpression<[l, operator, r], $>
+}
+
+type parseTupleExpression<
+    expression extends TupleExpression,
+    $
+> = expression extends validateTupleExpression<expression, $>
+    ? Type<inferTupleExpression<expression, $>>
+    : never
 
 export type parseType<def, $> = def extends validateDefinition<def, $>
     ? Type<inferDefinition<def, $>>
