@@ -6,6 +6,10 @@ import type {
     RegexLiteral,
     tryCatch
 } from "../../utils/generics.ts"
+import type {
+    BigintLiteral,
+    NumberLiteral
+} from "../../utils/numericLiterals.ts"
 import type { StringLiteral } from "../string/shift/operand/enclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
 import type { parseString } from "../string/string.ts"
@@ -32,7 +36,7 @@ export type inferExpression<ast extends List, $> = ast[1] extends "[]"
         ? castOnError<result, never>
         : never
     : ast[1] extends Scanner.Comparator
-    ? ast[0] extends number
+    ? ast[0] extends NumberLiteral
         ? inferAst<ast[2], $>
         : inferAst<ast[0], $>
     : ast[1] extends "%"
@@ -43,27 +47,29 @@ export type validateAst<ast, $> = ast extends List
     ? validateExpression<ast, $>
     : ast
 
-export type validateExpression<ast extends List, $> = ast extends [
-    infer child,
-    unknown
-]
-    ? validateAst<child, $>
-    : ast extends [infer l, infer token, infer r]
-    ? token extends "&"
+export type validateExpression<
+    ast extends List,
+    $
+> = ast extends PostfixExpression<infer operator, infer operand>
+    ? operator extends "[]"
+        ? validateAst<operand, $>
+        : never
+    : ast extends InfixExpression<infer operator, infer l, infer r>
+    ? operator extends "&"
         ? tryCatch<
               inferIntersection<inferAst<l, $>, inferAst<r, $>>,
-              validateBinary<l, r, $>
+              validateInfix<ast, $>
           >
-        : token extends "|"
+        : operator extends "|"
         ? tryCatch<
               inferUnion<inferAst<l, $>, inferAst<r, $>>,
-              validateBinary<l, r, $>
+              validateInfix<ast, $>
           >
-        : token extends Scanner.Comparator
+        : operator extends Scanner.Comparator
         ? validateBound<l, r, $>
-        : token extends "%"
+        : operator extends "%"
         ? validateDivisor<l, $>
-        : validateAst<l, $>
+        : never
     : undefined
 
 export type validateString<def extends string, $> = parseString<
@@ -77,9 +83,31 @@ export type validateString<def extends string, $> = parseString<
         : def
     : never
 
-type validateBinary<l, r, $> = tryCatch<
-    validateAst<l, $>,
-    tryCatch<validateAst<r, $>, undefined>
+export type PrefixOperator = "keyof" | "instanceof" | "===" | "node"
+
+export type PrefixExpression<
+    operator extends PrefixOperator = PrefixOperator,
+    operand = unknown
+> = [operator, operand]
+
+export type PostfixOperator = "[]"
+
+export type PostfixExpression<
+    operator extends PostfixOperator = PostfixOperator,
+    operand = unknown
+> = [operand, operator]
+
+export type InfixOperator = "|" | "&" | Scanner.Comparator | "%" | ":" | "=>"
+
+export type InfixExpression<
+    operator extends InfixOperator = InfixOperator,
+    l = unknown,
+    r = unknown
+> = [l, operator, r]
+
+type validateInfix<ast extends InfixExpression, $> = tryCatch<
+    validateAst<ast[0], $>,
+    tryCatch<validateAst<ast[2], $>, ast>
 >
 
 export type inferTerminal<token, $> = token extends keyof $
@@ -88,6 +116,8 @@ export type inferTerminal<token, $> = token extends keyof $
     ? Text
     : token extends RegexLiteral
     ? string
-    : token extends number | bigint
-    ? token
+    : token extends NumberLiteral<infer value>
+    ? value
+    : token extends BigintLiteral<infer value>
+    ? value
     : never

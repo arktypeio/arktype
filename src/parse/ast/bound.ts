@@ -1,9 +1,10 @@
 import type { SizedData } from "../../utils/data.ts"
 import type { error, isAny } from "../../utils/generics.ts"
+import type { NumberLiteral } from "../../utils/numericLiterals.ts"
 import type { inferAst, validateAst } from "./ast.ts"
 import type { astToString } from "./utils.ts"
 
-export type validateBound<l, r, $> = l extends number
+export type validateBound<l, r, $> = l extends NumberLiteral
     ? validateAst<r, $>
     : isBoundable<inferAst<l, $>> extends true
     ? validateAst<l, $>

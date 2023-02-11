@@ -33,12 +33,16 @@ export type parseDivisor<
     ? tryParseWellFormedInteger<
           scanned,
           writeInvalidDivisorMessage<scanned>
-      > extends infer result
-        ? result extends number
-            ? result extends 0
+      > extends infer divisor
+        ? divisor extends number
+            ? divisor extends 0
                 ? error<writeInvalidDivisorMessage<0>>
-                : state.setRoot<s, [s["root"], "%", result], nextUnscanned>
-            : error<result & string>
+                : state.setRoot<
+                      s,
+                      [s["root"], "%", `${divisor}`],
+                      nextUnscanned
+                  >
+            : error<divisor & string>
         : never
     : never
 

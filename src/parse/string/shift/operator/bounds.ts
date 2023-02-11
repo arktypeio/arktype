@@ -18,6 +18,7 @@ import {
     keysOf,
     listFrom
 } from "../../../../utils/generics.ts"
+import type { NumberLiteral } from "../../../../utils/numericLiterals.ts"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.ts"
 import { writeUnboundableMessage } from "../../../ast/bound.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
@@ -45,7 +46,7 @@ export type parseBound<
           infer comparator extends Scanner.Comparator,
           infer nextUnscanned
       >
-        ? s["root"] extends number
+        ? s["root"] extends NumberLiteral
             ? state.reduceLeftBound<s, s["root"], comparator, nextUnscanned>
             : parseRightBound<s, comparator, nextUnscanned>
         : shiftResultOrError
@@ -168,11 +169,16 @@ export type parseRightBound<
                           s["branches"]["range"]["limit"],
                           s["branches"]["range"]["comparator"],
                           comparator,
-                          limit,
+                          `${limit}`,
                           nextUnscanned
                       >
                     : error<writeUnpairableComparatorMessage<comparator>>
-                : state.reduceSingleBound<s, comparator, limit, nextUnscanned>
+                : state.reduceSingleBound<
+                      s,
+                      comparator,
+                      `${limit}`,
+                      nextUnscanned
+                  >
             : error<limit & string>
         : never
     : never

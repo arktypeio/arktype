@@ -130,9 +130,9 @@ export class DynamicState {
         if (this.branches.range) {
             return this.error(
                 writeMultipleLeftBoundsMessage(
-                    this.branches.range.limit,
+                    `${this.branches.range.limit}`,
                     this.branches.range.comparator,
-                    limit,
+                    `${limit}`,
                     invertedComparator
                 )
             )
@@ -195,7 +195,7 @@ export class DynamicState {
         if (this.branches.range) {
             return this.error(
                 writeOpenRangeMessage(
-                    this.branches.range.limit,
+                    `${this.branches.range.limit}`,
                     this.branches.range.comparator
                 )
             )

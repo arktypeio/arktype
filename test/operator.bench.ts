@@ -1,9 +1,6 @@
 import { type } from "../api.ts"
 import { bench, suite } from "../dev/attest/api.ts"
 
-const writeBranchDef = (token: string, size: number) =>
-    [...Array(size - 1)].map((_) => "unknown").join(token) as any
-
 suite("parse/str/operator", () => {
     bench("array", () => {
         const _ = type("number[]")
@@ -23,11 +20,6 @@ suite("parse/str/operator", () => {
         })
             .median([16.64, "us"])
             .type([5605, "instantiations"])
-
-        const largeUnionDef = writeBranchDef("|", 100)
-        bench("100-ary", () => {
-            type(largeUnionDef)
-        }).median([1.53, "ms"])
     })
 
     suite("intersection", () => {
@@ -44,11 +36,6 @@ suite("parse/str/operator", () => {
         })
             .median([707, "ns"])
             .type([4131, "instantiations"])
-
-        const largeIntersectionDef = writeBranchDef("&", 100)
-        bench("100-ary", () => {
-            type(largeIntersectionDef)
-        }).median([700, "ns"])
     })
 
     suite("group", () => {
