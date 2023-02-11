@@ -81,7 +81,7 @@ export type inferKeyOfExpression<operandDef, $> = keyOf<
     inferDefinition<operandDef, $>
 >
 
-export type validateKeyOfExpression<operandDef, $> = [
+export type validateKeyOfExpression<operandDef, $> = readonly [
     "keyof",
     inferKeyOfExpression<operandDef, $> extends never
         ? writeImplicitNeverMessage<[], "keyof">

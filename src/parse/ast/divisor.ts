@@ -1,9 +1,9 @@
 import type { error, isAny } from "../../utils/generics"
-import type { inferAst, validateSemantics } from "./ast"
+import type { inferAst, validateAst } from "./ast"
 import type { astToString } from "./utils"
 
 export type validateDivisor<l, $> = isDivisible<inferAst<l, $>> extends true
-    ? validateSemantics<l, $>
+    ? validateAst<l, $>
     : error<writeIndivisibleMessage<astToString<l>>>
 
 type isDivisible<data> = isAny<data> extends true

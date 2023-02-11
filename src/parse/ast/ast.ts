@@ -15,36 +15,40 @@ import type { inferIntersection } from "./intersection.ts"
 import type { inferUnion } from "./union.ts"
 
 export type inferAst<ast, $> = ast extends List
-    ? ast[1] extends "[]"
-        ? inferAst<ast[0], $>[]
-        : ast[1] extends "|"
-        ? inferUnion<
-              inferAst<ast[0], $>,
-              inferAst<ast[2], $>
-          > extends infer result
-            ? castOnError<result, never>
-            : never
-        : ast[1] extends "&"
-        ? inferIntersection<
-              inferAst<ast[0], $>,
-              inferAst<ast[2], $>
-          > extends infer result
-            ? castOnError<result, never>
-            : never
-        : ast[1] extends Scanner.Comparator
-        ? ast[0] extends number
-            ? inferAst<ast[2], $>
-            : inferAst<ast[0], $>
-        : ast[1] extends "%"
-        ? inferAst<ast[0], $>
-        : never
+    ? inferExpression<ast, $>
     : inferTerminal<ast, $>
 
-export type validateSemantics<def, $> = def extends string
-    ? validateString<def, $>
-    : def extends [infer child, unknown]
-    ? validateSemantics<child, $>
-    : def extends [infer l, infer token, infer r]
+export type inferExpression<ast extends List, $> = ast[1] extends "[]"
+    ? inferAst<ast[0], $>[]
+    : ast[1] extends "|"
+    ? inferUnion<inferAst<ast[0], $>, inferAst<ast[2], $>> extends infer result
+        ? castOnError<result, never>
+        : never
+    : ast[1] extends "&"
+    ? inferIntersection<
+          inferAst<ast[0], $>,
+          inferAst<ast[2], $>
+      > extends infer result
+        ? castOnError<result, never>
+        : never
+    : ast[1] extends Scanner.Comparator
+    ? ast[0] extends number
+        ? inferAst<ast[2], $>
+        : inferAst<ast[0], $>
+    : ast[1] extends "%"
+    ? inferAst<ast[0], $>
+    : never
+
+export type validateAst<ast, $> = ast extends List
+    ? validateExpression<ast, $>
+    : ast
+
+export type validateExpression<ast extends List, $> = ast extends [
+    infer child,
+    unknown
+]
+    ? validateAst<child, $>
+    : ast extends [infer l, infer token, infer r]
     ? token extends "&"
         ? tryCatch<
               inferIntersection<inferAst<l, $>, inferAst<r, $>>,
@@ -59,7 +63,7 @@ export type validateSemantics<def, $> = def extends string
         ? validateBound<l, r, $>
         : token extends "%"
         ? validateDivisor<l, $>
-        : validateSemantics<l, $>
+        : validateAst<l, $>
     : undefined
 
 export type validateString<def extends string, $> = parseString<
@@ -68,16 +72,14 @@ export type validateString<def extends string, $> = parseString<
 > extends infer ast
     ? ast extends error<infer message>
         ? message
-        : ast extends List
-        ? validateSemantics<ast, $> extends error<infer message>
-            ? message
-            : def
+        : validateAst<ast, $> extends error<infer message>
+        ? message
         : def
     : never
 
 type validateBinary<l, r, $> = tryCatch<
-    validateSemantics<l, $>,
-    tryCatch<validateSemantics<r, $>, undefined>
+    validateAst<l, $>,
+    tryCatch<validateAst<r, $>, undefined>
 >
 
 export type inferTerminal<token, $> = token extends keyof $

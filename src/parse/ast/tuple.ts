@@ -82,7 +82,7 @@ export type validateTupleExpression<
     : def[0] extends "node"
     ? conform<def, readonly ["node", ResolvedNode<$>]>
     : def[0] extends "keyof"
-    ? validateKeyOfExpression<def[1], $>
+    ? conform<def, validateKeyOfExpression<def[1], $>>
     : never
 
 export type inferTuple<def extends List, $> = def extends TupleExpression
@@ -94,7 +94,13 @@ export type inferTuple<def extends List, $> = def extends TupleExpression
 export type inferTupleExpression<
     def extends TupleExpression,
     $
-> = def[1] extends ":"
+> = def[1] extends "[]"
+    ? inferDefinition<def[0], $>[]
+    : def[1] extends "&"
+    ? inferIntersection<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
+    : def[1] extends "|"
+    ? inferUnion<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
+    : def[1] extends ":"
     ? "3" extends keyof def
         ? inferDefinition<def[3], $>
         : inferDefinition<def[0], $>
@@ -106,12 +112,6 @@ export type inferTupleExpression<
               ? asOut<inferDefinition<def[3], $>>
               : returnOf<def[2]>
       >
-    : def[1] extends "&"
-    ? inferIntersection<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
-    : def[1] extends "|"
-    ? inferUnion<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
-    : def[1] extends "[]"
-    ? inferDefinition<def[0], $>[]
     : def[0] extends "==="
     ? def[1]
     : def[0] extends "instanceof"

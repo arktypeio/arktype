@@ -253,6 +253,13 @@
             "operator": {
                 "array": [
                     {
+                        "date": "2/11/2023",
+                        "mark": {
+                            "median": [934, "ns"],
+                            "type": [900, "instantiations"]
+                        }
+                    },
+                    {
                         "date": "11/11/2022",
                         "mark": {
                             "type": [257, "instantiations"]
@@ -264,7 +271,112 @@
                             "type": [328, "instantiations"]
                         }
                     }
-                ]
+                ],
+                "union": {
+                    "binary": [
+                        {
+                            "date": "2/11/2023",
+                            "mark": {
+                                "median": [498, "ns"],
+                                "type": [817, "instantiations"]
+                            }
+                        }
+                    ],
+                    "10-ary": [
+                        {
+                            "date": "2/11/2023",
+                            "mark": {
+                                "median": [16.64, "us"],
+                                "type": [5605, "instantiations"]
+                            }
+                        }
+                    ],
+                    "100-ary": [
+                        {
+                            "date": "2/11/2023",
+                            "mark": {
+                                "median": [1.53, "ms"]
+                            }
+                        }
+                    ]
+                },
+                "intersection": {
+                    "binary": [
+                        {
+                            "date": "2/11/2023",
+                            "mark": {
+                                "median": [511, "ns"],
+                                "type": [787, "instantiations"]
+                            }
+                        }
+                    ],
+                    "10-ary": [
+                        {
+                            "date": "2/11/2023",
+                            "mark": {
+                                "median": [707, "ns"],
+                                "type": [4131, "instantiations"]
+                            }
+                        }
+                    ],
+                    "100-ary": [
+                        {
+                            "date": "2/11/2023",
+                            "mark": {
+                                "median": [700, "ns"]
+                            }
+                        }
+                    ]
+                },
+                "group": {
+                    "shallow": [
+                        {
+                            "date": "2/11/2023",
+                            "mark": {
+                                "median": [1.04, "us"],
+                                "type": [1121, "instantiations"]
+                            }
+                        }
+                    ],
+                    "nested": [
+                        {
+                            "date": "2/11/2023",
+                            "mark": {
+                                "median": [1.44, "us"],
+                                "type": [3308, "instantiations"]
+                            }
+                        }
+                    ],
+                    "deep": [
+                        {
+                            "date": "2/11/2023",
+                            "mark": {
+                                "median": [5.34, "us"],
+                                "type": [36744, "instantiations"]
+                            }
+                        }
+                    ]
+                },
+                "bounds": {
+                    "single-bounded": [
+                        {
+                            "date": "2/11/2023",
+                            "mark": {
+                                "median": [616, "ns"],
+                                "type": [682, "instantiations"]
+                            }
+                        }
+                    ],
+                    "double-bounded": [
+                        {
+                            "date": "2/11/2023",
+                            "mark": {
+                                "median": [780, "ns"],
+                                "type": [1088, "instantiations"]
+                            }
+                        }
+                    ]
+                }
             }
         }
     },
