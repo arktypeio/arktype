@@ -3,7 +3,7 @@ import type { ParsedMorph } from "../parse/ast/morph.ts"
 import type {
     inferTupleExpression,
     TupleExpression,
-    validateTupleExpression
+    TuplePostfixOperator
 } from "../parse/ast/tuple.ts"
 import type {
     as,
@@ -38,11 +38,30 @@ export type BinaryExpressionParser<$, operator extends "&" | "|"> = {
     ): parseTupleExpression<[l, operator, r], $>
 }
 
+export type UnaryExpressionParser<$, operator extends "keyof" | "[]"> = {
+    <def>(def: validateDefinition<def, $>): parseTupleExpression<
+        unaryToTupleExpression<def, operator>,
+        $
+    >
+
+    <def>(
+        def: validateDefinition<def, $>,
+        opts: TypeOptions
+    ): parseTupleExpression<unaryToTupleExpression<def, operator>, $>
+}
+
+type unaryToTupleExpression<
+    def,
+    operator extends "keyof" | "[]"
+> = operator extends TuplePostfixOperator ? [def, "[]"] : [operator, def]
+
 type parseTupleExpression<
     expression extends TupleExpression,
     $
-> = expression extends validateTupleExpression<expression, $>
-    ? Type<inferTupleExpression<expression, $>>
+> = inferTupleExpression<expression, $> extends infer result
+    ? result extends never
+        ? never
+        : Type<result>
     : never
 
 export type parseType<def, $> = def extends validateDefinition<def, $>

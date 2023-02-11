@@ -4,7 +4,11 @@ import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
 import type { Space } from "./scope.ts"
 import { scope } from "./scope.ts"
 import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
-import type { BinaryExpressionParser, TypeParser } from "./type.ts"
+import type {
+    BinaryExpressionParser,
+    TypeParser,
+    UnaryExpressionParser
+} from "./type.ts"
 import { validation, validationScope } from "./validation.ts"
 
 export const standardScope = scope(
@@ -77,3 +81,9 @@ export const intersection: BinaryExpressionParser<PrecompiledDefaults, "&"> =
 
 export const union: BinaryExpressionParser<PrecompiledDefaults, "|"> =
     scopes.standard.union
+
+export const array: UnaryExpressionParser<PrecompiledDefaults, "[]"> =
+    scopes.standard.array
+
+export const keyof: UnaryExpressionParser<PrecompiledDefaults, "keyof"> =
+    scopes.standard.keyof
