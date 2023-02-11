@@ -21,13 +21,7 @@ import { Path } from "../utils/paths.ts"
 import type { stringifyUnion } from "../utils/unionToTuple.ts"
 import { Cache, FreezingCache } from "./cache.ts"
 import type { PrecompiledDefaults } from "./standard.ts"
-import type {
-    IntersectionParser,
-    Type,
-    TypeConfig,
-    TypeOptions,
-    TypeParser
-} from "./type.ts"
+import type { Type, TypeConfig, TypeOptions, TypeParser } from "./type.ts"
 import { initializeType } from "./type.ts"
 
 type ScopeParser = {
@@ -215,11 +209,11 @@ export class Scope<context extends ScopeContext = any> {
         return result
     }) as TypeParser<resolutions<context>>
 
-    intersection = ((l, r, opts) =>
-        this.type(
-            [l, "&", r] as inferred<unknown>,
-            opts
-        )) as IntersectionParser<resolutions<context>>
+    // intersection = ((l, r, opts) =>
+    //     this.type(
+    //         [l, "&", r] as inferred<unknown>,
+    //         opts
+    //     )) as ParseBinaryExpression<resolutions<context>>
 
     #initializeContext(type: Type): ParseContext {
         return {

@@ -1,5 +1,5 @@
-import type { inferTerminal } from "../parse/string/ast.js"
-import type { Out } from "../parse/tuple/morph.js"
+import type { inferTerminal } from "../parse/ast/ast.js"
+import type { Out } from "../parse/ast/morph.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import type {
     constructor,

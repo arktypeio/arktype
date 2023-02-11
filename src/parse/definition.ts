@@ -14,16 +14,17 @@ import type {
 import { objectKindOf } from "../utils/objectKinds.ts"
 import type { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { inferRecord } from "./record.ts"
-import { parseRecord } from "./record.ts"
-import type { inferString, validateString } from "./string/string.ts"
-import { parseString } from "./string/string.ts"
+import type { validateString } from "./ast/ast.ts"
 import type {
     inferTuple,
     TupleExpression,
     validateTupleExpression
-} from "./tuple/tuple.ts"
-import { parseTuple } from "./tuple/tuple.ts"
+} from "./ast/tuple.ts"
+import { parseTuple } from "./ast/tuple.ts"
+import type { inferRecord } from "./record.ts"
+import { parseRecord } from "./record.ts"
+import type { inferString } from "./string/string.ts"
+import { parseString } from "./string/string.ts"
 
 export type ParseContext = {
     type: Type

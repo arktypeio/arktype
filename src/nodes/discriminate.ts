@@ -1,4 +1,4 @@
-import { writeUndiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
+import { writeUndiscriminatableMorphUnionMessage } from "../parse/ast/union.ts"
 import type { Scope } from "../scopes/scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"

@@ -18,15 +18,16 @@ import type {
     validateDefinition
 } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
-import type { inferIntersection, inferUnion } from "../string/ast.ts"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
+import type { inferIntersection } from "./intersection.ts"
 import type { inferKeyOfExpression, validateKeyOfExpression } from "./keyof.ts"
 import { parseKeyOfTuple } from "./keyof.ts"
 import type { Out, validateMorphTuple } from "./morph.ts"
 import { parseMorphTuple } from "./morph.ts"
 import type { validateNarrowTuple } from "./narrow.ts"
 import { parseNarrowTuple } from "./narrow.ts"
+import type { inferUnion } from "./union.ts"
 
 export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     if (isPostfixExpression(def)) {
@@ -139,12 +140,12 @@ const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
 const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
     arrayOf(parseDefinition(def[0], scope))
 
-export type PostfixParser<token extends PostfixToken> = (
+export type PostfixParser<token extends PostfixOperator> = (
     def: PostfixExpression<token>,
     ctx: ParseContext
 ) => TypeNode
 
-export type PrefixParser<token extends PrefixToken> = (
+export type PrefixParser<token extends PrefixOperator> = (
     def: PrefixExpression<token>,
     ctx: ParseContext
 ) => TypeNode
@@ -157,18 +158,18 @@ export const writeMalformedFunctionalExpressionMessage = (
 ) =>
     `Expression requires a function following '${operator}' (was ${typeof rightDef})`
 
-export type TupleExpressionToken = PrefixToken | PostfixToken
+export type TupleExpressionToken = PrefixOperator | PostfixOperator
 
-type PostfixToken = "[]" | "&" | "|" | ":" | "=>"
+type PostfixOperator = "[]" | "&" | "|" | ":" | "=>"
 
-export type PostfixExpression<token extends PostfixToken = PostfixToken> =
+export type PostfixExpression<token extends PostfixOperator = PostfixOperator> =
     readonly [unknown, token, ...unknown[]]
 
 const isPostfixExpression = (def: List): def is PostfixExpression =>
-    postfixParsers[def[1] as PostfixToken] !== undefined
+    postfixParsers[def[1] as PostfixOperator] !== undefined
 
 const postfixParsers: {
-    [token in PostfixToken]: PostfixParser<token>
+    [token in PostfixOperator]: PostfixParser<token>
 } = {
     "|": parseBranchTuple,
     "&": parseBranchTuple,
@@ -177,13 +178,17 @@ const postfixParsers: {
     "=>": parseMorphTuple
 }
 
-type PrefixToken = "keyof" | "instanceof" | "===" | "node"
+type PrefixOperator = "keyof" | "instanceof" | "===" | "node"
 
-export type PrefixExpression<token extends PrefixToken = PrefixToken> =
+export type UnaryOperator = PrefixOperator | "[]"
+
+export type BinaryOperator = Exclude<PostfixOperator, UnaryOperator>
+
+export type PrefixExpression<token extends PrefixOperator = PrefixOperator> =
     readonly [token, ...unknown[]]
 
 const prefixParsers: {
-    [token in PrefixToken]: PrefixParser<token>
+    [token in PrefixOperator]: PrefixParser<token>
 } = {
     keyof: parseKeyOfTuple,
     instanceof: (def) => {
@@ -199,4 +204,4 @@ const prefixParsers: {
 }
 
 const isPrefixExpression = (def: List): def is PrefixExpression =>
-    prefixParsers[def[0] as PrefixToken] !== undefined
+    prefixParsers[def[0] as PrefixOperator] !== undefined

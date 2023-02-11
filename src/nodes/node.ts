@@ -1,5 +1,5 @@
+import { compileDisjointReasonsMessage } from "../parse/ast/intersection.ts"
 import type { ParseContext } from "../parse/definition.ts"
-import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"

@@ -1,4 +1,4 @@
-import type { Narrow } from "../../parse/tuple/narrow.ts"
+import type { Narrow } from "../../parse/ast/narrow.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type {
     CollapsibleList,

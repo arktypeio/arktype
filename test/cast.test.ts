@@ -3,7 +3,7 @@ import type { Type } from "../api.ts"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import type { inferred } from "../src/parse/definition.ts"
-import type { Out } from "../src/parse/tuple/morph.ts"
+import type { Out } from "../src/parse/ast/morph.ts"
 
 describe("cast", () => {
     it("primitive", () => {

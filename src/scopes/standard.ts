@@ -4,7 +4,7 @@ import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
 import type { Space } from "./scope.ts"
 import { scope } from "./scope.ts"
 import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
-import type { IntersectionParser, TypeParser } from "./type.ts"
+import type { TypeParser } from "./type.ts"
 import { validation, validationScope } from "./validation.ts"
 
 export const standardScope = scope(
@@ -72,5 +72,5 @@ type ValidateStandardScope = [
 
 export const type: TypeParser<PrecompiledDefaults> = scopes.standard.type
 
-export const intersection: IntersectionParser<PrecompiledDefaults> =
-    scopes.standard.intersection
+// export const intersection: ParseBinaryExpression<PrecompiledDefaults> =
+//     scopes.standard.intersection

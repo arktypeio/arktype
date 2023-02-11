@@ -19,7 +19,7 @@ import {
     listFrom
 } from "../../../../utils/generics.ts"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.ts"
-import { writeUnboundableMessage } from "../../ast.ts"
+import { writeUnboundableMessage } from "../../../ast/bound.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import { writeUnpairableComparatorMessage } from "../../reduce/shared.ts"
 import type { state, StaticState } from "../../reduce/static.ts"

@@ -1,6 +1,6 @@
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { writeImplicitNeverMessage } from "../src/parse/string/ast.ts"
+import { writeImplicitNeverMessage } from "../src/parse/ast/intersection.ts"
 import { wellFormedNonNegativeIntegerMatcher } from "../src/utils/numericLiterals.ts"
 import { Path } from "../src/utils/paths.ts"
 

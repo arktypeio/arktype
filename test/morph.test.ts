@@ -2,8 +2,8 @@ import { describe, it } from "mocha"
 import type { Type } from "../api.ts"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { writeUndiscriminatableMorphUnionMessage } from "../src/parse/string/ast.ts"
-import type { Out } from "../src/parse/tuple/morph.ts"
+import type { Out } from "../src/parse/ast/morph.ts"
+import { writeUndiscriminatableMorphUnionMessage } from "../src/parse/ast/union.ts"
 
 describe("morph", () => {
     it("base", () => {

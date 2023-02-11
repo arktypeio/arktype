@@ -1,7 +1,7 @@
 import { arrayOf } from "../../nodes/node.ts"
 import type { error } from "../../utils/generics.ts"
+import type { inferAst } from "../ast/ast.ts"
 import type { ParseContext } from "../definition.ts"
-import type { inferAst, validateAstSemantics } from "./ast.ts"
 import { DynamicState } from "./reduce/dynamic.ts"
 import type { state, StaticState } from "./reduce/static.ts"
 import { parseOperand } from "./shift/operand/operand.ts"
@@ -22,17 +22,6 @@ export type inferString<def extends string, $> = inferAst<
     parseString<def, $>,
     $
 >
-
-export type validateString<def extends string, $> = parseString<
-    def,
-    $
-> extends infer ast
-    ? ast extends error<infer message>
-        ? message
-        : validateAstSemantics<ast, $> extends error<infer message>
-        ? message
-        : def
-    : never
 
 /**
  * Try to parse the definition from right to left using the most common syntax.

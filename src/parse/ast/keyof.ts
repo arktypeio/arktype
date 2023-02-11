@@ -9,7 +9,7 @@ import { listFrom } from "../../utils/generics.ts"
 import { wellFormedNonNegativeIntegerMatcher } from "../../utils/numericLiterals.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
-import { writeImplicitNeverMessage } from "../string/ast.ts"
+import { writeImplicitNeverMessage } from "./intersection.ts"
 import type { PrefixParser } from "./tuple.ts"
 
 const numericIndexKey = {

@@ -1,6 +1,6 @@
 import type { LowerBound, MinComparator } from "../../../nodes/rules/range.ts"
 import type { defined, error } from "../../../utils/generics.ts"
-import type { astToString } from "../ast.ts"
+import type { astToString } from "../../ast/utils.ts"
 import type { Scanner } from "../shift/scanner.ts"
 import type {
     unclosedGroupMessage,

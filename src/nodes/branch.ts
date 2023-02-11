@@ -1,5 +1,5 @@
-import { writeImplicitNeverMessage } from "../parse/string/ast.js"
-import type { Morph } from "../parse/tuple/morph.js"
+import { writeImplicitNeverMessage } from "../parse/ast/intersection.js"
+import type { Morph } from "../parse/ast/morph.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf, hasDomain } from "../utils/domains.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"

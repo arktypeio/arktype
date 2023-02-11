@@ -1,12 +1,44 @@
 import type { TypeNode } from "../../nodes/node.ts"
+import { rootIntersection } from "../../nodes/node.ts"
 import type { NarrowableRules } from "../../nodes/rules/rules.ts"
+import type { asIn } from "../../scopes/type.ts"
+import type { Problems } from "../../traverse/problems.ts"
 import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type { evaluateObject } from "../../utils/generics.ts"
 import { keysOf } from "../../utils/generics.ts"
 import { stringify } from "../../utils/serialize.ts"
-import type { ParseContext } from "../definition.ts"
+import type {
+    inferDefinition,
+    ParseContext,
+    validateDefinition
+} from "../definition.ts"
+import { parseDefinition } from "../definition.ts"
+import type { PostfixParser, TupleExpression } from "./tuple.ts"
+
+export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
+    const inputNode = parseDefinition(def[0], ctx)
+    return rootIntersection(
+        inputNode,
+        distributeFunctionToNode(
+            def[2] as distributable<Narrow>,
+            inputNode,
+            ctx,
+            "narrow"
+        ),
+        ctx.type
+    )
+}
+
+export type Narrow<data = any> = (data: data, problems: Problems) => boolean
+
+export type validateNarrowTuple<def extends TupleExpression, $> = readonly [
+    _: validateDefinition<def[0], $>,
+    _: ":",
+    _: distributable<Narrow<asIn<inferDefinition<def[0], $>>>>,
+    _?: validateDefinition<def[3], $>
+]
 
 export type DistributableFunction<
     input = any,

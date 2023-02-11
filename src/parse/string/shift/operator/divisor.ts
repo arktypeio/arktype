@@ -1,7 +1,7 @@
 import type { error } from "../../../../utils/generics.ts"
 import { keysOf } from "../../../../utils/generics.ts"
 import { tryParseWellFormedInteger } from "../../../../utils/numericLiterals.ts"
-import { writeIndivisibleMessage } from "../../ast.ts"
+import { writeIndivisibleMessage } from "../../../ast/divisor.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { state, StaticState } from "../../reduce/static.ts"
 import type { Scanner } from "../scanner.ts"
