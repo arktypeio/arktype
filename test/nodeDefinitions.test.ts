@@ -3,6 +3,7 @@ import type { Type } from "../api.ts"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import type { Out } from "../src/parse/ast/morph.ts"
+import { fromNode } from "../src/scopes/standard.ts"
 
 describe("node definitions", () => {
     it("base", () => {
@@ -130,42 +131,56 @@ describe("node definitions", () => {
         ])
         attest(t.infer).type.toString("Date")
     })
-    it("bad shallow reference", () => {
-        // @ts-expect-error
-        attest(() => type(["node", "whoops"])).type.errors(
-            `Type 'string' has no properties in common with type 'ResolvedNode<PrecompiledDefaults>'`
-        )
+    it("helper", () => {
+        const t = fromNode({ string: true })
+        attest(t.infer).typed as string
+        attest(t.node).snap({ string: true })
     })
-    it("bad prop reference", () => {
-        attest(() =>
-            type([
-                "node",
-                {
-                    // @ts-expect-error
-                    object: {
-                        props: {
-                            a: "whoops"
+    describe("errors", () => {
+        // NOTE: these won't throw at runtime because nodes are assumed valid
+        it("bad shallow reference", () => {
+            // @ts-expect-error
+            attest(() => type(["node", "whoops"])).type.errors(
+                `Type 'string' has no properties in common with type 'ResolvedNode<PrecompiledDefaults>'`
+            )
+        })
+        it("bad prop reference", () => {
+            attest(() =>
+                type([
+                    "node",
+                    {
+                        // @ts-expect-error
+                        object: {
+                            props: {
+                                a: "whoops"
+                            }
                         }
                     }
-                }
-            ])
-        ).type.errors(
-            `Type '"whoops"' is not assignable to type 'Prop<PrecompiledDefaults, TypeNode<PrecompiledDefaults>>'`
-        )
-    })
-    it("rule in wrong domain", () => {
-        attest(() =>
-            type([
-                "node",
-                {
-                    number: {
-                        // @ts-expect-error
-                        regex: "/.*/"
+                ])
+            ).type.errors(
+                `Type '"whoops"' is not assignable to type 'Prop<PrecompiledDefaults, TypeNode<PrecompiledDefaults>>'`
+            )
+        })
+        it("rule in wrong domain", () => {
+            attest(() =>
+                type([
+                    "node",
+                    {
+                        number: {
+                            // @ts-expect-error
+                            regex: "/.*/"
+                        }
                     }
-                }
-            ])
-        ).type.errors(
-            `'regex' does not exist in type 'CollapsibleList<Branch<"number", PrecompiledDefaults>>'`
-        )
+                ])
+            ).type.errors(
+                `'regex' does not exist in type 'CollapsibleList<Branch<"number", PrecompiledDefaults>>'`
+            )
+        })
+        it("helper error", () => {
+            // @ts-expect-error
+            attest(() => fromNode({ number: { regex: /.*/ } })).type.errors(
+                `'regex' does not exist in type 'CollapsibleList<Branch<"number", PrecompiledDefaults>>'`
+            )
+        })
     })
 })

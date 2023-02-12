@@ -1,6 +1,7 @@
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import { writeImplicitNeverMessage } from "../src/parse/ast/intersection.ts"
+import { keyOf } from "../src/scopes/standard.ts"
 import { Path } from "../src/utils/paths.ts"
 
 describe("keyof", () => {
@@ -104,6 +105,14 @@ describe("keyof", () => {
         )
         // @ts-expect-error
         attest(() => type(["keyof", "undefined"])).throwsAndHasTypeError(
+            expectedNeverKeyOfMessage
+        )
+    })
+    it("helper", () => {
+        const t = keyOf({ a: "string" })
+        attest(t.infer).typed as "a"
+        attest(t.node).snap({ string: { value: "a" } })
+        attest(() => keyOf("object")).throwsAndHasTypeError(
             expectedNeverKeyOfMessage
         )
     })

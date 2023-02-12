@@ -1,10 +1,9 @@
 import { describe, it } from "mocha"
 import type { Type } from "../api.ts"
-import { scope, type } from "../api.ts"
+import { intersection, morph, scope, type, union } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import type { Out } from "../src/parse/ast/morph.ts"
 import { writeUndiscriminatableMorphUnionMessage } from "../src/parse/ast/union.ts"
-import { morph } from "../src/scopes/standard.ts"
 
 describe("morph", () => {
     it("base", () => {
@@ -334,5 +333,20 @@ describe("morph", () => {
         })
             .throws(writeUndiscriminatableMorphUnionMessage("key"))
             .type.errors(writeUndiscriminatableMorphUnionMessage("/"))
+    })
+    it("helper morph intersection", () => {
+        attest(() =>
+            intersection(
+                ["string", "=>", (s) => s.length],
+                ["string", "=>", (s) => s.split(",")]
+            )
+        ).throwsAndHasTypeError(
+            "Intersection of morphs results in an unsatisfiable type"
+        )
+    })
+    it("union helper undiscriminated", () => {
+        attest(() =>
+            union(["string", "=>", (s) => s.length], "'foo'")
+        ).throwsAndHasTypeError(writeUndiscriminatableMorphUnionMessage("/"))
     })
 })

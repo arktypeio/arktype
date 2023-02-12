@@ -2,9 +2,9 @@ import type { Branch, MorphBranch } from "../../nodes/branch.ts"
 import { isMorphBranch } from "../../nodes/branch.ts"
 import type { ResolvedNode } from "../../nodes/node.ts"
 import type { asIn, asOut } from "../../scopes/type.ts"
-import type { Domain, inferDomain } from "../../utils/domains.ts"
+import type { Domain } from "../../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../../utils/errors.ts"
-import type { mutable, nominal, returnOf } from "../../utils/generics.ts"
+import type { mutable, nominal } from "../../utils/generics.ts"
 import { isArray } from "../../utils/objectKinds.ts"
 import { stringify } from "../../utils/serialize.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
@@ -70,17 +70,6 @@ export type ParsedMorph<i = any, o = unknown> = (In: i) => Out<o>
 
 export type inferMorph<inDef, morph, $> = morph extends Morph
     ? (In: asIn<inferDefinition<inDef, $>>) => Out<ReturnType<morph>>
-    : morph extends {
-          [domain in Domain]?: Morph<
-              Extract<asIn<inferDefinition<inDef, $>>, inferDomain<domain>>
-          >
-      }
-    ? // TODO: add distributed morph tests
-      (In: asIn<inferDefinition<inDef, $>>) => Out<
-          {
-              [domain in keyof morph & Domain]: returnOf<morph[domain]>
-          }[keyof morph & Domain]
-      >
     : never
 
 export const writeMalformedMorphExpressionMessage = (value: unknown) =>

@@ -1,9 +1,9 @@
 import type { TypeNode } from "../../../nodes/node.ts"
 import {
-    arrayOf,
     isLiteralNode,
     rootIntersection,
-    rootUnion
+    rootUnion,
+    toArrayNode
 } from "../../../nodes/node.ts"
 import type { LowerBound } from "../../../nodes/rules/range.ts"
 import { minComparators } from "../../../nodes/rules/range.ts"
@@ -93,7 +93,7 @@ export class DynamicState {
     }
 
     rootToArray() {
-        this.root = arrayOf(this.ejectRoot())
+        this.root = toArrayNode(this.ejectRoot())
     }
 
     intersect(node: TypeNode) {

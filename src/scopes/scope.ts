@@ -50,7 +50,6 @@ type validateAliases<aliases, opts extends ScopeOptions> = {
         : validateDefinition<aliases[name], bootstrapScope<aliases, opts>>
 }
 
-// TODO: Add utilities for narrowed defs
 export type ScopeOptions = {
     // [] allows narrowed tuple inference
     imports?: Space[] | []
@@ -291,7 +290,7 @@ export class Scope<context extends ScopeContext = any> {
         return this.resolveNode(this.resolve(node).node)
     }
 
-    type = ((def, opts: TypeOptions = {}) => {
+    type: TypeParser<resolutions<context>> = ((def, opts: TypeOptions = {}) => {
         if (opts.name && this.aliases[opts.name]) {
             return throwParseError(writeDuplicateAliasesMessage(opts.name))
         }

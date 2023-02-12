@@ -1,4 +1,4 @@
-import { arrayOf } from "../../nodes/node.ts"
+import { toArrayNode } from "../../nodes/node.ts"
 import type { error } from "../../utils/generics.ts"
 import type { inferAst } from "../ast/ast.ts"
 import type { ParseContext } from "../definition.ts"
@@ -42,7 +42,7 @@ export const maybeNaiveParse = (def: string, ctx: ParseContext) => {
     if (def.endsWith("[]")) {
         const elementDef = def.slice(0, -2)
         if (ctx.type.meta.scope.addReferenceIfResolvable(def, ctx)) {
-            return arrayOf(elementDef)
+            return toArrayNode(elementDef)
         }
     }
 }
