@@ -5,8 +5,7 @@ import type {
     TupleExpression,
     TuplePostfixOperator,
     UnparsedTupleExpressionInput,
-    UnparsedTupleOperator,
-    validateTupleExpression
+    UnparsedTupleOperator
 } from "../parse/ast/tuple.ts"
 import type {
     as,
@@ -20,7 +19,6 @@ import type { conform, defer, evaluate, xor } from "../utils/generics.ts"
 import { hasKeys } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import type { Scope } from "./scope.ts"
-import type { PrecompiledDefaults } from "./standard.ts"
 
 // TODO: add config entries when resolving a type
 export type TypeParser<$> = {
@@ -67,16 +65,6 @@ export type UnvalidatedExpressionParser<
         opts: TypeOptions
     ): parseTupleExpression<[operator, def], $>
 }
-
-// export type TupleExpressionParser<$> = {
-//     <args extends readonly unknown[]>(
-//         ...args: validateTupleExpression<args, $>
-//     ): args ///parseTupleExpression<args, $>
-// }
-
-// const expression = {} as TupleExpressionParser<PrecompiledDefaults>
-
-// const t = expression("string", "[]")
 
 type unaryToTupleExpression<
     def,
