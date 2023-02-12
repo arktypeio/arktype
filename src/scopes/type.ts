@@ -3,7 +3,9 @@ import type { ParsedMorph } from "../parse/ast/morph.ts"
 import type {
     inferTupleExpression,
     TupleExpression,
-    TuplePostfixOperator
+    TuplePostfixOperator,
+    UnparsedTupleExpressionInput,
+    UnparsedTupleOperator
 } from "../parse/ast/tuple.ts"
 import type {
     as,
@@ -13,7 +15,7 @@ import type {
 import type { Problems, ProblemsConfig } from "../traverse/problems.ts"
 import { TraversalState, traverse } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
-import type { defer, evaluate, xor } from "../utils/generics.ts"
+import type { conform, defer, evaluate, xor } from "../utils/generics.ts"
 import { hasKeys } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import type { Scope } from "./scope.ts"
@@ -50,6 +52,20 @@ export type UnaryExpressionParser<$, operator extends "keyof" | "[]"> = {
     ): parseTupleExpression<unaryToTupleExpression<def, operator>, $>
 }
 
+export type UnvalidatedExpressionParser<
+    $,
+    operator extends UnparsedTupleOperator
+> = {
+    <def>(
+        def: conform<def, UnparsedTupleExpressionInput<$>[operator]>
+    ): parseTupleExpression<[operator, def], $>
+
+    <def>(
+        def: conform<def, UnparsedTupleExpressionInput<$>[operator]>,
+        opts: TypeOptions
+    ): parseTupleExpression<[operator, def], $>
+}
+
 type unaryToTupleExpression<
     def,
     operator extends "keyof" | "[]"
@@ -64,7 +80,7 @@ type parseTupleExpression<
         : Type<result>
     : never
 
-export type parseType<def, $> = def extends validateDefinition<def, $>
+export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
 

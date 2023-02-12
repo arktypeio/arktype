@@ -8,7 +8,9 @@ import { throwParseError } from "../../utils/errors.ts"
 import type {
     conform,
     constructor,
+    Dict,
     error,
+    evaluate,
     List,
     returnOf
 } from "../../utils/generics.ts"
@@ -58,10 +60,8 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
 export type validateTupleExpression<
     def extends TupleExpression,
     $
-> = def[1] extends "=>"
-    ? validateMorphTuple<def, $>
-    : def[1] extends ":"
-    ? validateNarrowTuple<def, $>
+> = def[1] extends "[]"
+    ? conform<def, readonly [validateDefinition<def[0], $>, "[]"]>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? [def[0], error<writeMissingRightOperandMessage<def[1], "">>]
@@ -73,8 +73,10 @@ export type validateTupleExpression<
                   validateDefinition<def[2], $>
               ]
           >
-    : def[1] extends "[]"
-    ? conform<def, readonly [validateDefinition<def[0], $>, "[]"]>
+    : def[1] extends "=>"
+    ? validateMorphTuple<def, $>
+    : def[1] extends ":"
+    ? validateNarrowTuple<def, $>
     : def[0] extends "==="
     ? conform<def, readonly ["===", unknown]>
     : def[0] extends "instanceof"
@@ -84,6 +86,16 @@ export type validateTupleExpression<
     : def[0] extends "keyof"
     ? conform<def, validateKeyOfExpression<def[1], $>>
     : never
+
+export type UnparsedTupleExpressionInput<$> = {
+    instanceof: constructor
+    node: ResolvedNode<$>
+    "===": unknown
+}
+
+export type UnparsedTupleOperator = evaluate<
+    keyof UnparsedTupleExpressionInput<Dict>
+>
 
 export type inferTuple<def extends List, $> = def extends TupleExpression
     ? inferTupleExpression<def, $>

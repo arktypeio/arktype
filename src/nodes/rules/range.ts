@@ -1,7 +1,7 @@
 import type { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { EntryChecker } from "../../traverse/traverse.ts"
 import { sizeOf } from "../../utils/data.ts"
-import type { keyOf } from "../../utils/generics.ts"
+import type { evaluate } from "../../utils/generics.ts"
 import { composeIntersection, equality } from "../compose.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
@@ -12,7 +12,7 @@ export type DoubleBound = {
     max?: UpperBound
 }
 
-export type BoundKind = keyOf<DoubleBound>
+export type BoundKind = evaluate<keyof DoubleBound>
 
 export const minComparators = {
     ">": true,

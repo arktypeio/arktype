@@ -108,10 +108,8 @@ export const objectKeysOf = <o extends object>(o: o) =>
 
 export type stringKeyOf<o> = keyof o & string
 
-export type keyOf<t> = evaluate<keyof t>
-
 /** Mimics output of TS's keyof operator at runtime */
-export const prototypeKeysOf = <t>(value: t): keyOf<t>[] => {
+export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
     const result: (string | number | symbol)[] = []
     while (
         value !== Object.prototype &&
@@ -130,7 +128,7 @@ export const prototypeKeysOf = <t>(value: t): keyOf<t>[] => {
         }
         value = Object.getPrototypeOf(value)
     }
-    return result as keyOf<t>[]
+    return result as evaluate<keyof t>[]
 }
 
 export const hasKey = <o, k extends string>(

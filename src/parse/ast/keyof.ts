@@ -5,7 +5,7 @@ import type { Rules } from "../../nodes/rules/rules.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import { deepFreeze } from "../../utils/freeze.ts"
-import type { constructor, keyOf, List } from "../../utils/generics.ts"
+import type { constructor, evaluate, List } from "../../utils/generics.ts"
 import {
     listFrom,
     objectKeysOf,
@@ -148,8 +148,8 @@ const keysOfObjectBranch = (branch: Branch): KeyValue[] => {
     return result
 }
 
-export type inferKeyOfExpression<operandDef, $> = keyOf<
-    inferDefinition<operandDef, $>
+export type inferKeyOfExpression<operandDef, $> = evaluate<
+    keyof inferDefinition<operandDef, $>
 >
 
 export type validateKeyOfExpression<operandDef, $> = readonly [

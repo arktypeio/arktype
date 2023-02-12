@@ -3,7 +3,7 @@ import type { Scope } from "../scopes/scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type { keyOf, keySet } from "../utils/generics.ts"
+import type { evaluate, keySet } from "../utils/generics.ts"
 import { hasKey, isKeyOf, objectKeysOf } from "../utils/generics.ts"
 import type { NumberLiteral } from "../utils/numericLiterals.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
@@ -126,7 +126,7 @@ const discriminantKinds: keySet<DiscriminantKind> = {
     value: true
 }
 
-export type DiscriminantKind = keyOf<DiscriminantKinds>
+export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 const calculateDiscriminants = (
     branches: Branches,
