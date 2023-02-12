@@ -4,6 +4,7 @@ import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import type { Out } from "../src/parse/ast/morph.ts"
 import { writeUndiscriminatableMorphUnionMessage } from "../src/parse/ast/union.ts"
+import { morph } from "../src/scopes/standard.ts"
 
 describe("morph", () => {
     it("base", () => {
@@ -61,9 +62,9 @@ describe("morph", () => {
     it("intersection", () => {
         const $ = scope({
             b: "3.14",
-            a: ["number", "=>", (data) => `${data}`, "string"],
-            aAndB: "a&b",
-            bAndA: "b&a"
+            a: () => $.morph("number", (data) => `${data}`),
+            aAndB: () => $.type("a&b"),
+            bAndA: () => $.type("b&a")
         })
         const types = $.compile()
         attest(types.aAndB).typed as Type<(In: 3.14) => Out<string>>
@@ -75,7 +76,7 @@ describe("morph", () => {
     })
     it("object interesection", () => {
         const $ = scope({
-            a: [{ a: "1" }, "=>", (data) => `${data}`, "string"],
+            a: morph({ a: "1" }, (data) => `${data}`),
             b: { b: "2" },
             c: "a&b"
         })
@@ -162,20 +163,22 @@ describe("morph", () => {
         })
     })
     it("chained", () => {
-        const types = scope({
-            a: ["string", "=>", (s) => s.length, "number"],
-            b: ["a", "=>", (n) => n === 0]
-        }).compile()
+        const $ = scope({
+            a: () => $.morph("string", (s) => s.length),
+            b: () => $.morph("a", (n) => n === 0)
+        })
+        const types = $.compile()
         attest(types.b).typed as Type<(In: string) => Out<boolean>>
         attest(types.b.node).snap({
             string: { rules: {}, morph: ["(function)", "(function)"] }
         })
     })
     it("chained nested", () => {
-        const types = scope({
-            a: ["string", "=>", (s) => s.length, "number"],
-            b: [{ a: "a" }, "=>", ({ a }) => a === 0, "boolean"]
-        }).compile()
+        const $ = scope({
+            a: () => $.morph("string", (s) => s.length),
+            b: () => $.morph({ a: "a" }, ({ a }) => a === 0)
+        })
+        const types = $.compile()
         attest(types.b).typed as Type<(In: { a: string }) => Out<boolean>>
         attest(types.b.node).snap({
             object: { rules: { props: { a: "a" } }, morph: "(function)" }
@@ -200,11 +203,12 @@ describe("morph", () => {
         })
     })
     it("discriminatable tuple union", () => {
-        const types = scope({
-            a: [["string"], "=>", (s) => [...s, "!"], "string[]"],
+        const $ = scope({
+            a: () => $.morph(["string"], (s) => [...s, "!"]),
             b: ["boolean"],
-            c: "a|b"
-        }).compile()
+            c: () => $.type("a|b")
+        })
+        const types = $.compile()
         attest(types.c).typed as Type<
             [boolean] | ((In: [string]) => Out<string[]>)
         >

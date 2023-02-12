@@ -1,5 +1,6 @@
 import type { TraversalNode, TypeNode } from "../nodes/node.ts"
-import type { ParsedMorph } from "../parse/ast/morph.ts"
+import type { distributable } from "../parse/ast/distributableFunction.ts"
+import type { Morph, ParsedMorph } from "../parse/ast/morph.ts"
 import type { Narrow } from "../parse/ast/narrow.ts"
 import type {
     FunctionalTupleOperator,
@@ -72,30 +73,25 @@ export type FunctionalExpressionParser<
     $,
     operator extends FunctionalTupleOperator
 > = {
-    <
-        input,
-        fn extends (
-            data: asIn<inferDefinition<input, $>>,
-            ...rest: any[]
-        ) => any
-    >(
-        input: validateDefinition<input, $>,
+    <inDef, fn extends FunctionWithInferredInput<$, operator, inDef>>(
+        inDef: validateDefinition<inDef, $>,
         fn: fn
-    ): parseTupleExpression<[input, operator, fn], $>
+    ): parseTupleExpression<[inDef, operator, fn], $>
 
-    <input, fn>(
-        input: validateDefinition<input, $>,
+    <inDef, fn extends FunctionWithInferredInput<$, operator, inDef>>(
+        inDef: validateDefinition<inDef, $>,
         fn: fn,
         opts: TypeOptions
-    ): parseTupleExpression<[input, operator, fn], $>
+    ): parseTupleExpression<[inDef, operator, fn], $>
 }
 
-export type NarrowParser<$> = {
-    <inDef, narrow extends Narrow<inferDefinition<inDef, $>>>(
-        input: validateDefinition<inDef, $>,
-        narrow: narrow
-    ): parseTupleExpression<[inDef, ":", narrow], $>
-}
+export type FunctionWithInferredInput<
+    $,
+    operator extends FunctionalTupleOperator,
+    inDef
+> = operator extends ":"
+    ? distributable<Narrow<asIn<inferDefinition<inDef, $>>>>
+    : Morph<asOut<inferDefinition<inDef, $>>>
 
 type unaryToTupleExpression<
     def,

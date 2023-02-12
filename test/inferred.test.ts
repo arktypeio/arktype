@@ -85,6 +85,21 @@ describe("type and thunk definitions", () => {
         }
         attest(types.b.node).snap({ object: { props: { a: "a" } } })
     })
+    it("expression from thunk", () => {
+        const $ = scope({
+            a: () => $.type({ a: "string" }),
+            b: { b: "boolean" },
+            aAndB: () => $.type("a&b")
+        })
+        const types = $.compile()
+        attest(types.aAndB.infer).typed as {
+            a: string
+            b: boolean
+        }
+        attest(types.aAndB.node).snap({
+            object: { props: { a: "string", b: "boolean" } }
+        })
+    })
     it("function requiring args in scope", () => {
         // @ts-expect-error it would be better if the error were in the def (instead we get a cyclic reference issue)
         const $ = scope({

@@ -70,18 +70,18 @@ export type ParsedMorph<i = any, o = unknown> = (In: i) => Out<o>
 
 export type inferMorph<inDef, morph, $> = morph extends Morph
     ? (In: asIn<inferDefinition<inDef, $>>) => Out<ReturnType<morph>>
+    : morph extends {
+          [domain in Domain]?: Morph<
+              Extract<asIn<inferDefinition<inDef, $>>, inferDomain<domain>>
+          >
+      }
+    ? // TODO: add distributed morph tests
+      (In: asIn<inferDefinition<inDef, $>>) => Out<
+          {
+              [domain in keyof morph & Domain]: returnOf<morph[domain]>
+          }[keyof morph & Domain]
+      >
     : never
-// morph extends {
-//       [domain in Domain]?: Morph<
-//           Extract<asIn<inferDefinition<inDef, $>>, inferDomain<domain>>
-//       >
-//   }
-// ? (In: asIn<inferDefinition<inDef, $>>) => Out<
-//       {
-//           [domain in keyof morph & Domain]: returnOf<morph[domain]>
-//       }[keyof morph & Domain]
-//   >
-// : never
 
 export const writeMalformedMorphExpressionMessage = (value: unknown) =>
     `Morph expression requires a function following '=>' (was ${typeof value})`

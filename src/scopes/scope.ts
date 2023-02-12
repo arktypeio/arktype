@@ -207,71 +207,6 @@ export class Scope<context extends ScopeContext = any> {
         }
     }
 
-    type = ((def, opts: TypeOptions = {}) => {
-        if (opts.name && this.aliases[opts.name]) {
-            return throwParseError(writeDuplicateAliasesMessage(opts.name))
-        }
-        const result = initializeType(def, opts, this)
-        const ctx = this.#initializeContext(result)
-        result.node = this.resolveNode(parseDefinition(def, ctx))
-        result.flat = flattenType(result)
-        return result
-    }) as TypeParser<resolutions<context>>
-
-    intersection = ((l, r, opts) =>
-        this.type(
-            [l, "&", r] as inferred<unknown>,
-            opts
-        )) as BinaryExpressionParser<resolutions<context>, "&">
-
-    union = ((l, r, opts) =>
-        this.type(
-            [l, "|", r] as inferred<unknown>,
-            opts
-        )) as BinaryExpressionParser<resolutions<context>, "|">
-
-    arrayOf = ((def, opts) =>
-        this.type(
-            [def, "[]"] as inferred<unknown>,
-            opts
-        )) as UnaryExpressionParser<resolutions<context>, "[]">
-
-    keyOf = ((def, opts) =>
-        this.type(
-            ["keyof", def] as inferred<unknown>,
-            opts
-        )) as UnaryExpressionParser<resolutions<context>, "keyof">
-
-    fromNode = ((def, opts) =>
-        this.type(
-            ["node", def] as inferred<unknown>,
-            opts
-        )) as UnvalidatedExpressionParser<PrecompiledDefaults, "node">
-
-    instanceOf = ((def, opts) =>
-        this.type(
-            ["instanceof", def] as inferred<unknown>,
-            opts
-        )) as UnvalidatedExpressionParser<PrecompiledDefaults, "instanceof">
-
-    literal = ((def, opts) =>
-        this.type(
-            ["===", def] as inferred<unknown>,
-            opts
-        )) as UnvalidatedExpressionParser<PrecompiledDefaults, "===">
-
-    narrow = ((def, fn, opts) =>
-        this.type(
-            [def, ":", fn] as inferred<unknown>,
-            opts
-        )) as FunctionalExpressionParser<PrecompiledDefaults, ":">
-
-    morph = ((def, fn, opts) =>
-        this.type(
-            [def, "=>", fn] as inferred<unknown>,
-            opts
-        )) as FunctionalExpressionParser<PrecompiledDefaults, "=>">
-
     #initializeContext(type: Type): ParseContext {
         return {
             type,
@@ -355,6 +290,71 @@ export class Scope<context extends ScopeContext = any> {
         }
         return this.resolveNode(this.resolve(node).node)
     }
+
+    type = ((def, opts: TypeOptions = {}) => {
+        if (opts.name && this.aliases[opts.name]) {
+            return throwParseError(writeDuplicateAliasesMessage(opts.name))
+        }
+        const result = initializeType(def, opts, this)
+        const ctx = this.#initializeContext(result)
+        result.node = this.resolveNode(parseDefinition(def, ctx))
+        result.flat = flattenType(result)
+        return result
+    }) as TypeParser<resolutions<context>>
+
+    intersection = ((l, r, opts) =>
+        this.type(
+            [l, "&", r] as inferred<unknown>,
+            opts
+        )) as BinaryExpressionParser<resolutions<context>, "&">
+
+    union = ((l, r, opts) =>
+        this.type(
+            [l, "|", r] as inferred<unknown>,
+            opts
+        )) as BinaryExpressionParser<resolutions<context>, "|">
+
+    arrayOf = ((def, opts) =>
+        this.type(
+            [def, "[]"] as inferred<unknown>,
+            opts
+        )) as UnaryExpressionParser<resolutions<context>, "[]">
+
+    keyOf = ((def, opts) =>
+        this.type(
+            ["keyof", def] as inferred<unknown>,
+            opts
+        )) as UnaryExpressionParser<resolutions<context>, "keyof">
+
+    fromNode = ((def, opts) =>
+        this.type(
+            ["node", def] as inferred<unknown>,
+            opts
+        )) as UnvalidatedExpressionParser<resolutions<context>, "node">
+
+    instanceOf = ((def, opts) =>
+        this.type(
+            ["instanceof", def] as inferred<unknown>,
+            opts
+        )) as UnvalidatedExpressionParser<resolutions<context>, "instanceof">
+
+    literal = ((def, opts) =>
+        this.type(
+            ["===", def] as inferred<unknown>,
+            opts
+        )) as UnvalidatedExpressionParser<resolutions<context>, "===">
+
+    narrow = ((def, fn, opts) =>
+        this.type(
+            [def, ":", fn] as inferred<unknown>,
+            opts
+        )) as FunctionalExpressionParser<resolutions<context>, ":">
+
+    morph = ((def, fn, opts) =>
+        this.type(
+            [def, "=>", fn] as inferred<unknown>,
+            opts
+        )) as FunctionalExpressionParser<resolutions<context>, "=>">
 }
 
 type OnUnresolvable = "throw" | "undefined"
