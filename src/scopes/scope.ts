@@ -27,7 +27,8 @@ import type {
     TypeConfig,
     TypeOptions,
     TypeParser,
-    UnaryExpressionParser
+    UnaryExpressionParser,
+    UnvalidatedExpressionParser
 } from "./type.ts"
 import { initializeType } from "./type.ts"
 
@@ -228,17 +229,35 @@ export class Scope<context extends ScopeContext = any> {
             opts
         )) as BinaryExpressionParser<resolutions<context>, "|">
 
-    array = ((def, opts) =>
+    arrayOf = ((def, opts) =>
         this.type(
             [def, "[]"] as inferred<unknown>,
             opts
         )) as UnaryExpressionParser<resolutions<context>, "[]">
 
-    keyof = ((def, opts) =>
+    keyOf = ((def, opts) =>
         this.type(
             ["keyof", def] as inferred<unknown>,
             opts
         )) as UnaryExpressionParser<resolutions<context>, "keyof">
+
+    fromNode = ((def, opts) =>
+        this.type(
+            ["node", def] as inferred<unknown>,
+            opts
+        )) as UnvalidatedExpressionParser<PrecompiledDefaults, "node">
+
+    instanceOf = ((def, opts) =>
+        this.type(
+            ["instanceof", def] as inferred<unknown>,
+            opts
+        )) as UnvalidatedExpressionParser<PrecompiledDefaults, "instanceof">
+
+    literal = ((def, opts) =>
+        this.type(
+            ["===", def] as inferred<unknown>,
+            opts
+        )) as UnvalidatedExpressionParser<PrecompiledDefaults, "===">
 
     #initializeContext(type: Type): ParseContext {
         return {

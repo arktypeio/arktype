@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
 import { intersection, union } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { array, keyof } from "../src/scopes/standard.ts"
+import { arrayOf, keyOf } from "../src/scopes/standard.ts"
 
 // TODO: add tests in scope
 describe("expressions", () => {
@@ -29,7 +29,7 @@ describe("expressions", () => {
         })
     })
     it("array", () => {
-        const t = array({ a: "string" })
+        const t = arrayOf({ a: "string" })
         attest(t.infer).typed as {
             a: string
         }[]
@@ -41,7 +41,7 @@ describe("expressions", () => {
         })
     })
     it("keyof", () => {
-        const t = keyof({ a: "string" })
+        const t = keyOf({ a: "string" })
         attest(t.infer).typed as "a"
         attest(t.node).snap({ string: { value: "a" } })
     })
