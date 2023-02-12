@@ -6,6 +6,7 @@ import { scope } from "./scope.ts"
 import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
 import type {
     BinaryExpressionParser,
+    FunctionalExpressionParser,
     TypeParser,
     UnaryExpressionParser,
     UnvalidatedExpressionParser
@@ -101,3 +102,9 @@ export const instanceOf: UnvalidatedExpressionParser<
 
 export const literal: UnvalidatedExpressionParser<PrecompiledDefaults, "==="> =
     scopes.standard.literal
+
+export const narrow: FunctionalExpressionParser<PrecompiledDefaults, ":"> =
+    scopes.standard.narrow
+
+export const morph: FunctionalExpressionParser<PrecompiledDefaults, "=>"> =
+    scopes.standard.morph

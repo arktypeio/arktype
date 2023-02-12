@@ -59,12 +59,13 @@ describe("morph", () => {
         attest(t).typed as Type<(In: { a: string }) => Out<string>>
     })
     it("intersection", () => {
-        const types = scope({
+        const $ = scope({
             b: "3.14",
             a: ["number", "=>", (data) => `${data}`, "string"],
             aAndB: "a&b",
             bAndA: "b&a"
-        }).compile()
+        })
+        const types = $.compile()
         attest(types.aAndB).typed as Type<(In: 3.14) => Out<string>>
         attest(types.aAndB.node).snap({
             number: { rules: { value: 3.14 }, morph: "(function)" }
@@ -73,11 +74,12 @@ describe("morph", () => {
         attest(types.bAndA.node).equals(types.aAndB.node)
     })
     it("object interesection", () => {
-        const types = scope({
+        const $ = scope({
             a: [{ a: "1" }, "=>", (data) => `${data}`, "string"],
             b: { b: "2" },
             c: "a&b"
-        }).compile()
+        })
+        const types = $.compile()
         attest(types.c).typed as Type<(In: { a: 1; b: 2 }) => Out<string>>
         attest(types.c.node).snap({
             object: {

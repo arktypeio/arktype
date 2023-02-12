@@ -11,8 +11,8 @@ describe("narrow", () => {
         attest(t.infer).typed as number
         attest(t.node).equals({ number: { narrow: isOdd as any } })
     })
-    it("functional narrowing", () => {
-        const t = type(["number", ":", (n) => n === 1, "1"])
+    it("functional predicate", () => {
+        const t = type(["number", ":", (n): n is 1 => n === 1])
         attest(t).typed as Type<1>
     })
     it("functional parameter inference", () => {
@@ -47,17 +47,18 @@ describe("narrow", () => {
             number: { narrow: distributedBlacklist.number }
         })
     })
-    it("distributed narrowing", () => {
+    it("distributed predicates", () => {
         const t = type([
             "string|number",
             ":",
             {
-                string: (s) => s === "zero",
-                number: (n) => n === 0
-            },
-            "0|'zero'"
+                // with predicate is narrowed
+                number: (n): n is 0 => n === 0,
+                // without predicate is allowed but not narrowed
+                string: (s) => s === "zero"
+            }
         ])
-        attest(t).typed as Type<0 | "zero">
+        attest(t).typed as Type<0 | string>
     })
     it("distributed parameter inference", () => {
         const validateInferredAsZero = (input: 0) => !input
@@ -114,21 +115,21 @@ describe("narrow", () => {
         })
         attest(okType.infer).typed as { a: string }
 
-        const workaround = scope({
-            // added a workaround allowing out inference from an extra def at position 3
-            a: [{ a: "1" }, "=>", (data) => `${data}`, "string"],
-            // Also works for narrowing
-            b: [
-                { a: "number" },
-                ":",
-                (data): data is { a: 1 } => data.a === 1,
-                { a: "1" }
-            ],
-            // can also avoid by explicitly annotating the input def, but that may be difficult if the scope is cyclic
-            c: [{ a: "1" }, "=>", (data: { a: 1 }) => `${data}`]
-        }).compile()
-        attest(workaround.a.infer).typed as string
-        attest(workaround.b.infer).typed as { a: 1 }
-        attest(workaround.c.infer).typed as string
+        // const workaround = scope({
+        //     // added a workaround allowing out inference from an extra def at position 3
+        //     a: [{ a: "1" }, "=>", (data) => `${data}`, "string"],
+        //     // Also works for narrowing
+        //     b: [
+        //         { a: "number" },
+        //         ":",
+        //         (data): data is { a: 1 } => data.a === 1,
+        //         { a: "1" }
+        //     ],
+        //     // can also avoid by explicitly annotating the input def, but that may be difficult if the scope is cyclic
+        //     c: [{ a: "1" }, "=>", (data: { a: 1 }) => `${data}`]
+        // }).compile()
+        // attest(workaround.a.infer).typed as string
+        // attest(workaround.b.infer).typed as { a: 1 }
+        // attest(workaround.c.infer).typed as string
     })
 })

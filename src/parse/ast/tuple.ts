@@ -2,7 +2,6 @@ import type { inferNode } from "../../nodes/infer.ts"
 import type { ResolvedNode, TypeNode } from "../../nodes/node.ts"
 import { arrayOf, rootIntersection, rootUnion } from "../../nodes/node.ts"
 import type { Prop } from "../../nodes/rules/props.ts"
-import type { asIn, asOut } from "../../scopes/type.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type {
@@ -11,8 +10,7 @@ import type {
     Dict,
     error,
     evaluate,
-    List,
-    returnOf
+    List
 } from "../../utils/generics.ts"
 import type {
     inferDefinition,
@@ -25,9 +23,9 @@ import type { Scanner } from "../string/shift/scanner.ts"
 import type { inferIntersection } from "./intersection.ts"
 import type { inferKeyOfExpression, validateKeyOfExpression } from "./keyof.ts"
 import { parseKeyOfTuple } from "./keyof.ts"
-import type { Out, validateMorphTuple } from "./morph.ts"
+import type { inferMorph, validateMorphTuple } from "./morph.ts"
 import { parseMorphTuple } from "./morph.ts"
-import type { validateNarrowTuple } from "./narrow.ts"
+import type { inferNarrow, validateNarrowTuple } from "./narrow.ts"
 import { parseNarrowTuple } from "./narrow.ts"
 import type { inferUnion } from "./union.ts"
 
@@ -113,17 +111,9 @@ export type inferTupleExpression<
     : def[1] extends "|"
     ? inferUnion<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
     : def[1] extends ":"
-    ? "3" extends keyof def
-        ? inferDefinition<def[3], $>
-        : inferDefinition<def[0], $>
+    ? inferNarrow<def[0], def[2], $>
     : def[1] extends "=>"
-    ? (
-          In: asIn<inferDefinition<def[0], $>>
-      ) => Out<
-          "3" extends keyof def
-              ? asOut<inferDefinition<def[3], $>>
-              : returnOf<def[2]>
-      >
+    ? inferMorph<def[0], def[2], $>
     : def[0] extends "==="
     ? def[1]
     : def[0] extends "instanceof"
@@ -194,6 +184,8 @@ const indexOneParsers: {
     ":": parseNarrowTuple,
     "=>": parseMorphTuple
 }
+
+export type FunctionalTupleOperator = ":" | "=>"
 
 export type IndexZeroOperator = "keyof" | "instanceof" | "===" | "node"
 

@@ -23,6 +23,7 @@ import { Cache, FreezingCache } from "./cache.ts"
 import type { PrecompiledDefaults } from "./standard.ts"
 import type {
     BinaryExpressionParser,
+    FunctionalExpressionParser,
     Type,
     TypeConfig,
     TypeOptions,
@@ -258,6 +259,18 @@ export class Scope<context extends ScopeContext = any> {
             ["===", def] as inferred<unknown>,
             opts
         )) as UnvalidatedExpressionParser<PrecompiledDefaults, "===">
+
+    narrow = ((def, fn, opts) =>
+        this.type(
+            [def, ":", fn] as inferred<unknown>,
+            opts
+        )) as FunctionalExpressionParser<PrecompiledDefaults, ":">
+
+    morph = ((def, fn, opts) =>
+        this.type(
+            [def, "=>", fn] as inferred<unknown>,
+            opts
+        )) as FunctionalExpressionParser<PrecompiledDefaults, "=>">
 
     #initializeContext(type: Type): ParseContext {
         return {

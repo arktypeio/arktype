@@ -1,6 +1,8 @@
 import type { TraversalNode, TypeNode } from "../nodes/node.ts"
 import type { ParsedMorph } from "../parse/ast/morph.ts"
+import type { Narrow } from "../parse/ast/narrow.ts"
 import type {
+    FunctionalTupleOperator,
     inferTupleExpression,
     TupleExpression,
     TuplePostfixOperator,
@@ -64,6 +66,35 @@ export type UnvalidatedExpressionParser<
         def: conform<def, UnparsedTupleExpressionInput<$>[operator]>,
         opts: TypeOptions
     ): parseTupleExpression<[operator, def], $>
+}
+
+export type FunctionalExpressionParser<
+    $,
+    operator extends FunctionalTupleOperator
+> = {
+    <
+        input,
+        fn extends (
+            data: asIn<inferDefinition<input, $>>,
+            ...rest: any[]
+        ) => any
+    >(
+        input: validateDefinition<input, $>,
+        fn: fn
+    ): parseTupleExpression<[input, operator, fn], $>
+
+    <input, fn>(
+        input: validateDefinition<input, $>,
+        fn: fn,
+        opts: TypeOptions
+    ): parseTupleExpression<[input, operator, fn], $>
+}
+
+export type NarrowParser<$> = {
+    <inDef, narrow extends Narrow<inferDefinition<inDef, $>>>(
+        input: validateDefinition<inDef, $>,
+        narrow: narrow
+    ): parseTupleExpression<[inDef, ":", narrow], $>
 }
 
 type unaryToTupleExpression<
