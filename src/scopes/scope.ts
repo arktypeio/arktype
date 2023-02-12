@@ -12,7 +12,7 @@ import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import type {
     Dict,
     error,
-    evaluateObject,
+    evaluate,
     isAny,
     List,
     nominal
@@ -135,7 +135,7 @@ type bootstrapScope<aliases, opts extends ScopeOptions> = {
     [k in keyof aliases]: alias<aliases[k]>
 } & preresolved<opts>
 
-type inferExports<aliases, opts extends ScopeOptions> = evaluateObject<
+type inferExports<aliases, opts extends ScopeOptions> = evaluate<
     {
         [k in keyof aliases]: inferDefinition<
             aliases[k],

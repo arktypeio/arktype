@@ -6,7 +6,7 @@ import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type {
     Dict,
-    evaluateObject,
+    evaluate,
     isAny,
     isUnknown,
     List
@@ -94,7 +94,7 @@ export type validateDefinition<def, $> = def extends (...args: any[]) => any
       >
     : isUnknown<def> extends true
     ? unknownDefinitionMessage
-    : evaluateObject<{
+    : evaluate<{
           [k in keyof def]: validateDefinition<def[k], $>
       }>
 

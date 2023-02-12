@@ -15,8 +15,8 @@ import type { error, keySet, mutable } from "../../../../utils/generics.ts"
 import {
     hasKey,
     isKeyOf,
-    keysOf,
-    listFrom
+    listFrom,
+    objectKeysOf
 } from "../../../../utils/generics.ts"
 import type { NumberLiteral } from "../../../../utils/numericLiterals.ts"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.ts"
@@ -108,7 +108,7 @@ export const parseRightBound = (
 
 const distributeRange = (range: Range, s: DynamicState) => {
     const resolution = s.resolveRoot()
-    const domains = keysOf(resolution)
+    const domains = objectKeysOf(resolution)
     const distributedRange: mutable<ResolvedNode> = {}
     const rangePredicate = { range } as const
     const isBoundable = domains.every((domain) => {

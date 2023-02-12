@@ -4,7 +4,7 @@ import type { Domain, inferDomain } from "../utils/domains.js"
 import type {
     constructor,
     evaluate,
-    evaluateObject,
+    evaluateObjectOrFunction,
     HomogenousTuple,
     List,
     returnOf
@@ -32,7 +32,7 @@ export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
         ? result extends BuiltinClass
             ? // don't evaluate builtin classes like Date (expanding their prototype looks like a mess)
               result
-            : evaluate<result>
+            : evaluateObjectOrFunction<result>
         : never
     : never
 
@@ -98,7 +98,7 @@ type inferObjectRules<
     ? inferProps<rules["props"], $>
     : object
 
-type inferProps<props extends PropsRule, $> = evaluateObject<
+type inferProps<props extends PropsRule, $> = evaluate<
     {
         [k in requiredKeyOf<props>]: props[k] extends Prop<$, infer node>
             ? inferNode<node, $>

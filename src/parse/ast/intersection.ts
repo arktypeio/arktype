@@ -6,14 +6,13 @@ import type {
     Dict,
     error,
     evaluate,
-    evaluateObject,
     extractValues,
     isAny,
     List,
     stringKeyOf,
     tryCatch
 } from "../../utils/generics.ts"
-import { keysOf } from "../../utils/generics.ts"
+import { objectKeysOf } from "../../utils/generics.ts"
 import type { Path, pathToString } from "../../utils/paths.ts"
 import type { Out, ParsedMorph } from "./morph.ts"
 
@@ -41,7 +40,7 @@ type inferIntersectionRecurse<
     ? (In: evaluate<rIn & l>) => Out<rOut>
     : [l, r] extends [Dict, Dict]
     ? bubblePropErrors<
-          evaluateObject<
+          evaluate<
               {
                   [k in stringKeyOf<l>]: k extends keyof r
                       ? inferIntersectionRecurse<l[k], r[k], [...path, k]>
@@ -64,7 +63,7 @@ type bubblePropErrors<o> = extractValues<o, error> extends never
     : extractValues<o, error>
 
 export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
-    const paths = keysOf(disjoints)
+    const paths = objectKeysOf(disjoints)
     if (paths.length === 1) {
         const path = paths[0]
         return `${

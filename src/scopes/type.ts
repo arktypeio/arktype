@@ -13,7 +13,7 @@ import type {
 import type { Problems, ProblemsConfig } from "../traverse/problems.ts"
 import { TraversalState, traverse } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
-import type { defer, evaluateObject, xor } from "../utils/generics.ts"
+import type { defer, evaluate, xor } from "../utils/generics.ts"
 import { hasKeys } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import type { Scope } from "./scope.ts"
@@ -59,7 +59,7 @@ type parseTupleExpression<
     expression extends TupleExpression,
     $
 > = inferTupleExpression<expression, $> extends infer result
-    ? result extends never
+    ? [result] extends [never]
         ? never
         : Type<result>
     : never
@@ -76,7 +76,7 @@ type TypeRoot<t = unknown> = {
     meta: TypeMeta
 }
 
-export type TypeOptions = evaluateObject<
+export type TypeOptions = evaluate<
     {
         name?: string
     } & ProblemsConfig

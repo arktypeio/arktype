@@ -9,7 +9,6 @@ import type {
     conform,
     constructor,
     error,
-    extend,
     List,
     returnOf
 } from "../../utils/generics.ts"
@@ -21,7 +20,6 @@ import type {
 import { parseDefinition } from "../definition.ts"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
-import { PrefixOperator } from "./ast.ts"
 import type { inferIntersection } from "./intersection.ts"
 import type { inferKeyOfExpression, validateKeyOfExpression } from "./keyof.ts"
 import { parseKeyOfTuple } from "./keyof.ts"

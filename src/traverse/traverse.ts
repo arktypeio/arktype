@@ -16,7 +16,7 @@ import type { SizedData } from "../utils/data.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf, hasDomain } from "../utils/domains.js"
 import type { extend, stringKeyOf } from "../utils/generics.js"
-import { hasKey, keysOf } from "../utils/generics.js"
+import { hasKey, objectKeysOf } from "../utils/generics.js"
 import { getPath, Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import { deserializePrimitive } from "../utils/serialize.js"
@@ -172,7 +172,7 @@ const entryCheckers = {
         const entries = domains[domainOf(state.data)]
         return entries
             ? checkEntries(entries, state)
-            : state.problems.create("domainBranches", keysOf(domains))
+            : state.problems.create("domainBranches", objectKeysOf(domains))
     },
     domain: (domain, state) =>
         domainOf(state.data) === domain ||
@@ -208,7 +208,7 @@ const entryCheckers = {
         if (hasKey(rule.cases, caseKey)) {
             return checkEntries(rule.cases[caseKey], state)
         }
-        const caseKeys = keysOf(rule.cases)
+        const caseKeys = objectKeysOf(rule.cases)
         const missingCasePath = state.path.concat(rule.path)
         return rule.kind === "value"
             ? state.problems.create(

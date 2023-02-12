@@ -6,8 +6,8 @@ import type { Problems } from "../../traverse/problems.ts"
 import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
-import type { evaluateObject } from "../../utils/generics.ts"
-import { keysOf } from "../../utils/generics.ts"
+import type { evaluate } from "../../utils/generics.ts"
+import { objectKeysOf } from "../../utils/generics.ts"
 import { stringify } from "../../utils/serialize.ts"
 import type {
     inferDefinition,
@@ -52,7 +52,7 @@ export type distributable<f extends DistributableFunction> =
 
 type distributeFunction<f extends DistributableFunction> =
     f extends DistributableFunction<infer input, infer args, infer output>
-        ? evaluateObject<{
+        ? evaluate<{
               [domain in domainOf<input>]?: (
                   input: unknown extends input
                       ? unknown
@@ -87,7 +87,7 @@ export const distributeFunctionToNode = <
     ctx: ParseContext,
     ruleKey: ruleKey
 ): DistributedFunctionNode<f, ruleKey> => {
-    const domains = keysOf(ctx.type.meta.scope.resolveNode(inputNode))
+    const domains = objectKeysOf(ctx.type.meta.scope.resolveNode(inputNode))
     if (!hasDomain(distributableFunction, "object")) {
         return throwParseError(
             writeMalformedDistributableFunctionMessage(distributableFunction)

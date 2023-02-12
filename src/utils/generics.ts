@@ -14,28 +14,26 @@ export type castWithExclusion<t, castTo, excluded> = t extends excluded
 
 export type Literalable = string | boolean | number | bigint
 
-export type evaluate<t> = isTopType<t> extends true
+export type evaluateObjectOrFunction<t> = isTopType<t> extends true
     ? t
     : t extends (...args: infer args) => infer ret
     ? (...args: args) => ret
-    : evaluateObject<t>
+    : evaluate<t>
 
-export type evaluateObject<t> = { [k in keyof t]: t[k] } & unknown
+export type evaluate<t> = { [k in keyof t]: t[k] } & unknown
 
 /** Causes a type that would be eagerly calculated to be displayed as-is.
  *  WARNING: Makes t NonNullable as a side effect.
  */
 export type defer<t> = t & {}
 
-export type merge<base, merged> = evaluateObject<
-    Omit<base, keyof merged> & merged
->
+export type merge<base, merged> = evaluate<Omit<base, keyof merged> & merged>
 
 /** Replace existing keys of o without altering readonly or optional modifiers  */
 export type replaceProps<
     o,
     replacements extends { -readonly [k in keyof o]?: unknown }
-> = evaluateObject<{
+> = evaluate<{
     [k in keyof o]: k extends keyof replacements ? replacements[k] : o[k]
 }>
 
@@ -95,7 +93,7 @@ export const entriesOf = <o extends object>(o: o) =>
     Object.entries(o) as entriesOf<o>
 
 /** Mimics the result of Object.keys(...) */
-export type keyOf<o> = [o] extends [object]
+export type objectKeysOf<o> = [o] extends [object]
     ? o extends readonly unknown[]
         ? any[] extends o
             ? `${number}`
@@ -105,17 +103,35 @@ export type keyOf<o> = [o] extends [object]
         : Exclude<keyof o, symbol>
     : never
 
-export type nonArrayKeyOf<o> = keyOf<o> extends infer result
-    ? result extends `${number}`
-        ? `${number}` extends result
-            ? never
-            : result
-        : result
-    : never
-
-export const keysOf = <o extends object>(o: o) => Object.keys(o) as keyOf<o>[]
+export const objectKeysOf = <o extends object>(o: o) =>
+    Object.keys(o) as objectKeysOf<o>[]
 
 export type stringKeyOf<o> = keyof o & string
+
+export type keyOf<t> = evaluate<keyof t>
+
+/** Mimics output of TS's keyof operator at runtime */
+export const prototypeKeysOf = <t>(value: t): keyOf<t>[] => {
+    const result: (string | number | symbol)[] = []
+    while (
+        value !== Object.prototype &&
+        value !== null &&
+        value !== undefined
+    ) {
+        for (const k of Object.getOwnPropertyNames(value)) {
+            if (!result.includes(k)) {
+                result.push(k)
+            }
+        }
+        for (const symbol of Object.getOwnPropertySymbols(value)) {
+            if (!result.includes(symbol)) {
+                result.push(symbol)
+            }
+        }
+        value = Object.getPrototypeOf(value)
+    }
+    return result as keyOf<t>[]
+}
 
 export const hasKey = <o, k extends string>(
     o: o,
@@ -269,5 +285,5 @@ export type CollapsibleList<t> = t | readonly t[]
  * B, with all properties of A undefined
  **/
 export type xor<a, b> =
-    | evaluateObject<a & { [k in keyof b]?: undefined }>
-    | evaluateObject<b & { [k in keyof a]?: undefined }>
+    | evaluate<a & { [k in keyof b]?: undefined }>
+    | evaluate<b & { [k in keyof a]?: undefined }>

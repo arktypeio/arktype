@@ -4,7 +4,7 @@ import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
-import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
+import { hasKey, hasKeys, objectKeysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { MorphEntry } from "./branch.ts"
 import type { Intersector } from "./compose.ts"
@@ -46,8 +46,8 @@ export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
             ? anonymousDisjoint()
             : state.addDisjoint(
                   "domain",
-                  keysOf(lResolution),
-                  keysOf(rResolution)
+                  objectKeysOf(lResolution),
+                  objectKeysOf(rResolution)
               )
     }
     return result === lResolution ? l : result === rResolution ? r : result
@@ -88,7 +88,7 @@ export const rootUnion = (
     const lResolution = type.meta.scope.resolveNode(l)
     const rResolution = type.meta.scope.resolveNode(r)
     const result = {} as mutable<ResolvedNode>
-    const domains = keysOf({ ...lResolution, ...rResolution })
+    const domains = objectKeysOf({ ...lResolution, ...rResolution })
     for (const domain of domains) {
         result[domain] = hasKey(lResolution, domain)
             ? hasKey(rResolution, domain)
@@ -196,7 +196,7 @@ export const flattenNode = (
               ]
             : resolution.flat
     }
-    const domains = keysOf(node)
+    const domains = objectKeysOf(node)
     if (domains.length === 1) {
         const domain = domains[0]
         const predicate = node[domain]!

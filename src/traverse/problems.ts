@@ -7,8 +7,8 @@ import type {
     arraySubclassToReadonly,
     constructor,
     evaluate,
-    evaluateObject,
     instanceOf,
+    keyOf,
     RegexLiteral,
     requireKeys
 } from "../utils/generics.ts"
@@ -192,7 +192,7 @@ type ProblemSources = {
     branches: readonly Problem[]
 }
 
-export type ProblemCode = evaluate<keyof ProblemSources>
+export type ProblemCode = keyOf<ProblemSources>
 
 export type ProblemSource<code extends ProblemCode = ProblemCode> =
     ProblemSources[code]
@@ -321,7 +321,7 @@ export type ProblemOptions<code extends ProblemCode = ProblemCode> = {
     addContext?: ContextWriter
 }
 
-export type ProblemsConfig = evaluateObject<
+export type ProblemsConfig = evaluate<
     { defaults?: ProblemOptions<ProblemCode> } & {
         [code in ProblemCode]?: ProblemOptions<code>
     }

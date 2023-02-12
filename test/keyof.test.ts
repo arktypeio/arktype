@@ -1,7 +1,6 @@
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import { writeImplicitNeverMessage } from "../src/parse/ast/intersection.ts"
-import { wellFormedNonNegativeIntegerMatcher } from "../src/utils/numericLiterals.ts"
 import { Path } from "../src/utils/paths.ts"
 
 describe("keyof", () => {
@@ -29,10 +28,17 @@ describe("keyof", () => {
         ).throwsAndHasTypeError(expectedNeverKeyOfMessage)
     })
     it("non-object", () => {
-        // @ts-expect-error
-        attest(() => type(["keyof", "string"])).throwsAndHasTypeError(
-            expectedNeverKeyOfMessage
-        )
+        const t = type(["keyof", "bigint"])
+        attest(t.infer).typed as keyof bigint
+        attest(t.node).snap({
+            string: [
+                { value: "constructor" },
+                { value: "toLocaleString" },
+                { value: "toString" },
+                { value: "valueOf" }
+            ],
+            symbol: { value: "(symbol Symbol.toStringTag)" }
+        })
     })
     it("union including non-object", () => {
         attest(() =>
@@ -40,18 +46,65 @@ describe("keyof", () => {
             type(["keyof", [{ a: "number" }, "|", "string"]])
         ).throwsAndHasTypeError(expectedNeverKeyOfMessage)
     })
-    it("tuple", () => {
+    it("array", () => {
         const t = type(["keyof", ["string", "number"]])
-        attest(t.infer).typed as "0" | "1"
+        attest(t.infer).typed as keyof [string, number]
         attest(t.node).snap({
-            string: [{ value: "0" }, { value: "1" }]
+            string: [
+                { value: "0" },
+                { value: "1" },
+                { value: "length" },
+                { value: "constructor" },
+                { value: "at" },
+                { value: "concat" },
+                { value: "copyWithin" },
+                { value: "fill" },
+                { value: "find" },
+                { value: "findIndex" },
+                { value: "lastIndexOf" },
+                { value: "pop" },
+                { value: "push" },
+                { value: "reverse" },
+                { value: "shift" },
+                { value: "unshift" },
+                { value: "slice" },
+                { value: "sort" },
+                { value: "splice" },
+                { value: "includes" },
+                { value: "indexOf" },
+                { value: "join" },
+                { value: "keys" },
+                { value: "entries" },
+                { value: "values" },
+                { value: "forEach" },
+                { value: "filter" },
+                { value: "flat" },
+                { value: "flatMap" },
+                { value: "map" },
+                { value: "every" },
+                { value: "some" },
+                { value: "reduce" },
+                { value: "reduceRight" },
+                { value: "toLocaleString" },
+                { value: "toString" },
+                { value: "findLast" },
+                { value: "findLastIndex" }
+            ],
+            number: [{ value: 0 }, { value: 1 }],
+            symbol: [
+                { value: "(symbol Symbol.iterator)" },
+                { value: "(symbol Symbol.unscopables)" }
+            ]
         })
     })
-    it("array", () => {
-        const t = type(["keyof", "unknown[]"])
-        attest(t.node).equals({
-            string: { regex: wellFormedNonNegativeIntegerMatcher.source }
-        })
-        attest(t.infer).typed as `${number}`
+    it("nullish", () => {
+        // @ts-expect-error
+        attest(() => type(["keyof", "null"])).throwsAndHasTypeError(
+            expectedNeverKeyOfMessage
+        )
+        // @ts-expect-error
+        attest(() => type(["keyof", "undefined"])).throwsAndHasTypeError(
+            expectedNeverKeyOfMessage
+        )
     })
 })

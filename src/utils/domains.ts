@@ -1,4 +1,4 @@
-import type { evaluate, isTopType } from "./generics.ts"
+import type { isTopType, keyOf } from "./generics.ts"
 
 export const hasDomain = <data, domain extends Domain>(
     data: data,
@@ -20,7 +20,7 @@ export type inferDomain<domain extends Domain> = Domain extends domain
     ? unknown
     : DomainTypes[domain]
 
-export type Domain = evaluate<keyof DomainTypes>
+export type Domain = keyOf<DomainTypes>
 
 export type NullishDomain = "undefined" | "null"
 
