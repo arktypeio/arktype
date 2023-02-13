@@ -245,8 +245,6 @@ export type Dict<k extends string = string, v = unknown> = {
 
 export type List<t = unknown> = readonly t[]
 
-export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
-
 export type HomogenousTuple<
     item,
     length extends number,

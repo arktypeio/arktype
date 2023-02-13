@@ -8,7 +8,7 @@ import type { ParsedMorph } from "../parse/tuple/morph.ts"
 import type { Problems, ProblemsConfig } from "../traverse/problems.ts"
 import { TraversalState, traverse } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
-import type { defer, evaluateObject } from "../utils/generics.ts"
+import type { defer, evaluateObject, xor } from "../utils/generics.ts"
 import { hasKeys } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import type { Scope } from "./scope.ts"
@@ -92,12 +92,11 @@ export const initializeType = (
     // dynamically assign a name to the primary traversal function
     const namedTraverse: Checker<unknown> = {
         [name]: (data: unknown) => {
-            const state = new TraversalState(type)
-            const out = traverse(data, type.flat, state)
+            const state = new TraversalState(data, type)
             return (
-                state.problems.length
-                    ? { data, problems: state.problems }
-                    : { data, out }
+                traverse(type.flat, state)
+                    ? { data: state.data }
+                    : { problems: state.problems }
             ) as CheckResult<unknown>
         }
     }[name]
@@ -111,19 +110,7 @@ export const initializeType = (
 export const isType = (value: unknown): value is Type =>
     (value as Type)?.infer === chainableNoOpProxy
 
-export type CheckResult<t> = ValidCheckResult<t> | InvalidCheckResult
-
-type ValidCheckResult<t> = {
-    data: asIn<t>
-    out: asOut<t>
-    problems?: never
-}
-
-type InvalidCheckResult = {
-    data: unknown
-    problems: Problems
-    out?: never
-}
+export type CheckResult<t> = xor<{ data: asOut<t> }, { problems: Problems }>
 
 type Checker<t> = (data: unknown) => CheckResult<t>
 

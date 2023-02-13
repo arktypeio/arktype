@@ -1,5 +1,6 @@
 import type { ResolvedNode } from "../nodes/node.ts"
 import type { PropsRule } from "../nodes/rules/props.ts"
+
 import type { Dict, evaluateObject, mutable } from "../utils/generics.ts"
 import type { inferDefinition, ParseContext } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"

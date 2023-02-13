@@ -7,11 +7,12 @@ import type {
     evaluate,
     evaluateObject,
     instanceOf,
+    RegexLiteral,
     requireKeys
 } from "../utils/generics.ts"
 import { isWellFormedInteger } from "../utils/numericLiterals.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
-import { objectKindDescriptions, objectKindOf } from "../utils/objectKinds.ts"
+import { objectKindDescriptions } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 import type {
@@ -63,6 +64,8 @@ export class Problem<code extends ProblemCode = any> {
     }
 }
 
+export type AddProblemOptions = { path?: Path }
+
 class ProblemArray extends Array<Problem> {
     byPath: Record<string, Problem> = {}
 
@@ -73,17 +76,19 @@ class ProblemArray extends Array<Problem> {
     add<code extends ProblemCode>(
         code: code,
         data: ProblemData<code>,
-        source: ProblemSource<code>
-    ) {
+        source: ProblemSource<code>,
+        opts?: AddProblemOptions
+    ): false {
+        // copy the path to avoid future mutations affecting it
+        const path = opts?.path ?? Path.from(this.state.path)
         const problem: Problem = new Problem(
             code,
-            // copy the path to avoid future mutations affecting it
-            Path.from(this.state.path),
+            path,
             data,
             source,
             this.state.getConfigForProblemCode(code)
         )
-        const pathKey = `${this.state.path}`
+        const pathKey = `${path}`
         const existing = this.byPath[pathKey]
         if (existing) {
             if (existing.parts) {
@@ -108,12 +113,10 @@ class ProblemArray extends Array<Problem> {
             this.byPath[pathKey] = problem
             this.push(problem)
         }
+        return false
     }
 
     get summary() {
-        if (this.length === 1) {
-            return this[0].message
-        }
         return this.join("\n")
     }
 
@@ -160,17 +163,16 @@ export const describeBranches = (descriptions: string[]) => {
 
 type ProblemSources = {
     divisor: number
-    class: constructor
+    class: DefaultObjectKind | constructor
     domain: Domain
     domainBranches: Domain[]
-    objectKind: DefaultObjectKind
     missing: undefined
     bound: FlatBound
-    regex: string
+    regex: RegexLiteral
     value: unknown
     valueBranches: unknown[]
     multi: Problem[]
-    branches: Problem[]
+    branches: readonly Problem[]
 }
 
 export type ProblemCode = evaluate<keyof ProblemSources>
@@ -218,10 +220,6 @@ export class DataWrapper<value = unknown> {
         return domainOf(this.value)
     }
 
-    get objectKind() {
-        return objectKindOf(this.value) ?? "non-object"
-    }
-
     get size() {
         return typeof this.value === "string" || Array.isArray(this.value)
             ? this.value.length
@@ -246,7 +244,7 @@ export class DataWrapper<value = unknown> {
 const writeDefaultReason = (mustBe: string, was: DataWrapper | string) =>
     `must be ${mustBe}${was && ` (was ${was})`}`
 
-const writeDefaultProblemMessage: ContextWriter = (reason, path) =>
+const addDefaultContext: ContextWriter = (reason, path) =>
     path.length === 0
         ? capitalize(reason)
         : path.length === 1 && isWellFormedInteger(path[0])
@@ -259,7 +257,7 @@ const compileDefaultProblemWriters = (definitions: {
     let code: ProblemCode
     for (code in definitions) {
         definitions[code].writeReason ??= writeDefaultReason
-        definitions[code].addContext ??= writeDefaultProblemMessage
+        definitions[code].addContext ??= addDefaultContext
     }
     return definitions as DefaultProblemsWriters
 }
@@ -270,7 +268,10 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
             divisor === 1 ? `an integer` : `a multiple of ${divisor}`
     },
     class: {
-        mustBe: (constructor) => `an instance of ${constructor.name}`,
+        mustBe: (expected) =>
+            typeof expected === "string"
+                ? objectKindDescriptions[expected]
+                : `an instance of ${expected.name}`,
         writeReason: (mustBe, data) =>
             writeDefaultReason(mustBe, data.className)
     },
@@ -281,11 +282,6 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
     domainBranches: {
         mustBe: (domains) => describeDomains(domains),
         writeReason: (mustBe, data) => writeDefaultReason(mustBe, data.domain)
-    },
-    objectKind: {
-        mustBe: (kind: DefaultObjectKind) => objectKindDescriptions[kind],
-        writeReason: (mustBe, data) =>
-            writeDefaultReason(mustBe, data.objectKind)
     },
     missing: {
         mustBe: () => "defined",
@@ -300,10 +296,7 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
             writeDefaultReason(mustBe, `${data.size}`)
     },
     regex: {
-        mustBe: (expression) =>
-            expression[0] === "/"
-                ? `a string matching ${expression}`
-                : `a valid ${expression}`
+        mustBe: (expression) => `a string matching ${expression}`
     },
     value: {
         mustBe: stringify
@@ -312,24 +305,19 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
         mustBe: (values) => describeBranches(values.map(stringify))
     },
     branches: {
-        mustBe: (branchProblems) => {
-            const clausesByPath: Record<string, string[]> = {}
-            for (const problem of branchProblems) {
-                const pathKey = `${problem.path}`
-                clausesByPath[pathKey] ??= []
-                clausesByPath[pathKey].push(problem.mustBe)
-            }
-            return describeBranches(
-                Object.entries(clausesByPath).map(
-                    ([path, clauses]) =>
-                        `${path} must be ${
-                            clauses.length === 1
-                                ? clauses[0]
-                                : describeBranches(clauses)
+        mustBe: (branchProblems) =>
+            describeBranches(
+                branchProblems.map(
+                    (problem) =>
+                        `${problem.path} must be ${
+                            problem.parts
+                                ? describeBranches(
+                                      problem.parts.map((part) => part.mustBe)
+                                  )
+                                : problem.mustBe
                         }`
                 )
-            )
-        },
+            ),
         writeReason: (mustBe, data) => `${mustBe} (was ${data})`,
         addContext: (reason, path) =>
             path.length ? `At ${path}, ${reason}` : reason

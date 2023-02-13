@@ -2,6 +2,7 @@ import type { inferTerminal } from "../parse/string/ast.js"
 import type { Out } from "../parse/tuple/morph.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import type {
+    constructor,
     evaluate,
     evaluateObject,
     HomogenousTuple,
@@ -13,11 +14,15 @@ import type {
     DefaultObjectKind,
     inferObjectKind
 } from "../utils/objectKinds.js"
-import type { ResolvedNode, TypeNode } from "./node.js"
-import type { Predicate, TransformationBranch } from "./predicate.js"
-import type { ObjectKindRule } from "./rules/objectKind.js"
-import type { OptionalProp, PropsRule } from "./rules/props.js"
-import type { Bound, Range } from "./rules/range.js"
+import type { MorphBranch } from "./branch.js"
+import type { LiteralNode, ResolvedNode, TypeNode } from "./node.js"
+import type { Predicate } from "./predicate.js"
+import type {
+    MappedPropKey,
+    OptionalProp,
+    Prop,
+    PropsRule
+} from "./rules/props.js"
 import type { LiteralRules, NarrowableRules } from "./rules/rules.js"
 
 export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
@@ -52,19 +57,11 @@ type branchFrom<predicate extends Predicate> = predicate extends List
     ? predicate[number]
     : predicate
 
-type inferBranch<
-    domain extends Domain,
-    branch,
-    $
-> = branch extends TransformationBranch
+type inferBranch<domain extends Domain, branch, $> = branch extends MorphBranch
     ? inferMorph<domain, branch, $>
     : inferRules<domain, branch, $>
 
-type inferMorph<
-    domain extends Domain,
-    branch extends TransformationBranch,
-    $
-> = (
+type inferMorph<domain extends Domain, branch extends MorphBranch, $> = (
     In: inferBranch<domain, branch["rules"], $>
 ) => Out<
     branch["morph"] extends [...unknown[], infer tail]
@@ -83,39 +80,28 @@ type inferRules<domain extends Domain, branch, $> = branch extends LiteralRules
 type inferObjectRules<
     rules extends NarrowableRules,
     $
-> = rules["objectKind"] extends ObjectKindRule
-    ? rules["props"] extends PropsRule
-        ? inferProps<rules["props"], $> &
-              inferObjectKindRule<rules["objectKind"], rules["range"], $>
-        : inferObjectKindRule<rules["objectKind"], rules["range"], $>
+> = rules["class"] extends DefaultObjectKind
+    ? [rules["class"], rules["props"]] extends [
+          "Array",
+          {
+              "[index]": Prop<$, infer indexNode>
+              length?: Prop<$, infer lengthNode>
+          }
+      ]
+        ? lengthNode extends LiteralNode<"number", infer value>
+            ? HomogenousTuple<inferNode<indexNode, $>, value>
+            : inferNode<indexNode, $>[]
+        : inferObjectKind<rules["class"]>
+    : rules["class"] extends constructor<infer instance>
+    ? instance
     : rules["props"] extends PropsRule
     ? inferProps<rules["props"], $>
-    : unknown
-
-type inferObjectKindRule<
-    rule extends ObjectKindRule,
-    possibleRange extends Range | undefined,
-    $
-> = rule extends DefaultObjectKind
-    ? inferObjectKind<rule>
-    : rule extends readonly ["Array", infer item extends TypeNode<$>]
-    ? possibleRange extends Bound<"==">
-        ? HomogenousTuple<inferNode<item, $>, possibleRange["limit"]>
-        : inferNode<item, $>[]
-    : rule extends readonly ["Set", infer item extends TypeNode<$>]
-    ? Set<inferNode<item, $>>
-    : rule extends readonly [
-          "Map",
-          infer k extends TypeNode<$>,
-          infer v extends TypeNode<$>
-      ]
-    ? Map<inferNode<k, $>, inferNode<v, $>>
-    : never
+    : object
 
 type inferProps<props extends PropsRule, $> = evaluateObject<
     {
-        [k in requiredKeyOf<props>]: props[k] extends TypeNode<$>
-            ? inferNode<props[k], $>
+        [k in requiredKeyOf<props>]: props[k] extends Prop<$, infer node>
+            ? inferNode<node, $>
             : never
     } & {
         [k in optionalKeyOf<props>]?: props[k] extends OptionalProp<$>
@@ -128,7 +114,9 @@ type optionalKeyOf<props extends PropsRule> = {
     [k in keyof props]: props[k] extends OptionalProp ? k : never
 }[keyof props]
 
+type mappedKeyOf<props extends PropsRule> = Extract<keyof props, MappedPropKey>
+
 type requiredKeyOf<props extends PropsRule> = Exclude<
     keyof props,
-    optionalKeyOf<props>
+    optionalKeyOf<props> | mappedKeyOf<props>
 >

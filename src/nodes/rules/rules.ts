@@ -1,57 +1,42 @@
-import { writeImplicitNeverMessage } from "../../parse/string/ast.ts"
 import type { Narrow } from "../../parse/tuple/narrow.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
-import { throwParseError } from "../../utils/errors.ts"
 import type {
     CollapsibleList,
     constructor,
     Dict
 } from "../../utils/generics.ts"
 import { listFrom } from "../../utils/generics.ts"
+import type { DefaultObjectKind } from "../../utils/objectKinds.ts"
 import type { IntersectionState, Intersector } from "../compose.ts"
 import {
     composeIntersection,
     composeKeyedIntersection,
-    equality,
-    isDisjoint,
-    isEquality
+    equality
 } from "../compose.ts"
-import type { FlattenContext, TraversalEntry } from "../node.ts"
-import type {
-    Branch,
-    FlatBranch,
-    FlatTransformationBranch,
-    TransformationBranch
-} from "../predicate.ts"
-import { branchIsTransformation } from "../predicate.ts"
-
+import type { FlattenContext, TraversalEntry, TraversalKey } from "../node.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
-import type { ObjectKindRule, TraversalObjectKindRule } from "./objectKind.ts"
-import { flattenObjectKind, objectKindIntersection } from "./objectKind.ts"
-import type {
-    PropsRule,
-    TraversalOptionalProps,
-    TraversalRequiredProps
-} from "./props.ts"
+import type { PropEntry, PropsRule } from "./props.ts"
 import { flattenProps, propsIntersection } from "./props.ts"
 import type { FlatBound, Range } from "./range.ts"
 import { flattenRange, rangeIntersection } from "./range.ts"
 import { regexIntersection } from "./regex.ts"
 
 export type NarrowableRules<$ = Dict> = {
-    readonly objectKind?: ObjectKindRule<$>
     readonly regex?: CollapsibleList<string>
     readonly divisor?: number
     readonly range?: Range
     readonly props?: PropsRule<$>
-    readonly class?: constructor
+    readonly class?: DefaultObjectKind | constructor
     readonly narrow?: NarrowRule
 }
 
-export type LiteralRules<domain extends Domain = Domain> = {
-    readonly value: inferDomain<domain>
+export type LiteralRules<
+    domain extends Domain = Domain,
+    value extends inferDomain<domain> = inferDomain<domain>
+> = {
+    readonly value: value
 }
 
 export type NarrowRule = CollapsibleList<Narrow>
@@ -59,13 +44,11 @@ export type NarrowRule = CollapsibleList<Narrow>
 export type FlatRules = RuleEntry[]
 
 export type RuleEntry =
-    | ["objectKind", TraversalObjectKindRule]
     | ["regex", string]
     | ["divisor", number]
     | ["bound", FlatBound]
-    | ["class", constructor]
-    | TraversalRequiredProps
-    | TraversalOptionalProps
+    | ["class", DefaultObjectKind | constructor]
+    | PropEntry
     | ["narrow", Narrow]
     | ["value", unknown]
 
@@ -75,11 +58,7 @@ export type Rules<
 > = Domain extends domain
     ? NarrowableRules | LiteralRules
     : domain extends "object"
-    ? defineRuleSet<
-          domain,
-          "objectKind" | "props" | "range" | "narrow" | "class",
-          $
-      >
+    ? defineRuleSet<domain, "props" | "range" | "narrow" | "class", $>
     : domain extends "string"
     ? defineRuleSet<domain, "regex" | "range" | "narrow", $>
     : domain extends "number"
@@ -91,51 +70,6 @@ type defineRuleSet<
     keys extends keyof NarrowableRules,
     $
 > = Pick<NarrowableRules<$>, keys> | LiteralRules<domain>
-
-const rulesOf = (branch: Branch): Rules =>
-    (branch as TransformationBranch).rules ?? branch
-
-export const branchIntersection: Intersector<Branch> = (l, r, state) => {
-    const lRules = rulesOf(l)
-    const rRules = rulesOf(r)
-    const rulesResult = rulesIntersection(lRules, rRules, state)
-    if ("morph" in l) {
-        if ("morph" in r) {
-            if (l.morph === r.morph) {
-                return isEquality(rulesResult) || isDisjoint(rulesResult)
-                    ? rulesResult
-                    : {
-                          rules: rulesResult,
-                          morph: l.morph
-                      }
-            }
-            return state.lastOperator === "&"
-                ? throwParseError(
-                      writeImplicitNeverMessage(
-                          state.path,
-                          "Intersection",
-                          "of morphs"
-                      )
-                  )
-                : {}
-        }
-        return isDisjoint(rulesResult)
-            ? rulesResult
-            : {
-                  rules: isEquality(rulesResult) ? l.rules : rulesResult,
-                  morph: l.morph
-              }
-    }
-    if ("morph" in r) {
-        return isDisjoint(rulesResult)
-            ? rulesResult
-            : {
-                  rules: isEquality(rulesResult) ? r.rules : rulesResult,
-                  morph: r.morph
-              }
-    }
-    return rulesResult
-}
 
 export const rulesIntersection: Intersector<Rules> = (l, r, state) =>
     "value" in l
@@ -158,7 +92,6 @@ const narrowIntersection =
 export const narrowableRulesIntersection =
     composeKeyedIntersection<NarrowableRules>(
         {
-            objectKind: objectKindIntersection,
             divisor: divisorIntersection,
             regex: regexIntersection,
             props: propsIntersection,
@@ -168,6 +101,18 @@ export const narrowableRulesIntersection =
         },
         { onEmpty: "bubble" }
     )
+
+export const flattenRules = (
+    rules: UnknownRules,
+    ctx: FlattenContext
+): TraversalEntry[] => {
+    const entries: RuleEntry[] = []
+    let k: keyof UnknownRules
+    for (k in rules) {
+        ruleFlatteners[k](entries, rules[k] as any, ctx)
+    }
+    return entries.sort((l, r) => precedenceMap[l[0]] - precedenceMap[r[0]])
+}
 
 export type FlattenAndPushRule<t> = (
     entries: RuleEntry[],
@@ -180,7 +125,6 @@ type UnknownRules = NarrowableRules & Partial<LiteralRules>
 const ruleFlatteners: {
     [k in keyof UnknownRules]-?: FlattenAndPushRule<UnknownRules[k] & {}>
 } = {
-    objectKind: flattenObjectKind,
     regex: (entries, rule) => {
         for (const source of listFrom(rule)) {
             entries.push(["regex", source])
@@ -205,7 +149,7 @@ const ruleFlatteners: {
 }
 
 export const precedenceMap: {
-    readonly [k in TraversalEntry[0]]: number
+    readonly [k in TraversalKey]: number
 } = {
     // Critical: No other checks are performed if these fail
     config: 0,
@@ -213,47 +157,25 @@ export const precedenceMap: {
     value: 0,
     domains: 0,
     branches: 0,
-    objectKind: 0,
     switch: 0,
     alias: 0,
+    class: 0,
     // Shallow: All shallow checks will be performed even if one or more fail
-    class: 1,
     regex: 1,
     divisor: 1,
     bound: 1,
+    // Prerequisite: These are deep checks with special priority, e.g. the
+    // length of a tuple, which causes other deep props not to be checked if it
+    // is invalid
+    prerequisiteProp: 2,
     // Deep: Performed if all shallow checks pass, even if one or more deep checks fail
-    requiredProps: 2,
-    optionalProps: 2,
+    requiredProp: 3,
+    optionalProp: 3,
+    indexProp: 3,
     // Narrow: Only performed if all shallow and deep checks pass
-    narrow: 3,
+    narrow: 4,
     // Morph: Only performed if all validation passes
-    morph: 4
-}
-
-export const flattenBranch = (
-    branch: Branch,
-    ctx: FlattenContext
-): FlatBranch => {
-    if (branchIsTransformation(branch)) {
-        const result = flattenRules(
-            branch.rules,
-            ctx
-        ) as FlatTransformationBranch
-        if (branch.morph) {
-            result.push(["morph", branch.morph])
-        }
-        return result
-    }
-    return flattenRules(branch, ctx)
-}
-
-const flattenRules = (rules: UnknownRules, ctx: FlattenContext): FlatBranch => {
-    const entries: RuleEntry[] = []
-    let k: keyof UnknownRules
-    for (k in rules) {
-        ruleFlatteners[k](entries, rules[k] as any, ctx)
-    }
-    return entries.sort((l, r) => precedenceMap[l[0]] - precedenceMap[r[0]])
+    morph: 5
 }
 
 export const literalSatisfiesRules = (

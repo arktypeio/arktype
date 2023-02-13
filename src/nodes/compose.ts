@@ -6,7 +6,7 @@ import { keysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
 import { serialize } from "../utils/serialize.ts"
-import type { Branches } from "./branches.ts"
+import type { Branches } from "./branch.ts"
 import type { Range } from "./rules/range.ts"
 import type { LiteralRules, NarrowableRules } from "./rules/rules.ts"
 
@@ -49,21 +49,17 @@ export type DisjointKinds = extend<
             l: Domain[]
             r: Domain[]
         }
-        objectKind: {
-            l: DefaultObjectKind
-            r: DefaultObjectKind
-        }
         range: {
             l: Range
             r: Range
         }
-        class: {
-            l: constructor
-            r: constructor
-        }
         tupleLength: {
             l: number
             r: number
+        }
+        class: {
+            l: DefaultObjectKind | constructor
+            r: DefaultObjectKind | constructor
         }
         value: {
             l: unknown
@@ -86,9 +82,11 @@ export type DisjointKinds = extend<
 
 export const disjointDescriptionWriters = {
     domain: ({ l, r }) => `${l.join(", ")} and ${r.join(", ")}`,
-    objectKind: ({ l, r }) => `${l} and ${r}`,
     range: ({ l, r }) => `${stringifyRange(l)} and ${stringifyRange(r)}`,
-    class: ({ l, r }) => `classes ${l.name} and ${r.name}`,
+    class: ({ l, r }) =>
+        `classes ${typeof l === "string" ? l : l.name} and ${
+            typeof r === "string" ? r : r.name
+        }`,
     tupleLength: ({ l, r }) => `tuples of length ${l} and ${r}`,
     value: ({ l, r }) => `literal values ${serialize(l)} and ${serialize(r)}`,
     leftAssignability: ({ l, r }) =>
