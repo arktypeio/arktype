@@ -1,3 +1,4 @@
+import type { Out } from "../parse/ast/morph.ts"
 import type { extend } from "../utils/generics.ts"
 import type { InferredObjectKinds } from "../utils/objectKinds.ts"
 import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
@@ -60,6 +61,8 @@ export type PrecompiledDefaults = {
     creditCard: string
     email: string
     uuid: string
+    parsedNumber: (In: string) => Out<number>
+    parsedInteger: (In: string) => Out<number>
     // jsObects
 } & InferredObjectKinds
 

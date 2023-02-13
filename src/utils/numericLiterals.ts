@@ -22,7 +22,8 @@ export type IntegerLiteral<Value extends bigint = bigint> = `${Value}`
  *    3. If the value includes a decimal, its last digit may not be 0
  *    4. The value may not be "-0"
  */
-const wellFormedNumberMatcher = /^(?!^-0$)-?(?:0|[1-9]\d*)(?:\.\d*[1-9])?$/
+export const wellFormedNumberMatcher =
+    /^(?!^-0$)-?(?:0|[1-9]\d*)(?:\.\d*[1-9])?$/
 const isWellFormedNumber = (s: string) => wellFormedNumberMatcher.test(s)
 
 const numberLikeMatcher = /^-?\d*\.?\d*$/
