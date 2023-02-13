@@ -500,5 +500,76 @@
                 }
             }
         ]
+    },
+    "operators": {
+        "array": {
+            "tuple": [
+                {
+                    "date": "2/12/2023",
+                    "mark": {
+                        "median": [1.06, "us"],
+                        "type": [146, "instantiations"]
+                    }
+                }
+            ],
+            "expression": [
+                {
+                    "date": "2/12/2023",
+                    "mark": {
+                        "median": [1.11, "us"],
+                        "type": [703, "instantiations"]
+                    }
+                }
+            ]
+        },
+        "union": {
+            "tuple": [
+                {
+                    "date": "2/12/2023",
+                    "mark": {
+                        "median": [1.48, "us"],
+                        "type": [307, "instantiations"]
+                    }
+                }
+            ],
+            "expression": [
+                {
+                    "date": "2/12/2023",
+                    "mark": {
+                        "median": [1.48, "us"],
+                        "type": [1522, "instantiations"]
+                    }
+                }
+            ]
+        },
+        "intersection": {
+            "tuple": [
+                {
+                    "date": "2/12/2023",
+                    "mark": {
+                        "median": [1.76, "us"],
+                        "type": [517, "instantiations"]
+                    }
+                }
+            ],
+            "expression": [
+                {
+                    "date": "2/12/2023",
+                    "mark": {
+                        "median": [1.74, "us"],
+                        "type": [1717, "instantiations"]
+                    }
+                }
+            ]
+        },
+        "divisor": [
+            {
+                "date": "2/12/2023",
+                "mark": {
+                    "median": [560, "ns"],
+                    "type": [1401, "instantiations"]
+                }
+            }
+        ]
     }
 }
