@@ -4,7 +4,7 @@ import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import type { evaluate, keySet } from "../utils/generics.ts"
-import { hasKey, isKeyOf, objectKeysOf } from "../utils/generics.ts"
+import { isKeyOf, keyCount, objectKeysOf } from "../utils/generics.ts"
 import type { NumberLiteral } from "../utils/numericLiterals.ts"
 import { isArray } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
@@ -89,12 +89,14 @@ const discriminate = (
             discriminants,
             ctx
         )
-        pruneDiscriminantFromEntries(
-            cases[caseKey]!,
-            bestDiscriminant.path,
-            bestDiscriminant.kind,
-            ctx
-        )
+        if (caseKey !== "default") {
+            pruneDiscriminant(
+                cases[caseKey]!,
+                bestDiscriminant.path,
+                bestDiscriminant.kind,
+                ctx
+            )
+        }
     }
     return [
         [
@@ -108,46 +110,57 @@ const discriminate = (
     ]
 }
 
-// TODO: Need to recursively remove empty arrays
-const pruneDiscriminantFromEntries = (
+const pruneDiscriminant = (
     entries: TraversalEntry[],
     path: Path,
     kind: DiscriminantKind,
     ctx: FlattenContext
-): void => {
-    for (const [k, v] of entries) {
+) => {
+    for (let i = 0; i < entries.length; i++) {
+        const [k, v] = entries[i]
+        // check for branch keys, which must be traversed even if there
+        // are no segments left in path
         if (k === "domains") {
-            if ("object" in v) {
-                return pruneDiscriminantFromEntries(v.object, path, kind, ctx)
-            } else {
-                internalPruneFailure(path)
+            if (keyCount(v) !== 1 || !v.object) {
+                return internalPruneFailure(path)
             }
+            pruneDiscriminant(v.object, path, kind, ctx)
+            return
         } else if (k === "switch") {
             let caseKey: CaseKey
             for (caseKey in v.cases) {
-                pruneDiscriminantFromEntries(v.cases[caseKey]!, path, kind, ctx)
+                pruneDiscriminant(v.cases[caseKey]!, path, kind, ctx)
             }
             return
-        } else if (path.length === 0) {
-            const indexToPrune = entries.findIndex(([k]) => k === kind)
-            if (indexToPrune === -1) {
-                return internalPruneFailure(path)
+        } else if (k === "branches") {
+            for (const branch of v) {
+                pruneDiscriminant(branch, path, kind, ctx)
             }
-            entries.splice(indexToPrune, 1)
+            return
+            // if we're not at a branch key, check for the discriminant kind if
+            // the path is empty, otherwise look for the next prop
+        } else if (path.length === 0) {
+            if (k === kind) {
+                entries.splice(i, 1)
+                return
+            }
         } else if (
-            (k === "requiredProp" || k === "prerequisiteProp") &&
+            (k === "requiredProp" ||
+                k === "prerequisiteProp" ||
+                k === "optionalProp") &&
             v[0] === path[0]
         ) {
-            return typeof v[1] === "string"
-                ? internalPruneFailure(path)
-                : pruneDiscriminantFromEntries(
-                      v[1],
-                      path.slice(0, -1),
-                      kind,
-                      ctx
-                  )
+            if (typeof v[1] === "string") {
+                return internalPruneFailure(path)
+            }
+            pruneDiscriminant(v[1], path.slice(1), kind, ctx)
+            if (v[1].length === 0) {
+                entries.splice(i, 1)
+            }
+            return entries
         }
     }
+    return internalPruneFailure(path)
 }
 
 const internalPruneFailure = (path: Path) =>
@@ -222,15 +235,17 @@ const calculateDiscriminants = (
                     continue
                 }
                 const cases = discriminants.casesByDisjoint[qualifiedDisjoint]!
-                if (!hasKey(cases, lSerialized)) {
+                const existingLBranch = cases[lSerialized]
+                if (!existingLBranch) {
                     cases[lSerialized] = [lIndex]
-                } else if (!cases[lSerialized].includes(lIndex)) {
-                    cases[lSerialized].push(lIndex)
+                } else if (!existingLBranch.includes(lIndex)) {
+                    existingLBranch.push(lIndex)
                 }
-                if (!hasKey(cases, rSerialized)) {
+                const existingRBranch = cases[rSerialized]
+                if (!existingRBranch) {
                     cases[rSerialized] = [rIndex]
-                } else if (!cases[rSerialized].includes(rIndex)) {
-                    cases[rSerialized].push(rIndex)
+                } else if (!existingRBranch.includes(rIndex)) {
+                    existingRBranch.push(rIndex)
                 }
             }
         }

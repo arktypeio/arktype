@@ -12,12 +12,7 @@ import {
 } from "../../../../nodes/rules/range.ts"
 import { throwInternalError } from "../../../../utils/errors.ts"
 import type { error, keySet, mutable } from "../../../../utils/generics.ts"
-import {
-    hasKey,
-    isKeyOf,
-    listFrom,
-    objectKeysOf
-} from "../../../../utils/generics.ts"
+import { isKeyOf, listFrom, objectKeysOf } from "../../../../utils/generics.ts"
 import type { NumberLiteral } from "../../../../utils/numericLiterals.ts"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.ts"
 import { writeUnboundableMessage } from "../../../ast/bound.ts"
@@ -125,8 +120,7 @@ const distributeRange = (range: Range, s: DynamicState) => {
                     return false
                 }
                 return listFrom(resolution.object!).every(
-                    (branch) =>
-                        hasKey(branch, "class") && branch.class === "Array"
+                    (branch) => "class" in branch && branch.class === "Array"
                 )
             default:
                 return false

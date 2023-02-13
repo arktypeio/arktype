@@ -71,14 +71,15 @@ export class TraversalState<data = unknown> {
         const data = this.data
         const isObject = hasDomain(data, "object")
         if (isObject) {
-            if (hasKey(this.#seen, id)) {
-                if (this.#seen[id].includes(data)) {
+            const seenByCurrentType = this.#seen[id]
+            if (seenByCurrentType) {
+                if (seenByCurrentType.includes(data)) {
                     // if data has already been checked by this alias as part of
                     // a resolution higher up on the call stack, it must be valid
                     // or we wouldn't be here
                     return true
                 }
-                this.#seen[id].push(data)
+                seenByCurrentType.push(data)
             } else {
                 this.#seen[id] = [data]
             }

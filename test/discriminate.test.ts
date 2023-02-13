@@ -77,6 +77,7 @@ describe("discriminate", () => {
             ]
         ])
     })
+
     it("undiscriminatable", () => {
         const t = getPlaces().type([
             "ocean",
@@ -142,12 +143,10 @@ describe("discriminate", () => {
                     cases: {
                         "'blue'": [
                             ["requiredProp", ["climate", [["value", "wet"]]]],
-                            ["requiredProp", ["color", [["value", "blue"]]]],
                             ["requiredProp", ["isOcean", [["value", true]]]]
                         ],
                         "'green'": [
                             ["requiredProp", ["climate", [["value", "wet"]]]],
-                            ["requiredProp", ["color", [["value", "green"]]]],
                             [
                                 "requiredProp",
                                 ["isRainforest", [["value", true]]]
@@ -178,18 +177,8 @@ describe("discriminate", () => {
                     path: ["temperature"],
                     kind: "value",
                     cases: {
-                        "'cold'": [
-                            [
-                                "requiredProp",
-                                ["temperature", [["value", "cold"]]]
-                            ]
-                        ],
-                        "'hot'": [
-                            [
-                                "requiredProp",
-                                ["temperature", [["value", "hot"]]]
-                            ]
-                        ],
+                        "'cold'": [],
+                        "'hot'": [],
                         default: [
                             [
                                 "switch",
@@ -204,10 +193,6 @@ describe("discriminate", () => {
                                             ],
                                             [
                                                 "requiredProp",
-                                                ["color", [["value", "blue"]]]
-                                            ],
-                                            [
-                                                "requiredProp",
                                                 ["isOcean", [["value", true]]]
                                             ]
                                         ],
@@ -215,10 +200,6 @@ describe("discriminate", () => {
                                             [
                                                 "requiredProp",
                                                 ["climate", [["value", "wet"]]]
-                                            ],
-                                            [
-                                                "requiredProp",
-                                                ["color", [["value", "green"]]]
                                             ],
                                             [
                                                 "requiredProp",

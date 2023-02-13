@@ -9,6 +9,7 @@ import type {
 import { parseDefinition } from "../parse/definition.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
+import { deepFreeze } from "../utils/freeze.ts"
 import type {
     Dict,
     error,
@@ -270,8 +271,8 @@ export class Scope<context extends ScopeContext = any> {
             seen.push(resolution)
             resolution = this.#resolveRecurse(resolution, "throw", seen).node
         }
-        type.node = resolution
-        type.flat = flattenType(type)
+        type.node = deepFreeze(resolution)
+        type.flat = deepFreeze(flattenType(type))
         return type
     }
 
