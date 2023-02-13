@@ -1,7 +1,7 @@
 import type { Branch, MorphBranch } from "../../nodes/branch.ts"
 import { isMorphBranch } from "../../nodes/branch.ts"
 import type { ResolvedNode } from "../../nodes/node.ts"
-import type { asOut } from "../../scopes/type.ts"
+import type { asIn, asOut } from "../../scopes/type.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../../utils/errors.ts"
 import type { mutable, nominal } from "../../utils/generics.ts"
@@ -61,16 +61,16 @@ export type Out<t = {}> = nominal<t, "out">
 export type validateMorphTuple<def extends TupleExpression, $> = readonly [
     _: validateDefinition<def[0], $>,
     _: "=>",
-    _: Morph<
-        asOut<inferDefinition<def[0], $>>,
-        "3" extends keyof def ? inferDefinition<def[3], $> : unknown
-    >,
-    _?: validateDefinition<def[3], $>
+    _: Morph<asOut<inferDefinition<def[0], $>>, unknown>
 ]
 
 export type Morph<i = any, o = unknown> = (In: i) => o
 
 export type ParsedMorph<i = any, o = unknown> = (In: i) => Out<o>
+
+export type inferMorph<inDef, morph, $> = morph extends Morph
+    ? (In: asIn<inferDefinition<inDef, $>>) => Out<ReturnType<morph>>
+    : never
 
 export const writeMalformedMorphExpressionMessage = (value: unknown) =>
     `Morph expression requires a function following '=>' (was ${typeof value})`

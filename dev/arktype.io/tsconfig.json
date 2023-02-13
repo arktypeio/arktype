@@ -2,6 +2,7 @@
     "extends": "../../tsconfig",
     "compilerOptions": {
         "noEmit": true,
+        "emitDeclarationOnly": false,
         "module": "NodeNext",
         "moduleResolution": "bundler",
         "target": "ES2017",

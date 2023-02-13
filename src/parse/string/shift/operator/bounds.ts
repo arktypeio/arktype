@@ -15,11 +15,12 @@ import type { error, keySet, mutable } from "../../../../utils/generics.ts"
 import {
     hasKey,
     isKeyOf,
-    keysOf,
-    listFrom
+    listFrom,
+    objectKeysOf
 } from "../../../../utils/generics.ts"
+import type { NumberLiteral } from "../../../../utils/numericLiterals.ts"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.ts"
-import { writeUnboundableMessage } from "../../ast.ts"
+import { writeUnboundableMessage } from "../../../ast/bound.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import { writeUnpairableComparatorMessage } from "../../reduce/shared.ts"
 import type { state, StaticState } from "../../reduce/static.ts"
@@ -45,7 +46,7 @@ export type parseBound<
           infer comparator extends Scanner.Comparator,
           infer nextUnscanned
       >
-        ? s["root"] extends number
+        ? s["root"] extends NumberLiteral
             ? state.reduceLeftBound<s, s["root"], comparator, nextUnscanned>
             : parseRightBound<s, comparator, nextUnscanned>
         : shiftResultOrError
@@ -107,7 +108,7 @@ export const parseRightBound = (
 
 const distributeRange = (range: Range, s: DynamicState) => {
     const resolution = s.resolveRoot()
-    const domains = keysOf(resolution)
+    const domains = objectKeysOf(resolution)
     const distributedRange: mutable<ResolvedNode> = {}
     const rangePredicate = { range } as const
     const isBoundable = domains.every((domain) => {
@@ -168,11 +169,16 @@ export type parseRightBound<
                           s["branches"]["range"]["limit"],
                           s["branches"]["range"]["comparator"],
                           comparator,
-                          limit,
+                          `${limit}`,
                           nextUnscanned
                       >
                     : error<writeUnpairableComparatorMessage<comparator>>
-                : state.reduceSingleBound<s, comparator, limit, nextUnscanned>
+                : state.reduceSingleBound<
+                      s,
+                      comparator,
+                      `${limit}`,
+                      nextUnscanned
+                  >
             : error<limit & string>
         : never
     : never

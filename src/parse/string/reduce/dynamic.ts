@@ -1,9 +1,9 @@
 import type { TypeNode } from "../../../nodes/node.ts"
 import {
-    arrayOf,
-    intersection,
     isLiteralNode,
-    union
+    rootIntersection,
+    rootUnion,
+    toArrayNode
 } from "../../../nodes/node.ts"
 import type { LowerBound } from "../../../nodes/rules/range.ts"
 import { minComparators } from "../../../nodes/rules/range.ts"
@@ -93,11 +93,11 @@ export class DynamicState {
     }
 
     rootToArray() {
-        this.root = arrayOf(this.ejectRoot())
+        this.root = toArrayNode(this.ejectRoot())
     }
 
     intersect(node: TypeNode) {
-        this.root = intersection(this.ejectRoot(), node, this.ctx.type)
+        this.root = rootIntersection(this.ejectRoot(), node, this.ctx.type)
     }
 
     private ejectRoot() {
@@ -130,9 +130,9 @@ export class DynamicState {
         if (this.branches.range) {
             return this.error(
                 writeMultipleLeftBoundsMessage(
-                    this.branches.range.limit,
+                    `${this.branches.range.limit}`,
                     this.branches.range.comparator,
-                    limit,
+                    `${limit}`,
                     invertedComparator
                 )
             )
@@ -150,7 +150,7 @@ export class DynamicState {
             this.setRoot(this.branches.union)
         } else if (this.branches.intersection) {
             this.setRoot(
-                intersection(
+                rootIntersection(
                     this.branches.intersection,
                     this.ejectRoot(),
                     this.ctx.type
@@ -173,7 +173,7 @@ export class DynamicState {
     pushRootToBranch(token: Scanner.BranchToken) {
         this.assertRangeUnset()
         this.branches.intersection = this.branches.intersection
-            ? intersection(
+            ? rootIntersection(
                   this.branches.intersection,
                   this.ejectRoot(),
                   this.ctx.type
@@ -181,7 +181,7 @@ export class DynamicState {
             : this.ejectRoot()
         if (token === "|") {
             this.branches.union = this.branches.union
-                ? union(
+                ? rootUnion(
                       this.branches.union,
                       this.branches.intersection,
                       this.ctx.type
@@ -195,7 +195,7 @@ export class DynamicState {
         if (this.branches.range) {
             return this.error(
                 writeOpenRangeMessage(
-                    this.branches.range.limit,
+                    `${this.branches.range.limit}`,
                     this.branches.range.comparator
                 )
             )

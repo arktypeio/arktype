@@ -12,18 +12,17 @@ import { checkBound } from "../nodes/rules/range.js"
 import { checkRegex } from "../nodes/rules/regex.js"
 import { precedenceMap } from "../nodes/rules/rules.js"
 import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.js"
+import type { SizedData } from "../utils/data.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf, hasDomain } from "../utils/domains.js"
 import type { extend, stringKeyOf } from "../utils/generics.js"
-import { hasKey, keysOf } from "../utils/generics.js"
+import { hasKey, objectKeysOf } from "../utils/generics.js"
 import { getPath, Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import { deserializePrimitive } from "../utils/serialize.js"
-import type { SizedData } from "../utils/size.js"
 import type { ProblemCode, ProblemWriters } from "./problems.js"
-import { defaultProblemWriters, Problems } from "./problems.js"
+import { defaultProblemWriters, Problem, Problems } from "./problems.js"
 
-// TODO: include data wrapper in state
 export class TraversalState<data = unknown> {
     path = new Path()
     problems = new Problems(this as any)
@@ -57,7 +56,6 @@ export class TraversalState<data = unknown> {
     traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {
         const lastData = this.data
         this.data = this.data[key] as data
-        // TODO: make path externally readonly
         this.path.push(key)
         const isValid = traverse(node, this)
         this.path.pop()
@@ -114,16 +112,14 @@ export class TraversalState<data = unknown> {
         this.problems = lastProblems
         this.failFast = lastFailFast
         return (
-            hasValidBranch ||
-            this.problems.add("branches", this.data, branchProblems)
+            hasValidBranch || this.problems.create("branches", branchProblems)
         )
     }
 }
 
 export const traverse = (node: TraversalNode, state: TraversalState): boolean =>
     typeof node === "string"
-        ? domainOf(state.data) === node ||
-          state.problems.add("domain", state.data, node)
+        ? domainOf(state.data) === node || state.problems.create("domain", node)
         : checkEntries(node, state)
 
 export const checkEntries = (
@@ -133,17 +129,6 @@ export const checkEntries = (
     let isValid = true
     for (let i = 0; i < entries.length; i++) {
         const [k, v] = entries[i]
-        if (k === "morph") {
-            if (typeof v === "function") {
-                // TODO: allow problem from morph
-                state.data = v(state.data)
-            } else {
-                for (const morph of v) {
-                    state.data = morph(state.data)
-                }
-            }
-            return true
-        }
         const entryAllowsData = (entryCheckers[k] as EntryChecker<any>)(
             v,
             state
@@ -174,8 +159,9 @@ export const checkRequiredProp = (
     if (prop[0] in state.data) {
         return state.traverseKey(prop[0], prop[1])
     }
-    return state.problems.add("missing", undefined, undefined, {
-        path: state.path.concat(prop[0])
+    return state.problems.create("missing", undefined, {
+        path: state.path.concat(prop[0]),
+        data: undefined
     })
 }
 
@@ -186,12 +172,11 @@ const entryCheckers = {
         const entries = domains[domainOf(state.data)]
         return entries
             ? checkEntries(entries, state)
-            : state.problems.add("domainBranches", state.data, keysOf(domains))
+            : state.problems.create("domainBranches", objectKeysOf(domains))
     },
-    // TODO: remove data from problem params
     domain: (domain, state) =>
         domainOf(state.data) === domain ||
-        state.problems.add("domain", state.data, domain),
+        state.problems.create("domain", domain),
     bound: checkBound,
     optionalProp: (prop, state) => {
         if (prop[0] in state.data) {
@@ -205,7 +190,7 @@ const entryCheckers = {
     prerequisiteProp: checkRequiredProp,
     indexProp: (node, state) => {
         if (!Array.isArray(state.data)) {
-            return state.problems.add("class", state.data, "Array")
+            return state.problems.create("class", "Array")
         }
         let isValid = true
         for (let i = 0; i < state.data.length; i++) {
@@ -223,27 +208,23 @@ const entryCheckers = {
         if (hasKey(rule.cases, caseKey)) {
             return checkEntries(rule.cases[caseKey], state)
         }
-        const caseKeys = keysOf(rule.cases)
+        const caseKeys = objectKeysOf(rule.cases)
         const missingCasePath = state.path.concat(rule.path)
         return rule.kind === "value"
-            ? state.problems.add(
+            ? state.problems.create(
                   "valueBranches",
-                  dataAtPath,
                   caseKeys.map((k) =>
                       deserializePrimitive(k as SerializedPrimitive)
                   ),
-                  { path: missingCasePath }
+                  { path: missingCasePath, data: dataAtPath }
               )
-            : state.problems.add(
-                  "domainBranches",
-                  dataAtPath,
-                  caseKeys as Domain[],
-                  { path: missingCasePath }
-              )
+            : state.problems.create("domainBranches", caseKeys as Domain[], {
+                  path: missingCasePath,
+                  data: dataAtPath
+              })
     },
     alias: (name, state) => state.traverseResolution(name),
     class: checkClass,
-    // TODO: fix
     narrow: (narrow, state) => narrow(state.data, state.problems),
     config: ({ config, node }, state) => {
         state.configs.push(config)
@@ -252,9 +233,17 @@ const entryCheckers = {
         return result
     },
     value: (value, state) =>
-        state.data === value || state.problems.add("value", state.data, value)
+        state.data === value || state.problems.create("value", value),
+    morph: (morph, state) => {
+        const out = morph(state.data)
+        if (out instanceof Problem) {
+            return state.problems.add(out)
+        }
+        state.data = out
+        return true
+    }
 } satisfies {
-    [k in ValidationTraversalKey]: EntryChecker<k>
+    [k in TraversalKey]: EntryChecker<k>
 }
 
 export type ValidationTraversalKey = Exclude<TraversalKey, "morph">

@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { type } from "../api.ts"
+import { type, union } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import {
     writeMissingRightOperandMessage,
@@ -40,6 +40,19 @@ describe("union/parse", () => {
             number: true
         })
     })
+    it("helper", () => {
+        const t = union({ a: "string" }, { b: "boolean" })
+        attest(t.infer).typed as
+            | {
+                  a: string
+              }
+            | {
+                  b: boolean
+              }
+        attest(t.node).snap({
+            object: [{ props: { a: "string" } }, { props: { b: "boolean" } }]
+        })
+    })
     describe("errors", () => {
         it("bad reference", () => {
             // @ts-expect-error
@@ -65,6 +78,12 @@ describe("union/parse", () => {
                 type("boolean[]|(string|number|)|object")
             ).throwsAndHasTypeError(
                 writeMissingRightOperandMessage("|", ")|object")
+            )
+        })
+        it("helper bad reference", () => {
+            // @ts-expect-error
+            attest(() => union("string", "nummer")).throwsAndHasTypeError(
+                writeUnresolvableMessage("nummer")
             )
         })
     })

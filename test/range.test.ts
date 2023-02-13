@@ -167,19 +167,19 @@ describe("range", () => {
             it("unpaired left", () => {
                 // @ts-expect-error temporarily disabled type snapshot as it is returning ''
                 attest(() => type("3<number")).throws(
-                    writeOpenRangeMessage(3, ">")
+                    writeOpenRangeMessage("3", ">")
                 )
             })
             it("unpaired left group", () => {
                 // @ts-expect-error
                 attest(() => type("(-1<=number)")).throws(
-                    writeOpenRangeMessage(-1, ">=")
+                    writeOpenRangeMessage("-1", ">=")
                 )
             })
             it("double left", () => {
                 // @ts-expect-error
                 attest(() => type("3<5<8")).throwsAndHasTypeError(
-                    writeMultipleLeftBoundsMessage(3, ">", 5, ">")
+                    writeMultipleLeftBoundsMessage("3", ">", "5", ">")
                 )
             })
             it("empty range", () => {

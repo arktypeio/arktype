@@ -1,11 +1,12 @@
 import type { FlatBound } from "../nodes/rules/range.ts"
 import { Scanner } from "../parse/string/shift/scanner.ts"
+import { DataWrapper } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
-import { domainDescriptions, domainOf } from "../utils/domains.ts"
+import { domainDescriptions } from "../utils/domains.ts"
 import type {
+    arraySubclassToReadonly,
     constructor,
     evaluate,
-    evaluateObject,
     instanceOf,
     RegexLiteral,
     requireKeys
@@ -35,9 +36,9 @@ export class Problem<code extends ProblemCode = any> {
     constructor(
         public code: code,
         public path: Path,
-        protected data: ProblemData<code>,
-        protected source: ProblemSource<code>,
-        protected writers: ProblemWriters<code>
+        private data: ProblemData<code>,
+        private source: ProblemSource<code>,
+        private writers: ProblemWriters<code>
     ) {
         if (this.code === "multi") {
             this.parts = this.source as any
@@ -64,31 +65,46 @@ export class Problem<code extends ProblemCode = any> {
     }
 }
 
-export type AddProblemOptions = { path?: Path }
+export type AddProblemOptions<code extends ProblemCode = ProblemCode> = {
+    data?: ProblemData<code>
+    path?: Path
+}
 
 class ProblemArray extends Array<Problem> {
     byPath: Record<string, Problem> = {}
+    #state: TraversalState
 
-    constructor(private state: TraversalState) {
+    constructor(state: TraversalState) {
         super()
+        this.#state = state
     }
 
-    add<code extends ProblemCode>(
+    create<code extends ProblemCode>(
         code: code,
-        data: ProblemData<code>,
         source: ProblemSource<code>,
-        opts?: AddProblemOptions
+        opts?: AddProblemOptions<code>
     ): false {
         // copy the path to avoid future mutations affecting it
-        const path = opts?.path ?? Path.from(this.state.path)
-        const problem: Problem = new Problem(
-            code,
-            path,
-            data,
-            source,
-            this.state.getConfigForProblemCode(code)
+        const path = opts?.path ?? Path.from(this.#state.path)
+        const data =
+            // we have to check for the presence of the key explicitly since the
+            // data could be undefined or null
+            opts && "data" in opts
+                ? opts.data
+                : (this.#state.data as ProblemData<code>)
+        return this.add(
+            new Problem(
+                code,
+                path,
+                data,
+                source,
+                this.#state.getConfigForProblemCode(code)
+            )
         )
-        const pathKey = `${path}`
+    }
+
+    add(problem: Problem): false {
+        const pathKey = `${problem.path}`
         const existing = this.byPath[pathKey]
         if (existing) {
             if (existing.parts) {
@@ -97,9 +113,9 @@ class ProblemArray extends Array<Problem> {
                 const problemIntersection = new Problem(
                     "multi",
                     existing.path,
-                    data,
+                    (existing as any).data,
                     [existing, problem],
-                    this.state.getConfigForProblemCode("multi")
+                    this.#state.getConfigForProblemCode("multi")
                 )
                 const existingIndex = this.indexOf(existing)
                 // If existing is found (which it always should be unless this was externally mutated),
@@ -129,9 +145,9 @@ class ProblemArray extends Array<Problem> {
     }
 }
 
-export const Problems: new (state: TraversalState) => readonly Problem[] & {
-    [k in Exclude<keyof ProblemArray, keyof unknown[]>]: ProblemArray[k]
-} = ProblemArray
+export const Problems: new (
+    state: TraversalState
+) => arraySubclassToReadonly<ProblemArray> = ProblemArray
 
 export type Problems = instanceOf<typeof Problems>
 
@@ -208,38 +224,6 @@ export type ReasonWriter<code extends ProblemCode = ProblemCode> = (
 ) => string
 
 export type ContextWriter = (reason: string, path: Path) => string
-
-export class DataWrapper<value = unknown> {
-    constructor(public value: value) {}
-
-    toString() {
-        return stringify(this.value)
-    }
-
-    get domain() {
-        return domainOf(this.value)
-    }
-
-    get size() {
-        return typeof this.value === "string" || Array.isArray(this.value)
-            ? this.value.length
-            : typeof this.value === "number"
-            ? this.value
-            : 0
-    }
-
-    get units() {
-        return typeof this.value === "string"
-            ? "characters"
-            : Array.isArray(this.value)
-            ? "items"
-            : ""
-    }
-
-    get className() {
-        return Object(this.value).constructor.name
-    }
-}
 
 const writeDefaultReason = (mustBe: string, was: DataWrapper | string) =>
     `must be ${mustBe}${was && ` (was ${was})`}`
@@ -336,7 +320,7 @@ export type ProblemOptions<code extends ProblemCode = ProblemCode> = {
     addContext?: ContextWriter
 }
 
-export type ProblemsConfig = evaluateObject<
+export type ProblemsConfig = evaluate<
     { defaults?: ProblemOptions<ProblemCode> } & {
         [code in ProblemCode]?: ProblemOptions<code>
     }
