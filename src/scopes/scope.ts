@@ -20,17 +20,9 @@ import type {
 import { Path } from "../utils/paths.ts"
 import type { stringifyUnion } from "../utils/unionToTuple.ts"
 import { Cache, FreezingCache } from "./cache.ts"
+import type { Expressions } from "./expressions.ts"
 import type { PrecompiledDefaults } from "./standard.ts"
-import type {
-    BinaryExpressionParser,
-    FunctionalExpressionParser,
-    Type,
-    TypeConfig,
-    TypeOptions,
-    TypeParser,
-    UnaryExpressionParser,
-    UnvalidatedExpressionParser
-} from "./type.ts"
+import type { Type, TypeConfig, TypeOptions, TypeParser } from "./type.ts"
 import { initializeType } from "./type.ts"
 
 type ScopeParser = {
@@ -302,59 +294,54 @@ export class Scope<context extends ScopeContext = any> {
     }) as TypeParser<resolutions<context>>
 
     intersection = ((l, r, opts) =>
-        this.type(
-            [l, "&", r] as inferred<unknown>,
-            opts
-        )) as BinaryExpressionParser<resolutions<context>, "&">
+        this.type([l, "&", r] as inferred<unknown>, opts)) as Expressions<
+        resolutions<context>
+    >["intersection"]
 
     union = ((l, r, opts) =>
-        this.type(
-            [l, "|", r] as inferred<unknown>,
-            opts
-        )) as BinaryExpressionParser<resolutions<context>, "|">
+        this.type([l, "|", r] as inferred<unknown>, opts)) as Expressions<
+        resolutions<context>
+    >["union"]
 
     arrayOf = ((def, opts) =>
-        this.type(
-            [def, "[]"] as inferred<unknown>,
-            opts
-        )) as UnaryExpressionParser<resolutions<context>, "[]">
+        this.type([def, "[]"] as inferred<unknown>, opts)) as Expressions<
+        resolutions<context>
+    >["arrayOf"]
 
     keyOf = ((def, opts) =>
-        this.type(
-            ["keyof", def] as inferred<unknown>,
-            opts
-        )) as UnaryExpressionParser<resolutions<context>, "keyof">
+        this.type(["keyof", def] as inferred<unknown>, opts)) as Expressions<
+        resolutions<context>
+    >["keyOf"]
 
     fromNode = ((def, opts) =>
-        this.type(
-            ["node", def] as inferred<unknown>,
-            opts
-        )) as UnvalidatedExpressionParser<resolutions<context>, "node">
+        this.type(["node", def] as inferred<unknown>, opts)) as Expressions<
+        resolutions<context>
+    >["fromNode"]
 
     instanceOf = ((def, opts) =>
         this.type(
             ["instanceof", def] as inferred<unknown>,
             opts
-        )) as UnvalidatedExpressionParser<resolutions<context>, "instanceof">
+        )) as Expressions<resolutions<context>>["instanceOf"]
 
     literal = ((def, opts) =>
-        this.type(
-            ["===", def] as inferred<unknown>,
-            opts
-        )) as UnvalidatedExpressionParser<resolutions<context>, "===">
+        this.type(["===", def] as inferred<unknown>, opts)) as Expressions<
+        resolutions<context>
+    >["literal"]
 
     narrow = ((def, fn, opts) =>
-        this.type(
-            [def, ":", fn] as inferred<unknown>,
-            opts
-        )) as FunctionalExpressionParser<resolutions<context>, ":">
+        this.type([def, ":", fn] as inferred<unknown>, opts)) as Expressions<
+        resolutions<context>
+    >["narrow"]
 
     morph = ((def, fn, opts) =>
-        this.type(
-            [def, "=>", fn] as inferred<unknown>,
-            opts
-        )) as FunctionalExpressionParser<resolutions<context>, "=>">
+        this.type([def, "=>", fn] as inferred<unknown>, opts)) as Expressions<
+        resolutions<context>
+    >["morph"]
 }
+
+export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>
+    new Scope(aliases, opts)) as any
 
 type OnUnresolvable = "throw" | "undefined"
 
@@ -365,9 +352,6 @@ export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
         "=>"
     )}`
-
-export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>
-    new Scope(aliases, opts)) as any
 
 export const writeDuplicateAliasesMessage = <name extends string>(
     name: name

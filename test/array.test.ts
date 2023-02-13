@@ -1,9 +1,8 @@
 import { describe, it } from "mocha"
-import { type } from "../api.ts"
+import { arrayOf, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import { writeUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 import { incompleteArrayTokenMessage } from "../src/parse/string/shift/operator/operator.ts"
-import { arrayOf } from "../src/scopes/standard.ts"
 
 describe("parse array", () => {
     it("parse", () => {

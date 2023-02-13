@@ -4,13 +4,7 @@ import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
 import type { Space } from "./scope.ts"
 import { scope } from "./scope.ts"
 import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
-import type {
-    BinaryExpressionParser,
-    FunctionalExpressionParser,
-    TypeParser,
-    UnaryExpressionParser,
-    UnvalidatedExpressionParser
-} from "./type.ts"
+import type { TypeParser } from "./type.ts"
 import { validation, validationScope } from "./validation.ts"
 
 export const standardScope = scope(
@@ -77,34 +71,3 @@ type ValidateStandardScope = [
 ]
 
 export const type: TypeParser<PrecompiledDefaults> = scopes.standard.type
-
-export const intersection: BinaryExpressionParser<PrecompiledDefaults, "&"> =
-    scopes.standard.intersection
-
-export const union: BinaryExpressionParser<PrecompiledDefaults, "|"> =
-    scopes.standard.union
-
-export const arrayOf: UnaryExpressionParser<PrecompiledDefaults, "[]"> =
-    scopes.standard.arrayOf
-
-export const keyOf: UnaryExpressionParser<PrecompiledDefaults, "keyof"> =
-    scopes.standard.keyOf
-
-export const fromNode: UnvalidatedExpressionParser<
-    PrecompiledDefaults,
-    "node"
-> = scopes.standard.fromNode
-
-export const instanceOf: UnvalidatedExpressionParser<
-    PrecompiledDefaults,
-    "instanceof"
-> = scopes.standard.instanceOf
-
-export const literal: UnvalidatedExpressionParser<PrecompiledDefaults, "==="> =
-    scopes.standard.literal
-
-export const narrow: FunctionalExpressionParser<PrecompiledDefaults, ":"> =
-    scopes.standard.narrow
-
-export const morph: FunctionalExpressionParser<PrecompiledDefaults, "=>"> =
-    scopes.standard.morph

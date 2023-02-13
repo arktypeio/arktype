@@ -1,15 +1,5 @@
 import type { TraversalNode, TypeNode } from "../nodes/node.ts"
-import type { distributable } from "../parse/ast/distributableFunction.ts"
-import type { Morph, ParsedMorph } from "../parse/ast/morph.ts"
-import type { Narrow } from "../parse/ast/narrow.ts"
-import type {
-    FunctionalTupleOperator,
-    inferTupleExpression,
-    TupleExpression,
-    TuplePostfixOperator,
-    UnparsedTupleExpressionInput,
-    UnparsedTupleOperator
-} from "../parse/ast/tuple.ts"
+import type { ParsedMorph } from "../parse/ast/morph.ts"
 import type {
     as,
     inferDefinition,
@@ -18,7 +8,7 @@ import type {
 import type { Problems, ProblemsConfig } from "../traverse/problems.ts"
 import { TraversalState, traverse } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
-import type { conform, defer, evaluate, xor } from "../utils/generics.ts"
+import type { defer, evaluate, xor } from "../utils/generics.ts"
 import { hasKeys } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import type { Scope } from "./scope.ts"
@@ -29,83 +19,6 @@ export type TypeParser<$> = {
 
     <def>(def: validateDefinition<def, $>, opts: TypeOptions): parseType<def, $>
 }
-
-export type BinaryExpressionParser<$, operator extends "&" | "|"> = {
-    <l, r>(
-        l: validateDefinition<l, $>,
-        r: validateDefinition<r, $>
-    ): parseTupleExpression<[l, operator, r], $>
-
-    <l, r>(
-        l: validateDefinition<l, $>,
-        r: validateDefinition<r, $>,
-        opts: TypeOptions
-    ): parseTupleExpression<[l, operator, r], $>
-}
-
-export type UnaryExpressionParser<$, operator extends "keyof" | "[]"> = {
-    <def>(def: validateDefinition<def, $>): parseTupleExpression<
-        unaryToTupleExpression<def, operator>,
-        $
-    >
-
-    <def>(
-        def: validateDefinition<def, $>,
-        opts: TypeOptions
-    ): parseTupleExpression<unaryToTupleExpression<def, operator>, $>
-}
-
-export type UnvalidatedExpressionParser<
-    $,
-    operator extends UnparsedTupleOperator
-> = {
-    <def>(
-        def: conform<def, UnparsedTupleExpressionInput<$>[operator]>
-    ): parseTupleExpression<[operator, def], $>
-
-    <def>(
-        def: conform<def, UnparsedTupleExpressionInput<$>[operator]>,
-        opts: TypeOptions
-    ): parseTupleExpression<[operator, def], $>
-}
-
-export type FunctionalExpressionParser<
-    $,
-    operator extends FunctionalTupleOperator
-> = {
-    <inDef, fn extends FunctionWithInferredInput<$, operator, inDef>>(
-        inDef: validateDefinition<inDef, $>,
-        fn: fn
-    ): parseTupleExpression<[inDef, operator, fn], $>
-
-    <inDef, fn extends FunctionWithInferredInput<$, operator, inDef>>(
-        inDef: validateDefinition<inDef, $>,
-        fn: fn,
-        opts: TypeOptions
-    ): parseTupleExpression<[inDef, operator, fn], $>
-}
-
-export type FunctionWithInferredInput<
-    $,
-    operator extends FunctionalTupleOperator,
-    inDef
-> = operator extends ":"
-    ? distributable<Narrow<asIn<inferDefinition<inDef, $>>>>
-    : Morph<asOut<inferDefinition<inDef, $>>>
-
-type unaryToTupleExpression<
-    def,
-    operator extends "keyof" | "[]"
-> = operator extends TuplePostfixOperator ? [def, "[]"] : [operator, def]
-
-type parseTupleExpression<
-    expression extends TupleExpression,
-    $
-> = inferTupleExpression<expression, $> extends infer result
-    ? [result] extends [never]
-        ? never
-        : Type<result>
-    : never
 
 export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>

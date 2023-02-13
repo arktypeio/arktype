@@ -1,6 +1,6 @@
 export { scope } from "./src/scopes/scope.ts"
+export { type } from "./src/scopes/standard.ts"
 export {
-    type,
     intersection,
     union,
     arrayOf,
@@ -10,6 +10,6 @@ export {
     morph,
     narrow,
     keyOf
-} from "./src/scopes/standard.ts"
+} from "./src/scopes/expressions.ts"
 export type { Type } from "./src/scopes/type.ts"
 export { Problems, Problem } from "./src/traverse/problems.ts"
