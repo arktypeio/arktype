@@ -1,6 +1,14 @@
-import type { inferTerminal } from "../parse/ast/ast.js"
-import type { Out } from "../parse/ast/morph.js"
-import type { Domain, inferDomain } from "../utils/domains.js"
+import type { MorphBranch } from "../../nodes/branch.ts"
+import type { LiteralNode, ResolvedNode, TypeNode } from "../../nodes/node.ts"
+import type { Predicate } from "../../nodes/predicate.ts"
+import type {
+    MappedPropKey,
+    OptionalProp,
+    Prop,
+    PropsRule
+} from "../../nodes/rules/props.ts"
+import type { LiteralRules, NarrowableRules } from "../../nodes/rules/rules.ts"
+import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type {
     constructor,
     evaluate,
@@ -8,22 +16,14 @@ import type {
     HomogenousTuple,
     List,
     returnOf
-} from "../utils/generics.js"
+} from "../../utils/generics.ts"
 import type {
     BuiltinClass,
     DefaultObjectKind,
     inferObjectKind
-} from "../utils/objectKinds.js"
-import type { MorphBranch } from "./branch.js"
-import type { LiteralNode, ResolvedNode, TypeNode } from "./node.js"
-import type { Predicate } from "./predicate.js"
-import type {
-    MappedPropKey,
-    OptionalProp,
-    Prop,
-    PropsRule
-} from "./rules/props.js"
-import type { LiteralRules, NarrowableRules } from "./rules/rules.js"
+} from "../../utils/objectKinds.ts"
+import type { inferTerminal } from "./ast.ts"
+import type { Out } from "./morph.ts"
 
 export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
     ? inferTerminal<node, $>
