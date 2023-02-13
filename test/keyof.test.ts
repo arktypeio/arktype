@@ -112,6 +112,8 @@ describe("keyof", () => {
         const t = keyOf({ a: "string" })
         attest(t.infer).typed as "a"
         attest(t.node).snap({ string: { value: "a" } })
+    })
+    it("helper errors", () => {
         attest(() => keyOf("object")).throwsAndHasTypeError(
             expectedNeverKeyOfMessage
         )
