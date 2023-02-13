@@ -12,15 +12,11 @@ export const populateDemo = ({ data, type, problems }: PopulateDemoArgs) => {
     defElement.textContent = stringify(type.meta.definition, 2)
     defElement.innerHTML = recolor(defElement.innerHTML)
 
-    const dataElement = document.querySelector("#data")!
-    dataElement.textContent = stringify(data, 2)
-    dataElement.innerHTML = recolor(dataElement.innerHTML)
-
-    const resultElement = document.querySelector("#result")!
+    const resultElement = document.querySelector("#output")!
     if (problems) {
-        resultElement.textContent = \`❌ Problems:\n\n\${problems}\`
+        resultElement.textContent = \`❌ problems:\n\n\${problems}\`
     } else {
-        resultElement.textContent = \`✅ Output:\n\n\${stringify(
+        resultElement.textContent = \`✅ data:\n\n\${stringify(
             type(data).data,
             2
         )}\`
