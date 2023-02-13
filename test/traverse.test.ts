@@ -52,7 +52,7 @@ describe("traverse", () => {
         const basic = type("string|number[]")
         const check = basic(2)
         attest(check.problems?.summary).snap(
-            "Must be a string or an object (was number)"
+            "Must be a string or an object (was 2)"
         )
     })
     it("tuple length", () => {
@@ -87,7 +87,7 @@ describe("traverse", () => {
         )
         // unsatisfying value
         attest(t({ a: 5 }).problems?.summary).snap(
-            "a must be a string or boolean (was number)"
+            "a must be a string or boolean (was 5)"
         )
     })
     it("multi", () => {

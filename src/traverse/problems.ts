@@ -65,13 +65,14 @@ export class Problem<code extends ProblemCode = any> {
     }
 }
 
-export type AddProblemOptions<code extends ProblemCode = ProblemCode> = {
-    data?: ProblemData<code>
+export type AddProblemOptions<data = unknown> = {
+    data?: data
     path?: Path
 }
 
 class ProblemArray extends Array<Problem> {
     byPath: Record<string, Problem> = {}
+
     count = 0
     #state: TraversalState
 
@@ -83,15 +84,7 @@ class ProblemArray extends Array<Problem> {
     add<code extends ProblemCode>(
         code: code,
         source: ProblemSource<code>,
-        opts?: AddProblemOptions<code>
-    ): false {
-        return this.addProblem(this.create(code, source, opts))
-    }
-
-    create<code extends ProblemCode>(
-        code: code,
-        source: ProblemSource<code>,
-        opts?: AddProblemOptions<code>
+        opts?: AddProblemOptions<ProblemData<code>>
     ): Problem {
         // copy the path to avoid future mutations affecting it
         const path = opts?.path ?? Path.from(this.#state.path)
@@ -101,16 +94,19 @@ class ProblemArray extends Array<Problem> {
             opts && "data" in opts
                 ? opts.data
                 : (this.#state.data as ProblemData<code>)
-        return new Problem(
+
+        const problem = new Problem(
             code,
             path,
             data,
             source,
             this.#state.getConfigForProblemCode(code)
         )
+        this.addProblem(problem)
+        return problem
     }
 
-    addProblem(problem: Problem): false {
+    addProblem(problem: Problem) {
         const pathKey = `${problem.path}`
         const existing = this.byPath[pathKey]
         if (existing) {
@@ -137,7 +133,6 @@ class ProblemArray extends Array<Problem> {
             this.push(problem)
         }
         this.count++
-        return false
     }
 
     get summary() {
@@ -161,19 +156,19 @@ export type Problems = instanceOf<typeof Problems>
 
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1)
 
-export const describeDomains = (domains: Domain[]) => {
-    if (domains.length === 1) {
-        return domainDescriptions[domains[0]]
-    }
-    if (domains.length === 0) {
-        return "never"
-    }
-    return describeBranches(
-        domains.map((objectKind) => domainDescriptions[objectKind])
-    )
-}
+export const domainsToDescriptions = (domains: Domain[]) =>
+    domains.map((objectKind) => domainDescriptions[objectKind])
+
+export const objectKindsToDescriptions = (kinds: DefaultObjectKind[]) =>
+    kinds.map((objectKind) => objectKindDescriptions[objectKind])
 
 export const describeBranches = (descriptions: string[]) => {
+    if (descriptions.length === 0) {
+        return "never"
+    }
+    if (descriptions.length === 1) {
+        return descriptions[0]
+    }
     let description = ""
     for (let i = 0; i < descriptions.length - 1; i++) {
         description += descriptions[i]
@@ -189,15 +184,14 @@ type ProblemSources = {
     divisor: number
     class: DefaultObjectKind | constructor
     domain: Domain
-    domainBranches: Domain[]
     missing: undefined
     bound: FlatBound
     regex: RegexLiteral
     value: unknown
-    valueBranches: unknown[]
     multi: Problem[]
     branches: readonly Problem[]
     mustBe: string
+    cases: string[]
 }
 
 export type ProblemCode = evaluate<keyof ProblemSources>
@@ -272,10 +266,6 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
         mustBe: (domain) => domainDescriptions[domain],
         writeReason: (mustBe, data) => writeDefaultReason(mustBe, data.domain)
     },
-    domainBranches: {
-        mustBe: (domains) => describeDomains(domains),
-        writeReason: (mustBe, data) => writeDefaultReason(mustBe, data.domain)
-    },
     missing: {
         mustBe: () => "defined",
         writeReason: (mustBe) => writeDefaultReason(mustBe, "")
@@ -293,9 +283,6 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
     },
     value: {
         mustBe: stringify
-    },
-    valueBranches: {
-        mustBe: (values) => describeBranches(values.map(stringify))
     },
     branches: {
         mustBe: (branchProblems) =>
@@ -323,6 +310,9 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
     },
     mustBe: {
         mustBe: (mustBe) => mustBe
+    },
+    cases: {
+        mustBe: (cases) => describeBranches(cases)
     }
 })
 

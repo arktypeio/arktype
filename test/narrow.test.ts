@@ -83,7 +83,7 @@ describe("narrow", () => {
             (s, problems) =>
                 s === [...s].reverse().join("")
                     ? true
-                    : problems.add("mustBe", "a palindrome")
+                    : !problems.add("mustBe", "a palindrome")
         ])
         attest(palindrome).typed as Type<string>
         attest(palindrome("dad").data).snap("dad")

@@ -352,7 +352,7 @@ describe("morph", () => {
             (s, problems) => {
                 const result = parseInt(s)
                 if (Number.isNaN(result)) {
-                    return problems.create("mustBe", "an integer string")
+                    return problems.add("mustBe", "an integer string")
                 }
                 return result
             }

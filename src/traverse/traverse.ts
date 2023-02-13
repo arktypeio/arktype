@@ -1,27 +1,33 @@
-import { serializeCase } from "../nodes/discriminate.js"
+import { serializeCase } from "../nodes/discriminate.ts"
 import type {
     TraversalEntry,
     TraversalKey,
     TraversalNode,
     TraversalValue
-} from "../nodes/node.js"
-import { checkClass } from "../nodes/rules/class.js"
-import { checkDivisor } from "../nodes/rules/divisor.js"
-import type { TraversalProp } from "../nodes/rules/props.js"
-import { checkBound } from "../nodes/rules/range.js"
-import { checkRegex } from "../nodes/rules/regex.js"
-import { precedenceMap } from "../nodes/rules/rules.js"
-import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.js"
-import type { SizedData } from "../utils/data.js"
-import type { Domain } from "../utils/domains.js"
-import { domainOf, hasDomain } from "../utils/domains.js"
-import type { extend, stringKeyOf } from "../utils/generics.js"
-import { hasKey, objectKeysOf } from "../utils/generics.js"
-import { getPath, Path } from "../utils/paths.js"
-import type { SerializedPrimitive } from "../utils/serialize.js"
-import { deserializePrimitive } from "../utils/serialize.js"
-import type { ProblemCode, ProblemWriters } from "./problems.js"
-import { defaultProblemWriters, Problem, Problems } from "./problems.js"
+} from "../nodes/node.ts"
+import { checkClass } from "../nodes/rules/class.ts"
+import { checkDivisor } from "../nodes/rules/divisor.ts"
+import type { TraversalProp } from "../nodes/rules/props.ts"
+import { checkBound } from "../nodes/rules/range.ts"
+import { checkRegex } from "../nodes/rules/regex.ts"
+import { precedenceMap } from "../nodes/rules/rules.ts"
+import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
+import type { SizedData } from "../utils/data.ts"
+import type { Domain } from "../utils/domains.ts"
+import { domainOf, hasDomain } from "../utils/domains.ts"
+import { throwInternalError } from "../utils/errors.ts"
+import type { extend, stringKeyOf } from "../utils/generics.ts"
+import { hasKey, objectKeysOf } from "../utils/generics.ts"
+import type { DefaultObjectKind } from "../utils/objectKinds.ts"
+import { getPath, Path } from "../utils/paths.ts"
+import type { ProblemCode, ProblemWriters } from "./problems.ts"
+import {
+    defaultProblemWriters,
+    domainsToDescriptions,
+    objectKindsToDescriptions,
+    Problem,
+    Problems
+} from "./problems.ts"
 
 export class TraversalState<data = unknown> {
     path = new Path()
@@ -112,13 +118,13 @@ export class TraversalState<data = unknown> {
         this.path = lastPath
         this.problems = lastProblems
         this.failFast = lastFailFast
-        return hasValidBranch || this.problems.add("branches", branchProblems)
+        return hasValidBranch || !this.problems.add("branches", branchProblems)
     }
 }
 
 export const traverse = (node: TraversalNode, state: TraversalState): boolean =>
     typeof node === "string"
-        ? domainOf(state.data) === node || state.problems.add("domain", node)
+        ? domainOf(state.data) === node || !state.problems.add("domain", node)
         : checkEntries(node, state)
 
 export const checkEntries = (
@@ -158,10 +164,11 @@ export const checkRequiredProp = (
     if (prop[0] in state.data) {
         return state.traverseKey(prop[0], prop[1])
     }
-    return state.problems.add("missing", undefined, {
+    state.problems.add("missing", undefined, {
         path: state.path.concat(prop[0]),
         data: undefined
     })
+    return false
 }
 
 const entryCheckers = {
@@ -171,10 +178,14 @@ const entryCheckers = {
         const entries = domains[domainOf(state.data)]
         return entries
             ? checkEntries(entries, state)
-            : state.problems.add("domainBranches", objectKeysOf(domains))
+            : !state.problems.add(
+                  "cases",
+                  domainsToDescriptions(objectKeysOf(domains))
+              )
     },
     domain: (domain, state) =>
-        domainOf(state.data) === domain || state.problems.add("domain", domain),
+        domainOf(state.data) === domain ||
+        !state.problems.add("domain", domain),
     bound: checkBound,
     optionalProp: (prop, state) => {
         if (prop[0] in state.data) {
@@ -188,7 +199,8 @@ const entryCheckers = {
     prerequisiteProp: checkRequiredProp,
     indexProp: (node, state) => {
         if (!Array.isArray(state.data)) {
-            return state.problems.add("class", "Array")
+            state.problems.add("class", "Array")
+            return false
         }
         let isValid = true
         for (let i = 0; i < state.data.length; i++) {
@@ -208,18 +220,21 @@ const entryCheckers = {
         }
         const caseKeys = objectKeysOf(rule.cases)
         const missingCasePath = state.path.concat(rule.path)
-        return rule.kind === "value"
-            ? state.problems.add(
-                  "valueBranches",
-                  caseKeys.map((k) =>
-                      deserializePrimitive(k as SerializedPrimitive)
-                  ),
-                  { path: missingCasePath, data: dataAtPath }
-              )
-            : state.problems.add("domainBranches", caseKeys as Domain[], {
-                  path: missingCasePath,
-                  data: dataAtPath
-              })
+        const caseDescriptions =
+            rule.kind === "value"
+                ? caseKeys
+                : rule.kind === "domain"
+                ? domainsToDescriptions(caseKeys as Domain[])
+                : rule.kind === "class"
+                ? objectKindsToDescriptions(caseKeys as DefaultObjectKind[])
+                : throwInternalError(
+                      `Unexpectedly encountered rule kind '${rule.kind}' during traversal`
+                  )
+        state.problems.add("cases", caseDescriptions, {
+            path: missingCasePath,
+            data: dataAtPath
+        })
+        return false
     },
     alias: (name, state) => state.traverseResolution(name),
     class: checkClass,
@@ -231,14 +246,15 @@ const entryCheckers = {
         return result
     },
     value: (value, state) =>
-        state.data === value || state.problems.add("value", value),
+        state.data === value || !state.problems.add("value", value),
     morph: (morph, state) => {
-        const lastProblemCount = state.problems.count
         const out = morph(state.data, state.problems)
-        if (out instanceof Problem) {
-            return state.problems.addProblem(out)
+        if (state.problems.length) {
+            return false
         }
-        if (state.problems.count > lastProblemCount) {
+        if (out instanceof Problem) {
+            // if a problem was returned from the morph but not added, add it
+            state.problems.addProblem(out)
             return false
         }
         state.data = out
