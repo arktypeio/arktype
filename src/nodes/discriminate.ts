@@ -2,12 +2,11 @@ import { writeUndiscriminatableMorphUnionMessage } from "../parse/ast/union.ts"
 import type { Scope } from "../scopes/scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import { throwParseError } from "../utils/errors.ts"
+import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import type { evaluate, keySet } from "../utils/generics.ts"
 import { hasKey, isKeyOf, objectKeysOf } from "../utils/generics.ts"
 import type { NumberLiteral } from "../utils/numericLiterals.ts"
-import type { DefaultObjectKind } from "../utils/objectKinds.ts"
-import { isArray, objectKindOf } from "../utils/objectKinds.ts"
+import { isArray } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
 import type {
     SerializablePrimitive,
@@ -90,6 +89,12 @@ const discriminate = (
             discriminants,
             ctx
         )
+        pruneDiscriminantFromEntries(
+            cases[caseKey]!,
+            bestDiscriminant.path,
+            bestDiscriminant.kind,
+            ctx
+        )
     }
     return [
         [
@@ -102,6 +107,51 @@ const discriminate = (
         ]
     ]
 }
+
+// TODO: Need to recursively remove empty arrays
+const pruneDiscriminantFromEntries = (
+    entries: TraversalEntry[],
+    path: Path,
+    kind: DiscriminantKind,
+    ctx: FlattenContext
+): void => {
+    for (const [k, v] of entries) {
+        if (k === "domains") {
+            if ("object" in v) {
+                return pruneDiscriminantFromEntries(v.object, path, kind, ctx)
+            } else {
+                internalPruneFailure(path)
+            }
+        } else if (k === "switch") {
+            let caseKey: CaseKey
+            for (caseKey in v.cases) {
+                pruneDiscriminantFromEntries(v.cases[caseKey]!, path, kind, ctx)
+            }
+            return
+        } else if (path.length === 0) {
+            const indexToPrune = entries.findIndex(([k]) => k === kind)
+            if (indexToPrune === -1) {
+                return internalPruneFailure(path)
+            }
+            entries.splice(indexToPrune, 1)
+        } else if (
+            (k === "requiredProp" || k === "prerequisiteProp") &&
+            v[0] === path[0]
+        ) {
+            return typeof v[1] === "string"
+                ? internalPruneFailure(path)
+                : pruneDiscriminantFromEntries(
+                      v[1],
+                      path.slice(0, -1),
+                      kind,
+                      ctx
+                  )
+        }
+    }
+}
+
+const internalPruneFailure = (path: Path) =>
+    throwInternalError(`Unexpectedly failed to discriminate path '${path}'`)
 
 type Discriminants = {
     disjointsByPair: DisjointsByPair
@@ -116,13 +166,11 @@ type CasesByDisjoint = {
 
 export type DiscriminantKinds = {
     domain: Domain
-    objectKind: DefaultObjectKind
     value: unknown
 }
 
 const discriminantKinds: keySet<DiscriminantKind> = {
     domain: true,
-    objectKind: true,
     value: true
 }
 
@@ -279,7 +327,6 @@ const serializeIfPrimitive = (data: unknown) => {
 
 const caseSerializers: Record<DiscriminantKind, (data: unknown) => string> = {
     value: (data) => serializeIfPrimitive(data) ?? "default",
-    objectKind: (data) => objectKindOf(data) ?? "default",
     domain: domainOf
 }
 

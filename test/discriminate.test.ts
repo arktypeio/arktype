@@ -12,11 +12,7 @@ describe("discriminate", () => {
                 {
                     path: [],
                     kind: "value",
-                    cases: {
-                        "'a'": [["value", "a"]],
-                        "'b'": [["value", "b"]],
-                        "'c'": [["value", "c"]]
-                    }
+                    cases: { "'a'": [], "'b'": [], "'c'": [] }
                 }
             ]
         ])
@@ -52,26 +48,10 @@ describe("discriminate", () => {
                                         "'wet'": [
                                             [
                                                 "requiredProp",
-                                                ["climate", [["value", "wet"]]]
-                                            ],
-                                            [
-                                                "requiredProp",
-                                                ["color", [["value", "blue"]]]
-                                            ],
-                                            [
-                                                "requiredProp",
                                                 ["isOcean", [["value", true]]]
                                             ]
                                         ],
                                         "'dry'": [
-                                            [
-                                                "requiredProp",
-                                                ["climate", [["value", "dry"]]]
-                                            ],
-                                            [
-                                                "requiredProp",
-                                                ["color", [["value", "blue"]]]
-                                            ],
                                             [
                                                 "requiredProp",
                                                 ["isSky", [["value", true]]]
@@ -83,7 +63,6 @@ describe("discriminate", () => {
                         ],
                         "'green'": [
                             ["requiredProp", ["climate", [["value", "wet"]]]],
-                            ["requiredProp", ["color", [["value", "green"]]]],
                             [
                                 "requiredProp",
                                 ["isRainforest", [["value", true]]]
@@ -91,7 +70,6 @@ describe("discriminate", () => {
                         ],
                         "'brown'": [
                             ["requiredProp", ["climate", [["value", "dry"]]]],
-                            ["requiredProp", ["color", [["value", "brown"]]]],
                             ["requiredProp", ["isDesert", [["value", true]]]]
                         ]
                     }
