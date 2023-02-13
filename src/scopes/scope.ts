@@ -282,62 +282,58 @@ export class Scope<context extends ScopeContext = any> {
         return this.resolveNode(this.resolve(node).node)
     }
 
-    type: TypeParser<resolutions<context>> = ((def, opts: TypeOptions = {}) => {
-        if (opts.name && this.aliases[opts.name]) {
-            return throwParseError(writeDuplicateAliasesMessage(opts.name))
-        }
-        const result = initializeType(def, opts, this)
-        const ctx = this.#initializeContext(result)
-        result.node = this.resolveNode(parseDefinition(def, ctx))
-        result.flat = flattenType(result)
-        return result
-    }) as TypeParser<resolutions<context>>
+    expressions: Expressions<resolutions<context>> = {
+        intersection: (l, r, opts) =>
+            this.type([l, "&", r] as inferred<unknown>, opts),
+        union: (l, r, opts) =>
+            this.type([l, "|", r] as inferred<unknown>, opts),
+        arrayOf: (def, opts) =>
+            this.type([def, "[]"] as inferred<unknown>, opts),
+        keyOf: (def, opts) =>
+            this.type(["keyof", def] as inferred<unknown>, opts),
+        fromNode: (def, opts) =>
+            this.type(["node", def] as inferred<unknown>, opts),
+        instanceOf: (def, opts) =>
+            this.type(["instanceof", def] as inferred<unknown>, opts),
+        literal: (def, opts) =>
+            this.type(["===", def] as inferred<unknown>, opts),
+        narrow: (def, fn, opts) =>
+            this.type([def, ":", fn] as inferred<unknown>, opts),
+        morph: (def, fn, opts) =>
+            this.type([def, "=>", fn] as inferred<unknown>, opts)
+    } as Expressions<resolutions<context>>
 
-    intersection = ((l, r, opts) =>
-        this.type([l, "&", r] as inferred<unknown>, opts)) as Expressions<
-        resolutions<context>
-    >["intersection"]
+    intersection = this.expressions.intersection
 
-    union = ((l, r, opts) =>
-        this.type([l, "|", r] as inferred<unknown>, opts)) as Expressions<
-        resolutions<context>
-    >["union"]
+    union = this.expressions.union
 
-    arrayOf = ((def, opts) =>
-        this.type([def, "[]"] as inferred<unknown>, opts)) as Expressions<
-        resolutions<context>
-    >["arrayOf"]
+    arrayOf = this.expressions.arrayOf
 
-    keyOf = ((def, opts) =>
-        this.type(["keyof", def] as inferred<unknown>, opts)) as Expressions<
-        resolutions<context>
-    >["keyOf"]
+    keyOf = this.expressions.keyOf
 
-    fromNode = ((def, opts) =>
-        this.type(["node", def] as inferred<unknown>, opts)) as Expressions<
-        resolutions<context>
-    >["fromNode"]
+    fromNode = this.expressions.fromNode
 
-    instanceOf = ((def, opts) =>
-        this.type(
-            ["instanceof", def] as inferred<unknown>,
-            opts
-        )) as Expressions<resolutions<context>>["instanceOf"]
+    instanceOf = this.expressions.instanceOf
 
-    literal = ((def, opts) =>
-        this.type(["===", def] as inferred<unknown>, opts)) as Expressions<
-        resolutions<context>
-    >["literal"]
+    literal = this.expressions.literal
 
-    narrow = ((def, fn, opts) =>
-        this.type([def, ":", fn] as inferred<unknown>, opts)) as Expressions<
-        resolutions<context>
-    >["narrow"]
+    narrow = this.expressions.narrow
 
-    morph = ((def, fn, opts) =>
-        this.type([def, "=>", fn] as inferred<unknown>, opts)) as Expressions<
-        resolutions<context>
-    >["morph"]
+    morph = this.expressions.morph
+
+    type: TypeParser<resolutions<context>> = Object.assign(
+        ((def, opts: TypeOptions = {}) => {
+            if (opts.name && this.aliases[opts.name]) {
+                return throwParseError(writeDuplicateAliasesMessage(opts.name))
+            }
+            const result = initializeType(def, opts, this)
+            const ctx = this.#initializeContext(result)
+            result.node = this.resolveNode(parseDefinition(def, ctx))
+            result.flat = flattenType(result)
+            return result
+        }) as TypeParser<resolutions<context>>,
+        this.expressions
+    )
 }
 
 export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>

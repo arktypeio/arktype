@@ -11,6 +11,7 @@ import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { defer, evaluate, xor } from "../utils/generics.ts"
 import { hasKeys } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
+import type { Expressions } from "./expressions.ts"
 import type { Scope } from "./scope.ts"
 
 // TODO: add config entries when resolving a type
@@ -18,7 +19,7 @@ export type TypeParser<$> = {
     <def>(def: validateDefinition<def, $>): parseType<def, $>
 
     <def>(def: validateDefinition<def, $>, opts: TypeOptions): parseType<def, $>
-}
+} & Expressions<$>
 
 export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
