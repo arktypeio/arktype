@@ -2,7 +2,7 @@ import type { Branch, MorphBranch } from "../../nodes/branch.ts"
 import { isMorphBranch } from "../../nodes/branch.ts"
 import type { ResolvedNode } from "../../nodes/node.ts"
 import type { asIn, asOut } from "../../scopes/type.ts"
-import type { Problems } from "../../traverse/problems.ts"
+import type { Problem, Problems } from "../../traverse/problems.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../../utils/errors.ts"
 import type { mutable, nominal } from "../../utils/generics.ts"
@@ -67,13 +67,17 @@ export type validateMorphTuple<def extends TupleExpression, $> = readonly [
 
 export type Morph<i = any, o = unknown> = (In: i, problems: Problems) => o
 
-export type ParsedMorph<i = any, o = unknown> = (In: i) => Out<o>
+export type ParsedMorph<i = any, o = unknown> = (In: i) => inferMorphOut<o>
 
 export type inferMorph<inDef, morph, $> = morph extends Morph
-    ? (
-          In: asIn<inferDefinition<inDef, $>>
-      ) => Out<Exclude<ReturnType<morph>, undefined>>
+    ? (In: asIn<inferDefinition<inDef, $>>) => inferMorphOut<ReturnType<morph>>
     : never
+
+type inferMorphOut<out> = unknown extends out
+    ? Out<unknown> | undefined | null
+    :
+          | Out<Exclude<out, Problem | undefined | null>>
+          | Extract<out, undefined | null>
 
 export const writeMalformedMorphExpressionMessage = (value: unknown) =>
     `Morph expression requires a function following '=>' (was ${typeof value})`

@@ -76,4 +76,19 @@ describe("narrow", () => {
             ])
         }).type.errors("Type 'boolean[]' is not assignable to type 'string[]'.")
     })
+    it("narrow problem", () => {
+        const palindrome = type([
+            "string",
+            ":",
+            (s, problems) =>
+                s === [...s].reverse().join("")
+                    ? true
+                    : problems.add("mustBe", "a palindrome")
+        ])
+        attest(palindrome).typed as Type<string>
+        attest(palindrome("dad").data).snap("dad")
+        attest(palindrome("david").problems?.summary).snap(
+            "Must be a palindrome (was 'david')"
+        )
+    })
 })

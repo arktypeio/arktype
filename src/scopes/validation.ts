@@ -16,6 +16,7 @@ export const isLuhnValid = (creditCardInput: string) => {
         tmpNum = parseInt(digit, 10)
         if (shouldDouble) {
             tmpNum *= 2
+            // TODO: Add error message
             if (tmpNum >= 10) {
                 sum += (tmpNum % 10) + 1
             } else {

@@ -1,8 +1,6 @@
 import { describe, it } from "mocha"
-import type { Type } from "../api.js"
 import { type } from "../api.js"
 import { attest } from "../dev/attest/api.js"
-import type { Out } from "../src/parse/ast/morph.js"
 
 describe("traverse", () => {
     it("divisible", () => {
@@ -49,39 +47,6 @@ describe("traverse", () => {
             }
         })
         attest(isEven(3).problems?.summary).snap("3 is not a multiple of 2!")
-    })
-    it("narrow problem", () => {
-        const palindrome = type([
-            "string",
-            ":",
-            (s, problems) =>
-                s === [...s].reverse().join("")
-                    ? true
-                    : problems.mustBe("a palindrome")
-        ])
-        attest(palindrome("dad").data).snap("dad")
-        attest(palindrome("david").problems?.summary).snap(
-            "Must be a palindrome (was 'david')"
-        )
-    })
-    it("morph problem", () => {
-        const parsedInt = type([
-            "string",
-            "=>",
-            (s, problems) => {
-                const result = parseInt(s)
-                if (Number.isNaN(result)) {
-                    problems.mustBe("an integer string")
-                    return
-                }
-                return result
-            }
-        ])
-        attest(parsedInt).typed as Type<(In: string) => Out<number>>
-        attest(parsedInt("5").data).snap(5)
-        attest(parsedInt("five").problems?.summary).snap(
-            "Must be an integer string (was 'five')"
-        )
     })
     it("domains", () => {
         const basic = type("string|number[]")

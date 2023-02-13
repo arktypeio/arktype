@@ -345,4 +345,49 @@ describe("morph", () => {
             writeUndiscriminatableMorphUnionMessage("/")
         )
     })
+    it("problem not included in return", () => {
+        const parsedInt = type([
+            "string",
+            "=>",
+            (s, problems) => {
+                const result = parseInt(s)
+                if (Number.isNaN(result)) {
+                    return problems.create("mustBe", "an integer string")
+                }
+                return result
+            }
+        ])
+        attest(parsedInt).typed as Type<(In: string) => Out<number>>
+        attest(parsedInt("5").data).snap(5)
+        attest(parsedInt("five").problems?.summary).snap(
+            "Must be an integer string (was 'five')"
+        )
+    })
+    it("nullable return", () => {
+        const toNullableNumber = type(["string", "=>", (s) => s.length || null])
+        attest(toNullableNumber).typed as Type<
+            (In: string) => Out<number> | null
+        >
+    })
+    it("undefinable return", () => {
+        const toUndefinableNumber = type([
+            "string",
+            "=>",
+            (s) => s.length || undefined
+        ])
+        attest(toUndefinableNumber).typed as Type<
+            (In: string) => Out<number> | undefined
+        >
+    })
+    it("null or undefined return", () => {
+        const toMaybeNumber = type([
+            "string",
+            "=>",
+            (s) =>
+                s.length === 0 ? undefined : s.length === 1 ? null : s.length
+        ])
+        attest(toMaybeNumber).typed as Type<
+            (In: string) => Out<number> | null | undefined
+        >
+    })
 })

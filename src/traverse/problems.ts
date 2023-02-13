@@ -80,15 +80,19 @@ class ProblemArray extends Array<Problem> {
         this.#state = state
     }
 
-    mustBe(description: string, opts?: AddProblemOptions<"custom">) {
-        return this.create("custom", description, opts)
+    add<code extends ProblemCode>(
+        code: code,
+        source: ProblemSource<code>,
+        opts?: AddProblemOptions<code>
+    ): false {
+        return this.addProblem(this.create(code, source, opts))
     }
 
     create<code extends ProblemCode>(
         code: code,
         source: ProblemSource<code>,
         opts?: AddProblemOptions<code>
-    ): false {
+    ): Problem {
         // copy the path to avoid future mutations affecting it
         const path = opts?.path ?? Path.from(this.#state.path)
         const data =
@@ -97,18 +101,16 @@ class ProblemArray extends Array<Problem> {
             opts && "data" in opts
                 ? opts.data
                 : (this.#state.data as ProblemData<code>)
-        return this.add(
-            new Problem(
-                code,
-                path,
-                data,
-                source,
-                this.#state.getConfigForProblemCode(code)
-            )
+        return new Problem(
+            code,
+            path,
+            data,
+            source,
+            this.#state.getConfigForProblemCode(code)
         )
     }
 
-    add(problem: Problem): false {
+    addProblem(problem: Problem): false {
         const pathKey = `${problem.path}`
         const existing = this.byPath[pathKey]
         if (existing) {
@@ -195,7 +197,7 @@ type ProblemSources = {
     valueBranches: unknown[]
     multi: Problem[]
     branches: readonly Problem[]
-    custom: string
+    mustBe: string
 }
 
 export type ProblemCode = evaluate<keyof ProblemSources>
@@ -319,7 +321,7 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
         addContext: (reason, path) =>
             path.length ? `At ${path}, ${reason}` : reason
     },
-    custom: {
+    mustBe: {
         mustBe: (mustBe) => mustBe
     }
 })

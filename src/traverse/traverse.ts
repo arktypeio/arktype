@@ -21,7 +21,7 @@ import { getPath, Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import { deserializePrimitive } from "../utils/serialize.js"
 import type { ProblemCode, ProblemWriters } from "./problems.js"
-import { defaultProblemWriters, Problems } from "./problems.js"
+import { defaultProblemWriters, Problem, Problems } from "./problems.js"
 
 export class TraversalState<data = unknown> {
     path = new Path()
@@ -112,15 +112,13 @@ export class TraversalState<data = unknown> {
         this.path = lastPath
         this.problems = lastProblems
         this.failFast = lastFailFast
-        return (
-            hasValidBranch || this.problems.create("branches", branchProblems)
-        )
+        return hasValidBranch || this.problems.add("branches", branchProblems)
     }
 }
 
 export const traverse = (node: TraversalNode, state: TraversalState): boolean =>
     typeof node === "string"
-        ? domainOf(state.data) === node || state.problems.create("domain", node)
+        ? domainOf(state.data) === node || state.problems.add("domain", node)
         : checkEntries(node, state)
 
 export const checkEntries = (
@@ -160,7 +158,7 @@ export const checkRequiredProp = (
     if (prop[0] in state.data) {
         return state.traverseKey(prop[0], prop[1])
     }
-    return state.problems.create("missing", undefined, {
+    return state.problems.add("missing", undefined, {
         path: state.path.concat(prop[0]),
         data: undefined
     })
@@ -173,11 +171,10 @@ const entryCheckers = {
         const entries = domains[domainOf(state.data)]
         return entries
             ? checkEntries(entries, state)
-            : state.problems.create("domainBranches", objectKeysOf(domains))
+            : state.problems.add("domainBranches", objectKeysOf(domains))
     },
     domain: (domain, state) =>
-        domainOf(state.data) === domain ||
-        state.problems.create("domain", domain),
+        domainOf(state.data) === domain || state.problems.add("domain", domain),
     bound: checkBound,
     optionalProp: (prop, state) => {
         if (prop[0] in state.data) {
@@ -191,7 +188,7 @@ const entryCheckers = {
     prerequisiteProp: checkRequiredProp,
     indexProp: (node, state) => {
         if (!Array.isArray(state.data)) {
-            return state.problems.create("class", "Array")
+            return state.problems.add("class", "Array")
         }
         let isValid = true
         for (let i = 0; i < state.data.length; i++) {
@@ -212,14 +209,14 @@ const entryCheckers = {
         const caseKeys = objectKeysOf(rule.cases)
         const missingCasePath = state.path.concat(rule.path)
         return rule.kind === "value"
-            ? state.problems.create(
+            ? state.problems.add(
                   "valueBranches",
                   caseKeys.map((k) =>
                       deserializePrimitive(k as SerializedPrimitive)
                   ),
                   { path: missingCasePath, data: dataAtPath }
               )
-            : state.problems.create("domainBranches", caseKeys as Domain[], {
+            : state.problems.add("domainBranches", caseKeys as Domain[], {
                   path: missingCasePath,
                   data: dataAtPath
               })
@@ -234,10 +231,13 @@ const entryCheckers = {
         return result
     },
     value: (value, state) =>
-        state.data === value || state.problems.create("value", value),
+        state.data === value || state.problems.add("value", value),
     morph: (morph, state) => {
         const lastProblemCount = state.problems.count
         const out = morph(state.data, state.problems)
+        if (out instanceof Problem) {
+            return state.problems.addProblem(out)
+        }
         if (state.problems.count > lastProblemCount) {
             return false
         }
