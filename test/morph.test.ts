@@ -243,13 +243,11 @@ describe("morph", () => {
                         string: [
                             ["class", "Array"],
                             ["prerequisiteProp", ["length", [["value", 1]]]],
-                            ["requiredProp", ["0", "string"]],
                             ["morph", "(function)"]
                         ],
                         boolean: [
                             ["class", "Array"],
-                            ["prerequisiteProp", ["length", [["value", 1]]]],
-                            ["requiredProp", ["0", "boolean"]]
+                            ["prerequisiteProp", ["length", [["value", 1]]]]
                         ]
                     }
                 }

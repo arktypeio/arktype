@@ -5,8 +5,8 @@ import { domainOf } from "../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import type { evaluate, keySet } from "../utils/generics.ts"
 import { isKeyOf, keyCount, objectKeysOf } from "../utils/generics.ts"
-import type { NumberLiteral } from "../utils/numericLiterals.ts"
-import { isArray } from "../utils/objectKinds.ts"
+import type { DefaultObjectKind } from "../utils/objectKinds.ts"
+import { isArray, objectKindOf } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
 import type {
     SerializablePrimitive,
@@ -16,7 +16,12 @@ import { serializePrimitive } from "../utils/serialize.ts"
 import type { Branch, Branches } from "./branch.ts"
 import { branchIntersection, flattenBranch } from "./branch.ts"
 import { IntersectionState } from "./compose.ts"
-import type { FlattenContext, TraversalEntry, TypeNode } from "./node.ts"
+import type {
+    FlattenContext,
+    TraversalEntry,
+    TraversalValue,
+    TypeNode
+} from "./node.ts"
 import { mappedKeys, propToNode } from "./rules/props.ts"
 
 export type DiscriminatedSwitch<
@@ -32,6 +37,9 @@ export type DiscriminatedCases<
 > = {
     [caseKey in CaseKey<kind>]?: TraversalEntry[]
 }
+
+export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
+    DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
 export const flattenBranches = (branches: Branches, ctx: FlattenContext) => {
     const discriminants = calculateDiscriminants(branches, ctx)
@@ -80,8 +88,7 @@ const discriminate = (
         ]
     }
     const cases = {} as DiscriminatedCases
-    let caseKey: CaseKey
-    for (caseKey in bestDiscriminant.indexCases) {
+    for (const caseKey in bestDiscriminant.indexCases) {
         const nextIndices = bestDiscriminant.indexCases[caseKey]!
         cases[caseKey] = discriminate(
             originalBranches,
@@ -93,7 +100,7 @@ const discriminate = (
             pruneDiscriminant(
                 cases[caseKey]!,
                 bestDiscriminant.path,
-                bestDiscriminant.kind,
+                bestDiscriminant,
                 ctx
             )
         }
@@ -112,35 +119,23 @@ const discriminate = (
 
 const pruneDiscriminant = (
     entries: TraversalEntry[],
-    path: Path,
-    kind: DiscriminantKind,
+    segments: string[],
+    discriminant: Discriminant,
     ctx: FlattenContext
 ) => {
     for (let i = 0; i < entries.length; i++) {
         const [k, v] = entries[i]
-        // check for branch keys, which must be traversed even if there
-        // are no segments left in path
-        if (k === "domains") {
-            if (keyCount(v) !== 1 || !v.object) {
-                return internalPruneFailure(path)
-            }
-            pruneDiscriminant(v.object, path, kind, ctx)
-            return
-        } else if (k === "switch") {
-            let caseKey: CaseKey
-            for (caseKey in v.cases) {
-                pruneDiscriminant(v.cases[caseKey]!, path, kind, ctx)
-            }
-            return
-        } else if (k === "branches") {
-            for (const branch of v) {
-                pruneDiscriminant(branch, path, kind, ctx)
-            }
-            return
-            // if we're not at a branch key, check for the discriminant kind if
-            // the path is empty, otherwise look for the next prop
-        } else if (path.length === 0) {
-            if (k === kind) {
+        if (!segments.length) {
+            if (discriminant.kind === "domain") {
+                if (k === "domain" || k === "domains") {
+                    entries.splice(i, 1)
+                    return
+                } else if (k === "class" || k === "value") {
+                    // these keys imply a domain, but also add additional
+                    // information, so can't be pruned
+                    return
+                }
+            } else if (discriminant.kind === k) {
                 entries.splice(i, 1)
                 return
             }
@@ -148,23 +143,53 @@ const pruneDiscriminant = (
             (k === "requiredProp" ||
                 k === "prerequisiteProp" ||
                 k === "optionalProp") &&
-            v[0] === path[0]
+            v[0] === segments[0]
         ) {
             if (typeof v[1] === "string") {
-                return internalPruneFailure(path)
+                if (discriminant.kind !== "domain") {
+                    return throwPruneFailure(discriminant)
+                }
+                entries.splice(i, 1)
+                return
             }
-            pruneDiscriminant(v[1], path.slice(1), kind, ctx)
+            pruneDiscriminant(v[1], segments.slice(1), discriminant, ctx)
             if (v[1].length === 0) {
                 entries.splice(i, 1)
             }
-            return entries
+            return
+        }
+        // check for branch keys, which must be traversed even if there are no
+        // segments left
+        if (k === "domains") {
+            if (keyCount(v) !== 1 || !v.object) {
+                return throwPruneFailure(discriminant)
+            }
+            pruneDiscriminant(v.object, segments, discriminant, ctx)
+            return
+        } else if (k === "switch") {
+            for (const caseKey in v.cases) {
+                pruneDiscriminant(
+                    v.cases[caseKey]!,
+                    segments,
+                    discriminant,
+                    ctx
+                )
+            }
+            return
+        } else if (k === "branches") {
+            for (const branch of v) {
+                pruneDiscriminant(branch, segments, discriminant, ctx)
+            }
+            return
         }
     }
-    return internalPruneFailure(path)
+    return throwPruneFailure(discriminant)
 }
 
-const internalPruneFailure = (path: Path) =>
-    throwInternalError(`Unexpectedly failed to discriminate path '${path}'`)
+const throwPruneFailure = (discriminant: Discriminant) =>
+    throwInternalError(
+        `Unexpectedly failed to discriminate ${discriminant.kind} at path '${discriminant.path}'`
+    )
 
 type Discriminants = {
     disjointsByPair: DisjointsByPair
@@ -179,11 +204,13 @@ type CasesByDisjoint = {
 
 export type DiscriminantKinds = {
     domain: Domain
-    value: unknown
+    class: DefaultObjectKind
+    value: SerializedPrimitive
 }
 
 const discriminantKinds: keySet<DiscriminantKind> = {
     domain: true,
+    class: true,
     value: true
 }
 
@@ -219,8 +246,8 @@ const calculateDiscriminants = (
                 if (!isKeyOf(kind, discriminantKinds)) {
                     continue
                 }
-                const lSerialized = serializeIfAllowed(kind, l)
-                const rSerialized = serializeIfAllowed(kind, r)
+                const lSerialized = serializeDefinitionIfAllowed(kind, l)
+                const rSerialized = serializeDefinitionIfAllowed(kind, r)
                 if (lSerialized === undefined || rSerialized === undefined) {
                     continue
                 }
@@ -284,8 +311,7 @@ const findBestDiscriminant = (
                     ...remainingIndices
                 ]
                 let score = 0
-                let caseKey: CaseKey
-                for (caseKey in indexCases) {
+                for (const caseKey in indexCases) {
                     const filteredIndices = indexCases[caseKey]!.filter((i) => {
                         const remainingIndex = remainingIndices.indexOf(i)
                         if (remainingIndex !== -1) {
@@ -325,13 +351,21 @@ const findBestDiscriminant = (
     return bestDiscriminant
 }
 
-export const serializeIfAllowed = <kind extends DiscriminantKind>(
+export const serializeDefinitionIfAllowed = <kind extends DiscriminantKind>(
     kind: kind,
-    data: DiscriminantKinds[kind]
-) =>
-    (kind === "value" ? serializeIfPrimitive(data) : `${data}`) as
-        | CaseKey<kind>
-        | undefined
+    definition: TraversalValue<kind>
+): string | undefined => {
+    switch (kind) {
+        case "value":
+            return serializeIfPrimitive(definition)
+        case "domain":
+            return definition as Domain
+        case "class":
+            return typeof definition === "string" ? definition : undefined
+        default:
+            return
+    }
+}
 
 const serializeIfPrimitive = (data: unknown) => {
     const domain = domainOf(data)
@@ -340,22 +374,21 @@ const serializeIfPrimitive = (data: unknown) => {
         : serializePrimitive(data as SerializablePrimitive)
 }
 
-const caseSerializers: Record<DiscriminantKind, (data: unknown) => string> = {
+const serializeData: {
+    [kind in DiscriminantKind]: (
+        data: unknown
+    ) => DiscriminantKinds[kind] | "default"
+} = {
     value: (data) => serializeIfPrimitive(data) ?? "default",
+    class: (data) =>
+        (objectKindOf(data) as DefaultObjectKind | undefined) ?? "default",
     domain: domainOf
 }
 
 export const serializeCase = <kind extends DiscriminantKind>(
     kind: kind,
     data: unknown
-) => caseSerializers[kind](data) as CaseKey<kind>
-
-type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
-    kind extends "value"
-        ? SerializedPrimitive | "default"
-        : kind extends "tupleLength"
-        ? NumberLiteral | "default"
-        : DiscriminantKinds[kind]
+) => serializeData[kind](data)
 
 const branchIncludesMorph = (branch: Branch, $: Scope) =>
     "morph" in branch
