@@ -1,5 +1,12 @@
 # arktype
 
+## 0.4.0
+
+### Minor Changes
+
+-   33682224: add expression helper functions (intersection, arrayOf, etc.)
+-   33682224: include prototype keys in keyof types, align inference with TS keyof
+
 ## 0.3.0
 
 ### Minor Changes
