@@ -1,25 +1,31 @@
 import type { TraversalNode, TypeNode } from "../nodes/node.ts"
+import type { ParsedMorph } from "../parse/ast/morph.ts"
 import type {
     as,
     inferDefinition,
     validateDefinition
 } from "../parse/definition.ts"
-import type { ParsedMorph } from "../parse/tuple/morph.ts"
 import type { Problems, ProblemsConfig } from "../traverse/problems.ts"
 import { TraversalState, traverse } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
-import type { defer, evaluateObject, xor } from "../utils/generics.ts"
+import type { defer, evaluate, xor } from "../utils/generics.ts"
 import { hasKeys } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
+import type { Expressions } from "./expressions.ts"
 import type { Scope } from "./scope.ts"
 
+// TODO: add config entries when resolving a type
 export type TypeParser<$> = {
     <def>(def: validateDefinition<def, $>): parseType<def, $>
 
     <def>(def: validateDefinition<def, $>, opts: TypeOptions): parseType<def, $>
+} & TypeParserProps<$>
+
+export type TypeParserProps<$> = {
+    from: Expressions<$>["fromNode"]
 }
 
-export type parseType<def, $> = def extends validateDefinition<def, $>
+export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
 
@@ -31,7 +37,7 @@ type TypeRoot<t = unknown> = {
     meta: TypeMeta
 }
 
-export type TypeOptions = evaluateObject<
+export type TypeOptions = evaluate<
     {
         name?: string
     } & ProblemsConfig
@@ -127,7 +133,7 @@ type asIo<t, io extends "in" | "out"> = t extends ParsedMorph<infer i, infer o>
         ? i
         : o
     : t extends object
-    ? t extends Function | BuiltinClass
+    ? t extends BuiltinClass | ((...args: any[]) => any)
         ? t
         : { [k in keyof t]: asIo<t[k], io> }
     : t

@@ -1,9 +1,9 @@
 import { describe, it } from "mocha"
 import type { Type } from "../api.ts"
-import { scope, type } from "../api.ts"
+import { intersection, morph, scope, type, union } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import { writeUndiscriminatableMorphUnionMessage } from "../src/parse/string/ast.ts"
-import type { Out } from "../src/parse/tuple/morph.ts"
+import type { Out } from "../src/parse/ast/morph.ts"
+import { writeUndiscriminatableMorphUnionMessage } from "../src/parse/ast/union.ts"
 
 describe("morph", () => {
     it("base", () => {
@@ -59,12 +59,13 @@ describe("morph", () => {
         attest(t).typed as Type<(In: { a: string }) => Out<string>>
     })
     it("intersection", () => {
-        const types = scope({
+        const $ = scope({
             b: "3.14",
-            a: ["number", "=>", (data) => `${data}`, "string"],
-            aAndB: "a&b",
-            bAndA: "b&a"
-        }).compile()
+            a: () => $.morph("number", (data) => `${data}`),
+            aAndB: () => $.type("a&b"),
+            bAndA: () => $.type("b&a")
+        })
+        const types = $.compile()
         attest(types.aAndB).typed as Type<(In: 3.14) => Out<string>>
         attest(types.aAndB.node).snap({
             number: { rules: { value: 3.14 }, morph: "(function)" }
@@ -73,11 +74,12 @@ describe("morph", () => {
         attest(types.bAndA.node).equals(types.aAndB.node)
     })
     it("object interesection", () => {
-        const types = scope({
-            a: [{ a: "1" }, "=>", (data) => `${data}`, "string"],
+        const $ = scope({
+            a: morph({ a: "1" }, (data) => `${data}`),
             b: { b: "2" },
             c: "a&b"
-        }).compile()
+        })
+        const types = $.compile()
         attest(types.c).typed as Type<(In: { a: 1; b: 2 }) => Out<string>>
         attest(types.c.node).snap({
             object: {
@@ -160,20 +162,22 @@ describe("morph", () => {
         })
     })
     it("chained", () => {
-        const types = scope({
-            a: ["string", "=>", (s) => s.length, "number"],
-            b: ["a", "=>", (n) => n === 0]
-        }).compile()
+        const $ = scope({
+            a: () => $.morph("string", (s) => s.length),
+            b: () => $.morph("a", (n) => n === 0)
+        })
+        const types = $.compile()
         attest(types.b).typed as Type<(In: string) => Out<boolean>>
         attest(types.b.node).snap({
             string: { rules: {}, morph: ["(function)", "(function)"] }
         })
     })
     it("chained nested", () => {
-        const types = scope({
-            a: ["string", "=>", (s) => s.length, "number"],
-            b: [{ a: "a" }, "=>", ({ a }) => a === 0, "boolean"]
-        }).compile()
+        const $ = scope({
+            a: () => $.morph("string", (s) => s.length),
+            b: () => $.morph({ a: "a" }, ({ a }) => a === 0)
+        })
+        const types = $.compile()
         attest(types.b).typed as Type<(In: { a: string }) => Out<boolean>>
         attest(types.b.node).snap({
             object: { rules: { props: { a: "a" } }, morph: "(function)" }
@@ -198,11 +202,12 @@ describe("morph", () => {
         })
     })
     it("discriminatable tuple union", () => {
-        const types = scope({
-            a: [["string"], "=>", (s) => [...s, "!"], "string[]"],
+        const $ = scope({
+            a: () => $.morph(["string"], (s) => [...s, "!"]),
             b: ["boolean"],
-            c: "a|b"
-        }).compile()
+            c: () => $.type("a|b")
+        })
+        const types = $.compile()
         attest(types.c).typed as Type<
             [boolean] | ((In: [string]) => Out<string[]>)
         >
@@ -328,5 +333,18 @@ describe("morph", () => {
         })
             .throws(writeUndiscriminatableMorphUnionMessage("key"))
             .type.errors(writeUndiscriminatableMorphUnionMessage("/"))
+    })
+    it("helper morph intersection", () => {
+        attest(() =>
+            intersection(
+                ["string", "=>", (s) => s.length],
+                ["string", "=>", (s) => s.split(",")]
+            )
+        ).throws("Intersection of morphs results in an unsatisfiable type")
+    })
+    it("union helper undiscriminated", () => {
+        attest(() => union(["string", "=>", (s) => s.length], "'foo'")).throws(
+            writeUndiscriminatableMorphUnionMessage("/")
+        )
     })
 })

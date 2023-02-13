@@ -1,6 +1,7 @@
 import { describe, it } from "mocha"
-import { type } from "../api.ts"
+import { arrayOf, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
+import { writeUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 import { incompleteArrayTokenMessage } from "../src/parse/string/shift/operator/operator.ts"
 
 describe("parse array", () => {
@@ -39,12 +40,30 @@ describe("parse array", () => {
             ]
         ])
     })
+    it("helper", () => {
+        const t = arrayOf({ a: "string" })
+        attest(t.infer).typed as {
+            a: string
+        }[]
+        attest(t.node).snap({
+            object: {
+                class: "Array",
+                props: { "[index]": { object: { props: { a: "string" } } } }
+            }
+        })
+    })
 
     describe("errors", () => {
         it("incomplete token", () => {
             // @ts-expect-error
             attest(() => type("string[")).throwsAndHasTypeError(
                 incompleteArrayTokenMessage
+            )
+        })
+        it("helper", () => {
+            // @ts-expect-error
+            attest(() => arrayOf({ a: "hmm" })).throwsAndHasTypeError(
+                writeUnresolvableMessage("hmm")
             )
         })
     })

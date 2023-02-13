@@ -1,10 +1,10 @@
-import { writeUndiscriminatableMorphUnionMessage } from "../parse/string/ast.ts"
+import { writeUndiscriminatableMorphUnionMessage } from "../parse/ast/union.ts"
 import type { Scope } from "../scopes/scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { evaluate, keySet } from "../utils/generics.ts"
-import { hasKey, isKeyOf, keysOf } from "../utils/generics.ts"
+import { hasKey, isKeyOf, objectKeysOf } from "../utils/generics.ts"
 import type { NumberLiteral } from "../utils/numericLiterals.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { isArray, objectKindOf } from "../utils/objectKinds.ts"
@@ -236,7 +236,7 @@ const findBestDiscriminant = (
                     filteredCases[caseKey] = filteredIndices
                     score++
                 }
-                const defaultCaseKeys = keysOf(defaultCases)
+                const defaultCaseKeys = objectKeysOf(defaultCases)
                 if (defaultCaseKeys.length) {
                     filteredCases["default"] = defaultCaseKeys.map((k) =>
                         parseInt(k)

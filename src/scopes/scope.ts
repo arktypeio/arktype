@@ -2,6 +2,7 @@ import type { ResolvedNode, TypeNode } from "../nodes/node.ts"
 import { flattenType } from "../nodes/node.ts"
 import type {
     inferDefinition,
+    inferred,
     ParseContext,
     validateDefinition
 } from "../parse/definition.ts"
@@ -11,7 +12,7 @@ import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import type {
     Dict,
     error,
-    evaluateObject,
+    evaluate,
     isAny,
     List,
     nominal
@@ -19,6 +20,7 @@ import type {
 import { Path } from "../utils/paths.ts"
 import type { stringifyUnion } from "../utils/unionToTuple.ts"
 import { Cache, FreezingCache } from "./cache.ts"
+import type { Expressions } from "./expressions.ts"
 import type { PrecompiledDefaults } from "./standard.ts"
 import type { Type, TypeConfig, TypeOptions, TypeParser } from "./type.ts"
 import { initializeType } from "./type.ts"
@@ -34,7 +36,12 @@ type ScopeParser = {
     ): Scope<parseScope<aliases, opts>>
 }
 
-// TODO: Reintegrate thunks/compilation, add utilities for narrowed defs
+type validateAliases<aliases, opts extends ScopeOptions> = {
+    [name in keyof aliases]: name extends keyof preresolved<opts>
+        ? writeDuplicateAliasesMessage<name & string>
+        : validateDefinition<aliases[name], bootstrapScope<aliases, opts>>
+}
+
 export type ScopeOptions = {
     // [] allows narrowed tuple inference
     imports?: Space[] | []
@@ -111,12 +118,6 @@ type mergeSpaces<scopes, base extends Dict = {}> = scopes extends readonly [
           >
     : base
 
-type validateAliases<aliases, opts extends ScopeOptions> = {
-    [name in keyof aliases]: name extends keyof preresolved<opts>
-        ? writeDuplicateAliasesMessage<name & string>
-        : validateDefinition<aliases[name], bootstrapScope<aliases, opts>>
-}
-
 type preresolved<opts extends ScopeOptions> = includesOf<opts> &
     importsOf<opts> &
     (opts["standard"] extends false ? {} : PrecompiledDefaults)
@@ -127,7 +128,7 @@ type bootstrapScope<aliases, opts extends ScopeOptions> = {
     [k in keyof aliases]: alias<aliases[k]>
 } & preresolved<opts>
 
-type inferExports<aliases, opts extends ScopeOptions> = evaluateObject<
+type inferExports<aliases, opts extends ScopeOptions> = evaluate<
     {
         [k in keyof aliases]: inferDefinition<
             aliases[k],
@@ -196,17 +197,6 @@ export class Scope<context extends ScopeContext = any> {
             }
         }
     }
-
-    type = ((def, opts: TypeOptions = {}) => {
-        if (opts.name && this.aliases[opts.name]) {
-            return throwParseError(writeDuplicateAliasesMessage(opts.name))
-        }
-        const result = initializeType(def, opts, this)
-        const ctx = this.#initializeContext(result)
-        result.node = this.resolveNode(parseDefinition(def, ctx))
-        result.flat = flattenType(result)
-        return result
-    }) as TypeParser<resolutions<context>>
 
     #initializeContext(type: Type): ParseContext {
         return {
@@ -291,7 +281,61 @@ export class Scope<context extends ScopeContext = any> {
         }
         return this.resolveNode(this.resolve(node).node)
     }
+
+    expressions: Expressions<resolutions<context>> = {
+        intersection: (l, r, opts) =>
+            this.type([l, "&", r] as inferred<unknown>, opts),
+        union: (l, r, opts) =>
+            this.type([l, "|", r] as inferred<unknown>, opts),
+        arrayOf: (def, opts) =>
+            this.type([def, "[]"] as inferred<unknown>, opts),
+        keyOf: (def, opts) =>
+            this.type(["keyof", def] as inferred<unknown>, opts),
+        fromNode: (def, opts) =>
+            this.type(["node", def] as inferred<unknown>, opts),
+        instanceOf: (def, opts) =>
+            this.type(["instanceof", def] as inferred<unknown>, opts),
+        valueOf: (def, opts) =>
+            this.type(["===", def] as inferred<unknown>, opts),
+        narrow: (def, fn, opts) =>
+            this.type([def, ":", fn] as inferred<unknown>, opts),
+        morph: (def, fn, opts) =>
+            this.type([def, "=>", fn] as inferred<unknown>, opts)
+    } as Expressions<resolutions<context>>
+
+    intersection = this.expressions.intersection
+
+    union = this.expressions.union
+
+    arrayOf = this.expressions.arrayOf
+
+    keyOf = this.expressions.keyOf
+
+    valueOf = this.expressions.valueOf
+
+    instanceOf = this.expressions.instanceOf
+
+    narrow = this.expressions.narrow
+
+    morph = this.expressions.morph
+
+    type: TypeParser<resolutions<context>> = Object.assign(
+        (def: unknown, opts: TypeOptions = {}) => {
+            if (opts.name && this.aliases[opts.name]) {
+                return throwParseError(writeDuplicateAliasesMessage(opts.name))
+            }
+            const result = initializeType(def, opts, this)
+            const ctx = this.#initializeContext(result)
+            result.node = this.resolveNode(parseDefinition(def, ctx))
+            result.flat = flattenType(result)
+            return result
+        },
+        { from: this.expressions.fromNode }
+    ) as TypeParser<resolutions<context>>
 }
+
+export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>
+    new Scope(aliases, opts)) as any
 
 type OnUnresolvable = "throw" | "undefined"
 
@@ -302,9 +346,6 @@ export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
         "=>"
     )}`
-
-export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>
-    new Scope(aliases, opts)) as any
 
 export const writeDuplicateAliasesMessage = <name extends string>(
     name: name

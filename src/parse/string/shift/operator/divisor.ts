@@ -1,7 +1,7 @@
 import type { error } from "../../../../utils/generics.ts"
-import { keysOf } from "../../../../utils/generics.ts"
+import { objectKeysOf } from "../../../../utils/generics.ts"
 import { tryParseWellFormedInteger } from "../../../../utils/numericLiterals.ts"
-import { writeIndivisibleMessage } from "../../ast.ts"
+import { writeIndivisibleMessage } from "../../../ast/divisor.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { state, StaticState } from "../../reduce/static.ts"
 import type { Scanner } from "../scanner.ts"
@@ -15,7 +15,7 @@ export const parseDivisor = (s: DynamicState) => {
     if (divisor === 0) {
         s.error(writeInvalidDivisorMessage(0))
     }
-    const rootDomains = keysOf(s.resolveRoot())
+    const rootDomains = objectKeysOf(s.resolveRoot())
     if (rootDomains.length === 1 && rootDomains[0] === "number") {
         s.intersect({ number: { divisor } })
     } else {
@@ -33,12 +33,16 @@ export type parseDivisor<
     ? tryParseWellFormedInteger<
           scanned,
           writeInvalidDivisorMessage<scanned>
-      > extends infer result
-        ? result extends number
-            ? result extends 0
+      > extends infer divisor
+        ? divisor extends number
+            ? divisor extends 0
                 ? error<writeInvalidDivisorMessage<0>>
-                : state.setRoot<s, [s["root"], "%", result], nextUnscanned>
-            : error<result & string>
+                : state.setRoot<
+                      s,
+                      [s["root"], "%", `${divisor}`],
+                      nextUnscanned
+                  >
+            : error<divisor & string>
         : never
     : never
 

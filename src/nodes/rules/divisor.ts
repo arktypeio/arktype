@@ -20,5 +20,4 @@ const greatestCommonDivisor = (l: number, r: number) => {
 }
 
 export const checkDivisor: EntryChecker<"divisor"> = (divisor, state) =>
-    state.data % divisor === 0 ||
-    state.problems.add("divisor", state.data, divisor)
+    state.data % divisor === 0 || state.problems.create("divisor", divisor)

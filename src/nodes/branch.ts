@@ -1,5 +1,5 @@
-import { writeImplicitNeverMessage } from "../parse/string/ast.js"
-import type { Morph } from "../parse/tuple/morph.js"
+import { writeImplicitNeverMessage } from "../parse/ast/intersection.js"
+import type { Morph } from "../parse/ast/morph.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf, hasDomain } from "../utils/domains.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
@@ -22,7 +22,7 @@ export type MorphBranch<domain extends Domain = Domain, $ = Dict> = {
 
 export type Branches = List<Branch>
 
-export type MorphEntry = ["morph", CollapsibleList<Morph>]
+export type MorphEntry = ["morph", Morph]
 
 export const isBranchComparison = (
     comparison: PredicateComparison
@@ -119,7 +119,13 @@ export const flattenBranch = (branch: Branch, ctx: FlattenContext) => {
     if (isMorphBranch(branch)) {
         const result = flattenRules(branch.rules, ctx)
         if (branch.morph) {
-            result.push(["morph", branch.morph])
+            if (typeof branch.morph === "function") {
+                result.push(["morph", branch.morph])
+            } else {
+                for (const morph of branch.morph) {
+                    result.push(["morph", morph])
+                }
+            }
         }
         return result
     }

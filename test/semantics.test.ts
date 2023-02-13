@@ -1,10 +1,8 @@
 import { describe, it } from "mocha"
 import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import {
-    writeIndivisibleMessage,
-    writeUnboundableMessage
-} from "../src/parse/string/ast.ts"
+import { writeUnboundableMessage } from "../src/parse/ast/bound.ts"
+import { writeIndivisibleMessage } from "../src/parse/ast/divisor.ts"
 
 describe("semantics", () => {
     describe("bound", () => {

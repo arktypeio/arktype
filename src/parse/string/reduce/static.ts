@@ -1,6 +1,10 @@
-import type { LowerBound, MinComparator } from "../../../nodes/rules/range.ts"
+import type {
+    MaxComparator,
+    MinComparator
+} from "../../../nodes/rules/range.ts"
 import type { defined, error } from "../../../utils/generics.ts"
-import type { astToString } from "../ast.ts"
+import type { NumberLiteral } from "../../../utils/numericLiterals.ts"
+import type { astToString } from "../../ast/utils.ts"
 import type { Scanner } from "../shift/scanner.ts"
 import type {
     unclosedGroupMessage,
@@ -17,8 +21,10 @@ export type StaticState = {
     unscanned: string
 }
 
+type StaticOpenLeftBound = { limit: NumberLiteral; comparator: MinComparator }
+
 type BranchState = {
-    range: LowerBound | undefined
+    range: StaticOpenLeftBound | undefined
     "&": unknown
     "|": unknown
 }
@@ -67,7 +73,7 @@ export namespace state {
 
     export type reduceLeftBound<
         s extends StaticState,
-        limit extends number,
+        limit extends NumberLiteral,
         comparator extends Scanner.Comparator,
         unscanned extends string
     > = comparator extends "<" | "<="
@@ -97,10 +103,10 @@ export namespace state {
 
     export type reduceRange<
         s extends StaticState,
-        minLimit extends number,
+        minLimit extends NumberLiteral,
         minComparator extends MinComparator,
-        maxComparator extends Scanner.Comparator,
-        maxLimit extends number,
+        maxComparator extends MaxComparator,
+        maxLimit extends NumberLiteral,
         unscanned extends string
     > = state.from<{
         root: [minLimit, minComparator, [s["root"], maxComparator, maxLimit]]
@@ -116,7 +122,7 @@ export namespace state {
     export type reduceSingleBound<
         s extends StaticState,
         comparator extends Scanner.Comparator,
-        limit extends number,
+        limit extends NumberLiteral,
         unscanned extends string
     > = state.from<{
         root: [s["root"], comparator, limit]

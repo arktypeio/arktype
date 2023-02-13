@@ -22,11 +22,11 @@ export const checkClass: EntryChecker<"class"> = (expectedClass, state) => {
     if (typeof expectedClass === "string") {
         return (
             objectKindOf(state.data) === expectedClass ||
-            state.problems.add("class", state.data, expectedClass)
+            state.problems.create("class", expectedClass)
         )
     }
     return (
         state.data instanceof expectedClass ||
-        state.problems.add("class", state.data, expectedClass)
+        state.problems.create("class", expectedClass)
     )
 }
