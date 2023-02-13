@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
 import type { Type } from "../api.ts"
-import { fromNode, scope, type } from "../api.ts"
+import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import type { Out } from "../src/parse/ast/morph.ts"
 
@@ -131,7 +131,7 @@ describe("node definitions", () => {
         attest(t.infer).type.toString("Date")
     })
     it("helper", () => {
-        const t = fromNode({ string: true })
+        const t = type.from({ string: true })
         attest(t.infer).typed as string
         attest(t.node).snap({ string: true })
     })
@@ -177,7 +177,7 @@ describe("node definitions", () => {
         })
         it("helper error", () => {
             // @ts-expect-error
-            attest(() => fromNode({ number: { regex: /.*/ } })).type.errors(
+            attest(() => type.from({ number: { regex: /.*/ } })).type.errors(
                 `'regex' does not exist in type 'CollapsibleList<Branch<"number", PrecompiledDefaults>>'`
             )
         })

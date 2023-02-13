@@ -5,8 +5,7 @@ export {
     union,
     arrayOf,
     instanceOf,
-    fromNode,
-    literal,
+    valueOf,
     morph,
     narrow,
     keyOf

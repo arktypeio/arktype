@@ -19,7 +19,11 @@ export type TypeParser<$> = {
     <def>(def: validateDefinition<def, $>): parseType<def, $>
 
     <def>(def: validateDefinition<def, $>, opts: TypeOptions): parseType<def, $>
-} & Expressions<$>
+} & TypeParserProps<$>
+
+export type TypeParserProps<$> = {
+    from: Expressions<$>["fromNode"]
+}
 
 export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>

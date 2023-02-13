@@ -27,25 +27,6 @@ describe("terminal objects", () => {
                 type({ a: type("goolean") })
             }).throwsAndHasTypeError(writeUnresolvableMessage("goolean"))
         })
-        it("allows expression access as props", () => {
-            const t = type.intersection({ a: "string" }, { b: "boolean" })
-            attest(t.infer).typed as {
-                a: string
-                b: boolean
-            }
-            attest(t.node).snap({
-                object: { props: { a: "string", b: "boolean" } }
-            })
-        })
-        it("allows expression access as props in scope", () => {
-            const $ = scope({
-                a: () => $.type.keyOf("b"),
-                b: { k: "'value'" }
-            })
-            const types = $.compile()
-            attest(types.a.infer).typed as "k"
-            attest(types.a.node).snap({ string: { value: "k" } })
-        })
     })
     describe("thunk", () => {
         it("thunk", () => {

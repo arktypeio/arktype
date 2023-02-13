@@ -25,7 +25,7 @@ export type Expressions<$> = {
     keyOf: UnaryExpressionParser<$, "keyof">
     fromNode: UnvalidatedExpressionParser<$, "node">
     instanceOf: UnvalidatedExpressionParser<$, "instanceof">
-    literal: UnvalidatedExpressionParser<$, "===">
+    valueOf: UnvalidatedExpressionParser<$, "===">
     narrow: FunctionalExpressionParser<$, ":">
     morph: FunctionalExpressionParser<$, "=>">
 }
@@ -41,11 +41,9 @@ export const arrayOf: Standard["arrayOf"] = scopes.standard.arrayOf
 
 export const keyOf: Standard["keyOf"] = scopes.standard.keyOf
 
-export const fromNode: Standard["fromNode"] = scopes.standard.fromNode
-
 export const instanceOf: Standard["instanceOf"] = scopes.standard.instanceOf
 
-export const literal: Standard["literal"] = scopes.standard.literal
+export const valueOf: Standard["valueOf"] = scopes.standard.valueOf
 
 export const narrow: Standard["narrow"] = scopes.standard.narrow
 

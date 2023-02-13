@@ -295,7 +295,7 @@ export class Scope<context extends ScopeContext = any> {
             this.type(["node", def] as inferred<unknown>, opts),
         instanceOf: (def, opts) =>
             this.type(["instanceof", def] as inferred<unknown>, opts),
-        literal: (def, opts) =>
+        valueOf: (def, opts) =>
             this.type(["===", def] as inferred<unknown>, opts),
         narrow: (def, fn, opts) =>
             this.type([def, ":", fn] as inferred<unknown>, opts),
@@ -311,18 +311,16 @@ export class Scope<context extends ScopeContext = any> {
 
     keyOf = this.expressions.keyOf
 
-    fromNode = this.expressions.fromNode
+    valueOf = this.expressions.valueOf
 
     instanceOf = this.expressions.instanceOf
-
-    literal = this.expressions.literal
 
     narrow = this.expressions.narrow
 
     morph = this.expressions.morph
 
     type: TypeParser<resolutions<context>> = Object.assign(
-        ((def, opts: TypeOptions = {}) => {
+        (def: unknown, opts: TypeOptions = {}) => {
             if (opts.name && this.aliases[opts.name]) {
                 return throwParseError(writeDuplicateAliasesMessage(opts.name))
             }
@@ -331,9 +329,9 @@ export class Scope<context extends ScopeContext = any> {
             result.node = this.resolveNode(parseDefinition(def, ctx))
             result.flat = flattenType(result)
             return result
-        }) as TypeParser<resolutions<context>>,
-        this.expressions
-    )
+        },
+        { from: this.expressions.fromNode }
+    ) as TypeParser<resolutions<context>>
 }
 
 export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>
