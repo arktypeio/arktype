@@ -1,4 +1,5 @@
 import { describe, it } from "mocha"
+import type { Type } from "../api.ts"
 import { instanceOf, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
@@ -37,8 +38,9 @@ describe("instanceof", () => {
     it("user-defined class", () => {
         class Ark {}
         const ark = type(["instanceof", Ark])
-        attest(ark.infer).type.toString("Ark")
-        attest(ark(new Ark()).data).snap({})
+        attest(ark).typed as Type<Ark>
+        const a = new Ark()
+        attest(ark(a).data).equals(a)
         attest(ark({}).problems?.summary).snap(
             "Must be an instance of Ark (was Object)"
         )
@@ -55,7 +57,7 @@ describe("instanceof", () => {
                 "Expected a constructor following 'instanceof' operator (was number)."
             )
             .type.errors(
-                "Argument of type '5' is not assignable to parameter of type 'constructor'."
+                "Argument of type 'number' is not assignable to parameter of type 'constructor<unknown>'."
             )
     })
 })

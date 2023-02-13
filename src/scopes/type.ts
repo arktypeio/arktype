@@ -133,7 +133,7 @@ type asIo<t, io extends "in" | "out"> = t extends ParsedMorph<infer i, infer o>
         ? i
         : o
     : t extends object
-    ? t extends Function | BuiltinClass
+    ? t extends BuiltinClass | ((...args: any[]) => any)
         ? t
         : { [k in keyof t]: asIo<t[k], io> }
     : t

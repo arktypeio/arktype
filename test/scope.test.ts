@@ -82,8 +82,8 @@ describe("scope", () => {
             b: () => $.type("number")
         })
         const types = $.compile()
-        attest(types.a).typed as string
-        attest(types.b).typed as number
+        attest(types.a.infer).typed as string
+        attest(types.b.infer).typed as number
     })
     it("infers cyclic helpers", () => {
         const $ = scope({
@@ -96,7 +96,7 @@ describe("scope", () => {
                 b: any
             }
         }
-        attest(types.b).typed as {
+        attest(types.b.infer).typed as {
             b: {
                 a: any
             }
@@ -108,8 +108,11 @@ describe("scope", () => {
             lessThan10: () => $.type("n<10")
         })
         const types = $.compile()
-        attest(types.n).typed as number
-        attest(types.lessThan10).typed as number
+        attest(types.n.infer).typed as number
+        attest(types.lessThan10.infer).typed as number
+        attest(types.lessThan10.node).snap({
+            number: { range: { max: { comparator: "<", limit: 10 } } }
+        })
     })
     it("errors on helper parse error", () => {
         attest(() => {
