@@ -26,8 +26,8 @@ export type Expressions<$> = {
     fromNode: UnvalidatedExpressionParser<$, "node">
     instanceOf: UnvalidatedExpressionParser<$, "instanceof">
     valueOf: UnvalidatedExpressionParser<$, "===">
-    narrow: FunctionalExpressionParser<$, ":">
-    morph: FunctionalExpressionParser<$, "=>">
+    narrow: FunctionalExpressionParser<$, "=>">
+    morph: FunctionalExpressionParser<$, "|>">
 }
 
 type Standard = Expressions<PrecompiledDefaults>

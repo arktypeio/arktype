@@ -9,6 +9,7 @@ import type {
 import { parseDefinition } from "../parse/definition.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
+import { deepFreeze } from "../utils/freeze.ts"
 import type {
     Dict,
     error,
@@ -270,8 +271,8 @@ export class Scope<context extends ScopeContext = any> {
             seen.push(resolution)
             resolution = this.#resolveRecurse(resolution, "throw", seen).node
         }
-        type.node = resolution
-        type.flat = flattenType(type)
+        type.node = deepFreeze(resolution)
+        type.flat = deepFreeze(flattenType(type))
         return type
     }
 
@@ -298,9 +299,9 @@ export class Scope<context extends ScopeContext = any> {
         valueOf: (def, opts) =>
             this.type(["===", def] as inferred<unknown>, opts),
         narrow: (def, fn, opts) =>
-            this.type([def, ":", fn] as inferred<unknown>, opts),
+            this.type([def, "=>", fn] as inferred<unknown>, opts),
         morph: (def, fn, opts) =>
-            this.type([def, "=>", fn] as inferred<unknown>, opts)
+            this.type([def, "|>", fn] as inferred<unknown>, opts)
     } as Expressions<resolutions<context>>
 
     intersection = this.expressions.intersection

@@ -91,7 +91,7 @@ const minAllows = (min: DoubleBound["min"], n: number) =>
 const maxAllows = (max: DoubleBound["max"], n: number) =>
     !max || n > max.limit || (n === max.limit && !isExclusive(max.comparator))
 
-export type FlatBound = Bound & { units?: string }
+export type FlatBound = evaluate<Bound & { units?: string }>
 
 export const flattenRange: FlattenAndPushRule<Range> = (
     entries,
@@ -117,7 +117,7 @@ export const flattenRange: FlattenAndPushRule<Range> = (
 
 export const checkBound: EntryChecker<"bound"> = (bound, state) =>
     comparatorCheckers[bound.comparator](sizeOf(state.data), bound.limit) ||
-    state.problems.create("bound", bound)
+    !state.problems.add("bound", bound)
 
 const comparatorCheckers: Record<
     Scanner.Comparator,

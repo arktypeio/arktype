@@ -8,7 +8,7 @@ import type { distributable } from "./distributableFunction.ts"
 import { distributeFunctionToNode } from "./distributableFunction.ts"
 import type { PostfixParser, TupleExpression } from "./tuple.ts"
 
-export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
+export const parseNarrowTuple: PostfixParser<"=>"> = (def, ctx) => {
     const inputNode = parseDefinition(def[0], ctx)
     return rootIntersection(
         inputNode,
@@ -31,7 +31,7 @@ export type NarrowCast<data = any, to extends data = data> = (
 
 export type validateNarrowTuple<def extends TupleExpression, $> = readonly [
     _: validateDefinition<def[0], $>,
-    _: ":",
+    _: "=>",
     _: distributable<Narrow<asIn<inferDefinition<def[0], $>>>>
 ]
 
