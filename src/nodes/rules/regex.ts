@@ -14,7 +14,7 @@ export const getRegex = (source: string) => {
 
 export const checkRegex: EntryChecker<"regex"> = (source, state) =>
     getRegex(source).test(state.data) ||
-    state.problems.create("regex", `/${source}/`)
+    !state.problems.add("regex", `/${source}/`)
 
 export const regexIntersection = composeIntersection<CollapsibleList<string>>(
     collapsibleListUnion<string>

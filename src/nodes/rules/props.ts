@@ -1,5 +1,4 @@
 import type { Dict } from "../../utils/generics.ts"
-import { hasKey } from "../../utils/generics.ts"
 import {
     composeIntersection,
     composeKeyedIntersection,
@@ -84,7 +83,7 @@ export const propsIntersection = composeIntersection<PropsRule>(
             return result
         }
         const lengthValue = getTupleLengthIfPresent(result)
-        if (lengthValue === undefined || !hasKey(result, mappedKeys.index)) {
+        if (lengthValue === undefined || !(mappedKeys.index in result)) {
             return result
         }
         // if we are at this point, we have an array with an exact length (i.e.

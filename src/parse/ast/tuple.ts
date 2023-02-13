@@ -71,9 +71,9 @@ export type validateTupleExpression<
                   validateDefinition<def[2], $>
               ]
           >
-    : def[1] extends "=>"
+    : def[1] extends "|>"
     ? validateMorphTuple<def, $>
-    : def[1] extends ":"
+    : def[1] extends "=>"
     ? validateNarrowTuple<def, $>
     : def[0] extends "==="
     ? conform<def, readonly ["===", unknown]>
@@ -110,9 +110,9 @@ export type inferTupleExpression<
     ? inferIntersection<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
     : def[1] extends "|"
     ? inferUnion<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
-    : def[1] extends ":"
-    ? inferNarrow<def[0], def[2], $>
     : def[1] extends "=>"
+    ? inferNarrow<def[0], def[2], $>
+    : def[1] extends "|>"
     ? inferMorph<def[0], def[2], $>
     : def[0] extends "==="
     ? def[1]
@@ -155,7 +155,7 @@ export type PrefixParser<token extends IndexZeroOperator> = (
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 
 export const writeMalformedFunctionalExpressionMessage = (
-    operator: "=>" | ":",
+    operator: FunctionalTupleOperator,
     rightDef: unknown
 ) =>
     `Expression requires a function following '${operator}' (was ${typeof rightDef})`
@@ -166,7 +166,7 @@ type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
 
 export type TuplePostfixOperator = "[]"
 
-export type TupleInfixOperator = "&" | "|" | ":" | "=>"
+export type TupleInfixOperator = "&" | "|" | ":" | "=>" | "|>"
 
 export type IndexOneExpression<
     token extends IndexOneOperator = IndexOneOperator
@@ -181,11 +181,12 @@ const indexOneParsers: {
     "|": parseBranchTuple,
     "&": parseBranchTuple,
     "[]": parseArrayTuple,
-    ":": parseNarrowTuple,
-    "=>": parseMorphTuple
+    "=>": parseNarrowTuple,
+    "|>": parseMorphTuple,
+    ":": () => ({})
 }
 
-export type FunctionalTupleOperator = ":" | "=>"
+export type FunctionalTupleOperator = "=>" | "|>"
 
 export type IndexZeroOperator = "keyof" | "instanceof" | "===" | "node"
 

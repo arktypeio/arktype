@@ -1,4 +1,4 @@
-import type { deepImmutable, Dict, mutable } from "./generics.ts"
+import type { deepImmutable, Dict } from "./generics.ts"
 
 export const deepFreeze = <value>(value: value): deepImmutable<value> =>
     (Object.isFrozen(value)
@@ -9,9 +9,8 @@ export const deepFreeze = <value>(value: value): deepImmutable<value> =>
           deepFreezeDictionary(value as Dict)) as deepImmutable<value>
 
 const deepFreezeDictionary = (value: Dict) => {
-    const result: mutable<Dict> = {}
     for (const k in value) {
-        result[k] = deepFreeze(value[k] as any)
+        deepFreeze(value[k] as any)
     }
-    return Object.freeze(result)
+    return value
 }
