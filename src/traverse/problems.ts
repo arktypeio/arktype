@@ -72,11 +72,16 @@ export type AddProblemOptions<code extends ProblemCode = ProblemCode> = {
 
 class ProblemArray extends Array<Problem> {
     byPath: Record<string, Problem> = {}
+    count = 0
     #state: TraversalState
 
     constructor(state: TraversalState) {
         super()
         this.#state = state
+    }
+
+    mustBe(description: string, opts?: AddProblemOptions<"custom">) {
+        return this.create("custom", description, opts)
     }
 
     create<code extends ProblemCode>(
@@ -129,6 +134,7 @@ class ProblemArray extends Array<Problem> {
             this.byPath[pathKey] = problem
             this.push(problem)
         }
+        this.count++
         return false
     }
 
@@ -189,6 +195,7 @@ type ProblemSources = {
     valueBranches: unknown[]
     multi: Problem[]
     branches: readonly Problem[]
+    custom: string
 }
 
 export type ProblemCode = evaluate<keyof ProblemSources>
@@ -311,6 +318,9 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
         writeReason: (mustBe, data) => `${data} must be...\n${mustBe}`,
         addContext: (reason, path) =>
             path.length ? `At ${path}, ${reason}` : reason
+    },
+    custom: {
+        mustBe: (mustBe) => mustBe
     }
 })
 

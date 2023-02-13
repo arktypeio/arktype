@@ -2,6 +2,7 @@ import type { Branch, MorphBranch } from "../../nodes/branch.ts"
 import { isMorphBranch } from "../../nodes/branch.ts"
 import type { ResolvedNode } from "../../nodes/node.ts"
 import type { asIn, asOut } from "../../scopes/type.ts"
+import type { Problems } from "../../traverse/problems.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../../utils/errors.ts"
 import type { mutable, nominal } from "../../utils/generics.ts"
@@ -64,12 +65,14 @@ export type validateMorphTuple<def extends TupleExpression, $> = readonly [
     _: Morph<asOut<inferDefinition<def[0], $>>, unknown>
 ]
 
-export type Morph<i = any, o = unknown> = (In: i) => o
+export type Morph<i = any, o = unknown> = (In: i, problems: Problems) => o
 
 export type ParsedMorph<i = any, o = unknown> = (In: i) => Out<o>
 
 export type inferMorph<inDef, morph, $> = morph extends Morph
-    ? (In: asIn<inferDefinition<inDef, $>>) => Out<ReturnType<morph>>
+    ? (
+          In: asIn<inferDefinition<inDef, $>>
+      ) => Out<Exclude<ReturnType<morph>, undefined>>
     : never
 
 export const writeMalformedMorphExpressionMessage = (value: unknown) =>

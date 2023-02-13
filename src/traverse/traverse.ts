@@ -21,7 +21,7 @@ import { getPath, Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import { deserializePrimitive } from "../utils/serialize.js"
 import type { ProblemCode, ProblemWriters } from "./problems.js"
-import { defaultProblemWriters, Problem, Problems } from "./problems.js"
+import { defaultProblemWriters, Problems } from "./problems.js"
 
 export class TraversalState<data = unknown> {
     path = new Path()
@@ -235,9 +235,10 @@ const entryCheckers = {
     value: (value, state) =>
         state.data === value || state.problems.create("value", value),
     morph: (morph, state) => {
-        const out = morph(state.data)
-        if (out instanceof Problem) {
-            return state.problems.add(out)
+        const lastProblemCount = state.problems.count
+        const out = morph(state.data, state.problems)
+        if (state.problems.count > lastProblemCount) {
+            return false
         }
         state.data = out
         return true

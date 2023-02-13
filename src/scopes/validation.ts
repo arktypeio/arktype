@@ -47,8 +47,8 @@ export const validationScope = scope(
         email: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
         // https://github.com/validatorjs/validator.js
         uuid: /^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/,
-        parsedNumber: [wellFormedNumberMatcher, "=>", parseFloat],
-        parsedInteger: [wellFormedIntegerMatcher, "=>", parseInt],
+        parsedNumber: [wellFormedNumberMatcher, "=>", (s) => parseFloat(s)],
+        parsedInteger: [wellFormedIntegerMatcher, "=>", (s) => parseInt(s)],
         integer: ["node", { number: { divisor: 1 } }]
     },
     { name: "validation", standard: false }
