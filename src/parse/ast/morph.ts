@@ -12,7 +12,7 @@ import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { PostfixParser, TupleExpression } from "./tuple.ts"
 
-export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
+export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {
         return throwParseError(writeMalformedMorphExpressionMessage(def[2]))
     }
@@ -61,7 +61,7 @@ export type Out<t = {}> = nominal<t, "out">
 
 export type validateMorphTuple<def extends TupleExpression, $> = readonly [
     _: validateDefinition<def[0], $>,
-    _: "=>",
+    _: "|>",
     _: Morph<asOut<inferDefinition<def[0], $>>, unknown>
 ]
 
@@ -80,4 +80,4 @@ type inferMorphOut<out> = unknown extends out
           | Extract<out, undefined | null>
 
 export const writeMalformedMorphExpressionMessage = (value: unknown) =>
-    `Morph expression requires a function following '=>' (was ${typeof value})`
+    `Morph expression requires a function following '|>' (was ${typeof value})`

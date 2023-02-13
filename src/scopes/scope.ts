@@ -299,9 +299,9 @@ export class Scope<context extends ScopeContext = any> {
         valueOf: (def, opts) =>
             this.type(["===", def] as inferred<unknown>, opts),
         narrow: (def, fn, opts) =>
-            this.type([def, ":", fn] as inferred<unknown>, opts),
+            this.type([def, "=>", fn] as inferred<unknown>, opts),
         morph: (def, fn, opts) =>
-            this.type([def, "=>", fn] as inferred<unknown>, opts)
+            this.type([def, "|>", fn] as inferred<unknown>, opts)
     } as Expressions<resolutions<context>>
 
     intersection = this.expressions.intersection

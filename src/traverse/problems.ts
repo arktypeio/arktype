@@ -72,7 +72,6 @@ export type AddProblemOptions<data = unknown> = {
 
 class ProblemArray extends Array<Problem> {
     byPath: Record<string, Problem> = {}
-
     count = 0
     #state: TraversalState
 

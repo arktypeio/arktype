@@ -132,7 +132,7 @@ export namespace Scanner {
 
     export type BranchToken = keyof typeof branchTokens
 
-    export type InfixToken = BranchToken | Comparator | "%" | ":" | "=>"
+    export type InfixToken = BranchToken | Comparator | "%" | ":" | "=>" | "|>"
 
     export type PostfixToken = "[]"
 
