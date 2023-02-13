@@ -39,6 +39,7 @@ if (args[attestArgIndex + 1] === "bench") {
     const skipTypes = attestArgs.includes("--skipTypes")
 
     let processError: unknown
+    const buildTest = /\/dist\//.test(args[attestArgIndex])
 
     try {
         if (skipTypes) {
@@ -57,7 +58,7 @@ if (args[attestArgIndex + 1] === "bench") {
         console.log(`⏳ attest: Using npx mocha to run your tests...`)
         const runnerStart = Date.now()
 
-        shell("npx mocha", {
+        shell(`npx mocha ${buildTest ? "*/*.test.js" : ""}`, {
             stdio: "inherit",
             env: { ARKTYPE_CHECK_CMD: attestArgs.join(" ") }
         })
