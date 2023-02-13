@@ -340,13 +340,11 @@ describe("morph", () => {
                 ["string", "=>", (s) => s.length],
                 ["string", "=>", (s) => s.split(",")]
             )
-        ).throwsAndHasTypeError(
-            "Intersection of morphs results in an unsatisfiable type"
-        )
+        ).throws("Intersection of morphs results in an unsatisfiable type")
     })
     it("union helper undiscriminated", () => {
-        attest(() =>
-            union(["string", "=>", (s) => s.length], "'foo'")
-        ).throwsAndHasTypeError(writeUndiscriminatableMorphUnionMessage("/"))
+        attest(() => union(["string", "=>", (s) => s.length], "'foo'")).throws(
+            writeUndiscriminatableMorphUnionMessage("/")
+        )
     })
 })

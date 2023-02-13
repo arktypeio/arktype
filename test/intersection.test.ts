@@ -103,9 +103,9 @@ describe("intersection", () => {
                 ).throwsAndHasTypeError(writeUnresolvableMessage("what"))
             })
             it("helper implicit never", () => {
-                attest(() =>
-                    intersection("string", "number")
-                ).throwsAndHasTypeError("results in an unsatisfiable type")
+                attest(() => intersection("string", "number")).throws(
+                    "results in an unsatisfiable type"
+                )
             })
         })
     })

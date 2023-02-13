@@ -113,8 +113,6 @@ describe("keyof", () => {
         attest(t.node).snap({ string: { value: "a" } })
     })
     it("helper errors", () => {
-        attest(() => keyOf("object")).throwsAndHasTypeError(
-            expectedNeverKeyOfMessage
-        )
+        attest(() => keyOf("object")).throws(expectedNeverKeyOfMessage)
     })
 })
