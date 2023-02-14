@@ -211,11 +211,24 @@ export class Scope<context extends ScopeContext = any> {
 
     getAnonymousTypeName(base = "type") {
         let increment = 1
-        let name = base
+        let name = `λ${base}`
         while (this.isResolvable(name)) {
-            name = `${base}${++increment}`
+            name = `λ${base}${++increment}`
         }
         return name
+    }
+
+    addAnonymous(type: Type) {
+        if (this.isResolvable(type.name)) {
+            if (type === this.resolve(type.name)) {
+                return type.name
+            }
+            const name = this.getAnonymousTypeName()
+            this.type(["node", type.node] as inferred<unknown>, { name })
+            return name
+        }
+        this.#resolutions.set(type.name, type)
+        return type.name
     }
 
     get infer(): exportsOf<context> {
@@ -288,10 +301,9 @@ export class Scope<context extends ScopeContext = any> {
     }
 
     resolveNode(node: TypeNode): ResolvedNode {
-        if (typeof node === "object") {
-            return node
-        }
-        return this.resolveNode(this.resolve(node).node)
+        return typeof node === "object"
+            ? node
+            : this.resolveNode(this.resolve(node).node)
     }
 
     expressions: Expressions<resolutions<context>> = {
@@ -338,8 +350,8 @@ export class Scope<context extends ScopeContext = any> {
             }
             const t = initializeType(def, opts, this)
             const ctx = this.#initializeContext(t)
-            t.node = this.resolveNode(parseDefinition(def, ctx))
-            t.flat = flattenType(t)
+            t.node = deepFreeze(parseDefinition(def, ctx))
+            t.flat = deepFreeze(flattenType(t))
             this.#resolutions.set(t.name, t)
             return t
         },

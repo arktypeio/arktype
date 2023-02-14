@@ -94,4 +94,82 @@ describe("config traversal", () => {
             "monster must be the number of dimensions in the monster group (was 196882)"
         )
     })
+    it("anonymous type config", () => {
+        const t = type(type("true", { mustBe: "unfalse" }))
+        attest(t.infer).typed as true
+        attest(t.flat).snap([
+            [
+                "config",
+                {
+                    config: { defaults: { mustBe: "unfalse" } },
+                    node: [["value", true]]
+                }
+            ]
+        ])
+        attest(t(false).problems?.summary).snap("Must be unfalse (was false)")
+    })
+    it("anonymous type config at path", () => {
+        const unfalse = type("true", { mustBe: "unfalse" })
+        const t = type({ myKey: unfalse })
+        attest(t.flat).snap([
+            ["domain", "object"],
+            [
+                "requiredProp",
+                [
+                    "myKey",
+                    [
+                        [
+                            "config",
+                            {
+                                config: { defaults: { mustBe: "unfalse" } },
+                                node: [["value", true]]
+                            }
+                        ]
+                    ]
+                ]
+            ]
+        ])
+        attest(t({ myKey: "500" }).problems?.summary).snap(
+            "myKey must be unfalse (was '500')"
+        )
+        // config only applies within myKey
+        attest(t({ yourKey: "500" }).problems?.summary).snap(
+            "myKey must be defined"
+        )
+    })
+    it("anonymous type thunk", () => {
+        const t = type(() => type("false", { mustBe: "untrue" }))
+        attest(t.infer).typed as false
+        attest(t.flat).snap([
+            [
+                "config",
+                {
+                    config: { defaults: { mustBe: "untrue" } },
+                    node: [["value", false]]
+                }
+            ]
+        ])
+    })
+    it("anonymous type thunk at path", () => {
+        const t = type({ myKey: () => type("false", { mustBe: "untrue" }) })
+        attest(t.infer).typed as { myKey: false }
+        attest(t.flat).snap([
+            ["domain", "object"],
+            [
+                "requiredProp",
+                [
+                    "myKey",
+                    [
+                        [
+                            "config",
+                            {
+                                config: { defaults: { mustBe: "untrue" } },
+                                node: [["value", false]]
+                            }
+                        ]
+                    ]
+                ]
+            ]
+        ])
+    })
 })
