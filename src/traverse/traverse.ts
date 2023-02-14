@@ -11,7 +11,8 @@ import type { TraversalProp } from "../nodes/rules/props.ts"
 import { checkBound } from "../nodes/rules/range.ts"
 import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
-import type { ArkTypeConfig, QualifiedTypeName, Type } from "../scopes/type.ts"
+import type { Scope } from "../scopes/scope.ts"
+import type { QualifiedTypeName, Type } from "../scopes/type.ts"
 import type { SizedData } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
@@ -32,27 +33,29 @@ import {
 export class TraversalState<data = unknown> {
     path = new Path()
     problems = new Problems(this as any)
-    configs: ArkTypeConfig[]
+    traversed: Type[]
+    scope: Scope
     failFast = false
 
     #seen: { [name in QualifiedTypeName]?: object[] } = {}
 
-    constructor(public data: data, public type: Type) {
-        this.configs = type.meta.scope.config ? [type.meta.scope.config] : []
+    constructor(public data: data, type: Type) {
+        this.scope = type.scope
+        this.traversed = [type]
     }
 
     getConfigForProblemCode<code extends ProblemCode>(
         code: code
     ): ProblemWriters<code> {
-        if (!this.configs.length) {
+        if (!this.traversed.length) {
             return defaultProblemWriters[code]
         }
-        for (let i = this.configs.length - 1; i >= 0; i--) {
-            if (this.configs[i][code] || this.configs[i]["defaults"]) {
+        for (let i = this.traversed.length - 1; i >= 0; i--) {
+            if (this.traversed[i][code] || this.traversed[i]["defaults"]) {
                 return {
                     ...defaultProblemWriters[code],
-                    ...this.configs[i]["defaults"],
-                    ...this.configs[i][code]
+                    ...this.traversed[i]["defaults"],
+                    ...this.traversed[i][code]
                 }
             }
         }
@@ -70,9 +73,13 @@ export class TraversalState<data = unknown> {
         return isValid
     }
 
+    get type() {
+        return this.traversed[this.traversed.length - 1]
+    }
+
     traverseResolution(name: string): boolean {
-        const resolution = this.type.meta.scope.resolve(name)
-        const id = resolution.meta.id
+        const resolution = this.type.scope.resolve(name)
+        const id = resolution.qualifiedName
         // this assignment helps with narrowing
         const data = this.data
         const isObject = hasDomain(data, "object")
@@ -90,10 +97,9 @@ export class TraversalState<data = unknown> {
                 this.#seen[id] = [data]
             }
         }
-        const lastResolution = this.type
-        this.type = resolution
+        this.traversed.push(resolution)
         const isValid = traverse(resolution.flat, this)
-        this.type = lastResolution
+        this.traversed.pop()
         if (isObject) {
             this.#seen[id]!.pop()
         }
@@ -240,9 +246,9 @@ const entryCheckers = {
     class: checkClass,
     narrow: (narrow, state) => narrow(state.data, state.problems),
     config: ({ config, node }, state) => {
-        state.configs.push(config)
+        state.traversed.push(config)
         const result = traverse(node, state)
-        state.configs.pop()
+        state.traversed.pop()
         return result
     },
     value: (value, state) =>

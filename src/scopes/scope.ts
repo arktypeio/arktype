@@ -8,6 +8,7 @@ import type {
     validateDefinition
 } from "../parse/definition.ts"
 import { parseDefinition } from "../parse/definition.ts"
+import type { ProblemsConfig } from "../traverse/problems.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import { deepFreeze } from "../utils/freeze.ts"
@@ -24,8 +25,9 @@ import type { stringifyUnion } from "../utils/unionToTuple.ts"
 import { Cache, FreezingCache } from "./cache.ts"
 import type { Expressions } from "./expressions.ts"
 import type { PrecompiledDefaults } from "./standard.ts"
-import type { ArkTypeConfig, Type, TypeOptions, TypeParser } from "./type.ts"
+import type { Type, TypeOptions, TypeParser } from "./type.ts"
 import { initializeType } from "./type.ts"
+import type { DateOptions } from "./validation/date.ts"
 
 type ScopeParser = {
     <aliases>(aliases: validateAliases<aliases, {}>): Scope<
@@ -50,8 +52,10 @@ export type ScopeOptions = {
     includes?: Space[] | []
     standard?: boolean
     name?: string
-    config?: ArkTypeConfig
+    config?: ScopeConfig
 }
+
+export type ScopeConfig = evaluate<{ date?: DateOptions } & ProblemsConfig>
 
 type validateOptions<opts extends ScopeOptions> = {
     [k in keyof opts]: k extends "imports" | "includes"
@@ -157,7 +161,7 @@ export const isConfigTuple = (def: unknown): def is ConfigTuple =>
 
 export class Scope<context extends ScopeContext = any> {
     name: string
-    config: ArkTypeConfig | undefined
+    config: ScopeConfig | undefined
     parseCache = new FreezingCache<TypeNode>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
@@ -252,7 +256,7 @@ export class Scope<context extends ScopeContext = any> {
         if (!resolution) {
             return false
         }
-        ctx.type.meta.includesMorph ||= resolution.meta.includesMorph
+        ctx.type.includesMorph ||= resolution.includesMorph
         return true
     }
 
@@ -285,7 +289,7 @@ export class Scope<context extends ScopeContext = any> {
         this.#resolutions.set(name, type)
         this.#exports.set(name, type)
         const ctx = this.#initializeContext(type)
-        let resolution = parseDefinition(type.meta.definition, ctx)
+        let resolution = parseDefinition(type.definition, ctx)
         if (typeof resolution === "string") {
             if (seen.includes(resolution)) {
                 return throwParseError(

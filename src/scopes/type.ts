@@ -5,19 +5,13 @@ import type {
     inferDefinition,
     validateDefinition
 } from "../parse/definition.ts"
-import type {
-    Problems,
-    ProblemsConfig,
-    ProblemsOptions
-} from "../traverse/problems.ts"
+import type { ProblemOptions, Problems } from "../traverse/problems.ts"
 import { TraversalState, traverse } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { defer, evaluate, xor } from "../utils/generics.ts"
-import { hasKeys } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import type { Expressions } from "./expressions.ts"
 import type { Scope } from "./scope.ts"
-import type { DateOptions } from "./validation/date.ts"
 
 export type TypeParser<$> = {
     <def>(def: validateDefinition<def, $>): parseType<def, $>
@@ -33,55 +27,24 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
 
-type TypeRoot<t = unknown> = {
-    [as]: t
-    infer: asOut<t>
-    node: TypeNode
-    flat: TraversalNode
-    meta: TypeMeta
-}
+type TypeRoot<t = unknown> = evaluate<
+    {
+        [as]: t
+        infer: asOut<t>
+        node: TypeNode
+        flat: TraversalNode
+        qualifiedName: QualifiedTypeName
+        definition: unknown
+        scope: Scope
+        includesMorph: boolean
+    } & ProblemOptions
+>
 
 export type TypeOptions = evaluate<
     {
         name?: string
-        date?: DateOptions
-    } & ProblemsOptions
+    } & ProblemOptions
 >
-
-export type ArkTypeConfig = evaluate<{ date?: DateOptions } & ProblemsConfig>
-
-type TypeMeta = {
-    name: string
-    id: QualifiedTypeName
-    definition: unknown
-    scope: Scope
-    config: ArkTypeConfig | undefined
-    includesMorph: boolean
-}
-
-const compileTypeConfig = (
-    opts: TypeOptions | undefined
-): ArkTypeConfig | undefined => {
-    if (opts === undefined) {
-        return
-    }
-    const { name, mustBe, writeReason, addContext, ...rest } = opts
-    const config = rest as ArkTypeConfig
-    if (mustBe) {
-        config.defaults = { mustBe }
-    }
-    if (writeReason) {
-        config.defaults ??= {}
-        config.defaults.writeReason = writeReason
-    }
-    if (addContext) {
-        config.defaults ??= {}
-        config.defaults.addContext = addContext
-    }
-    if (hasKeys(config)) {
-        return config
-    }
-}
 
 export const initializeType = (
     definition: unknown,
@@ -89,23 +52,16 @@ export const initializeType = (
     scope: Scope
 ) => {
     const name = opts?.name ?? scope.getAnonymousTypeName()
-    const config = compileTypeConfig(opts)
-    const meta: TypeMeta = {
-        name,
-        id: `${scope.name}.${name}`,
-        definition,
-        scope,
-        config,
-        includesMorph: false
-    }
-
     const root = {
         // temporarily initialize node/flat to aliases that will be included in
         // the final type in case of cyclic resolutions
         node: name,
         flat: [["alias", name]],
-        meta,
-        infer: chainableNoOpProxy
+        infer: chainableNoOpProxy,
+        qualifiedName: `${scope.name}.${name}`,
+        definition,
+        scope,
+        includesMorph: false
         // the "as" symbol from inferred is not used at runtime, so we check
         // that the rest of the type is correct then cast it
     } satisfies Omit<TypeRoot, typeof as> as TypeRoot
