@@ -49,7 +49,6 @@ export class TraversalState<data = unknown> {
     traversedProblemConfigs = initializeTraversalConfig()
     readonly rootScope: Scope
 
-    // TODO: use this for anonymous types
     #seen: { [name in QualifiedTypeName]?: object[] } = {}
 
     constructor(public data: data, public type: Type) {

@@ -30,7 +30,11 @@ import { Cache, FreezingCache } from "./cache.ts"
 import type { Expressions } from "./expressions.ts"
 import type { PrecompiledDefaults } from "./standard.ts"
 import type { Type, TypeOptions, TypeParser } from "./type.ts"
-import { initializeType } from "./type.ts"
+import {
+    initializeType,
+    nameIsAnonymousReference,
+    typeRegistry
+} from "./type.ts"
 
 type ScopeParser = {
     <aliases>(aliases: validateAliases<aliases, {}>): Scope<
@@ -225,14 +229,14 @@ export class Scope<context extends ScopeContext = any> {
         }
         let increment = 1
         let name = base
-        while (this.isResolvable(name)) {
+        while (this.isInternallyResolvable(name)) {
             name = `${base}${++increment}`
         }
         return name
     }
 
     addAnonymous(type: Type, ctx: ParseContext) {
-        if (this.isResolvable(type.name)) {
+        if (this.isInternallyResolvable(type.name)) {
             if (type === this.resolve(type.name)) {
                 return type.name
             }
@@ -241,7 +245,7 @@ export class Scope<context extends ScopeContext = any> {
             return name
         }
         this.#resolutions.set(type.name, type)
-        return type.name
+        return type.qualifiedName
     }
 
     get infer(): exportsOf<context> {
@@ -282,6 +286,15 @@ export class Scope<context extends ScopeContext = any> {
         if (maybeCacheResult) {
             return maybeCacheResult
         }
+        if (nameIsAnonymousReference(name)) {
+            // TODO: maybe this can't be resolved like this
+            return (
+                typeRegistry[name] ??
+                throwInternalError(
+                    `Unexpectedly failed to resolve anonymous type '${name}'`
+                )
+            )
+        }
         const aliasValue = this.aliases[name]
         if (!aliasValue) {
             return (
@@ -292,13 +305,14 @@ export class Scope<context extends ScopeContext = any> {
                     : undefined
             ) as ResolveResult<onUnresolvable>
         }
-        const type = isConfigTuple(aliasValue)
-            ? initializeType(name, aliasValue[0], aliasValue[2], this)
-            : initializeType(name, aliasValue, undefined, this)
+        const type = initializeType(name, aliasValue, undefined, this)
+        // isConfigTuple(aliasValue)
+        // ? initializeType(name, aliasValue[0], aliasValue[2], this)
+        // :
         this.#resolutions.set(name, type)
         this.#exports.set(name, type)
         const ctx = this.#initializeContext(type)
-        let resolution = parseDefinition(type.definition, ctx)
+        const resolution = parseDefinition(type.definition, ctx)
         if (typeof resolution === "string") {
             if (seen.includes(resolution)) {
                 return throwParseError(
@@ -306,7 +320,10 @@ export class Scope<context extends ScopeContext = any> {
                 )
             }
             seen.push(resolution)
-            resolution = this.#resolveRecurse(resolution, "throw", seen).node
+            const resolvedType = this.#resolveRecurse(resolution, "throw", seen)
+            type.node = resolvedType.node
+            type.flat = resolvedType.flat
+            return type
         }
         type.node = deepFreeze(resolution)
         type.flat = deepFreeze(flattenType(type))
@@ -359,7 +376,7 @@ export class Scope<context extends ScopeContext = any> {
     type: TypeParser<resolutions<context>> = Object.assign(
         (def: unknown, opts?: TypeOptions) => {
             const name = opts?.name
-                ? this.isResolvable(opts.name)
+                ? this.isInternallyResolvable(opts.name)
                     ? throwParseError(writeDuplicateAliasesMessage(opts.name))
                     : opts.name
                 : this.getAnonymousTypeName()
@@ -376,7 +393,7 @@ export class Scope<context extends ScopeContext = any> {
         { from: this.expressions.node }
     ) as TypeParser<resolutions<context>>
 
-    isResolvable(name: string) {
+    isInternallyResolvable(name: string) {
         return this.#resolutions.has(name) || this.aliases[name]
     }
 }
@@ -384,12 +401,12 @@ export class Scope<context extends ScopeContext = any> {
 export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>
     new Scope(aliases, opts)) as any
 
-export const emptyScope: Scope<[{}, {}, false]> = scope(
+export const rootScope: Scope<[{}, {}, false]> = scope(
     {},
-    { standard: false }
+    { name: "empty", standard: false }
 ) as any
 
-export const baseType: TypeParser<{}> = emptyScope.type
+export const rootType: TypeParser<{}> = rootScope.type
 
 type OnUnresolvable = "throw" | "undefined"
 

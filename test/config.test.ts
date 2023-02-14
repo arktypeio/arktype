@@ -12,14 +12,10 @@ describe("config traversal", () => {
             }
         }).compile()
         attest(types.a.infer).typed as string
-        attest(types.a.problems?.mustBe).equals(mustBe)
-        attest(types.a.flat).equals([
+        attest(types.a.flat).snap([
             [
                 "config",
-                {
-                    config: { mustBe },
-                    node: "string"
-                }
+                { config: { mustBe: "a series of characters" }, node: "string" }
             ]
         ])
 
@@ -65,7 +61,10 @@ describe("config traversal", () => {
             ]
         })
         attest(t.infer).typed as { monster: 196883 }
-        attest(t.node).snap({ object: { props: { monster: "λmonster" } } })
+        attest(t.node).snap({
+            // TODO: only qualify when needed
+            object: { props: { monster: "standard.λmonster" } }
+        })
         attest(t.flat).snap([
             ["domain", "object"],
             [

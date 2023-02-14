@@ -1,4 +1,4 @@
-import { baseType } from "../scope.ts"
+import { rootType } from "../scope.ts"
 
 type DayDelimiter = "." | "/" | "-"
 
@@ -97,8 +97,8 @@ export const tryParseDate = (
     return writeFormattedMustBe(opts.format)
 }
 
-export const parsedDate = baseType([
-    baseType.from({ string: true }),
+export const parsedDate = rootType([
+    rootType.from({ string: true }),
     "|>",
     (s, problems) => {
         const result = tryParseDate(s)

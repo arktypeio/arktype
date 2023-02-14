@@ -3,7 +3,7 @@ import type { extend } from "../utils/generics.ts"
 import type { InferredObjectKinds } from "../utils/objectKinds.ts"
 import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
 import type { Space } from "./scope.ts"
-import { emptyScope, scope } from "./scope.ts"
+import { rootScope, scope } from "./scope.ts"
 import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
 import type { TypeParser } from "./type.ts"
 import { validation, validationScope } from "./validation/validation.ts"
@@ -20,7 +20,7 @@ export const standardScope = scope(
 export const standard = standardScope.compile()
 
 export const scopes = {
-    empty: emptyScope,
+    empty: rootScope,
     tsKeywords: tsKeywordsScope,
     jsObjects: jsObjectsScope,
     validation: validationScope,
