@@ -12,14 +12,12 @@ describe("config traversal", () => {
             }
         }).compile()
         attest(types.a.infer).typed as string
-        attest(types.a.meta.config).equals({
-            defaults: { mustBe }
-        })
+        attest(types.a.config?.mustBe).equals(mustBe)
         attest(types.a.flat).equals([
             [
                 "config",
                 {
-                    config: { defaults: { mustBe } },
+                    config: { mustBe },
                     node: "string"
                 }
             ]
@@ -41,7 +39,7 @@ describe("config traversal", () => {
                             "config",
                             {
                                 config: {
-                                    defaults: { mustBe }
+                                    mustBe
                                 },
                                 node: "string"
                             }

@@ -1,6 +1,6 @@
 import { compileDisjointReasonsMessage } from "../parse/ast/intersection.ts"
 import type { ParseContext } from "../parse/definition.ts"
-import type { ArkTypeConfig, Type } from "../scopes/type.ts"
+import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { defined, Dict, mutable, stringKeyOf } from "../utils/generics.ts"
@@ -37,8 +37,8 @@ export type ResolvedNode<$ = Dict> = {
 
 export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
     state.domain = undefined
-    const lResolution = state.type.meta.scope.resolveNode(l)
-    const rResolution = state.type.meta.scope.resolveNode(r)
+    const lResolution = state.type.scope.resolveNode(l)
+    const rResolution = state.type.scope.resolveNode(r)
     const result = resolutionIntersection(lResolution, rResolution, state)
     if (typeof result === "object" && !hasKeys(result)) {
         return hasKeys(state.disjoints)
@@ -84,8 +84,8 @@ export const rootUnion = (
     r: TypeNode,
     type: Type
 ): ResolvedNode => {
-    const lResolution = type.meta.scope.resolveNode(l)
-    const rResolution = type.meta.scope.resolveNode(r)
+    const lResolution = type.scope.resolveNode(l)
+    const rResolution = type.scope.resolveNode(r)
     const result = {} as mutable<ResolvedNode>
     const domains = objectKeysOf({ ...lResolution, ...rResolution })
     for (const domain of domains) {
@@ -129,7 +129,7 @@ export type AliasEntry = ["alias", string]
 export type ConfigEntry = [
     "config",
     {
-        config: ArkTypeConfig
+        config: TypeConfig
         node: TraversalNode
     }
 ]
@@ -161,12 +161,12 @@ export const flattenType = (type: Type): TraversalNode => {
         path: new Path(),
         lastDomain: "undefined"
     }
-    return type.meta.config
+    return type.config
         ? [
               [
                   "config",
                   {
-                      config: type.meta.config,
+                      config: type.config,
                       node: flattenNode(type.node, ctx)
                   }
               ]
@@ -179,21 +179,7 @@ export const flattenNode = (
     ctx: FlattenContext
 ): TraversalNode => {
     if (typeof node === "string") {
-        const resolution = ctx.type.meta.scope.resolve(node)
-        const updatedScopeConfig =
-            resolution.meta.scope !== ctx.type.meta.scope &&
-            resolution.meta.scope.config
-        return updatedScopeConfig
-            ? [
-                  [
-                      "config",
-                      {
-                          config: updatedScopeConfig,
-                          node: resolution.flat
-                      }
-                  ]
-              ]
-            : resolution.flat
+        return ctx.type.scope.resolve(node).flat
     }
     const domains = objectKeysOf(node)
     if (domains.length === 1) {

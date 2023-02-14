@@ -8,7 +8,11 @@ import type {
     validateDefinition
 } from "../parse/definition.ts"
 import { parseDefinition } from "../parse/definition.ts"
-import type { ProblemsConfig } from "../traverse/problems.ts"
+import type {
+    DefaultProblemsWriters,
+    ProblemsConfig
+} from "../traverse/problems.ts"
+import { compileProblemWriters } from "../traverse/problems.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import { deepFreeze } from "../utils/freeze.ts"
@@ -27,7 +31,6 @@ import type { Expressions } from "./expressions.ts"
 import type { PrecompiledDefaults } from "./standard.ts"
 import type { Type, TypeOptions, TypeParser } from "./type.ts"
 import { initializeType } from "./type.ts"
-import type { DateOptions } from "./validation/date.ts"
 
 type ScopeParser = {
     <aliases>(aliases: validateAliases<aliases, {}>): Scope<
@@ -52,10 +55,10 @@ export type ScopeOptions = {
     includes?: Space[] | []
     standard?: boolean
     name?: string
-    config?: ScopeConfig
+    problems?: ProblemsConfig
 }
 
-export type ScopeConfig = evaluate<{ date?: DateOptions } & ProblemsConfig>
+export type ScopeConfig = DefaultProblemsWriters
 
 type validateOptions<opts extends ScopeOptions> = {
     [k in keyof opts]: k extends "imports" | "includes"
@@ -161,7 +164,7 @@ export const isConfigTuple = (def: unknown): def is ConfigTuple =>
 
 export class Scope<context extends ScopeContext = any> {
     name: string
-    config: ScopeConfig | undefined
+    problemWriters: DefaultProblemsWriters
     parseCache = new FreezingCache<TypeNode>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
@@ -177,9 +180,7 @@ export class Scope<context extends ScopeContext = any> {
         if (opts.includes) {
             this.#cacheSpaces(opts.includes, "includes")
         }
-        if (opts.config) {
-            this.config = opts.config
-        }
+        this.problemWriters = compileProblemWriters(opts.problems)
     }
 
     #register(opts: ScopeOptions) {
@@ -284,8 +285,8 @@ export class Scope<context extends ScopeContext = any> {
             ) as ResolveResult<onUnresolvable>
         }
         const type = isConfigTuple(aliasValue)
-            ? initializeType(aliasValue[0], { name, ...aliasValue[2] }, this)
-            : initializeType(aliasValue, { name }, this)
+            ? initializeType(name, aliasValue[0], aliasValue[2], this)
+            : initializeType(name, aliasValue, undefined, this)
         this.#resolutions.set(name, type)
         this.#exports.set(name, type)
         const ctx = this.#initializeContext(type)
@@ -348,11 +349,13 @@ export class Scope<context extends ScopeContext = any> {
     morph = this.expressions.morph
 
     type: TypeParser<resolutions<context>> = Object.assign(
-        (def: unknown, opts: TypeOptions = {}) => {
-            if (opts.name && this.isResolvable(opts.name)) {
-                return throwParseError(writeDuplicateAliasesMessage(opts.name))
-            }
-            const t = initializeType(def, opts, this)
+        (def: unknown, opts?: TypeOptions) => {
+            const name = opts?.name
+                ? this.isResolvable(opts.name)
+                    ? throwParseError(writeDuplicateAliasesMessage(opts.name))
+                    : opts.name
+                : this.getAnonymousTypeName()
+            const t = initializeType(name, def, opts, this)
             const ctx = this.#initializeContext(t)
             t.node = deepFreeze(parseDefinition(def, ctx))
             t.flat = deepFreeze(flattenType(t))

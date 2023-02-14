@@ -32,7 +32,7 @@ export type parseUnenclosed<
     : never
 
 const unenclosedToNode = (s: DynamicState, token: string) => {
-    if (s.ctx.type.meta.scope.addReferenceIfResolvable(token, s.ctx)) {
+    if (s.ctx.type.scope.addReferenceIfResolvable(token, s.ctx)) {
         return token
     }
     return (

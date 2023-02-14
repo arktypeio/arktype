@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { type } from "../api.ts"
+import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
 describe("traverse", () => {
@@ -40,13 +40,20 @@ describe("traverse", () => {
         )
     })
     it("customized builtin problem", () => {
-        const isEven = type("number%2", {
-            divisor: {
-                mustBe: (divisor) => `a multiple of ${divisor}`,
-                writeReason: (mustBe, was) => `${was} is not ${mustBe}!`
+        const types = scope(
+            { isEven: "number%2" },
+            {
+                problems: {
+                    divisor: {
+                        mustBe: (divisor) => `a multiple of ${divisor}`,
+                        writeReason: (mustBe, was) => `${was} is not ${mustBe}!`
+                    }
+                }
             }
-        })
-        attest(isEven(3).problems?.summary).snap("3 is not a multiple of 2!")
+        ).compile()
+        attest(types.isEven(3).problems?.summary).snap(
+            "3 is not a multiple of 2!"
+        )
     })
     it("domains", () => {
         const basic = type("string|number[]")

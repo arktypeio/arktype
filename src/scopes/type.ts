@@ -27,18 +27,17 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
 
-type TypeRoot<t = unknown> = evaluate<
-    {
-        [as]: t
-        infer: asOut<t>
-        node: TypeNode
-        flat: TraversalNode
-        qualifiedName: QualifiedTypeName
-        definition: unknown
-        scope: Scope
-        includesMorph: boolean
-    } & ProblemOptions
->
+type TypeRoot<t = unknown> = evaluate<{
+    [as]: t
+    infer: asOut<t>
+    node: TypeNode
+    flat: TraversalNode
+    qualifiedName: QualifiedTypeName
+    definition: unknown
+    scope: Scope
+    includesMorph: boolean
+    config: TypeConfig | undefined
+}>
 
 export type TypeOptions = evaluate<
     {
@@ -46,12 +45,14 @@ export type TypeOptions = evaluate<
     } & ProblemOptions
 >
 
+export type TypeConfig = ProblemOptions
+
 export const initializeType = (
+    name: string,
     definition: unknown,
-    opts: TypeOptions | undefined,
+    config: TypeConfig | undefined,
     scope: Scope
 ) => {
-    const name = opts?.name ?? scope.getAnonymousTypeName()
     const root = {
         // temporarily initialize node/flat to aliases that will be included in
         // the final type in case of cyclic resolutions
@@ -61,7 +62,8 @@ export const initializeType = (
         qualifiedName: `${scope.name}.${name}`,
         definition,
         scope,
-        includesMorph: false
+        includesMorph: false,
+        config
         // the "as" symbol from inferred is not used at runtime, so we check
         // that the rest of the type is correct then cast it
     } satisfies Omit<TypeRoot, typeof as> as TypeRoot

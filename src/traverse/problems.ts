@@ -11,6 +11,7 @@ import type {
     RegexLiteral,
     requireKeys
 } from "../utils/generics.ts"
+import { objectKeysOf } from "../utils/generics.ts"
 import { isWellFormedInteger } from "../utils/numericLiterals.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { objectKindDescriptions } from "../utils/objectKinds.ts"
@@ -105,7 +106,7 @@ class ProblemArray extends Array<Problem> {
             path,
             data,
             source,
-            this.#state.getConfigForProblemCode(code)
+            this.#state.getProblemConfig(code)
         )
         this.addProblem(problem)
         return problem
@@ -123,7 +124,7 @@ class ProblemArray extends Array<Problem> {
                     existing.path,
                     (existing as any).data,
                     [existing, problem],
-                    this.#state.getConfigForProblemCode("multi")
+                    this.#state.getProblemConfig("multi")
                 )
                 const existingIndex = this.indexOf(existing)
                 // If existing is found (which it always should be unless this was externally mutated),
@@ -243,18 +244,9 @@ const addDefaultContext: ContextWriter = (reason, path) =>
         ? `Item at index ${path[0]} ${reason}`
         : `${path} ${reason}`
 
-const compileDefaultProblemWriters = (definitions: {
+const defaultProblemConfig: {
     [code in ProblemCode]: ProblemDefinition<code>
-}) => {
-    let code: ProblemCode
-    for (code in definitions) {
-        definitions[code].writeReason ??= writeDefaultReason
-        definitions[code].addContext ??= addDefaultContext
-    }
-    return definitions as DefaultProblemsWriters
-}
-
-export const defaultProblemWriters = compileDefaultProblemWriters({
+} = {
     divisor: {
         mustBe: (divisor) =>
             divisor === 1 ? `an integer` : `a multiple of ${divisor}`
@@ -319,7 +311,52 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
     cases: {
         mustBe: (cases) => describeBranches(cases)
     }
-})
+}
+
+export const problemCodes: readonly ProblemCode[] =
+    objectKeysOf(defaultProblemConfig)
+
+const compileDefaultProblemWriters = () => {
+    const result = {} as DefaultProblemsWriters
+    let code: ProblemCode
+    for (code of problemCodes) {
+        result[code] = {
+            mustBe: defaultProblemConfig[code].mustBe as any,
+            writeReason:
+                defaultProblemConfig[code].writeReason ??
+                (writeDefaultReason as any),
+            addContext:
+                defaultProblemConfig[code].addContext ?? addDefaultContext
+        }
+    }
+    return result
+}
+
+export const defaultProblemWriters = compileDefaultProblemWriters()
+
+export const compileProblemWriters = (
+    input: ProblemsConfig | undefined
+): DefaultProblemsWriters => {
+    if (!input) {
+        return defaultProblemWriters
+    }
+    const result = {} as DefaultProblemsWriters
+    for (const code of problemCodes) {
+        result[code].mustBe =
+            input[code]?.mustBe ?? defaultProblemConfig[code].mustBe
+        result[code].writeReason =
+            input[code]?.writeReason ??
+            defaultProblemConfig[code].writeReason ??
+            input.writeReason ??
+            (writeDefaultReason as any)
+        result[code].addContext =
+            input[code]?.addContext ??
+            defaultProblemConfig[code].addContext ??
+            input.addContext ??
+            addDefaultContext
+    }
+    return result
+}
 
 export type ProblemOptions<code extends ProblemCode = ProblemCode> = {
     mustBe?: MustBeWriter<code>
@@ -327,14 +364,11 @@ export type ProblemOptions<code extends ProblemCode = ProblemCode> = {
     addContext?: ContextWriter
 }
 
-export type ProblemsOptions = evaluate<
-    ProblemOptions<ProblemCode> & ProblemsConfigByCode
->
-
 export type ProblemsConfig = evaluate<
-    ProblemsConfigByCode & {
-        defaults?: ProblemOptions<ProblemCode>
-    }
+    {
+        writeReason?: ReasonWriter
+        addContext?: ContextWriter
+    } & ProblemsConfigByCode
 >
 
 export type ProblemsConfigByCode = {
@@ -345,6 +379,6 @@ export type DefaultProblemsWriters = {
     [code in ProblemCode]: ProblemWriters<code>
 }
 
-export type ProblemWriters<code extends ProblemCode> = Required<
+export type ProblemWriters<code extends ProblemCode = ProblemCode> = Required<
     ProblemOptions<code>
 >

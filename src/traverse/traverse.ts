@@ -11,8 +11,8 @@ import type { TraversalProp } from "../nodes/rules/props.ts"
 import { checkBound } from "../nodes/rules/range.ts"
 import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
-import type { Scope } from "../scopes/scope.ts"
-import type { QualifiedTypeName, Type } from "../scopes/type.ts"
+import type { Scope, ScopeConfig } from "../scopes/scope.ts"
+import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
 import type { SizedData } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
@@ -30,36 +30,55 @@ import {
     Problems
 } from "./problems.ts"
 
+const initializeTraversalConfig = (): TraversalConfigs => ({
+    mustBe: [],
+    writeReason: [],
+    addContext: []
+})
+
+type TraversalConfigKey = keyof TraversalConfigs
+
+const traversalConfigKeys: readonly TraversalConfigKey[] = objectKeysOf(
+    initializeTraversalConfig()
+)
+
 export class TraversalState<data = unknown> {
     path = new Path()
     problems = new Problems(this as any)
-    traversed: Type[]
-    scope: Scope
+
     failFast = false
+    traversalConfigs: TraversalConfigs = initializeTraversalConfig()
+    readonly rootScope: Scope
 
     #seen: { [name in QualifiedTypeName]?: object[] } = {}
 
-    constructor(public data: data, type: Type) {
-        this.scope = type.scope
-        this.traversed = [type]
+    constructor(public data: data, public type: Type) {
+        this.rootScope = type.scope
     }
 
-    getConfigForProblemCode<code extends ProblemCode>(
+    getProblemConfig<code extends ProblemCode>(
         code: code
     ): ProblemWriters<code> {
-        if (!this.traversed.length) {
-            return defaultProblemWriters[code]
-        }
-        for (let i = this.traversed.length - 1; i >= 0; i--) {
-            if (this.traversed[i][code] || this.traversed[i]["defaults"]) {
-                return {
-                    ...defaultProblemWriters[code],
-                    ...this.traversed[i]["defaults"],
-                    ...this.traversed[i][code]
-                }
-            }
+        const result = {} as ProblemWriters<code>
+        for (const k of traversalConfigKeys) {
+            result[k] =
+                (this.traversalConfigs[k][0] as any) ??
+                this.rootScope.problemWriters[code][k]
         }
         return defaultProblemWriters[code]
+    }
+
+    traverseConfig(config: TypeConfig, node: TraversalNode) {
+        let k: keyof TypeConfig
+        // TODO: to entries
+        for (k in config) {
+            this.traversalConfigs[k].unshift(config[k] as any)
+        }
+        const isValid = traverse(node, this)
+        for (k in config) {
+            this.traversalConfigs[k].shift()
+        }
+        return isValid
     }
 
     traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {
@@ -71,10 +90,6 @@ export class TraversalState<data = unknown> {
         lastData[key] = this.data as any
         this.data = lastData
         return isValid
-    }
-
-    get type() {
-        return this.traversed[this.traversed.length - 1]
     }
 
     traverseResolution(name: string): boolean {
@@ -97,9 +112,10 @@ export class TraversalState<data = unknown> {
                 this.#seen[id] = [data]
             }
         }
-        this.traversed.push(resolution)
+        const lastType = this.type
+        this.type = resolution
         const isValid = traverse(resolution.flat, this)
-        this.traversed.pop()
+        this.type = lastType
         if (isObject) {
             this.#seen[id]!.pop()
         }
@@ -126,6 +142,12 @@ export class TraversalState<data = unknown> {
         this.failFast = lastFailFast
         return hasValidBranch || !this.problems.add("branches", branchProblems)
     }
+}
+
+export type TraversalConfigs = { [k in keyof TypeConfig]-?: TypeConfig[k][] }
+
+export type TraversalScopeConfigs = {
+    [k in keyof ScopeConfig]: ScopeConfig[k][]
 }
 
 export const traverse = (node: TraversalNode, state: TraversalState): boolean =>
@@ -245,12 +267,7 @@ const entryCheckers = {
     alias: (name, state) => state.traverseResolution(name),
     class: checkClass,
     narrow: (narrow, state) => narrow(state.data, state.problems),
-    config: ({ config, node }, state) => {
-        state.traversed.push(config)
-        const result = traverse(node, state)
-        state.traversed.pop()
-        return result
-    },
+    config: ({ config, node }, state) => state.traverseConfig(config, node),
     value: (value, state) =>
         state.data === value || !state.problems.add("value", value),
     morph: (morph, state) => {

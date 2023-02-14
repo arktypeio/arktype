@@ -73,10 +73,7 @@ const discriminate = (
             [
                 "branches",
                 remainingIndices.map((i) =>
-                    branchIncludesMorph(
-                        originalBranches[i],
-                        ctx.type.meta.scope
-                    )
+                    branchIncludesMorph(originalBranches[i], ctx.type.scope)
                         ? throwParseError(
                               writeUndiscriminatableMorphUnionMessage(
                                   `${ctx.path}`
@@ -401,7 +398,7 @@ const branchIncludesMorph = (branch: Branch, $: Scope) =>
 
 const nodeIncludesMorph = (node: TypeNode, $: Scope): boolean =>
     typeof node === "string"
-        ? $.resolve(node).meta.includesMorph
+        ? $.resolve(node).includesMorph
         : Object.values(node).some((predicate) =>
               predicate === true
                   ? false
