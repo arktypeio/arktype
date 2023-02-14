@@ -40,7 +40,7 @@
         "test": "ts-node ./dev/attest/cli.ts --cmd mocha",
         "testCov": "c8 pnpm test",
         "tnt": "ts-node ./dev/attest/cli.ts --skipTypes --cmd mocha",
-        "testRepo": "pnpm testAttest; pnpm testTsVersions; pnpm testDeno; pnpm testBuild",
+        "testRepo": " pnpm testBuild && pnpm testTsVersions && pnpm testAttest && pnpm testDeno",
         "testBuild": "ts-node ./dev/scripts/testBuild.ts",
         "testAttest": "ts-node ./dev/scripts/testAttest.ts",
         "testTsVersions": "ts-node ./dev/scripts/testTsVersions.ts",

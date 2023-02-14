@@ -1,4 +1,4 @@
-import type { arraySubclassToReadonly } from "./generics"
+import type { arraySubclassToReadonly } from "./generics.ts"
 
 export class Path extends Array<string> {
     static fromString(s: string, delimiter = "/") {

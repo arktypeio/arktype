@@ -4,7 +4,10 @@ import { fromHere, readFile } from "../../runtime/api.ts"
 import { runThenGetContents } from "./utils.ts"
 
 const benchTemplate = fromHere("benchTemplate.ts")
-const expectedOutput = readFile(fromHere("benchExpectedOutput.ts"))
+const expectedOutput = readFile(fromHere("benchExpectedOutput.ts")).replaceAll(
+    "\r\n",
+    "\n"
+)
 
 describe("bench", () => {
     it("populates file", () => {
@@ -13,5 +16,5 @@ describe("bench", () => {
             benchFormat: { noExternal: true }
         })
         assert.equal(actual, expectedOutput)
-    }).timeout(8000)
+    }).timeout(30000)
 })

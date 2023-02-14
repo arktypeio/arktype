@@ -39,7 +39,7 @@ if (args[attestArgIndex + 1] === "bench") {
     const skipTypes = attestArgs.includes("--skipTypes")
 
     let processError: unknown
-    const buildTest = /\/dist\//.test(args[attestArgIndex])
+    const buildTest = args[attestArgIndex].includes("dist")
 
     try {
         if (skipTypes) {
