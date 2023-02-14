@@ -24,13 +24,7 @@ import type { stringifyUnion } from "../utils/unionToTuple.ts"
 import { Cache, FreezingCache } from "./cache.ts"
 import type { Expressions } from "./expressions.ts"
 import type { PrecompiledDefaults } from "./standard.ts"
-import type {
-    ArkTypeConfig,
-    QualifiedTypeName,
-    Type,
-    TypeOptions,
-    TypeParser
-} from "./type.ts"
+import type { ArkTypeConfig, Type, TypeOptions, TypeParser } from "./type.ts"
 import { initializeType } from "./type.ts"
 
 type ScopeParser = {
@@ -215,17 +209,13 @@ export class Scope<context extends ScopeContext = any> {
         }
     }
 
-    createAnonymousTypeId(name = "type"): QualifiedTypeName {
-        let increment = 0
-        let uniqueTypeId = name
-        while (
-            this.#resolutions.has(uniqueTypeId) ||
-            this.aliases[uniqueTypeId]
-        ) {
-            uniqueTypeId = `${name}${increment}`
-            increment++
+    getAnonymousTypeName(base = "type") {
+        let increment = 1
+        let name = base
+        while (this.isResolvable(name)) {
+            name = `${base}${++increment}`
         }
-        return `${this.name}.${uniqueTypeId}`
+        return name
     }
 
     get infer(): exportsOf<context> {
@@ -343,17 +333,22 @@ export class Scope<context extends ScopeContext = any> {
 
     type: TypeParser<resolutions<context>> = Object.assign(
         (def: unknown, opts: TypeOptions = {}) => {
-            if (opts.name && this.aliases[opts.name]) {
+            if (opts.name && this.isResolvable(opts.name)) {
                 return throwParseError(writeDuplicateAliasesMessage(opts.name))
             }
-            const result = initializeType(def, opts, this)
-            const ctx = this.#initializeContext(result)
-            result.node = this.resolveNode(parseDefinition(def, ctx))
-            result.flat = flattenType(result)
-            return result
+            const t = initializeType(def, opts, this)
+            const ctx = this.#initializeContext(t)
+            t.node = this.resolveNode(parseDefinition(def, ctx))
+            t.flat = flattenType(t)
+            this.#resolutions.set(t.name, t)
+            return t
         },
         { from: this.expressions.node }
     ) as TypeParser<resolutions<context>>
+
+    isResolvable(name: string) {
+        return this.#resolutions.has(name) || this.aliases[name]
+    }
 }
 
 export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>

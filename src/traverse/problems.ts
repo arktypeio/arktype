@@ -61,7 +61,9 @@ export class Problem<code extends ProblemCode = any> {
     }
 
     get mustBe() {
-        return this.writers.mustBe(this.source)
+        return typeof this.writers.mustBe === "string"
+            ? this.writers.mustBe
+            : this.writers.mustBe(this.source)
     }
 }
 
@@ -216,9 +218,9 @@ type ProblemDefinition<code extends ProblemCode> = requireKeys<
     "mustBe"
 >
 
-export type MustBeWriter<code extends ProblemCode> = (
-    source: ProblemSources[code]
-) => string
+export type MustBeWriter<code extends ProblemCode> =
+    | string
+    | ((source: ProblemSources[code]) => string)
 
 export type ReasonWriter<code extends ProblemCode = ProblemCode> = (
     mustBe: string,

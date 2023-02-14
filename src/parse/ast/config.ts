@@ -1,6 +1,5 @@
 import type { TypeOptions } from "../../scopes/type.ts"
-import type { validateDefinition } from "../definition.ts"
-import { parseDefinition } from "../definition.ts"
+import type { inferred, validateDefinition } from "../definition.ts"
 import type { PostfixParser, TupleExpression } from "./tuple.ts"
 
 export type ConfigTuple<
@@ -9,8 +8,14 @@ export type ConfigTuple<
 > = readonly [def, ":", config]
 
 export const parseConfigTuple: PostfixParser<":"> = (def, ctx) => {
-    const inputNode = parseDefinition(def[0], ctx)
-    return inputNode
+    const anonymousType = ctx.type.meta.scope.type(
+        def[0] as inferred<unknown>,
+        {
+            name: ctx.type.meta.scope.getAnonymousTypeName(`${ctx.path}`),
+            ...(def[2] as TypeOptions)
+        }
+    )
+    return anonymousType.name
 }
 
 export type validateConfigTuple<def extends TupleExpression, $> = readonly [

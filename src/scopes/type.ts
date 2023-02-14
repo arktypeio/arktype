@@ -87,11 +87,11 @@ export const initializeType = (
     opts: TypeOptions | undefined,
     scope: Scope
 ) => {
-    const name = opts?.name ?? "type"
+    const name = opts?.name ?? scope.getAnonymousTypeName()
     const config = compileTypeConfig(opts)
     const meta: TypeMeta = {
         name,
-        id: scope.createAnonymousTypeId(name),
+        id: `${scope.name}.${name}`,
         definition,
         scope,
         config,
