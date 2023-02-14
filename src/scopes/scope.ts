@@ -23,7 +23,13 @@ import type { stringifyUnion } from "../utils/unionToTuple.ts"
 import { Cache, FreezingCache } from "./cache.ts"
 import type { Expressions } from "./expressions.ts"
 import type { PrecompiledDefaults } from "./standard.ts"
-import type { Type, TypeConfig, TypeOptions, TypeParser } from "./type.ts"
+import type {
+    QualifiedTypeName,
+    Type,
+    TypeConfig,
+    TypeOptions,
+    TypeParser
+} from "./type.ts"
 import { initializeType } from "./type.ts"
 
 type ScopeParser = {
@@ -157,7 +163,6 @@ export class Scope<context extends ScopeContext = any> {
     parseCache = new FreezingCache<TypeNode>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
-    #anonymousTypeCount = 0
 
     constructor(public aliases: Dict, public opts: ScopeOptions) {
         this.name = this.#register(opts)
@@ -206,8 +211,17 @@ export class Scope<context extends ScopeContext = any> {
         }
     }
 
-    createAnonymousTypeSuffix() {
-        return ++this.#anonymousTypeCount
+    createAnonymousTypeId(name = "type"): QualifiedTypeName {
+        let increment = 0
+        let uniqueTypeId = name
+        while (
+            this.#resolutions.has(uniqueTypeId) ||
+            this.aliases[uniqueTypeId]
+        ) {
+            uniqueTypeId = `${name}${increment}`
+            increment++
+        }
+        return `${this.name}.${uniqueTypeId}`
     }
 
     get infer(): exportsOf<context> {
@@ -292,7 +306,7 @@ export class Scope<context extends ScopeContext = any> {
             this.type([def, "[]"] as inferred<unknown>, opts),
         keyOf: (def, opts) =>
             this.type(["keyof", def] as inferred<unknown>, opts),
-        fromNode: (def, opts) =>
+        node: (def, opts) =>
             this.type(["node", def] as inferred<unknown>, opts),
         instanceOf: (def, opts) =>
             this.type(["instanceof", def] as inferred<unknown>, opts),
@@ -331,7 +345,7 @@ export class Scope<context extends ScopeContext = any> {
             result.flat = flattenType(result)
             return result
         },
-        { from: this.expressions.fromNode }
+        { from: this.expressions.node }
     ) as TypeParser<resolutions<context>>
 }
 

@@ -1,5 +1,5 @@
-import type { Branch, MorphBranch } from "../../nodes/branch.ts"
-import { isMorphBranch } from "../../nodes/branch.ts"
+import type { Branch, TransformationBranch } from "../../nodes/branch.ts"
+import { isTransformationBranch } from "../../nodes/branch.ts"
 import type { ResolvedNode } from "../../nodes/node.ts"
 import type { asIn, asOut } from "../../scopes/type.ts"
 import type { Problem, Problems } from "../../traverse/problems.ts"
@@ -42,8 +42,8 @@ export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
     return result
 }
 
-const applyMorph = (branch: Branch, morph: Morph): MorphBranch =>
-    isMorphBranch(branch)
+const applyMorph = (branch: Branch, morph: Morph): TransformationBranch =>
+    isTransformationBranch(branch)
         ? {
               ...branch,
               morph: branch.morph

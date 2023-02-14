@@ -22,7 +22,7 @@ export type TypeParser<$> = {
 } & TypeParserProps<$>
 
 export type TypeParserProps<$> = {
-    from: Expressions<$>["fromNode"]
+    from: Expressions<$>["node"]
 }
 
 export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
@@ -75,9 +75,7 @@ export const initializeType = (
     const config = compileTypeConfig(opts)
     const meta: TypeMeta = {
         name,
-        id: `${scope.name}.${
-            opts?.name ? name : `type${scope.createAnonymousTypeSuffix()}`
-        }`,
+        id: scope.createAnonymousTypeId(name),
         definition,
         scope,
         config,

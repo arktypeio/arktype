@@ -23,7 +23,7 @@ export type Expressions<$> = {
     union: BinaryExpressionParser<$, "|">
     arrayOf: UnaryExpressionParser<$, "[]">
     keyOf: UnaryExpressionParser<$, "keyof">
-    fromNode: UnvalidatedExpressionParser<$, "node">
+    node: UnvalidatedExpressionParser<$, "node">
     instanceOf: UnvalidatedExpressionParser<$, "instanceof">
     valueOf: UnvalidatedExpressionParser<$, "===">
     narrow: FunctionalExpressionParser<$, "=>">
@@ -108,7 +108,7 @@ export type FunctionWithInferredInput<
     $,
     operator extends FunctionalTupleOperator,
     inDef
-> = operator extends ":"
+> = operator extends "=>"
     ? distributable<Narrow<asIn<inferDefinition<inDef, $>>>>
     : Morph<asOut<inferDefinition<inDef, $>>>
 

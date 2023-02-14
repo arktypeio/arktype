@@ -3,7 +3,7 @@ import type { ParseContext } from "../parse/definition.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
+import type { defined, Dict, mutable, stringKeyOf } from "../utils/generics.ts"
 import { hasKey, hasKeys, objectKeysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { MorphEntry } from "./branch.ts"
@@ -22,8 +22,7 @@ import {
     flattenPredicate,
     isLiteralCondition,
     predicateIntersection,
-    predicateUnion,
-    resolutionExtendsDomain
+    predicateUnion
 } from "./predicate.ts"
 import { mappedKeys } from "./rules/props.ts"
 import type { LiteralRules, RuleEntry } from "./rules/rules.ts"
@@ -232,6 +231,18 @@ export const isLiteralNode = <domain extends Domain>(
         resolutionExtendsDomain(node, domain) &&
         isLiteralCondition(node[domain])
     )
+}
+
+export type DomainSubtypeResolution<domain extends Domain> = {
+    readonly [k in domain]: defined<ResolvedNode[domain]>
+}
+
+export const resolutionExtendsDomain = <domain extends Domain>(
+    resolution: ResolvedNode,
+    domain: domain
+): resolution is DomainSubtypeResolution<domain> => {
+    const domains = objectKeysOf(resolution)
+    return domains.length === 1 && domains[0] === domain
 }
 
 export const toArrayNode = (node: TypeNode): ResolvedNode => ({
