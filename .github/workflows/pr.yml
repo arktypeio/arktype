@@ -25,7 +25,7 @@ jobs:
               run: pnpm lint
 
             - name: Test
-              run: pnpm test
+              run: pnpm testRepo
 
             - name: Docgen
               run: pnpm docgen
@@ -59,7 +59,7 @@ jobs:
                   node: ${{ matrix.node }}
 
             - name: Test
-              run: pnpm test
+              run: pnpm testRepo
 
             - name: Site
               run: pnpm buildSite
