@@ -366,6 +366,13 @@ export class Scope<context extends ScopeContext = any> {
 export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>
     new Scope(aliases, opts)) as any
 
+export const emptyScope: Scope<[{}, {}, false]> = scope(
+    {},
+    { standard: false }
+) as any
+
+export const baseType: TypeParser<{}> = emptyScope.type
+
 type OnUnresolvable = "throw" | "undefined"
 
 type ResolveResult<onUnresolvable extends OnUnresolvable> =

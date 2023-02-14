@@ -3,7 +3,7 @@ import type { extend } from "../utils/generics.ts"
 import type { InferredObjectKinds } from "../utils/objectKinds.ts"
 import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
 import type { Space } from "./scope.ts"
-import { scope } from "./scope.ts"
+import { emptyScope, scope } from "./scope.ts"
 import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
 import type { TypeParser } from "./type.ts"
 import { validation, validationScope } from "./validation.ts"
@@ -20,6 +20,7 @@ export const standardScope = scope(
 export const standard = standardScope.compile()
 
 export const scopes = {
+    empty: emptyScope,
     tsKeywords: tsKeywordsScope,
     jsObjects: jsObjectsScope,
     validation: validationScope,
@@ -31,7 +32,7 @@ export const spaces = {
     jsObjects,
     validation,
     standard
-} satisfies Record<keyof typeof scopes, Space>
+} satisfies Record<Exclude<keyof typeof scopes, "empty">, Space>
 
 // This is just copied from the inference of defaultScope. Creating an explicit
 // type like this makes validation for the default type and scope functions feel

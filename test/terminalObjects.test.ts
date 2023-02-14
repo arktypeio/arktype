@@ -70,9 +70,7 @@ describe("terminal objects", () => {
                     a: string
                 }
             }
-            attest(types.b.node).snap({
-                object: { props: { a: { object: { props: { a: "string" } } } } }
-            })
+            attest(types.b.node).snap({ object: { props: { a: "λtype" } } })
         })
         it("cyclic thunks in scope", () => {
             if (getTsVersionUnderTest() === "4.8") {
