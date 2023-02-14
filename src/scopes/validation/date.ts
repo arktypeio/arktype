@@ -52,16 +52,21 @@ type ParsedDayParts = {
 
 const isValidDateInstance = (date: Date) => !isNaN(date as any)
 
+const writeFormattedMustBe = (format: DateFormat) =>
+    `a ${format}-formatted date`
+
 export const tryParseDate = (
     data: string,
     opts?: DateOptions
-): Date | undefined => {
+): Date | string => {
     if (!opts?.format) {
         const result = new Date(data)
-        return isValidDateInstance(result) ? result : undefined
+        return isValidDateInstance(result) ? result : "a valid date"
     }
     if (opts.format === "iso8601") {
-        return iso8601Matcher.test(data) ? new Date(data) : undefined
+        return iso8601Matcher.test(data)
+            ? new Date(data)
+            : writeFormattedMustBe("iso8601")
     }
     const dataParts = data.split(dayDelimiterMatcher)
     // will be the first delimiter matched, if there is one
@@ -69,7 +74,7 @@ export const tryParseDate = (
     const formatParts = delimiter ? opts.format.split(delimiter) : [opts.format]
 
     if (dataParts.length !== formatParts.length) {
-        return
+        return writeFormattedMustBe(opts.format)
     }
 
     const parsedParts: ParsedDayParts = {}
@@ -79,7 +84,7 @@ export const tryParseDate = (
             // if format is "m" or "d", data is allowed to be 1 or 2 characters
             !(formatParts[i].length === 1 && dataParts[i].length === 2)
         ) {
-            return
+            return writeFormattedMustBe(opts.format)
         }
         parsedParts[formatParts[i][0] as PartKey] = dataParts[i]
     }
@@ -89,10 +94,14 @@ export const tryParseDate = (
     if (`${date.getDate()}` === parsedParts.d) {
         return date
     }
+    return writeFormattedMustBe(opts.format)
 }
 
 export const parseDate = baseType([
     baseType.from({ string: true }),
     "|>",
-    (s, problems) => tryParseDate(s) ?? problems.mustBe("a valid date")
+    (s, problems) => {
+        const result = tryParseDate(s)
+        return typeof result === "string" ? problems.mustBe(result) : result
+    }
 ])
