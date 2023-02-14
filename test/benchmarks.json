@@ -570,6 +570,52 @@
                     "type": [1401, "instantiations"]
                 }
             }
-        ]
+        ],
+        "narrow": {
+            "tuple expression": [
+                {
+                    "date": "2/13/2023",
+                    "mark": {
+                        "type": [409, "instantiations"]
+                    }
+                },
+                {
+                    "date": "2/13/2023",
+                    "mark": {
+                        "median": [1.09, "us"],
+                        "type": [23236, "instantiations"]
+                    }
+                }
+            ],
+            "helper": [
+                {
+                    "date": "2/13/2023",
+                    "mark": {
+                        "median": [1.09, "us"],
+                        "type": [1059, "instantiations"]
+                    }
+                }
+            ]
+        },
+        "morph": {
+            "tuple expression": [
+                {
+                    "date": "2/13/2023",
+                    "mark": {
+                        "median": [686, "ns"],
+                        "type": [336, "instantiations"]
+                    }
+                }
+            ],
+            "helper": [
+                {
+                    "date": "2/13/2023",
+                    "mark": {
+                        "median": [794, "ns"],
+                        "type": [878, "instantiations"]
+                    }
+                }
+            ]
+        }
     }
 }
