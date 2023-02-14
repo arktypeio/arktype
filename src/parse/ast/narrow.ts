@@ -35,22 +35,23 @@ export type validateNarrowTuple<def extends TupleExpression, $> = readonly [
     _: distributable<Narrow<asIn<inferDefinition<def[0], $>>>>
 ]
 
-export type inferNarrow<inDef, narrow, $> = narrow extends Narrow
-    ? inferNarrowFunction<asIn<inferDefinition<inDef, $>>, narrow>
-    : narrow extends { [domain in Domain]?: Narrow }
+export type inferNarrow<inDef, narrow, $> = narrow extends {
+    [domain in Domain]?: any
+}
     ? {
-          [domain in keyof narrow & Domain]: inferNarrowFunction<
-              Extract<asIn<inferDefinition<inDef, $>>, inferDomain<domain>>,
+          [domain in keyof narrow]: inferNarrowFunction<
+              Extract<
+                  asIn<inferDefinition<inDef, $>>,
+                  inferDomain<domain & Domain>
+              >,
               narrow[domain]
           >
-      }[keyof narrow & Domain]
-    : never
+      }[keyof narrow]
+    : inferNarrowFunction<asIn<inferDefinition<inDef, $>>, narrow>
 
-type inferNarrowFunction<input, narrow> = narrow extends NarrowPredicate<
-    input,
-    infer narrowed
->
+type inferNarrowFunction<input, narrow> = narrow extends (
+    data: any,
+    ...args: any[]
+) => data is infer narrowed
     ? narrowed
-    : narrow extends Narrow<input>
-    ? input
-    : never
+    : input
