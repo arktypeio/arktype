@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
 import { scope, type } from "../api.ts"
-import { attest } from "../dev/attest/api.ts"
+import { attest, getTsVersionUnderTest } from "../dev/attest/api.ts"
 import { writeBadDefinitionTypeMessage } from "../src/parse/definition.ts"
 import { writeUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 
@@ -74,25 +74,29 @@ describe("terminal objects", () => {
                 object: { props: { a: { object: { props: { a: "string" } } } } }
             })
         })
-        // it("cyclic thunks in scope", () => {
-        //     const $ = scope({
-        //         a: () => $.type({ b: "b" }),
-        //         b: () => $.type({ a: "a" })
-        //     })
-        //     const types = $.compile()
-        //     attest(types.a.infer).typed as {
-        //         b: {
-        //             a: any
-        //         }
-        //     }
-        //     attest(types.a.node).snap({ object: { props: { b: "b" } } })
-        //     attest(types.b.infer).typed as {
-        //         a: {
-        //             b: any
-        //         }
-        //     }
-        //     attest(types.b.node).snap({ object: { props: { a: "a" } } })
-        // })
+        it("cyclic thunks in scope", () => {
+            if (getTsVersionUnderTest() === "4.8") {
+                // cyclic thunk inference is unsupported for TS versions <4.9
+                return
+            }
+            const $ = scope({
+                a: () => $.type({ b: "b" }),
+                b: () => $.type({ a: "a" })
+            })
+            const types = $.compile()
+            attest(types.a.infer).typed as {
+                b: {
+                    a: any
+                }
+            }
+            attest(types.a.node).snap({ object: { props: { b: "b" } } })
+            attest(types.b.infer).typed as {
+                a: {
+                    b: any
+                }
+            }
+            attest(types.b.node).snap({ object: { props: { a: "a" } } })
+        })
         it("expression from thunk", () => {
             const $ = scope({
                 a: () => $.type({ a: "string" }),
