@@ -1,5 +1,6 @@
 import { serializeCase } from "../nodes/discriminate.ts"
 import type {
+    ConfigEntry,
     TraversalEntry,
     TraversalKey,
     TraversalNode,
@@ -12,7 +13,7 @@ import { checkBound } from "../nodes/rules/range.ts"
 import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
 import type { Scope } from "../scopes/scope.ts"
-import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
+import type { QualifiedTypeName, Type } from "../scopes/type.ts"
 import type { SizedData } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
@@ -67,15 +68,13 @@ export class TraversalState<data = unknown> {
         return result
     }
 
-    traverseConfig(config: TypeConfig, node: TraversalNode) {
-        let k: keyof TypeConfig
-        // TODO: to entries
-        for (k in config) {
-            this.traversedProblemConfigs[k].unshift(config[k] as any)
+    traverseConfig(configEntries: ConfigEntry[], node: TraversalNode) {
+        for (const entry of configEntries) {
+            this.traversedProblemConfigs[entry[0]].unshift(entry[1] as any)
         }
         const isValid = traverse(node, this)
-        for (k in config) {
-            this.traversedProblemConfigs[k].shift()
+        for (const entry of configEntries) {
+            this.traversedProblemConfigs[entry[0]].shift()
         }
         return isValid
     }

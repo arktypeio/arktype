@@ -3,8 +3,14 @@ import type { ParseContext } from "../parse/definition.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type { defined, Dict, mutable, stringKeyOf } from "../utils/generics.ts"
-import { hasKey, hasKeys, objectKeysOf } from "../utils/generics.ts"
+import type {
+    defined,
+    Dict,
+    entryOf,
+    mutable,
+    stringKeyOf
+} from "../utils/generics.ts"
+import { entriesOf, hasKey, hasKeys, objectKeysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { MorphEntry } from "./branch.ts"
 import type { Intersector } from "./compose.ts"
@@ -122,14 +128,16 @@ export type TraversalEntry =
     | DomainEntry
     | BranchesEntry
     | SwitchEntry
-    | ConfigEntry
+    | TraversalConfigEntry
 
 export type AliasEntry = ["alias", string]
 
-export type ConfigEntry = [
+export type ConfigEntry = entryOf<TypeConfig>
+
+export type TraversalConfigEntry = [
     "config",
     {
-        config: TypeConfig
+        config: ConfigEntry[]
         node: TraversalNode
     }
 ]
@@ -166,7 +174,7 @@ export const flattenType = (type: Type): TraversalNode => {
               [
                   "config",
                   {
-                      config: type.problems,
+                      config: entriesOf(type.problems),
                       node: flattenNode(type.node, ctx)
                   }
               ]

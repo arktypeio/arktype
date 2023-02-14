@@ -83,11 +83,13 @@ export type constructor<instance = unknown> = new (...args: any[]) => instance
 export type instanceOf<classType extends constructor<any>> =
     classType extends constructor<infer Instance> ? Instance : never
 
-export type entryOf<o> = { [k in keyof o]-?: [k, o[k]] }[o extends List
-    ? keyof o & number
-    : keyof o]
+export type entryOf<o> = evaluate<
+    { [k in keyof o]-?: [k, defined<o[k]>] }[o extends List
+        ? keyof o & number
+        : keyof o]
+>
 
-export type entriesOf<o extends object> = entryOf<o>[]
+export type entriesOf<o extends object> = evaluate<entryOf<o>[]>
 
 export const entriesOf = <o extends object>(o: o) =>
     Object.entries(o) as entriesOf<o>

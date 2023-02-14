@@ -15,7 +15,10 @@ describe("config traversal", () => {
         attest(types.a.flat).snap([
             [
                 "config",
-                { config: { mustBe: "a series of characters" }, node: "string" }
+                {
+                    config: [["mustBe", "a series of characters"]],
+                    node: "string"
+                }
             ]
         ])
 
@@ -34,9 +37,7 @@ describe("config traversal", () => {
                         [
                             "config",
                             {
-                                config: {
-                                    mustBe
-                                },
+                                config: [["mustBe", mustBe]],
                                 node: "string"
                             }
                         ]
@@ -75,9 +76,12 @@ describe("config traversal", () => {
                         [
                             "config",
                             {
-                                config: {
-                                    mustBe: "the number of dimensions in the monster group"
-                                },
+                                config: [
+                                    [
+                                        "mustBe",
+                                        "the number of dimensions in the monster group"
+                                    ]
+                                ],
                                 node: [["value", 196883]]
                             }
                         ]
@@ -95,10 +99,7 @@ describe("config traversal", () => {
         attest(t.flat).snap([
             [
                 "config",
-                {
-                    config: { mustBe: "unfalse" },
-                    node: [["value", true]]
-                }
+                { config: [["mustBe", "unfalse"]], node: [["value", true]] }
             ]
         ])
         attest(t(false).problems?.summary).snap("Must be unfalse (was false)")
@@ -116,7 +117,7 @@ describe("config traversal", () => {
                         [
                             "config",
                             {
-                                config: { mustBe: "unfalse" },
+                                config: [["mustBe", "unfalse"]],
                                 node: [["value", true]]
                             }
                         ]
@@ -138,10 +139,7 @@ describe("config traversal", () => {
         attest(t.flat).snap([
             [
                 "config",
-                {
-                    config: { mustBe: "untrue" },
-                    node: [["value", false]]
-                }
+                { config: [["mustBe", "untrue"]], node: [["value", false]] }
             ]
         ])
     })
@@ -158,7 +156,7 @@ describe("config traversal", () => {
                         [
                             "config",
                             {
-                                config: { mustBe: "untrue" },
+                                config: [["mustBe", "untrue"]],
                                 node: [["value", false]]
                             }
                         ]
