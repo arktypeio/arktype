@@ -24,7 +24,7 @@ export const parseNarrowTuple: PostfixParser<"=>"> = (def, ctx) => {
 
 export type Narrow<data = any> = (data: data, problems: Problems) => boolean
 
-export type NarrowCast<data = any, to extends data = data> = (
+export type NarrowPredicate<data = any, to extends data = data> = (
     data: data,
     problems: Problems
 ) => data is to
@@ -36,17 +36,17 @@ export type validateNarrowTuple<def extends TupleExpression, $> = readonly [
 ]
 
 export type inferNarrow<inDef, narrow, $> = narrow extends Narrow
-    ? inferNarrowFunction<inferDefinition<inDef, $>, narrow>
+    ? inferNarrowFunction<asIn<inferDefinition<inDef, $>>, narrow>
     : narrow extends { [domain in Domain]?: Narrow }
     ? {
           [domain in keyof narrow & Domain]: inferNarrowFunction<
-              Extract<inferDefinition<inDef, $>, inferDomain<domain>>,
+              Extract<asIn<inferDefinition<inDef, $>>, inferDomain<domain>>,
               narrow[domain]
           >
       }[keyof narrow & Domain]
     : never
 
-type inferNarrowFunction<input, narrow> = narrow extends NarrowCast<
+type inferNarrowFunction<input, narrow> = narrow extends NarrowPredicate<
     input,
     infer to
 >
