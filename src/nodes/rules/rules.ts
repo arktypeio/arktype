@@ -1,5 +1,4 @@
 import type { Narrow } from "../../parse/ast/narrow.ts"
-import type { TypeOptions } from "../../scopes/type.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type {
     CollapsibleList,
@@ -31,7 +30,6 @@ export type NarrowableRules<$ = Dict> = {
     readonly props?: PropsRule<$>
     readonly class?: DefaultObjectKind | constructor
     readonly narrow?: NarrowRule
-    // readonly config?: TypeOptions
 }
 
 export type LiteralRules<
