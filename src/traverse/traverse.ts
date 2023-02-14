@@ -11,7 +11,7 @@ import type { TraversalProp } from "../nodes/rules/props.ts"
 import { checkBound } from "../nodes/rules/range.ts"
 import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
-import type { Scope, ScopeConfig } from "../scopes/scope.ts"
+import type { Scope } from "../scopes/scope.ts"
 import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
 import type { SizedData } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
@@ -62,8 +62,8 @@ export class TraversalState<data = unknown> {
         const result = {} as ProblemWriters<code>
         for (const k of traversalConfigKeys) {
             result[k] =
-                (this.traversalConfigs[k][0] as any) ??
-                this.rootScope.problemWriters[code][k]
+                this.traversalConfigs[k][0] ??
+                (this.rootScope.problemWriters[code][k] as any)
         }
         return defaultProblemWriters[code]
     }
@@ -145,10 +145,6 @@ export class TraversalState<data = unknown> {
 }
 
 export type TraversalConfigs = { [k in keyof TypeConfig]-?: TypeConfig[k][] }
-
-export type TraversalScopeConfigs = {
-    [k in keyof ScopeConfig]: ScopeConfig[k][]
-}
 
 export const traverse = (node: TraversalNode, state: TraversalState): boolean =>
     typeof node === "string"

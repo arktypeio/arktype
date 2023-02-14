@@ -214,21 +214,29 @@ export class Scope<context extends ScopeContext = any> {
         }
     }
 
-    getAnonymousTypeName(base = "type") {
+    getAnonymousTypeName(ctx?: ParseContext) {
+        let base = ctx
+            ? ctx.path.length
+                ? `${ctx.path}`
+                : ctx.type.name
+            : "type"
+        if (base[0] !== "λ") {
+            base = `λ${base}`
+        }
         let increment = 1
-        let name = `λ${base}`
+        let name = base
         while (this.isResolvable(name)) {
-            name = `λ${base}${++increment}`
+            name = `${base}${++increment}`
         }
         return name
     }
 
-    addAnonymous(type: Type) {
+    addAnonymous(type: Type, ctx: ParseContext) {
         if (this.isResolvable(type.name)) {
             if (type === this.resolve(type.name)) {
                 return type.name
             }
-            const name = this.getAnonymousTypeName()
+            const name = this.getAnonymousTypeName(ctx)
             this.type(["node", type.node] as inferred<unknown>, { name })
             return name
         }
@@ -355,6 +363,9 @@ export class Scope<context extends ScopeContext = any> {
                     ? throwParseError(writeDuplicateAliasesMessage(opts.name))
                     : opts.name
                 : this.getAnonymousTypeName()
+            // remove name from opts since we've already used it and otherwise it will
+            // interfere with traversal keys being ProblemOptions
+            delete opts?.name
             const t = initializeType(name, def, opts, this)
             const ctx = this.#initializeContext(t)
             t.node = deepFreeze(parseDefinition(def, ctx))

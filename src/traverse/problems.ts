@@ -342,18 +342,21 @@ export const compileProblemWriters = (
     }
     const result = {} as DefaultProblemsWriters
     for (const code of problemCodes) {
-        result[code].mustBe =
-            input[code]?.mustBe ?? defaultProblemConfig[code].mustBe
-        result[code].writeReason =
-            input[code]?.writeReason ??
-            defaultProblemConfig[code].writeReason ??
-            input.writeReason ??
-            (writeDefaultReason as any)
-        result[code].addContext =
-            input[code]?.addContext ??
-            defaultProblemConfig[code].addContext ??
-            input.addContext ??
-            addDefaultContext
+        result[code] = {
+            mustBe:
+                input[code]?.mustBe ??
+                (defaultProblemConfig[code].mustBe as any),
+            writeReason:
+                input[code]?.writeReason ??
+                defaultProblemConfig[code].writeReason ??
+                input.writeReason ??
+                (writeDefaultReason as any),
+            addContext:
+                input[code]?.addContext ??
+                defaultProblemConfig[code].addContext ??
+                input.addContext ??
+                addDefaultContext
+        }
     }
     return result
 }

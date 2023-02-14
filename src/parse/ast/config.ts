@@ -9,7 +9,7 @@ export type ConfigTuple<
 
 export const parseConfigTuple: PostfixParser<":"> = (def, ctx) => {
     const anonymousType = ctx.type.scope.type(def[0] as inferred<unknown>, {
-        name: ctx.type.scope.getAnonymousTypeName(),
+        name: ctx.type.scope.getAnonymousTypeName(ctx),
         ...(def[2] as TypeOptions)
     })
     return anonymousType.name

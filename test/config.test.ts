@@ -12,7 +12,7 @@ describe("config traversal", () => {
             }
         }).compile()
         attest(types.a.infer).typed as string
-        attest(types.a.config?.mustBe).equals(mustBe)
+        attest(types.a.problems?.mustBe).equals(mustBe)
         attest(types.a.flat).equals([
             [
                 "config",
@@ -77,9 +77,7 @@ describe("config traversal", () => {
                             "config",
                             {
                                 config: {
-                                    defaults: {
-                                        mustBe: "the number of dimensions in the monster group"
-                                    }
+                                    mustBe: "the number of dimensions in the monster group"
                                 },
                                 node: [["value", 196883]]
                             }
@@ -99,7 +97,7 @@ describe("config traversal", () => {
             [
                 "config",
                 {
-                    config: { defaults: { mustBe: "unfalse" } },
+                    config: { mustBe: "unfalse" },
                     node: [["value", true]]
                 }
             ]
@@ -119,7 +117,7 @@ describe("config traversal", () => {
                         [
                             "config",
                             {
-                                config: { defaults: { mustBe: "unfalse" } },
+                                config: { mustBe: "unfalse" },
                                 node: [["value", true]]
                             }
                         ]
@@ -142,7 +140,7 @@ describe("config traversal", () => {
             [
                 "config",
                 {
-                    config: { defaults: { mustBe: "untrue" } },
+                    config: { mustBe: "untrue" },
                     node: [["value", false]]
                 }
             ]
@@ -161,7 +159,7 @@ describe("config traversal", () => {
                         [
                             "config",
                             {
-                                config: { defaults: { mustBe: "untrue" } },
+                                config: { mustBe: "untrue" },
                                 node: [["value", false]]
                             }
                         ]
