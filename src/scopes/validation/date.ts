@@ -20,14 +20,14 @@ type ParsedDate = {
 
 export const tryParseDate = (
     data: string,
-    options: DateOptions
+    options?: DateOptions
 ): Date | undefined => {
-    const format = options.format
+    const format = options?.format
         ? dateFormatMatcher.test(options.format)
             ? options.format.toLowerCase()
             : throwParseError(`Invalid date format '${options.format}'`)
         : "yyyy/mm/dd"
-    const delimiters = options.delimiters ?? ["/", "-"]
+    const delimiters = options?.delimiters ?? ["/", "-"]
     const delimiter = delimiters.find((delimiter) =>
         format.includes(delimiter)
     )!
@@ -45,7 +45,6 @@ export const tryParseDate = (
         if (dataPart.length !== formatPart.length) {
             return
         }
-
         parsedDate[formatPart[0] as keyof ParsedDate] = dataPart
     }
 
@@ -74,13 +73,13 @@ export const isValidDate = (data: string) => {
         const maxDay = isLeapYear(year) ? 366 : 365
         return day < maxDay
     }
-    const parts = data.match(/(\d{4})-?(\d{0,2})-?(\d*)/)
-    if (!parts) {
-        return false
-    }
-    const year = parts[1] && tryParseWellFormedInteger(parts[1])
-    const month = parts[2] && tryParseWellFormedInteger(parts[2])
-    const day = parts[3] && tryParseWellFormedInteger(parts[3])
+    const {
+        1: year,
+        2: month,
+        3: day
+    } = (data
+        .match(/(\d{4})-?(\d{0,2})-?(\d*)/)
+        ?.map((part) => parseInt(part)) ?? []) as Record<number, number>
 
     const date = new Date(
         `${year}-${month ? `0${month}`.slice(-2) : "01"}-${
