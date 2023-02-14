@@ -542,8 +542,8 @@ packages:
       '@swc/core-win32-x64-msvc': 1.3.24
     dev: true
 
-  /@ts-morph/common/0.18.0:
-    resolution: {integrity: sha512-UvWF+oQdMa4qMWhXTOd2JWtAbAJGgkPMNzGHgEcfOwQRIcViKdwsSqXXjSaQCZ4fo+bZMhdfuwQCjlW5bNcqEQ==}
+  /@ts-morph/common/0.18.1:
+    resolution: {integrity: sha512-RVE+zSRICWRsfrkAw5qCAK+4ZH9kwEFv5h0+/YeHTLieWP7F4wWq4JsKFuNWG+fYh/KF+8rAtgdj5zb2mm+DVA==}
     dependencies:
       fast-glob: 3.2.12
       minimatch: 5.1.0
@@ -4271,7 +4271,7 @@ packages:
   /ts-morph/17.0.1:
     resolution: {integrity: sha512-10PkHyXmrtsTvZSL+cqtJLTgFXkU43Gd0JCc0Rw6GchWbqKe0Rwgt1v3ouobTZwQzF1mGhDeAlWYBMGRV7y+3g==}
     dependencies:
-      '@ts-morph/common': 0.18.0
+      '@ts-morph/common': 0.18.1
       code-block-writer: 11.0.3
     dev: true
 

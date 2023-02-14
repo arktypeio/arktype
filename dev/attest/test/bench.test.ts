@@ -13,5 +13,5 @@ describe("bench", () => {
             benchFormat: { noExternal: true }
         })
         assert.equal(actual, expectedOutput)
-    })
+    }).timeout(8000)
 })

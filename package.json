@@ -32,7 +32,7 @@
     "packageManager": "pnpm@7.18.0",
     "scripts": {
         "//temporarily disabled pr checks": "pnpm testRepo",
-        "prChecks": "pnpm install && pnpm buildThenTest && pnpm build && pnpm typecheck && pnpm lint && pnpm test && pnpm docgen && pnpm buildSite",
+        "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm test && pnpm docgen && pnpm buildSite",
         "typecheck": "tsc --noEmit",
         "build": "ts-node ./dev/scripts/build.ts",
         "buildRepo": "pnpm build && pnpm docgen && pnpm buildSite",
@@ -44,7 +44,7 @@
         "buildThenTest": "pnpm build --test && pnpm testBuild",
         "tnt": "ts-node ./dev/attest/cli.ts --skipTypes --cmd mocha",
         "testAttest": "cd ./dev/attest && pnpx ts-node cli.ts --cmd mocha",
-        "testRepo": "pnpm testCov; pnpm testAttest; ts-node ./dev/scripts/testBuild.ts; deno task test",
+        "testRepo": "pnpm testAttest; pnpm testTsVersions; pnpm buildThenTest; deno task test",
         "testTsVersions": "ts-node ./dev/attest/src/testTsVersions.ts",
         "bench": "ts-node ./dev/attest/cli.ts bench --benchmarksPath ./test/benchmarks.json",
         "lint": "eslint --max-warnings=0 .",

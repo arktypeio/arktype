@@ -26,5 +26,5 @@
         "dist",
         "node_modules"
     ],
-    "deno.enable": false
+    "deno.enable": true
 }
