@@ -1,5 +1,11 @@
 # arktype
 
+## 0.5.1
+
+### Patch Changes
+
+-   7a6d6504: fix narrow tuple expression recursive inference
+
 ## 0.5.0
 
 ### Minor Changes
