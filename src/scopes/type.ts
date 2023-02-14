@@ -17,8 +17,8 @@ import { hasKeys } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import type { Expressions } from "./expressions.ts"
 import type { Scope } from "./scope.ts"
+import type { DateOptions } from "./validation/date.ts"
 
-// TODO: add config entries when resolving a type
 export type TypeParser<$> = {
     <def>(def: validateDefinition<def, $>): parseType<def, $>
 
@@ -44,10 +44,11 @@ type TypeRoot<t = unknown> = {
 export type TypeOptions = evaluate<
     {
         name?: string
+        date?: DateOptions
     } & ProblemsOptions
 >
 
-export type ArkTypeConfig = ProblemsConfig
+export type ArkTypeConfig = evaluate<{ date?: DateOptions } & ProblemsConfig>
 
 type TypeMeta = {
     name: string

@@ -6,7 +6,7 @@ import type { Space } from "./scope.ts"
 import { emptyScope, scope } from "./scope.ts"
 import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
 import type { TypeParser } from "./type.ts"
-import { validation, validationScope } from "./validation.ts"
+import { validation, validationScope } from "./validation/validation.ts"
 
 export const standardScope = scope(
     {},
