@@ -6,6 +6,7 @@ export const testBuild = (outDir: string) => {
         cwd: outDir
     })
 }
+shell("pnpm build --test")
 testBuild(repoDirs.mjsOut)
 testBuild(repoDirs.cjsOut)
 shell("pnpm build")
