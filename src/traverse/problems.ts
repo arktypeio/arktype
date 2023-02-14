@@ -80,6 +80,10 @@ class ProblemArray extends Array<Problem> {
         this.#state = state
     }
 
+    mustBe(description: string, opts?: AddProblemOptions) {
+        return this.add("custom", description, opts)
+    }
+
     add<code extends ProblemCode>(
         code: code,
         source: ProblemSource<code>,
@@ -189,7 +193,7 @@ type ProblemSources = {
     value: unknown
     multi: Problem[]
     branches: readonly Problem[]
-    mustBe: string
+    custom: string
     cases: string[]
 }
 
@@ -307,7 +311,7 @@ export const defaultProblemWriters = compileDefaultProblemWriters({
         addContext: (reason, path) =>
             path.length ? `At ${path}, ${reason}` : reason
     },
-    mustBe: {
+    custom: {
         mustBe: (mustBe) => mustBe
     },
     cases: {
@@ -321,11 +325,19 @@ export type ProblemOptions<code extends ProblemCode = ProblemCode> = {
     addContext?: ContextWriter
 }
 
+export type ProblemsOptions = evaluate<
+    ProblemOptions<ProblemCode> & ProblemsConfigByCode
+>
+
 export type ProblemsConfig = evaluate<
-    { defaults?: ProblemOptions<ProblemCode> } & {
-        [code in ProblemCode]?: ProblemOptions<code>
+    ProblemsConfigByCode & {
+        defaults?: ProblemOptions<ProblemCode>
     }
 >
+
+export type ProblemsConfigByCode = {
+    [code in ProblemCode]?: ProblemOptions<code>
+}
 
 export type DefaultProblemsWriters = {
     [code in ProblemCode]: ProblemWriters<code>

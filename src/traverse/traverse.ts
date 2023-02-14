@@ -11,7 +11,7 @@ import type { TraversalProp } from "../nodes/rules/props.ts"
 import { checkBound } from "../nodes/rules/range.ts"
 import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
-import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
+import type { ArkTypeConfig, QualifiedTypeName, Type } from "../scopes/type.ts"
 import type { SizedData } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
@@ -32,7 +32,7 @@ import {
 export class TraversalState<data = unknown> {
     path = new Path()
     problems = new Problems(this as any)
-    configs: TypeConfig[]
+    configs: ArkTypeConfig[]
     failFast = false
 
     #seen: { [name in QualifiedTypeName]?: object[] } = {}

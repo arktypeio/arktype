@@ -1,5 +1,6 @@
 import type { ResolvedNode, TypeNode } from "../nodes/node.ts"
 import { flattenType } from "../nodes/node.ts"
+import type { ConfigTuple } from "../parse/ast/config.ts"
 import type {
     inferDefinition,
     inferred,
@@ -24,9 +25,9 @@ import { Cache, FreezingCache } from "./cache.ts"
 import type { Expressions } from "./expressions.ts"
 import type { PrecompiledDefaults } from "./standard.ts"
 import type {
+    ArkTypeConfig,
     QualifiedTypeName,
     Type,
-    TypeConfig,
     TypeOptions,
     TypeParser
 } from "./type.ts"
@@ -55,7 +56,7 @@ export type ScopeOptions = {
     includes?: Space[] | []
     standard?: boolean
     name?: string
-    config?: TypeConfig
+    config?: ArkTypeConfig
 }
 
 type validateOptions<opts extends ScopeOptions> = {
@@ -157,9 +158,12 @@ let anonymousScopeCount = 0
 const scopeRegistry: Record<string, Scope | undefined> = {}
 const spaceRegistry: Record<string, Space | undefined> = {}
 
+export const isConfigTuple = (def: unknown): def is ConfigTuple =>
+    Array.isArray(def) && def[1] === ":"
+
 export class Scope<context extends ScopeContext = any> {
     name: string
-    config: TypeConfig | undefined
+    config: ArkTypeConfig | undefined
     parseCache = new FreezingCache<TypeNode>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
@@ -262,7 +266,8 @@ export class Scope<context extends ScopeContext = any> {
         if (maybeCacheResult) {
             return maybeCacheResult
         }
-        if (!this.aliases[name]) {
+        const aliasValue = this.aliases[name]
+        if (!aliasValue) {
             return (
                 onUnresolvable === "throw"
                     ? throwInternalError(
@@ -271,7 +276,9 @@ export class Scope<context extends ScopeContext = any> {
                     : undefined
             ) as ResolveResult<onUnresolvable>
         }
-        const type = initializeType(this.aliases[name], { name }, this)
+        const type = isConfigTuple(aliasValue)
+            ? initializeType(aliasValue[0], { name, ...aliasValue[2] }, this)
+            : initializeType(aliasValue, { name }, this)
         this.#resolutions.set(name, type)
         this.#exports.set(name, type)
         const ctx = this.#initializeContext(type)

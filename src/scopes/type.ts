@@ -5,7 +5,11 @@ import type {
     inferDefinition,
     validateDefinition
 } from "../parse/definition.ts"
-import type { Problems, ProblemsConfig } from "../traverse/problems.ts"
+import type {
+    Problems,
+    ProblemsConfig,
+    ProblemsOptions
+} from "../traverse/problems.ts"
 import { TraversalState, traverse } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { defer, evaluate, xor } from "../utils/generics.ts"
@@ -40,27 +44,39 @@ type TypeRoot<t = unknown> = {
 export type TypeOptions = evaluate<
     {
         name?: string
-    } & ProblemsConfig
+    } & ProblemsOptions
 >
 
-export type TypeConfig = ProblemsConfig
+export type ArkTypeConfig = ProblemsConfig
 
 type TypeMeta = {
     name: string
     id: QualifiedTypeName
     definition: unknown
     scope: Scope
-    config: TypeConfig | undefined
+    config: ArkTypeConfig | undefined
     includesMorph: boolean
 }
 
 const compileTypeConfig = (
     opts: TypeOptions | undefined
-): TypeConfig | undefined => {
+): ArkTypeConfig | undefined => {
     if (opts === undefined) {
         return
     }
-    const { name, ...config } = opts
+    const { name, mustBe, writeReason, addContext, ...rest } = opts
+    const config = rest as ArkTypeConfig
+    if (mustBe) {
+        config.defaults = { mustBe }
+    }
+    if (writeReason) {
+        config.defaults ??= {}
+        config.defaults.writeReason = writeReason
+    }
+    if (addContext) {
+        config.defaults ??= {}
+        config.defaults.addContext = addContext
+    }
     if (hasKeys(config)) {
         return config
     }

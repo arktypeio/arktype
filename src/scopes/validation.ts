@@ -43,7 +43,7 @@ export const validationScope = scope(
             "=>",
             (s, problems) =>
                 isLuhnValid(s) ||
-                !problems.add("mustBe", "a valid credit card number")
+                !problems.add("custom", "a valid credit card number")
         ],
         // https://www.regular-expressions.info
         email: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,

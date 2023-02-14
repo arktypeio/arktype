@@ -155,8 +155,9 @@ const ruleFlatteners: {
 export const precedenceMap: {
     readonly [k in TraversalKey]: number
 } = {
+    // Config: Applies before any checks
+    config: -1,
     // Critical: No other checks are performed if these fail
-    config: 0,
     domain: 0,
     value: 0,
     domains: 0,

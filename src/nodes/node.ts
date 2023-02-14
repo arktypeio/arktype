@@ -1,6 +1,6 @@
 import { compileDisjointReasonsMessage } from "../parse/ast/intersection.ts"
 import type { ParseContext } from "../parse/definition.ts"
-import type { Type, TypeConfig } from "../scopes/type.ts"
+import type { ArkTypeConfig, Type } from "../scopes/type.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { defined, Dict, mutable, stringKeyOf } from "../utils/generics.ts"
@@ -118,18 +118,18 @@ export type TraversalEntry =
     | RuleEntry
     | DomainsEntry
     | MorphEntry
-    | CyclicReferenceEntry
+    | AliasEntry
     | DomainEntry
     | BranchesEntry
     | SwitchEntry
     | ConfigEntry
 
-export type CyclicReferenceEntry = ["alias", string]
+export type AliasEntry = ["alias", string]
 
 export type ConfigEntry = [
     "config",
     {
-        config: TypeConfig
+        config: ArkTypeConfig
         node: TraversalNode
     }
 ]
