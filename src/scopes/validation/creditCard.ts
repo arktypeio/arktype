@@ -1,4 +1,4 @@
-import { baseType } from "../scope"
+import { baseType } from "../scope.ts"
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isLuhnNumber.js
 export const isLuhnValid = (creditCardInput: string) => {

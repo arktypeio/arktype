@@ -1,18 +1,19 @@
 import {
     wellFormedIntegerMatcher,
     wellFormedNumberMatcher
-} from "../../utils/numericLiterals.js"
-import { baseType, scope } from "../scope.js"
-import { creditCard } from "./creditCard.js"
+} from "../../utils/numericLiterals.ts"
+import { baseType, scope } from "../scope.ts"
+import { creditCard } from "./creditCard.ts"
+import { parseDate } from "./date.ts"
 
 // Non-trivial expressions should have an explanation or attribution
 
-const parsedNumber = baseType(
+const parseNumber = baseType(
     [wellFormedNumberMatcher, "|>", (s) => parseFloat(s)],
     { mustBe: "a well-formed numeric string" }
 )
 
-const parsedInteger = baseType(
+const parseInteger = baseType(
     [wellFormedIntegerMatcher, "|>", (s) => parseInt(s)],
     { mustBe: "a well-formed integer string" }
 )
@@ -45,8 +46,9 @@ export const validationScope = scope(
         creditCard,
         email,
         uuid,
-        parsedNumber,
-        parsedInteger,
+        parseNumber,
+        parseInteger,
+        parseDate,
         integer: ["node", { number: { divisor: 1 } }]
     },
     { name: "validation", standard: false }

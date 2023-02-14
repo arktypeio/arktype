@@ -1,55 +1,98 @@
-import { throwParseError } from "../../utils/errors"
+import { baseType } from "../scope.ts"
 
-export type DateDelimiter = "." | "/" | "-"
+type DayDelimiter = "." | "/" | "-"
 
-export type DateOptions = {
-    format?: string
-    delimiters?: DateDelimiter[]
+const dayDelimiterMatcher = /^[./-]$/
+
+type DayPart = DayPatterns[PartKey]
+
+type PartKey = keyof DayPatterns
+
+type DayPatterns = {
+    y: "yy" | "yyyy"
+    m: "mm" | "m"
+    d: "dd" | "d"
 }
 
-// Adapted from https://github.com/validatorjs/validator.js/blob/master/src/lib/isDate.js
-const dateFormatMatcher =
-    /(^(y{4}|y{2})[./-](m{1,2})[./-](d{1,2})$)|(^(m{1,2})[./-](d{1,2})[./-]((y{4}|y{2})$))|(^(d{1,2})[./-](m{1,2})[./-]((y{4}|y{2})$))/gi
+type fragment<part extends DayPart, delimiter extends DayDelimiter> =
+    | `${delimiter}${part}`
+    | ""
 
-type ParsedDateParts = {
+export type DayPattern<delimiter extends DayDelimiter = DayDelimiter> = {
+    [d in delimiter]: {
+        [k1 in keyof DayPatterns]: {
+            [k2 in Exclude<
+                keyof DayPatterns,
+                k1
+            >]: `${DayPatterns[k1]}${fragment<DayPatterns[k2], d>}${fragment<
+                DayPatterns[Exclude<keyof DayPatterns, k1 | k2>],
+                d
+            >}`
+        }[Exclude<keyof DayPatterns, k1>]
+    }[keyof DayPatterns]
+}[delimiter]
+
+export type DateFormat = "iso8601" | DayPattern
+
+export type DateOptions = {
+    format?: DateFormat
+}
+
+// ISO 8601 date/time modernized from https://github.com/validatorjs/validator.js/blob/master/src/lib/isISO8601.js
+// Based on https://tc39.es/ecma262/#sec-date-time-string-format, the T
+// delimiter for date/time is mandatory. Regex from validator.js strict matcher:
+const iso8601Matcher =
+    /^([+-]?\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-3])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))([T]((([01]\d|2[0-3])((:?)[0-5]\d)?|24:?00)([.,]\d+(?!:))?)?(\17[0-5]\d([.,]\d+)?)?([zZ]|([+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/
+
+type ParsedDayParts = {
     y?: string
     m?: string
     d?: string
 }
 
+const isValidDateInstance = (date: Date) => !isNaN(date as any)
+
 export const tryParseDate = (
     data: string,
-    options?: DateOptions
+    opts?: DateOptions
 ): Date | undefined => {
-    const format = options?.format
-        ? dateFormatMatcher.test(options.format)
-            ? options.format.toLowerCase()
-            : throwParseError(`Invalid date format '${options.format}'`)
-        : "yyyy/mm/dd"
-    const delimiters = options?.delimiters ?? ["/", "-"]
-    const delimiter = delimiters.find((delimiter) =>
-        format.includes(delimiter)
-    )!
-    const dataParts = data.split(delimiter)
-    const formatParts = format.split(delimiter)
+    if (!opts?.format) {
+        const result = new Date(data)
+        return isValidDateInstance(result) ? result : undefined
+    }
+    if (opts.format === "iso8601") {
+        return iso8601Matcher.test(data) ? new Date(data) : undefined
+    }
+    const dataParts = data.split(dayDelimiterMatcher)
+    // will be the first delimiter matched, if there is one
+    const delimiter: string | undefined = data[dataParts[0].length]
+    const formatParts = delimiter ? opts.format.split(delimiter) : [opts.format]
 
-    const partPairs: [data: string, format: string][] = []
-    for (let i = 0; i < dataParts.length && i < formatParts.length; i++) {
-        partPairs.push([dataParts[i], formatParts[i]])
+    if (dataParts.length !== formatParts.length) {
+        return
     }
 
-    const parsedDate: ParsedDateParts = {}
-
-    for (const [dataPart, formatPart] of partPairs) {
-        if (dataPart.length !== formatPart.length) {
+    const parsedParts: ParsedDayParts = {}
+    for (let i = 0; i < formatParts.length; i++) {
+        if (
+            dataParts[i].length !== formatParts[i].length &&
+            // if format is "m" or "d", data is allowed to be 1 or 2 characters
+            !(formatParts[i].length === 1 && dataParts[i].length === 2)
+        ) {
             return
         }
-        parsedDate[formatPart[0] as keyof ParsedDateParts] = dataPart
+        parsedParts[formatParts[i][0] as PartKey] = dataParts[i]
     }
 
-    const date = new Date(`${parsedDate.m}/${parsedDate.d}/${parsedDate.y}`)
+    const date = new Date(`${parsedParts.m}/${parsedParts.d}/${parsedParts.y}`)
 
-    if (date.getDate() === parseInt(parsedDate.d!)) {
+    if (`${date.getDate()}` === parsedParts.d) {
         return date
     }
 }
+
+export const parseDate = baseType([
+    baseType.from({ string: true }),
+    "|>",
+    (s, problems) => tryParseDate(s) ?? problems.mustBe("a valid date")
+])
