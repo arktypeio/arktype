@@ -48,9 +48,9 @@ export type inferNarrow<inDef, narrow, $> = narrow extends Narrow
 
 type inferNarrowFunction<input, narrow> = narrow extends NarrowPredicate<
     input,
-    infer to
+    infer narrowed
 >
-    ? to
+    ? narrowed
     : narrow extends Narrow<input>
     ? input
     : never
