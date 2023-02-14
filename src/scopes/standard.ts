@@ -62,9 +62,9 @@ export type PrecompiledDefaults = {
     creditCard: string
     email: string
     uuid: string
-    parseNumber: (In: string) => Out<number>
-    parseInteger: (In: string) => Out<number>
-    parseDate: (In: string) => Out<Date>
+    parsedNumber: (In: string) => Out<number>
+    parsedInteger: (In: string) => Out<number>
+    parsedDate: (In: string) => Out<Date>
     // jsObects
 } & InferredObjectKinds
 

@@ -97,7 +97,7 @@ export const tryParseDate = (
     return writeFormattedMustBe(opts.format)
 }
 
-export const parseDate = baseType([
+export const parsedDate = baseType([
     baseType.from({ string: true }),
     "|>",
     (s, problems) => {

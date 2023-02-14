@@ -4,16 +4,16 @@ import {
 } from "../../utils/numericLiterals.ts"
 import { baseType, scope } from "../scope.ts"
 import { creditCard } from "./creditCard.ts"
-import { parseDate } from "./date.ts"
+import { parsedDate } from "./date.ts"
 
 // Non-trivial expressions should have an explanation or attribution
 
-const parseNumber = baseType(
+const parsedNumber = baseType(
     [wellFormedNumberMatcher, "|>", (s) => parseFloat(s)],
     { mustBe: "a well-formed numeric string" }
 )
 
-const parseInteger = baseType(
+const parsedInteger = baseType(
     [wellFormedIntegerMatcher, "|>", (s) => parseInt(s)],
     { mustBe: "a well-formed integer string" }
 )
@@ -46,9 +46,9 @@ export const validationScope = scope(
         creditCard,
         email,
         uuid,
-        parseNumber,
-        parseInteger,
-        parseDate,
+        parsedNumber,
+        parsedInteger,
+        parsedDate,
         integer: ["node", { number: { divisor: 1 } }]
     },
     { name: "validation", standard: false }
