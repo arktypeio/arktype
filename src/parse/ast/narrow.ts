@@ -36,11 +36,11 @@ export type validateNarrowTuple<def extends TupleExpression, $> = readonly [
 ]
 
 export type inferNarrow<inDef, narrow, $> = narrow extends Narrow
-    ? inferNarrowFunction<inferDefinition<inDef, $>, narrow>
+    ? inferNarrowFunction<asIn<inferDefinition<inDef, $>>, narrow>
     : narrow extends { [domain in Domain]?: Narrow }
     ? {
           [domain in keyof narrow & Domain]: inferNarrowFunction<
-              Extract<inferDefinition<inDef, $>, inferDomain<domain>>,
+              Extract<asIn<inferDefinition<inDef, $>>, inferDomain<domain>>,
               narrow[domain]
           >
       }[keyof narrow & Domain]

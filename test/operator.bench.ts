@@ -1,4 +1,4 @@
-import { arrayOf, intersection, type, union } from "../api.ts"
+import { arrayOf, intersection, morph, narrow, type, union } from "../api.ts"
 import { bench, suite } from "../dev/attest/api.ts"
 
 suite("operators", () => {
@@ -113,4 +113,29 @@ suite("operators", () => {
     })
         .median([560, "ns"])
         .type([1401, "instantiations"])
+
+    suite("narrow", () => {
+        bench("tuple expression", () => {
+            const _ = type(["boolean", "=>", (b) => b])
+        })
+            .median([1.09, "us"])
+            .type([409, "instantiations"])
+        bench("helper", () => {
+            const _ = narrow("boolean", (b) => b)
+        })
+            .median([1.09, "us"])
+            .type([1059, "instantiations"])
+    })
+    suite("morph", () => {
+        bench("tuple expression", () => {
+            const _ = type(["boolean", "|>", (b) => b])
+        })
+            .median([686, "ns"])
+            .type([336, "instantiations"])
+        bench("helper", () => {
+            const _ = morph("boolean", (b) => b)
+        })
+            .median([794, "ns"])
+            .type([878, "instantiations"])
+    })
 })
