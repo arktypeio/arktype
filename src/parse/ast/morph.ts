@@ -1,7 +1,8 @@
 import type { Branch, MorphBranch } from "../../nodes/branch.ts"
 import { isMorphBranch } from "../../nodes/branch.ts"
 import type { ResolvedNode } from "../../nodes/node.ts"
-import type { asOut } from "../../scopes/type.ts"
+import type { asIn, asOut } from "../../scopes/type.ts"
+import type { Problem, Problems } from "../../traverse/problems.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../../utils/errors.ts"
 import type { mutable, nominal } from "../../utils/generics.ts"
@@ -11,7 +12,7 @@ import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { PostfixParser, TupleExpression } from "./tuple.ts"
 
-export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
+export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {
         return throwParseError(writeMalformedMorphExpressionMessage(def[2]))
     }
@@ -60,17 +61,23 @@ export type Out<t = {}> = nominal<t, "out">
 
 export type validateMorphTuple<def extends TupleExpression, $> = readonly [
     _: validateDefinition<def[0], $>,
-    _: "=>",
-    _: Morph<
-        asOut<inferDefinition<def[0], $>>,
-        "3" extends keyof def ? inferDefinition<def[3], $> : unknown
-    >,
-    _?: validateDefinition<def[3], $>
+    _: "|>",
+    _: Morph<asOut<inferDefinition<def[0], $>>, unknown>
 ]
 
-export type Morph<i = any, o = unknown> = (In: i) => o
+export type Morph<i = any, o = unknown> = (In: i, problems: Problems) => o
 
-export type ParsedMorph<i = any, o = unknown> = (In: i) => Out<o>
+export type ParsedMorph<i = any, o = unknown> = (In: i) => inferMorphOut<o>
+
+export type inferMorph<inDef, morph, $> = morph extends Morph
+    ? (In: asIn<inferDefinition<inDef, $>>) => inferMorphOut<ReturnType<morph>>
+    : never
+
+type inferMorphOut<out> = unknown extends out
+    ? Out<unknown> | undefined | null
+    :
+          | Out<Exclude<out, Problem | undefined | null>>
+          | Extract<out, undefined | null>
 
 export const writeMalformedMorphExpressionMessage = (value: unknown) =>
-    `Morph expression requires a function following '=>' (was ${typeof value})`
+    `Morph expression requires a function following '|>' (was ${typeof value})`

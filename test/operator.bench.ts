@@ -1,84 +1,116 @@
-import { type } from "../api.ts"
+import { arrayOf, intersection, type, union } from "../api.ts"
 import { bench, suite } from "../dev/attest/api.ts"
 
-const writeBranchDef = (token: string, size: number) =>
-    [...Array(size - 1)].reduce((def, _, i) => `${def}${token}${i + 1}`, "0")
+suite("operators", () => {
+    suite("array", () => {
+        bench("string", () => {
+            const _ = type("number[]")
+        })
+            .median([934, "ns"])
+            .type([134, "instantiations"])
 
-suite("parse/str/operator", () => {
-    bench("array", () => {
-        const _ = type("number[]")
+        bench("tuple", () => {
+            const _ = type(["number", "[]"])
+        })
+            .median([1.06, "us"])
+            .type([146, "instantiations"])
+
+        bench("expression", () => {
+            const _ = arrayOf("number")
+        })
+            .median([1.11, "us"])
+            .type([703, "instantiations"])
     })
-        .median()
-        .type()
 
     suite("union", () => {
-        bench("binary", () => {
+        bench("string", () => {
             const _ = type("number|string")
         })
-            .median()
-            .type()
+            .median([498, "ns"])
+            .type([817, "instantiations"])
+
+        bench("tuple", () => {
+            const _ = type(["number", "|", "string"])
+        })
+            .median([1.48, "us"])
+            .type([307, "instantiations"])
+
+        bench("expression", () => {
+            const _ = union("number", "string")
+        })
+            .median([1.48, "us"])
+            .type([1522, "instantiations"])
 
         bench("10-ary", () => {
             const _ = type("0|1|2|3|4|5|6|7|8|9")
         })
-            .median()
-            .type()
-
-        const largeUnionDef = writeBranchDef("|", 100)
-        bench("100-ary", () => {
-            type(largeUnionDef)
-        }).median()
+            .median([16.64, "us"])
+            .type([5605, "instantiations"])
     })
 
     suite("intersection", () => {
-        bench("binary", () => {
+        bench("string", () => {
             const _ = type("number&0")
         })
-            .median()
-            .type()
+            .median([511, "ns"])
+            .type([787, "instantiations"])
+
+        bench("tuple", () => {
+            const _ = type(["number", "&", "0"])
+        })
+            .median([1.76, "us"])
+            .type([517, "instantiations"])
+
+        bench("expression", () => {
+            const _ = intersection("number", "0")
+        })
+            .median([1.74, "us"])
+            .type([1717, "instantiations"])
 
         bench("10-ary", () => {
-            const _ = type("0&1&2&3&4&5&6&7&8&9")
+            const _ = type(
+                "unknown&unknown&unknown&unknown&unknown&unknown&unknown&unknown&unknown&unknown"
+            )
         })
-            .median()
-            .type()
-
-        const largeIntersectionDef = writeBranchDef("&", 100)
-        bench("100-ary", () => {
-            type(largeIntersectionDef)
-        }).median()
+            .median([707, "ns"])
+            .type([4131, "instantiations"])
     })
 
     suite("group", () => {
         bench("shallow", () => {
             const _ = type("string|(number[])")
         })
-            .median()
-            .type()
+            .median([1.04, "us"])
+            .type([1121, "instantiations"])
 
         bench("nested", () => {
             const _ = type("string|(number|(boolean))[][]")
         })
-            .median()
-            .type()
+            .median([1.44, "us"])
+            .type([3308, "instantiations"])
 
         bench("deep", () => {
             const _ = type("(0|(1|(2|(3|(4|5)[])[])[])[])[]")
         })
-            .median()
-            .type()
+            .median([5.34, "us"])
+            .type([36744, "instantiations"])
     })
     suite("bounds", () => {
-        bench("single-bounded", () => {
+        bench("single", () => {
             const _ = type("string>5")
         })
-            .median()
-            .type()
+            .median([616, "ns"])
+            .type([682, "instantiations"])
 
-        bench("double-bounded", () => {
+        bench("double", () => {
             const _ = type("-7<=integer<99")
         })
-            .median()
-            .type()
+            .median([780, "ns"])
+            .type([1088, "instantiations"])
     })
+    bench("divisor", () => {
+        const _ = type("number%5")
+    })
+        .median([560, "ns"])
+        .type([1401, "instantiations"])
 })

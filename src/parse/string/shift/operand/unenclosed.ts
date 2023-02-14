@@ -73,11 +73,11 @@ type tryResolve<
     : token extends NumberLiteral<infer value>
     ? number extends value
         ? error<writeMalformedNumericLiteralMessage<token, "number">>
-        : value
+        : token
     : token extends BigintLiteral<infer value>
     ? bigint extends value
         ? error<writeMalformedNumericLiteralMessage<token, "bigint">>
-        : value
+        : token
     : error<
           token extends ""
               ? writeMissingOperandMessage<s>

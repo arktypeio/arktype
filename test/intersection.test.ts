@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { type } from "../api.ts"
+import { intersection, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import {
     writeMissingRightOperandMessage,
@@ -67,6 +67,16 @@ describe("intersection", () => {
                 }
             })
         })
+        it("helper", () => {
+            const t = intersection({ a: "string" }, { b: "boolean" })
+            attest(t.infer).typed as {
+                a: string
+                b: boolean
+            }
+            attest(t.node).snap({
+                object: { props: { a: "string", b: "boolean" } }
+            })
+        })
         describe("errors", () => {
             it("bad reference", () => {
                 // @ts-expect-error
@@ -83,6 +93,17 @@ describe("intersection", () => {
             it("implicit never", () => {
                 // @ts-expect-error
                 attest(() => type("string&number")).throwsAndHasTypeError(
+                    "results in an unsatisfiable type"
+                )
+            })
+            it("helper parse", () => {
+                attest(() =>
+                    // @ts-expect-error
+                    intersection({ a: "what" }, { b: "boolean" })
+                ).throwsAndHasTypeError(writeUnresolvableMessage("what"))
+            })
+            it("helper implicit never", () => {
+                attest(() => intersection("string", "number")).throws(
                     "results in an unsatisfiable type"
                 )
             })

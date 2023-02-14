@@ -1,16 +1,16 @@
 import type { inferNode } from "../../nodes/infer.ts"
 import type { ResolvedNode, TypeNode } from "../../nodes/node.ts"
-import { arrayOf, intersection, union } from "../../nodes/node.ts"
+import { rootIntersection, rootUnion, toArrayNode } from "../../nodes/node.ts"
 import type { Prop } from "../../nodes/rules/props.ts"
-import type { asIn, asOut } from "../../scopes/type.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type {
     conform,
     constructor,
+    Dict,
     error,
-    List,
-    returnOf
+    evaluate,
+    List
 } from "../../utils/generics.ts"
 import type {
     inferDefinition,
@@ -18,21 +18,22 @@ import type {
     validateDefinition
 } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
-import type { inferIntersection, inferUnion } from "../string/ast.ts"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
+import type { inferIntersection } from "./intersection.ts"
 import type { inferKeyOfExpression, validateKeyOfExpression } from "./keyof.ts"
 import { parseKeyOfTuple } from "./keyof.ts"
-import type { Out, validateMorphTuple } from "./morph.ts"
+import type { inferMorph, validateMorphTuple } from "./morph.ts"
 import { parseMorphTuple } from "./morph.ts"
-import type { validateNarrowTuple } from "./narrow.ts"
+import type { inferNarrow, validateNarrowTuple } from "./narrow.ts"
 import { parseNarrowTuple } from "./narrow.ts"
+import type { inferUnion } from "./union.ts"
 
 export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
-    if (isPostfixExpression(def)) {
-        return postfixParsers[def[1]](def as never, ctx)
+    if (isIndexOneExpression(def)) {
+        return indexOneParsers[def[1]](def as never, ctx)
     }
-    if (isPrefixExpression(def)) {
+    if (isIndexZeroExpression(def)) {
         return prefixParsers[def[0]](def as never, ctx)
     }
     const props: Record<number | "length", Prop> = {
@@ -57,10 +58,8 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
 export type validateTupleExpression<
     def extends TupleExpression,
     $
-> = def[1] extends "=>"
-    ? validateMorphTuple<def, $>
-    : def[1] extends ":"
-    ? validateNarrowTuple<def, $>
+> = def[1] extends "[]"
+    ? conform<def, readonly [validateDefinition<def[0], $>, "[]"]>
     : def[1] extends Scanner.BranchToken
     ? def[2] extends undefined
         ? [def[0], error<writeMissingRightOperandMessage<def[1], "">>]
@@ -72,8 +71,10 @@ export type validateTupleExpression<
                   validateDefinition<def[2], $>
               ]
           >
-    : def[1] extends "[]"
-    ? conform<def, readonly [validateDefinition<def[0], $>, "[]"]>
+    : def[1] extends "|>"
+    ? validateMorphTuple<def, $>
+    : def[1] extends "=>"
+    ? validateNarrowTuple<def, $>
     : def[0] extends "==="
     ? conform<def, readonly ["===", unknown]>
     : def[0] extends "instanceof"
@@ -81,8 +82,18 @@ export type validateTupleExpression<
     : def[0] extends "node"
     ? conform<def, readonly ["node", ResolvedNode<$>]>
     : def[0] extends "keyof"
-    ? validateKeyOfExpression<def[1], $>
+    ? conform<def, validateKeyOfExpression<def[1], $>>
     : never
+
+export type UnparsedTupleExpressionInput<$> = {
+    instanceof: constructor
+    node: ResolvedNode<$>
+    "===": unknown
+}
+
+export type UnparsedTupleOperator = evaluate<
+    keyof UnparsedTupleExpressionInput<Dict>
+>
 
 export type inferTuple<def extends List, $> = def extends TupleExpression
     ? inferTupleExpression<def, $>
@@ -93,24 +104,16 @@ export type inferTuple<def extends List, $> = def extends TupleExpression
 export type inferTupleExpression<
     def extends TupleExpression,
     $
-> = def[1] extends ":"
-    ? "3" extends keyof def
-        ? inferDefinition<def[3], $>
-        : inferDefinition<def[0], $>
-    : def[1] extends "=>"
-    ? (
-          In: asIn<inferDefinition<def[0], $>>
-      ) => Out<
-          "3" extends keyof def
-              ? asOut<inferDefinition<def[3], $>>
-              : returnOf<def[2]>
-      >
+> = def[1] extends "[]"
+    ? inferDefinition<def[0], $>[]
     : def[1] extends "&"
     ? inferIntersection<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
     : def[1] extends "|"
     ? inferUnion<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
-    : def[1] extends "[]"
-    ? inferDefinition<def[0], $>[]
+    : def[1] extends "=>"
+    ? inferNarrow<def[0], def[2], $>
+    : def[1] extends "|>"
+    ? inferMorph<def[0], def[2], $>
     : def[0] extends "==="
     ? def[1]
     : def[0] extends "instanceof"
@@ -131,57 +134,68 @@ const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
     }
     const l = parseDefinition(def[0], ctx)
     const r = parseDefinition(def[2], ctx)
-    return def[1] === "&" ? intersection(l, r, ctx.type) : union(l, r, ctx.type)
+    return def[1] === "&"
+        ? rootIntersection(l, r, ctx.type)
+        : rootUnion(l, r, ctx.type)
 }
 
 const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
-    arrayOf(parseDefinition(def[0], scope))
+    toArrayNode(parseDefinition(def[0], scope))
 
-export type PostfixParser<token extends PostfixToken> = (
-    def: PostfixExpression<token>,
+export type PostfixParser<token extends IndexOneOperator> = (
+    def: IndexOneExpression<token>,
     ctx: ParseContext
 ) => TypeNode
 
-export type PrefixParser<token extends PrefixToken> = (
-    def: PrefixExpression<token>,
+export type PrefixParser<token extends IndexZeroOperator> = (
+    def: IndexZeroExpression<token>,
     ctx: ParseContext
 ) => TypeNode
 
-export type TupleExpression = PrefixExpression | PostfixExpression
+export type TupleExpression = IndexZeroExpression | IndexOneExpression
 
 export const writeMalformedFunctionalExpressionMessage = (
-    operator: "=>" | ":",
+    operator: FunctionalTupleOperator,
     rightDef: unknown
 ) =>
     `Expression requires a function following '${operator}' (was ${typeof rightDef})`
 
-export type TupleExpressionToken = PrefixToken | PostfixToken
+export type TupleExpressionOperator = IndexZeroOperator | IndexOneOperator
 
-type PostfixToken = "[]" | "&" | "|" | ":" | "=>"
+type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
 
-export type PostfixExpression<token extends PostfixToken = PostfixToken> =
-    readonly [unknown, token, ...unknown[]]
+export type TuplePostfixOperator = "[]"
 
-const isPostfixExpression = (def: List): def is PostfixExpression =>
-    postfixParsers[def[1] as PostfixToken] !== undefined
+export type TupleInfixOperator = "&" | "|" | ":" | "=>" | "|>"
 
-const postfixParsers: {
-    [token in PostfixToken]: PostfixParser<token>
+export type IndexOneExpression<
+    token extends IndexOneOperator = IndexOneOperator
+> = readonly [unknown, token, ...unknown[]]
+
+const isIndexOneExpression = (def: List): def is IndexOneExpression =>
+    indexOneParsers[def[1] as IndexOneOperator] !== undefined
+
+const indexOneParsers: {
+    [token in IndexOneOperator]: PostfixParser<token>
 } = {
     "|": parseBranchTuple,
     "&": parseBranchTuple,
     "[]": parseArrayTuple,
-    ":": parseNarrowTuple,
-    "=>": parseMorphTuple
+    "=>": parseNarrowTuple,
+    "|>": parseMorphTuple,
+    ":": () => ({})
 }
 
-type PrefixToken = "keyof" | "instanceof" | "===" | "node"
+export type FunctionalTupleOperator = "=>" | "|>"
 
-export type PrefixExpression<token extends PrefixToken = PrefixToken> =
-    readonly [token, ...unknown[]]
+export type IndexZeroOperator = "keyof" | "instanceof" | "===" | "node"
+
+export type IndexZeroExpression<
+    token extends IndexZeroOperator = IndexZeroOperator
+> = readonly [token, ...unknown[]]
 
 const prefixParsers: {
-    [token in PrefixToken]: PrefixParser<token>
+    [token in IndexZeroOperator]: PrefixParser<token>
 } = {
     keyof: parseKeyOfTuple,
     instanceof: (def) => {
@@ -196,5 +210,5 @@ const prefixParsers: {
     node: (def) => def[1] as ResolvedNode
 }
 
-const isPrefixExpression = (def: List): def is PrefixExpression =>
-    prefixParsers[def[0] as PrefixToken] !== undefined
+const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>
+    prefixParsers[def[0] as IndexZeroOperator] !== undefined

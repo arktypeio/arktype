@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
-import { type } from "../api.js"
-import { attest } from "../dev/attest/api.js"
+import { type } from "../api.ts"
+import { attest } from "../dev/attest/api.ts"
 
 describe("traverse", () => {
     it("divisible", () => {
@@ -39,7 +39,7 @@ describe("traverse", () => {
             "age must be defined"
         )
     })
-    it("custom errors", () => {
+    it("customized builtin problem", () => {
         const isEven = type("number%2", {
             divisor: {
                 mustBe: (divisor) => `a multiple of ${divisor}`,
@@ -52,7 +52,7 @@ describe("traverse", () => {
         const basic = type("string|number[]")
         const check = basic(2)
         attest(check.problems?.summary).snap(
-            "Must be a string or an object (was number)"
+            "Must be a string or an object (was 2)"
         )
     })
     it("tuple length", () => {
@@ -87,7 +87,7 @@ describe("traverse", () => {
         )
         // unsatisfying value
         attest(t({ a: 5 }).problems?.summary).snap(
-            "a must be a string or boolean (was number)"
+            "a must be a string or boolean (was 5)"
         )
     })
     it("multi", () => {

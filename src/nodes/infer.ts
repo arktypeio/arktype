@@ -1,29 +1,29 @@
-import type { inferTerminal } from "../parse/string/ast.js"
-import type { Out } from "../parse/tuple/morph.js"
-import type { Domain, inferDomain } from "../utils/domains.js"
+import type { inferTerminal } from "../parse/ast/ast.ts"
+import type { Out } from "../parse/ast/morph.ts"
+import type { Domain, inferDomain } from "../utils/domains.ts"
 import type {
     constructor,
     evaluate,
-    evaluateObject,
+    evaluateObjectOrFunction,
     HomogenousTuple,
     List,
     returnOf
-} from "../utils/generics.js"
+} from "../utils/generics.ts"
 import type {
     BuiltinClass,
     DefaultObjectKind,
     inferObjectKind
-} from "../utils/objectKinds.js"
-import type { MorphBranch } from "./branch.js"
-import type { LiteralNode, ResolvedNode, TypeNode } from "./node.js"
-import type { Predicate } from "./predicate.js"
+} from "../utils/objectKinds.ts"
+import type { MorphBranch } from "./branch.ts"
+import type { LiteralNode, ResolvedNode, TypeNode } from "./node.ts"
+import type { Predicate } from "./predicate.ts"
 import type {
     MappedPropKey,
     OptionalProp,
     Prop,
     PropsRule
-} from "./rules/props.js"
-import type { LiteralRules, NarrowableRules } from "./rules/rules.js"
+} from "./rules/props.ts"
+import type { LiteralRules, NarrowableRules } from "./rules/rules.ts"
 
 export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
     ? inferTerminal<node, $>
@@ -32,7 +32,7 @@ export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
         ? result extends BuiltinClass
             ? // don't evaluate builtin classes like Date (expanding their prototype looks like a mess)
               result
-            : evaluate<result>
+            : evaluateObjectOrFunction<result>
         : never
     : never
 
@@ -98,7 +98,7 @@ type inferObjectRules<
     ? inferProps<rules["props"], $>
     : object
 
-type inferProps<props extends PropsRule, $> = evaluateObject<
+type inferProps<props extends PropsRule, $> = evaluate<
     {
         [k in requiredKeyOf<props>]: props[k] extends Prop<$, infer node>
             ? inferNode<node, $>

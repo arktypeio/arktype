@@ -47,10 +47,4 @@ describe("bad definition types", () => {
             writeBadDefinitionTypeMessage("symbol")
         )
     })
-    it("objects", () => {
-        // @ts-expect-error
-        attest(() => type({ bad: () => {} })).throwsAndHasTypeError(
-            writeBadDefinitionTypeMessage("Function")
-        )
-    })
 })

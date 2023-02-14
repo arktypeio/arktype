@@ -1,6 +1,7 @@
 import { describe, it } from "mocha"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
+import { writeUnboundableMessage } from "../src/parse/ast/bound.ts"
 import { writeUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 
 describe("scope", () => {
@@ -74,5 +75,62 @@ describe("scope", () => {
         const $ = scope({ a: {} as any })
         attest($.infer).typed as { a: never }
         attest($.type(["number", "a"]).infer).typed as [number, never]
+    })
+    it("infers its own helpers", () => {
+        const $ = scope({
+            a: () => $.type("string"),
+            b: () => $.type("number")
+        })
+        const types = $.compile()
+        attest(types.a.infer).typed as string
+        attest(types.b.infer).typed as number
+    })
+    it("infers cyclic helpers", () => {
+        const $ = scope({
+            a: () => $.type({ a: "b" }),
+            b: () => $.type({ b: "a" })
+        })
+        const types = $.compile()
+        attest(types.a.infer).typed as {
+            a: {
+                b: any
+            }
+        }
+        attest(types.b.infer).typed as {
+            b: {
+                a: any
+            }
+        }
+    })
+    it("allows semantically valid helpers", () => {
+        const $ = scope({
+            n: () => $.type("number"),
+            lessThan10: () => $.type("n<10")
+        })
+        const types = $.compile()
+        attest(types.n.infer).typed as number
+        attest(types.lessThan10.infer).typed as number
+        attest(types.lessThan10.node).snap({
+            number: { range: { max: { comparator: "<", limit: 10 } } }
+        })
+    })
+    it("errors on helper parse error", () => {
+        attest(() => {
+            const $ = scope({
+                // @ts-expect-error
+                a: () => $.type("kung|foo")
+            })
+            $.compile()
+        }).throwsAndHasTypeError(writeUnresolvableMessage("kung"))
+    })
+    it("errors on semantically invalid helper", () => {
+        attest(() => {
+            const $ = scope({
+                b: () => $.type("boolean"),
+                // @ts-expect-error
+                lessThan10: () => $.type("b<10")
+            })
+            $.compile()
+        }).throwsAndHasTypeError(writeUnboundableMessage("'b'"))
     })
 })

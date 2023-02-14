@@ -1,10 +1,10 @@
+import { compileDisjointReasonsMessage } from "../parse/ast/intersection.ts"
 import type { ParseContext } from "../parse/definition.ts"
-import { compileDisjointReasonsMessage } from "../parse/string/ast.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
-import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
+import { hasKey, hasKeys, objectKeysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { MorphEntry } from "./branch.ts"
 import type { Intersector } from "./compose.ts"
@@ -46,8 +46,8 @@ export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
             ? anonymousDisjoint()
             : state.addDisjoint(
                   "domain",
-                  keysOf(lResolution),
-                  keysOf(rResolution)
+                  objectKeysOf(lResolution),
+                  objectKeysOf(rResolution)
               )
     }
     return result === lResolution ? l : result === rResolution ? r : result
@@ -66,7 +66,7 @@ const resolutionIntersection = composeKeyedIntersection<ResolvedNode>(
     { onEmpty: "omit" }
 )
 
-export const intersection = (
+export const rootIntersection = (
     l: TypeNode,
     r: TypeNode,
     type: Type
@@ -80,11 +80,15 @@ export const intersection = (
         : result
 }
 
-export const union = (l: TypeNode, r: TypeNode, type: Type): ResolvedNode => {
+export const rootUnion = (
+    l: TypeNode,
+    r: TypeNode,
+    type: Type
+): ResolvedNode => {
     const lResolution = type.meta.scope.resolveNode(l)
     const rResolution = type.meta.scope.resolveNode(r)
     const result = {} as mutable<ResolvedNode>
-    const domains = keysOf({ ...lResolution, ...rResolution })
+    const domains = objectKeysOf({ ...lResolution, ...rResolution })
     for (const domain of domains) {
         result[domain] = hasKey(lResolution, domain)
             ? hasKey(rResolution, domain)
@@ -192,7 +196,7 @@ export const flattenNode = (
               ]
             : resolution.flat
     }
-    const domains = keysOf(node)
+    const domains = objectKeysOf(node)
     if (domains.length === 1) {
         const domain = domains[0]
         const predicate = node[domain]!
@@ -230,7 +234,7 @@ export const isLiteralNode = <domain extends Domain>(
     )
 }
 
-export const arrayOf = (node: TypeNode): ResolvedNode => ({
+export const toArrayNode = (node: TypeNode): ResolvedNode => ({
     object: {
         class: "Array",
         props: {

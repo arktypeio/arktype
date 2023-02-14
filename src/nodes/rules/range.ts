@@ -1,7 +1,7 @@
 import type { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { EntryChecker } from "../../traverse/traverse.ts"
+import { sizeOf } from "../../utils/data.ts"
 import type { evaluate } from "../../utils/generics.ts"
-import { sizeOf } from "../../utils/size.ts"
 import { composeIntersection, equality } from "../compose.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
@@ -91,7 +91,7 @@ const minAllows = (min: DoubleBound["min"], n: number) =>
 const maxAllows = (max: DoubleBound["max"], n: number) =>
     !max || n > max.limit || (n === max.limit && !isExclusive(max.comparator))
 
-export type FlatBound = Bound & { units?: string }
+export type FlatBound = evaluate<Bound & { units?: string }>
 
 export const flattenRange: FlattenAndPushRule<Range> = (
     entries,
@@ -117,7 +117,7 @@ export const flattenRange: FlattenAndPushRule<Range> = (
 
 export const checkBound: EntryChecker<"bound"> = (bound, state) =>
     comparatorCheckers[bound.comparator](sizeOf(state.data), bound.limit) ||
-    state.problems.add("bound", state.data, bound)
+    !state.problems.add("bound", bound)
 
 const comparatorCheckers: Record<
     Scanner.Comparator,

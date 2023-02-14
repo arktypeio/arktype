@@ -6,7 +6,7 @@ import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type {
     Dict,
-    evaluateObject,
+    evaluate,
     isAny,
     isUnknown,
     List
@@ -14,16 +14,17 @@ import type {
 import { objectKindOf } from "../utils/objectKinds.ts"
 import type { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { inferRecord } from "./record.ts"
-import { parseRecord } from "./record.ts"
-import type { inferString, validateString } from "./string/string.ts"
-import { parseString } from "./string/string.ts"
+import type { validateString } from "./ast/ast.ts"
 import type {
     inferTuple,
     TupleExpression,
     validateTupleExpression
-} from "./tuple/tuple.ts"
-import { parseTuple } from "./tuple/tuple.ts"
+} from "./ast/tuple.ts"
+import { parseTuple } from "./ast/tuple.ts"
+import type { inferRecord } from "./record.ts"
+import { parseRecord } from "./record.ts"
+import type { inferString } from "./string/string.ts"
+import { parseString } from "./string/string.ts"
 
 export type ParseContext = {
     type: Type
@@ -47,9 +48,16 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
         case "RegExp":
             return { string: { regex: (def as RegExp).source } }
         case "Function":
-            return isType(def)
-                ? def.node
-                : throwParseError(writeBadDefinitionTypeMessage("Function"))
+            if (isType(def)) {
+                return def.node
+            }
+            if (isThunk(def)) {
+                const returned = def()
+                if (isType(returned)) {
+                    return returned.node
+                }
+            }
+            return throwParseError(writeBadDefinitionTypeMessage("Function"))
         default:
             return throwParseError(
                 writeBadDefinitionTypeMessage(objectKind ?? stringify(def))
@@ -59,7 +67,7 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
 
 export type inferDefinition<def, $> = isAny<def> extends true
     ? never
-    : def extends inferred<infer t>
+    : def extends inferred<infer t> | InferredThunk<infer t>
     ? t
     : def extends string
     ? inferString<def, $>
@@ -71,7 +79,10 @@ export type inferDefinition<def, $> = isAny<def> extends true
     ? inferRecord<def, $>
     : never
 
-export type validateDefinition<def, $> = def extends Terminal
+// we ignore functions in validation so that cyclic thunk definitions can be inferred in scopes
+export type validateDefinition<def, $> = def extends (...args: any[]) => any
+    ? def
+    : def extends Terminal
     ? def
     : def extends string
     ? validateString<def, $>
@@ -83,7 +94,7 @@ export type validateDefinition<def, $> = def extends Terminal
       >
     : isUnknown<def> extends true
     ? unknownDefinitionMessage
-    : evaluateObject<{
+    : evaluate<{
           [k in keyof def]: validateDefinition<def[k], $>
       }>
 
@@ -98,9 +109,14 @@ export const unknownDefinitionMessage =
 
 export type unknownDefinitionMessage = typeof unknownDefinitionMessage
 
-type Terminal = RegExp | inferred<unknown>
+const isThunk = (def: unknown): def is () => unknown =>
+    typeof def === "function" && def.length === 0
 
-type BadDefinitionType = Exclude<Primitive, string> | Function
+type InferredThunk<t = unknown> = () => inferred<t>
+
+type Terminal = RegExp | inferred<unknown> | InferredThunk
+
+type BadDefinitionType = Exclude<Primitive, string>
 
 export const writeBadDefinitionTypeMessage = <actual extends string>(
     actual: actual

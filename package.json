@@ -1,7 +1,7 @@
 {
     "name": "arktype",
     "description": "Isomorphic types for TS/JS",
-    "version": "0.3.0",
+    "version": "0.5.0",
     "author": {
         "name": "David Blass",
         "email": "david@arktype.io",
@@ -44,7 +44,7 @@
         "buildThenTest": "pnpm build --test && pnpm testBuild",
         "tnt": "ts-node ./dev/attest/cli.ts --skipTypes --cmd mocha",
         "testAttest": "cd ./dev/attest && pnpx ts-node cli.ts --cmd mocha",
-        "testRepo": "pnpm testAttest; pnpm testTsVersions; pnpm buildThenTest; deno task test",
+        "testRepo": "pnpm testAttest; pnpm testTsVersions; deno task test --import-map ./deno.json; pnpm buildThenTest",
         "testTsVersions": "ts-node ./dev/attest/src/testTsVersions.ts",
         "bench": "ts-node ./dev/attest/cli.ts bench --benchmarksPath ./test/benchmarks.json",
         "lint": "eslint --max-warnings=0 .",

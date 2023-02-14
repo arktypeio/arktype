@@ -1,15 +1,15 @@
-import { writeImplicitNeverMessage } from "../parse/string/ast.js"
-import type { Morph } from "../parse/tuple/morph.js"
-import type { Domain } from "../utils/domains.js"
-import { domainOf, hasDomain } from "../utils/domains.js"
-import { throwInternalError, throwParseError } from "../utils/errors.js"
-import type { CollapsibleList, Dict, List } from "../utils/generics.js"
-import type { IntersectionState, Intersector } from "./compose.js"
-import { isDisjoint, isEquality } from "./compose.js"
-import type { FlattenContext } from "./node.js"
-import type { PredicateComparison } from "./predicate.js"
-import type { Rules } from "./rules/rules.js"
-import { flattenRules, rulesIntersection } from "./rules/rules.js"
+import { writeImplicitNeverMessage } from "../parse/ast/intersection.ts"
+import type { Morph } from "../parse/ast/morph.ts"
+import type { Domain } from "../utils/domains.ts"
+import { domainOf, hasDomain } from "../utils/domains.ts"
+import { throwInternalError, throwParseError } from "../utils/errors.ts"
+import type { CollapsibleList, Dict, List } from "../utils/generics.ts"
+import type { IntersectionState, Intersector } from "./compose.ts"
+import { isDisjoint, isEquality } from "./compose.ts"
+import type { FlattenContext } from "./node.ts"
+import type { PredicateComparison } from "./predicate.ts"
+import type { Rules } from "./rules/rules.ts"
+import { flattenRules, rulesIntersection } from "./rules/rules.ts"
 
 export type Branch<domain extends Domain = Domain, $ = Dict> =
     | Rules<domain, $>
@@ -22,7 +22,7 @@ export type MorphBranch<domain extends Domain = Domain, $ = Dict> = {
 
 export type Branches = List<Branch>
 
-export type MorphEntry = ["morph", CollapsibleList<Morph>]
+export type MorphEntry = ["morph", Morph]
 
 export const isBranchComparison = (
     comparison: PredicateComparison
@@ -119,7 +119,13 @@ export const flattenBranch = (branch: Branch, ctx: FlattenContext) => {
     if (isMorphBranch(branch)) {
         const result = flattenRules(branch.rules, ctx)
         if (branch.morph) {
-            result.push(["morph", branch.morph])
+            if (typeof branch.morph === "function") {
+                result.push(["morph", branch.morph])
+            } else {
+                for (const morph of branch.morph) {
+                    result.push(["morph", morph])
+                }
+            }
         }
         return result
     }

@@ -1,5 +1,24 @@
 # arktype
 
+## 0.5.0
+
+### Minor Changes
+
+-   285842e4: allow adhoc problems via "mustBe" and "cases" codes
+-   285842e4: discriminated branches are now pruned to avoid redundant checks
+
+### Patch Changes
+
+-   285842e4: add parsedNumber, parsedInteger validator keywords
+-   285842e4: add Luhn Validation to creditCard keyword
+
+## 0.4.0
+
+### Minor Changes
+
+-   33682224: add expression helper functions (intersection, arrayOf, etc.)
+-   33682224: include prototype keys in keyof types, align inference with TS keyof
+
 ## 0.3.0
 
 ### Minor Changes
