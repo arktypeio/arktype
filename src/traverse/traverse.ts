@@ -21,24 +21,23 @@ import type { extend, stringKeyOf } from "../utils/generics.ts"
 import { hasKey, objectKeysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { getPath, Path } from "../utils/paths.ts"
-import type { ProblemCode, ProblemWriters } from "./problems.ts"
+import type { ProblemCode, ProblemOptions, ProblemWriters } from "./problems.ts"
 import {
-    defaultProblemWriters,
     domainsToDescriptions,
     objectKindsToDescriptions,
     Problem,
     Problems
 } from "./problems.ts"
 
-const initializeTraversalConfig = (): TraversalConfigs => ({
+const initializeTraversalConfig = (): TraversedProblemConfigs => ({
     mustBe: [],
     writeReason: [],
     addContext: []
 })
 
-type TraversalConfigKey = keyof TraversalConfigs
+type ProblemWriterKey = keyof TraversedProblemConfigs
 
-const traversalConfigKeys: readonly TraversalConfigKey[] = objectKeysOf(
+const problemWriterKeys: readonly ProblemWriterKey[] = objectKeysOf(
     initializeTraversalConfig()
 )
 
@@ -47,9 +46,10 @@ export class TraversalState<data = unknown> {
     problems = new Problems(this as any)
 
     failFast = false
-    traversalConfigs: TraversalConfigs = initializeTraversalConfig()
+    traversedProblemConfigs = initializeTraversalConfig()
     readonly rootScope: Scope
 
+    // TODO: use this for anonymous types
     #seen: { [name in QualifiedTypeName]?: object[] } = {}
 
     constructor(public data: data, public type: Type) {
@@ -60,23 +60,23 @@ export class TraversalState<data = unknown> {
         code: code
     ): ProblemWriters<code> {
         const result = {} as ProblemWriters<code>
-        for (const k of traversalConfigKeys) {
+        for (const k of problemWriterKeys) {
             result[k] =
-                this.traversalConfigs[k][0] ??
+                this.traversedProblemConfigs[k][0] ??
                 (this.rootScope.problemWriters[code][k] as any)
         }
-        return defaultProblemWriters[code]
+        return result
     }
 
     traverseConfig(config: TypeConfig, node: TraversalNode) {
         let k: keyof TypeConfig
         // TODO: to entries
         for (k in config) {
-            this.traversalConfigs[k].unshift(config[k] as any)
+            this.traversedProblemConfigs[k].unshift(config[k] as any)
         }
         const isValid = traverse(node, this)
         for (k in config) {
-            this.traversalConfigs[k].shift()
+            this.traversedProblemConfigs[k].shift()
         }
         return isValid
     }
@@ -144,7 +144,9 @@ export class TraversalState<data = unknown> {
     }
 }
 
-export type TraversalConfigs = { [k in keyof TypeConfig]-?: TypeConfig[k][] }
+export type TraversedProblemConfigs = {
+    [k in keyof ProblemOptions]-?: ProblemOptions[k][]
+}
 
 export const traverse = (node: TraversalNode, state: TraversalState): boolean =>
     typeof node === "string"
