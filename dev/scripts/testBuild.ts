@@ -8,3 +8,4 @@ export const testBuild = (outDir: string) => {
 }
 testBuild(repoDirs.mjsOut)
 testBuild(repoDirs.cjsOut)
+shell("pnpm build")

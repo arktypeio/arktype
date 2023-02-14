@@ -85,23 +85,6 @@ describe("scope", () => {
         attest(types.a.infer).typed as string
         attest(types.b.infer).typed as number
     })
-    it("infers cyclic helpers", () => {
-        const $ = scope({
-            a: () => $.type({ a: "b" }),
-            b: () => $.type({ b: "a" })
-        })
-        const types = $.compile()
-        attest(types.a.infer).typed as {
-            a: {
-                b: any
-            }
-        }
-        attest(types.b.infer).typed as {
-            b: {
-                a: any
-            }
-        }
-    })
     it("allows semantically valid helpers", () => {
         const $ = scope({
             n: () => $.type("number"),

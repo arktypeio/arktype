@@ -106,5 +106,8 @@
     },
     "eslintConfig": {
         "extends": "./dev/configs/.eslintrc.cjs"
+    },
+    "dependencies": {
+        "arktype": "link:"
     }
 }

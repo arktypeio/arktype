@@ -4,7 +4,9 @@ import { fromPackageRoot, readPackageJson } from "../../runtime/fs.ts"
 import { shell } from "../../runtime/shell.ts"
 
 const versions: { [k: string]: string } = {
-    "4.8": "16.0.0"
+    "4.8": "16"
+    // When 5.0 is released enable
+    // "4.9": "17"
 }
 const filePath = join(fromPackageRoot(), ".npmrc")
 rmSync(filePath, { force: true })
