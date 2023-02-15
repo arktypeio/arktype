@@ -26,7 +26,7 @@ export class ArkTypeError extends TypeError {
     cause: Problems
 
     constructor(problems: Problems) {
-        super(problems.summary)
+        super(`${problems}`)
         this.cause = problems
     }
 }
@@ -141,12 +141,13 @@ class ProblemArray extends Array<Problem> {
         this.count++
     }
 
-    get summary() {
-        return this.join("\n")
+    get summary(): string {
+        // throw new ArkTypeError(this)
+        return `${this}`
     }
 
     toString() {
-        return this.summary
+        return this.join("\n")
     }
 
     throw(): never {

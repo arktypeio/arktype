@@ -29,6 +29,12 @@ const uuid = rootType(
     { mustBe: "a valid UUID" }
 )
 
+// https://github.com/sindresorhus/semver-regex
+const semver = rootType(
+    /(?<=^v?|\sv?)(?:(?:0|[1-9]\d{0,9}?)\.){2}(?:0|[1-9]\d{0,9})(?:-(?:--+)?(?:0|[1-9]\d*|\d*[a-z]+\d*)){0,100}(?=$| |\+|\.)(?:(?<=-\S+)(?:\.(?:--?|[\da-z-]*[a-z-]\d*|0|[1-9]\d*)){1,100}?)?(?!\.)(?:\+(?:[\da-z]\.?-?){1,100}?(?!\w))?(?!\+)/,
+    { mustBe: "a valid semantic version (see https://semver.org/)" }
+)
+
 export const validationScope = scope(
     {
         // Character sets
@@ -46,6 +52,7 @@ export const validationScope = scope(
         parsedNumber,
         parsedInteger,
         parsedDate,
+        semver,
         integer: ["node", { number: { divisor: 1 } }]
     },
     { name: "validation", standard: false }

@@ -8,7 +8,7 @@ import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
 import type { TypeParser } from "./type.ts"
 import { validation, validationScope } from "./validation/validation.ts"
 
-export const ark = scope(
+export const arkscope = scope(
     {},
     {
         name: "standard",
@@ -17,21 +17,21 @@ export const ark = scope(
     }
 )
 
-export const arktypes = ark.compile()
+export const ark = arkscope.compile()
 
 export const scopes = {
     root: rootScope,
     tsKeywords: tsKeywordsScope,
     jsObjects: jsObjectsScope,
     validation: validationScope,
-    ark
+    ark: arkscope
 }
 
 export const spaces = {
     tsKeywords,
     jsObjects,
     validation,
-    ark: arktypes
+    ark
 } satisfies Record<Exclude<keyof typeof scopes, "root">, Space>
 
 // This is just copied from the inference of defaultScope. Creating an explicit
@@ -62,6 +62,7 @@ export type PrecompiledDefaults = {
     creditCard: string
     email: string
     uuid: string
+    semver: string
     parsedNumber: (In: string) => Out<number>
     parsedInteger: (In: string) => Out<number>
     parsedDate: (In: string) => Out<Date>
@@ -75,4 +76,4 @@ type ValidateArkScope = [
     extend<typeof scopes["ark"]["infer"], PrecompiledDefaults>
 ]
 
-export const type: TypeParser<PrecompiledDefaults> = ark.type
+export const type: TypeParser<PrecompiledDefaults> = arkscope.type
