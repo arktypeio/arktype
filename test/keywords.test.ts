@@ -2,7 +2,7 @@ import { describe, it } from "mocha"
 import { ark, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
-describe("validation", () => {
+describe("keywords", () => {
     it("parsedDate", () => {
         const parsedDate = type("parsedDate")
         attest(parsedDate("5/21/1993").data?.toDateString()).snap(
