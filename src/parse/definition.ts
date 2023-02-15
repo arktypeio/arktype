@@ -49,12 +49,12 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
             return { string: { regex: (def as RegExp).source } }
         case "Function":
             if (isType(def)) {
-                return ctx.type.scope.addAnonymous(def, ctx)
+                return ctx.type.scope.addAnonymousReference(def, ctx)
             }
             if (isThunk(def)) {
                 const returned = def()
                 if (isType(returned)) {
-                    return ctx.type.scope.addAnonymous(returned, ctx)
+                    return ctx.type.scope.addAnonymousReference(returned, ctx)
                 }
             }
             return throwParseError(writeBadDefinitionTypeMessage("Function"))

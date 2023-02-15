@@ -8,7 +8,8 @@ import type {
 import type { ProblemOptions, Problems } from "../traverse/problems.ts"
 import { TraversalState, traverse } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
-import type { defer, evaluate, xor } from "../utils/generics.ts"
+import type { defer, evaluate, nominal, xor } from "../utils/generics.ts"
+import { composeNamed, getNominalId } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import type { Expressions } from "./expressions.ts"
 import type { Scope } from "./scope.ts"
@@ -33,11 +34,12 @@ type TypeRoot<t = unknown> = evaluate<{
     allows: (data: unknown) => data is t
     node: TypeNode
     flat: TraversalNode
+    id: string
     qualifiedName: QualifiedTypeName
     definition: unknown
     scope: Scope
     includesMorph: boolean
-    config: TypeConfig | undefined
+    config: TypeConfig
 }>
 
 export type KeyCheckKind = "loose" | "strict" | "distilled"
@@ -54,30 +56,27 @@ export type TypeConfig = Omit<TypeOptions, "name">
 export const initializeType = (
     name: string,
     definition: unknown,
-    config: TypeConfig | undefined,
+    config: TypeConfig,
     scope: Scope
 ) => {
-    // dynamically assign a name to the primary traversal function
-    const namedTraverse = {
-        [name]: (data: unknown) => {
-            const state = new TraversalState(data, namedTraverse)
-            traverse(namedTraverse.flat, state)
-            return (
-                state.problems.count
-                    ? { problems: state.problems }
-                    : { data: state.data }
-            ) as CheckResult<unknown>
-        }
-    }[name] as Type
+    const namedTraverse: Checker<unknown> = composeNamed((data: unknown) => {
+        const state = new TraversalState(data, t)
+        traverse(t.flat, state)
+        return state.problems.count
+            ? { problems: state.problems }
+            : { data: state.data }
+    }, name)
 
+    const id = isAnonymousName(name) ? scope.anonymousIdFrom(name) : name
     const root = {
         // temporarily initialize node/flat to aliases that will be included in
         // the final type in case of cyclic resolutions
         node: name,
-        allows: (data): data is any => !!namedTraverse(data).problems,
         flat: [["alias", name]],
+        allows: (data): data is any => !!namedTraverse(data).problems,
         infer: chainableNoOpProxy,
-        qualifiedName: `${scope.name}.${name}`,
+        id,
+        qualifiedName: `${scope.name}.${id}`,
         definition,
         scope,
         includesMorph: false,
@@ -86,19 +85,34 @@ export const initializeType = (
         // that the rest of the type is correct then cast it
     } satisfies Omit<TypeRoot, typeof as> as TypeRoot
 
-    return Object.assign(namedTraverse, root)
+    const t = Object.assign(namedTraverse, root)
+    typeRegistry[root.qualifiedName] = t
+    return t
 }
+
+export const typeRegistry: Record<QualifiedTypeName, Type> = {}
 
 export const isType = (value: unknown): value is Type =>
     (value as Type)?.infer === chainableNoOpProxy
 
-export type CheckResult<t> = xor<{ data: asOut<t> }, { problems: Problems }>
+export type CheckResult<out = unknown> = nominal<
+    xor<{ data: out }, { problems: Problems }>,
+    string
+>
 
-type Checker<t> = (data: unknown) => CheckResult<t>
+export const isCheckResult = (value: unknown): value is CheckResult =>
+    getNominalId(value) !== undefined
+
+type Checker<t> = (data: unknown) => CheckResult<asOut<t>>
 
 export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
 
 export type QualifiedTypeName = `${string}.${string}`
+
+export type AnonymousTypeName = `λ${string}`
+
+export const isAnonymousName = (name: string): name is AnonymousTypeName =>
+    name[0] === "λ"
 
 export type asIn<t> = asIo<t, "in">
 

@@ -97,8 +97,10 @@ export const tryParseDate = (
     return writeFormattedMustBe(opts.format)
 }
 
+export const s = rootType.from({ string: true })
+
 export const parsedDate = rootType([
-    rootType.from({ string: true }),
+    s,
     "|>",
     (s, problems) => {
         const result = tryParseDate(s)

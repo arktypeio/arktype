@@ -8,11 +8,12 @@ export type ConfigTuple<
 > = readonly [def, ":", config]
 
 export const parseConfigTuple: PostfixParser<":"> = (def, ctx) => {
-    const anonymousType = ctx.type.scope.type(def[0] as inferred<unknown>, {
-        name: ctx.type.scope.getAnonymousTypeName(ctx),
-        ...(def[2] as TypeOptions)
-    })
-    return anonymousType.name
+    const opts = def[2] as TypeOptions
+    if (!opts.name && ctx.path.length) {
+        opts.name = `${ctx.path}`
+    }
+    const anonymousType = ctx.type.scope.type(def[0] as inferred<unknown>, opts)
+    return ctx.type.scope.addAnonymousReference(anonymousType, ctx)
 }
 
 export type validateConfigTuple<def extends TupleExpression, $> = readonly [

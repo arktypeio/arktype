@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
 import type { Type } from "../api.ts"
-import { intersection, morph, scope, type, union } from "../api.ts"
+import { ark, intersection, morph, scope, type, union } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import type { Out } from "../src/parse/ast/morph.ts"
 import { writeUndiscriminatableMorphUnionMessage } from "../src/parse/ast/union.ts"
@@ -26,6 +26,12 @@ describe("morph", () => {
             return result.problems.throw()
         }
         attest(result.data).equals(false).typed as boolean
+    })
+    it("check result", () => {
+        const t = type(["string>5", "|>", (s) => ark.parsedDate(s)])
+        attest(t).typed as Type<(In: string) => Date>
+        attest(t("5/21/1993").data?.getDay()).equals(21)
+        attest(t("foo").problems?.summary).snap()
     })
     it("at path", () => {
         const t = type({ a: ["string", "|>", (data) => data.length] })
