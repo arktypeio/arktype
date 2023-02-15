@@ -11,9 +11,9 @@ describe("intersection", () => {
         it("two types", () => {
             const t = type("boolean&true")
             attest(t.infer).typed as true
-            attest(t.node).snap({ boolean: { value: true } })
+            attest(t.node).snap("true")
         })
-        it("email", () => {
+        it("regex", () => {
             const t = type("email&/@arktype.io$/")
             attest(t.infer).typed as string
             attest(t("shawn@arktype.io").data).snap("shawn@arktype.io")
@@ -24,7 +24,7 @@ describe("intersection", () => {
         it("several types", () => {
             const t = type("unknown&boolean&false")
             attest(t.infer).typed as false
-            attest(t.node).snap({ boolean: { value: false } })
+            attest(t.node).snap("false")
         })
         describe("number & literals", () => {
             it("same literal", () => {

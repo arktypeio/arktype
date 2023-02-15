@@ -27,7 +27,7 @@ describe("snippets", () => {
             }[]
         }
         attest(scopeSnippet.problems?.summary).snap(
-            "dependencies/0/dependencies/0/contributors/0/email must be a string matching /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/ (was 'david@sharktypeio')\ncontributors/0/email must be a string matching /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/ (was 'david@sharktypeio')"
+            "dependencies/0/dependencies/0/contributors/0/email must be a valid email (was 'david@sharktypeio')\ncontributors/0/email must be a valid email (was 'david@sharktypeio')"
         )
     })
 })

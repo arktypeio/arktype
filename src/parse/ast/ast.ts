@@ -97,7 +97,14 @@ export type PostfixExpression<
     operand = unknown
 > = [operand, operator]
 
-export type InfixOperator = "|" | "&" | Scanner.Comparator | "%" | ":" | "=>"
+export type InfixOperator =
+    | "|"
+    | "&"
+    | Scanner.Comparator
+    | "%"
+    | ":"
+    | "=>"
+    | "|>"
 
 export type InfixExpression<
     operator extends InfixOperator = InfixOperator,

@@ -17,7 +17,12 @@ import type { FlattenContext, TraversalEntry, TraversalKey } from "../node.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
-import type { PropEntry, PropsRule } from "./props.ts"
+import type {
+    DistilledPropsEntry,
+    PropEntry,
+    PropsRule,
+    StrictPropsEntry
+} from "./props.ts"
 import { flattenProps, propsIntersection } from "./props.ts"
 import type { FlatBound, Range } from "./range.ts"
 import { flattenRange, rangeIntersection } from "./range.ts"
@@ -48,6 +53,8 @@ export type RuleEntry =
     | ["divisor", number]
     | ["bound", FlatBound]
     | ["class", DefaultObjectKind | constructor]
+    | DistilledPropsEntry
+    | StrictPropsEntry
     | PropEntry
     | ["narrow", Narrow]
     | ["value", unknown]
@@ -155,8 +162,9 @@ const ruleFlatteners: {
 export const precedenceMap: {
     readonly [k in TraversalKey]: number
 } = {
+    // Config: Applies before any checks
+    config: -1,
     // Critical: No other checks are performed if these fail
-    config: 0,
     domain: 0,
     value: 0,
     domains: 0,
@@ -173,6 +181,8 @@ export const precedenceMap: {
     // is invalid
     prerequisiteProp: 2,
     // Deep: Performed if all shallow checks pass, even if one or more deep checks fail
+    distilledProps: 3,
+    strictProps: 3,
     requiredProp: 3,
     optionalProp: 3,
     indexProp: 3,
@@ -186,6 +196,4 @@ export const literalSatisfiesRules = (
     data: unknown,
     rules: NarrowableRules,
     state: IntersectionState
-) =>
-    !state.type.meta.scope.type(["node", { [state.domain!]: rules }])(data)
-        .problems
+) => !state.type.scope.type(["node", { [state.domain!]: rules }])(data).problems

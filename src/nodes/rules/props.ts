@@ -1,3 +1,4 @@
+import type { KeyCheckKind } from "../../scopes/type.ts"
 import type { Dict } from "../../utils/generics.ts"
 import {
     composeIntersection,
@@ -6,7 +7,12 @@ import {
     isDisjoint,
     isEquality
 } from "../compose.ts"
-import type { TraversalNode, TypeNode } from "../node.ts"
+import type {
+    FlattenContext,
+    TraversalEntry,
+    TraversalNode,
+    TypeNode
+} from "../node.ts"
 import { flattenNode, isLiteralNode, nodeIntersection } from "../node.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
 
@@ -28,6 +34,21 @@ export type PrerequisiteProp<
     $ = Dict,
     node extends TypeNode<$> = TypeNode<$>
 > = ["!", node]
+
+export type PropsRecordKey = "distilledProps" | "strictProps"
+
+export type PropsRecordEntry<kind extends PropsRecordKey = PropsRecordKey> = [
+    kind,
+    {
+        required: { [propKey in string]: TraversalNode }
+        optional: { [propKey in string]: TraversalNode }
+        index?: TraversalNode
+    }
+]
+
+export type DistilledPropsEntry = PropsRecordEntry<"distilledProps">
+
+export type StrictPropsEntry = PropsRecordEntry<"strictProps">
 
 export type PropEntry =
     | RequiredPropEntry
@@ -146,6 +167,18 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
     props,
     ctx
 ) => {
+    const keyConfig = ctx.type.config?.keys ?? ctx.type.scope.config.keys
+    return keyConfig === "loose"
+        ? flattenLooseProps(entries, props, ctx)
+        : flattenPropsRecord(keyConfig, entries, props, ctx)
+}
+
+const flattenLooseProps: FlattenAndPushRule<PropsRule> = (
+    entries,
+    props,
+    ctx
+) => {
+    // if we don't care about extraneous keys, flatten props so we can iterate over the definitions directly
     for (const k in props) {
         const prop = props[k]
         ctx.path.push(k)
@@ -160,4 +193,35 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
         }
         ctx.path.pop()
     }
+}
+
+const flattenPropsRecord = (
+    kind: Exclude<KeyCheckKind, "loose">,
+    entries: TraversalEntry[],
+    props: PropsRule,
+    ctx: FlattenContext
+) => {
+    const result: PropsRecordEntry[1] = {
+        required: {},
+        optional: {}
+    }
+    // if we need to keep track of extraneous keys, either to add problems or
+    // remove them, store the props as a Record to optimize for presence
+    // checking as we iterate over the data
+    for (const k in props) {
+        const prop = props[k]
+        ctx.path.push(k)
+        if (k === mappedKeys.index) {
+            result.index = flattenNode(propToNode(prop), ctx)
+        } else if (isOptional(prop)) {
+            result.optional[k] = flattenNode(prop[1], ctx)
+        } else if (isPrerequisite(prop)) {
+            // we still have to push prerequisite props as normal entries so they can be checked first
+            entries.push(["prerequisiteProp", [k, flattenNode(prop[1], ctx)]])
+        } else {
+            result.required[k] = flattenNode(prop, ctx)
+        }
+        ctx.path.pop()
+    }
+    entries.push([`${kind}Props`, result])
 }
