@@ -36,7 +36,8 @@ export const createStackblitzDemo = async ({ embedId }: DemoProps) =>
             },
             settings: {
                 compile: {
-                    clearConsole: false
+                    clearConsole: false,
+                    trigger: "keystroke"
                 }
             }
         },
