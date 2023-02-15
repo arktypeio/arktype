@@ -36,7 +36,7 @@ type TypeRoot<t = unknown> = evaluate<{
     definition: unknown
     scope: Scope
     includesMorph: boolean
-    problems: ProblemOptions | undefined
+    config: TypeConfig | undefined
 }>
 
 export type TypeOptions = evaluate<
@@ -67,7 +67,7 @@ export const initializeType = (
         definition,
         scope,
         includesMorph: false,
-        problems: config
+        config
         // the "as" symbol from inferred is not used at runtime, so we check
         // that the rest of the type is correct then cast it
     } satisfies Omit<TypeRoot, typeof as> as TypeRoot

@@ -169,12 +169,12 @@ export const flattenType = (type: Type): TraversalNode => {
         path: new Path(),
         lastDomain: "undefined"
     }
-    return type.problems
+    return type.config
         ? [
               [
                   "config",
                   {
-                      config: entriesOf(type.problems),
+                      config: entriesOf(type.config),
                       node: flattenNode(type.node, ctx)
                   }
               ]

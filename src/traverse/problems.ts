@@ -269,7 +269,8 @@ const defaultProblemConfig: {
         writeReason: (mustBe) => writeDefaultReason(mustBe, "")
     },
     extraneous: {
-        mustBe: () => "removed"
+        mustBe: () => "removed",
+        writeReason: (mustBe) => writeDefaultReason(mustBe, "")
     },
     bound: {
         mustBe: (bound) =>
@@ -321,7 +322,7 @@ export const problemCodes: readonly ProblemCode[] =
     objectKeysOf(defaultProblemConfig)
 
 const compileDefaultProblemWriters = () => {
-    const result = {} as DefaultProblemsWriters
+    const result = {} as ProblemWritersByCode
     let code: ProblemCode
     for (code of problemCodes) {
         result[code] = {
@@ -340,11 +341,11 @@ export const defaultProblemWriters = compileDefaultProblemWriters()
 
 export const compileProblemWriters = (
     input: ProblemsConfig | undefined
-): DefaultProblemsWriters => {
+): ProblemWritersByCode => {
     if (!input) {
         return defaultProblemWriters
     }
-    const result = {} as DefaultProblemsWriters
+    const result = {} as ProblemWritersByCode
     for (const code of problemCodes) {
         result[code] = {
             mustBe:
@@ -382,7 +383,7 @@ export type ProblemsConfigByCode = {
     [code in ProblemCode]?: ProblemOptions<code>
 }
 
-export type DefaultProblemsWriters = {
+export type ProblemWritersByCode = {
     [code in ProblemCode]: ProblemWriters<code>
 }
 

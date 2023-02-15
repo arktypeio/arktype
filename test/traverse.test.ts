@@ -43,7 +43,7 @@ describe("traverse", () => {
         const types = scope(
             { isEven: "number%2" },
             {
-                problems: {
+                codes: {
                     divisor: {
                         mustBe: (divisor) => `a multiple of ${divisor}`,
                         writeReason: (mustBe, was) => `${was} is not ${mustBe}!`

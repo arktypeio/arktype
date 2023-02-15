@@ -9,8 +9,8 @@ import type {
 } from "../parse/definition.ts"
 import { parseDefinition } from "../parse/definition.ts"
 import type {
-    DefaultProblemsWriters,
-    ProblemsConfig
+    ProblemsConfig,
+    ProblemWritersByCode
 } from "../traverse/problems.ts"
 import { compileProblemWriters } from "../traverse/problems.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
@@ -29,7 +29,7 @@ import type { stringifyUnion } from "../utils/unionToTuple.ts"
 import type { PrecompiledDefaults } from "./ark.ts"
 import { Cache, FreezingCache } from "./cache.ts"
 import type { Expressions } from "./expressions.ts"
-import type { Type, TypeOptions, TypeParser } from "./type.ts"
+import type { KeyCheckKind, Type, TypeOptions, TypeParser } from "./type.ts"
 import { initializeType } from "./type.ts"
 
 type ScopeParser = {
@@ -55,10 +55,19 @@ export type ScopeOptions = {
     includes?: Space[] | []
     standard?: boolean
     name?: string
-    problems?: ProblemsConfig
+    codes?: ProblemsConfig
+    keys?: KeyCheckKind
 }
 
-export type ScopeConfig = DefaultProblemsWriters
+export type ScopeConfig = evaluate<{
+    keys: KeyCheckKind
+    codes: ProblemWritersByCode
+}>
+
+export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
+    codes: compileProblemWriters(opts.codes),
+    keys: opts.keys ?? "loose"
+})
 
 type validateOptions<opts extends ScopeOptions> = {
     [k in keyof opts]: k extends "imports" | "includes"
@@ -164,12 +173,12 @@ export const isConfigTuple = (def: unknown): def is ConfigTuple =>
 
 export class Scope<context extends ScopeContext = any> {
     name: string
-    problemWriters: DefaultProblemsWriters
+    config: ScopeConfig
     parseCache = new FreezingCache<TypeNode>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
 
-    constructor(public aliases: Dict, public opts: ScopeOptions) {
+    constructor(public aliases: Dict, opts: ScopeOptions = {}) {
         this.name = this.#register(opts)
         if (opts.standard !== false) {
             this.#cacheSpaces([spaceRegistry["standard"]!], "imports")
@@ -180,7 +189,7 @@ export class Scope<context extends ScopeContext = any> {
         if (opts.includes) {
             this.#cacheSpaces(opts.includes, "includes")
         }
-        this.problemWriters = compileProblemWriters(opts.problems)
+        this.config = compileScopeOptions(opts)
     }
 
     #register(opts: ScopeOptions) {

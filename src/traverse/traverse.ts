@@ -70,7 +70,7 @@ export class TraversalState<data = unknown> {
         for (const k of problemWriterKeys) {
             result[k] =
                 this.traversalConfig[k][0] ??
-                (this.rootScope.problemWriters[code][k] as any)
+                (this.rootScope.config.codes[code][k] as any)
         }
         return result
     }
