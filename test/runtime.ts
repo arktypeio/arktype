@@ -29,10 +29,10 @@ import { scope, type } from "arktype"
  *   }
  */
 
-const myType = type("string|number[]")
+const myType = type("string")
 
 type MyType = typeof myType.infer
 
-const { data, problems } = myType([3.14, ""])
+const { data, problems } = myType("foo")
 
 console.log(problems?.summary ?? data)
