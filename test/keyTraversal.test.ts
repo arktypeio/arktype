@@ -3,7 +3,7 @@ import { type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
 describe("key traversal", () => {
-    const extraneousB = { a: "ok", b: "why?" }
+    const getExtraneousB = () => ({ a: "ok", b: "why?" })
     it("loose by default", () => {
         const t = type({
             a: "string"
@@ -12,7 +12,7 @@ describe("key traversal", () => {
             ["domain", "object"],
             ["requiredProp", ["a", "string"]]
         ])
-        attest(t(extraneousB).data).equals(extraneousB)
+        attest(t(getExtraneousB()).data).snap({ a: "ok", b: "why?" })
     })
     it("distilled type", () => {
         const t = type(
@@ -37,7 +37,7 @@ describe("key traversal", () => {
             ]
         ])
         attest(t({ a: "ok" }).data).equals({ a: "ok" })
-        attest(t(extraneousB).data).snap({ a: "ok" })
+        attest(t(getExtraneousB()).data).snap({ a: "ok" })
     })
     it("strict type", () => {
         const t = type(
@@ -62,6 +62,6 @@ describe("key traversal", () => {
             ]
         ])
         attest(t({ a: "ok" }).data).equals({ a: "ok" })
-        attest(t(extraneousB).problems?.summary).snap("b must be removed")
+        attest(t(getExtraneousB()).problems?.summary).snap("b must be removed")
     })
 })
