@@ -56,9 +56,8 @@ describe("traverse", () => {
         )
     })
     it("domains", () => {
-        const basic = type("string|number[]")
-        const check = basic(2)
-        attest(check.problems?.summary).snap(
+        const t = type("string|number[]")
+        attest(t(2).problems?.summary).snap(
             "Must be a string or an object (was 2)"
         )
     })

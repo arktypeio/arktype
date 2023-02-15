@@ -133,22 +133,10 @@ const getPackage = () => {
     return data
 }
 
+// ⬇️
 types.package(getPackage())
 
 //********** NARROWING ********** /
-scope({
-    package: {
-        name: "string",
-        version: "semver",
-        "contributors?": "contributors",
-        "devDependencies?": [
-            "package[]",
-            "=>",
-            (packages) => packages.every((pkg) => pkg.name !== "left-pad")
-        ]
-    },
-    contributors: "email[]>1"
-})
 
 const getPackage2 = () => {
     const data = {
@@ -160,6 +148,7 @@ const getPackage2 = () => {
                 name: "typescript",
                 version: "5.0.0-beta"
             },
+            // ⬇️
             {
                 name: "left-pad",
                 version: "1.3.0"
@@ -170,11 +159,12 @@ const getPackage2 = () => {
     return data
 }
 
-const t = scope({
+scope({
     package: {
         name: "string",
         version: "semver",
         "contributors?": "contributors",
+        // ⬇️
         "devDependencies?": [
             "package[]",
             "=>",
@@ -182,6 +172,48 @@ const t = scope({
         ]
     },
     contributors: "email[]>1"
+})
+
+const getPackage3 = () => {
+    const data = {
+        name: "arktype",
+        version: "1.0.0-beta",
+        contributors: ["david@arktype.io", "shawn@arktype.io"],
+        devDependencies: [
+            {
+                name: "typescript",
+                version: "5.0.0-beta"
+            }
+            // ⬇️
+            // {
+            //     name: "left-pad",
+            //     version: "1.3.0"
+            // }
+        ]
+    }
+    data.devDependencies.push(data)
+    return data
+}
+
+//********** MORPHS ********** /
+
+const types2 = scope({
+    package: {
+        name: "string",
+        version: "semver",
+        "contributors?": "contributors",
+        "devDependencies?": "package[]"
+        // ⬇️
+        //     [
+        //     "package[]"
+        //     // "=>",
+        //     // (packages) => packages.every((pkg) => pkg.name !== "left-pad")
+        // ]
+    },
+    contributors: "email[]>1"
 }).compile()
 
-console.log(t.package(getPackage2()).problems?.summary)
+// ⬇️
+// const json = scope({
+//     parsePackage: ["string", "|>", (json) => types2.package.includes]
+// })

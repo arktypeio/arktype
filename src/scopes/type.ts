@@ -30,6 +30,7 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
 type TypeRoot<t = unknown> = evaluate<{
     [as]: t
     infer: asOut<t>
+    allows: (data: unknown) => data is t
     node: TypeNode
     flat: TraversalNode
     qualifiedName: QualifiedTypeName
@@ -56,21 +57,6 @@ export const initializeType = (
     config: TypeConfig | undefined,
     scope: Scope
 ) => {
-    const root = {
-        // temporarily initialize node/flat to aliases that will be included in
-        // the final type in case of cyclic resolutions
-        node: name,
-        flat: [["alias", name]],
-        infer: chainableNoOpProxy,
-        qualifiedName: `${scope.name}.${name}`,
-        definition,
-        scope,
-        includesMorph: false,
-        config
-        // the "as" symbol from inferred is not used at runtime, so we check
-        // that the rest of the type is correct then cast it
-    } satisfies Omit<TypeRoot, typeof as> as TypeRoot
-
     // dynamically assign a name to the primary traversal function
     const namedTraverse = {
         [name]: (data: unknown) => {
@@ -83,6 +69,23 @@ export const initializeType = (
             ) as CheckResult<unknown>
         }
     }[name] as Type
+
+    const root = {
+        // temporarily initialize node/flat to aliases that will be included in
+        // the final type in case of cyclic resolutions
+        node: name,
+        allows: (data): data is any => !!namedTraverse(data).problems,
+        flat: [["alias", name]],
+        infer: chainableNoOpProxy,
+        qualifiedName: `${scope.name}.${name}`,
+        definition,
+        scope,
+        includesMorph: false,
+        config
+        // the "as" symbol from inferred is not used at runtime, so we check
+        // that the rest of the type is correct then cast it
+    } satisfies Omit<TypeRoot, typeof as> as TypeRoot
+
     return Object.assign(namedTraverse, root)
 }
 
