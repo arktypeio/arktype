@@ -1,5 +1,21 @@
 # arktype
 
+## 0.6.0
+
+### Minor Changes
+
+-   da4c2d63: allow adhoc problems via "mustBe" and "cases" codes
+-   da4c2d63: add custom messages for validation keywords
+-   da4c2d63: discriminated branches are now pruned to avoid redundant checks
+-   da4c2d63: add config expressions, preserve configs during traversal
+-   da4c2d63: add key traversal options for "distilled" and "strict" keys
+
+### Patch Changes
+
+-   da4c2d63: fix narrow tuple expression recursive inference
+-   da4c2d63: add parsedNumber, parsedInteger validator keywords
+-   da4c2d63: add Luhn Validation to creditCard keyword
+
 ## 0.5.1
 
 ### Patch Changes
