@@ -30,11 +30,7 @@ import { Cache, FreezingCache } from "./cache.ts"
 import type { Expressions } from "./expressions.ts"
 import type { PrecompiledDefaults } from "./standard.ts"
 import type { Type, TypeOptions, TypeParser } from "./type.ts"
-import {
-    initializeType,
-    nameIsAnonymousReference,
-    typeRegistry
-} from "./type.ts"
+import { initializeType } from "./type.ts"
 
 type ScopeParser = {
     <aliases>(aliases: validateAliases<aliases, {}>): Scope<
@@ -245,7 +241,7 @@ export class Scope<context extends ScopeContext = any> {
             return name
         }
         this.#resolutions.set(type.name, type)
-        return type.qualifiedName
+        return type.name
     }
 
     get infer(): exportsOf<context> {
@@ -286,15 +282,6 @@ export class Scope<context extends ScopeContext = any> {
         if (maybeCacheResult) {
             return maybeCacheResult
         }
-        if (nameIsAnonymousReference(name)) {
-            // TODO: maybe this can't be resolved like this
-            return (
-                typeRegistry[name] ??
-                throwInternalError(
-                    `Unexpectedly failed to resolve anonymous type '${name}'`
-                )
-            )
-        }
         const aliasValue = this.aliases[name]
         if (!aliasValue) {
             return (
@@ -306,9 +293,6 @@ export class Scope<context extends ScopeContext = any> {
             ) as ResolveResult<onUnresolvable>
         }
         const type = initializeType(name, aliasValue, undefined, this)
-        // isConfigTuple(aliasValue)
-        // ? initializeType(name, aliasValue[0], aliasValue[2], this)
-        // :
         this.#resolutions.set(name, type)
         this.#exports.set(name, type)
         const ctx = this.#initializeContext(type)

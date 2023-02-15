@@ -12,7 +12,7 @@ export const parseConfigTuple: PostfixParser<":"> = (def, ctx) => {
         name: ctx.type.scope.getAnonymousTypeName(ctx),
         ...(def[2] as TypeOptions)
     })
-    return anonymousType.qualifiedName
+    return anonymousType.name
 }
 
 export type validateConfigTuple<def extends TupleExpression, $> = readonly [

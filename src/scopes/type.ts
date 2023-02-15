@@ -47,8 +47,6 @@ export type TypeOptions = evaluate<
 
 export type TypeConfig = ProblemOptions
 
-export const typeRegistry: Record<QualifiedTypeName, Type | undefined> = {}
-
 export const initializeType = (
     name: string,
     definition: unknown,
@@ -85,7 +83,6 @@ export const initializeType = (
     // we need to assign this to a variable before returning so we can reference
     // it in namedTraverse
     const t: Type = Object.assign(namedTraverse, root)
-    typeRegistry[t.qualifiedName] = t
     return t
 }
 
@@ -99,12 +96,6 @@ type Checker<t> = (data: unknown) => CheckResult<t>
 export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
 
 export type QualifiedTypeName = `${string}.${string}`
-
-export type AnonymousTypeReference = `${string}.λ${string}`
-
-export const nameIsAnonymousReference = (
-    name: string
-): name is AnonymousTypeReference => name.includes(".λ")
 
 export type asIn<t> = asIo<t, "in">
 

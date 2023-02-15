@@ -63,8 +63,7 @@ describe("config traversal", () => {
         })
         attest(t.infer).typed as { monster: 196883 }
         attest(t.node).snap({
-            // TODO: only qualify when needed
-            object: { props: { monster: "standard.λmonster" } }
+            object: { props: { monster: "λmonster" } }
         })
         attest(t.flat).snap([
             ["domain", "object"],
