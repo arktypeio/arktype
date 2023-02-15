@@ -39,7 +39,7 @@ const buildTypes = () => {
     try {
         writeJson(tempTsConfig, { ...tsConfigData, include: ["src"] })
         shell(
-            `pnpm tsc --project ${tempTsConfig} --outDir ${repoDirs.outRoot} --emitDeclarationOnly`
+            `pnpm tsc --project ${tempTsConfig} --outDir ${repoDirs.outRoot} --noEmit false --emitDeclarationOnly`
         )
         renameSync(join(repoDirs.outRoot, "src"), repoDirs.typesOut)
         rewriteTsImports(repoDirs.typesOut)

@@ -13,7 +13,7 @@ export const buildStackblitzIndexText = (embedId: EmbedId) => {
     } catch(e) {
         populateDemo({ 
             type: {
-                meta: {definition: ""}
+                definition: ""
             },
             data: "",
             problems: "ParseError: " + e.originalErr.message

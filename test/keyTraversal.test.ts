@@ -12,7 +12,8 @@ describe("key traversal", () => {
             ["domain", "object"],
             ["requiredProp", ["a", "string"]]
         ])
-        attest(t(getExtraneousB()).data).snap({ a: "ok", b: "why?" })
+        const dataWithExtraneousB = getExtraneousB()
+        attest(t(dataWithExtraneousB).data).equals(dataWithExtraneousB)
     })
     it("distilled type", () => {
         const t = type(
