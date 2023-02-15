@@ -17,7 +17,12 @@ import type { FlattenContext, TraversalEntry, TraversalKey } from "../node.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
-import type { PropEntry, PropsRule } from "./props.ts"
+import type {
+    DistilledPropsEntry,
+    PropEntry,
+    PropsRule,
+    StrictPropsEntry
+} from "./props.ts"
 import { flattenProps, propsIntersection } from "./props.ts"
 import type { FlatBound, Range } from "./range.ts"
 import { flattenRange, rangeIntersection } from "./range.ts"
@@ -48,6 +53,8 @@ export type RuleEntry =
     | ["divisor", number]
     | ["bound", FlatBound]
     | ["class", DefaultObjectKind | constructor]
+    | DistilledPropsEntry
+    | StrictPropsEntry
     | PropEntry
     | ["narrow", Narrow]
     | ["value", unknown]
@@ -174,6 +181,8 @@ export const precedenceMap: {
     // is invalid
     prerequisiteProp: 2,
     // Deep: Performed if all shallow checks pass, even if one or more deep checks fail
+    distilledProps: 3,
+    strictProps: 3,
     requiredProp: 3,
     optionalProp: 3,
     indexProp: 3,

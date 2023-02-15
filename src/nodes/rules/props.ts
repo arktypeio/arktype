@@ -29,6 +29,20 @@ export type PrerequisiteProp<
     node extends TypeNode<$> = TypeNode<$>
 > = ["!", node]
 
+export type PropsRecordKey = "distilledProps" | "strictProps"
+
+export type PropsRecordEntry<kind extends PropsRecordKey = PropsRecordKey> = [
+    kind,
+    {
+        required: { [propKey in string]: TraversalNode }
+        optional: { [propKey in string]: TraversalNode }
+    }
+]
+
+export type DistilledPropsEntry = PropsRecordEntry<"distilledProps">
+
+export type StrictPropsEntry = PropsRecordEntry<"strictProps">
+
 export type PropEntry =
     | RequiredPropEntry
     | OptionalPropEntry

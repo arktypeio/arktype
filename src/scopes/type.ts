@@ -45,7 +45,11 @@ export type TypeOptions = evaluate<
     } & ProblemOptions
 >
 
-export type TypeConfig = ProblemOptions
+export type KeyCheckKind = "loose" | "distill" | "strict"
+
+export type TypeConfig = ProblemOptions & {
+    keys?: KeyCheckKind
+}
 
 export const initializeType = (
     name: string,
@@ -69,21 +73,17 @@ export const initializeType = (
     } satisfies Omit<TypeRoot, typeof as> as TypeRoot
 
     // dynamically assign a name to the primary traversal function
-    const namedTraverse: Checker<unknown> = {
+    const namedTraverse = {
         [name]: (data: unknown) => {
-            const state = new TraversalState(data, t)
+            const state = new TraversalState(data, namedTraverse)
             return (
-                traverse(t.flat, state)
+                traverse(namedTraverse.flat, state)
                     ? { data: state.data }
                     : { problems: state.problems }
             ) as CheckResult<unknown>
         }
-    }[name]
-
-    // we need to assign this to a variable before returning so we can reference
-    // it in namedTraverse
-    const t: Type = Object.assign(namedTraverse, root)
-    return t
+    }[name] as Type
+    return Object.assign(namedTraverse, root)
 }
 
 export const isType = (value: unknown): value is Type =>

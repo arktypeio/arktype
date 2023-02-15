@@ -191,6 +191,7 @@ type ProblemSources = {
     class: DefaultObjectKind | constructor
     domain: Domain
     missing: undefined
+    extraneous: unknown
     bound: FlatBound
     regex: RegexLiteral
     value: unknown
@@ -266,6 +267,9 @@ const defaultProblemConfig: {
     missing: {
         mustBe: () => "defined",
         writeReason: (mustBe) => writeDefaultReason(mustBe, "")
+    },
+    extraneous: {
+        mustBe: () => "removed"
     },
     bound: {
         mustBe: (bound) =>
