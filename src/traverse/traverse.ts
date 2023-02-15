@@ -1,5 +1,6 @@
 import { serializeCase } from "../nodes/discriminate.ts"
 import type {
+    ConfigEntry,
     TraversalEntry,
     TraversalKey,
     TraversalNode,
@@ -7,10 +8,15 @@ import type {
 } from "../nodes/node.ts"
 import { checkClass } from "../nodes/rules/class.ts"
 import { checkDivisor } from "../nodes/rules/divisor.ts"
-import type { TraversalProp } from "../nodes/rules/props.ts"
+import type {
+    PropsRecordEntry,
+    PropsRecordKey,
+    TraversalProp
+} from "../nodes/rules/props.ts"
 import { checkBound } from "../nodes/rules/range.ts"
 import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
+import type { Scope } from "../scopes/scope.ts"
 import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
 import type { SizedData } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
@@ -20,43 +26,68 @@ import type { extend, stringKeyOf } from "../utils/generics.ts"
 import { hasKey, objectKeysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { getPath, Path } from "../utils/paths.ts"
-import type { ProblemCode, ProblemWriters } from "./problems.ts"
+import type { ProblemCode, ProblemOptions, ProblemWriters } from "./problems.ts"
 import {
-    defaultProblemWriters,
     domainsToDescriptions,
     objectKindsToDescriptions,
     Problem,
     Problems
 } from "./problems.ts"
 
+const initializeTraversalConfig = (): TraversalConfig => ({
+    mustBe: [],
+    writeReason: [],
+    addContext: [],
+    keys: []
+})
+
+type ProblemWriterKey = keyof ProblemOptions
+
+const problemWriterKeys: readonly ProblemWriterKey[] = [
+    "mustBe",
+    "writeReason",
+    "addContext"
+]
+
 export class TraversalState<data = unknown> {
     path = new Path()
     problems = new Problems(this as any)
-    configs: TypeConfig[]
+
     failFast = false
+    traversalConfig = initializeTraversalConfig()
+    readonly rootScope: Scope
 
     #seen: { [name in QualifiedTypeName]?: object[] } = {}
 
     constructor(public data: data, public type: Type) {
-        this.configs = type.meta.scope.config ? [type.meta.scope.config] : []
+        this.rootScope = type.scope
     }
 
-    getConfigForProblemCode<code extends ProblemCode>(
+    getProblemConfig<code extends ProblemCode>(
         code: code
     ): ProblemWriters<code> {
-        if (!this.configs.length) {
-            return defaultProblemWriters[code]
+        const result = {} as ProblemWriters<code>
+        for (const k of problemWriterKeys) {
+            result[k] =
+                this.traversalConfig[k][0] ??
+                (this.rootScope.config.codes[code][k] as any)
         }
-        for (let i = this.configs.length - 1; i >= 0; i--) {
-            if (this.configs[i][code] || this.configs[i]["defaults"]) {
-                return {
-                    ...defaultProblemWriters[code],
-                    ...this.configs[i]["defaults"],
-                    ...this.configs[i][code]
-                }
-            }
+        return result
+    }
+
+    getConfigKey<k extends keyof TypeConfig>(k: k) {
+        return this.traversalConfig[k][0] as TypeConfig[k] | undefined
+    }
+
+    traverseConfig(configEntries: ConfigEntry[], node: TraversalNode) {
+        for (const entry of configEntries) {
+            this.traversalConfig[entry[0]].unshift(entry[1] as any)
         }
-        return defaultProblemWriters[code]
+        const isValid = traverse(node, this)
+        for (const entry of configEntries) {
+            this.traversalConfig[entry[0]].shift()
+        }
+        return isValid
     }
 
     traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {
@@ -71,8 +102,8 @@ export class TraversalState<data = unknown> {
     }
 
     traverseResolution(name: string): boolean {
-        const resolution = this.type.meta.scope.resolve(name)
-        const id = resolution.meta.id
+        const resolution = this.type.scope.resolve(name)
+        const id = resolution.qualifiedName
         // this assignment helps with narrowing
         const data = this.data
         const isObject = hasDomain(data, "object")
@@ -90,10 +121,10 @@ export class TraversalState<data = unknown> {
                 this.#seen[id] = [data]
             }
         }
-        const lastResolution = this.type
+        const lastType = this.type
         this.type = resolution
         const isValid = traverse(resolution.flat, this)
-        this.type = lastResolution
+        this.type = lastType
         if (isObject) {
             this.#seen[id]!.pop()
         }
@@ -120,6 +151,10 @@ export class TraversalState<data = unknown> {
         this.failFast = lastFailFast
         return hasValidBranch || !this.problems.add("branches", branchProblems)
     }
+}
+
+export type TraversalConfig = {
+    [k in keyof TypeConfig]-?: TypeConfig[k][]
 }
 
 export const traverse = (node: TraversalNode, state: TraversalState): boolean =>
@@ -170,6 +205,32 @@ export const checkRequiredProp = (
     })
     return false
 }
+
+const createPropChecker =
+    (kind: PropsRecordKey) =>
+    (props: PropsRecordEntry[1], state: TraversalState<TraversableData>) => {
+        let isValid = true
+        const unseenRequired = { ...props.required }
+        for (const k in state.data) {
+            if (props.required[k]) {
+                isValid ||= state.traverseKey(k, props.required[k])
+                delete unseenRequired[k]
+            } else if (props.optional[k]) {
+                isValid ||= state.traverseKey(k, props.optional[k])
+            } else if (kind === "distilledProps") {
+                delete state.data[k]
+            } else {
+                state.problems.add("extraneous", state.data[k], {
+                    path: state.path.concat(k)
+                })
+                isValid = false
+            }
+            if (!isValid && state.failFast) {
+                return false
+            }
+        }
+        return isValid
+    }
 
 const entryCheckers = {
     regex: checkRegex,
@@ -239,12 +300,7 @@ const entryCheckers = {
     alias: (name, state) => state.traverseResolution(name),
     class: checkClass,
     narrow: (narrow, state) => narrow(state.data, state.problems),
-    config: ({ config, node }, state) => {
-        state.configs.push(config)
-        const result = traverse(node, state)
-        state.configs.pop()
-        return result
-    },
+    config: ({ config, node }, state) => state.traverseConfig(config, node),
     value: (value, state) =>
         state.data === value || !state.problems.add("value", value),
     morph: (morph, state) => {
@@ -259,7 +315,9 @@ const entryCheckers = {
         }
         state.data = out
         return true
-    }
+    },
+    distilledProps: createPropChecker("distilledProps"),
+    strictProps: createPropChecker("strictProps")
 } satisfies {
     [k in TraversalKey]: EntryChecker<k>
 }
@@ -283,6 +341,8 @@ export type ConstrainedRuleTraversalData = extend<
         optionalProp: TraversableData
         requiredProp: TraversableData
         indexProp: TraversableData
+        distilledProps: TraversableData
+        strictProps: TraversableData
     }
 >
 

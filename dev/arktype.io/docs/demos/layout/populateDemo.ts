@@ -9,7 +9,7 @@ type PopulateDemoArgs = {
 }
 export const populateDemo = ({ data, type, problems }: PopulateDemoArgs) => {
     const defElement = document.querySelector("#definition")!
-    defElement.textContent = stringify(type.meta.definition, 2)
+    defElement.textContent = stringify(type.definition, 2)
     defElement.innerHTML = recolor(defElement.innerHTML)
 
     const resultElement = document.querySelector("#output")!

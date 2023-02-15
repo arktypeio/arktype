@@ -1,4 +1,3 @@
-import type { inferNode } from "../../nodes/infer.ts"
 import type { ResolvedNode, TypeNode } from "../../nodes/node.ts"
 import { rootIntersection, rootUnion, toArrayNode } from "../../nodes/node.ts"
 import type { Prop } from "../../nodes/rules/props.ts"
@@ -20,6 +19,8 @@ import type {
 import { parseDefinition } from "../definition.ts"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
 import type { Scanner } from "../string/shift/scanner.ts"
+import type { validateConfigTuple } from "./config.ts"
+import { parseConfigTuple } from "./config.ts"
 import type { inferIntersection } from "./intersection.ts"
 import type { inferKeyOfExpression, validateKeyOfExpression } from "./keyof.ts"
 import { parseKeyOfTuple } from "./keyof.ts"
@@ -27,6 +28,7 @@ import type { inferMorph, validateMorphTuple } from "./morph.ts"
 import { parseMorphTuple } from "./morph.ts"
 import type { inferNarrow, validateNarrowTuple } from "./narrow.ts"
 import { parseNarrowTuple } from "./narrow.ts"
+import type { inferNode } from "./node.ts"
 import type { inferUnion } from "./union.ts"
 
 export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
@@ -71,10 +73,12 @@ export type validateTupleExpression<
                   validateDefinition<def[2], $>
               ]
           >
-    : def[1] extends "|>"
-    ? validateMorphTuple<def, $>
     : def[1] extends "=>"
     ? validateNarrowTuple<def, $>
+    : def[1] extends "|>"
+    ? validateMorphTuple<def, $>
+    : def[1] extends ":"
+    ? validateConfigTuple<def, $>
     : def[0] extends "==="
     ? conform<def, readonly ["===", unknown]>
     : def[0] extends "instanceof"
@@ -114,6 +118,8 @@ export type inferTupleExpression<
     ? inferNarrow<def[0], def[2], $>
     : def[1] extends "|>"
     ? inferMorph<def[0], def[2], $>
+    : def[1] extends ":"
+    ? inferDefinition<def[0], $>
     : def[0] extends "==="
     ? def[1]
     : def[0] extends "instanceof"
@@ -183,7 +189,7 @@ const indexOneParsers: {
     "[]": parseArrayTuple,
     "=>": parseNarrowTuple,
     "|>": parseMorphTuple,
-    ":": () => ({})
+    ":": parseConfigTuple
 }
 
 export type FunctionalTupleOperator = "=>" | "|>"

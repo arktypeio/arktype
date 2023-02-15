@@ -1,7 +1,7 @@
 import type { Type } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
-import type { CollapsibleList, defined, Dict } from "../utils/generics.ts"
-import { listFrom, objectKeysOf } from "../utils/generics.ts"
+import type { CollapsibleList, Dict } from "../utils/generics.ts"
+import { listFrom } from "../utils/generics.ts"
 import { isArray } from "../utils/objectKinds.ts"
 import type { Branch, Branches, BranchesComparison } from "./branch.ts"
 import {
@@ -151,15 +151,3 @@ export const isLiteralCondition = (
     predicate: Predicate
 ): predicate is LiteralRules =>
     typeof predicate === "object" && "value" in predicate
-
-export type DomainSubtypeResolution<domain extends Domain> = {
-    readonly [k in domain]: defined<ResolvedNode[domain]>
-}
-
-export const resolutionExtendsDomain = <domain extends Domain>(
-    resolution: ResolvedNode,
-    domain: domain
-): resolution is DomainSubtypeResolution<domain> => {
-    const domains = objectKeysOf(resolution)
-    return domains.length === 1 && domains[0] === domain
-}

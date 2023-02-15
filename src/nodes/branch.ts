@@ -3,7 +3,7 @@ import type { Morph } from "../parse/ast/morph.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
-import type { CollapsibleList, Dict, List } from "../utils/generics.ts"
+import type { CollapsibleList, Dict } from "../utils/generics.ts"
 import type { IntersectionState, Intersector } from "./compose.ts"
 import { isDisjoint, isEquality } from "./compose.ts"
 import type { FlattenContext } from "./node.ts"
@@ -13,14 +13,14 @@ import { flattenRules, rulesIntersection } from "./rules/rules.ts"
 
 export type Branch<domain extends Domain = Domain, $ = Dict> =
     | Rules<domain, $>
-    | MorphBranch<domain, $>
+    | TransformationBranch<domain, $>
 
-export type MorphBranch<domain extends Domain = Domain, $ = Dict> = {
+export type TransformationBranch<domain extends Domain = Domain, $ = Dict> = {
     rules: Rules<domain, $>
-    morph: CollapsibleList<Morph>
+    morph?: CollapsibleList<Morph>
 }
 
-export type Branches = List<Branch>
+export type Branches = readonly Branch[]
 
 export type MorphEntry = ["morph", Morph]
 
@@ -112,11 +112,12 @@ export const compareBranches = (
     return result
 }
 
-export const isMorphBranch = (branch: Branch): branch is MorphBranch =>
-    "morph" in branch
+export const isTransformationBranch = (
+    branch: Branch
+): branch is TransformationBranch => "rules" in branch
 
 export const flattenBranch = (branch: Branch, ctx: FlattenContext) => {
-    if (isMorphBranch(branch)) {
+    if (isTransformationBranch(branch)) {
         const result = flattenRules(branch.rules, ctx)
         if (branch.morph) {
             if (typeof branch.morph === "function") {
@@ -133,7 +134,7 @@ export const flattenBranch = (branch: Branch, ctx: FlattenContext) => {
 }
 
 const rulesOf = (branch: Branch): Rules =>
-    (branch as MorphBranch).rules ?? branch
+    (branch as TransformationBranch).rules ?? branch
 
 export const branchIntersection: Intersector<Branch> = (l, r, state) => {
     const lRules = rulesOf(l)

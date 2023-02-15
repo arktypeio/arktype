@@ -3,8 +3,14 @@ import type { ParseContext } from "../parse/definition.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type { Dict, mutable, stringKeyOf } from "../utils/generics.ts"
-import { hasKey, hasKeys, objectKeysOf } from "../utils/generics.ts"
+import type {
+    defined,
+    Dict,
+    entryOf,
+    mutable,
+    stringKeyOf
+} from "../utils/generics.ts"
+import { entriesOf, hasKey, hasKeys, objectKeysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { MorphEntry } from "./branch.ts"
 import type { Intersector } from "./compose.ts"
@@ -22,8 +28,7 @@ import {
     flattenPredicate,
     isLiteralCondition,
     predicateIntersection,
-    predicateUnion,
-    resolutionExtendsDomain
+    predicateUnion
 } from "./predicate.ts"
 import { mappedKeys } from "./rules/props.ts"
 import type { LiteralRules, RuleEntry } from "./rules/rules.ts"
@@ -38,8 +43,8 @@ export type ResolvedNode<$ = Dict> = {
 
 export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
     state.domain = undefined
-    const lResolution = state.type.meta.scope.resolveNode(l)
-    const rResolution = state.type.meta.scope.resolveNode(r)
+    const lResolution = state.type.scope.resolveNode(l)
+    const rResolution = state.type.scope.resolveNode(r)
     const result = resolutionIntersection(lResolution, rResolution, state)
     if (typeof result === "object" && !hasKeys(result)) {
         return hasKeys(state.disjoints)
@@ -85,8 +90,8 @@ export const rootUnion = (
     r: TypeNode,
     type: Type
 ): ResolvedNode => {
-    const lResolution = type.meta.scope.resolveNode(l)
-    const rResolution = type.meta.scope.resolveNode(r)
+    const lResolution = type.scope.resolveNode(l)
+    const rResolution = type.scope.resolveNode(r)
     const result = {} as mutable<ResolvedNode>
     const domains = objectKeysOf({ ...lResolution, ...rResolution })
     for (const domain of domains) {
@@ -119,18 +124,20 @@ export type TraversalEntry =
     | RuleEntry
     | DomainsEntry
     | MorphEntry
-    | CyclicReferenceEntry
+    | AliasEntry
     | DomainEntry
     | BranchesEntry
     | SwitchEntry
-    | ConfigEntry
+    | TraversalConfigEntry
 
-export type CyclicReferenceEntry = ["alias", string]
+export type AliasEntry = ["alias", string]
 
-export type ConfigEntry = [
+export type ConfigEntry = entryOf<TypeConfig>
+
+export type TraversalConfigEntry = [
     "config",
     {
-        config: TypeConfig
+        config: ConfigEntry[]
         node: TraversalNode
     }
 ]
@@ -162,12 +169,12 @@ export const flattenType = (type: Type): TraversalNode => {
         path: new Path(),
         lastDomain: "undefined"
     }
-    return type.meta.config
+    return type.config
         ? [
               [
                   "config",
                   {
-                      config: type.meta.config,
+                      config: entriesOf(type.config),
                       node: flattenNode(type.node, ctx)
                   }
               ]
@@ -180,21 +187,7 @@ export const flattenNode = (
     ctx: FlattenContext
 ): TraversalNode => {
     if (typeof node === "string") {
-        const resolution = ctx.type.meta.scope.resolve(node)
-        const updatedScopeConfig =
-            resolution.meta.scope !== ctx.type.meta.scope &&
-            resolution.meta.scope.config
-        return updatedScopeConfig
-            ? [
-                  [
-                      "config",
-                      {
-                          config: updatedScopeConfig,
-                          node: resolution.flat
-                      }
-                  ]
-              ]
-            : resolution.flat
+        return ctx.type.scope.resolve(node).flat
     }
     const domains = objectKeysOf(node)
     if (domains.length === 1) {
@@ -232,6 +225,18 @@ export const isLiteralNode = <domain extends Domain>(
         resolutionExtendsDomain(node, domain) &&
         isLiteralCondition(node[domain])
     )
+}
+
+export type DomainSubtypeResolution<domain extends Domain> = {
+    readonly [k in domain]: defined<ResolvedNode[domain]>
+}
+
+export const resolutionExtendsDomain = <domain extends Domain>(
+    resolution: ResolvedNode,
+    domain: domain
+): resolution is DomainSubtypeResolution<domain> => {
+    const domains = objectKeysOf(resolution)
+    return domains.length === 1 && domains[0] === domain
 }
 
 export const toArrayNode = (node: TypeNode): ResolvedNode => ({

@@ -1,5 +1,6 @@
 import { platform } from "node:os"
 import { relative } from "node:path"
+import { ts } from "ts-morph"
 import { shell } from "../../runtime/api.ts"
 
 export const getCmdFromPid = (pid: number) =>
@@ -45,3 +46,5 @@ export const positionToString = (position: SourcePosition) =>
     `line ${position.line}, character ${position.char} at path '${position.file}'`
 
 export const getFileKey = (path: string) => relative(".", path)
+
+export const getTsVersionUnderTest = () => ts.versionMajorMinor

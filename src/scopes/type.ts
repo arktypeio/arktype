@@ -5,16 +5,14 @@ import type {
     inferDefinition,
     validateDefinition
 } from "../parse/definition.ts"
-import type { Problems, ProblemsConfig } from "../traverse/problems.ts"
+import type { ProblemOptions, Problems } from "../traverse/problems.ts"
 import { TraversalState, traverse } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { defer, evaluate, xor } from "../utils/generics.ts"
-import { hasKeys } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import type { Expressions } from "./expressions.ts"
 import type { Scope } from "./scope.ts"
 
-// TODO: add config entries when resolving a type
 export type TypeParser<$> = {
     <def>(def: validateDefinition<def, $>): parseType<def, $>
 
@@ -22,95 +20,69 @@ export type TypeParser<$> = {
 } & TypeParserProps<$>
 
 export type TypeParserProps<$> = {
-    from: Expressions<$>["fromNode"]
+    from: Expressions<$>["node"]
 }
 
 export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
 
-type TypeRoot<t = unknown> = {
+type TypeRoot<t = unknown> = evaluate<{
     [as]: t
     infer: asOut<t>
     node: TypeNode
     flat: TraversalNode
-    meta: TypeMeta
-}
+    qualifiedName: QualifiedTypeName
+    definition: unknown
+    scope: Scope
+    includesMorph: boolean
+    config: TypeConfig | undefined
+}>
+
+export type KeyCheckKind = "loose" | "strict" | "distilled"
 
 export type TypeOptions = evaluate<
     {
+        keys?: KeyCheckKind
         name?: string
-    } & ProblemsConfig
+    } & ProblemOptions
 >
 
-export type TypeConfig = ProblemsConfig
-
-type TypeMeta = {
-    name: string
-    id: QualifiedTypeName
-    definition: unknown
-    scope: Scope
-    config: TypeConfig | undefined
-    includesMorph: boolean
-}
-
-const compileTypeConfig = (
-    opts: TypeOptions | undefined
-): TypeConfig | undefined => {
-    if (opts === undefined) {
-        return
-    }
-    const { name, ...config } = opts
-    if (hasKeys(config)) {
-        return config
-    }
-}
+export type TypeConfig = Omit<TypeOptions, "name">
 
 export const initializeType = (
+    name: string,
     definition: unknown,
-    opts: TypeOptions | undefined,
+    config: TypeConfig | undefined,
     scope: Scope
 ) => {
-    const name = opts?.name ?? "type"
-    const config = compileTypeConfig(opts)
-    const meta: TypeMeta = {
-        name,
-        id: `${scope.name}.${
-            opts?.name ? name : `type${scope.createAnonymousTypeSuffix()}`
-        }`,
-        definition,
-        scope,
-        config,
-        includesMorph: false
-    }
-
     const root = {
         // temporarily initialize node/flat to aliases that will be included in
         // the final type in case of cyclic resolutions
         node: name,
         flat: [["alias", name]],
-        meta,
-        infer: chainableNoOpProxy
+        infer: chainableNoOpProxy,
+        qualifiedName: `${scope.name}.${name}`,
+        definition,
+        scope,
+        includesMorph: false,
+        config
         // the "as" symbol from inferred is not used at runtime, so we check
         // that the rest of the type is correct then cast it
     } satisfies Omit<TypeRoot, typeof as> as TypeRoot
 
     // dynamically assign a name to the primary traversal function
-    const namedTraverse: Checker<unknown> = {
+    const namedTraverse = {
         [name]: (data: unknown) => {
-            const state = new TraversalState(data, type)
+            const state = new TraversalState(data, namedTraverse)
             return (
-                traverse(type.flat, state)
+                traverse(namedTraverse.flat, state)
                     ? { data: state.data }
                     : { problems: state.problems }
             ) as CheckResult<unknown>
         }
-    }[name]
-
-    // we need to assign this to a variable before returning so we can reference
-    // it in namedTraverse
-    const type: Type = Object.assign(namedTraverse, root)
-    return type
+    }[name] as Type
+    return Object.assign(namedTraverse, root)
 }
 
 export const isType = (value: unknown): value is Type =>
