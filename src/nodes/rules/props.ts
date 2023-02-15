@@ -1,3 +1,4 @@
+import type { KeyCheckKind } from "../../scopes/type.ts"
 import type { Dict } from "../../utils/generics.ts"
 import {
     composeIntersection,
@@ -169,10 +170,7 @@ export const flattenProps: FlattenAndPushRule<PropsRule> = (
     const keyConfig = ctx.type.config?.keys ?? ctx.type.scope.config.keys
     return keyConfig === "loose"
         ? flattenLooseProps(entries, props, ctx)
-        : [
-              keyConfig === "distill" ? "distilledProps" : "strictProps",
-              flattenPropsRecord(entries, props, ctx)
-          ]
+        : flattenPropsRecord(keyConfig, entries, props, ctx)
 }
 
 const flattenLooseProps: FlattenAndPushRule<PropsRule> = (
@@ -198,10 +196,11 @@ const flattenLooseProps: FlattenAndPushRule<PropsRule> = (
 }
 
 const flattenPropsRecord = (
+    kind: Exclude<KeyCheckKind, "loose">,
     entries: TraversalEntry[],
     props: PropsRule,
     ctx: FlattenContext
-): PropsRecordEntry[1] => {
+) => {
     const result: PropsRecordEntry[1] = {
         required: {},
         optional: {}
@@ -224,5 +223,5 @@ const flattenPropsRecord = (
         }
         ctx.path.pop()
     }
-    return result
+    entries.push([`${kind}Props`, result])
 }

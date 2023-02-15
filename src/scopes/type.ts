@@ -39,17 +39,16 @@ type TypeRoot<t = unknown> = evaluate<{
     config: TypeConfig | undefined
 }>
 
+export type KeyCheckKind = "loose" | "strict" | "distilled"
+
 export type TypeOptions = evaluate<
     {
+        keys?: KeyCheckKind
         name?: string
     } & ProblemOptions
 >
 
-export type KeyCheckKind = "loose" | "distill" | "strict"
-
-export type TypeConfig = ProblemOptions & {
-    keys?: KeyCheckKind
-}
+export type TypeConfig = Omit<TypeOptions, "name">
 
 export const initializeType = (
     name: string,

@@ -209,20 +209,27 @@ export const checkRequiredProp = (
 const createPropChecker =
     (kind: PropsRecordKey) =>
     (props: PropsRecordEntry[1], state: TraversalState<TraversableData>) => {
+        let isValid = true
         const unseenRequired = { ...props.required }
         for (const k in state.data) {
             if (props.required[k]) {
-                state.traverseKey(k, props.required[k])
+                isValid ||= state.traverseKey(k, props.required[k])
                 delete unseenRequired[k]
             } else if (props.optional[k]) {
-                state.traverseKey(k, props.optional[k])
+                isValid ||= state.traverseKey(k, props.optional[k])
             } else if (kind === "distilledProps") {
                 delete state.data[k]
             } else {
-                state.problems.add("extraneous", state.data[k])
+                state.problems.add("extraneous", state.data[k], {
+                    path: state.path.concat(k)
+                })
+                isValid = false
+            }
+            if (!isValid && state.failFast) {
+                return false
             }
         }
-        return true
+        return isValid
     }
 
 const entryCheckers = {
