@@ -14,8 +14,8 @@ import type {
     validateDefinition
 } from "../parse/definition.ts"
 import type { conform } from "../utils/generics.ts"
-import type { PrecompiledDefaults } from "./standard.ts"
-import { scopes } from "./standard.ts"
+import type { PrecompiledDefaults } from "./ark.ts"
+import { scopes } from "./ark.ts"
 import type { asIn, asOut, Type, TypeOptions } from "./type.ts"
 
 export type Expressions<$> = {
@@ -32,22 +32,21 @@ export type Expressions<$> = {
 
 type Standard = Expressions<PrecompiledDefaults>
 
-export const intersection: Standard["intersection"] =
-    scopes.standard.intersection
+export const intersection: Standard["intersection"] = scopes.ark.intersection
 
-export const union: Standard["union"] = scopes.standard.union
+export const union: Standard["union"] = scopes.ark.union
 
-export const arrayOf: Standard["arrayOf"] = scopes.standard.arrayOf
+export const arrayOf: Standard["arrayOf"] = scopes.ark.arrayOf
 
-export const keyOf: Standard["keyOf"] = scopes.standard.keyOf
+export const keyOf: Standard["keyOf"] = scopes.ark.keyOf
 
-export const instanceOf: Standard["instanceOf"] = scopes.standard.instanceOf
+export const instanceOf: Standard["instanceOf"] = scopes.ark.instanceOf
 
-export const valueOf: Standard["valueOf"] = scopes.standard.valueOf
+export const valueOf: Standard["valueOf"] = scopes.ark.valueOf
 
-export const narrow: Standard["narrow"] = scopes.standard.narrow
+export const narrow: Standard["narrow"] = scopes.ark.narrow
 
-export const morph: Standard["morph"] = scopes.standard.morph
+export const morph: Standard["morph"] = scopes.ark.morph
 
 export type BinaryExpressionParser<$, operator extends "&" | "|"> = {
     <l, r>(

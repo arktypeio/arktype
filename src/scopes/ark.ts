@@ -8,7 +8,7 @@ import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
 import type { TypeParser } from "./type.ts"
 import { validation, validationScope } from "./validation/validation.ts"
 
-export const standardScope = scope(
+export const ark = scope(
     {},
     {
         name: "standard",
@@ -17,22 +17,22 @@ export const standardScope = scope(
     }
 )
 
-export const standard = standardScope.compile()
+export const arktypes = ark.compile()
 
 export const scopes = {
-    empty: rootScope,
+    root: rootScope,
     tsKeywords: tsKeywordsScope,
     jsObjects: jsObjectsScope,
     validation: validationScope,
-    standard: standardScope
+    ark
 }
 
 export const spaces = {
     tsKeywords,
     jsObjects,
     validation,
-    standard
-} satisfies Record<Exclude<keyof typeof scopes, "empty">, Space>
+    ark: arktypes
+} satisfies Record<Exclude<keyof typeof scopes, "root">, Space>
 
 // This is just copied from the inference of defaultScope. Creating an explicit
 // type like this makes validation for the default type and scope functions feel
@@ -69,10 +69,10 @@ export type PrecompiledDefaults = {
 } & InferredObjectKinds
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-type ValidateStandardScope = [
+type ValidateArkScope = [
     // if PrecompiledDefaults gets out of sync with scopes.standard, there will be a type error here
-    extend<PrecompiledDefaults, typeof scopes["standard"]["infer"]>,
-    extend<typeof scopes["standard"]["infer"], PrecompiledDefaults>
+    extend<PrecompiledDefaults, typeof scopes["ark"]["infer"]>,
+    extend<typeof scopes["ark"]["infer"], PrecompiledDefaults>
 ]
 
-export const type: TypeParser<PrecompiledDefaults> = scopes.standard.type
+export const type: TypeParser<PrecompiledDefaults> = ark.type

@@ -26,9 +26,9 @@ import type {
 } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { stringifyUnion } from "../utils/unionToTuple.ts"
+import type { PrecompiledDefaults } from "./ark.ts"
 import { Cache, FreezingCache } from "./cache.ts"
 import type { Expressions } from "./expressions.ts"
-import type { PrecompiledDefaults } from "./standard.ts"
 import type { Type, TypeOptions, TypeParser } from "./type.ts"
 import { initializeType } from "./type.ts"
 
