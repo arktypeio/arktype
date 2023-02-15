@@ -75,10 +75,11 @@ export const initializeType = (
     const namedTraverse = {
         [name]: (data: unknown) => {
             const state = new TraversalState(data, namedTraverse)
+            traverse(namedTraverse.flat, state)
             return (
-                traverse(namedTraverse.flat, state)
-                    ? { data: state.data }
-                    : { problems: state.problems }
+                state.problems.count
+                    ? { problems: state.problems }
+                    : { data: state.data }
             ) as CheckResult<unknown>
         }
     }[name] as Type

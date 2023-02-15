@@ -142,7 +142,6 @@ class ProblemArray extends Array<Problem> {
     }
 
     get summary(): string {
-        // throw new ArkTypeError(this)
         return `${this}`
     }
 

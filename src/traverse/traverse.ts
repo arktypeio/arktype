@@ -299,7 +299,16 @@ const entryCheckers = {
     },
     alias: (name, state) => state.traverseResolution(name),
     class: checkClass,
-    narrow: (narrow, state) => narrow(state.data, state.problems),
+    narrow: (narrow, state) => {
+        const lastProblemsCount = state.problems.count
+        const result = narrow(state.data, state.problems)
+        if (!result && state.problems.count === lastProblemsCount) {
+            state.problems.mustBe(
+                narrow.name ? `valid according to ${narrow.name}` : "valid"
+            )
+        }
+        return result
+    },
     config: ({ config, node }, state) => state.traverseConfig(config, node),
     value: (value, state) =>
         state.data === value || !state.problems.add("value", value),

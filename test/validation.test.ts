@@ -33,6 +33,8 @@ describe("validation", () => {
 
     it("semver", () => {
         attest(ark.semver("1.0.0").data).equals("1.0.0")
-        attest(ark.semver("-1.0.0").problems?.summary).snap()
+        attest(ark.semver("-1.0.0").problems?.summary).snap(
+            "Must be a valid semantic version (see https://semver.org/) (was '-1.0.0')"
+        )
     })
 })

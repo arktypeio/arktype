@@ -86,6 +86,7 @@ export const serialize = (
                     if (seen.includes(v)) {
                         return opts.onCycle?.(v)
                     }
+                    seen.push(v)
                     if (typeof v === "function") {
                         return opts.onFunction?.(v)
                     }
