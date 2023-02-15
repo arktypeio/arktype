@@ -72,6 +72,8 @@ const snapshotRecurse = (
     }
 }
 
+// TODO: add cyclic test
+const n: number = ""
 export const serialize = (
     data: unknown,
     opts: SerializationOptions = {},
