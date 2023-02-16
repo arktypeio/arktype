@@ -1,5 +1,5 @@
 import type { TransformationBranch } from "../../nodes/branch.ts"
-import type { LiteralNode, ResolvedNode, TypeNode } from "../../nodes/node.ts"
+import type { LiteralNode, TypeNode } from "../../nodes/node.ts"
 import type { Predicate } from "../../nodes/predicate.ts"
 import type {
     MappedPropKey,
@@ -27,7 +27,7 @@ import type { Out } from "./morph.ts"
 
 export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
     ? inferTerminal<node, $>
-    : node extends ResolvedNode<$>
+    : node extends TypeNode<$>
     ? inferResolution<node, $> extends infer result
         ? result extends BuiltinClass
             ? // don't evaluate builtin classes like Date (expanding their prototype looks like a mess)
@@ -36,7 +36,7 @@ export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
         : never
     : never
 
-export type inferResolution<node extends ResolvedNode<$>, $> = {
+export type inferResolution<node extends TypeNode<$>, $> = {
     [domain in keyof node]: inferPredicate<
         // @ts-expect-error Some very odd inference behavior related to domain I can't resolve
         domain,

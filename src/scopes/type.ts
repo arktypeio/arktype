@@ -34,7 +34,6 @@ type TypeRoot<t = unknown> = evaluate<{
     allows: (data: unknown) => data is t
     node: TypeNode
     flat: TraversalNode
-    id: string
     qualifiedName: QualifiedTypeName
     definition: unknown
     scope: Scope
@@ -47,11 +46,10 @@ export type KeyCheckKind = "loose" | "strict" | "distilled"
 export type TypeOptions = evaluate<
     {
         keys?: KeyCheckKind
-        name?: string
     } & ProblemOptions
 >
 
-export type TypeConfig = Omit<TypeOptions, "name">
+export type TypeConfig = TypeOptions
 
 export const initializeType = (
     name: string,
@@ -67,7 +65,6 @@ export const initializeType = (
             : { data: state.data }
     }, name)
 
-    const id = isAnonymousName(name) ? scope.anonymousIdFrom(name) : name
     const root = {
         // temporarily initialize node/flat to aliases that will be included in
         // the final type in case of cyclic resolutions
@@ -75,8 +72,9 @@ export const initializeType = (
         flat: [["alias", name]],
         allows: (data): data is any => !!namedTraverse(data).problems,
         infer: chainableNoOpProxy,
-        id,
-        qualifiedName: `${scope.name}.${id}`,
+        qualifiedName: isAnonymousName(name)
+            ? scope.getAnonymousQualifiedName(name)
+            : `${scope.name}.${name}`,
         definition,
         scope,
         includesMorph: false,
@@ -86,11 +84,8 @@ export const initializeType = (
     } satisfies Omit<TypeRoot, typeof as> as TypeRoot
 
     const t = Object.assign(namedTraverse, root)
-    typeRegistry[root.qualifiedName] = t
     return t
 }
-
-export const typeRegistry: Record<QualifiedTypeName, Type> = {}
 
 export const isType = (value: unknown): value is Type =>
     (value as Type)?.infer === chainableNoOpProxy
