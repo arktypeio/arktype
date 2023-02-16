@@ -1,5 +1,5 @@
 import type { TypeOptions } from "../../scopes/type.ts"
-import type { inferred, validateDefinition } from "../definition.ts"
+import type { validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { PostfixParser, TupleExpression } from "./tuple.ts"
 
@@ -10,7 +10,7 @@ export type ConfigTuple<
 
 export const parseConfigTuple: PostfixParser<":"> = (def, ctx) => {
     const node = parseDefinition(def, ctx)
-    const branches = {}
+    //const branches = {}
     return node
 }
 
