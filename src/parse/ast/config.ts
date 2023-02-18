@@ -9,7 +9,7 @@ export type ConfigTuple<
 > = readonly [def, ":", config]
 
 export const parseConfigTuple: PostfixParser<":"> = (def, ctx) => {
-    const node = parseDefinition(def, ctx)
+    const node = parseDefinition(def[0], ctx)
     //const branches = {}
     return node
 }
