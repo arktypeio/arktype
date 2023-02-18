@@ -14,12 +14,11 @@ import { flattenRules, rulesIntersection } from "./rules/rules.ts"
 
 export type Branch<domain extends Domain = Domain, $ = Dict> =
     | Rules<domain, $>
-    | MetaBranch<domain, $>
+    | MorphBranch<domain, $>
 
-export type MetaBranch<domain extends Domain = Domain, $ = Dict> = {
+export type MorphBranch<domain extends Domain = Domain, $ = Dict> = {
     rules: Rules<domain, $>
     morph?: CollapsibleList<Morph>
-    config?: TypeConfig
 }
 
 export type Branches = readonly Branch[]
@@ -114,11 +113,11 @@ export const compareBranches = (
     return result
 }
 
-export const isTransformationBranch = (branch: Branch): branch is MetaBranch =>
+export const isMorphBranch = (branch: Branch): branch is MorphBranch =>
     "rules" in branch
 
 export const flattenBranch = (branch: Branch, ctx: FlattenContext) => {
-    if (isTransformationBranch(branch)) {
+    if (isMorphBranch(branch)) {
         const result = flattenRules(branch.rules, ctx)
         if (branch.morph) {
             if (typeof branch.morph === "function") {
@@ -135,7 +134,7 @@ export const flattenBranch = (branch: Branch, ctx: FlattenContext) => {
 }
 
 const rulesOf = (branch: Branch): Rules =>
-    (branch as MetaBranch).rules ?? branch
+    (branch as MorphBranch).rules ?? branch
 
 export const branchIntersection: Intersector<Branch> = (l, r, state) => {
     const lRules = rulesOf(l)
