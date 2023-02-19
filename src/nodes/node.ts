@@ -171,29 +171,36 @@ export const flattenType = (type: Type): TraversalNode => {
         path: new Path(),
         lastDomain: "undefined"
     }
-    const config = entriesOf(type.config)
-    return config.length
-        ? [
-              [
-                  "config",
-                  {
-                      config,
-                      node: flattenNode(type.node, ctx)
-                  }
-              ]
-          ]
-        : flattenNode(type.node, ctx)
+    return flattenNode(type.node, ctx)
 }
 
 export const flattenNode = (node: Node, ctx: FlattenContext): TraversalNode => {
     if (typeof node === "string") {
         return ctx.type.scope.resolve(node).flat
     }
-    const typeNode = isConfigNode(node) ? node.node : node
-    const domains = objectKeysOf(typeNode)
+    const hasConfig = isConfigNode(node)
+    const flattenedTypeNode = flattenTypeNode(hasConfig ? node.node : node, ctx)
+    return hasConfig
+        ? [
+              [
+                  "config",
+                  {
+                      config: entriesOf(node.config),
+                      node: flattenedTypeNode
+                  }
+              ]
+          ]
+        : flattenedTypeNode
+}
+
+export const flattenTypeNode = (
+    node: TypeNode,
+    ctx: FlattenContext
+): TraversalNode => {
+    const domains = objectKeysOf(node)
     if (domains.length === 1) {
         const domain = domains[0]
-        const predicate = typeNode[domain]!
+        const predicate = node[domain]!
         if (predicate === true) {
             return domain
         }
@@ -206,7 +213,7 @@ export const flattenNode = (node: Node, ctx: FlattenContext): TraversalNode => {
     const result: mutable<DomainsEntry[1]> = {}
     for (const domain of domains) {
         ctx.lastDomain = domain
-        result[domain] = flattenPredicate(typeNode[domain]!, ctx)
+        result[domain] = flattenPredicate(node[domain]!, ctx)
     }
     return [["domains", result]]
 }
