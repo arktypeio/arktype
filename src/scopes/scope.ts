@@ -293,24 +293,23 @@ export class Scope<context extends ScopeContext = any> {
                     : undefined
             ) as ResolveResult<onUnresolvable>
         }
-        let resolution: Type
-        if (typeof aliasDef === "string" && this.isResolvable(aliasDef)) {
-            if (seen.includes(aliasDef)) {
+        const t = initializeType(name, aliasDef, {}, this)
+        const ctx = this.#initializeContext(t)
+        this.#resolutions.set(name, t)
+        this.#exports.set(name, t)
+        let node = parseDefinition(aliasDef, ctx)
+        if (typeof node === "string") {
+            if (seen.includes(node)) {
                 return throwParseError(
                     writeShallowCycleErrorMessage(name, seen)
                 )
             }
-            seen.push(aliasDef)
-            resolution = this.#resolveRecurse(aliasDef, "throw", seen)
-        } else {
-            resolution = initializeType(name, aliasDef, {}, this)
-            const ctx = this.#initializeContext(resolution)
-            resolution.node = deepFreeze(parseDefinition(aliasDef, ctx))
-            resolution.flat = deepFreeze(flattenType(resolution))
+            seen.push(node)
+            node = this.#resolveRecurse(node, "throw", seen).node
         }
-        this.#resolutions.set(name, resolution)
-        this.#exports.set(name, resolution)
-        return resolution
+        t.node = deepFreeze(node)
+        t.flat = deepFreeze(flattenType(t))
+        return t
     }
 
     resolveNode(node: Node): ResolvedNode {

@@ -70,7 +70,7 @@ export const initializeType = (
         // the final type in case of cyclic resolutions
         node: name,
         flat: [["alias", name]],
-        allows: (data): data is any => !!namedTraverse(data).problems,
+        allows: (data): data is any => !namedTraverse(data).problems,
         infer: chainableNoOpProxy,
         qualifiedName: isAnonymousName(name)
             ? scope.getAnonymousQualifiedName(name)
