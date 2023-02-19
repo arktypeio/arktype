@@ -1,4 +1,5 @@
-import { rootIntersection } from "../../nodes/node.ts"
+import type { TypeNode } from "../../nodes/node.ts"
+import { isConfigNode, rootIntersection } from "../../nodes/node.ts"
 import type { asIn } from "../../scopes/type.ts"
 import type { Problems } from "../../traverse/problems.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
@@ -10,16 +11,22 @@ import type { PostfixParser, TupleExpression } from "./tuple.ts"
 
 export const parseNarrowTuple: PostfixParser<"=>"> = (def, ctx) => {
     const inputNode = parseDefinition(def[0], ctx)
-    return rootIntersection(
+    const resolution = ctx.type.scope.resolveNode(inputNode)
+    const hasConfig = isConfigNode(resolution)
+    const typeNode = hasConfig ? resolution.node : resolution
+    const result = rootIntersection(
         inputNode,
         distributeFunctionToNode(
             def[2] as distributable<Narrow>,
-            inputNode,
+            typeNode,
             ctx,
             "narrow"
         ),
         ctx.type
     )
+    return hasConfig
+        ? { config: resolution.config, node: result as TypeNode }
+        : result
 }
 
 export type Narrow<data = any> = (data: data, problems: Problems) => boolean

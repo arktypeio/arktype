@@ -2,7 +2,7 @@ import { describe, it } from "mocha"
 import { keyOf, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 import type { Branch } from "../src/nodes/branch.ts"
-import type { ResolvedNode } from "../src/nodes/node.ts"
+import type { TypeNode } from "../src/nodes/node.ts"
 import { writeImplicitNeverMessage } from "../src/parse/ast/intersection.ts"
 import { Path } from "../src/utils/paths.ts"
 
@@ -64,7 +64,7 @@ describe("keyof", () => {
     it("array", () => {
         const t = type(["keyof", ["string", "number"]])
         attest(t.infer).typed as keyof [string, number]
-        const node = t.node as ResolvedNode
+        const node = t.node as TypeNode
         // the array prototype has many items and they vary based on the JS
         // flavor we're running in, so just check that the indices from the type
         // and one prototype key are present as a heuristic

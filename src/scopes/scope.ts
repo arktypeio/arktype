@@ -24,6 +24,7 @@ import type {
     List,
     nominal
 } from "../utils/generics.ts"
+import { hasKeys } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { stringifyUnion } from "../utils/unionToTuple.ts"
 import type { PrecompiledDefaults } from "./ark.ts"
@@ -364,7 +365,12 @@ export class Scope<context extends ScopeContext = any> {
         (def: unknown, config: TypeOptions = {}) => {
             const t = initializeType("λtype", def, config, this)
             const ctx = this.#initializeContext(t)
-            t.node = deepFreeze(parseDefinition(def, ctx))
+            const root = parseDefinition(def, ctx)
+            t.node = deepFreeze(
+                hasKeys(config)
+                    ? { config, node: this.resolveTypeNode(root) }
+                    : root
+            )
             t.flat = deepFreeze(flattenType(t))
             return t
         },

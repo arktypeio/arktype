@@ -1,4 +1,4 @@
-import type { Node } from "../../nodes/node.ts"
+import type { TypeNode } from "../../nodes/node.ts"
 import type { NarrowableRules } from "../../nodes/rules/rules.ts"
 import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
@@ -51,11 +51,11 @@ export const distributeFunctionToNode = <
     ruleKey extends keyof NarrowableRules
 >(
     distributableFunction: distributable<f>,
-    inputNode: Node,
+    node: TypeNode,
     ctx: ParseContext,
     ruleKey: ruleKey
 ): DistributedFunctionNode<f, ruleKey> => {
-    const domains = objectKeysOf(ctx.type.scope.resolveNode(inputNode))
+    const domains = objectKeysOf(node)
     if (!hasDomain(distributableFunction, "object")) {
         return throwParseError(
             writeMalformedDistributableFunctionMessage(distributableFunction)

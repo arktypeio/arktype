@@ -1,5 +1,4 @@
 import type { Out } from "../parse/ast/morph.ts"
-import type { extend } from "../utils/generics.ts"
 import type { InferredObjectKinds } from "../utils/objectKinds.ts"
 import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
 import type { Space } from "./scope.ts"
@@ -17,7 +16,7 @@ export const arkscope = scope(
     }
 )
 
-export const ark = arkscope.compile()
+export const ark: Space<PrecompiledDefaults> = arkscope.compile()
 
 export const scopes = {
     root: rootScope,
@@ -68,12 +67,5 @@ export type PrecompiledDefaults = {
     parsedDate: (In: string) => Out<Date>
     // jsObects
 } & InferredObjectKinds
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type ValidateArkScope = [
-    // if PrecompiledDefaults gets out of sync with scopes.standard, there will be a type error here
-    extend<PrecompiledDefaults, typeof scopes["ark"]["infer"]>,
-    extend<typeof scopes["ark"]["infer"], PrecompiledDefaults>
-]
 
 export const type: TypeParser<PrecompiledDefaults> = arkscope.type
