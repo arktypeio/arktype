@@ -62,6 +62,7 @@ export type PrecompiledDefaults = {
     email: string
     uuid: string
     semver: string
+    json: (In: string) => Out<unknown> | undefined | null
     parsedNumber: (In: string) => Out<number>
     parsedInteger: (In: string) => Out<number>
     parsedDate: (In: string) => Out<Date>

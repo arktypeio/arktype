@@ -195,25 +195,24 @@ const getPackage3 = () => {
     return data
 }
 
-//********** MORPHS ********** /
+//********** MORPHS, SCOPE IMPORTS ********** /
 
 const types2 = scope({
     package: {
         name: "string",
         version: "semver",
         "contributors?": "contributors",
-        "devDependencies?": "package[]"
         // ⬇️
-        //     [
-        //     "package[]"
-        //     // "=>",
-        //     // (packages) => packages.every((pkg) => pkg.name !== "left-pad")
-        // ]
+        "devDependencies?": [
+            "package[]",
+            "=>",
+            (packages) => packages.every((pkg) => pkg.name !== "left-pad")
+        ]
     },
     contributors: "email[]>1"
 }).compile()
 
 // ⬇️
-// const json = scope({
-//     parsePackage: ["string", "|>", (json) => types2.package.includes]
-// })
+const json = scope({
+    parsePackage: ["string", "|>", (json) => {}]
+})
