@@ -1,16 +1,9 @@
-import { writeImplicitNeverMessage } from "../../parse/ast/intersection.ts"
 import type { Narrow } from "../../parse/ast/narrow.ts"
-import type { TypeConfig } from "../../scopes/type.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
-import { hasDomain } from "../../utils/domains.ts"
-import { throwParseError } from "../../utils/errors.ts"
 import type {
     CollapsibleList,
     constructor,
-    defined,
-    Dict,
-    evaluate,
-    extend
+    Dict
 } from "../../utils/generics.ts"
 import { listFrom } from "../../utils/generics.ts"
 import type { DefaultObjectKind } from "../../utils/objectKinds.ts"
@@ -35,101 +28,23 @@ import type { FlatBound, Range } from "./range.ts"
 import { flattenRange, rangeIntersection } from "./range.ts"
 import { regexIntersection } from "./regex.ts"
 
-type NarrowableConstraints<$ = Dict> = {
-    regex: string
-    divisor: number
-    range: Range
-    props: PropsRule<$>
-    class: DefaultObjectKind | constructor
-    narrow: Narrow
+export type NarrowableRules<$ = Dict> = {
+    readonly regex?: CollapsibleList<string>
+    readonly divisor?: number
+    readonly range?: Range
+    readonly props?: PropsRule<$>
+    readonly class?: DefaultObjectKind | constructor
+    readonly narrow?: NarrowRule
 }
-
-// When intersecting these rules, there will be always be a single result. E.g.,
-// intersecting two divisors can always be reduced to a single divisor based on
-// their LCM.
-type ReducibleKey = Exclude<keyof NarrowableConstraints, IrreducibleKey>
-
-type ReducibleRules<$ = Dict> = {
-    readonly [k in ReducibleKey]?: ConfigurableRule<NarrowableConstraints<$>[k]>
-}
-
-// Intersecting these rules may not always lead to a reducible result. E.g., the
-// intersection of two narrow functions cannot be reduced checking that some
-// data satisisfies each operand individually. In these cases, intersections of
-// non-equal constraints are stored as lists.
-type IrreducibleKey = extend<keyof NarrowableConstraints, "regex" | "narrow">
-
-type IrreducibleRules<$ = Dict> = {
-    readonly [k in IrreducibleKey]?: CollapsibleList<
-        ConfigurableRule<NarrowableConstraints<$>[k]>
-    >
-}
-
-export type NarrowableRules<$ = Dict> = evaluate<
-    ReducibleRules<$> & IrreducibleRules<$>
->
 
 export type LiteralRules<
     domain extends Domain = Domain,
     value extends inferDomain<domain> = inferDomain<domain>
 > = {
-    readonly value: ConfigurableRule<value>
+    readonly value: value
 }
 
-export type ConfigurableRule<constraint> =
-    | constraint
-    | ConfiguredRule<constraint>
-
-export type ConfiguredRule<constraint> = [
-    constraint: constraint,
-    _: ":",
-    config: TypeConfig
-]
-
-export const ruleHasConfig = <k extends keyof NarrowableConstraints>(
-    rule: ConfigurableRule<NarrowableConstraints[k]>
-): rule is ConfiguredRule<NarrowableConstraints[k]> =>
-    Array.isArray(rule) && rule[1] === ":"
-
-export const composeReducibleRuleIntersection = <k extends ReducibleKey>(
-    intersector: Intersector<NarrowableConstraints[k]>
-) =>
-    composeIntersection<ConfigurableRule<NarrowableConstraints[k]>>(
-        (l, r, state) => {
-            const lHasConfig = ruleHasConfig(l)
-            const rHasConfig = ruleHasConfig(r)
-            const constraintResult = intersector(
-                lHasConfig ? l[0] : l,
-                rHasConfig ? r[0] : r,
-                state
-            )
-            if (lHasConfig) {
-                if (rHasConfig) {
-                    const result = { ...l[2] }
-                    let k: keyof TypeConfig
-                    for (k in l[2]) {
-                        if (k in r[2]) {
-                            if (l[2][k] !== r[2][k]) {
-                                return state.lastOperator === "&"
-                                    ? throwParseError(
-                                          writeImplicitNeverMessage(
-                                              state.path,
-                                              "Intersection",
-                                              `of config values '${l[2][k]}' and '${r[2][k]}' for key '${k}'`
-                                          )
-                                      )
-                                    : {}
-                            }
-                        }
-                    }
-                }
-            }
-            if (rHasConfig) {
-                return r
-            }
-            return constraintResult
-        }
-    )
+export type NarrowRule = CollapsibleList<Narrow>
 
 export type FlatRules = RuleEntry[]
 
@@ -159,9 +74,9 @@ export type Rules<
 
 type defineRuleSet<
     domain extends Domain,
-    keys extends keyof NarrowableConstraints,
+    keys extends keyof NarrowableRules,
     $
-> = Pick<NarrowableConstraints<$>, keys> | LiteralRules<domain>
+> = Pick<NarrowableRules<$>, keys> | LiteralRules<domain>
 
 export const rulesIntersection: Intersector<Rules> = (l, r, state) =>
     "value" in l
@@ -182,7 +97,7 @@ const narrowIntersection =
     composeIntersection<CollapsibleList<Narrow>>(collapsibleListUnion)
 
 export const narrowableRulesIntersection =
-    composeKeyedIntersection<NarrowableConstraints>(
+    composeKeyedIntersection<NarrowableRules>(
         {
             divisor: divisorIntersection,
             regex: regexIntersection,
@@ -216,7 +131,7 @@ export type FlattenAndPushRule<t> = (
     ctx: FlattenContext
 ) => void
 
-type UnknownRules = NarrowableConstraints & Partial<LiteralRules>
+type UnknownRules = NarrowableRules & Partial<LiteralRules>
 
 const ruleFlatteners: {
     [k in keyof UnknownRules]-?: FlattenAndPushRule<UnknownRules[k] & {}>
@@ -279,6 +194,6 @@ export const precedenceMap: {
 
 export const literalSatisfiesRules = (
     data: unknown,
-    rules: NarrowableConstraints,
+    rules: NarrowableRules,
     state: IntersectionState
 ) => !state.type.scope.type(["node", { [state.domain!]: rules }])(data).problems

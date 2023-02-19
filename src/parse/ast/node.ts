@@ -1,4 +1,4 @@
-import type { MorphBranch } from "../../nodes/branch.ts"
+import type { MetaBranch } from "../../nodes/branch.ts"
 import type { LiteralNode, TypeNode } from "../../nodes/node.ts"
 import type { Predicate } from "../../nodes/predicate.ts"
 import type {
@@ -57,11 +57,11 @@ type branchFrom<predicate extends Predicate> = predicate extends List
     ? predicate[number]
     : predicate
 
-type inferBranch<domain extends Domain, branch, $> = branch extends MorphBranch
+type inferBranch<domain extends Domain, branch, $> = branch extends MetaBranch
     ? inferMorph<domain, branch, $>
     : inferRules<domain, branch, $>
 
-type inferMorph<domain extends Domain, branch extends MorphBranch, $> = (
+type inferMorph<domain extends Domain, branch extends MetaBranch, $> = (
     In: inferBranch<domain, branch["rules"], $>
 ) => Out<
     branch["morph"] extends [...unknown[], infer tail]
