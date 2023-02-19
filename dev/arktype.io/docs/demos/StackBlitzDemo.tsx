@@ -30,7 +30,7 @@ export const StackBlitzDemo = (demoProps: DemoProps) => {
                         },
                         destroy: []
                     }),
-                1000
+                3000
             )
             setIsLoading(false)
         })()
