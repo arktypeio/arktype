@@ -314,14 +314,7 @@ const entryCheckers = {
     value: (value, state) =>
         state.data === value || !state.problems.add("value", value),
     morph: (morph, state) => {
-        let out
-        try {
-            out = morph(state.data, state.problems)
-        } catch (e) {
-            state.problems.mustBe(
-                `morphable${morph.name && ` via ${morph.name}`}`
-            )
-        }
+        const out = morph(state.data, state.problems)
         if (state.problems.length) {
             return false
         }

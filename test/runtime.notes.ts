@@ -214,5 +214,5 @@ const types2 = scope({
 
 // ⬇️
 const json = scope({
-    parsePackage: ["string", "|>", (json) => {}]
+    parsePackage: ["string", "|>", (s) => types2.package(JSON.parse(s))]
 })
