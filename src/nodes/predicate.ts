@@ -13,9 +13,8 @@ import {
 import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
 import { equality, IntersectionState, isEquality } from "./compose.ts"
 import { flattenBranches } from "./discriminate.ts"
-import type { FlattenContext, ResolvedNode, TraversalEntry } from "./node.ts"
+import type { FlattenContext, TraversalEntry, TypeNode } from "./node.ts"
 import type { LiteralRules } from "./rules/rules.ts"
-import {} from "./rules/rules.ts"
 
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to
@@ -74,9 +73,12 @@ export const comparePredicates = (
     return comparison
 }
 
-export const predicateIntersection: KeyIntersectionFn<
-    Required<ResolvedNode>
-> = (domain, l, r, state) => {
+export const predicateIntersection: KeyIntersectionFn<Required<TypeNode>> = (
+    domain,
+    l,
+    r,
+    state
+) => {
     state.domain = domain
     const comparison = comparePredicates(l, r, state)
     if (!isBranchComparison(comparison)) {

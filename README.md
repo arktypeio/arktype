@@ -14,7 +14,7 @@ Isomorphic types for TS/JS
 
 If you're using TypeScript, you'll need at least `4.8`
 
-_Note: This package is under active development. APIs have largely stabilized, but may still change prior to our upcoming 1.0-beta release. Stay tuned!⛵_
+_Note: Our APIs have largely stabilized at this point, but some may still change during the alpha/beta stages of our 1.0 release. If you have feedback that may require a breaking change, now is the time to let us know!_
 
 ### Your first type
 

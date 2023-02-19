@@ -26,5 +26,7 @@
         "dist",
         "node_modules"
     ],
-    "deno.enable": false
+    "deno.enable": false,
+    // temporarily disabled until .ts suffixes are preserved
+    "typescript.updateImportsOnFileMove.enabled": "never"
 }
