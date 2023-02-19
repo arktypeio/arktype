@@ -1,5 +1,5 @@
-import type { ResolvedNode, TypeNode } from "../nodes/node.ts"
-import { flattenType } from "../nodes/node.ts"
+import type { Node, ResolvedNode, TypeNode } from "../nodes/node.ts"
+import { flattenType, isConfigNode } from "../nodes/node.ts"
 import type { ConfigTuple } from "../parse/ast/config.ts"
 import type {
     inferDefinition,
@@ -181,7 +181,7 @@ export const isConfigTuple = (def: unknown): def is ConfigTuple =>
 export class Scope<context extends ScopeContext = any> {
     name: string
     config: ScopeConfig
-    parseCache = new FreezingCache<TypeNode>()
+    parseCache = new FreezingCache<Node>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
 
@@ -239,10 +239,7 @@ export class Scope<context extends ScopeContext = any> {
         return `${this.name}.${id}`
     }
 
-    addAnonymousTypeReference(
-        referencedType: Type,
-        ctx: ParseContext
-    ): TypeNode {
+    addAnonymousTypeReference(referencedType: Type, ctx: ParseContext): Node {
         ctx.type.includesMorph ||= referencedType.includesMorph
         return referencedType.node
     }
@@ -315,10 +312,15 @@ export class Scope<context extends ScopeContext = any> {
         return resolution
     }
 
-    resolveNode(node: TypeNode): ResolvedNode {
-        return typeof node === "object"
-            ? node
-            : this.resolveNode(this.resolve(node).node)
+    resolveNode(node: Node): ResolvedNode {
+        return typeof node === "string"
+            ? this.resolveNode(this.resolve(node).node)
+            : node
+    }
+
+    resolveTypeNode(node: Node): TypeNode {
+        const resolution = this.resolveNode(node)
+        return isConfigNode(resolution) ? resolution.node : resolution
     }
 
     expressions: Expressions<resolutions<context>> = {

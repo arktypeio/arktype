@@ -1,5 +1,5 @@
 import type { MetaBranch } from "../../nodes/branch.ts"
-import type { LiteralNode, TypeNode } from "../../nodes/node.ts"
+import type { LiteralNode, Node } from "../../nodes/node.ts"
 import type { Predicate } from "../../nodes/predicate.ts"
 import type {
     MappedPropKey,
@@ -25,9 +25,9 @@ import type {
 import type { inferTerminal } from "./ast.ts"
 import type { Out } from "./morph.ts"
 
-export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
+export type inferNode<node extends Node<$>, $ = {}> = node extends string
     ? inferTerminal<node, $>
-    : node extends TypeNode<$>
+    : node extends Node<$>
     ? inferResolution<node, $> extends infer result
         ? result extends BuiltinClass
             ? // don't evaluate builtin classes like Date (expanding their prototype looks like a mess)
@@ -36,7 +36,7 @@ export type inferNode<node extends TypeNode<$>, $ = {}> = node extends string
         : never
     : never
 
-export type inferResolution<node extends TypeNode<$>, $> = {
+export type inferResolution<node extends Node<$>, $> = {
     [domain in keyof node]: inferPredicate<
         // @ts-expect-error Some very odd inference behavior related to domain I can't resolve
         domain,

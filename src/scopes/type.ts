@@ -1,4 +1,4 @@
-import type { TraversalNode, TypeNode } from "../nodes/node.ts"
+import type { Node, TraversalNode } from "../nodes/node.ts"
 import type { ParsedMorph } from "../parse/ast/morph.ts"
 import type {
     as,
@@ -32,7 +32,7 @@ type TypeRoot<t = unknown> = evaluate<{
     [as]: t
     infer: asOut<t>
     allows: (data: unknown) => data is t
-    node: TypeNode
+    node: Node
     flat: TraversalNode
     qualifiedName: QualifiedTypeName
     definition: unknown
