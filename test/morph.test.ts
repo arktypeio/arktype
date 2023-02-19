@@ -27,12 +27,24 @@ describe("morph", () => {
         }
         attest(result.data).equals(false).typed as boolean
     })
-    it("check result", () => {
-        const t = type(["string>5", "|>", (s) => ark.parsedDate(s)])
+    it("from type", () => {
+        const t = type(["string>5", "|>", ark.parsedDate])
         attest(t).typed as Type<(In: string) => Out<Date>>
         attest(t("5/21/1993").data?.getDate()).equals(21)
         attest(t("foobar").problems?.summary).snap(
             "Must be a valid date (was 'foobar')"
+        )
+    })
+    it("return problem", () => {
+        const divide100By = type([
+            "number",
+            "|>",
+            (n, problems) => (n === 0 ? problems.mustBe("non-zero") : 100 / n)
+        ])
+        attest(divide100By).typed as Type<(In: number) => Out<number>>
+        attest(divide100By(5).data).equals(20)
+        attest(divide100By(0).problems?.summary).snap(
+            "Must be non-zero (was 0)"
         )
     })
     it("at path", () => {
