@@ -1,7 +1,7 @@
 {
     "name": "arktype",
     "description": "Isomorphic types for TS/JS",
-    "version": "0.6.0-alpha",
+    "version": "1.0.0-alpha",
     "author": {
         "name": "David Blass",
         "email": "david@arktype.io",

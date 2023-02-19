@@ -1,5 +1,25 @@
 # arktype
 
+## 1.0.0-alpha
+
+### Major Changes
+
+-   1f7658f8: release 1.0.0-alpha-alpha ⛵
+
+### Minor Changes
+
+-   1f7658f8: allow adhoc problems via "mustBe" and "cases" codes
+-   1f7658f8: add custom messages for validation keywords
+-   1f7658f8: discriminated branches are now pruned to avoid redundant checks
+-   1f7658f8: add config expressions, preserve configs during traversal
+-   1f7658f8: add key traversal options for "distilled" and "strict" keys
+
+### Patch Changes
+
+-   1f7658f8: fix narrow tuple expression recursive inference
+-   1f7658f8: add parsedNumber, parsedInteger validator keywords
+-   1f7658f8: add Luhn Validation to creditCard keyword
+
 ## 0.6.0
 
 ### Minor Changes
