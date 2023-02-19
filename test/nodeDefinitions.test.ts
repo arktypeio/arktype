@@ -140,7 +140,7 @@ describe("node definitions", () => {
         it("bad shallow reference", () => {
             // @ts-expect-error
             attest(() => type(["node", "whoops"])).type.errors(
-                `Type 'string' has no properties in common with type 'ResolvedNode<PrecompiledDefaults>'`
+                `Type 'string' is not assignable to type 'ResolvedNode<PrecompiledDefaults>'`
             )
         })
         it("bad prop reference", () => {
@@ -157,7 +157,7 @@ describe("node definitions", () => {
                     }
                 ])
             ).type.errors(
-                `Type '"whoops"' is not assignable to type 'Prop<PrecompiledDefaults, TypeNode<PrecompiledDefaults>>'`
+                `Type '"whoops"' is not assignable to type 'Prop<PrecompiledDefaults, Node<PrecompiledDefaults>>'`
             )
         })
         it("rule in wrong domain", () => {

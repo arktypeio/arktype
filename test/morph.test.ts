@@ -29,7 +29,7 @@ describe("morph", () => {
     })
     it("check result", () => {
         const t = type(["string>5", "|>", (s) => ark.parsedDate(s)])
-        attest(t).typed as Type<(In: string) => Date>
+        attest(t).typed as Type<(In: string) => Out<Date>>
         attest(t("5/21/1993").data?.getDate()).equals(21)
         attest(t("foobar").problems?.summary).snap(
             "Must be a valid date (was 'foobar')"
