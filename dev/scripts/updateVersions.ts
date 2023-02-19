@@ -11,7 +11,9 @@ import {
 import { repoDirs } from "./common.ts"
 import { docgen } from "./docgen/main.ts"
 
-const suffixedPackageEntries: [rootDir: string, suffix: string][] = []
+const suffixedPackageEntries: [rootDir: string, suffix: string][] = [
+    [".", "alpha"]
+]
 
 const forEachPackageWithSuffix = (transformer: SuffixTransformer) => {
     for (const [packagePath, suffix] of suffixedPackageEntries) {

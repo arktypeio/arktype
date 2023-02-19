@@ -141,6 +141,11 @@ export const hasKey = <o, k extends string>(
     return valueAtKey !== undefined && valueAtKey !== null
 }
 
+export const hasSingleKey = <o extends object, k extends string>(
+    o: o,
+    k: k
+): o is o & { [_ in k]: {} } => k in o && Object.keys(o).length === 1
+
 export const keyCount = (o: object) => Object.keys(o).length
 
 export type keySet<key extends string = string> = { readonly [_ in key]?: true }
@@ -165,11 +170,37 @@ export type deepImmutable<o> = [o] extends [object]
 /** Check for type equality without breaking TS for this repo. Fails on some types like Dict/{} */
 export type equals<t, u> = identity<t> extends identity<u> ? true : false
 
-declare const id: unique symbol
+const id = Symbol("id")
+
+export const nominal = <o extends object, name extends string>(
+    o: o,
+    name: name
+): nominal<o, name> => Object.assign(o, { [id]: name })
+
+export const composeNamed = <
+    args extends any[],
+    returns extends object,
+    name extends string
+>(
+    f: (...args: args) => returns,
+    name: name
+) =>
+    // define within a key to dynamically assign a name to the function
+    ({
+        [name]: (...args: args) => nominal(f(...args), name)
+    }[name])
 
 export type nominal<t, id extends string> = t & {
     readonly [id]: id
 }
+
+export const getNominalId = <data>(data: data) =>
+    hasDomain(data, "object") && id in data ? data[id] : undefined
+
+export const hasNominalId = <data, name extends string>(
+    data: data,
+    name: name
+): data is nominal<data, name> => getNominalId(data) === name
 
 export type assertEqual<t, u> = equals<t, u> extends true
     ? t

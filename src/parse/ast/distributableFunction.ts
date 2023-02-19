@@ -51,11 +51,11 @@ export const distributeFunctionToNode = <
     ruleKey extends keyof NarrowableRules
 >(
     distributableFunction: distributable<f>,
-    inputNode: TypeNode,
+    node: TypeNode,
     ctx: ParseContext,
     ruleKey: ruleKey
 ): DistributedFunctionNode<f, ruleKey> => {
-    const domains = objectKeysOf(ctx.type.scope.resolveNode(inputNode))
+    const domains = objectKeysOf(node)
     if (!hasDomain(distributableFunction, "object")) {
         return throwParseError(
             writeMalformedDistributableFunctionMessage(distributableFunction)

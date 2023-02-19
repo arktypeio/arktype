@@ -5,15 +5,31 @@ import { attest } from "../dev/attest/api.ts"
 import type { assertEqual } from "../src/utils/generics.ts"
 
 describe("narrow", () => {
-    it("functional", () => {
+    it("implicit problem", () => {
         const isOdd = (n: number) => n % 2 === 1
-        const t = type(["number", "=>", isOdd])
-        attest(t.infer).typed as number
-        attest(t.node).equals({ number: { narrow: isOdd as any } })
+        const odd = type(["number", "=>", isOdd])
+        attest(odd.infer).typed as number
+        attest(odd.node).equals({ number: { narrow: isOdd as any } })
+        attest(odd(1).data).equals(1)
+        attest(odd(2).problems?.summary).snap(
+            "Must be valid according to isOdd (was 2)"
+        )
+    })
+    it("implicit problem anonymous", () => {
+        const even = type(["number", "=>", (n) => n % 2 === 0])
+        attest(even(1).problems?.summary).snap("Must be valid (was 1)")
+    })
+    it("explicit problem", () => {
+        const even = type([
+            "number",
+            "=>",
+            (n, problems) => n % 3 === 0 || !problems.mustBe("divisible by 3")
+        ])
+        attest(even(1).problems?.summary).snap("Must be divisible by 3 (was 1)")
     })
     it("functional predicate", () => {
-        const t = type(["number", "=>", (n): n is 1 => n === 1])
-        attest(t).typed as Type<1>
+        const one = type(["number", "=>", (n): n is 1 => n === 1])
+        attest(one).typed as Type<1>
     })
     it("functional parameter inference", () => {
         type Expected = number | boolean[]

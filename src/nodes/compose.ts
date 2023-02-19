@@ -5,7 +5,7 @@ import type { constructor, Dict, extend, mutable } from "../utils/generics.ts"
 import { objectKeysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
-import { serialize } from "../utils/serialize.ts"
+import { stringify } from "../utils/serialize.ts"
 import type { Branches } from "./branch.ts"
 import type { Range } from "./rules/range.ts"
 import type { LiteralRules, NarrowableRules } from "./rules/rules.ts"
@@ -88,12 +88,12 @@ export const disjointDescriptionWriters = {
             typeof r === "string" ? r : r.name
         }`,
     tupleLength: ({ l, r }) => `tuples of length ${l} and ${r}`,
-    value: ({ l, r }) => `literal values ${serialize(l)} and ${serialize(r)}`,
+    value: ({ l, r }) => `literal values ${stringify(l)} and ${stringify(r)}`,
     leftAssignability: ({ l, r }) =>
-        `literal value ${serialize(l.value)} and ${serialize(r)}`,
+        `literal value ${stringify(l.value)} and ${stringify(r)}`,
     rightAssignability: ({ l, r }) =>
-        `literal value ${serialize(r.value)} and ${serialize(l)}`,
-    union: ({ l, r }) => `branches ${serialize(l)} and branches ${serialize(r)}`
+        `literal value ${stringify(r.value)} and ${stringify(l)}`,
+    union: ({ l, r }) => `branches ${stringify(l)} and branches ${stringify(r)}`
 } satisfies {
     [k in DisjointKind]: (context: DisjointContext<k>) => string
 }

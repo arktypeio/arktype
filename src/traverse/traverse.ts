@@ -18,6 +18,7 @@ import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
 import type { Scope } from "../scopes/scope.ts"
 import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
+import { isCheckResult } from "../scopes/type.ts"
 import type { SizedData } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
@@ -299,7 +300,16 @@ const entryCheckers = {
     },
     alias: (name, state) => state.traverseResolution(name),
     class: checkClass,
-    narrow: (narrow, state) => narrow(state.data, state.problems),
+    narrow: (narrow, state) => {
+        const lastProblemsCount = state.problems.count
+        const result = narrow(state.data, state.problems)
+        if (!result && state.problems.count === lastProblemsCount) {
+            state.problems.mustBe(
+                narrow.name ? `valid according to ${narrow.name}` : "valid"
+            )
+        }
+        return result
+    },
     config: ({ config, node }, state) => state.traverseConfig(config, node),
     value: (value, state) =>
         state.data === value || !state.problems.add("value", value),
@@ -312,6 +322,16 @@ const entryCheckers = {
             // if a problem was returned from the morph but not added, add it
             state.problems.addProblem(out)
             return false
+        }
+        if (isCheckResult(out)) {
+            if (out.problems) {
+                for (const problem of out.problems) {
+                    state.problems.addProblem(problem)
+                }
+                return false
+            }
+            state.data = out.data
+            return true
         }
         state.data = out
         return true

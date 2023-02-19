@@ -1,5 +1,4 @@
 import type { Out } from "../parse/ast/morph.ts"
-import type { extend } from "../utils/generics.ts"
 import type { InferredObjectKinds } from "../utils/objectKinds.ts"
 import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
 import type { Space } from "./scope.ts"
@@ -8,7 +7,7 @@ import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
 import type { TypeParser } from "./type.ts"
 import { validation, validationScope } from "./validation/validation.ts"
 
-export const ark = scope(
+export const arkscope = scope(
     {},
     {
         name: "standard",
@@ -17,21 +16,21 @@ export const ark = scope(
     }
 )
 
-export const arktypes = ark.compile()
+export const ark: Space<PrecompiledDefaults> = arkscope.compile()
 
 export const scopes = {
     root: rootScope,
     tsKeywords: tsKeywordsScope,
     jsObjects: jsObjectsScope,
     validation: validationScope,
-    ark
+    ark: arkscope
 }
 
 export const spaces = {
     tsKeywords,
     jsObjects,
     validation,
-    ark: arktypes
+    ark
 } satisfies Record<Exclude<keyof typeof scopes, "root">, Space>
 
 // This is just copied from the inference of defaultScope. Creating an explicit
@@ -62,17 +61,11 @@ export type PrecompiledDefaults = {
     creditCard: string
     email: string
     uuid: string
+    semver: string
     parsedNumber: (In: string) => Out<number>
     parsedInteger: (In: string) => Out<number>
     parsedDate: (In: string) => Out<Date>
     // jsObects
 } & InferredObjectKinds
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type ValidateArkScope = [
-    // if PrecompiledDefaults gets out of sync with scopes.standard, there will be a type error here
-    extend<PrecompiledDefaults, typeof scopes["ark"]["infer"]>,
-    extend<typeof scopes["ark"]["infer"], PrecompiledDefaults>
-]
-
-export const type: TypeParser<PrecompiledDefaults> = ark.type
+export const type: TypeParser<PrecompiledDefaults> = arkscope.type
