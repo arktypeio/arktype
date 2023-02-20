@@ -1,7 +1,7 @@
-import type { Branch, TransformationBranch } from "../../nodes/branch.ts"
+import type { Branch, MetaBranch } from "../../nodes/branch.ts"
 import { isTransformationBranch } from "../../nodes/branch.ts"
-import type { ResolvedNode } from "../../nodes/node.ts"
-import type { asIn, asOut } from "../../scopes/type.ts"
+import type { TypeNode } from "../../nodes/node.ts"
+import type { asIn, asOut, CheckResult } from "../../scopes/type.ts"
 import type { Problem, Problems } from "../../traverse/problems.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../../utils/errors.ts"
@@ -16,11 +16,12 @@ export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {
         return throwParseError(writeMalformedMorphExpressionMessage(def[2]))
     }
-    const resolution = ctx.type.scope.resolveNode(parseDefinition(def[0], ctx))
+    const node = parseDefinition(def[0], ctx)
+    const resolution = ctx.type.scope.resolveTypeNode(node)
     const morph = def[2] as Morph
     ctx.type.includesMorph = true
     let domain: Domain
-    const result: mutable<ResolvedNode> = {}
+    const result: mutable<TypeNode> = {}
     for (domain in resolution) {
         const predicate = resolution[domain]
         if (predicate === true) {
@@ -40,7 +41,7 @@ export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
     return result
 }
 
-const applyMorph = (branch: Branch, morph: Morph): TransformationBranch =>
+const applyMorph = (branch: Branch, morph: Morph): MetaBranch =>
     isTransformationBranch(branch)
         ? {
               ...branch,
@@ -73,6 +74,8 @@ export type inferMorph<inDef, morph, $> = morph extends Morph
 
 type inferMorphOut<out> = unknown extends out
     ? Out<unknown> | undefined | null
+    : [out] extends [CheckResult<infer t>]
+    ? Out<t>
     :
           | Out<Exclude<out, Problem | undefined | null>>
           | Extract<out, undefined | null>

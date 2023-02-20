@@ -1,4 +1,4 @@
-import type { TypeNode } from "../../../../nodes/node.ts"
+import type { Node } from "../../../../nodes/node.ts"
 import type { error, stringKeyOf } from "../../../../utils/generics.ts"
 import type {
     BigintLiteral,
@@ -32,7 +32,7 @@ export type parseUnenclosed<
     : never
 
 const unenclosedToNode = (s: DynamicState, token: string) => {
-    if (s.ctx.type.scope.addReferenceIfResolvable(token, s.ctx)) {
+    if (s.ctx.type.scope.addParsedReferenceIfResolvable(token, s.ctx)) {
         return token
     }
     return (
@@ -45,7 +45,7 @@ const unenclosedToNode = (s: DynamicState, token: string) => {
     )
 }
 
-const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
+const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
         return { number: { value: maybeNumber } }

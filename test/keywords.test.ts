@@ -46,13 +46,7 @@ describe("keywords", () => {
             "Must be only uppercase letters (was 'myVar')"
         )
     })
-    it("credit card", () => {
-        const cc = type("creditCard")
-        attest(cc("1234123412341234").problems?.summary).snap(
-            "Must be a valid credit card number (was '1234123412341234')"
-        )
-        attest(cc("4111111111111111").data).snap("4111111111111111")
-    })
+
     it("email", () => {
         const email = type("email")
         attest(email("shawn@mail.com").data).snap("shawn@mail.com")

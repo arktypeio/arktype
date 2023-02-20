@@ -18,9 +18,9 @@ import { branchIntersection, flattenBranch } from "./branch.ts"
 import { IntersectionState } from "./compose.ts"
 import type {
     FlattenContext,
+    Node,
     TraversalEntry,
-    TraversalValue,
-    TypeNode
+    TraversalValue
 } from "./node.ts"
 import { mappedKeys, propToNode } from "./rules/props.ts"
 
@@ -396,10 +396,10 @@ const branchIncludesMorph = (branch: Branch, $: Scope) =>
           )
         : false
 
-const nodeIncludesMorph = (node: TypeNode, $: Scope): boolean =>
+const nodeIncludesMorph = (node: Node, $: Scope): boolean =>
     typeof node === "string"
         ? $.resolve(node).includesMorph
-        : Object.values(node).some((predicate) =>
+        : Object.values($.resolveTypeNode(node)).some((predicate) =>
               predicate === true
                   ? false
                   : isArray(predicate)

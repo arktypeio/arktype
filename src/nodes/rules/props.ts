@@ -9,9 +9,9 @@ import {
 } from "../compose.ts"
 import type {
     FlattenContext,
+    Node,
     TraversalEntry,
-    TraversalNode,
-    TypeNode
+    TraversalNode
 } from "../node.ts"
 import { flattenNode, isLiteralNode, nodeIntersection } from "../node.ts"
 import type { FlattenAndPushRule } from "./rules.ts"
@@ -20,20 +20,17 @@ export type PropsRule<$ = Dict> = {
     [propKey in string]: Prop<$>
 }
 
-export type Prop<$ = Dict, node extends TypeNode<$> = TypeNode<$>> =
+export type Prop<$ = Dict, node extends Node<$> = Node<$>> =
     | node
     | OptionalProp<$, node>
     | PrerequisiteProp<$, node>
 
-export type OptionalProp<$ = Dict, node extends TypeNode<$> = TypeNode<$>> = [
-    "?",
+export type OptionalProp<$ = Dict, node extends Node<$> = Node<$>> = ["?", node]
+
+export type PrerequisiteProp<$ = Dict, node extends Node<$> = Node<$>> = [
+    "!",
     node
 ]
-
-export type PrerequisiteProp<
-    $ = Dict,
-    node extends TypeNode<$> = TypeNode<$>
-> = ["!", node]
 
 export type PropsRecordKey = "distilledProps" | "strictProps"
 

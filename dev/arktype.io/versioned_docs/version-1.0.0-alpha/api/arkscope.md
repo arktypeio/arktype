@@ -2,12 +2,12 @@
 hide_table_of_contents: true
 ---
 
-# arkScope
+# arkscope
 
 ## text
 
 ```ts
-ark: import("./scope.js").Scope<
+arkscope: import("./scope.js").Scope<
     [
         {
             any: any
@@ -50,6 +50,7 @@ ark: import("./scope.js").Scope<
             parsedNumber: (In: string) => Out<number>
             parsedInteger: (In: string) => Out<number>
             parsedDate: (In: string) => Out<Date>
+            semver: string
             integer: number
         },
         {},

@@ -33,32 +33,42 @@ import {
 import { mappedKeys } from "./rules/props.ts"
 import type { LiteralRules, RuleEntry } from "./rules/rules.ts"
 
-export type TypeNode<$ = Dict> = Identifier<$> | ResolvedNode<$>
+export type Node<$ = Dict> = Identifier<$> | ResolvedNode<$>
 
 export type Identifier<$ = Dict> = stringKeyOf<$>
 
-export type ResolvedNode<$ = Dict> = {
+export type ResolvedNode<$ = Dict> = TypeNode<$> | ConfigNode<$>
+
+export type ConfigNode<$ = Dict> = {
+    config: TypeConfig
+    node: TypeNode<$>
+}
+
+export const isConfigNode = (node: ResolvedNode): node is ConfigNode =>
+    "config" in node
+
+export type TypeNode<$ = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, $>
 }
 
-export const nodeIntersection: Intersector<TypeNode> = (l, r, state) => {
+export const nodeIntersection: Intersector<Node> = (l, r, state) => {
     state.domain = undefined
-    const lResolution = state.type.scope.resolveNode(l)
-    const rResolution = state.type.scope.resolveNode(r)
-    const result = resolutionIntersection(lResolution, rResolution, state)
+    const lDomains = state.type.scope.resolveTypeNode(l)
+    const rDomains = state.type.scope.resolveTypeNode(r)
+    const result = typeNodeIntersection(lDomains, rDomains, state)
     if (typeof result === "object" && !hasKeys(result)) {
         return hasKeys(state.disjoints)
             ? anonymousDisjoint()
             : state.addDisjoint(
                   "domain",
-                  objectKeysOf(lResolution),
-                  objectKeysOf(rResolution)
+                  objectKeysOf(lDomains),
+                  objectKeysOf(rDomains)
               )
     }
-    return result === lResolution ? l : result === rResolution ? r : result
+    return result === lDomains ? l : result === rDomains ? r : result
 }
 
-const resolutionIntersection = composeKeyedIntersection<ResolvedNode>(
+const typeNodeIntersection = composeKeyedIntersection<TypeNode>(
     (domain, l, r, context) => {
         if (l === undefined) {
             return r === undefined ? throwUndefinedOperandsError() : undefined
@@ -71,11 +81,7 @@ const resolutionIntersection = composeKeyedIntersection<ResolvedNode>(
     { onEmpty: "omit" }
 )
 
-export const rootIntersection = (
-    l: TypeNode,
-    r: TypeNode,
-    type: Type
-): TypeNode => {
+export const rootIntersection = (l: Node, r: Node, type: Type): Node => {
     const state = new IntersectionState(type, "&")
     const result = nodeIntersection(l, r, state)
     return isDisjoint(result)
@@ -85,27 +91,23 @@ export const rootIntersection = (
         : result
 }
 
-export const rootUnion = (
-    l: TypeNode,
-    r: TypeNode,
-    type: Type
-): ResolvedNode => {
-    const lResolution = type.scope.resolveNode(l)
-    const rResolution = type.scope.resolveNode(r)
-    const result = {} as mutable<ResolvedNode>
-    const domains = objectKeysOf({ ...lResolution, ...rResolution })
+export const rootUnion = (l: Node, r: Node, type: Type): ResolvedNode => {
+    const lDomains = type.scope.resolveTypeNode(l)
+    const rDomains = type.scope.resolveTypeNode(r)
+    const result = {} as mutable<TypeNode>
+    const domains = objectKeysOf({ ...lDomains, ...rDomains })
     for (const domain of domains) {
-        result[domain] = hasKey(lResolution, domain)
-            ? hasKey(rResolution, domain)
+        result[domain] = hasKey(lDomains, domain)
+            ? hasKey(rDomains, domain)
                 ? predicateUnion(
                       domain,
-                      lResolution[domain],
-                      rResolution[domain],
+                      lDomains[domain],
+                      rDomains[domain],
                       type
                   )
-                : lResolution[domain]
-            : hasKey(rResolution, domain)
-            ? rResolution[domain]
+                : lDomains[domain]
+            : hasKey(rDomains, domain)
+            ? rDomains[domain]
             : throwUndefinedOperandsError()
     }
     return result
@@ -169,26 +171,32 @@ export const flattenType = (type: Type): TraversalNode => {
         path: new Path(),
         lastDomain: "undefined"
     }
-    return type.config
+    return flattenNode(type.node, ctx)
+}
+
+export const flattenNode = (node: Node, ctx: FlattenContext): TraversalNode => {
+    if (typeof node === "string") {
+        return ctx.type.scope.resolve(node).flat
+    }
+    const hasConfig = isConfigNode(node)
+    const flattenedTypeNode = flattenTypeNode(hasConfig ? node.node : node, ctx)
+    return hasConfig
         ? [
               [
                   "config",
                   {
-                      config: entriesOf(type.config),
-                      node: flattenNode(type.node, ctx)
+                      config: entriesOf(node.config),
+                      node: flattenedTypeNode
                   }
               ]
           ]
-        : flattenNode(type.node, ctx)
+        : flattenedTypeNode
 }
 
-export const flattenNode = (
+export const flattenTypeNode = (
     node: TypeNode,
     ctx: FlattenContext
 ): TraversalNode => {
-    if (typeof node === "string") {
-        return ctx.type.scope.resolve(node).flat
-    }
     const domains = objectKeysOf(node)
     if (domains.length === 1) {
         const domain = domains[0]
@@ -228,7 +236,7 @@ export const isLiteralNode = <domain extends Domain>(
 }
 
 export type DomainSubtypeResolution<domain extends Domain> = {
-    readonly [k in domain]: defined<ResolvedNode[domain]>
+    readonly [k in domain]: defined<TypeNode[domain]>
 }
 
 export const resolutionExtendsDomain = <domain extends Domain>(
@@ -239,7 +247,7 @@ export const resolutionExtendsDomain = <domain extends Domain>(
     return domains.length === 1 && domains[0] === domain
 }
 
-export const toArrayNode = (node: TypeNode): ResolvedNode => ({
+export const toArrayNode = (node: Node): ResolvedNode => ({
     object: {
         class: "Array",
         props: {

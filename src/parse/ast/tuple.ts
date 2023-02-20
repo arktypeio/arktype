@@ -1,4 +1,4 @@
-import type { ResolvedNode, TypeNode } from "../../nodes/node.ts"
+import type { Node, ResolvedNode } from "../../nodes/node.ts"
 import { rootIntersection, rootUnion, toArrayNode } from "../../nodes/node.ts"
 import type { Prop } from "../../nodes/rules/props.ts"
 import { domainOf } from "../../utils/domains.ts"
@@ -31,7 +31,7 @@ import { parseNarrowTuple } from "./narrow.ts"
 import type { inferNode } from "./node.ts"
 import type { inferUnion } from "./union.ts"
 
-export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
+export const parseTuple = (def: List, ctx: ParseContext): Node => {
     if (isIndexOneExpression(def)) {
         return indexOneParsers[def[1]](def as never, ctx)
     }
@@ -151,12 +151,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
 export type PostfixParser<token extends IndexOneOperator> = (
     def: IndexOneExpression<token>,
     ctx: ParseContext
-) => TypeNode
+) => Node
 
 export type PrefixParser<token extends IndexZeroOperator> = (
     def: IndexZeroExpression<token>,
     ctx: ParseContext
-) => TypeNode
+) => Node
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 

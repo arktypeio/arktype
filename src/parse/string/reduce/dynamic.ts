@@ -1,4 +1,4 @@
-import type { TypeNode } from "../../../nodes/node.ts"
+import type { Node } from "../../../nodes/node.ts"
 import {
     isLiteralNode,
     rootIntersection,
@@ -22,13 +22,13 @@ import {
 
 type BranchState = {
     range?: LowerBound
-    intersection?: TypeNode
-    union?: TypeNode
+    intersection?: Node
+    union?: Node
 }
 
 export class DynamicState {
     public readonly scanner: Scanner
-    private root: TypeNode | undefined
+    private root: Node | undefined
     private branches: BranchState = {}
     private groups: BranchState[] = []
 
@@ -46,7 +46,7 @@ export class DynamicState {
 
     resolveRoot() {
         this.assertHasRoot()
-        return this.ctx.type.scope.resolveNode(this.root!)
+        return this.ctx.type.scope.resolveTypeNode(this.root!)
     }
 
     rootToString() {
@@ -87,7 +87,7 @@ export class DynamicState {
         }
     }
 
-    setRoot(node: TypeNode) {
+    setRoot(node: Node) {
         this.assertUnsetRoot()
         this.root = node
     }
@@ -96,7 +96,7 @@ export class DynamicState {
         this.root = toArrayNode(this.ejectRoot())
     }
 
-    intersect(node: TypeNode) {
+    intersect(node: Node) {
         this.root = rootIntersection(this.ejectRoot(), node, this.ctx.type)
     }
 

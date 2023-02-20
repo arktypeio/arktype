@@ -1,5 +1,6 @@
 import { writeImplicitNeverMessage } from "../parse/ast/intersection.ts"
 import type { Morph } from "../parse/ast/morph.ts"
+import type { TypeConfig } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
@@ -13,11 +14,12 @@ import { flattenRules, rulesIntersection } from "./rules/rules.ts"
 
 export type Branch<domain extends Domain = Domain, $ = Dict> =
     | Rules<domain, $>
-    | TransformationBranch<domain, $>
+    | MetaBranch<domain, $>
 
-export type TransformationBranch<domain extends Domain = Domain, $ = Dict> = {
+export type MetaBranch<domain extends Domain = Domain, $ = Dict> = {
     rules: Rules<domain, $>
     morph?: CollapsibleList<Morph>
+    config?: TypeConfig
 }
 
 export type Branches = readonly Branch[]
@@ -112,9 +114,8 @@ export const compareBranches = (
     return result
 }
 
-export const isTransformationBranch = (
-    branch: Branch
-): branch is TransformationBranch => "rules" in branch
+export const isTransformationBranch = (branch: Branch): branch is MetaBranch =>
+    "rules" in branch
 
 export const flattenBranch = (branch: Branch, ctx: FlattenContext) => {
     if (isTransformationBranch(branch)) {
@@ -134,7 +135,7 @@ export const flattenBranch = (branch: Branch, ctx: FlattenContext) => {
 }
 
 const rulesOf = (branch: Branch): Rules =>
-    (branch as TransformationBranch).rules ?? branch
+    (branch as MetaBranch).rules ?? branch
 
 export const branchIntersection: Intersector<Branch> = (l, r, state) => {
     const lRules = rulesOf(l)

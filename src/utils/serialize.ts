@@ -15,7 +15,7 @@ export type SerializationOptions = {
 }
 
 export const snapshot = <t>(data: t, opts: SerializationOptions = {}) =>
-    snapshotRecurse(data, opts, []) as snapshot<t>
+    serializeRecurse(data, opts, []) as snapshot<t>
 
 export type snapshot<t, depth extends 1[] = []> = isTopType<t> extends true
     ? unknown
@@ -39,71 +39,19 @@ type snapshotPrimitive<t> = t extends undefined
     ? `(symbol${string})`
     : t
 
-const snapshotRecurse = (
-    v: unknown,
-    context: SerializationOptions,
-    seen: unknown[]
-): unknown => {
-    switch (domainOf(v)) {
+export const stringify = (data: unknown, indent?: number) => {
+    switch (domainOf(data)) {
         case "object":
-            if (typeof v === "function") {
-                return stringifyOpts.onFunction(v)
-            }
-            if (seen.includes(v)) {
-                return "(cycle)"
-            }
-            const nextSeen = [...seen, v]
-            if (Array.isArray(v)) {
-                return v.map((item) => snapshotRecurse(item, context, nextSeen))
-            }
-            const result: Record<string, unknown> = {}
-            for (const k in v as Dict) {
-                result[k] = snapshotRecurse((v as any)[k], context, nextSeen)
-            }
-            return result
+            return JSON.stringify(
+                serializeRecurse(data, stringifyOpts, []),
+                null,
+                indent
+            )
         case "symbol":
-            return stringifyOpts.onSymbol(v as symbol)
-        case "bigint":
-            return `${v}n`
-        case "undefined":
-            return "undefined"
+            return stringifyOpts.onSymbol(data as symbol)
         default:
-            return v
+            return serializePrimitive(data as SerializablePrimitive)
     }
-}
-
-// TODO: add cyclic test
-export const serialize = (
-    data: unknown,
-    opts: SerializationOptions = {},
-    indent?: number
-) => {
-    const seen: unknown[] = []
-    return JSON.stringify(
-        data,
-        (k, v) => {
-            switch (domainOf(v)) {
-                case "object":
-                    if (seen.includes(v)) {
-                        return opts.onCycle?.(v)
-                    }
-                    seen.push(v)
-                    if (typeof v === "function") {
-                        return opts.onFunction?.(v)
-                    }
-                    return v
-                case "undefined":
-                    return "undefined"
-                case "symbol":
-                    return opts.onSymbol?.(v)
-                case "bigint":
-                    return `${v}n`
-                default:
-                    return v
-            }
-        },
-        indent
-    )
 }
 
 const stringifyOpts = {
@@ -112,14 +60,42 @@ const stringifyOpts = {
     onFunction: (v) => `(function${v.name && ` ${v.name}`})`
 } satisfies SerializationOptions
 
-export const stringify = (data: unknown, indent?: number) => {
+const serializeRecurse = (
+    data: unknown,
+    context: SerializationOptions,
+    seen: unknown[]
+): unknown => {
     switch (domainOf(data)) {
         case "object":
-            return serialize(data, stringifyOpts, indent)
+            if (typeof data === "function") {
+                return stringifyOpts.onFunction(data)
+            }
+            if (seen.includes(data)) {
+                return "(cycle)"
+            }
+            const nextSeen = [...seen, data]
+            if (Array.isArray(data)) {
+                return data.map((item) =>
+                    serializeRecurse(item, context, nextSeen)
+                )
+            }
+            const result: Record<string, unknown> = {}
+            for (const k in data as Dict) {
+                result[k] = serializeRecurse(
+                    (data as any)[k],
+                    context,
+                    nextSeen
+                )
+            }
+            return result
         case "symbol":
             return stringifyOpts.onSymbol(data as symbol)
+        case "bigint":
+            return `${data}n`
+        case "undefined":
+            return "undefined"
         default:
-            return serializePrimitive(data as SerializablePrimitive)
+            return data
     }
 }
 
