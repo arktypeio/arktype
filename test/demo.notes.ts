@@ -3,7 +3,7 @@ import { scope, type } from "arktype"
 
 const contributors = type("string")
 
-contributors("ssalbdivad")
+contributors("david@arktype.io")
 
 //********** TS KEYWORDS ********** /
 type("string")
@@ -12,7 +12,7 @@ type("string")
 type("string|number")
 type("string|number[]")
 
-contributors(["ssalbdivad"])
+contributors(["david@arktype.io"])
 
 type("(string|number)[]")
 
