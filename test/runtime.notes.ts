@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { scope, type } from "arktype"
 
-const ids = type("any")
+const contributors = type("string")
 
-ids("ssalbdivad")
+contributors("ssalbdivad")
 
 //********** TS KEYWORDS ********** /
 type("string")
@@ -12,12 +12,12 @@ type("string")
 type("string|number")
 type("string|number[]")
 
-ids(["ssalbdivad"])
+contributors(["ssalbdivad"])
 
 type("(string|number)[]")
 
 //********** VALIDATION KEYWORDS ********** /
-const contributors = type("email[]")
+type("email[]")
 
 contributors(["david@arktype.io"])
 
