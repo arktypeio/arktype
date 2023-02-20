@@ -7,7 +7,9 @@ import { scope, type } from "arktype"
 
 
 
-const contributors = type("(string|number)[]")
+
+
+const contributors = type("string|number[]")
 
 export type Contributors = typeof contributors.infer
 //          ^?
