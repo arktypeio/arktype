@@ -3,6 +3,72 @@ import { ark, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
 
 describe("keywords", () => {
+    it("integer", () => {
+        const integer = type("integer")
+        attest(integer(123).data).snap(123)
+        attest(integer("123").problems?.summary).snap(
+            "Must be a number (was string)"
+        )
+        attest(integer(12.12).problems?.summary).snap(
+            "Must be an integer (was 12.12)"
+        )
+    })
+    it("alpha", () => {
+        const alpha = type("alpha")
+        attest(alpha("user").data).snap("user")
+        attest(alpha("user123").problems?.summary).snap(
+            "Must be only letters (was 'user123')"
+        )
+    })
+    it("alphanumeric", () => {
+        const alphanumeric = type("alphanumeric")
+        attest(alphanumeric("user123").data).snap("user123")
+        attest(alphanumeric("user").data).snap("user")
+        attest(alphanumeric("123").data).snap("123")
+        attest(alphanumeric("abc@123").problems?.summary).snap(
+            "Must be only letters and digits (was 'abc@123')"
+        )
+    })
+    it("lowercase", () => {
+        const lowercase = type("lowercase")
+        attest(lowercase("var").data).snap("var")
+        attest(lowercase("newVar").problems?.summary).snap(
+            "Must be only lowercase letters (was 'newVar')"
+        )
+    })
+    it("uppercase", () => {
+        const uppercase = type("uppercase")
+        attest(uppercase("VAR").data).snap("VAR")
+        attest(uppercase("CONST_VAR").problems?.summary).snap(
+            "Must be only uppercase letters (was 'CONST_VAR')"
+        )
+        attest(uppercase("myVar").problems?.summary).snap(
+            "Must be only uppercase letters (was 'myVar')"
+        )
+    })
+    it("credit card", () => {
+        const cc = type("creditCard")
+        attest(cc("1234123412341234").problems?.summary).snap(
+            "Must be a valid credit card number (was '1234123412341234')"
+        )
+        attest(cc("4111111111111111").data).snap("4111111111111111")
+    })
+    it("email", () => {
+        const email = type("email")
+        attest(email("shawn@mail.com").data).snap("shawn@mail.com")
+        attest(email("shawn@email").problems?.summary).snap(
+            "Must be a valid email (was 'shawn@email')"
+        )
+    })
+    it("uuid", () => {
+        const uuid = type("uuid")
+        attest(uuid("f70b8242-dd57-4e6b-b0b7-649d997140a0").data).snap(
+            "f70b8242-dd57-4e6b-b0b7-649d997140a0"
+        )
+        attest(uuid(1234).problems?.summary).snap(
+            "Must be a valid UUID (was number)"
+        )
+    })
     it("parsedDate", () => {
         const parsedDate = type("parsedDate")
         attest(parsedDate("5/21/1993").data?.toDateString()).snap(
