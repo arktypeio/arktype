@@ -1,6 +1,6 @@
 import { type } from "arktype"
 
-const contributors = type("string")
+const contributors = type("(string|number)[]")
 
 const { data, problems } = contributors(["david@arktype.io"])
 
