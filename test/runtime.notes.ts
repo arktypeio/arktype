@@ -52,7 +52,7 @@ pkg({
 
 pkg({
     name: "arktype",
-    version: "1.0.0-beta", // ⬅️
+    version: "1.0.0-alpha", // ⬅️
     contributors: ["david@arktype.io", "shawn@arktype.io"]
 })
 
@@ -76,7 +76,7 @@ const types = scope({
 
 types.package({
     name: "arktype",
-    version: "1.0.0-beta",
+    version: "1.0.0-alpha",
     contributors: ["david@arktype.io", "shawn@arktype.io"]
 })
 
@@ -103,7 +103,7 @@ scope({
 
 types.package({
     name: "arktype",
-    version: "1.0.0-beta",
+    version: "1.0.0-alpha",
     contributors: ["david@arktype.io", "shawn@arktype.io"],
     // ⬇️
     devDependencies: [
@@ -120,7 +120,7 @@ types.package({
 const getPackage = () => {
     const data = {
         name: "arktype",
-        version: "1.0.0-beta",
+        version: "1.0.0-alpha",
         contributors: ["david@arktype.io", "shawn@arktype.io"],
         devDependencies: [
             {
@@ -141,7 +141,7 @@ types.package(getPackage())
 const getPackage2 = () => {
     const data = {
         name: "arktype",
-        version: "1.0.0-beta",
+        version: "1.0.0-alpha",
         contributors: ["david@arktype.io", "shawn@arktype.io"],
         devDependencies: [
             {
@@ -177,7 +177,7 @@ scope({
 const getPackage3 = () => {
     const data = {
         name: "arktype",
-        version: "1.0.0-beta",
+        version: "1.0.0-alpha",
         contributors: ["david@arktype.io", "shawn@arktype.io"],
         devDependencies: [
             {
@@ -195,14 +195,13 @@ const getPackage3 = () => {
     return data
 }
 
-//********** MORPHS, SCOPE IMPORTS ********** /
+//********** MORPHS ********** /
 
 const types2 = scope({
     package: {
         name: "string",
         version: "semver",
         "contributors?": "contributors",
-        // ⬇️
         "devDependencies?": [
             "package[]",
             "=>",
@@ -216,3 +215,34 @@ const types2 = scope({
 const json = scope({
     parsePackage: ["string", "|>", (s) => types2.package(JSON.parse(s))]
 })
+
+//********** SCOPE IMPORTS ********** /
+
+const getPackage4 = () => {
+    const data = {
+        name: "arktype",
+        version: "1.0.0-alpha",
+        contributors: ["david@arktype.io", "shawn@arktype.io"],
+        devDependencies: [
+            {
+                name: "typescript",
+                version: "5.0.0-beta"
+            }
+        ]
+    }
+    data.devDependencies.push(data)
+    return data
+}
+
+const json2 = scope(
+    {
+        parsePackage: ["string", "|>", (s) => types2.package(JSON.parse(s))],
+        // ⬇️
+        extractSpecifier: [
+            "package",
+            "|>",
+            (data) => `${data.name}@${data.version}`
+        ]
+    },
+    { imports: [types2] }
+)
