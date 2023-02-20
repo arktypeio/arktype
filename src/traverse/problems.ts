@@ -142,7 +142,7 @@ class ProblemArray extends Array<Problem> {
     }
 
     get summary(): string {
-        return `${this}`
+        return this.throw()
     }
 
     toString() {
