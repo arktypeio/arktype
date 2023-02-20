@@ -26,7 +26,7 @@ export type TypeParserProps<$> = {
 
 export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
-    : Type<never>
+    : never
 
 type TypeRoot<t = unknown> = evaluate<{
     [as]: t

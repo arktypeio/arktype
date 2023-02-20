@@ -236,7 +236,7 @@ export type ReasonWriter<code extends ProblemCode = ProblemCode> = (
 export type ContextWriter = (reason: string, path: Path) => string
 
 const writeDefaultReason = (mustBe: string, was: DataWrapper | string) =>
-    `must be ${mustBe}${was && ` (was ${was})`}`
+    `must be ${mustBe}`
 
 const addDefaultContext: ContextWriter = (reason, path) =>
     path.length === 0

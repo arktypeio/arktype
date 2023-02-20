@@ -71,7 +71,7 @@ const HomepageDemo = (props: HomepageDemoProps) => {
                     </div>
                 }
             >
-                {props.activeDemo ? "All done?" : "Try it here!"}
+                {props.activeDemo ? "All done?" : "Try in browser"}
             </Button>
         </Stack>
     )
