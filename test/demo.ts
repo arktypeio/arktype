@@ -4,9 +4,19 @@ const types = scope({
     package: {
         name: "string",
         version: "semver",
-        "contributors?": "authorList"
-    },
-    authorList: "1<email[]<=10"
+        dependencies: [
+            "package[]",
+            "=>",
+            (pkgs, problems) =>
+                pkgs.every(({ name }) => name !== "left-pad") ||
+                !problems.mustBe("not breaking the internet")
+        ]
+    }
 }).compile()
 
-const parsers = scope({})
+const { data, problems } = types.package({
+    name: "arktype",
+    version: "1.0.0-alpha",
+    dependencies: [{ name: "left-pad", version: "5.0.0-beta", dependencies: [] }]
+})
+console.log(problems?.summary ?? data?.dependencies[0].dependencies)

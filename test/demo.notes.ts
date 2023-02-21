@@ -91,34 +91,37 @@ const { data, problems } = types.package({
     contributors: ["david@arktype.io", "shawn@arktype.io"]
 })
 
+scope({
+    package: {
+        name: "string",
+        version: "semver",
+        // ⬇️
+        "contributors?": "authorList"
+    },
+    // ⬇️
+    authorList: "1<email[]<=10"
+}).compile()
+
 console.log(problems?.summary ?? data)
 
 //********** CYCLIC SCOPES ********** /
+
 const cyclicTypes = scope({
     package: {
         name: "string",
         version: "semver",
-        "contributors?": "authorList",
         dependencies: "package[]"
-    },
-    authorList: "1<email[]<=10"
+    }
 }).compile()
 
-type Package3 = typeof cyclicTypes.package.infer
-
-// Add TS as dependency
-types.package({
+// prettier-ignore
+cyclicTypes.package({
     name: "arktype",
     version: "1.0.0-alpha",
-    contributors: ["david@arktype.io", "shawn@arktype.io"],
-    dependencies: [
-        {
-            name: "typescript",
-            version: "5.0.0-beta"
-        }
-    ]
+    dependencies: [{ name: "typescript", version: "5.0.0-beta", dependencies: [] }]
 })
 
+console.log(problems?.summary ?? data)
 //********** NARROWING ********** /
 
 types.package({
@@ -164,13 +167,9 @@ scope({
             "package[]",
             "=>",
             // ⬇️
-            (packages, problems) => {
-                if (packages.some(({ name }) => name === "left-pad")) {
-                    problems.mustBe("not breaking the internet")
-                    return false
-                }
-                return true
-            }
+            (pkgs, problems) =>
+                pkgs.every(({ name }) => name !== "left-pad") ||
+                !problems.mustBe("not breaking the internet")
         ]
     },
     authorList: "1<email[]<=10"
@@ -193,54 +192,32 @@ types.package({
     ]
 })
 
-//********** MORPHS ********** /
+//********** Morphs, SCOPE IMPORTS ********** /
 
-const morphTypes = scope({
+const importedTypes = scope({
     package: {
         name: "string",
         version: "semver",
-        "contributors?": "authorList",
-        // ⬇️ reset
-        dependencies: "package[]"
+        "contributors?": "authorList"
     },
     authorList: "1<email[]<=10"
 }).compile()
 
-// ⬇️
-const json = scope({
-    parsePackage: ["string", "|>", (s) => morphTypes.package(JSON.parse(s))]
-})
-
-//********** SCOPE IMPORTS ********** /
-
-types.package({
-    name: "arktype",
-    version: "1.0.0-alpha",
-    contributors: ["david@arktype.io", "shawn@arktype.io"],
-    dependencies: [
-        {
-            name: "typescript",
-            version: "5.0.0-beta"
-        }
-    ]
-})
-
-scope(
+const serializers = scope(
     {
-        parsePackage: [
-            "string",
-            "|>",
-            (s) => morphTypes.package(JSON.parse(s))
-        ],
-        // ⬇️
-        extractSpecifier: [
-            "package",
-            "|>",
-            (data) => `${data.name}@${data.version}`
-        ]
+        stringifyPackage: ["package", "|>", (data) => JSON.stringify(data)]
     },
-    { imports: [morphTypes] }
-)
+    {
+        imports: [importedTypes]
+    }
+).compile()
+
+serializers.stringifyPackage({
+    name: "arktype",
+    version: "1.0.0-beta"
+})
+
+// console.log(typeof data === "string" ? data : problems.summary)
 
 //********** CYCLIC DATA ********** /
 
