@@ -194,30 +194,60 @@ types.package({
 
 //********** Morphs, SCOPE IMPORTS ********** /
 
-const importedTypes = scope({
-    package: {
-        name: "string",
-        version: "semver",
-        "contributors?": "authorList"
-    },
-    authorList: "1<email[]<=10"
+const threeSixtyNo = scope({
+    three: "'three'",
+    sixty: "60",
+    no: "false"
 }).compile()
 
-const serializers = scope(
+threeSixtyNo.sixty(60)
+
+console.log(problems?.summary ?? data)
+
+scope(
     {
-        stringifyPackage: ["package", "|>", (data) => JSON.stringify(data)]
+        three: "'three'",
+        sixty: "60",
+        no: "false",
+        packages: "package[]"
     },
-    {
-        imports: [importedTypes]
-    }
+    { imports: [cyclicTypes] }
 ).compile()
 
-serializers.stringifyPackage({
-    name: "arktype",
-    version: "1.0.0-beta"
-})
+type Package = typeof cyclicTypes.package.infer
 
-// console.log(typeof data === "string" ? data : problems.summary)
+const arktype = {
+    name: "arktype",
+    version: "1.0.0-alpha",
+    dependencies: []
+}
+
+const installTypes = scope(
+    {
+        installArktype: [
+            "package",
+            "|>",
+            (pkg) => ({
+                ...pkg,
+                dependencies: [
+                    ...pkg.dependencies,
+                    {
+                        name: "arktype",
+                        version: "1.0.0-alpha",
+                        dependencies: []
+                    }
+                ]
+            })
+        ]
+    },
+    { imports: [cyclicTypes] }
+).compile()
+
+installTypes.installArktype({
+    name: "your-typesafe-project",
+    version: "3.1.4",
+    dependencies: []
+})
 
 //********** CYCLIC DATA ********** /
 

@@ -1,6 +1,6 @@
 import { scope } from "arktype"
 
-const types = scope({
+export const types = scope({
     package: {
         name: "string",
         version: "semver",
@@ -14,9 +14,8 @@ const types = scope({
     }
 }).compile()
 
-const { data, problems } = types.package({
+export const arktypeRelease = {
     name: "arktype",
     version: "1.0.0-alpha",
-    dependencies: [{ name: "left-pad", version: "5.0.0-beta", dependencies: [] }]
-})
-console.log(problems?.summary ?? data?.dependencies[0].dependencies)
+    dependencies: []
+} as const
