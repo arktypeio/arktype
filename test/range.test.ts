@@ -144,6 +144,11 @@ describe("range", () => {
                 attest(type("number<3&number<=3").node).equals(expected)
                 attest(type("number<=3&number<3").node).equals(expected)
             })
+            it("testtest", () => {
+                attest(() => type("number==2&number<=4")).throws.snap(
+                    "Error: Intersection of the range of exactly 2 and <=4 results in an unsatisfiable type"
+                )
+            })
         })
         describe("errors", () => {
             it("single equals", () => {
