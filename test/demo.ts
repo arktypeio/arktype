@@ -4,12 +4,11 @@ const contributors = type("string[]|undefined")
 
 const pkg = type({
     name: "string",
-    "contributors?": contributors
+    contributors: contributors
 })
 
-const { data, problems } = pkg({
-    name: "arktype",
-    contributors: ["david@arktype.io"]
-})
+type Package = typeof pkg.infer
+
+const { data, problems } = contributors(["david@arktype.io"])
 
 console.log(problems?.summary ?? data)

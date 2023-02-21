@@ -21,32 +21,29 @@ const pkg = type({
     "contributors?": contributors
 })
 
+// Replace ^? with inferred type
+export type Package = typeof types.package.infer
+
+pkg({
+    name: "arktype",
+    contributors: ["david@arktype.io"]
+})
+
 const pkg2 = type({
     name: "string",
     // inline string def
     "contributors?": "string[]|undefined"
 })
 
-// Replace ^? with inferred type
-export type Package = typeof types.package.infer
-
-/** ➡️ COPY THIS FIRST */
-pkg({
-    name: "arktype",
-    contributors: ["david@arktype.io"]
-})
-
 //********** VALIDATION- REGEX ********** /
 type({
     name: "string",
-    /** ⬇️ COPY THIS FIRST */
     version: /^\d+\.\d+\.\d+$/,
     "contributors?": "string[]"
 })
 
 pkg({
     name: "arktype",
-    // ⬇️
     version: "1.0.0",
     contributors: ["david@arktype.io"]
 })
@@ -109,15 +106,17 @@ scope({
 })
 
 //********** CYCLIC SCOPES ********** /
-scope({
+const cyclicTypes = scope({
     package: {
         name: "string",
         version: "semver",
         "contributors?": "contributors",
-        "devDependencies?": "package[]"
+        devDependencies: "package[]"
     },
     contributors: "1<email[]<=10"
-})
+}).compile()
+
+type Package3 = typeof cyclicTypes.package.infer
 
 // Add TS as dependency
 types.package({
@@ -157,7 +156,7 @@ scope({
         version: "semver",
         "contributors?": "contributors",
         // ⬇️
-        "devDependencies?": [
+        devDependencies: [
             "package[]",
             "=>",
             (packages) => packages.every((pkg) => pkg.name !== "left-pad")
@@ -173,7 +172,7 @@ scope({
         name: "string",
         version: "semver",
         "contributors?": "contributors",
-        "devDependencies?": [
+        devDependencies: [
             "package[]",
             "=>",
             // ⬇️
@@ -208,20 +207,20 @@ types.package({
 
 //********** MORPHS ********** /
 
-const types2 = scope({
+const morphTypes = scope({
     package: {
         name: "string",
         version: "semver",
         "contributors?": "contributors",
         // ⬇️ reset
-        "devDependencies?": "package[]"
+        devDependencies: "package[]"
     },
     contributors: "1<email[]<=10"
 }).compile()
 
 // ⬇️
 const json = scope({
-    parsePackage: ["string", "|>", (s) => types2.package(JSON.parse(s))]
+    parsePackage: ["string", "|>", (s) => morphTypes.package(JSON.parse(s))]
 })
 
 //********** SCOPE IMPORTS ********** /
@@ -240,7 +239,11 @@ types.package({
 
 scope(
     {
-        parsePackage: ["string", "|>", (s) => types2.package(JSON.parse(s))],
+        parsePackage: [
+            "string",
+            "|>",
+            (s) => morphTypes.package(JSON.parse(s))
+        ],
         // ⬇️
         extractSpecifier: [
             "package",
@@ -248,7 +251,7 @@ scope(
             (data) => `${data.name}@${data.version}`
         ]
     },
-    { imports: [types2] }
+    { imports: [morphTypes] }
 )
 
 //********** CYCLIC DATA ********** /
