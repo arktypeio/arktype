@@ -3,74 +3,78 @@ import { scope, type } from "arktype"
 
 const contributors = type("string")
 
-contributors("david@arktype.io")
+contributors(["david@arktype.io"])
 
 //********** TS KEYWORDS ********** /
 type("string")
 
 //********** TS EXPRESSIONS ********** /
-type("string|number")
-type("string|number[]")
-
-contributors(["david@arktype.io"])
-
-type("(string|number)[]")
-
-//********** VALIDATION KEYWORDS ********** /
-type("email[]")
-
-contributors(["david@arktype.io"])
-
-type("email[]>1")
-
-contributors(["david@arktype.io", "shawn@arktype.io"])
+type("string|undefined")
+type("string|undefined[]")
+type("(string|undefined)[]")
+type("string[]|undefined")
 
 //********** OBJECTS LITERALS ********** /
 const pkg = type({
-    contributors: "email[]>1"
+    name: "string",
+    "contributors?": "string[]"
 })
 
 pkg({
-    contributors: ["david@arktype.io", "shawn@arktype.io"]
+    name: "arktype",
+    contributors: ["david@arktype.io"]
 })
 
-//********** REGEX, OPTIONAL KEYS ********** /
+//********** VALIDATION- REGEX ********** /
 type({
     name: "string",
-    version: /\d+\.\d+\.\d+/, // ⬅️
-    contributors: "email[]>1", // ⬅️
-    "dependencies?": "string[]" // ⬅️
+    version: /^\d+\.\d+\.\d+$/,
+    "contributors?": "string[]"
 })
 
 pkg({
     name: "arktype",
     version: "1.0.0",
-    contributors: ["david@arktype.io", "shawn@arktype.io"]
+    contributors: ["david@arktype.io"]
 })
 
-// pause
+//********** VALIDATION- KEYWORDS ********** /
 
+// Data: update version
 pkg({
     name: "arktype",
-    version: "1.0.0-alpha", // ⬅️
-    contributors: ["david@arktype.io", "shawn@arktype.io"]
+    version: "1.0.0-alpha",
+    contributors: ["david@arktype.io"]
 })
+
+// Type: update for version and contributors
+type({
+    name: "string",
+    version: "semver",
+    "contributors?": "email[]"
+})
+
+//********** VALIDATION- Range ********** /
 
 type({
     name: "string",
-    version: "semver", // ⬅️
-    contributors: "email[]>1",
-    "dependencies?": "string[]"
+    version: "semver",
+    // ⬇️
+    "contributors?": "1<email[]<=10"
+})
+
+pkg({
+    name: "arktype",
+    version: "1.0.0-alpha",
+    contributors: ["david@arktype.io", "shawn@arktype.io"]
 })
 
 //********** SCOPES ********** /
-// ⬇️
 const types = scope({
     package: {
         name: "string",
         version: "semver",
-        contributors: "email[]>1",
-        "devDependencies?": "string[]"
+        "contributors?": "1<email[]<=10"
     }
 }).compile()
 
@@ -83,12 +87,14 @@ types.package({
 scope({
     pkg: {
         name: "string",
-        version: /\d+\.\d+\.\d+/,
-        "contributors?": "contributors",
-        "devDependencies?": "string[]"
+        version: "semver",
+        "contributors?": "contributors"
     },
-    contributors: "email[]>1"
+    contributors: "1<email[]<=10"
 })
+
+// Replace ^? with inferred type
+export type Package = typeof types.package.infer
 
 //********** CYCLIC SCOPES ********** /
 scope({
@@ -98,14 +104,14 @@ scope({
         "contributors?": "contributors",
         "devDependencies?": "package[]"
     },
-    contributors: "email[]>1"
+    contributors: "1<email[]<=10"
 })
 
+// Add TS as dependency
 types.package({
     name: "arktype",
     version: "1.0.0-alpha",
     contributors: ["david@arktype.io", "shawn@arktype.io"],
-    // ⬇️
     devDependencies: [
         {
             name: "typescript",
@@ -113,6 +119,125 @@ types.package({
         }
     ]
 })
+
+//********** NARROWING ********** /
+
+types.package({
+    name: "arktype",
+    version: "1.0.0-alpha",
+    contributors: ["david@arktype.io", "shawn@arktype.io"],
+    devDependencies: [
+        {
+            name: "typescript",
+            version: "5.0.0-beta"
+        },
+        // ⬇️
+        {
+            name: "left-pad",
+            version: "1.3.0"
+        }
+    ]
+})
+
+scope({
+    package: {
+        name: "string",
+        version: "semver",
+        "contributors?": "contributors",
+        // ⬇️
+        "devDependencies?": [
+            "package[]",
+            "=>",
+            (packages) => packages.every((pkg) => pkg.name !== "left-pad")
+        ]
+    },
+    contributors: "1<email[]<=10"
+})
+
+//********** CUSTOM ERRORS ********** /
+
+scope({
+    package: {
+        name: "string",
+        version: "semver",
+        "contributors?": "contributors",
+        "devDependencies?": [
+            "package[]",
+            "=>",
+            // ⬇️
+            (packages, problems) => {
+                if (packages.some(({ name }) => name === "left-pad")) {
+                    problems.mustBe("not breaking the internet")
+                    return false
+                }
+                return true
+            }
+        ]
+    },
+    contributors: "1<email[]<=10"
+})
+
+types.package({
+    name: "arktype",
+    version: "1.0.0-alpha",
+    contributors: ["david@arktype.io", "shawn@arktype.io"],
+    devDependencies: [
+        {
+            name: "typescript",
+            version: "5.0.0-beta"
+        }
+        // ⬇️
+        // {
+        //     name: "left-pad",
+        //     version: "1.3.0"
+        // }
+    ]
+})
+
+//********** MORPHS ********** /
+
+const types2 = scope({
+    package: {
+        name: "string",
+        version: "semver",
+        "contributors?": "contributors",
+        // ⬇️ reset
+        "devDependencies?": "package[]"
+    },
+    contributors: "1<email[]<=10"
+}).compile()
+
+// ⬇️
+const json = scope({
+    parsePackage: ["string", "|>", (s) => types2.package(JSON.parse(s))]
+})
+
+//********** SCOPE IMPORTS ********** /
+
+types.package({
+    name: "arktype",
+    version: "1.0.0-alpha",
+    contributors: ["david@arktype.io", "shawn@arktype.io"],
+    devDependencies: [
+        {
+            name: "typescript",
+            version: "5.0.0-beta"
+        }
+    ]
+})
+
+scope(
+    {
+        parsePackage: ["string", "|>", (s) => types2.package(JSON.parse(s))],
+        // ⬇️
+        extractSpecifier: [
+            "package",
+            "|>",
+            (data) => `${data.name}@${data.version}`
+        ]
+    },
+    { imports: [types2] }
+)
 
 //********** CYCLIC DATA ********** /
 
@@ -135,114 +260,3 @@ const getPackage = () => {
 
 // ⬇️
 types.package(getPackage())
-
-//********** NARROWING ********** /
-
-const getPackage2 = () => {
-    const data = {
-        name: "arktype",
-        version: "1.0.0-alpha",
-        contributors: ["david@arktype.io", "shawn@arktype.io"],
-        devDependencies: [
-            {
-                name: "typescript",
-                version: "5.0.0-beta"
-            },
-            // ⬇️
-            {
-                name: "left-pad",
-                version: "1.3.0"
-            }
-        ]
-    }
-    data.devDependencies.push(data)
-    return data
-}
-
-scope({
-    package: {
-        name: "string",
-        version: "semver",
-        "contributors?": "contributors",
-        // ⬇️
-        "devDependencies?": [
-            "package[]",
-            "=>",
-            (packages) => packages.every((pkg) => pkg.name !== "left-pad")
-        ]
-    },
-    contributors: "email[]>1"
-})
-
-const getPackage3 = () => {
-    const data = {
-        name: "arktype",
-        version: "1.0.0-alpha",
-        contributors: ["david@arktype.io", "shawn@arktype.io"],
-        devDependencies: [
-            {
-                name: "typescript",
-                version: "5.0.0-beta"
-            }
-            // ⬇️
-            // {
-            //     name: "left-pad",
-            //     version: "1.3.0"
-            // }
-        ]
-    }
-    data.devDependencies.push(data)
-    return data
-}
-
-//********** MORPHS ********** /
-
-const types2 = scope({
-    package: {
-        name: "string",
-        version: "semver",
-        "contributors?": "contributors",
-        "devDependencies?": [
-            "package[]",
-            "=>",
-            (packages) => packages.every((pkg) => pkg.name !== "left-pad")
-        ]
-    },
-    contributors: "email[]>1"
-}).compile()
-
-// ⬇️
-const json = scope({
-    parsePackage: ["string", "|>", (s) => types2.package(JSON.parse(s))]
-})
-
-//********** SCOPE IMPORTS ********** /
-
-const getPackage4 = () => {
-    const data = {
-        name: "arktype",
-        version: "1.0.0-alpha",
-        contributors: ["david@arktype.io", "shawn@arktype.io"],
-        devDependencies: [
-            {
-                name: "typescript",
-                version: "5.0.0-beta"
-            }
-        ]
-    }
-    data.devDependencies.push(data)
-    return data
-}
-
-const json2 = scope(
-    {
-        parsePackage: ["string", "|>", (s) => types2.package(JSON.parse(s))],
-        // ⬇️
-        extractSpecifier: [
-            "package",
-            "|>",
-            (data) => `${data.name}@${data.version}`
-        ]
-    },
-    { imports: [types2] }
-)

@@ -20,7 +20,8 @@ module.exports = defineConfig({
         "**/dist/**",
         "**/node_modules**",
         "**/*js",
-        "**/generated/**"
+        "**/generated/**",
+        "demo.ts"
     ],
     rules: {
         /**
