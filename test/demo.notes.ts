@@ -17,9 +17,20 @@ type("string[]|undefined")
 //********** OBJECTS LITERALS ********** /
 const pkg = type({
     name: "string",
-    "contributors?": "string[]"
+    // with anonymous type
+    "contributors?": contributors
 })
 
+const pkg2 = type({
+    name: "string",
+    // inline string def
+    "contributors?": "string[]|undefined"
+})
+
+// Replace ^? with inferred type
+export type Package = typeof types.package.infer
+
+/** ➡️ COPY THIS FIRST */
 pkg({
     name: "arktype",
     contributors: ["david@arktype.io"]
@@ -28,12 +39,14 @@ pkg({
 //********** VALIDATION- REGEX ********** /
 type({
     name: "string",
+    /** ⬇️ COPY THIS FIRST */
     version: /^\d+\.\d+\.\d+$/,
     "contributors?": "string[]"
 })
 
 pkg({
     name: "arktype",
+    // ⬇️
     version: "1.0.0",
     contributors: ["david@arktype.io"]
 })
@@ -70,6 +83,8 @@ pkg({
 })
 
 //********** SCOPES ********** /
+// no changes, just translating existing types over so far
+
 const types = scope({
     package: {
         name: "string",
@@ -92,9 +107,6 @@ scope({
     },
     contributors: "1<email[]<=10"
 })
-
-// Replace ^? with inferred type
-export type Package = typeof types.package.infer
 
 //********** CYCLIC SCOPES ********** /
 scope({

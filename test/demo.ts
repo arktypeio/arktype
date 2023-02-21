@@ -1,11 +1,15 @@
 import { type } from "arktype"
 
-const contributors = type("email[]>1")
+const contributors = type("string[]|undefined")
 
-const { data, problems } = contributors([
-    "david@arktype.io",
-    "shawn@arktype.io"
-])
+const pkg = type({
+    name: "string",
+    "contributors?": contributors
+})
 
-console.log(data ?? problems.summary)
-//          ^?
+const { data, problems } = pkg({
+    name: "arktype",
+    contributors: ["david@arktype.io"]
+})
+
+console.log(problems?.summary ?? data)
