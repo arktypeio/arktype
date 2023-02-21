@@ -17,12 +17,8 @@ type("string[]|undefined")
 //********** OBJECTS LITERALS ********** /
 const pkg = type({
     name: "string",
-    // with anonymous type
     "contributors?": contributors
 })
-
-// Replace ^? with inferred type
-export type Package = typeof types.package.infer
 
 pkg({
     name: "arktype",
@@ -31,8 +27,7 @@ pkg({
 
 const pkg2 = type({
     name: "string",
-    // inline string def
-    "contributors?": "string[]|undefined"
+    "contributors?": "string[]"
 })
 
 //********** VALIDATION- REGEX ********** /
@@ -111,7 +106,7 @@ const cyclicTypes = scope({
         name: "string",
         version: "semver",
         "contributors?": "contributors",
-        devDependencies: "package[]"
+        dependencies: "package[]"
     },
     contributors: "1<email[]<=10"
 }).compile()
@@ -123,7 +118,7 @@ types.package({
     name: "arktype",
     version: "1.0.0-alpha",
     contributors: ["david@arktype.io", "shawn@arktype.io"],
-    devDependencies: [
+    dependencies: [
         {
             name: "typescript",
             version: "5.0.0-beta"
@@ -137,7 +132,7 @@ types.package({
     name: "arktype",
     version: "1.0.0-alpha",
     contributors: ["david@arktype.io", "shawn@arktype.io"],
-    devDependencies: [
+    dependencies: [
         {
             name: "typescript",
             version: "5.0.0-beta"
@@ -156,7 +151,7 @@ scope({
         version: "semver",
         "contributors?": "contributors",
         // ⬇️
-        devDependencies: [
+        dependencies: [
             "package[]",
             "=>",
             (packages) => packages.every((pkg) => pkg.name !== "left-pad")
@@ -172,7 +167,7 @@ scope({
         name: "string",
         version: "semver",
         "contributors?": "contributors",
-        devDependencies: [
+        dependencies: [
             "package[]",
             "=>",
             // ⬇️
@@ -192,7 +187,7 @@ types.package({
     name: "arktype",
     version: "1.0.0-alpha",
     contributors: ["david@arktype.io", "shawn@arktype.io"],
-    devDependencies: [
+    dependencies: [
         {
             name: "typescript",
             version: "5.0.0-beta"
@@ -213,7 +208,7 @@ const morphTypes = scope({
         version: "semver",
         "contributors?": "contributors",
         // ⬇️ reset
-        devDependencies: "package[]"
+        dependencies: "package[]"
     },
     contributors: "1<email[]<=10"
 }).compile()
@@ -229,7 +224,7 @@ types.package({
     name: "arktype",
     version: "1.0.0-alpha",
     contributors: ["david@arktype.io", "shawn@arktype.io"],
-    devDependencies: [
+    dependencies: [
         {
             name: "typescript",
             version: "5.0.0-beta"
@@ -262,14 +257,14 @@ const getPackage = () => {
         name: "arktype",
         version: "1.0.0-alpha",
         contributors: ["david@arktype.io", "shawn@arktype.io"],
-        devDependencies: [
+        dependencies: [
             {
                 name: "typescript",
                 version: "5.0.0-beta"
             }
         ]
     }
-    data.devDependencies.push(data)
+    data.dependencies.push(data)
     return data
 }
 
