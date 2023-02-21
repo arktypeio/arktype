@@ -85,30 +85,23 @@ const types = scope({
     }
 }).compile()
 
-types.package({
+const { data, problems } = types.package({
     name: "arktype",
     version: "1.0.0-alpha",
     contributors: ["david@arktype.io", "shawn@arktype.io"]
 })
 
-scope({
-    pkg: {
-        name: "string",
-        version: "semver",
-        "contributors?": "contributors"
-    },
-    contributors: "1<email[]<=10"
-})
+console.log(problems?.summary ?? data)
 
 //********** CYCLIC SCOPES ********** /
 const cyclicTypes = scope({
     package: {
         name: "string",
         version: "semver",
-        "contributors?": "contributors",
+        "contributors?": "authorList",
         dependencies: "package[]"
     },
-    contributors: "1<email[]<=10"
+    authorList: "1<email[]<=10"
 }).compile()
 
 type Package3 = typeof cyclicTypes.package.infer
@@ -149,7 +142,7 @@ scope({
     package: {
         name: "string",
         version: "semver",
-        "contributors?": "contributors",
+        "contributors?": "authorList",
         // ⬇️
         dependencies: [
             "package[]",
@@ -157,7 +150,7 @@ scope({
             (packages) => packages.every((pkg) => pkg.name !== "left-pad")
         ]
     },
-    contributors: "1<email[]<=10"
+    authorList: "1<email[]<=10"
 })
 
 //********** CUSTOM ERRORS ********** /
@@ -166,7 +159,7 @@ scope({
     package: {
         name: "string",
         version: "semver",
-        "contributors?": "contributors",
+        "contributors?": "authorList",
         dependencies: [
             "package[]",
             "=>",
@@ -180,7 +173,7 @@ scope({
             }
         ]
     },
-    contributors: "1<email[]<=10"
+    authorList: "1<email[]<=10"
 })
 
 types.package({
@@ -206,11 +199,11 @@ const morphTypes = scope({
     package: {
         name: "string",
         version: "semver",
-        "contributors?": "contributors",
+        "contributors?": "authorList",
         // ⬇️ reset
         dependencies: "package[]"
     },
-    contributors: "1<email[]<=10"
+    authorList: "1<email[]<=10"
 }).compile()
 
 // ⬇️
