@@ -141,7 +141,7 @@ class ProblemArray extends Array<Problem> {
     }
 
     get summary(): string {
-        return this.throw()
+        return `${this}`
     }
 
     toString() {
@@ -233,7 +233,7 @@ export type ReasonWriter<code extends ProblemCode = ProblemCode> = (
 export type ContextWriter = (reason: string, path: Path) => string
 
 const writeDefaultReason = (mustBe: string, was: DataWrapper | string) =>
-    `must be ${mustBe}`
+    `must be ${mustBe}${was && ` (was ${was})`}`
 
 const addDefaultContext: ContextWriter = (reason, path) =>
     path.length === 0
