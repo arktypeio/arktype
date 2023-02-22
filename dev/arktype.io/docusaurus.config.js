@@ -4,7 +4,7 @@
 const config = {
     title: "ArkType",
     // @lineFrom:package.json:description => tagline: {?},
-    tagline: "Isomorphic types for TS/JS",
+    tagline: "The first isomorphic type system for TS/JS",
     url: "https://arktype.io",
     baseUrl: "/",
     onBrokenLinks: "throw",
