@@ -211,7 +211,7 @@ export class Assertions implements AssertionRecord {
 
     get typed() {
         if (this.ctx.cfg.skipTypes) {
-            return
+            return undefined
         }
         const assertionData = getTypeDataAtPos(this.ctx.position)
         if (!assertionData.type.expected) {
@@ -226,5 +226,6 @@ export class Assertions implements AssertionRecord {
         ) {
             assert.equal(assertionData.type.actual, assertionData.type.expected)
         }
+        return undefined
     }
 }

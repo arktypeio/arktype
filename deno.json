@@ -16,6 +16,9 @@
     },
     "lock": "./dev/configs/deno.lock",
     "lint": {
+        "files": {
+            "exclude": ["."]
+        },
         "rules": {
             "exclude": ["ban-ts-comment", "ban-types", "no-explicit-any"]
         }
