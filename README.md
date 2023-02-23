@@ -8,7 +8,7 @@ The first isomorphic type system for TS/JS
 
 </div>
 
-![](./dev/arktype.io/static/img/arktype.gif)
+![](./dev/arktype.io/static/img/arktypeGithub.gif)
 
 ## Installation 📦
 
