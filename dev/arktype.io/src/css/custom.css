@@ -16,10 +16,6 @@
         rgba(0, 0, 0, 0.12) 0px 9px 46px 8px;
 }
 
-[data-theme="dark"] .navbar {
-    background-color: #242424;
-}
-
 .navbar__items {
     font-size: x-large;
 }
@@ -44,10 +40,6 @@
     background: url("/img/githubDark.svg");
 }
 
-[data-theme="dark"] .main-wrapper {
-    background-color: #242424;
-}
-
 [class*="ToggleIcon"] {
     width: 36px;
     height: 36px;
@@ -62,4 +54,12 @@ header {
     position: relative;
     overflow: hidden;
     background: #0067a5;
+}
+
+[data-theme="dark"] .navbar {
+    background-color: #1a1a1a;
+}
+
+[data-theme="dark"] .main-wrapper {
+    background-color: #1a1a1a;
 }

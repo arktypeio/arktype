@@ -86,10 +86,10 @@ const rangeAllows = (range: Range, n: number) =>
         : minAllows(range.min, n) && maxAllows(range.max, n)
 
 const minAllows = (min: DoubleBound["min"], n: number) =>
-    !min || n < min.limit || (n === min.limit && !isExclusive(min.comparator))
+    !min || n > min.limit || (n === min.limit && !isExclusive(min.comparator))
 
 const maxAllows = (max: DoubleBound["max"], n: number) =>
-    !max || n > max.limit || (n === max.limit && !isExclusive(max.comparator))
+    !max || n < max.limit || (n === max.limit && !isExclusive(max.comparator))
 
 export type FlatBound = evaluate<Bound & { units?: string }>
 
@@ -102,7 +102,7 @@ export const flattenRange: FlattenAndPushRule<Range> = (
         ctx.lastDomain === "string"
             ? "characters"
             : ctx.lastDomain === "object"
-            ? "items"
+            ? "items long"
             : undefined
     if (isEqualityRange(range)) {
         return entries.push(["bound", units ? { ...range, units } : range])

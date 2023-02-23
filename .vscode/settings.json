@@ -19,8 +19,8 @@
         "ARKTYPE_CHECK_CMD": "--skipTypes"
     },
     "testExplorer.useNativeTesting": true,
-    "typescript.tsdk": "./node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
+    "typescript.tsdk": "./node_modules/typescript/lib",
     "typescript.tsserver.experimental.enableProjectDiagnostics": true,
     "typescript.preferences.autoImportFileExcludePatterns": [
         "dist",

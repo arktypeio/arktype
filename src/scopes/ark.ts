@@ -1,4 +1,3 @@
-import type { Out } from "../parse/ast/morph.ts"
 import type { InferredObjectKinds } from "../utils/objectKinds.ts"
 import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
 import type { Space } from "./scope.ts"
@@ -62,9 +61,10 @@ export type PrecompiledDefaults = {
     email: string
     uuid: string
     semver: string
-    parsedNumber: (In: string) => Out<number>
-    parsedInteger: (In: string) => Out<number>
-    parsedDate: (In: string) => Out<Date>
+    json: (In: string) => unknown
+    parsedNumber: (In: string) => number
+    parsedInteger: (In: string) => number
+    parsedDate: (In: string) => Date
     // jsObects
 } & InferredObjectKinds
 
