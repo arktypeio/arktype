@@ -43,7 +43,6 @@ const buildTypes = () => {
         )
         renameSync(join(repoDirs.outRoot, "src"), repoDirs.typesOut)
         rewriteTsImports(repoDirs.typesOut)
-        buildExportsTs("types")
     } finally {
         rmSync(tempTsConfig, { force: true })
     }
@@ -68,13 +67,11 @@ const swc = (kind: "mjs" | "cjs") => {
     }
     if (!isTestBuild) {
         cmd += inFiles.join(" ")
-        cmd += " main.ts"
         shell(cmd)
     } else {
         buildWithTests(kind, kindOutDir)
     }
     rewriteTsImports(kindOutDir)
-    buildExportsTs(kind)
     writeJson(join(kindOutDir, "package.json"), {
         type: kind === "cjs" ? "commonjs" : "module"
     })
@@ -100,35 +97,6 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
             )} -d ${kindOutDir}/${baseDir} -C jsc.target=es2020 -q`
         )
     }
-}
-
-const buildExportsTs = (kind: "mjs" | "cjs" | "types") => {
-    const originalPath =
-        kind === "mjs" || kind === "cjs"
-            ? join(repoDirs.outRoot, kind, "main.js")
-            : "main.ts"
-    const originalContents = readFile(originalPath)
-    if (kind === "mjs" || kind === "cjs") {
-        rmSync(originalPath)
-    }
-    let transformedContents = originalContents
-    if (!isTestBuild) {
-        transformedContents = transformedContents.replaceAll(
-            "./src/",
-            `./${kind}/`
-        )
-    }
-    if (kind === "types") {
-        transformedContents = replaceTsImports(transformedContents)
-    }
-    const destinationFile = isTestBuild
-        ? join(
-              repoDirs.outRoot,
-              `${kind}`,
-              kind === "types" ? "main.d.ts" : "main.js"
-          )
-        : join(repoDirs.outRoot, `main.${kind === "types" ? "d.ts" : kind}`)
-    writeFile(destinationFile, transformedContents)
 }
 
 const rewriteTsImports = (dir: string) => {

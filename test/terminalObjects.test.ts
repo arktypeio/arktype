@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
 import { attest, getTsVersionUnderTest } from "../dev/attest/main.ts"
-import { scope, type } from "../main.ts"
+import { scope, type } from "../src/main.ts"
 import { writeBadDefinitionTypeMessage } from "../src/parse/definition.ts"
 import { writeUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
 

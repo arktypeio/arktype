@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
 import { attest } from "../dev/attest/main.ts"
-import { scope } from "../main.ts"
+import { scope } from "../src/main.ts"
 
 const getCyclicScope = () =>
     scope({

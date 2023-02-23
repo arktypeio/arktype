@@ -1,4 +1,4 @@
-import { type } from "../main.ts"
+import { type } from "../src/main.ts"
 
 // Define a type...
 export const user = type({

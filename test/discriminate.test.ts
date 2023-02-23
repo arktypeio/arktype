@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
 import { attest } from "../dev/attest/main.ts"
-import { scope, type } from "../main.ts"
+import { scope, type } from "../src/main.ts"
 
 describe("discriminate", () => {
     it("shallow", () => {

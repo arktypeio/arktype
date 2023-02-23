@@ -1,5 +1,5 @@
 import { bench, suite } from "../dev/attest/main.ts"
-import { scope } from "../main.ts"
+import { scope } from "../src/main.ts"
 import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.ts"
 
 const recursive = scope({ dejaVu: { "dejaVu?": "dejaVu" } }).compile()

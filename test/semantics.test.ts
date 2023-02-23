@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
 import { attest } from "../dev/attest/main.ts"
-import { type } from "../main.ts"
+import { type } from "../src/main.ts"
 import { writeUnboundableMessage } from "../src/parse/ast/bound.ts"
 import { writeIndivisibleMessage } from "../src/parse/ast/divisor.ts"
 
