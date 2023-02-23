@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.3-alpha
+
+### Patch Changes
+
+-   ddedc880: update Deno release
+
 ## 1.0.2-alpha
 
 ### Patch Changes
