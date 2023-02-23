@@ -57,9 +57,9 @@ header {
 }
 
 [data-theme="dark"] .navbar {
-    background-color: #0d1117;
+    background-color: #1b1b1b;
 }
 
 [data-theme="dark"] .main-wrapper {
-    background-color: #0d1117;
+    background-color: #1b1b1b;
 }

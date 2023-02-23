@@ -11,6 +11,8 @@ export const getTheme = () =>
                 primary: {
                     main: "#085b92",
                     light: "#80cff8"
+                    // Ocassionally "#009EFF" is used, e.g. in GIF title bars.
+                    // Not sure if/where that belongs yet.
                 },
                 secondary: {
                     main: "#eb9f2e",
@@ -19,7 +21,7 @@ export const getTheme = () =>
                 },
                 common: {
                     white: "#fffff0",
-                    black: "#0d1117"
+                    black: "#1b1b1b"
                 }
             },
             typography: {
