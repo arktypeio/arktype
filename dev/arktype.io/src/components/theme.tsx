@@ -9,10 +9,11 @@ export const getTheme = () =>
         createTheme({
             palette: {
                 primary: {
-                    main: "#0067a5"
+                    main: "#085b92"
                 },
                 secondary: {
-                    main: "#e3ab57"
+                    main: "#d09847",
+                    dark: "#4b3621"
                 },
                 common: {
                     white: "#fffff0"

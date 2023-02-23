@@ -22,7 +22,7 @@ const Contents = () => {
                             width: "100%",
                             borderRadius: 8
                         }}
-                        src="/img/arktype.gif"
+                        src="/img/arktypeGithub.gif"
                     />
                     <Features />
                     <Demo />
