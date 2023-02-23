@@ -15,5 +15,3 @@ coverage
 # @blockEnd 
 
 pnpm-lock.yaml
-demo.ts
-importDemo.ts

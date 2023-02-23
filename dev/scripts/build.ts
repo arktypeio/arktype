@@ -80,10 +80,6 @@ const swc = (kind: "mjs" | "cjs") => {
 const buildWithTests = (kind: string, kindOutDir: string) => {
     const cjsAddon = kind === "cjs" ? "-C module.type=commonjs" : ""
 
-    shell(
-        `pnpm swc ${cjsAddon} ./main.ts -d dist/${kind}/ --source-maps inline`
-    )
-
     const dirs = {
         src: ["src"],
         test: ["test"],

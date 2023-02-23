@@ -19,8 +19,7 @@ export type AssertionContext = {
     assertionStack: string
 }
 
-// @ts-ignore
-export const attest: AssertFn = (
+export const attest = ((
     value: unknown,
     internalConfigHooks?: Partial<AssertionContext>
 ) => {
@@ -38,4 +37,4 @@ export const attest: AssertFn = (
         assertionStack: getCallStack({ offset: 1 }).join("\n")
     }
     return new Assertions(ctx)
-}
+}) as AssertFn

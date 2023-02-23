@@ -101,7 +101,7 @@ const extractAssertionTypesFromCall = (
 }
 
 const getPossibleExpectedType = (propName: string, ancestor: Node<ts.Node>) => {
-    if (propName === "typedValue" || propName === "narrowedValue") {
+    if (propName === "typedValue") {
         const typedValueCall = ancestor.getParentIfKind(
             SyntaxKind.CallExpression
         )

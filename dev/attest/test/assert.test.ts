@@ -46,16 +46,4 @@ describe("attest", () => {
         // @ts-expect-error
         attest(5).throws
     })
-    it("narrowedValue", () => {
-        attest({ a: "narrow" } as { a: "narrow" }).narrowedValue({
-            a: "narrow"
-        })
-        assert.throws(
-            () => {
-                attest({ a: "narrow" }).narrowedValue({ a: "narrow" })
-            },
-            assert.AssertionError,
-            "string"
-        )
-    })
 })

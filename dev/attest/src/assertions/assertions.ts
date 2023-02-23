@@ -81,10 +81,6 @@ export class Assertions implements AssertionRecord {
         }
     }
 
-    narrowedValue(expectedValue: unknown) {
-        return this.typedValue(expectedValue)
-    }
-
     // Use variadic args to distinguish undefined being passed explicitly from no args
     snap(...args: [expected: unknown]) {
         const expectedSerialized = this.serialize(args[0])
