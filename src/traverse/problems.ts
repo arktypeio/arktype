@@ -7,7 +7,6 @@ import type {
     arraySubclassToReadonly,
     constructor,
     evaluate,
-    instanceOf,
     RegexLiteral,
     requireKeys
 } from "../utils/generics.ts"
@@ -154,11 +153,9 @@ class ProblemArray extends Array<Problem> {
     }
 }
 
-export const Problems: new (
-    state: TraversalState
-) => arraySubclassToReadonly<ProblemArray> = ProblemArray
+export const Problems: new (state: TraversalState) => Problems = ProblemArray
 
-export type Problems = instanceOf<typeof Problems>
+export type Problems = arraySubclassToReadonly<ProblemArray>
 
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1)
 

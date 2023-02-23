@@ -11,7 +11,7 @@ describe("traverse", () => {
     it("range", () => {
         const t = type("number>2")
         attest(t(3).data).snap(3)
-        attest(t(2).problems?.summary).snap("Must be greater than 2 (was 2)")
+        attest(t(2).problems?.summary).snap("Must be more than 2 (was 2)")
     })
     it("domain", () => {
         const t = type("number")
@@ -99,13 +99,13 @@ describe("traverse", () => {
     it("multi", () => {
         const naturalNumber = type("integer>0")
         attest(naturalNumber(-1.2).problems?.summary).snap(
-            "-1.2 must be...\n• an integer\n• greater than 0"
+            "-1.2 must be...\n• an integer\n• more than 0"
         )
         const naturalAtPath = type({
             natural: naturalNumber
         })
         attest(naturalAtPath({ natural: -0.1 }).problems?.summary).snap(
-            "At natural, -0.1 must be...\n• an integer\n• greater than 0"
+            "At natural, -0.1 must be...\n• an integer\n• more than 0"
         )
     })
 })

@@ -14,7 +14,7 @@ import type {
 } from "../../utils/generics.ts"
 import { objectKeysOf } from "../../utils/generics.ts"
 import type { Path, pathToString } from "../../utils/paths.ts"
-import type { Out, ParsedMorph } from "./morph.ts"
+import type { ParsedMorph } from "./morph.ts"
 
 export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, []>
 
@@ -35,9 +35,9 @@ type inferIntersectionRecurse<
     : l extends ParsedMorph<infer lIn, infer lOut>
     ? r extends ParsedMorph
         ? error<writeImplicitNeverMessage<path, "Intersection", "of morphs">>
-        : (In: evaluate<lIn & r>) => Out<lOut>
+        : (In: evaluate<lIn & r>) => lOut
     : r extends ParsedMorph<infer rIn, infer rOut>
-    ? (In: evaluate<rIn & l>) => Out<rOut>
+    ? (In: evaluate<rIn & l>) => rOut
     : [l, r] extends [Dict, Dict]
     ? bubblePropErrors<
           evaluate<

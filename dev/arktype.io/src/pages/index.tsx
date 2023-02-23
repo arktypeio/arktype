@@ -1,4 +1,5 @@
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
+import useIsBrowser from "@docusaurus/useIsBrowser"
 import { Stack, ThemeProvider, Typography } from "@mui/material"
 import Layout from "@theme/Layout"
 import React from "react"
@@ -14,8 +15,18 @@ const Contents = () => {
         <ThemeProvider theme={getTheme()}>
             <Header title={siteConfig.title} tagline={siteConfig.tagline} />
             <main>
-                <Features />
-                <Demo />
+                <Stack alignItems="center" spacing={1} padding={2}>
+                    <img
+                        style={{
+                            maxWidth: "60em",
+                            width: "100%",
+                            borderRadius: 8
+                        }}
+                        src="/img/arktype.gif"
+                    />
+                    <Features />
+                    <Demo />
+                </Stack>
             </main>
         </ThemeProvider>
     )
@@ -46,7 +57,18 @@ const Header = ({ title, tagline }: Record<string, string>) => {
                 <Typography component="h1" variant="h2" color="secondary">
                     {title}
                 </Typography>
-                <Typography component="h2" variant="h5" color="common.white">
+                <Typography
+                    component="h2"
+                    variant={
+                        useIsBrowser() && window.screen.width < 1000
+                            ? "h6"
+                            : "h5"
+                    }
+                    color="common.white"
+                    style={{
+                        whiteSpace: "nowrap"
+                    }}
+                >
                     {tagline}
                 </Typography>
             </Stack>

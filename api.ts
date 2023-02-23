@@ -10,5 +10,6 @@ export {
     narrow,
     keyOf
 } from "./src/scopes/expressions.ts"
+export type { Scope, Space } from "./src/scopes/scope.ts"
 export type { Type } from "./src/scopes/type.ts"
 export { Problems, Problem } from "./src/traverse/problems.ts"

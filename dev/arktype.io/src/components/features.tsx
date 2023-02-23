@@ -41,7 +41,7 @@ type FeatureProps = {
 
 export const Features = () => {
     return (
-        <Grid container direction="row">
+        <Grid container>
             {details.map((feature, i) => (
                 <Grid item key={i} xs={12} md={6}>
                     <Feature

@@ -5,7 +5,7 @@ import type { asIn, asOut, CheckResult } from "../../scopes/type.ts"
 import type { Problem, Problems } from "../../traverse/problems.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../../utils/errors.ts"
-import type { mutable, nominal } from "../../utils/generics.ts"
+import type { mutable } from "../../utils/generics.ts"
 import { isArray } from "../../utils/objectKinds.ts"
 import { stringify } from "../../utils/serialize.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
@@ -56,8 +56,6 @@ const applyMorph = (branch: Branch, morph: Morph): MetaBranch =>
               morph
           }
 
-export type Out<t = {}> = nominal<t, "out">
-
 export type validateMorphTuple<def extends TupleExpression, $> = readonly [
     _: validateDefinition<def[0], $>,
     _: "|>",
@@ -66,19 +64,15 @@ export type validateMorphTuple<def extends TupleExpression, $> = readonly [
 
 export type Morph<i = any, o = unknown> = (In: i, problems: Problems) => o
 
-export type ParsedMorph<i = any, o = unknown> = (In: i) => inferMorphOut<o>
+export type ParsedMorph<i = any, o = unknown> = (In: i) => o
 
 export type inferMorph<inDef, morph, $> = morph extends Morph
     ? (In: asIn<inferDefinition<inDef, $>>) => inferMorphOut<ReturnType<morph>>
     : never
 
-type inferMorphOut<out> = unknown extends out
-    ? Out<unknown> | undefined | null
-    : [out] extends [CheckResult<infer t>]
-    ? Out<t>
-    :
-          | Out<Exclude<out, Problem | undefined | null>>
-          | Extract<out, undefined | null>
+type inferMorphOut<out> = [out] extends [CheckResult<infer t>]
+    ? t
+    : Exclude<out, Problem>
 
 export const writeMalformedMorphExpressionMessage = (value: unknown) =>
     `Morph expression requires a function following '|>' (was ${typeof value})`

@@ -4,9 +4,11 @@
 </div>
 <div align="center">
 
-Isomorphic types for TS/JS
+The first isomorphic type system for TS/JS
 
 </div>
+
+![](./dev/arktype.io/static/img/arktypeGithub.gif)
 
 ## Installation 📦
 

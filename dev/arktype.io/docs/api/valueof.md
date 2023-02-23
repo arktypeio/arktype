@@ -7,5 +7,5 @@ hide_table_of_contents: true
 ## text
 
 ```ts
-valueOf: Standard["valueOf"]
+valueOf: Ark["valueOf"]
 ```

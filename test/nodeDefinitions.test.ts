@@ -2,7 +2,6 @@ import { describe, it } from "mocha"
 import type { Type } from "../api.ts"
 import { scope, type } from "../api.ts"
 import { attest } from "../dev/attest/api.ts"
-import type { Out } from "../src/parse/ast/morph.ts"
 
 describe("node definitions", () => {
     it("base", () => {
@@ -114,9 +113,9 @@ describe("node definitions", () => {
             }
         ])
         attest(t).typed as Type<
-            (In: { a: string }) => Out<{
+            (In: { a: string }) => {
                 b: number
-            }>
+            }
         >
     })
     it("doesn't evaluate builtins", () => {

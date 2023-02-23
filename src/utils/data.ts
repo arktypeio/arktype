@@ -11,7 +11,11 @@ export const sizeOf = (data: unknown) =>
         : 0
 
 export const unitsOf = (data: unknown) =>
-    typeof data === "string" ? "characters" : Array.isArray(data) ? "items" : ""
+    typeof data === "string"
+        ? "characters"
+        : Array.isArray(data)
+        ? "items long"
+        : ""
 
 export class DataWrapper<value = unknown> {
     constructor(public value: value) {}

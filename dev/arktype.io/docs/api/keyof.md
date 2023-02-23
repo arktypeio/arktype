@@ -7,5 +7,5 @@ hide_table_of_contents: true
 ## text
 
 ```ts
-keyOf: Standard["keyOf"]
+keyOf: Ark["keyOf"]
 ```

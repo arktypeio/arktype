@@ -7,5 +7,5 @@ hide_table_of_contents: true
 ## text
 
 ```ts
-narrow: Standard["narrow"]
+narrow: Ark["narrow"]
 ```
