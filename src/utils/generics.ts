@@ -1,8 +1,8 @@
 import { hasDomain } from "./domains.ts"
 
-export type asConst<t> = castWithExclusion<t, asConstRecurse<t>, []>
-
 export const asConst = <t>(t: asConst<t>) => t
+
+export type asConst<t> = castWithExclusion<t, asConstRecurse<t>, []>
 
 type asConstRecurse<t> = {
     [k in keyof t]: t[k] extends Literalable | [] ? t[k] : asConstRecurse<t[k]>

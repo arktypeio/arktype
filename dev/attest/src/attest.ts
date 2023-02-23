@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url"
-import { caller, getCallStack } from "../../runtime/api.ts"
+import { caller, getCallStack } from "../../runtime/main.ts"
 import { Assertions } from "./assertions/assertions.ts"
 import type { RootAssertions } from "./assertions/types.ts"
 import type { AttestConfig } from "./config.ts"
@@ -19,8 +19,7 @@ export type AssertionContext = {
     assertionStack: string
 }
 
-// @ts-ignore
-export const attest: AssertFn = (
+export const attest = ((
     value: unknown,
     internalConfigHooks?: Partial<AssertionContext>
 ) => {
@@ -38,4 +37,4 @@ export const attest: AssertFn = (
         assertionStack: getCallStack({ offset: 1 }).join("\n")
     }
     return new Assertions(ctx)
-}
+}) as AssertFn

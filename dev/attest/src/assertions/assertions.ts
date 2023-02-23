@@ -2,7 +2,7 @@ import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.ts"
 import { snapshot, stringify } from "../../../../src/utils/serialize.ts"
-import { caller } from "../../../runtime/api.ts"
+import { caller } from "../../../runtime/main.ts"
 import { assertEquals } from "../assertions.ts"
 import type { AssertionContext } from "../attest.ts"
 import type { SnapshotArgs } from "../snapshot.ts"
@@ -79,10 +79,6 @@ export class Assertions implements AssertionRecord {
             }
             assertEquals(typeData.type.expected, typeData.type.actual, this.ctx)
         }
-    }
-
-    narrowedValue(expectedValue: unknown) {
-        return this.typedValue(expectedValue)
     }
 
     // Use variadic args to distinguish undefined being passed explicitly from no args

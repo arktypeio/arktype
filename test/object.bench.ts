@@ -1,5 +1,5 @@
-import { type } from "../api.ts"
-import { bench, suite } from "../dev/attest/api.ts"
+import { bench, suite } from "../dev/attest/main.ts"
+import { type } from "../src/main.ts"
 
 suite("parse/struct", () => {
     bench("dictionary", () => {
