@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.2-alpha
+
+### Patch Changes
+
+-   0325e26d: rename api.ts entrypoints to main.ts to improve Deno compatibility
+
 ## 1.0.1-alpha
 
 ### Patch Changes
