@@ -1,4 +1,5 @@
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
+import useIsBrowser from "@docusaurus/useIsBrowser"
 import { Stack, ThemeProvider, Typography } from "@mui/material"
 import Layout from "@theme/Layout"
 import React from "react"
@@ -7,7 +8,6 @@ import { Features } from "../components/features"
 import { Demo } from "../components/homepageDemo"
 import { getTheme } from "../components/index"
 import { LogoCloud } from "../components/logoCloud"
-import { isMobile } from "../components/util"
 
 const Contents = () => {
     const { siteConfig } = useDocusaurusContext()
@@ -59,7 +59,11 @@ const Header = ({ title, tagline }: Record<string, string>) => {
                 </Typography>
                 <Typography
                     component="h2"
-                    variant={isMobile() ? "h6" : "h5"}
+                    variant={
+                        useIsBrowser() && window.screen.width < 1000
+                            ? "h6"
+                            : "h5"
+                    }
                     color="common.white"
                     style={{
                         whiteSpace: "nowrap"

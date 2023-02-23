@@ -47,10 +47,11 @@ arkscope: import("./scope.js").Scope<
             creditCard: string
             email: string
             uuid: string
-            parsedNumber: (In: string) => Out<number>
-            parsedInteger: (In: string) => Out<number>
-            parsedDate: (In: string) => Out<Date>
+            parsedNumber: (In: string) => number
+            parsedInteger: (In: string) => number
+            parsedDate: (In: string) => Date
             semver: string
+            json: (In: string) => unknown
             integer: number
         },
         {},

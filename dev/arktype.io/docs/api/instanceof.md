@@ -7,5 +7,5 @@ hide_table_of_contents: true
 ## text
 
 ```ts
-instanceOf: Standard["instanceOf"]
+instanceOf: Ark["instanceOf"]
 ```
