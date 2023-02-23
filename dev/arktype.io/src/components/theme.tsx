@@ -9,14 +9,17 @@ export const getTheme = () =>
         createTheme({
             palette: {
                 primary: {
-                    main: "#085b92"
+                    main: "#085b92",
+                    light: "#80cff8"
                 },
                 secondary: {
-                    main: "#d09847",
-                    dark: "#4b3621"
+                    main: "#eb9f2e",
+                    dark: "#4b3621",
+                    light: "#f5cf8f"
                 },
                 common: {
-                    white: "#fffff0"
+                    white: "#fffff0",
+                    black: "#0d1117"
                 }
             },
             typography: {
