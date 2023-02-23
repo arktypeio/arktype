@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
-import { ark, type } from "../api.ts"
-import { attest } from "../dev/attest/api.ts"
+import { attest } from "../dev/attest/main.ts"
+import { ark, type } from "../main.ts"
 
 describe("keywords", () => {
     it("parsedDate", () => {

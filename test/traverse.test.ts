@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
-import { scope, type } from "../api.ts"
-import { attest } from "../dev/attest/api.ts"
+import { attest } from "../dev/attest/main.ts"
+import { scope, type } from "../main.ts"
 
 describe("traverse", () => {
     it("divisible", () => {

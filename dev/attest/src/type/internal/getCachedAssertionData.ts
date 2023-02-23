@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs"
-import { readJson } from "../../../../runtime/api.ts"
+import { readJson } from "../../../../runtime/main.ts"
 import type { AttestConfig } from "../../config.ts"
 
 export const getCachedAssertionData = (config: AttestConfig) => {

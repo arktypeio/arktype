@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { basename } from "node:path"
-import { findPackageRoot, shell, walkPaths } from "../runtime/api.ts"
-import { cacheAssertions, cleanupAssertions } from "./api.ts"
+import { findPackageRoot, shell, walkPaths } from "../runtime/main.ts"
+import { cacheAssertions, cleanupAssertions } from "./main.ts"
 
 const args: string[] =
     (globalThis as any).process?.argv ?? (globalThis as any).Deno.args

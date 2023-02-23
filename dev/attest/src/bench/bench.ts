@@ -1,6 +1,6 @@
 import * as process from "node:process"
 import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.ts"
-import { caller } from "../../../runtime/api.ts"
+import { caller } from "../../../runtime/main.ts"
 import { addListener } from "../../../runtime/shell.ts"
 import type { AttestConfig } from "../config.ts"
 import { getAttestConfig } from "../config.ts"

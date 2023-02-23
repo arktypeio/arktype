@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
-import { keyOf, type } from "../api.ts"
-import { attest } from "../dev/attest/api.ts"
+import { attest } from "../dev/attest/main.ts"
+import { keyOf, type } from "../main.ts"
 import type { Branch } from "../src/nodes/branch.ts"
 import type { TypeNode } from "../src/nodes/node.ts"
 import { writeImplicitNeverMessage } from "../src/parse/ast/intersection.ts"

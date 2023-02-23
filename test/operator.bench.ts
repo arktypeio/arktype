@@ -1,5 +1,5 @@
-import { arrayOf, intersection, morph, narrow, type, union } from "../api.ts"
-import { bench, suite } from "../dev/attest/api.ts"
+import { bench, suite } from "../dev/attest/main.ts"
+import { arrayOf, intersection, morph, narrow, type, union } from "../main.ts"
 
 suite("operators", () => {
     suite("array", () => {

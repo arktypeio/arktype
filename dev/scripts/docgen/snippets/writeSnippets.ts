@@ -4,7 +4,7 @@ import {
     readJson,
     shell,
     writeFile
-} from "../../../runtime/api.ts"
+} from "../../../runtime/main.ts"
 import type { SnippetsByPath } from "./extractSnippets.ts"
 import { referenceTokens } from "./snipTokens.ts"
 

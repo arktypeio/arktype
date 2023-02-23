@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
-import type { Type } from "../api.ts"
-import { ark, intersection, morph, scope, type, union } from "../api.ts"
-import { attest } from "../dev/attest/api.ts"
+import { attest } from "../dev/attest/main.ts"
+import type { Type } from "../main.ts"
+import { ark, intersection, morph, scope, type, union } from "../main.ts"
 import { writeUndiscriminatableMorphUnionMessage } from "../src/parse/ast/union.ts"
 
 describe("morph", () => {
