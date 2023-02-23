@@ -26,7 +26,9 @@
         "dist",
         "node_modules"
     ],
-    "deno.enable": false,
+    "deno.config": "./dev/configs/deno.json",
     // temporarily disabled until .ts suffixes are preserved
     "typescript.updateImportsOnFileMove.enabled": "never"
+    // Should remain commented when code is submitted for PR so Node is active by default
+    // "deno.enable": true,
 }
