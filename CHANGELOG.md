@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.1-alpha
+
+### Patch Changes
+
+-   a871a43c: minor improvements to default problem messages
+
 ## 1.0.0-alpha
 
 ### Major Changes
