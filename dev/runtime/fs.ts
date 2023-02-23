@@ -51,7 +51,7 @@ export type WalkOptions = {
 }
 
 export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
-    readdirSync(dir).reduce((paths, item) => {
+    readdirSync(dir).reduce((paths: string[], item: string) => {
         const path = join(dir, item)
         const isDir = lstatSync(path).isDirectory()
         if (isDir && options.ignoreDirsMatching?.test(path)) {
@@ -64,7 +64,7 @@ export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
             (options.include && !options.include(path))
         const nestedPaths = isDir ? walkPaths(path, options) : []
         return [...paths, ...(excludeCurrent ? [] : [path]), ...nestedPaths]
-    }, [] as string[])
+    }, [])
 
 /** Fetch the file and directory paths from a path, uri, or `import.meta.url` */
 export const filePath = (path: string) => {
