@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
-import { type } from "../api.ts"
-import { attest } from "../dev/attest/api.ts"
+import { attest } from "../dev/attest/main.ts"
+import { type } from "../src/main.ts"
 
 describe("key traversal", () => {
     const getExtraneousB = () => ({ a: "ok", b: "why?" })

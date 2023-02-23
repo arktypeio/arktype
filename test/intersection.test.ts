@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
-import { intersection, type } from "../api.ts"
-import { attest } from "../dev/attest/api.ts"
+import { attest } from "../dev/attest/main.ts"
+import { intersection, type } from "../src/main.ts"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
