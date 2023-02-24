@@ -47,11 +47,11 @@
         "testDeno": "deno task test",
         "bench": "ts-node ./dev/attest/cli.ts bench --benchmarksPath ./test/benchmarks.json",
         "lint": "eslint --max-warnings=0 .",
-        "format": "prettier --write --ignore-path ./dev/repo/.prettierignore .",
+        "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
         "findUnused": "ts-node ./dev/scripts/findUnusedExports.ts",
         "changeset": "changeset",
         "preinstall": "npx only-allow pnpm",
-        "prepare": "husky install dev/repo/.husky",
+        "prepare": "husky install dev/configs/.husky",
         "ci:version": "ts-node ./dev/scripts/updateVersions.ts",
         "ci:publish": "changeset publish"
     },
@@ -105,6 +105,6 @@
         ]
     },
     "eslintConfig": {
-        "extends": "./dev/repo/.eslintrc.cjs"
+        "extends": "./dev/configs/.eslintrc.cjs"
     }
 }

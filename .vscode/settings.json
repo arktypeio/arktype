@@ -10,7 +10,7 @@
         "@typescript-eslint/consistent-type-imports",
         "object-shorthand"
     ],
-    "prettier.ignorePath": "dev/repo/.prettierignore",
+    "prettier.ignorePath": "dev/configs/.prettierignore",
     "mochaExplorer.nodeArgv": [
         "--loader=ts-node/esm",
         "--no-warnings=ExperimentalWarning"
@@ -26,7 +26,7 @@
         "dist",
         "node_modules"
     ],
-    "deno.config": "./dev/repo/deno.json",
+    "deno.config": "./dev/configs/deno.json",
     // temporarily disabled until .ts suffixes are preserved
     "typescript.updateImportsOnFileMove.enabled": "never"
     // Should remain commented when code is submitted for PR so Node is active by default
