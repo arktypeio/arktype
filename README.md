@@ -3,10 +3,6 @@
 
 ![](./dev/arktype.io/static/img/arktypeGithub.gif)
 
-## Intro
-
-
-
 ## Installation 📦
 
 `npm install arktype`
