@@ -1,4 +1,4 @@
-<h1 align="center"><sub><sup>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp</sup></sub>ArkType:<sub><sup> <i>The first isomorphic type system for TS/JS</i></sup></sub></h1>
+<h1 align="center">ArkType:<sub><sup> <i>The first isomorphic type system for TS/JS</i></sup></sub></h1>
 
 ![](./dev/arktype.io/static/img/arktypeGithub.gif)
 
