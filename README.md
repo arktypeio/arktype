@@ -1,5 +1,4 @@
 <h1 align="center">ArkType</h1>
-<p align="center"><i>The first isomorphic type system for TS/JS</i></p>
 
 ![](./dev/arktype.io/static/img/arktypeGithub.gif)
 
