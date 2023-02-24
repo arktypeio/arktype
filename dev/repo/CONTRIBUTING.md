@@ -82,7 +82,7 @@ You can also run any of these commands individually:
 
 All of these commands will run as part of our CI process and must succeed in order for us to accept your Pull Request.
 
-The new ".ts" extension resolution in TS 5.0 in conjunction with our [import_map.json](./dev/configs/import_map.json) allows us to support editing the same source using either standard Node tooling or via Deno. Since `arktype` has no dependencies, you generally shouldn't have to worry about compatibility, but you will need to at least [install Deno](https://deno.land/manual/getting_started/installation) to make sure the tests pass there, too.
+The new ".ts" extension resolution in TS 5.0 in conjunction with our [import map settings](./deno.json) allows us to support editing the same source using either standard Node tooling or via Deno. Since `arktype` has no dependencies, you generally shouldn't have to worry about compatibility, but you will need to at least [install Deno](https://deno.land/manual/getting_started/installation) to make sure the tests pass there, too.
 
 8. Once everything is passing, commit your changes and ensure your fork is up to date:
 
@@ -101,7 +101,7 @@ Our current and planned work can always be found [here](https://github.com/arkty
 ## Code of Conduct
 
 ArkType has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) as its Code of Conduct, and we expect project participants to adhere to it.
-Please read [the full text](/dev/CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
+Please read [the full text](./CODE_OF_CONDUCT.md) so that you can understand what actions will and will not be tolerated.
 
 ## License
 

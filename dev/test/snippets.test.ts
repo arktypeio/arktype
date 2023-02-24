@@ -3,7 +3,7 @@ import { attest } from "../dev/attest/main.ts"
 
 describe("snippets", () => {
     it("type", async () => {
-        const typeSnippet = await import("../examples/type.ts")
+        const typeSnippet = await import("../dev/examples/type.ts")
         attest(typeSnippet.user.infer).typed as {
             name: string
             device: {
@@ -16,7 +16,7 @@ describe("snippets", () => {
         )
     })
     it("scope", async () => {
-        const scopeSnippet = await import("../examples/scope.ts")
+        const scopeSnippet = await import("../dev/examples/scope.ts")
         attest(scopeSnippet.types.package.infer).typed as {
             name: string
             dependencies?: any[]

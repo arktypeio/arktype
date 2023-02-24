@@ -22,7 +22,7 @@
 
 ### Major Changes
 
--   1f7658f8: release 1.0.0-alpha-alpha ⛵
+-   1f7658f8: release 1.0.0-alpha ⛵
 
 ### Minor Changes
 
