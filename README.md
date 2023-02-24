@@ -1,16 +1,9 @@
-<div style="display: flex">
-    <img src="./dev/arktype.io/static/img/logo.svg" style="height: 4.5rem;" />
-    <div style="margin-left: 1em">
-        <h1 style="margin-top: -0.5rem; margin-bottom: 0; border-bottom:none;">
-            ArkType
-        </h1>
-        <p style="margin-top: -0.5rem; margin-bottom: 0; font-size:1.5rem; text-decoration: underline">
-            The first isomorphic type system for TS/JS
-        </p>
-    </div>
-</div>
+<h1 border>ArkType</h1>
+
+The first isomorphic type system for TS/JS
 
 ![](./dev/arktype.io/static/img/arktypeGithub.gif)
+<img src="./dev/arktype.io/static/img/logo2to1.svg" height="64px" />
 
 ## Installation 📦
 
