@@ -1,6 +1,6 @@
 <h1 align="center">ArkType</h1>
 
-![](./dev/arktype.io/static/img/arktypeGithub.gif)
+![](./dev/arktype.io/static/img/arktype.gif)
 
 ## Installation 📦
 
