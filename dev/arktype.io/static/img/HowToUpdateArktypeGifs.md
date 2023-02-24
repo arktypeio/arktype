@@ -20,11 +20,9 @@
 // "typescript.suggest.enabled": false,
 ```
 
-2. Once finished recording, generate a high-quality MP4 from ClipChamp
+2. Once finished recording, generate a high-quality MP4 from ClipChamp called `arktype.mp4`. This MP4 should have a #1b1b1b background, and can be used directly on arktype.io.
 3. Import the new MP4 into your existing VSDC project
-4. Generate `arktypeGithub.apng` as a 1750x750 100% quality APNG based on the existing project (has transparency filters etc.). The GitHub version should have a background of #0d1117, exactly matching GitHub in dark mode
-5. Check the github apng to ensure it is exactly #0d1117, then save the VSDC project
-6. Disable the transparency mask from within the updated MP4 in VSDC. Change the color of the top rectangle to `#1b1b1b`
-7. Generate another `.apng` with the same settings called `arktype.gif`. Ensure the background is exactly `#1b1b1b`
-8. Run `arktype.apng` and `arktypeGithub.apng` through the default settings for [GifTuna](https://github.com/dudewheresmycode/giftuna). Ensure the output colors exactly match the ones described and that the GIFs are ~20MB each.
-9. Replace arktype.gif and arktypeGithub.gif in (repo-root)/dev/arktype.io/static/img.
+4. Generate `arktype.apng` as a 1750x750 100% quality APNG based on the existing project (has transparency filters etc.). The GitHub version should have a background of #0d1117, exactly matching GitHub in dark mode
+5. Check `arktype.apng` to ensure it is exactly #0d1117, then save the VSDC project
+6. Run `arktype.apng` through [GifTuna](https://github.com/dudewheresmycode/giftuna) with "Dither" disabled. Ensure the output background is still the same and that the GIF is ~20MB, and name the result `arktype.gif`.
+7. Replace `arktype.mp4` and `arktype.gif` in (repo-root)/dev/arktype.io/static/img.
