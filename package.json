@@ -97,7 +97,10 @@
         "trailingComma": "none"
     },
     "mocha": {
-        "spec": "test/*.test.ts",
+        "spec": [
+            "dev/test/*.test.ts",
+            "test/*.test.ts"
+        ],
         "ignore": "**/node_modules/*",
         "node-option": [
             "loader=ts-node/esm",

@@ -14,8 +14,8 @@ _Note: Our APIs have largely stabilized at this point, but some may still change
 
 [Try it out.](https://arktype.io/docs/#your-first-type)
 
-```ts @blockFrom:examples/type.ts
-import { type } from "../src/main.ts"
+```ts @blockFrom:dev/examples/type.ts
+import { type } from "../../src/main.ts"
 
 // Define a type...
 export const user = type({
@@ -47,8 +47,8 @@ if (problems) {
 
 [Try it out.](https://arktype.io/docs/scopes)
 
-```ts @blockFrom:examples/scope.ts
-import { scope } from "../src/main.ts"
+```ts @blockFrom:dev/examples/scope.ts
+import { scope } from "../../src/main.ts"
 
 // Scopes are collections of types that can reference each other.
 export const types = scope({

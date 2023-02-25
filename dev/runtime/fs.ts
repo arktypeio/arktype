@@ -136,10 +136,7 @@ export const getSourceControlPaths = () =>
 export const tsFileMatcher = /^.*\.(c|m)?tsx?$/
 
 const inFileFilter: WalkOptions = {
-    include: (path) =>
-        tsFileMatcher.test(path) &&
-        /(^src|test|examples|dev\/attest|dev\/runtime)\/?/.test(path) &&
-        !/dev\/attest\/test/.test(path),
+    include: (path) => tsFileMatcher.test(path),
     ignoreDirsMatching: /node_modules|dist|docgen/
 }
 

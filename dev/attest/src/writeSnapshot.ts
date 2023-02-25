@@ -120,7 +120,7 @@ const runPrettierIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
                 )
             )
         ]
-        shell(`pnpx prettier --write ${updatedPaths.join(" ")}`)
+        shell(`pnpm prettier --write ${updatedPaths.join(" ")}`)
     } catch {
         // If prettier is unavailable, do nothing.
     }

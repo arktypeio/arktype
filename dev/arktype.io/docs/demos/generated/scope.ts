@@ -1,4 +1,4 @@
-export default `import { scope } from "../src/main"
+export default `import { scope } from "../../src/main"
 
 // Scopes are collections of types that can reference each other.
 export const types = scope({
