@@ -1,6 +1,7 @@
-<h1 align="center">ArkType <sub><sup>Isomorphic types for TS/JS</sup></sub></h1>
-
 ![Intro GIF](./dev/arktype.io/static/img/arktype.gif)
+<sub><i>Vanilla `typescript@4.9.5` in VS Code with live output— no extensions or plugins required (<a href="#how">how?</a>)</i></sub>
+
+<h1 align="center">ArkType <sub><sup>Isomorphic types for TS/JS</sup></sub></h1>
 
 ## Install <sub><sub>📦`4KB` gzipped, `0` dependencies</sub></sub>
 
@@ -93,6 +94,10 @@ If you're interested in contributing to ArkType...
 
 1.  Thank you! We'll do everything we can to make this as straightforward as possible, regardless of your level of experience.
 2.  Check out our [guide](./dev/configs/CONTRIBUTING.md) to get started!
+
+### How
+
+![](https://media2.giphy.com/media/CAYVZA5NRb529kKQUc/giphy.gif?cid=ecf05e47sdo4ysq8yl97j7xfo5sr3c2e3e4im6ipspci5v0k&rid=giphy.gif)
 
 ## License
 
