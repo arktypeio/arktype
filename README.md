@@ -8,12 +8,12 @@
 
 <img src="./dev/arktype.io/static/img/deno.svg" alt="Deno Icon" height="16px"> `import { type } from "https://deno.land/x/arktype"`
 
-<img src="./dev/arktype.io/static/img/logo.svg" alt="Deno Icon" height="16px"> <i>Try it in-browser at [arktype.io/try](https://arktype.io/try)</i> <sub>(the types aren't quite as snappy as they will be in
+<img src="./dev/arktype.io/static/img/logo.svg" alt="ArkType Icon" height="16px"> <i>Try it in-browser at [arktype.io/try](https://arktype.io/try)</i> <sub>(the types aren't quite as snappy as they will be in
 your IDE)</sub>
 
 Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#strict) with TypeScript versions `4.8`, `4.9`, and `5.0`.
 
-_Our APIs have largely stabilized at this point, but details may still change during the alpha/beta stages of our 1.0 release. If you have feedback that may require a breaking change, now is the time to let us know!_ ⛵
+_Our APIs have mostly stabilized, but details may still change during the alpha/beta stages of our 1.0 release. If you have feedback that may require a breaking change, now is the time to let us know!_ ⛵
 
 ## Types
 
