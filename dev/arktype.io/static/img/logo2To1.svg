@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="200" height="100" version="1.1" viewBox="0 0 200 50" xmlns="http://www.w3.org/2000/svg">
- <rect y="-25" width="200" height="100" rx="10" fill="#0067a5"/>
- <g transform="translate(100.03 -25)" fill="#e3ab57">
-  <!-- From font 'Cabin Condensed, Bold Condensed' -->
-  <path d="m53.316 82.645h-13.339l-3.2173 11.194h-8.1774l14.277-46.919h7.5071l14.344 46.919h-8.1774zm-2.1449-7.5071-4.5579-15.886-4.4909 15.886z"/>
-  <path d="m73.357 54.426h-11.261v-7.5071h30.699v7.5071h-11.261v39.412h-8.1774z"/>
- </g>
+    <rect y="-25" width="200" height="100" rx="10" fill="#085b92" />
+    <g transform="translate(100.03 -25)" fill="#eb9f2e">
+        <!-- From font 'Cabin Condensed, Bold Condensed' -->
+        <path
+            d="m53.316 82.645h-13.339l-3.2173 11.194h-8.1774l14.277-46.919h7.5071l14.344 46.919h-8.1774zm-2.1449-7.5071-4.5579-15.886-4.4909 15.886z" />
+        <path d="m73.357 54.426h-11.261v-7.5071h30.699v7.5071h-11.261v39.412h-8.1774z" />
+    </g>
 </svg>

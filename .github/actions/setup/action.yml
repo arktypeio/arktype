@@ -17,7 +17,6 @@ runs:
           uses: actions/setup-node@v3
           with:
               node-version: ${{ inputs.node }}
-              cache: "pnpm"
 
         - uses: denoland/setup-deno@v1
           with:

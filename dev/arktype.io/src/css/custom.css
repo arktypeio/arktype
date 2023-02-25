@@ -46,20 +46,20 @@
 }
 
 .footer {
-    background-color: #0067a5;
+    background-color: #085b92;
 }
 
 header {
     text-align: center;
     position: relative;
     overflow: hidden;
-    background: #0067a5;
+    background: #085b92;
 }
 
 [data-theme="dark"] .navbar {
-    background-color: #1b181a;
+    background-color: #1b1b1b;
 }
 
 [data-theme="dark"] .main-wrapper {
-    background-color: #1b181a;
+    background-color: #1b1b1b;
 }

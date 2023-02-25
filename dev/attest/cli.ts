@@ -58,7 +58,7 @@ if (args[attestArgIndex + 1] === "bench") {
         console.log(`⏳ attest: Using npx mocha to run your tests...`)
         const runnerStart = Date.now()
 
-        shell(`npx mocha ${buildTest ? "*/*.test.js" : ""}`, {
+        shell(`npx mocha ${buildTest ? "**/test/*.test.js" : ""}`, {
             stdio: "inherit",
             env: { ARKTYPE_CHECK_CMD: attestArgs.join(" ") }
         })

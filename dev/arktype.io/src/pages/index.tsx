@@ -16,13 +16,15 @@ const Contents = () => {
             <Header title={siteConfig.title} tagline={siteConfig.tagline} />
             <main>
                 <Stack alignItems="center" spacing={1} padding={2}>
-                    <img
+                    <video
+                        autoPlay
+                        loop={true}
                         style={{
                             maxWidth: "60em",
                             width: "100%",
                             borderRadius: 8
                         }}
-                        src="/img/arktype.gif"
+                        src="/img/arktype.mp4"
                     />
                     <Features />
                     <Demo />

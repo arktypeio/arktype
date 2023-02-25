@@ -10,6 +10,11 @@
         "@typescript-eslint/consistent-type-imports",
         "object-shorthand"
     ],
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "typescript.tsdk": "./node_modules/typescript/lib",
+    "typescript.tsserver.experimental.enableProjectDiagnostics": true,
+    // temporarily disabled until .ts suffixes are preserved
+    "typescript.updateImportsOnFileMove.enabled": "never",
     "prettier.ignorePath": "dev/configs/.prettierignore",
     "mochaExplorer.nodeArgv": [
         "--loader=ts-node/esm",
@@ -19,14 +24,8 @@
         "ARKTYPE_CHECK_CMD": "--skipTypes"
     },
     "testExplorer.useNativeTesting": true,
-    "typescript.enablePromptUseWorkspaceTsdk": true,
-    "typescript.tsdk": "./node_modules/typescript/lib",
-    "typescript.tsserver.experimental.enableProjectDiagnostics": true,
-    "typescript.preferences.autoImportFileExcludePatterns": [
-        "dist",
-        "node_modules"
-    ],
-    "deno.enable": false,
-    // temporarily disabled until .ts suffixes are preserved
-    "typescript.updateImportsOnFileMove.enabled": "never"
+    "deno.config": "./dev/configs/deno.jsonc",
+    "deno.lint": false
+    // Should remain commented when code is submitted for PR so Node is active by default
+    // "deno.enable": true
 }
