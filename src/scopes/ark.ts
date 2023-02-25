@@ -6,7 +6,7 @@ import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
 import type { TypeParser } from "./type.ts"
 import { validation, validationScope } from "./validation/validation.ts"
 
-export const arkscope = scope(
+export const arkScope = scope(
     {},
     {
         name: "standard",
@@ -15,14 +15,14 @@ export const arkscope = scope(
     }
 )
 
-export const ark: Space<PrecompiledDefaults> = arkscope.compile()
+export const ark: Space<PrecompiledDefaults> = arkScope.compile()
 
 export const scopes = {
     root: rootScope,
     tsKeywords: tsKeywordsScope,
     jsObjects: jsObjectsScope,
     validation: validationScope,
-    ark: arkscope
+    ark: arkScope
 }
 
 export const spaces = {
@@ -68,4 +68,4 @@ export type PrecompiledDefaults = {
     // jsObects
 } & InferredObjectKinds
 
-export const type: TypeParser<PrecompiledDefaults> = arkscope.type
+export const type: TypeParser<PrecompiledDefaults> = arkScope.type

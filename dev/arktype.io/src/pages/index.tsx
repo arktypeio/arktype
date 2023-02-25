@@ -5,9 +5,9 @@ import Layout from "@theme/Layout"
 import React from "react"
 import { Boat } from "../components/boat"
 import { Features } from "../components/features"
-import { Demo } from "../components/homepageDemo"
 import { getTheme } from "../components/index"
 import { LogoCloud } from "../components/logoCloud"
+import { ToggleableDemo } from "../components/toggleableDemo"
 
 const Contents = () => {
     const { siteConfig } = useDocusaurusContext()
@@ -27,7 +27,7 @@ const Contents = () => {
                         src="/img/arktype.mp4"
                     />
                     <Features />
-                    <Demo />
+                    <ToggleableDemo embedId="type" />
                 </Stack>
             </main>
         </ThemeProvider>
