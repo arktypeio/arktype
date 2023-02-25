@@ -1,4 +1,4 @@
-<h1 align="center">ArkType</h1>
+<h1 align="center">ArkType: <sub><sup>Isomorphic types for TS/JS</sup></sub></h1>
 
 ![](./dev/arktype.io/static/img/arktype.gif)
 
