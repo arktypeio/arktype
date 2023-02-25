@@ -1,18 +1,23 @@
 <h1 align="center">ArkType <sub><sup>Isomorphic types for TS/JS</sup></sub></h1>
 
-![](./dev/arktype.io/static/img/arktype.gif)
+![Intro GIF](./dev/arktype.io/static/img/arktype.gif)
 
-## Installation 📦
+## Install <sub><sub>📦`4KB` gzipped, `0` dependencies</sub></sub>
 
-`npm install arktype`
+<img src="./dev/arktype.io/static/img/npm.svg" alt="Npm Icon" height="16px"> `npm install arktype` <sub>(or whatever package manager you prefer)</sub>
 
-If you're using TypeScript, you'll need at least `4.8`
+<img src="./dev/arktype.io/static/img/deno.svg" alt="Deno Icon" height="16px"> `import { type } from "https://deno.land/x/arktype"`
 
-_Note: Our APIs have largely stabilized at this point, but some may still change during the alpha/beta stages of our 1.0 release. If you have feedback that may require a breaking change, now is the time to let us know!_
+<img src="./dev/arktype.io/static/img/logo.svg" alt="Deno Icon" height="16px"> <i>Try it in-browser at [arktype.io/try](https://arktype.io/try)</i> <sub>(the types aren't quite as snappy as they will be in
+your IDE)</sub>
 
-### Your first type
+Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#strict) with TypeScript versions `4.8`, `4.9`, and `5.0`.
 
-[Try it out.](https://arktype.io/docs/#your-first-type)
+_Our APIs have largely stabilized at this point, but details may still change during the alpha/beta stages of our 1.0 release. If you have feedback that may require a breaking change, now is the time to let us know!_ ⛵
+
+## Types
+
+[Try it in-browser.](https://arktype.io/docs/#your-first-type)
 
 ```ts @blockFrom:dev/examples/type.ts
 import { type } from "../../src/main.ts"
@@ -45,7 +50,7 @@ if (problems) {
 
 ### Scopes
 
-[Try it out.](https://arktype.io/docs/scopes)
+[Try it in-browser.](https://arktype.io/docs/scopes)
 
 ```ts @blockFrom:dev/examples/scope.ts
 import { scope } from "../../src/main.ts"
