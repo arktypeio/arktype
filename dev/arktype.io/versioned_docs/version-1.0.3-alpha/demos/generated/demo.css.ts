@@ -50,7 +50,7 @@ pre {
 
 h3 {
     margin: 0px;
-    color: #fff;
+    color: #fffff0;
 }
 
 .key {
