@@ -9,7 +9,8 @@ const details = [
     },
     {
         title: "Native JS/TS",
-        description: "No extensions, plugins or compilers required"
+        description:
+            "Zero dependencies and no extensions, plugins or compilers required"
     },
     {
         title: "Concise",
