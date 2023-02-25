@@ -18,7 +18,8 @@ const Contents = () => {
                 <Stack alignItems="center" spacing={1} padding={2}>
                     <video
                         autoPlay
-                        loop={true}
+                        loop
+                        muted
                         style={{
                             maxWidth: "60em",
                             width: "100%",
