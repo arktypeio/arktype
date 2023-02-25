@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
-import { attest } from "../dev/attest/main.ts"
-import { arrayOf, type } from "../src/main.ts"
-import { writeUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
-import { incompleteArrayTokenMessage } from "../src/parse/string/shift/operator/operator.ts"
+import { arrayOf, type } from "../../src/main.ts"
+import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.ts"
+import { incompleteArrayTokenMessage } from "../../src/parse/string/shift/operator/operator.ts"
+import { attest } from "../attest/main.ts"
 
 describe("parse array", () => {
     it("parse", () => {

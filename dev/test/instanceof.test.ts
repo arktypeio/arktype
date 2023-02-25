@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
-import { attest } from "../dev/attest/main.ts"
-import type { Type } from "../src/main.ts"
-import { instanceOf, type } from "../src/main.ts"
+import type { Type } from "../../src/main.ts"
+import { instanceOf, type } from "../../src/main.ts"
+import { attest } from "../attest/main.ts"
 
 describe("instanceof", () => {
     it("base", () => {

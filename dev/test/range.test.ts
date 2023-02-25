@@ -1,13 +1,13 @@
 import { describe, it } from "mocha"
-import { attest } from "../dev/attest/main.ts"
-import { type } from "../src/main.ts"
-import type { ResolvedNode } from "../src/nodes/node.ts"
+import { type } from "../../src/main.ts"
+import type { ResolvedNode } from "../../src/nodes/node.ts"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
     writeUnpairableComparatorMessage
-} from "../src/parse/string/reduce/shared.ts"
-import { singleEqualsMessage } from "../src/parse/string/shift/operator/bounds.ts"
+} from "../../src/parse/string/reduce/shared.ts"
+import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.ts"
+import { attest } from "../attest/main.ts"
 
 describe("range", () => {
     describe("parse", () => {

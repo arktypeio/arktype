@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
-import { attest } from "../dev/attest/main.ts"
-import type { Type } from "../src/main.ts"
-import { scope, type } from "../src/main.ts"
+import type { Type } from "../../src/main.ts"
+import { scope, type } from "../../src/main.ts"
+import { attest } from "../attest/main.ts"
 
 describe("node definitions", () => {
     it("base", () => {

@@ -1,12 +1,12 @@
 import { describe, it } from "mocha"
-import { attest } from "../dev/attest/main.ts"
-import { type } from "../src/main.ts"
-import type { ResolvedNode } from "../src/nodes/node.ts"
-import { writeUnterminatedEnclosedMessage } from "../src/parse/string/shift/operand/enclosed.ts"
+import { type } from "../../src/main.ts"
+import type { ResolvedNode } from "../../src/nodes/node.ts"
+import { writeUnterminatedEnclosedMessage } from "../../src/parse/string/shift/operand/enclosed.ts"
 import {
     writeExpressionExpectedMessage,
     writeUnresolvableMessage
-} from "../src/parse/string/shift/operand/unenclosed.ts"
+} from "../../src/parse/string/shift/operand/unenclosed.ts"
+import { attest } from "../attest/main.ts"
 
 describe("string", () => {
     it("errors on empty string", () => {

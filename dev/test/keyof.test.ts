@@ -1,10 +1,10 @@
 import { describe, it } from "mocha"
-import { attest } from "../dev/attest/main.ts"
-import { keyOf, type } from "../src/main.ts"
-import type { Branch } from "../src/nodes/branch.ts"
-import type { TypeNode } from "../src/nodes/node.ts"
-import { writeImplicitNeverMessage } from "../src/parse/ast/intersection.ts"
-import { Path } from "../src/utils/paths.ts"
+import { keyOf, type } from "../../src/main.ts"
+import type { Branch } from "../../src/nodes/branch.ts"
+import type { TypeNode } from "../../src/nodes/node.ts"
+import { writeImplicitNeverMessage } from "../../src/parse/ast/intersection.ts"
+import { Path } from "../../src/utils/paths.ts"
+import { attest } from "../attest/main.ts"
 
 describe("keyof", () => {
     it("object literal", () => {

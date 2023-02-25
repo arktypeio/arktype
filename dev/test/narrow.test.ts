@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
-import { attest } from "../dev/attest/main.ts"
-import type { Type } from "../src/main.ts"
-import { type } from "../src/main.ts"
-import type { assertEqual } from "../src/utils/generics.ts"
+import type { Type } from "../../src/main.ts"
+import { type } from "../../src/main.ts"
+import type { assertEqual } from "../../src/utils/generics.ts"
+import { attest } from "../attest/main.ts"
 
 describe("narrow", () => {
     it("implicit problem", () => {

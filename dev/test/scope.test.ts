@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
-import { attest } from "../dev/attest/main.ts"
-import { scope, type } from "../src/main.ts"
-import { writeUnboundableMessage } from "../src/parse/ast/bound.ts"
-import { writeUnresolvableMessage } from "../src/parse/string/shift/operand/unenclosed.ts"
+import { scope, type } from "../../src/main.ts"
+import { writeUnboundableMessage } from "../../src/parse/ast/bound.ts"
+import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.ts"
+import { attest } from "../attest/main.ts"
 
 describe("scope", () => {
     it("base definition", () => {

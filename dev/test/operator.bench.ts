@@ -1,4 +1,3 @@
-import { bench, suite } from "../dev/attest/main.ts"
 import {
     arrayOf,
     intersection,
@@ -6,7 +5,8 @@ import {
     narrow,
     type,
     union
-} from "../src/main.ts"
+} from "../../src/main.ts"
+import { bench, suite } from "../attest/main.ts"
 
 suite("operators", () => {
     suite("array", () => {
