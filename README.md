@@ -80,14 +80,14 @@ export const { data, problems } = types.package(packageData)
 
 ## API
 
-ArkType supports many of TypeScript's built-in types and operators, as well as some new nes dedicated exclusively to runtime validation. In fact, we got a little ahead of ourselves and built a ton of cool features, but we're still working on getting caught up syntax and API docs. Keep an eye out for more in the next couple weeks! In the meantime, check out the examples from this README and use the type hints you get to learn how you can customize your types and scopes. If you have any questions, don't hesitate to reach out on the [dedicated Discord channel](https://discord.gg/WSNF3Kc4xh)!
+ArkType supports many of TypeScript's built-in types and operators, as well as some new nes dedicated exclusively to runtime validation. In fact, we got a little ahead of ourselves and built a ton of cool features, but we're still working on getting caught up syntax and API docs. Keep an eye out for more in the next couple weeks! In the meantime, check out the examples from this README and use the type hints you get to learn how you can customize your types and scopes. If you have any questions, don't hesitate to reach out on our [Discord channel](https://discord.gg/WSNF3Kc4xh)!
 
 ## Contributing
 
 If you're interested in contributing to ArkType...
 
 1.  Thank you! We'll do everything we can to make this as straightforward as possible, regardless of your level of experience.
-2.  Check out our [guide](./CONTRIBUTING.md) to get started!
+2.  Check out our [guide](./dev/configs/CONTRIBUTING.md) to get started!
 
 ## License
 
