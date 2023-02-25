@@ -5,9 +5,6 @@
         "get-current-line": "https://unpkg.com/get-current-line@6.6.0/edition-deno/index.ts"
     },
     "lint": {
-        "files": {
-            "exclude": ["../.."]
-        },
         "rules": {
             "exclude": ["ban-ts-comment", "ban-types", "no-explicit-any"]
         }
