@@ -79,18 +79,19 @@ const swc = (kind: "mjs" | "cjs") => {
 
 const buildWithTests = (kind: string, kindOutDir: string) => {
     const cjsAddon = kind === "cjs" ? "-C module.type=commonjs" : ""
-
-    const dirs = {
+    const paths = {
         src: ["src"],
         dev: [
-            "dev/attest",
+            "dev/attest/main.ts",
+            "dev/attest/cli.ts",
+            "dev/attest/src",
             "dev/runtime",
             "dev/scripts",
             "dev/examples",
             "dev/test"
         ]
     }
-    for (const [baseDir, dirsToInclude] of Object.entries(dirs)) {
+    for (const [baseDir, dirsToInclude] of Object.entries(paths)) {
         shell(
             `pnpm swc ${cjsAddon} ${dirsToInclude.join(
                 " "
