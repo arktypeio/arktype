@@ -11,7 +11,7 @@ export const getTheme = () =>
                 primary: {
                     main: "#085b92",
                     light: "#80cff8"
-                    // Ocassionally "#009EFF" is used, e.g. in GIF title bars.
+                    // Occasionally "#009EFF" is used, e.g. in GIF title bars.
                     // Not sure if/where that belongs yet.
                 },
                 secondary: {

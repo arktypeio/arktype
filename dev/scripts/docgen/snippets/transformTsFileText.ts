@@ -37,7 +37,7 @@ export const transformRelativeImports = (
     )
     for (const declaration of importDeclarations) {
         const specifier = declaration.getModuleSpecifier()
-        if (specifier.getLiteralText().endsWith("../main.ts")) {
+        if (specifier.getLiteralText().endsWith("main.ts")) {
             specifier.replaceWithText(`"${packageJson.name}"`)
         }
     }

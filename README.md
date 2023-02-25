@@ -14,14 +14,14 @@ your IDE)</sub>
 
 Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#strict) with TypeScript versions `4.8`, `4.9`, and `5.0`.
 
-_Our APIs have mostly stabilized, but details may still change during the alpha/beta stages of our 1.0 release. If you have feedback that may require a breaking change, now is the time to let us know!_ ⛵
+_Our APIs have mostly stabilized, but details may still change during the alpha/beta stages of our 1.0 release. If you have suggestions that may require a breaking change, now is the time to let us know!_ ⛵
 
 ## Types
 
 [Try it in-browser.](https://arktype.io/docs/#your-first-type)
 
 ```ts @blockFrom:dev/examples/type.ts
-import { type } from "../../src/main.ts"
+import { type } from "arktype"
 
 // Define a type...
 export const user = type({
@@ -54,7 +54,7 @@ if (problems) {
 [Try it in-browser.](https://arktype.io/docs/scopes)
 
 ```ts @blockFrom:dev/examples/scope.ts
-import { scope } from "../../src/main.ts"
+import { scope } from "arktype"
 
 // Scopes are collections of types that can reference each other.
 export const types = scope({
