@@ -34,7 +34,8 @@
         "typeof",
         "unvalidated",
         "stackblitz",
-        "toggleable"
+        "toggleable",
+        "chatgpt"
     ],
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "typescript.tsdk": "./node_modules/typescript/lib",
@@ -57,6 +58,7 @@
         "Infima",
         "intellij",
         "interactable",
+        "Intersector",
         "pnpm",
         "uninteractable"
     ]

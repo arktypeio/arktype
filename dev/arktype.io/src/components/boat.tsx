@@ -1,16 +1,18 @@
-import ArkSvg from "@site/static/img/ark.svg"
+import BoatSvg from "@site/static/img/boat.svg"
 import { motion } from "framer-motion"
 import React from "react"
+import { useWindowSize } from "./useWindowSize"
 
-const LOOP_DURATION = 120
-const BOB_HEIGHT = 2
-const BOB_INTERVAL = 2
-const bobFrames: number[] = []
-for (let i = 0; i < LOOP_DURATION / BOB_INTERVAL; i++) {
-    bobFrames.push(i % 2 ? BOB_HEIGHT : 0)
-}
+const BOB_HEIGHT_PX = 2
+const BOB_WIDTH_PX = 16
 
 export const Boat = () => {
+    const { width } = useWindowSize()
+    const loopDuration = width / BOB_WIDTH_PX
+    const bobFrames: number[] = []
+    for (let i = 0; i < loopDuration; i++) {
+        bobFrames.push(i % 2 ? BOB_HEIGHT_PX : 0)
+    }
     return (
         <motion.div
             style={{
@@ -25,13 +27,13 @@ export const Boat = () => {
                 y: bobFrames
             }}
             transition={{
-                duration: LOOP_DURATION,
+                duration: loopDuration,
                 repeat: Infinity,
                 ease: "linear",
                 delay: 1
             }}
         >
-            <ArkSvg style={{ width: 100 }} />
+            <BoatSvg style={{ width: 100 }} />
         </motion.div>
     )
 }

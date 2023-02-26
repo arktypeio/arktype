@@ -4,12 +4,15 @@ import TabItem from "@theme/TabItem"
 import Tabs from "@theme/Tabs"
 import React from "react"
 
+export const FloatingInstallationBlock = () => (
+    <div style={{ position: "fixed", right: 0, top: 60 }}>
+        <InstallationBlock />
+    </div>
+)
+
 export const InstallationBlock = () => (
     <Card
         style={{
-            position: "fixed",
-            right: 0,
-            top: 60,
             height: "9rem",
             margin: ".5rem",
             padding: ".7rem .5rem 0rem",
