@@ -1,5 +1,5 @@
 export { scope } from "./scopes/scope.ts"
-export { type, ark, arkScope as arkscope } from "./scopes/ark.ts"
+export { type, ark, arkScope } from "./scopes/ark.ts"
 export {
     intersection,
     union,
