@@ -19,10 +19,8 @@ export const ToggleableDemo = ({ embedId }: ToggleableDemoProps) => {
             <Button
                 color="info"
                 variant="contained"
-                sx={{ whiteSpace: "nowrap", maxWidth: "13rem" }}
-                onClick={() => {
-                    setIsActive(!isActive)
-                }}
+                sx={{ whiteSpace: "nowrap" }}
+                onClick={() => setIsActive(!isActive)}
                 endIcon={
                     <div style={{ display: "flex" }}>
                         <Terminal />
