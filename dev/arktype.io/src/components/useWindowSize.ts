@@ -1,3 +1,4 @@
+import { useMediaQuery } from "@mui/material"
 import { useEffect, useState } from "react"
 
 export const useWindowSize = (): { width: number; height: number } => {
@@ -23,3 +24,7 @@ export const useWindowSize = (): { width: number; height: number } => {
 
     return windowSize
 }
+
+// Based on Docusaurus's mobile cutoff:
+// https://docusaurus.io/docs/styling-layout#mobile-view
+export const useIsMobile = () => useMediaQuery("(max-width:996px)")

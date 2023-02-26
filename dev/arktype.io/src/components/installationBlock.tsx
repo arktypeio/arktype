@@ -10,6 +10,12 @@ export const FloatingInstallationBlock = () => (
     </div>
 )
 
+export const MobileInstallationBlock = () => (
+    <div style={{ width: "100%" }}>
+        <InstallationBlock />
+    </div>
+)
+
 export const InstallationBlock = () => (
     <Card
         style={{

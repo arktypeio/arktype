@@ -2,6 +2,8 @@ import { Stack } from "@mui/material"
 import React from "react"
 import { Features } from "../components/features"
 import { ToggleableDemo } from "../components/toggleableDemo"
+import { MobileInstallationBlock } from "./installationBlock"
+import { useIsMobile } from "./useWindowSize"
 
 export const Contents = () => {
     return (
@@ -9,25 +11,14 @@ export const Contents = () => {
             <Stack
                 justifyContent="center"
                 alignItems="center"
+                padding="1rem 0rem 1rem"
                 spacing={1}
-                padding={2}
                 width="100%"
-                maxWidth="1600px"
+                maxWidth="60rem"
             >
-                <video
-                    autoPlay
-                    loop
-                    muted
-                    style={{
-                        maxWidth: "60em",
-                        width: "100%",
-                        borderRadius: "1rem",
-                        zIndex: -2
-                    }}
-                    src="/img/arktype.mp4"
-                />
-                <Features />
                 <ToggleableDemo embedId="type" />
+                {useIsMobile() ? <MobileInstallationBlock /> : null}
+                <Features />
             </Stack>
         </main>
     )

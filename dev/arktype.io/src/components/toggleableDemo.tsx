@@ -15,11 +15,21 @@ export const ToggleableDemo = ({ embedId }: ToggleableDemoProps) => {
     const { pathname } = useLocation()
     const [isActive, setIsActive] = useState<boolean>(pathname.includes("try"))
     return (
-        <Stack alignItems="center" spacing={2} width="100%">
+        <Stack
+            alignItems="center"
+            spacing={2}
+            width="100%"
+            sx={{ position: "relative" }}
+        >
             <Button
                 color="info"
                 variant="contained"
-                sx={{ whiteSpace: "nowrap" }}
+                sx={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    whiteSpace: "nowrap"
+                }}
                 onClick={() => setIsActive(!isActive)}
                 endIcon={
                     <div style={{ display: "flex" }}>
@@ -28,9 +38,31 @@ export const ToggleableDemo = ({ embedId }: ToggleableDemoProps) => {
                     </div>
                 }
             >
-                {isActive ? "All done?" : "Try in-browser"}
+                {isActive ? "All done?" : "Take control"}
             </Button>
-            {isActive ? <StackBlitzDemo embedId={embedId} /> : null}
+            {isActive ? (
+                <StackBlitzDemo embedId={embedId} />
+            ) : (
+                <DemoVideo src="/img/arktype.mp4" />
+            )}
         </Stack>
     )
 }
+
+type DemoVideoProps = {
+    src: string
+}
+
+const DemoVideo = ({ src }: DemoVideoProps) => (
+    <video
+        autoPlay
+        loop
+        muted
+        style={{
+            width: "100%",
+            borderRadius: "1rem",
+            zIndex: -2
+        }}
+        src={src}
+    />
+)
