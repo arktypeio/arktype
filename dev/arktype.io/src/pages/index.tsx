@@ -1,6 +1,6 @@
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import useIsBrowser from "@docusaurus/useIsBrowser"
-import { Card, Stack, ThemeProvider, Typography } from "@mui/material"
+import { Stack, ThemeProvider, Typography } from "@mui/material"
 import Layout from "@theme/Layout"
 import React from "react"
 import { Boat } from "../components/boat"
@@ -27,7 +27,8 @@ const Contents = () => {
                 style={{
                     maxWidth: "60em",
                     width: "100%",
-                    borderRadius: "1rem"
+                    borderRadius: "1rem",
+                    zIndex: -2
                 }}
                 src="/img/arktype.mp4"
             />
@@ -43,21 +44,8 @@ export default () => {
         <Layout title={siteConfig.title} description={siteConfig.tagline}>
             <ThemeProvider theme={getTheme()}>
                 <Header title={siteConfig.title} tagline={siteConfig.tagline} />
+                <InstallationBlock />
                 <main style={{ display: "flex", justifyContent: "center" }}>
-                    <Card
-                        style={{
-                            position: "fixed",
-                            right: 0,
-                            height: "auto",
-                            margin: "1rem",
-                            backgroundColor: "#009EFF66",
-                            backdropFilter: "blur(10px)",
-                            borderRadius: "2rem"
-                        }}
-                        elevation={6}
-                    >
-                        <InstallationBlock />
-                    </Card>
                     <Contents />
                 </main>
             </ThemeProvider>
@@ -69,7 +57,7 @@ const Header = ({ title, tagline }: Record<string, string>) => {
     return (
         <header
             style={{
-                height: 180,
+                height: "10rem",
                 display: "flex",
                 flexDirection: "row",
                 alignItems: "center",
