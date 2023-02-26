@@ -1,7 +1,6 @@
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext"
 import useIsBrowser from "@docusaurus/useIsBrowser"
-import { Grid, Stack, ThemeProvider, Typography, useTheme } from "@mui/material"
-import useMediaQuery from "@mui/material/useMediaQuery"
+import { Card, Stack, ThemeProvider, Typography } from "@mui/material"
 import Layout from "@theme/Layout"
 import React from "react"
 import { Boat } from "../components/boat"
@@ -12,8 +11,6 @@ import { LogoCloud } from "../components/logoCloud"
 import { ToggleableDemo } from "../components/toggleableDemo"
 
 const Contents = () => {
-    const theme = useTheme()
-    const isMobile = useMediaQuery(theme.breakpoints.down("md"))
     return (
         <Stack
             justifyContent="center"
@@ -23,35 +20,19 @@ const Contents = () => {
             width="100%"
             maxWidth="1600px"
         >
-            <Grid container>
-                <Grid xs={12} md={9}>
-                    <video
-                        autoPlay
-                        loop
-                        muted
-                        style={{
-                            maxWidth: "60em",
-                            width: "100%",
-                            borderRadius: "1rem"
-                        }}
-                        src="/img/arktype.mp4"
-                    />
-                </Grid>
-                <Grid xs={12} md={3}>
-                    <Stack
-                        height="100%"
-                        alignItems="center"
-                        justifyContent="center"
-                        spacing={4}
-                    >
-                        <div style={{ height: "auto" }} className="card">
-                            <InstallationBlock />
-                        </div>
-                        <ToggleableDemo embedId="type" />
-                    </Stack>
-                </Grid>
-            </Grid>
+            <video
+                autoPlay
+                loop
+                muted
+                style={{
+                    maxWidth: "60em",
+                    width: "100%",
+                    borderRadius: "1rem"
+                }}
+                src="/img/arktype.mp4"
+            />
             <Features />
+            <ToggleableDemo embedId="type" />
         </Stack>
     )
 }
@@ -63,6 +44,20 @@ export default () => {
             <ThemeProvider theme={getTheme()}>
                 <Header title={siteConfig.title} tagline={siteConfig.tagline} />
                 <main style={{ display: "flex", justifyContent: "center" }}>
+                    <Card
+                        style={{
+                            position: "fixed",
+                            right: 0,
+                            height: "auto",
+                            margin: "1rem",
+                            backgroundColor: "#009EFF66",
+                            backdropFilter: "blur(10px)",
+                            borderRadius: "2rem"
+                        }}
+                        elevation={6}
+                    >
+                        <InstallationBlock />
+                    </Card>
                     <Contents />
                 </main>
             </ThemeProvider>
@@ -81,47 +76,27 @@ const Header = ({ title, tagline }: Record<string, string>) => {
                 justifyContent: "center"
             }}
         >
-            <Stack direction="row">
-                <LogoCloud
-                    names={["typescript", "vscode", "intellij", "vim"]}
-                />
-                {/* Invisible, uninteractable mirror of right to keep title center-aligned */}
-                <div style={{ opacity: 0, zIndex: -1, marginLeft: "4rem" }}>
-                    <InstallationBlock />
-                </div>
+            <LogoCloud names={["typescript", "vscode", "intellij", "vim"]} />
+            <Stack flexGrow={1}>
+                <Typography component="h1" variant="h2" color="secondary">
+                    {title}
+                </Typography>
+                <Typography
+                    component="h2"
+                    variant={
+                        useIsBrowser() && window.screen.width < 1000
+                            ? "h6"
+                            : "h5"
+                    }
+                    color="common.white"
+                    style={{
+                        whiteSpace: "nowrap"
+                    }}
+                >
+                    {tagline}
+                </Typography>
             </Stack>
-            <Stack
-                direction="row"
-                flexGrow={1}
-                alignItems="center"
-                justifyContent="center"
-            >
-                <Stack>
-                    <Typography component="h1" variant="h2" color="secondary">
-                        {title}
-                    </Typography>
-                    <Typography
-                        component="h2"
-                        variant={
-                            useIsBrowser() && window.screen.width < 1000
-                                ? "h6"
-                                : "h5"
-                        }
-                        color="common.white"
-                        style={{
-                            whiteSpace: "nowrap"
-                        }}
-                    >
-                        {tagline}
-                    </Typography>
-                </Stack>
-            </Stack>
-            <Stack direction="row">
-                <div style={{ marginRight: "4rem" }}>
-                    <InstallationBlock />
-                </div>
-                <LogoCloud names={["javascript", "chromium", "node", "deno"]} />
-            </Stack>
+            <LogoCloud names={["javascript", "chromium", "node", "deno"]} />
             <Boat />
         </header>
     )

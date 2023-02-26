@@ -60,27 +60,29 @@ header {
     background-color: #1b1b1b;
 }
 
-[data-theme="dark"] .main-wrapper {
+[data-theme="dark"] {
     background-color: #1b1b1b;
+    --ifm-color-primary: #009eff;
+    --ifm-color-primary-dark: #008ee6;
+    --ifm-color-primary-darker: #0086d9;
+    --ifm-color-primary-darkest: #006fb3;
+    --ifm-color-primary-light: #1aa8ff;
+    --ifm-color-primary-lighter: #26adff;
+    --ifm-color-primary-lightest: #4dbbff;
 }
 
-/*@snipStart:cardCss*/
-.card {
-    padding: 1rem;
-    background-color: #1b1b1b;
-    color: #ffffff;
-    /* transition: box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms; */
-    border-radius: 1rem;
-    box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 1px -1px,
-        rgba(0, 0, 0, 0.14) 0px 1px 1px 0px, rgba(0, 0, 0, 0.12) 0px 1px 3px 0px;
-    background-image: linear-gradient(
-        rgba(255, 255, 255, 0.05),
-        rgba(255, 255, 255, 0.05)
-    );
-    height: 100%;
+[data-theme="light"] {
+    background-color: #fffff0;
+    --ifm-color-primary: #085b92;
+    --ifm-color-primary-dark: #075283;
+    --ifm-color-primary-darker: #074d7c;
+    --ifm-color-primary-darkest: #064066;
+    --ifm-color-primary-light: #0964a1;
+    --ifm-color-primary-lighter: #0969a8;
+    --ifm-color-primary-lightest: #0a76be;
 }
-/*@snipEnd:cardCss*/
 
-.codeBlock {
-    font-family: "Cascadia Code", sans-serif;
+.installationTabs {
+    --ifm-tabs-color-active: #eb9f2e;
+    --ifm-tabs-color-active-border: #eb9f2e;
 }

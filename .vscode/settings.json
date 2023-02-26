@@ -52,7 +52,13 @@
     "testExplorer.useNativeTesting": true,
     "deno.config": "./dev/configs/deno.jsonc",
     "deno.lint": false,
-    "cSpell.words": ["gtag", "intellij", "interactable", "uninteractable"]
+    "cSpell.words": [
+        "gtag",
+        "Infima",
+        "intellij",
+        "interactable",
+        "uninteractable"
+    ]
     // Should remain commented when code is submitted for PR so Node is active by default
     // "deno.enable": true
 }
