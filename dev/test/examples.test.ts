@@ -2,6 +2,17 @@ import { describe, it } from "mocha"
 import { attest } from "../attest/main.ts"
 
 describe("snippets", () => {
+    it("demo", async () => {
+        const typeSnippet = await import("../examples/demo.ts")
+        attest(typeSnippet.pkg.infer).typed as {
+            name: string
+            version: string
+            contributors?: string[]
+        }
+        attest(typeSnippet.problems?.summary).snap(
+            "contributors must be more than 1 items long (was 1)"
+        )
+    })
     it("type", async () => {
         const typeSnippet = await import("../examples/type.ts")
         attest(typeSnippet.user.infer).typed as {
