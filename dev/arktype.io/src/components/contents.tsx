@@ -1,11 +1,11 @@
 import { Stack } from "@mui/material"
 import React from "react"
 import { Features } from "../components/features"
-import { ToggleableDemo } from "../components/toggleableDemo"
 import {
     FloatingInstallationBlock,
     MobileInstallationBlock
 } from "./installationBlock"
+import { SudoDemo } from "./sudoDemo"
 import { useInstallationBlockShouldFloat } from "./useWindowSize"
 
 export const Contents = () => {
@@ -19,7 +19,7 @@ export const Contents = () => {
                 width="100%"
                 maxWidth="60rem"
             >
-                <ToggleableDemo embedId="type" />
+                <SudoDemo />
                 {useInstallationBlockShouldFloat() ? (
                     <FloatingInstallationBlock />
                 ) : (
