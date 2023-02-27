@@ -1,5 +1,61 @@
 // @ts-check
 
+// Automatically generated from ArkDark via https://github.com/FormidableLabs/prism-react-renderer/tree/master/tools/themeFromVsCode
+/** @type {import('prism-react-renderer').PrismTheme} */
+const arkDarkPrismTheme = {
+    plain: {
+        color: "#FFFFF0",
+        backgroundColor: "#1b1b1b"
+    },
+    styles: [
+        {
+            types: ["comment"],
+            style: {
+                color: "rgb(104, 107, 120)"
+            }
+        },
+        {
+            types: ["string", "number", "boolean"],
+            style: {
+                color: "rgb(245, 207, 143)"
+            }
+        },
+        {
+            types: ["builtin"],
+            style: {
+                color: "rgb(255, 255, 240)"
+            }
+        },
+        {
+            types: [
+                "punctuation",
+                "tag",
+                "operator",
+                "keyword",
+                "selector",
+                "doctype",
+                "namespace"
+            ],
+            style: {
+                color: "rgb(235, 159, 46)"
+            }
+        },
+        {
+            types: [
+                "char",
+                "constant",
+                "variable",
+                "class-name",
+                "function",
+                "attr-name"
+            ],
+            style: {
+                color: "rgb(128, 207, 248)"
+            }
+        }
+    ]
+}
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
     title: "ArkType",
@@ -39,6 +95,12 @@ const config = {
     themeConfig:
         /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
         ({
+            colorMode: {
+                defaultMode: "dark"
+            },
+            prism: {
+                theme: arkDarkPrismTheme
+            },
             navbar: {
                 logo: {
                     alt: "Arktype Logo",

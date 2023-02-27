@@ -60,6 +60,60 @@ header {
     background-color: #1b1b1b;
 }
 
-[data-theme="dark"] .main-wrapper {
+[data-theme="dark"] {
     background-color: #1b1b1b;
+    --ifm-color-primary: #009eff;
+    --ifm-color-primary-dark: #008ee6;
+    --ifm-color-primary-darker: #0086d9;
+    --ifm-color-primary-darkest: #006fb3;
+    --ifm-color-primary-light: #1aa8ff;
+    --ifm-color-primary-lighter: #26adff;
+    --ifm-color-primary-lightest: #4dbbff;
+    --ifm-tabs-color-active: #fffff0;
+    --ifm-tabs-color-active-border: #fffff0;
+}
+
+[data-theme="light"] {
+    background-color: #fffff0;
+    --ifm-color-primary: #085b92;
+    --ifm-color-primary-dark: #075283;
+    --ifm-color-primary-darker: #074d7c;
+    --ifm-color-primary-darkest: #064066;
+    --ifm-color-primary-light: #0964a1;
+    --ifm-color-primary-lighter: #0969a8;
+    --ifm-color-primary-lightest: #0a76be;
+    --ifm-tabs-color-active: #1b1b1b;
+    --ifm-tabs-color-active-border: #1b1b1b;
+}
+
+.installationTabs {
+    height: 2.6rem;
+    margin-top: -1.5rem;
+    --ifm-tabs-color: #8a8a8a;
+}
+
+.subTabs {
+    height: 3rem;
+    margin-top: -1.5rem;
+    --ifm-tabs-color: #8a8a8a;
+}
+
+.npmTab {
+    --ifm-tabs-color-active: #ff3939;
+    --ifm-tabs-color-active-border: #ff3939;
+}
+
+.pnpmTab {
+    --ifm-tabs-color-active: #f69220;
+    --ifm-tabs-color-active-border: #f69220;
+}
+
+.yarnTab {
+    --ifm-tabs-color-active: #6fd3ff;
+    --ifm-tabs-color-active-border: #6fd3ff;
+}
+
+.theme-code-block {
+    --prism-background-color: #1b1b1b66 !important;
+    --ifm-pre-padding: 0.5rem;
 }

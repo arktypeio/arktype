@@ -4,15 +4,16 @@ export type ThemeConfigOptions = {
     isDark: boolean
 }
 
+export const cascadiaCodeFamily = `"Cascadia Code", sans-serif`
+
 export const getTheme = () =>
     responsiveFontSizes(
         createTheme({
             palette: {
                 primary: {
-                    main: "#085b92",
-                    light: "#80cff8"
-                    // Occasionally "#009EFF" is used, e.g. in GIF title bars.
-                    // Not sure if/where that belongs yet.
+                    dark: "#085b92",
+                    light: "#80cff8",
+                    main: "#009EFF"
                 },
                 secondary: {
                     main: "#eb9f2e",
