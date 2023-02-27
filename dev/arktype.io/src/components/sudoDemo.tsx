@@ -29,7 +29,8 @@ export const SudoDemo = () => {
                     "&:hover": {
                         backgroundColor,
                         color: palette.primary.main
-                    }
+                    },
+                    zIndex: 1
                 }}
                 onClick={() => setIsActive(!isActive)}
                 endIcon={
