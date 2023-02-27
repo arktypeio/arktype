@@ -1,4 +1,4 @@
-import { Box, CircularProgress } from "@mui/material"
+import { Box } from "@mui/material"
 import React, { useEffect, useState } from "react"
 import type { DemoProps } from "./stackblitzGenerators/index"
 import {
@@ -6,15 +6,10 @@ import {
     DEMO_ELEMENT_ID
 } from "./stackblitzGenerators/index"
 
-const DEMO_LOADER_ID = "demo-loader"
-
 export const StackBlitzDemo = (demoProps: DemoProps) => {
     const [isLoading, setIsLoading] = useState(true)
     useEffect(() => {
         ;(async () => {
-            window.document
-                .getElementById(DEMO_LOADER_ID)
-                ?.scrollIntoView({ behavior: "smooth", block: "center" })
             const vm = await createStackblitzDemo(demoProps)
             // hack to workaround a caching issue where tsconfig is not applied until it is modified
             setTimeout(
@@ -56,12 +51,7 @@ export const StackBlitzDemo = (demoProps: DemoProps) => {
                 alignItems: "center"
             }}
         >
-            <CircularProgress
-                style={{ position: "absolute", opacity: isLoading ? 1 : 0 }}
-                color="secondary"
-                id={DEMO_LOADER_ID}
-            />
-            <div style={{ opacity: isLoading ? 0 : 1 }} id={DEMO_ELEMENT_ID} />
+            <div id={DEMO_ELEMENT_ID} />
         </Box>
     )
 }
