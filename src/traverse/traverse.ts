@@ -97,7 +97,9 @@ export class TraversalState<data = unknown> {
         this.path.push(key)
         const isValid = traverse(node, this)
         this.path.pop()
-        lastData[key] = this.data as any
+        if (lastData[key] !== this.data) {
+            lastData[key] = this.data as any
+        }
         this.data = lastData
         return isValid
     }

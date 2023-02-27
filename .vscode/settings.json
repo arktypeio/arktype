@@ -10,6 +10,7 @@
         "@typescript-eslint/consistent-type-imports",
         "object-shorthand"
     ],
+    "cSpell.enabled": true,
     "cSpell.useGitignore": true,
     "cSpell.userWords": [
         "arktype",
