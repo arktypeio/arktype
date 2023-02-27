@@ -4,6 +4,8 @@ export type ThemeConfigOptions = {
     isDark: boolean
 }
 
+export const cascadiaCodeFamily = `"Cascadia Code", sans-serif`
+
 export const getTheme = () =>
     responsiveFontSizes(
         createTheme({

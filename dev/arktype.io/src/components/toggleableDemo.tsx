@@ -9,6 +9,7 @@ import {
     createStackblitzDemo,
     DEMO_ELEMENT_ID
 } from "../../docs/demos/stackblitzGenerators"
+import { cascadiaCodeFamily } from "."
 
 export const ToggleableDemo = (props: DemoProps) => {
     const { pathname } = useLocation()
@@ -23,20 +24,26 @@ export const ToggleableDemo = (props: DemoProps) => {
                 sx={{ position: "relative" }}
             >
                 <Button
-                    color="info"
                     variant="contained"
                     sx={{
                         position: "absolute",
-                        bottom: 0,
+                        top: 0,
                         left: 0,
-                        whiteSpace: "nowrap"
+                        margin: "1rem",
+                        whiteSpace: "nowrap",
+                        backgroundColor: "#ffffff00",
+                        backdropFilter: "blur(2px)",
+                        borderRadius: "2rem",
+                        fontSize: "1.5rem",
+                        fontFamily: cascadiaCodeFamily,
+                        textTransform: "none"
                     }}
                     onClick={async () => {
+                        setIsActive(!isActive)
                         if (!isActive) {
                             await activateDemo(props)
                             setIsLoading(false)
                         }
-                        setIsActive(!isActive)
                     }}
                     endIcon={
                         <div style={{ display: "flex" }}>
@@ -45,19 +52,28 @@ export const ToggleableDemo = (props: DemoProps) => {
                         </div>
                     }
                 >
-                    {isActive ? "All done?" : "Take control"}
+                    {isActive ? "All done?" : "Take control of this demo"}
                 </Button>
-                <Stack>
-                    <div id={DEMO_ELEMENT_ID} />
-                    {isActive ? null : (
-                        <video
-                            autoPlay
-                            loop
-                            muted
-                            src="/img/arktype.mp4"
-                            style={{ width: "100%" }}
-                        />
-                    )}
+                <Stack width="100%">
+                    <div
+                        style={{
+                            width: "100%",
+                            height: "600px",
+                            display: isActive ? "flex" : "none"
+                        }}
+                    >
+                        <div id={DEMO_ELEMENT_ID} />
+                    </div>
+                    <video
+                        style={{
+                            width: "100%",
+                            display: isActive ? "none" : "unset"
+                        }}
+                        autoPlay
+                        loop
+                        muted
+                        src="/img/arktype.mp4"
+                    />
                 </Stack>
             </Stack>
         </>
