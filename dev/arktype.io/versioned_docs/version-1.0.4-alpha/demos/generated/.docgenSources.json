@@ -1,0 +1,9 @@
+{
+    "//": "This directory was generated from the following files (see dev/scripts/docgen/mapDir.ts for details)",
+    "demo.ts": "dev/examples/demo.ts",
+    "scope.ts": "dev/examples/scope.ts",
+    "type.ts": "dev/examples/type.ts",
+    "demo.css.ts": "dev/arktype.io/docs/demos/layout/demo.css",
+    "index.html.ts": "dev/arktype.io/docs/demos/layout/index.html",
+    "populateDemo.ts": "dev/arktype.io/docs/demos/layout/populateDemo.ts"
+}
