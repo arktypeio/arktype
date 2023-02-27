@@ -55,14 +55,16 @@ export const SudoDemo = () => {
                     <StackBlitzDemo embedId="type" />
                 ) : (
                     <video
+                        src="/img/arktype.mp4"
+                        autoPlay
+                        loop
+                        muted
+                        disablePictureInPicture={true}
+                        controls={true}
                         style={{
                             width: "100%",
                             marginTop: "-1.8rem"
                         }}
-                        autoPlay
-                        loop
-                        muted
-                        src="/img/arktype.mp4"
                     />
                 )}
             </Stack>
