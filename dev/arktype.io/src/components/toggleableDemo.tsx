@@ -1,8 +1,9 @@
 import { useLocation } from "@docusaurus/router"
+import { useColorMode } from "@docusaurus/theme-common"
 import Collapse from "@mui/icons-material/ExpandLess"
 import Expand from "@mui/icons-material/ExpandMore"
-import Terminal from "@mui/icons-material/Terminal"
-import { Button, Stack } from "@mui/material"
+import { Button, Stack, useMediaQuery, useTheme } from "@mui/material"
+import { motion } from "framer-motion"
 import React, { useState } from "react"
 import type { DemoProps } from "../../docs/demos/stackblitzGenerators"
 import {
@@ -13,70 +14,77 @@ import { cascadiaCodeFamily } from "."
 
 export const ToggleableDemo = (props: DemoProps) => {
     const { pathname } = useLocation()
+    const palette = useTheme().palette
+    const isDarkMode = useColorMode().colorMode === "dark"
     const [isActive, setIsActive] = useState<boolean>(pathname.includes("try"))
     const [isLoading, setIsLoading] = useState(true)
+    const backgroundColor = isDarkMode ? "#ffffff00" : "#000000aa"
     return (
-        <>
-            <Stack
-                alignItems="center"
-                spacing={2}
-                width="100%"
-                sx={{ position: "relative" }}
-            >
-                <Button
-                    variant="contained"
-                    sx={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        margin: "1rem",
-                        whiteSpace: "nowrap",
-                        backgroundColor: "#ffffff00",
-                        backdropFilter: "blur(2px)",
-                        borderRadius: "2rem",
-                        fontSize: "1.5rem",
-                        fontFamily: cascadiaCodeFamily,
-                        textTransform: "none"
-                    }}
-                    onClick={async () => {
-                        setIsActive(!isActive)
-                        if (!isActive) {
-                            await activateDemo(props)
-                            setIsLoading(false)
-                        }
-                    }}
-                    endIcon={
-                        <div style={{ display: "flex" }}>
-                            <Terminal />
-                            {isActive ? <Collapse /> : <Expand />}
-                        </div>
+        <Stack alignItems="start" width="100%">
+            <Button
+                variant="contained"
+                sx={{
+                    backgroundColor,
+                    backdropFilter: "blur(2px)",
+                    borderRadius: "2rem",
+                    fontSize: "1.5rem",
+                    fontFamily: cascadiaCodeFamily,
+                    textTransform: "none",
+                    color: palette.primary.light,
+                    "&:hover": {
+                        backgroundColor,
+                        color: palette.primary.main
                     }
-                >
-                    {isActive ? "All done?" : "Take control of this demo"}
-                </Button>
-                <Stack width="100%">
-                    <div
-                        style={{
-                            width: "100%",
-                            height: "600px",
-                            display: isActive ? "flex" : "none"
-                        }}
-                    >
-                        <div id={DEMO_ELEMENT_ID} />
+                }}
+                onClick={async () => {
+                    setIsActive(!isActive)
+                    if (!isActive) {
+                        await activateDemo(props)
+                        setIsLoading(false)
+                    }
+                }}
+                endIcon={
+                    <div style={{ display: "flex" }}>
+                        {isActive ? <Collapse /> : <Expand />}
                     </div>
-                    <video
-                        style={{
-                            width: "100%",
-                            display: isActive ? "none" : "unset"
-                        }}
-                        autoPlay
-                        loop
-                        muted
-                        src="/img/arktype.mp4"
-                    />
-                </Stack>
+                }
+            >
+                {isActive ? "$ wq!" : "$ sudo chmod +wx demo.ts"}
+                <motion.div
+                    animate={{ opacity: 0 }}
+                    transition={{
+                        duration: 0.5,
+                        repeatType: "mirror",
+                        repeat: Infinity
+                    }}
+                >
+                    _
+                </motion.div>
+            </Button>
+            <Stack width="100%">
+                <div
+                    style={{
+                        width: "100%",
+                        height: "600px",
+                        display: isActive ? "flex" : "none",
+                        marginTop: "1rem"
+                    }}
+                >
+                    <div id={DEMO_ELEMENT_ID} />
+                </div>
+                <video
+                    style={{
+                        width: "100%",
+                        display: isActive ? "none" : "unset",
+                        marginTop: "-1.8rem"
+                    }}
+                    autoPlay
+                    loop
+                    muted
+                    src="/img/arktype.mp4"
+                />
             </Stack>
-        </>
+        </Stack>
     )
 }
 

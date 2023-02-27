@@ -2,8 +2,11 @@ import { Stack } from "@mui/material"
 import React from "react"
 import { Features } from "../components/features"
 import { ToggleableDemo } from "../components/toggleableDemo"
-import { MobileInstallationBlock } from "./installationBlock"
-import { useIsMobile } from "./useWindowSize"
+import {
+    FloatingInstallationBlock,
+    MobileInstallationBlock
+} from "./installationBlock"
+import { useInstallationBlockShouldFloat } from "./useWindowSize"
 
 export const Contents = () => {
     return (
@@ -17,7 +20,11 @@ export const Contents = () => {
                 maxWidth="60rem"
             >
                 <ToggleableDemo embedId="type" />
-                {useIsMobile() ? <MobileInstallationBlock /> : null}
+                {useInstallationBlockShouldFloat() ? (
+                    <FloatingInstallationBlock />
+                ) : (
+                    <MobileInstallationBlock />
+                )}
                 <Features />
             </Stack>
         </main>

@@ -2,13 +2,28 @@ import { Card } from "@mui/material"
 import Code from "@theme/CodeBlock"
 import TabItem from "@theme/TabItem"
 import Tabs from "@theme/Tabs"
+import { motion, useAnimation, useScroll } from "framer-motion"
 import React from "react"
 
-export const FloatingInstallationBlock = () => (
-    <div style={{ position: "fixed", right: 0, top: 60 }}>
-        <InstallationBlock />
-    </div>
-)
+export const FloatingInstallationBlock = () => {
+    const { scrollY } = useScroll()
+    const controls = useAnimation()
+    const initial = {
+        position: "absolute",
+        top: 60,
+        width: "24rem"
+    } as const satisfies Parameters<(typeof controls)["start"]>[0]
+    scrollY.onChange((value) => {
+        controls.start(
+            value ? { position: "fixed", top: "50%", width: "unset" } : initial
+        )
+    })
+    return (
+        <motion.div style={{ right: 0 }} initial={initial} animate={controls}>
+            <InstallationBlock />
+        </motion.div>
+    )
+}
 
 export const MobileInstallationBlock = () => (
     <div style={{ width: "100%" }}>
@@ -19,9 +34,9 @@ export const MobileInstallationBlock = () => (
 export const InstallationBlock = () => (
     <Card
         style={{
-            height: "9rem",
+            height: "8rem",
             margin: ".5rem",
-            padding: ".7rem .5rem 0rem",
+            padding: ".7rem 1rem 0rem",
             backgroundColor: "#ffffff00",
             backdropFilter: "blur(1px)",
             borderRadius: "2rem",
@@ -48,7 +63,9 @@ export const InstallationBlock = () => (
                 <Code language="bash">bun install arktype</Code>
             </TabItem>
             <TabItem value="deno" label="deno">
-                <Code language="bash">https://deno.land/x/arktype/main.ts</Code>
+                <Code language="typescript">
+                    {`import { type } from "https://deno.land/x/arktype/main.ts"`}
+                </Code>
             </TabItem>
         </Tabs>
     </Card>
