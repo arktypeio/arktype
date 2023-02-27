@@ -2,12 +2,12 @@
 hide_table_of_contents: true
 ---
 
-# arkscope
+# arkScope
 
 ## text
 
 ```ts
-arkscope: import("./scope.js").Scope<
+arkScope: import("./scope.js").Scope<
     [
         {
             any: any

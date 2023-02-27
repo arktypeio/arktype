@@ -34,7 +34,8 @@
         "typeof",
         "unvalidated",
         "stackblitz",
-        "toggleable"
+        "toggleable",
+        "chatgpt"
     ],
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "typescript.tsdk": "./node_modules/typescript/lib",
@@ -52,7 +53,15 @@
     "testExplorer.useNativeTesting": true,
     "deno.config": "./dev/configs/deno.jsonc",
     "deno.lint": false,
-    "cSpell.words": ["intellij"]
+    "cSpell.words": [
+        "gtag",
+        "Infima",
+        "intellij",
+        "interactable",
+        "Intersector",
+        "pnpm",
+        "uninteractable"
+    ]
     // Should remain commented when code is submitted for PR so Node is active by default
     // "deno.enable": true
 }
