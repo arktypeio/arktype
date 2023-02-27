@@ -1,18 +1,17 @@
 <h1 align="center">ArkType <sub><sup>Isomorphic types for TS/JS</sup></sub></h1>
 
-![Intro GIF](./dev/arktype.io/static/img/arktype.gif)
+[<img src="./dev/arktype.io/static/img/arktype.gif">](https://arktype.io/try)
 <sub><i>`typescript@4.9.5` in VS Code— no extensions or plugins required (<a href="#how">how?</a>)</i></sub>
 
 <!-- @snipStart:install -->
+
+<img src="./dev/arktype.io/static/img/logo.svg" alt="ArkType Icon" height="16px"><b> Try this demo in-browser at [arktype.io/try](https://arktype.io/try)</b>
 
 ## Install <sub><sub>📦`4KB` gzipped, `0` dependencies</sub></sub>
 
 <img src="./dev/arktype.io/static/img/npm.svg" alt="Npm Icon" height="16px"> `npm install arktype` <sub>(or whatever package manager you prefer)</sub>
 
 <img src="./dev/arktype.io/static/img/deno.svg" alt="Deno Icon" height="16px"> `import { type } from "https://deno.land/x/arktype"`
-
-<img src="./dev/arktype.io/static/img/logo.svg" alt="ArkType Icon" height="16px"> <i>Try it in-browser at [arktype.io/try](https://arktype.io/try)</i> <sub>(the types aren't quite as snappy as they will be in
-your IDE)</sub>
 
 Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#strict) with TypeScript versions `4.8`, `4.9`, and `5.0`.
 
