@@ -1,0 +1,91 @@
+# Usage
+
+You already know how to write TS types, why not write save time and write validators and types together
+
+## Creating an object
+
+```ts
+import { type } from "arktype"
+
+const user = type({
+    name: "string",
+    users: "number"
+})
+
+// extracting the type is as easy as inferring your Arktype definition
+type User = typeof user.infer
+
+user({
+    name: "Arktype",
+    users: 2
+})
+// {data: { name: 'Arktype', users: 2 }}
+```
+
+## Optional keys
+
+```ts
+import { type } from "arktype"
+const user = type({ name: "string", "yearsOfExperience?": "number" })
+
+type User = typeof user.infer
+//  {
+//      name: string;
+//      yearsOfExperience?: number;
+//  }
+
+user({ name: "David" })
+// {data: { name: 'David'}}
+```
+
+## Bounds
+
+Looking to constrain your data?
+
+```ts
+import { type } from "arktype"
+
+// single bound
+type("number<5")
+type("number<=5")
+type("number>5")
+type("number>=5")
+
+//double bound
+type("2<number<5")
+type("2<=number<=5")
+```
+
+Bounds can be applied to: `string` `number` `(string | number)[ ]` [Tuples](#Tuples)
+
+## Tuples {#Tuples}
+
+```ts
+import { type } from "arktype"
+
+const tuple = type(["string", "number", "string"])
+tuple.check(["EZ", 0, "MOOCHI"])
+// { data: [ 'EZ', 0, 'MOOCHI' ] }
+```
+
+## Intersections and Unions
+
+```ts
+const union = type("string|number")
+typeof union // string|number
+
+const intersection = type("string&number")
+typeof intersection // never
+```
+
+## Cyclic Data
+
+We handle those cycles with ease! Cycle away!
+
+```ts
+scope({
+    three: "3",
+    sixty: "60",
+    no: "'no'"
+})
+```
