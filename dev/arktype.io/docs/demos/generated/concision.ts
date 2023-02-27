@@ -1,6 +1,13 @@
 export default `import z from "zod"
 import { type } from "arktype"
 
+// Hover to infer... ⛵
+const playerTwo = type({
+    name: "string",
+    birthday: ["string", "|>", (s) => new Date(s)],
+    "powerLevel?": "1<=number<9000"
+})
+
 // Hover to infer... 🦸
 const playerOne = z.object({
     name: z.string(),
@@ -9,12 +16,5 @@ const playerOne = z.object({
         z.date()
     ),
     powerLevel: z.number().gte(1).lt(9000).optional()
-})
-
-// Hover to infer... ⛵
-const playerTwo = type({
-    name: "string",
-    birthday: ["string", "|>", (s) => new Date(s)],
-    "powerLevel?": "1<=number<9000"
 })
 `

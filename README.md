@@ -5,13 +5,13 @@
 
 <!-- @snipStart:install -->
 
-<img src="./dev/arktype.io/static/img/logo.svg" alt="ArkType Icon" height="16px"><b> Try this demo in-browser at [arktype.io/try](https://arktype.io/try)</b>
+<img src="./dev/arktype.io/static/img/logo.svg" alt="ArkType Icon" height="16px"/><b> Try this demo in-browser at [arktype.io/try](https://arktype.io/try)</b>
 
 ## Install <sub><sub>📦`4KB` gzipped, `0` dependencies</sub></sub>
 
-<img src="./dev/arktype.io/static/img/npm.svg" alt="Npm Icon" height="16px"> `npm install arktype` <sub>(or whatever package manager you prefer)</sub>
+<img src="./dev/arktype.io/static/img/npm.svg" alt="Npm Icon" height="16px" /> <code>npm install arktype</code> <sub>(or whatever package manager you prefer)</sub>
 
-<img src="./dev/arktype.io/static/img/deno.svg" alt="Deno Icon" height="16px"> `import { type } from "https://deno.land/x/arktype"`
+<img src="./dev/arktype.io/static/img/deno.svg" alt="Deno Icon" height="16px" /> <code>import { type } from "https://deno.land/x/arktype"</code>
 
 Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#strict) with TypeScript versions `4.8`, `4.9`, and `5.0`.
 

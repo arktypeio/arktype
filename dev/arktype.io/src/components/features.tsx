@@ -1,4 +1,4 @@
-import { Grid, Typography, useTheme } from "@mui/material"
+import { Grid, Stack, Typography, useTheme } from "@mui/material"
 import Code from "@theme/CodeBlock"
 import React from "react"
 
@@ -23,12 +23,11 @@ type User = typeof user.infer
 const ArkTypeConcision = (
     <div className="inferable-code">
         <Code language="typescript">{`// Hover to infer... ⛵
-const playerOne = type({
+const playerTwo = type({
     name: "string",
     birthday: ["string", "|>", (s) => new Date(s)],
     "powerLevel?": "1<=number<9000"
-})
-`}</Code>
+})`}</Code>
         <img height="60%" src="/img/conciseInfer.png" />
     </div>
 )
@@ -36,23 +35,22 @@ const playerOne = type({
 const ZodConcision = (
     <div className="inferable-code">
         <Code language="typescript">{`// Hover to infer... 🦸
-const playerTwo = z.object({
+const playerOne = z.object({
     name: z.string(),
     birthday: z.preprocess(
         (arg) => (typeof arg === "string" ? new Date(arg) : undefined),
         z.date()
     ),
     powerLevel: z.number().gte(1).lt(9000).optional()
-})
-`}</Code>
+})`}</Code>
         <img height="80%" src="/img/zodInfer.png" />
     </div>
 )
 
 const ConciseImage = (
     <>
-        {ArkTypeConcision}
         {ZodConcision}
+        {ArkTypeConcision}
     </>
 )
 
@@ -64,14 +62,14 @@ const details = [
         image: IsomorphicCodeBlock
     },
     {
-        title: "Native JS/TS",
-        description:
-            "Zero dependencies and no extensions, plugins or compilers required"
-    },
-    {
         title: "Concise",
         description: "Say more with less",
         image: ConciseImage
+    },
+    {
+        title: "Native JS/TS",
+        description:
+            "Zero dependencies and no extensions, plugins or compilers required"
     },
     {
         // add image of intersections with divisors/range etc.
@@ -112,13 +110,7 @@ export const Features = () => {
 const Feature = (props: FeatureProps) => {
     const theme = useTheme()
     return (
-        <div
-            style={{
-                margin: "auto",
-                paddingTop: "1em",
-                maxWidth: "40em"
-            }}
-        >
+        <Stack spacing={2} maxWidth="40em">
             <Typography
                 component="h3"
                 variant="h5"
@@ -132,7 +124,7 @@ const Feature = (props: FeatureProps) => {
             <Typography component="p" variant="body1" fontWeight="300">
                 {props.description}
             </Typography>
-            {props.image ?? null}
-        </div>
+            <div>{props.image ?? null}</div>
+        </Stack>
     )
 }

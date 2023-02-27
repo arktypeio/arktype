@@ -2,14 +2,14 @@ import z from "zod"
 import { type } from "../../src/main.ts"
 
 // Hover to infer... ⛵
-const playerOne = type({
+const playerTwo = type({
     name: "string",
     birthday: ["string", "|>", (s) => new Date(s)],
     "powerLevel?": "1<=number<9000"
 })
 
 // Hover to infer... 🦸
-const playerTwo = z.object({
+const playerOne = z.object({
     name: z.string(),
     birthday: z.preprocess(
         (arg) => (typeof arg === "string" ? new Date(arg) : undefined),
