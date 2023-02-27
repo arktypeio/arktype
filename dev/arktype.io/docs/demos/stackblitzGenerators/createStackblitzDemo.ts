@@ -1,10 +1,11 @@
 import sdk from "@stackblitz/sdk"
+import demoContents from "../generated/demo"
 import scopeContents from "../generated/scope"
 import typeContents from "../generated/type"
 import { buildStackblitzIndexText } from "./buildStackblitzIndexText"
 import { defaultStaticFiles } from "./defaultFiles"
 
-export const embedIds = { type: 1, scope: 1 }
+export const embedIds = { type: 1, scope: 1, demo: 1 }
 export type EmbedId = keyof typeof embedIds
 
 export type DemoProps = {
@@ -13,7 +14,8 @@ export type DemoProps = {
 
 export const contentsByEmbedId: Record<EmbedId, string> = {
     type: typeContents,
-    scope: scopeContents
+    scope: scopeContents,
+    demo: demoContents
 }
 
 export const DEMO_ELEMENT_ID = "arktype-demo"

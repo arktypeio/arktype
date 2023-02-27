@@ -53,17 +53,19 @@ export const SudoDemo = () => {
             </Button>
             <Stack width="100%">
                 {isActive ? (
-                    <StackBlitzDemo embedId="type" />
+                    <StackBlitzDemo embedId="demo" />
                 ) : (
                     <video
+                        src="/img/arktype.mp4"
+                        autoPlay
+                        loop
+                        muted
+                        disablePictureInPicture={true}
+                        controls={true}
                         style={{
                             width: "100%",
                             marginTop: "-1.8rem"
                         }}
-                        autoPlay
-                        loop
-                        muted
-                        src="/img/arktype.mp4"
                     />
                 )}
             </Stack>

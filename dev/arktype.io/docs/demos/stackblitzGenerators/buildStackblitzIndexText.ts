@@ -32,5 +32,9 @@ const demoAdapters: Record<EmbedId, DemoAdapter> = {
     scope: [
         `const { types, data, problems } = await import("./scope")`,
         "{ type: types.package, data, problems }"
+    ],
+    demo: [
+        `const { pkg, data, problems } = await import("./demo")`,
+        `{ type: pkg, data, problems }`
     ]
 }
