@@ -112,6 +112,12 @@ module.exports = defineConfig({
                 // Assignment to a variable is required to ensure types are parsed
                 "@typescript-eslint/no-unused-vars": "off"
             }
+        },
+        {
+            files: ["./dev/examples/*.ts"],
+            rules: {
+                "@typescript-eslint/no-unused-vars": "off"
+            }
         }
     ]
 })

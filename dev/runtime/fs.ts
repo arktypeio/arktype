@@ -128,7 +128,10 @@ export const readPackageJson = (startDir?: string) =>
     readJson(join(findPackageRoot(startDir), "package.json"))
 
 export const getSourceControlPaths = () =>
-    shell("git ls-files", { stdio: "pipe" })!
+    // include tracked and untracked files as long as they are not ignored
+    shell("git ls-files --exclude-standard --cached --others", {
+        stdio: "pipe"
+    })!
         .toString()
         .split("\n")
         .filter((path) => existsSync(path) && statSync(path).isFile())

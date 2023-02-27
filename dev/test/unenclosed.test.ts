@@ -65,19 +65,19 @@ describe("parse unenclosed", () => {
             })
 
             it("leading zeroes", () => {
-                // @ts-expect-error
+                // https://github.com/arktypeio/arktype/issues/65 @ts-expect-error
                 attest(() => type("010")).throwsAndHasTypeError(
                     writeMalformedNumericLiteralMessage("010", "number")
                 )
             })
             it("trailing zeroes", () => {
-                // @ts-expect-error
+                // https://github.com/arktypeio/arktype/issues/65 @ts-expect-error
                 attest(() => type("4.0")).throwsAndHasTypeError(
                     writeMalformedNumericLiteralMessage("4.0", "number")
                 )
             })
             it("negative zero", () => {
-                // @ts-expect-error
+                // https://github.com/arktypeio/arktype/issues/659 @ts-expect-error
                 attest(() => type("-0")).throwsAndHasTypeError(
                     writeMalformedNumericLiteralMessage("-0", "number")
                 )
@@ -115,7 +115,7 @@ describe("parse unenclosed", () => {
                     .type.errors(writeUnresolvableMessage("007n"))
             })
             it("negative zero", () => {
-                // @ts-expect-error
+                // https://github.com/arktypeio/arktype/issues/65 @ts-expect-error
                 attest(() => type("-0n")).throwsAndHasTypeError(
                     writeMalformedNumericLiteralMessage("-0n", "bigint")
                 )

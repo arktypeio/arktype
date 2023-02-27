@@ -52,7 +52,7 @@ export const SudoDemo = () => {
             </Button>
             <Stack width="100%">
                 {isActive ? (
-                    <StackBlitzDemo embedId="type" />
+                    <StackBlitzDemo embedId="demo" />
                 ) : (
                     <video
                         src="/img/arktype.mp4"

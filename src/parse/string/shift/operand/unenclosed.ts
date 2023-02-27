@@ -2,8 +2,7 @@ import type { Node } from "../../../../nodes/node.ts"
 import type { error, stringKeyOf } from "../../../../utils/generics.ts"
 import type {
     BigintLiteral,
-    NumberLiteral,
-    writeMalformedNumericLiteralMessage
+    NumberLiteral
 } from "../../../../utils/numericLiterals.ts"
 import {
     tryParseWellFormedBigint,
@@ -70,15 +69,19 @@ type tryResolve<
     $
 > = isResolvableIdentifier<token, $> extends true
     ? token
-    : token extends NumberLiteral<infer value>
-    ? number extends value
-        ? error<writeMalformedNumericLiteralMessage<token, "number">>
-        : token
-    : token extends BigintLiteral<infer value>
-    ? bigint extends value
-        ? error<writeMalformedNumericLiteralMessage<token, "bigint">>
-        : token
-    : error<
+    : token extends NumberLiteral
+    ? token
+    : // These checks are temporarily disabled because we're unable to update our TS version in StackBlitz to 4.8+
+    // https://github.com/arktypeio/arktype/issues/659
+    // number extends value
+    //     ? error<writeMalformedNumericLiteralMessage<token, "number">>
+    //     : token
+    token extends BigintLiteral
+    ? token
+    : // bigint extends value
+      //     ? error<writeMalformedNumericLiteralMessage<token, "bigint">>
+      //     : token
+      error<
           token extends ""
               ? writeMissingOperandMessage<s>
               : writeUnresolvableMessage<token>
