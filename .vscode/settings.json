@@ -62,7 +62,8 @@
         "Intersector",
         "pnpm",
         "uninteractable",
-        "unscanned"
+        "unscanned",
+        "uninteractable"
     ]
     // Should remain commented when code is submitted for PR so Node is active by default
     // "deno.enable": true
