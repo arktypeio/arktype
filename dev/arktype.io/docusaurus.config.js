@@ -147,11 +147,11 @@ const config = {
                             {
                                 label: "Discord",
                                 href: "https://discord.gg/WSNF3Kc4xh"
+                            },
+                            {
+                                label: "Twitch",
+                                href: "https://twitch.tv/arktypeio"
                             }
-                            // {
-                            //     label: "Twitch",
-                            //     href: "https://twitch.tv/ArkTypeCode"
-                            // }
                         ]
                     }
                 ],
