@@ -12,7 +12,7 @@
     ],
     "cSpell.enabled": true,
     "cSpell.useGitignore": true,
-    "cSpell.userWords": [
+    "cSpell.words": [
         "arktype",
         "Blass",
         "Cascadia",
@@ -36,7 +36,16 @@
         "unvalidated",
         "stackblitz",
         "toggleable",
-        "chatgpt"
+        "chatgpt",
+        "gtag",
+        "Infima",
+        "intellij",
+        "interactable",
+        "Intersector",
+        "pnpm",
+        "ssalbdivad",
+        "uninteractable",
+        "unscanned"
     ],
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "typescript.tsdk": "./node_modules/typescript/lib",
@@ -53,18 +62,7 @@
     },
     "testExplorer.useNativeTesting": true,
     "deno.config": "./dev/configs/deno.jsonc",
-    "deno.lint": false,
-    "cSpell.words": [
-        "gtag",
-        "Infima",
-        "intellij",
-        "interactable",
-        "Intersector",
-        "pnpm",
-        "uninteractable",
-        "unscanned",
-        "uninteractable"
-    ]
+    "deno.lint": false
     // Should remain commented when code is submitted for PR so Node is active by default
     // "deno.enable": true
 }
