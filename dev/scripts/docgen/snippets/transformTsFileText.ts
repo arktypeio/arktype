@@ -1,6 +1,6 @@
 import type { Project, SourceFile } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { findPackageRoot, readPackageJson } from "../../../runtime/api.ts"
+import { findPackageRoot, readPackageJson } from "../../../runtime/main.ts"
 import type { PackageMetadata } from "../api/extractApi.ts"
 import type { DocGenSnippetsConfig } from "../main.ts"
 import type { SnippetTransformToggles } from "./extractSnippets.ts"
@@ -37,7 +37,7 @@ export const transformRelativeImports = (
     )
     for (const declaration of importDeclarations) {
         const specifier = declaration.getModuleSpecifier()
-        if (specifier.getLiteralText().endsWith("../api.ts")) {
+        if (specifier.getLiteralText().endsWith("main.ts")) {
             specifier.replaceWithText(`"${packageJson.name}"`)
         }
     }

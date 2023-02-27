@@ -51,11 +51,11 @@ type ScopeParser = {
     ): Scope<parseScope<aliases, opts>>
 }
 
-type validateAliases<aliases, opts extends ScopeOptions> = {
+type validateAliases<aliases, opts extends ScopeOptions> = evaluate<{
     [name in keyof aliases]: name extends keyof preresolved<opts>
         ? writeDuplicateAliasesMessage<name & string>
         : validateDefinition<aliases[name], bootstrapScope<aliases, opts>>
-}
+}>
 
 export type ScopeOptions = {
     // [] allows narrowed tuple inference

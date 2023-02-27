@@ -1,23 +1,32 @@
-import { createTheme } from "@mui/material"
+import { createTheme, responsiveFontSizes } from "@mui/material"
 
 export type ThemeConfigOptions = {
     isDark: boolean
 }
 
+export const cascadiaCodeFamily = `"Cascadia Code", sans-serif`
+
 export const getTheme = () =>
-    createTheme({
-        palette: {
-            primary: {
-                main: "#0067a5"
+    responsiveFontSizes(
+        createTheme({
+            palette: {
+                primary: {
+                    dark: "#085b92",
+                    light: "#80cff8",
+                    main: "#009EFF"
+                },
+                secondary: {
+                    main: "#eb9f2e",
+                    dark: "#4b3621",
+                    light: "#f5cf8f"
+                },
+                common: {
+                    white: "#fffff0",
+                    black: "#1b1b1b"
+                }
             },
-            secondary: {
-                main: "#e3ab57"
-            },
-            common: {
-                white: "#fffff0"
+            typography: {
+                fontFamily: "'Raleway', sans-serif"
             }
-        },
-        typography: {
-            fontFamily: "'Raleway', sans-serif"
-        }
-    })
+        })
+    )

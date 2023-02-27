@@ -1,12 +1,12 @@
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import * as process from "node:process"
-import type { SourceFileEntry } from "../../runtime/api.ts"
+import type { SourceFileEntry } from "../../runtime/main.ts"
 import {
     ensureDir,
     fromPackageRoot,
     getSourceFileEntries
-} from "../../runtime/api.ts"
+} from "../../runtime/main.ts"
 import { getCmdFromPid } from "./utils.ts"
 import type { BenchFormat } from "./writeSnapshot.ts"
 

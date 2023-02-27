@@ -1,4 +1,3 @@
-import type { asConst } from "../../../../src/utils/generics.ts"
 import type { snapshot } from "../../../../src/utils/serialize.ts"
 
 export type RootAssertions<
@@ -69,9 +68,6 @@ export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
         "unknown"
     >
     typedValue: (expected: T) => undefined
-    narrowedValue: <Expected extends T>(
-        expected: asConst<Expected>
-    ) => undefined
 }
 
 export type ExternalSnapshotArgs = {

@@ -1,12 +1,12 @@
 import { getAttestConfig } from "../config.ts"
 import { getFileKey } from "../utils.ts"
 import { getVirtualTsMorphProject } from "./getTsMorphProject.ts"
-import type { AssertionData } from "./internal/api.ts"
+import type { AssertionData } from "./internal/main.ts"
 import {
     getAssertionsInFile,
     getCachedAssertionData,
     getDiagnosticsByFile
-} from "./internal/api.ts"
+} from "./internal/main.ts"
 
 type AnalyzeTypeAssertionsOptions = {
     isInitialCache?: boolean

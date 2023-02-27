@@ -6,6 +6,8 @@ import * as process from "node:process"
 // workaround for incompatible CJS/ESM imports (we have to use CJS in this dir because of docusaurus)
 //@blockFrom:dev/runtime/shell.ts:shell
 export type ShellOptions = Parameters<typeof execSync>[1] & {
+    env?: Record<string, unknown>
+    stdio?: "pipe" | "inherit"
     returnOutput?: boolean
 }
 
@@ -13,12 +15,12 @@ export type ShellOptions = Parameters<typeof execSync>[1] & {
 export const shell = (
     cmd: string,
     { returnOutput, env, ...otherOptions }: ShellOptions = {}
-) =>
+): string =>
     execSync(cmd, {
         stdio: returnOutput ? "pipe" : "inherit",
         env: { ...process.env, ...env },
         ...otherOptions
-    })!
+    })?.toString() ?? ""
 //@blockEnd
 
 rmSync("dist", { recursive: true, force: true })

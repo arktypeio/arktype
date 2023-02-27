@@ -1,7 +1,7 @@
 import { basename, dirname, isAbsolute, join } from "node:path"
 import type { CallExpression, Project, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { readJson } from "../../runtime/api.ts"
+import { readJson } from "../../runtime/main.ts"
 import { addListener } from "../../runtime/shell.ts"
 import { getAttestConfig } from "./config.ts"
 import { getRealTsMorphProject } from "./type/getTsMorphProject.ts"

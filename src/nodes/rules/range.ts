@@ -102,7 +102,7 @@ export const flattenRange: FlattenAndPushRule<Range> = (
         ctx.lastDomain === "string"
             ? "characters"
             : ctx.lastDomain === "object"
-            ? "items"
+            ? "items long"
             : undefined
     if (isEqualityRange(range)) {
         return entries.push(["bound", units ? { ...range, units } : range])

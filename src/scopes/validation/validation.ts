@@ -3,6 +3,7 @@ import {
     wellFormedNumberMatcher
 } from "../../utils/numericLiterals.ts"
 import { rootType, scope } from "../scope.ts"
+import { tsKeywords } from "../tsKeywords.ts"
 import { creditCard } from "./creditCard.ts"
 import { parsedDate } from "./date.ts"
 
@@ -35,6 +36,10 @@ const semver = rootType(
     { mustBe: "a valid semantic version (see https://semver.org/)" }
 )
 
+const json = rootType([tsKeywords.string, "|>", (s) => JSON.parse(s)], {
+    mustBe: "a JSON-parsable string"
+})
+
 export const validationScope = scope(
     {
         // Character sets
@@ -53,6 +58,7 @@ export const validationScope = scope(
         parsedInteger,
         parsedDate,
         semver,
+        json,
         integer: ["node", { number: { divisor: 1 } }]
     },
     { name: "validation", standard: false }

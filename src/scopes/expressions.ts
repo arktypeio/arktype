@@ -30,23 +30,23 @@ export type Expressions<$> = {
     morph: FunctionalExpressionParser<$, "|>">
 }
 
-type Standard = Expressions<PrecompiledDefaults>
+type Ark = Expressions<PrecompiledDefaults>
 
-export const intersection: Standard["intersection"] = scopes.ark.intersection
+export const intersection: Ark["intersection"] = scopes.ark.intersection
 
-export const union: Standard["union"] = scopes.ark.union
+export const union: Ark["union"] = scopes.ark.union
 
-export const arrayOf: Standard["arrayOf"] = scopes.ark.arrayOf
+export const arrayOf: Ark["arrayOf"] = scopes.ark.arrayOf
 
-export const keyOf: Standard["keyOf"] = scopes.ark.keyOf
+export const keyOf: Ark["keyOf"] = scopes.ark.keyOf
 
-export const instanceOf: Standard["instanceOf"] = scopes.ark.instanceOf
+export const instanceOf: Ark["instanceOf"] = scopes.ark.instanceOf
 
-export const valueOf: Standard["valueOf"] = scopes.ark.valueOf
+export const valueOf: Ark["valueOf"] = scopes.ark.valueOf
 
-export const narrow: Standard["narrow"] = scopes.ark.narrow
+export const narrow: Ark["narrow"] = scopes.ark.narrow
 
-export const morph: Standard["morph"] = scopes.ark.morph
+export const morph: Ark["morph"] = scopes.ark.morph
 
 export type BinaryExpressionParser<$, operator extends "&" | "|"> = {
     <l, r>(

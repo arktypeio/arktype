@@ -9,7 +9,7 @@ import {
     walkPaths,
     writeFile,
     writeJson
-} from "../runtime/api.ts"
+} from "../runtime/main.ts"
 import { repoDirs } from "./common.ts"
 
 const isTestBuild = process.argv.includes("--test")
@@ -43,7 +43,6 @@ const buildTypes = () => {
         )
         renameSync(join(repoDirs.outRoot, "src"), repoDirs.typesOut)
         rewriteTsImports(repoDirs.typesOut)
-        buildExportsTs("types")
     } finally {
         rmSync(tempTsConfig, { force: true })
     }
@@ -68,13 +67,11 @@ const swc = (kind: "mjs" | "cjs") => {
     }
     if (!isTestBuild) {
         cmd += inFiles.join(" ")
-        cmd += " api.ts"
         shell(cmd)
     } else {
         buildWithTests(kind, kindOutDir)
     }
     rewriteTsImports(kindOutDir)
-    buildExportsTs(kind)
     writeJson(join(kindOutDir, "package.json"), {
         type: kind === "cjs" ? "commonjs" : "module"
     })
@@ -82,51 +79,25 @@ const swc = (kind: "mjs" | "cjs") => {
 
 const buildWithTests = (kind: string, kindOutDir: string) => {
     const cjsAddon = kind === "cjs" ? "-C module.type=commonjs" : ""
-
-    shell(`pnpm swc ${cjsAddon} ./api.ts -d dist/${kind}/ --source-maps inline`)
-
-    const dirs = {
+    const paths = {
         src: ["src"],
-        test: ["test"],
-        dev: ["dev/attest", "dev/runtime", "dev/scripts"],
-        examples: ["examples"]
+        dev: [
+            "dev/attest/main.ts",
+            "dev/attest/cli.ts",
+            "dev/attest/src",
+            "dev/runtime",
+            "dev/scripts",
+            "dev/examples",
+            "dev/test"
+        ]
     }
-    for (const [baseDir, dirsToInclude] of Object.entries(dirs)) {
+    for (const [baseDir, dirsToInclude] of Object.entries(paths)) {
         shell(
             `pnpm swc ${cjsAddon} ${dirsToInclude.join(
                 " "
             )} -d ${kindOutDir}/${baseDir} -C jsc.target=es2020 -q`
         )
     }
-}
-
-const buildExportsTs = (kind: "mjs" | "cjs" | "types") => {
-    const originalPath =
-        kind === "mjs" || kind === "cjs"
-            ? join(repoDirs.outRoot, kind, "api.js")
-            : "api.ts"
-    const originalContents = readFile(originalPath)
-    if (kind === "mjs" || kind === "cjs") {
-        rmSync(originalPath)
-    }
-    let transformedContents = originalContents
-    if (!isTestBuild) {
-        transformedContents = transformedContents.replaceAll(
-            "./src/",
-            `./${kind}/`
-        )
-    }
-    if (kind === "types") {
-        transformedContents = replaceTsImports(transformedContents)
-    }
-    const destinationFile = isTestBuild
-        ? join(
-              repoDirs.outRoot,
-              `${kind}`,
-              kind === "types" ? "api.d.ts" : "api.js"
-          )
-        : join(repoDirs.outRoot, `api.${kind === "types" ? "d.ts" : kind}`)
-    writeFile(destinationFile, transformedContents)
 }
 
 const rewriteTsImports = (dir: string) => {

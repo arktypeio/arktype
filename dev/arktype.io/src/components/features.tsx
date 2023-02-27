@@ -9,7 +9,8 @@ const details = [
     },
     {
         title: "Native JS/TS",
-        description: "No extensions, plugins or compilers required"
+        description:
+            "Zero dependencies and no extensions, plugins or compilers required"
     },
     {
         title: "Concise",
@@ -41,7 +42,7 @@ type FeatureProps = {
 
 export const Features = () => {
     return (
-        <Grid container direction="row">
+        <Grid container>
             {details.map((feature, i) => (
                 <Grid item key={i} xs={12} md={6}>
                     <Feature

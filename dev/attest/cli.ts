@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { basename } from "node:path"
-import { findPackageRoot, shell, walkPaths } from "../runtime/api.ts"
-import { cacheAssertions, cleanupAssertions } from "./api.ts"
+import { findPackageRoot, shell, walkPaths } from "../runtime/main.ts"
+import { cacheAssertions, cleanupAssertions } from "./main.ts"
 
 const args: string[] =
     (globalThis as any).process?.argv ?? (globalThis as any).Deno.args
@@ -58,7 +58,7 @@ if (args[attestArgIndex + 1] === "bench") {
         console.log(`⏳ attest: Using npx mocha to run your tests...`)
         const runnerStart = Date.now()
 
-        shell(`npx mocha ${buildTest ? "*/*.test.js" : ""}`, {
+        shell(`npx mocha ${buildTest ? "**/test/*.test.js" : ""}`, {
             stdio: "inherit",
             env: { ARKTYPE_CHECK_CMD: attestArgs.join(" ") }
         })

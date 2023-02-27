@@ -109,7 +109,7 @@ export namespace Scanner {
 
     export const comparatorDescriptions = {
         "<": "less than",
-        ">": "greater than",
+        ">": "more than",
         "<=": "at most",
         ">=": "at least",
         "==": "exactly"

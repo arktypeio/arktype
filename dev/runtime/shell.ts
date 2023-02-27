@@ -11,6 +11,8 @@ export const addListener = (signal: string, handler: () => void) => {
 
 // @snipStart:shell
 export type ShellOptions = Parameters<typeof execSync>[1] & {
+    env?: Record<string, unknown>
+    stdio?: "pipe" | "inherit"
     returnOutput?: boolean
 }
 
@@ -18,10 +20,10 @@ export type ShellOptions = Parameters<typeof execSync>[1] & {
 export const shell = (
     cmd: string,
     { returnOutput, env, ...otherOptions }: ShellOptions = {}
-) =>
+): string =>
     execSync(cmd, {
         stdio: returnOutput ? "pipe" : "inherit",
         env: { ...process.env, ...env },
         ...otherOptions
-    })!
+    })?.toString() ?? ""
 // @snipEnd

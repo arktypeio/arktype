@@ -9,7 +9,6 @@ const outRoot = "dist"
 const typesOut = join(outRoot, "types")
 const mjsOut = join(outRoot, "mjs")
 const cjsOut = join(outRoot, "cjs")
-const denoOut = join(outRoot, "deno")
 
 export const repoDirs = {
     root,
@@ -20,6 +19,5 @@ export const repoDirs = {
     outRoot,
     typesOut,
     mjsOut,
-    cjsOut,
-    denoOut
+    cjsOut
 }

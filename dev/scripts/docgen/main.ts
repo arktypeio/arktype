@@ -1,8 +1,8 @@
 import { basename, join, relative } from "node:path"
 import * as process from "node:process"
 import { Project } from "ts-morph"
-import type { WalkOptions } from "../../runtime/api.ts"
-import { dirName, getSourceControlPaths } from "../../runtime/api.ts"
+import type { WalkOptions } from "../../runtime/main.ts"
+import { dirName, getSourceControlPaths } from "../../runtime/main.ts"
 import { repoDirs } from "../common.ts"
 import { extractApi } from "./api/extractApi.ts"
 import { writeApi } from "./api/writeApi.ts"
@@ -56,7 +56,7 @@ export const defaultConfig = createConfig({
     mappedDirs: [
         {
             sources: [
-                join(repoDirs.root, "examples"),
+                join(repoDirs.dev, "examples"),
                 join(repoDirs.docsDir, "demos", "layout")
             ],
             targets: [join(repoDirs.docsDir, "demos", "generated")],

@@ -7,7 +7,7 @@ import {
     shell,
     writeFile,
     writeJson
-} from "../runtime/api.ts"
+} from "../runtime/main.ts"
 import { repoDirs } from "./common.ts"
 import { docgen } from "./docgen/main.ts"
 
@@ -18,7 +18,12 @@ const suffixedPackageEntries: [rootDir: string, suffix: string][] = [
 const forEachPackageWithSuffix = (transformer: SuffixTransformer) => {
     for (const [packagePath, suffix] of suffixedPackageEntries) {
         const packageJsonPath = join(packagePath, "package.json")
-        const changelogPath = join(packagePath, "CHANGELOG.md")
+        const changelogPath = join(
+            packagePath,
+            "dev",
+            "configs",
+            "CHANGELOG.md"
+        )
         const packageJson = readJson(packageJsonPath)
         const changelog = readFile(changelogPath)
         const transformed = transformer({

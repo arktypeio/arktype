@@ -1,6 +1,6 @@
 import * as assert from "node:assert/strict"
 import { describe, it } from "mocha"
-import { fromHere, readFile } from "../../runtime/api.ts"
+import { fromHere, readFile } from "../../runtime/main.ts"
 import { runThenGetContents } from "./utils.ts"
 
 const benchTemplate = fromHere("benchTemplate.ts")

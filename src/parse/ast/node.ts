@@ -23,7 +23,6 @@ import type {
     inferObjectKind
 } from "../../utils/objectKinds.ts"
 import type { inferTerminal } from "./ast.ts"
-import type { Out } from "./morph.ts"
 
 export type inferNode<node extends Node<$>, $ = {}> = node extends string
     ? inferTerminal<node, $>
@@ -63,11 +62,9 @@ type inferBranch<domain extends Domain, branch, $> = branch extends MetaBranch
 
 type inferMorph<domain extends Domain, branch extends MetaBranch, $> = (
     In: inferBranch<domain, branch["rules"], $>
-) => Out<
-    branch["morph"] extends [...unknown[], infer tail]
-        ? returnOf<tail>
-        : returnOf<branch["morph"]>
->
+) => branch["morph"] extends [...unknown[], infer tail]
+    ? returnOf<tail>
+    : returnOf<branch["morph"]>
 
 type inferRules<domain extends Domain, branch, $> = branch extends LiteralRules
     ? branch["value"]

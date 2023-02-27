@@ -51,7 +51,7 @@ export type WalkOptions = {
 }
 
 export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
-    readdirSync(dir).reduce((paths, item) => {
+    readdirSync(dir).reduce((paths: string[], item: string) => {
         const path = join(dir, item)
         const isDir = lstatSync(path).isDirectory()
         if (isDir && options.ignoreDirsMatching?.test(path)) {
@@ -64,7 +64,7 @@ export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
             (options.include && !options.include(path))
         const nestedPaths = isDir ? walkPaths(path, options) : []
         return [...paths, ...(excludeCurrent ? [] : [path]), ...nestedPaths]
-    }, [] as string[])
+    }, [])
 
 /** Fetch the file and directory paths from a path, uri, or `import.meta.url` */
 export const filePath = (path: string) => {
@@ -128,7 +128,10 @@ export const readPackageJson = (startDir?: string) =>
     readJson(join(findPackageRoot(startDir), "package.json"))
 
 export const getSourceControlPaths = () =>
-    shell("git ls-files", { stdio: "pipe" })!
+    // include tracked and untracked files as long as they are not ignored
+    shell("git ls-files --exclude-standard --cached --others", {
+        stdio: "pipe"
+    })!
         .toString()
         .split("\n")
         .filter((path) => existsSync(path) && statSync(path).isFile())
@@ -136,10 +139,7 @@ export const getSourceControlPaths = () =>
 export const tsFileMatcher = /^.*\.(c|m)?tsx?$/
 
 const inFileFilter: WalkOptions = {
-    include: (path) =>
-        tsFileMatcher.test(path) &&
-        /(^api\.ts|src|test|examples|dev\/attest|dev\/runtime)\/?/.test(path) &&
-        !/dev\/attest\/test/.test(path),
+    include: (path) => tsFileMatcher.test(path),
     ignoreDirsMatching: /node_modules|dist|docgen/
 }
 

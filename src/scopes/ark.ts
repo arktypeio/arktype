@@ -1,4 +1,3 @@
-import type { Out } from "../parse/ast/morph.ts"
 import type { InferredObjectKinds } from "../utils/objectKinds.ts"
 import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
 import type { Space } from "./scope.ts"
@@ -7,7 +6,7 @@ import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
 import type { TypeParser } from "./type.ts"
 import { validation, validationScope } from "./validation/validation.ts"
 
-export const arkscope = scope(
+export const arkScope = scope(
     {},
     {
         name: "standard",
@@ -16,14 +15,14 @@ export const arkscope = scope(
     }
 )
 
-export const ark: Space<PrecompiledDefaults> = arkscope.compile()
+export const ark: Space<PrecompiledDefaults> = arkScope.compile()
 
 export const scopes = {
     root: rootScope,
     tsKeywords: tsKeywordsScope,
     jsObjects: jsObjectsScope,
     validation: validationScope,
-    ark: arkscope
+    ark: arkScope
 }
 
 export const spaces = {
@@ -62,10 +61,11 @@ export type PrecompiledDefaults = {
     email: string
     uuid: string
     semver: string
-    parsedNumber: (In: string) => Out<number>
-    parsedInteger: (In: string) => Out<number>
-    parsedDate: (In: string) => Out<Date>
+    json: (In: string) => unknown
+    parsedNumber: (In: string) => number
+    parsedInteger: (In: string) => number
+    parsedDate: (In: string) => Date
     // jsObects
 } & InferredObjectKinds
 
-export const type: TypeParser<PrecompiledDefaults> = arkscope.type
+export const type: TypeParser<PrecompiledDefaults> = arkScope.type

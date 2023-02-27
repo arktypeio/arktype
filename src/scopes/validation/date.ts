@@ -1,4 +1,5 @@
 import { rootType } from "../scope.ts"
+import { tsKeywords } from "../tsKeywords.ts"
 
 type DayDelimiter = "." | "/" | "-"
 
@@ -98,7 +99,7 @@ export const tryParseDate = (
 }
 
 export const parsedDate = rootType([
-    rootType.from({ string: true }),
+    tsKeywords.string,
     "|>",
     (s, problems) => {
         const result = tryParseDate(s)
