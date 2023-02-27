@@ -5,10 +5,10 @@ import Expand from "@mui/icons-material/ExpandMore"
 import { Button, Stack, useTheme } from "@mui/material"
 import { motion } from "framer-motion"
 import React, { useState } from "react"
-import { StackBlitzDemo } from "../../docs/demos"
-import { cascadiaCodeFamily } from "."
+import { StackBlitzDemo } from "../../docs/demos/StackBlitzDemo.tsx"
+import { cascadiaCodeFamily } from "./theme.tsx"
 
-export const SudoDemo = () => {
+export const HomeDemo = () => {
     const { pathname } = useLocation()
     const palette = useTheme().palette
     const isDarkMode = useColorMode().colorMode === "dark"

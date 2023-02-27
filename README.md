@@ -3,6 +3,8 @@
 ![Intro GIF](./dev/arktype.io/static/img/arktype.gif)
 <sub><i>`typescript@4.9.5` in VS Code— no extensions or plugins required (<a href="#how">how?</a>)</i></sub>
 
+<!-- @snipStart:install -->
+
 ## Install <sub><sub>📦`4KB` gzipped, `0` dependencies</sub></sub>
 
 <img src="./dev/arktype.io/static/img/npm.svg" alt="Npm Icon" height="16px"> `npm install arktype` <sub>(or whatever package manager you prefer)</sub>
@@ -16,6 +18,8 @@ Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#st
 
 _Our APIs have mostly stabilized, but details may still change during the alpha/beta stages of our 1.0 release. If you have suggestions that may require a breaking change, now is the time to let us know!_ ⛵
 
+<!-- @snipEnd:install -->
+
 ## Types
 
 [Try it in-browser.](https://arktype.io/docs/#your-first-type)
@@ -23,7 +27,7 @@ _Our APIs have mostly stabilized, but details may still change during the alpha/
 ```ts @blockFrom:dev/examples/type.ts
 import { type } from "arktype"
 
-// Define a type...
+// Define your type...
 export const user = type({
     name: "string",
     device: {
@@ -35,7 +39,7 @@ export const user = type({
 // Infer it...
 export type User = typeof user.infer
 
-// Validate your data anytime, anywhere, with the same clarity and precision you expect from TypeScript.
+// Get validated data or clear, customizable error messages.
 export const { data, problems } = user({
     name: "Alan Turing",
     device: {

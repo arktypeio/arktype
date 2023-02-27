@@ -1,11 +1,67 @@
 import { Grid, Typography, useTheme } from "@mui/material"
+import Code from "@theme/CodeBlock"
 import React from "react"
+
+const IsomorphicCodeBlock = (
+    <div className="inferable-code">
+        <Code language="typescript">{`const user = type({
+    name: "string",
+    device: {
+        platform: "'android'|'ios'",
+        "version?": "number"
+    }
+})
+
+
+// Hover to infer...
+type User = typeof user.infer
+`}</Code>
+        <img height="50%" src="/img/isomorphicHover.png" />
+    </div>
+)
+
+const ArkTypeConcision = (
+    <div className="inferable-code">
+        <Code language="typescript">{`// Hover to infer... ⛵
+const playerOne = type({
+    name: "string",
+    birthday: ["string", "|>", (s) => new Date(s)],
+    "powerLevel?": "1<=number<9000"
+})
+`}</Code>
+        <img height="60%" src="/img/conciseInfer.png" />
+    </div>
+)
+
+const ZodConcision = (
+    <div className="inferable-code">
+        <Code language="typescript">{`// Hover to infer... 🦸
+const playerTwo = z.object({
+    name: z.string(),
+    birthday: z.preprocess(
+        (arg) => (typeof arg === "string" ? new Date(arg) : undefined),
+        z.date()
+    ),
+    powerLevel: z.number().gte(1).lt(9000).optional()
+})
+`}</Code>
+        <img height="80%" src="/img/zodInfer.png" />
+    </div>
+)
+
+const ConciseImage = (
+    <>
+        {ArkTypeConcision}
+        {ZodConcision}
+    </>
+)
 
 const details = [
     {
         title: "Isomorphic",
         description:
-            "Define types using TS syntax. Infer them 1:1. Use them to validate your data at runtime."
+            "Define types using TS syntax. Infer them 1:1. Use them to validate your data at runtime.",
+        image: IsomorphicCodeBlock
     },
     {
         title: "Native JS/TS",
@@ -14,7 +70,8 @@ const details = [
     },
     {
         title: "Concise",
-        description: "Say more with less"
+        description: "Say more with less",
+        image: ConciseImage
     },
     {
         // add image of intersections with divisors/range etc.
@@ -42,13 +99,10 @@ type FeatureProps = {
 
 export const Features = () => {
     return (
-        <Grid container>
-            {details.map((feature, i) => (
+        <Grid container spacing={3}>
+            {details.map((props, i) => (
                 <Grid item key={i} xs={12} md={6}>
-                    <Feature
-                        title={feature.title}
-                        description={feature.description}
-                    />
+                    <Feature {...props} />
                 </Grid>
             ))}
         </Grid>
@@ -60,7 +114,6 @@ const Feature = (props: FeatureProps) => {
     return (
         <div
             style={{
-                textAlign: "center",
                 margin: "auto",
                 paddingTop: "1em",
                 maxWidth: "40em"
@@ -71,6 +124,7 @@ const Feature = (props: FeatureProps) => {
                 variant="h5"
                 fontWeight="700"
                 width="100%"
+                textAlign="center"
                 color={theme.palette.info.main}
             >
                 {props.title}
@@ -78,6 +132,7 @@ const Feature = (props: FeatureProps) => {
             <Typography component="p" variant="body1" fontWeight="300">
                 {props.description}
             </Typography>
+            {props.image ?? null}
         </div>
     )
 }

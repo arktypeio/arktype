@@ -84,26 +84,22 @@ const getUpdatedLines = (
     snippetsByPath: SnippetsByPath
 ) => {
     let lines: string[]
-    const lineFromRefeferenceParts = line
+    const lineFromReferenceParts = line
         .slice(line.indexOf(token))
         .split(" ")[0]
         .split(":")
-    const filePath = lineFromRefeferenceParts[1]
+    const filePath = lineFromReferenceParts[1]
     if (!filePath) {
         throw new Error(
             `${token} expression '${line}' required a file path, e.g. '${token}:check/package.json:version'.`
         )
     }
     if (filePath.endsWith(".json")) {
-        lines = getLinesFromJsonFile(
-            filePath,
-            lineFromRefeferenceParts[2],
-            token
-        )
+        lines = getLinesFromJsonFile(filePath, lineFromReferenceParts[2], token)
     } else {
         lines = getSnippedBlockLines(
             filePath,
-            lineFromRefeferenceParts[2],
+            lineFromReferenceParts[2],
             snippetsByPath
         )
     }
