@@ -37,6 +37,14 @@ describe("record", () => {
             }
         })
     })
+    it("strict optional", () => {
+        const o = type({ "a?": "string" }, { keys: "strict" })
+        attest(o({ a: "string" }).data).snap({ a: "string" })
+    })
+    it("not valid use union TODO", () => {
+        const o = type({ "a?": "string" }, { keys: "strict" })
+        attest(o({ a: "string" }).data).snap({ a: "string" })
+    })
     it("escaped optional token", () => {
         const t = type({ "a\\?": "string" })
         attest(t.infer).typed as { "a?": string }

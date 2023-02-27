@@ -86,6 +86,29 @@ describe("range", () => {
             })
         })
         describe("intersection", () => {
+            describe("equality range", () => {
+                it("equal", () => {
+                    attest(type("number==2&number==2").node).snap({
+                        number: { range: { comparator: "==", limit: 2 } }
+                    })
+                })
+                it("unequal", () => {
+                    attest(() => type("number==2&number==3").node).throws.snap(
+                        "Error: Intersection of the range of exactly 2 and the range of exactly 3 results in an unsatisfiable type"
+                    )
+                })
+                it("right equality range", () => {
+                    attest(type("number<4&number==2").node).snap({
+                        number: { range: { comparator: "==", limit: 2 } }
+                    })
+                })
+                it("left equality range", () => {
+                    attest(type("number==3&number>=3").node).snap({
+                        number: { range: { comparator: "==", limit: 3 } }
+                    })
+                })
+            })
+
             it("overlapping", () => {
                 const expected: ResolvedNode = {
                     number: {

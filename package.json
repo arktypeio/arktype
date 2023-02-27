@@ -72,6 +72,7 @@
         "eslint-plugin-only-warn": "1.1.0",
         "eslint-plugin-prefer-arrow": "1.2.3",
         "eslint-plugin-unicorn": "45.0.2",
+        "eslint-plugin-prettier": "4.2.1",
         "fast-check": "3.5.0",
         "get-current-line": "6.6.0",
         "husky": "8.0.3",
@@ -87,6 +88,10 @@
         "checkCoverage": true,
         "lines": 98,
         "src": "./src",
+        "exclude": [
+            "test/**",
+            "dev/**"
+        ],
         "extension": ".ts",
         "reporter": "lcovonly"
     },
