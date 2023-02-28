@@ -1,9 +1,18 @@
 <h1 align="center">ArkType <sub><sup>Isomorphic types for TS/JS</sup></sub></h1>
 
 [<img src="./dev/arktype.io/static/img/arktype.gif">](https://arktype.io/try)
-<sub><i>`typescript@4.9.5` in VS Code— no extensions or plugins required (<a href="#how">how?</a>)</i></sub>
+<sub>
+<i>`typescript@4.9.5` in VS Code— no extensions or plugins required (<a href="#how">how?</a>) (<a href="https://arktype.io/try">try in-browser</a>)</i>
+</sub>
 
-<img src="./dev/arktype.io/static/img/logo.svg" alt="ArkType Icon" height="16px"/><b> Try this demo in-browser at <a href="https://arktype.io/try">arktype.io/try</a></b>
+<!-- @snipStart:intro -->
+
+ArkType is a library for defining runtime types using TypeScript syntax that can be inferred 1:1.
+<br />
+<br />
+Each character you type is instantly validated both syntactically and semantically using TypeScript's own type system, so you know exactly what to expect from editor to runtime ⛵
+
+<!-- @snipEnd -->
 
 <!-- @snipStart:install -->
 
