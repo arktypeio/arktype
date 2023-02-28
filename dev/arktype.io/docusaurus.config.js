@@ -59,7 +59,7 @@ const arkDarkPrismTheme = {
 /** @type {import('@docusaurus/types').Config} */
 const config = {
     title: "ArkType",
-    // @lineFrom:package.json:description => tagline: {?},
+    // @lineFrom:package.json:description |> tagline: {?},
     tagline: "The first isomorphic type system for TS/JS",
     url: "https://arktype.io",
     baseUrl: "/",

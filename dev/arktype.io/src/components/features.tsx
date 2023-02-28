@@ -22,12 +22,17 @@ type User = typeof user.infer
 
 const ArkTypeConcision = (
     <div className="inferable-code">
-        <Code language="typescript">{`// Hover to infer... ⛵
-const playerTwo = type({
-    name: "string",
+        <Code language="typescript">
+            {
+                // @blockFrom:dev/examples/concision.ts:arkUser |> replace(`,\`) |> replace(${,\${) |> embed(`,`)
+                `const arkUser = type({
+    name: /^ark.*$/ as cast<\`ark\${string}\`>,
     birthday: ["string", "|>", (s) => new Date(s)],
     "powerLevel?": "1<=number<9000"
-})`}</Code>
+})`
+                // @blockEnd
+            }
+        </Code>
         <img height="60%" src="/img/conciseInfer.png" />
     </div>
 )

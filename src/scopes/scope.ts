@@ -2,8 +2,8 @@ import type { Node, ResolvedNode, TypeNode } from "../nodes/node.ts"
 import { flattenType, isConfigNode } from "../nodes/node.ts"
 import type { ConfigTuple } from "../parse/ast/config.ts"
 import type {
+    cast,
     inferDefinition,
-    inferred,
     ParseContext,
     validateDefinition
 } from "../parse/definition.ts"
@@ -325,23 +325,18 @@ export class Scope<context extends ScopeContext = any> {
 
     expressions: Expressions<resolutions<context>> = {
         intersection: (l, r, opts) =>
-            this.type([l, "&", r] as inferred<unknown>, opts),
-        union: (l, r, opts) =>
-            this.type([l, "|", r] as inferred<unknown>, opts),
-        arrayOf: (def, opts) =>
-            this.type([def, "[]"] as inferred<unknown>, opts),
-        keyOf: (def, opts) =>
-            this.type(["keyof", def] as inferred<unknown>, opts),
-        node: (def, opts) =>
-            this.type(["node", def] as inferred<unknown>, opts),
+            this.type([l, "&", r] as cast<unknown>, opts),
+        union: (l, r, opts) => this.type([l, "|", r] as cast<unknown>, opts),
+        arrayOf: (def, opts) => this.type([def, "[]"] as cast<unknown>, opts),
+        keyOf: (def, opts) => this.type(["keyof", def] as cast<unknown>, opts),
+        node: (def, opts) => this.type(["node", def] as cast<unknown>, opts),
         instanceOf: (def, opts) =>
-            this.type(["instanceof", def] as inferred<unknown>, opts),
-        valueOf: (def, opts) =>
-            this.type(["===", def] as inferred<unknown>, opts),
+            this.type(["instanceof", def] as cast<unknown>, opts),
+        valueOf: (def, opts) => this.type(["===", def] as cast<unknown>, opts),
         narrow: (def, fn, opts) =>
-            this.type([def, "=>", fn] as inferred<unknown>, opts),
+            this.type([def, "=>", fn] as cast<unknown>, opts),
         morph: (def, fn, opts) =>
-            this.type([def, "|>", fn] as inferred<unknown>, opts)
+            this.type([def, "|>", fn] as cast<unknown>, opts)
     } as Expressions<resolutions<context>>
 
     intersection = this.expressions.intersection

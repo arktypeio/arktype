@@ -12,7 +12,7 @@
         "resolveJsonModule": true,
         "composite": true,
         "exactOptionalPropertyTypes": true,
-        "noErrorTruncation": false,
+        "noErrorTruncation": true,
         "lib": ["ESNext"],
         "paths": {
             "get-current-line": [

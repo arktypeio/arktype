@@ -21,8 +21,8 @@ export const updateSnippetReferences = (snippetsByPath: SnippetsByPath) => {
     }
 }
 
-const TEMPLATE_REPLACE_TOKEN = "{?}"
-const REPLACE_MATCHER = /replace\((.*),(.*)\)/
+const EMBED_MATCHER = /embed\((.*?),(.*)\)/
+const REPLACE_MATCHER = /replace\((.*?),(.*)\)/
 
 const updateSnippetReferencesIfNeeded = (
     path: string,
@@ -104,16 +104,19 @@ const getUpdatedLines = (
             snippetsByPath
         )
     }
-    const suffix = line.split("=>")[1]
-    if (suffix) {
-        if (suffix.includes(TEMPLATE_REPLACE_TOKEN)) {
+    const pipes = line.split("|>").slice(1)
+    for (const pipe of pipes) {
+        const replaceArgs = pipe.match(REPLACE_MATCHER)
+        if (replaceArgs) {
             lines = lines.map((line) =>
-                suffix.replace(TEMPLATE_REPLACE_TOKEN, line)
+                line.replaceAll(replaceArgs[1], replaceArgs[2])
             )
         } else {
-            const match = suffix.match(REPLACE_MATCHER)
-            if (match) {
-                lines = lines.map((line) => line.replace(match[1], match[2]))
+            const embedArgs = pipe.match(EMBED_MATCHER)
+            if (embedArgs) {
+                lines = `${embedArgs[1]}${lines.join("\n")}${
+                    embedArgs[2]
+                }`.split("\n")
             }
         }
     }
