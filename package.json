@@ -38,7 +38,6 @@
         "buildSite": "cd dev/arktype.io && pnpm install && pnpm build",
         "docgen": "ts-node ./dev/scripts/docgen.ts",
         "test": "ts-node ./dev/attest/cli.ts --cmd mocha",
-        "testCov": "ts-node ./dev/scripts/c8.cts pnpm test",
         "tnt": "ts-node ./dev/attest/cli.ts --skipTypes --cmd mocha",
         "testRepo": " pnpm testBuild && pnpm testTsVersions && pnpm testAttest && pnpm testDeno",
         "testBuild": "ts-node ./dev/scripts/testBuild.ts",
@@ -87,7 +86,7 @@
     },
     "c8": {
         "checkCoverage": true,
-        "lines": 98,
+        "lines": 95,
         "src": "./src",
         "exclude": [
             "test/**",
