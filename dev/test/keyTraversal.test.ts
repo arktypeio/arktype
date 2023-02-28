@@ -40,6 +40,19 @@ describe("key traversal", () => {
         attest(t({ a: "ok" }).data).equals({ a: "ok" })
         attest(t(getExtraneousB()).data).snap({ a: "ok" })
     })
+    it("distilled union", () => {
+        const o = type([{ a: "string" }, "|", { b: "boolean" }], {
+            keys: "distilled"
+        })
+        // can distill to first branch
+        attest(o({ a: "to", z: "bra" }).data).snap({ a: "to" })
+        // can distill to second branch
+        attest(o({ b: true, c: false }).data).snap({ b: true })
+        // can handle missing keys
+        attest(o({ a: 2 }).problems?.summary).snap(
+            'a must be a string or b must be defined (was {"a":2})'
+        )
+    })
     it("strict type", () => {
         const t = type(
             {
