@@ -14,6 +14,7 @@
     "cSpell.useGitignore": true,
     "cSpell.words": [
         "arktype",
+        "arktypeio",
         "Blass",
         "Boundable",
         "Cascadia",
@@ -57,6 +58,7 @@
         "Unpairable",
         "unscanned",
         "unvalidated",
+        "yourname",
         "λtype"
     ],
     "typescript.enablePromptUseWorkspaceTsdk": true,

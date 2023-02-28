@@ -76,13 +76,13 @@ pnpm prChecks
 
 You can also run any of these commands individually:
 
-```sh @lineFrom:package.json:scripts/prChecks =>{?}
+```sh @lineFrom:package.json:scripts/prChecks
 "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm testRepo && pnpm docgen && pnpm buildSite"
 ```
 
 All of these commands will run as part of our CI process and must succeed in order for us to accept your Pull Request.
 
-The new ".ts" extension resolution in TS 5.0 in conjunction with our [import map settings](./deno.json) allows us to support editing the same source using either standard Node tooling or via Deno. Since `arktype` has no dependencies, you generally shouldn't have to worry about compatibility, but you will need to at least [install Deno](https://deno.land/manual/getting_started/installation) to make sure the tests pass there, too.
+The new ".ts" extension resolution in TS 5.0 in conjunction with our [import map settings](./deno.jsonc) allows us to support editing the same source using either standard Node tooling or via Deno. Since `arktype` has no dependencies, you generally shouldn't have to worry about compatibility, but you will need to at least [install Deno](https://deno.land/manual/getting_started/installation) to make sure the tests pass there, too.
 
 8. Once everything is passing, commit your changes and ensure your fork is up to date:
 

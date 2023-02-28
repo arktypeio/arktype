@@ -22,6 +22,7 @@ export const updateSnippetReferences = (snippetsByPath: SnippetsByPath) => {
 }
 
 const TEMPLATE_REPLACE_TOKEN = "{?}"
+const REPLACE_MATCHER = /replace\((.*),(.*)\)/
 
 const updateSnippetReferencesIfNeeded = (
     path: string,
@@ -103,11 +104,18 @@ const getUpdatedLines = (
             snippetsByPath
         )
     }
-    const possibleTemplate = line.split("=>")[1]
-    if (possibleTemplate) {
-        lines = lines.map((line) =>
-            possibleTemplate.replace(TEMPLATE_REPLACE_TOKEN, line)
-        )
+    const suffix = line.split("=>")[1]
+    if (suffix) {
+        if (suffix.includes(TEMPLATE_REPLACE_TOKEN)) {
+            lines = lines.map((line) =>
+                suffix.replace(TEMPLATE_REPLACE_TOKEN, line)
+            )
+        } else {
+            const match = suffix.match(REPLACE_MATCHER)
+            if (match) {
+                lines = lines.map((line) => line.replace(match[1], match[2]))
+            }
+        }
     }
     return lines
 }

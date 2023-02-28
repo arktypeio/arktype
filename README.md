@@ -3,15 +3,18 @@
 [<img src="./dev/arktype.io/static/img/arktype.gif">](https://arktype.io/try)
 <sub><i>`typescript@4.9.5` in VS Code— no extensions or plugins required (<a href="#how">how?</a>)</i></sub>
 
-<!-- @snipStart:install -->
+<img src="./dev/arktype.io/static/img/logo.svg" alt="ArkType Icon" height="16px"/><b> Try this demo in-browser at <a href="https://arktype.io/try">arktype.io/try</a></b>
 
-<img src="./dev/arktype.io/static/img/logo.svg" alt="ArkType Icon" height="16px"/><b> Try this demo in-browser at [arktype.io/try](https://arktype.io/try)</b>
+<!-- @snipStart:install -->
 
 ## Install <sub><sub>📦`4KB` gzipped, `0` dependencies</sub></sub>
 
-<img src="./dev/arktype.io/static/img/npm.svg" alt="Npm Icon" height="16px" /> <code>npm install arktype</code> <sub>(or whatever package manager you prefer)</sub>
-
-<img src="./dev/arktype.io/static/img/deno.svg" alt="Deno Icon" height="16px" /> <code>import { type } from "https://deno.land/x/arktype"</code>
+<img src="./dev/arktype.io/static/img/npm.svg" alt="Npm Icon" height="16px" />
+<code>npm install arktype</code>
+<sub>(or whatever package manager you prefer)</sub>
+<br />
+<img src="./dev/arktype.io/static/img/deno.svg" alt="Deno Icon" height="16px" />
+<code>import type from "https://deno.land/x/arktype"</code>
 
 Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#strict) with TypeScript versions `4.8`, `4.9`, and `5.0`.
 
