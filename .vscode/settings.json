@@ -37,6 +37,8 @@
         "nocheck",
         "optionalize",
         "pnpm",
+        "pnpx",
+        "precache",
         "preinstall",
         "quokka",
         "sharktypeio",
