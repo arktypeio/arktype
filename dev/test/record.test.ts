@@ -37,6 +37,29 @@ describe("record", () => {
             }
         })
     })
+    it("data traversed optional", () => {
+        const o = type({ "a?": "string" }, { keys: "strict" })
+        attest(o({ a: "a" }).data).snap({ a: "a" })
+        attest(o({}).data).snap({})
+        attest(o({ a: 1 }).problems?.summary).snap(
+            "a must be a string (was number)"
+        )
+    })
+    it("invalid union", () => {
+        const o = type([{ a: "string" }, "|", { b: "boolean" }], {
+            keys: "strict"
+        })
+        attest(o({ a: 2 }).problems?.summary).snap(
+            'a must be a string or removed (was {"a":2})'
+        )
+    })
+    // TODO https://github.com/arktypeio/arktype/issues/664
+    // it("distilled union", () => {
+    //     const o = type([{ a: "string" }, "|", { b: "boolean" }], {
+    //         keys: "distilled"
+    //     })
+    //     attest(o({ a: 2 }).problems?.summary).snap()
+    // })
     it("escaped optional token", () => {
         const t = type({ "a\\?": "string" })
         attest(t.infer).typed as { "a?": string }

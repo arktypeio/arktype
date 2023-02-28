@@ -27,7 +27,7 @@ const arrayIndexStringBranch = deepFreeze({
 }) satisfies Rules<"string">
 
 const arrayIndexNumberBranch = deepFreeze({
-    range: { min: { comparator: ">=", limit: 1 } },
+    range: { min: { comparator: ">=", limit: 0 } },
     divisor: 1
 }) satisfies Rules<"number">
 
@@ -63,6 +63,7 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
             keyNode.number ??= []
             keyNode.number.push(arrayIndexNumberBranch)
         } else {
+            /* c8 ignore next 4*/
             return throwInternalError(
                 `Unexpected keyof key '${stringify(key)}'`
             )
@@ -117,6 +118,7 @@ const keysOfObjectBranch = (branch: Branch): KeyValue[] => {
     if ("props" in branch) {
         for (const key of Object.keys(branch.props)) {
             if (key === mappedKeys.index) {
+                // if any number is a valid key push this RegExp
                 result.push(wellFormedNonNegativeIntegerMatcher)
             } else if (!result.includes(key)) {
                 result.push(key)

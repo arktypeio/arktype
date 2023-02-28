@@ -31,13 +31,15 @@ export const composeIntersection = <
     ((l, r, state) =>
         l === undefined
             ? r === undefined
-                ? throwUndefinedOperandsError()
+                ? /* c8 ignore next */
+                  throwUndefinedOperandsError()
                 : r
             : r === undefined
             ? l
             : reducer(l, r, state)) as allowUndefinedOperands<reducer>
 
 export const throwUndefinedOperandsError = () =>
+    /* c8 ignore next */
     throwInternalError(`Unexpected operation two undefined operands`)
 
 export type IntersectionResult<t> = t | Empty | Equal
