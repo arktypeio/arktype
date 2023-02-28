@@ -2,12 +2,12 @@
 hide_table_of_contents: true
 ---
 
-# cast
+# Infer
 
 ## text
 
 ```ts
-export type cast<t> = {
+export type Infer<t> = {
     [as]?: t
 }
 ```
