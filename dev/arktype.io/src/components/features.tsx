@@ -127,14 +127,14 @@ const OptimizedImage = (
 )
 
 const TypeSafeImage = (
-    <>
-        <AutoplayDemo src="/img/typePerf.mp4" style={{ width: "100%" }} />
-        <caption style={{ width: "100%", fontSize: ".8rem" }}>
+    <Stack width="100%">
+        <AutoplayDemo src="/img/typePerf.mp4" />
+        <caption style={{ fontSize: ".8rem" }}>
             Worried about performance? Don't be. This is how it feels to
             interact with a scope of 100 cyclic types (you may want to go
             fullscreen to see the details!)
         </caption>
-    </>
+    </Stack>
 )
 
 const details = [
