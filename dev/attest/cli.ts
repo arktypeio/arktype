@@ -64,18 +64,19 @@ if (args[attestArgIndex + 1] === "bench") {
         console.log(`⏳ attest: Using npx mocha to run your tests...`)
         const runnerStart = Date.now()
 
-        shell(
-            `node --require ${fromHere("patchC8.cjs")} ${fromPackageRoot(
-                "node_modules",
-                "c8",
-                "bin",
-                "c8.js"
-            )} mocha ${isBuildTest ? "**/test/*.test.js" : ""}`,
-            {
-                stdio: "inherit",
-                env: { ARKTYPE_CHECK_CMD: attestArgs.join(" ") }
-            }
-        )
+        const prefix = attestArgs.includes("--coverage")
+            ? `node --require ${fromHere("patchC8.cjs")} ${fromPackageRoot(
+                  "node_modules",
+                  "c8",
+                  "bin",
+                  "c8.js"
+              )} mocha`
+            : "npx mocha"
+
+        shell(`${prefix} ${isBuildTest ? "**/test/*.test.js" : ""}`, {
+            stdio: "inherit",
+            env: { ARKTYPE_CHECK_CMD: attestArgs.join(" ") }
+        })
         const runnerSeconds = (Date.now() - runnerStart) / 1000
         console.log(
             `✅ attest: npx mocha completed in ${runnerSeconds} seconds.\n`
