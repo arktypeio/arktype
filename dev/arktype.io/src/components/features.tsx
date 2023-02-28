@@ -2,6 +2,7 @@ import { Masonry } from "@mui/lab"
 import { Stack, Typography, useTheme } from "@mui/material"
 import Code from "@theme/CodeBlock"
 import React from "react"
+import { AutoplayDemo } from "./autoplayDemo"
 import { useIsMobile } from "./useWindowSize"
 
 const IsomorphicCodeBlock = (
@@ -70,6 +71,72 @@ const ConciseImage = (
     </>
 )
 
+const OptimizedUnion = (
+    <div className="inferable-code">
+        <Code language="typescript">
+            {"// Hover to see internal representation...\n"}
+            {
+                // @blockFrom:dev/examples/optimized.ts:union |> embed(`,`)
+                `export const deepLeftOrRight = union(
+    {
+        auto: {
+            discriminated: "'left'"
+        }
+    },
+    {
+        auto: {
+            discriminated: "'right'"
+        }
+    }
+)`
+                // @blockEnd
+            }
+        </Code>
+        <img src="/img/optimizedUnion.png" />
+    </div>
+)
+
+const OptimizedNumber = (
+    <div className="inferable-code">
+        <Code language="typescript">
+            {"// Hover to see internal representation...\n"}
+            {
+                // @blockFrom:dev/examples/optimized.ts:number |> embed(`,`)
+                `export const numericIntersection = type(
+    "(1 <= number%2 < 100) & (0 < number%3 <= 99)"
+)`
+                // @blockEnd
+            }
+            {`
+       
+
+
+
+
+`}
+        </Code>
+        <img src="/img/optimizedNumber.png" />
+    </div>
+)
+
+const OptimizedImage = (
+    <>
+        {OptimizedUnion}
+        {OptimizedNumber}
+    </>
+)
+
+const TypeSafeImage = (
+    <>
+        <AutoplayDemo src="/img/typePerf.mp4" style={{ width: "100%" }} />
+        <caption style={{ width: "100%", fontSize: ".8rem" }}>
+            Worried about performance? Don't be. This is how it feels to
+            interact with a scope of 100 cyclic types (you may want to go
+            fullscreen to see the details!)
+        </caption>
+    </>
+)
+
 const details = [
     {
         title: "Isomorphic",
@@ -83,16 +150,22 @@ const details = [
         image: ConciseImage
     },
     {
-        // add image of intersections with divisors/range etc.
         title: "Optimized",
         description:
-            "ArkType is not just a validator— it's a full type system. Operations are deeply computed and optimized by default"
+            "ArkType is not just a validator— it's a full type system. Operations are deeply computed and optimized by default",
+        image: OptimizedImage
     },
     {
-        title: "Portable",
+        title: "Type-safe",
         description:
-            "Most ArkType definitions are just strings and objects. Serialize them and take them anywhere your data can go!"
+            "String definitions are statically parsed with each character you type and give detailed feedback just like in your editor.",
+        image: TypeSafeImage
     }
+    // {
+    //     title: "Portable",
+    //     description:
+    //         "Most ArkType definitions are just strings and objects. Serialize them and take them anywhere your data can go!"
+    // }
 ]
 
 type FeatureProps = {

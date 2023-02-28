@@ -1,6 +1,7 @@
 import { type, union } from "../../src/main.ts"
 import { asConst } from "../../src/utils/generics.ts"
 
+// @snipStatement:union
 export const deepLeftOrRight = union(
     {
         auto: {
@@ -29,6 +30,7 @@ export const unionInternalRepresentation = asConst([
     ]
 ])
 
+// @snipStatement:number
 export const numericIntersection = type(
     "(1 <= number%2 < 100) & (0 < number%3 <= 99)"
 )

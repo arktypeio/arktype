@@ -6,6 +6,7 @@ import { Button, Stack, useTheme } from "@mui/material"
 import { motion } from "framer-motion"
 import React, { useState } from "react"
 import { StackBlitzDemo } from "../../docs/demos/StackBlitzDemo.tsx"
+import { AutoplayDemo } from "./autoplayDemo.tsx"
 import { cascadiaCodeFamily } from "./theme.tsx"
 
 export const HomeDemo = () => {
@@ -55,13 +56,8 @@ export const HomeDemo = () => {
                 {isActive ? (
                     <StackBlitzDemo embedId="demo" />
                 ) : (
-                    <video
+                    <AutoplayDemo
                         src="/img/arktype.mp4"
-                        autoPlay
-                        loop
-                        muted
-                        disablePictureInPicture={true}
-                        controls={true}
                         style={{
                             width: "100%",
                             marginTop: "-1.8rem"
