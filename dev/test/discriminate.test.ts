@@ -19,17 +19,17 @@ describe("discriminate", () => {
     })
     const getPlaces = () =>
         scope({
-            rainforest: {
+            rainForest: {
                 climate: "'wet'",
                 color: "'green'",
-                isRainforest: "true"
+                isRainForest: "true"
             },
             desert: { climate: "'dry'", color: "'brown'", isDesert: "true" },
             sky: { climate: "'dry'", color: "'blue'", isSky: "true" },
             ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" }
         })
     it("nested", () => {
-        const t = getPlaces().type("ocean|sky|rainforest|desert")
+        const t = getPlaces().type("ocean|sky|rainForest|desert")
         attest(t.flat).snap([
             ["domain", "object"],
             [
@@ -65,7 +65,7 @@ describe("discriminate", () => {
                             ["requiredProp", ["climate", [["value", "wet"]]]],
                             [
                                 "requiredProp",
-                                ["isRainforest", [["value", true]]]
+                                ["isRainForest", [["value", true]]]
                             ]
                         ],
                         "'brown'": [
@@ -129,7 +129,7 @@ describe("discriminate", () => {
     })
     it("default case", () => {
         const t = getPlaces().type([
-            "ocean|rainforest",
+            "ocean|rainForest",
             "|",
             { temperature: "'hot'" }
         ])
@@ -149,7 +149,7 @@ describe("discriminate", () => {
                             ["requiredProp", ["climate", [["value", "wet"]]]],
                             [
                                 "requiredProp",
-                                ["isRainforest", [["value", true]]]
+                                ["isRainForest", [["value", true]]]
                             ]
                         ],
                         default: [
@@ -167,7 +167,7 @@ describe("discriminate", () => {
         const t = getPlaces().type([
             { temperature: "'cold'" },
             "|",
-            ["ocean|rainforest", "|", { temperature: "'hot'" }]
+            ["ocean|rainForest", "|", { temperature: "'hot'" }]
         ])
         attest(t.flat).snap([
             ["domain", "object"],
@@ -204,7 +204,7 @@ describe("discriminate", () => {
                                             [
                                                 "requiredProp",
                                                 [
-                                                    "isRainforest",
+                                                    "isRainForest",
                                                     [["value", true]]
                                                 ]
                                             ]

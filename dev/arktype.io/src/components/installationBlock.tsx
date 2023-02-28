@@ -11,7 +11,7 @@ export const FloatingInstallationBlock = () => {
     const initial = {
         position: "absolute",
         top: 60,
-        width: "24rem"
+        width: 386
     } as const satisfies Parameters<(typeof controls)["start"]>[0]
     scrollY.onChange((value) => {
         controls.start(

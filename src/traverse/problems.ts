@@ -30,7 +30,7 @@ export class ArkTypeError extends TypeError {
     }
 }
 
-export class Problem<code extends ProblemCode = any> {
+export class Problem<code extends ProblemCode = ProblemCode> {
     parts?: Problem[]
 
     constructor(
@@ -101,7 +101,9 @@ class ProblemArray extends Array<Problem> {
                 : (this.#state.data as ProblemData<code>)
 
         const problem = new Problem(
-            code,
+            // avoid a bunch of errors from TS trying to discriminate the
+            // problem input based on the code
+            code as any,
             path,
             data,
             source,
@@ -119,7 +121,7 @@ class ProblemArray extends Array<Problem> {
                 existing.parts.push(problem)
             } else {
                 const problemIntersection = new Problem(
-                    "multi",
+                    "multi" as any,
                     existing.path,
                     (existing as any).data,
                     [existing, problem],

@@ -5,11 +5,11 @@ import type {
     inferDefinition,
     validateDefinition
 } from "../parse/definition.ts"
-import type { ProblemOptions, Problems } from "../traverse/problems.ts"
-import { TraversalState, traverse } from "../traverse/traverse.ts"
+import type { ProblemOptions } from "../traverse/problems.ts"
+import type { CheckResult } from "../traverse/traverse.ts"
+import { traverseRoot } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
-import type { defer, evaluate, nominal, xor } from "../utils/generics.ts"
-import { composeNamed, getNominalId } from "../utils/generics.ts"
+import type { defer, evaluate } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import type { Expressions } from "./expressions.ts"
 import type { Scope } from "./scope.ts"
@@ -57,14 +57,6 @@ export const initializeType = (
     config: TypeConfig,
     scope: Scope
 ) => {
-    const namedTraverse: Checker<unknown> = composeNamed((data: unknown) => {
-        const state = new TraversalState(data, t)
-        traverse(t.flat, state)
-        return state.problems.count
-            ? { problems: state.problems }
-            : { data: state.data }
-    }, name)
-
     const root = {
         // temporarily initialize node/flat to aliases that will be included in
         // the final type in case of cyclic resolutions
@@ -83,6 +75,11 @@ export const initializeType = (
         // that the rest of the type is correct then cast it
     } satisfies Omit<TypeRoot, typeof as> as TypeRoot
 
+    // define within a key to dynamically assign a name to the function
+    const namedTraverse = {
+        [name]: (data: unknown) => traverseRoot(namedTraverse as Type, data)
+    }[name]
+
     const t = Object.assign(namedTraverse, root)
     return t
 }
@@ -90,17 +87,9 @@ export const initializeType = (
 export const isType = (value: unknown): value is Type =>
     (value as Type)?.infer === chainableNoOpProxy
 
-export type CheckResult<out = unknown> = nominal<
-    xor<{ data: out }, { problems: Problems }>,
-    string
->
-
-export const isCheckResult = (value: unknown): value is CheckResult =>
-    getNominalId(value) !== undefined
-
-type Checker<t> = (data: unknown) => CheckResult<asOut<t>>
-
 export type Type<t = unknown> = defer<Checker<t> & TypeRoot<t>>
+
+export type Checker<t> = (data: unknown) => CheckResult<asOut<t>>
 
 export type QualifiedTypeName = `${string}.${string}`
 

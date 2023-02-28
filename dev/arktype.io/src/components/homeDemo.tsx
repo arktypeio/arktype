@@ -5,10 +5,11 @@ import Expand from "@mui/icons-material/ExpandMore"
 import { Button, Stack, useTheme } from "@mui/material"
 import { motion } from "framer-motion"
 import React, { useState } from "react"
-import { StackBlitzDemo } from "../../docs/demos"
-import { cascadiaCodeFamily } from "."
+import { StackBlitzDemo } from "../../docs/demos/StackBlitzDemo.tsx"
+import { AutoplayDemo } from "./autoplayDemo.tsx"
+import { cascadiaCodeFamily } from "./theme.tsx"
 
-export const SudoDemo = () => {
+export const HomeDemo = () => {
     const { pathname } = useLocation()
     const palette = useTheme().palette
     const isDarkMode = useColorMode().colorMode === "dark"
@@ -55,13 +56,8 @@ export const SudoDemo = () => {
                 {isActive ? (
                     <StackBlitzDemo embedId="demo" />
                 ) : (
-                    <video
+                    <AutoplayDemo
                         src="/img/arktype.mp4"
-                        autoPlay
-                        loop
-                        muted
-                        disablePictureInPicture={true}
-                        controls={true}
                         style={{
                             width: "100%",
                             marginTop: "-1.8rem"
@@ -69,6 +65,17 @@ export const SudoDemo = () => {
                     />
                 )}
             </Stack>
+            <sub>
+                <code>typescript@4.9.5</code> in VS Code— no extensions or
+                plugins required (
+                <a
+                    href="https://github.com/arktypeio/arktype#how"
+                    target="_blank"
+                >
+                    how?
+                </a>
+                )
+            </sub>
         </Stack>
     )
 }

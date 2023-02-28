@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 import { basename } from "node:path"
-import { findPackageRoot, shell, walkPaths } from "../runtime/main.ts"
+import {
+    findPackageRoot,
+    fromHere,
+    fromPackageRoot,
+    shell,
+    walkPaths
+} from "../runtime/main.ts"
 import { cacheAssertions, cleanupAssertions } from "./main.ts"
 
 const args: string[] =
@@ -39,7 +45,7 @@ if (args[attestArgIndex + 1] === "bench") {
     const skipTypes = attestArgs.includes("--skipTypes")
 
     let processError: unknown
-    const buildTest = args[attestArgIndex].includes("dist")
+    const isBuildTest = args[attestArgIndex].includes("dist")
 
     try {
         if (skipTypes) {
@@ -58,7 +64,16 @@ if (args[attestArgIndex + 1] === "bench") {
         console.log(`⏳ attest: Using npx mocha to run your tests...`)
         const runnerStart = Date.now()
 
-        shell(`npx mocha ${buildTest ? "**/test/*.test.js" : ""}`, {
+        const prefix = attestArgs.includes("--coverage")
+            ? `node --require ${fromHere("patchC8.cjs")} ${fromPackageRoot(
+                  "node_modules",
+                  "c8",
+                  "bin",
+                  "c8.js"
+              )} mocha`
+            : "npx mocha"
+
+        shell(`${prefix} ${isBuildTest ? "**/test/*.test.js" : ""}`, {
             stdio: "inherit",
             env: { ARKTYPE_CHECK_CMD: attestArgs.join(" ") }
         })
