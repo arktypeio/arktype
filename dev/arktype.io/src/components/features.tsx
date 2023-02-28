@@ -1,6 +1,8 @@
-import { Grid, Stack, Typography, useTheme } from "@mui/material"
+import { Masonry } from "@mui/lab"
+import { Stack, Typography, useTheme } from "@mui/material"
 import Code from "@theme/CodeBlock"
 import React from "react"
+import { useIsMobile } from "./useWindowSize"
 
 const IsomorphicCodeBlock = (
     <div className="inferable-code">
@@ -23,6 +25,7 @@ type User = typeof user.infer
 const ArkTypeConcision = (
     <div className="inferable-code">
         <Code language="typescript">
+            {"// Hover to infer...\n"}
             {
                 // @blockFrom:dev/examples/concision.ts:arkUser |> replace(`,\`) |> replace(${,\${) |> embed(`,`)
                 `const arkUser = type({
@@ -33,29 +36,37 @@ const ArkTypeConcision = (
                 // @blockEnd
             }
         </Code>
-        <img height="60%" src="/img/conciseInfer.png" />
+        <img height="60%" src="/img/arkUser.png" />
     </div>
 )
 
 const ZodConcision = (
     <div className="inferable-code">
-        <Code language="typescript">{`// Hover to infer... 🦸
-const playerOne = z.object({
-    name: z.string(),
+        <Code language="typescript">
+            {"// Hover to infer...\n"}
+            {
+                // @blockFrom:dev/examples/concision.ts:zodUser |> replace(`,\`) |> replace(${,\${) |> embed(`,`)
+                `const zodUser = z.object({
+    name: z.custom<\`zod\${string}\`>(
+        (val) => typeof val === "string" && /^zod.*$/.test(val)
+    ),
     birthday: z.preprocess(
         (arg) => (typeof arg === "string" ? new Date(arg) : undefined),
         z.date()
     ),
     powerLevel: z.number().gte(1).lt(9000).optional()
-})`}</Code>
+})`
+                // @blockEnd
+            }
+        </Code>
         <img height="80%" src="/img/zodInfer.png" />
     </div>
 )
 
 const ConciseImage = (
     <>
-        {ZodConcision}
         {ArkTypeConcision}
+        {ZodConcision}
     </>
 )
 
@@ -80,7 +91,7 @@ const details = [
         // add image of intersections with divisors/range etc.
         title: "Powerful",
         description:
-            "As a full type system, ArkType understands your data in ways other validators never could"
+            "As a full type system, ArkType understands your data in a way shallow validators never could"
     },
     {
         title: "Fast",
@@ -102,13 +113,15 @@ type FeatureProps = {
 
 export const Features = () => {
     return (
-        <Grid container spacing={3}>
+        <Masonry
+            sx={{ alignContent: "center" }}
+            columns={useIsMobile() ? 1 : 2}
+            spacing={3}
+        >
             {details.map((props, i) => (
-                <Grid item key={i} xs={12} md={6}>
-                    <Feature {...props} />
-                </Grid>
+                <Feature key={i} {...props} />
             ))}
-        </Grid>
+        </Masonry>
     )
 }
 
@@ -126,7 +139,12 @@ const Feature = (props: FeatureProps) => {
             >
                 {props.title}
             </Typography>
-            <Typography component="p" variant="body1" fontWeight="300">
+            <Typography
+                component="p"
+                variant="body1"
+                fontWeight="300"
+                minHeight="3rem"
+            >
                 {props.description}
             </Typography>
             <div>{props.image ?? null}</div>
