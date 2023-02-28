@@ -37,11 +37,15 @@ describe("record", () => {
             }
         })
     })
-    it("strict optional", () => {
+    it("data traversed optional", () => {
         const o = type({ "a?": "string" }, { keys: "strict" })
-        attest(o({ a: "string" }).data).snap({ a: "string" })
+        attest(o({ a: "a" }).data).snap({ a: "a" })
+        attest(o({}).data).snap({})
+        attest(o({ a: 1 }).problems?.summary).snap(
+            "a must be a string (was number)"
+        )
     })
-    it("strict invalid union", () => {
+    it("invalid union", () => {
         const o = type([{ a: "string" }, "|", { b: "boolean" }], {
             keys: "strict"
         })

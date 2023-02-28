@@ -3,7 +3,7 @@ import { ark, type } from "../../src/main.ts"
 import { attest } from "../attest/main.ts"
 
 describe("keywords", () => {
-    describe("js keywords", () => {
+    describe("js", () => {
         it("Function", () => {
             attest(type("Function").node).snap("Function")
             attest(type("Array").node).snap("Array")
@@ -21,7 +21,7 @@ describe("keywords", () => {
             attest(type("Promise").node).snap("Promise")
         })
     })
-    describe("ts keywords", () => {
+    describe("ts", () => {
         it("any", () => {
             attest(type("any").node).equals("any")
         })
@@ -65,7 +65,7 @@ describe("keywords", () => {
             attest(type("undefined").node).snap()
         })
     })
-    describe("validation scope", () => {
+    describe("validation", () => {
         it("integer", () => {
             const integer = type("integer")
             attest(integer(123).data).snap(123)
@@ -122,8 +122,8 @@ describe("keywords", () => {
             attest(uuid("f70b8242-dd57-4e6b-b0b7-649d997140a0").data).snap(
                 "f70b8242-dd57-4e6b-b0b7-649d997140a0"
             )
-            attest(uuid(1234).problems?.summary).snap(
-                "Must be a valid UUID (was number)"
+            attest(uuid("1234").problems?.summary).snap(
+                "Must be a valid UUID (was '1234')"
             )
         })
         it("parsedDate", () => {
