@@ -89,6 +89,10 @@
         "checkCoverage": true,
         "lines": 98,
         "src": "./src",
+        "exclude": [
+            "test/**",
+            "dev/**"
+        ],
         "extension": ".ts",
         "reporter": "lcovonly"
     },

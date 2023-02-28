@@ -28,6 +28,7 @@ module.exports = defineConfig({
          */
         curly: "warn",
         eqeqeq: "warn",
+        "object-shorthand": ["warn"],
         "@typescript-eslint/no-unused-vars": [
             "warn",
             { ignoreRestSiblings: true }
@@ -35,7 +36,6 @@ module.exports = defineConfig({
         "@typescript-eslint/default-param-last": "warn",
         "@typescript-eslint/consistent-type-imports": "warn",
         "@typescript-eslint/consistent-type-definitions": ["warn", "type"],
-        "object-shorthand": ["warn"],
         /**
          * Require the use of arrow functions where possible
          */

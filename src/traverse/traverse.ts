@@ -216,11 +216,12 @@ const createPropChecker =
         const unseenRequired = { ...props.required }
         for (const k in state.data) {
             if (props.required[k]) {
-                isValid ||= state.traverseKey(k, props.required[k])
+                isValid &&= state.traverseKey(k, props.required[k])
                 delete unseenRequired[k]
             } else if (props.optional[k]) {
-                isValid ||= state.traverseKey(k, props.optional[k])
+                isValid &&= state.traverseKey(k, props.optional[k])
             } else if (kind === "distilledProps") {
+                // TODO https://github.com/arktypeio/arktype/issues/664
                 delete state.data[k]
             } else {
                 state.problems.add("extraneous", state.data[k], {
@@ -291,7 +292,8 @@ const entryCheckers = {
                 ? domainsToDescriptions(caseKeys as Domain[])
                 : rule.kind === "class"
                 ? objectKindsToDescriptions(caseKeys as DefaultObjectKind[])
-                : throwInternalError(
+                : /* c8 ignore next 3 */
+                  throwInternalError(
                       `Unexpectedly encountered rule kind '${rule.kind}' during traversal`
                   )
         state.problems.add("cases", caseDescriptions, {

@@ -4,6 +4,7 @@ import type { Branch } from "../../src/nodes/branch.ts"
 import type { TypeNode } from "../../src/nodes/node.ts"
 import { writeImplicitNeverMessage } from "../../src/parse/ast/intersection.ts"
 import { Path } from "../../src/utils/paths.ts"
+import { stringify } from "../../src/utils/serialize.ts"
 import { attest } from "../attest/main.ts"
 
 describe("keyof", () => {
@@ -49,16 +50,15 @@ describe("keyof", () => {
             type(["keyof", [{ a: "number" }, "|", "string"]])
         ).throwsAndHasTypeError(expectedNeverKeyOfMessage)
     })
-    const attestHasStringLiteralBranches = (
+    const attestHasStringBranches = (
         branches: Branch<"string">[],
-        values: string[]
+        expectedBranches: Branch<"string">[]
     ) => {
-        for (const value of values) {
+        for (const expected of expectedBranches) {
+            const expectedString = stringify(expected)
             attest(
-                branches.some(
-                    (branch) => "value" in branch && branch.value === value
-                )
-            )
+                branches.some((branch) => stringify(branch) === expectedString)
+            ).equals(true)
         }
     }
     it("array", () => {
@@ -68,15 +68,27 @@ describe("keyof", () => {
         // the array prototype has many items and they vary based on the JS
         // flavor we're running in, so just check that the indices from the type
         // and one prototype key are present as a heuristic
-        attestHasStringLiteralBranches(node.string as Branch<"string">[], [
-            "0",
-            "1",
-            "map"
+        attestHasStringBranches(node.string as Branch<"string">[], [
+            { value: "0" },
+            { value: "1" },
+            { value: "map" }
         ])
         attest(node.number).snap([{ value: 0 }, { value: 1 }])
         attest(node.symbol).snap([
             { value: "(symbol Symbol.iterator)" },
             { value: "(symbol Symbol.unscopables)" }
+        ])
+    })
+    it("wellFormedNonNegativeInteger intersection", () => {
+        const t = type(["keyof", [{ "1": "1" }, "&", "string[]"]])
+        const node = t.node as TypeNode
+        attestHasStringBranches(node.string as Branch<"string">[], [
+            { value: "1" },
+            { regex: "^(?:0|(?:[1-9]\\d*))$" }
+        ])
+        attest(node.number).snap([
+            { value: 1 },
+            { range: { min: { comparator: ">=", limit: 0 } }, divisor: 1 }
         ])
     })
     it("nullish", () => {

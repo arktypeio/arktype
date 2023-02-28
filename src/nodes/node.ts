@@ -71,7 +71,10 @@ export const nodeIntersection: Intersector<Node> = (l, r, state) => {
 const typeNodeIntersection = composeKeyedIntersection<TypeNode>(
     (domain, l, r, context) => {
         if (l === undefined) {
-            return r === undefined ? throwUndefinedOperandsError() : undefined
+            return r === undefined
+                ? /* c8 ignore next */
+                  throwUndefinedOperandsError()
+                : undefined
         }
         if (r === undefined) {
             return undefined
@@ -108,7 +111,8 @@ export const rootUnion = (l: Node, r: Node, type: Type): ResolvedNode => {
                 : lDomains[domain]
             : hasKey(rDomains, domain)
             ? rDomains[domain]
-            : throwUndefinedOperandsError()
+            : /* c8 ignore next */
+              throwUndefinedOperandsError()
     }
     return result
 }
