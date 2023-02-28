@@ -41,9 +41,19 @@ describe("record", () => {
         const o = type({ "a?": "string" }, { keys: "strict" })
         attest(o({ a: "string" }).data).snap({ a: "string" })
     })
-    it("not valid use union TODO", () => {
-        const o = type({ "a?": "string" }, { keys: "strict" })
-        attest(o({ a: "string" }).data).snap({ a: "string" })
+    it("fail fast non valid union strictly", () => {
+        const o = type([{ a: "string" }, "|", { b: "boolean" }], {
+            keys: "strict"
+        })
+        attest(o({ a: 2 }).problems?.summary).snap(
+            'a must be a string or removed (was {"a":2})'
+        )
+    })
+    it("fail fast non valid union distilled", () => {
+        const o = type([{ a: "string" }, "|", { b: "boolean" }], {
+            keys: "distilled"
+        })
+        attest(o({ a: 2 }).problems?.summary).snap()
     })
     it("escaped optional token", () => {
         const t = type({ "a\\?": "string" })

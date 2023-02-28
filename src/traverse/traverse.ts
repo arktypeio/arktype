@@ -216,11 +216,12 @@ const createPropChecker =
         const unseenRequired = { ...props.required }
         for (const k in state.data) {
             if (props.required[k]) {
-                isValid ||= state.traverseKey(k, props.required[k])
+                isValid &&= state.traverseKey(k, props.required[k])
                 delete unseenRequired[k]
             } else if (props.optional[k]) {
-                isValid ||= state.traverseKey(k, props.optional[k])
+                isValid &&= state.traverseKey(k, props.optional[k])
             } else if (kind === "distilledProps") {
+                // TODO https://github.com/arktypeio/arktype/issues/664
                 delete state.data[k]
             } else {
                 state.problems.add("extraneous", state.data[k], {
