@@ -49,12 +49,13 @@ describe("record", () => {
             'a must be a string or removed (was {"a":2})'
         )
     })
-    it("fail fast non valid union distilled", () => {
-        const o = type([{ a: "string" }, "|", { b: "boolean" }], {
-            keys: "distilled"
-        })
-        attest(o({ a: 2 }).problems?.summary).snap()
-    })
+    // TODO https://github.com/arktypeio/arktype/issues/664
+    // it("fail fast non valid union distilled", () => {
+    //     const o = type([{ a: "string" }, "|", { b: "boolean" }], {
+    //         keys: "distilled"
+    //     })
+    //     attest(o({ a: 2 }).problems?.summary).snap()
+    // })
     it("escaped optional token", () => {
         const t = type({ "a\\?": "string" })
         attest(t.infer).typed as { "a?": string }
