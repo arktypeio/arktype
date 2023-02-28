@@ -90,7 +90,7 @@ describe("morph", () => {
         attest(types.bAndA).typed as typeof types.aAndB
         attest(types.bAndA.node).equals(types.aAndB.node)
     })
-    it("object interesection", () => {
+    it("object intersection", () => {
         const $ = scope({
             a: morph({ a: "1" }, (data) => `${data}`),
             b: { b: "2" },

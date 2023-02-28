@@ -2,7 +2,7 @@ import { compileDisjointReasonsMessage } from "../parse/ast/intersection.ts"
 import type { ParseContext } from "../parse/definition.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
-import { throwParseError } from "../utils/errors.ts"
+import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import type {
     defined,
     Dict,
@@ -20,7 +20,7 @@ import {
     IntersectionState,
     isDisjoint,
     isEquality,
-    throwUndefinedOperandsError
+    undefinedOperandsMessage
 } from "./compose.ts"
 import type { DiscriminatedSwitch } from "./discriminate.ts"
 import type { Predicate } from "./predicate.ts"
@@ -72,8 +72,7 @@ const typeNodeIntersection = composeKeyedIntersection<TypeNode>(
     (domain, l, r, context) => {
         if (l === undefined) {
             return r === undefined
-                ? /* c8 ignore next */
-                  throwUndefinedOperandsError()
+                ? throwInternalError(undefinedOperandsMessage)
                 : undefined
         }
         if (r === undefined) {
@@ -111,8 +110,7 @@ export const rootUnion = (l: Node, r: Node, type: Type): ResolvedNode => {
                 : lDomains[domain]
             : hasKey(rDomains, domain)
             ? rDomains[domain]
-            : /* c8 ignore next */
-              throwUndefinedOperandsError()
+            : throwInternalError(undefinedOperandsMessage)
     }
     return result
 }

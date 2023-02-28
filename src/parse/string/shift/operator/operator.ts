@@ -7,6 +7,7 @@ import { Scanner } from "../scanner.ts"
 import { parseBound } from "./bounds.ts"
 import { parseDivisor } from "./divisor.ts"
 
+// @snipStart:parseOperator
 export const parseOperator = (s: DynamicState): void => {
     const lookahead = s.scanner.shift()
     return lookahead === ""
@@ -25,8 +26,7 @@ export const parseOperator = (s: DynamicState): void => {
         ? parseDivisor(s)
         : lookahead === " "
         ? parseOperator(s)
-        : /* c8 ignore next */
-          throwInternalError(writeUnexpectedCharacterMessage(lookahead))
+        : throwInternalError(writeUnexpectedCharacterMessage(lookahead))
 }
 
 export type parseOperator<s extends StaticState> =
@@ -47,6 +47,7 @@ export type parseOperator<s extends StaticState> =
             ? parseOperator<state.scanTo<s, unscanned>>
             : error<writeUnexpectedCharacterMessage<lookahead>>
         : state.finalize<s>
+// @snipEnd
 
 export const writeUnexpectedCharacterMessage = <char extends string>(
     char: char

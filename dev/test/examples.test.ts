@@ -41,4 +41,25 @@ describe("snippets", () => {
             "dependencies/0/dependencies/0/contributors/0/email must be a valid email (was 'david@sharktypeio')\ncontributors/0/email must be a valid email (was 'david@sharktypeio')"
         )
     })
+    it("optimized", async () => {
+        const example = await import("../examples/optimized.ts")
+        attest(example.deepLeftOrRight.infer).typed as
+            | {
+                  auto: {
+                      discriminated: "left"
+                  }
+              }
+            | {
+                  auto: {
+                      discriminated: "right"
+                  }
+              }
+        attest(example.deepLeftOrRight.flat).snap(
+            example.unionInternalRepresentation
+        )
+        attest(example.numericIntersection.infer).typed as number
+        attest(example.numericIntersection.flat).equals(
+            example.numericInternalRepresentation
+        )
+    })
 })

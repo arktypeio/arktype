@@ -1,12 +1,12 @@
 import { Stack } from "@mui/material"
 import React from "react"
-import { Features } from "../components/features"
+import { Features } from "../components/features.tsx"
+import { HomeDemo } from "./homeDemo.tsx"
 import {
     FloatingInstallationBlock,
     MobileInstallationBlock
-} from "./installationBlock"
-import { SudoDemo } from "./sudoDemo"
-import { useInstallationBlockShouldFloat } from "./useWindowSize"
+} from "./installationBlock.tsx"
+import { useInstallationBlockShouldFloat } from "./useWindowSize.ts"
 
 export const Contents = () => {
     return (
@@ -19,7 +19,7 @@ export const Contents = () => {
                 width="100%"
                 maxWidth="60rem"
             >
-                <SudoDemo />
+                <HomeDemo />
                 {useInstallationBlockShouldFloat() ? (
                     <FloatingInstallationBlock />
                 ) : (

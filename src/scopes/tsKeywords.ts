@@ -1,4 +1,4 @@
-import type { inferred } from "../parse/definition.ts"
+import type { Infer } from "../parse/definition.ts"
 import type { Domain } from "../utils/domains.ts"
 import { scope } from "./scope.ts"
 
@@ -15,7 +15,7 @@ const always: Record<Domain, true> = {
 
 export const tsKeywordsScope = scope(
     {
-        any: ["node", always] as inferred<any>,
+        any: ["node", always] as Infer<any>,
         bigint: ["node", { bigint: true }],
         boolean: ["node", { boolean: true }],
         false: ["node", { boolean: { value: false } }],
@@ -26,8 +26,8 @@ export const tsKeywordsScope = scope(
         string: ["node", { string: true }],
         symbol: ["node", { symbol: true }],
         true: ["node", { boolean: { value: true } }],
-        unknown: ["node", always] as inferred<unknown>,
-        void: ["node", { undefined: true }] as inferred<void>,
+        unknown: ["node", always] as Infer<unknown>,
+        void: ["node", { undefined: true }] as Infer<void>,
         undefined: ["node", { undefined: true }]
     },
     { name: "ts", standard: false }

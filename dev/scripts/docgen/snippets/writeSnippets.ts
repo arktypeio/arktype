@@ -21,7 +21,8 @@ export const updateSnippetReferences = (snippetsByPath: SnippetsByPath) => {
     }
 }
 
-const TEMPLATE_REPLACE_TOKEN = "{?}"
+const EMBED_MATCHER = /embed\((.*?),(.*)\)/
+const REPLACE_MATCHER = /replace\((.*?),(.*)\)/
 
 const updateSnippetReferencesIfNeeded = (
     path: string,
@@ -84,34 +85,40 @@ const getUpdatedLines = (
     snippetsByPath: SnippetsByPath
 ) => {
     let lines: string[]
-    const lineFromRefeferenceParts = line
+    const lineFromReferenceParts = line
         .slice(line.indexOf(token))
         .split(" ")[0]
         .split(":")
-    const filePath = lineFromRefeferenceParts[1]
+    const filePath = lineFromReferenceParts[1]
     if (!filePath) {
         throw new Error(
             `${token} expression '${line}' required a file path, e.g. '${token}:check/package.json:version'.`
         )
     }
     if (filePath.endsWith(".json")) {
-        lines = getLinesFromJsonFile(
-            filePath,
-            lineFromRefeferenceParts[2],
-            token
-        )
+        lines = getLinesFromJsonFile(filePath, lineFromReferenceParts[2], token)
     } else {
         lines = getSnippedBlockLines(
             filePath,
-            lineFromRefeferenceParts[2],
+            lineFromReferenceParts[2],
             snippetsByPath
         )
     }
-    const possibleTemplate = line.split("=>")[1]
-    if (possibleTemplate) {
-        lines = lines.map((line) =>
-            possibleTemplate.replace(TEMPLATE_REPLACE_TOKEN, line)
-        )
+    const pipes = line.split("|>").slice(1)
+    for (const pipe of pipes) {
+        const replaceArgs = pipe.match(REPLACE_MATCHER)
+        if (replaceArgs) {
+            lines = lines.map((line) =>
+                line.replaceAll(replaceArgs[1], replaceArgs[2])
+            )
+        } else {
+            const embedArgs = pipe.match(EMBED_MATCHER)
+            if (embedArgs) {
+                lines = `${embedArgs[1]}${lines.join("\n")}${
+                    embedArgs[2]
+                }`.split("\n")
+            }
+        }
     }
     return lines
 }

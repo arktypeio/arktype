@@ -18,12 +18,11 @@ import { checkRegex } from "../nodes/rules/regex.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
 import type { Scope } from "../scopes/scope.ts"
 import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
-import { isCheckResult } from "../scopes/type.ts"
 import type { SizedData } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
-import type { extend, stringKeyOf } from "../utils/generics.ts"
+import type { extend, stringKeyOf, xor } from "../utils/generics.ts"
 import { hasKey, objectKeysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { getPath, Path } from "../utils/paths.ts"
@@ -50,9 +49,35 @@ const problemWriterKeys: readonly ProblemWriterKey[] = [
     "addContext"
 ]
 
+export const traverseRoot = (t: Type, data: unknown) => {
+    const state = new TraversalState(data, t)
+    traverse(t.flat, state)
+    const result = new CheckResult(state)
+    if (state.problems.count) {
+        result.problems = state.problems
+    } else {
+        for (const [o, k] of state.entriesToPrune) {
+            delete o[k]
+        }
+        result.data = state.data
+    }
+    return result
+}
+
+const CheckResult = class {
+    data?: unknown
+    problems?: Problems
+} as new (state: TraversalState) => CheckResult
+
+export type CheckResult<out = unknown> = xor<
+    { data: out },
+    { problems: Problems }
+>
+
 export class TraversalState<data = unknown> {
     path = new Path()
-    problems = new Problems(this as any)
+    problems: Problems = new Problems(this)
+    entriesToPrune: [data: Record<string, unknown>, key: string][] = []
 
     failFast = false
     traversalConfig = initializeTraversalConfig()
@@ -141,15 +166,19 @@ export class TraversalState<data = unknown> {
         const branchProblems = new Problems(this)
         this.problems = branchProblems
         const lastPath = this.path
+        const lastKeysToPrune = this.entriesToPrune
         let hasValidBranch = false
         for (const branch of branches) {
             this.path = new Path()
+            this.entriesToPrune = []
             if (checkEntries(branch, this)) {
                 hasValidBranch = true
+                lastKeysToPrune.push(...this.entriesToPrune)
                 break
             }
         }
         this.path = lastPath
+        this.entriesToPrune = lastKeysToPrune
         this.problems = lastProblems
         this.failFast = lastFailFast
         return hasValidBranch || !this.problems.add("branches", branchProblems)
@@ -213,25 +242,43 @@ const createPropChecker =
     (kind: PropsRecordKey) =>
     (props: PropsRecordEntry[1], state: TraversalState<TraversableData>) => {
         let isValid = true
-        const unseenRequired = { ...props.required }
+        const remainingUnseenRequired = { ...props.required }
         for (const k in state.data) {
             if (props.required[k]) {
                 isValid &&= state.traverseKey(k, props.required[k])
-                delete unseenRequired[k]
+                delete remainingUnseenRequired[k]
             } else if (props.optional[k]) {
                 isValid &&= state.traverseKey(k, props.optional[k])
             } else if (kind === "distilledProps") {
-                // TODO https://github.com/arktypeio/arktype/issues/664
-                delete state.data[k]
+                if (state.failFast) {
+                    // If we're in a union (i.e. failFast is enabled) in
+                    // distilled mode, we need to wait to prune distilled keys
+                    // to avoid mutating data based on a branch that will not be
+                    // included in the final result. Instead, we push the object
+                    // and key to state to handle after traversal is complete.
+                    state.entriesToPrune.push([state.data, k])
+                } else {
+                    // If we're not in a union, we can safely distill right away
+                    delete state.data[k]
+                }
             } else {
+                isValid = false
                 state.problems.add("extraneous", state.data[k], {
                     path: state.path.concat(k)
                 })
-                isValid = false
             }
             if (!isValid && state.failFast) {
                 return false
             }
+        }
+        const unseenRequired = Object.keys(remainingUnseenRequired)
+        if (unseenRequired.length) {
+            for (const k of unseenRequired) {
+                state.problems.add("missing", undefined, {
+                    path: state.path.concat(k)
+                })
+            }
+            return false
         }
         return isValid
     }
@@ -292,10 +339,11 @@ const entryCheckers = {
                 ? domainsToDescriptions(caseKeys as Domain[])
                 : rule.kind === "class"
                 ? objectKindsToDescriptions(caseKeys as DefaultObjectKind[])
-                : /* c8 ignore next 3 */
+                : /* c8 ignore start*/
                   throwInternalError(
                       `Unexpectedly encountered rule kind '${rule.kind}' during traversal`
                   )
+        /* c8 ignore stop*/
         state.problems.add("cases", caseDescriptions, {
             path: missingCasePath,
             data: dataAtPath
@@ -327,7 +375,7 @@ const entryCheckers = {
             state.problems.addProblem(out)
             return false
         }
-        if (isCheckResult(out)) {
+        if (out instanceof CheckResult) {
             if (out.problems) {
                 for (const problem of out.problems) {
                     state.problems.addProblem(problem)

@@ -3,21 +3,24 @@
 [<img src="./dev/arktype.io/static/img/arktype.gif">](https://arktype.io/try)
 <sub><i>`typescript@4.9.5` in VS Code— no extensions or plugins required (<a href="#how">how?</a>)</i></sub>
 
-<!-- @snipStart:install -->
+<img src="./dev/arktype.io/static/img/logo.svg" alt="ArkType Icon" height="16px"/><b> Try this demo in-browser at <a href="https://arktype.io/try">arktype.io/try</a></b>
 
-<img src="./dev/arktype.io/static/img/logo.svg" alt="ArkType Icon" height="16px"><b> Try this demo in-browser at [arktype.io/try](https://arktype.io/try)</b>
+<!-- @snipStart:install -->
 
 ## Install <sub><sub>📦`4KB` gzipped, `0` dependencies</sub></sub>
 
-<img src="./dev/arktype.io/static/img/npm.svg" alt="Npm Icon" height="16px"> `npm install arktype` <sub>(or whatever package manager you prefer)</sub>
-
-<img src="./dev/arktype.io/static/img/deno.svg" alt="Deno Icon" height="16px"> `import { type } from "https://deno.land/x/arktype"`
+<img src="./dev/arktype.io/static/img/npm.svg" alt="Npm Icon" height="16px" />
+<code>npm install arktype</code>
+<sub>(or whatever package manager you prefer)</sub>
+<br />
+<img src="./dev/arktype.io/static/img/deno.svg" alt="Deno Icon" height="16px" />
+<code>import type from "https://deno.land/x/arktype"</code>
 
 Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#strict) with TypeScript versions `4.8`, `4.9`, and `5.0`.
 
 _Our APIs have mostly stabilized, but details may still change during the alpha/beta stages of our 1.0 release. If you have suggestions that may require a breaking change, now is the time to let us know!_ ⛵
 
-<!-- @snipEnd:install -->
+<!-- @snipEnd -->
 
 ## Types
 
@@ -89,17 +92,21 @@ export const { data, problems } = types.package(packageData)
 
 ### API
 
-ArkType supports many of TypeScript's built-in types and operators, as well as some new ones dedicated exclusively to runtime validation. In fact, we got a little ahead of ourselves and built a ton of cool features, but we're still working on getting caught up syntax and API docs. Keep an eye out for more in the next couple weeks!
+<!--@snipStart:api -->
 
-In the meantime, check out the examples from this README and use the type hints you get to learn how you can customize your types and scopes. If you want to explore some of the more advanced features, take a look at [our unit tests](./dev/test) and don't hesitate to reach out on our [Discord channel](https://discord.gg/WSNF3Kc4xh)!
+ArkType supports many of TypeScript's built-in types and operators, as well as some new ones dedicated exclusively to runtime validation. In fact, we got a little ahead of ourselves and built a ton of cool features, but we're still working on getting caught up syntax and API docs. Keep an eye out for more in the next couple weeks ⛵
 
-### How
+In the meantime, check out the examples here and use the type hints you get to learn how you can customize your types and scopes. If you want to explore some of the more advanced features, take a look at [our unit tests](./dev/test) and don't hesitate to reach out on our [Discord channel](https://discord.gg/WSNF3Kc4xh)!
+
+<!--@snipEnd -->
+
+## How
 
 ArkType's isomorphic parser has parallel static and dynamic implementations. This means as soon as you type a definition in your editor, you'll know the eventual result at runtime.
 
 If you're curious, below is an example of what that looks like under the hood. If not, close that hood back up, `npm install arktype` and enjoy top-notch developer experience 🧑‍💻
 
-```ts
+```ts @blockFrom:src/parse/string/shift/operator/operator.ts:parseOperator
 export const parseOperator = (s: DynamicState): void => {
     const lookahead = s.scanner.shift()
     return lookahead === ""
@@ -141,12 +148,27 @@ export type parseOperator<s extends StaticState> =
         : state.finalize<s>
 ```
 
-## Contributing
+## Contributions
 
-If you're interested in contributing to ArkType...
+We accept and encourage pull requests from outside ArkType.
 
-1.  Thank you! We'll do everything we can to make this as straightforward as possible, regardless of your level of experience.
-2.  Check out our [guide](./dev/configs/CONTRIBUTING.md) to get started!
+Depending on your level of familiarity with type systems and TS generics, some parts of the codebase may be hard to jump into. That said, there's plenty of opportunities for more straightforward contributions.
+
+If you're planning on submitting a non-trivial fix or a new feature, please [create an issue first](https://github.com/arktypeio/arktype/issues/new) so everyone's on the same page. The last thing we want is for you to spend time on a submission we're unable to merge.
+
+When you're ready, check out our [guide](./dev/configs/CONTRIBUTING.md) to get started!
+
+## Sponsorship
+
+We've been working full-time on this project for over a year and it means a lot to have the community behind us.
+
+If the project has been useful to you and you are in a financial position to do so, please feel free to chip in [via our Patreon](https://www.patreon.com/ArkType240).
+
+Otherwise, consider sending me an email (david@arktype.io) letting me know you're a fan of ArkType. Either would make my day! 😊
+
+## Collaboration
+
+I'd love to hear about what you're working on and how ArkType can help. Please reach out to david@arktype.io.
 
 ## License
 

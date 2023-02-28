@@ -1,7 +1,7 @@
 import BoatSvg from "@site/static/img/boat.svg"
 import { motion } from "framer-motion"
 import React from "react"
-import { useWindowSize } from "./useWindowSize"
+import { useWindowSize } from "./useWindowSize.ts"
 
 const BOB_HEIGHT_PX = 2
 const BOB_WIDTH_PX = 16

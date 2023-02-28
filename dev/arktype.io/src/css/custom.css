@@ -114,6 +114,31 @@ header {
 }
 
 .theme-code-block {
-    --prism-background-color: #1b1b1b66 !important;
+    --prism-background-color: #1b1b1baa;
     --ifm-pre-padding: 0.5rem;
+}
+
+.inferable-code {
+    position: relative;
+    background: #fffff0;
+    border-radius: 0.5rem;
+}
+
+.inferable-code .theme-code-block {
+    --prism-background-color: linear-gradient(
+        to top right,
+        #0d1117ff,
+        #0d1117dd
+    ) !important;
+}
+
+.inferable-code img {
+    display: none;
+}
+
+.inferable-code:hover img {
+    display: block;
+    position: absolute;
+    bottom: 0px;
+    right: 1rem;
 }

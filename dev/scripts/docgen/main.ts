@@ -112,7 +112,10 @@ const getSnippetsAndUpdateReferences = (project: Project) => {
         (path) =>
             // Avoid conflicts between snip matching and the source
             // code defining those matchers
-            !path.startsWith(relative(repoDirs.root, dirName()))
+            !path.startsWith(relative(repoDirs.root, dirName())) &&
+            // Don't update old docs versions, which would incorrectly update
+            // snapshotted package.json versions
+            !path.startsWith(join("dev", "arktype.io", "versioned_docs"))
     )
     const snippets = extractSnippets(sourceControlPaths, project)
     updateSnippetReferences(snippets)

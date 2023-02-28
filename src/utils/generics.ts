@@ -6,7 +6,7 @@ export type asConst<t> = castWithExclusion<t, asConstRecurse<t>, []>
 
 type asConstRecurse<t> = {
     [k in keyof t]: t[k] extends Literalable | [] ? t[k] : asConstRecurse<t[k]>
-}
+} & unknown
 
 export type castWithExclusion<t, castTo, excluded> = t extends excluded
     ? t
@@ -176,19 +176,6 @@ export const nominal = <o extends object, name extends string>(
     o: o,
     name: name
 ): nominal<o, name> => Object.assign(o, { [id]: name })
-
-export const composeNamed = <
-    args extends any[],
-    returns extends object,
-    name extends string
->(
-    f: (...args: args) => returns,
-    name: name
-) =>
-    // define within a key to dynamically assign a name to the function
-    ({
-        [name]: (...args: args) => nominal(f(...args), name)
-    }[name])
 
 export type nominal<t, id extends string> = t & {
     readonly [id]: id
