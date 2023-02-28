@@ -41,7 +41,7 @@ describe("record", () => {
         const o = type({ "a?": "string" }, { keys: "strict" })
         attest(o({ a: "string" }).data).snap({ a: "string" })
     })
-    it("fail fast non valid union strictly", () => {
+    it("strict invalid union", () => {
         const o = type([{ a: "string" }, "|", { b: "boolean" }], {
             keys: "strict"
         })
@@ -50,7 +50,7 @@ describe("record", () => {
         )
     })
     // TODO https://github.com/arktypeio/arktype/issues/664
-    // it("fail fast non valid union distilled", () => {
+    // it("distilled union", () => {
     //     const o = type([{ a: "string" }, "|", { b: "boolean" }], {
     //         keys: "distilled"
     //     })
