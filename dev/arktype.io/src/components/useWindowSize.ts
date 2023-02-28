@@ -25,8 +25,6 @@ export const useWindowSize = (): { width: number; height: number } => {
     return windowSize
 }
 
-// Based on Docusaurus's mobile cutoff:
-// https://docusaurus.io/docs/styling-layout#mobile-view
 export const useIsMobile = () => useMediaQuery("(max-width:1250px)")
 
 export const useInstallationBlockShouldFloat = () =>
