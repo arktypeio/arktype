@@ -132,7 +132,7 @@ const config = {
                         title: "Docs",
                         items: [
                             {
-                                label: "Tutorial",
+                                label: "Docs",
                                 to: "/docs/"
                             }
                         ]
@@ -154,8 +154,7 @@ const config = {
                             }
                         ]
                     }
-                ],
-                copyright: `Copyright © ${new Date().getFullYear()} Arktype, Inc. Built with Docusaurus.`
+                ]
             }
         })
 }
