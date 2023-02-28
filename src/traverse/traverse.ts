@@ -292,10 +292,11 @@ const entryCheckers = {
                 ? domainsToDescriptions(caseKeys as Domain[])
                 : rule.kind === "class"
                 ? objectKindsToDescriptions(caseKeys as DefaultObjectKind[])
-                : /* c8 ignore next 3 */
+                : /* c8 ignore start*/
                   throwInternalError(
                       `Unexpectedly encountered rule kind '${rule.kind}' during traversal`
                   )
+        /* c8 ignore stop*/
         state.problems.add("cases", caseDescriptions, {
             path: missingCasePath,
             data: dataAtPath
