@@ -52,10 +52,12 @@
         "typeof",
         "Unboundable",
         "undiscriminatable",
+        "undiscriminated",
         "uninteractable",
         "Unpairable",
         "unscanned",
-        "unvalidated"
+        "unvalidated",
+        "λtype"
     ],
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "typescript.tsdk": "./node_modules/typescript/lib",
