@@ -37,6 +37,7 @@
         "Literalable",
         "Luhn",
         "nocheck",
+        "npmrc",
         "optionalize",
         "pnpm",
         "pnpx",
