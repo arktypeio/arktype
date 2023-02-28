@@ -70,7 +70,7 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): Node => {
 
 export type inferDefinition<def, $> = isAny<def> extends true
     ? never
-    : def extends cast<infer t> | InferredThunk<infer t>
+    : def extends Infer<infer t> | InferredThunk<infer t>
     ? t
     : def extends string
     ? inferString<def, $>
@@ -103,21 +103,21 @@ export type validateDefinition<def, $> = def extends (...args: any[]) => any
 
 export const as = Symbol("as")
 
-export type cast<t> = {
+export type Infer<t> = {
     [as]?: t
 }
 
 export const unknownDefinitionMessage =
-    "Cannot statically parse a definition inferred as unknown. Consider using 'as inferred<...>' to cast it."
+    "Cannot statically parse a definition inferred as unknown. Consider using 'as Infer<...>' to cast it."
 
 export type unknownDefinitionMessage = typeof unknownDefinitionMessage
 
 const isThunk = (def: unknown): def is () => unknown =>
     typeof def === "function" && def.length === 0
 
-type InferredThunk<t = unknown> = () => cast<t>
+type InferredThunk<t = unknown> = () => Infer<t>
 
-type Terminal = RegExp | cast<unknown> | InferredThunk
+type Terminal = RegExp | Infer<unknown> | InferredThunk
 
 type BadDefinitionType = Exclude<Primitive, string>
 

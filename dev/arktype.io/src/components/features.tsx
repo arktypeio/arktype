@@ -27,10 +27,10 @@ const ArkTypeConcision = (
         <Code language="typescript">
             {"// Hover to infer...\n"}
             {
-                // @blockFrom:dev/examples/concision.ts:arkUser |> replace(`,\`) |> replace(${,\${) |> embed(`,`)
+                // @blockFrom:dev/examples/concision.ts:arkUserHelper |> replace(`,\`) |> replace(${,\${) |> embed(`,`)
                 `const arkUser = type({
-    name: /^ark.*$/ as cast<\`ark\${string}\`>,
-    birthday: ["string", "|>", (s) => new Date(s)],
+    name: /^ark.*$/ as Infer<\`ark\${string}\`>,
+    birthday: morph("string", (s) => new Date(s)),
     "powerLevel?": "1<=number<9000"
 })`
                 // @blockEnd
@@ -83,20 +83,10 @@ const details = [
         image: ConciseImage
     },
     {
-        title: "Native JS/TS",
-        description:
-            "Zero dependencies and no extensions, plugins or compilers required"
-    },
-    {
         // add image of intersections with divisors/range etc.
-        title: "Powerful",
+        title: "Optimized",
         description:
-            "As a full type system, ArkType understands your data in a way shallow validators never could"
-    },
-    {
-        title: "Fast",
-        description:
-            "Types are optimized for traversal and can validate your data 2-10x faster than existing validators (details to come)"
+            "ArkType is not just a validator— it's a full type system. Operations are deeply computed and optimized by default"
     },
     {
         title: "Portable",

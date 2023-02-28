@@ -6,7 +6,8 @@
         "dev": "docusaurus start",
         "build": "ts-node ./build.ts",
         "typecheck": "tsc",
-        "serve": "docusaurus serve --dir dist"
+        "serve": "docusaurus serve --dir dist",
+        "docgen": "cd .. && pnpm docgen"
     },
     "dependencies": {
         "@docusaurus/core": "2.3.1",

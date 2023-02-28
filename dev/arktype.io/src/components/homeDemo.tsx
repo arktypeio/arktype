@@ -69,6 +69,17 @@ export const HomeDemo = () => {
                     />
                 )}
             </Stack>
+            <sub>
+                <code>typescript@4.9.5</code> in VS Code— no extensions or
+                plugins required (
+                <a
+                    href="https://github.com/arktypeio/arktype#how"
+                    target="_blank"
+                >
+                    how?
+                </a>
+                )
+            </sub>
         </Stack>
     )
 }

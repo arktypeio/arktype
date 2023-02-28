@@ -1,17 +1,19 @@
 import z from "zod"
-import type { cast } from "../../src/main.ts"
+import type { Infer } from "../../src/main.ts"
 import { morph, type } from "../../src/main.ts"
 
-// @snipStatement:arkUser
-const arkUser = type({
-    name: /^ark.*$/ as cast<`ark${string}`>,
-    birthday: ["string", "|>", (s) => new Date(s)],
-    "powerLevel?": "1<=number<9000"
-})
+{
+    // @snipStatement:arkUserExpression
+    const arkUser = type({
+        name: /^ark.*$/ as Infer<`ark${string}`>,
+        birthday: ["string", "|>", (s) => new Date(s)],
+        "powerLevel?": "1<=number<9000"
+    })
+}
 
-// @snipStatement:arkUser2
-const arkUser2 = type({
-    name: /^ark.*$/ as cast<`ark${string}`>,
+// @snipStatement:arkUserHelper
+const arkUser = type({
+    name: /^ark.*$/ as Infer<`ark${string}`>,
     birthday: morph("string", (s) => new Date(s)),
     "powerLevel?": "1<=number<9000"
 })

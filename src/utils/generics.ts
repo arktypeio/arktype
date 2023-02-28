@@ -6,7 +6,7 @@ export type asConst<t> = castWithExclusion<t, asConstRecurse<t>, []>
 
 type asConstRecurse<t> = {
     [k in keyof t]: t[k] extends Literalable | [] ? t[k] : asConstRecurse<t[k]>
-}
+} & unknown
 
 export type castWithExclusion<t, castTo, excluded> = t extends excluded
     ? t

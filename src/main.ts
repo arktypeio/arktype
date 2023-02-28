@@ -1,6 +1,6 @@
 export { scope } from "./scopes/scope.ts"
 export { type, ark, arkScope } from "./scopes/ark.ts"
-export type { cast } from "./parse/definition.ts"
+export type { Infer } from "./parse/definition.ts"
 export {
     intersection,
     union,

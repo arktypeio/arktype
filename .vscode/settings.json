@@ -42,6 +42,7 @@
         "pnpm",
         "pnpx",
         "precache",
+        "precached",
         "preinstall",
         "preresolved",
         "quokka",
