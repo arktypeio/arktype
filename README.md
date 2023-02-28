@@ -17,7 +17,7 @@ Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#st
 
 _Our APIs have mostly stabilized, but details may still change during the alpha/beta stages of our 1.0 release. If you have suggestions that may require a breaking change, now is the time to let us know!_ ⛵
 
-<!-- @snipEnd:install -->
+<!-- @snipEnd -->
 
 ## Types
 
@@ -93,60 +93,37 @@ ArkType supports many of TypeScript's built-in types and operators, as well as s
 
 In the meantime, check out the examples from this README and use the type hints you get to learn how you can customize your types and scopes. If you want to explore some of the more advanced features, take a look at [our unit tests](./dev/test) and don't hesitate to reach out on our [Discord channel](https://discord.gg/WSNF3Kc4xh)!
 
-### How
+## How
 
 ArkType's isomorphic parser has parallel static and dynamic implementations. This means as soon as you type a definition in your editor, you'll know the eventual result at runtime.
 
 If you're curious, below is an example of what that looks like under the hood. If not, close that hood back up, `npm install arktype` and enjoy top-notch developer experience 🧑‍💻
 
-```ts
-export const parseOperator = (s: DynamicState): void => {
-    const lookahead = s.scanner.shift()
-    return lookahead === ""
-        ? s.finalize()
-        : lookahead === "["
-        ? s.scanner.shift() === "]"
-            ? s.rootToArray()
-            : s.error(incompleteArrayTokenMessage)
-        : isKeyOf(lookahead, Scanner.branchTokens)
-        ? s.pushRootToBranch(lookahead)
-        : lookahead === ")"
-        ? s.finalizeGroup()
-        : isKeyOf(lookahead, Scanner.comparatorStartChars)
-        ? parseBound(s, lookahead)
-        : lookahead === "%"
-        ? parseDivisor(s)
-        : lookahead === " "
-        ? parseOperator(s)
-        : throwInternalError(writeUnexpectedCharacterMessage(lookahead))
-}
+```ts @blockFrom:src/parse/string/shift/operator/operator.ts:parseOperator
 
-export type parseOperator<s extends StaticState> =
-    s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
-        ? lookahead extends "["
-            ? unscanned extends Scanner.shift<"]", infer nextUnscanned>
-                ? state.setRoot<s, [s["root"], "[]"], nextUnscanned>
-                : error<incompleteArrayTokenMessage>
-            : lookahead extends Scanner.BranchToken
-            ? state.reduceBranch<s, lookahead, unscanned>
-            : lookahead extends ")"
-            ? state.finalizeGroup<s, unscanned>
-            : lookahead extends Scanner.ComparatorStartChar
-            ? parseBound<s, lookahead, unscanned>
-            : lookahead extends "%"
-            ? parseDivisor<s, unscanned>
-            : lookahead extends " "
-            ? parseOperator<state.scanTo<s, unscanned>>
-            : error<writeUnexpectedCharacterMessage<lookahead>>
-        : state.finalize<s>
 ```
 
-## Contributing
+## Contributions
 
-If you're interested in contributing to ArkType...
+We accept and encourage pull requests from outside ArkType.
 
-1.  Thank you! We'll do everything we can to make this as straightforward as possible, regardless of your level of experience.
-2.  Check out our [guide](./dev/configs/CONTRIBUTING.md) to get started!
+Depending on your level of familiarity with type systems and TS generics, some parts of the codebase may be hard to jump into. That said, there's plenty of opportunities for more straightforward contributions.
+
+If you're planning on submitting a non-trivial fix or a new feature, please [create an issue first](https://github.com/arktypeio/arktype/issues/new) so everyone's on the same page. The last thing we want is for you to spend time on a submission we're unable to merge.
+
+When you're ready, check out our [guide](./dev/configs/CONTRIBUTING.md) to get started!
+
+## Sponsorship
+
+We've been working full-time on this project for over a year and it means a lot to have the community behind us.
+
+If the project has been useful to you and you are in a financial position to do so, please feel free to chip in [via our Patreon](https://www.patreon.com/ArkType240).
+
+Otherwise, consider sending me an email (david@arktype.io) letting me know you're a fan of ArkType. Either would make my day! 😊
+
+## Collaboration
+
+I'd love to hear about what you're working on and how ArkType can help. Please reach out to david@arktype.io.
 
 ## License
 
