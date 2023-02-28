@@ -1,6 +1,5 @@
 <h1 align="center">ArkType <sub><sup>Isomorphic types for TS/JS</sup></sub></h1>
 
-
 [<img src="./dev/arktype.io/static/img/arktype.gif">](https://arktype.io/try)
 <sub><i>`typescript@4.9.5` in VS Code— no extensions or plugins required (<a href="#how">how?</a>)</i></sub>
 
