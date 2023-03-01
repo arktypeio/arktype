@@ -172,7 +172,7 @@ We've been working full-time on this project for over a year and it means a lot 
 
 If the project has been useful to you and you are in a financial position to do so, please feel free to chip in [via our Patreon](https://www.patreon.com/ArkType240).
 
-Otherwise, consider sending me an email (david@arktype.io) letting me know you're a fan of ArkType. Either would make my day! 😊
+Otherwise, consider sending me an email (david@arktype.io) or [message me on Discord](https://discord.gg/WSNF3Kc4xh) to let me know you're a fan of ArkType. Either would make my day! 😊
 
 ## Collaboration
 
