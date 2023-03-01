@@ -22,7 +22,7 @@ Each character you type is instantly validated both syntactically and semantical
 <sub>(or whatever package manager you prefer)</sub>
 <br />
 
-<img src="./dev/arktype.io/static/img/deno.svg" alt="Deno Icon" height="16px" /> <code>import { type } from "https://deno.land/x/arktype"</code>
+<img src="./dev/arktype.io/static/img/deno.svg" alt="Deno Icon" height="16px" /> <code>import { type } from "https://deno.land/x/arktype/main.ts"</code>
 
 Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#strict) with TypeScript versions `4.8`, `4.9`, and `5.0`.
 
