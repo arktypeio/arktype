@@ -4,13 +4,14 @@
 <sub>
 <i>`typescript@4.9.5` in VS Code— no extensions or plugins required (<a href="#how">how?</a>) (<a href="https://arktype.io/try">try in-browser</a>)</i>
 </sub>
+<br />
 
 <!-- @snipStart:intro -->
 
-ArkType is a library for defining runtime types using TypeScript syntax that can be inferred 1:1.
+ArkType is a type-safe runtime validator that understands TypeScript syntax.
 <br />
 <br />
-Each character you type is instantly validated both syntactically and semantically using TypeScript's own type system, so you know exactly what to expect from editor to runtime ⛵
+Each character you type is statically parsed so you'll know exactly what to expect from editor to runtime ⛵
 
 <!-- @snipEnd -->
 
