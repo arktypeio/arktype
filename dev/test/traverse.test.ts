@@ -95,7 +95,30 @@ describe("traverse", () => {
         attest(t({ a: 5 }).problems?.summary).snap(
             "a must be a string or boolean (was 5)"
         )
+        attest(t.flat).snap([
+            ["domain", "object"],
+            [
+                "switch",
+                {
+                    path: ["a"],
+                    kind: "domain",
+                    cases: { string: [], boolean: [] }
+                }
+            ]
+        ])
     })
+    it("multiple switch", () => {
+        const $ = scope({
+            a: { a: "string" },
+            b: { a: "number" },
+            c: { a: "Function" },
+            d: "a|b|c"
+        }).compile()
+        attest($.d({}).problems?.summary).snap(
+            "a must be a string, a number or an object (was undefined)"
+        )
+    })
+
     it("multi", () => {
         const naturalNumber = type("integer>0")
         attest(naturalNumber(-1.2).problems?.summary).snap(

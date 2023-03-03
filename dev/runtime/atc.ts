@@ -1,13 +1,20 @@
 import type { CallExpression } from "ts-morph"
 import { Project, SyntaxKind } from "ts-morph"
-import { type } from "../../src/main.ts"
+import { type } from "../../src/main.js"
+import {
+    forceCreateTsMorphProject,
+    getVirtualTsMorphProject
+} from "../attest/src/type/getTsMorphProject.js"
 
 const arktypeFunctions = {
     type
 }
 
 export const precompileArktypeCalls = (paths: string[]) => {
-    const project = new Project({})
+    const project = forceCreateTsMorphProject({
+        useRealFs: true,
+        preloadFiles: false
+    })
     for (const path of paths) {
         project.addSourceFileAtPathIfExists(path)
     }
@@ -62,4 +69,4 @@ const getStringifiedAttributes = ({
     )
 }
 
-precompileArktypeCalls(["./test/test.ts"])
+precompileArktypeCalls(["./test/test.js"])

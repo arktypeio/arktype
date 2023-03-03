@@ -77,12 +77,14 @@ export class DynamicState {
 
     private assertHasRoot() {
         if (this.root === undefined) {
+            /* c8 ignore next */
             return throwInternalError("Unexpected interaction with unset root")
         }
     }
 
     private assertUnsetRoot() {
         if (this.root !== undefined) {
+            /* c8 ignore next */
             return throwInternalError("Unexpected attempt to overwrite root")
         }
     }

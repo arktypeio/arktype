@@ -97,7 +97,8 @@ export const parseRightBound = (
         ? { min: rightBound }
         : hasComparatorIn(rightBound, maxComparators)
         ? { max: rightBound }
-        : throwInternalError(`Unexpected comparator '${rightBound.comparator}'`)
+        : /* c8 ignore next*/
+          throwInternalError(`Unexpected comparator '${rightBound.comparator}'`)
     s.intersect(distributeRange(range, s))
 }
 

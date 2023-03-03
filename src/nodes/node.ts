@@ -72,8 +72,10 @@ const typeNodeIntersection = composeKeyedIntersection<TypeNode>(
     (domain, l, r, context) => {
         if (l === undefined) {
             return r === undefined
-                ? throwInternalError(undefinedOperandsMessage)
-                : undefined
+                ? /* c8 ignore start */
+                  throwInternalError(undefinedOperandsMessage)
+                : /* c8 ignore stop */
+                  undefined
         }
         if (r === undefined) {
             return undefined

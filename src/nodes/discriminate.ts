@@ -158,9 +158,11 @@ const pruneDiscriminant = (
         // check for branch keys, which must be traversed even if there are no
         // segments left
         if (k === "domains") {
+            /* c8 ignore start */
             if (keyCount(v) !== 1 || !v.object) {
                 return throwPruneFailure(discriminant)
             }
+            /* c8 ignore stop */
             pruneDiscriminant(v.object, segments, discriminant, ctx)
             return
         } else if (k === "switch") {
@@ -180,13 +182,16 @@ const pruneDiscriminant = (
             return
         }
     }
+    /* c8 ignore next */
     return throwPruneFailure(discriminant)
 }
 
 const throwPruneFailure = (discriminant: Discriminant) =>
+    /* c8 ignore start */
     throwInternalError(
         `Unexpectedly failed to discriminate ${discriminant.kind} at path '${discriminant.path}'`
     )
+/* c8 ignore stop */
 
 type Discriminants = {
     disjointsByPair: DisjointsByPair
