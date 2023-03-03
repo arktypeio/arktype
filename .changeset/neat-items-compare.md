@@ -2,7 +2,7 @@
 "arktype": patch
 ---
 
-## Allow discrimination between common builtin classes
+Allow discrimination between common builtin classes
 
 Previously, types like the following were incorrectly treated as non-discriminatable unions:
 
