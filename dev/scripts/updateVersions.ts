@@ -1,9 +1,8 @@
 /** Changesets doesn't understand version suffixes like -alpha by default, so we use this to preserve them */
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import {
     fromPackageRoot,
-    readFile,
     readJson,
     readPackageJson,
     shell,
@@ -30,22 +29,34 @@ const updatedVersionWithSuffix = updatedVersion + `-${currentSuffix}`
 packageJson.version = updatedVersionWithSuffix
 writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 4))
 
+const rootChangelogPath = fromPackageRoot("CHANGELOG.md")
+
+writeFileSync(
+    rootChangelogPath,
+    readFileSync(rootChangelogPath)
+        .toString()
+        .replaceAll(updatedVersion, updatedVersionWithSuffix)
+)
+
 // Move changelog updates, which by default are generated at the repo root, to
 // the correct path.
 
-const rootChangelogPath = fromPackageRoot("CHANGELOG.md")
 const actualChangelogPath = join("dev", "configs", "CHANGELOG.md")
-const changelog = readFile(actualChangelogPath)
 
-if (existsSync(rootChangelogPath)) {
-    const contents = readFileSync(rootChangelogPath)
-        .toString()
-        .replaceAll(updatedVersion, updatedVersionWithSuffix)
-    // remove initial "#arktype" header
-    const existingChanges = changelog.slice(10)
-    writeFileSync(actualChangelogPath, contents + existingChanges)
-    rmSync(rootChangelogPath)
-}
+// remove duplicate "#arktype" header from existing changes
+const existingChanges = readFileSync(actualChangelogPath).toString().slice(10)
+
+writeFileSync(
+    actualChangelogPath,
+    readFileSync(rootChangelogPath).toString() + existingChanges
+)
+
+// Hack to work around the fact that changesets expects us to have a
+// CHANGELOG.md file at the root. By git adding it first, we can delete it and
+// git won't complain when changesets tries to add it, since it will be "adding"
+// the change that we deleted it.
+shell(`git add ${rootChangelogPath}`)
+rmSync(rootChangelogPath)
 
 docgen()
 
