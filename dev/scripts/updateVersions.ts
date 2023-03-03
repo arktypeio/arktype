@@ -29,7 +29,7 @@ const updatedVersionWithSuffix = updatedVersion + `-${currentSuffix}`
 packageJson.version = updatedVersionWithSuffix
 writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 4))
 
-const rootChangelogPath = fromPackageRoot("CHANGELOG.md")
+const rootChangelogPath = "CHANGELOG.md"
 
 writeFileSync(
     rootChangelogPath,
@@ -56,7 +56,6 @@ writeFileSync(
 // git won't complain when changesets tries to add it, since it will be "adding"
 // the change that we deleted it.
 shell(`git add ${rootChangelogPath}`)
-rmSync(rootChangelogPath)
 
 docgen()
 
@@ -70,5 +69,4 @@ if (!existingDocsVersions.includes(updatedVersion)) {
             cwd: repoDirs.arktypeIo
         }
     )
-    shell("pnpm format")
 }
