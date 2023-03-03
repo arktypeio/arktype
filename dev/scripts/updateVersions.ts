@@ -21,7 +21,7 @@ packageJson.version = packageJson.version.slice(0, -currentSuffix.length - 1)
 
 writeJson(packageJsonPath, packageJson)
 
-shell("pnpm changeset version", { cwd: fromPackageRoot("dev", "configs") })
+shell("pnpx changeset version", { cwd: fromPackageRoot("dev", "configs") })
 
 const updatedVersion = readPackageJson(repoDirs.root).version
 const updatedVersionWithSuffix = updatedVersion + `-${currentSuffix}`
