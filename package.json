@@ -1,7 +1,7 @@
 {
     "name": "arktype",
     "description": "The first isomorphic type system for TS/JS",
-    "version": "1.0.7-alpha",
+    "version": "1.0.8-alpha",
     "author": {
         "name": "David Blass",
         "email": "david@arktype.io",
