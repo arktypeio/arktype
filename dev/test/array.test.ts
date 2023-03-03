@@ -9,10 +9,13 @@ describe("parse array", () => {
         const t = type("string[]")
         attest(t.infer).typed as string[]
         attest(t.node).snap({
-            object: { class: "Array", props: { "[index]": "string" } }
+            object: {
+                class: "(function Array)",
+                props: { "[index]": "string" }
+            }
         })
         attest(t.flat).snap([
-            ["class", "Array"],
+            ["class", "(function Array)"],
             ["indexProp", "string"]
         ])
     })
@@ -20,7 +23,7 @@ describe("parse array", () => {
         const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
         attest(t.node).snap({
             object: {
-                class: "Array",
+                class: "(function Array)",
                 props: {
                     "[index]": {
                         object: { props: { a: "string", b: "number" } }
@@ -29,7 +32,7 @@ describe("parse array", () => {
             }
         })
         attest(t.flat).snap([
-            ["class", "Array"],
+            ["class", "(function Array)"],
             [
                 "indexProp",
                 [
@@ -47,7 +50,7 @@ describe("parse array", () => {
         }[]
         attest(t.node).snap({
             object: {
-                class: "Array",
+                class: "(function Array)",
                 props: { "[index]": { object: { props: { a: "string" } } } }
             }
         })

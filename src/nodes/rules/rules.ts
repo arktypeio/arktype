@@ -6,7 +6,6 @@ import type {
     Dict
 } from "../../utils/generics.ts"
 import { listFrom } from "../../utils/generics.ts"
-import type { DefaultObjectKind } from "../../utils/objectKinds.ts"
 import type { IntersectionState, Intersector } from "../compose.ts"
 import {
     composeIntersection,
@@ -33,7 +32,7 @@ export type NarrowableRules<$ = Dict> = {
     readonly divisor?: number
     readonly range?: Range
     readonly props?: PropsRule<$>
-    readonly class?: DefaultObjectKind | constructor
+    readonly class?: constructor
     readonly narrow?: NarrowRule
 }
 
@@ -52,7 +51,7 @@ export type RuleEntry =
     | ["regex", string]
     | ["divisor", number]
     | ["bound", FlatBound]
-    | ["class", DefaultObjectKind | constructor]
+    | ["class", constructor]
     | DistilledPropsEntry
     | StrictPropsEntry
     | PropEntry

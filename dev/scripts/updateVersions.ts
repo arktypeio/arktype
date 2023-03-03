@@ -1,85 +1,60 @@
 /** Changesets doesn't understand version suffixes like -alpha by default, so we use this to preserve them */
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import {
+    fromPackageRoot,
     readFile,
     readJson,
     readPackageJson,
     shell,
-    writeFile,
     writeJson
 } from "../runtime/main.ts"
 import { repoDirs } from "./common.ts"
 import { docgen } from "./docgen/main.ts"
 
-const suffixedPackageEntries: [rootDir: string, suffix: string][] = [
-    [".", "alpha"]
-]
+const currentSuffix = "alpha"
+const packageJsonPath = "package.json"
 
-const forEachPackageWithSuffix = (transformer: SuffixTransformer) => {
-    for (const [packagePath, suffix] of suffixedPackageEntries) {
-        const packageJsonPath = join(packagePath, "package.json")
-        const changelogPath = join(
-            packagePath,
-            "dev",
-            "configs",
-            "CHANGELOG.md"
-        )
-        const packageJson = readJson(packageJsonPath)
-        const changelog = readFile(changelogPath)
-        const transformed = transformer({
-            packageJson,
-            changelog,
-            suffix
-        })
-        if (transformed.packageJson) {
-            writeJson(packageJsonPath, transformed.packageJson)
-        }
-        if (transformed.changelog) {
-            writeFile(changelogPath, transformed.changelog)
-        }
-    }
-}
+const packageJson = readJson(packageJsonPath)
 
-forEachPackageWithSuffix(({ packageJson, suffix }) => {
-    // Temporarily remove the suffix, if it exists, so changesets can handle versioning
-    if (packageJson.version.endsWith(suffix)) {
-        packageJson.version = packageJson.version.slice(0, -suffix.length - 1)
-    }
-    return {
-        packageJson
-    }
-})
+// Temporarily remove the suffix, if it exists, so changesets can handle versioning
+packageJson.version = packageJson.version.slice(0, -currentSuffix.length - 1)
+
+writeJson(packageJsonPath, packageJson)
 
 shell("pnpm changeset version")
 
-forEachPackageWithSuffix(({ packageJson, changelog, suffix }) => {
-    const versionWithSuffix = packageJson.version + `-${suffix}`
-    const updatedChangelog = changelog.replaceAll(
-        packageJson.version,
-        versionWithSuffix
-    )
-    packageJson.version = versionWithSuffix
-    return { packageJson, changelog: updatedChangelog }
-})
+const updatedVersion = readPackageJson(repoDirs.root).version
+const updatedVersionWithSuffix = updatedVersion + `-${currentSuffix}`
 
-type SuffixTransformer = (args: {
-    packageJson: any
-    changelog: string
-    suffix: string
-}) => {
-    packageJson?: any
-    changelog?: string
+packageJson.version = updatedVersionWithSuffix
+writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 4))
+
+// Move changelog updates, which by default are generated at the repo root, to
+// the correct path.
+
+const rootChangelogPath = fromPackageRoot("CHANGELOG.md")
+const actualChangelogPath = join("dev", "configs", "CHANGELOG.md")
+const changelog = readFile(actualChangelogPath)
+
+if (existsSync(rootChangelogPath)) {
+    const contents = readFileSync(rootChangelogPath)
+        .toString()
+        .replaceAll(updatedVersion, updatedVersionWithSuffix)
+    // remove initial "#arktype" header
+    const existingChanges = changelog.slice(10)
+    writeFileSync(actualChangelogPath, contents + existingChanges)
+    rmSync(rootChangelogPath)
 }
 
 docgen()
 
-const packageJson = readPackageJson(repoDirs.root)
-const existingVersions: string[] = readJson(
+const existingDocsVersions: string[] = readJson(
     join(repoDirs.arktypeIo, `versions.json`)
 )
-if (!existingVersions.includes(packageJson.version)) {
+if (!existingDocsVersions.includes(updatedVersion)) {
     shell(
-        `pnpm install && pnpm docusaurus docs:version ${packageJson.version} && pnpm build`,
+        `pnpm install && pnpm docusaurus docs:version ${updatedVersion} && pnpm build`,
         {
             cwd: repoDirs.arktypeIo
         }

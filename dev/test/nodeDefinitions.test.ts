@@ -55,7 +55,7 @@ describe("node definitions", () => {
             "node",
             {
                 object: {
-                    class: "Array",
+                    class: Array,
                     props: {
                         "[index]": { object: { props: { name: "string" } } }
                     }
@@ -69,7 +69,7 @@ describe("node definitions", () => {
             "node",
             {
                 object: {
-                    class: "Array",
+                    class: Array,
                     props: {
                         "[index]": "string",
                         length: { number: { value: 5 } }
@@ -87,7 +87,7 @@ describe("node definitions", () => {
                 boolean: true,
                 object: [
                     { props: { a: "string" } },
-                    { class: "Array", props: { "[index]": "number" } }
+                    { class: Array, props: { "[index]": "number" } }
                 ]
             } as const
         ])
@@ -123,7 +123,7 @@ describe("node definitions", () => {
             "node",
             {
                 object: {
-                    class: "Date"
+                    class: Date
                 }
             }
         ])
