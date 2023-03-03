@@ -32,10 +32,10 @@ shell(
     { cwd: fromPackageRoot("dev", "configs") }
 )
 
-const updatedVersion = readPackageJson(repoDirs.root).version
-const updatedVersionWithSuffix = updatedVersion + `-${currentSuffix}`
+const nonSuffixedVersion = readPackageJson(repoDirs.root).version
+const suffixedVersion = nonSuffixedVersion + `-${currentSuffix}`
 
-packageJson.version = updatedVersionWithSuffix
+packageJson.version = suffixedVersion
 writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 4))
 
 const changelogPath = fromPackageRoot("dev", "configs", "CHANGELOG.md")
@@ -44,7 +44,7 @@ writeFileSync(
     changelogPath,
     readFileSync(changelogPath)
         .toString()
-        .replaceAll(updatedVersion, updatedVersionWithSuffix)
+        .replaceAll(nonSuffixedVersion, suffixedVersion)
 )
 
 docgen()
@@ -52,9 +52,9 @@ docgen()
 const existingDocsVersions: string[] = readJson(
     join(repoDirs.arktypeIo, `versions.json`)
 )
-if (!existingDocsVersions.includes(updatedVersion)) {
+if (!existingDocsVersions.includes(suffixedVersion)) {
     shell(
-        `pnpm install && pnpm docusaurus docs:version ${updatedVersion} && pnpm build`,
+        `pnpm install && pnpm docusaurus docs:version ${suffixedVersion} && pnpm build`,
         {
             cwd: repoDirs.arktypeIo
         }
