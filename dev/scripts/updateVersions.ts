@@ -59,5 +59,7 @@ if (!existingDocsVersions.includes(updatedVersion)) {
             cwd: repoDirs.arktypeIo
         }
     )
-    shell("pnpm format")
+    shell("pnpm format", { cwd: repoDirs.root })
 }
+
+process.chdir(repoDirs.root)
