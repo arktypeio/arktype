@@ -25,7 +25,7 @@ writeJson(packageJsonPath, packageJson)
 shell("pnpm changeset version")
 
 const updatedVersion = readPackageJson(repoDirs.root).version
-const updatedVersionWithSuffix = packageJson.version + `-${currentSuffix}`
+const updatedVersionWithSuffix = updatedVersion + `-${currentSuffix}`
 
 packageJson.version = updatedVersionWithSuffix
 writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 4))
@@ -40,7 +40,7 @@ const changelog = readFile(actualChangelogPath)
 if (existsSync(rootChangelogPath)) {
     const contents = readFileSync(rootChangelogPath)
         .toString()
-        .replaceAll(packageJson.version, updatedVersionWithSuffix)
+        .replaceAll(updatedVersion, updatedVersionWithSuffix)
     // remove initial "#arktype" header
     const existingChanges = changelog.slice(10)
     writeFileSync(actualChangelogPath, contents + existingChanges)
