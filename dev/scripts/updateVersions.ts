@@ -12,6 +12,7 @@ import { repoDirs } from "./common.ts"
 import { docgen } from "./docgen/main.ts"
 
 const currentSuffix = "alpha"
+
 const packageJsonPath = fromPackageRoot("package.json")
 
 const packageJson = readJson(packageJsonPath)
@@ -21,7 +22,15 @@ packageJson.version = packageJson.version.slice(0, -currentSuffix.length - 1)
 
 writeJson(packageJsonPath, packageJson)
 
-shell("pnpx changeset version", { cwd: fromPackageRoot("dev", "configs") })
+shell(
+    `node ${fromPackageRoot(
+        "node_modules",
+        "@changesets",
+        "cli",
+        "bin.js"
+    )} version`,
+    { cwd: fromPackageRoot("dev", "configs") }
+)
 
 const updatedVersion = readPackageJson(repoDirs.root).version
 const updatedVersionWithSuffix = updatedVersion + `-${currentSuffix}`
