@@ -14,4 +14,11 @@ describe("allows", () => {
         }
         attest(t.allows(5)).equals(false)
     })
+    it("assert", () => {
+        const t = type("string")
+        attest(t.assert("foo")).equals("foo")
+        attest(() => t.assert(5)).throws.snap(
+            "TypeError: Must be a string (was number)"
+        )
+    })
 })
