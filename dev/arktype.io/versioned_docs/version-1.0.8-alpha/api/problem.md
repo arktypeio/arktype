@@ -7,7 +7,7 @@ hide_table_of_contents: true
 ## text
 
 ```ts
-export declare class Problem<code extends ProblemCode = any> {
+export declare class Problem<code extends ProblemCode = ProblemCode> {
     code: code
     path: Path
     private data

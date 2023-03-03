@@ -21,15 +21,16 @@ export const HomeDemo = () => {
                 variant="contained"
                 sx={{
                     backgroundColor,
-                    backdropFilter: "blur(2px)",
+                    backdropFilter: "blur(4px)",
                     borderRadius: "2rem",
                     fontSize: "1.5rem",
                     fontFamily: cascadiaCodeFamily,
                     textTransform: "none",
-                    color: palette.primary.light,
+                    color: palette.primary.main,
                     "&:hover": {
                         backgroundColor,
-                        color: palette.primary.main
+                        color: palette.secondary.main,
+                        backdropFilter: "blur(6px)"
                     },
                     zIndex: 1
                 }}
@@ -40,7 +41,7 @@ export const HomeDemo = () => {
                     </div>
                 }
             >
-                {isActive ? "$ wq!" : "$ sudo chmod +wx demo.ts"}
+                {isActive ? "$ wq!" : "$ code demo.ts"}
                 <motion.div
                     animate={{ opacity: 0 }}
                     transition={{
@@ -60,7 +61,7 @@ export const HomeDemo = () => {
                         src="/img/arktype.mp4"
                         style={{
                             width: "100%",
-                            marginTop: "-1.8rem"
+                            marginTop: "-2.8rem"
                         }}
                     />
                 )}

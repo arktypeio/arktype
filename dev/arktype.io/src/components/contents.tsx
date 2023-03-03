@@ -31,18 +31,16 @@ export const Contents = () => {
                     color={
                         colorMode === "dark" ? "primary.light" : "primary.dark"
                     }
-                    style={{ marginTop: "1rem" }}
+                    style={{ marginTop: "2rem", marginBottom: "2rem" }}
                     fontSize="1.3rem"
                 >
                     {/* @blockFrom:README.md:intro */}
-                    ArkType is a library for defining runtime types using
-                    TypeScript syntax that can be inferred 1:1.
+                    ArkType is a type-safe runtime validator that understands
+                    TypeScript syntax.
                     <br />
                     <br />
-                    Each character you type is instantly validated both
-                    syntactically and semantically using TypeScript's own type
-                    system, so you know exactly what to expect from editor to
-                    runtime ⛵
+                    Each character you type is statically parsed so you'll know
+                    exactly what to expect from editor to runtime ⛵
                     {/* @blockEnd (these extra spaces are here so it stays on its own line) */}
                 </Typography>
                 <Features />

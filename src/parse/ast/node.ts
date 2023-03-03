@@ -17,11 +17,7 @@ import type {
     List,
     returnOf
 } from "../../utils/generics.ts"
-import type {
-    BuiltinClass,
-    DefaultObjectKind,
-    inferObjectKind
-} from "../../utils/objectKinds.ts"
+import type { BuiltinClass, inferObjectKind } from "../../utils/objectKinds.ts"
 import type { inferTerminal } from "./ast.ts"
 
 export type inferNode<node extends Node<$>, $ = {}> = node extends string
@@ -77,18 +73,17 @@ type inferRules<domain extends Domain, branch, $> = branch extends LiteralRules
 type inferObjectRules<
     rules extends NarrowableRules,
     $
-> = rules["class"] extends DefaultObjectKind
-    ? [rules["class"], rules["props"]] extends [
-          "Array",
-          {
-              "[index]": Prop<$, infer indexNode>
-              length?: Prop<$, infer lengthNode>
-          }
-      ]
+> = rules["class"] extends ArrayConstructor
+    ? rules["props"] extends {
+          "[index]": Prop<$, infer indexNode>
+          length?: Prop<$, infer lengthNode>
+      }
         ? lengthNode extends LiteralNode<"number", infer value>
             ? HomogenousTuple<inferNode<indexNode, $>, value>
             : inferNode<indexNode, $>[]
-        : inferObjectKind<rules["class"]>
+        : unknown[]
+    : rules["class"] extends FunctionConstructor
+    ? inferObjectKind<"Function">
     : rules["class"] extends constructor<infer instance>
     ? instance
     : rules["props"] extends PropsRule

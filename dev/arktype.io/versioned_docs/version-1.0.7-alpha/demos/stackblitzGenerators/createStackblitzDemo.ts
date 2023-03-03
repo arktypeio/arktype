@@ -33,7 +33,8 @@ export const createStackblitzDemo = async ({ embedId }: DemoProps) =>
             description: `ArkType ${embedId} demo`,
             template: "typescript",
             dependencies: {
-                arktype: "1.0.4-alpha"
+                // @lineFrom:package.json:version |> embed("arktype":,,)
+                arktype: "1.0.7-alpha"
             },
             settings: {
                 compile: {

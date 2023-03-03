@@ -2,11 +2,11 @@
     "sidebar": [
         {
             "type": "category",
-            "label": "Tutorial",
+            "label": "Getting Started",
             "items": [
                 {
                     "type": "doc",
-                    "label": "Intro",
+                    "label": "Types",
                     "id": "intro"
                 },
                 {
@@ -15,6 +15,11 @@
                     "id": "scopes"
                 }
             ]
+        },
+        {
+            "type": "doc",
+            "label": "API",
+            "id": "api"
         }
     ]
 }

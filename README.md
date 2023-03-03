@@ -4,13 +4,14 @@
 <sub>
 <i>`typescript@4.9.5` in VS Code— no extensions or plugins required (<a href="#how">how?</a>) (<a href="https://arktype.io/try">try in-browser</a>)</i>
 </sub>
+<br />
 
 <!-- @snipStart:intro -->
 
-ArkType is a library for defining runtime types using TypeScript syntax that can be inferred 1:1.
+ArkType is a type-safe runtime validator that understands TypeScript syntax.
 <br />
 <br />
-Each character you type is instantly validated both syntactically and semantically using TypeScript's own type system, so you know exactly what to expect from editor to runtime ⛵
+Each character you type is statically parsed so you'll know exactly what to expect from editor to runtime ⛵
 
 <!-- @snipEnd -->
 
@@ -22,7 +23,7 @@ Each character you type is instantly validated both syntactically and semantical
 <sub>(or whatever package manager you prefer)</sub>
 <br />
 
-<img src="./dev/arktype.io/static/img/deno.svg" alt="Deno Icon" height="16px" /> <code>import type from "https://deno.land/x/arktype"</code>
+<img src="./dev/arktype.io/static/img/deno.svg" alt="Deno Icon" height="16px" /> <code>import { type } from "https://deno.land/x/arktype/main.ts"</code>
 
 Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#strict) with TypeScript versions `4.8`, `4.9`, and `5.0`.
 
@@ -172,7 +173,7 @@ We've been working full-time on this project for over a year and it means a lot 
 
 If the project has been useful to you and you are in a financial position to do so, please feel free to chip in [via our Patreon](https://www.patreon.com/ArkType240).
 
-Otherwise, consider sending me an email (david@arktype.io) letting me know you're a fan of ArkType. Either would make my day! 😊
+Otherwise, consider sending me an email (david@arktype.io) or [message me on Discord](https://discord.gg/WSNF3Kc4xh) to let me know you're a fan of ArkType. Either would make my day! 😊
 
 ## Collaboration
 

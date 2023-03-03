@@ -1,10 +1,10 @@
 import { LinearProgress, Stack } from "@mui/material"
 import React, { useEffect, useState } from "react"
-import type { DemoProps } from "./stackblitzGenerators/index"
+import type { DemoProps } from "./stackblitzGenerators/createStackblitzDemo"
 import {
     createStackblitzDemo,
     DEMO_ELEMENT_ID
-} from "./stackblitzGenerators/index"
+} from "./stackblitzGenerators/createStackblitzDemo"
 
 export const StackBlitzDemo = (demoProps: DemoProps) => {
     const [isLoading, setIsLoading] = useState(true)

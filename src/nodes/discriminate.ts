@@ -6,7 +6,11 @@ import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import type { evaluate, keySet } from "../utils/generics.ts"
 import { isKeyOf, keyCount, objectKeysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
-import { isArray, objectKindOf } from "../utils/objectKinds.ts"
+import {
+    defaultObjectKinds,
+    isArray,
+    objectKindOf
+} from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
 import type {
     SerializablePrimitive,
@@ -363,7 +367,12 @@ export const serializeDefinitionIfAllowed = <kind extends DiscriminantKind>(
         case "domain":
             return definition as Domain
         case "class":
-            return typeof definition === "string" ? definition : undefined
+            const constructorName: string | undefined = Object(definition).name
+            return constructorName &&
+                isKeyOf(constructorName, defaultObjectKinds) &&
+                defaultObjectKinds[constructorName] === definition
+                ? constructorName
+                : undefined
         default:
             return
     }

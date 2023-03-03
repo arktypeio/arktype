@@ -218,6 +218,20 @@ describe("discriminate", () => {
             ]
         ])
     })
+    it("discriminate class", () => {
+        const t = type([["instanceof", Array], "|", ["instanceof", Date]])
+        attest(t.flat).snap([
+            ["domain", "object"],
+            [
+                "switch",
+                { path: [], kind: "class", cases: { Array: [], Date: [] } }
+            ]
+        ])
+        attest(t([]).data).equals([])
+        attest(t({}).problems?.summary).snap(
+            "Must be an array or a Date (was {})"
+        )
+    })
     it("won't discriminate between possibly empty arrays", () => {
         attest(type("string[]|boolean[]").flat).snap([
             ["domain", "object"],
@@ -225,11 +239,11 @@ describe("discriminate", () => {
                 "branches",
                 [
                     [
-                        ["class", "Array"],
+                        ["class", "(function Array)"],
                         ["indexProp", "string"]
                     ],
                     [
-                        ["class", "Array"],
+                        ["class", "(function Array)"],
                         ["indexProp", "boolean"]
                     ]
                 ]

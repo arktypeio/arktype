@@ -26,7 +26,10 @@ describe("tuple expression", () => {
         const t = type(["string", "[]"])
         attest(t.infer).typed as string[]
         attest(t.node).snap({
-            object: { class: "Array", props: { "[index]": "string" } }
+            object: {
+                class: "(function Array)",
+                props: { "[index]": "string" }
+            }
         })
     })
     it("nested union", () => {

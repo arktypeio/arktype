@@ -31,9 +31,7 @@ arkScope: import("./scope.js").Scope<
             Map: Map<unknown, unknown>
             RegExp: RegExp
             Set: Set<unknown>
-            Object: {
-                [x: string]: unknown
-            }
+            Object: Record<string, unknown>
             String: String
             Number: Number
             Boolean: Boolean
