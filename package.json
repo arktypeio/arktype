@@ -52,7 +52,7 @@
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install dev/configs/.husky",
         "ci:version": "ts-node ./dev/scripts/updateVersions.ts",
-        "ci:publish": "changeset publish"
+        "ci:publish": "pnpm publish"
     },
     "devDependencies": {
         "@changesets/cli": "2.26.0",
