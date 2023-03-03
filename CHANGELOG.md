@@ -4,12 +4,6 @@
 
 ### Patch Changes
 
--   bump version
-
-## 1.0.6-alpha
-
-### Patch Changes
-
 -   Allow discrimination between common builtin classes
 
     Previously, types like the following were incorrectly treated as non-discriminatable unions:
