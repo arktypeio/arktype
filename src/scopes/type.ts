@@ -32,6 +32,7 @@ type TypeRoot<t = unknown> = evaluate<{
     [as]: t
     infer: asOut<t>
     allows: (data: unknown) => data is t
+    assert: (data: unknown) => t
     node: Node
     flat: TraversalNode
     qualifiedName: QualifiedTypeName
@@ -63,6 +64,10 @@ export const initializeType = (
         node: name,
         flat: [["alias", name]],
         allows: (data): data is any => !namedTraverse(data).problems,
+        assert: (data) => {
+            const result = namedTraverse(data)
+            return result.problems ? result.problems.throw() : result.data
+        },
         infer: chainableNoOpProxy,
         qualifiedName: isAnonymousName(name)
             ? scope.getAnonymousQualifiedName(name)
