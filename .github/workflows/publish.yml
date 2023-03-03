@@ -50,6 +50,7 @@ jobs:
               with:
                   commit: "chore: update versions"
                   title: "chore: update versions"
+                  cwd: "./dev/configs"
                   version: pnpm ci:version
                   publish: pnpm ci:publish
               env:
