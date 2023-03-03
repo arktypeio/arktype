@@ -21,7 +21,7 @@ packageJson.version = packageJson.version.slice(0, -currentSuffix.length - 1)
 
 writeJson(packageJsonPath, packageJson)
 
-shell("pnpm changeset version")
+shell("pnpm changeset version", { cwd: fromPackageRoot("dev", "configs") })
 
 const updatedVersion = readPackageJson(repoDirs.root).version
 const updatedVersionWithSuffix = updatedVersion + `-${currentSuffix}`
@@ -29,7 +29,7 @@ const updatedVersionWithSuffix = updatedVersion + `-${currentSuffix}`
 packageJson.version = updatedVersionWithSuffix
 writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 4))
 
-const changelogPath = "CHANGELOG.md"
+const changelogPath = fromPackageRoot("dev", "configs", "CHANGELOG.md")
 
 writeFileSync(
     changelogPath,
