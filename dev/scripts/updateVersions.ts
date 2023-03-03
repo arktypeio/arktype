@@ -15,8 +15,6 @@ const currentSuffix = "alpha"
 
 const packageJsonPath = fromPackageRoot("package.json")
 
-const devConfigsPath = fromPackageRoot("dev", "configs")
-
 const packageJson = readJson(packageJsonPath)
 
 // Temporarily remove the suffix, if it exists, so changesets can handle versioning
@@ -31,10 +29,10 @@ shell(
         "cli",
         "bin.js"
     )} version`,
-    { cwd: devConfigsPath }
+    { cwd: repoDirs.configs }
 )
 
-shell(`rm -f ${join(devConfigsPath, ".changeset", "*.md")}`)
+shell(`rm -f ${join(repoDirs.configs, ".changeset", "*.md")}`)
 
 const nonSuffixedVersion = readPackageJson(repoDirs.root).version
 const suffixedVersion = nonSuffixedVersion + `-${currentSuffix}`
