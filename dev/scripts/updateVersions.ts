@@ -62,4 +62,4 @@ if (!existingDocsVersions.includes(updatedVersion)) {
     shell("pnpm format", { cwd: repoDirs.root })
 }
 
-process.chdir(repoDirs.root)
+shell(`git add ${repoDirs.root}`)
