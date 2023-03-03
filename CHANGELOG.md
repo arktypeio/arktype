@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.7-alpha
+
+### Patch Changes
+
+-   bump version
+
 ## 1.0.6-alpha
 
 ### Patch Changes
