@@ -1,12 +1,18 @@
 /** Changesets doesn't understand version suffixes like -alpha by default, so we use this to preserve them */
 import { readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { readJson, readPackageJson, shell, writeJson } from "../runtime/main.ts"
+import {
+    fromPackageRoot,
+    readJson,
+    readPackageJson,
+    shell,
+    writeJson
+} from "../runtime/main.ts"
 import { repoDirs } from "./common.ts"
 import { docgen } from "./docgen/main.ts"
 
 const currentSuffix = "alpha"
-const packageJsonPath = "package.json"
+const packageJsonPath = fromPackageRoot("package.json")
 
 const packageJson = readJson(packageJsonPath)
 
@@ -23,33 +29,14 @@ const updatedVersionWithSuffix = updatedVersion + `-${currentSuffix}`
 packageJson.version = updatedVersionWithSuffix
 writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 4))
 
-const rootChangelogPath = "CHANGELOG.md"
+const changelogPath = "CHANGELOG.md"
 
 writeFileSync(
-    rootChangelogPath,
-    readFileSync(rootChangelogPath)
+    changelogPath,
+    readFileSync(changelogPath)
         .toString()
         .replaceAll(updatedVersion, updatedVersionWithSuffix)
 )
-
-// Move changelog updates, which by default are generated at the repo root, to
-// the correct path.
-
-const actualChangelogPath = join("dev", "configs", "CHANGELOG.md")
-
-// remove duplicate "#arktype" header from existing changes
-const existingChanges = readFileSync(actualChangelogPath).toString().slice(10)
-
-writeFileSync(
-    actualChangelogPath,
-    readFileSync(rootChangelogPath).toString() + existingChanges
-)
-
-// Hack to work around the fact that changesets expects us to have a
-// CHANGELOG.md file at the root. By git adding it first, we can delete it and
-// git won't complain when changesets tries to add it, since it will be "adding"
-// the change that we deleted it.
-shell(`git add ${rootChangelogPath}`)
 
 docgen()
 
