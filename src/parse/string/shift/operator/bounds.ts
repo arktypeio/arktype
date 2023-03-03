@@ -120,7 +120,7 @@ const distributeRange = (range: Range, s: DynamicState) => {
                     return false
                 }
                 return listFrom(resolution.object!).every(
-                    (branch) => "class" in branch && branch.class === "Array"
+                    (branch) => "class" in branch && branch.class === Array
                 )
             default:
                 return false

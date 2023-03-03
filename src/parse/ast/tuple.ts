@@ -51,7 +51,7 @@ export const parseTuple = (def: List, ctx: ParseContext): Node => {
     }
     return {
         object: {
-            class: "Array",
+            class: Array,
             props
         }
     }
