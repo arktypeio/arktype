@@ -34,6 +34,8 @@ shell(
     { cwd: devConfigsPath }
 )
 
+shell(`rm -f ${join(devConfigsPath, ".changeset", "*.md")}`)
+
 const nonSuffixedVersion = readPackageJson(repoDirs.root).version
 const suffixedVersion = nonSuffixedVersion + `-${currentSuffix}`
 
