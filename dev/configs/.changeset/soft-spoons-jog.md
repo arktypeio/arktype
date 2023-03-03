@@ -1,5 +1,0 @@
----
-"arktype": patch
----
-
-bump version
