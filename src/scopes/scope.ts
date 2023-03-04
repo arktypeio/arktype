@@ -1,5 +1,5 @@
 import type { Node, ResolvedNode, TypeNode } from "../nodes/node.ts"
-import { flattenType, isConfigNode } from "../nodes/node.ts"
+import { compileType, flattenType, isConfigNode } from "../nodes/node.ts"
 import type { ConfigTuple } from "../parse/ast/config.ts"
 import type {
     Infer,
@@ -13,6 +13,7 @@ import type {
     ProblemWritersByCode
 } from "../traverse/problems.ts"
 import { compileProblemWriters } from "../traverse/problems.ts"
+import { CheckResult, TraversalState } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import { deepFreeze } from "../utils/freeze.ts"
@@ -38,7 +39,7 @@ import type {
     TypeOptions,
     TypeParser
 } from "./type.ts"
-import { initializeType } from "./type.ts"
+import { finalizeTraversal, initializeType } from "./type.ts"
 
 type ScopeParser = {
     <aliases>(aliases: validateAliases<aliases, {}>): Scope<
@@ -309,6 +310,22 @@ export class Scope<context extends ScopeContext = any> {
         }
         t.node = deepFreeze(node)
         t.flat = deepFreeze(flattenType(t))
+        t.js = compileType(t)
+        t.traverse = finalizeTraversal(t.name, t.js)
+        t.check = (data) => {
+            const state = new TraversalState(data, t)
+            t.traverse(data, state)
+            const result = new CheckResult(state)
+            if (state.problems.count) {
+                result.problems = state.problems
+            } else {
+                for (const [o, k] of state.entriesToPrune) {
+                    delete o[k]
+                }
+                result.data = state.data
+            }
+            return result
+        }
         return t
     }
 
@@ -366,6 +383,23 @@ export class Scope<context extends ScopeContext = any> {
                     : root
             )
             t.flat = deepFreeze(flattenType(t))
+            t.js = compileType(t)
+            // TODO: refactor
+            t.traverse = finalizeTraversal(t.name, t.js)
+            t.check = (data) => {
+                const state = new TraversalState(data, t)
+                t.traverse(data, state)
+                const result = new CheckResult(state)
+                if (state.problems.count) {
+                    result.problems = state.problems
+                } else {
+                    for (const [o, k] of state.entriesToPrune) {
+                        delete o[k]
+                    }
+                    result.data = state.data
+                }
+                return result
+            }
             return t
         },
         { from: this.expressions.node }

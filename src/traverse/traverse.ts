@@ -64,7 +64,7 @@ export const traverseRoot = (t: Type, data: unknown) => {
     return result
 }
 
-const CheckResult = class {
+export const CheckResult = class {
     data?: unknown
     problems?: Problems
 } as new (state: TraversalState) => CheckResult

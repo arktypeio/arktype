@@ -6,9 +6,10 @@ import type {
     validateDefinition
 } from "../parse/definition.ts"
 import type { ProblemOptions } from "../traverse/problems.ts"
-import type { CheckResult } from "../traverse/traverse.ts"
+import type { CheckResult, TraversalState } from "../traverse/traverse.ts"
 import { traverseRoot } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
+import { throwInternalError } from "../utils/errors.ts"
 import type { defer, evaluate } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import type { Expressions } from "./expressions.ts"
@@ -31,8 +32,11 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
 type TypeRoot<t = unknown> = evaluate<{
     [as]: t
     infer: asOut<t>
+    js: string
     allows: (data: unknown) => data is t
     assert: (data: unknown) => t
+    traverse: CompiledTraversal
+    check: Checker<t>
     node: Node
     flat: TraversalNode
     qualifiedName: QualifiedTypeName
@@ -52,6 +56,19 @@ export type TypeOptions = evaluate<
 
 export type TypeConfig = TypeOptions
 
+export type CompiledTraversal = (
+    data: unknown,
+    state: TraversalState
+) => TraversalState
+
+export const finalizeTraversal = (
+    name: string,
+    js: string
+): CompiledTraversal =>
+    Function(
+        `const _${name} = (data, state) => { return ${js} }; return _${name}`
+    )()
+
 export const initializeType = (
     name: string,
     definition: unknown,
@@ -63,6 +80,15 @@ export const initializeType = (
         // the final type in case of cyclic resolutions
         node: name,
         flat: [["alias", name]],
+        js: `${name}(data)`,
+        check: (() =>
+            throwInternalError(
+                `Unexpected attempt to check uncompiled type '${name}'`
+            )) as any,
+        traverse: (() =>
+            throwInternalError(
+                `Unexpected attempt to check uncompiled type '${name}'`
+            )) as any,
         allows: (data): data is any => !namedTraverse(data).problems,
         assert: (data) => {
             const result = namedTraverse(data)
