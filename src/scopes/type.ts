@@ -87,7 +87,7 @@ export const initializeType = (
             )) as any,
         traverse: (() =>
             throwInternalError(
-                `Unexpected attempt to check uncompiled type '${name}'`
+                `Unexpected attempt to traverse uncompiled type '${name}'`
             )) as any,
         allows: (data): data is any => !namedTraverse(data).problems,
         assert: (data) => {
