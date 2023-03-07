@@ -1,5 +1,6 @@
+import { compileType } from "../compile/compile.ts"
 import type { Node, ResolvedNode, TypeNode } from "../nodes/node.ts"
-import { compileType, flattenType, isConfigNode } from "../nodes/node.ts"
+import { flattenType, isConfigNode } from "../nodes/node.ts"
 import type { ConfigTuple } from "../parse/ast/config.ts"
 import type {
     Infer,
