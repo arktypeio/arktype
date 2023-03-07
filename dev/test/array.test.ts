@@ -69,7 +69,7 @@ describe("parse array", () => {
                 writeUnresolvableMessage("hmm")
             )
         })
-        it("constructed non-array with index props", () => {
+        it("from node definition without class rule", () => {
             const t = type([
                 "node",
                 {

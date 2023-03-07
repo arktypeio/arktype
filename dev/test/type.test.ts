@@ -5,7 +5,7 @@ import { ArkTypeError } from "../../src/traverse/problems.ts"
 import { attest } from "../attest/main.ts"
 
 describe("type utilities", () => {
-    it("base", () => {
+    it("allows", () => {
         const t = type("number%2")
         const data: unknown = 4
         if (t.allows(data)) {
@@ -16,7 +16,7 @@ describe("type utilities", () => {
         }
         attest(t.allows(5)).equals(false)
     })
-    it("throws an Arktype Error", () => {
+    it("problems can be thrown", () => {
         const t = type("number")
         try {
             attest(t("invalid").problems?.throw())

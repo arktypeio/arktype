@@ -110,13 +110,13 @@ describe("traverse", () => {
         ])
     })
     it("multiple switch", () => {
-        const $ = scope({
+        const types = scope({
             a: { a: "string" },
             b: { a: "number" },
             c: { a: "Function" },
             d: "a|b|c"
         }).compile()
-        attest($.d({}).problems?.summary).snap(
+        attest(types.d({}).problems?.summary).snap(
             "a must be a string, a number or an object (was undefined)"
         )
     })

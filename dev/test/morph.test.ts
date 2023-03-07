@@ -46,7 +46,7 @@ describe("morph", () => {
             "Must be non-zero (was 0)"
         )
     })
-    it("returns problem without adding to state", () => {
+    it("adds a problem if one is returned without being added", () => {
         const divide100By = type([
             "number",
             "|>",

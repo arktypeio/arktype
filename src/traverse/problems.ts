@@ -14,7 +14,7 @@ import { objectKeysOf } from "../utils/generics.ts"
 import { isWellFormedInteger } from "../utils/numericLiterals.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
-    getExactObjectKind,
+    getExactConstructorObjectKind,
     objectKindDescriptions
 } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
@@ -172,10 +172,8 @@ export const objectKindsToDescriptions = (kinds: DefaultObjectKind[]) =>
 
 export const describeBranches = (descriptions: string[]) => {
     if (descriptions.length === 0) {
-        /* c8 ignore start */
         return "never"
     }
-    /* c8 ignore stop */
     if (descriptions.length === 1) {
         return descriptions[0]
     }
@@ -258,7 +256,7 @@ const defaultProblemConfig: {
     },
     class: {
         mustBe: (expected) => {
-            const possibleObjectKind = getExactObjectKind(expected)
+            const possibleObjectKind = getExactConstructorObjectKind(expected)
             return possibleObjectKind
                 ? objectKindDescriptions[possibleObjectKind]
                 : `an instance of ${expected.name}`

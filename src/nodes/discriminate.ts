@@ -7,7 +7,7 @@ import type { evaluate, keySet } from "../utils/generics.ts"
 import { isKeyOf, keyCount, objectKeysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
-    getExactObjectKind,
+    getExactConstructorObjectKind,
     isArray,
     objectKindOf
 } from "../utils/objectKinds.ts"
@@ -364,7 +364,7 @@ export const serializeDefinitionIfAllowed = <kind extends DiscriminantKind>(
         case "domain":
             return definition as Domain
         case "class":
-            return getExactObjectKind(definition)
+            return getExactConstructorObjectKind(definition)
         default:
             return
     }

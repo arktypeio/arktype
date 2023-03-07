@@ -83,30 +83,33 @@ describe("intersection", () => {
                 object: { props: { a: "string", b: "boolean" } }
             })
         })
-        describe("Tuple and Array", () => {
-            it("string type", () => {
-                const t = type([["string", "string"], "&", "string[]"])
-                attest(t(["1", "1"]).data).snap(["1", "1"])
-                attest(t(["1", 1]).problems?.summary).snap(
-                    "Item at index 1 must be a string (was number)"
-                )
-            })
-            it("multiple types with union array", () => {
-                const t = type([["number", "string"], "&", "(string|number)[]"])
-                attest(t.node).snap({
-                    object: {
-                        class: "(function Array)",
-                        props: {
-                            "0": "number",
-                            "1": "string",
-                            length: ["!", { number: { value: 2 } }]
-                        }
+        it("string type", () => {
+            const t = type([["string", "string"], "&", "alpha[]"])
+            attest(t.node).snap({
+                object: {
+                    class: "(function Array)",
+                    props: {
+                        "0": "alpha",
+                        "1": "alpha",
+                        length: ["!", { number: { value: 2 } }]
                     }
-                })
-                attest(t([1, "1"]).data).snap([1, "1"])
-                attest(t(["1", 1]).problems?.summary).snap(
-                    "Item at index 0 must be a number (was string)\nItem at index 1 must be a string (was number)"
-                )
+                }
+            })
+            attest(t(["1", 1]).problems?.summary).snap(
+                "Item at index 0 must be only letters (was '1')\nItem at index 1 must be only letters (was number)"
+            )
+        })
+        it("multiple types with union array", () => {
+            const t = type([["number", "string"], "&", "('one'|1)[]"])
+            attest(t.node).snap({
+                object: {
+                    class: "(function Array)",
+                    props: {
+                        "0": { number: { value: 1 } },
+                        "1": { string: { value: "one" } },
+                        length: ["!", { number: { value: 2 } }]
+                    }
+                }
             })
         })
         describe("errors", () => {

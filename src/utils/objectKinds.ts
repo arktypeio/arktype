@@ -123,13 +123,13 @@ export const objectKindDescriptions = {
 
 // this will only return an object kind if it's the root constructor
 // example TypeError would return undefined not 'Error'
-export const getExactObjectKind = (
-    data: unknown
+export const getExactConstructorObjectKind = (
+    constructor: unknown
 ): DefaultObjectKind | undefined => {
-    const constructorName: string | undefined = Object(data).name
+    const constructorName: string | undefined = Object(constructor).name
     return constructorName &&
         isKeyOf(constructorName, defaultObjectKinds) &&
-        defaultObjectKinds[constructorName] === data
+        defaultObjectKinds[constructorName] === constructor
         ? constructorName
         : undefined
 }
