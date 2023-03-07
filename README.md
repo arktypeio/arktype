@@ -165,7 +165,7 @@ Depending on your level of familiarity with type systems and TS generics, some p
 
 If you're planning on submitting a non-trivial fix or a new feature, please [create an issue first](https://github.com/arktypeio/arktype/issues/new) so everyone's on the same page. The last thing we want is for you to spend time on a submission we're unable to merge.
 
-When you're ready, check out our [guide](./dev/configs/CONTRIBUTING.md) to get started!
+When you're ready, check out our [guide](./.github/CONTRIBUTING.md) to get started!
 
 ## Sponsorship
 
@@ -178,6 +178,10 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 ## Collaboration
 
 I'd love to hear about what you're working on and how ArkType can help. Please reach out to david@arktype.io.
+
+## Code of Conduct
+
+We will not tolerate any form of disrespect toward members of our community. Please refer to our [Code of Conduct](./.github/CODE_OF_CONDUCT.md) and reach out to david@arktype.io immediately if you've seen or experienced an interaction that may violate these standards.
 
 ## License
 
