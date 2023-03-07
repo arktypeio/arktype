@@ -32,13 +32,11 @@ export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
                 ? predicate.map((branch) => applyMorph(branch, morph))
                 : applyMorph(predicate, morph)
         } else {
-            /* c8 ignore start */
             throwInternalError(
                 `Unexpected predicate value for domain '${domain}': ${stringify(
                     predicate
                 )}`
             )
-            /* c8 ignore end */
         }
     }
     return result

@@ -8,6 +8,7 @@ import { isKeyOf, keyCount, objectKeysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
     defaultObjectKinds,
+    getExactObjectKind,
     isArray,
     objectKindOf
 } from "../utils/objectKinds.ts"
@@ -186,16 +187,13 @@ const pruneDiscriminant = (
             return
         }
     }
-    /* c8 ignore next */
     return throwPruneFailure(discriminant)
 }
 
 const throwPruneFailure = (discriminant: Discriminant) =>
-    /* c8 ignore start */
     throwInternalError(
         `Unexpectedly failed to discriminate ${discriminant.kind} at path '${discriminant.path}'`
     )
-/* c8 ignore stop */
 
 type Discriminants = {
     disjointsByPair: DisjointsByPair
@@ -367,12 +365,7 @@ export const serializeDefinitionIfAllowed = <kind extends DiscriminantKind>(
         case "domain":
             return definition as Domain
         case "class":
-            const constructorName: string | undefined = Object(definition).name
-            return constructorName &&
-                isKeyOf(constructorName, defaultObjectKinds) &&
-                defaultObjectKinds[constructorName] === definition
-                ? constructorName
-                : undefined
+            return getExactObjectKind(definition)
         default:
             return
     }

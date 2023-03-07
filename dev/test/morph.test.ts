@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import type { Type } from "../../src/main.ts"
+import type { Problem, Type } from "../../src/main.ts"
 import { ark, intersection, morph, scope, type, union } from "../../src/main.ts"
 import { writeUndiscriminatableMorphUnionMessage } from "../../src/parse/ast/union.ts"
 import { attest } from "../attest/main.ts"
@@ -44,6 +44,23 @@ describe("morph", () => {
         attest(divide100By(5).data).equals(20)
         attest(divide100By(0).problems?.summary).snap(
             "Must be non-zero (was 0)"
+        )
+    })
+    it("returns problem without adding to state", () => {
+        const divide100By = type([
+            "number",
+            "|>",
+            (n, problems) => {
+                if (n !== 0) {
+                    return 100 / n
+                } else {
+                    problems.mustBe("non-zero")
+                    return (problems as unknown as Problem[]).pop()
+                }
+            }
+        ])
+        attest(divide100By(0).problems?.summary).snap(
+            "0 must be...\n• non-zero\n• non-zero"
         )
     })
     it("at path", () => {

@@ -31,8 +31,7 @@ export const composeIntersection = <
     ((l, r, state) =>
         l === undefined
             ? r === undefined
-                ? /* c8 ignore next */
-                  throwInternalError(undefinedOperandsMessage)
+                ? throwInternalError(undefinedOperandsMessage)
                 : r
             : r === undefined
             ? l

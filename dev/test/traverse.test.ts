@@ -55,8 +55,10 @@ describe("traverse", () => {
             "3 is not a multiple of 2!"
         )
     })
-    it("domains", () => {
+    it("domains ", () => {
         const t = type("string|number[]")
+        attest(t([1]).data).snap([1])
+        attest(t("hello").data).snap("hello")
         attest(t(2).problems?.summary).snap(
             "Must be a string or an object (was 2)"
         )

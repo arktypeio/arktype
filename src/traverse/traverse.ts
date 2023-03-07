@@ -101,10 +101,6 @@ export class TraversalState<data = unknown> {
         return result
     }
 
-    getConfigKey<k extends keyof TypeConfig>(k: k) {
-        return this.traversalConfig[k][0] as TypeConfig[k] | undefined
-    }
-
     traverseConfig(configEntries: ConfigEntry[], node: TraversalNode) {
         for (const entry of configEntries) {
             this.traversalConfig[entry[0]].unshift(entry[1] as any)
@@ -311,7 +307,7 @@ const entryCheckers = {
     prerequisiteProp: checkRequiredProp,
     indexProp: (node, state) => {
         if (!Array.isArray(state.data)) {
-            state.problems.add("class", "Array")
+            state.problems.add("class", Array)
             return false
         }
         let isValid = true
@@ -339,11 +335,9 @@ const entryCheckers = {
                 ? domainsToDescriptions(caseKeys as Domain[])
                 : rule.kind === "class"
                 ? objectKindsToDescriptions(caseKeys as DefaultObjectKind[])
-                : /* c8 ignore start*/
-                  throwInternalError(
+                : throwInternalError(
                       `Unexpectedly encountered rule kind '${rule.kind}' during traversal`
                   )
-        /* c8 ignore stop*/
         state.problems.add("cases", caseDescriptions, {
             path: missingCasePath,
             data: dataAtPath

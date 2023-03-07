@@ -69,5 +69,20 @@ describe("parse array", () => {
                 writeUnresolvableMessage("hmm")
             )
         })
+        it("constructed non-array with index props", () => {
+            const t = type([
+                "node",
+                {
+                    object: {
+                        props: {
+                            "[index]": { number: true }
+                        }
+                    }
+                }
+            ])
+            attest(t({}).problems?.summary).snap(
+                "Must be an array (was Object)"
+            )
+        })
     })
 })

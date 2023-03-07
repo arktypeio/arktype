@@ -13,7 +13,10 @@ import type {
 import { objectKeysOf } from "../utils/generics.ts"
 import { isWellFormedInteger } from "../utils/numericLiterals.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
-import { objectKindDescriptions } from "../utils/objectKinds.ts"
+import {
+    getExactObjectKind,
+    objectKindDescriptions
+} from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 import type {
@@ -169,8 +172,10 @@ export const objectKindsToDescriptions = (kinds: DefaultObjectKind[]) =>
 
 export const describeBranches = (descriptions: string[]) => {
     if (descriptions.length === 0) {
+        /* c8 ignore start */
         return "never"
     }
+    /* c8 ignore stop */
     if (descriptions.length === 1) {
         return descriptions[0]
     }
@@ -187,7 +192,7 @@ export const describeBranches = (descriptions: string[]) => {
 
 type ProblemSources = {
     divisor: number
-    class: DefaultObjectKind | constructor
+    class: constructor
     domain: Domain
     missing: undefined
     extraneous: unknown
@@ -252,10 +257,12 @@ const defaultProblemConfig: {
             divisor === 1 ? `an integer` : `a multiple of ${divisor}`
     },
     class: {
-        mustBe: (expected) =>
-            typeof expected === "string"
-                ? objectKindDescriptions[expected]
-                : `an instance of ${expected.name}`,
+        mustBe: (expected) => {
+            const possibleObjectKind = getExactObjectKind(expected)
+            return possibleObjectKind
+                ? objectKindDescriptions[possibleObjectKind]
+                : `an instance of ${expected.name}`
+        },
         writeReason: (mustBe, data) =>
             writeDefaultReason(mustBe, data.className)
     },

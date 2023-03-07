@@ -94,13 +94,11 @@ export const compareBranches = (
                 // branch for the final union
                 return subresult
             }
-            /* c8 ignore start */
             return throwInternalError(
                 `Unexpected predicate intersection result of type '${domainOf(
                     subresult
                 )}'`
             )
-            /* c8 ignore stop */
         })
         if (!lImpliesR) {
             for (let i = 0; i < pairs.length; i++) {
