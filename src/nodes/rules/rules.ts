@@ -6,13 +6,18 @@ import type {
     Dict
 } from "../../utils/generics.ts"
 import { listFrom } from "../../utils/generics.ts"
+import type { CompilationState } from "../compile.ts"
 import type { IntersectionState, Intersector } from "../compose.ts"
 import {
     composeIntersection,
     composeKeyedIntersection,
     equality
 } from "../compose.ts"
-import type { FlattenContext, TraversalEntry, TraversalKey } from "../node.ts"
+import type {
+    CompilationContext,
+    TraversalEntry,
+    TraversalKey
+} from "../node.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"
@@ -22,9 +27,9 @@ import type {
     PropsRule,
     StrictPropsEntry
 } from "./props.ts"
-import { flattenProps, propsIntersection } from "./props.ts"
+import { compileProps, propsIntersection } from "./props.ts"
 import type { FlatBound, Range } from "./range.ts"
-import { flattenRange, rangeIntersection } from "./range.ts"
+import { compileRange, rangeIntersection } from "./range.ts"
 import { regexIntersection } from "./regex.ts"
 
 export type NarrowableRules<$ = Dict> = {
@@ -108,32 +113,28 @@ export const narrowableRulesIntersection =
         { onEmpty: "bubble" }
     )
 
-export const flattenRules = (
+export const compileRules = (
     rules: UnknownRules,
-    ctx: FlattenContext
+    ctx: CompilationContext
 ): TraversalEntry[] => {
     const entries: RuleEntry[] = []
     let k: keyof UnknownRules
     for (k in rules) {
         ruleFlatteners[k](entries, rules[k] as any, ctx)
     }
-    // Some entries with the same precedence, e.g. morphs flattened from a list,
+    // Some entries with the same precedence, e.g. morphs compiled from a list,
     // rely on the fact that JS's builtin sort is stable to behave as expected
     // when traversed:
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort
     return entries.sort((l, r) => precedenceMap[l[0]] - precedenceMap[r[0]])
 }
 
-export type FlattenAndPushRule<t> = (
-    entries: RuleEntry[],
-    rule: t,
-    ctx: FlattenContext
-) => void
+export type RuleCompiler<t> = (rule: t, state: CompilationState) => string
 
 type UnknownRules = NarrowableRules & Partial<LiteralRules>
 
 const ruleFlatteners: {
-    [k in keyof UnknownRules]-?: FlattenAndPushRule<UnknownRules[k] & {}>
+    [k in keyof UnknownRules]-?: RuleCompiler<UnknownRules[k] & {}>
 } = {
     regex: (entries, rule) => {
         for (const source of listFrom(rule)) {
@@ -143,11 +144,11 @@ const ruleFlatteners: {
     divisor: (entries, rule) => {
         entries.push(["divisor", rule])
     },
-    range: flattenRange,
+    range: compileRange,
     class: (entries, rule) => {
         entries.push(["class", rule])
     },
-    props: flattenProps,
+    props: compileProps,
     narrow: (entries, rule) => {
         for (const narrow of listFrom(rule)) {
             entries.push(["narrow", narrow])

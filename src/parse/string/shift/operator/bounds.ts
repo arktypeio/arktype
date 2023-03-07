@@ -1,5 +1,5 @@
 import { stringifyRange } from "../../../../nodes/compose.ts"
-import type { TypeNode } from "../../../../nodes/node.ts"
+import type { DomainsNode } from "../../../../nodes/node.ts"
 import type {
     Bound,
     MaxComparator,
@@ -104,7 +104,7 @@ export const parseRightBound = (
 const distributeRange = (range: Range, s: DynamicState) => {
     const resolution = s.resolveRoot()
     const domains = objectKeysOf(resolution)
-    const distributedRange: mutable<TypeNode> = {}
+    const distributedRange: mutable<DomainsNode> = {}
     const rangePredicate = { range } as const
     const isBoundable = domains.every((domain) => {
         switch (domain) {

@@ -1,5 +1,6 @@
-import type { Node, ResolvedNode, TypeNode } from "../nodes/node.ts"
-import { flattenType, isConfigNode } from "../nodes/node.ts"
+import { compileType } from "../nodes/compile.ts"
+import type { DomainsNode, Node, ResolvedNode } from "../nodes/node.ts"
+import { isConfigNode } from "../nodes/node.ts"
 import type { ConfigTuple } from "../parse/ast/config.ts"
 import type {
     Infer,
@@ -309,8 +310,7 @@ export class Scope<context extends ScopeContext = any> {
             node = this.#resolveRecurse(node, "throw", seen).node
         }
         t.node = deepFreeze(node)
-        t.flat = deepFreeze(flattenType(t))
-        t.js = ""
+        t.js = compileType(t)
         t.traverse = finalizeTraversal(t.name, t.js)
         t.check = (data) => {
             const state = new TraversalState(data, t)
@@ -335,7 +335,7 @@ export class Scope<context extends ScopeContext = any> {
             : node
     }
 
-    resolveTypeNode(node: Node): TypeNode {
+    resolveTypeNode(node: Node): DomainsNode {
         const resolution = this.resolveNode(node)
         return isConfigNode(resolution) ? resolution.node : resolution
     }
@@ -382,8 +382,7 @@ export class Scope<context extends ScopeContext = any> {
                     ? { config, node: this.resolveTypeNode(root) }
                     : root
             )
-            t.flat = deepFreeze(flattenType(t))
-            t.js = ""
+            t.js = compileType(t)
             // TODO: refactor
             t.traverse = finalizeTraversal(t.name, t.js)
             t.check = (data) => {

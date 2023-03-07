@@ -18,10 +18,10 @@ import type {
 } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
 import type { Branch, Branches } from "./branch.ts"
-import { branchIntersection, flattenBranch } from "./branch.ts"
+import { branchIntersection, compileBranch } from "./branch.ts"
 import { IntersectionState } from "./compose.ts"
 import type {
-    FlattenContext,
+    CompilationContext,
     Node,
     TraversalEntry,
     TraversalValue
@@ -45,7 +45,10 @@ export type DiscriminatedCases<
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-export const flattenBranches = (branches: Branches, ctx: FlattenContext) => {
+export const compileBranches = (
+    branches: Branches,
+    ctx: CompilationContext
+) => {
     const discriminants = calculateDiscriminants(branches, ctx)
     const indices = branches.map((_, i) => i)
     return discriminate(branches, indices, discriminants, ctx)
@@ -63,10 +66,10 @@ const discriminate = (
     originalBranches: Branches,
     remainingIndices: number[],
     discriminants: Discriminants,
-    ctx: FlattenContext
+    ctx: CompilationContext
 ): TraversalEntry[] => {
     if (remainingIndices.length === 1) {
-        return flattenBranch(originalBranches[remainingIndices[0]], ctx)
+        return compileBranch(originalBranches[remainingIndices[0]], ctx)
     }
     const bestDiscriminant = findBestDiscriminant(
         remainingIndices,
@@ -83,7 +86,7 @@ const discriminate = (
                                   `${ctx.path}`
                               )
                           )
-                        : flattenBranch(originalBranches[i], ctx)
+                        : compileBranch(originalBranches[i], ctx)
                 )
             ]
         ]
@@ -122,7 +125,7 @@ const pruneDiscriminant = (
     entries: TraversalEntry[],
     segments: string[],
     discriminant: Discriminant,
-    ctx: FlattenContext
+    ctx: CompilationContext
 ) => {
     for (let i = 0; i < entries.length; i++) {
         const [k, v] = entries[i]
@@ -219,7 +222,7 @@ export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 const calculateDiscriminants = (
     branches: Branches,
-    ctx: FlattenContext
+    ctx: CompilationContext
 ): Discriminants => {
     const discriminants: Discriminants = {
         disjointsByPair: {},

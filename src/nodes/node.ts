@@ -1,18 +1,9 @@
 import { compileDisjointReasonsMessage } from "../parse/ast/intersection.ts"
-import type { ParseContext } from "../parse/definition.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
-import type {
-    defined,
-    Dict,
-    entryOf,
-    mutable,
-    stringKeyOf
-} from "../utils/generics.ts"
-import { entriesOf, hasKey, hasKeys, objectKeysOf } from "../utils/generics.ts"
-import { Path } from "../utils/paths.ts"
-import type { MorphEntry } from "./branch.ts"
+import type { defined, Dict, mutable, stringKeyOf } from "../utils/generics.ts"
+import { hasKey, hasKeys, objectKeysOf } from "../utils/generics.ts"
 import type { Intersector } from "./compose.ts"
 import {
     anonymousDisjoint,
@@ -22,32 +13,30 @@ import {
     isEquality,
     undefinedOperandsMessage
 } from "./compose.ts"
-import type { DiscriminatedSwitch } from "./discriminate.ts"
 import type { Predicate } from "./predicate.ts"
 import {
-    flattenPredicate,
     isLiteralCondition,
     predicateIntersection,
     predicateUnion
 } from "./predicate.ts"
 import { mappedKeys } from "./rules/props.ts"
-import type { LiteralRules, RuleEntry } from "./rules/rules.ts"
+import type { LiteralRules } from "./rules/rules.ts"
 
 export type Node<$ = Dict> = Identifier<$> | ResolvedNode<$>
 
 export type Identifier<$ = Dict> = stringKeyOf<$>
 
-export type ResolvedNode<$ = Dict> = TypeNode<$> | ConfigNode<$>
+export type ResolvedNode<$ = Dict> = DomainsNode<$> | ConfigNode<$>
 
 export type ConfigNode<$ = Dict> = {
     config: TypeConfig
-    node: TypeNode<$>
+    node: DomainsNode<$>
 }
 
 export const isConfigNode = (node: ResolvedNode): node is ConfigNode =>
     "config" in node
 
-export type TypeNode<$ = Dict> = {
+export type DomainsNode<$ = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, $>
 }
 
@@ -68,7 +57,7 @@ export const nodeIntersection: Intersector<Node> = (l, r, state) => {
     return result === lDomains ? l : result === rDomains ? r : result
 }
 
-const typeNodeIntersection = composeKeyedIntersection<TypeNode>(
+const typeNodeIntersection = composeKeyedIntersection<DomainsNode>(
     (domain, l, r, context) => {
         if (l === undefined) {
             return r === undefined
@@ -96,7 +85,7 @@ export const rootIntersection = (l: Node, r: Node, type: Type): Node => {
 export const rootUnion = (l: Node, r: Node, type: Type): ResolvedNode => {
     const lDomains = type.scope.resolveTypeNode(l)
     const rDomains = type.scope.resolveTypeNode(r)
-    const result = {} as mutable<TypeNode>
+    const result = {} as mutable<DomainsNode>
     const domains = objectKeysOf({ ...lDomains, ...rDomains })
     for (const domain of domains) {
         result[domain] = hasKey(lDomains, domain)
@@ -113,111 +102,6 @@ export const rootUnion = (l: Node, r: Node, type: Type): ResolvedNode => {
             : throwInternalError(undefinedOperandsMessage)
     }
     return result
-}
-
-export type TraversalNode = Domain | TraversalEntry[]
-
-export type TraversalKey = TraversalEntry[0]
-
-export type TraversalValue<k extends TraversalKey> = Extract<
-    TraversalEntry,
-    [k, unknown]
->[1]
-
-export type TraversalEntry =
-    | RuleEntry
-    | DomainsEntry
-    | MorphEntry
-    | AliasEntry
-    | DomainEntry
-    | BranchesEntry
-    | SwitchEntry
-    | TraversalConfigEntry
-
-export type AliasEntry = ["alias", string]
-
-export type ConfigEntry = entryOf<TypeConfig>
-
-export type TraversalConfigEntry = [
-    "config",
-    {
-        config: ConfigEntry[]
-        node: TraversalNode
-    }
-]
-
-export type DomainEntry = ["domain", Domain]
-
-const hasImpliedDomain = (flatPredicate: TraversalEntry[]) =>
-    flatPredicate[0] &&
-    (flatPredicate[0][0] === "value" || flatPredicate[0][0] === "class")
-
-export type DomainsEntry = [
-    "domains",
-    {
-        readonly [domain in Domain]?: TraversalEntry[]
-    }
-]
-
-export type BranchesEntry = ["branches", TraversalEntry[][]]
-
-export type SwitchEntry = ["switch", DiscriminatedSwitch]
-
-export type FlattenContext = ParseContext & {
-    lastDomain: Domain
-}
-
-export const flattenType = (type: Type): TraversalNode => {
-    const ctx: FlattenContext = {
-        type,
-        path: new Path(),
-        lastDomain: "undefined"
-    }
-    return flattenNode(type.node, ctx)
-}
-
-export const flattenNode = (node: Node, ctx: FlattenContext): TraversalNode => {
-    if (typeof node === "string") {
-        return ctx.type.scope.resolve(node).flat
-    }
-    const hasConfig = isConfigNode(node)
-    const flattenedTypeNode = flattenTypeNode(hasConfig ? node.node : node, ctx)
-    return hasConfig
-        ? [
-              [
-                  "config",
-                  {
-                      config: entriesOf(node.config),
-                      node: flattenedTypeNode
-                  }
-              ]
-          ]
-        : flattenedTypeNode
-}
-
-export const flattenTypeNode = (
-    node: TypeNode,
-    ctx: FlattenContext
-): TraversalNode => {
-    const domains = objectKeysOf(node)
-    if (domains.length === 1) {
-        const domain = domains[0]
-        const predicate = node[domain]!
-        if (predicate === true) {
-            return domain
-        }
-        ctx.lastDomain = domain
-        const flatPredicate = flattenPredicate(predicate, ctx)
-        return hasImpliedDomain(flatPredicate)
-            ? flatPredicate
-            : [["domain", domain], ...flatPredicate]
-    }
-    const result: mutable<DomainsEntry[1]> = {}
-    for (const domain of domains) {
-        ctx.lastDomain = domain
-        result[domain] = flattenPredicate(node[domain]!, ctx)
-    }
-    return [["domains", result]]
 }
 
 export type LiteralNode<
@@ -238,7 +122,7 @@ export const isLiteralNode = <domain extends Domain>(
 }
 
 export type DomainSubtypeResolution<domain extends Domain> = {
-    readonly [k in domain]: defined<TypeNode[domain]>
+    readonly [k in domain]: defined<DomainsNode[domain]>
 }
 
 export const resolutionExtendsDomain = <domain extends Domain>(

@@ -7,10 +7,10 @@ import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import type { CollapsibleList, Dict } from "../utils/generics.ts"
 import type { IntersectionState, Intersector } from "./compose.ts"
 import { isDisjoint, isEquality } from "./compose.ts"
-import type { FlattenContext } from "./node.ts"
+import type { CompilationContext } from "./node.ts"
 import type { PredicateComparison } from "./predicate.ts"
 import type { Rules } from "./rules/rules.ts"
-import { flattenRules, rulesIntersection } from "./rules/rules.ts"
+import { compileRules, rulesIntersection } from "./rules/rules.ts"
 
 export type Branch<domain extends Domain = Domain, $ = Dict> =
     | Rules<domain, $>
@@ -117,9 +117,9 @@ export const compareBranches = (
 export const isTransformationBranch = (branch: Branch): branch is MetaBranch =>
     "rules" in branch
 
-export const flattenBranch = (branch: Branch, ctx: FlattenContext) => {
+export const compileBranch = (branch: Branch, ctx: CompilationContext) => {
     if (isTransformationBranch(branch)) {
-        const result = flattenRules(branch.rules, ctx)
+        const result = compileRules(branch.rules, ctx)
         if (branch.morph) {
             if (typeof branch.morph === "function") {
                 result.push(["morph", branch.morph])
@@ -131,7 +131,7 @@ export const flattenBranch = (branch: Branch, ctx: FlattenContext) => {
         }
         return result
     }
-    return flattenRules(branch, ctx)
+    return compileRules(branch, ctx)
 }
 
 const rulesOf = (branch: Branch): Rules =>

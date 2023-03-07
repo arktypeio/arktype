@@ -1,0 +1,503 @@
+import type { DiscriminatedSwitch } from "../nodes/discriminate.ts"
+import { serializeCase } from "../nodes/discriminate.ts"
+import { checkClass } from "../nodes/rules/class.ts"
+import { checkDivisor } from "../nodes/rules/divisor.ts"
+import type {
+    PropsRecordEntry,
+    PropsRecordKey,
+    TraversalProp
+} from "../nodes/rules/props.ts"
+import { checkBound } from "../nodes/rules/range.ts"
+import { checkRegex } from "../nodes/rules/regex.ts"
+import type { RuleEntry } from "../nodes/rules/rules.ts"
+import { precedenceMap } from "../nodes/rules/rules.ts"
+import type { Scope } from "../scopes/scope.ts"
+import type { Type, TypeConfig } from "../scopes/type.ts"
+import type {
+    ProblemCode,
+    ProblemOptions,
+    ProblemWriters
+} from "../traverse/problems.ts"
+import {
+    domainsToDescriptions,
+    objectKindsToDescriptions,
+    Problem,
+    Problems
+} from "../traverse/problems.ts"
+import type { SizedData } from "../utils/data.ts"
+import type { Domain } from "../utils/domains.ts"
+import { domainOf, hasDomain } from "../utils/domains.ts"
+import { throwInternalError } from "../utils/errors.ts"
+import type {
+    entryOf,
+    extend,
+    mutable,
+    stringKeyOf
+} from "../utils/generics.ts"
+import { entriesOf, hasKey, objectKeysOf } from "../utils/generics.ts"
+import type { DefaultObjectKind } from "../utils/objectKinds.ts"
+import { getPath, Path } from "../utils/paths.ts"
+import type { MorphEntry } from "./branch.ts"
+import type { ConfigNode, DomainsNode, Node } from "./node.ts"
+import { isConfigNode } from "./node.ts"
+import { compilePredicate } from "./predicate.ts"
+
+export type TraversalNode = string
+
+export type TraversalKey = TraversalEntry[0]
+
+export type TraversalValue<k extends TraversalKey> = Extract<
+    TraversalEntry,
+    [k, unknown]
+>[1]
+
+export type TraversalEntry =
+    | RuleEntry
+    | DomainsEntry
+    | MorphEntry
+    | AliasEntry
+    | DomainEntry
+    | BranchesEntry
+    | SwitchEntry
+    | TraversalConfigEntry
+
+export type AliasEntry = ["alias", string]
+
+export type ConfigEntry = entryOf<TypeConfig>
+
+export type TraversalConfigEntry = [
+    "config",
+    {
+        config: ConfigEntry[]
+        node: TraversalNode
+    }
+]
+
+export type DomainEntry = ["domain", Domain]
+
+const hasImpliedDomain = (flatPredicate: TraversalEntry[]) =>
+    flatPredicate[0] &&
+    (flatPredicate[0][0] === "value" || flatPredicate[0][0] === "class")
+
+export type DomainsEntry = [
+    "domains",
+    {
+        readonly [domain in Domain]?: TraversalEntry[]
+    }
+]
+
+export type BranchesEntry = ["branches", TraversalEntry[][]]
+
+export type SwitchEntry = ["switch", DiscriminatedSwitch]
+
+export const compileType = (type: Type) => {
+    const state = new CompilationState(type)
+    return compileNode(type.node, state)
+}
+
+export const compileNode = (node: Node, state: CompilationState) => {
+    if (typeof node === "string") {
+        return state.type.scope.resolve(node).js
+    }
+    return isConfigNode(node)
+        ? state.compileConfigNode(node)
+        : compileTypeNode(node, state)
+}
+
+const negatedDomainChecks = {
+    boolean: `typeof data !== "boolean"`,
+    bigint: `typeof data !== "bigint"`,
+    null: `data !== null`,
+    number: `typeof data !== "number"`,
+    object: `(typeof data !== "object" || data === null)`,
+    string: `typeof data !== "string"`,
+    symbol: `typeof data !== "symbol"`,
+    undefined: `data !== undefined`
+} as const satisfies Record<Domain, string>
+
+const compileTypeNode = (
+    node: DomainsNode,
+    state: CompilationState
+): TraversalNode => {
+    const domains = objectKeysOf(node)
+    if (domains.length === 1) {
+        const domain = domains[0]
+        const predicate = node[domain]!
+        if (predicate === true) {
+            return `${negatedDomainChecks[domain]} && state.problems.add("domain", domain)`
+        }
+        return ""
+        // const flatPredicate = compilePredicate(predicate, state)
+        // return hasImpliedDomain(flatPredicate)
+        //     ? flatPredicate
+        //     : [["domain", domain], ...flatPredicate]
+    }
+    const result: mutable<DomainsEntry[1]> = {}
+    for (const domain of domains) {
+        result[domain] = compilePredicate(node[domain]!, state)
+    }
+    return "" //[["domains", result]]
+}
+
+const initializeCompilationConfig = (): TraversalConfig => ({
+    mustBe: [],
+    writeReason: [],
+    addContext: [],
+    keys: []
+})
+
+type ProblemWriterKey = keyof ProblemOptions
+
+const problemWriterKeys: readonly ProblemWriterKey[] = [
+    "mustBe",
+    "writeReason",
+    "addContext"
+]
+
+export class CompilationState<data = unknown> {
+    path = new Path()
+    failFast = false
+    traversalConfig = initializeCompilationConfig()
+    readonly rootScope: Scope
+
+    constructor(public type: Type) {
+        this.rootScope = type.scope
+    }
+
+    getProblemConfig<code extends ProblemCode>(
+        code: code
+    ): ProblemWriters<code> {
+        const result = {} as ProblemWriters<code>
+        for (const k of problemWriterKeys) {
+            result[k] =
+                this.traversalConfig[k][0] ??
+                (this.rootScope.config.codes[code][k] as any)
+        }
+        return result
+    }
+
+    getConfigKey<k extends keyof TypeConfig>(k: k) {
+        return this.traversalConfig[k][0] as TypeConfig[k] | undefined
+    }
+
+    compileConfigNode(node: ConfigNode) {
+        const configEntries = entriesOf(node.config)
+        for (const entry of configEntries) {
+            this.traversalConfig[entry[0]].unshift(entry[1] as any)
+        }
+        const result = compileTypeNode(node.node, this)
+        for (const entry of configEntries) {
+            this.traversalConfig[entry[0]].shift()
+        }
+        return result
+    }
+
+    // traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {
+    //     const lastData = this.data
+    //     this.data = this.data[key] as data
+    //     this.path.push(key)
+    //     const isValid = traverse(node, this)
+    //     this.path.pop()
+    //     if (lastData[key] !== this.data) {
+    //         lastData[key] = this.data as any
+    //     }
+    //     this.data = lastData
+    //     return isValid
+    // }
+
+    // traverseResolution(name: string): boolean {
+    //     const resolution = this.type.scope.resolve(name)
+    //     const id = resolution.qualifiedName
+    //     // this assignment helps with narrowing
+    //     const data = this.data
+    //     const isObject = hasDomain(data, "object")
+    //     if (isObject) {
+    //         const seenByCurrentType = this.#seen[id]
+    //         if (seenByCurrentType) {
+    //             if (seenByCurrentType.includes(data)) {
+    //                 // if data has already been checked by this alias as part of
+    //                 // a resolution higher up on the call stack, it must be valid
+    //                 // or we wouldn't be here
+    //                 return true
+    //             }
+    //             seenByCurrentType.push(data)
+    //         } else {
+    //             this.#seen[id] = [data]
+    //         }
+    //     }
+    //     const lastType = this.type
+    //     this.type = resolution
+    //     const isValid = traverse(resolution.flat, this)
+    //     this.type = lastType
+    //     if (isObject) {
+    //         this.#seen[id]!.pop()
+    //     }
+    //     return isValid
+    // }
+
+    // traverseBranches(branches: TraversalEntry[][]): boolean {
+    //     const lastFailFast = this.failFast
+    //     this.failFast = true
+    //     const lastProblems = this.problems
+    //     const branchProblems = new Problems(this)
+    //     this.problems = branchProblems
+    //     const lastPath = this.path
+    //     const lastKeysToPrune = this.entriesToPrune
+    //     let hasValidBranch = false
+    //     for (const branch of branches) {
+    //         this.path = new Path()
+    //         this.entriesToPrune = []
+    //         if (checkEntries(branch, this)) {
+    //             hasValidBranch = true
+    //             lastKeysToPrune.push(...this.entriesToPrune)
+    //             break
+    //         }
+    //     }
+    //     this.path = lastPath
+    //     this.entriesToPrune = lastKeysToPrune
+    //     this.problems = lastProblems
+    //     this.failFast = lastFailFast
+    //     return hasValidBranch || !this.problems.add("branches", branchProblems)
+    // }
+}
+
+export type TraversalConfig = {
+    [k in keyof TypeConfig]-?: TypeConfig[k][]
+}
+
+export const traverse = (
+    node: TraversalNode,
+    state: CompilationState
+): boolean =>
+    typeof node === "string"
+        ? domainOf(state.data) === node || !state.problems.add("domain", node)
+        : checkEntries(node, state)
+
+export const checkEntries = (
+    entries: TraversalEntry[],
+    state: CompilationState
+): boolean => {
+    let isValid = true
+    for (let i = 0; i < entries.length; i++) {
+        const [k, v] = entries[i]
+        const entryAllowsData = (entryCheckers[k] as EntryChecker<any>)(
+            v,
+            state
+        )
+        isValid &&= entryAllowsData
+        if (!isValid) {
+            if (state.failFast) {
+                return false
+            }
+            if (
+                i < entries.length - 1 &&
+                precedenceMap[k] < precedenceMap[entries[i + 1][0]]
+            ) {
+                // if we've encountered a problem, there is at least one entry
+                // remaining, and the next entry is of a higher precedence level
+                // than the current entry, return immediately
+                return false
+            }
+        }
+    }
+    return isValid
+}
+
+export const checkRequiredProp = (
+    prop: TraversalProp,
+    state: CompilationState<TraversableData>
+) => {
+    if (prop[0] in state.data) {
+        return state.traverseKey(prop[0], prop[1])
+    }
+    state.problems.add("missing", undefined, {
+        path: state.path.concat(prop[0]),
+        data: undefined
+    })
+    return false
+}
+
+const createPropChecker =
+    (kind: PropsRecordKey) =>
+    (props: PropsRecordEntry[1], state: CompilationState<TraversableData>) => {
+        let isValid = true
+        const remainingUnseenRequired = { ...props.required }
+        for (const k in state.data) {
+            if (props.required[k]) {
+                isValid &&= state.traverseKey(k, props.required[k])
+                delete remainingUnseenRequired[k]
+            } else if (props.optional[k]) {
+                isValid &&= state.traverseKey(k, props.optional[k])
+            } else if (kind === "distilledProps") {
+                if (state.failFast) {
+                    // If we're in a union (i.e. failFast is enabled) in
+                    // distilled mode, we need to wait to prune distilled keys
+                    // to avoid mutating data based on a branch that will not be
+                    // included in the final result. Instead, we push the object
+                    // and key to state to handle after traversal is complete.
+                    state.entriesToPrune.push([state.data, k])
+                } else {
+                    // If we're not in a union, we can safely distill right away
+                    delete state.data[k]
+                }
+            } else {
+                isValid = false
+                state.problems.add("extraneous", state.data[k], {
+                    path: state.path.concat(k)
+                })
+            }
+            if (!isValid && state.failFast) {
+                return false
+            }
+        }
+        const unseenRequired = Object.keys(remainingUnseenRequired)
+        if (unseenRequired.length) {
+            for (const k of unseenRequired) {
+                state.problems.add("missing", undefined, {
+                    path: state.path.concat(k)
+                })
+            }
+            return false
+        }
+        return isValid
+    }
+
+const entryCheckers = {
+    regex: checkRegex,
+    divisor: checkDivisor,
+    domains: (domains, state) => {
+        const entries = domains[domainOf(state.data)]
+        return entries
+            ? checkEntries(entries, state)
+            : !state.problems.add(
+                  "cases",
+                  domainsToDescriptions(objectKeysOf(domains))
+              )
+    },
+    domain: (domain, state) =>
+        domainOf(state.data) === domain ||
+        !state.problems.add("domain", domain),
+    bound: checkBound,
+    optionalProp: (prop, state) => {
+        if (prop[0] in state.data) {
+            return state.traverseKey(prop[0], prop[1])
+        }
+        return true
+    },
+    // these checks work the same way, the keys are only distinct so that
+    // prerequisite props can have a higher precedence
+    requiredProp: checkRequiredProp,
+    prerequisiteProp: checkRequiredProp,
+    indexProp: (node, state) => {
+        if (!Array.isArray(state.data)) {
+            state.problems.add("class", "Array")
+            return false
+        }
+        let isValid = true
+        for (let i = 0; i < state.data.length; i++) {
+            isValid &&= state.traverseKey(`${i}`, node)
+            if (!isValid && state.failFast) {
+                return false
+            }
+        }
+        return isValid
+    },
+    branches: (branches, state) => state.traverseBranches(branches),
+    switch: (rule, state) => {
+        const dataAtPath = getPath(state.data, rule.path)
+        const caseKey = serializeCase(rule.kind, dataAtPath)
+        if (hasKey(rule.cases, caseKey)) {
+            return checkEntries(rule.cases[caseKey], state)
+        }
+        const caseKeys = objectKeysOf(rule.cases)
+        const missingCasePath = state.path.concat(rule.path)
+        const caseDescriptions =
+            rule.kind === "value"
+                ? caseKeys
+                : rule.kind === "domain"
+                ? domainsToDescriptions(caseKeys as Domain[])
+                : rule.kind === "class"
+                ? objectKindsToDescriptions(caseKeys as DefaultObjectKind[])
+                : /* c8 ignore start*/
+                  throwInternalError(
+                      `Unexpectedly encountered rule kind '${rule.kind}' during traversal`
+                  )
+        /* c8 ignore stop*/
+        state.problems.add("cases", caseDescriptions, {
+            path: missingCasePath,
+            data: dataAtPath
+        })
+        return false
+    },
+    alias: (name, state) => state.traverseResolution(name),
+    class: checkClass,
+    narrow: (narrow, state) => {
+        const lastProblemsCount = state.problems.count
+        const result = narrow(state.data, state.problems)
+        if (!result && state.problems.count === lastProblemsCount) {
+            state.problems.mustBe(
+                narrow.name ? `valid according to ${narrow.name}` : "valid"
+            )
+        }
+        return result
+    },
+    config: ({ config, node }, state) => state.compileConfigNode(config, node),
+    value: (value, state) =>
+        state.data === value || !state.problems.add("value", value),
+    morph: (morph, state) => {
+        const out = morph(state.data, state.problems)
+        if (state.problems.length) {
+            return false
+        }
+        if (out instanceof Problem) {
+            // if a problem was returned from the morph but not added, add it
+            state.problems.addProblem(out)
+            return false
+        }
+        if (out instanceof CheckResult) {
+            if (out.problems) {
+                for (const problem of out.problems) {
+                    state.problems.addProblem(problem)
+                }
+                return false
+            }
+            state.data = out.data
+            return true
+        }
+        state.data = out
+        return true
+    },
+    distilledProps: createPropChecker("distilledProps"),
+    strictProps: createPropChecker("strictProps")
+} satisfies {
+    [k in TraversalKey]: EntryChecker<k>
+}
+
+export type ValidationTraversalKey = Exclude<TraversalKey, "morph">
+
+export type EntryChecker<k extends TraversalKey> = (
+    constraint: TraversalValue<k>,
+    state: CompilationState<RuleData<k>>
+) => boolean
+
+export type TraversableData = Record<string | number, unknown>
+
+export type ConstrainedRuleTraversalData = extend<
+    { [k in TraversalKey]?: unknown },
+    {
+        regex: string
+        divisor: number
+        bound: SizedData
+        prerequisiteProp: TraversableData
+        optionalProp: TraversableData
+        requiredProp: TraversableData
+        indexProp: TraversableData
+        distilledProps: TraversableData
+        strictProps: TraversableData
+    }
+>
+
+export type RuleData<k extends TraversalKey> =
+    k extends keyof ConstrainedRuleTraversalData
+        ? ConstrainedRuleTraversalData[k]
+        : unknown

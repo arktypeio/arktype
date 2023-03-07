@@ -3,7 +3,7 @@ import type { EntryChecker } from "../../traverse/traverse.ts"
 import { sizeOf } from "../../utils/data.ts"
 import type { evaluate } from "../../utils/generics.ts"
 import { composeIntersection, equality } from "../compose.ts"
-import type { FlattenAndPushRule } from "./rules.ts"
+import type { RuleCompiler } from "./rules.ts"
 
 export type Range = DoubleBound | Bound<"==">
 
@@ -93,11 +93,7 @@ const maxAllows = (max: DoubleBound["max"], n: number) =>
 
 export type FlatBound = evaluate<Bound & { units?: string }>
 
-export const flattenRange: FlattenAndPushRule<Range> = (
-    entries,
-    range,
-    ctx
-) => {
+export const compileRange: RuleCompiler<Range> = (entries, range, ctx) => {
     const units =
         ctx.lastDomain === "string"
             ? "characters"

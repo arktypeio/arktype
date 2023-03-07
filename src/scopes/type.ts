@@ -1,4 +1,4 @@
-import type { Node, TraversalNode } from "../nodes/node.ts"
+import type { Node } from "../nodes/node.ts"
 import type { ParsedMorph } from "../parse/ast/morph.ts"
 import type {
     as,
@@ -7,7 +7,6 @@ import type {
 } from "../parse/definition.ts"
 import type { ProblemOptions } from "../traverse/problems.ts"
 import type { CheckResult, TraversalState } from "../traverse/traverse.ts"
-import { traverseRoot } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { defer, evaluate } from "../utils/generics.ts"
@@ -38,7 +37,6 @@ type TypeRoot<t = unknown> = evaluate<{
     traverse: CompiledTraversal
     check: Checker<t>
     node: Node
-    flat: TraversalNode
     qualifiedName: QualifiedTypeName
     definition: unknown
     scope: Scope
@@ -79,7 +77,6 @@ export const initializeType = (
         // temporarily initialize node/flat to aliases that will be included in
         // the final type in case of cyclic resolutions
         node: name,
-        flat: [["alias", name]],
         js: `${name}(data)`,
         check: (() =>
             throwInternalError(
@@ -108,7 +105,7 @@ export const initializeType = (
 
     // define within a key to dynamically assign a name to the function
     const namedTraverse = {
-        [name]: (data: unknown) => traverseRoot(namedTraverse as Type, data)
+        [name]: (data: unknown) => root.check(data)
     }[name]
 
     const t = Object.assign(namedTraverse, root)
