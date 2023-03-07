@@ -1,5 +1,4 @@
 import { AssertionError } from "node:assert"
-import { assert } from "node:console"
 import { describe, it } from "mocha"
 import { type } from "../../src/main.ts"
 import { ArkTypeError } from "../../src/traverse/problems.ts"

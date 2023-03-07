@@ -7,7 +7,6 @@ import type { evaluate, keySet } from "../utils/generics.ts"
 import { isKeyOf, keyCount, objectKeysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
-    defaultObjectKinds,
     getExactObjectKind,
     isArray,
     objectKindOf
