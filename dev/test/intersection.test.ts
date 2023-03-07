@@ -21,6 +21,12 @@ describe("intersection", () => {
                 "Must be a string matching /@arktype.io$/ (was 'shawn@arktype.oi')"
             )
         })
+        it("multiple valid types", () => {
+            const t = type("email&lowercase<5")
+            attest(t("ShawnArktype.io").problems?.summary).snap(
+                "'ShawnArktype.io' must be...\n• a string matching /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/\n• a string matching /^[a-z]*$/\n• less than 5 characters"
+            )
+        })
         it("several types", () => {
             const t = type("unknown&boolean&false")
             attest(t.infer).typed as false
@@ -75,6 +81,35 @@ describe("intersection", () => {
             }
             attest(t.node).snap({
                 object: { props: { a: "string", b: "boolean" } }
+            })
+        })
+        it("string type", () => {
+            const t = type([["string", "string"], "&", "alpha[]"])
+            attest(t.node).snap({
+                object: {
+                    class: "(function Array)",
+                    props: {
+                        "0": "alpha",
+                        "1": "alpha",
+                        length: ["!", { number: { value: 2 } }]
+                    }
+                }
+            })
+            attest(t(["1", 1]).problems?.summary).snap(
+                "Item at index 0 must be only letters (was '1')\nItem at index 1 must be only letters (was number)"
+            )
+        })
+        it("multiple types with union array", () => {
+            const t = type([["number", "string"], "&", "('one'|1)[]"])
+            attest(t.node).snap({
+                object: {
+                    class: "(function Array)",
+                    props: {
+                        "0": { number: { value: 1 } },
+                        "1": { string: { value: "one" } },
+                        length: ["!", { number: { value: 2 } }]
+                    }
+                }
             })
         })
         describe("errors", () => {

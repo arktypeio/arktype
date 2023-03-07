@@ -7,7 +7,7 @@ import type { evaluate, keySet } from "../utils/generics.ts"
 import { isKeyOf, keyCount, objectKeysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
-    defaultObjectKinds,
+    getExactConstructorObjectKind,
     isArray,
     objectKindOf
 } from "../utils/objectKinds.ts"
@@ -165,9 +165,11 @@ const pruneDiscriminant = (
         // check for branch keys, which must be traversed even if there are no
         // segments left
         if (k === "domains") {
+            /* c8 ignore start */
             if (keyCount(v) !== 1 || !v.object) {
                 return throwPruneFailure(discriminant)
             }
+            /* c8 ignore stop */
             pruneDiscriminant(v.object, segments, discriminant, ctx)
             return
         } else if (k === "switch") {
@@ -365,12 +367,7 @@ export const serializeDefinitionIfAllowed = <kind extends DiscriminantKind>(
         case "domain":
             return definition as Domain
         case "class":
-            const constructorName: string | undefined = Object(definition).name
-            return constructorName &&
-                isKeyOf(constructorName, defaultObjectKinds) &&
-                defaultObjectKinds[constructorName] === definition
-                ? constructorName
-                : undefined
+            return getExactConstructorObjectKind(definition)
         default:
             return
     }
