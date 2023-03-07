@@ -13,11 +13,6 @@ import {
     composeKeyedIntersection,
     equality
 } from "../compose.ts"
-import type {
-    CompilationContext,
-    TraversalEntry,
-    TraversalKey
-} from "../node.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorIntersection } from "./divisor.ts"

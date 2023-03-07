@@ -57,6 +57,7 @@
         "stringification",
         "subresult",
         "toggleable",
+        "tsbuildinfo",
         "typecheck",
         "typeof",
         "Unboundable",

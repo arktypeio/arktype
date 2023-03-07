@@ -16,6 +16,7 @@ import type { Type, TypeConfig } from "../scopes/type.ts"
 import type {
     ProblemCode,
     ProblemOptions,
+    ProblemSource,
     ProblemWriters
 } from "../traverse/problems.ts"
 import {
@@ -124,7 +125,10 @@ const compileTypeNode = (
         const domain = domains[0]
         const predicate = node[domain]!
         if (predicate === true) {
-            return `${negatedDomainChecks[domain]} && state.problems.add("domain", domain)`
+            return `${negatedDomainChecks[domain]} && ${state.precompileProblem(
+                "domain",
+                `"${domain}"`
+            )}`
         }
         return ""
         // const flatPredicate = compilePredicate(predicate, state)
@@ -154,7 +158,7 @@ const problemWriterKeys: readonly ProblemWriterKey[] = [
     "addContext"
 ]
 
-export class CompilationState<data = unknown> {
+export class CompilationState {
     path = new Path()
     failFast = false
     traversalConfig = initializeCompilationConfig()
@@ -162,6 +166,12 @@ export class CompilationState<data = unknown> {
 
     constructor(public type: Type) {
         this.rootScope = type.scope
+    }
+
+    precompileProblem<code extends ProblemCode>(code: code, source: string) {
+        return `state.addProblem("${code}", ${source}, [${this.path.join(
+            ", "
+        )}])`
     }
 
     getProblemConfig<code extends ProblemCode>(

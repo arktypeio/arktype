@@ -2,6 +2,13 @@ import type { Scope } from "../scopes/scope.ts"
 import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
 import type { xor } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
+import type {
+    ContextWriter,
+    MustBeWriter,
+    ProblemCode,
+    ProblemSource,
+    ReasonWriter
+} from "./problems.ts"
 import { Problems } from "./problems.ts"
 
 export const CheckResult = class {
@@ -18,6 +25,7 @@ export class TraversalState<data = unknown> {
     path = new Path()
     problems: Problems = new Problems(this)
     entriesToPrune: [data: Record<string, unknown>, key: string][] = []
+    config: TypeConfig
 
     readonly rootScope: Scope
 
@@ -25,18 +33,35 @@ export class TraversalState<data = unknown> {
 
     constructor(public data: data, public type: Type) {
         this.rootScope = type.scope
+        this.config = type.config
     }
 
-    // traverseConfig(configEntries: ConfigEntry[], node: TraversalNode) {
-    //     for (const entry of configEntries) {
-    //         this.traversalConfig[entry[0]].unshift(entry[1] as any)
-    //     }
-    //     const isValid = traverse(node, this)
-    //     for (const entry of configEntries) {
-    //         this.traversalConfig[entry[0]].shift()
-    //     }
-    //     return isValid
-    // }
+    addProblem<code extends ProblemCode>(
+        code: code,
+        source: ProblemSource<code>,
+        segments: string[]
+    ) {
+        return this.problems.addNew(
+            code,
+            this.path.concat(segments),
+            this.data,
+            source,
+            {
+                mustBe:
+                    this.config.mustBe ??
+                    (this.rootScope.config.codes[code]
+                        .mustBe as MustBeWriter<any>),
+                writeReason:
+                    this.config.writeReason ??
+                    (this.rootScope.config.codes[code]
+                        .writeReason as ReasonWriter<any>),
+                addContext:
+                    this.config.addContext ??
+                    (this.rootScope.config.codes[code]
+                        .addContext as ContextWriter)
+            }
+        )
+    }
 
     // traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {
     //     const lastData = this.data

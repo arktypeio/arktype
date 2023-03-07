@@ -17,7 +17,7 @@ Each character you type is statically parsed so you'll know exactly what to expe
 
 <!-- @snipStart:install -->
 
-## Install <sub><sub>📦`4KB` gzipped, `0` dependencies</sub></sub>
+## Install <sub><sub>📦`18KB` gzipped, `0` dependencies</sub></sub>
 
 <img src="./dev/arktype.io/static/img/npm.svg" alt="Npm Icon" height="16px" /> <code>npm install arktype</code>
 <sub>(or whatever package manager you prefer)</sub>

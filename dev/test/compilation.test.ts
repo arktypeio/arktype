@@ -6,7 +6,7 @@ describe("compilation", () => {
     it("compiles", () => {
         const t = type("string")
         attest(t.js).snap(
-            'typeof data === \'string\' ? data : state.problems.add("domain", "string")'
+            'typeof data !== "string" && state.addProblem("domain", "string", [])'
         )
         attest(t.check("foo")).snap({ data: "foo" })
         attest(t.check(5).problems?.summary).snap(

@@ -86,6 +86,10 @@ class ProblemArray extends Array<Problem> {
         return this.add("custom", description, opts)
     }
 
+    addNew(...args: ConstructorParameters<typeof Problem>) {
+        return this.addProblem(new Problem(...args))
+    }
+
     add<code extends ProblemCode>(
         code: code,
         source: ProblemSource<code>,
