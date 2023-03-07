@@ -16,6 +16,4 @@ if (!original) {
 }
 
 CovSource.prototype._parseIgnore = (lineStr) =>
-    lineStr.match(/throwInternalError|throwPruneFailure/)
-        ? { count: 1 }
-        : original(lineStr)
+    lineStr.match(/throwInternalError/) ? { count: 1 } : original(lineStr)

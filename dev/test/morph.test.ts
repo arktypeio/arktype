@@ -55,12 +55,13 @@ describe("morph", () => {
                     return 100 / n
                 } else {
                     problems.mustBe("non-zero")
+                    problems.byPath = {}
                     return (problems as unknown as Problem[]).pop()
                 }
             }
         ])
         attest(divide100By(0).problems?.summary).snap(
-            "0 must be...\n• non-zero\n• non-zero"
+            "Must be non-zero (was 0)"
         )
     })
     it("at path", () => {
