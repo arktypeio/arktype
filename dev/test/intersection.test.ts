@@ -21,6 +21,12 @@ describe("intersection", () => {
                 "Must be a string matching /@arktype.io$/ (was 'shawn@arktype.oi')"
             )
         })
+        it("multiple valid types", () => {
+            const t = type("email&lowercase<5")
+            attest(t("ShawnArktype.io").problems?.summary).snap(
+                "'ShawnArktype.io' must be...\n• a string matching /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/\n• a string matching /^[a-z]*$/\n• less than 5 characters"
+            )
+        })
         it("several types", () => {
             const t = type("unknown&boolean&false")
             attest(t.infer).typed as false

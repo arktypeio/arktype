@@ -147,10 +147,6 @@ describe("keywords", () => {
             attest(email("shawn@email").problems?.summary).snap(
                 "Must be a valid email (was 'shawn@email')"
             )
-            const t = type("email&lowercase<5")
-            attest(t("ShawnArktype.io").problems?.summary).snap(
-                "'ShawnArktype.io' must be...\n• a string matching /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/\n• a string matching /^[a-z]*$/\n• less than 5 characters"
-            )
         })
         it("uuid", () => {
             const uuid = type("uuid")
