@@ -1,4 +1,3 @@
-import type { DiscriminatedSwitch } from "../compile/discriminate.ts"
 import { compileDisjointReasonsMessage } from "../parse/ast/intersection.ts"
 import type { ParseContext } from "../parse/definition.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
@@ -23,6 +22,7 @@ import {
     isEquality,
     undefinedOperandsMessage
 } from "./compose.ts"
+import type { DiscriminatedSwitch } from "./discriminate.ts"
 import type { Predicate } from "./predicate.ts"
 import {
     flattenPredicate,

@@ -1,13 +1,3 @@
-import type { Branch, Branches } from "../nodes/branch.ts"
-import { branchIntersection, flattenBranch } from "../nodes/branch.ts"
-import { IntersectionState } from "../nodes/compose.ts"
-import type {
-    FlattenContext,
-    Node,
-    TraversalEntry,
-    TraversalValue
-} from "../nodes/node.ts"
-import { mappedKeys, propToNode } from "../nodes/rules/props.ts"
 import { writeUndiscriminatableMorphUnionMessage } from "../parse/ast/union.ts"
 import type { Scope } from "../scopes/scope.ts"
 import type { Domain } from "../utils/domains.ts"
@@ -27,6 +17,16 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
+import type { Branch, Branches } from "./branch.ts"
+import { branchIntersection, flattenBranch } from "./branch.ts"
+import { IntersectionState } from "./compose.ts"
+import type {
+    FlattenContext,
+    Node,
+    TraversalEntry,
+    TraversalValue
+} from "./node.ts"
+import { mappedKeys, propToNode } from "./rules/props.ts"
 
 export type DiscriminatedSwitch<
     kind extends DiscriminantKind = DiscriminantKind

@@ -1,4 +1,4 @@
-import { serializeCase } from "../compile/discriminate.ts"
+import { serializeCase } from "../nodes/discriminate.ts"
 import type {
     ConfigEntry,
     TraversalEntry,

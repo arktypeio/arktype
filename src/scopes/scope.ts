@@ -1,4 +1,3 @@
-import { compileType } from "../compile/compile.ts"
 import type { Node, ResolvedNode, TypeNode } from "../nodes/node.ts"
 import { flattenType, isConfigNode } from "../nodes/node.ts"
 import type { ConfigTuple } from "../parse/ast/config.ts"
@@ -311,7 +310,7 @@ export class Scope<context extends ScopeContext = any> {
         }
         t.node = deepFreeze(node)
         t.flat = deepFreeze(flattenType(t))
-        t.js = compileType(t)
+        t.js = ""
         t.traverse = finalizeTraversal(t.name, t.js)
         t.check = (data) => {
             const state = new TraversalState(data, t)
@@ -384,7 +383,7 @@ export class Scope<context extends ScopeContext = any> {
                     : root
             )
             t.flat = deepFreeze(flattenType(t))
-            t.js = compileType(t)
+            t.js = ""
             // TODO: refactor
             t.traverse = finalizeTraversal(t.name, t.js)
             t.check = (data) => {

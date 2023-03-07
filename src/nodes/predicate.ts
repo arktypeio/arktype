@@ -1,4 +1,3 @@
-import { flattenBranches } from "../compile/discriminate.ts"
 import type { Type } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
 import type { CollapsibleList, Dict } from "../utils/generics.ts"
@@ -13,6 +12,7 @@ import {
 } from "./branch.ts"
 import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
 import { equality, IntersectionState, isEquality } from "./compose.ts"
+import { flattenBranches } from "./discriminate.ts"
 import type { FlattenContext, TraversalEntry, TypeNode } from "./node.ts"
 import type { LiteralRules } from "./rules/rules.ts"
 
