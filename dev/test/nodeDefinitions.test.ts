@@ -118,6 +118,10 @@ describe("node definitions", () => {
             }
         >
     })
+    it("never", () => {
+        const t = type(["node", {}])
+        attest(t({}).problems?.summary).snap("Must be never (was {})")
+    })
     it("doesn't evaluate builtins", () => {
         const t = type([
             "node",

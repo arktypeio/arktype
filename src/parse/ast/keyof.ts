@@ -62,12 +62,11 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
             keyNode.string!.push(arrayIndexStringBranch)
             keyNode.number ??= []
             keyNode.number.push(arrayIndexNumberBranch)
-        } /* c8 ignore start*/ else {
+        } else {
             return throwInternalError(
                 `Unexpected keyof key '${stringify(key)}'`
             )
         }
-        /* c8 ignore stop*/
     }
 
     return Object.fromEntries(

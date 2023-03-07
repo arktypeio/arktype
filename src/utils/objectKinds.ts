@@ -1,5 +1,6 @@
 import { domainOf } from "./domains.ts"
 import type { constructor, instanceOf, isTopType } from "./generics.ts"
+import { isKeyOf } from "./generics.ts"
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
@@ -119,3 +120,16 @@ export const objectKindDescriptions = {
     WeakMap: "a WeakMap",
     WeakSet: "a WeakSet"
 } as const satisfies Record<DefaultObjectKind, string>
+
+// this will only return an object kind if it's the root constructor
+// example TypeError would return undefined not 'Error'
+export const getExactConstructorObjectKind = (
+    constructor: unknown
+): DefaultObjectKind | undefined => {
+    const constructorName: string | undefined = Object(constructor).name
+    return constructorName &&
+        isKeyOf(constructorName, defaultObjectKinds) &&
+        defaultObjectKinds[constructorName] === constructor
+        ? constructorName
+        : undefined
+}
