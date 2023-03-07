@@ -69,5 +69,20 @@ describe("parse array", () => {
                 writeUnresolvableMessage("hmm")
             )
         })
+        it("from node definition without class rule", () => {
+            const t = type([
+                "node",
+                {
+                    object: {
+                        props: {
+                            "[index]": { number: true }
+                        }
+                    }
+                }
+            ])
+            attest(t({}).problems?.summary).snap(
+                "Must be an array (was Object)"
+            )
+        })
     })
 })

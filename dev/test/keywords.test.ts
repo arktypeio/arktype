@@ -4,20 +4,51 @@ import { attest } from "../attest/main.ts"
 
 describe("keywords", () => {
     describe("js", () => {
-        it("Function", () => {
-            attest(type("Function").node).snap("Function")
+        it(" Function", () => {
+            const t = type("Function")
+            attest(t.node).snap("Function")
+            attest(t((str: string) => [str]).data).snap("(function)")
+            attest(t(1).problems?.summary).snap(
+                "Must be a function (was Number)"
+            )
+        })
+        it("Array", () => {
             attest(type("Array").node).snap("Array")
+        })
+        it("Date", () => {
             attest(type("Date").node).snap("Date")
+        })
+        it("Error", () => {
             attest(type("Error").node).snap("Error")
+        })
+        it("Map", () => {
             attest(type("Map").node).snap("Map")
+        })
+        it("RegExp", () => {
             attest(type("RegExp").node).snap("RegExp")
+        })
+        it("Set", () => {
             attest(type("Set").node).snap("Set")
+        })
+        it("Object", () => {
             attest(type("Object").node).snap("Object")
+        })
+        it("String", () => {
             attest(type("String").node).snap("String")
+        })
+        it("Number", () => {
             attest(type("Number").node).snap("Number")
+        })
+        it("Boolean", () => {
             attest(type("Boolean").node).snap("Boolean")
+        })
+        it("WeakMap", () => {
             attest(type("WeakMap").node).snap("WeakMap")
+        })
+        it("WeakSet", () => {
             attest(type("WeakSet").node).snap("WeakSet")
+        })
+        it("Promise", () => {
             attest(type("Promise").node).snap("Promise")
         })
     })

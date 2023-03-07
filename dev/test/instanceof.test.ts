@@ -11,9 +11,7 @@ describe("instanceof", () => {
         attest(t.flat).equals([["class", Error]])
         const e = new Error()
         attest(t(e).data).equals(e)
-        attest(t({}).problems?.summary).snap(
-            "Must be an instance of Error (was Object)"
-        )
+        attest(t({}).problems?.summary).snap("Must be an Error (was Object)")
     })
     it("inherited", () => {
         const t = type(["instanceof", TypeError])
