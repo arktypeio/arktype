@@ -1,7 +1,7 @@
-import type { EntryChecker } from "../../traverse/traverse.ts"
 import type { constructor } from "../../utils/generics.ts"
 import { objectKindOf } from "../../utils/objectKinds.ts"
 import { composeIntersection, equality } from "../compose.ts"
+import type { RuleCompiler } from "./rules.ts"
 
 export const classIntersection = composeIntersection<constructor>(
     (l, r, state) => {
@@ -15,15 +15,10 @@ export const classIntersection = composeIntersection<constructor>(
     }
 )
 
-export const checkClass: EntryChecker<"class"> = (expectedClass, state) => {
-    if (typeof expectedClass === "string") {
-        return (
-            objectKindOf(state.data) === expectedClass ||
-            !state.problems.add("class", expectedClass)
-        )
-    }
-    return (
-        state.data instanceof expectedClass ||
-        !state.problems.add("class", expectedClass)
-    )
-}
+export const compileClassCheck: RuleCompiler<constructor> = (expected, state) =>
+    `data instanceof expected` as const
+
+// return (
+//     state.data instanceof expectedClass ||
+//     !state.problems.add("class", expectedClass)
+// )

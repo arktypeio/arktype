@@ -73,7 +73,7 @@
     ],
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "typescript.tsdk": "./node_modules/typescript/lib",
-    "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+    "typescript.tsserver.experimental.enableProjectDiagnostics": true,
     // temporarily disabled until .ts suffixes are preserved
     "typescript.updateImportsOnFileMove.enabled": "never",
     "prettier.ignorePath": "dev/configs/.prettierignore",

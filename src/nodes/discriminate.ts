@@ -19,13 +19,9 @@ import type {
 import { serializePrimitive } from "../utils/serialize.ts"
 import type { Branch, Branches } from "./branch.ts"
 import { branchIntersection, compileBranch } from "./branch.ts"
+import type { CompilationState } from "./compile.ts"
 import { IntersectionState } from "./compose.ts"
-import type {
-    CompilationContext,
-    Node,
-    TraversalEntry,
-    TraversalValue
-} from "./node.ts"
+import type { Node } from "./node.ts"
 import { mappedKeys, propToNode } from "./rules/props.ts"
 
 export type DiscriminatedSwitch<
@@ -47,11 +43,11 @@ export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 
 export const compileBranches = (
     branches: Branches,
-    ctx: CompilationContext
+    state: CompilationState
 ) => {
-    const discriminants = calculateDiscriminants(branches, ctx)
+    const discriminants = calculateDiscriminants(branches, state)
     const indices = branches.map((_, i) => i)
-    return discriminate(branches, indices, discriminants, ctx)
+    return discriminate(branches, indices, discriminants, state)
 }
 
 type IndexCases = {
@@ -66,8 +62,8 @@ const discriminate = (
     originalBranches: Branches,
     remainingIndices: number[],
     discriminants: Discriminants,
-    ctx: CompilationContext
-): TraversalEntry[] => {
+    ctx: CompilationState
+): string => {
     if (remainingIndices.length === 1) {
         return compileBranch(originalBranches[remainingIndices[0]], ctx)
     }
@@ -125,7 +121,7 @@ const pruneDiscriminant = (
     entries: TraversalEntry[],
     segments: string[],
     discriminant: Discriminant,
-    ctx: CompilationContext
+    ctx: CompilationState
 ) => {
     for (let i = 0; i < entries.length; i++) {
         const [k, v] = entries[i]
@@ -224,7 +220,7 @@ export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 const calculateDiscriminants = (
     branches: Branches,
-    ctx: CompilationContext
+    ctx: CompilationState
 ): Discriminants => {
     const discriminants: Discriminants = {
         disjointsByPair: {},

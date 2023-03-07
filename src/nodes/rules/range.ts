@@ -1,5 +1,4 @@
 import type { Scanner } from "../../parse/string/shift/scanner.ts"
-import type { EntryChecker } from "../../traverse/traverse.ts"
 import { sizeOf } from "../../utils/data.ts"
 import type { evaluate } from "../../utils/generics.ts"
 import { composeIntersection, equality } from "../compose.ts"
@@ -93,11 +92,31 @@ const maxAllows = (max: DoubleBound["max"], n: number) =>
 
 export type FlatBound = evaluate<Bound & { units?: string }>
 
-export const compileRange: RuleCompiler<Range> = (entries, range, ctx) => {
+export const compileRange: RuleCompiler<Range> = (range, state) => {
+    const sizeIsAllowed = isEqualityRange(range)
+        ? (`size === ${range.limit}` as const)
+        : range.min
+        ? range.max
+            ? (`(size ${range.min.comparator} ${range.min.limit} && size ${range.max.comparator} ${range.max.limit})` as const)
+            : (`size ${range.min.comparator} ${range.min.limit}` as const)
+        : range.max
+        ? (`size ${range.max.comparator} ${range.max.limit}` as const)
+        : undefined
+    if (!sizeIsAllowed) {
+        return ""
+    }
+    const assignSize =
+        `const size = typeof data === "number" ? data : data.length` as const
+    return `${assignSize};${sizeIsAllowed} || !${state.precompileProblem(
+        "bound"
+    )}`
+}
+
+{
     const units =
-        ctx.lastDomain === "string"
+        state.lastDomain === "string"
             ? "characters"
-            : ctx.lastDomain === "object"
+            : state.lastDomain === "object"
             ? "items long"
             : undefined
     if (isEqualityRange(range)) {

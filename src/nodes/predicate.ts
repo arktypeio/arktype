@@ -10,10 +10,11 @@ import {
     compileBranch,
     isBranchComparison
 } from "./branch.ts"
+import type { CompilationState } from "./compile.ts"
 import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
 import { equality, IntersectionState, isEquality } from "./compose.ts"
 import { compileBranches } from "./discriminate.ts"
-import type { CompilationContext, TraversalEntry, DomainsNode } from "./node.ts"
+import type { DomainsNode } from "./node.ts"
 import type { LiteralRules } from "./rules/rules.ts"
 
 /** If scope is provided, we also narrow each predicate to match its domain.
@@ -139,14 +140,14 @@ export const predicateUnion = (
 
 export const compilePredicate = (
     predicate: Predicate,
-    context: CompilationContext
-): TraversalEntry[] => {
+    state: CompilationState
+): string => {
     if (predicate === true) {
         return []
     }
     return isArray(predicate)
-        ? compileBranches(predicate, context)
-        : compileBranch(predicate, context)
+        ? compileBranches(predicate, state)
+        : compileBranch(predicate, state)
 }
 
 export const isLiteralCondition = (

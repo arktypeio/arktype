@@ -110,12 +110,12 @@ export const narrowableRulesIntersection =
 
 export const compileRules = (
     rules: UnknownRules,
-    ctx: CompilationContext
-): TraversalEntry[] => {
+    state: CompilationState
+): string => {
     const entries: RuleEntry[] = []
     let k: keyof UnknownRules
     for (k in rules) {
-        ruleFlatteners[k](entries, rules[k] as any, ctx)
+        ruleCompilers[k](entries, rules[k] as any, state)
     }
     // Some entries with the same precedence, e.g. morphs compiled from a list,
     // rely on the fact that JS's builtin sort is stable to behave as expected
@@ -128,7 +128,7 @@ export type RuleCompiler<t> = (rule: t, state: CompilationState) => string
 
 type UnknownRules = NarrowableRules & Partial<LiteralRules>
 
-const ruleFlatteners: {
+const ruleCompilers: {
     [k in keyof UnknownRules]-?: RuleCompiler<UnknownRules[k] & {}>
 } = {
     regex: (entries, rule) => {
@@ -154,38 +154,38 @@ const ruleFlatteners: {
     }
 }
 
-export const precedenceMap: {
-    readonly [k in TraversalKey]: number
-} = {
-    // Config: Applies before any checks
-    config: -1,
-    // Critical: No other checks are performed if these fail
-    domain: 0,
-    value: 0,
-    domains: 0,
-    branches: 0,
-    switch: 0,
-    alias: 0,
-    class: 0,
-    // Shallow: All shallow checks will be performed even if one or more fail
-    regex: 1,
-    divisor: 1,
-    bound: 1,
-    // Prerequisite: These are deep checks with special priority, e.g. the
-    // length of a tuple, which causes other deep props not to be checked if it
-    // is invalid
-    prerequisiteProp: 2,
-    // Deep: Performed if all shallow checks pass, even if one or more deep checks fail
-    distilledProps: 3,
-    strictProps: 3,
-    requiredProp: 3,
-    optionalProp: 3,
-    indexProp: 3,
-    // Narrow: Only performed if all shallow and deep checks pass
-    narrow: 4,
-    // Morph: Only performed if all validation passes
-    morph: 5
-}
+// export const precedenceMap: {
+//     readonly [k in TraversalKey]: number
+// } = {
+//     // Config: Applies before any checks
+//     config: -1,
+//     // Critical: No other checks are performed if these fail
+//     domain: 0,
+//     value: 0,
+//     domains: 0,
+//     branches: 0,
+//     switch: 0,
+//     alias: 0,
+//     class: 0,
+//     // Shallow: All shallow checks will be performed even if one or more fail
+//     regex: 1,
+//     divisor: 1,
+//     bound: 1,
+//     // Prerequisite: These are deep checks with special priority, e.g. the
+//     // length of a tuple, which causes other deep props not to be checked if it
+//     // is invalid
+//     prerequisiteProp: 2,
+//     // Deep: Performed if all shallow checks pass, even if one or more deep checks fail
+//     distilledProps: 3,
+//     strictProps: 3,
+//     requiredProp: 3,
+//     optionalProp: 3,
+//     indexProp: 3,
+//     // Narrow: Only performed if all shallow and deep checks pass
+//     narrow: 4,
+//     // Morph: Only performed if all validation passes
+//     morph: 5
+// }
 
 export const literalSatisfiesRules = (
     data: unknown,

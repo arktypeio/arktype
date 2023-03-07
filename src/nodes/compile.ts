@@ -1,7 +1,6 @@
-import type { DiscriminatedSwitch } from "../nodes/discriminate.ts"
 import { serializeCase } from "../nodes/discriminate.ts"
-import { checkClass } from "../nodes/rules/class.ts"
-import { checkDivisor } from "../nodes/rules/divisor.ts"
+import { compileClassCheck } from "../nodes/rules/class.ts"
+import { compileDivisorCheck } from "../nodes/rules/divisor.ts"
 import type {
     PropsRecordEntry,
     PropsRecordKey,
@@ -9,87 +8,33 @@ import type {
 } from "../nodes/rules/props.ts"
 import { checkBound } from "../nodes/rules/range.ts"
 import { checkRegex } from "../nodes/rules/regex.ts"
-import type { RuleEntry } from "../nodes/rules/rules.ts"
 import { precedenceMap } from "../nodes/rules/rules.ts"
 import type { Scope } from "../scopes/scope.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type {
     ProblemCode,
     ProblemOptions,
-    ProblemSource,
     ProblemWriters
 } from "../traverse/problems.ts"
 import {
     domainsToDescriptions,
     objectKindsToDescriptions,
-    Problem,
-    Problems
+    Problem
 } from "../traverse/problems.ts"
 import type { SizedData } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
-import { domainOf, hasDomain } from "../utils/domains.ts"
+import { domainOf } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
-import type {
-    entryOf,
-    extend,
-    mutable,
-    stringKeyOf
-} from "../utils/generics.ts"
+import type { extend } from "../utils/generics.ts"
 import { entriesOf, hasKey, objectKeysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { getPath, Path } from "../utils/paths.ts"
-import type { MorphEntry } from "./branch.ts"
 import type { ConfigNode, DomainsNode, Node } from "./node.ts"
 import { isConfigNode } from "./node.ts"
-import { compilePredicate } from "./predicate.ts"
 
-export type TraversalNode = string
-
-export type TraversalKey = TraversalEntry[0]
-
-export type TraversalValue<k extends TraversalKey> = Extract<
-    TraversalEntry,
-    [k, unknown]
->[1]
-
-export type TraversalEntry =
-    | RuleEntry
-    | DomainsEntry
-    | MorphEntry
-    | AliasEntry
-    | DomainEntry
-    | BranchesEntry
-    | SwitchEntry
-    | TraversalConfigEntry
-
-export type AliasEntry = ["alias", string]
-
-export type ConfigEntry = entryOf<TypeConfig>
-
-export type TraversalConfigEntry = [
-    "config",
-    {
-        config: ConfigEntry[]
-        node: TraversalNode
-    }
-]
-
-export type DomainEntry = ["domain", Domain]
-
-const hasImpliedDomain = (flatPredicate: TraversalEntry[]) =>
-    flatPredicate[0] &&
-    (flatPredicate[0][0] === "value" || flatPredicate[0][0] === "class")
-
-export type DomainsEntry = [
-    "domains",
-    {
-        readonly [domain in Domain]?: TraversalEntry[]
-    }
-]
-
-export type BranchesEntry = ["branches", TraversalEntry[][]]
-
-export type SwitchEntry = ["switch", DiscriminatedSwitch]
+// const hasImpliedDomain = (flatPredicate: TraversalEntry[]) =>
+//     flatPredicate[0] &&
+//     (flatPredicate[0][0] === "value" || flatPredicate[0][0] === "class")
 
 export const compileType = (type: Type) => {
     const state = new CompilationState(type)
@@ -116,10 +61,7 @@ const negatedDomainChecks = {
     undefined: `data !== undefined`
 } as const satisfies Record<Domain, string>
 
-const compileTypeNode = (
-    node: DomainsNode,
-    state: CompilationState
-): TraversalNode => {
+const compileTypeNode = (node: DomainsNode, state: CompilationState) => {
     const domains = objectKeysOf(node)
     if (domains.length === 1) {
         const domain = domains[0]
@@ -136,10 +78,10 @@ const compileTypeNode = (
         //     ? flatPredicate
         //     : [["domain", domain], ...flatPredicate]
     }
-    const result: mutable<DomainsEntry[1]> = {}
-    for (const domain of domains) {
-        result[domain] = compilePredicate(node[domain]!, state)
-    }
+    // const result = {}
+    // for (const domain of domains) {
+    //     result[domain] = compilePredicate(node[domain]!, state)
+    // }
     return "" //[["domains", result]]
 }
 
@@ -168,10 +110,13 @@ export class CompilationState {
         this.rootScope = type.scope
     }
 
-    precompileProblem<code extends ProblemCode>(code: code, source: string) {
+    precompileProblem<code extends ProblemCode, source extends string>(
+        code: code,
+        source: source
+    ) {
         return `state.addProblem("${code}", ${source}, [${this.path.join(
             ", "
-        )}])`
+        )}])` as const
     }
 
     getProblemConfig<code extends ProblemCode>(
@@ -275,14 +220,6 @@ export type TraversalConfig = {
     [k in keyof TypeConfig]-?: TypeConfig[k][]
 }
 
-export const traverse = (
-    node: TraversalNode,
-    state: CompilationState
-): boolean =>
-    typeof node === "string"
-        ? domainOf(state.data) === node || !state.problems.add("domain", node)
-        : checkEntries(node, state)
-
 export const checkEntries = (
     entries: TraversalEntry[],
     state: CompilationState
@@ -374,7 +311,7 @@ const createPropChecker =
 
 const entryCheckers = {
     regex: checkRegex,
-    divisor: checkDivisor,
+    divisor: compileDivisorCheck,
     domains: (domains, state) => {
         const entries = domains[domainOf(state.data)]
         return entries
@@ -440,7 +377,7 @@ const entryCheckers = {
         return false
     },
     alias: (name, state) => state.traverseResolution(name),
-    class: checkClass,
+    class: compileClassCheck,
     narrow: (narrow, state) => {
         const lastProblemsCount = state.problems.count
         const result = narrow(state.data, state.problems)
@@ -482,13 +419,6 @@ const entryCheckers = {
 } satisfies {
     [k in TraversalKey]: EntryChecker<k>
 }
-
-export type ValidationTraversalKey = Exclude<TraversalKey, "morph">
-
-export type EntryChecker<k extends TraversalKey> = (
-    constraint: TraversalValue<k>,
-    state: CompilationState<RuleData<k>>
-) => boolean
 
 export type TraversableData = Record<string | number, unknown>
 

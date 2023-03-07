@@ -5,9 +5,9 @@ import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import type { CollapsibleList, Dict } from "../utils/generics.ts"
+import type { CompilationState } from "./compile.ts"
 import type { IntersectionState, Intersector } from "./compose.ts"
 import { isDisjoint, isEquality } from "./compose.ts"
-import type { CompilationContext } from "./node.ts"
 import type { PredicateComparison } from "./predicate.ts"
 import type { Rules } from "./rules/rules.ts"
 import { compileRules, rulesIntersection } from "./rules/rules.ts"
@@ -117,9 +117,9 @@ export const compareBranches = (
 export const isTransformationBranch = (branch: Branch): branch is MetaBranch =>
     "rules" in branch
 
-export const compileBranch = (branch: Branch, ctx: CompilationContext) => {
+export const compileBranch = (branch: Branch, state: CompilationState) => {
     if (isTransformationBranch(branch)) {
-        const result = compileRules(branch.rules, ctx)
+        const result = compileRules(branch.rules, state)
         if (branch.morph) {
             if (typeof branch.morph === "function") {
                 result.push(["morph", branch.morph])
@@ -131,7 +131,7 @@ export const compileBranch = (branch: Branch, ctx: CompilationContext) => {
         }
         return result
     }
-    return compileRules(branch, ctx)
+    return compileRules(branch, state)
 }
 
 const rulesOf = (branch: Branch): Rules =>

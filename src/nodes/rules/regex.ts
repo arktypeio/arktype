@@ -1,7 +1,7 @@
-import type { EntryChecker } from "../../traverse/traverse.ts"
 import type { CollapsibleList } from "../../utils/generics.ts"
 import { composeIntersection } from "../compose.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
+import type { RuleCompiler } from "./rules.ts"
 
 const regexCache: Record<string, RegExp> = {}
 
@@ -12,9 +12,11 @@ export const getRegex = (source: string) => {
     return regexCache[source]
 }
 
-export const checkRegex: EntryChecker<"regex"> = (source, state) =>
-    getRegex(source).test(state.data) ||
-    !state.problems.add("regex", `/${source}/`)
+export const checkRegex: RuleCompiler<string> = (source, state) =>
+    `/${source}/.test(data) || !${state.precompileProblem(
+        "regex",
+        source
+    )}` as const
 
 export const regexIntersection = composeIntersection<CollapsibleList<string>>(
     collapsibleListUnion<string>

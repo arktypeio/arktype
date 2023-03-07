@@ -1,5 +1,5 @@
-import type { EntryChecker } from "../../traverse/traverse.ts"
 import { composeIntersection, equality } from "../compose.ts"
+import type { RuleCompiler } from "./rules.ts"
 
 export const divisorIntersection = composeIntersection<number>(
     (l: number, r: number) =>
@@ -19,5 +19,8 @@ const greatestCommonDivisor = (l: number, r: number) => {
     return greatestCommonDivisor
 }
 
-export const checkDivisor: EntryChecker<"divisor"> = (divisor, state) =>
-    state.data % divisor === 0 || !state.problems.add("divisor", divisor)
+export const compileDivisorCheck = ((divisor, state) =>
+    `data % ${divisor} === 0 || !${state.precompileProblem(
+        "divisor",
+        `${divisor}`
+    )}` as const) satisfies RuleCompiler<number>
