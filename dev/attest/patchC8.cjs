@@ -15,5 +15,68 @@ if (!original) {
     )
 }
 
-CovSource.prototype._parseIgnore = (lineStr) =>
-    lineStr.match(/throwInternalError/) ? { count: 1 } : original(lineStr)
+const bracketMatcher = {
+    "}": "{",
+    "]": "[",
+    ")": "("
+}
+
+let currentlyUnbalanced = false
+const stack = []
+const possibleOpenBrackets = Object.values(bracketMatcher)
+const possibleCloseBrackets = Object.keys(bracketMatcher)
+// Added ( for the script to skip over imports
+const throwInternalRegex = /throwInternal.*\(/
+
+CovSource.prototype._parseIgnore = (lineStr) => {
+    if (throwInternalRegex.test(lineStr) || currentlyUnbalanced) {
+        if (isBalanced(lineStr)) {
+            currentlyUnbalanced = false
+        }
+        return { count: 1 }
+    } else {
+        return original(lineStr)
+    }
+}
+
+const isBalanced = (lineStr) => {
+    const filteredMatchers = lineStr
+        .split(" ")
+        .filter(
+            (section) =>
+                throwInternalRegex.test(section) |
+                possibleOpenBrackets.some((bracket) =>
+                    section.includes(bracket)
+                ) |
+                possibleCloseBrackets.some((bracket) =>
+                    section.includes(bracket)
+                ) |
+                false
+        )
+
+    for (let match of filteredMatchers) {
+        if (throwInternalRegex.test(match)) {
+            currentlyUnbalanced = true
+        }
+        for (let position = 0; position < match.length; position++) {
+            const section = match[position]
+            if (
+                possibleOpenBrackets.some((bracket) =>
+                    section.includes(bracket)
+                ) ||
+                possibleCloseBrackets.some((bracket) =>
+                    section.includes(bracket)
+                )
+            ) {
+                for (let char of section) {
+                    if (possibleOpenBrackets.includes(char)) {
+                        stack.push(char)
+                    } else if (bracketMatcher[char]) {
+                        stack.pop()
+                    }
+                }
+            }
+        }
+    }
+    return !stack.length
+}
