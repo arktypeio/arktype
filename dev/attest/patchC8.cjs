@@ -15,23 +15,17 @@ if (!original) {
     )
 }
 
-const bracketMatcher = {
-    "}": "{",
-    "]": "[",
-    ")": "("
-}
-
-let currentlyUnbalanced = false
+let inThrowInternalCall = false
 const stack = []
-const possibleOpenBrackets = Object.values(bracketMatcher)
-const possibleCloseBrackets = Object.keys(bracketMatcher)
-// Added ( for the script to skip over imports
 const throwInternalRegex = /throwInternal.*\(/
 
 CovSource.prototype._parseIgnore = (lineStr) => {
-    if (throwInternalRegex.test(lineStr) || currentlyUnbalanced) {
+    if (throwInternalRegex.test(lineStr)) {
+        inThrowInternalCall = true
+    }
+    if (inThrowInternalCall) {
         if (isBalanced(lineStr)) {
-            currentlyUnbalanced = false
+            inThrowInternalCall = false
         }
         return { count: 1 }
     } else {
@@ -45,35 +39,19 @@ const isBalanced = (lineStr) => {
         .filter(
             (section) =>
                 throwInternalRegex.test(section) |
-                possibleOpenBrackets.some((bracket) =>
-                    section.includes(bracket)
-                ) |
-                possibleCloseBrackets.some((bracket) =>
-                    section.includes(bracket)
-                ) |
+                section.includes("(") |
+                section.includes(")") |
                 false
         )
 
     for (let match of filteredMatchers) {
-        if (throwInternalRegex.test(match)) {
-            currentlyUnbalanced = true
-        }
         for (let position = 0; position < match.length; position++) {
             const section = match[position]
-            if (
-                possibleOpenBrackets.some((bracket) =>
-                    section.includes(bracket)
-                ) ||
-                possibleCloseBrackets.some((bracket) =>
-                    section.includes(bracket)
-                )
-            ) {
-                for (let char of section) {
-                    if (possibleOpenBrackets.includes(char)) {
-                        stack.push(char)
-                    } else if (bracketMatcher[char]) {
-                        stack.pop()
-                    }
+            for (let char of section) {
+                if (char === "(") {
+                    stack.push(char)
+                } else if (char === ")") {
+                    stack.pop()
                 }
             }
         }
