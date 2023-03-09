@@ -82,7 +82,7 @@ You can also run any of these commands individually:
 
 All of these commands will run as part of our CI process and must succeed in order for us to accept your Pull Request.
 
-The new ".ts" extension resolution in TS 5.0 in conjunction with our [import map settings](./deno.jsonc) allows us to support editing the same source using either standard Node tooling or via Deno. Since `arktype` has no dependencies, you generally shouldn't have to worry about compatibility, but you will need to at least [install Deno](https://deno.land/manual/getting_started/installation) to make sure the tests pass there, too.
+The new ".ts" extension resolution in TS 5.0 in conjunction with our [import map settings](./deno.jsonc) allows us to support editing the same source using either standard Node tooling or via Deno. Since `arktype` has no dependencies, you generally shouldn't have to worry about compatibility. If you want to make sure the tests pass in Deno before running them in CI, you will need to [install Deno](https://deno.land/manual/getting_started/installation). If you don't want to install Deno or prefer to live dangerously, move on to the next step and await the results of our CI 🎲
 
 8. Once everything is passing, commit your changes and ensure your fork is up to date:
 
@@ -96,7 +96,7 @@ The core team is monitoring for Pull Requests. We will review your Pull Request 
 
 ## Project
 
-Our current and planned work can always be found [here](https://github.com/arktypeio/arktype/projects/1). If you want to contribute but aren't sure where to get started, see if any of the issues in our backlog sound interesting! Not all are well-documented, so it usually makes sense to comment on the issue with any questions you may have before you start coding.
+Our current and planned work can always be found [here](https://github.com/orgs/arktypeio/projects/4). If you want to contribute but aren't sure where to get started, see if any of the issues in our backlog sound interesting! Most are not well-documented, so it usually makes sense to comment on the issue with any questions you may have before you start coding.
 
 ## Code of Conduct
 
