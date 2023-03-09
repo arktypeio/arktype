@@ -2,13 +2,6 @@ import type { Scope } from "../scopes/scope.ts"
 import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
 import type { xor } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import type {
-    DescribeRequirement,
-    ProblemCode,
-    ProblemContext,
-    WriteContext,
-    WriteReason
-} from "./problems.ts"
 import { Problems } from "./problems.ts"
 
 export const CheckResult = class {
@@ -34,33 +27,6 @@ export class TraversalState<data = unknown> {
     constructor(public data: data, public type: Type) {
         this.rootScope = type.scope
         this.config = type.config
-    }
-
-    addProblem<code extends ProblemCode>(
-        code: code,
-        source: ProblemContext<code>,
-        segments: string[]
-    ) {
-        return this.problems.addNew(
-            code,
-            this.path.concat(segments),
-            this.data,
-            source,
-            {
-                mustBe:
-                    this.config.mustBe ??
-                    (this.rootScope.config.codes[code]
-                        .mustBe as DescribeRequirement<any>),
-                writeReason:
-                    this.config.writeReason ??
-                    (this.rootScope.config.codes[code]
-                        .writeReason as WriteReason<any>),
-                addContext:
-                    this.config.addContext ??
-                    (this.rootScope.config.codes[code]
-                        .addContext as WriteContext)
-            }
-        )
     }
 
     // traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {

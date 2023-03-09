@@ -1,17 +1,19 @@
 import type { Scanner } from "../../parse/string/shift/scanner.ts"
-import { sizeOf } from "../../utils/data.ts"
 import type { evaluate } from "../../utils/generics.ts"
+import type { CompilationState } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
-import type { RuleCompiler } from "./rules.ts"
 
-export type Range = DoubleBound | Bound<"==">
+export type Range = RelativeRange | Bound<"==">
 
-export type DoubleBound = {
-    min?: LowerBound
-    max?: UpperBound
+type RelativeRange<
+    min extends LowerBound = LowerBound,
+    max extends UpperBound = UpperBound
+> = {
+    min?: min
+    max?: max
 }
 
-export type BoundKind = evaluate<keyof DoubleBound>
+export type BoundKind = evaluate<keyof RelativeRange>
 
 export const minComparators = {
     ">": true,
@@ -20,7 +22,8 @@ export const minComparators = {
 
 export type MinComparator = keyof typeof minComparators
 
-export type LowerBound = Bound<MinComparator>
+export type LowerBound<comparator extends MinComparator = MinComparator> =
+    Bound<comparator>
 
 export const maxComparators = {
     "<": true,
@@ -29,7 +32,8 @@ export const maxComparators = {
 
 export type MaxComparator = keyof typeof maxComparators
 
-export type UpperBound = Bound<MaxComparator>
+export type UpperBound<comparator extends MaxComparator = MaxComparator> =
+    Bound<comparator>
 
 export type Bound<comparator extends Scanner.Comparator = Scanner.Comparator> =
     {
@@ -84,52 +88,46 @@ const rangeAllows = (range: Range, n: number) =>
         ? n === range.limit
         : minAllows(range.min, n) && maxAllows(range.max, n)
 
-const minAllows = (min: DoubleBound["min"], n: number) =>
+const minAllows = (min: RelativeRange["min"], n: number) =>
     !min || n > min.limit || (n === min.limit && !isExclusive(min.comparator))
 
-const maxAllows = (max: DoubleBound["max"], n: number) =>
+const maxAllows = (max: RelativeRange["max"], n: number) =>
     !max || n < max.limit || (n === max.limit && !isExclusive(max.comparator))
 
 export type FlatBound = evaluate<Bound & { units?: string }>
 
-export const compileRange: RuleCompiler<Range> = (range, state) => {
+export const compileRange = <range extends Range>(
+    range: range,
+    state: CompilationState
+) => {
     const assignSize =
-        `const size = typeof data === "number" ? data : data.length` as const
-    const units =
-        `typeof data === "string" ? "characters" : Array.isArray(data) ? "items" : ""` as const
-    if (isEqualityRange(range)) {
-        return `${assignSize};size === ${
-            range.limit
-        } || ${state.precompileProblem(
-            "size",
-            `{ comparator: "===", limit: ${range.limit}, units: ${units}}`
-        )}` as const
-    }
-    if (range.min) {
-        if (range.max) {
-        } else {
-        }
-    } else if (range.max) {
-    }
-    return ""
-
-    const sizeIsAllowed = isEqualityRange(range)
-        ? (`size === ${range.limit}` as const)
-        : range.min
-        ? range.max
-            ? (`(size ${range.min.comparator} ${range.min.limit} && size ${range.max.comparator} ${range.max.limit})` as const)
-            : (`size ${range.min.comparator} ${range.min.limit}` as const)
-        : range.max
-        ? (`size ${range.max.comparator} ${range.max.limit}` as const)
-        : undefined
-    if (!sizeIsAllowed) {
-        return ""
-    }
-
-    return `${assignSize};${sizeIsAllowed} || ${state.precompileProblem(
-        "bound"
-    )}`
+        `const size = typeof data === "number" ? data : data.length;` as const
+    return `${assignSize}${
+        isEqualityRange(range)
+            ? compileBoundCheck(range, state)
+            : compileRelativeRangeChecks(range, state)
+    }` as const
 }
+
+const compileRelativeRangeChecks = <
+    minComparator extends MinComparator,
+    maxComparator extends MaxComparator
+>(
+    range: RelativeRange<LowerBound<minComparator>, UpperBound<maxComparator>>,
+    state: CompilationState
+) =>
+    `${range.min ? compileBoundCheck(range.min, state) : ""}${
+        range.max ? compileBoundCheck(range.max, state) : ""
+    }` as const
+
+const compileBoundCheck = <comparator extends Scanner.Comparator>(
+    bound: Bound<comparator>,
+    state: CompilationState
+) =>
+    `size ${bound.comparator} ${bound.limit} || ${state.precompileProblem(
+        "size",
+        `{ comparator: '${bound.comparator}', limit: ${bound.limit} }`
+    )};` as const
 
 export const compareStrictness = (
     kind: "min" | "max",
