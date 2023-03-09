@@ -3,11 +3,11 @@ import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
 import type { xor } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type {
-    ContextWriter,
-    MustBeWriter,
+    WriteContext,
+    DescribeRequirement,
     ProblemCode,
-    ProblemSource,
-    ReasonWriter
+    ProblemContext,
+    WriteReason
 } from "./problems.ts"
 import { Problems } from "./problems.ts"
 
@@ -38,7 +38,7 @@ export class TraversalState<data = unknown> {
 
     addProblem<code extends ProblemCode>(
         code: code,
-        source: ProblemSource<code>,
+        source: ProblemContext<code>,
         segments: string[]
     ) {
         return this.problems.addNew(
@@ -50,15 +50,15 @@ export class TraversalState<data = unknown> {
                 mustBe:
                     this.config.mustBe ??
                     (this.rootScope.config.codes[code]
-                        .mustBe as MustBeWriter<any>),
+                        .mustBe as DescribeRequirement<any>),
                 writeReason:
                     this.config.writeReason ??
                     (this.rootScope.config.codes[code]
-                        .writeReason as ReasonWriter<any>),
+                        .writeReason as WriteReason<any>),
                 addContext:
                     this.config.addContext ??
                     (this.rootScope.config.codes[code]
-                        .addContext as ContextWriter)
+                        .addContext as WriteContext)
             }
         )
     }

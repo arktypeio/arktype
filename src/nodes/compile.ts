@@ -50,15 +50,15 @@ export const compileNode = (node: Node, state: CompilationState) => {
         : compileTypeNode(node, state)
 }
 
-const negatedDomainChecks = {
-    boolean: `typeof data !== "boolean"`,
-    bigint: `typeof data !== "bigint"`,
-    null: `data !== null`,
-    number: `typeof data !== "number"`,
-    object: `(typeof data !== "object" || data === null)`,
-    string: `typeof data !== "string"`,
-    symbol: `typeof data !== "symbol"`,
-    undefined: `data !== undefined`
+const compiledDomainChecks = {
+    boolean: `typeof data === "boolean"`,
+    bigint: `typeof data === "bigint"`,
+    null: `data === null`,
+    number: `typeof data === "number"`,
+    object: `(typeof data === "object" && data !== null)`,
+    string: `typeof data === "string"`,
+    symbol: `typeof data === "symbol"`,
+    undefined: `data === undefined`
 } as const satisfies Record<Domain, string>
 
 const compileTypeNode = (node: DomainsNode, state: CompilationState) => {
@@ -67,10 +67,9 @@ const compileTypeNode = (node: DomainsNode, state: CompilationState) => {
         const domain = domains[0]
         const predicate = node[domain]!
         if (predicate === true) {
-            return `${negatedDomainChecks[domain]} && ${state.precompileProblem(
-                "domain",
-                `"${domain}"`
-            )}`
+            return `${
+                compiledDomainChecks[domain]
+            } || ${state.precompileProblem("domain", `"${domain}"`)}`
         }
         return ""
         // const flatPredicate = compilePredicate(predicate, state)
@@ -114,7 +113,7 @@ export class CompilationState {
         code: code,
         source: source
     ) {
-        return `state.addProblem("${code}", ${source}, [${this.path.join(
+        return `!state.addProblem("${code}", ${source}, [${this.path.join(
             ", "
         )}])` as const
     }
@@ -419,25 +418,3 @@ const entryCheckers = {
 } satisfies {
     [k in TraversalKey]: EntryChecker<k>
 }
-
-export type TraversableData = Record<string | number, unknown>
-
-export type ConstrainedRuleTraversalData = extend<
-    { [k in TraversalKey]?: unknown },
-    {
-        regex: string
-        divisor: number
-        bound: SizedData
-        prerequisiteProp: TraversableData
-        optionalProp: TraversableData
-        requiredProp: TraversableData
-        indexProp: TraversableData
-        distilledProps: TraversableData
-        strictProps: TraversableData
-    }
->
-
-export type RuleData<k extends TraversalKey> =
-    k extends keyof ConstrainedRuleTraversalData
-        ? ConstrainedRuleTraversalData[k]
-        : unknown

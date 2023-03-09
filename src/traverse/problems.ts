@@ -1,13 +1,16 @@
-import type { FlatBound } from "../nodes/rules/range.ts"
+import type { Bound } from "../nodes/rules/range.ts"
 import { Scanner } from "../parse/string/shift/scanner.ts"
-import { DataWrapper } from "../utils/data.ts"
+import type { SizedData } from "../utils/data.ts"
+import { DataWrapper, unitsOf } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainDescriptions } from "../utils/domains.ts"
 import type {
     arraySubclassToReadonly,
     constructor,
     evaluate,
-    RegexLiteral,
+    extend,
+    merge,
+    optionalizeKeys,
     requireKeys
 } from "../utils/generics.ts"
 import { objectKeysOf } from "../utils/generics.ts"
@@ -19,10 +22,7 @@ import {
 } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type {
-    ConstrainedRuleTraversalData,
-    TraversalState
-} from "./traverse.ts"
+import type { TraversalState } from "./traverse.ts"
 
 export class ArkTypeError extends TypeError {
     cause: Problems
@@ -40,10 +40,10 @@ export class Problem<code extends ProblemCode = ProblemCode> {
         public code: code,
         public path: Path,
         private data: ProblemData<code>,
-        private source: ProblemSource<code>,
+        private source: ProblemContext<code>,
         private writers: ProblemWriters<code>
     ) {
-        if (this.code === "multi") {
+        if (this.code === "intersection") {
             this.parts = this.source as any
         }
     }
@@ -95,17 +95,14 @@ class ProblemArray extends Array<Problem> {
 
     add<code extends ProblemCode>(
         code: code,
-        source: ProblemSource<code>,
-        opts?: AddProblemOptions<ProblemData<code>>
+        input: ProblemParams<code>
     ): Problem {
         // copy the path to avoid future mutations affecting it
-        const path = opts?.path ?? Path.from(this.#state.path)
+        const path = input?.path ?? Path.from(this.#state.path)
         const data =
             // we have to check for the presence of the key explicitly since the
             // data could be undefined or null
-            opts && "data" in opts
-                ? opts.data
-                : (this.#state.data as ProblemData<code>)
+            "data" in input ? input.data : (this.#state.data as any)
 
         const problem = new Problem(
             // avoid a bunch of errors from TS trying to discriminate the
@@ -113,7 +110,7 @@ class ProblemArray extends Array<Problem> {
             code as any,
             path,
             data,
-            source,
+            input,
             this.#state.getProblemConfig(code)
         )
         this.addProblem(problem)
@@ -192,59 +189,47 @@ export const describeBranches = (descriptions: string[]) => {
     return description
 }
 
-type ProblemSources = {
-    divisor: number
-    class: constructor
-    domain: Domain
-    missing: undefined
-    extraneous: unknown
-    bound: FlatBound
-    regex: RegexLiteral
-    value: unknown
-    multi: Problem[]
-    branches: readonly Problem[]
-    custom: string
-    cases: string[]
+type ParamsByCode = {
+    divisor: [divisor: number, ctx?: ProblemContext<number>]
+    constructor: [constructor: constructor, ctx?: ProblemContext<object>]
+    domain: [domain: Domain, ctx?: ProblemContext]
+    missing: [ctx?: ProblemContext<undefined>]
+    extraneous: [ctx?: ProblemContext]
+    size: [bound: Bound, ctx?: ProblemContext<SizedData>]
+    regex: [source: string, ctx?: ProblemContext<string>]
+    value: [required: unknown, ctx?: ProblemContext]
+    intersection: [problems: (string | Problem)[], ctx?: ProblemContext]
+    union: [problems: (string | Problem)[], ctx?: ProblemContext]
+    custom: [mustBe: string, ctx?: ProblemContext]
 }
 
-export type ProblemCode = evaluate<keyof ProblemSources>
+export type ProblemCode = evaluate<keyof ParamsByCode>
 
-export type ProblemSource<code extends ProblemCode = ProblemCode> =
-    ProblemSources[code]
+type ProblemParams<code extends ProblemCode> = ParamsByCode[code]
 
-type ProblemDataByCode = {
-    [code in ProblemCode]: code extends keyof ConstrainedRuleTraversalData
-        ? ConstrainedRuleTraversalData[code]
-        : unknown
+type ProblemContext<data = unknown> = {
+    data: data
+    path: Path
 }
 
-export type ProblemData<code extends ProblemCode = ProblemCode> =
-    ProblemDataByCode[code]
-
-type ProblemDefinition<code extends ProblemCode> = requireKeys<
+type ProblemWritersDefinition<code extends ProblemCode> = requireKeys<
     ProblemOptions<code>,
     "mustBe"
 >
 
-export type MustBeWriter<code extends ProblemCode> =
+export type DescribeRequirement<code extends ProblemCode> =
     | string
-    | ((source: ProblemSources[code]) => string)
+    | ((...args: ProblemParams<code>) => string)
 
-export type ReasonWriter<code extends ProblemCode = ProblemCode> = (
+export type WriteReason<code extends ProblemCode = ProblemCode> = (
     mustBe: string,
-    data: DataWrapper<
-        code extends keyof ConstrainedRuleTraversalData
-            ? ConstrainedRuleTraversalData[code]
-            : unknown
-    >
+    ...args: ProblemParams<code>
 ) => string
-
-export type ContextWriter = (reason: string, path: Path) => string
 
 const writeDefaultReason = (mustBe: string, was: DataWrapper | string) =>
     `must be ${mustBe}${was && ` (was ${was})`}`
 
-const addDefaultContext: ContextWriter = (reason, path) =>
+const addDefaultContext: WriteReason = (mustBe, path, ctx) =>
     path.length === 0
         ? capitalize(reason)
         : path.length === 1 && isWellFormedInteger(path[0])
@@ -252,24 +237,25 @@ const addDefaultContext: ContextWriter = (reason, path) =>
         : `${path} ${reason}`
 
 const defaultProblemConfig: {
-    [code in ProblemCode]: ProblemDefinition<code>
+    [code in ProblemCode]: ProblemWritersDefinition<code>
 } = {
     divisor: {
-        mustBe: (divisor) =>
+        mustBe: ({ rule: divisor }) =>
             divisor === 1 ? `an integer` : `a multiple of ${divisor}`
     },
-    class: {
-        mustBe: (expected) => {
-            const possibleObjectKind = getExactConstructorObjectKind(expected)
+    constructor: {
+        mustBe: ({ rule: constructor }) => {
+            const possibleObjectKind =
+                getExactConstructorObjectKind(constructor)
             return possibleObjectKind
                 ? objectKindDescriptions[possibleObjectKind]
-                : `an instance of ${expected.name}`
+                : `an instance of ${constructor.name}`
         },
         writeReason: (mustBe, data) =>
             writeDefaultReason(mustBe, data.className)
     },
     domain: {
-        mustBe: (domain) => domainDescriptions[domain],
+        mustBe: ({ rule: domain }) => domainDescriptions[domain],
         writeReason: (mustBe, data) => writeDefaultReason(mustBe, data.domain)
     },
     missing: {
@@ -280,11 +266,13 @@ const defaultProblemConfig: {
         mustBe: () => "removed",
         writeReason: (mustBe) => writeDefaultReason(mustBe, "")
     },
-    bound: {
-        mustBe: (bound) =>
-            `${Scanner.comparatorDescriptions[bound.comparator]} ${
-                bound.limit
-            }${bound.units ? ` ${bound.units}` : ""}`,
+    size: {
+        mustBe: ({ comparator, limit, data }) => {
+            const units = unitsOf(data)
+            return `${Scanner.comparatorDescriptions[comparator]} ${limit}${
+                units ? ` ${units}` : ""
+            }`
+        },
         writeReason: (mustBe, data) =>
             writeDefaultReason(mustBe, `${data.size}`)
     },
@@ -294,35 +282,39 @@ const defaultProblemConfig: {
     value: {
         mustBe: stringify
     },
-    branches: {
-        mustBe: (branchProblems) =>
+    union: {
+        mustBe: ({ problems }) =>
             describeBranches(
-                branchProblems.map(
-                    (problem) =>
-                        `${problem.path} must be ${
-                            problem.parts
-                                ? describeBranches(
-                                      problem.parts.map((part) => part.mustBe)
-                                  )
-                                : problem.mustBe
-                        }`
+                problems.map((problem) =>
+                    typeof problem === "string"
+                        ? `must be ${problem}`
+                        : `${problem.path} must be ${
+                              problem.parts
+                                  ? describeBranches(
+                                        problem.parts.map((part) => part.mustBe)
+                                    )
+                                  : problem.mustBe
+                          }`
                 )
             ),
         writeReason: (mustBe, data) => `${mustBe} (was ${data})`,
         addContext: (reason, path) =>
             path.length ? `At ${path}, ${reason}` : reason
     },
-    multi: {
-        mustBe: (problems) => "• " + problems.map((_) => _.mustBe).join("\n• "),
+    intersection: {
+        mustBe: ({ problems }) =>
+            "• " +
+            problems
+                .map((problem) =>
+                    typeof problem === "string" ? problem : problem.mustBe
+                )
+                .join("\n• "),
         writeReason: (mustBe, data) => `${data} must be...\n${mustBe}`,
         addContext: (reason, path) =>
             path.length ? `At ${path}, ${reason}` : reason
     },
     custom: {
-        mustBe: (mustBe) => mustBe
-    },
-    cases: {
-        mustBe: (cases) => describeBranches(cases)
+        mustBe: ({ mustBe }) => mustBe
     }
 }
 
@@ -375,15 +367,15 @@ export const compileProblemWriters = (
 }
 
 export type ProblemOptions<code extends ProblemCode = ProblemCode> = {
-    mustBe?: MustBeWriter<code>
-    writeReason?: ReasonWriter<code>
-    addContext?: ContextWriter
+    mustBe?: DescribeRequirement<code>
+    writeReason?: WriteReason<code>
+    addContext?: WriteContext
 }
 
 export type ProblemsConfig = evaluate<
     {
-        writeReason?: ReasonWriter
-        addContext?: ContextWriter
+        writeReason?: WriteReason
+        addContext?: WriteContext
     } & ProblemsConfigByCode
 >
 

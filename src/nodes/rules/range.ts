@@ -93,6 +93,26 @@ const maxAllows = (max: DoubleBound["max"], n: number) =>
 export type FlatBound = evaluate<Bound & { units?: string }>
 
 export const compileRange: RuleCompiler<Range> = (range, state) => {
+    const assignSize =
+        `const size = typeof data === "number" ? data : data.length` as const
+    const units =
+        `typeof data === "string" ? "characters" : Array.isArray(data) ? "items" : ""` as const
+    if (isEqualityRange(range)) {
+        return `${assignSize};size === ${
+            range.limit
+        } || ${state.precompileProblem(
+            "size",
+            `{ comparator: "===", limit: ${range.limit}, units: ${units}}`
+        )}` as const
+    }
+    if (range.min) {
+        if (range.max) {
+        } else {
+        }
+    } else if (range.max) {
+    }
+    return ""
+
     const sizeIsAllowed = isEqualityRange(range)
         ? (`size === ${range.limit}` as const)
         : range.min
@@ -105,44 +125,10 @@ export const compileRange: RuleCompiler<Range> = (range, state) => {
     if (!sizeIsAllowed) {
         return ""
     }
-    const assignSize =
-        `const size = typeof data === "number" ? data : data.length` as const
-    return `${assignSize};${sizeIsAllowed} || !${state.precompileProblem(
+
+    return `${assignSize};${sizeIsAllowed} || ${state.precompileProblem(
         "bound"
     )}`
-}
-
-{
-    const units =
-        state.lastDomain === "string"
-            ? "characters"
-            : state.lastDomain === "object"
-            ? "items long"
-            : undefined
-    if (isEqualityRange(range)) {
-        return entries.push(["bound", units ? { ...range, units } : range])
-    }
-    if (range.min) {
-        entries.push(["bound", units ? { ...range.min, units } : range.min])
-    }
-    if (range.max) {
-        entries.push(["bound", units ? { ...range.max, units } : range.max])
-    }
-}
-
-export const checkBound: EntryChecker<"bound"> = (bound, state) =>
-    comparatorCheckers[bound.comparator](sizeOf(state.data), bound.limit) ||
-    !state.problems.add("bound", bound)
-
-const comparatorCheckers: Record<
-    Scanner.Comparator,
-    (size: number, limit: number) => boolean
-> = {
-    "<": (size, limit) => size < limit,
-    ">": (size, limit) => size > limit,
-    "<=": (size, limit) => size <= limit,
-    ">=": (size, limit) => size >= limit,
-    "==": (size, limit) => size === limit
 }
 
 export const compareStrictness = (

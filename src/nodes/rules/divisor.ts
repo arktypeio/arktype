@@ -20,7 +20,7 @@ const greatestCommonDivisor = (l: number, r: number) => {
 }
 
 export const compileDivisorCheck = ((divisor, state) =>
-    `data % ${divisor} === 0 || !${state.precompileProblem(
+    `data % ${divisor} === 0 || ${state.precompileProblem(
         "divisor",
         `${divisor}`
     )}` as const) satisfies RuleCompiler<number>

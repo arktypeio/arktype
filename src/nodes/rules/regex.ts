@@ -13,7 +13,7 @@ export const getRegex = (source: string) => {
 }
 
 export const checkRegex: RuleCompiler<string> = (source, state) =>
-    `/${source}/.test(data) || !${state.precompileProblem(
+    `/${source}/.test(data) || ${state.precompileProblem(
         "regex",
         source
     )}` as const

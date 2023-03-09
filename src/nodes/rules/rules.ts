@@ -15,7 +15,7 @@ import {
 } from "../compose.ts"
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
-import { divisorIntersection } from "./divisor.ts"
+import { compileDivisorCheck, divisorIntersection } from "./divisor.ts"
 import type {
     DistilledPropsEntry,
     PropEntry,
@@ -131,25 +131,23 @@ type UnknownRules = NarrowableRules & Partial<LiteralRules>
 const ruleCompilers: {
     [k in keyof UnknownRules]-?: RuleCompiler<UnknownRules[k] & {}>
 } = {
-    regex: (entries, rule) => {
+    regex: (rule) => {
         for (const source of listFrom(rule)) {
             entries.push(["regex", source])
         }
     },
-    divisor: (entries, rule) => {
-        entries.push(["divisor", rule])
-    },
+    divisor: compileDivisorCheck,
     range: compileRange,
-    class: (entries, rule) => {
+    class: (rule) => {
         entries.push(["class", rule])
     },
     props: compileProps,
-    narrow: (entries, rule) => {
+    narrow: (rule) => {
         for (const narrow of listFrom(rule)) {
             entries.push(["narrow", narrow])
         }
     },
-    value: (entries, rule) => {
+    value: (rule) => {
         entries.push(["value", rule])
     }
 }
