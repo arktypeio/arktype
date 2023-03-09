@@ -16,4 +16,4 @@ jobs:
         steps:
             - uses: srggrs/assign-one-project-github-action@1.2.1
               with:
-                  project: "https://github.com/arktypeio/arktype/projects/1"
+                  project: "https://github.com/orgs/arktypeio/projects/4"
