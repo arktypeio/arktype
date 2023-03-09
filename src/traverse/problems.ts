@@ -1,6 +1,6 @@
 import { Scanner } from "../parse/string/shift/scanner.ts"
-import type { DataWrapper, SizedData } from "../utils/data.ts"
-import { unitsOf } from "../utils/data.ts"
+import type { SizedData } from "../utils/data.ts"
+import { DataWrapper, unitsOf } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainDescriptions } from "../utils/domains.ts"
 import type {
@@ -61,8 +61,8 @@ class ProblemArray extends Array<Problem> {
         this.#state = state
     }
 
-    mustBe(description: string, opts?: AddProblemOptions) {
-        return this.add("custom", description, opts)
+    mustBe(mustBe: string, context?: ProblemContextInput<"custom">) {
+        return this.add("custom", mustBe, context)
     }
 
     addNew(...args: ConstructorParameters<typeof Problem>) {
@@ -71,23 +71,28 @@ class ProblemArray extends Array<Problem> {
 
     add<code extends ProblemCode>(
         code: code,
-        input: ProblemParams<code>
+        ...args: ProblemParams<code>
     ): Problem {
-        // copy the path to avoid future mutations affecting it
-        const path = input?.path ?? Path.from(this.#state.path)
-        const data =
-            // we have to check for the presence of the key explicitly since the
-            // data could be undefined or null
-            "data" in input ? input.data : (this.#state.data as any)
+        const [requirement, ctx] = (
+            args.length === 2 ? args : [undefined, args[0]]
+        ) as [unknown, ProblemContextInput]
 
         const problem = new Problem(
             // avoid a bunch of errors from TS trying to discriminate the
             // problem input based on the code
             code as any,
-            path,
-            data,
-            input,
-            this.#state.getProblemConfig(code)
+            "reason",
+            {
+                // copy the path to avoid future mutations affecting it
+                path: ctx?.path ?? Path.from(this.#state.path),
+                // we have to check for the presence of the key explicitly since the
+                // data could be nullish
+                data: new DataWrapper(
+                    "data" in ctx ? ctx.data : (this.#state.data as any)
+                ),
+                mustBe: "",
+                was: ""
+            }
         )
         this.addProblem(problem)
         return problem
@@ -97,15 +102,14 @@ class ProblemArray extends Array<Problem> {
         const pathKey = `${problem.path}`
         const existing = this.byPath[pathKey]
         if (existing) {
-            if (existing.parts) {
-                existing.parts.push(problem)
+            if (existing.hasCode("intersection")) {
+                existing.context.parts.push(problem)
+                existing.reason += "also"
             } else {
                 const problemIntersection = new Problem(
-                    "multi" as any,
-                    existing.path,
-                    (existing as any).data,
-                    [existing, problem],
-                    this.#state.getProblemConfig("multi")
+                    "intersection",
+                    "multi",
+                    { ...existing.context, parts: [existing, problem] }
                 )
                 const existingIndex = this.indexOf(existing)
                 // If existing is found (which it always should be unless this was externally mutated),
@@ -122,8 +126,8 @@ class ProblemArray extends Array<Problem> {
         this.count++
     }
 
-    get summary(): string {
-        return `${this}`
+    get summary() {
+        return this.toString()
     }
 
     toString() {
@@ -191,11 +195,14 @@ type ProblemContextInput<code extends ProblemCode = ProblemCode> = {
 }
 
 type ProblemParams<code extends ProblemCode> = [
-    ...requirement: {} extends extractRequirement<code>
-        ? []
-        : [requirement: valueOf<extractRequirement<code>>],
+    ...requirement: extractRequirementParams<code>,
     ctx?: ProblemContextInput<code>
 ]
+
+type extractRequirementParams<code extends ProblemCode> =
+    {} extends extractRequirement<code>
+        ? []
+        : [requirement: valueOf<extractRequirement<code>>]
 
 type extractRequirement<code extends ProblemCode> = Omit<
     ProblemDefinitions[code],
