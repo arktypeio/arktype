@@ -26,7 +26,7 @@ import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { extend } from "../utils/generics.ts"
-import { entriesOf, hasKey, ObjectKeys } from "../utils/generics.ts"
+import { entriesOf, hasKey, keysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { getPath, Path } from "../utils/paths.ts"
 import type { ConfigNode, DomainsNode, Node } from "./node.ts"
@@ -62,7 +62,7 @@ const compiledDomainChecks = {
 } as const satisfies Record<Domain, string>
 
 const compileTypeNode = (node: DomainsNode, state: CompilationState) => {
-    const domains = ObjectKeys(node)
+    const domains = keysOf(node)
     if (domains.length === 1) {
         const domain = domains[0]
         const predicate = node[domain]!
@@ -317,7 +317,7 @@ const entryCheckers = {
             ? checkEntries(entries, state)
             : !state.problems.add(
                   "cases",
-                  domainsToDescriptions(ObjectKeys(domains))
+                  domainsToDescriptions(keysOf(domains))
               )
     },
     domain: (domain, state) =>
@@ -355,7 +355,7 @@ const entryCheckers = {
         if (hasKey(rule.cases, caseKey)) {
             return checkEntries(rule.cases[caseKey], state)
         }
-        const caseKeys = ObjectKeys(rule.cases)
+        const caseKeys = keysOf(rule.cases)
         const missingCasePath = state.path.concat(rule.path)
         const caseDescriptions =
             rule.kind === "value"

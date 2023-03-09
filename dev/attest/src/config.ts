@@ -1,7 +1,6 @@
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import * as process from "node:process"
-import type { SourceFileEntry } from "../../runtime/main.ts"
 import {
     ensureDir,
     fromPackageRoot,
@@ -99,11 +98,12 @@ export const getAttestConfig = (): AttestConfig => {
     const typeSources = getSourceFileEntries()
         .filter(([path]) => !path.startsWith("dev/arktype.io"))
         .map(
-            ([path, contents]): SourceFileEntry => [
-                path,
-                // Use .js imports for node + pre 5.0 versions of TS
-                contents.replaceAll('.ts"', '.js"')
-            ]
+            ([path, contents]) =>
+                [
+                    path,
+                    // Use .js imports for node + pre 5.0 versions of TS
+                    contents.replaceAll('.ts"', '.js"')
+                ] as [string, string]
         )
     cachedConfig = {
         updateSnapshots:

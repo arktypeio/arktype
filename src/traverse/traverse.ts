@@ -3,10 +3,10 @@ import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
 import type { xor } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type {
-    WriteContext,
     DescribeRequirement,
     ProblemCode,
     ProblemContext,
+    WriteContext,
     WriteReason
 } from "./problems.ts"
 import { Problems } from "./problems.ts"

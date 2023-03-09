@@ -4,7 +4,7 @@ import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import type { evaluate, keySet } from "../utils/generics.ts"
-import { isKeyOf, keyCount, ObjectKeys } from "../utils/generics.ts"
+import { isKeyOf, keyCount, keysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
     getExactConstructorObjectKind,
@@ -327,7 +327,7 @@ const findBestDiscriminant = (
                     filteredCases[caseKey] = filteredIndices
                     score++
                 }
-                const defaultCaseKeys = ObjectKeys(defaultCases)
+                const defaultCaseKeys = keysOf(defaultCases)
                 if (defaultCaseKeys.length) {
                     filteredCases["default"] = defaultCaseKeys.map((k) =>
                         parseInt(k)

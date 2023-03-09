@@ -4,7 +4,7 @@ import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type { evaluate } from "../../utils/generics.ts"
-import { ObjectKeys } from "../../utils/generics.ts"
+import { keysOf } from "../../utils/generics.ts"
 import { stringify } from "../../utils/serialize.ts"
 import type { ParseContext } from "../definition.ts"
 
@@ -55,7 +55,7 @@ export const distributeFunctionToNode = <
     ctx: ParseContext,
     ruleKey: ruleKey
 ): DistributedFunctionNode<f, ruleKey> => {
-    const domains = ObjectKeys(node)
+    const domains = keysOf(node)
     if (!hasDomain(distributableFunction, "object")) {
         return throwParseError(
             writeMalformedDistributableFunctionMessage(distributableFunction)

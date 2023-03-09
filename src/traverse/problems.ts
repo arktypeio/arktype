@@ -15,7 +15,7 @@ import type {
     requireKeys,
     valueOf
 } from "../utils/generics.ts"
-import { ObjectKeys } from "../utils/generics.ts"
+import { keysOf } from "../utils/generics.ts"
 import { isWellFormedInteger } from "../utils/numericLiterals.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
@@ -354,8 +354,7 @@ const defaultProblemConfig: {
     }
 }
 
-export const problemCodes: readonly ProblemCode[] =
-    ObjectKeys(defaultProblemConfig)
+export const problemCodes: readonly ProblemCode[] = keysOf(defaultProblemConfig)
 
 const compileDefaultProblemWriters = () => {
     const result = {} as ProblemWritersByCode

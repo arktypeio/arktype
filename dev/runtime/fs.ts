@@ -146,7 +146,7 @@ const inFileFilter: WalkOptions = {
 export const getSourceFilePaths = (dir = repoDirs.root) =>
     walkPaths(dir, inFileFilter)
 
-export type SourceFileEntry = [path: string, contents: string]
-
-export const getSourceFileEntries = (dir = repoDirs.root): SourceFileEntry[] =>
+export const getSourceFileEntries = (
+    dir = repoDirs.root
+): [path: string, contents: string][] =>
     getSourceFilePaths(dir).map((path) => [path, readFile(path)])
