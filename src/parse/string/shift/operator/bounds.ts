@@ -12,7 +12,7 @@ import {
 } from "../../../../nodes/rules/range.ts"
 import { throwInternalError } from "../../../../utils/errors.ts"
 import type { error, keySet, mutable } from "../../../../utils/generics.ts"
-import { isKeyOf, listFrom, objectKeysOf } from "../../../../utils/generics.ts"
+import { isKeyOf, listFrom, ObjectKeys } from "../../../../utils/generics.ts"
 import type { NumberLiteral } from "../../../../utils/numericLiterals.ts"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.ts"
 import { writeUnboundableMessage } from "../../../ast/bound.ts"
@@ -103,7 +103,7 @@ export const parseRightBound = (
 
 const distributeRange = (range: Range, s: DynamicState) => {
     const resolution = s.resolveRoot()
-    const domains = objectKeysOf(resolution)
+    const domains = ObjectKeys(resolution)
     const distributedRange: mutable<DomainsNode> = {}
     const rangePredicate = { range } as const
     const isBoundable = domains.every((domain) => {

@@ -3,7 +3,7 @@ import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import type { defined, Dict, mutable, stringKeyOf } from "../utils/generics.ts"
-import { hasKey, hasKeys, objectKeysOf } from "../utils/generics.ts"
+import { hasKey, hasKeys, ObjectKeys } from "../utils/generics.ts"
 import type { Intersector } from "./compose.ts"
 import {
     anonymousDisjoint,
@@ -50,8 +50,8 @@ export const nodeIntersection: Intersector<Node> = (l, r, state) => {
             ? anonymousDisjoint()
             : state.addDisjoint(
                   "domain",
-                  objectKeysOf(lDomains),
-                  objectKeysOf(rDomains)
+                  ObjectKeys(lDomains),
+                  ObjectKeys(rDomains)
               )
     }
     return result === lDomains ? l : result === rDomains ? r : result
@@ -86,7 +86,7 @@ export const rootUnion = (l: Node, r: Node, type: Type): ResolvedNode => {
     const lDomains = type.scope.resolveTypeNode(l)
     const rDomains = type.scope.resolveTypeNode(r)
     const result = {} as mutable<DomainsNode>
-    const domains = objectKeysOf({ ...lDomains, ...rDomains })
+    const domains = ObjectKeys({ ...lDomains, ...rDomains })
     for (const domain of domains) {
         result[domain] = hasKey(lDomains, domain)
             ? hasKey(rDomains, domain)
@@ -129,7 +129,7 @@ export const resolutionExtendsDomain = <domain extends Domain>(
     resolution: ResolvedNode,
     domain: domain
 ): resolution is DomainSubtypeResolution<domain> => {
-    const domains = objectKeysOf(resolution)
+    const domains = ObjectKeys(resolution)
     return domains.length === 1 && domains[0] === domain
 }
 

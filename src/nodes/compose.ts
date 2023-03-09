@@ -2,7 +2,7 @@ import type { Type } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { constructor, Dict, extend, mutable } from "../utils/generics.ts"
-import { objectKeysOf } from "../utils/generics.ts"
+import { ObjectKeys } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
@@ -179,7 +179,7 @@ export const composeKeyedIntersection =
     ): Intersector<root> =>
     (l, r, state) => {
         const result = {} as mutable<root>
-        const keys = objectKeysOf({ ...l, ...r } as root)
+        const keys = ObjectKeys({ ...l, ...r } as root)
         let lImpliesR = true
         let rImpliesL = true
         for (const k of keys) {

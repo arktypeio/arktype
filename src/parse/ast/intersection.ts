@@ -12,7 +12,7 @@ import type {
     stringKeyOf,
     tryCatch
 } from "../../utils/generics.ts"
-import { objectKeysOf } from "../../utils/generics.ts"
+import { ObjectKeys } from "../../utils/generics.ts"
 import type { Path, pathToString } from "../../utils/paths.ts"
 import type { ParsedMorph } from "./morph.ts"
 
@@ -63,7 +63,7 @@ type bubblePropErrors<o> = extractValues<o, error> extends never
     : extractValues<o, error>
 
 export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
-    const paths = objectKeysOf(disjoints)
+    const paths = ObjectKeys(disjoints)
     if (paths.length === 1) {
         const path = paths[0]
         return `${

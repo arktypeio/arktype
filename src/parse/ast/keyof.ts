@@ -6,11 +6,7 @@ import type { Domain } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import { deepFreeze } from "../../utils/freeze.ts"
 import type { constructor, evaluate, List } from "../../utils/generics.ts"
-import {
-    listFrom,
-    objectKeysOf,
-    prototypeKeysOf
-} from "../../utils/generics.ts"
+import { listFrom, ObjectKeys, prototypeKeysOf } from "../../utils/generics.ts"
 import {
     tryParseWellFormedInteger,
     wellFormedNonNegativeIntegerMatcher
@@ -37,7 +33,7 @@ type KeyNode = { [domain in KeyDomain]?: Rules<domain>[] }
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
     const resolution = ctx.type.scope.resolveNode(parseDefinition(def[1], ctx))
-    const predicateKeys = objectKeysOf(resolution).map((domain) =>
+    const predicateKeys = ObjectKeys(resolution).map((domain) =>
         keysOfPredicate(domain, resolution[domain]!)
     )
     const sharedKeys = sharedKeysOf(predicateKeys)
