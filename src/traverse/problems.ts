@@ -1,6 +1,6 @@
 import { Scanner } from "../parse/string/shift/scanner.ts"
-import type { SizedData } from "../utils/data.ts"
-import { DataWrapper, unitsOf } from "../utils/data.ts"
+import type { DataWrapper, SizedData } from "../utils/data.ts"
+import { unitsOf } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainDescriptions } from "../utils/domains.ts"
 import type {
@@ -32,34 +32,22 @@ export class ArkTypeError extends TypeError {
 
 export class Problem<code extends ProblemCode = ProblemCode> {
     path: Path
-    parts?: Problem[]
 
-    constructor(public code: code, public context: ProblemContext<code>) {
+    constructor(
+        public code: code,
+        public reason: string,
+        public context: ProblemContext<code>
+    ) {
         this.path = context.path
-        if (this.code === "intersection") {
-            this.parts = this.source as any
-        }
+    }
+
+    hasCode<code extends ProblemCode>(code: code): this is Problem<code> {
+        // doesn't make much sense we have to cast this, but alas
+        return this.code === (code as ProblemCode)
     }
 
     toString() {
-        return this.message
-    }
-
-    get message() {
-        return this.writers.addContext(this.reason, this.path)
-    }
-
-    get reason() {
-        return this.writers.writeReason(
-            this.mustBe,
-            new DataWrapper(this.data) as never
-        )
-    }
-
-    get mustBe() {
-        return typeof this.writers.mustBe === "string"
-            ? this.writers.mustBe
-            : this.writers.mustBe(this.source)
+        return this.reason
     }
 }
 
@@ -186,8 +174,8 @@ type ProblemDefinitions = {
     size: { comparator: Scanner.Comparator; limit: number; data: SizedData }
     regex: { source: string; data: string }
     value: { value: unknown }
-    intersection: { problems: (string | Problem)[] }
-    union: { problems: (string | Problem)[] }
+    intersection: { parts: (string | Problem)[] }
+    union: { parts: (string | Problem)[] }
     custom: { mustBe: string }
 }
 
@@ -305,17 +293,21 @@ const defaultProblemConfig: {
         mustBe: stringify
     },
     union: {
-        mustBe: ({ problems }) =>
+        mustBe: ({ parts: problems }) =>
             describeBranches(
                 problems.map((problem) =>
                     typeof problem === "string"
                         ? `must be ${problem}`
                         : `${problem.path} must be ${
-                              problem.parts
+                              problem.hasCode("intersection")
                                   ? describeBranches(
-                                        problem.parts.map((part) => part.mustBe)
+                                        problem.context.parts.map((part) =>
+                                            typeof part === "string"
+                                                ? part
+                                                : part.context.mustBe
+                                        )
                                     )
-                                  : problem.mustBe
+                                  : problem.context.mustBe
                           }`
                 )
             ),
@@ -325,11 +317,11 @@ const defaultProblemConfig: {
                 : `${mustBe} (was ${was})`
     },
     intersection: {
-        mustBe: ({ problems }) =>
+        mustBe: ({ parts }) =>
             "• " +
-            problems
-                .map((problem) =>
-                    typeof problem === "string" ? problem : problem.mustBe
+            parts
+                .map((part) =>
+                    typeof part === "string" ? part : part.context.mustBe
                 )
                 .join("\n• "),
         writeReason: ({ mustBe, data, path }) => {
