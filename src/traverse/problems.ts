@@ -1,4 +1,3 @@
-import type { Bound } from "../nodes/rules/range.ts"
 import { Scanner } from "../parse/string/shift/scanner.ts"
 import type { SizedData } from "../utils/data.ts"
 import { DataWrapper, unitsOf } from "../utils/data.ts"
@@ -8,10 +7,6 @@ import type {
     arraySubclassToReadonly,
     constructor,
     evaluate,
-    extend,
-    merge,
-    optionalizeKeys,
-    replaceProps,
     requireKeys,
     valueOf
 } from "../utils/generics.ts"
@@ -36,15 +31,11 @@ export class ArkTypeError extends TypeError {
 }
 
 export class Problem<code extends ProblemCode = ProblemCode> {
+    path: Path
     parts?: Problem[]
 
-    constructor(
-        public code: code,
-        public path: Path,
-        private data: ProblemData<code>,
-        private source: ProblemContextInput<code>,
-        private writers: ProblemWriters<code>
-    ) {
+    constructor(public code: code, public context: ProblemContext<code>) {
+        this.path = context.path
         if (this.code === "intersection") {
             this.parts = this.source as any
         }
@@ -70,11 +61,6 @@ export class Problem<code extends ProblemCode = ProblemCode> {
             ? this.writers.mustBe
             : this.writers.mustBe(this.source)
     }
-}
-
-export type AddProblemOptions<data = unknown> = {
-    data?: data
-    path?: Path
 }
 
 class ProblemArray extends Array<Problem> {
@@ -199,7 +185,7 @@ type ProblemDefinitions = {
     extraneous: {}
     size: { comparator: Scanner.Comparator; limit: number; data: SizedData }
     regex: { source: string; data: string }
-    value: { required: unknown }
+    value: { value: unknown }
     intersection: { problems: (string | Problem)[] }
     union: { problems: (string | Problem)[] }
     custom: { mustBe: string }
@@ -211,6 +197,7 @@ type ProblemContextInput<code extends ProblemCode = ProblemCode> = {
     data?: "data" extends keyof ProblemDefinitions[code]
         ? ProblemDefinitions[code]["data"]
         : unknown
+    mustBe?: string
     was?: string
     path?: Path
 }
@@ -224,14 +211,20 @@ type ProblemParams<code extends ProblemCode> = [
 
 type extractRequirement<code extends ProblemCode> = Omit<
     ProblemDefinitions[code],
-    keyof ProblemContextInput
+    "data"
 >
 
-type ProblemContext<code extends ProblemCode = ProblemCode> = evaluate<
+type ReasonContext<code extends ProblemCode = ProblemCode> = evaluate<
     extractRequirement<code> & {
         data: DataWrapper<ProblemContextInput<code>["data"]>
-        was: string
         path: Path
+    }
+>
+
+export type ProblemContext<code extends ProblemCode = ProblemCode> = evaluate<
+    ReasonContext<code> & {
+        mustBe: string
+        was: string
     }
 >
 
@@ -242,20 +235,15 @@ type DefaultProblemConfig<code extends ProblemCode> = requireKeys<
 
 export type DescribeRequirement<code extends ProblemCode = ProblemCode> =
     | string
-    | ((ctx: ProblemContext<code>) => string)
+    | ((ctx: ReasonContext<code>) => string)
 
 export type DescribeWas<code extends ProblemCode = ProblemCode> =
     | string
-    | ((data: ProblemContext<code>["data"]) => string)
+    | ((data: ReasonContext<code>["data"]) => string)
 
 export type WriteReason<code extends ProblemCode = ProblemCode> =
     | string
-    | ((
-          ctx: ProblemContext<code> & {
-              mustBe: string
-              was: string
-          }
-      ) => string)
+    | ((ctx: ProblemContext<code>) => string)
 
 const describeDefaultWas: DescribeWas = (data) => `${data}`
 
