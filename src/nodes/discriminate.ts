@@ -148,7 +148,7 @@ const pruneDiscriminant = (
         ) {
             if (typeof v[1] === "string") {
                 if (discriminant.kind !== "domain") {
-                    return throwPruneFailure(discriminant)
+                    return throwInternalPruneFailure(discriminant)
                 }
                 entries.splice(i, 1)
                 return
@@ -162,11 +162,10 @@ const pruneDiscriminant = (
         // check for branch keys, which must be traversed even if there are no
         // segments left
         if (k === "domains") {
-            /* c8 ignore start */
+            /* c8 ignore next */
             if (keyCount(v) !== 1 || !v.object) {
-                return throwPruneFailure(discriminant)
+                return throwInternalPruneFailure(discriminant)
             }
-            /* c8 ignore stop */
             pruneDiscriminant(v.object, segments, discriminant, ctx)
             return
         } else if (k === "switch") {
@@ -186,10 +185,10 @@ const pruneDiscriminant = (
             return
         }
     }
-    return throwPruneFailure(discriminant)
+    return throwInternalPruneFailure(discriminant)
 }
 
-const throwPruneFailure = (discriminant: Discriminant) =>
+const throwInternalPruneFailure = (discriminant: Discriminant) =>
     throwInternalError(
         `Unexpectedly failed to discriminate ${discriminant.kind} at path '${discriminant.path}'`
     )
