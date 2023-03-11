@@ -1,6 +1,6 @@
 {
     "name": "arktype",
-    "description": "The first isomorphic type system for TS/JS",
+    "description": "A 1:1 type-safe syntax for optimized validation",
     "version": "1.0.8-alpha",
     "author": {
         "name": "David Blass",

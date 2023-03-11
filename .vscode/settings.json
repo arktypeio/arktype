@@ -61,6 +61,7 @@
         "tsbuildinfo",
         "typecheck",
         "typeof",
+        "Typesafe",
         "Unboundable",
         "uncompiled",
         "undici",
