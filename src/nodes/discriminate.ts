@@ -1,7 +1,6 @@
 import type { Scope } from "../scopes/scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import { throwInternalError } from "../utils/errors.ts"
 import type { evaluate, keySet } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"

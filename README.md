@@ -167,13 +167,10 @@ If you're planning on submitting a non-trivial fix or a new feature, please [cre
 
 When you're ready, check out our [guide](./.github/CONTRIBUTING.md) to get started!
 
-## Sponsorship
+## License
 
-We've been working full-time on this project for over a year and it means a lot to have the community behind us.
-
-If the project has been useful to you and you are in a financial position to do so, please feel free to chip in [via our Patreon](https://www.patreon.com/ArkType240).
-
-Otherwise, consider sending me an email (david@arktype.io) or [message me on Discord](https://discord.gg/WSNF3Kc4xh) to let me know you're a fan of ArkType. Either would make my day! 😊
+This project is licensed under the terms of the
+[MIT license](./LICENSE).
 
 ## Collaboration
 
@@ -183,7 +180,16 @@ I'd love to hear about what you're working on and how ArkType can help. Please r
 
 We will not tolerate any form of disrespect toward members of our community. Please refer to our [Code of Conduct](./.github/CODE_OF_CONDUCT.md) and reach out to david@arktype.io immediately if you've seen or experienced an interaction that may violate these standards.
 
-## License
+## Sponsorship
 
-This project is licensed under the terms of the
-[MIT license](./LICENSE).
+We've been working full-time on this project for over a year and it means a lot to have the community behind us.
+
+If the project has been useful to you and you are in a financial position to do so, please chip in via [GitHub Sponsors](https://github.com/sponsors/arktypeio).
+
+Otherwise, consider sending me an email (david@arktype.io) or [message me on Discord](https://discord.gg/WSNF3Kc4xh) to let me know you're a fan of ArkType. Either would make my day!
+
+### Current Sponsors 🥰
+
+[<img height="64px" src="https://avatars.githubusercontent.com/u/6759464">](https://github.com/tmm)
+
+[tmm](https://github.com/tmm)

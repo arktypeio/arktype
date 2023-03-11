@@ -15,5 +15,46 @@ if (!original) {
     )
 }
 
-CovSource.prototype._parseIgnore = (lineStr) =>
-    lineStr.match(/throwInternalError/) ? { count: 1 } : original(lineStr)
+let inThrowInternalCall = false
+const stack = []
+const throwInternalRegex = /throwInternal.*\(/
+
+CovSource.prototype._parseIgnore = (lineStr) => {
+    if (throwInternalRegex.test(lineStr)) {
+        inThrowInternalCall = true
+    }
+    if (inThrowInternalCall) {
+        if (isBalanced(lineStr)) {
+            inThrowInternalCall = false
+        }
+        return { count: 1 }
+    } else {
+        return original(lineStr)
+    }
+}
+
+const isBalanced = (lineStr) => {
+    const filteredMatchers = lineStr
+        .split(" ")
+        .filter(
+            (section) =>
+                throwInternalRegex.test(section) |
+                section.includes("(") |
+                section.includes(")") |
+                false
+        )
+
+    for (let match of filteredMatchers) {
+        for (let position = 0; position < match.length; position++) {
+            const section = match[position]
+            for (let char of section) {
+                if (char === "(") {
+                    stack.push(char)
+                } else if (char === ")") {
+                    stack.pop()
+                }
+            }
+        }
+    }
+    return !stack.length
+}

@@ -87,6 +87,7 @@ header {
 }
 
 .installationTabs {
+    overflow: hidden;
     height: 2.6rem;
     margin-top: -1.5rem;
     --ifm-tabs-color: #8a8a8a;
