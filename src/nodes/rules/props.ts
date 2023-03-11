@@ -157,57 +157,63 @@ const propKeysIntersection = composeKeyedIntersection<PropsRule>(
 
 export const compileProps = (props: PropsRule, state: CompilationState) => {
     const keyConfig = state.type.config?.keys ?? state.type.scope.config.keys
-    return keyConfig === "loose"
-        ? compileLooseProps(props, state)
-        : compilePropsRecord(keyConfig, props, state)
+    return compileLooseProps(props, state)
+    // keyConfig === "loose"
+    //     ? compileLooseProps(props, state)
+    //     : compilePropsRecord(keyConfig, props, state)
 }
 
 const compileLooseProps = (props: PropsRule, state: CompilationState) => {
-    const lines = []
+    const lines: string[] = []
     // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
+    lines.push(`let lastData = data`)
     for (const k in props) {
         const prop = props[k]
         state.path.push(k)
+        // TODO: Just use prop directly?
+        // TODO: Fix props that cannot be accessed via .
+        lines.push(`data = data.${k}`)
         if (k === mappedKeys.index) {
-            entries.push(["indexProp", compileNode(propToNode(prop), state)])
+            lines.push(...compileNode(propToNode(prop), state))
         } else if (isOptional(prop)) {
-            entries.push(["optionalProp", [k, compileNode(prop[1], state)]])
+            lines.push(...compileNode(prop[1], state))
         } else if (isPrerequisite(prop)) {
-            entries.push(["prerequisiteProp", [k, compileNode(prop[1], state)]])
+            lines.push(...compileNode(prop[1], state))
         } else {
-            entries.push(["requiredProp", [k, compileNode(prop, state)]])
+            lines.push(...compileNode(prop, state))
         }
+        lines.push(`data = lastData`)
         state.path.pop()
     }
 }
 
-const compilePropsRecord = (
-    kind: Exclude<KeyCheckKind, "loose">,
-    props: PropsRule,
-    state: CompilationState
-) => {
-    const result: PropsRecordEntry[1] = {
-        required: {},
-        optional: {}
-    }
-    // if we need to keep track of extraneous keys, either to add problems or
-    // remove them, store the props as a Record to optimize for presence
-    // checking as we iterate over the data
-    for (const k in props) {
-        const prop = props[k]
-        state.path.push(k)
-        if (k === mappedKeys.index) {
-            result.index = compileNode(propToNode(prop), state)
-        } else if (isOptional(prop)) {
-            result.optional[k] = compileNode(prop[1], state)
-        } else if (isPrerequisite(prop)) {
-            // we still have to push prerequisite props as normal entries so they can be checked first
-            // entries.push(["prerequisiteProp", [k, compileNode(prop[1], ctx)]])
-        } else {
-            result.required[k] = compileNode(prop, state)
-        }
-        state.path.pop()
-    }
-    // entries.push([`${kind}Props`, result])
-    return ""
-}
+// const compilePropsRecord = (
+//     kind: Exclude<KeyCheckKind, "loose">,
+//     props: PropsRule,
+//     state: CompilationState
+// ) => {
+//     const result: PropsRecordEntry[1] = {
+//         required: {},
+//         optional: {}
+//     }
+//     // if we need to keep track of extraneous keys, either to add problems or
+//     // remove them, store the props as a Record to optimize for presence
+//     // checking as we iterate over the data
+//     for (const k in props) {
+//         const prop = props[k]
+//         state.path.push(k)
+//         if (k === mappedKeys.index) {
+//             result.index = compileNode(propToNode(prop), state)
+//         } else if (isOptional(prop)) {
+//             result.optional[k] = compileNode(prop[1], state)
+//         } else if (isPrerequisite(prop)) {
+//             // we still have to push prerequisite props as normal entries so they can be checked first
+//             // entries.push(["prerequisiteProp", [k, compileNode(prop[1], ctx)]])
+//         } else {
+//             result.required[k] = compileNode(prop, state)
+//         }
+//         state.path.pop()
+//     }
+//     // entries.push([`${kind}Props`, result])
+//     return ""
+// }

@@ -10,6 +10,7 @@ import { entriesOf, keysOf } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { ConfigNode, DomainsNode, Node } from "./node.ts"
 import { isConfigNode } from "./node.ts"
+import { compilePredicate } from "./predicate.ts"
 
 // const hasImpliedDomain = (flatPredicate: TraversalEntry[]) =>
 //     flatPredicate[0] &&
@@ -20,7 +21,7 @@ export const compileType = (type: Type) => {
     return compileNode(type.node, state)
 }
 
-export const compileNode = (node: Node, state: CompilationState) => {
+export const compileNode = (node: Node, state: CompilationState): string[] => {
     if (typeof node === "string") {
         return state.type.scope.resolve(node).js
     }
@@ -40,17 +41,21 @@ const compiledDomainChecks = {
     undefined: `data === undefined`
 } as const satisfies Record<Domain, string>
 
-const compileTypeNode = (node: DomainsNode, state: CompilationState) => {
+const compileTypeNode = (
+    node: DomainsNode,
+    state: CompilationState
+): string[] => {
     const domains = keysOf(node)
     if (domains.length === 1) {
         const domain = domains[0]
         const predicate = node[domain]!
+        const domainCheck = `${
+            compiledDomainChecks[domain]
+        } || ${state.precompileProblem("domain", `"${domain}"`)}` as const
         if (predicate === true) {
-            return `${
-                compiledDomainChecks[domain]
-            } || ${state.precompileProblem("domain", `"${domain}"`)}`
+            return [domainCheck]
         }
-        return ""
+        return [domainCheck, ...compilePredicate(predicate, state)]
         // const flatPredicate = compilePredicate(predicate, state)
         // return hasImpliedDomain(flatPredicate)
         //     ? flatPredicate
@@ -60,7 +65,7 @@ const compileTypeNode = (node: DomainsNode, state: CompilationState) => {
     // for (const domain of domains) {
     //     result[domain] = compilePredicate(node[domain]!, state)
     // }
-    return "" //[["domains", result]]
+    return [] //[["domains", result]]
 }
 
 export type TraversalConfig = {
@@ -117,7 +122,7 @@ export class CompilationState {
         return this.traversalConfig[k][0] as TypeConfig[k] | undefined
     }
 
-    compileConfigNode(node: ConfigNode) {
+    compileConfigNode(node: ConfigNode): string[] {
         const configEntries = entriesOf(node.config)
         for (const entry of configEntries) {
             this.traversalConfig[entry[0]].unshift(entry[1] as any)

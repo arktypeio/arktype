@@ -21,7 +21,7 @@ export const compileRegexLines = (
         (source) =>
             `/${source}/.test(data) || ${state.precompileProblem(
                 "regex",
-                source
+                "`" + source + "`"
             )}` as const
     )
 
