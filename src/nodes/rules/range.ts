@@ -121,13 +121,11 @@ const rangeLinesFrom = (c: Compiler, ...bounds: Bound[]) =>
     ] as RangeLines
 
 const compileBoundCheck = (bound: Bound, c: Compiler) =>
-    // cast to "<comparator>" so the return type is easier to read
-    `size ${bound.comparator as "<comparator>"} ${bound.limit} || ${c.problem(
+    c.check(
         "size",
-        `{ comparator: '${bound.comparator as "<comparator>"}', limit: ${
-            bound.limit
-        } }`
-    )}` as const
+        `size ${bound.comparator as "<comparator>"} ${bound.limit}`,
+        bound
+    ) // cast to "<comparator>" so the return type is easier to read
 
 type CompiledBoundCheck = ReturnType<typeof compileBoundCheck>
 

@@ -20,7 +20,4 @@ const greatestCommonDivisor = (l: number, r: number) => {
 }
 
 export const compileDivisorCheck = (divisor: number, c: Compiler) =>
-    `${c.data} % ${divisor} === 0 || ${c.problem(
-        "divisor",
-        `${divisor}`
-    )}` as const
+    c.check("divisor", `${c.data} % ${divisor} === 0` as const, divisor)

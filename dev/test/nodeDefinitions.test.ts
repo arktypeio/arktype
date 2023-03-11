@@ -7,7 +7,6 @@ describe("node definitions", () => {
     it("base", () => {
         const t = type(["node", { string: true }])
         attest(t.node).snap({ string: true })
-        attest(t.flat).snap("string")
     })
     it("alias", () => {
         const types = scope({

@@ -54,11 +54,11 @@ describe("snippets", () => {
                       discriminated: "right"
                   }
               }
-        attest(example.deepLeftOrRight.flat).snap(
+        attest(example.deepLeftOrRight.lines).snap(
             example.unionInternalRepresentation
         )
         attest(example.numericIntersection.infer).typed as number
-        attest(example.numericIntersection.flat).equals(
+        attest(example.numericIntersection.lines).equals(
             example.numericInternalRepresentation
         )
     })

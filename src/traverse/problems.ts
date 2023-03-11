@@ -202,11 +202,15 @@ type ProblemParams<code extends ProblemCode> = [
 type extractRequirementParams<code extends ProblemCode> =
     {} extends extractRequirement<code>
         ? []
-        : [requirement: valueOf<extractRequirement<code>>]
+        : [requirement: ProblemRequirement<code>]
 
 type extractRequirement<code extends ProblemCode> = Omit<
     ProblemDefinitions[code],
     "data"
+>
+
+export type ProblemRequirement<code extends ProblemCode> = valueOf<
+    extractRequirement<code>
 >
 
 type ReasonContext<code extends ProblemCode = ProblemCode> = evaluate<

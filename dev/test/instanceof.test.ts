@@ -8,7 +8,7 @@ describe("instanceof", () => {
         const t = type(["instanceof", Error])
         attest(t.infer).typed as Error
         attest(t.node).equals({ object: { class: Error } })
-        attest(t.flat).equals([["class", Error]])
+        attest(t.lines).snap()
         const e = new Error()
         attest(t(e).data).equals(e)
         attest(t({}).problems?.summary).snap("Must be an Error (was Object)")

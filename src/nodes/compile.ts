@@ -3,6 +3,7 @@ import type { Type, TypeConfig } from "../scopes/type.ts"
 import type {
     ProblemCode,
     ProblemOptions,
+    ProblemRequirement,
     ProblemWriters
 } from "../traverse/problems.ts"
 import type { Domain } from "../utils/domains.ts"
@@ -48,10 +49,11 @@ const compileTypeNode = (node: DomainsNode, c: Compiler): string[] => {
     if (domains.length === 1) {
         const domain = domains[0]
         const predicate = node[domain]!
-        const domainCheck = `${compileDomainCheck(
-            domain,
-            c.data
-        )} || ${c.problem("domain", `"${domain}"`)}` as const
+        const domainCheck = c.check(
+            "domain",
+            compileDomainCheck(domain, c.data),
+            domain
+        )
         if (predicate === true) {
             return [domainCheck]
         }
@@ -97,12 +99,20 @@ export class Compiler {
         this.rootScope = type.scope
     }
 
+    check<code extends ProblemCode, condition extends string>(
+        code: code,
+        condition: condition,
+        source: ProblemRequirement<code>
+    ) {
+        return `${condition} || ${this.problem(code, source)}` as const
+    }
+
     get data() {
         // TODO: Fix props that cannot be accessed via .
         return ["data", ...this.path].join(".")
     }
 
-    problem<code extends ProblemCode, source extends string>(
+    problem<code extends ProblemCode, source extends ProblemRequirement<code>>(
         code: code,
         source: source
     ) {

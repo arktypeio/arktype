@@ -13,6 +13,8 @@ import { type } from "../../src/main.ts"
 //     })
 // })
 
+console.log(type("string[]").lines)
+
 console.log(type("number%2").lines)
 
 console.log(type({ a: "string", b: "boolean" }).lines)

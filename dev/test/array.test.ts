@@ -14,10 +14,7 @@ describe("parse array", () => {
                 props: { "[index]": "string" }
             }
         })
-        attest(t.flat).snap([
-            ["class", "(function Array)"],
-            ["indexProp", "string"]
-        ])
+        attest(t.lines).snap()
     })
     it("array intersection", () => {
         const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
@@ -31,17 +28,7 @@ describe("parse array", () => {
                 }
             }
         })
-        attest(t.flat).snap([
-            ["class", "(function Array)"],
-            [
-                "indexProp",
-                [
-                    ["domain", "object"],
-                    ["requiredProp", ["a", "string"]],
-                    ["requiredProp", ["b", "number"]]
-                ]
-            ]
-        ])
+        attest(t.lines).snap()
     })
     it("helper", () => {
         const t = arrayOf({ a: "string" })
