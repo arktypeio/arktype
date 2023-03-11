@@ -60,7 +60,7 @@ const arkDarkPrismTheme = {
 const config = {
     title: "ArkType",
     // @lineFrom:package.json:description |> embed(tagline:,,)
-    tagline: "The first isomorphic type system for TS/JS",
+    tagline: "A 1:1 type-safe syntax for optimized validation",
     url: "https://arktype.io",
     baseUrl: "/",
     onBrokenLinks: "throw",

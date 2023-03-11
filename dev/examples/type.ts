@@ -1,6 +1,6 @@
 import { type } from "../../src/main.ts"
 
-// Define your type...
+// Definitions are checked as you type and inferred as TS.
 export const user = type({
     name: "string",
     device: {
@@ -9,18 +9,11 @@ export const user = type({
     }
 })
 
-// Infer it...
-export type User = typeof user.infer
-
-// Get validated data or clear, customizable error messages.
+// Validators return typed data or clear, customizable errors.
 export const { data, problems } = user({
     name: "Alan Turing",
     device: {
+        // "device/platform must be 'android' or 'ios' (was 'enigma')"
         platform: "enigma"
     }
 })
-
-if (problems) {
-    // "device/platform must be 'android' or 'ios' (was 'enigma')"
-    console.log(problems.summary)
-}
