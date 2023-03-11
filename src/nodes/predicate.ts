@@ -10,7 +10,7 @@ import {
     compileBranch,
     isBranchComparison
 } from "./branch.ts"
-import type { Compiler } from "./compile.ts"
+import type { Compilation } from "./compile.ts"
 import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
 import { equality, IntersectionState, isEquality } from "./compose.ts"
 import { compileBranches } from "./discriminate.ts"
@@ -138,10 +138,7 @@ export const predicateUnion = (
     return resultBranches.length === 1 ? resultBranches[0] : resultBranches
 }
 
-export const compilePredicate = (
-    predicate: Predicate,
-    c: Compiler
-): string[] => {
+export const compilePredicate = (predicate: Predicate, c: Compilation) => {
     if (predicate === true) {
         return []
     }

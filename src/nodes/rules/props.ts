@@ -1,6 +1,5 @@
-import type { KeyCheckKind } from "../../scopes/type.ts"
 import type { Dict } from "../../utils/generics.ts"
-import type { Compiler } from "../compile.ts"
+import type { Compilation } from "../compile.ts"
 import { compileNode } from "../compile.ts"
 import {
     composeIntersection,
@@ -155,7 +154,7 @@ const propKeysIntersection = composeKeyedIntersection<PropsRule>(
     { onEmpty: "bubble" }
 )
 
-export const compileProps = (props: PropsRule, c: Compiler) => {
+export const compileProps = (props: PropsRule, c: Compilation) => {
     const keyConfig = c.type.config?.keys ?? c.type.scope.config.keys
     return compileLooseProps(props, c)
     // keyConfig === "loose"
@@ -163,39 +162,35 @@ export const compileProps = (props: PropsRule, c: Compiler) => {
     //     : compilePropsRecord(keyConfig, props, state)
 }
 
-const compileLooseProps = (props: PropsRule, c: Compiler) => {
-    const lines: string[] = []
+const compileLooseProps = (props: PropsRule, c: Compilation) => {
     // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
     for (const k in props) {
         const prop = props[k]
         if (k === mappedKeys.index) {
             if (c.path.length) {
-                lines.push(
+                c.lines.push(
                     `const lastPath = state.path`,
                     `state.path = state.path.concat(${c.path.json})`
                 )
             }
-            lines.push(
-                `${c.data}.filter((item, i) => {`,
-                ...compileNode(propToNode(prop), c),
-                "})"
-            )
+            c.lines.push(`${c.data}.filter((item, i) => {`)
+            compileNode(propToNode(prop), c)
+            c.lines.push("})")
             if (c.path.length) {
-                lines.push(`state.path = lastPath`)
+                c.lines.push(`state.path = lastPath`)
             }
         } else {
             c.path.push(k)
             if (isOptional(prop)) {
-                lines.push(...compileNode(prop[1], c))
+                compileNode(prop[1], c)
             } else if (isPrerequisite(prop)) {
-                lines.push(...compileNode(prop[1], c))
+                compileNode(prop[1], c)
             } else {
-                lines.push(...compileNode(prop, c))
+                compileNode(prop, c)
             }
             c.path.pop()
         }
     }
-    return lines
 }
 
 // const compilePropsRecord = (

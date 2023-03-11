@@ -1,6 +1,6 @@
 import type { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { evaluate, xor } from "../../utils/generics.ts"
-import type { Compiler } from "../compile.ts"
+import type { Compilation } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
 
 export type Range = RelativeRange | Bound<"==">
@@ -98,7 +98,7 @@ const minAllows = (min: LowerBound | undefined, n: number) =>
 const maxAllows = (max: UpperBound | undefined, n: number) =>
     !max || n < max.limit || (n === max.limit && !isExclusive(max.comparator))
 
-export const compileRangeLines = (range: Range, c: Compiler) =>
+export const compileRangeLines = (range: Range, c: Compilation) =>
     isEqualityRange(range)
         ? rangeLinesFrom(c, range)
         : range.min
@@ -114,13 +114,13 @@ const compileSizeAssignment = (data: string) =>
 
 type CompiledSizeAssignment = ReturnType<typeof compileSizeAssignment>
 
-const rangeLinesFrom = (c: Compiler, ...bounds: Bound[]) =>
+const rangeLinesFrom = (c: Compilation, ...bounds: Bound[]) =>
     [
         compileSizeAssignment(c.data),
         ...bounds.map((bound) => compileBoundCheck(bound, c))
     ] as RangeLines
 
-const compileBoundCheck = (bound: Bound, c: Compiler) =>
+const compileBoundCheck = (bound: Bound, c: Compilation) =>
     c.check("size", `size ${bound.comparator} ${bound.limit}`, bound)
 
 type CompiledBoundCheck = ReturnType<typeof compileBoundCheck>

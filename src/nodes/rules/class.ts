@@ -1,6 +1,6 @@
 import type { constructor } from "../../utils/generics.ts"
 import { objectKindOf } from "../../utils/objectKinds.ts"
-import type { Compiler } from "../compile.ts"
+import type { Compilation } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
 
 export const classIntersection = composeIntersection<constructor>(
@@ -15,7 +15,7 @@ export const classIntersection = composeIntersection<constructor>(
     }
 )
 
-export const compileClassCheck = (expected: constructor, c: Compiler) =>
+export const compileClassCheck = (expected: constructor, c: Compilation) =>
     `data instanceof expected` as const
 
 // return (

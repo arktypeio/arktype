@@ -5,7 +5,7 @@ import type { Domain } from "../utils/domains.ts"
 import { domainOf, hasDomain } from "../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import type { CollapsibleList, Dict } from "../utils/generics.ts"
-import type { Compiler } from "./compile.ts"
+import type { Compilation } from "./compile.ts"
 import type { IntersectionState, Intersector } from "./compose.ts"
 import { isDisjoint, isEquality } from "./compose.ts"
 import type { PredicateComparison } from "./predicate.ts"
@@ -117,7 +117,7 @@ export const compareBranches = (
 export const isTransformationBranch = (branch: Branch): branch is MetaBranch =>
     "rules" in branch
 
-export const compileBranch = (branch: Branch, c: Compiler) => {
+export const compileBranch = (branch: Branch, c: Compilation) => {
     if (isTransformationBranch(branch)) {
         const result = compileRules(branch.rules, c)
         return result

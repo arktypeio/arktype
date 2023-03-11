@@ -5,7 +5,7 @@ import type {
     constructor,
     Dict
 } from "../../utils/generics.ts"
-import type { Compiler } from "../compile.ts"
+import type { Compilation } from "../compile.ts"
 import type { IntersectionState, Intersector } from "../compose.ts"
 import {
     composeIntersection,
@@ -89,27 +89,25 @@ export const narrowableRulesIntersection =
         { onEmpty: "bubble" }
     )
 
-export const compileRules = (rules: UnknownRules, c: Compiler): string[] => {
-    const lines: string[] = []
+export const compileRules = (rules: UnknownRules, c: Compilation) => {
     if (rules.class) {
     }
     if (rules.divisor) {
-        lines.push(compileDivisorCheck(rules.divisor, c))
+        c.lines.push(compileDivisorCheck(rules.divisor, c))
     }
     if (rules.range) {
-        lines.push(...compileRangeLines(rules.range, c))
+        c.lines.push(...compileRangeLines(rules.range, c))
     }
     if (rules.regex) {
-        lines.push(...compileRegexLines(rules.regex, c))
+        c.lines.push(...compileRegexLines(rules.regex, c))
     }
     if (rules.value) {
     }
     if (rules.props) {
-        lines.push(...compileProps(rules.props, c))
+        compileProps(rules.props, c)
     }
     if (rules.narrow) {
     }
-    return lines
 }
 
 type UnknownRules = NarrowableRules & Partial<LiteralRules>

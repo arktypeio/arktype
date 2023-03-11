@@ -17,7 +17,7 @@ import type {
 import { serializePrimitive } from "../utils/serialize.ts"
 import type { Branch, Branches } from "./branch.ts"
 import { branchIntersection, compileBranch } from "./branch.ts"
-import type { Compiler } from "./compile.ts"
+import type { Compilation } from "./compile.ts"
 import { IntersectionState } from "./compose.ts"
 import type { Node } from "./node.ts"
 import { mappedKeys, propToNode } from "./rules/props.ts"
@@ -25,7 +25,7 @@ import { mappedKeys, propToNode } from "./rules/props.ts"
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-export const compileBranches = (branches: Branches, c: Compiler) => {
+export const compileBranches = (branches: Branches, c: Compilation) => {
     const discriminants = calculateDiscriminants(branches, c)
     const indices = branches.map((_, i) => i)
     return discriminate(branches, indices, discriminants, c)
@@ -43,8 +43,8 @@ const discriminate = (
     originalBranches: Branches,
     remainingIndices: number[],
     discriminants: Discriminants,
-    ctx: Compiler
-): string[] => {
+    ctx: Compilation
+) => {
     return compileBranch(originalBranches[remainingIndices[0]], ctx)
     // if (remainingIndices.length === 1) {
     //     return compileBranch(originalBranches[remainingIndices[0]], ctx)
@@ -202,7 +202,7 @@ export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 const calculateDiscriminants = (
     branches: Branches,
-    ctx: Compiler
+    ctx: Compilation
 ): Discriminants => {
     const discriminants: Discriminants = {
         disjointsByPair: {},

@@ -19,11 +19,12 @@ import { compilePredicate } from "./predicate.ts"
 //     (flatPredicate[0][0] === "value" || flatPredicate[0][0] === "class")
 
 export const compileType = (type: Type) => {
-    const state = new Compiler(type)
-    return compileNode(type.node, state)
+    const state = new Compilation(type)
+    compileNode(type.node, state)
+    return state.lines
 }
 
-export const compileNode = (node: Node, c: Compiler): string[] => {
+export const compileNode = (node: Node, c: Compilation) => {
     if (typeof node === "string") {
         // TODO: improve
         const lines = c.type.scope.resolve(node).steps
@@ -45,7 +46,7 @@ const compileDomainCheck = (domain: Domain, data: string) =>
         ? `${data} === ${domain}`
         : `typeof ${data} === "${domain}"`
 
-const compileTypeNode = (node: DomainsNode, c: Compiler): string[] => {
+const compileTypeNode = (node: DomainsNode, c: Compilation) => {
     const domains = keysOf(node)
     if (domains.length === 1) {
         const domain = domains[0]
@@ -55,10 +56,11 @@ const compileTypeNode = (node: DomainsNode, c: Compiler): string[] => {
             compileDomainCheck(domain, c.data),
             domain
         )
+        c.lines.push(domainCheck)
         if (predicate === true) {
-            return [domainCheck]
+            return
         }
-        return [domainCheck, ...compilePredicate(predicate, c)]
+        compilePredicate(predicate, c)
         // const flatPredicate = compilePredicate(predicate, state)
         // return hasImpliedDomain(flatPredicate)
         //     ? flatPredicate
@@ -68,7 +70,7 @@ const compileTypeNode = (node: DomainsNode, c: Compiler): string[] => {
     // for (const domain of domains) {
     //     result[domain] = compilePredicate(node[domain]!, state)
     // }
-    return [] //[["domains", result]]
+    return //[["domains", result]]
 }
 
 export type TraversalConfig = {
@@ -90,10 +92,11 @@ const problemWriterKeys: readonly ProblemWriterKey[] = [
     "was"
 ]
 
-export class Compiler {
+export class Compilation {
     path = new Path()
     failFast = false
     traversalConfig = initializeCompilationConfig()
+    lines: string[] = []
     readonly rootScope: Scope
 
     constructor(public type: Type) {
@@ -138,16 +141,15 @@ export class Compiler {
         return this.traversalConfig[k][0] as TypeConfig[k] | undefined
     }
 
-    compileConfigNode(node: ConfigNode): string[] {
+    compileConfigNode(node: ConfigNode) {
         const configEntries = entriesOf(node.config)
         for (const entry of configEntries) {
             this.traversalConfig[entry[0]].unshift(entry[1] as any)
         }
-        const result = compileTypeNode(node.node, this)
+        compileTypeNode(node.node, this)
         for (const entry of configEntries) {
             this.traversalConfig[entry[0]].shift()
         }
-        return result
     }
 
     // traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {

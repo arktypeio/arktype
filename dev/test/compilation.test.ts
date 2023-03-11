@@ -27,3 +27,10 @@ console.log(t([""]))
 console.log(type("number%2").steps)
 
 console.log(type({ a: "string", b: "boolean" }).steps)
+
+let n, result
+result = ((n = 5), n + 1)
+
+console.log((n = 5))
+
+console.log(result)
