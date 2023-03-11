@@ -60,9 +60,9 @@ export type CompiledTraversal = (
 ) => TraversalState
 
 export const compileJs = (name: string, steps: string[]) =>
-    `const _${name} = (data, state) => { 
-    ${steps.join(";\n")} 
-    }; return _${name}` as const
+    `return (data, state) => {
+${steps.join(";\n")} 
+}` as const
 
 export const initializeType = (
     name: string,

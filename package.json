@@ -66,6 +66,7 @@
         "@types/node": "18.14.6",
         "@typescript-eslint/eslint-plugin": "5.53.0",
         "@typescript-eslint/parser": "5.53.0",
+        "@types/prettier": "2.7.2",
         "c8": "7.13.0",
         "eslint": "8.34.0",
         "eslint-config-prettier": "8.6.0",

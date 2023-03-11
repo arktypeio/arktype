@@ -1,4 +1,5 @@
 // import { describe, it } from "mocha"
+import { format } from "prettier"
 import { type } from "../../src/main.ts"
 // import { attest } from "../attest/main.ts"
 
@@ -17,7 +18,9 @@ const t = type("string[]")
 
 console.log(t.steps)
 
-console.log(t.js)
+const source = format(t.js)
+
+console.log(source)
 
 console.log(t([""]))
 
