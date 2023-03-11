@@ -310,8 +310,8 @@ export class Scope<context extends ScopeContext = any> {
             node = this.#resolveRecurse(node, "throw", seen).node
         }
         t.node = deepFreeze(node)
-        t.js = compileType(t)
-        t.traverse = finalizeTraversal(t.name, t.js)
+        t.lines = compileType(t)
+        t.traverse = finalizeTraversal(t.name, t.lines)
         t.check = (data) => {
             const state = new TraversalState(data, t)
             t.traverse(data, state)
@@ -382,9 +382,9 @@ export class Scope<context extends ScopeContext = any> {
                     ? { config, node: this.resolveTypeNode(root) }
                     : root
             )
-            t.js = compileType(t)
+            t.lines = compileType(t)
             // TODO: refactor
-            t.traverse = finalizeTraversal(t.name, t.js)
+            t.traverse = finalizeTraversal(t.name, t.lines)
             t.check = (data) => {
                 const state = new TraversalState(data, t)
                 t.traverse(data, state)

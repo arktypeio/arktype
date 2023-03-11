@@ -31,7 +31,7 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
 type TypeRoot<t = unknown> = evaluate<{
     [as]: t
     infer: asOut<t>
-    js: string[]
+    lines: string[]
     allows: (data: unknown) => data is t
     assert: (data: unknown) => t
     traverse: CompiledTraversal
@@ -61,11 +61,11 @@ export type CompiledTraversal = (
 
 export const finalizeTraversal = (
     name: string,
-    js: string[]
+    lines: string[]
 ): CompiledTraversal =>
     Function(
         `const _${name} = (data, state) => { 
-${js.join(";\n")} 
+${lines.join(";\n")} 
 }; return _${name}`
     )()
 
@@ -79,7 +79,7 @@ export const initializeType = (
         // temporarily initialize node/flat to aliases that will be included in
         // the final type in case of cyclic resolutions
         node: name,
-        js: [`${name}(data)`],
+        lines: [`${name}(data)`],
         check: (() =>
             throwInternalError(
                 `Unexpected attempt to check uncompiled type '${name}'`

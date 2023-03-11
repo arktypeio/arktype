@@ -1,6 +1,6 @@
 import type { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { evaluate, xor } from "../../utils/generics.ts"
-import type { CompilationState } from "../compile.ts"
+import type { Compiler } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
 
 export type Range = RelativeRange | Bound<"==">
@@ -98,33 +98,31 @@ const minAllows = (min: LowerBound | undefined, n: number) =>
 const maxAllows = (max: UpperBound | undefined, n: number) =>
     !max || n < max.limit || (n === max.limit && !isExclusive(max.comparator))
 
-export const compileRangeLines = (range: Range, state: CompilationState) =>
+export const compileRangeLines = (range: Range, c: Compiler) =>
     isEqualityRange(range)
-        ? rangeLinesFrom(state, range)
+        ? rangeLinesFrom(c, range)
         : range.min
         ? range.max
-            ? rangeLinesFrom(state, range.min, range.max)
-            : rangeLinesFrom(state, range.min)
-        : rangeLinesFrom(state, range.max)
+            ? rangeLinesFrom(c, range.min, range.max)
+            : rangeLinesFrom(c, range.min)
+        : rangeLinesFrom(c, range.max)
 
 type RangeLines = evaluate<[CompiledSizeAssignment, ...CompiledBoundCheck[]]>
 
-const compiledSizeAssignment =
-    `const size = typeof data === "number" ? data : data.length` as const
+const compileSizeAssignment = (data: string) =>
+    `const size = typeof ${data} === "number" ? ${data} : ${data}.length` as const
 
-type CompiledSizeAssignment = typeof compiledSizeAssignment
+type CompiledSizeAssignment = ReturnType<typeof compileSizeAssignment>
 
-const rangeLinesFrom = (state: CompilationState, ...bounds: Bound[]) =>
+const rangeLinesFrom = (c: Compiler, ...bounds: Bound[]) =>
     [
-        compiledSizeAssignment,
-        ...bounds.map((bound) => compileBoundCheck(bound, state))
+        compileSizeAssignment(c.data),
+        ...bounds.map((bound) => compileBoundCheck(bound, c))
     ] as RangeLines
 
-const compileBoundCheck = (bound: Bound, state: CompilationState) =>
+const compileBoundCheck = (bound: Bound, c: Compiler) =>
     // cast to "<comparator>" so the return type is easier to read
-    `size ${bound.comparator as "<comparator>"} ${
-        bound.limit
-    } || ${state.precompileProblem(
+    `size ${bound.comparator as "<comparator>"} ${bound.limit} || ${c.problem(
         "size",
         `{ comparator: '${bound.comparator as "<comparator>"}', limit: ${
             bound.limit

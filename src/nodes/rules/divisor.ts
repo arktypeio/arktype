@@ -1,4 +1,4 @@
-import type { CompilationState } from "../compile.ts"
+import type { Compiler } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
 
 export const divisorIntersection = composeIntersection<number>(
@@ -19,8 +19,8 @@ const greatestCommonDivisor = (l: number, r: number) => {
     return greatestCommonDivisor
 }
 
-export const compileDivisorCheck = (divisor: number, state: CompilationState) =>
-    `data % ${divisor} === 0 || ${state.precompileProblem(
+export const compileDivisorCheck = (divisor: number, c: Compiler) =>
+    `${c.data} % ${divisor} === 0 || ${c.problem(
         "divisor",
         `${divisor}`
     )}` as const

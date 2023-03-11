@@ -17,45 +17,45 @@ import { compilePredicate } from "./predicate.ts"
 //     (flatPredicate[0][0] === "value" || flatPredicate[0][0] === "class")
 
 export const compileType = (type: Type) => {
-    const state = new CompilationState(type)
+    const state = new Compiler(type)
     return compileNode(type.node, state)
 }
 
-export const compileNode = (node: Node, state: CompilationState): string[] => {
+export const compileNode = (node: Node, c: Compiler): string[] => {
     if (typeof node === "string") {
-        return state.type.scope.resolve(node).js
+        // TODO: improve
+        const lines = c.type.scope.resolve(node).lines
+        return c.path.length
+            ? lines.map((line) =>
+                  line.replace("data", `data.${c.path.join(".")}`)
+              )
+            : lines
     }
     return isConfigNode(node)
-        ? state.compileConfigNode(node)
-        : compileTypeNode(node, state)
+        ? c.compileConfigNode(node)
+        : compileTypeNode(node, c)
 }
 
-const compiledDomainChecks = {
-    boolean: `typeof data === "boolean"`,
-    bigint: `typeof data === "bigint"`,
-    null: `data === null`,
-    number: `typeof data === "number"`,
-    object: `(typeof data === "object" && data !== null)`,
-    string: `typeof data === "string"`,
-    symbol: `typeof data === "symbol"`,
-    undefined: `data === undefined`
-} as const satisfies Record<Domain, string>
+const compileDomainCheck = (domain: Domain, data: string) =>
+    domain === "object"
+        ? `(typeof ${data} === "object" && ${data} !== null) || typeof ${data} === "function"`
+        : domain === "null" || domain === "undefined"
+        ? `${data} === ${domain}`
+        : `typeof ${data} === "${domain}"`
 
-const compileTypeNode = (
-    node: DomainsNode,
-    state: CompilationState
-): string[] => {
+const compileTypeNode = (node: DomainsNode, c: Compiler): string[] => {
     const domains = keysOf(node)
     if (domains.length === 1) {
         const domain = domains[0]
         const predicate = node[domain]!
-        const domainCheck = `${
-            compiledDomainChecks[domain]
-        } || ${state.precompileProblem("domain", `"${domain}"`)}` as const
+        const domainCheck = `${compileDomainCheck(
+            domain,
+            c.data
+        )} || ${c.problem("domain", `"${domain}"`)}` as const
         if (predicate === true) {
             return [domainCheck]
         }
-        return [domainCheck, ...compilePredicate(predicate, state)]
+        return [domainCheck, ...compilePredicate(predicate, c)]
         // const flatPredicate = compilePredicate(predicate, state)
         // return hasImpliedDomain(flatPredicate)
         //     ? flatPredicate
@@ -87,7 +87,7 @@ const problemWriterKeys: readonly ProblemWriterKey[] = [
     "was"
 ]
 
-export class CompilationState {
+export class Compiler {
     path = new Path()
     failFast = false
     traversalConfig = initializeCompilationConfig()
@@ -97,13 +97,18 @@ export class CompilationState {
         this.rootScope = type.scope
     }
 
-    precompileProblem<code extends ProblemCode, source extends string>(
+    get data() {
+        // TODO: Fix props that cannot be accessed via .
+        return ["data", ...this.path].join(".")
+    }
+
+    problem<code extends ProblemCode, source extends string>(
         code: code,
         source: source
     ) {
-        return `!state.addProblem("${code}", ${source}, [${this.path.join(
-            ", "
-        )}])` as const
+        return `!state.problems.addNew("${code}", ${source}${
+            this.path.length ? `, ${JSON.stringify({ path: this.path })}` : ""
+        })` as const
     }
 
     getProblemConfig<code extends ProblemCode>(

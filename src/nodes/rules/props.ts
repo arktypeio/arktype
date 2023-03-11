@@ -1,6 +1,6 @@
 import type { KeyCheckKind } from "../../scopes/type.ts"
 import type { Dict } from "../../utils/generics.ts"
-import type { CompilationState } from "../compile.ts"
+import type { Compiler } from "../compile.ts"
 import { compileNode } from "../compile.ts"
 import {
     composeIntersection,
@@ -155,36 +155,32 @@ const propKeysIntersection = composeKeyedIntersection<PropsRule>(
     { onEmpty: "bubble" }
 )
 
-export const compileProps = (props: PropsRule, state: CompilationState) => {
-    const keyConfig = state.type.config?.keys ?? state.type.scope.config.keys
-    return compileLooseProps(props, state)
+export const compileProps = (props: PropsRule, c: Compiler) => {
+    const keyConfig = c.type.config?.keys ?? c.type.scope.config.keys
+    return compileLooseProps(props, c)
     // keyConfig === "loose"
     //     ? compileLooseProps(props, state)
     //     : compilePropsRecord(keyConfig, props, state)
 }
 
-const compileLooseProps = (props: PropsRule, state: CompilationState) => {
+const compileLooseProps = (props: PropsRule, c: Compiler) => {
     const lines: string[] = []
     // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
-    lines.push(`let lastData = data`)
     for (const k in props) {
         const prop = props[k]
-        state.path.push(k)
-        // TODO: Just use prop directly?
-        // TODO: Fix props that cannot be accessed via .
-        lines.push(`data = data.${k}`)
+        c.path.push(k)
         if (k === mappedKeys.index) {
-            lines.push(...compileNode(propToNode(prop), state))
+            lines.push(...compileNode(propToNode(prop), c))
         } else if (isOptional(prop)) {
-            lines.push(...compileNode(prop[1], state))
+            lines.push(...compileNode(prop[1], c))
         } else if (isPrerequisite(prop)) {
-            lines.push(...compileNode(prop[1], state))
+            lines.push(...compileNode(prop[1], c))
         } else {
-            lines.push(...compileNode(prop, state))
+            lines.push(...compileNode(prop, c))
         }
-        lines.push(`data = lastData`)
-        state.path.pop()
+        c.path.pop()
     }
+    return lines
 }
 
 // const compilePropsRecord = (

@@ -5,7 +5,7 @@ import type {
     constructor,
     Dict
 } from "../../utils/generics.ts"
-import type { CompilationState } from "../compile.ts"
+import type { Compiler } from "../compile.ts"
 import type { IntersectionState, Intersector } from "../compose.ts"
 import {
     composeIntersection,
@@ -16,7 +16,7 @@ import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { compileDivisorCheck, divisorIntersection } from "./divisor.ts"
 import type { PropsRule } from "./props.ts"
-import { propsIntersection } from "./props.ts"
+import { compileProps, propsIntersection } from "./props.ts"
 import type { Range } from "./range.ts"
 import { compileRangeLines, rangeIntersection } from "./range.ts"
 import { compileRegexLines, regexIntersection } from "./regex.ts"
@@ -89,25 +89,23 @@ export const narrowableRulesIntersection =
         { onEmpty: "bubble" }
     )
 
-export const compileRules = (
-    rules: UnknownRules,
-    state: CompilationState
-): string[] => {
+export const compileRules = (rules: UnknownRules, c: Compiler): string[] => {
     const lines: string[] = []
     if (rules.class) {
     }
     if (rules.divisor) {
-        lines.push(compileDivisorCheck(rules.divisor, state))
+        lines.push(compileDivisorCheck(rules.divisor, c))
     }
     if (rules.range) {
-        lines.push(...compileRangeLines(rules.range, state))
+        lines.push(...compileRangeLines(rules.range, c))
     }
     if (rules.regex) {
-        lines.push(...compileRegexLines(rules.regex, state))
+        lines.push(...compileRegexLines(rules.regex, c))
     }
     if (rules.value) {
     }
     if (rules.props) {
+        lines.push(...compileProps(rules.props, c))
     }
     if (rules.narrow) {
     }

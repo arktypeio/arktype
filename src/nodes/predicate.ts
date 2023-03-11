@@ -10,7 +10,7 @@ import {
     compileBranch,
     isBranchComparison
 } from "./branch.ts"
-import type { CompilationState } from "./compile.ts"
+import type { Compiler } from "./compile.ts"
 import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
 import { equality, IntersectionState, isEquality } from "./compose.ts"
 import { compileBranches } from "./discriminate.ts"
@@ -140,14 +140,14 @@ export const predicateUnion = (
 
 export const compilePredicate = (
     predicate: Predicate,
-    state: CompilationState
+    c: Compiler
 ): string[] => {
     if (predicate === true) {
         return []
     }
     return isArray(predicate)
-        ? compileBranches(predicate, state)
-        : compileBranch(predicate, state)
+        ? compileBranches(predicate, c)
+        : compileBranch(predicate, c)
 }
 
 export const isLiteralCondition = (

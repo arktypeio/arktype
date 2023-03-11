@@ -39,6 +39,9 @@ type snapshotPrimitive<t> = t extends undefined
     ? `(symbol${string})`
     : t
 
+export const print = (data: unknown, indent?: number) =>
+    console.log(stringify(data, indent))
+
 export const stringify = (data: unknown, indent?: number) => {
     switch (domainOf(data)) {
         case "object":
