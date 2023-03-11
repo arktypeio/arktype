@@ -141,7 +141,7 @@ export const predicateUnion = (
 export const compilePredicate = (
     predicate: Predicate,
     state: CompilationState
-): string => {
+): string[] => {
     if (predicate === true) {
         return []
     }

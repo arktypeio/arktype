@@ -1,10 +1,9 @@
-import { writeUndiscriminatableMorphUnionMessage } from "../parse/ast/union.ts"
 import type { Scope } from "../scopes/scope.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import { throwInternalError, throwParseError } from "../utils/errors.ts"
+import { throwInternalError } from "../utils/errors.ts"
 import type { evaluate, keySet } from "../utils/generics.ts"
-import { isKeyOf, keyCount, keysOf } from "../utils/generics.ts"
+import { isKeyOf, keysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
     getExactConstructorObjectKind,
@@ -23,20 +22,6 @@ import type { CompilationState } from "./compile.ts"
 import { IntersectionState } from "./compose.ts"
 import type { Node } from "./node.ts"
 import { mappedKeys, propToNode } from "./rules/props.ts"
-
-export type DiscriminatedSwitch<
-    kind extends DiscriminantKind = DiscriminantKind
-> = {
-    readonly path: Path
-    readonly kind: kind
-    readonly cases: DiscriminatedCases<kind>
-}
-
-export type DiscriminatedCases<
-    kind extends DiscriminantKind = DiscriminantKind
-> = {
-    [caseKey in CaseKey<kind>]?: TraversalEntry[]
-}
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
@@ -63,135 +48,136 @@ const discriminate = (
     remainingIndices: number[],
     discriminants: Discriminants,
     ctx: CompilationState
-): string => {
-    if (remainingIndices.length === 1) {
-        return compileBranch(originalBranches[remainingIndices[0]], ctx)
-    }
-    const bestDiscriminant = findBestDiscriminant(
-        remainingIndices,
-        discriminants
-    )
-    if (!bestDiscriminant) {
-        return [
-            [
-                "branches",
-                remainingIndices.map((i) =>
-                    branchIncludesMorph(originalBranches[i], ctx.type.scope)
-                        ? throwParseError(
-                              writeUndiscriminatableMorphUnionMessage(
-                                  `${ctx.path}`
-                              )
-                          )
-                        : compileBranch(originalBranches[i], ctx)
-                )
-            ]
-        ]
-    }
-    const cases = {} as DiscriminatedCases
-    for (const caseKey in bestDiscriminant.indexCases) {
-        const nextIndices = bestDiscriminant.indexCases[caseKey]!
-        cases[caseKey] = discriminate(
-            originalBranches,
-            nextIndices,
-            discriminants,
-            ctx
-        )
-        if (caseKey !== "default") {
-            pruneDiscriminant(
-                cases[caseKey]!,
-                bestDiscriminant.path,
-                bestDiscriminant,
-                ctx
-            )
-        }
-    }
-    return [
-        [
-            "switch",
-            {
-                path: bestDiscriminant.path,
-                kind: bestDiscriminant.kind,
-                cases
-            }
-        ]
-    ]
+): string[] => {
+    return compileBranch(originalBranches[remainingIndices[0]], ctx)
+    // if (remainingIndices.length === 1) {
+    //     return compileBranch(originalBranches[remainingIndices[0]], ctx)
+    // }
+    //     const bestDiscriminant = findBestDiscriminant(
+    //         remainingIndices,
+    //         discriminants
+    //     )
+    //     if (!bestDiscriminant) {
+    //         return [
+    //             [
+    //                 "branches",
+    //                 remainingIndices.map((i) =>
+    //                     branchIncludesMorph(originalBranches[i], ctx.type.scope)
+    //                         ? throwParseError(
+    //                               writeUndiscriminatableMorphUnionMessage(
+    //                                   `${ctx.path}`
+    //                               )
+    //                           )
+    //                         : compileBranch(originalBranches[i], ctx)
+    //                 )
+    //             ]
+    //         ]
+    //     }
+    //     const cases = {} as DiscriminatedCases
+    //     for (const caseKey in bestDiscriminant.indexCases) {
+    //         const nextIndices = bestDiscriminant.indexCases[caseKey]!
+    //         cases[caseKey] = discriminate(
+    //             originalBranches,
+    //             nextIndices,
+    //             discriminants,
+    //             ctx
+    //         )
+    //         if (caseKey !== "default") {
+    //             pruneDiscriminant(
+    //                 cases[caseKey]!,
+    //                 bestDiscriminant.path,
+    //                 bestDiscriminant,
+    //                 ctx
+    //             )
+    //         }
+    //     }
+    //     return [
+    //         [
+    //             "switch",
+    //             {
+    //                 path: bestDiscriminant.path,
+    //                 kind: bestDiscriminant.kind,
+    //                 cases
+    //             }
+    //         ]
+    //     ]
 }
 
-const pruneDiscriminant = (
-    entries: TraversalEntry[],
-    segments: string[],
-    discriminant: Discriminant,
-    ctx: CompilationState
-) => {
-    for (let i = 0; i < entries.length; i++) {
-        const [k, v] = entries[i]
-        if (!segments.length) {
-            if (discriminant.kind === "domain") {
-                if (k === "domain" || k === "domains") {
-                    entries.splice(i, 1)
-                    return
-                } else if (k === "class" || k === "value") {
-                    // these keys imply a domain, but also add additional
-                    // information, so can't be pruned
-                    return
-                }
-            } else if (discriminant.kind === k) {
-                entries.splice(i, 1)
-                return
-            }
-        } else if (
-            (k === "requiredProp" ||
-                k === "prerequisiteProp" ||
-                k === "optionalProp") &&
-            v[0] === segments[0]
-        ) {
-            if (typeof v[1] === "string") {
-                if (discriminant.kind !== "domain") {
-                    return throwPruneFailure(discriminant)
-                }
-                entries.splice(i, 1)
-                return
-            }
-            pruneDiscriminant(v[1], segments.slice(1), discriminant, ctx)
-            if (v[1].length === 0) {
-                entries.splice(i, 1)
-            }
-            return
-        }
-        // check for branch keys, which must be traversed even if there are no
-        // segments left
-        if (k === "domains") {
-            /* c8 ignore start */
-            if (keyCount(v) !== 1 || !v.object) {
-                return throwPruneFailure(discriminant)
-            }
-            /* c8 ignore stop */
-            pruneDiscriminant(v.object, segments, discriminant, ctx)
-            return
-        } else if (k === "switch") {
-            for (const caseKey in v.cases) {
-                pruneDiscriminant(
-                    v.cases[caseKey]!,
-                    segments,
-                    discriminant,
-                    ctx
-                )
-            }
-            return
-        } else if (k === "branches") {
-            for (const branch of v) {
-                pruneDiscriminant(branch, segments, discriminant, ctx)
-            }
-            return
-        }
-    }
-    return throwPruneFailure(discriminant)
-}
+// const pruneDiscriminant = (
+//     entries: TraversalEntry[],
+//     segments: string[],
+//     discriminant: Discriminant,
+//     ctx: CompilationState
+// ) => {
+//     for (let i = 0; i < entries.length; i++) {
+//         const [k, v] = entries[i]
+//         if (!segments.length) {
+//             if (discriminant.kind === "domain") {
+//                 if (k === "domain" || k === "domains") {
+//                     entries.splice(i, 1)
+//                     return
+//                 } else if (k === "class" || k === "value") {
+//                     // these keys imply a domain, but also add additional
+//                     // information, so can't be pruned
+//                     return
+//                 }
+//             } else if (discriminant.kind === k) {
+//                 entries.splice(i, 1)
+//                 return
+//             }
+//         } else if (
+//             (k === "requiredProp" ||
+//                 k === "prerequisiteProp" ||
+//                 k === "optionalProp") &&
+//             v[0] === segments[0]
+//         ) {
+//             if (typeof v[1] === "string") {
+//                 if (discriminant.kind !== "domain") {
+//                     return throwPruneFailure(discriminant)
+//                 }
+//                 entries.splice(i, 1)
+//                 return
+//             }
+//             pruneDiscriminant(v[1], segments.slice(1), discriminant, ctx)
+//             if (v[1].length === 0) {
+//                 entries.splice(i, 1)
+//             }
+//             return
+//         }
+//         // check for branch keys, which must be traversed even if there are no
+//         // segments left
+//         if (k === "domains") {
+//             /* c8 ignore start */
+//             if (keyCount(v) !== 1 || !v.object) {
+//                 return throwPruneFailure(discriminant)
+//             }
+//             /* c8 ignore stop */
+//             pruneDiscriminant(v.object, segments, discriminant, ctx)
+//             return
+//         } else if (k === "switch") {
+//             for (const caseKey in v.cases) {
+//                 pruneDiscriminant(
+//                     v.cases[caseKey]!,
+//                     segments,
+//                     discriminant,
+//                     ctx
+//                 )
+//             }
+//             return
+//         } else if (k === "branches") {
+//             for (const branch of v) {
+//                 pruneDiscriminant(branch, segments, discriminant, ctx)
+//             }
+//             return
+//         }
+//     }
+//     return throwPruneFailure(discriminant)
+// }
 
-const throwPruneFailure = (discriminant: Discriminant) =>
-    throwInternalError(
-        `Unexpectedly failed to discriminate ${discriminant.kind} at path '${discriminant.path}'`
-    )
+// const throwPruneFailure = (discriminant: Discriminant) =>
+//     throwInternalError(
+//         `Unexpectedly failed to discriminate ${discriminant.kind} at path '${discriminant.path}'`
+//     )
 
 type Discriminants = {
     disjointsByPair: DisjointsByPair
@@ -353,9 +339,15 @@ const findBestDiscriminant = (
     return bestDiscriminant
 }
 
+type DiscriminantDefinitionKinds = {
+    value: unknown
+    domain: Domain
+    class: object
+}
+
 export const serializeDefinitionIfAllowed = <kind extends DiscriminantKind>(
     kind: kind,
-    definition: TraversalValue<kind>
+    definition: DiscriminantDefinitionKinds[kind]
 ): string | undefined => {
     switch (kind) {
         case "value":

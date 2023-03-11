@@ -11,7 +11,6 @@ import {
 } from "../compose.ts"
 import type { Node } from "../node.ts"
 import { isLiteralNode, nodeIntersection } from "../node.ts"
-import type { RuleCompiler } from "./rules.ts"
 
 export type PropsRule<$ = Dict> = {
     [propKey in string]: Prop<$>
@@ -156,18 +155,15 @@ const propKeysIntersection = composeKeyedIntersection<PropsRule>(
     { onEmpty: "bubble" }
 )
 
-export const compileProps: RuleCompiler<PropsRule> = (
-    entries,
-    props,
-    state
-) => {
+export const compileProps = (props: PropsRule, state: CompilationState) => {
     const keyConfig = state.type.config?.keys ?? state.type.scope.config.keys
     return keyConfig === "loose"
-        ? compileLooseProps(entries, props, state)
-        : compilePropsRecord(keyConfig, entries, props, state)
+        ? compileLooseProps(props, state)
+        : compilePropsRecord(keyConfig, props, state)
 }
 
-const compileLooseProps: RuleCompiler<PropsRule> = (entries, props, state) => {
+const compileLooseProps = (props: PropsRule, state: CompilationState) => {
+    const lines = []
     // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
     for (const k in props) {
         const prop = props[k]

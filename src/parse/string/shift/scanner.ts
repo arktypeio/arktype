@@ -157,7 +157,7 @@ export namespace Scanner {
         unscanned extends string,
         terminator extends string,
         scanned extends string = ""
-    > = unscanned extends Scanner.shift<infer lookahead, infer nextUnscanned>
+    > = unscanned extends shift<infer lookahead, infer nextUnscanned>
         ? lookahead extends terminator
             ? scanned extends `${infer base}${EscapeToken}`
                 ? shiftUntil<nextUnscanned, terminator, `${base}${lookahead}`>
@@ -169,7 +169,7 @@ export namespace Scanner {
         unscanned extends string,
         nonTerminator extends string,
         scanned extends string = ""
-    > = unscanned extends Scanner.shift<infer lookahead, infer nextUnscanned>
+    > = unscanned extends shift<infer lookahead, infer nextUnscanned>
         ? lookahead extends nonTerminator
             ? shiftUntilNot<
                   nextUnscanned,

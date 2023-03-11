@@ -120,15 +120,6 @@ export const isTransformationBranch = (branch: Branch): branch is MetaBranch =>
 export const compileBranch = (branch: Branch, state: CompilationState) => {
     if (isTransformationBranch(branch)) {
         const result = compileRules(branch.rules, state)
-        if (branch.morph) {
-            if (typeof branch.morph === "function") {
-                result.push(["morph", branch.morph])
-            } else {
-                for (const morph of branch.morph) {
-                    result.push(["morph", morph])
-                }
-            }
-        }
         return result
     }
     return compileRules(branch, state)
