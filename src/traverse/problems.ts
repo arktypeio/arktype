@@ -1,3 +1,4 @@
+import type { Bound } from "../nodes/rules/range.ts"
 import { Scanner } from "../parse/string/shift/scanner.ts"
 import type { SizedData } from "../utils/data.ts"
 import { DataWrapper, unitsOf } from "../utils/data.ts"
@@ -65,10 +66,6 @@ class ProblemArray extends Array<Problem> {
         return this.add("custom", mustBe, context)
     }
 
-    addNew(...args: ConstructorParameters<typeof Problem>) {
-        return this.addProblem(new Problem(...args))
-    }
-
     add<code extends ProblemCode>(
         code: code,
         ...args: ProblemParams<code>
@@ -94,11 +91,11 @@ class ProblemArray extends Array<Problem> {
                 was: ""
             }
         )
-        this.addProblem(problem)
+        this.addFrom(problem)
         return problem
     }
 
-    addProblem(problem: Problem) {
+    addFrom(problem: Problem) {
         const pathKey = `${problem.path}`
         const existing = this.byPath[pathKey]
         if (existing) {
@@ -175,7 +172,7 @@ type ProblemDefinitions = {
     domain: { domain: Domain }
     missing: { data: undefined }
     extraneous: {}
-    size: { comparator: Scanner.Comparator; limit: number; data: SizedData }
+    size: { bound: Bound; data: SizedData }
     regex: { source: string; data: string }
     value: { value: unknown }
     intersection: { parts: (string | Problem)[] }
@@ -289,11 +286,11 @@ const defaultProblemConfig: {
         was: ""
     },
     size: {
-        mustBe: ({ comparator, limit, data }) => {
+        mustBe: ({ bound, data }) => {
             const units = unitsOf(data)
-            return `${Scanner.comparatorDescriptions[comparator]} ${limit}${
-                units ? ` ${units}` : ""
-            }`
+            return `${Scanner.comparatorDescriptions[bound.comparator]} ${
+                bound.limit
+            }${units ? ` ${units}` : ""}`
         },
         was: ({ size }) => `${size}`
     },

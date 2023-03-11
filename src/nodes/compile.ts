@@ -102,9 +102,9 @@ export class Compiler {
     check<code extends ProblemCode, condition extends string>(
         code: code,
         condition: condition,
-        source: ProblemRequirement<code>
+        requirement: ProblemRequirement<code>
     ) {
-        return `${condition} || ${this.problem(code, source)}` as const
+        return `${condition} || ${this.problem(code, requirement)}` as const
     }
 
     get data() {
@@ -112,11 +112,11 @@ export class Compiler {
         return ["data", ...this.path].join(".")
     }
 
-    problem<code extends ProblemCode, source extends ProblemRequirement<code>>(
-        code: code,
-        source: source
-    ) {
-        return `!state.problems.addNew("${code}", ${source}${
+    problem<
+        code extends ProblemCode,
+        requirement extends ProblemRequirement<code>
+    >(code: code, requirement: requirement) {
+        return `!state.reject("${code}", ${requirement}${
             this.path.length ? `, ${JSON.stringify({ path: this.path })}` : ""
         })` as const
     }

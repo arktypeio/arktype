@@ -2,7 +2,7 @@ import type { Scope } from "../scopes/scope.ts"
 import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
 import type { xor } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import { Problems } from "./problems.ts"
+import { Problem, Problems } from "./problems.ts"
 
 export const CheckResult = class {
     data?: unknown
@@ -27,6 +27,10 @@ export class TraversalState<data = unknown> {
     constructor(public data: data, public type: Type) {
         this.rootScope = type.scope
         this.config = type.config
+    }
+
+    reject(...args: ConstructorParameters<typeof Problem>) {
+        return this.problems.addFrom(new Problem(...args))
     }
 
     // traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {

@@ -170,7 +170,7 @@ const compileLooseProps = (props: PropsRule, c: Compiler) => {
         const prop = props[k]
         c.path.push(k)
         if (k === mappedKeys.index) {
-            lines.push(`for(let i = 0; i < ${c.data}.length; i++) {`, ``, ``)
+            // lines.push(`for(let i = 0; i < ${c.data}.length; i++) {`, ``, `}`)
             // lines.push(...compileNode(propToNode(prop), c))
         } else if (isOptional(prop)) {
             lines.push(...compileNode(prop[1], c))
