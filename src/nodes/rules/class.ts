@@ -1,7 +1,7 @@
 import type { constructor } from "../../utils/generics.ts"
 import { objectKindOf } from "../../utils/objectKinds.ts"
+import type { CompilationState } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
-import type { RuleCompiler } from "./rules.ts"
 
 export const classIntersection = composeIntersection<constructor>(
     (l, r, state) => {
@@ -15,8 +15,10 @@ export const classIntersection = composeIntersection<constructor>(
     }
 )
 
-export const compileClassCheck: RuleCompiler<constructor> = (expected, state) =>
-    `data instanceof expected` as const
+export const compileClassCheck = (
+    expected: constructor,
+    state: CompilationState
+) => `data instanceof expected` as const
 
 // return (
 //     state.data instanceof expectedClass ||

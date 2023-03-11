@@ -5,7 +5,6 @@ import type {
     constructor,
     Dict
 } from "../../utils/generics.ts"
-import { listFrom } from "../../utils/generics.ts"
 import type { CompilationState } from "../compile.ts"
 import type { IntersectionState, Intersector } from "../compose.ts"
 import {
@@ -16,16 +15,11 @@ import {
 import { classIntersection } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { compileDivisorCheck, divisorIntersection } from "./divisor.ts"
-import type {
-    DistilledPropsEntry,
-    PropEntry,
-    PropsRule,
-    StrictPropsEntry
-} from "./props.ts"
-import { compileProps, propsIntersection } from "./props.ts"
-import type { FlatBound, Range } from "./range.ts"
-import { compileRange, rangeIntersection } from "./range.ts"
-import { regexIntersection } from "./regex.ts"
+import type { PropsRule } from "./props.ts"
+import { propsIntersection } from "./props.ts"
+import type { Range } from "./range.ts"
+import { compileRangeLines, rangeIntersection } from "./range.ts"
+import { compileRegexLines, regexIntersection } from "./regex.ts"
 
 export type NarrowableRules<$ = Dict> = {
     readonly regex?: CollapsibleList<string>
@@ -44,19 +38,6 @@ export type LiteralRules<
 }
 
 export type NarrowRule = CollapsibleList<Narrow>
-
-export type FlatRules = RuleEntry[]
-
-export type RuleEntry =
-    | ["regex", string]
-    | ["divisor", number]
-    | ["bound", FlatBound]
-    | ["class", constructor]
-    | DistilledPropsEntry
-    | StrictPropsEntry
-    | PropEntry
-    | ["narrow", Narrow]
-    | ["value", unknown]
 
 export type Rules<
     domain extends Domain = Domain,
@@ -116,12 +97,13 @@ export const compileRules = (
     if (rules.class) {
     }
     if (rules.divisor) {
-        lines.push(...compileDivisorCheck(rules.divisor, state))
+        lines.push(compileDivisorCheck(rules.divisor, state))
     }
     if (rules.range) {
-        lines.push(...compileRange(rules.range, state))
+        lines.push(...compileRangeLines(rules.range, state))
     }
     if (rules.regex) {
+        lines.push(...compileRegexLines(rules.regex, state))
     }
     if (rules.value) {
     }
@@ -132,66 +114,7 @@ export const compileRules = (
     return lines
 }
 
-export type RuleCompiler<t> = (rule: t, state: CompilationState) => string
-
 type UnknownRules = NarrowableRules & Partial<LiteralRules>
-
-const ruleCompilers: {
-    [k in keyof UnknownRules]-?: RuleCompiler<UnknownRules[k] & {}>
-} = {
-    regex: (rule) => {
-        for (const source of listFrom(rule)) {
-            entries.push(["regex", source])
-        }
-    },
-    divisor: compileDivisorCheck,
-    range: compileRange,
-    class: (rule) => {
-        entries.push(["class", rule])
-    },
-    props: compileProps,
-    narrow: (rule) => {
-        for (const narrow of listFrom(rule)) {
-            entries.push(["narrow", narrow])
-        }
-    },
-    value: (rule) => {
-        entries.push(["value", rule])
-    }
-}
-
-// export const precedenceMap: {
-//     readonly [k in TraversalKey]: number
-// } = {
-//     // Config: Applies before any checks
-//     config: -1,
-//     // Critical: No other checks are performed if these fail
-//     domain: 0,
-//     value: 0,
-//     domains: 0,
-//     branches: 0,
-//     switch: 0,
-//     alias: 0,
-//     class: 0,
-//     // Shallow: All shallow checks will be performed even if one or more fail
-//     regex: 1,
-//     divisor: 1,
-//     bound: 1,
-//     // Prerequisite: These are deep checks with special priority, e.g. the
-//     // length of a tuple, which causes other deep props not to be checked if it
-//     // is invalid
-//     prerequisiteProp: 2,
-//     // Deep: Performed if all shallow checks pass, even if one or more deep checks fail
-//     distilledProps: 3,
-//     strictProps: 3,
-//     requiredProp: 3,
-//     optionalProp: 3,
-//     indexProp: 3,
-//     // Narrow: Only performed if all shallow and deep checks pass
-//     narrow: 4,
-//     // Morph: Only performed if all validation passes
-//     morph: 5
-// }
 
 export const literalSatisfiesRules = (
     data: unknown,

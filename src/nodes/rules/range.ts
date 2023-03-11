@@ -1,17 +1,21 @@
 import type { Scanner } from "../../parse/string/shift/scanner.ts"
-import type { evaluate } from "../../utils/generics.ts"
+import type { evaluate, xor } from "../../utils/generics.ts"
 import type { CompilationState } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
 
 export type Range = RelativeRange | Bound<"==">
 
-type RelativeRange<
-    min extends LowerBound = LowerBound,
-    max extends UpperBound = UpperBound
-> = {
-    min?: min
-    max?: max
-}
+// disallow empty object
+type RelativeRange =
+    | { min: LowerBound; max: UpperBound }
+    | xor<
+          {
+              min: LowerBound
+          },
+          {
+              max: UpperBound
+          }
+      >
 
 export type BoundKind = evaluate<keyof RelativeRange>
 
@@ -88,40 +92,46 @@ const rangeAllows = (range: Range, n: number) =>
         ? n === range.limit
         : minAllows(range.min, n) && maxAllows(range.max, n)
 
-const minAllows = (min: RelativeRange["min"], n: number) =>
+const minAllows = (min: LowerBound | undefined, n: number) =>
     !min || n > min.limit || (n === min.limit && !isExclusive(min.comparator))
 
-const maxAllows = (max: RelativeRange["max"], n: number) =>
+const maxAllows = (max: UpperBound | undefined, n: number) =>
     !max || n < max.limit || (n === max.limit && !isExclusive(max.comparator))
 
-export type FlatBound = evaluate<Bound & { units?: string }>
+export const compileRangeLines = (range: Range, state: CompilationState) =>
+    isEqualityRange(range)
+        ? rangeLinesFrom(state, range)
+        : range.min
+        ? range.max
+            ? rangeLinesFrom(state, range.min, range.max)
+            : rangeLinesFrom(state, range.min)
+        : rangeLinesFrom(state, range.max)
 
-export const compileRange = <range extends Range>(
-    range: range,
-    state: CompilationState
-) => {
-    const lines = [`const size = typeof data === "number" ? data : data.length`]
-    if (isEqualityRange(range)) {
-        lines.push(compileBoundCheck(range, state))
-    } else {
-        if (range.min) {
-            lines.push(compileBoundCheck(range.min, state))
-        }
-        if (range.max) {
-            lines.push(compileBoundCheck(range.max, state))
-        }
-    }
-    return lines
-}
+type RangeLines = evaluate<[CompiledSizeAssignment, ...CompiledBoundCheck[]]>
 
-const compileBoundCheck = <comparator extends Scanner.Comparator>(
-    bound: Bound<comparator>,
-    state: CompilationState
-) =>
-    `size ${bound.comparator} ${bound.limit} || ${state.precompileProblem(
+const compiledSizeAssignment =
+    `const size = typeof data === "number" ? data : data.length` as const
+
+type CompiledSizeAssignment = typeof compiledSizeAssignment
+
+const rangeLinesFrom = (state: CompilationState, ...bounds: Bound[]) =>
+    [
+        compiledSizeAssignment,
+        ...bounds.map((bound) => compileBoundCheck(bound, state))
+    ] as RangeLines
+
+const compileBoundCheck = (bound: Bound, state: CompilationState) =>
+    // cast to "<comparator>" so the return type is easier to read
+    `size ${bound.comparator as "<comparator>"} ${
+        bound.limit
+    } || ${state.precompileProblem(
         "size",
-        `{ comparator: '${bound.comparator}', limit: ${bound.limit} }`
+        `{ comparator: '${bound.comparator as "<comparator>"}', limit: ${
+            bound.limit
+        } }`
     )}` as const
+
+type CompiledBoundCheck = ReturnType<typeof compileBoundCheck>
 
 export const compareStrictness = (
     kind: "min" | "max",
