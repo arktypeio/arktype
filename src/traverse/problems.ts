@@ -81,7 +81,7 @@ class ProblemArray extends Array<Problem> {
             "reason",
             {
                 // copy the path to avoid future mutations affecting it
-                path: ctx?.path ?? Path.from(this.#state.path),
+                path: ctx?.path ?? new Path(...this.#state.path),
                 // we have to check for the presence of the key explicitly since the
                 // data could be nullish
                 data: new DataWrapper(

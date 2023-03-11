@@ -13,8 +13,14 @@ import { type } from "../../src/main.ts"
 //     })
 // })
 
-console.log(type("string[]").lines)
+const t = type("string[]")
 
-console.log(type("number%2").lines)
+console.log(t.steps)
 
-console.log(type({ a: "string", b: "boolean" }).lines)
+console.log(t.js)
+
+console.log(t([""]))
+
+console.log(type("number%2").steps)
+
+console.log(type({ a: "string", b: "boolean" }).steps)

@@ -168,18 +168,32 @@ const compileLooseProps = (props: PropsRule, c: Compiler) => {
     // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
     for (const k in props) {
         const prop = props[k]
-        c.path.push(k)
         if (k === mappedKeys.index) {
-            // lines.push(`for(let i = 0; i < ${c.data}.length; i++) {`, ``, `}`)
-            // lines.push(...compileNode(propToNode(prop), c))
-        } else if (isOptional(prop)) {
-            lines.push(...compileNode(prop[1], c))
-        } else if (isPrerequisite(prop)) {
-            lines.push(...compileNode(prop[1], c))
+            if (c.path.length) {
+                lines.push(
+                    `const lastPath = state.path`,
+                    `state.path = state.path.concat(${c.path.json})`
+                )
+            }
+            lines.push(
+                `${c.data}.filter((item, i) => {`,
+                ...compileNode(propToNode(prop), c),
+                "})"
+            )
+            if (c.path.length) {
+                lines.push(`state.path = lastPath`)
+            }
         } else {
-            lines.push(...compileNode(prop, c))
+            c.path.push(k)
+            if (isOptional(prop)) {
+                lines.push(...compileNode(prop[1], c))
+            } else if (isPrerequisite(prop)) {
+                lines.push(...compileNode(prop[1], c))
+            } else {
+                lines.push(...compileNode(prop, c))
+            }
+            c.path.pop()
         }
-        c.path.pop()
     }
     return lines
 }

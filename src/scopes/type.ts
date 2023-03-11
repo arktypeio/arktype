@@ -8,7 +8,6 @@ import type {
 import type { ProblemOptions } from "../traverse/problems.ts"
 import type { CheckResult, TraversalState } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
-import { throwInternalError } from "../utils/errors.ts"
 import type { defer, evaluate } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import type { Expressions } from "./expressions.ts"
@@ -31,7 +30,8 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
 type TypeRoot<t = unknown> = evaluate<{
     [as]: t
     infer: asOut<t>
-    lines: string[]
+    steps: string[]
+    js: string
     allows: (data: unknown) => data is t
     assert: (data: unknown) => t
     traverse: CompiledTraversal
@@ -59,15 +59,10 @@ export type CompiledTraversal = (
     state: TraversalState
 ) => TraversalState
 
-export const finalizeTraversal = (
-    name: string,
-    lines: string[]
-): CompiledTraversal =>
-    Function(
-        `const _${name} = (data, state) => { 
-${lines.join(";\n")} 
-}; return _${name}`
-    )()
+export const compileJs = (name: string, steps: string[]) =>
+    `const _${name} = (data, state) => { 
+    ${steps.join(";\n")} 
+    }; return _${name}` as const
 
 export const initializeType = (
     name: string,
@@ -79,15 +74,10 @@ export const initializeType = (
         // temporarily initialize node/flat to aliases that will be included in
         // the final type in case of cyclic resolutions
         node: name,
-        lines: [`${name}(data)`],
-        check: (() =>
-            throwInternalError(
-                `Unexpected attempt to check uncompiled type '${name}'`
-            )) as any,
-        traverse: (() =>
-            throwInternalError(
-                `Unexpected attempt to traverse uncompiled type '${name}'`
-            )) as any,
+        steps: [`${name}(data)`],
+        js: uninitializedJs,
+        check: uninitializedTraversal,
+        traverse: uninitializedTraversal,
         allows: (data): data is any => !namedTraverse(data).problems,
         assert: (data) => {
             const result = namedTraverse(data)
@@ -107,12 +97,18 @@ export const initializeType = (
 
     // define within a key to dynamically assign a name to the function
     const namedTraverse = {
-        [name]: (data: unknown) => root.check(data)
+        [name]: (data: unknown) => (namedTraverse as Type).check(data)
     }[name]
 
     const t = Object.assign(namedTraverse, root)
     return t
 }
+
+const uninitializedJs = compileJs("uninitialized", [
+    `throw new Error("Unexpected attempt to check uncompiled type.")`
+])
+
+const uninitializedTraversal = Function(uninitializedJs)()
 
 export const isType = (value: unknown): value is Type =>
     (value as Type)?.infer === chainableNoOpProxy

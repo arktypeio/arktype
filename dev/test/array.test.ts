@@ -14,7 +14,7 @@ describe("parse array", () => {
                 props: { "[index]": "string" }
             }
         })
-        attest(t.lines).snap()
+        attest(t.steps).snap()
     })
     it("array intersection", () => {
         const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
@@ -28,7 +28,7 @@ describe("parse array", () => {
                 }
             }
         })
-        attest(t.lines).snap()
+        attest(t.steps).snap()
     })
     it("helper", () => {
         const t = arrayOf({ a: "string" })

@@ -40,7 +40,7 @@ import type {
     TypeOptions,
     TypeParser
 } from "./type.ts"
-import { finalizeTraversal, initializeType } from "./type.ts"
+import { compileJs, initializeType } from "./type.ts"
 
 type ScopeParser = {
     <aliases>(aliases: validateAliases<aliases, {}>): Scope<
@@ -310,8 +310,9 @@ export class Scope<context extends ScopeContext = any> {
             node = this.#resolveRecurse(node, "throw", seen).node
         }
         t.node = deepFreeze(node)
-        t.lines = compileType(t)
-        t.traverse = finalizeTraversal(t.name, t.lines)
+        t.steps = compileType(t)
+        t.js = compileJs(t.name, t.steps)
+        t.traverse = Function(t.js)()
         t.check = (data) => {
             const state = new TraversalState(data, t)
             t.traverse(data, state)
@@ -382,9 +383,10 @@ export class Scope<context extends ScopeContext = any> {
                     ? { config, node: this.resolveTypeNode(root) }
                     : root
             )
-            t.lines = compileType(t)
+            t.steps = compileType(t)
             // TODO: refactor
-            t.traverse = finalizeTraversal(t.name, t.lines)
+            t.js = compileJs(t.name, t.steps)
+            t.traverse = Function(t.js)()
             t.check = (data) => {
                 const state = new TraversalState(data, t)
                 t.traverse(data, state)

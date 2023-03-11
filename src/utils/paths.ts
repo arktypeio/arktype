@@ -8,6 +8,10 @@ export class Path extends Array<string> {
     toString(delimiter = "/") {
         return this.length ? this.join(delimiter) : delimiter
     }
+
+    get json() {
+        return JSON.stringify(this)
+    }
 }
 
 export type ReadonlyPath = arraySubclassToReadonly<Path>

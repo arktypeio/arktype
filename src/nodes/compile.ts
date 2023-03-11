@@ -1,3 +1,4 @@
+import { serialize } from "node:v8"
 import type { Scope } from "../scopes/scope.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type {
@@ -25,7 +26,7 @@ export const compileType = (type: Type) => {
 export const compileNode = (node: Node, c: Compiler): string[] => {
     if (typeof node === "string") {
         // TODO: improve
-        const lines = c.type.scope.resolve(node).lines
+        const lines = c.type.scope.resolve(node).steps
         return c.path.length
             ? lines.map((line) =>
                   line.replace("data", `data.${c.path.join(".")}`)
@@ -109,16 +110,16 @@ export class Compiler {
 
     get data() {
         // TODO: Fix props that cannot be accessed via .
-        return ["data", ...this.path].join(".")
+        return this.path.length ? `data.${this.path.join(".")}` : "data"
     }
 
     problem<
         code extends ProblemCode,
         requirement extends ProblemRequirement<code>
     >(code: code, requirement: requirement) {
-        return `!state.reject("${code}", ${requirement}${
-            this.path.length ? `, ${JSON.stringify({ path: this.path })}` : ""
-        })` as const
+        return `state.reject("${code}", ${JSON.stringify(
+            requirement
+        )}, { path: ${this.path.json}, data: ${this.data} } )` as const
     }
 
     getProblemConfig<code extends ProblemCode>(
