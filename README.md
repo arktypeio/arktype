@@ -1,4 +1,4 @@
-<h1 align="center">ArkType <sub><sup>1:1 type-safe runtime validation</sup></sub></h1>
+<h1 align="center">ArkType <sub><sup>1:1 type-safe syntax for optimized validation</sup></sub></h1>
 
 [<img src="./dev/arktype.io/static/img/arktype.gif">](https://arktype.io/try)
 <sub>
@@ -10,7 +10,7 @@
 
 <!-- @snipStart:intro -->
 
-ArkType is a runtime validation library that can infer TypeScript definitions 1:1 and reuse them as highly-optimized validators for your data.
+ArkType is a runtime validation library that can infer **TypeScript definitions** 1:1 and reuse them as **highly-optimized validators** for your data.
 
 <!-- @snipEnd -->
 
@@ -30,15 +30,19 @@ export const user = type({
 export const { data, problems } = user({
     name: "Alan Turing",
     device: {
-        // "device/platform must be 'android' or 'ios' (was 'enigma')"
+        // problems.summary: "device/platform must be 'android' or 'ios' (was 'enigma')"
         platform: "enigma"
     }
 })
 ```
 
-With each character you type, you'll get immediate feedback from TypeScript— either a specific and helpful `ParseError` or a fully-inferred `Type`! This exactly mirrors the result you can expect at runtime down to the punctuation of the error message.
+With each character you type, you'll get **immediate feedback from your editor** in the form of either a fully-inferred `Type` or a specific and helpful `ParseError`.
 
-Sound too good to be true? [See for yourself in-browser.](https://arktype.io/docs/#your-first-type)
+This result exactly mirrors what you can expect to happen at runtime- down to the punctuation of the error message.
+
+**No plugins required**.
+
+Sound too good to be true? Check out [how it works](#how) or [try it yourself in-browser.](https://arktype.io/docs/#your-first-type)
 
 <!-- @snipStart:install -->
 
@@ -91,7 +95,7 @@ packageData.dependencies![0].dependencies = [packageData]
 export const { data, problems } = types.package(packageData)
 ```
 
-### API
+## API
 
 <!--@snipStart:api -->
 
@@ -101,7 +105,7 @@ In the meantime, check out the examples here and use the type hints you get to l
 
 <!--@snipEnd -->
 
-## How
+## How?
 
 ArkType's isomorphic parser has parallel static and dynamic implementations. This means as soon as you type a definition in your editor, you'll know the eventual result at runtime.
 

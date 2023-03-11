@@ -1,6 +1,6 @@
 import { type } from "../../src/main.ts"
 
-// Definitions are checked as you type and inferred as TS.
+// Definitions are statically parsed and inferred as TS.
 export const user = type({
     name: "string",
     device: {
@@ -13,7 +13,7 @@ export const user = type({
 export const { data, problems } = user({
     name: "Alan Turing",
     device: {
-        // "device/platform must be 'android' or 'ios' (was 'enigma')"
+        // problems.summary: "device/platform must be 'android' or 'ios' (was 'enigma')"
         platform: "enigma"
     }
 })
