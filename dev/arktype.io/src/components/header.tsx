@@ -15,24 +15,29 @@ export const Header = ({ title, tagline }: Record<string, string>) => {
                 justifyContent: "center"
             }}
         >
-            <LogoCloud names={["typescript", "vscode", "intellij", "vim"]} />
+            {useIsMobile() ? null : (
+                <LogoCloud
+                    names={["typescript", "vscode", "intellij", "vim"]}
+                />
+            )}
             <Stack flexGrow={1}>
                 <Typography component="h1" variant="h2" color="secondary">
                     {title}
                 </Typography>
                 <Typography
                     component="h2"
-                    variant="h6"
+                    variant="h5"
                     color="common.white"
-                    style={{
-                        whiteSpace: "nowrap",
-                        fontSize: useIsMobile() ? "1rem" : "unset"
-                    }}
+                    // style={{
+                    //     fontSize: useIsMobile() ? "1rem" : "unset"
+                    // }}
                 >
                     {tagline}
                 </Typography>
             </Stack>
-            <LogoCloud names={["javascript", "chromium", "node", "deno"]} />
+            {useIsMobile() ? null : (
+                <LogoCloud names={["javascript", "chromium", "node", "deno"]} />
+            )}
             <Boat />
         </header>
     )

@@ -6,6 +6,8 @@ export type ThemeConfigOptions = {
 
 export const cascadiaCodeFamily = `"Cascadia Code", sans-serif`
 
+// Consider #0bda96 as an accent color?
+
 export const getTheme = () =>
     responsiveFontSizes(
         createTheme({

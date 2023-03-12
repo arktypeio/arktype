@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { describe, it } from "mocha"
-import { intersection, type } from "../../src/main.ts"
+import { intersection, scope, type } from "../../src/main.ts"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
@@ -52,7 +53,7 @@ describe("intersection", () => {
                 attest(type("string&'a'").node).snap({ string: { value: "a" } })
             })
         })
-        it("list intersection", () => {
+        it("array intersection", () => {
             const t = type([
                 [{ a: "string" }, "[]"],
                 "&",

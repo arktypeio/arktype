@@ -1,4 +1,4 @@
-<h1 align="center">ArkType <sub><sup>1:1 type-safe syntax for optimized validation</sup></sub></h1>
+<h1 align="center">ArkType <sub><sup>Isomorphic types for TS/JS</sup></sub></h1>
 
 [<img src="./dev/arktype.io/static/img/arktype.gif">](https://arktype.io/try)
 <sub>
@@ -10,7 +10,7 @@
 
 <!-- @snipStart:intro -->
 
-ArkType is a runtime validation library that can infer **TypeScript definitions** 1:1 and reuse them as **highly-optimized validators** for your data.
+ArkType is performant a runtime validation library that can infer **TypeScript definitions** 1:1 and reuse them as **highly-optimized validators** for your data.
 
 <!-- @snipEnd -->
 
@@ -38,15 +38,15 @@ export const { data, problems } = user({
 
 With each character you type, you'll get **immediate feedback from your editor** in the form of either a fully-inferred `Type` or a specific and helpful `ParseError`.
 
-This result exactly mirrors what you can expect to happen at runtime- down to the punctuation of the error message.
+This result exactly mirrors what will happen at runtime, right down to the punctuation of the error message- **no plugins required**.
 
-**No plugins required**.
-
-Sound too good to be true? Check out [how it works](#how) or [try it yourself in-browser.](https://arktype.io/docs/#your-first-type)
+Sound too good to be true? Check out [how it works](#how), try it [in-browser](https://arktype.io/docs/#your-first-type), or navigate very slightly forward to [our installation guide](#install).
 
 <!-- @snipStart:install -->
 
-## Install <sub><sub>📦`12KB` gzipped, `0` dependencies</sub></sub>
+<h2 id="install">
+  Install <sub><sub>📦`12KB` gzipped, `0` dependencies</sub></sub>
+</h2>
 
 <img src="./dev/arktype.io/static/img/npm.svg" alt="Npm Icon" height="16px" /> <code>npm install arktype</code>
 <sub>(or whatever package manager you prefer)</sub>
