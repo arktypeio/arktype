@@ -1,4 +1,4 @@
-import { compileType } from "../nodes/compile.ts"
+import { compileJs, compileType } from "../nodes/compile.ts"
 import type { DomainsNode, Node, ResolvedNode } from "../nodes/node.ts"
 import { isConfigNode } from "../nodes/node.ts"
 import type { ConfigTuple } from "../parse/ast/config.ts"
@@ -40,7 +40,7 @@ import type {
     TypeOptions,
     TypeParser
 } from "./type.ts"
-import { compileJs, initializeType } from "./type.ts"
+import { initializeType } from "./type.ts"
 
 type ScopeParser = {
     <aliases>(aliases: validateAliases<aliases, {}>): Scope<
@@ -314,7 +314,7 @@ export class Scope<context extends ScopeContext = any> {
         t.js = compileJs(t.name, t.steps)
         t.traverse = Function(t.js)()
         t.check = (data) => {
-            const state = new TraversalState(data, t)
+            const state = new TraversalState(t)
             t.traverse(data, state)
             const result = new CheckResult(state)
             if (state.problems.count) {
@@ -323,7 +323,8 @@ export class Scope<context extends ScopeContext = any> {
                 for (const [o, k] of state.entriesToPrune) {
                     delete o[k]
                 }
-                result.data = state.data
+                result.data = {}
+                //state.data
             }
             return result
         }
@@ -388,7 +389,7 @@ export class Scope<context extends ScopeContext = any> {
             t.js = compileJs(t.name, t.steps)
             t.traverse = Function(t.js)()
             t.check = (data) => {
-                const state = new TraversalState(data, t)
+                const state = new TraversalState(t)
                 t.traverse(data, state)
                 const result = new CheckResult(state)
                 if (state.problems.count) {
@@ -397,7 +398,8 @@ export class Scope<context extends ScopeContext = any> {
                     for (const [o, k] of state.entriesToPrune) {
                         delete o[k]
                     }
-                    result.data = state.data
+                    //state.data
+                    result.data = {}
                 }
                 return result
             }

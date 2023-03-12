@@ -138,7 +138,10 @@ export const predicateUnion = (
     return resultBranches.length === 1 ? resultBranches[0] : resultBranches
 }
 
-export const compilePredicate = (predicate: Predicate, c: Compilation) => {
+export const compilePredicate = (
+    predicate: Predicate,
+    c: Compilation
+): string[] => {
     if (predicate === true) {
         return []
     }

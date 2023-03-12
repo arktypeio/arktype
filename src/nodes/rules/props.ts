@@ -163,34 +163,37 @@ export const compileProps = (props: PropsRule, c: Compilation) => {
 }
 
 const compileLooseProps = (props: PropsRule, c: Compilation) => {
+    const lines: string[] = []
     // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
     for (const k in props) {
         const prop = props[k]
         if (k === mappedKeys.index) {
             if (c.path.length) {
-                c.lines.push(
+                lines.push(
                     `const lastPath = state.path`,
                     `state.path = state.path.concat(${c.path.json})`
                 )
             }
-            c.lines.push(`${c.data}.filter((item, i) => {`)
-            compileNode(propToNode(prop), c)
-            c.lines.push("})")
+            const arrayLines = compileNode(propToNode(prop), c)
+            lines.push(`${c.data}.filter((data, i) => {`)
+            lines.push(`state.path.push(i)`, ...arrayLines, `state.path.pop()`)
+            lines.push("})")
             if (c.path.length) {
-                c.lines.push(`state.path = lastPath`)
+                lines.push(`state.path = lastPath`)
             }
         } else {
             c.path.push(k)
             if (isOptional(prop)) {
-                compileNode(prop[1], c)
+                lines.push(...compileNode(prop[1], c))
             } else if (isPrerequisite(prop)) {
-                compileNode(prop[1], c)
+                lines.push(...compileNode(prop[1], c))
             } else {
-                compileNode(prop, c)
+                lines.push(...compileNode(prop, c))
             }
             c.path.pop()
         }
     }
+    return lines
 }
 
 // const compilePropsRecord = (

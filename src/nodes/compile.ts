@@ -18,10 +18,14 @@ import { compilePredicate } from "./predicate.ts"
 //     flatPredicate[0] &&
 //     (flatPredicate[0][0] === "value" || flatPredicate[0][0] === "class")
 
-export const compileType = (type: Type) => {
+export const compileJs = (name: string, steps: string[]) =>
+    `return (data, state) => {
+${steps.join(";\n")} 
+}` as const
+
+export const compileType = (type: Type): string[] => {
     const state = new Compilation(type)
-    compileNode(type.node, state)
-    return state.lines
+    return compileNode(type.node, state)
 }
 
 export const compileNode = (node: Node, c: Compilation) => {
@@ -56,11 +60,10 @@ const compileTypeNode = (node: DomainsNode, c: Compilation) => {
             compileDomainCheck(domain, c.data),
             domain
         )
-        c.lines.push(domainCheck)
         if (predicate === true) {
-            return
+            return [domainCheck]
         }
-        compilePredicate(predicate, c)
+        return [domainCheck, ...compilePredicate(predicate, c)]
         // const flatPredicate = compilePredicate(predicate, state)
         // return hasImpliedDomain(flatPredicate)
         //     ? flatPredicate
@@ -70,7 +73,7 @@ const compileTypeNode = (node: DomainsNode, c: Compilation) => {
     // for (const domain of domains) {
     //     result[domain] = compilePredicate(node[domain]!, state)
     // }
-    return //[["domains", result]]
+    return [] //[["domains", result]]
 }
 
 export type TraversalConfig = {
@@ -96,7 +99,6 @@ export class Compilation {
     path = new Path()
     failFast = false
     traversalConfig = initializeCompilationConfig()
-    lines: string[] = []
     readonly rootScope: Scope
 
     constructor(public type: Type) {
@@ -146,10 +148,11 @@ export class Compilation {
         for (const entry of configEntries) {
             this.traversalConfig[entry[0]].unshift(entry[1] as any)
         }
-        compileTypeNode(node.node, this)
+        const result = compileTypeNode(node.node, this)
         for (const entry of configEntries) {
             this.traversalConfig[entry[0]].shift()
         }
+        return result
     }
 
     // traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {

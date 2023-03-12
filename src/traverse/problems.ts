@@ -84,9 +84,7 @@ class ProblemArray extends Array<Problem> {
                 path: ctx?.path ?? new Path(...this.#state.path),
                 // we have to check for the presence of the key explicitly since the
                 // data could be nullish
-                data: new DataWrapper(
-                    "data" in ctx ? ctx.data : (this.#state.data as any)
-                ),
+                data: new DataWrapper("data" in ctx ? ctx.data : ({} as any)),
                 mustBe: "",
                 was: ""
             }

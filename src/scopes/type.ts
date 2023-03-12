@@ -1,3 +1,4 @@
+import { compileJs } from "../nodes/compile.ts"
 import type { Node } from "../nodes/node.ts"
 import type { ParsedMorph } from "../parse/ast/morph.ts"
 import type {
@@ -58,11 +59,6 @@ export type CompiledTraversal = (
     data: unknown,
     state: TraversalState
 ) => TraversalState
-
-export const compileJs = (name: string, steps: string[]) =>
-    `return (data, state) => {
-${steps.join(";\n")} 
-}` as const
 
 export const initializeType = (
     name: string,

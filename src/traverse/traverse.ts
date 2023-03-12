@@ -14,7 +14,7 @@ export type CheckResult<out = unknown> = xor<
     { problems: Problems }
 >
 
-export class TraversalState<data = unknown> {
+export class TraversalState {
     path = new Path()
     problems: Problems = new Problems(this)
     entriesToPrune: [data: Record<string, unknown>, key: string][] = []
@@ -24,7 +24,7 @@ export class TraversalState<data = unknown> {
 
     #seen: { [name in QualifiedTypeName]?: object[] } = {}
 
-    constructor(public data: data, public type: Type) {
+    constructor(public type: Type) {
         this.rootScope = type.scope
         this.config = type.config
     }
