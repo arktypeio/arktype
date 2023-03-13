@@ -48,15 +48,45 @@ type inferIntersectionRecurse<
               } & Omit<r, keyof l>
           >
       >
-    : [l, r] extends [List<infer lItem>, List<infer rItem>]
-    ? inferIntersectionRecurse<
-          lItem,
-          rItem,
+    : l extends List
+    ? r extends List
+        ? inferArrayIntersection<l, r, path>
+        : l & r
+    : l & r
+
+type inferArrayIntersection<
+    l extends List,
+    r extends List,
+    path extends string[]
+> = isTuple<l> extends true
+    ? {
+          [i in keyof l]: inferIntersectionRecurse<
+              l[i],
+              r[i & keyof r],
+              [...path, `${i}`]
+          > extends infer result
+              ? tryCatch<result, result>
+              : never
+      }
+    : isTuple<r> extends true
+    ? {
+          [i in keyof r]: inferIntersectionRecurse<
+              l[i & keyof l],
+              r[i],
+              [...path, `${i}`]
+          > extends infer result
+              ? tryCatch<result, result>
+              : never
+      }
+    : inferIntersectionRecurse<
+          l[number],
+          r[number],
           [...path, MappedKeys["index"]]
       > extends infer result
-        ? tryCatch<result, result[]>
-        : never
-    : l & r
+    ? tryCatch<result, result[]>
+    : never
+
+type isTuple<list extends List> = number extends list["length"] ? false : true
 
 type bubblePropErrors<o> = extractValues<o, error> extends never
     ? o
