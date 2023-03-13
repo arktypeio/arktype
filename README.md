@@ -193,4 +193,3 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 [<img height="64px" src="https://avatars.githubusercontent.com/u/6759464">](https://github.com/tmm)
 
 [tmm](https://github.com/tmm)
-
