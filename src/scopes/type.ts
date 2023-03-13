@@ -15,6 +15,8 @@ import type { Expressions } from "./expressions.ts"
 import type { Scope } from "./scope.ts"
 
 export type TypeParser<$> = {
+    // Parse and check the definition, returning either the original input for a
+    // valid definition or a string representing an error message.
     <def>(def: validateDefinition<def, $>): parseType<def, $>
 
     <def>(def: validateDefinition<def, $>, opts: TypeOptions): parseType<def, $>
@@ -24,9 +26,11 @@ export type TypeParserProps<$> = {
     from: Expressions<$>["node"]
 }
 
+// Reuse the validation result to determine if the type will be successfully created.
+// If it will, infer it and create a validator. Otherwise, return never.
 export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
-    : Type<never>
+    : never
 
 type TypeRoot<t = unknown> = evaluate<{
     [as]: t
