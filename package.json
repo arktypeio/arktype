@@ -1,7 +1,7 @@
 {
     "name": "arktype",
     "description": "TypeScript's 1:1 runtime validator, optimized from V8 to VSCode",
-    "version": "1.0.8-alpha",
+    "version": "1.0.9-alpha",
     "author": {
         "name": "David Blass",
         "email": "david@arktype.io",

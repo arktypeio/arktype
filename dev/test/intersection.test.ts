@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { describe, it } from "mocha"
-import { intersection, scope, type } from "../../src/main.ts"
+import { intersection, type } from "../../src/main.ts"
+import type { Node } from "../../src/nodes/node.ts"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
@@ -73,6 +74,63 @@ describe("intersection", () => {
                     }
                 }
             })
+        })
+        it("tuple intersection", () => {
+            const t = type([[{ a: "string" }], "&", [{ b: "boolean" }]])
+            attest(t.infer).typed as [
+                {
+                    a: string
+                    b: boolean
+                }
+            ]
+            attest(t.node).snap({
+                object: {
+                    class: "(function Array)",
+                    props: {
+                        "0": {
+                            object: { props: { a: "string", b: "boolean" } }
+                        },
+                        length: ["!", { number: { value: 1 } }]
+                    }
+                }
+            })
+        })
+        it("mixed tuple intersection", () => {
+            const tupleAndArray = type([
+                [{ a: "string" }],
+                "&",
+                [{ b: "boolean" }, "[]"]
+            ])
+            const arrayAndTuple = type([
+                [{ b: "boolean" }, "[]"],
+                "&",
+                [{ a: "string" }]
+            ])
+            attest(tupleAndArray.infer).typed as [
+                {
+                    a: string
+                    b: boolean
+                }
+            ]
+            attest(arrayAndTuple.infer).typed as [
+                {
+                    a: string
+                    b: boolean
+                }
+            ]
+            const expectedNode: Node = {
+                object: {
+                    class: Array,
+                    props: {
+                        "0": {
+                            object: { props: { a: "string", b: "boolean" } }
+                        },
+                        length: ["!", { number: { value: 1 } }]
+                    }
+                }
+            }
+            attest(tupleAndArray.node).equals(expectedNode)
+            attest(arrayAndTuple.node).equals(expectedNode)
         })
         it("helper", () => {
             const t = intersection({ a: "string" }, { b: "boolean" })
