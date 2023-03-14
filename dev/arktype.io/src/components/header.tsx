@@ -26,11 +26,12 @@ export const Header = ({ title, tagline }: Record<string, string>) => {
                 </Typography>
                 <Typography
                     component="h2"
-                    variant="h5"
+                    variant="h6"
                     color="common.white"
-                    // style={{
-                    //     fontSize: useIsMobile() ? "1rem" : "unset"
-                    // }}
+                    style={{
+                        whiteSpace: "nowrap",
+                        fontSize: useIsMobile() ? "1rem" : "unset"
+                    }}
                 >
                     {tagline}
                 </Typography>

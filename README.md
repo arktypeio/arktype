@@ -1,4 +1,4 @@
-<h1 align="center">ArkType <sub><sup>TypeScript's 1:1 runtime validator</sup></sub></h1>
+<h1 align="center">ArkType <sub><sup>TypeScript's 1:1 validator</sup></sub></h1>
 
 [<img src="./dev/arktype.io/static/img/arktype.gif">](https://arktype.io/try)
 <sub>
@@ -10,7 +10,11 @@
 
 <!-- @snipStart:intro -->
 
-ArkType is performant a runtime validation library that can infer **TypeScript definitions** 1:1 and reuse them as **highly-optimized validators** for your data.
+<p>ArkType is a runtime validation library that can infer <b>TypeScript definitions 1:1</b> and reuse them as <b>highly-optimized validators</b> for your data.</p>
+
+<p>With each character you type, you'll get <b>immediate feedback from your editor</b> in the form of either a fully-inferred <code>Type</code> or a specific and helpful <code>ParseError</code>.</p>
+
+<p>This result exactly mirrors what you can expect to happen at runtime down to the punctuation of the error message- <b>no plugins required</b>.</p>
 
 <!-- @snipEnd -->
 
@@ -36,17 +40,13 @@ export const { data, problems } = user({
 })
 ```
 
-With each character you type, you'll get **immediate feedback from your editor** in the form of either a fully-inferred `Type` or a specific and helpful `ParseError`.
+Check out [how it works](#how), [try it in-browser](https://arktype.io/docs/#your-first-type), or [scroll slightly](#install) to read about installation.
 
-This result exactly mirrors what will happen at runtime, right down to the punctuation of the error message- **no plugins required**.
-
-Sound too good to be true? Check out [how it works](#how), try it [in-browser](https://arktype.io/docs/#your-first-type), or navigate very slightly forward to [our installation guide](#install).
+<a id="install" />
 
 <!-- @snipStart:install -->
 
-<h2 id="install">
-  Install <sub><sub>📦`12KB` gzipped, `0` dependencies</sub></sub>
-</h2>
+## Install <sub><sub>📦`12KB` gzipped, `0` dependencies</sub></sub>
 
 <img src="./dev/arktype.io/static/img/npm.svg" alt="Npm Icon" height="16px" /> <code>npm install arktype</code>
 <sub>(or whatever package manager you prefer)</sub>

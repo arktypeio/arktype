@@ -1,6 +1,6 @@
 import { hasDomain } from "./domains.ts"
 
-export const asConst = <t>(t: asConst<t>) => t
+export const asConst = <t>(t: asConstRecurse<t>) => t
 
 export type asConst<t> = castWithExclusion<t, asConstRecurse<t>, []>
 

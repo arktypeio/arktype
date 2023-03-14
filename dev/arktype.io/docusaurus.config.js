@@ -60,8 +60,7 @@ const arkDarkPrismTheme = {
 const config = {
     title: "ArkType",
     // @lineFrom:package.json:description |> embed(tagline:,,)
-    tagline:
-        "Performant runtime validation for TypeScript with state-of-the-art static inference",
+    tagline: "TypeScript's 1:1 validator, optimized from editor to runtime",
     url: "https://arktype.io",
     baseUrl: "/",
     onBrokenLinks: "throw",
