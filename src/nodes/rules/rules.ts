@@ -20,6 +20,7 @@ import { compileProps, propsIntersection } from "./props.ts"
 import type { Range } from "./range.ts"
 import { compileRangeLines, rangeIntersection } from "./range.ts"
 import { compileRegexLines, regexIntersection } from "./regex.ts"
+import { compileValueCheck } from "./value.ts"
 
 export type NarrowableRules<$ = Dict> = {
     readonly regex?: CollapsibleList<string>
@@ -91,6 +92,9 @@ export const narrowableRulesIntersection =
 
 export const compileRules = (rules: UnknownRules, c: Compilation) => {
     const lines: string[] = []
+    if (rules.value) {
+        lines.push(compileValueCheck(rules.value, c))
+    }
     if (rules.class) {
         lines.push(compileClassCheck(rules.class, c))
     }
@@ -102,8 +106,6 @@ export const compileRules = (rules: UnknownRules, c: Compilation) => {
     }
     if (rules.regex) {
         lines.push(...compileRegexLines(rules.regex, c))
-    }
-    if (rules.value) {
     }
     if (rules.props) {
         lines.push(...compileProps(rules.props, c))
