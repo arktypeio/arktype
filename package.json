@@ -1,7 +1,7 @@
 {
     "name": "arktype",
-    "description": "A 1:1 type-safe syntax for optimized validation",
-    "version": "1.0.8-alpha",
+    "description": "TypeScript's 1:1 validator, optimized from editor to runtime",
+    "version": "1.0.9-alpha",
     "author": {
         "name": "David Blass",
         "email": "david@arktype.io",

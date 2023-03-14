@@ -73,7 +73,9 @@ const config = {
     themes: [
         [
             "@docusaurus/theme-classic",
-            { customCss: require.resolve("./src/css/custom.css") }
+            {
+                customCss: require.resolve("./src/css/custom.css")
+            }
         ]
     ],
     plugins: [
@@ -95,6 +97,7 @@ const config = {
     themeConfig:
         /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
         ({
+            image: "img/logo2To1.png",
             colorMode: {
                 defaultMode: "dark"
             },
@@ -147,6 +150,10 @@ const config = {
                             {
                                 label: "Discord",
                                 href: "https://discord.gg/WSNF3Kc4xh"
+                            },
+                            {
+                                label: "Twitter",
+                                href: "https://twitter.com/arktypeio"
                             },
                             {
                                 label: "Twitch",
