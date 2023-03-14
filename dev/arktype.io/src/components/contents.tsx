@@ -35,12 +35,26 @@ export const Contents = () => {
                     fontSize="1.3rem"
                 >
                     {/* @blockFrom:README.md:intro */}
-                    ArkType is a type-safe runtime validator that understands
-                    TypeScript syntax.
-                    <br />
-                    <br />
-                    Each character you type is statically parsed so you'll know
-                    exactly what to expect from editor to runtime ⛵
+
+                    <p>
+                        ArkType is a runtime validation library that can infer{" "}
+                        <b>TypeScript definitions 1:1</b> and reuse them as{" "}
+                        <b>highly-optimized validators</b> for your data.
+                    </p>
+
+                    <p>
+                        With each character you type, you'll get{" "}
+                        <b>immediate feedback from your editor</b> in the form
+                        of either a fully-inferred <code>Type</code> or a
+                        specific and helpful <code>ParseError</code>.
+                    </p>
+
+                    <p>
+                        This result exactly mirrors what you can expect to
+                        happen at runtime down to the punctuation of the error
+                        message- <b>no plugins required</b>.
+                    </p>
+
                     {/* @blockEnd (these extra spaces are here so it stays on its own line) */}
                 </Typography>
                 <Features />

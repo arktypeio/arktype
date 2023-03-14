@@ -10,7 +10,11 @@
 
 <!-- @snipStart:intro -->
 
-ArkType is a runtime validation library that can infer **TypeScript definitions** 1:1 and reuse them as **highly-optimized validators** for your data.
+<p>ArkType is a runtime validation library that can infer <b>TypeScript definitions 1:1</b> and reuse them as <b>highly-optimized validators</b> for your data.</p>
+
+<p>With each character you type, you'll get <b>immediate feedback from your editor</b> in the form of either a fully-inferred <code>Type</code> or a specific and helpful <code>ParseError</code>.</p>
+
+<p>This result exactly mirrors what you can expect to happen at runtime down to the punctuation of the error message- <b>no plugins required</b>.</p>
 
 <!-- @snipEnd -->
 
@@ -36,13 +40,9 @@ export const { data, problems } = user({
 })
 ```
 
-With each character you type, you'll get **immediate feedback from your editor** in the form of either a fully-inferred `Type` or a specific and helpful `ParseError`.
+Check out [how it works](#how), [try it in-browser](https://arktype.io/docs/#your-first-type), or [scroll slightly](#install) to read about installation.
 
-This result exactly mirrors what you can expect to happen at runtime- down to the punctuation of the error message.
-
-**No plugins required**.
-
-Sound too good to be true? Check out [how it works](#how) or [try it yourself in-browser.](https://arktype.io/docs/#your-first-type)
+<a id="install" />
 
 <!-- @snipStart:install -->
 
