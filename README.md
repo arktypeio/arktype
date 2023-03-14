@@ -6,18 +6,47 @@
 </sub>
 <br />
 
+## What is it?
+
 <!-- @snipStart:intro -->
 
-ArkType is a type-safe runtime validator that understands TypeScript syntax.
-<br />
-<br />
-Each character you type is statically parsed so you'll know exactly what to expect from editor to runtime ⛵
+<p>ArkType is a runtime validation library that can infer <b>TypeScript definitions 1:1</b> and reuse them as <b>highly-optimized validators</b> for your data.</p>
+
+<p>With each character you type, you'll get <b>immediate feedback from your editor</b> in the form of either a fully-inferred <code>Type</code> or a specific and helpful <code>ParseError</code>.</p>
+
+<p>This result exactly mirrors what you can expect to happen at runtime down to the punctuation of the error message- <b>no plugins required</b>.</p>
 
 <!-- @snipEnd -->
 
+```ts @blockFrom:dev/examples/type.ts
+import { type } from "arktype"
+
+// Definitions are statically parsed and inferred as TS.
+export const user = type({
+    name: "string",
+    device: {
+        platform: "'android'|'ios'",
+        "version?": "number"
+    }
+})
+
+// Validators return typed data or clear, customizable errors.
+export const { data, problems } = user({
+    name: "Alan Turing",
+    device: {
+        // problems.summary: "device/platform must be 'android' or 'ios' (was 'enigma')"
+        platform: "enigma"
+    }
+})
+```
+
+Check out [how it works](#how), [try it in-browser](https://arktype.io/docs/#your-first-type), or [scroll slightly](#install) to read about installation.
+
+<a id="install" />
+
 <!-- @snipStart:install -->
 
-## Install <sub><sub>📦`4KB` gzipped, `0` dependencies</sub></sub>
+## Install <sub><sub>📦`12KB` gzipped, `0` dependencies</sub></sub>
 
 <img src="./dev/arktype.io/static/img/npm.svg" alt="Npm Icon" height="16px" /> <code>npm install arktype</code>
 <sub>(or whatever package manager you prefer)</sub>
@@ -31,42 +60,9 @@ _Our APIs have mostly stabilized, but details may still change during the alpha/
 
 <!-- @snipEnd -->
 
-## Types
-
-[Try it in-browser.](https://arktype.io/docs/#your-first-type)
-
-```ts @blockFrom:dev/examples/type.ts
-import { type } from "arktype"
-
-// Define your type...
-export const user = type({
-    name: "string",
-    device: {
-        platform: "'android'|'ios'",
-        "version?": "number"
-    }
-})
-
-// Infer it...
-export type User = typeof user.infer
-
-// Get validated data or clear, customizable error messages.
-export const { data, problems } = user({
-    name: "Alan Turing",
-    device: {
-        platform: "enigma"
-    }
-})
-
-if (problems) {
-    // "device/platform must be 'android' or 'ios' (was 'enigma')"
-    console.log(problems.summary)
-}
-```
-
 ### Scopes
 
-[Try it in-browser.](https://arktype.io/docs/scopes)
+[Try this example in-browser.](https://arktype.io/docs/scopes)
 
 ```ts @blockFrom:dev/examples/scope.ts
 import { scope } from "arktype"
@@ -99,17 +95,17 @@ packageData.dependencies![0].dependencies = [packageData]
 export const { data, problems } = types.package(packageData)
 ```
 
-### API
+## API
 
 <!--@snipStart:api -->
 
 ArkType supports many of TypeScript's built-in types and operators, as well as some new ones dedicated exclusively to runtime validation. In fact, we got a little ahead of ourselves and built a ton of cool features, but we're still working on getting caught up syntax and API docs. Keep an eye out for more in the next couple weeks ⛵
 
-In the meantime, check out the examples here and use the type hints you get to learn how you can customize your types and scopes. If you want to explore some of the more advanced features, take a look at [our unit tests](./dev/test) and don't hesitate to reach out on our [Discord channel](https://discord.gg/WSNF3Kc4xh)!
+In the meantime, check out the examples here and use the type hints you get to learn how you can customize your types and scopes. If you want to explore some of the more advanced features, take a look at [our unit tests](./dev/test) or ask us [on Discord](https://discord.gg/WSNF3Kc4xh) if your functionality is supported. If not, [create a GitHub issue](https://github.com/arktypeio/arktype/issues/new) so we can prioritize it!
 
 <!--@snipEnd -->
 
-## How
+## How?
 
 ArkType's isomorphic parser has parallel static and dynamic implementations. This means as soon as you type a definition in your editor, you'll know the eventual result at runtime.
 
