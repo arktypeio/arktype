@@ -1,4 +1,4 @@
-<h1 align="center">ArkType <sub><sup>TypeScript's 1:1 runtime validator</sup></sub></h1>
+<h1 align="center">ArkType <sub><sup>TypeScript's 1:1 validator</sup></sub></h1>
 
 [<img src="./dev/arktype.io/static/img/arktype.gif">](https://arktype.io/try)
 <sub>
