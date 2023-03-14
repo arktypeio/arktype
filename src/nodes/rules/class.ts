@@ -1,5 +1,5 @@
+import { getCompiledGlobal, globals } from "../../traverse/globals.ts"
 import type { constructor } from "../../utils/generics.ts"
-import { objectKindOf } from "../../utils/objectKinds.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
 
@@ -15,10 +15,22 @@ export const classIntersection = composeIntersection<constructor>(
     }
 )
 
-export const compileClassCheck = (expected: constructor, c: Compilation) =>
-    `data instanceof expected` as const
-
-// return (
-//     state.data instanceof expectedClass ||
-//     !state.problems.add("class", expectedClass)
-// )
+export const compileClassCheck = (constructor: constructor, c: Compilation) => {
+    if (constructor === Array) {
+        return c.check("constructor", `Array.isArray(data)`, Array)
+    }
+    let key = constructor.name
+    let suffix = 2
+    while (
+        key in globals.constructors &&
+        globals.constructors[key] !== constructor
+    ) {
+        key = `${constructor.name}${suffix++}`
+    }
+    globals.constructors[key] = constructor
+    return c.check(
+        "constructor",
+        `data instanceof ${getCompiledGlobal("constructors", key)}`,
+        constructor
+    )
+}

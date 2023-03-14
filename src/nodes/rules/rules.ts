@@ -12,7 +12,7 @@ import {
     composeKeyedIntersection,
     equality
 } from "../compose.ts"
-import { classIntersection } from "./class.ts"
+import { classIntersection, compileClassCheck } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { compileDivisorCheck, divisorIntersection } from "./divisor.ts"
 import type { PropsRule } from "./props.ts"
@@ -92,6 +92,7 @@ export const narrowableRulesIntersection =
 export const compileRules = (rules: UnknownRules, c: Compilation) => {
     const lines: string[] = []
     if (rules.class) {
+        lines.push(compileClassCheck(rules.class, c))
     }
     if (rules.divisor) {
         lines.push(compileDivisorCheck(rules.divisor, c))

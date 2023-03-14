@@ -1,4 +1,3 @@
-import { serialize } from "node:v8"
 import type { Scope } from "../scopes/scope.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type {
@@ -8,15 +7,13 @@ import type {
     ProblemWriters
 } from "../traverse/problems.ts"
 import type { Domain } from "../utils/domains.ts"
-import { entriesOf, keysOf } from "../utils/generics.ts"
+import { entriesOf, keysOf, listFrom } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
+import { isTransformationBranch } from "./branch.ts"
 import type { ConfigNode, DomainsNode, Node } from "./node.ts"
 import { isConfigNode } from "./node.ts"
+import type { Predicate } from "./predicate.ts"
 import { compilePredicate } from "./predicate.ts"
-
-// const hasImpliedDomain = (flatPredicate: TraversalEntry[]) =>
-//     flatPredicate[0] &&
-//     (flatPredicate[0][0] === "value" || flatPredicate[0][0] === "class")
 
 export const compileJs = (name: string, steps: string[]) =>
     `return (data, state) => {
@@ -50,6 +47,13 @@ const compileDomainCheck = (domain: Domain, data: string) =>
         ? `${data} === ${domain}`
         : `typeof ${data} === "${domain}"`
 
+const hasImpliedDomain = (predicate: Predicate) =>
+    predicate !== true &&
+    listFrom(predicate).every((branch) => {
+        const rules = isTransformationBranch(branch) ? branch.rules : branch
+        return "value" in rules || rules.class
+    })
+
 const compileTypeNode = (node: DomainsNode, c: Compilation) => {
     const domains = keysOf(node)
     if (domains.length === 1) {
@@ -63,11 +67,11 @@ const compileTypeNode = (node: DomainsNode, c: Compilation) => {
         if (predicate === true) {
             return [domainCheck]
         }
-        return [domainCheck, ...compilePredicate(predicate, c)]
-        // const flatPredicate = compilePredicate(predicate, state)
-        // return hasImpliedDomain(flatPredicate)
-        //     ? flatPredicate
-        //     : [["domain", domain], ...flatPredicate]
+        const checks = compilePredicate(predicate, c)
+        if (!hasImpliedDomain(predicate)) {
+            checks.unshift(domainCheck)
+        }
+        return checks
     }
     // const result = {}
     // for (const domain of domains) {
