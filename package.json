@@ -1,6 +1,6 @@
 {
     "name": "arktype",
-    "description": "Performant runtime validation for TypeScript with state-of-the-art static inference",
+    "description": "TypeScript's 1:1 runtime validator, optimized from V8 to VSCode",
     "version": "1.0.8-alpha",
     "author": {
         "name": "David Blass",
