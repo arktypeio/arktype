@@ -18,9 +18,7 @@ const t = type("string[]")
 
 console.log(t.steps)
 
-const source = format(t.js)
-
-console.log(source)
+console.log(format(t.js))
 
 console.log(t([""]))
 
@@ -28,8 +26,14 @@ console.log(type("number%2").steps)
 
 console.log(type({ a: "string", b: "boolean" }).steps)
 
-let n, result
-result = ((n = 5), n + 1)
+let result, isValid
+
+let n = 6
+
+result =
+    ((isValid = n > 5), (isValid = n < 10 && isValid), n % 2 === 0 && isValid)
+
+console.log(result)
 
 console.log((n = 5))
 

@@ -22,6 +22,11 @@ import { compileRangeLines, rangeIntersection } from "./range.ts"
 import { compileRegexLines, regexIntersection } from "./regex.ts"
 import { compileValueCheck } from "./value.ts"
 
+export type RuleDefinition<requirement> = {
+    intersection: Intersector<requirement>
+    compile: (requirement: requirement, c: Compilation) => string
+}
+
 export type NarrowableRules<$ = Dict> = {
     readonly regex?: CollapsibleList<string>
     readonly divisor?: number

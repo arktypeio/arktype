@@ -16,6 +16,8 @@ export type Branch<domain extends Domain = Domain, $ = Dict> =
     | Rules<domain, $>
     | MetaBranch<domain, $>
 
+export class _Branch {}
+
 export type MetaBranch<domain extends Domain = Domain, $ = Dict> = {
     rules: Rules<domain, $>
     morph?: CollapsibleList<Morph>

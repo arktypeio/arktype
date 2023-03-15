@@ -27,6 +27,14 @@ export type Predicate<
     ? true | CollapsibleList<Branch>
     : true | CollapsibleList<Branch<domain, $>>
 
+export class _Predicate<domain extends Domain = Domain, $ = Dict> {
+    constructor(public branches: Branch<domain, $>[]) {}
+
+    toJSON() {
+        return this.branches.length === 1 ? this.branches[0] : this.branches
+    }
+}
+
 export type PredicateComparison =
     | IntersectionResult<Predicate>
     | BranchesComparison

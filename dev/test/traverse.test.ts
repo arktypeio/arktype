@@ -134,3 +134,5 @@ describe("traverse", () => {
         )
     })
 })
+
+export const trimmedString = type(["string", "|>", (s) => s.trim()])

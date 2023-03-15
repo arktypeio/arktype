@@ -28,6 +28,10 @@ export type Identifier<$ = Dict> = stringKeyOf<$>
 
 export type ResolvedNode<$ = Dict> = DomainsNode<$> | ConfigNode<$>
 
+export class _ResolvedNode<$ = Dict> {
+    constructor(public domains: DomainsNode<$>, public config?: TypeConfig) {}
+}
+
 export type ConfigNode<$ = Dict> = {
     config: TypeConfig
     node: DomainsNode<$>
