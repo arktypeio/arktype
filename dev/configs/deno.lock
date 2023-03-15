@@ -59,7 +59,10 @@
       "pretty-quick@3.1.3": "pretty-quick@3.1.3_prettier@2.8.4",
       "ts-morph@17.0.1": "ts-morph@17.0.1",
       "ts-node@10.9.1": "ts-node@10.9.1_@swc+core@1.3.35_@types+node@18.14.0_typescript@4.9.5",
-      "typescript@5.0.0-beta": "typescript@5.0.0-beta"
+      "typescript@5.0.0-beta": "typescript@5.0.0-beta",
+      "typescript@5.0.1-rc": "typescript@5.0.1-rc",
+      "zod@3.20.6": "zod@3.20.6",
+      "zod@3.21.4": "zod@3.21.4"
     },
     "packages": {
       "@babel/code-frame@7.18.6": {
@@ -3590,6 +3593,10 @@
         "integrity": "sha512-+SSabbSXG5mtF+QGdV9uXXt9Saq1cSyI6hSG7znhaLoquleJpnmfkwSxFngK9c2fWWi1W/263TuzXQOsIcdjjA==",
         "dependencies": {}
       },
+      "typescript@5.0.1-rc": {
+        "integrity": "sha512-zh75jY8gPo/y7fpmlTVN2bb2MigoLx4hGk+Cla9pY6lgSTvzJrmQQrRt5S80VTsEt6biWPZJgLK2nm6f0Ya+mA==",
+        "dependencies": {}
+      },
       "unbox-primitive@1.0.2": {
         "integrity": "sha512-61pPlCD9h51VoreyJ0BReideM3MDKMKnh6+V9L08331ipq6Q8OFXZYiqP6n/tbHx4s5I9uRhcye6BrbkizkBDw==",
         "dependencies": {
@@ -3826,6 +3833,14 @@
       },
       "yocto-queue@0.1.0": {
         "integrity": "sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==",
+        "dependencies": {}
+      },
+      "zod@3.20.6": {
+        "integrity": "sha512-oyu0m54SGCtzh6EClBVqDDlAYRz4jrVtKwQ7ZnsEmMI9HnzuZFj8QFwAY1M5uniIYACdGvv0PBWPF2kO0aNofA==",
+        "dependencies": {}
+      },
+      "zod@3.21.4": {
+        "integrity": "sha512-m46AKbrzKVzOzs/DZgVnG5H55N1sv1M8qZU3A8RIKbs3mrACDNeIOeilDymVb2HdmP8uwshOCF4uJ8uM9rCqJw==",
         "dependencies": {}
       }
     }

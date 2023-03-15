@@ -66,7 +66,7 @@ export type PrecompiledDefaults = {
     parsedNumber: (In: string) => number
     parsedInteger: (In: string) => number
     parsedDate: (In: string) => Date
-    // jsObects
+    // jsObjects
 } & InferredObjectKinds
 
 export const type: TypeParser<PrecompiledDefaults> = arkScope.type

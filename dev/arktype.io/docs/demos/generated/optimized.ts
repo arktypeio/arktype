@@ -33,10 +33,10 @@ export const numericIntersection = type(
     "(1 <= number%2 < 100) & (0 < number%3 <= 99)"
 )
 
-export const numericInternalRepresentation = asConst([
+export const numericInternalRepresentation = [
     ["domain", "number"],
     ["divisor", 6],
     ["bound", { limit: 1, comparator: ">=" }],
     ["bound", { comparator: "<=", limit: 99 }]
-])
+] as const
 `

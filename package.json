@@ -1,7 +1,7 @@
 {
     "name": "arktype",
-    "description": "The first isomorphic type system for TS/JS",
-    "version": "1.0.8-alpha",
+    "description": "TypeScript's 1:1 validator, optimized from editor to runtime",
+    "version": "1.0.9-alpha",
     "author": {
         "name": "David Blass",
         "email": "david@arktype.io",
@@ -43,7 +43,7 @@
         "testBuild": "ts-node ./dev/scripts/testBuild.ts",
         "testAttest": "ts-node ./dev/scripts/testAttest.ts",
         "testTsVersions": "ts-node ./dev/scripts/testTsVersions.ts",
-        "testDeno": "deno test -c ./dev/configs/deno.jsonc --no-check --allow-all",
+        "testDeno": "deno test -c ./dev/configs/deno.jsonc --no-check --allow-all -- --skipTypes",
         "bench": "ts-node ./dev/attest/cli.ts bench --benchmarksPath ./test/benchmarks.json",
         "lint": "eslint --max-warnings=0 .",
         "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
@@ -81,8 +81,8 @@
         "pretty-quick": "3.1.3",
         "ts-morph": "17.0.1",
         "ts-node": "10.9.1",
-        "typescript": "5.0.0-beta",
-        "zod": "3.20.6"
+        "typescript": "5.0.1-rc",
+        "zod": "3.21.4"
     },
     "c8": {
         "checkCoverage": true,
