@@ -2,12 +2,7 @@ import { basename, join, relative } from "node:path"
 import * as process from "node:process"
 import { Project } from "ts-morph"
 import type { WalkOptions } from "../../runtime/main.ts"
-import {
-    dirName,
-    fromPackageRoot,
-    getSourceControlPaths,
-    shell
-} from "../../runtime/main.ts"
+import { dirName, getSourceControlPaths } from "../../runtime/main.ts"
 import { repoDirs } from "../common.ts"
 import { extractApi } from "./api/extractApi.ts"
 import { writeApi } from "./api/writeApi.ts"

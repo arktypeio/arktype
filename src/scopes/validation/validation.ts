@@ -83,4 +83,3 @@ export const validationScope = scope(
 )
 
 export const validation = validationScope.compile()
-// precompiled scope

@@ -31,6 +31,7 @@ export const writeApi = (
     }
     shell(`prettier --write ${apiConfig.outDir}`)
 }
+
 const writeEntryPoint = (
     entryPoint: ApiEntryPoint,
     entryPointOutDir: string,
