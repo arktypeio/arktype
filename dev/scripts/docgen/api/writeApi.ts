@@ -30,7 +30,7 @@ export const writeApi = (
     }
     shell(`prettier --write ${apiConfig.outDir}`)
 }
-const scopeData: ExportData[] = []
+const scopeData: string[] = []
 const writeEntryPoint = (
     entryPoint: ApiEntryPoint,
     entryPointOutDir: string,
@@ -48,9 +48,7 @@ const writeEntryPoint = (
         appendFileSync(mdFilePath, generateMarkdownForExport(exported, data))
     }
     const keywordsPath = join(entryPointOutDir, "keywords.md")
-    scopeData.forEach((data) =>
-        appendFileSync(keywordsPath, generateMarkdownForExport(data, {}))
-    )
+    scopeData.forEach((data) => appendFileSync(keywordsPath, data))
 }
 
 const generateMarkdownForExport = (
@@ -65,11 +63,13 @@ const generateMarkdownForExport = (
     let text
     if (tagData.scope) {
         text = tabulateData(packDataForTable(exported, tagData))
-        scopeData.push({ name: exported.name, text, tsDocs: undefined })
+        md.section("text").text(text)
+        scopeData.push(md.toString())
     } else {
         text = exported.text
+        md.section("text").tsBlock(text)
     }
-    md.section("text").tsBlock(text)
+
     return md.toString()
 }
 type KeywordData = {

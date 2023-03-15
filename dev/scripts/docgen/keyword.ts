@@ -73,5 +73,5 @@ for (const data of keywordData) {
     newContents += `${section.join("\n")}\n`
 }
 const outputPath = join(docsPath, "outputKeywords.md")
-writeFileSync(outputPath, newContents)
-shell(`pnpm prettier --write ${outputPath}`)
+// writeFileSync(outputPath, newContents)
+// shell(`pnpm prettier --write ${outputPath}`)

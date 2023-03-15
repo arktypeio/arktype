@@ -14,22 +14,19 @@ hide_table_of_contents: true
 
 ## text
 
-```ts
-| Name   | Type   | Description          |
-| ------ | ------ | -------------------- |
-| any |  any | ---- |
-| bigint |  bigint | ---- |
-| boolean |  boolean | ---- |
-| false |  false | ---- |
-| never |  never | additional comment about never |
-| null |  null | ---- |
-| number |  number | ---- |
-| object |  object | ---- |
-| string |  string | ---- |
-| symbol |  symbol | ---- |
-| true |  true | ---- |
-| unknown |  unknown | ---- |
-| void |  void | additional comment about void |
-| undefined |  undefined | ---- |
-
-```
+| Name      | Type      | Description                    |
+| --------- | --------- | ------------------------------ |
+| any       | any       | ----                           |
+| bigint    | bigint    | ----                           |
+| boolean   | boolean   | ----                           |
+| false     | false     | ----                           |
+| never     | never     | additional comment about never |
+| null      | null      | ----                           |
+| number    | number    | ----                           |
+| object    | object    | ----                           |
+| string    | string    | ----                           |
+| symbol    | symbol    | ----                           |
+| true      | true      | ----                           |
+| unknown   | unknown   | ----                           |
+| void      | void      | additional comment about void  |
+| undefined | undefined | ----                           |

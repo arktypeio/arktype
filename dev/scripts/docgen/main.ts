@@ -90,7 +90,6 @@ export const docgen = () => {
     updateApiDocs(project)
     const snippets = getSnippetsAndUpdateReferences(project)
     mapDirs(snippets)
-    postProcess()
     console.log(`Enjoy your new docs! 📚`)
     console.groupEnd()
 }
@@ -110,16 +109,6 @@ const updateApiDocs = (project: Project) => {
         writeApi(api, data)
     }
     process.stdout.write("✅\n")
-}
-
-const postProcess = () => {
-    const processesRoot = join(fromPackageRoot(), "dev", "scripts", "docgen")
-    const processes = [join(processesRoot, "keyword.ts")]
-    for (const processPath of processes) {
-        shell(`ts-node ${processPath}`, { cwd: fromPackageRoot() })
-    }
-    //TODO somewhere
-    // exported items + doc tags => add map to array of instances of uses
 }
 
 const getSnippetsAndUpdateReferences = (project: Project) => {
