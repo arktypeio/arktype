@@ -65,9 +65,13 @@ const generateMarkdownForExport = (
     exported: ExportData,
     tagData: TsTagData
 ) => {
+    const tagsToIgnore = ["descriptions", "scope"]
     const md = new MarkdownSection(exported.name)
     md.options({ hide_table_of_contents: true })
     for (const [tag, arrayOfTagData] of Object.entries(tagData)) {
+        if (tagsToIgnore.includes(tag)) {
+            continue
+        }
         md.section(tag).text(formatTagData(arrayOfTagData, tag))
     }
     if (tagData.scope) {

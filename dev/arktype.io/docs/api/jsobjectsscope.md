@@ -4,14 +4,6 @@ hide_table_of_contents: true
 
 # jsObjectsScope
 
-## scope
-
--
-
-## descriptions
-
--   descriptions: { "Object": "an object","Array": "an array","Function": "a function", "Date": "a Date","RegExp": "a RegExp","Error": "an Error","Map": "a Map","Set": "a Set","String": "a String object","Number": "a Number object","Boolean": "a Boolean object","Promise": "a Promise","WeakMap": "a WeakMap","WeakSet": "a WeakSet" }
-
 ## text
 
 | Name     | Type                           | Description      |

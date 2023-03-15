@@ -4,27 +4,6 @@ hide_table_of_contents: true
 
 # tsKeywordsScope
 
-## descriptions
-
--   descriptions: {"any": "any",
-    "bigint": "a bigint",
-    "boolean": "a boolean",
-    "false": "false",
-    "never": "never",
-    "null": "null",
-    "number": "a number",
-    "object": "an object",
-    "string": "a string",
-    "symbol": "a symbol",
-    "true": "true",
-    "unknown": "unknown",
-    "void": "void",
-    "undefined": "undefined"}
-
-## scope
-
--
-
 ## text
 
 | Name      | Type         | Description |
