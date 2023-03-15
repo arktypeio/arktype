@@ -13,6 +13,10 @@ const always: Record<Domain, true> = {
     undefined: true
 }
 
+/**
+ * @descriptions descriptions: {"void": "additional comment about void", "never": "additional comment about never"}
+ * @scope
+ */
 export const tsKeywordsScope = scope(
     {
         any: ["node", always] as Infer<any>,

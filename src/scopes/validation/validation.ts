@@ -40,6 +40,10 @@ const json = rootType([tsKeywords.string, "|>", (s) => JSON.parse(s)], {
     mustBe: "a JSON-parsable string"
 })
 
+/**
+ * @descriptions descriptions: {"email": "a valid email address", "creditCard": "a valid credit card number"}
+ * @scope
+ */
 export const validationScope = scope(
     {
         // Character sets
@@ -65,3 +69,4 @@ export const validationScope = scope(
 )
 
 export const validation = validationScope.compile()
+// precompiled scope

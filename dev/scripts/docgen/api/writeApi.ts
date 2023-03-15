@@ -30,7 +30,7 @@ export const writeApi = (
     }
     shell(`prettier --write ${apiConfig.outDir}`)
 }
-
+const scopeData: ExportData[] = []
 const writeEntryPoint = (
     entryPoint: ApiEntryPoint,
     entryPointOutDir: string,
@@ -47,6 +47,10 @@ const writeEntryPoint = (
         // avoid a docusaurus build failure
         appendFileSync(mdFilePath, generateMarkdownForExport(exported, data))
     }
+    const keywordsPath = join(entryPointOutDir, "keywords.md")
+    scopeData.forEach((data) =>
+        appendFileSync(keywordsPath, generateMarkdownForExport(data, {}))
+    )
 }
 
 const generateMarkdownForExport = (
@@ -58,10 +62,66 @@ const generateMarkdownForExport = (
     for (const [tag, arrayOfTagData] of Object.entries(tagData)) {
         md.section(tag).text(formatTagData(arrayOfTagData, tag))
     }
-    md.section("text").tsBlock(exported.text)
+    let text
+    if (tagData.scope) {
+        text = tabulateData(packDataForTable(exported, tagData))
+        scopeData.push({ name: exported.name, text, tsDocs: undefined })
+    } else {
+        text = exported.text
+    }
+    md.section("text").tsBlock(text)
     return md.toString()
 }
+type KeywordData = {
+    scope: string
+    types: Record<string, Record<string, string>>
+}
+const packDataForTable = (exportData: ExportData, tags: TsTagData) => {
+    const descriptions = tags.descriptions
+    const descriptionMatcher = /(?<=descriptions: ).+/
+    let descriptionObject
+    if (descriptions) {
+        const matchedDescription = descriptions[0].match(descriptionMatcher)
+        if (matchedDescription) {
+            descriptionObject = JSON.parse(matchedDescription[0])
+        }
+    }
 
+    const objectMatch = exportData.text.match(/{[\s\S]*?}/)
+    if (!objectMatch) {
+        throw new Error("unexpected text")
+    }
+    const matchedObject = objectMatch[0].split("\n")
+    const props = matchedObject.slice(1, matchedObject.length - 1)
+
+    const keywordData: KeywordData = {
+        scope: exportData.name,
+        types: {}
+    }
+    for (const prop of props) {
+        const keyword = prop.trim().match(/^([^:]+):(.+)$/)
+        if (keyword) {
+            keywordData.types[keyword[1]] = {
+                type: keyword[2].replace(";", ""),
+                comment: descriptionObject
+                    ? descriptionObject[keyword[1]] ?? ""
+                    : ""
+            }
+        }
+    }
+    return keywordData
+}
+const tabulateData = (data: KeywordData) => {
+    const tableHeader = `| Name   | Type   | Description          |\n| ------ | ------ | -------------------- |`
+    const section = []
+    section.push(tableHeader)
+    Object.entries(data.types).forEach((type) => {
+        const comment = type[1].comment
+        const additional = comment.length ? comment : "----"
+        section.push(`| ${type[0]} | ${type[1].type} | ${additional} |`)
+    })
+    return `${section.join("\n")}\n`
+}
 class MarkdownSection {
     private contents: (string | MarkdownSection)[]
     private optionsAdded = false

@@ -22,6 +22,7 @@ export const scopes = {
     tsKeywords: tsKeywordsScope,
     jsObjects: jsObjectsScope,
     validation: validationScope,
+
     ark: arkScope
 }
 

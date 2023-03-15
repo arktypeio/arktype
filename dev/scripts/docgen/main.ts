@@ -2,7 +2,12 @@ import { basename, join, relative } from "node:path"
 import * as process from "node:process"
 import { Project } from "ts-morph"
 import type { WalkOptions } from "../../runtime/main.ts"
-import { dirName, getSourceControlPaths } from "../../runtime/main.ts"
+import {
+    dirName,
+    fromPackageRoot,
+    getSourceControlPaths,
+    shell
+} from "../../runtime/main.ts"
 import { repoDirs } from "../common.ts"
 import { extractApi } from "./api/extractApi.ts"
 import { writeApi } from "./api/writeApi.ts"
@@ -85,6 +90,7 @@ export const docgen = () => {
     updateApiDocs(project)
     const snippets = getSnippetsAndUpdateReferences(project)
     mapDirs(snippets)
+    postProcess()
     console.log(`Enjoy your new docs! 📚`)
     console.groupEnd()
 }
@@ -104,6 +110,16 @@ const updateApiDocs = (project: Project) => {
         writeApi(api, data)
     }
     process.stdout.write("✅\n")
+}
+
+const postProcess = () => {
+    const processesRoot = join(fromPackageRoot(), "dev", "scripts", "docgen")
+    const processes = [join(processesRoot, "keyword.ts")]
+    for (const processPath of processes) {
+        shell(`ts-node ${processPath}`, { cwd: fromPackageRoot() })
+    }
+    //TODO somewhere
+    // exported items + doc tags => add map to array of instances of uses
 }
 
 const getSnippetsAndUpdateReferences = (project: Project) => {
