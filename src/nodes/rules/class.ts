@@ -1,7 +1,7 @@
-import { compileRegistered } from "../../traverse/store.ts"
 import type { constructor } from "../../utils/generics.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
+import { compileRegistered } from "../store.ts"
 
 export const classIntersection = composeIntersection<constructor>(
     (l, r, state) => {

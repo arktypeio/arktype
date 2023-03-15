@@ -1,13 +1,13 @@
 import { compileJs } from "../nodes/compile.ts"
 import type { Node } from "../nodes/node.ts"
+import type { ProblemOptions } from "../nodes/problems.ts"
+import type { CheckResult, TraversalState } from "../nodes/traverse.ts"
 import type { ParsedMorph } from "../parse/ast/morph.ts"
 import type {
     as,
     inferDefinition,
     validateDefinition
 } from "../parse/definition.ts"
-import type { ProblemOptions } from "../traverse/problems.ts"
-import type { CheckResult, TraversalState } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { defer, evaluate } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"

@@ -13,4 +13,4 @@ export {
 } from "./scopes/expressions.ts"
 export type { Scope, Space } from "./scopes/scope.ts"
 export type { Type } from "./scopes/type.ts"
-export { Problems, Problem } from "./traverse/problems.ts"
+export { Problems, Problem } from "./nodes/problems.ts"

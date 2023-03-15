@@ -1,6 +1,9 @@
 import { compileJs, compileType } from "../nodes/compile.ts"
 import type { DomainsNode, Node, ResolvedNode } from "../nodes/node.ts"
 import { isConfigNode } from "../nodes/node.ts"
+import type { ProblemsConfig, ProblemWritersByCode } from "../nodes/problems.ts"
+import { compileProblemWriters } from "../nodes/problems.ts"
+import { CheckResult, TraversalState } from "../nodes/traverse.ts"
 import type { ConfigTuple } from "../parse/ast/config.ts"
 import type {
     Infer,
@@ -9,12 +12,6 @@ import type {
     validateDefinition
 } from "../parse/definition.ts"
 import { parseDefinition } from "../parse/definition.ts"
-import type {
-    ProblemsConfig,
-    ProblemWritersByCode
-} from "../traverse/problems.ts"
-import { compileProblemWriters } from "../traverse/problems.ts"
-import { CheckResult, TraversalState } from "../traverse/traverse.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import { deepFreeze } from "../utils/freeze.ts"

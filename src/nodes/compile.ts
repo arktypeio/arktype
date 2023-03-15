@@ -1,11 +1,11 @@
-import type { Scope } from "../scopes/scope.ts"
-import type { Type, TypeConfig } from "../scopes/type.ts"
 import type {
     ProblemCode,
     ProblemOptions,
     ProblemRequirement,
     ProblemWriters
-} from "../traverse/problems.ts"
+} from "../nodes/problems.ts"
+import type { Scope } from "../scopes/scope.ts"
+import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
 import { entriesOf, keysOf, listFrom } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"

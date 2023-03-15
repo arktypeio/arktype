@@ -20,7 +20,6 @@ import {
 } from "../utils/objectKinds.ts"
 import type { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { TraversalState } from "./traverse.ts"
 
 export class ArkTypeError extends TypeError {
     cause: Problems
@@ -55,10 +54,6 @@ export class Problem<code extends ProblemCode = ProblemCode> {
 class ProblemArray extends Array<Problem> {
     byPath: Record<string, Problem> = {}
     count = 0
-
-    constructor() {
-        super()
-    }
 
     add(problem: Problem) {
         const pathKey = `${problem.path}`
@@ -101,7 +96,7 @@ class ProblemArray extends Array<Problem> {
     }
 }
 
-export const Problems: new (state: TraversalState) => Problems = ProblemArray
+export const Problems: new () => Problems = ProblemArray
 
 export type Problems = arraySubclassToReadonly<ProblemArray>
 

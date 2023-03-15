@@ -1,7 +1,7 @@
 import type { DomainsNode } from "../../nodes/node.ts"
 import { isConfigNode, rootIntersection } from "../../nodes/node.ts"
+import type { TraversalState } from "../../nodes/traverse.ts"
 import type { asIn } from "../../scopes/type.ts"
-import type { TraversalState } from "../../traverse/traverse.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"

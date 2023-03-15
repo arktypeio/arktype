@@ -1,6 +1,6 @@
 import type { Compilation } from "../compile.ts"
+import type { Requirement } from "../compose.ts"
 import { composeIntersection, equality } from "../compose.ts"
-import type { RuleDefinition } from "./rules.ts"
 
 export const divisorIntersection = composeIntersection<number>(
     (l: number, r: number) =>
@@ -23,7 +23,7 @@ const greatestCommonDivisor = (l: number, r: number) => {
 export const compileDivisorCheck = (divisor: number, c: Compilation) =>
     c.check("divisor", `${c.data} % ${divisor} === 0` as const, divisor)
 
-export const divisibility: RuleDefinition<number> = {
+export const divisibility: Requirement<number> = {
     intersection: (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r)),
     compile: (divisor, c) =>
         c.check("divisor", `${c.data} % ${divisor} === 0` as const, divisor)

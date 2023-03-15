@@ -7,14 +7,22 @@ import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 import type { Branches } from "./branch.ts"
+import type { Compilation } from "./compile.ts"
 import type { Range } from "./rules/range.ts"
 import type { LiteralRules, NarrowableRules } from "./rules/rules.ts"
+
+export type Requirement<t> = {
+    intersection: Intersector<t>
+    compile: Compiler<t>
+}
 
 export type Intersector<t> = (
     l: t,
     r: t,
     state: IntersectionState
 ) => IntersectionResult<t>
+
+export type Compiler<t> = (t: t, c: Compilation) => string
 
 type allowUndefinedOperands<f extends Intersector<any>> = f extends Intersector<
     infer operand
