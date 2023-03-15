@@ -14,7 +14,20 @@ const always: Record<Domain, true> = {
 }
 
 /**
- * @descriptions descriptions: {"void": "additional comment about void", "never": "additional comment about never"}
+ * @descriptions descriptions: {"any": "any",
+        "bigint": "a bigint",
+        "boolean": "a boolean",
+        "false": "false",
+        "never": "never",
+        "null": "null",
+        "number": "a number",
+        "object": "an object",
+        "string": "a string",
+        "symbol": "a symbol",
+        "true": "true",
+        "unknown": "unknown",
+        "void": "void",
+        "undefined": "undefined"}
  * @scope
  */
 export const tsKeywordsScope = scope(
