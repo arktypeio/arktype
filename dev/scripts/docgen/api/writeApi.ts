@@ -72,7 +72,7 @@ const generateMarkdownForExport = (
     }
     if (tagData.scope) {
         const textAsTable = tabulateData(packDataForTable(exported, tagData))
-        md.section("text").tsBlock(textAsTable)
+        md.section("text").text(textAsTable)
         scopeData.push({ name: exported.name, text: textAsTable })
     } else {
         md.section("text").tsBlock(exported.text)
