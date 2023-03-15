@@ -1,7 +1,7 @@
 import type { Bound } from "../nodes/rules/range.ts"
 import { Scanner } from "../parse/string/shift/scanner.ts"
-import type { SizedData } from "../utils/data.ts"
-import { DataWrapper, unitsOf } from "../utils/data.ts"
+import type { DataWrapper, SizedData } from "../utils/data.ts"
+import { unitsOf } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainDescriptions } from "../utils/domains.ts"
 import type {
@@ -18,7 +18,7 @@ import {
     getExactConstructorObjectKind,
     objectKindDescriptions
 } from "../utils/objectKinds.ts"
-import { Path } from "../utils/paths.ts"
+import type { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 import type { TraversalState } from "./traverse.ts"
 
@@ -55,45 +55,12 @@ export class Problem<code extends ProblemCode = ProblemCode> {
 class ProblemArray extends Array<Problem> {
     byPath: Record<string, Problem> = {}
     count = 0
-    #state: TraversalState
 
-    constructor(state: TraversalState) {
+    constructor() {
         super()
-        this.#state = state
     }
 
-    mustBe(mustBe: string, context?: ProblemContextInput<"custom">) {
-        return this.add("custom", mustBe, context)
-    }
-
-    add<code extends ProblemCode>(
-        code: code,
-        ...args: ProblemParams<code>
-    ): Problem {
-        const [requirement, ctx] = (
-            args.length === 2 ? args : [undefined, args[0]]
-        ) as [unknown, ProblemContextInput]
-
-        const problem = new Problem(
-            // avoid a bunch of errors from TS trying to discriminate the
-            // problem input based on the code
-            code as any,
-            "reason",
-            {
-                // copy the path to avoid future mutations affecting it
-                path: ctx?.path ?? new Path(...this.#state.path),
-                // we have to check for the presence of the key explicitly since the
-                // data could be nullish
-                data: new DataWrapper("data" in ctx ? ctx.data : ({} as any)),
-                mustBe: "",
-                was: ""
-            }
-        )
-        this.addFrom(problem)
-        return problem
-    }
-
-    addFrom(problem: Problem) {
+    add(problem: Problem) {
         const pathKey = `${problem.path}`
         const existing = this.byPath[pathKey]
         if (existing) {
@@ -180,7 +147,7 @@ type ProblemDefinitions = {
 
 export type ProblemCode = evaluate<keyof ProblemDefinitions>
 
-type ProblemContextInput<code extends ProblemCode = ProblemCode> = {
+export type ProblemContextInput<code extends ProblemCode = ProblemCode> = {
     data?: "data" extends keyof ProblemDefinitions[code]
         ? ProblemDefinitions[code]["data"]
         : unknown
@@ -189,7 +156,7 @@ type ProblemContextInput<code extends ProblemCode = ProblemCode> = {
     path?: Path
 }
 
-type ProblemParams<code extends ProblemCode> = [
+export type ProblemParams<code extends ProblemCode> = [
     ...requirement: extractRequirementParams<code>,
     ctx?: ProblemContextInput<code>
 ]

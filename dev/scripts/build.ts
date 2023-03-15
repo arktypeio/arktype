@@ -58,7 +58,7 @@ const transpile = () => {
 
 const swc = (kind: "mjs" | "cjs") => {
     const kindOutDir = join(repoDirs.outRoot, kind)
-    let cmd = `pnpm swc -d ${kindOutDir} -C jsc.target=es2020 -q `
+    let cmd = `pnpm swc -d ${kindOutDir} -C jsc.target=es2022 -q `
     if (kind === "cjs") {
         cmd += `-C module.type=commonjs `
     }
@@ -95,7 +95,7 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
         shell(
             `pnpm swc ${cjsAddon} ${dirsToInclude.join(
                 " "
-            )} -d ${kindOutDir}/${baseDir} -C jsc.target=es2020 -q`
+            )} -d ${kindOutDir}/${baseDir} -C jsc.target=es2022 -q`
         )
     }
 }

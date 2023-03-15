@@ -99,7 +99,6 @@ const problemWriterKeys: readonly ProblemWriterKey[] = [
     "was"
 ]
 
-// TODO: Figure out how this works with minification
 export class Compilation {
     path = new Path()
     failFast = false

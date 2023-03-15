@@ -1,7 +1,7 @@
 import type { DomainsNode } from "../../nodes/node.ts"
 import { isConfigNode, rootIntersection } from "../../nodes/node.ts"
 import type { asIn } from "../../scopes/type.ts"
-import type { Problems } from "../../traverse/problems.ts"
+import type { TraversalState } from "../../traverse/traverse.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
@@ -29,17 +29,17 @@ export const parseNarrowTuple: PostfixParser<"=>"> = (def, ctx) => {
         : result
 }
 
-export type Narrow<data = any> = (data: data, problems: Problems) => boolean
+export type Narrow<data = any> = (data: data, state: TraversalState) => boolean
 
 export type NarrowPredicate<data = any, narrowed extends data = data> = (
     data: data,
-    problems: Problems
+    state: TraversalState
 ) => data is narrowed
 
 export type validateNarrowTuple<def extends TupleExpression, $> = readonly [
-    _: validateDefinition<def[0], $>,
-    _: "=>",
-    _: distributable<Narrow<asIn<inferDefinition<def[0], $>>>>
+    validateDefinition<def[0], $>,
+    "=>",
+    distributable<Narrow<asIn<inferDefinition<def[0], $>>>>
 ]
 
 export type inferNarrow<inDef, narrow, $> = narrow extends {

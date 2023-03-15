@@ -1,7 +1,13 @@
 import type { Scope } from "../scopes/scope.ts"
 import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
+import { DataWrapper } from "../utils/data.ts"
 import type { xor } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
+import type {
+    ProblemCode,
+    ProblemContextInput,
+    ProblemParams
+} from "./problems.ts"
 import { Problem, Problems } from "./problems.ts"
 
 export const CheckResult = class {
@@ -29,8 +35,35 @@ export class TraversalState {
         this.config = type.config
     }
 
-    reject(...args: ConstructorParameters<typeof Problem>) {
-        return this.problems.addFrom(new Problem(...args))
+    mustBe(mustBe: string, context?: ProblemContextInput<"custom">) {
+        return this.reject("custom", mustBe, context)
+    }
+
+    reject<code extends ProblemCode>(
+        code: code,
+        ...args: ProblemParams<code>
+    ): Problem {
+        const [requirement, ctx] = (
+            args.length === 2 ? args : [undefined, args[0]]
+        ) as [unknown, ProblemContextInput]
+
+        const problem = new Problem(
+            // avoid a bunch of errors from TS trying to discriminate the
+            // problem input based on the code
+            code as any,
+            "reason",
+            {
+                // copy the path to avoid future mutations affecting it
+                path: ctx?.path ?? new Path(...this.path),
+                // we have to check for the presence of the key explicitly since the
+                // data could be nullish
+                data: new DataWrapper("data" in ctx ? ctx.data : ({} as any)),
+                mustBe: "",
+                was: ""
+            }
+        )
+        this.problems.add(problem)
+        return problem
     }
 
     // traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {

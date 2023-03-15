@@ -2,8 +2,8 @@ import type { Branch, MetaBranch } from "../../nodes/branch.ts"
 import { isTransformationBranch } from "../../nodes/branch.ts"
 import type { DomainsNode } from "../../nodes/node.ts"
 import type { asIn, asOut } from "../../scopes/type.ts"
-import type { Problem, Problems } from "../../traverse/problems.ts"
-import type { CheckResult } from "../../traverse/traverse.ts"
+import type { Problem } from "../../traverse/problems.ts"
+import type { CheckResult, TraversalState } from "../../traverse/traverse.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../../utils/errors.ts"
 import type { mutable } from "../../utils/generics.ts"
@@ -58,12 +58,12 @@ const applyMorph = (branch: Branch, morph: Morph): MetaBranch =>
           }
 
 export type validateMorphTuple<def extends TupleExpression, $> = readonly [
-    _: validateDefinition<def[0], $>,
-    _: "|>",
-    _: Morph<asOut<inferDefinition<def[0], $>>, unknown>
+    validateDefinition<def[0], $>,
+    "|>",
+    Morph<asOut<inferDefinition<def[0], $>>, unknown>
 ]
 
-export type Morph<i = any, o = unknown> = (In: i, problems: Problems) => o
+export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
 export type ParsedMorph<i = any, o = unknown> = (In: i) => o
 

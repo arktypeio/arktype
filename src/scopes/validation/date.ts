@@ -101,8 +101,8 @@ export const tryParseDate = (
 export const parsedDate = rootType([
     tsKeywords.string,
     "|>",
-    (s, problems) => {
+    (s, state) => {
         const result = tryParseDate(s)
-        return typeof result === "string" ? problems.mustBe(result) : result
+        return typeof result === "string" ? state.mustBe(result) : result
     }
 ])
