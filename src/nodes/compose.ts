@@ -11,11 +11,6 @@ import type { Compilation } from "./compile.ts"
 import type { Range } from "./rules/range.ts"
 import type { LiteralRules, NarrowableRules } from "./rules/rules.ts"
 
-export type Requirement<t> = {
-    intersection: Intersector<t>
-    compile: Compiler<t>
-}
-
 export type Intersector<t> = (
     l: t,
     r: t,

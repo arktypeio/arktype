@@ -1,7 +1,7 @@
 import type { constructor } from "../../utils/generics.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
-import { compileRegistered } from "../store.ts"
+import { registerConstructor } from "../registry.ts"
 
 export const classIntersection = composeIntersection<constructor>(
     (l, r, state) => {
@@ -21,11 +21,7 @@ export const compileClassCheck = (constructor: constructor, c: Compilation) => {
     }
     return c.check(
         "constructor",
-        `data instanceof ${compileRegistered(
-            "constructor",
-            constructor.name,
-            constructor
-        )}`,
+        `data instanceof ${registerConstructor(constructor.name, constructor)}`,
         constructor
     )
 }

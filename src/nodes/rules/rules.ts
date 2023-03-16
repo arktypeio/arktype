@@ -14,12 +14,12 @@ import {
 } from "../compose.ts"
 import { classIntersection, compileClassCheck } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
-import { compileDivisorCheck, divisorIntersection } from "./divisor.ts"
+import { divisorCompilation, divisorIntersection } from "./divisor.ts"
 import type { PropsRule } from "./props.ts"
 import { compileProps, propsIntersection } from "./props.ts"
 import type { Range } from "./range.ts"
 import { compileRangeLines, rangeIntersection } from "./range.ts"
-import { compileRegexLines, regexIntersection } from "./regex.ts"
+import { regexCompilation, regexIntersection } from "./regex.ts"
 import { compileValueCheck } from "./value.ts"
 
 export type NarrowableRules<$ = Dict> = {
@@ -99,13 +99,13 @@ export const compileRules = (rules: UnknownRules, c: Compilation) => {
         lines.push(compileClassCheck(rules.class, c))
     }
     if (rules.divisor) {
-        lines.push(compileDivisorCheck(rules.divisor, c))
+        lines.push(divisorCompilation(rules.divisor, c))
     }
     if (rules.range) {
         lines.push(...compileRangeLines(rules.range, c))
     }
     if (rules.regex) {
-        lines.push(...compileRegexLines(rules.regex, c))
+        lines.push(...regexCompilation(rules.regex, c))
     }
     if (rules.props) {
         lines.push(...compileProps(rules.props, c))

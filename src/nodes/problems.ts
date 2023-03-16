@@ -8,6 +8,7 @@ import type {
     arraySubclassToReadonly,
     constructor,
     evaluate,
+    optionalizeKeys,
     requireKeys,
     valueOf
 } from "../utils/generics.ts"
@@ -126,88 +127,63 @@ export const describeBranches = (descriptions: string[]) => {
     return description
 }
 
-type ProblemDefinitions = {
-    divisor: { divisor: number; data: number }
-    constructor: { constructor: constructor; data: object }
-    domain: { domain: Domain }
-    missing: { data: undefined }
-    extraneous: {}
-    size: { bound: Bound; data: SizedData }
-    regex: { source: string; data: string }
-    value: { value: unknown }
-    intersection: { parts: (string | Problem)[] }
-    union: { parts: (string | Problem)[] }
-    custom: { mustBe: string }
+type ProblemInput = {
+    divisor: [divisor: number]
+    constructor: [constructor: constructor]
+    domain: [domain: Domain]
+    missing: []
+    extraneous: []
+    size: [bound: Bound]
+    regex: [source: string]
+    value: [expectedValue: unknown]
+    intersection: [parts: (string | Problem)[]]
+    union: [parts: (string | Problem)[]]
+    custom: [mustBe: string]
 }
 
-export type ProblemCode = evaluate<keyof ProblemDefinitions>
+type ProblemPrerequisites = {
+    divisor: number
+    constructor: object
+    size: SizedData
+    regex: string
+}
 
-export type ProblemContextInput<code extends ProblemCode = ProblemCode> = {
-    data?: "data" extends keyof ProblemDefinitions[code]
-        ? ProblemDefinitions[code]["data"]
+type ProblemData<code extends ProblemCode> =
+    code extends keyof ProblemPrerequisites
+        ? ProblemPrerequisites[code]
         : unknown
-    mustBe?: string
-    was?: string
-    path?: Path
+
+type ProblemContext = {
+    mustBe: string
+    was: string
 }
 
-export type ProblemParams<code extends ProblemCode> = [
-    ...requirement: extractRequirementParams<code>,
-    ctx?: ProblemContextInput<code>
-]
+export type ProblemCode = evaluate<keyof ProblemInput>
 
-type extractRequirementParams<code extends ProblemCode> =
-    {} extends extractRequirement<code>
-        ? []
-        : [requirement: ProblemRequirement<code>]
+export type ProblemWriter<code extends ProblemCode> = {
+    mustBe: (...args: ProblemInput[code]) => string
+    was: undefined | ((data: DataWrapper<ProblemData<code>>) => string)
+    join: (mustBe: string, was: string) => string
+}
 
-type extractRequirement<code extends ProblemCode> = Omit<
-    ProblemDefinitions[code],
-    "data"
+export type ProblemWriterConfig<code extends ProblemCode> = optionalizeKeys<
+    ProblemWriter<code>,
+    "was" | "join"
 >
 
-export type ProblemRequirement<code extends ProblemCode> = valueOf<
-    extractRequirement<code>
->
+export const defineProblemConfig = <code extends ProblemCode>(
+    code: code,
+    writers: ProblemWriterConfig<code>
+): ProblemWriter<code> => ({
+    was: (data) => `${data}`,
+    join: (mustBe, was) => `must be ${mustBe}${was ? ` ( was ${was})` : ""}`,
+    ...writers
+})
 
-type ReasonContext<code extends ProblemCode = ProblemCode> = evaluate<
-    extractRequirement<code> & {
-        data: DataWrapper<ProblemContextInput<code>["data"]>
-        path: Path
-    }
->
-
-export type ProblemContext<code extends ProblemCode = ProblemCode> = evaluate<
-    ReasonContext<code> & {
-        mustBe: string
-        was: string
-    }
->
-
-type DefaultProblemConfig<code extends ProblemCode> = requireKeys<
+export type DefaultProblemConfig<code extends ProblemCode> = requireKeys<
     ProblemOptions<code>,
     "mustBe"
 >
-
-export type DescribeRequirement<code extends ProblemCode = ProblemCode> =
-    | string
-    | ((ctx: ReasonContext<code>) => string)
-
-export type DescribeWas<code extends ProblemCode = ProblemCode> =
-    | string
-    | ((data: ReasonContext<code>["data"]) => string)
-
-export type WriteReason<code extends ProblemCode = ProblemCode> =
-    | string
-    | ((ctx: ProblemContext<code>) => string)
-
-const describeDefaultWas: DescribeWas = (data) => `${data}`
-
-const writeDefaultReason: WriteReason<ProblemCode> = ({ mustBe, was, path }) =>
-    addDefaultPathContext(writeDefaultDescription(mustBe, was), path)
-
-const writeDefaultDescription = (mustBe: string, was: string) =>
-    `must be ${mustBe} ${` (was ${was})`}` as const
 
 const addDefaultPathContext = (description: string, path: Path) =>
     path.length === 0
@@ -219,10 +195,6 @@ const addDefaultPathContext = (description: string, path: Path) =>
 const defaultProblemConfig: {
     [code in ProblemCode]: DefaultProblemConfig<code>
 } = {
-    divisor: {
-        mustBe: ({ divisor }) =>
-            divisor === 1 ? `an integer` : `a multiple of ${divisor}`
-    },
     constructor: {
         mustBe: ({ constructor }) => {
             const possibleObjectKind =
@@ -253,9 +225,6 @@ const defaultProblemConfig: {
             }${units ? ` ${units}` : ""}`
         },
         was: ({ size }) => `${size}`
-    },
-    regex: {
-        mustBe: (expression) => `a string matching ${expression}`
     },
     value: {
         mustBe: stringify
