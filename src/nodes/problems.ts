@@ -1,21 +1,22 @@
-import type { RangeProblem } from "../nodes/rules/range.ts"
+import { RangeProblem } from "../nodes/rules/range.ts"
 import { DataWrapper } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainDescriptions } from "../utils/domains.ts"
 import type {
     arraySubclassToReadonly,
     conform,
-    evaluate
+    constructor,
+    instanceOf
 } from "../utils/generics.ts"
 import { isWellFormedInteger } from "../utils/numericLiterals.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { objectKindDescriptions } from "../utils/objectKinds.ts"
 import type { Path } from "../utils/paths.ts"
-import type { DivisorProblem } from "./rules/divisor.ts"
-import type { InstanceProblem } from "./rules/instance.ts"
-import type { KeyProblem } from "./rules/props.ts"
-import type { RegexProblem } from "./rules/regex.ts"
-import type { ValueProblem } from "./rules/value.ts"
+import { DivisorProblem } from "./rules/divisor.ts"
+import { InstanceProblem } from "./rules/instance.ts"
+import { KeyProblem } from "./rules/props.ts"
+import { RegexProblem } from "./rules/regex.ts"
+import { ValueProblem } from "./rules/value.ts"
 
 export class ArkTypeError extends TypeError {
     cause: Problems
@@ -32,17 +33,11 @@ export abstract class Problem<requirement = unknown, data = unknown> {
     abstract readonly code: ProblemCode
     abstract mustBe: string
 
-    constructor(
-        public requirement: requirement,
-        data: data,
-        public path: Path
-    ) {
+    constructor(public rule: requirement, data: data, public path: Path) {
         this.data = new DataWrapper(data)
     }
 
-    hasCode<code extends ProblemCode>(
-        code: code
-    ): this is ProblemsByCode[code] {
+    hasCode<code extends ProblemCode>(code: code): this is ProblemFrom<code> {
         // doesn't make much sense we have to cast this, but alas
         return this.code === (code as ProblemCode)
     }
@@ -77,7 +72,7 @@ class ProblemArray extends Array<Problem> {
         const existing = this.byPath[pathKey]
         if (existing) {
             if (existing.hasCode("intersection")) {
-                existing.requirement.push(problem)
+                existing.rule.push(problem)
             } else {
                 const problemIntersection = new ProblemIntersection(
                     [existing, problem],
@@ -142,30 +137,6 @@ export const describeBranches = (descriptions: string[]) => {
     return description
 }
 
-type ProblemsByCode = defineProblemsByCode<{
-    domain: DomainProblem
-    divisor: DivisorProblem
-    instance: InstanceProblem
-    key: KeyProblem
-    range: RangeProblem
-    regex: RegexProblem
-    value: ValueProblem
-    custom: CustomProblem
-    intersection: ProblemIntersection
-    union: ProblemUnion
-}>
-
-type defineProblemsByCode<
-    problems extends {
-        [code in keyof problems]: conform<
-            problems[code],
-            { readonly code: code }
-        >
-    }
-> = problems
-
-export type ProblemCode = evaluate<keyof ProblemsByCode>
-
 export class ProblemIntersection extends Problem<Problem[]> {
     readonly code = "intersection"
 
@@ -176,7 +147,7 @@ export class ProblemIntersection extends Problem<Problem[]> {
     }
 
     get mustBe() {
-        return "• " + this.requirement.map(({ mustBe }) => mustBe).join("\n• ")
+        return "• " + this.rule.map(({ mustBe }) => mustBe).join("\n• ")
     }
 
     get reason() {
@@ -188,7 +159,7 @@ export class DomainProblem extends Problem<Domain> {
     readonly code = "domain"
 
     get mustBe() {
-        return domainDescriptions[this.requirement]
+        return domainDescriptions[this.rule]
     }
 }
 
@@ -197,12 +168,12 @@ export class ProblemUnion extends Problem<Problem[]> {
 
     get mustBe() {
         return describeBranches(
-            this.requirement.map(
+            this.rule.map(
                 (problem) =>
                     `${problem.path} must be ${
                         problem.hasCode("intersection")
                             ? describeBranches(
-                                  problem.requirement.map((part) => part.mustBe)
+                                  problem.rule.map((part) => part.mustBe)
                               )
                             : problem.mustBe
                     }`
@@ -221,6 +192,47 @@ export class CustomProblem extends Problem<string> {
     readonly code = "custom"
 
     get mustBe() {
-        return this.requirement
+        return this.rule
     }
 }
+
+export const defineProblemsCode = <problems>(problems: {
+    [code in keyof problems]: conform<
+        problems[code],
+        constructor<{ readonly code: code }>
+    >
+}) => problems
+
+export const problemsByCode = defineProblemsCode({
+    domain: DomainProblem,
+    divisor: DivisorProblem,
+    instance: InstanceProblem,
+    key: KeyProblem,
+    range: RangeProblem,
+    regex: RegexProblem,
+    value: ValueProblem,
+    custom: CustomProblem,
+    intersection: ProblemIntersection,
+    union: ProblemUnion
+})
+
+type ProblemClasses = typeof problemsByCode
+
+export type ProblemCode = keyof ProblemClasses
+
+export type ProblemFrom<code extends ProblemCode> = instanceOf<
+    ProblemClasses[code]
+>
+
+export type ProblemRules = {
+    // we shouldn't have to intersect keyof ProblemFrom<code> here, seems like a TS bug
+    [code in ProblemCode]: ProblemFrom<code>["rule" & keyof ProblemFrom<code>]
+}
+
+export type ProblemData = {
+    [code in ProblemCode]: ProblemFrom<code>["data" & keyof ProblemFrom<code>]
+}
+
+export type ProblemParameters<code extends ProblemCode> = ConstructorParameters<
+    typeof Problem<ProblemRules[code], ProblemData[code]>
+>

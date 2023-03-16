@@ -1,6 +1,5 @@
 import type { CollapsibleList } from "../../utils/generics.ts"
 import { listFrom } from "../../utils/generics.ts"
-import type { Path } from "../../utils/paths.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection } from "../compose.ts"
 import { Problem } from "../problems.ts"
@@ -15,7 +14,7 @@ export class RegexProblem extends Problem<string> {
     readonly code = "regex"
 
     get mustBe() {
-        return `a string matching /${this.requirement}/`
+        return `a string matching /${this.rule}/`
     }
 }
 

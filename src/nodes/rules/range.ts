@@ -1,5 +1,6 @@
 import { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { SizedData } from "../../utils/data.ts"
+import { throwInternalError } from "../../utils/errors.ts"
 import type { evaluate, xor } from "../../utils/generics.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
@@ -118,13 +119,26 @@ const compileSizeAssignment = (data: string) =>
 
 type CompiledSizeAssignment = ReturnType<typeof compileSizeAssignment>
 
-const rangeLinesFrom = (c: Compilation, ...bounds: Bound[]) =>
-    [
+const rangeLinesFrom = (c: Compilation, ...bounds: Bound[]) => {
+    const units =
+        c.lastDomain === "string"
+            ? "characters"
+            : c.lastDomain === "object"
+            ? "items long"
+            : c.lastDomain === "number"
+            ? ""
+            : throwInternalError(
+                  `Unexpected lastDomain '${c.lastDomain}' while compiling range.`
+              )
+    return [
         compileSizeAssignment(c.data),
-        ...bounds.map((bound) => compileBoundCheck(bound, c))
+        ...bounds.map((bound) => {
+            return compileBoundCheck({ ...bound, units }, c)
+        })
     ] as RangeLines
+}
 
-const compileBoundCheck = (bound: Bound, c: Compilation) =>
+const compileBoundCheck = (bound: BoundWithUnits, c: Compilation) =>
     c.check("range", `size ${bound.comparator} ${bound.limit}`, bound)
 
 type CompiledBoundCheck = ReturnType<typeof compileBoundCheck>
@@ -163,11 +177,9 @@ export class RangeProblem extends Problem<BoundWithUnits, SizedData> {
     readonly code = "range"
 
     get mustBe() {
-        return `${
-            Scanner.comparatorDescriptions[this.requirement.comparator]
-        } ${this.requirement.limit}${
-            this.data.units ? ` ${this.data.units}` : ""
-        }`
+        return `${Scanner.comparatorDescriptions[this.rule.comparator]} ${
+            this.rule.limit
+        }${this.data.units ? ` ${this.data.units}` : ""}`
     }
 
     get was() {

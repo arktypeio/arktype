@@ -26,8 +26,6 @@ export class DivisorProblem extends Problem<number, number> {
     readonly code = "divisor"
 
     get mustBe() {
-        return this.requirement === 1
-            ? `an integer`
-            : `a multiple of ${this.requirement}`
+        return this.rule === 1 ? `an integer` : `a multiple of ${this.rule}`
     }
 }

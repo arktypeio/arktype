@@ -3,7 +3,6 @@ import {
     getExactConstructorObjectKind,
     objectKindDescriptions
 } from "../../utils/objectKinds.ts"
-import type { Path } from "../../utils/paths.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
 import { Problem } from "../problems.ts"
@@ -36,11 +35,9 @@ export class InstanceProblem extends Problem<constructor, object> {
     readonly code = "instance"
 
     get mustBe() {
-        const possibleObjectKind = getExactConstructorObjectKind(
-            this.requirement
-        )
+        const possibleObjectKind = getExactConstructorObjectKind(this.rule)
         return possibleObjectKind
             ? objectKindDescriptions[possibleObjectKind]
-            : `an instance of ${this.requirement.name}`
+            : `an instance of ${this.rule.name}`
     }
 }

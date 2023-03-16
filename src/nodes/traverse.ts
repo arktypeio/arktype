@@ -3,7 +3,7 @@ import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
 import { DataWrapper } from "../utils/data.ts"
 import type { xor } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import type { ProblemCode } from "./problems.ts"
+import type { ProblemCode, ProblemParameters } from "./problems.ts"
 import { Problem, Problems } from "./problems.ts"
 
 export const CheckResult = class {
@@ -37,12 +37,8 @@ export class TraversalState {
 
     reject<code extends ProblemCode>(
         code: code,
-        ...args: ProblemParams<code>
-    ): Problem {
-        const [requirement, ctx] = (
-            args.length === 2 ? args : [undefined, args[0]]
-        ) as [unknown, ProblemContextInput]
-
+        ...args: ProblemParameters<code>
+    ) {
         const problem = new Problem(
             // avoid a bunch of errors from TS trying to discriminate the
             // problem input based on the code
@@ -59,7 +55,7 @@ export class TraversalState {
             }
         )
         this.problems.add(problem)
-        return problem
+        return false
     }
 
     // traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {

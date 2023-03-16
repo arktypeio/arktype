@@ -1,5 +1,4 @@
 import type { Dict } from "../../utils/generics.ts"
-import type { Path } from "../../utils/paths.ts"
 import type { Compilation } from "../compile.ts"
 import { compileNode } from "../compile.ts"
 import {
@@ -234,5 +233,5 @@ export type KeyProblemKind = "missing" | "extraneous"
 export class KeyProblem extends Problem<KeyProblemKind> {
     readonly code = "key"
 
-    mustBe = this.requirement === "missing" ? "defined" : "extraneous"
+    mustBe = this.rule === "missing" ? "defined" : "extraneous"
 }

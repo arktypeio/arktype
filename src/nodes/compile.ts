@@ -1,8 +1,4 @@
-import type {
-    ProblemCode,
-    ProblemOptions,
-    ProblemWriters
-} from "../nodes/problems.ts"
+import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
 import type { Scope } from "../scopes/scope.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
@@ -90,16 +86,9 @@ const initializeCompilationConfig = (): TraversalConfig => ({
     keys: []
 })
 
-type ProblemWriterKey = keyof ProblemOptions
-
-const problemWriterKeys: readonly ProblemWriterKey[] = [
-    "mustBe",
-    "writeReason",
-    "was"
-]
-
 export class Compilation {
     path = new Path()
+    lastDomain: Domain = "undefined"
     failFast = false
     traversalConfig = initializeCompilationConfig()
     readonly rootScope: Scope
@@ -111,9 +100,9 @@ export class Compilation {
     check<code extends ProblemCode, condition extends string>(
         code: code,
         condition: condition,
-        requirement: ProblemRequirement<code>
+        rule: ProblemRules<code>
     ) {
-        return `${condition} || ${this.problem(code, requirement)}` as const
+        return `${condition} || ${this.problem(code, rule)}` as const
     }
 
     get data() {
@@ -121,26 +110,23 @@ export class Compilation {
         return this.path.length ? `data.${this.path.join(".")}` : "data"
     }
 
-    problem<
-        code extends ProblemCode,
-        requirement extends ProblemRequirement<code>
-    >(code: code, requirement: requirement) {
-        return `state.reject("${code}", ${JSON.stringify(
-            requirement
-        )}, { path: ${this.path.json}, data: ${this.data} } )` as const
+    problem<code extends ProblemCode>(code: code, rule: ProblemRules<code>) {
+        return `state.reject("${code}", ${JSON.stringify(rule)}, ${
+            this.data
+        }, ${this.path.json})` as const
     }
 
-    getProblemConfig<code extends ProblemCode>(
-        code: code
-    ): ProblemWriters<code> {
-        const result = {} as ProblemWriters<code>
-        for (const k of problemWriterKeys) {
-            result[k] =
-                this.traversalConfig[k][0] ??
-                (this.rootScope.config.codes[code][k] as any)
-        }
-        return result
-    }
+    // getProblemConfig<code extends ProblemCode>(
+    //     code: code
+    // ): ProblemWriters<code> {
+    //     const result = {} as ProblemWriters<code>
+    //     for (const k of problemWriterKeys) {
+    //         result[k] =
+    //             this.traversalConfig[k][0] ??
+    //             (this.rootScope.config.codes[code][k] as any)
+    //     }
+    //     return result
+    // }
 
     getConfigKey<k extends keyof TypeConfig>(k: k) {
         return this.traversalConfig[k][0] as TypeConfig[k] | undefined

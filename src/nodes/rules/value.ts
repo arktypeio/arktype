@@ -1,5 +1,4 @@
 import { hasDomain } from "../../utils/domains.ts"
-import type { Path } from "../../utils/paths.ts"
 import type { SerializablePrimitive } from "../../utils/serialize.ts"
 import { serializePrimitive, stringify } from "../../utils/serialize.ts"
 import type { Compilation } from "../compile.ts"
@@ -28,6 +27,6 @@ export class ValueProblem extends Problem {
     readonly code = "value"
 
     get mustBe() {
-        return stringify(this.requirement)
+        return stringify(this.rule)
     }
 }
