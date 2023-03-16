@@ -8,7 +8,7 @@ import { composeIntersection, equality } from "../compose.ts"
 import { defineProblemConfig } from "../problems.ts"
 import { registerConstructor } from "../registry.ts"
 
-export const instanceOfIntersection = composeIntersection<constructor>(
+export const intersectInstanceOf = composeIntersection<constructor>(
     (l, r, state) => {
         return l === r
             ? equality()
@@ -20,10 +20,7 @@ export const instanceOfIntersection = composeIntersection<constructor>(
     }
 )
 
-export const instanceOfCompilation = (
-    instanceOf: constructor,
-    c: Compilation
-) => {
+export const compileInstanceOf = (instanceOf: constructor, c: Compilation) => {
     if (instanceOf === Array) {
         return c.check("instanceOf", `Array.isArray(data)`, Array)
     }

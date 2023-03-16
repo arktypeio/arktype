@@ -1,7 +1,8 @@
 import { hasDomain } from "../../utils/domains.ts"
 import type { SerializablePrimitive } from "../../utils/serialize.ts"
-import { serializePrimitive } from "../../utils/serialize.ts"
+import { serializePrimitive, stringify } from "../../utils/serialize.ts"
 import type { Compilation } from "../compile.ts"
+import { defineProblemConfig } from "../problems.ts"
 import { registerValue } from "../registry.ts"
 
 export const compileValueCheck = (value: unknown, c: Compilation) => {
@@ -21,3 +22,7 @@ export const compileValueCheck = (value: unknown, c: Compilation) => {
         value as {}
     )
 }
+
+export const valueProblemConfig = defineProblemConfig("value", {
+    mustBe: stringify
+})

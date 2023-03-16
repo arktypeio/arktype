@@ -1,7 +1,8 @@
-import type { Scanner } from "../../parse/string/shift/scanner.ts"
+import { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { evaluate, xor } from "../../utils/generics.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
+import { defineProblemConfig } from "../problems.ts"
 
 export type Range = RelativeRange | Bound<"==">
 
@@ -45,10 +46,12 @@ export type Bound<comparator extends Scanner.Comparator = Scanner.Comparator> =
         readonly limit: number
     }
 
+export type BoundWithUnits = Bound & { units: string | undefined }
+
 export const isEqualityRange = (range: Range): range is Bound<"=="> =>
     "comparator" in range
 
-export const rangeIntersection = composeIntersection<Range>((l, r, state) => {
+export const intersectRange = composeIntersection<Range>((l, r, state) => {
     if (isEqualityRange(l)) {
         if (isEqualityRange(r)) {
             return l.limit === r.limit
@@ -98,7 +101,7 @@ const minAllows = (min: LowerBound | undefined, n: number) =>
 const maxAllows = (max: UpperBound | undefined, n: number) =>
     !max || n < max.limit || (n === max.limit && !isExclusive(max.comparator))
 
-export const compileRangeLines = (range: Range, c: Compilation) =>
+export const compileRange = (range: Range, c: Compilation) =>
     isEqualityRange(range)
         ? rangeLinesFrom(c, range)
         : range.min
@@ -121,7 +124,7 @@ const rangeLinesFrom = (c: Compilation, ...bounds: Bound[]) =>
     ] as RangeLines
 
 const compileBoundCheck = (bound: Bound, c: Compilation) =>
-    c.check("size", `size ${bound.comparator} ${bound.limit}`, bound)
+    c.check("range", `size ${bound.comparator} ${bound.limit}`, bound)
 
 type CompiledBoundCheck = ReturnType<typeof compileBoundCheck>
 
@@ -154,3 +157,12 @@ export const compareStrictness = (
 
 const isExclusive = (comparator: Scanner.Comparator): comparator is ">" | "<" =>
     comparator.length === 1
+
+export const rangeProblemConfig = defineProblemConfig("range", {
+    mustBe: (bound) => {
+        return `${Scanner.comparatorDescriptions[bound.comparator]} ${
+            bound.limit
+        }${bound.units ? ` ${bound.units}` : ""}`
+    },
+    was: ({ size }) => `${size}`
+})

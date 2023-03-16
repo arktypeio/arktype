@@ -14,10 +14,7 @@ export const regexProblemConfig = defineProblemConfig("regex", {
     mustBe: (source) => `a string matching /${source}/`
 })
 
-export const regexCompilation = (
-    rule: CollapsibleList<string>,
-    c: Compilation
-) =>
+export const compileRegex = (rule: CollapsibleList<string>, c: Compilation) =>
     listFrom(rule).map(
         (source) =>
             `${registerRegex(source)}.test(${c.data}) || ${c.problem(

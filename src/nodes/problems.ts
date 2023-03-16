@@ -1,7 +1,5 @@
-import type { Bound } from "../nodes/rules/range.ts"
-import { Scanner } from "../parse/string/shift/scanner.ts"
+import type { BoundWithUnits } from "../nodes/rules/range.ts"
 import type { DataWrapper, SizedData } from "../utils/data.ts"
-import { unitsOf } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainDescriptions } from "../utils/domains.ts"
 import type {
@@ -9,18 +7,13 @@ import type {
     constructor,
     evaluate,
     optionalizeKeys,
-    requireKeys,
-    valueOf
+    requireKeys
 } from "../utils/generics.ts"
 import { keysOf } from "../utils/generics.ts"
 import { isWellFormedInteger } from "../utils/numericLiterals.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
-import {
-    getExactConstructorObjectKind,
-    objectKindDescriptions
-} from "../utils/objectKinds.ts"
+import { objectKindDescriptions } from "../utils/objectKinds.ts"
 import type { Path } from "../utils/paths.ts"
-import { stringify } from "../utils/serialize.ts"
 
 export class ArkTypeError extends TypeError {
     cause: Problems
@@ -133,7 +126,7 @@ type ProblemInput = {
     domain: [domain: Domain]
     missing: []
     extraneous: []
-    size: [bound: Bound]
+    range: [bound: BoundWithUnits]
     regex: [source: string]
     value: [expectedValue: unknown]
     intersection: [parts: (string | Problem)[]]
@@ -144,7 +137,7 @@ type ProblemInput = {
 type ProblemPrerequisites = {
     divisor: number
     instanceOf: object
-    size: SizedData
+    range: SizedData
     regex: string
 }
 
@@ -192,74 +185,54 @@ const addDefaultPathContext = (description: string, path: Path) =>
         ? `Item at index ${path[0]} ${description}`
         : `${path} ${description}`
 
-const defaultProblemConfig: {
-    [code in ProblemCode]: DefaultProblemConfig<code>
-} = {
-    domain: {
-        mustBe: ({ domain }) => domainDescriptions[domain],
-        was: ({ domain }) => domain
-    },
-    missing: {
-        mustBe: () => "defined",
-        was: ""
-    },
-    extraneous: {
-        mustBe: () => "removed",
-        was: ""
-    },
-    size: {
-        mustBe: ({ bound, data }) => {
-            const units = unitsOf(data)
-            return `${Scanner.comparatorDescriptions[bound.comparator]} ${
-                bound.limit
-            }${units ? ` ${units}` : ""}`
-        },
-        was: ({ size }) => `${size}`
-    },
-    value: {
-        mustBe: stringify
-    },
-    union: {
-        mustBe: ({ parts: problems }) =>
-            describeBranches(
-                problems.map((problem) =>
-                    typeof problem === "string"
-                        ? `must be ${problem}`
-                        : `${problem.path} must be ${
-                              problem.hasCode("intersection")
-                                  ? describeBranches(
-                                        problem.context.parts.map((part) =>
-                                            typeof part === "string"
-                                                ? part
-                                                : part.context.mustBe
-                                        )
-                                    )
-                                  : problem.context.mustBe
-                          }`
-                )
-            ),
-        writeReason: ({ mustBe, path, was }) =>
-            path.length
-                ? `At ${path}, ${mustBe} (was ${was})`
-                : `${mustBe} (was ${was})`
-    },
-    intersection: {
-        mustBe: ({ parts }) =>
-            "• " +
-            parts
-                .map((part) =>
-                    typeof part === "string" ? part : part.context.mustBe
-                )
-                .join("\n• "),
-        writeReason: ({ mustBe, data, path }) => {
-            const description = `${data} must be...\n${mustBe}`
-            return path.length ? `At ${path}, ${description}` : description
-        }
-    },
-    custom: {
-        mustBe: ({ mustBe }) => mustBe
-    }
-}
+// const defaultProblemConfig: {
+//     [code in ProblemCode]: DefaultProblemConfig<code>
+// } = {
+//     domain: {
+//         mustBe: ({ domain }) => domainDescriptions[domain],
+//         was: ({ domain }) => domain
+//     },
+//     union: {
+//         mustBe: ({ parts: problems }) =>
+//             describeBranches(
+//                 problems.map((problem) =>
+//                     typeof problem === "string"
+//                         ? `must be ${problem}`
+//                         : `${problem.path} must be ${
+//                               problem.hasCode("intersection")
+//                                   ? describeBranches(
+//                                         problem.context.parts.map((part) =>
+//                                             typeof part === "string"
+//                                                 ? part
+//                                                 : part.context.mustBe
+//                                         )
+//                                     )
+//                                   : problem.context.mustBe
+//                           }`
+//                 )
+//             ),
+//         writeReason: ({ mustBe, path, was }) =>
+//             path.length
+//                 ? `At ${path}, ${mustBe} (was ${was})`
+//                 : `${mustBe} (was ${was})`
+//     },
+//     intersection: {
+//         mustBe: ({ parts }) =>
+//             "• " +
+//             parts
+//                 .map((part) =>
+//                     typeof part === "string" ? part : part.context.mustBe
+//                 )
+//                 .join("\n• "),
+//         writeReason: ({ mustBe, data, path }) => {
+//             const description = `${data} must be...\n${mustBe}`
+//             return path.length ? `At ${path}, ${description}` : description
+//         }
+//     },
+//     custom: {
+//         mustBe: ({ mustBe }) => mustBe
+//     }
+// }
 
 export const problemCodes: readonly ProblemCode[] = keysOf(defaultProblemConfig)
 

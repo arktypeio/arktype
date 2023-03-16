@@ -2,11 +2,11 @@ import type { Compilation } from "../compile.ts"
 import { composeIntersection } from "../compose.ts"
 import { defineProblemConfig } from "../problems.ts"
 
-export const divisorIntersection = composeIntersection<number>((l, r) =>
+export const intersectDivisors = composeIntersection<number>((l, r) =>
     Math.abs((l * r) / greatestCommonDivisor(l, r))
 )
 
-export const divisorCompilation = (divisor: number, c: Compilation) =>
+export const compileDivisor = (divisor: number, c: Compilation) =>
     c.check("divisor", `${c.data} % ${divisor} === 0` as const, divisor)
 
 export const divisorProblemConfig = defineProblemConfig("divisor", {

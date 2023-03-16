@@ -13,13 +13,13 @@ import {
     equality
 } from "../compose.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
-import { divisorCompilation, divisorIntersection } from "./divisor.ts"
-import { instanceOfCompilation, instanceOfIntersection } from "./instanceOf.ts"
+import { compileDivisor, intersectDivisors } from "./divisor.ts"
+import { compileInstanceOf, intersectInstanceOf } from "./instanceOf.ts"
 import type { PropsRule } from "./props.ts"
 import { compileProps, propsIntersection } from "./props.ts"
 import type { Range } from "./range.ts"
-import { compileRangeLines, rangeIntersection } from "./range.ts"
-import { regexCompilation, regexIntersection } from "./regex.ts"
+import { compileRange, intersectRange } from "./range.ts"
+import { compileRegex, regexIntersection } from "./regex.ts"
 import { compileValueCheck } from "./value.ts"
 
 export type NarrowableRules<$ = Dict> = {
@@ -80,11 +80,11 @@ const narrowIntersection =
 export const narrowableRulesIntersection =
     composeKeyedIntersection<NarrowableRules>(
         {
-            divisor: divisorIntersection,
+            divisor: intersectDivisors,
             regex: regexIntersection,
             props: propsIntersection,
-            instanceOf: instanceOfIntersection,
-            range: rangeIntersection,
+            instanceOf: intersectInstanceOf,
+            range: intersectRange,
             narrow: narrowIntersection
         },
         { onEmpty: "bubble" }
@@ -96,16 +96,16 @@ export const compileRules = (rules: UnknownRules, c: Compilation) => {
         lines.push(compileValueCheck(rules.value, c))
     }
     if (rules.instanceOf) {
-        lines.push(instanceOfCompilation(rules.instanceOf, c))
+        lines.push(compileInstanceOf(rules.instanceOf, c))
     }
     if (rules.divisor) {
-        lines.push(divisorCompilation(rules.divisor, c))
+        lines.push(compileDivisor(rules.divisor, c))
     }
     if (rules.range) {
-        lines.push(...compileRangeLines(rules.range, c))
+        lines.push(...compileRange(rules.range, c))
     }
     if (rules.regex) {
-        lines.push(...regexCompilation(rules.regex, c))
+        lines.push(...compileRegex(rules.regex, c))
     }
     if (rules.props) {
         lines.push(...compileProps(rules.props, c))

@@ -10,6 +10,7 @@ import {
 } from "../compose.ts"
 import type { Node } from "../node.ts"
 import { isLiteralNode, nodeIntersection } from "../node.ts"
+import { defineProblemConfig } from "../problems.ts"
 
 export type PropsRule<$ = Dict> = {
     [propKey in string]: Prop<$>
@@ -226,3 +227,13 @@ const compileLooseProps = (props: PropsRule, c: Compilation) => {
 //     // entries.push([`${kind}Props`, result])
 //     return ""
 // }
+
+export const extraneousProblemConfig = defineProblemConfig("extraneous", {
+    mustBe: () => "removed",
+    was: undefined
+})
+
+export const missingProblemConfig = defineProblemConfig("missing", {
+    mustBe: () => "defined",
+    was: undefined
+})
