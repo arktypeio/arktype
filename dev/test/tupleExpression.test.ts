@@ -27,7 +27,7 @@ describe("tuple expression", () => {
         attest(t.infer).typed as string[]
         attest(t.node).snap({
             object: {
-                class: "(function Array)",
+                instanceOf: "(function Array)",
                 props: { "[index]": "string" }
             }
         })

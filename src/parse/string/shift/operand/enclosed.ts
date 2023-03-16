@@ -1,4 +1,3 @@
-import { getRegex } from "../../../../nodes/rules/regex.ts"
 import type { error, tailOfString } from "../../../../utils/generics.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { state, StaticState } from "../../reduce/static.ts"
@@ -21,8 +20,6 @@ export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
     }
     // Shift the scanner one additional time for the second enclosing token
     if (s.scanner.shift() === "/") {
-        // Cache the regex instance to throw right way if its invalid
-        getRegex(token)
         s.setRoot({ string: { regex: token } })
     } else {
         s.setRoot({ string: { value: token } })

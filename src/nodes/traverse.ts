@@ -3,11 +3,7 @@ import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
 import { DataWrapper } from "../utils/data.ts"
 import type { xor } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import type {
-    ProblemCode,
-    ProblemContextInput,
-    ProblemParams
-} from "./problems.ts"
+import type { ProblemCode } from "./problems.ts"
 import { Problem, Problems } from "./problems.ts"
 
 export const CheckResult = class {

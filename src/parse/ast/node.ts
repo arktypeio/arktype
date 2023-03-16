@@ -73,7 +73,7 @@ type inferRules<domain extends Domain, branch, $> = branch extends LiteralRules
 type inferObjectRules<
     rules extends NarrowableRules,
     $
-> = rules["class"] extends ArrayConstructor
+> = rules["instanceOf"] extends ArrayConstructor
     ? rules["props"] extends {
           "[index]": Prop<$, infer indexNode>
           length?: Prop<$, infer lengthNode>
@@ -82,9 +82,9 @@ type inferObjectRules<
             ? HomogenousTuple<inferNode<indexNode, $>, value>
             : inferNode<indexNode, $>[]
         : unknown[]
-    : rules["class"] extends FunctionConstructor
+    : rules["instanceOf"] extends FunctionConstructor
     ? inferObjectKind<"Function">
-    : rules["class"] extends constructor<infer instance>
+    : rules["instanceOf"] extends constructor<infer instance>
     ? instance
     : rules["props"] extends PropsRule
     ? inferProps<rules["props"], $>

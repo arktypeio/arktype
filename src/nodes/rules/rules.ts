@@ -12,9 +12,9 @@ import {
     composeKeyedIntersection,
     equality
 } from "../compose.ts"
-import { classIntersection, compileClassCheck } from "./class.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { divisorCompilation, divisorIntersection } from "./divisor.ts"
+import { instanceOfCompilation, instanceOfIntersection } from "./instanceOf.ts"
 import type { PropsRule } from "./props.ts"
 import { compileProps, propsIntersection } from "./props.ts"
 import type { Range } from "./range.ts"
@@ -27,7 +27,7 @@ export type NarrowableRules<$ = Dict> = {
     readonly divisor?: number
     readonly range?: Range
     readonly props?: PropsRule<$>
-    readonly class?: constructor
+    readonly instanceOf?: constructor
     readonly narrow?: NarrowRule
 }
 
@@ -46,7 +46,7 @@ export type Rules<
 > = Domain extends domain
     ? NarrowableRules | LiteralRules
     : domain extends "object"
-    ? defineRuleSet<domain, "props" | "range" | "narrow" | "class", $>
+    ? defineRuleSet<domain, "props" | "range" | "narrow" | "instanceOf", $>
     : domain extends "string"
     ? defineRuleSet<domain, "regex" | "range" | "narrow", $>
     : domain extends "number"
@@ -83,7 +83,7 @@ export const narrowableRulesIntersection =
             divisor: divisorIntersection,
             regex: regexIntersection,
             props: propsIntersection,
-            class: classIntersection,
+            instanceOf: instanceOfIntersection,
             range: rangeIntersection,
             narrow: narrowIntersection
         },
@@ -95,8 +95,8 @@ export const compileRules = (rules: UnknownRules, c: Compilation) => {
     if (rules.value) {
         lines.push(compileValueCheck(rules.value, c))
     }
-    if (rules.class) {
-        lines.push(compileClassCheck(rules.class, c))
+    if (rules.instanceOf) {
+        lines.push(instanceOfCompilation(rules.instanceOf, c))
     }
     if (rules.divisor) {
         lines.push(divisorCompilation(rules.divisor, c))

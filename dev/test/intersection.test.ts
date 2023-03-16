@@ -66,7 +66,7 @@ describe("intersection", () => {
             }[]
             attest(t.node).snap({
                 object: {
-                    class: "(function Array)",
+                    instanceOf: "(function Array)",
                     props: {
                         "[index]": {
                             object: { props: { a: "string", b: "boolean" } }
@@ -85,7 +85,7 @@ describe("intersection", () => {
             ]
             attest(t.node).snap({
                 object: {
-                    class: "(function Array)",
+                    instanceOf: "(function Array)",
                     props: {
                         "0": {
                             object: { props: { a: "string", b: "boolean" } }
@@ -120,7 +120,7 @@ describe("intersection", () => {
             ]
             const expectedNode: Node = {
                 object: {
-                    class: Array,
+                    instanceOf: Array,
                     props: {
                         "0": {
                             object: { props: { a: "string", b: "boolean" } }
@@ -146,7 +146,7 @@ describe("intersection", () => {
             const t = type([["string", "string"], "&", "alpha[]"])
             attest(t.node).snap({
                 object: {
-                    class: "(function Array)",
+                    instanceOf: "(function Array)",
                     props: {
                         "0": "alpha",
                         "1": "alpha",
@@ -162,7 +162,7 @@ describe("intersection", () => {
             const t = type([["number", "string"], "&", "('one'|1)[]"])
             attest(t.node).snap({
                 object: {
-                    class: "(function Array)",
+                    instanceOf: "(function Array)",
                     props: {
                         "0": { number: { value: 1 } },
                         "1": { string: { value: "one" } },

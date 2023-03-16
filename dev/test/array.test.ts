@@ -10,7 +10,7 @@ describe("parse array", () => {
         attest(t.infer).typed as string[]
         attest(t.node).snap({
             object: {
-                class: "(function Array)",
+                instanceOf: "(function Array)",
                 props: { "[index]": "string" }
             }
         })
@@ -20,7 +20,7 @@ describe("parse array", () => {
         const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
         attest(t.node).snap({
             object: {
-                class: "(function Array)",
+                instanceOf: "(function Array)",
                 props: {
                     "[index]": {
                         object: { props: { a: "string", b: "number" } }
@@ -37,7 +37,7 @@ describe("parse array", () => {
         }[]
         attest(t.node).snap({
             object: {
-                class: "(function Array)",
+                instanceOf: "(function Array)",
                 props: { "[index]": { object: { props: { a: "string" } } } }
             }
         })

@@ -1,7 +1,6 @@
 import type {
     ProblemCode,
     ProblemOptions,
-    ProblemRequirement,
     ProblemWriters
 } from "../nodes/problems.ts"
 import type { Scope } from "../scopes/scope.ts"
@@ -51,7 +50,7 @@ const hasImpliedDomain = (predicate: Predicate) =>
     predicate !== true &&
     listFrom(predicate).every((branch) => {
         const rules = isTransformationBranch(branch) ? branch.rules : branch
-        return "value" in rules || rules.class
+        return "value" in rules || rules.instanceOf
     })
 
 const compileTypeNode = (node: DomainsNode, c: Compilation) => {

@@ -135,7 +135,7 @@ export const resolutionExtendsDomain = <domain extends Domain>(
 
 export const toArrayNode = (node: Node): ResolvedNode => ({
     object: {
-        class: Array,
+        instanceOf: Array,
         props: {
             [mappedKeys.index]: node
         }

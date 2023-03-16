@@ -7,7 +7,7 @@ describe("instanceof", () => {
     it("base", () => {
         const t = type(["instanceof", Error])
         attest(t.infer).typed as Error
-        attest(t.node).equals({ object: { class: Error } })
+        attest(t.node).equals({ object: { instanceOf: Error } })
         attest(t.steps).snap()
         const e = new Error()
         attest(t(e).data).equals(e)
@@ -47,7 +47,7 @@ describe("instanceof", () => {
     it("helper", () => {
         const regex = instanceOf(RegExp)
         attest(regex.infer).type.toString("RegExp")
-        attest(regex.node).snap({ object: { class: "(function RegExp)" } })
+        attest(regex.node).snap({ object: { instanceOf: "(function RegExp)" } })
     })
     it("helper error", () => {
         // @ts-expect-error

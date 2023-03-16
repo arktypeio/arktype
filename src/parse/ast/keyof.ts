@@ -5,13 +5,12 @@ import type { Rules } from "../../nodes/rules/rules.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import { deepFreeze } from "../../utils/freeze.ts"
-import type { constructor, evaluate, List } from "../../utils/generics.ts"
-import { listFrom, keysOf, prototypeKeysOf } from "../../utils/generics.ts"
+import type { evaluate, List } from "../../utils/generics.ts"
+import { keysOf, listFrom, prototypeKeysOf } from "../../utils/generics.ts"
 import {
     tryParseWellFormedInteger,
     wellFormedNonNegativeIntegerMatcher
 } from "../../utils/numericLiterals.ts"
-import { defaultObjectKinds } from "../../utils/objectKinds.ts"
 import { stringify } from "../../utils/serialize.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
@@ -129,12 +128,8 @@ const keysOfObjectBranch = (branch: Branch): KeyValue[] => {
             }
         }
     }
-    if ("class" in branch) {
-        const constructor: constructor =
-            typeof branch.class === "string"
-                ? defaultObjectKinds[branch.class]
-                : branch.class
-        for (const key of prototypeKeysOf(constructor.prototype)) {
+    if ("instanceOf" in branch) {
+        for (const key of prototypeKeysOf(branch.instanceOf.prototype)) {
             if (!result.includes(key)) {
                 result.push(key)
             }

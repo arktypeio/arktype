@@ -129,7 +129,7 @@ export const describeBranches = (descriptions: string[]) => {
 
 type ProblemInput = {
     divisor: [divisor: number]
-    constructor: [constructor: constructor]
+    instanceOf: [constructor: constructor]
     domain: [domain: Domain]
     missing: []
     extraneous: []
@@ -143,7 +143,7 @@ type ProblemInput = {
 
 type ProblemPrerequisites = {
     divisor: number
-    constructor: object
+    instanceOf: object
     size: SizedData
     regex: string
 }
@@ -195,16 +195,6 @@ const addDefaultPathContext = (description: string, path: Path) =>
 const defaultProblemConfig: {
     [code in ProblemCode]: DefaultProblemConfig<code>
 } = {
-    constructor: {
-        mustBe: ({ constructor }) => {
-            const possibleObjectKind =
-                getExactConstructorObjectKind(constructor)
-            return possibleObjectKind
-                ? objectKindDescriptions[possibleObjectKind]
-                : `an instance of ${constructor.name}`
-        },
-        was: ({ className }) => className
-    },
     domain: {
         mustBe: ({ domain }) => domainDescriptions[domain],
         was: ({ domain }) => domain
