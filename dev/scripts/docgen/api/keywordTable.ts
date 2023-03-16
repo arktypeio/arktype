@@ -20,8 +20,8 @@ export const tabulateData = (exportData: ExportData, tags: TsTagData) => {
         `| Name   | Type   | Description          |`,
         `| ------ | ------ | -------------------- |`
     ]
-    for (const alias of scopeAliases) {
-        const keyword = alias.trim().match(/^([^:]+):(.+)$/)
+    for (const prop of scopeAliases) {
+        const keyword = prop.trim().match(/^([^:]+):(.+)$/)
         if (keyword) {
             const description = valuesByKey ? valuesByKey[keyword[1]] ?? "" : ""
             section.push(
