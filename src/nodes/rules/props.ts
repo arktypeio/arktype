@@ -1,4 +1,5 @@
 import type { Dict } from "../../utils/generics.ts"
+import type { Path } from "../../utils/paths.ts"
 import type { Compilation } from "../compile.ts"
 import { compileNode } from "../compile.ts"
 import {
@@ -10,7 +11,7 @@ import {
 } from "../compose.ts"
 import type { Node } from "../node.ts"
 import { isLiteralNode, nodeIntersection } from "../node.ts"
-import { defineProblemConfig } from "../problems.ts"
+import { defineProblemConfig, Problem } from "../problems.ts"
 
 export type PropsRule<$ = Dict> = {
     [propKey in string]: Prop<$>
@@ -228,12 +229,22 @@ const compileLooseProps = (props: PropsRule, c: Compilation) => {
 //     return ""
 // }
 
-export const extraneousProblemConfig = defineProblemConfig("extraneous", {
-    mustBe: () => "removed",
-    was: undefined
-})
+export class MissingProblem extends Problem<undefined> {
+    constructor(path: Path) {
+        super("missing", undefined, path)
+    }
 
-export const missingProblemConfig = defineProblemConfig("missing", {
-    mustBe: () => "defined",
-    was: undefined
-})
+    get mustBe() {
+        return "defined"
+    }
+}
+
+export class ExtraneousProblem extends Problem {
+    constructor(data: unknown, path: Path) {
+        super("extraneous", data, path)
+    }
+
+    get mustBe() {
+        return "removed"
+    }
+}

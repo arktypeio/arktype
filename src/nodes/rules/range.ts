@@ -1,8 +1,10 @@
 import { Scanner } from "../../parse/string/shift/scanner.ts"
+import type { SizedData } from "../../utils/data.ts"
 import type { evaluate, xor } from "../../utils/generics.ts"
+import type { Path } from "../../utils/paths.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
-import { defineProblemConfig } from "../problems.ts"
+import { defineProblemConfig, Problem } from "../problems.ts"
 
 export type Range = RelativeRange | Bound<"==">
 
@@ -166,3 +168,24 @@ export const rangeProblemConfig = defineProblemConfig("range", {
     },
     was: ({ size }) => `${size}`
 })
+
+export class RangeProblem extends Problem<SizedData> {
+    constructor(
+        public comparator: Scanner.Comparator,
+        public limit: number,
+        data: SizedData,
+        path: Path
+    ) {
+        super("range", data, path)
+    }
+
+    get mustBe() {
+        return `${Scanner.comparatorDescriptions[this.comparator]} ${
+            this.limit
+        }${this.data.units ? ` ${this.data.units}` : ""}`
+    }
+
+    get was() {
+        return `${this.data.size}`
+    }
+}

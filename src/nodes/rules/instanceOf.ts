@@ -3,9 +3,10 @@ import {
     getExactConstructorObjectKind,
     objectKindDescriptions
 } from "../../utils/objectKinds.ts"
+import type { Path } from "../../utils/paths.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
-import { defineProblemConfig } from "../problems.ts"
+import { defineProblemConfig, Problem } from "../problems.ts"
 import { registerConstructor } from "../registry.ts"
 
 export const intersectInstanceOf = composeIntersection<constructor>(
@@ -31,12 +32,17 @@ export const compileInstanceOf = (instanceOf: constructor, c: Compilation) => {
     )
 }
 
-export const instanceOfProblemConfig = defineProblemConfig("instanceOf", {
-    mustBe: (instanceOf) => {
-        const possibleObjectKind = getExactConstructorObjectKind(instanceOf)
+export class InstanceOfProblem extends Problem<object> {
+    constructor(public instanceOf: constructor, data: object, path: Path) {
+        super("instanceOf", data, path)
+    }
+
+    get mustBe() {
+        const possibleObjectKind = getExactConstructorObjectKind(
+            this.instanceOf
+        )
         return possibleObjectKind
             ? objectKindDescriptions[possibleObjectKind]
-            : `an instance of ${instanceOf.name}`
-    },
-    was: ({ className }) => className
-})
+            : `an instance of ${this.instanceOf.name}`
+    }
+}

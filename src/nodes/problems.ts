@@ -25,10 +25,12 @@ export class ArkTypeError extends TypeError {
     }
 }
 
-export abstract class Problem<code extends ProblemCode = ProblemCode> {
-    data: DataWrapper<unknown>
+export abstract class Problem<data = unknown> {
+    data: DataWrapper<data>
 
-    constructor(public code: code, data: unknown, public path: Path) {
+    abstract mustBe: string
+
+    constructor(public code: ProblemCode, data: data, public path: Path) {
         this.data = new DataWrapper(data)
     }
 
@@ -37,7 +39,13 @@ export abstract class Problem<code extends ProblemCode = ProblemCode> {
         return this.code === (code as ProblemCode)
     }
 
-    abstract mustBe: string
+    get message() {
+        return this.path.length === 0
+            ? capitalize(this.reason)
+            : this.path.length === 1 && isWellFormedInteger(this.path[0])
+            ? `Item at index ${this.path[0]} ${this.reason}`
+            : `${this.path} ${this.reason}`
+    }
 
     get reason() {
         return `must be ${this.mustBe}${this.was ? ` ( was ${this.was})` : ""}`
@@ -48,7 +56,7 @@ export abstract class Problem<code extends ProblemCode = ProblemCode> {
     }
 
     toString() {
-        return this.reason
+        return this.message
     }
 }
 
@@ -184,13 +192,6 @@ export type DefaultProblemConfig<code extends ProblemCode> = requireKeys<
     ProblemOptions<code>,
     "mustBe"
 >
-
-const addDefaultPathContext = (description: string, path: Path) =>
-    path.length === 0
-        ? capitalize(description)
-        : path.length === 1 && isWellFormedInteger(path[0])
-        ? `Item at index ${path[0]} ${description}`
-        : `${path} ${description}`
 
 // const defaultProblemConfig: {
 //     [code in ProblemCode]: DefaultProblemConfig<code>
