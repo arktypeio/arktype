@@ -229,7 +229,7 @@ const compileLooseProps = (props: PropsRule, c: Compilation) => {
 //     return ""
 // }
 
-export class MissingProblem extends Problem<undefined> {
+export class MissingKeyProblem extends Problem<undefined> {
     readonly code = "missing"
 
     constructor(path: Path) {
@@ -241,7 +241,7 @@ export class MissingProblem extends Problem<undefined> {
     }
 }
 
-export class ExtraneousProblem extends Problem {
+export class ExtraneousKeyProblem extends Problem {
     readonly code = "extraneous"
 
     constructor(data: unknown, path: Path) {

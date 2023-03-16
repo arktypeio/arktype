@@ -13,7 +13,7 @@ import { objectKindDescriptions } from "../utils/objectKinds.ts"
 import type { Path } from "../utils/paths.ts"
 import type { DivisorProblem } from "./rules/divisor.ts"
 import type { InstanceProblem } from "./rules/instance.ts"
-import type { ExtraneousProblem, MissingProblem } from "./rules/props.ts"
+import type { ExtraneousKeyProblem, MissingKeyProblem } from "./rules/props.ts"
 import type { RegexProblem } from "./rules/regex.ts"
 import type { ValueProblem } from "./rules/value.ts"
 
@@ -140,13 +140,17 @@ export const describeBranches = (descriptions: string[]) => {
 }
 
 type ProblemsByCode = defineProblemsByCode<{
+    domain: DomainProblem
     divisor: DivisorProblem
     instance: InstanceProblem
-    missing: MissingProblem
-    extraneous: ExtraneousProblem
+    missing: MissingKeyProblem
+    extraneous: ExtraneousKeyProblem
     range: RangeProblem
     regex: RegexProblem
     value: ValueProblem
+    custom: CustomProblem
+    intersection: ProblemIntersection
+    union: ProblemUnion
 }>
 
 type defineProblemsByCode<
@@ -158,110 +162,75 @@ type defineProblemsByCode<
     }
 > = problems
 
-type ProblemInput = {
-    domain: [domain: Domain]
-    intersection: [parts: (string | Problem)[]]
-    union: [parts: (string | Problem)[]]
-    custom: [mustBe: string]
-}
-
 export type ProblemCode = evaluate<keyof ProblemsByCode>
 
-// const defaultProblemConfig: {
-//     [code in ProblemCode]: DefaultProblemConfig<code>
-// } = {
-//     domain: {
-//         mustBe: ({ domain }) => domainDescriptions[domain],
-//         was: ({ domain }) => domain
-//     },
-//     union: {
-//         mustBe: ({ parts: problems }) =>
-//             describeBranches(
-//                 problems.map((problem) =>
-//                     typeof problem === "string"
-//                         ? `must be ${problem}`
-//                         : `${problem.path} must be ${
-//                               problem.hasCode("intersection")
-//                                   ? describeBranches(
-//                                         problem.context.parts.map((part) =>
-//                                             typeof part === "string"
-//                                                 ? part
-//                                                 : part.context.mustBe
-//                                         )
-//                                     )
-//                                   : problem.context.mustBe
-//                           }`
-//                 )
-//             ),
-//         writeReason: ({ mustBe, path, was }) =>
-//             path.length
-//                 ? `At ${path}, ${mustBe} (was ${was})`
-//                 : `${mustBe} (was ${was})`
-//     },
-//     intersection: {
-//         mustBe: ({ parts }) =>
-//             "• " +
-//             parts
-//                 .map((part) =>
-//                     typeof part === "string" ? part : part.context.mustBe
-//                 )
-//                 .join("\n• "),
-//         writeReason: ({ mustBe, data, path }) => {
-//             const description = `${data} must be...\n${mustBe}`
-//             return path.length ? `At ${path}, ${description}` : description
-//         }
-//     },
-//     custom: {
-//         mustBe: ({ mustBe }) => mustBe
-//     }
-// }
+export class ProblemIntersection extends Problem {
+    readonly code = "intersection"
 
-export const compileProblemWriters = (
-    input: ProblemsConfig | undefined
-): ProblemWritersByCode => {
-    if (!input) {
-        return defaultProblemWriters
+    constructor(public parts: Problem[], data: unknown, path: Path) {
+        super(data, path)
     }
-    const result = {} as ProblemWritersByCode
-    for (const code of problemCodes) {
-        result[code] = {
-            mustBe:
-                input[code]?.mustBe ??
-                (defaultProblemConfig[code].mustBe as any),
-            was:
-                input[code]?.was ??
-                defaultProblemConfig[code].was ??
-                (describeDefaultWas as any),
-            writeReason:
-                input[code]?.writeReason ??
-                input.writeReason ??
-                defaultProblemConfig[code].writeReason ??
-                (writeDefaultReason as any)
-        }
+
+    get message() {
+        return this.path.length
+            ? `At ${this.path}, ${this.reason}`
+            : this.reason
     }
-    return result
+
+    get mustBe() {
+        return "• " + this.parts.map(({ mustBe }) => mustBe).join("\n• ")
+    }
+
+    get reason() {
+        return `${this.data} must be...\n${this.mustBe}`
+    }
 }
 
-export type ProblemOptions<code extends ProblemCode = ProblemCode> = {
-    mustBe?: DescribeRequirement<code>
-    writeReason?: WriteReason<code>
-    was?: DescribeWas<code>
+export class DomainProblem extends Problem {
+    readonly code = "domain"
+
+    constructor(public domain: Domain, data: unknown, path: Path) {
+        super(data, path)
+    }
+
+    get mustBe() {
+        return domainDescriptions[this.domain]
+    }
 }
 
-export type ProblemsConfig = evaluate<
-    {
-        writeReason?: WriteReason
-    } & ProblemsConfigByCode
->
+export class ProblemUnion extends Problem {
+    readonly code = "union"
 
-export type ProblemsConfigByCode = {
-    [code in ProblemCode]?: ProblemOptions<code>
+    constructor(public parts: Problem[], data: unknown, path: Path) {
+        super(data, path)
+    }
+
+    get mustBe() {
+        return describeBranches(
+            this.parts.map(
+                (problem) =>
+                    `${problem.path} must be ${
+                        problem.hasCode("intersection")
+                            ? describeBranches(
+                                  problem.parts.map((part) => part.mustBe)
+                              )
+                            : problem.mustBe
+                    }`
+            )
+        )
+    }
+
+    get reason() {
+        return this.path.length
+            ? `At ${this.path}, ${this.mustBe} (was ${this.was})`
+            : `${this.mustBe} (was ${this.was})`
+    }
 }
 
-export type ProblemWritersByCode = {
-    [code in ProblemCode]: ProblemWriters<code>
-}
+export class CustomProblem extends Problem {
+    readonly code = "custom"
 
-export type ProblemWriters<code extends ProblemCode = ProblemCode> = Required<
-    ProblemOptions<code>
->
+    constructor(public mustBe: string, data: unknown, path: Path) {
+        super(data, path)
+    }
+}
