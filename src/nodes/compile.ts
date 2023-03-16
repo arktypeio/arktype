@@ -61,7 +61,7 @@ const compileTypeNode = (node: DomainsNode, c: Compilation) => {
             return domainCheck
         }
         const checks = compilePredicate(predicate, c)
-        if (!hasImpliedDomain(predicate)) {
+        if (checks && !hasImpliedDomain(predicate)) {
             return `${domainCheck} && ${checks}`
         }
         return checks

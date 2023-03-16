@@ -93,10 +93,10 @@ export const narrowableRulesIntersection =
 export const compileRules = (rules: UnknownRules, c: Compilation) => {
     let result = ""
     if (rules.value) {
-        result += compileValueCheck(rules.value, c)
+        result += compileValueCheck(rules.value, c) + ";"
     }
     if (rules.instance) {
-        result += compileInstance(rules.instance, c)
+        result += compileInstance(rules.instance, c) + ";"
     }
     if (rules.divisor) {
         result += compileDivisor(rules.divisor, c)
