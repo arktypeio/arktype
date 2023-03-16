@@ -4,7 +4,7 @@
     "private": true,
     "scripts": {
         "dev": "docusaurus start",
-        "build": "ts-node ./build.mts",
+        "build": "ts-node ../scripts/buildArktypeIO.ts",
         "typecheck": "tsc",
         "serve": "docusaurus serve --dir dist",
         "docgen": "cd .. && pnpm docgen"

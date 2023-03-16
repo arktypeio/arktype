@@ -157,6 +157,24 @@ describe("keywords", () => {
                 "Must be a valid UUID (was '1234')"
             )
         })
+        it("parsedNumber", () => {
+            const parsedNumber = type("parsedNumber")
+            attest(parsedNumber("5").data).snap(5)
+            attest(parsedNumber("5.5").data).snap(5.5)
+            attest(parsedNumber("five").problems?.summary).snap(
+                "Must be a well-formed numeric string (was 'five')"
+            )
+        })
+        it("parsedInteger", () => {
+            const parsedInteger = type("parsedInteger")
+            attest(parsedInteger("5").data).snap(5)
+            attest(parsedInteger("5.5").problems?.summary).snap(
+                "Must be a well-formed integer string (was '5.5')"
+            )
+            attest(parsedInteger(5).problems?.summary).snap(
+                "Must be a well-formed integer string (was number)"
+            )
+        })
         it("parsedDate", () => {
             const parsedDate = type("parsedDate")
             attest(parsedDate("5/21/1993").data?.toDateString()).snap(
@@ -167,6 +185,13 @@ describe("keywords", () => {
             )
             attest(parsedDate(5).problems?.summary).snap(
                 "Must be a string (was number)"
+            )
+        })
+        it("json", () => {
+            const json = type("json")
+            attest(json('{"a": "hello"}').data).snap({ a: "hello" })
+            attest(json(123).problems?.summary).snap(
+                "Must be a JSON-parsable string (was number)"
             )
         })
         it("credit card", () => {
