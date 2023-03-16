@@ -16,15 +16,13 @@ import { type } from "../../src/main.ts"
 
 const t = type("string[]")
 
-console.log(t.steps)
-
 console.log(format(t.js))
 
 console.log(t([""]))
 
-console.log(type("number%2").steps)
+console.log(type("number%2").js)
 
-console.log(type({ a: "string", b: "boolean" }).steps)
+console.log(type({ a: "string", b: "boolean" }).js)
 
 let result, isValid
 

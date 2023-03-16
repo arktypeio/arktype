@@ -141,9 +141,9 @@ export const predicateUnion = (
 export const compilePredicate = (
     predicate: Predicate,
     c: Compilation
-): string[] => {
+): string => {
     if (predicate === true) {
-        return []
+        return ""
     }
     return isArray(predicate)
         ? compileBranches(predicate, c)

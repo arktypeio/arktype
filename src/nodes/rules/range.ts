@@ -103,21 +103,17 @@ const maxAllows = (max: UpperBound | undefined, n: number) =>
 
 export const compileRange = (range: Range, c: Compilation) =>
     isEqualityRange(range)
-        ? rangeLinesFrom(c, range)
+        ? compileBounds(c, range)
         : range.min
         ? range.max
-            ? rangeLinesFrom(c, range.min, range.max)
-            : rangeLinesFrom(c, range.min)
-        : rangeLinesFrom(c, range.max)
-
-type RangeLines = evaluate<[CompiledSizeAssignment, ...CompiledBoundCheck[]]>
+            ? compileBounds(c, range.min, range.max)
+            : compileBounds(c, range.min)
+        : compileBounds(c, range.max)
 
 const compileSizeAssignment = (data: string) =>
-    `const size = typeof ${data} === "number" ? ${data} : ${data}.length` as const
+    `const size = typeof ${data} === "number" ? ${data} : ${data}.length;` as const
 
-type CompiledSizeAssignment = ReturnType<typeof compileSizeAssignment>
-
-const rangeLinesFrom = (c: Compilation, ...bounds: Bound[]) => {
+const compileBounds = (c: Compilation, ...bounds: Bound[]) => {
     const units =
         c.lastDomain === "string"
             ? "characters"
@@ -128,18 +124,18 @@ const rangeLinesFrom = (c: Compilation, ...bounds: Bound[]) => {
             : throwInternalError(
                   `Unexpected lastDomain '${c.lastDomain}' while compiling range.`
               )
-    return [
-        compileSizeAssignment(c.data),
-        ...bounds.map((bound) => {
-            return compileBoundCheck({ ...bound, units }, c)
-        })
-    ] as RangeLines
+    return `${compileSizeAssignment(c.data)}${compileBoundCheck(
+        { ...bounds[0], units },
+        c
+    )}${
+        bounds.length === 2
+            ? ` && ${compileBoundCheck({ ...bounds[1], units }, c)}`
+            : ""
+    }` as const
 }
 
 const compileBoundCheck = (bound: BoundWithUnits, c: Compilation) =>
     c.check("range", `size ${bound.comparator} ${bound.limit}`, bound)
-
-type CompiledBoundCheck = ReturnType<typeof compileBoundCheck>
 
 export const compareStrictness = (
     kind: "min" | "max",

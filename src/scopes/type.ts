@@ -1,4 +1,4 @@
-import { compileJs } from "../nodes/compile.ts"
+import { createTraverse } from "../nodes/compile.ts"
 import type { Node } from "../nodes/node.ts"
 import type { CheckResult, TraversalState } from "../nodes/traverse.ts"
 import type { ParsedMorph } from "../parse/ast/morph.ts"
@@ -34,7 +34,6 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
 type TypeRoot<t = unknown> = evaluate<{
     [as]: t
     infer: asOut<t>
-    steps: string[]
     js: string
     allows: (data: unknown) => data is t
     assert: (data: unknown) => t
@@ -72,7 +71,6 @@ export const initializeType = (
         // temporarily initialize node/flat to aliases that will be included in
         // the final type in case of cyclic resolutions
         node: name,
-        steps: [`${name}(data)`],
         js: uninitializedJs,
         check: uninitializedTraversal,
         traverse: uninitializedTraversal,
@@ -102,9 +100,10 @@ export const initializeType = (
     return t
 }
 
-const uninitializedJs = compileJs("uninitialized", [
+const uninitializedJs = createTraverse(
+    "uninitialized",
     `throw new Error("Unexpected attempt to check uncompiled type.")`
-])
+)
 
 const uninitializedTraversal = Function(uninitializedJs)()
 

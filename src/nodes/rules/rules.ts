@@ -91,28 +91,28 @@ export const narrowableRulesIntersection =
     )
 
 export const compileRules = (rules: UnknownRules, c: Compilation) => {
-    const lines: string[] = []
+    let result = ""
     if (rules.value) {
-        lines.push(compileValueCheck(rules.value, c))
+        result += compileValueCheck(rules.value, c)
     }
     if (rules.instance) {
-        lines.push(compileInstance(rules.instance, c))
+        result += compileInstance(rules.instance, c)
     }
     if (rules.divisor) {
-        lines.push(compileDivisor(rules.divisor, c))
+        result += compileDivisor(rules.divisor, c)
     }
     if (rules.range) {
-        lines.push(...compileRange(rules.range, c))
+        result += compileRange(rules.range, c)
     }
     if (rules.regex) {
-        lines.push(...compileRegex(rules.regex, c))
+        result += compileRegex(rules.regex, c)
     }
     if (rules.props) {
-        lines.push(...compileProps(rules.props, c))
+        result += compileProps(rules.props, c)
     }
     if (rules.narrow) {
     }
-    return lines
+    return result
 }
 
 type UnknownRules = NarrowableRules & Partial<LiteralRules>

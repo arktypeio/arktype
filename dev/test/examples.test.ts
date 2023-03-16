@@ -54,9 +54,6 @@ describe("snippets", () => {
                       discriminated: "right"
                   }
               }
-        attest(example.deepLeftOrRight.steps).snap(
-            example.unionInternalRepresentation
-        )
         attest(example.numericIntersection.infer).typed as number
         // attest(example.numericIntersection.flat).equals(
         //     example.numericInternalRepresentation as unknown as TraversalNode

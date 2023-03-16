@@ -10,12 +10,12 @@ import { isConfigNode } from "./node.ts"
 import type { Predicate } from "./predicate.ts"
 import { compilePredicate } from "./predicate.ts"
 
-export const compileJs = (name: string, steps: string[]) =>
-    `return (data, state) => {
-${steps.join(";\n")} 
-}` as const
+export const createTraverse = (name: string, js: string) =>
+    Function(`return (data, state) => {
+${js} 
+}`)()
 
-export const compileType = (type: Type): string[] => {
+export const compileType = (type: Type): string => {
     const state = new Compilation(type)
     return compileNode(type.node, state)
 }
@@ -23,12 +23,10 @@ export const compileType = (type: Type): string[] => {
 export const compileNode = (node: Node, c: Compilation) => {
     if (typeof node === "string") {
         // TODO: improve
-        const lines = c.type.scope.resolve(node).steps
+        const js = c.type.scope.resolve(node).js
         return c.path.length
-            ? lines.map((line) =>
-                  line.replace("data", `data.${c.path.join(".")}`)
-              )
-            : lines
+            ? js.replace("data", `data.${c.path.join(".")}`)
+            : js
     }
     return isConfigNode(node)
         ? c.compileConfigNode(node)
@@ -60,11 +58,11 @@ const compileTypeNode = (node: DomainsNode, c: Compilation) => {
             domain
         )
         if (predicate === true) {
-            return [domainCheck]
+            return domainCheck
         }
         const checks = compilePredicate(predicate, c)
         if (!hasImpliedDomain(predicate)) {
-            checks.unshift(domainCheck)
+            return `${domainCheck} && ${checks}`
         }
         return checks
     }
@@ -72,7 +70,7 @@ const compileTypeNode = (node: DomainsNode, c: Compilation) => {
     // for (const domain of domains) {
     //     result[domain] = compilePredicate(node[domain]!, state)
     // }
-    return [] //[["domains", result]]
+    return `console.log("unimplemented!")` //[["domains", result]]
 }
 
 export type TraversalConfig = {
@@ -109,9 +107,9 @@ export class Compilation {
     }
 
     problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
-        return `state.reject("${code}", ${JSON.stringify(rule)}, ${
-            this.data
-        }, ${this.path.json})` as const
+        return `state.reject("${code}", ${
+            typeof rule === "function" ? rule.name : JSON.stringify(rule)
+        }, ${this.data}, ${this.path.json})` as const
     }
 
     // getProblemConfig<code extends ProblemCode>(
@@ -141,272 +139,4 @@ export class Compilation {
         }
         return result
     }
-
-    // traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {
-    //     const lastData = this.data
-    //     this.data = this.data[key] as data
-    //     this.path.push(key)
-    //     const isValid = traverse(node, this)
-    //     this.path.pop()
-    //     if (lastData[key] !== this.data) {
-    //         lastData[key] = this.data as any
-    //     }
-    //     this.data = lastData
-    //     return isValid
-    // }
-
-    // traverseResolution(name: string): boolean {
-    //     const resolution = this.type.scope.resolve(name)
-    //     const id = resolution.qualifiedName
-    //     // this assignment helps with narrowing
-    //     const data = this.data
-    //     const isObject = hasDomain(data, "object")
-    //     if (isObject) {
-    //         const seenByCurrentType = this.#seen[id]
-    //         if (seenByCurrentType) {
-    //             if (seenByCurrentType.includes(data)) {
-    //                 // if data has already been checked by this alias as part of
-    //                 // a resolution higher up on the call stack, it must be valid
-    //                 // or we wouldn't be here
-    //                 return true
-    //             }
-    //             seenByCurrentType.push(data)
-    //         } else {
-    //             this.#seen[id] = [data]
-    //         }
-    //     }
-    //     const lastType = this.type
-    //     this.type = resolution
-    //     const isValid = traverse(resolution.flat, this)
-    //     this.type = lastType
-    //     if (isObject) {
-    //         this.#seen[id]!.pop()
-    //     }
-    //     return isValid
-    // }
-
-    // traverseBranches(branches: TraversalEntry[][]): boolean {
-    //     const lastFailFast = this.failFast
-    //     this.failFast = true
-    //     const lastProblems = this.problems
-    //     const branchProblems = new Problems(this)
-    //     this.problems = branchProblems
-    //     const lastPath = this.path
-    //     const lastKeysToPrune = this.entriesToPrune
-    //     let hasValidBranch = false
-    //     for (const branch of branches) {
-    //         this.path = new Path()
-    //         this.entriesToPrune = []
-    //         if (checkEntries(branch, this)) {
-    //             hasValidBranch = true
-    //             lastKeysToPrune.push(...this.entriesToPrune)
-    //             break
-    //         }
-    //     }
-    //     this.path = lastPath
-    //     this.entriesToPrune = lastKeysToPrune
-    //     this.problems = lastProblems
-    //     this.failFast = lastFailFast
-    //     return hasValidBranch || !this.problems.add("branches", branchProblems)
-    // }
 }
-
-// export const checkEntries = (
-//     entries: TraversalEntry[],
-//     state: CompilationState
-// ): boolean => {
-//     let isValid = true
-//     for (let i = 0; i < entries.length; i++) {
-//         const [k, v] = entries[i]
-//         const entryAllowsData = (entryCheckers[k] as EntryChecker<any>)(
-//             v,
-//             state
-//         )
-//         isValid &&= entryAllowsData
-//         if (!isValid) {
-//             if (state.failFast) {
-//                 return false
-//             }
-//             if (
-//                 i < entries.length - 1 &&
-//                 precedenceMap[k] < precedenceMap[entries[i + 1][0]]
-//             ) {
-//                 // if we've encountered a problem, there is at least one entry
-//                 // remaining, and the next entry is of a higher precedence level
-//                 // than the current entry, return immediately
-//                 return false
-//             }
-//         }
-//     }
-//     return isValid
-// }
-
-// export const checkRequiredProp = (
-//     prop: TraversalProp,
-//     state: CompilationState<TraversableData>
-// ) => {
-//     if (prop[0] in state.data) {
-//         return state.traverseKey(prop[0], prop[1])
-//     }
-//     state.problems.add("missing", undefined, {
-//         path: state.path.concat(prop[0]),
-//         data: undefined
-//     })
-//     return false
-// }
-
-// const createPropChecker =
-//     (kind: PropsRecordKey) =>
-//     (props: PropsRecordEntry[1], state: CompilationState<TraversableData>) => {
-//         let isValid = true
-//         const remainingUnseenRequired = { ...props.required }
-//         for (const k in state.data) {
-//             if (props.required[k]) {
-//                 isValid &&= state.traverseKey(k, props.required[k])
-//                 delete remainingUnseenRequired[k]
-//             } else if (props.optional[k]) {
-//                 isValid &&= state.traverseKey(k, props.optional[k])
-//             } else if (kind === "distilledProps") {
-//                 if (state.failFast) {
-//                     // If we're in a union (i.e. failFast is enabled) in
-//                     // distilled mode, we need to wait to prune distilled keys
-//                     // to avoid mutating data based on a branch that will not be
-//                     // included in the final result. Instead, we push the object
-//                     // and key to state to handle after traversal is complete.
-//                     state.entriesToPrune.push([state.data, k])
-//                 } else {
-//                     // If we're not in a union, we can safely distill right away
-//                     delete state.data[k]
-//                 }
-//             } else {
-//                 isValid = false
-//                 state.problems.add("extraneous", state.data[k], {
-//                     path: state.path.concat(k)
-//                 })
-//             }
-//             if (!isValid && state.failFast) {
-//                 return false
-//             }
-//         }
-//         const unseenRequired = Object.keys(remainingUnseenRequired)
-//         if (unseenRequired.length) {
-//             for (const k of unseenRequired) {
-//                 state.problems.add("missing", undefined, {
-//                     path: state.path.concat(k)
-//                 })
-//             }
-//             return false
-//         }
-//         return isValid
-//     }
-
-// const entryCheckers = {
-//     regex: checkRegex,
-//     divisor: compileDivisorCheck,
-//     domains: (domains, state) => {
-//         const entries = domains[domainOf(state.data)]
-//         return entries
-//             ? checkEntries(entries, state)
-//             : !state.problems.add(
-//                   "cases",
-//                   domainsToDescriptions(keysOf(domains))
-//               )
-//     },
-//     domain: (domain, state) =>
-//         domainOf(state.data) === domain ||
-//         !state.problems.add("domain", domain),
-//     bound: checkBound,
-//     optionalProp: (prop, state) => {
-//         if (prop[0] in state.data) {
-//             return state.traverseKey(prop[0], prop[1])
-//         }
-//         return true
-//     },
-//     // these checks work the same way, the keys are only distinct so that
-//     // prerequisite props can have a higher precedence
-//     requiredProp: checkRequiredProp,
-//     prerequisiteProp: checkRequiredProp,
-//     indexProp: (node, state) => {
-//         if (!Array.isArray(state.data)) {
-//             state.problems.add("class", "Array")
-//             return false
-//         }
-//         let isValid = true
-//         for (let i = 0; i < state.data.length; i++) {
-//             isValid &&= state.traverseKey(`${i}`, node)
-//             if (!isValid && state.failFast) {
-//                 return false
-//             }
-//         }
-//         return isValid
-//     },
-//     branches: (branches, state) => state.traverseBranches(branches),
-//     switch: (rule, state) => {
-//         const dataAtPath = getPath(state.data, rule.path)
-//         const caseKey = serializeCase(rule.kind, dataAtPath)
-//         if (hasKey(rule.cases, caseKey)) {
-//             return checkEntries(rule.cases[caseKey], state)
-//         }
-//         const caseKeys = keysOf(rule.cases)
-//         const missingCasePath = state.path.concat(rule.path)
-//         const caseDescriptions =
-//             rule.kind === "value"
-//                 ? caseKeys
-//                 : rule.kind === "domain"
-//                 ? domainsToDescriptions(caseKeys as Domain[])
-//                 : rule.kind === "class"
-//                 ? objectKindsToDescriptions(caseKeys as DefaultObjectKind[])
-//                 : /* c8 ignore start*/
-//                   throwInternalError(
-//                       `Unexpectedly encountered rule kind '${rule.kind}' during traversal`
-//                   )
-//         /* c8 ignore stop*/
-//         state.problems.add("cases", caseDescriptions, {
-//             path: missingCasePath,
-//             data: dataAtPath
-//         })
-//         return false
-//     },
-//     alias: (name, state) => state.traverseResolution(name),
-//     class: compileClassCheck,
-//     narrow: (narrow, state) => {
-//         const lastProblemsCount = state.problems.count
-//         const result = narrow(state.data, state.problems)
-//         if (!result && state.problems.count === lastProblemsCount) {
-//             state.problems.mustBe(
-//                 narrow.name ? `valid according to ${narrow.name}` : "valid"
-//             )
-//         }
-//         return result
-//     },
-//     config: ({ config, node }, state) => state.compileConfigNode(config, node),
-//     value: (value, state) =>
-//         state.data === value || !state.problems.add("value", value),
-//     morph: (morph, state) => {
-//         const out = morph(state.data, state.problems)
-//         if (state.problems.length) {
-//             return false
-//         }
-//         if (out instanceof Problem) {
-//             // if a problem was returned from the morph but not added, add it
-//             state.problems.addProblem(out)
-//             return false
-//         }
-//         if (out instanceof CheckResult) {
-//             if (out.problems) {
-//                 for (const problem of out.problems) {
-//                     state.problems.addProblem(problem)
-//                 }
-//                 return false
-//             }
-//             state.data = out.data
-//             return true
-//         }
-//         state.data = out
-//         return true
-//     },
-//     distilledProps: createPropChecker("distilledProps"),
-//     strictProps: createPropChecker("strictProps")
-// } satisfies {
-//     [k in TraversalKey]: EntryChecker<k>
-// }
