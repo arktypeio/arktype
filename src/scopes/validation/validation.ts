@@ -41,7 +41,7 @@ const json = rootType([tsKeywords.string, "|>", (s) => JSON.parse(s)], {
 })
 
 /**
- * @descriptions descriptions: { 
+ * @keywords keywords: { 
         "alpha": "only letters",
         "alphanumeric": "only letters and digits",
         "lowercase": "only lowercase letters",

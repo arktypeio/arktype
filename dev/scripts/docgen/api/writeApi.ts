@@ -7,7 +7,7 @@ import type {
     ExportData,
     PackageExtractionData
 } from "./extractApi.ts"
-import { packDataForTable, tabulateData } from "./keywordTable.ts"
+import { tabulateData } from "./keywordTable.ts"
 import type { TsTagData } from "./tsDocTransforms.ts"
 import {
     formatTagData,
@@ -65,7 +65,7 @@ const generateMarkdownForExport = (
     exported: ExportData,
     tagData: TsTagData
 ) => {
-    const tagsToIgnore = ["descriptions", "scope"]
+    const tagsToIgnore = ["keywords", "scope"]
     const md = new MarkdownSection(exported.name)
     md.options({ hide_table_of_contents: true })
     for (const [tag, arrayOfTagData] of Object.entries(tagData)) {
@@ -75,7 +75,7 @@ const generateMarkdownForExport = (
         md.section(tag).text(formatTagData(arrayOfTagData, tag))
     }
     if (tagData.scope) {
-        const textAsTable = tabulateData(packDataForTable(exported, tagData))
+        const textAsTable = tabulateData(exported, tagData)
         md.section("text").text(textAsTable)
         scopeData.push({ name: exported.name, text: textAsTable })
     } else {

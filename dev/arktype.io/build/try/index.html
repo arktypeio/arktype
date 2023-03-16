@@ -1,0 +1,1860 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="plugin-pages plugin-id-default">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="generator" content="Docusaurus v2.3.1" />
+        <title data-rh="true">ArkType | ArkType</title>
+        <meta
+            data-rh="true"
+            name="viewport"
+            content="width=device-width,initial-scale=1"
+        />
+        <meta
+            data-rh="true"
+            name="twitter:card"
+            content="summary_large_image"
+        />
+        <meta
+            data-rh="true"
+            property="og:image"
+            content="https://arktype.io/img/logo2To1.png"
+        />
+        <meta
+            data-rh="true"
+            name="twitter:image"
+            content="https://arktype.io/img/logo2To1.png"
+        />
+        <meta
+            data-rh="true"
+            property="og:url"
+            content="https://arktype.io/try"
+        />
+        <meta data-rh="true" name="docusaurus_locale" content="en" />
+        <meta data-rh="true" name="docusaurus_tag" content="default" />
+        <meta data-rh="true" name="docsearch:language" content="en" />
+        <meta
+            data-rh="true"
+            name="docsearch:docusaurus_tag"
+            content="default"
+        />
+        <meta data-rh="true" property="og:title" content="ArkType | ArkType" />
+        <meta
+            data-rh="true"
+            name="description"
+            content="TypeScript&#x27;s 1:1 validator, optimized from editor to runtime"
+        />
+        <meta
+            data-rh="true"
+            property="og:description"
+            content="TypeScript&#x27;s 1:1 validator, optimized from editor to runtime"
+        />
+        <link data-rh="true" rel="icon" href="/img/logo.svg" />
+        <link data-rh="true" rel="canonical" href="https://arktype.io/try" />
+        <link
+            data-rh="true"
+            rel="alternate"
+            href="https://arktype.io/try"
+            hreflang="en"
+        />
+        <link
+            data-rh="true"
+            rel="alternate"
+            href="https://arktype.io/try"
+            hreflang="x-default"
+        />
+        <link rel="preconnect" href="https://www.google-analytics.com" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <script
+            async
+            src="https://www.googletagmanager.com/gtag/js?id=G-FE16ZX1CZQ"
+        ></script>
+        <script>
+            function gtag() {
+                dataLayer.push(arguments)
+            }
+            ;(window.dataLayer = window.dataLayer || []),
+                gtag("js", new Date()),
+                gtag("config", "G-FE16ZX1CZQ", { anonymize_ip: !0 })
+        </script>
+        <link rel="stylesheet" href="/assets/css/styles.7b705141.css" />
+        <link
+            rel="preload"
+            href="/assets/js/runtime~main.66e1b792.js"
+            as="script"
+        />
+        <link rel="preload" href="/assets/js/main.1b510953.js" as="script" />
+    </head>
+    <body class="navigation-with-keyboard">
+        <script>
+            !(function () {
+                function t(t) {
+                    document.documentElement.setAttribute("data-theme", t)
+                }
+                var e = (function () {
+                    var t = null
+                    try {
+                        t = localStorage.getItem("theme")
+                    } catch (t) {}
+                    return t
+                })()
+                t(null !== e ? e : "dark")
+            })()
+        </script>
+        <div id="__docusaurus">
+            <div role="region" aria-label="Skip to main content">
+                <a
+                    class="skipToContent_VhAS"
+                    href="#docusaurus_skipToContent_fallback"
+                    >Skip to main content</a
+                >
+            </div>
+            <nav aria-label="Main" class="navbar navbar--fixed-top">
+                <div class="navbar__inner">
+                    <div class="navbar__items">
+                        <button
+                            aria-label="Toggle navigation bar"
+                            aria-expanded="false"
+                            class="navbar__toggle clean-btn"
+                            type="button"
+                        >
+                            <svg
+                                width="30"
+                                height="30"
+                                viewBox="0 0 30 30"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    stroke="currentColor"
+                                    stroke-linecap="round"
+                                    stroke-miterlimit="10"
+                                    stroke-width="2"
+                                    d="M4 7h22M4 15h22M4 23h22"
+                                ></path>
+                            </svg></button
+                        ><a class="navbar__brand" href="/"
+                            ><div class="navbar__logo">
+                                <img
+                                    src="/img/logo.svg"
+                                    alt="Arktype Logo"
+                                    class="themedImage_sEX1 themedImage--light_Rq57"
+                                /><img
+                                    src="/img/logo.svg"
+                                    alt="Arktype Logo"
+                                    class="themedImage_sEX1 themedImage--dark_kEke"
+                                /></div></a
+                        ><a class="navbar__item navbar__link" href="/docs/"
+                            >Docs</a
+                        >
+                    </div>
+                    <div class="navbar__items navbar__items--right">
+                        <div
+                            class="navbar__item dropdown dropdown--hoverable dropdown--right"
+                        >
+                            <a
+                                class="navbar__link navbar-versions"
+                                aria-haspopup="true"
+                                aria-expanded="false"
+                                role="button"
+                                href="/docs/"
+                                >1.0.9-alpha</a
+                            >
+                            <ul class="dropdown__menu">
+                                <li>
+                                    <a class="dropdown__link" href="/docs/next/"
+                                        >Next</a
+                                    >
+                                </li>
+                                <li>
+                                    <a class="dropdown__link" href="/docs/"
+                                        >1.0.9-alpha</a
+                                    >
+                                </li>
+                            </ul>
+                        </div>
+                        <a
+                            href="https://github.com/arktypeio/arktype"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="navbar__item navbar__link navbar-github"
+                        ></a>
+                        <div class="toggle_oxEb colorModeToggle_e4ST">
+                            <button
+                                class="clean-btn toggleButton_Aj9e toggleButtonDisabled_z5TS"
+                                type="button"
+                                disabled=""
+                                title="Switch between dark and light mode (currently dark mode)"
+                                aria-label="Switch between dark and light mode (currently dark mode)"
+                                aria-live="polite"
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    width="24"
+                                    height="24"
+                                    class="lightToggleIcon_oV7c"
+                                >
+                                    <path
+                                        fill="currentColor"
+                                        d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"
+                                    ></path></svg
+                                ><svg
+                                    viewBox="0 0 24 24"
+                                    width="24"
+                                    height="24"
+                                    class="darkToggleIcon_Mu_f"
+                                >
+                                    <path
+                                        fill="currentColor"
+                                        d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"
+                                    ></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="searchBox_Ulps"></div>
+                    </div>
+                </div>
+                <div role="presentation" class="navbar-sidebar__backdrop"></div>
+            </nav>
+            <div
+                id="docusaurus_skipToContent_fallback"
+                class="main-wrapper mainWrapper_w34T"
+            >
+                <header
+                    style="
+                        height: 10rem;
+                        display: flex;
+                        flex-direction: row;
+                        align-items: center;
+                        justify-content: center;
+                    "
+                >
+                    <div style="position: relative; height: 100%; width: 200px">
+                        <div
+                            style="
+                                position: absolute;
+                                height: 70px;
+                                opacity: 0.1;
+                                top: 55px;
+                                left: 70px;
+                            "
+                        >
+                            <img
+                                style="height: 100%"
+                                src="/img/integrationLogos/typescript.svg"
+                            />
+                        </div>
+                        <div
+                            style="
+                                position: absolute;
+                                height: 60px;
+                                opacity: 0.25;
+                                top: 30px;
+                                left: 130px;
+                            "
+                        >
+                            <img
+                                style="height: 100%"
+                                src="/img/integrationLogos/vscode.svg"
+                            />
+                        </div>
+                        <div
+                            style="
+                                position: absolute;
+                                height: 50px;
+                                opacity: 0.25;
+                                top: 100px;
+                                left: 30px;
+                            "
+                        >
+                            <img
+                                style="height: 100%"
+                                src="/img/integrationLogos/intellij.svg"
+                            />
+                        </div>
+                        <div
+                            style="
+                                position: absolute;
+                                height: 45px;
+                                opacity: 0.25;
+                                top: 20px;
+                                left: 50px;
+                            "
+                        >
+                            <img
+                                style="height: 100%"
+                                src="/img/integrationLogos/vim.svg"
+                            />
+                        </div>
+                    </div>
+                    <style data-emotion="css 1ylu0bo">
+                        .css-1ylu0bo {
+                            display: -webkit-box;
+                            display: -webkit-flex;
+                            display: -ms-flexbox;
+                            display: flex;
+                            -webkit-flex-direction: column;
+                            -ms-flex-direction: column;
+                            flex-direction: column;
+                            -webkit-box-flex: 1;
+                            -webkit-flex-grow: 1;
+                            -ms-flex-positive: 1;
+                            flex-grow: 1;
+                        }
+                    </style>
+                    <div class="css-1ylu0bo">
+                        <style data-emotion="css g80be9">
+                            .css-g80be9 {
+                                margin: 0;
+                                font-family: "Raleway", sans-serif;
+                                font-weight: 300;
+                                font-size: 2.375rem;
+                                line-height: 1.2;
+                                color: #eb9f2e;
+                            }
+                            @media (min-width: 600px) {
+                                .css-g80be9 {
+                                    font-size: 3.125rem;
+                                }
+                            }
+                            @media (min-width: 900px) {
+                                .css-g80be9 {
+                                    font-size: 3.3333rem;
+                                }
+                            }
+                            @media (min-width: 1200px) {
+                                .css-g80be9 {
+                                    font-size: 3.75rem;
+                                }
+                            }
+                        </style>
+                        <h1
+                            class="MuiTypography-root MuiTypography-h2 css-g80be9"
+                        >
+                            ArkType
+                        </h1>
+                        <style data-emotion="css tauiyv">
+                            .css-tauiyv {
+                                margin: 0;
+                                font-family: "Raleway", sans-serif;
+                                font-weight: 500;
+                                font-size: 1.125rem;
+                                line-height: 1.6;
+                                color: #fffff0;
+                            }
+                            @media (min-width: 600px) {
+                                .css-tauiyv {
+                                    font-size: 1.25rem;
+                                }
+                            }
+                            @media (min-width: 900px) {
+                                .css-tauiyv {
+                                    font-size: 1.25rem;
+                                }
+                            }
+                            @media (min-width: 1200px) {
+                                .css-tauiyv {
+                                    font-size: 1.25rem;
+                                }
+                            }
+                        </style>
+                        <h2
+                            class="MuiTypography-root MuiTypography-h6 css-tauiyv"
+                            style="white-space: nowrap; font-size: unset"
+                        >
+                            TypeScript&#x27;s 1:1 validator, optimized from
+                            editor to runtime
+                        </h2>
+                    </div>
+                    <div style="position: relative; height: 100%; width: 200px">
+                        <div
+                            style="
+                                position: absolute;
+                                height: 70px;
+                                opacity: 0.1;
+                                top: 55px;
+                                left: 70px;
+                            "
+                        >
+                            <img
+                                style="height: 100%"
+                                src="/img/integrationLogos/javascript.svg"
+                            />
+                        </div>
+                        <div
+                            style="
+                                position: absolute;
+                                height: 60px;
+                                opacity: 0.25;
+                                top: 30px;
+                                left: 130px;
+                            "
+                        >
+                            <img
+                                style="height: 100%"
+                                src="/img/integrationLogos/chromium.svg"
+                            />
+                        </div>
+                        <div
+                            style="
+                                position: absolute;
+                                height: 50px;
+                                opacity: 0.25;
+                                top: 100px;
+                                left: 30px;
+                            "
+                        >
+                            <img
+                                style="height: 100%"
+                                src="/img/integrationLogos/node.svg"
+                            />
+                        </div>
+                        <div
+                            style="
+                                position: absolute;
+                                height: 45px;
+                                opacity: 0.25;
+                                top: 20px;
+                                left: 50px;
+                            "
+                        >
+                            <img
+                                style="height: 100%"
+                                src="/img/integrationLogos/deno.svg"
+                            />
+                        </div>
+                    </div>
+                    <div
+                        style="
+                            position: absolute;
+                            bottom: -20px;
+                            opacity: 0.4;
+                            z-index: 1;
+                            left: -5%;
+                        "
+                    >
+                        <svg viewBox="0 0 375 375" style="width: 100px">
+                            <path
+                                fill="#4b3621"
+                                d="M5.314 281.357h27.799l9.62-38.835a5.288 5.337 0 0 1 5.156-4.077h212.609a5.288 5.337 0 0 1 5.156 4.077l9.461 38.3 37.844-4.775c1.754-.268 3.508.43 4.678 1.824 1.169 1.34 1.542 3.218 1.063 4.935l-10.63 37.548a5.295 5.344 0 0 1-5.103 3.916H5.315c-2.923 0-5.316-2.414-5.316-5.364V286.72c0-2.95 2.391-5.364 5.315-5.364Zm127.566-32.184H52.035l-7.972 32.184h88.817zm31.89 0h-21.26v32.184h21.26zm91.582 0h-80.95v32.184h88.923zM10.63 313.542h288.35l7.283-25.855-34.55 4.344c-.212.054-.425.054-.637.054H10.629v21.457z"
+                            ></path>
+                            <path
+                                fill="none"
+                                d="M106.994 267.84a5.281 5.33 0 0 0 4.624 2.789c.904 0 1.754-.215 2.604-.697a5.358 5.358 0 0 0 2.073-7.296c-1.435-2.574-4.624-3.54-7.229-2.092-2.55 1.449-3.507 4.72-2.072 7.296zm-43.212-2.575c0 2.95 2.338 5.364 5.262 5.364h.052c2.924 0 5.316-2.414 5.316-5.364 0-2.95-2.392-5.364-5.316-5.364-2.923 0-5.314 2.413-5.314 5.364zm127.671.805c.425 2.628 2.658 4.56 5.262 4.56.266 0 .531 0 .797-.054 2.87-.43 4.943-3.165 4.465-6.115-.426-2.95-3.083-4.989-6.006-4.506h-.053c-2.87.428-4.89 3.165-4.465 6.114zm21.155-.805c0 2.95 2.391 5.364 5.315 5.364 2.924 0 5.369-2.414 5.369-5.364 0-2.95-2.392-5.364-5.316-5.364h-.053c-2.923 0-5.315 2.413-5.315 5.364zm-127.566 0c0 2.95 2.339 5.364 5.262 5.364h.053c2.923 0 5.316-2.414 5.316-5.364 0-2.95-2.392-5.364-5.316-5.364s-5.315 2.413-5.315 5.364zm152.866 5.203a5.232 5.28 0 0 0 1.276.161 5.284 5.284 0 0 0 5.156-4.077c.744-2.843-.957-5.793-3.827-6.49h-.053c-2.87-.698-5.74 1.018-6.432 3.916a5.39 5.39 0 0 0 3.88 6.49z"
+                            ></path>
+                            <path
+                                fill="none"
+                                d="M182.736 249.173h73.616l6.644 26.82h-80.26Zm55.172 21.295a5.232 5.28 0 0 0 1.276.161 5.284 5.284 0 0 0 5.156-4.077c.744-2.843-.957-5.793-3.827-6.49h-.053c-2.87-.698-5.74 1.018-6.432 3.916a5.39 5.39 0 0 0 3.88 6.49zm-19.985.161c2.923 0 5.369-2.414 5.369-5.364 0-2.95-2.392-5.364-5.316-5.364h-.053c-2.923 0-5.315 2.413-5.315 5.364 0 2.95 2.392 5.364 5.315 5.364zm-21.208 0c.266 0 .532 0 .798-.053 2.87-.43 4.943-3.165 4.464-6.115-.425-2.95-3.082-4.989-6.006-4.506h-.053c-2.87.43-4.89 3.165-4.464 6.115.424 2.627 2.657 4.56 5.262 4.56z"
+                            ></path>
+                            <path
+                                fill="none"
+                                d="M182.736 249.173v26.82h80.26l1.329 5.364H175.4v-32.184zm-17.966 0h-13.925v26.82h13.925z"
+                            ></path>
+                            <path
+                                fill="none"
+                                d="M150.845 249.173v26.82h13.925v5.364h-21.26v-32.184zm-92.805 0h74.84v26.82H51.397Zm48.954 18.667a5.281 5.33 0 0 0 4.624 2.789c.904 0 1.754-.215 2.604-.697a5.358 5.358 0 0 0 2.073-7.296c-1.435-2.574-4.624-3.54-7.229-2.092-2.55 1.449-3.507 4.72-2.072 7.296zm-16.69 2.79h.053c2.923 0 5.316-2.415 5.316-5.365s-2.392-5.364-5.316-5.364-5.315 2.413-5.315 5.364c0 2.95 2.34 5.364 5.262 5.364zm-21.26 0h.052c2.924 0 5.316-2.415 5.316-5.365s-2.392-5.364-5.316-5.364c-2.923 0-5.315 2.413-5.315 5.364 0 2.95 2.34 5.364 5.262 5.364z"
+                            ></path>
+                            <path
+                                fill="none"
+                                d="M52.035 249.173h6.006l-6.644 26.82h81.483v5.364H44.062Zm-34.071 42.912h253.111c.213 0 .426 0 .638-.053l34.55-4.345-5.773 20.49H17.964Z"
+                            ></path>
+                            <path
+                                fill="none"
+                                d="m300.49 308.178-1.51 5.364zM17.964 292.085v16.093H300.49l-1.51 5.364H10.63v-21.457z"
+                            ></path>
+                            <path
+                                fill="none"
+                                d="M10.934 302.813v-10.728l131.358.01 131.358.01 15.636-1.955c8.6-1.076 15.786-1.805 15.968-1.621.182.184-1.236 5.887-3.152 12.674l-3.485 12.34H10.934Z"
+                            ></path>
+                            <path
+                                fill="#eb9f2e"
+                                d="M11.237 302.813v-10.728l132.573-.01 132.573-.01 12.453-1.519c14.274-1.741 15.793-1.814 15.794-.759 0 .422-1.407 5.939-3.128 12.26l-3.13 11.495H11.238Z"
+                            ></path>
+                            <path
+                                fill="none"
+                                d="M44.664 280.591c.009-.253 1.734-7.356 3.834-15.785l3.817-15.326 40.205-.157 40.205-.158v31.886h-44.04c-24.221 0-44.031-.207-44.021-.46zm28.34-11.294c1.408-1.335 1.898-4.63 1.03-6.916-.493-1.295-3.389-2.786-5.41-2.786-2.105 0-5.147 3.07-5.147 5.194 0 1.889 1.463 4.981 2.569 5.43 2.048.832 5.606.36 6.959-.922zm21.261 0c1.407-1.335 1.898-4.63 1.029-6.916-.493-1.295-3.389-2.786-5.41-2.786-2.105 0-5.147 3.07-5.147 5.194 0 1.889 1.463 4.981 2.569 5.43 2.049.832 5.606.36 6.959-.922zm20.992.12c1.898-1.506 2.42-4.01 1.367-6.554-.942-2.274-2.512-3.268-5.167-3.268-2.42 0-5.46 2.891-5.46 5.194 0 1.889 1.463 4.981 2.57 5.43 1.852.752 5.245.346 6.69-.802zm28.401-4.305v-15.938h20.653v31.876h-20.653z"
+                            ></path>
+                            <path
+                                fill="#eb9f2e"
+                                d="M175.852 265.112v-15.938h80.135l.6 2.299c.33 1.264 1.993 7.953 3.694 14.865 1.702 6.912 3.237 13.05 3.413 13.64.301 1.015-2.064 1.073-43.761 1.073h-44.08Zm24.73 4.138c1.832-2.02 2.163-3.777 1.165-6.189-1.626-3.926-5.907-4.728-8.933-1.674-1.989 2.007-2.257 4.073-.877 6.765 1.064 2.077 1.647 2.365 4.918 2.429 1.832.036 2.801-.31 3.727-1.33zm21.246 0c1.735-1.934 2.089-3.992 1.098-6.384-1.495-3.61-5.994-4.363-8.852-1.479-1.988 2.007-2.256 4.073-.877 6.765 1.064 2.077 1.647 2.365 4.918 2.429 1.836.036 2.796-.308 3.713-1.33zm21.259.047c1.038-.985 1.406-2.009 1.406-3.917 0-3.434-1.442-5.155-4.685-5.594-2.255-.305-2.757-.131-4.397 1.524-2.067 2.086-2.35 4.117-.954 6.842 1.06 2.067 1.651 2.365 4.833 2.429 1.666.034 2.817-.356 3.797-1.284zm-99.429-4.185v-15.938h20.653v31.876h-20.653zm-78.814 15.479c-10.775-.094-19.59-.408-19.59-.699 0-.797 7.103-29.51 7.366-29.774.125-.127 18.2-.322 40.166-.434l39.939-.204v31.571l-24.146-.145c-13.28-.079-32.961-.22-43.735-.315Zm7.764-10.585c1.609-.87 2.585-4.818 1.772-7.171-1.21-3.501-6.312-4.384-9.2-1.593-1.966 1.902-2.253 4.697-.776 7.579.84 1.64 1.212 1.808 3.988 1.808 1.684 0 3.58-.28 4.216-.623zm21.26 0c1.61-.87 2.585-4.818 1.772-7.171-1.21-3.501-6.312-4.384-9.2-1.593-1.966 1.902-2.253 4.697-.776 7.579.84 1.64 1.212 1.808 3.988 1.808 1.684 0 3.581-.28 4.216-.623zm21.833-.587c1.661-1.676 2.08-3.852 1.24-6.424-.847-2.588-2.125-3.4-5.354-3.4-4.654 0-7.006 4.654-4.663 9.226.855 1.668 1.184 1.808 4.252 1.808 2.501 0 3.623-.3 4.525-1.21z"
+                            ></path>
+                        </svg>
+                    </div>
+                </header>
+                <main style="display: flex; justify-content: center">
+                    <style data-emotion="css 13ally8">
+                        .css-13ally8 {
+                            display: -webkit-box;
+                            display: -webkit-flex;
+                            display: -ms-flexbox;
+                            display: flex;
+                            -webkit-flex-direction: column;
+                            -ms-flex-direction: column;
+                            flex-direction: column;
+                            -webkit-box-pack: center;
+                            -ms-flex-pack: center;
+                            -webkit-justify-content: center;
+                            justify-content: center;
+                            -webkit-align-items: center;
+                            -webkit-box-align: center;
+                            -ms-flex-align: center;
+                            align-items: center;
+                            padding: 1rem 0rem 1rem;
+                            width: 100%;
+                            max-width: 60rem;
+                        }
+                        .css-13ally8 > :not(style) + :not(style) {
+                            margin: 0;
+                            margin-top: 8px;
+                        }
+                    </style>
+                    <div class="css-13ally8">
+                        <style data-emotion="css 1nncgjz">
+                            .css-1nncgjz {
+                                display: -webkit-box;
+                                display: -webkit-flex;
+                                display: -ms-flexbox;
+                                display: flex;
+                                -webkit-flex-direction: column;
+                                -ms-flex-direction: column;
+                                flex-direction: column;
+                                -webkit-align-items: start;
+                                -webkit-box-align: start;
+                                -ms-flex-align: start;
+                                align-items: start;
+                                width: 100%;
+                            }
+                        </style>
+                        <div class="css-1nncgjz">
+                            <style data-emotion="css 13mf3p9">
+                                .css-13mf3p9 {
+                                    font-family: "Raleway", sans-serif;
+                                    font-weight: 500;
+                                    font-size: 0.875rem;
+                                    line-height: 1.75;
+                                    text-transform: uppercase;
+                                    min-width: 64px;
+                                    padding: 6px 16px;
+                                    border-radius: 4px;
+                                    -webkit-transition: background-color 250ms
+                                            cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+                                        box-shadow 250ms
+                                            cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+                                        border-color 250ms
+                                            cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+                                        color 250ms cubic-bezier(0.4, 0, 0.2, 1)
+                                            0ms;
+                                    transition: background-color 250ms
+                                            cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+                                        box-shadow 250ms
+                                            cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+                                        border-color 250ms
+                                            cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+                                        color 250ms cubic-bezier(0.4, 0, 0.2, 1)
+                                            0ms;
+                                    color: rgba(0, 0, 0, 0.87);
+                                    background-color: #009eff;
+                                    box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2),
+                                        0px 2px 2px 0px rgba(0, 0, 0, 0.14),
+                                        0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+                                    background-color: #ffffff00;
+                                    -webkit-backdrop-filter: blur(4px);
+                                    backdrop-filter: blur(4px);
+                                    border-radius: 2rem;
+                                    font-size: 1.5rem;
+                                    font-family: "Cascadia Code", sans-serif;
+                                    text-transform: none;
+                                    color: #009eff;
+                                    z-index: 1;
+                                }
+                                .css-13mf3p9:hover {
+                                    -webkit-text-decoration: none;
+                                    text-decoration: none;
+                                    background-color: #085b92;
+                                    box-shadow: 0px 2px 4px -1px rgba(0, 0, 0, 0.2),
+                                        0px 4px 5px 0px rgba(0, 0, 0, 0.14),
+                                        0px 1px 10px 0px rgba(0, 0, 0, 0.12);
+                                }
+                                @media (hover: none) {
+                                    .css-13mf3p9:hover {
+                                        background-color: #009eff;
+                                    }
+                                }
+                                .css-13mf3p9:active {
+                                    box-shadow: 0px 5px 5px -3px rgba(0, 0, 0, 0.2),
+                                        0px 8px 10px 1px rgba(0, 0, 0, 0.14),
+                                        0px 3px 14px 2px rgba(0, 0, 0, 0.12);
+                                }
+                                .css-13mf3p9.Mui-focusVisible {
+                                    box-shadow: 0px 3px 5px -1px rgba(0, 0, 0, 0.2),
+                                        0px 6px 10px 0px rgba(0, 0, 0, 0.14),
+                                        0px 1px 18px 0px rgba(0, 0, 0, 0.12);
+                                }
+                                .css-13mf3p9.Mui-disabled {
+                                    color: rgba(0, 0, 0, 0.26);
+                                    box-shadow: none;
+                                    background-color: rgba(0, 0, 0, 0.12);
+                                }
+                                .css-13mf3p9:hover {
+                                    background-color: #ffffff00;
+                                    color: #eb9f2e;
+                                    -webkit-backdrop-filter: blur(6px);
+                                    backdrop-filter: blur(6px);
+                                }</style
+                            ><style data-emotion="css 3pxiam">
+                                .css-3pxiam {
+                                    display: -webkit-inline-box;
+                                    display: -webkit-inline-flex;
+                                    display: -ms-inline-flexbox;
+                                    display: inline-flex;
+                                    -webkit-align-items: center;
+                                    -webkit-box-align: center;
+                                    -ms-flex-align: center;
+                                    align-items: center;
+                                    -webkit-box-pack: center;
+                                    -ms-flex-pack: center;
+                                    -webkit-justify-content: center;
+                                    justify-content: center;
+                                    position: relative;
+                                    box-sizing: border-box;
+                                    -webkit-tap-highlight-color: transparent;
+                                    background-color: transparent;
+                                    outline: 0;
+                                    border: 0;
+                                    margin: 0;
+                                    border-radius: 0;
+                                    padding: 0;
+                                    cursor: pointer;
+                                    -webkit-user-select: none;
+                                    -moz-user-select: none;
+                                    -ms-user-select: none;
+                                    user-select: none;
+                                    vertical-align: middle;
+                                    -moz-appearance: none;
+                                    -webkit-appearance: none;
+                                    -webkit-text-decoration: none;
+                                    text-decoration: none;
+                                    color: inherit;
+                                    font-family: "Raleway", sans-serif;
+                                    font-weight: 500;
+                                    font-size: 0.875rem;
+                                    line-height: 1.75;
+                                    text-transform: uppercase;
+                                    min-width: 64px;
+                                    padding: 6px 16px;
+                                    border-radius: 4px;
+                                    -webkit-transition: background-color 250ms
+                                            cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+                                        box-shadow 250ms
+                                            cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+                                        border-color 250ms
+                                            cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+                                        color 250ms cubic-bezier(0.4, 0, 0.2, 1)
+                                            0ms;
+                                    transition: background-color 250ms
+                                            cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+                                        box-shadow 250ms
+                                            cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+                                        border-color 250ms
+                                            cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+                                        color 250ms cubic-bezier(0.4, 0, 0.2, 1)
+                                            0ms;
+                                    color: rgba(0, 0, 0, 0.87);
+                                    background-color: #009eff;
+                                    box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2),
+                                        0px 2px 2px 0px rgba(0, 0, 0, 0.14),
+                                        0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+                                    background-color: #ffffff00;
+                                    -webkit-backdrop-filter: blur(4px);
+                                    backdrop-filter: blur(4px);
+                                    border-radius: 2rem;
+                                    font-size: 1.5rem;
+                                    font-family: "Cascadia Code", sans-serif;
+                                    text-transform: none;
+                                    color: #009eff;
+                                    z-index: 1;
+                                }
+                                .css-3pxiam::-moz-focus-inner {
+                                    border-style: none;
+                                }
+                                .css-3pxiam.Mui-disabled {
+                                    pointer-events: none;
+                                    cursor: default;
+                                }
+                                @media print {
+                                    .css-3pxiam {
+                                        -webkit-print-color-adjust: exact;
+                                        color-adjust: exact;
+                                    }
+                                }
+                                .css-3pxiam:hover {
+                                    -webkit-text-decoration: none;
+                                    text-decoration: none;
+                                    background-color: #085b92;
+                                    box-shadow: 0px 2px 4px -1px rgba(0, 0, 0, 0.2),
+                                        0px 4px 5px 0px rgba(0, 0, 0, 0.14),
+                                        0px 1px 10px 0px rgba(0, 0, 0, 0.12);
+                                }
+                                @media (hover: none) {
+                                    .css-3pxiam:hover {
+                                        background-color: #009eff;
+                                    }
+                                }
+                                .css-3pxiam:active {
+                                    box-shadow: 0px 5px 5px -3px rgba(0, 0, 0, 0.2),
+                                        0px 8px 10px 1px rgba(0, 0, 0, 0.14),
+                                        0px 3px 14px 2px rgba(0, 0, 0, 0.12);
+                                }
+                                .css-3pxiam.Mui-focusVisible {
+                                    box-shadow: 0px 3px 5px -1px rgba(0, 0, 0, 0.2),
+                                        0px 6px 10px 0px rgba(0, 0, 0, 0.14),
+                                        0px 1px 18px 0px rgba(0, 0, 0, 0.12);
+                                }
+                                .css-3pxiam.Mui-disabled {
+                                    color: rgba(0, 0, 0, 0.26);
+                                    box-shadow: none;
+                                    background-color: rgba(0, 0, 0, 0.12);
+                                }
+                                .css-3pxiam:hover {
+                                    background-color: #ffffff00;
+                                    color: #eb9f2e;
+                                    -webkit-backdrop-filter: blur(6px);
+                                    backdrop-filter: blur(6px);
+                                }</style
+                            ><button
+                                class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium css-3pxiam"
+                                tabindex="0"
+                                type="button"
+                            >
+                                $ wq!
+                                <div>_</div>
+                                <style data-emotion="css 1n4a93h">
+                                    .css-1n4a93h {
+                                        display: inherit;
+                                        margin-right: -4px;
+                                        margin-left: 8px;
+                                    }
+                                    .css-1n4a93h > *:nth-of-type(1) {
+                                        font-size: 20px;
+                                    }</style
+                                ><span
+                                    class="MuiButton-endIcon MuiButton-iconSizeMedium css-1n4a93h"
+                                    ><div style="display: flex">
+                                        <style data-emotion="css vubbuv">
+                                            .css-vubbuv {
+                                                -webkit-user-select: none;
+                                                -moz-user-select: none;
+                                                -ms-user-select: none;
+                                                user-select: none;
+                                                width: 1em;
+                                                height: 1em;
+                                                display: inline-block;
+                                                fill: currentColor;
+                                                -webkit-flex-shrink: 0;
+                                                -ms-flex-negative: 0;
+                                                flex-shrink: 0;
+                                                -webkit-transition: fill 200ms
+                                                    cubic-bezier(0.4, 0, 0.2, 1)
+                                                    0ms;
+                                                transition: fill 200ms
+                                                    cubic-bezier(0.4, 0, 0.2, 1)
+                                                    0ms;
+                                                font-size: 1.5rem;
+                                            }</style
+                                        ><svg
+                                            class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-vubbuv"
+                                            focusable="false"
+                                            aria-hidden="true"
+                                            viewBox="0 0 24 24"
+                                            data-testid="ExpandLessIcon"
+                                        >
+                                            <path
+                                                d="m12 8-6 6 1.41 1.41L12 10.83l4.59 4.58L18 14z"
+                                            ></path>
+                                        </svg></div
+                                ></span></button
+                            ><style data-emotion="css 1ofqig9">
+                                .css-1ofqig9 {
+                                    display: -webkit-box;
+                                    display: -webkit-flex;
+                                    display: -ms-flexbox;
+                                    display: flex;
+                                    -webkit-flex-direction: column;
+                                    -ms-flex-direction: column;
+                                    flex-direction: column;
+                                    width: 100%;
+                                }
+                            </style>
+                            <div class="css-1ofqig9">
+                                <style data-emotion="css rrarsp">
+                                    .css-rrarsp {
+                                        display: -webkit-box;
+                                        display: -webkit-flex;
+                                        display: -ms-flexbox;
+                                        display: flex;
+                                        -webkit-flex-direction: column;
+                                        -ms-flex-direction: column;
+                                        flex-direction: column;
+                                        width: 100%;
+                                        height: 600px;
+                                    }
+                                </style>
+                                <div class="css-rrarsp">
+                                    <style data-emotion="css 1optp1c">
+                                        .css-1optp1c {
+                                            position: relative;
+                                            overflow: hidden;
+                                            display: block;
+                                            height: 4px;
+                                            z-index: 0;
+                                            background-color: rgb(
+                                                158,
+                                                218,
+                                                255
+                                            );
+                                        }
+                                        @media print {
+                                            .css-1optp1c {
+                                                -webkit-print-color-adjust: exact;
+                                                color-adjust: exact;
+                                            }
+                                        }</style
+                                    ><span
+                                        class="MuiLinearProgress-root MuiLinearProgress-colorPrimary MuiLinearProgress-indeterminate css-1optp1c"
+                                        role="progressbar"
+                                        ><style
+                                            data-emotion="css ed72vx animation-ozg7p2"
+                                        >
+                                            .css-ed72vx {
+                                                width: 100%;
+                                                position: absolute;
+                                                left: 0;
+                                                bottom: 0;
+                                                top: 0;
+                                                -webkit-transition: -webkit-transform
+                                                    0.2s linear;
+                                                transition: transform 0.2s
+                                                    linear;
+                                                transform-origin: left;
+                                                background-color: #009eff;
+                                                width: auto;
+                                                -webkit-animation: animation-ozg7p2
+                                                    2.1s
+                                                    cubic-bezier(
+                                                        0.65,
+                                                        0.815,
+                                                        0.735,
+                                                        0.395
+                                                    )
+                                                    infinite;
+                                                animation: animation-ozg7p2 2.1s
+                                                    cubic-bezier(
+                                                        0.65,
+                                                        0.815,
+                                                        0.735,
+                                                        0.395
+                                                    )
+                                                    infinite;
+                                            }
+                                            @-webkit-keyframes animation-ozg7p2 {
+                                                0% {
+                                                    left: -35%;
+                                                    right: 100%;
+                                                }
+                                                60% {
+                                                    left: 100%;
+                                                    right: -90%;
+                                                }
+                                                100% {
+                                                    left: 100%;
+                                                    right: -90%;
+                                                }
+                                            }
+                                            @keyframes animation-ozg7p2 {
+                                                0% {
+                                                    left: -35%;
+                                                    right: 100%;
+                                                }
+                                                60% {
+                                                    left: 100%;
+                                                    right: -90%;
+                                                }
+                                                100% {
+                                                    left: 100%;
+                                                    right: -90%;
+                                                }
+                                            }</style
+                                        ><span
+                                            class="MuiLinearProgress-bar MuiLinearProgress-barColorPrimary MuiLinearProgress-bar1Indeterminate css-ed72vx"
+                                        ></span
+                                        ><style
+                                            data-emotion="css 1hcvm34 animation-19gglwu"
+                                        >
+                                            .css-1hcvm34 {
+                                                width: 100%;
+                                                position: absolute;
+                                                left: 0;
+                                                bottom: 0;
+                                                top: 0;
+                                                -webkit-transition: -webkit-transform
+                                                    0.2s linear;
+                                                transition: transform 0.2s
+                                                    linear;
+                                                transform-origin: left;
+                                                background-color: #009eff;
+                                                width: auto;
+                                                -webkit-animation: animation-19gglwu
+                                                    2.1s
+                                                    cubic-bezier(
+                                                        0.165,
+                                                        0.84,
+                                                        0.44,
+                                                        1
+                                                    )
+                                                    1.15s infinite;
+                                                animation: animation-19gglwu
+                                                    2.1s
+                                                    cubic-bezier(
+                                                        0.165,
+                                                        0.84,
+                                                        0.44,
+                                                        1
+                                                    )
+                                                    1.15s infinite;
+                                            }
+                                            @-webkit-keyframes animation-19gglwu {
+                                                0% {
+                                                    left: -200%;
+                                                    right: 100%;
+                                                }
+                                                60% {
+                                                    left: 107%;
+                                                    right: -8%;
+                                                }
+                                                100% {
+                                                    left: 107%;
+                                                    right: -8%;
+                                                }
+                                            }
+                                            @keyframes animation-19gglwu {
+                                                0% {
+                                                    left: -200%;
+                                                    right: 100%;
+                                                }
+                                                60% {
+                                                    left: 107%;
+                                                    right: -8%;
+                                                }
+                                                100% {
+                                                    left: 107%;
+                                                    right: -8%;
+                                                }
+                                            }</style
+                                        ><span
+                                            class="MuiLinearProgress-bar MuiLinearProgress-barColorPrimary MuiLinearProgress-bar2Indeterminate css-1hcvm34"
+                                        ></span
+                                    ></span>
+                                    <div id="arktype-demo"></div>
+                                </div>
+                            </div>
+                            <sub
+                                ><code>typescript@4.9.5</code> in VS Code— no
+                                extensions or plugins required (<a
+                                    href="https://github.com/arktypeio/arktype#how"
+                                    target="_blank"
+                                    >how?</a
+                                >)</sub
+                            >
+                        </div>
+                        <div style="width: 100%">
+                            <style data-emotion="css i6bazn">
+                                .css-i6bazn {
+                                    overflow: hidden;
+                                }</style
+                            ><style data-emotion="css 1qo83wj">
+                                .css-1qo83wj {
+                                    background-color: #fff;
+                                    color: rgba(0, 0, 0, 0.87);
+                                    -webkit-transition: box-shadow 300ms
+                                        cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+                                    transition: box-shadow 300ms
+                                        cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+                                    border-radius: 4px;
+                                    box-shadow: 0px 5px 5px -3px rgba(0, 0, 0, 0.2),
+                                        0px 8px 10px 1px rgba(0, 0, 0, 0.14),
+                                        0px 3px 14px 2px rgba(0, 0, 0, 0.12);
+                                    overflow: hidden;
+                                }
+                            </style>
+                            <div
+                                class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation8 MuiCard-root css-1qo83wj"
+                                style="
+                                    height: 8rem;
+                                    margin: 0.5rem;
+                                    padding: 0.7rem 1rem 0rem;
+                                    background-color: #ffffff00;
+                                    backdrop-filter: blur(1px);
+                                    border-radius: 2rem;
+                                    z-index: 1;
+                                    font-family: 'Cascadia Code', sans-serif;
+                                "
+                            >
+                                <div class="tabs-container tabList_NPiC">
+                                    <ul
+                                        role="tablist"
+                                        aria-orientation="horizontal"
+                                        class="tabs installationTabs"
+                                    >
+                                        <li
+                                            role="tab"
+                                            tabindex="0"
+                                            aria-selected="true"
+                                            class="tabs__item tabItem_b6he tabs__item--active"
+                                        >
+                                            node
+                                        </li>
+                                        <li
+                                            role="tab"
+                                            tabindex="-1"
+                                            aria-selected="false"
+                                            class="tabs__item tabItem_b6he"
+                                        >
+                                            bun
+                                        </li>
+                                        <li
+                                            role="tab"
+                                            tabindex="-1"
+                                            aria-selected="false"
+                                            class="tabs__item tabItem_b6he"
+                                        >
+                                            deno
+                                        </li>
+                                    </ul>
+                                    <div class="margin-top--md">
+                                        <div
+                                            role="tabpanel"
+                                            class="tabItem_RZ_s"
+                                        >
+                                            <div
+                                                class="tabs-container tabList_NPiC"
+                                            >
+                                                <ul
+                                                    role="tablist"
+                                                    aria-orientation="horizontal"
+                                                    class="tabs subTabs"
+                                                >
+                                                    <li
+                                                        role="tab"
+                                                        tabindex="0"
+                                                        aria-selected="true"
+                                                        class="tabs__item tabItem_b6he npmTab tabs__item--active"
+                                                    >
+                                                        npm
+                                                    </li>
+                                                    <li
+                                                        role="tab"
+                                                        tabindex="-1"
+                                                        aria-selected="false"
+                                                        class="tabs__item tabItem_b6he pnpmTab"
+                                                    >
+                                                        pnpm
+                                                    </li>
+                                                    <li
+                                                        role="tab"
+                                                        tabindex="-1"
+                                                        aria-selected="false"
+                                                        class="tabs__item tabItem_b6he yarnTab"
+                                                    >
+                                                        yarn
+                                                    </li>
+                                                </ul>
+                                                <div class="margin-top--md">
+                                                    <div
+                                                        role="tabpanel"
+                                                        class="tabItem_RZ_s"
+                                                    >
+                                                        <div
+                                                            class="language-bash codeBlockContainer_Lxhf theme-code-block"
+                                                            style="
+                                                                --prism-color: #fffff0;
+                                                                --prism-background-color: #1b1b1b;
+                                                            "
+                                                        >
+                                                            <div
+                                                                class="codeBlockContent_ipDN"
+                                                            >
+                                                                <pre
+                                                                    tabindex="0"
+                                                                    class="prism-code language-bash codeBlock_Ljhf thin-scrollbar"
+                                                                ><code class="codeBlockLines_GAdv"><span class="token-line" style="color:#FFFFF0"><span class="token function" style="color:rgb(128, 207, 248)">npm</span><span class="token plain"> </span><span class="token function" style="color:rgb(128, 207, 248)">install</span><span class="token plain"> arktype</span><br></span></code></pre>
+                                                                <div
+                                                                    class="buttonGroup_MIc6"
+                                                                >
+                                                                    <button
+                                                                        type="button"
+                                                                        aria-label="Copy code to clipboard"
+                                                                        title="Copy"
+                                                                        class="clean-btn"
+                                                                    >
+                                                                        <span
+                                                                            class="copyButtonIcons_iJAu"
+                                                                            aria-hidden="true"
+                                                                            ><svg
+                                                                                class="copyButtonIcon_Noed"
+                                                                                viewBox="0 0 24 24"
+                                                                            >
+                                                                                <path
+                                                                                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                                                                                ></path></svg
+                                                                            ><svg
+                                                                                class="copyButtonSuccessIcon_o2j9"
+                                                                                viewBox="0 0 24 24"
+                                                                            >
+                                                                                <path
+                                                                                    d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"
+                                                                                ></path></svg
+                                                                        ></span>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div
+                                                        role="tabpanel"
+                                                        class="tabItem_RZ_s"
+                                                        hidden=""
+                                                    >
+                                                        <div
+                                                            class="language-bash codeBlockContainer_Lxhf theme-code-block"
+                                                            style="
+                                                                --prism-color: #fffff0;
+                                                                --prism-background-color: #1b1b1b;
+                                                            "
+                                                        >
+                                                            <div
+                                                                class="codeBlockContent_ipDN"
+                                                            >
+                                                                <pre
+                                                                    tabindex="0"
+                                                                    class="prism-code language-bash codeBlock_Ljhf thin-scrollbar"
+                                                                ><code class="codeBlockLines_GAdv"><span class="token-line" style="color:#FFFFF0"><span class="token function" style="color:rgb(128, 207, 248)">pnpm</span><span class="token plain"> </span><span class="token function" style="color:rgb(128, 207, 248)">add</span><span class="token plain"> arktype</span><br></span></code></pre>
+                                                                <div
+                                                                    class="buttonGroup_MIc6"
+                                                                >
+                                                                    <button
+                                                                        type="button"
+                                                                        aria-label="Copy code to clipboard"
+                                                                        title="Copy"
+                                                                        class="clean-btn"
+                                                                    >
+                                                                        <span
+                                                                            class="copyButtonIcons_iJAu"
+                                                                            aria-hidden="true"
+                                                                            ><svg
+                                                                                class="copyButtonIcon_Noed"
+                                                                                viewBox="0 0 24 24"
+                                                                            >
+                                                                                <path
+                                                                                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                                                                                ></path></svg
+                                                                            ><svg
+                                                                                class="copyButtonSuccessIcon_o2j9"
+                                                                                viewBox="0 0 24 24"
+                                                                            >
+                                                                                <path
+                                                                                    d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"
+                                                                                ></path></svg
+                                                                        ></span>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div
+                                                        role="tabpanel"
+                                                        class="tabItem_RZ_s"
+                                                        hidden=""
+                                                    >
+                                                        <div
+                                                            class="language-bash codeBlockContainer_Lxhf theme-code-block"
+                                                            style="
+                                                                --prism-color: #fffff0;
+                                                                --prism-background-color: #1b1b1b;
+                                                            "
+                                                        >
+                                                            <div
+                                                                class="codeBlockContent_ipDN"
+                                                            >
+                                                                <pre
+                                                                    tabindex="0"
+                                                                    class="prism-code language-bash codeBlock_Ljhf thin-scrollbar"
+                                                                ><code class="codeBlockLines_GAdv"><span class="token-line" style="color:#FFFFF0"><span class="token function" style="color:rgb(128, 207, 248)">yarn</span><span class="token plain"> </span><span class="token function" style="color:rgb(128, 207, 248)">add</span><span class="token plain"> arktype</span><br></span></code></pre>
+                                                                <div
+                                                                    class="buttonGroup_MIc6"
+                                                                >
+                                                                    <button
+                                                                        type="button"
+                                                                        aria-label="Copy code to clipboard"
+                                                                        title="Copy"
+                                                                        class="clean-btn"
+                                                                    >
+                                                                        <span
+                                                                            class="copyButtonIcons_iJAu"
+                                                                            aria-hidden="true"
+                                                                            ><svg
+                                                                                class="copyButtonIcon_Noed"
+                                                                                viewBox="0 0 24 24"
+                                                                            >
+                                                                                <path
+                                                                                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                                                                                ></path></svg
+                                                                            ><svg
+                                                                                class="copyButtonSuccessIcon_o2j9"
+                                                                                viewBox="0 0 24 24"
+                                                                            >
+                                                                                <path
+                                                                                    d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"
+                                                                                ></path></svg
+                                                                        ></span>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            role="tabpanel"
+                                            class="tabItem_RZ_s"
+                                            hidden=""
+                                        >
+                                            <div
+                                                class="language-bash codeBlockContainer_Lxhf theme-code-block"
+                                                style="
+                                                    --prism-color: #fffff0;
+                                                    --prism-background-color: #1b1b1b;
+                                                "
+                                            >
+                                                <div
+                                                    class="codeBlockContent_ipDN"
+                                                >
+                                                    <pre
+                                                        tabindex="0"
+                                                        class="prism-code language-bash codeBlock_Ljhf thin-scrollbar"
+                                                    ><code class="codeBlockLines_GAdv"><span class="token-line" style="color:#FFFFF0"><span class="token plain">bun </span><span class="token function" style="color:rgb(128, 207, 248)">install</span><span class="token plain"> arktype</span><br></span></code></pre>
+                                                    <div
+                                                        class="buttonGroup_MIc6"
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            aria-label="Copy code to clipboard"
+                                                            title="Copy"
+                                                            class="clean-btn"
+                                                        >
+                                                            <span
+                                                                class="copyButtonIcons_iJAu"
+                                                                aria-hidden="true"
+                                                                ><svg
+                                                                    class="copyButtonIcon_Noed"
+                                                                    viewBox="0 0 24 24"
+                                                                >
+                                                                    <path
+                                                                        d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                                                                    ></path></svg
+                                                                ><svg
+                                                                    class="copyButtonSuccessIcon_o2j9"
+                                                                    viewBox="0 0 24 24"
+                                                                >
+                                                                    <path
+                                                                        d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"
+                                                                    ></path></svg
+                                                            ></span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            role="tabpanel"
+                                            class="tabItem_RZ_s"
+                                            hidden=""
+                                        >
+                                            <div
+                                                class="language-typescript codeBlockContainer_Lxhf theme-code-block"
+                                                style="
+                                                    --prism-color: #fffff0;
+                                                    --prism-background-color: #1b1b1b;
+                                                "
+                                            >
+                                                <div
+                                                    class="codeBlockContent_ipDN"
+                                                >
+                                                    <pre
+                                                        tabindex="0"
+                                                        class="prism-code language-typescript codeBlock_Ljhf thin-scrollbar"
+                                                    ><code class="codeBlockLines_GAdv"><span class="token-line" style="color:#FFFFF0"><span class="token keyword" style="color:rgb(235, 159, 46)">import</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(235, 159, 46)">{</span><span class="token plain"> type </span><span class="token punctuation" style="color:rgb(235, 159, 46)">}</span><span class="token plain"> </span><span class="token keyword" style="color:rgb(235, 159, 46)">from</span><span class="token plain"> </span><span class="token string" style="color:rgb(245, 207, 143)">&quot;https://deno.land/x/arktype/main.ts&quot;</span><br></span></code></pre>
+                                                    <div
+                                                        class="buttonGroup_MIc6"
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            aria-label="Copy code to clipboard"
+                                                            title="Copy"
+                                                            class="clean-btn"
+                                                        >
+                                                            <span
+                                                                class="copyButtonIcons_iJAu"
+                                                                aria-hidden="true"
+                                                                ><svg
+                                                                    class="copyButtonIcon_Noed"
+                                                                    viewBox="0 0 24 24"
+                                                                >
+                                                                    <path
+                                                                        d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                                                                    ></path></svg
+                                                                ><svg
+                                                                    class="copyButtonSuccessIcon_o2j9"
+                                                                    viewBox="0 0 24 24"
+                                                                >
+                                                                    <path
+                                                                        d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"
+                                                                    ></path></svg
+                                                            ></span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <style data-emotion="css 6l02qr">
+                            .css-6l02qr {
+                                margin: 0;
+                                font-family: "Raleway", sans-serif;
+                                font-weight: 400;
+                                font-size: 1rem;
+                                line-height: 1.5;
+                                color: #80cff8;
+                                font-size: 1.3rem;
+                            }
+                        </style>
+                        <p
+                            class="MuiTypography-root MuiTypography-body1 css-6l02qr"
+                            style="margin-top: 2rem; margin-bottom: 2rem"
+                        ></p>
+                        <p>
+                            ArkType is a runtime validation library that can
+                            infer<!-- -->
+                            <b>TypeScript definitions 1:1</b> and reuse them as<!-- -->
+                            <b>highly-optimized validators</b> for your data.
+                        </p>
+                        <p>
+                            With each character you type, you&#x27;ll get<!-- -->
+                            <b>immediate feedback from your editor</b> in the
+                            form of either a fully-inferred <code>Type</code> or
+                            a specific and helpful <code>ParseError</code>.
+                        </p>
+                        <p>
+                            This result exactly mirrors what you can expect to
+                            happen at runtime down to the punctuation of the
+                            error message- <b>no plugins required</b>.
+                        </p>
+                        <p></p>
+                        <style data-emotion="css p8a1bl">
+                            .css-p8a1bl {
+                                width: 100%;
+                                display: -webkit-box;
+                                display: -webkit-flex;
+                                display: -ms-flexbox;
+                                display: flex;
+                                -webkit-box-flex-flow: column wrap;
+                                -webkit-flex-flow: column wrap;
+                                -ms-flex-flow: column wrap;
+                                flex-flow: column wrap;
+                                -webkit-align-content: flex-start;
+                                -ms-flex-line-pack: flex-start;
+                                align-content: flex-start;
+                                box-sizing: border-box;
+                                margin: calc(0px - (24px / 2));
+                                -webkit-align-content: center;
+                                -ms-flex-line-pack: center;
+                                align-content: center;
+                            }
+                            .css-p8a1bl > * {
+                                box-sizing: border-box;
+                                margin: calc(24px / 2);
+                                width: calc(50% - 24px);
+                            }
+                        </style>
+                        <div class="MuiMasonry-root css-p8a1bl">
+                            <style data-emotion="css x94w60">
+                                .css-x94w60 {
+                                    display: -webkit-box;
+                                    display: -webkit-flex;
+                                    display: -ms-flexbox;
+                                    display: flex;
+                                    -webkit-flex-direction: column;
+                                    -ms-flex-direction: column;
+                                    flex-direction: column;
+                                    max-width: 40em;
+                                }
+                                .css-x94w60 > :not(style) + :not(style) {
+                                    margin: 0;
+                                    margin-top: 16px;
+                                }
+                            </style>
+                            <div class="css-x94w60">
+                                <style data-emotion="css 1v88y84">
+                                    .css-1v88y84 {
+                                        margin: 0;
+                                        font-family: "Raleway", sans-serif;
+                                        font-weight: 400;
+                                        font-size: 1.25rem;
+                                        line-height: 1.334;
+                                        font-weight: 700;
+                                        width: 100%;
+                                        text-align: center;
+                                        color: #0288d1;
+                                    }
+                                    @media (min-width: 600px) {
+                                        .css-1v88y84 {
+                                            font-size: 1.3118rem;
+                                        }
+                                    }
+                                    @media (min-width: 900px) {
+                                        .css-1v88y84 {
+                                            font-size: 1.4993rem;
+                                        }
+                                    }
+                                    @media (min-width: 1200px) {
+                                        .css-1v88y84 {
+                                            font-size: 1.4993rem;
+                                        }
+                                    }
+                                </style>
+                                <h3
+                                    class="MuiTypography-root MuiTypography-h5 css-1v88y84"
+                                >
+                                    Isomorphic
+                                </h3>
+                                <style data-emotion="css 1sap7rp">
+                                    .css-1sap7rp {
+                                        margin: 0;
+                                        font-family: "Raleway", sans-serif;
+                                        font-weight: 400;
+                                        font-size: 1rem;
+                                        line-height: 1.5;
+                                        font-weight: 300;
+                                        min-height: 3rem;
+                                    }
+                                </style>
+                                <p
+                                    class="MuiTypography-root MuiTypography-body1 css-1sap7rp"
+                                >
+                                    Define types using TS syntax. Infer them
+                                    1:1. Use them to validate your data at
+                                    runtime.
+                                </p>
+                                <div>
+                                    <div class="inferable-code">
+                                        <div
+                                            class="language-typescript codeBlockContainer_Lxhf theme-code-block"
+                                            style="
+                                                --prism-color: #fffff0;
+                                                --prism-background-color: #1b1b1b;
+                                            "
+                                        >
+                                            <div class="codeBlockContent_ipDN">
+                                                <pre
+                                                    tabindex="0"
+                                                    class="prism-code language-typescript codeBlock_Ljhf thin-scrollbar"
+                                                ><code class="codeBlockLines_GAdv"><span class="token-line" style="color:#FFFFF0"><span class="token keyword" style="color:rgb(235, 159, 46)">const</span><span class="token plain"> user </span><span class="token operator" style="color:rgb(235, 159, 46)">=</span><span class="token plain"> </span><span class="token function" style="color:rgb(128, 207, 248)">type</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token punctuation" style="color:rgb(235, 159, 46)">{</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    name</span><span class="token operator" style="color:rgb(235, 159, 46)">:</span><span class="token plain"> </span><span class="token string" style="color:rgb(245, 207, 143)">&quot;string&quot;</span><span class="token punctuation" style="color:rgb(235, 159, 46)">,</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    device</span><span class="token operator" style="color:rgb(235, 159, 46)">:</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(235, 159, 46)">{</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">        platform</span><span class="token operator" style="color:rgb(235, 159, 46)">:</span><span class="token plain"> </span><span class="token string" style="color:rgb(245, 207, 143)">&quot;&#x27;android&#x27;|&#x27;ios&#x27;&quot;</span><span class="token punctuation" style="color:rgb(235, 159, 46)">,</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">        </span><span class="token string-property property">&quot;version?&quot;</span><span class="token operator" style="color:rgb(235, 159, 46)">:</span><span class="token plain"> </span><span class="token string" style="color:rgb(245, 207, 143)">&quot;number&quot;</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    </span><span class="token punctuation" style="color:rgb(235, 159, 46)">}</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain"></span><span class="token punctuation" style="color:rgb(235, 159, 46)">}</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain"></span><span class="token comment" style="color:rgb(104, 107, 120)">// Hover to infer...</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain"></span><span class="token keyword" style="color:rgb(235, 159, 46)">type</span><span class="token plain"> </span><span class="token class-name" style="color:rgb(128, 207, 248)">User</span><span class="token plain"> </span><span class="token operator" style="color:rgb(235, 159, 46)">=</span><span class="token plain"> </span><span class="token keyword" style="color:rgb(235, 159, 46)">typeof</span><span class="token plain"> user</span><span class="token punctuation" style="color:rgb(235, 159, 46)">.</span><span class="token keyword" style="color:rgb(235, 159, 46)">infer</span><br></span></code></pre>
+                                                <div class="buttonGroup_MIc6">
+                                                    <button
+                                                        type="button"
+                                                        aria-label="Copy code to clipboard"
+                                                        title="Copy"
+                                                        class="clean-btn"
+                                                    >
+                                                        <span
+                                                            class="copyButtonIcons_iJAu"
+                                                            aria-hidden="true"
+                                                            ><svg
+                                                                class="copyButtonIcon_Noed"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                                                                ></path></svg
+                                                            ><svg
+                                                                class="copyButtonSuccessIcon_o2j9"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"
+                                                                ></path></svg
+                                                        ></span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <img
+                                            height="50%"
+                                            src="/img/isomorphicHover.png"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="css-x94w60">
+                                <h3
+                                    class="MuiTypography-root MuiTypography-h5 css-1v88y84"
+                                >
+                                    Concise
+                                </h3>
+                                <p
+                                    class="MuiTypography-root MuiTypography-body1 css-1sap7rp"
+                                >
+                                    Say more with less
+                                </p>
+                                <div>
+                                    <div class="inferable-code">
+                                        <div
+                                            class="language-typescript codeBlockContainer_Lxhf theme-code-block"
+                                            style="
+                                                --prism-color: #fffff0;
+                                                --prism-background-color: #1b1b1b;
+                                            "
+                                        >
+                                            <div class="codeBlockContent_ipDN">
+                                                <pre
+                                                    tabindex="0"
+                                                    class="prism-code language-typescript codeBlock_Ljhf thin-scrollbar"
+                                                ><code class="codeBlockLines_GAdv"><span class="token-line" style="color:#FFFFF0"><span class="token comment" style="color:rgb(104, 107, 120)">// Hover to infer...</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain"></span><span class="token keyword" style="color:rgb(235, 159, 46)">const</span><span class="token plain"> arkUser </span><span class="token operator" style="color:rgb(235, 159, 46)">=</span><span class="token plain"> </span><span class="token function" style="color:rgb(128, 207, 248)">type</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token punctuation" style="color:rgb(235, 159, 46)">{</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    name</span><span class="token operator" style="color:rgb(235, 159, 46)">:</span><span class="token plain"> </span><span class="token operator" style="color:rgb(235, 159, 46)">/</span><span class="token operator" style="color:rgb(235, 159, 46)">^</span><span class="token plain">ark</span><span class="token punctuation" style="color:rgb(235, 159, 46)">.</span><span class="token operator" style="color:rgb(235, 159, 46)">*</span><span class="token plain">$</span><span class="token operator" style="color:rgb(235, 159, 46)">/</span><span class="token plain"> </span><span class="token keyword" style="color:rgb(235, 159, 46)">as</span><span class="token plain"> Infer</span><span class="token operator" style="color:rgb(235, 159, 46)">&lt;</span><span class="token template-string template-punctuation string" style="color:rgb(245, 207, 143)">`</span><span class="token template-string string" style="color:rgb(245, 207, 143)">ark</span><span class="token template-string interpolation interpolation-punctuation punctuation" style="color:rgb(235, 159, 46)">${</span><span class="token template-string interpolation builtin" style="color:rgb(255, 255, 240)">string</span><span class="token template-string interpolation interpolation-punctuation punctuation" style="color:rgb(235, 159, 46)">}</span><span class="token template-string template-punctuation string" style="color:rgb(245, 207, 143)">`</span><span class="token operator" style="color:rgb(235, 159, 46)">&gt;</span><span class="token punctuation" style="color:rgb(235, 159, 46)">,</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    birthday</span><span class="token operator" style="color:rgb(235, 159, 46)">:</span><span class="token plain"> </span><span class="token function" style="color:rgb(128, 207, 248)">morph</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token string" style="color:rgb(245, 207, 143)">&quot;string&quot;</span><span class="token punctuation" style="color:rgb(235, 159, 46)">,</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token plain">s</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token plain"> </span><span class="token operator" style="color:rgb(235, 159, 46)">=&gt;</span><span class="token plain"> </span><span class="token keyword" style="color:rgb(235, 159, 46)">new</span><span class="token plain"> </span><span class="token class-name" style="color:rgb(128, 207, 248)">Date</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token plain">s</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token punctuation" style="color:rgb(235, 159, 46)">,</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    </span><span class="token string-property property">&quot;powerLevel?&quot;</span><span class="token operator" style="color:rgb(235, 159, 46)">:</span><span class="token plain"> </span><span class="token string" style="color:rgb(245, 207, 143)">&quot;1&lt;=number&lt;9000&quot;</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain"></span><span class="token punctuation" style="color:rgb(235, 159, 46)">}</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><br></span></code></pre>
+                                                <div class="buttonGroup_MIc6">
+                                                    <button
+                                                        type="button"
+                                                        aria-label="Copy code to clipboard"
+                                                        title="Copy"
+                                                        class="clean-btn"
+                                                    >
+                                                        <span
+                                                            class="copyButtonIcons_iJAu"
+                                                            aria-hidden="true"
+                                                            ><svg
+                                                                class="copyButtonIcon_Noed"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                                                                ></path></svg
+                                                            ><svg
+                                                                class="copyButtonSuccessIcon_o2j9"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"
+                                                                ></path></svg
+                                                        ></span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <img
+                                            height="60%"
+                                            src="/img/arkUser.png"
+                                        />
+                                    </div>
+                                    <div class="inferable-code">
+                                        <div
+                                            class="language-typescript codeBlockContainer_Lxhf theme-code-block"
+                                            style="
+                                                --prism-color: #fffff0;
+                                                --prism-background-color: #1b1b1b;
+                                            "
+                                        >
+                                            <div class="codeBlockContent_ipDN">
+                                                <pre
+                                                    tabindex="0"
+                                                    class="prism-code language-typescript codeBlock_Ljhf thin-scrollbar"
+                                                ><code class="codeBlockLines_GAdv"><span class="token-line" style="color:#FFFFF0"><span class="token comment" style="color:rgb(104, 107, 120)">// Hover to infer...</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain"></span><span class="token keyword" style="color:rgb(235, 159, 46)">const</span><span class="token plain"> zodUser </span><span class="token operator" style="color:rgb(235, 159, 46)">=</span><span class="token plain"> z</span><span class="token punctuation" style="color:rgb(235, 159, 46)">.</span><span class="token function" style="color:rgb(128, 207, 248)">object</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token punctuation" style="color:rgb(235, 159, 46)">{</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    name</span><span class="token operator" style="color:rgb(235, 159, 46)">:</span><span class="token plain"> z</span><span class="token punctuation" style="color:rgb(235, 159, 46)">.</span><span class="token generic-function function" style="color:rgb(128, 207, 248)">custom</span><span class="token generic-function generic class-name operator" style="color:rgb(235, 159, 46)">&lt;</span><span class="token generic-function generic class-name template-string template-punctuation string" style="color:rgb(245, 207, 143)">`</span><span class="token generic-function generic class-name template-string string" style="color:rgb(245, 207, 143)">zod</span><span class="token generic-function generic class-name template-string interpolation interpolation-punctuation punctuation" style="color:rgb(235, 159, 46)">${</span><span class="token generic-function generic class-name template-string interpolation builtin" style="color:rgb(255, 255, 240)">string</span><span class="token generic-function generic class-name template-string interpolation interpolation-punctuation punctuation" style="color:rgb(235, 159, 46)">}</span><span class="token generic-function generic class-name template-string template-punctuation string" style="color:rgb(245, 207, 143)">`</span><span class="token generic-function generic class-name operator" style="color:rgb(235, 159, 46)">&gt;</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">        </span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token plain">val</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token plain"> </span><span class="token operator" style="color:rgb(235, 159, 46)">=&gt;</span><span class="token plain"> </span><span class="token keyword" style="color:rgb(235, 159, 46)">typeof</span><span class="token plain"> val </span><span class="token operator" style="color:rgb(235, 159, 46)">===</span><span class="token plain"> </span><span class="token string" style="color:rgb(245, 207, 143)">&quot;string&quot;</span><span class="token plain"> </span><span class="token operator" style="color:rgb(235, 159, 46)">&amp;&amp;</span><span class="token plain"> </span><span class="token regex regex-delimiter">/</span><span class="token regex regex-source language-regex">^zod.*$</span><span class="token regex regex-delimiter">/</span><span class="token punctuation" style="color:rgb(235, 159, 46)">.</span><span class="token function" style="color:rgb(128, 207, 248)">test</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token plain">val</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    </span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token punctuation" style="color:rgb(235, 159, 46)">,</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    birthday</span><span class="token operator" style="color:rgb(235, 159, 46)">:</span><span class="token plain"> z</span><span class="token punctuation" style="color:rgb(235, 159, 46)">.</span><span class="token function" style="color:rgb(128, 207, 248)">preprocess</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">        </span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token plain">arg</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token plain"> </span><span class="token operator" style="color:rgb(235, 159, 46)">=&gt;</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token keyword" style="color:rgb(235, 159, 46)">typeof</span><span class="token plain"> arg </span><span class="token operator" style="color:rgb(235, 159, 46)">===</span><span class="token plain"> </span><span class="token string" style="color:rgb(245, 207, 143)">&quot;string&quot;</span><span class="token plain"> </span><span class="token operator" style="color:rgb(235, 159, 46)">?</span><span class="token plain"> </span><span class="token keyword" style="color:rgb(235, 159, 46)">new</span><span class="token plain"> </span><span class="token class-name" style="color:rgb(128, 207, 248)">Date</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token plain">arg</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token plain"> </span><span class="token operator" style="color:rgb(235, 159, 46)">:</span><span class="token plain"> </span><span class="token keyword" style="color:rgb(235, 159, 46)">undefined</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token punctuation" style="color:rgb(235, 159, 46)">,</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">        z</span><span class="token punctuation" style="color:rgb(235, 159, 46)">.</span><span class="token function" style="color:rgb(128, 207, 248)">date</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    </span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token punctuation" style="color:rgb(235, 159, 46)">,</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    powerLevel</span><span class="token operator" style="color:rgb(235, 159, 46)">:</span><span class="token plain"> z</span><span class="token punctuation" style="color:rgb(235, 159, 46)">.</span><span class="token function" style="color:rgb(128, 207, 248)">number</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token punctuation" style="color:rgb(235, 159, 46)">.</span><span class="token function" style="color:rgb(128, 207, 248)">gte</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token number" style="color:rgb(245, 207, 143)">1</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token punctuation" style="color:rgb(235, 159, 46)">.</span><span class="token function" style="color:rgb(128, 207, 248)">lt</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token number" style="color:rgb(245, 207, 143)">9000</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token punctuation" style="color:rgb(235, 159, 46)">.</span><span class="token function" style="color:rgb(128, 207, 248)">optional</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain"></span><span class="token punctuation" style="color:rgb(235, 159, 46)">}</span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><br></span></code></pre>
+                                                <div class="buttonGroup_MIc6">
+                                                    <button
+                                                        type="button"
+                                                        aria-label="Copy code to clipboard"
+                                                        title="Copy"
+                                                        class="clean-btn"
+                                                    >
+                                                        <span
+                                                            class="copyButtonIcons_iJAu"
+                                                            aria-hidden="true"
+                                                            ><svg
+                                                                class="copyButtonIcon_Noed"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                                                                ></path></svg
+                                                            ><svg
+                                                                class="copyButtonSuccessIcon_o2j9"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"
+                                                                ></path></svg
+                                                        ></span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <img
+                                            height="80%"
+                                            src="/img/zodInfer.png"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="css-x94w60">
+                                <h3
+                                    class="MuiTypography-root MuiTypography-h5 css-1v88y84"
+                                >
+                                    Optimized
+                                </h3>
+                                <p
+                                    class="MuiTypography-root MuiTypography-body1 css-1sap7rp"
+                                >
+                                    ArkType is not just a validator— it&#x27;s a
+                                    full type system. Operations are deeply
+                                    computed and optimized by default
+                                </p>
+                                <div>
+                                    <div class="inferable-code">
+                                        <div
+                                            class="language-typescript codeBlockContainer_Lxhf theme-code-block"
+                                            style="
+                                                --prism-color: #fffff0;
+                                                --prism-background-color: #1b1b1b;
+                                            "
+                                        >
+                                            <div class="codeBlockContent_ipDN">
+                                                <pre
+                                                    tabindex="0"
+                                                    class="prism-code language-typescript codeBlock_Ljhf thin-scrollbar"
+                                                ><code class="codeBlockLines_GAdv"><span class="token-line" style="color:#FFFFF0"><span class="token comment" style="color:rgb(104, 107, 120)">// Hover to see internal representation...</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain"></span><span class="token keyword" style="color:rgb(235, 159, 46)">export</span><span class="token plain"> </span><span class="token keyword" style="color:rgb(235, 159, 46)">const</span><span class="token plain"> deepLeftOrRight </span><span class="token operator" style="color:rgb(235, 159, 46)">=</span><span class="token plain"> </span><span class="token function" style="color:rgb(128, 207, 248)">union</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    </span><span class="token punctuation" style="color:rgb(235, 159, 46)">{</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">        auto</span><span class="token operator" style="color:rgb(235, 159, 46)">:</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(235, 159, 46)">{</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">            discriminated</span><span class="token operator" style="color:rgb(235, 159, 46)">:</span><span class="token plain"> </span><span class="token string" style="color:rgb(245, 207, 143)">&quot;&#x27;left&#x27;&quot;</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">        </span><span class="token punctuation" style="color:rgb(235, 159, 46)">}</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    </span><span class="token punctuation" style="color:rgb(235, 159, 46)">}</span><span class="token punctuation" style="color:rgb(235, 159, 46)">,</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    </span><span class="token punctuation" style="color:rgb(235, 159, 46)">{</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">        auto</span><span class="token operator" style="color:rgb(235, 159, 46)">:</span><span class="token plain"> </span><span class="token punctuation" style="color:rgb(235, 159, 46)">{</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">            discriminated</span><span class="token operator" style="color:rgb(235, 159, 46)">:</span><span class="token plain"> </span><span class="token string" style="color:rgb(245, 207, 143)">&quot;&#x27;right&#x27;&quot;</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">        </span><span class="token punctuation" style="color:rgb(235, 159, 46)">}</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    </span><span class="token punctuation" style="color:rgb(235, 159, 46)">}</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain"></span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><br></span></code></pre>
+                                                <div class="buttonGroup_MIc6">
+                                                    <button
+                                                        type="button"
+                                                        aria-label="Copy code to clipboard"
+                                                        title="Copy"
+                                                        class="clean-btn"
+                                                    >
+                                                        <span
+                                                            class="copyButtonIcons_iJAu"
+                                                            aria-hidden="true"
+                                                            ><svg
+                                                                class="copyButtonIcon_Noed"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                                                                ></path></svg
+                                                            ><svg
+                                                                class="copyButtonSuccessIcon_o2j9"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"
+                                                                ></path></svg
+                                                        ></span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <img src="/img/optimizedUnion.png" />
+                                    </div>
+                                    <div class="inferable-code">
+                                        <div
+                                            class="language-typescript codeBlockContainer_Lxhf theme-code-block"
+                                            style="
+                                                --prism-color: #fffff0;
+                                                --prism-background-color: #1b1b1b;
+                                            "
+                                        >
+                                            <div class="codeBlockContent_ipDN">
+                                                <pre
+                                                    tabindex="0"
+                                                    class="prism-code language-typescript codeBlock_Ljhf thin-scrollbar"
+                                                ><code class="codeBlockLines_GAdv"><span class="token-line" style="color:#FFFFF0"><span class="token comment" style="color:rgb(104, 107, 120)">// Hover to see internal representation...</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain"></span><span class="token keyword" style="color:rgb(235, 159, 46)">export</span><span class="token plain"> </span><span class="token keyword" style="color:rgb(235, 159, 46)">const</span><span class="token plain"> numericIntersection </span><span class="token operator" style="color:rgb(235, 159, 46)">=</span><span class="token plain"> </span><span class="token function" style="color:rgb(128, 207, 248)">type</span><span class="token punctuation" style="color:rgb(235, 159, 46)">(</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">    </span><span class="token string" style="color:rgb(245, 207, 143)">&quot;(1 &lt;= number%2 &lt; 100) &amp; (0 &lt; number%3 &lt;= 99)&quot;</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain"></span><span class="token punctuation" style="color:rgb(235, 159, 46)">)</span><span class="token plain"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain">       </span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#FFFFF0"><span class="token plain" style="display:inline-block"></span><br></span></code></pre>
+                                                <div class="buttonGroup_MIc6">
+                                                    <button
+                                                        type="button"
+                                                        aria-label="Copy code to clipboard"
+                                                        title="Copy"
+                                                        class="clean-btn"
+                                                    >
+                                                        <span
+                                                            class="copyButtonIcons_iJAu"
+                                                            aria-hidden="true"
+                                                            ><svg
+                                                                class="copyButtonIcon_Noed"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                                                                ></path></svg
+                                                            ><svg
+                                                                class="copyButtonSuccessIcon_o2j9"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"
+                                                                ></path></svg
+                                                        ></span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <img src="/img/optimizedNumber.png" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="css-x94w60">
+                                <h3
+                                    class="MuiTypography-root MuiTypography-h5 css-1v88y84"
+                                >
+                                    Type-safe
+                                </h3>
+                                <p
+                                    class="MuiTypography-root MuiTypography-body1 css-1sap7rp"
+                                >
+                                    String definitions are statically parsed
+                                    with each character you type and give
+                                    detailed feedback just like in your editor.
+                                </p>
+                                <div>
+                                    <div class="css-1ofqig9">
+                                        <video
+                                            autoplay=""
+                                            loop=""
+                                            controls=""
+                                            playsinline=""
+                                            muted=""
+                                            disablepictureinpicture=""
+                                            src="/img/typePerf.mp4"
+                                        ></video>
+                                        <caption style="font-size: 0.8rem">
+                                            Worried about performance?
+                                            Don&#x27;t be. This is how it feels
+                                            to interact with a scope of 100
+                                            cyclic types (you may want to go
+                                            fullscreen to see the details!)
+                                        </caption>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+            <footer class="footer footer--dark">
+                <div class="container container-fluid">
+                    <div class="row footer__links">
+                        <div class="col footer__col">
+                            <div class="footer__title">Docs</div>
+                            <ul class="footer__items clean-list">
+                                <li class="footer__item">
+                                    <a class="footer__link-item" href="/docs/"
+                                        >Docs</a
+                                    >
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col footer__col">
+                            <div class="footer__title">Community</div>
+                            <ul class="footer__items clean-list">
+                                <li class="footer__item">
+                                    <a
+                                        href="https://github.com/arktypeio/arktype"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="footer__link-item"
+                                        >GitHub<svg
+                                            width="13.5"
+                                            height="13.5"
+                                            aria-hidden="true"
+                                            viewBox="0 0 24 24"
+                                            class="iconExternalLink_Cao8"
+                                        >
+                                            <path
+                                                fill="currentColor"
+                                                d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"
+                                            ></path></svg
+                                    ></a>
+                                </li>
+                                <li class="footer__item">
+                                    <a
+                                        href="https://discord.gg/WSNF3Kc4xh"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="footer__link-item"
+                                        >Discord<svg
+                                            width="13.5"
+                                            height="13.5"
+                                            aria-hidden="true"
+                                            viewBox="0 0 24 24"
+                                            class="iconExternalLink_Cao8"
+                                        >
+                                            <path
+                                                fill="currentColor"
+                                                d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"
+                                            ></path></svg
+                                    ></a>
+                                </li>
+                                <li class="footer__item">
+                                    <a
+                                        href="https://twitter.com/arktypeio"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="footer__link-item"
+                                        >Twitter<svg
+                                            width="13.5"
+                                            height="13.5"
+                                            aria-hidden="true"
+                                            viewBox="0 0 24 24"
+                                            class="iconExternalLink_Cao8"
+                                        >
+                                            <path
+                                                fill="currentColor"
+                                                d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"
+                                            ></path></svg
+                                    ></a>
+                                </li>
+                                <li class="footer__item">
+                                    <a
+                                        href="https://twitch.tv/arktypeio"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="footer__link-item"
+                                        >Twitch<svg
+                                            width="13.5"
+                                            height="13.5"
+                                            aria-hidden="true"
+                                            viewBox="0 0 24 24"
+                                            class="iconExternalLink_Cao8"
+                                        >
+                                            <path
+                                                fill="currentColor"
+                                                d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"
+                                            ></path></svg
+                                    ></a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+        <script src="/assets/js/runtime~main.66e1b792.js"></script>
+        <script src="/assets/js/main.1b510953.js"></script>
+    </body>
+</html>

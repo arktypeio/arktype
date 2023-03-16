@@ -14,7 +14,7 @@ const always: Record<Domain, true> = {
 }
 
 /**
- * @descriptions descriptions: {"any": "any",
+ * @keywords keywords: {"any": "any",
         "bigint": "a bigint",
         "boolean": "a boolean",
         "false": "false",
