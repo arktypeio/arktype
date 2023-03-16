@@ -16,6 +16,8 @@ import { type } from "../../src/main.ts"
 
 const t = type("string[]")
 
+console.log(format(type("string[]").js))
+
 console.log(format(t.js))
 
 console.log(t([""]))

@@ -12,6 +12,17 @@ export class Path extends Array<string> {
     get json() {
         return JSON.stringify(this)
     }
+
+    toPropChain(result = "data") {
+        for (const segment of this) {
+            if (/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(segment)) {
+                result += `.${segment}`
+            } else {
+                result += `[${JSON.stringify(segment)}]`
+            }
+        }
+        return result
+    }
 }
 
 export type ReadonlyPath = arraySubclassToReadonly<Path>

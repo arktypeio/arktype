@@ -9,6 +9,7 @@ import type { ConfigNode, DomainsNode, Node } from "./node.ts"
 import { isConfigNode } from "./node.ts"
 import type { Predicate } from "./predicate.ts"
 import { compilePredicate } from "./predicate.ts"
+import { RuleName, Rules } from "./rules/rules.ts"
 
 export const createTraverse = (name: string, js: string) =>
     Function(`return (data, state) => {
@@ -22,18 +23,16 @@ export const compileType = (type: Type): string => {
 
 export const compileNode = (node: Node, c: Compilation) => {
     if (typeof node === "string") {
-        // TODO: improve
-        const js = c.type.scope.resolve(node).js
-        return c.path.length
-            ? js.replace("data", `data.${c.path.join(".")}`)
-            : js
+        return c.type.scope
+            .resolve(node)
+            .js.replace("data", c.path.toPropChain())
     }
     return isConfigNode(node)
         ? c.compileConfigNode(node)
         : compileTypeNode(node, c)
 }
 
-const compileDomainCheck = (domain: Domain, data: string) =>
+const compileDomainCondition = (domain: Domain, data: string) =>
     domain === "object"
         ? `(typeof ${data} === "object" && ${data} !== null) || typeof ${data} === "function"`
         : domain === "null" || domain === "undefined"
@@ -54,15 +53,15 @@ const compileTypeNode = (node: DomainsNode, c: Compilation) => {
         const predicate = node[domain]!
         const domainCheck = c.check(
             "domain",
-            compileDomainCheck(domain, c.data),
+            compileDomainCondition(domain, c.data),
             domain
         )
         if (predicate === true) {
             return domainCheck
         }
         const checks = compilePredicate(predicate, c)
-        if (checks && !hasImpliedDomain(predicate)) {
-            return `${domainCheck} && ${checks}`
+        if (!hasImpliedDomain(predicate)) {
+            return domainCheck + checks
         }
         return checks
     }
@@ -82,6 +81,10 @@ const initializeCompilationConfig = (): TraversalConfig => ({
     keys: []
 })
 
+export type CheckName = RuleName
+
+export const phases = {}
+
 export class Compilation {
     path = new Path()
     lastDomain: Domain = "undefined"
@@ -98,18 +101,24 @@ export class Compilation {
         condition: condition,
         rule: ProblemRules[code]
     ) {
-        return `${condition} || ${this.problem(code, rule)}` as const
+        return `(${condition} || ${this.problem(code, rule)})` as const
     }
 
     get data() {
-        // TODO: Fix props that cannot be accessed via .
-        return this.path.length ? `data.${this.path.join(".")}` : "data"
+        return this.path.toPropChain()
     }
 
     problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
         return `state.reject("${code}", ${
             typeof rule === "function" ? rule.name : JSON.stringify(rule)
         }, ${this.data}, ${this.path.json})` as const
+    }
+
+    prop(key: string, node: Node) {
+        this.path.push(key)
+        const result = compileNode(node, this)
+        this.path.pop()
+        return result
     }
 
     // getProblemConfig<code extends ProblemCode>(

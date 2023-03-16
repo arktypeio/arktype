@@ -3,7 +3,8 @@ import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type {
     CollapsibleList,
     constructor,
-    Dict
+    Dict,
+    evaluate
 } from "../../utils/generics.ts"
 import type { Compilation } from "../compile.ts"
 import type { IntersectionState, Intersector } from "../compose.ts"
@@ -53,6 +54,8 @@ export type Rules<
     ? defineRuleSet<domain, "divisor" | "range" | "narrow", $>
     : defineRuleSet<domain, "narrow", $>
 
+export type RuleName = evaluate<keyof NarrowableRules | keyof LiteralRules>
+
 type defineRuleSet<
     domain extends Domain,
     keys extends keyof NarrowableRules,
@@ -93,23 +96,37 @@ export const narrowableRulesIntersection =
 export const compileRules = (rules: UnknownRules, c: Compilation) => {
     let result = ""
     if (rules.value) {
-        result += compileValueCheck(rules.value, c) + ";"
+        result += compileValueCheck(rules.value, c)
     }
     if (rules.instance) {
-        result += compileInstance(rules.instance, c) + ";"
+        result += compileInstance(rules.instance, c)
     }
+
+    const shallowChecks: string[] = []
+
     if (rules.divisor) {
-        result += compileDivisor(rules.divisor, c)
+        shallowChecks.push(compileDivisor(rules.divisor, c))
     }
     if (rules.range) {
-        result += compileRange(rules.range, c)
+        shallowChecks.push(compileRange(rules.range, c))
     }
     if (rules.regex) {
-        result += compileRegex(rules.regex, c)
+        shallowChecks.push(compileRegex(rules.regex, c))
     }
+
+    if (shallowChecks.length) {
+        result += " && "
+        if (shallowChecks.length === 1) {
+            result += shallowChecks[0]
+        } else {
+        }
+    }
+
     if (rules.props) {
+        result += " && "
         result += compileProps(rules.props, c)
     }
+
     if (rules.narrow) {
     }
     return result

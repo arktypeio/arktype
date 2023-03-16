@@ -170,25 +170,23 @@ const compileLooseProps = (props: PropsRule, c: Compilation) => {
         if (k === mappedKeys.index) {
             if (c.path.length) {
                 result += `const lastPath = state.path;`
-                result += `state.path = state.path.concat(${c.path.json})`
+                result += `state.path = state.path.concat(${c.path.json});`
             }
             const itemChecks = compileNode(propToNode(prop), c)
             result += `${c.data}.filter((data, i) => {`
-            result += `state.path.push(i);${itemChecks};state.path.pop();`
-            result += "})"
+            result += `state.path.push(i);const isValid = ${itemChecks};state.path.pop();return isValid;`
+            result += `}).length === ${c.data}.length`
             if (c.path.length) {
                 result += `state.path = lastPath;`
             }
         } else {
-            c.path.push(k)
             if (isOptional(prop)) {
-                result += compileNode(prop[1], c)
+                result += c.prop(k, prop[1])
             } else if (isPrerequisite(prop)) {
-                result += compileNode(prop[1], c)
+                result += c.prop(k, prop[1])
             } else {
-                result += compileNode(prop, c)
+                result += c.prop(k, prop)
             }
-            c.path.pop()
         }
     }
     return result
