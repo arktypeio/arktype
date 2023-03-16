@@ -1,10 +1,8 @@
-import { Scanner } from "../../parse/string/shift/scanner.ts"
-import type { SizedData } from "../../utils/data.ts"
+import type { Scanner } from "../../parse/string/shift/scanner.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import type { evaluate, xor } from "../../utils/generics.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
-import { Problem } from "../problems.ts"
 
 export type Range = RelativeRange | Bound<"==">
 
@@ -172,17 +170,3 @@ export const compareStrictness = (
 
 const isExclusive = (comparator: Scanner.Comparator): comparator is ">" | "<" =>
     comparator.length === 1
-
-export class RangeProblem extends Problem<BoundWithUnits, SizedData> {
-    readonly code = "range"
-
-    get mustBe() {
-        return `${Scanner.comparatorDescriptions[this.rule.comparator]} ${
-            this.rule.limit
-        }${this.data.units ? ` ${this.data.units}` : ""}`
-    }
-
-    get was() {
-        return `${this.data.size}`
-    }
-}

@@ -1,11 +1,6 @@
 import type { constructor } from "../../utils/generics.ts"
-import {
-    getExactConstructorObjectKind,
-    objectKindDescriptions
-} from "../../utils/objectKinds.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
-import { Problem } from "../problems.ts"
 import { registerConstructor } from "../registry.ts"
 
 export const instanceIntersection = composeIntersection<constructor>(
@@ -29,15 +24,4 @@ export const compileInstance = (instanceOf: constructor, c: Compilation) => {
         `data instanceof ${registerConstructor(instanceOf.name, instanceOf)}`,
         instanceOf
     )
-}
-
-export class InstanceProblem extends Problem<constructor, object> {
-    readonly code = "instance"
-
-    get mustBe() {
-        const possibleObjectKind = getExactConstructorObjectKind(this.rule)
-        return possibleObjectKind
-            ? objectKindDescriptions[possibleObjectKind]
-            : `an instance of ${this.rule.name}`
-    }
 }

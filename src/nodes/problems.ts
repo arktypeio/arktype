@@ -1,4 +1,6 @@
-import { RangeProblem } from "../nodes/rules/range.ts"
+import type { BoundWithUnits } from "../nodes/rules/range.ts"
+import { Scanner } from "../parse/string/shift/scanner.ts"
+import type { SizedData } from "../utils/data.ts"
 import { DataWrapper } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainDescriptions } from "../utils/domains.ts"
@@ -10,13 +12,12 @@ import type {
 } from "../utils/generics.ts"
 import { isWellFormedInteger } from "../utils/numericLiterals.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
-import { objectKindDescriptions } from "../utils/objectKinds.ts"
+import {
+    getExactConstructorObjectKind,
+    objectKindDescriptions
+} from "../utils/objectKinds.ts"
 import type { Path } from "../utils/paths.ts"
-import { DivisorProblem } from "./rules/divisor.ts"
-import { InstanceProblem } from "./rules/instance.ts"
-import { KeyProblem } from "./rules/props.ts"
-import { RegexProblem } from "./rules/regex.ts"
-import { ValueProblem } from "./rules/value.ts"
+import { stringify } from "../utils/serialize.ts"
 
 export class ArkTypeError extends TypeError {
     cause: Problems
@@ -203,6 +204,65 @@ export const defineProblemsCode = <problems>(problems: {
         constructor<{ readonly code: code }>
     >
 }) => problems
+
+// TODO: split up
+
+export type KeyProblemKind = "missing" | "extraneous"
+
+export class KeyProblem extends Problem<KeyProblemKind> {
+    readonly code = "key"
+
+    mustBe = this.rule === "missing" ? "defined" : "extraneous"
+}
+
+export class RangeProblem extends Problem<BoundWithUnits, SizedData> {
+    readonly code = "range"
+
+    get mustBe() {
+        return `${Scanner.comparatorDescriptions[this.rule.comparator]} ${
+            this.rule.limit
+        }${this.data.units ? ` ${this.data.units}` : ""}`
+    }
+
+    get was() {
+        return `${this.data.size}`
+    }
+}
+
+export class RegexProblem extends Problem<string> {
+    readonly code = "regex"
+
+    get mustBe() {
+        return `a string matching /${this.rule}/`
+    }
+}
+
+export class InstanceProblem extends Problem<constructor, object> {
+    readonly code = "instance"
+
+    get mustBe() {
+        const possibleObjectKind = getExactConstructorObjectKind(this.rule)
+        return possibleObjectKind
+            ? objectKindDescriptions[possibleObjectKind]
+            : `an instance of ${this.rule.name}`
+    }
+}
+
+export class DivisorProblem extends Problem<number, number> {
+    readonly code = "divisor"
+
+    get mustBe() {
+        return this.rule === 1 ? `an integer` : `a multiple of ${this.rule}`
+    }
+}
+
+export class ValueProblem extends Problem {
+    readonly code = "value"
+
+    get mustBe() {
+        return stringify(this.rule)
+    }
+}
 
 export const problemsByCode = defineProblemsCode({
     domain: DomainProblem,

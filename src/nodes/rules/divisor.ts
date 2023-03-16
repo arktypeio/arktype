@@ -1,6 +1,5 @@
 import type { Compilation } from "../compile.ts"
 import { composeIntersection } from "../compose.ts"
-import { Problem } from "../problems.ts"
 
 export const intersectDivisors = composeIntersection<number>((l, r) =>
     Math.abs((l * r) / greatestCommonDivisor(l, r))
@@ -20,12 +19,4 @@ const greatestCommonDivisor = (l: number, r: number) => {
         greatestCommonDivisor = previous
     }
     return greatestCommonDivisor
-}
-
-export class DivisorProblem extends Problem<number, number> {
-    readonly code = "divisor"
-
-    get mustBe() {
-        return this.rule === 1 ? `an integer` : `a multiple of ${this.rule}`
-    }
 }
