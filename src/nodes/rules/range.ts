@@ -1,7 +1,6 @@
 import { Scanner } from "../../parse/string/shift/scanner.ts"
 import type { SizedData } from "../../utils/data.ts"
 import type { evaluate, xor } from "../../utils/generics.ts"
-import type { Path } from "../../utils/paths.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
 import { Problem } from "../problems.ts"
@@ -160,22 +159,15 @@ export const compareStrictness = (
 const isExclusive = (comparator: Scanner.Comparator): comparator is ">" | "<" =>
     comparator.length === 1
 
-export class RangeProblem extends Problem<SizedData> {
+export class RangeProblem extends Problem<BoundWithUnits, SizedData> {
     readonly code = "range"
 
-    constructor(
-        public comparator: Scanner.Comparator,
-        public limit: number,
-        data: SizedData,
-        path: Path
-    ) {
-        super(data, path)
-    }
-
     get mustBe() {
-        return `${Scanner.comparatorDescriptions[this.comparator]} ${
-            this.limit
-        }${this.data.units ? ` ${this.data.units}` : ""}`
+        return `${
+            Scanner.comparatorDescriptions[this.requirement.comparator]
+        } ${this.requirement.limit}${
+            this.data.units ? ` ${this.data.units}` : ""
+        }`
     }
 
     get was() {

@@ -229,26 +229,10 @@ const compileLooseProps = (props: PropsRule, c: Compilation) => {
 //     return ""
 // }
 
-export class MissingKeyProblem extends Problem<undefined> {
-    readonly code = "missing"
+export type KeyProblemKind = "missing" | "extraneous"
 
-    constructor(path: Path) {
-        super(undefined, path)
-    }
+export class KeyProblem extends Problem<KeyProblemKind> {
+    readonly code = "key"
 
-    get mustBe() {
-        return "defined"
-    }
-}
-
-export class ExtraneousKeyProblem extends Problem {
-    readonly code = "extraneous"
-
-    constructor(data: unknown, path: Path) {
-        super(data, path)
-    }
-
-    get mustBe() {
-        return "removed"
-    }
+    mustBe = this.requirement === "missing" ? "defined" : "extraneous"
 }

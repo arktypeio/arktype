@@ -1,4 +1,3 @@
-import type { Path } from "../../utils/paths.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection } from "../compose.ts"
 import { Problem } from "../problems.ts"
@@ -23,16 +22,12 @@ const greatestCommonDivisor = (l: number, r: number) => {
     return greatestCommonDivisor
 }
 
-export class DivisorProblem extends Problem<number> {
+export class DivisorProblem extends Problem<number, number> {
     readonly code = "divisor"
 
-    constructor(public divisor: number, data: number, path: Path) {
-        super(data, path)
-    }
-
     get mustBe() {
-        return this.divisor === 1
+        return this.requirement === 1
             ? `an integer`
-            : `a multiple of ${this.divisor}`
+            : `a multiple of ${this.requirement}`
     }
 }

@@ -27,11 +27,7 @@ export const compileValueCheck = (value: unknown, c: Compilation) => {
 export class ValueProblem extends Problem {
     readonly code = "value"
 
-    constructor(public value: unknown, data: unknown, path: Path) {
-        super(data, path)
-    }
-
     get mustBe() {
-        return stringify(this.value)
+        return stringify(this.requirement)
     }
 }

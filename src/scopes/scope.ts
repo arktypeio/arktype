@@ -1,8 +1,6 @@
 import { compileJs, compileType } from "../nodes/compile.ts"
 import type { DomainsNode, Node, ResolvedNode } from "../nodes/node.ts"
 import { isConfigNode } from "../nodes/node.ts"
-import type { ProblemsConfig, ProblemWritersByCode } from "../nodes/problems.ts"
-import { compileProblemWriters } from "../nodes/problems.ts"
 import { CheckResult, TraversalState } from "../nodes/traverse.ts"
 import type { ConfigTuple } from "../parse/ast/config.ts"
 import type {

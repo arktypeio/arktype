@@ -32,17 +32,15 @@ export const compileInstance = (instanceOf: constructor, c: Compilation) => {
     )
 }
 
-export class InstanceProblem extends Problem<object> {
+export class InstanceProblem extends Problem<constructor, object> {
     readonly code = "instance"
 
-    constructor(public instance: constructor, data: object, path: Path) {
-        super(data, path)
-    }
-
     get mustBe() {
-        const possibleObjectKind = getExactConstructorObjectKind(this.instance)
+        const possibleObjectKind = getExactConstructorObjectKind(
+            this.requirement
+        )
         return possibleObjectKind
             ? objectKindDescriptions[possibleObjectKind]
-            : `an instance of ${this.instance.name}`
+            : `an instance of ${this.requirement.name}`
     }
 }

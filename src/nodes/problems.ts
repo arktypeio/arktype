@@ -13,7 +13,7 @@ import { objectKindDescriptions } from "../utils/objectKinds.ts"
 import type { Path } from "../utils/paths.ts"
 import type { DivisorProblem } from "./rules/divisor.ts"
 import type { InstanceProblem } from "./rules/instance.ts"
-import type { ExtraneousKeyProblem, MissingKeyProblem } from "./rules/props.ts"
+import type { KeyProblem } from "./rules/props.ts"
 import type { RegexProblem } from "./rules/regex.ts"
 import type { ValueProblem } from "./rules/value.ts"
 
@@ -26,13 +26,17 @@ export class ArkTypeError extends TypeError {
     }
 }
 
-export abstract class Problem<data = unknown> {
+export abstract class Problem<requirement = unknown, data = unknown> {
     data: DataWrapper<data>
 
     abstract readonly code: ProblemCode
     abstract mustBe: string
 
-    constructor(data: data, public path: Path) {
+    constructor(
+        public requirement: requirement,
+        data: data,
+        public path: Path
+    ) {
         this.data = new DataWrapper(data)
     }
 
@@ -73,13 +77,12 @@ class ProblemArray extends Array<Problem> {
         const existing = this.byPath[pathKey]
         if (existing) {
             if (existing.hasCode("intersection")) {
-                existing.context.parts.push(problem)
-                existing.reason += "also"
+                existing.requirement.push(problem)
             } else {
-                const problemIntersection = new Problem(
-                    "intersection",
-                    "multi",
-                    { ...existing.context, parts: [existing, problem] }
+                const problemIntersection = new ProblemIntersection(
+                    [existing, problem],
+                    problem.data,
+                    problem.path
                 )
                 const existingIndex = this.indexOf(existing)
                 // If existing is found (which it always should be unless this was externally mutated),
@@ -143,8 +146,7 @@ type ProblemsByCode = defineProblemsByCode<{
     domain: DomainProblem
     divisor: DivisorProblem
     instance: InstanceProblem
-    missing: MissingKeyProblem
-    extraneous: ExtraneousKeyProblem
+    key: KeyProblem
     range: RangeProblem
     regex: RegexProblem
     value: ValueProblem
@@ -164,12 +166,8 @@ type defineProblemsByCode<
 
 export type ProblemCode = evaluate<keyof ProblemsByCode>
 
-export class ProblemIntersection extends Problem {
+export class ProblemIntersection extends Problem<Problem[]> {
     readonly code = "intersection"
-
-    constructor(public parts: Problem[], data: unknown, path: Path) {
-        super(data, path)
-    }
 
     get message() {
         return this.path.length
@@ -178,7 +176,7 @@ export class ProblemIntersection extends Problem {
     }
 
     get mustBe() {
-        return "• " + this.parts.map(({ mustBe }) => mustBe).join("\n• ")
+        return "• " + this.requirement.map(({ mustBe }) => mustBe).join("\n• ")
     }
 
     get reason() {
@@ -186,33 +184,25 @@ export class ProblemIntersection extends Problem {
     }
 }
 
-export class DomainProblem extends Problem {
+export class DomainProblem extends Problem<Domain> {
     readonly code = "domain"
 
-    constructor(public domain: Domain, data: unknown, path: Path) {
-        super(data, path)
-    }
-
     get mustBe() {
-        return domainDescriptions[this.domain]
+        return domainDescriptions[this.requirement]
     }
 }
 
-export class ProblemUnion extends Problem {
+export class ProblemUnion extends Problem<Problem[]> {
     readonly code = "union"
-
-    constructor(public parts: Problem[], data: unknown, path: Path) {
-        super(data, path)
-    }
 
     get mustBe() {
         return describeBranches(
-            this.parts.map(
+            this.requirement.map(
                 (problem) =>
                     `${problem.path} must be ${
                         problem.hasCode("intersection")
                             ? describeBranches(
-                                  problem.parts.map((part) => part.mustBe)
+                                  problem.requirement.map((part) => part.mustBe)
                               )
                             : problem.mustBe
                     }`
@@ -227,10 +217,10 @@ export class ProblemUnion extends Problem {
     }
 }
 
-export class CustomProblem extends Problem {
+export class CustomProblem extends Problem<string> {
     readonly code = "custom"
 
-    constructor(public mustBe: string, data: unknown, path: Path) {
-        super(data, path)
+    get mustBe() {
+        return this.requirement
     }
 }

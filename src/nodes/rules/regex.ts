@@ -14,12 +14,8 @@ export const regexIntersection = composeIntersection<CollapsibleList<string>>(
 export class RegexProblem extends Problem<string> {
     readonly code = "regex"
 
-    constructor(public source: string, data: string, path: Path) {
-        super(data, path)
-    }
-
     get mustBe() {
-        return `a string matching /${this.source}/`
+        return `a string matching /${this.requirement}/`
     }
 }
 
