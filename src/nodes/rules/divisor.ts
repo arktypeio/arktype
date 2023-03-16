@@ -24,8 +24,10 @@ const greatestCommonDivisor = (l: number, r: number) => {
 }
 
 export class DivisorProblem extends Problem<number> {
+    readonly code = "divisor"
+
     constructor(public divisor: number, data: number, path: Path) {
-        super("divisor", data, path)
+        super(data, path)
     }
 
     get mustBe() {

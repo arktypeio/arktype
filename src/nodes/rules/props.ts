@@ -11,7 +11,7 @@ import {
 } from "../compose.ts"
 import type { Node } from "../node.ts"
 import { isLiteralNode, nodeIntersection } from "../node.ts"
-import { defineProblemConfig, Problem } from "../problems.ts"
+import { Problem } from "../problems.ts"
 
 export type PropsRule<$ = Dict> = {
     [propKey in string]: Prop<$>
@@ -230,8 +230,10 @@ const compileLooseProps = (props: PropsRule, c: Compilation) => {
 // }
 
 export class MissingProblem extends Problem<undefined> {
+    readonly code = "missing"
+
     constructor(path: Path) {
-        super("missing", undefined, path)
+        super(undefined, path)
     }
 
     get mustBe() {
@@ -240,8 +242,10 @@ export class MissingProblem extends Problem<undefined> {
 }
 
 export class ExtraneousProblem extends Problem {
+    readonly code = "extraneous"
+
     constructor(data: unknown, path: Path) {
-        super("extraneous", data, path)
+        super(data, path)
     }
 
     get mustBe() {

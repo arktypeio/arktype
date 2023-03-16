@@ -126,7 +126,7 @@ describe("node definitions", () => {
             "node",
             {
                 object: {
-                    instanceOf: Date
+                    instance: Date
                 }
             }
         ])

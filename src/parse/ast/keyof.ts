@@ -128,8 +128,8 @@ const keysOfObjectBranch = (branch: Branch): KeyValue[] => {
             }
         }
     }
-    if ("instanceOf" in branch) {
-        for (const key of prototypeKeysOf(branch.instanceOf.prototype)) {
+    if ("instance" in branch) {
+        for (const key of prototypeKeysOf(branch.instance.prototype)) {
             if (!result.includes(key)) {
                 result.push(key)
             }

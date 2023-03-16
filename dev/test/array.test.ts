@@ -8,9 +8,9 @@ describe("parse array", () => {
     it("parse", () => {
         const t = type("string[]")
         attest(t.infer).typed as string[]
-        attest(t.node).snap({
+        attest(t.node).equals({
             object: {
-                instanceOf: "(function Array)",
+                instance: Array,
                 props: { "[index]": "string" }
             }
         })
@@ -18,9 +18,9 @@ describe("parse array", () => {
     })
     it("array intersection", () => {
         const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
-        attest(t.node).snap({
+        attest(t.node).equals({
             object: {
-                instanceOf: "(function Array)",
+                instance: Array,
                 props: {
                     "[index]": {
                         object: { props: { a: "string", b: "number" } }
@@ -35,9 +35,9 @@ describe("parse array", () => {
         attest(t.infer).typed as {
             a: string
         }[]
-        attest(t.node).snap({
+        attest(t.node).equals({
             object: {
-                instanceOf: "(function Array)",
+                instance: Array,
                 props: { "[index]": { object: { props: { a: "string" } } } }
             }
         })

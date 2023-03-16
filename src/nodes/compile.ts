@@ -50,7 +50,7 @@ const hasImpliedDomain = (predicate: Predicate) =>
     predicate !== true &&
     listFrom(predicate).every((branch) => {
         const rules = isTransformationBranch(branch) ? branch.rules : branch
-        return "value" in rules || rules.instanceOf
+        return "value" in rules || rules.instance
     })
 
 const compileTypeNode = (node: DomainsNode, c: Compilation) => {

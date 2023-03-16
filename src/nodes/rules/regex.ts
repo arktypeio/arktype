@@ -3,7 +3,7 @@ import { listFrom } from "../../utils/generics.ts"
 import type { Path } from "../../utils/paths.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection } from "../compose.ts"
-import { defineProblemConfig, Problem } from "../problems.ts"
+import { Problem } from "../problems.ts"
 import { registerRegex } from "../registry.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 
@@ -11,13 +11,11 @@ export const regexIntersection = composeIntersection<CollapsibleList<string>>(
     collapsibleListUnion<string>
 )
 
-export const regexProblemConfig = defineProblemConfig("regex", {
-    mustBe: (source) => `a string matching /${source}/`
-})
-
 export class RegexProblem extends Problem<string> {
+    readonly code = "regex"
+
     constructor(public source: string, data: string, path: Path) {
-        super("regex", data, path)
+        super(data, path)
     }
 
     get mustBe() {

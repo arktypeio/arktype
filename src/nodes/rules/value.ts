@@ -3,7 +3,7 @@ import type { Path } from "../../utils/paths.ts"
 import type { SerializablePrimitive } from "../../utils/serialize.ts"
 import { serializePrimitive, stringify } from "../../utils/serialize.ts"
 import type { Compilation } from "../compile.ts"
-import { defineProblemConfig, Problem } from "../problems.ts"
+import { Problem } from "../problems.ts"
 import { registerValue } from "../registry.ts"
 
 export const compileValueCheck = (value: unknown, c: Compilation) => {
@@ -24,13 +24,11 @@ export const compileValueCheck = (value: unknown, c: Compilation) => {
     )
 }
 
-export const valueProblemConfig = defineProblemConfig("value", {
-    mustBe: stringify
-})
-
 export class ValueProblem extends Problem {
+    readonly code = "value"
+
     constructor(public value: unknown, data: unknown, path: Path) {
-        super("value", data, path)
+        super(data, path)
     }
 
     get mustBe() {

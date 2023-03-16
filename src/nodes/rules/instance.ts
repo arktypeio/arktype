@@ -6,10 +6,10 @@ import {
 import type { Path } from "../../utils/paths.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
-import { defineProblemConfig, Problem } from "../problems.ts"
+import { Problem } from "../problems.ts"
 import { registerConstructor } from "../registry.ts"
 
-export const intersectInstanceOf = composeIntersection<constructor>(
+export const instanceIntersection = composeIntersection<constructor>(
     (l, r, state) => {
         return l === r
             ? equality()
@@ -21,28 +21,28 @@ export const intersectInstanceOf = composeIntersection<constructor>(
     }
 )
 
-export const compileInstanceOf = (instanceOf: constructor, c: Compilation) => {
+export const compileInstance = (instanceOf: constructor, c: Compilation) => {
     if (instanceOf === Array) {
-        return c.check("instanceOf", `Array.isArray(data)`, Array)
+        return c.check("instance", `Array.isArray(data)`, Array)
     }
     return c.check(
-        "instanceOf",
+        "instance",
         `data instanceof ${registerConstructor(instanceOf.name, instanceOf)}`,
         instanceOf
     )
 }
 
-export class InstanceOfProblem extends Problem<object> {
-    constructor(public instanceOf: constructor, data: object, path: Path) {
-        super("instanceOf", data, path)
+export class InstanceProblem extends Problem<object> {
+    readonly code = "instance"
+
+    constructor(public instance: constructor, data: object, path: Path) {
+        super(data, path)
     }
 
     get mustBe() {
-        const possibleObjectKind = getExactConstructorObjectKind(
-            this.instanceOf
-        )
+        const possibleObjectKind = getExactConstructorObjectKind(this.instance)
         return possibleObjectKind
             ? objectKindDescriptions[possibleObjectKind]
-            : `an instance of ${this.instanceOf.name}`
+            : `an instance of ${this.instance.name}`
     }
 }

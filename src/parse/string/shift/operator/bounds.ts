@@ -121,7 +121,7 @@ const distributeRange = (range: Range, s: DynamicState) => {
                 }
                 return listFrom(resolution.object!).every(
                     (branch) =>
-                        "instanceOf" in branch && branch.instanceOf === Array
+                        "instance" in branch && branch.instance === Array
                 )
             default:
                 return false

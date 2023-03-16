@@ -12,7 +12,7 @@ describe("record", () => {
                     a: "string",
                     b: {
                         object: {
-                            instanceOf: "(function Array)",
+                            instance: "(function Array)",
                             props: { "[index]": "boolean" }
                         }
                     }
@@ -29,7 +29,7 @@ describe("record", () => {
                     a: ["?", "string"],
                     b: {
                         object: {
-                            instanceOf: "(function Array)",
+                            instance: "(function Array)",
                             props: { "[index]": "boolean" }
                         }
                     }

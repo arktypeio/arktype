@@ -4,7 +4,7 @@ import type { evaluate, xor } from "../../utils/generics.ts"
 import type { Path } from "../../utils/paths.ts"
 import type { Compilation } from "../compile.ts"
 import { composeIntersection, equality } from "../compose.ts"
-import { defineProblemConfig, Problem } from "../problems.ts"
+import { Problem } from "../problems.ts"
 
 export type Range = RelativeRange | Bound<"==">
 
@@ -53,7 +53,7 @@ export type BoundWithUnits = Bound & { units: string | undefined }
 export const isEqualityRange = (range: Range): range is Bound<"=="> =>
     "comparator" in range
 
-export const intersectRange = composeIntersection<Range>((l, r, state) => {
+export const rangeIntersection = composeIntersection<Range>((l, r, state) => {
     if (isEqualityRange(l)) {
         if (isEqualityRange(r)) {
             return l.limit === r.limit
@@ -160,23 +160,16 @@ export const compareStrictness = (
 const isExclusive = (comparator: Scanner.Comparator): comparator is ">" | "<" =>
     comparator.length === 1
 
-export const rangeProblemConfig = defineProblemConfig("range", {
-    mustBe: (bound) => {
-        return `${Scanner.comparatorDescriptions[bound.comparator]} ${
-            bound.limit
-        }${bound.units ? ` ${bound.units}` : ""}`
-    },
-    was: ({ size }) => `${size}`
-})
-
 export class RangeProblem extends Problem<SizedData> {
+    readonly code = "range"
+
     constructor(
         public comparator: Scanner.Comparator,
         public limit: number,
         data: SizedData,
         path: Path
     ) {
-        super("range", data, path)
+        super(data, path)
     }
 
     get mustBe() {

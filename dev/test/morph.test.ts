@@ -246,7 +246,7 @@ describe("morph", () => {
             object: [
                 {
                     rules: {
-                        instanceOf: `(function Array)`,
+                        instance: `(function Array)`,
                         props: {
                             "0": "string",
                             length: ["!", { number: { value: 1 } }]
@@ -255,7 +255,7 @@ describe("morph", () => {
                     morph: "(function)"
                 },
                 {
-                    instanceOf: `(function Array)`,
+                    instance: `(function Array)`,
                     props: {
                         "0": "boolean",
                         length: ["!", { number: { value: 1 } }]

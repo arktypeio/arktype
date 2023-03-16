@@ -1,20 +1,21 @@
-import type { BoundWithUnits } from "../nodes/rules/range.ts"
-import type { SizedData } from "../utils/data.ts"
+import type { RangeProblem } from "../nodes/rules/range.ts"
 import { DataWrapper } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainDescriptions } from "../utils/domains.ts"
 import type {
     arraySubclassToReadonly,
-    constructor,
-    evaluate,
-    optionalizeKeys,
-    requireKeys
+    conform,
+    evaluate
 } from "../utils/generics.ts"
-import { keysOf } from "../utils/generics.ts"
 import { isWellFormedInteger } from "../utils/numericLiterals.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { objectKindDescriptions } from "../utils/objectKinds.ts"
 import type { Path } from "../utils/paths.ts"
+import type { DivisorProblem } from "./rules/divisor.ts"
+import type { InstanceProblem } from "./rules/instance.ts"
+import type { ExtraneousProblem, MissingProblem } from "./rules/props.ts"
+import type { RegexProblem } from "./rules/regex.ts"
+import type { ValueProblem } from "./rules/value.ts"
 
 export class ArkTypeError extends TypeError {
     cause: Problems
@@ -28,13 +29,16 @@ export class ArkTypeError extends TypeError {
 export abstract class Problem<data = unknown> {
     data: DataWrapper<data>
 
+    abstract readonly code: ProblemCode
     abstract mustBe: string
 
-    constructor(public code: ProblemCode, data: data, public path: Path) {
+    constructor(data: data, public path: Path) {
         this.data = new DataWrapper(data)
     }
 
-    hasCode<code extends ProblemCode>(code: code): this is Problem<code> {
+    hasCode<code extends ProblemCode>(
+        code: code
+    ): this is ProblemsByCode[code] {
         // doesn't make much sense we have to cast this, but alas
         return this.code === (code as ProblemCode)
     }
@@ -135,63 +139,33 @@ export const describeBranches = (descriptions: string[]) => {
     return description
 }
 
+type ProblemsByCode = defineProblemsByCode<{
+    divisor: DivisorProblem
+    instance: InstanceProblem
+    missing: MissingProblem
+    extraneous: ExtraneousProblem
+    range: RangeProblem
+    regex: RegexProblem
+    value: ValueProblem
+}>
+
+type defineProblemsByCode<
+    problems extends {
+        [code in keyof problems]: conform<
+            problems[code],
+            { readonly code: code }
+        >
+    }
+> = problems
+
 type ProblemInput = {
-    divisor: [divisor: number]
-    instanceOf: [constructor: constructor]
     domain: [domain: Domain]
-    missing: []
-    extraneous: []
-    range: [bound: BoundWithUnits]
-    regex: [source: string]
-    value: [expectedValue: unknown]
     intersection: [parts: (string | Problem)[]]
     union: [parts: (string | Problem)[]]
     custom: [mustBe: string]
 }
 
-type ProblemPrerequisites = {
-    divisor: number
-    instanceOf: object
-    range: SizedData
-    regex: string
-}
-
-type ProblemData<code extends ProblemCode> =
-    code extends keyof ProblemPrerequisites
-        ? ProblemPrerequisites[code]
-        : unknown
-
-type ProblemContext = {
-    mustBe: string
-    was: string
-}
-
-export type ProblemCode = evaluate<keyof ProblemInput>
-
-export type ProblemWriter<code extends ProblemCode> = {
-    mustBe: (...args: ProblemInput[code]) => string
-    was: undefined | ((data: DataWrapper<ProblemData<code>>) => string)
-    join: (mustBe: string, was: string) => string
-}
-
-export type ProblemWriterConfig<code extends ProblemCode> = optionalizeKeys<
-    ProblemWriter<code>,
-    "was" | "join"
->
-
-export const defineProblemConfig = <code extends ProblemCode>(
-    code: code,
-    writers: ProblemWriterConfig<code>
-): ProblemWriter<code> => ({
-    was: (data) => `${data}`,
-    join: (mustBe, was) => `must be ${mustBe}${was ? ` ( was ${was})` : ""}`,
-    ...writers
-})
-
-export type DefaultProblemConfig<code extends ProblemCode> = requireKeys<
-    ProblemOptions<code>,
-    "mustBe"
->
+export type ProblemCode = evaluate<keyof ProblemsByCode>
 
 // const defaultProblemConfig: {
 //     [code in ProblemCode]: DefaultProblemConfig<code>
@@ -241,25 +215,6 @@ export type DefaultProblemConfig<code extends ProblemCode> = requireKeys<
 //         mustBe: ({ mustBe }) => mustBe
 //     }
 // }
-
-export const problemCodes: readonly ProblemCode[] = keysOf(defaultProblemConfig)
-
-const compileDefaultProblemWriters = () => {
-    const result = {} as ProblemWritersByCode
-    let code: ProblemCode
-    for (code of problemCodes) {
-        result[code] = {
-            mustBe: defaultProblemConfig[code].mustBe as any,
-            writeReason:
-                defaultProblemConfig[code].writeReason ??
-                (writeDefaultReason as any),
-            was: (defaultProblemConfig[code].was as any) ?? describeDefaultWas
-        }
-    }
-    return result
-}
-
-export const defaultProblemWriters = compileDefaultProblemWriters()
 
 export const compileProblemWriters = (
     input: ProblemsConfig | undefined

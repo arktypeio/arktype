@@ -14,11 +14,11 @@ import {
 } from "../compose.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { compileDivisor, intersectDivisors } from "./divisor.ts"
-import { compileInstanceOf, intersectInstanceOf } from "./instanceOf.ts"
+import { compileInstance, instanceIntersection } from "./instance.ts"
 import type { PropsRule } from "./props.ts"
 import { compileProps, propsIntersection } from "./props.ts"
 import type { Range } from "./range.ts"
-import { compileRange, intersectRange } from "./range.ts"
+import { compileRange, rangeIntersection } from "./range.ts"
 import { compileRegex, regexIntersection } from "./regex.ts"
 import { compileValueCheck } from "./value.ts"
 
@@ -27,7 +27,7 @@ export type NarrowableRules<$ = Dict> = {
     readonly divisor?: number
     readonly range?: Range
     readonly props?: PropsRule<$>
-    readonly instanceOf?: constructor
+    readonly instance?: constructor
     readonly narrow?: NarrowRule
 }
 
@@ -46,7 +46,7 @@ export type Rules<
 > = Domain extends domain
     ? NarrowableRules | LiteralRules
     : domain extends "object"
-    ? defineRuleSet<domain, "props" | "range" | "narrow" | "instanceOf", $>
+    ? defineRuleSet<domain, "props" | "range" | "narrow" | "instance", $>
     : domain extends "string"
     ? defineRuleSet<domain, "regex" | "range" | "narrow", $>
     : domain extends "number"
@@ -83,8 +83,8 @@ export const narrowableRulesIntersection =
             divisor: intersectDivisors,
             regex: regexIntersection,
             props: propsIntersection,
-            instanceOf: intersectInstanceOf,
-            range: intersectRange,
+            instance: instanceIntersection,
+            range: rangeIntersection,
             narrow: narrowIntersection
         },
         { onEmpty: "bubble" }
@@ -95,8 +95,8 @@ export const compileRules = (rules: UnknownRules, c: Compilation) => {
     if (rules.value) {
         lines.push(compileValueCheck(rules.value, c))
     }
-    if (rules.instanceOf) {
-        lines.push(compileInstanceOf(rules.instanceOf, c))
+    if (rules.instance) {
+        lines.push(compileInstance(rules.instance, c))
     }
     if (rules.divisor) {
         lines.push(compileDivisor(rules.divisor, c))

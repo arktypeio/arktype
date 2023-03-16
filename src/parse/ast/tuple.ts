@@ -51,7 +51,7 @@ export const parseTuple = (def: List, ctx: ParseContext): Node => {
     }
     return {
         object: {
-            instanceOf: Array,
+            instance: Array,
             props
         }
     }
@@ -210,7 +210,7 @@ const prefixParsers: {
                 `Expected a constructor following 'instanceof' operator (was ${typeof def[1]}).`
             )
         }
-        return { object: { instanceOf: def[1] as constructor } }
+        return { object: { instance: def[1] as constructor } }
     },
     "===": (def) => ({ [domainOf(def[1])]: { value: def[1] } }),
     node: (def) => def[1] as ResolvedNode
