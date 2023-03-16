@@ -1,5 +1,6 @@
 import type { BoundWithUnits } from "../nodes/rules/range.ts"
-import type { DataWrapper, SizedData } from "../utils/data.ts"
+import type { SizedData } from "../utils/data.ts"
+import { DataWrapper } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainDescriptions } from "../utils/domains.ts"
 import type {
@@ -24,20 +25,26 @@ export class ArkTypeError extends TypeError {
     }
 }
 
-export class Problem<code extends ProblemCode = ProblemCode> {
-    path: Path
+export abstract class Problem<code extends ProblemCode = ProblemCode> {
+    data: DataWrapper<unknown>
 
-    constructor(
-        public code: code,
-        public reason: string,
-        public context: ProblemContext<code>
-    ) {
-        this.path = context.path
+    constructor(public code: code, data: unknown, public path: Path) {
+        this.data = new DataWrapper(data)
     }
 
     hasCode<code extends ProblemCode>(code: code): this is Problem<code> {
         // doesn't make much sense we have to cast this, but alas
         return this.code === (code as ProblemCode)
+    }
+
+    abstract mustBe: string
+
+    get reason() {
+        return `must be ${this.mustBe}${this.was ? ` ( was ${this.was})` : ""}`
+    }
+
+    get was() {
+        return `${this.data}`
     }
 
     toString() {
