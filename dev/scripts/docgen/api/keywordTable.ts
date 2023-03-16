@@ -4,13 +4,13 @@ import type { TsTagData } from "./tsDocTransforms"
 export const tabulateData = (exportData: ExportData, tags: TsTagData) => {
     const keywords = tags.keywords
     const keywordMatcher = /(?<=keywords: ).+/
-    let valuesByKey: { [keyword: string]: string } | undefined
+    let descriptionsByKeyword: { [keyword: string]: string } | undefined
     if (keywords) {
         const matchedKeyword = keywords[0]
             .replaceAll("\n", "")
             .match(keywordMatcher)
         if (matchedKeyword) {
-            valuesByKey = JSON.parse(matchedKeyword[0])
+            descriptionsByKeyword = JSON.parse(matchedKeyword[0])
         }
     }
 
@@ -23,7 +23,9 @@ export const tabulateData = (exportData: ExportData, tags: TsTagData) => {
     for (const prop of scopeAliases) {
         const keyword = prop.trim().match(/^([^:]+):(.+)$/)
         if (keyword) {
-            const description = valuesByKey ? valuesByKey[keyword[1]] ?? "" : ""
+            const description = descriptionsByKeyword
+                ? descriptionsByKeyword[keyword[1]] ?? ""
+                : ""
             section.push(
                 `| ${keyword[1]} | \`${keyword[2].replace(
                     ";",
