@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
 import type { Type } from "../../src/main.ts"
-import { instance, type } from "../../src/main.ts"
+import { instanceOf, type } from "../../src/main.ts"
 import { attest } from "../attest/main.ts"
 
 describe("instanceof", () => {
@@ -45,13 +45,13 @@ describe("instanceof", () => {
         )
     })
     it("helper", () => {
-        const regex = instance(RegExp)
+        const regex = instanceOf(RegExp)
         attest(regex.infer).type.toString("RegExp")
         attest(regex.node).snap({ object: { instance: "(function RegExp)" } })
     })
     it("helper error", () => {
         // @ts-expect-error
-        attest(() => instance(5))
+        attest(() => instanceOf(5))
             .throws(
                 "Expected a constructor following 'instanceof' operator (was number)."
             )

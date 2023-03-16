@@ -1,6 +1,7 @@
 import { compileJs, compileType } from "../nodes/compile.ts"
 import type { DomainsNode, Node, ResolvedNode } from "../nodes/node.ts"
 import { isConfigNode } from "../nodes/node.ts"
+import type { ProblemCode, ProblemOptionsByCode } from "../nodes/problems.ts"
 import { CheckResult, TraversalState } from "../nodes/traverse.ts"
 import type { ConfigTuple } from "../parse/ast/config.ts"
 import type {
@@ -60,17 +61,18 @@ export type ScopeOptions = {
     includes?: Space[] | []
     standard?: boolean
     name?: string
-    codes?: ProblemsConfig
+    // TODO: Fix
+    codes?: Record<ProblemCode, { mustBe?: string }>
     keys?: KeyCheckKind
 }
 
 export type ScopeConfig = evaluate<{
     keys: KeyCheckKind
-    codes: ProblemWritersByCode
+    codes: ProblemOptionsByCode
 }>
 
 export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
-    codes: compileProblemWriters(opts.codes),
+    codes: {},
     keys: opts.keys ?? "loose"
 })
 

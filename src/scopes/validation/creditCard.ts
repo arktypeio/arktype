@@ -34,7 +34,9 @@ export const creditCard = rootType(
         creditCardMatcher,
         "=>",
         (s, state) =>
-            isLuhnValid(s) || !state.mustBe("a valid credit card number")
+            isLuhnValid(s) ||
+            // TODO: Fix
+            !state.mustBe("a valid credit card number", s, state.path)
     ],
     { mustBe: "a valid credit card number" }
 )

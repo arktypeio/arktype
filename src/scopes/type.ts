@@ -1,6 +1,5 @@
 import { compileJs } from "../nodes/compile.ts"
 import type { Node } from "../nodes/node.ts"
-import type { ProblemOptions } from "../nodes/problems.ts"
 import type { CheckResult, TraversalState } from "../nodes/traverse.ts"
 import type { ParsedMorph } from "../parse/ast/morph.ts"
 import type {
@@ -51,11 +50,10 @@ type TypeRoot<t = unknown> = evaluate<{
 
 export type KeyCheckKind = "loose" | "strict" | "distilled"
 
-export type TypeOptions = evaluate<
-    {
-        keys?: KeyCheckKind
-    } & ProblemOptions
->
+export type TypeOptions = evaluate<{
+    keys?: KeyCheckKind
+    mustBe?: string
+}>
 
 export type TypeConfig = TypeOptions
 

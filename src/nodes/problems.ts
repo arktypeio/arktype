@@ -92,6 +92,7 @@ class ProblemArray extends Array<Problem> {
             this.push(problem)
         }
         this.count++
+        return problem
     }
 
     get summary() {
@@ -234,5 +235,9 @@ export type ProblemData = {
 }
 
 export type ProblemParameters<code extends ProblemCode> = ConstructorParameters<
-    typeof Problem<ProblemRules[code], ProblemData[code]>
+    ProblemClasses[code]
 >
+
+export type ProblemOptions = { mustBe?: string }
+
+export type ProblemOptionsByCode = { [code in ProblemCode]?: ProblemOptions }

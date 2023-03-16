@@ -1,10 +1,9 @@
 import type { Scope } from "../scopes/scope.ts"
 import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
-import { DataWrapper } from "../utils/data.ts"
 import type { xor } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import type { ProblemCode, ProblemParameters } from "./problems.ts"
-import { Problem, Problems } from "./problems.ts"
+import type { Problem, ProblemCode, ProblemParameters } from "./problems.ts"
+import { Problems, problemsByCode } from "./problems.ts"
 
 export const CheckResult = class {
     data?: unknown
@@ -31,31 +30,26 @@ export class TraversalState {
         this.config = type.config
     }
 
-    mustBe(mustBe: string, context?: ProblemContextInput<"custom">) {
-        return this.reject("custom", mustBe, context)
+    mustBe(mustBe: string, data: unknown, path: Path) {
+        return this.addProblem("custom", mustBe, data, path)
+    }
+
+    addProblem<code extends ProblemCode>(
+        code: code,
+        ...args: ProblemParameters<code>
+    ) {
+        // TODO: fix
+        const problem = new problemsByCode[code](
+            ...(args as [any, any, any])
+        ) as any as Problem
+        return this.problems.add(problem)
     }
 
     reject<code extends ProblemCode>(
         code: code,
         ...args: ProblemParameters<code>
     ) {
-        const problem = new Problem(
-            // avoid a bunch of errors from TS trying to discriminate the
-            // problem input based on the code
-            code as any,
-            "reason",
-            {
-                // copy the path to avoid future mutations affecting it
-                path: ctx?.path ?? new Path(...this.path),
-                // we have to check for the presence of the key explicitly since the
-                // data could be nullish
-                data: new DataWrapper("data" in ctx ? ctx.data : ({} as any)),
-                mustBe: "",
-                was: ""
-            }
-        )
-        this.problems.add(problem)
-        return false
+        return !this.addProblem(code, ...args)
     }
 
     // traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {

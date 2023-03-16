@@ -22,7 +22,7 @@ describe("keyof", () => {
         attest(t.node).snap({ string: { value: "b" } })
     })
     const expectedNeverKeyOfMessage = writeImplicitNeverMessage(
-        new Path() as [],
+        new Path() as unknown as [],
         "keyof"
     )
     it("non-overlapping union", () => {

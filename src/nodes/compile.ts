@@ -81,8 +81,6 @@ export type TraversalConfig = {
 
 const initializeCompilationConfig = (): TraversalConfig => ({
     mustBe: [],
-    writeReason: [],
-    was: [],
     keys: []
 })
 
@@ -100,7 +98,7 @@ export class Compilation {
     check<code extends ProblemCode, condition extends string>(
         code: code,
         condition: condition,
-        rule: ProblemRules<code>
+        rule: ProblemRules[code]
     ) {
         return `${condition} || ${this.problem(code, rule)}` as const
     }
@@ -110,7 +108,7 @@ export class Compilation {
         return this.path.length ? `data.${this.path.join(".")}` : "data"
     }
 
-    problem<code extends ProblemCode>(code: code, rule: ProblemRules<code>) {
+    problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
         return `state.reject("${code}", ${JSON.stringify(rule)}, ${
             this.data
         }, ${this.path.json})` as const

@@ -2,6 +2,7 @@ import { describe, it } from "mocha"
 import type { Type } from "../../src/main.ts"
 import { type } from "../../src/main.ts"
 import type { assertEqual } from "../../src/utils/generics.ts"
+import { Path } from "../../src/utils/paths.ts"
 import { attest } from "../attest/main.ts"
 
 describe("narrow", () => {
@@ -23,7 +24,10 @@ describe("narrow", () => {
         const even = type([
             "number",
             "=>",
-            (n, problems) => n % 3 === 0 || !problems.mustBe("divisible by 3")
+
+            (n, problems) =>
+                // TODO: fix input
+                n % 3 === 0 || !problems.mustBe("divisible by 3", n, new Path())
         ])
         attest(even(1).problems?.summary).snap("Must be divisible by 3 (was 1)")
     })
@@ -99,7 +103,8 @@ describe("narrow", () => {
             (s, problems) =>
                 s === [...s].reverse().join("")
                     ? true
-                    : !problems.mustBe("a palindrome")
+                    : // TODO: fix input
+                      !problems.mustBe("a palindrome", s, new Path())
         ])
         attest(palindrome).typed as Type<string>
         attest(palindrome("dad").data).snap("dad")

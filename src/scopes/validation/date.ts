@@ -103,6 +103,9 @@ export const parsedDate = rootType([
     "|>",
     (s, state) => {
         const result = tryParseDate(s)
-        return typeof result === "string" ? state.mustBe(result) : result
+        return typeof result === "string"
+            ? // TODO: Fix
+              state.mustBe(result, s, state.path)
+            : result
     }
 ])
