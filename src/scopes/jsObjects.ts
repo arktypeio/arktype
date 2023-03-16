@@ -2,6 +2,9 @@ import type { Infer } from "../main.ts"
 import type { inferObjectKind } from "../utils/objectKinds.ts"
 import { scope } from "./scope.ts"
 
+/**
+ * @scope
+ */
 export const jsObjectsScope = scope(
     {
         Function: ["node", { object: { class: Function } }] as Infer<
