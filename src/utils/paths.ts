@@ -1,6 +1,6 @@
 import type { arraySubclassToReadonly } from "./generics.ts"
 
-export class Path extends Array<string> {
+export class Path extends Array<string | number> {
     static fromString(s: string, delimiter = "/") {
         return s === delimiter ? new Path() : new Path(...s.split(delimiter))
     }
@@ -15,10 +15,18 @@ export class Path extends Array<string> {
 
     toPropChain(result = "data") {
         for (const segment of this) {
-            if (/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(segment)) {
-                result += `.${segment}`
+            if (typeof segment === "string") {
+                if (/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(segment)) {
+                    result += `.${segment}`
+                } else {
+                    result += `[${
+                        /^\$\{.*\}$/.test(segment)
+                            ? segment.slice(2, -1)
+                            : JSON.stringify(segment)
+                    }]`
+                }
             } else {
-                result += `[${JSON.stringify(segment)}]`
+                result += `[${segment}]`
             }
         }
         return result
@@ -27,13 +35,15 @@ export class Path extends Array<string> {
 
 export type ReadonlyPath = arraySubclassToReadonly<Path>
 
+export type Segments = (string | number)[]
+
 export type pathToString<
-    segments extends string[],
+    segments extends Segments,
     delimiter extends string = "/"
 > = segments extends [] ? "/" : join<segments, delimiter>
 
 export type join<
-    segments extends string[],
+    segments extends Segments,
     delimiter extends string = "/",
     result extends string = ""
 > = segments extends [infer head extends string, ...infer tail extends string[]]

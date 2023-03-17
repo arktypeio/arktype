@@ -10,7 +10,6 @@ import type {
     constructor,
     instanceOf
 } from "../utils/generics.ts"
-import { isWellFormedInteger } from "../utils/numericLiterals.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
     getExactConstructorObjectKind,
@@ -46,7 +45,7 @@ export abstract class Problem<requirement = unknown, data = unknown> {
     get message() {
         return this.path.length === 0
             ? capitalize(this.reason)
-            : this.path.length === 1 && isWellFormedInteger(this.path[0])
+            : this.path.length === 1 && typeof this.path[0] === "number"
             ? `Item at index ${this.path[0]} ${this.reason}`
             : `${this.path} ${this.reason}`
     }

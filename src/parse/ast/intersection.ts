@@ -13,7 +13,7 @@ import type {
     tryCatch
 } from "../../utils/generics.ts"
 import { keysOf } from "../../utils/generics.ts"
-import type { Path, pathToString } from "../../utils/paths.ts"
+import type { Path, pathToString, Segments } from "../../utils/paths.ts"
 import type { ParsedMorph } from "./morph.ts"
 
 export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, []>
@@ -130,7 +130,7 @@ export const writeImplicitNeverMessage = <
     >
 
 export type writeImplicitNeverMessage<
-    path extends string[],
+    path extends Segments,
     operator extends "Intersection" | "keyof",
     description extends string = ""
 > = `${path extends []

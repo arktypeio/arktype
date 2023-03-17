@@ -45,7 +45,7 @@ export const parseTuple = (def: List, ctx: ParseContext): Node => {
         length: ["!", { number: { value: def.length } }]
     }
     for (let i = 0; i < def.length; i++) {
-        ctx.path.push(`${i}`)
+        ctx.path.push(i)
         props[i] = parseDefinition(def[i], ctx)
         ctx.path.pop()
     }

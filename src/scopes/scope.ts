@@ -1,4 +1,4 @@
-import { compileType, createTraverse } from "../nodes/compile.ts"
+import { Compilation, createTraverse } from "../nodes/compile.ts"
 import type { DomainsNode, Node, ResolvedNode } from "../nodes/node.ts"
 import { isConfigNode } from "../nodes/node.ts"
 import type { ProblemCode, ProblemOptionsByCode } from "../nodes/problems.ts"
@@ -307,7 +307,7 @@ export class Scope<context extends ScopeContext = any> {
             node = this.#resolveRecurse(node, "throw", seen).node
         }
         t.node = deepFreeze(node)
-        t.js = compileType(t)
+        t.js = new Compilation(t).node(node)
         t.traverse = createTraverse(t.name, t.js)
         t.check = (data) => {
             const state = new TraversalState(t)
@@ -381,7 +381,7 @@ export class Scope<context extends ScopeContext = any> {
                     : root
             )
             // TODO: refactor
-            t.js = compileType(t)
+            t.js = new Compilation(t).node(t.node)
             t.traverse = createTraverse(t.name, t.js)
             t.check = (data) => {
                 const state = new TraversalState(t)

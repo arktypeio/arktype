@@ -1,6 +1,5 @@
 import type { Dict } from "../../utils/generics.ts"
 import type { Compilation } from "../compile.ts"
-import { compileNode } from "../compile.ts"
 import {
     composeIntersection,
     composeKeyedIntersection,
@@ -111,7 +110,7 @@ export const propsIntersection = composeIntersection<PropsRule>(
                 continue
             }
             const existingNodeAtIndex = propToNode(updatedResult[i])
-            state.path.push(`${i}`)
+            state.path.push(i)
             const updatedResultAtIndex = nodeIntersection(
                 existingNodeAtIndex,
                 indexNode,
@@ -168,23 +167,15 @@ const compileLooseProps = (props: PropsRule, c: Compilation) => {
     for (const k in props) {
         const prop = props[k]
         if (k === mappedKeys.index) {
-            const baseData = c.data
-            result += c.rebasePathAndCompile(
-                () => `${baseData}.filter((data, i) => {
-state.path.push(i);
-const itemIsValid = ${compileNode(propToNode(prop), c)};
-state.path.pop();
-return itemIsValid;
-}).length === ${baseData}.length`
-            )
+            result += c.arrayOf(prop as Node)
         } else {
             c.path.push(k)
             if (isOptional(prop)) {
-                result += compileNode(prop[1], c)
+                result += c.node(prop[1])
             } else if (isPrerequisite(prop)) {
-                result += compileNode(prop[1], c)
+                result += c.node(prop[1])
             } else {
-                result += compileNode(prop, c)
+                result += c.node(prop)
             }
             c.path.pop()
         }
