@@ -14,9 +14,9 @@ import { type } from "../../src/main.ts"
 //     })
 // })
 
-const t = type("string[]")
+const t = type({ a: "string[]" })
 
-console.log(format(type("string[]").js))
+console.log(format(type({ a: "string[]" }).js))
 
 console.log(format(t.js))
 

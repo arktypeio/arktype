@@ -9,7 +9,7 @@ import type { ConfigNode, DomainsNode, Node } from "./node.ts"
 import { isConfigNode } from "./node.ts"
 import type { Predicate } from "./predicate.ts"
 import { compilePredicate } from "./predicate.ts"
-import { RuleName, Rules } from "./rules/rules.ts"
+import type { RuleName } from "./rules/rules.ts"
 
 export const createTraverse = (name: string, js: string) =>
     Function(`return (data, state) => {
@@ -114,11 +114,22 @@ export class Compilation {
         }, ${this.data}, ${this.path.json})` as const
     }
 
-    prop(key: string, node: Node) {
-        this.path.push(key)
-        const result = compileNode(node, this)
-        this.path.pop()
-        return result
+    rebasePathAndCompile(compile: () => string) {
+        if (!this.path.length) {
+            return compile()
+        }
+        const lastPath = this.path
+        this.path = new Path()
+        const result = compile()
+        this.path = lastPath
+        // JS performs in-place truncation when assigning to length
+        return `(() => {
+            const lastLength = state.basePath.length;
+            state.basePath.push(${lastPath.json.slice(1, -1)});
+            const isValid = ${result};
+            state.basePath.length = lastLength;
+            return isValid
+})()`
     }
 
     // getProblemConfig<code extends ProblemCode>(

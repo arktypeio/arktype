@@ -105,7 +105,7 @@ export const parsedDate = rootType([
         const result = tryParseDate(s)
         return typeof result === "string"
             ? // TODO: Fix
-              state.mustBe(result, s, state.path)
+              state.mustBe(result, s, state.basePath)
             : result
     }
 ])

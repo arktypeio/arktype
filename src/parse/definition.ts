@@ -83,24 +83,20 @@ export type inferDefinition<def, $> = isAny<def> extends true
     : never
 
 // we ignore functions in validation so that cyclic thunk definitions can be inferred in scopes
-export type validateDefinition<def, $> = [def] extends [(...args: any[]) => any]
+export type validateDefinition<def, $> = def extends (...args: any[]) => any
     ? def
-    : [def] extends [Terminal]
+    : def extends Terminal
     ? def
-    : [def] extends [string]
+    : def extends string
     ? validateString<def, $>
-    : [def] extends [TupleExpression]
+    : def extends TupleExpression
     ? validateTupleExpression<def, $>
-    : [def] extends [BadDefinitionType]
+    : def extends BadDefinitionType
     ? writeBadDefinitionTypeMessage<
           objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
       >
     : isUnknown<def> extends true
     ? unknownDefinitionMessage
-    : [def] extends [readonly unknown[]]
-    ? {
-          [k in keyof def]: validateDefinition<def[k], $>
-      }
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], $>
       }>

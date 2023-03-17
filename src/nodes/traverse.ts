@@ -16,7 +16,7 @@ export type CheckResult<out = unknown> = xor<
 >
 
 export class TraversalState {
-    path = new Path()
+    basePath = new Path()
     problems: Problems = new Problems()
     entriesToPrune: [data: Record<string, unknown>, key: string][] = []
     config: TypeConfig

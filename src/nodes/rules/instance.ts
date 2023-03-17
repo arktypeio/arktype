@@ -17,11 +17,14 @@ export const instanceIntersection = composeIntersection<constructor>(
 
 export const compileInstance = (instanceOf: constructor, c: Compilation) => {
     if (instanceOf === Array) {
-        return c.check("instance", `Array.isArray(data)`, Array)
+        return c.check("instance", `Array.isArray(${c.data})`, Array)
     }
     return c.check(
         "instance",
-        `data instanceof ${registerConstructor(instanceOf.name, instanceOf)}`,
+        `${c.data} instanceof ${registerConstructor(
+            instanceOf.name,
+            instanceOf
+        )}`,
         instanceOf
     )
 }
