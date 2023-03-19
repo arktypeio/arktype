@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.10-alpha
+
+### Patch Changes
+
+-   add "inferIn" prop for extracting type input
+
 ## 1.0.9-alpha
 
 ### Patch Changes
