@@ -34,9 +34,10 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
 type TypeRoot<t = unknown> = evaluate<{
     [as]: t
     infer: asOut<t>
+    inferIn: asIn<t>
+    allows: (data: unknown) => data is asIn<t>
+    assert: (data: unknown) => asOut<t>
     js: string
-    allows: (data: unknown) => data is t
-    assert: (data: unknown) => t
     traverse: CompiledTraversal
     check: Checker<t>
     node: Node
@@ -80,6 +81,7 @@ export const initializeType = (
             return result.problems ? result.problems.throw() : result.data
         },
         infer: chainableNoOpProxy,
+        inferIn: chainableNoOpProxy,
         qualifiedName: isAnonymousName(name)
             ? scope.getAnonymousQualifiedName(name)
             : `${scope.name}.${name}`,

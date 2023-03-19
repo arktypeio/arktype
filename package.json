@@ -46,7 +46,7 @@
         "testBuild": "ts-node ./dev/scripts/testBuild.ts",
         "testAttest": "ts-node ./dev/scripts/testAttest.ts",
         "testTsVersions": "ts-node ./dev/scripts/testTsVersions.ts",
-        "testDeno": "deno test -c ./dev/configs/deno.jsonc --no-check --allow-all -- --skipTypes",
+        "testDeno": "deno test -c ./dev/configs/deno.jsonc --no-check --allow-all --no-npm -- --skipTypes",
         "bench": "ts-node ./dev/attest/cli.ts bench --benchmarksPath ./test/benchmarks.json",
         "lint": "eslint --max-warnings=0 .",
         "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
