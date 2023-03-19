@@ -26,6 +26,10 @@ console.log(type("number%2").js)
 
 console.log(type({ a: "string", b: "boolean" }).js)
 
+const o = type({ a: "string", b: "boolean" })
+
+console.log(o({}))
+
 let result, isValid
 
 let n = 6

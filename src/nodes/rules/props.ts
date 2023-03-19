@@ -162,25 +162,23 @@ export const compileProps = (props: PropsRule, c: Compilation) => {
 }
 
 const compileLooseProps = (props: PropsRule, c: Compilation) => {
-    let result = ""
+    const propChecks: string[] = []
     // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
     for (const k in props) {
         const prop = props[k]
         if (k === mappedKeys.index) {
-            result += c.arrayOf(prop as Node)
+            propChecks.push(c.arrayOf(prop as Node))
         } else {
             c.path.push(k)
-            if (isOptional(prop)) {
-                result += c.node(prop[1])
-            } else if (isPrerequisite(prop)) {
-                result += c.node(prop[1])
-            } else {
-                result += c.node(prop)
-            }
+            propChecks.push(
+                isOptional(prop) || isPrerequisite(prop)
+                    ? c.node(prop[1])
+                    : c.node(prop)
+            )
             c.path.pop()
         }
     }
-    return result
+    return propChecks.length ? c.mergeChecks(propChecks) : "true"
 }
 
 // const compilePropsRecord = (

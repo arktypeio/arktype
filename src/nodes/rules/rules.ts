@@ -115,11 +115,7 @@ export const compileRules = (rules: UnknownRules, c: Compilation) => {
     }
 
     if (shallowChecks.length) {
-        result += " && "
-        if (shallowChecks.length === 1) {
-            result += shallowChecks[0]
-        } else {
-        }
+        result += " && " + c.mergeChecks(shallowChecks)
     }
 
     if (rules.props) {

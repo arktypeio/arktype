@@ -43,6 +43,20 @@ export class Compilation {
         return `(${condition} || ${this.problem(code, rule)})` as const
     }
 
+    mergeChecks(checks: string[]) {
+        if (checks.length === 1) {
+            return checks[0]
+        }
+        let result = `(() => {
+let valid = ${checks[0]};\n`
+        for (let i = 1; i < checks.length - 1; i++) {
+            result += `valid = ${checks[i]} && valid;\n`
+        }
+        result += `return ${checks[checks.length - 1]} && valid
+})()`
+        return result
+    }
+
     get data() {
         return this.path.toPropChain()
     }
@@ -54,14 +68,14 @@ export class Compilation {
     }
 
     arrayOf(node: Node) {
-        // TODO: increment
+        // TODO: increment. does this work for logging?
         this.path.push("${i}")
         const result = `(() => {
-    let isValid = true;
+    let valid = true;
     for(let i = 0; i < ${this.data}.length; i++) {
-        isValid = ${this.node(node)} && isValid;
+        valid = ${this.node(node)} && isValid;
     }
-    return isValid
+    return valid
 })()`
         this.path.pop()
         return result
