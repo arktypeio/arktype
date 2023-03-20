@@ -12,7 +12,7 @@ import {
 } from "./branch.ts"
 import type { Compilation } from "./compile.ts"
 import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
-import { equality, IntersectionState, isEquality } from "./compose.ts"
+import { BaseNode, equality, IntersectionState, isEquality } from "./compose.ts"
 import { compileBranches } from "./discriminate.ts"
 import type { DomainsNode } from "./node.ts"
 import type { LiteralRules } from "./rules/rules.ts"

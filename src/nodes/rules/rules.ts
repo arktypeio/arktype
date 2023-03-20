@@ -9,9 +9,11 @@ import type {
 import type { Compilation } from "../compile.ts"
 import type { IntersectionState, Intersector } from "../compose.ts"
 import {
+    BaseNode,
     composeIntersection,
     composeKeyedIntersection,
-    equality
+    equality,
+    KeyedNode
 } from "../compose.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { compileDivisor, intersectDivisors } from "./divisor.ts"
@@ -22,6 +24,14 @@ import type { Range } from "./range.ts"
 import { compileRange, rangeIntersection } from "./range.ts"
 import { compileRegex, regexIntersection } from "./regex.ts"
 import { compileValueCheck } from "./value.ts"
+
+export abstract class RuleNode<def> extends BaseNode<def> {}
+
+export class RulesNode<domain extends Domain = Domain> extends KeyedNode<{
+    [ruleName in RuleName]?: RuleNode<unknown>
+}> {
+    readonly onEmpty = "bubble"
+}
 
 export type NarrowableRules<$ = Dict> = {
     readonly regex?: CollapsibleList<string>

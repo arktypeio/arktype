@@ -1,3 +1,4 @@
+import { intersection } from "zod"
 import { compileDisjointReasonsMessage } from "../parse/ast/intersection.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
@@ -11,9 +12,10 @@ import {
     IntersectionState,
     isDisjoint,
     isEquality,
+    KeyedNode,
     undefinedOperandsMessage
 } from "./compose.ts"
-import type { Predicate } from "./predicate.ts"
+import type { Predicate, PredicateNode } from "./predicate.ts"
 import {
     isLiteralCondition,
     predicateIntersection,
@@ -28,8 +30,12 @@ export type Identifier<$ = Dict> = stringKeyOf<$>
 
 export type ResolvedNode<$ = Dict> = DomainsNode<$> | ConfigNode<$>
 
-export class _ResolvedNode<$ = Dict> {
-    constructor(public domains: DomainsNode<$>, public config?: TypeConfig) {}
+export class TypeNode extends KeyedNode<TypeNodeDefinition> {
+    readonly onEmpty = "omit"
+}
+
+export type TypeNodeDefinition = {
+    readonly [domain in Domain]?: PredicateNode<domain>
 }
 
 export type ConfigNode<$ = Dict> = {

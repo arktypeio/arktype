@@ -211,3 +211,57 @@ export const composeKeyedIntersection =
         }
         return lImpliesR ? (rImpliesL ? equality() : l) : rImpliesL ? r : result
     }
+
+export abstract class BaseNode<def> {
+    constructor(public def: def) {}
+
+    protected create(def: def): this {
+        return new (this.constructor as any)(def)
+    }
+
+    abstract intersection(
+        node: this,
+        state: IntersectionState
+    ): IntersectionResult<this>
+}
+
+export abstract class KeyedNode<
+    def extends Dict<string, BaseNode<unknown>>
+> extends BaseNode<def> {
+    abstract onEmpty: "omit" | "bubble"
+
+    intersection(node: this, state: IntersectionState) {
+        const result = {} as mutable<def>
+        const keys = keysOf({ ...this.def, ...node.def })
+        let thisImpliesNode = true
+        let nodeImpliesThis = true
+        for (const k of keys) {
+            const keyResult = this.def[k].intersection(node.def[k], state)
+            if (isEquality(keyResult)) {
+                if (this.def[k] !== undefined) {
+                    result[k] = this.def[k]
+                }
+            } else if (isDisjoint(keyResult)) {
+                if (this.onEmpty === "omit") {
+                    thisImpliesNode = false
+                    nodeImpliesThis = false
+                } else {
+                    return empty
+                }
+            } else {
+                if (keyResult !== undefined) {
+                    result[k] = keyResult
+                }
+                thisImpliesNode &&= keyResult === this.def[k]
+                nodeImpliesThis &&= keyResult === node.def[k]
+            }
+        }
+        return thisImpliesNode
+            ? nodeImpliesThis
+                ? equality()
+                : this
+            : nodeImpliesThis
+            ? node
+            : this.create(result)
+    }
+}
