@@ -4,7 +4,7 @@ import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwInternalError, throwParseError } from "../utils/errors.ts"
 import type { defined, Dict, mutable, stringKeyOf } from "../utils/generics.ts"
 import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
-import type { Intersector } from "./compose.ts"
+import type { IntersectionResult, Intersector } from "./compose.ts"
 import {
     anonymousDisjoint,
     composeKeyedIntersection,

@@ -35,6 +35,13 @@ export type Predicate<
     ? true | CollapsibleList<Branch>
     : true | CollapsibleList<Branch<domain, $>>
 
+export type DomainComparison = {
+    subtypes: number[]
+    supertypes: number[]
+    equalities: [lIndex: number, rIndex: number][]
+    intersections: Branches
+}
+
 export class DomainNode<domain extends Domain = Domain> extends BaseNode<
     Branch<domain>[]
 > {
@@ -46,23 +53,13 @@ export class DomainNode<domain extends Domain = Domain> extends BaseNode<
         // state.domain = domain
         const comparison = this.compare(node, state)
         const resultBranches = [
-            ...comparison.distinctIntersections,
-            ...comparison.equalities.map(
-                (indices) => comparison.lBranches[indices[0]]
-            ),
-            ...comparison.lExtendsR.map(
-                (lIndex) => comparison.lBranches[lIndex]
-            ),
-            ...comparison.rExtendsL.map(
-                (rIndex) => comparison.rBranches[rIndex]
-            )
+            ...comparison.intersections,
+            ...comparison.equalities.map((indices) => this.def[indices[0]]),
+            ...comparison.subtypes.map((lIndex) => this.def[lIndex]),
+            ...comparison.supertypes.map((rIndex) => node.def[rIndex])
         ]
         if (resultBranches.length === 0) {
-            state.addDisjoint(
-                "union",
-                comparison.lBranches,
-                comparison.rBranches
-            )
+            state.addDisjoint("union", this.def, node.def)
         }
         return resultBranches.length === 1 ? resultBranches[0] : resultBranches
     }
@@ -86,16 +83,16 @@ export class DomainNode<domain extends Domain = Domain> extends BaseNode<
             //       ])
         }
         const resultBranches = [
-            ...comparison.lBranches.filter(
+            ...this.def.filter(
                 (_, lIndex) =>
-                    !comparison.lExtendsR.includes(lIndex) &&
+                    !comparison.subtypes.includes(lIndex) &&
                     !comparison.equalities.some(
                         (indexPair) => indexPair[0] === lIndex
                     )
             ),
-            ...comparison.rBranches.filter(
+            ...node.def.filter(
                 (_, rIndex) =>
-                    !comparison.rExtendsL.includes(rIndex) &&
+                    !comparison.supertypes.includes(rIndex) &&
                     !comparison.equalities.some(
                         (indexPair) => indexPair[1] === rIndex
                     )
@@ -105,13 +102,11 @@ export class DomainNode<domain extends Domain = Domain> extends BaseNode<
     }
 
     compare(predicate: this, state: IntersectionState) {
-        // TODO: could this be renamed to subtypes/supertypes relative to the
-        // current instance?
-        const result: BranchesComparison = {
-            lExtendsR: [],
-            rExtendsL: [],
+        const result: DomainComparison = {
+            subtypes: [],
+            supertypes: [],
             equalities: [],
-            distinctIntersections: []
+            intersections: []
         }
         const pairs = predicate.def.map((condition) => ({
             condition,
@@ -129,14 +124,14 @@ export class DomainNode<domain extends Domain = Domain> extends BaseNode<
                     // doesn't tell us about any redundancies or add a distinct pair
                     return null
                 } else if (subresult === l) {
-                    result.lExtendsR.push(lIndex)
+                    result.subtypes.push(lIndex)
                     // If l is a subtype of the current r branch, intersections
                     // with the remaining branches of r won't lead to distinct
                     // branches, so we set a flag indicating we can skip them.
                     lImpliesR = true
                     return null
                 } else if (subresult === r) {
-                    result.rExtendsL.push(rIndex)
+                    result.supertypes.push(rIndex)
                     // If r is a subtype of the current l branch, it is removed
                     // from pairsByR because future intersections won't lead to
                     // distinct branches.
@@ -168,9 +163,7 @@ export class DomainNode<domain extends Domain = Domain> extends BaseNode<
                 }
             }
         })
-        result.distinctIntersections = pairs.flatMap(
-            (pairs) => pairs.distinct ?? []
-        )
+        result.intersections = pairs.flatMap((pairs) => pairs.distinct ?? [])
         return result
     }
 }

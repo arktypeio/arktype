@@ -10,7 +10,7 @@ import { type } from "../../src/main.ts"
 //             'typeof data === "string" || !state.problems.addNew("domain", "string", { path: []})'
 //         ])
 //         attest(t.check("foo")).snap({ data: "foo" })
-//         attest(t.check(5).problems?.summary)R.snap()
+//         attest(t.check(5).problems?.summary).snap()
 //     })
 // })
 
