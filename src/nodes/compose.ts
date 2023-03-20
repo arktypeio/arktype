@@ -224,6 +224,8 @@ export abstract class BaseNode<def> {
         state: IntersectionState
     ): IntersectionResult<this>
 
+    // TODO: Add serialize/deserialize for constructor
+
     // TODO: Add compile
 
     // TODO: make all comparable as type nodes? e.g. a rule could be checked
