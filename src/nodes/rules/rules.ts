@@ -27,7 +27,7 @@ import { compileValueCheck } from "./value.ts"
 
 export abstract class RuleNode<def> extends BaseNode<def> {}
 
-export class RulesNode<domain extends Domain = Domain> extends KeyedNode<{
+export class BranchNode<domain extends Domain = Domain> extends KeyedNode<{
     [ruleName in RuleName]?: RuleNode<unknown>
 }> {
     readonly onEmpty = "bubble"

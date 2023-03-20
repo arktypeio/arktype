@@ -26,35 +26,6 @@ export type PrerequisiteProp<$ = Dict, node extends Node<$> = Node<$>> = [
     node
 ]
 
-export type PropsRecordKey = "distilledProps" | "strictProps"
-
-export type PropsRecordEntry<kind extends PropsRecordKey = PropsRecordKey> = [
-    kind,
-    {
-        required: { [propKey in string]: string }
-        optional: { [propKey in string]: string }
-        index?: string
-    }
-]
-
-export type DistilledPropsEntry = PropsRecordEntry<"distilledProps">
-
-export type StrictPropsEntry = PropsRecordEntry<"strictProps">
-
-export type PropEntry =
-    | RequiredPropEntry
-    | OptionalPropEntry
-    | IndexPropEntry
-    | PrerequisitePropEntry
-
-export type PrerequisitePropEntry = ["prerequisiteProp", TraversalProp]
-
-export type RequiredPropEntry = ["requiredProp", TraversalProp]
-
-export type OptionalPropEntry = ["optionalProp", TraversalProp]
-
-export type IndexPropEntry = ["indexProp", string]
-
 export type TraversalProp<
     key extends string = string,
     node extends string = string

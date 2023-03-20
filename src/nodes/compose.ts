@@ -223,6 +223,11 @@ export abstract class BaseNode<def> {
         node: this,
         state: IntersectionState
     ): IntersectionResult<this>
+
+    // TODO: Add compile
+
+    // TODO: make all comparable as type nodes? e.g. a rule could be checked
+    // against an entire type directly
 }
 
 export abstract class KeyedNode<

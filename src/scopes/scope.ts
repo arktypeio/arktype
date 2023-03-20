@@ -380,7 +380,9 @@ export class Scope<context extends ScopeContext = any> {
                     ? { config, node: this.resolveTypeNode(root) }
                     : root
             )
-            // TODO: refactor
+            // TODO: refactor TODO: each node should compile completely or until
+            // it hits a loop with itself. it should rely on other nodes that
+            // have been compiled the same way, parametrized with the current path.
             t.js = new Compilation(t).node(t.node)
             t.traverse = createTraverse(t.name, t.js)
             t.check = (data) => {
