@@ -1,21 +1,67 @@
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
+import { domainDescriptions } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
-import type { defined, Dict, mutable, stringKeyOf } from "../utils/generics.ts"
-import { hasKey, keysOf } from "../utils/generics.ts"
-import { KeyedNode, undefinedOperandsMessage } from "./compose.ts"
+import type { Dict, mutable } from "../utils/generics.ts"
+import { defined, hasKey, hasKeys, keysOf } from "../utils/generics.ts"
+import type { IntersectionResult, IntersectionState } from "./compose.ts"
+import { BaseNode, KeyedNode } from "./compose.ts"
 import type { DomainNode, Predicate } from "./predicate.ts"
 import { isLiteralCondition, predicateUnion } from "./predicate.ts"
 import { mappedKeys } from "./rules/props.ts"
 import type { LiteralRules } from "./rules/rules.ts"
 
-export type TypeJson<$ = Dict> = DomainsNode<$> | ConfigNode<$>
+export type TypeJson<$ = Dict> = {
+    readonly [domain in Domain]?: Predicate<domain, $>
+} //| ConfigNode<$>
 
-export class TypeNode extends KeyedNode<TypeNodeDefinition> {
-    readonly onEmpty = "omit"
+export type TypeDomains = {
+    readonly [domain in Domain]?: DomainNode<domain>
+}
+
+const domainKeys = keysOf(domainDescriptions)
+
+export class TypeNode extends BaseNode {
+    constructor(public domains: TypeDomains) {
+        super()
+    }
+
+    intersect(node: this, s: IntersectionState) {
+        const intersection: IntersectionResult<mutable<TypeDomains>> = {
+            result: {},
+            isSubtype: true,
+            isSupertype: true,
+            isDisjoint: false
+        }
+        let domain: Domain
+        for (domain of domainKeys) {
+            if (hasKey(this.domains, domain)) {
+                if (hasKey(node.domains, domain)) {
+                    const domainIntersection = this.domains[
+                        domain
+                    ].intersection(node.domains[domain], s)
+                    if (domainIntersection.isDisjoint) {
+                        intersection.isSubtype = false
+                        intersection.isSupertype = false
+                        continue
+                    }
+                    intersection.result[domain] = domainIntersection.result
+                    intersection.isSubtype &&= domainIntersection.isSubtype
+                    intersection.isSupertype &&= domainIntersection.isSupertype
+                }
+            }
+        }
+        return hasKeys(intersection.result)
+            ? intersection
+            : s.addDisjoint(
+                  "domain",
+                  keysOf(this.domains),
+                  keysOf(node.domains)
+              )
+    }
 
     union(node: this, type: Type) {
-        const result = {} as mutable<DomainsNode>
+        const result = {} as mutable<DomainsJson>
         const domains = keysOf({ ...this.json, ...node.json })
         for (const domain of domains) {
             result[domain] = hasKey(this.json, domain)
@@ -45,23 +91,6 @@ export class TypeNode extends KeyedNode<TypeNodeDefinition> {
         }
     }
 
-    // if (l === undefined) {
-    //     return r === undefined
-    //         ? throwInternalError(undefinedOperandsMessage)
-    //         : undefined
-    // }
-    // if (r === undefined) {
-    //     return undefined
-    // }
-    // return predicateIntersection(domain, l, r, context)
-
-    // if (typeof result === "object" && !hasKeys(result)) {
-    //     return hasKeys(state.disjoints)
-    //         ? anonymousDisjoint()
-    //         : state.addDisjoint("domain", keysOf(lDomains), keysOf(rDomains))
-    // }
-    // return result === lDomains ? l : result === rDomains ? r : result
-
     // const state = new IntersectionState(type, "&")
     // const result = nodeIntersection(l, r, state)
     // return isDisjoint(result)
@@ -71,21 +100,10 @@ export class TypeNode extends KeyedNode<TypeNodeDefinition> {
     //     : result
 }
 
-export type TypeNodeDefinition = {
-    readonly [domain in Domain]?: DomainNode<domain>
-}
-
-export type ConfigNode<$ = Dict> = {
-    config: TypeConfig
-    node: DomainsNode<$>
-}
-
-export const isConfigNode = (node: ResolvedNode): node is ConfigNode =>
-    "config" in node
-
-export type DomainsNode<$ = Dict> = {
-    readonly [domain in Domain]?: Predicate<domain, $>
-}
+// export type ConfigNode<$ = Dict> = {
+//     config: TypeConfig
+//     node: DomainsJson<$>
+// }
 
 export type LiteralNode<
     domain extends Domain = Domain,
@@ -94,24 +112,24 @@ export type LiteralNode<
     [k in domain]: LiteralRules<domain, value>
 }
 
-export const isLiteralNode = <domain extends Domain>(
-    node: ResolvedNode,
-    domain: domain
-): node is LiteralNode<domain> => {
-    return (
-        resolutionExtendsDomain(node, domain) &&
-        isLiteralCondition(node[domain])
-    )
-}
+// export const isLiteralNode = <domain extends Domain>(
+//     node: ResolvedNode,
+//     domain: domain
+// ): node is LiteralNode<domain> => {
+//     return (
+//         resolutionExtendsDomain(node, domain) &&
+//         isLiteralCondition(node[domain])
+//     )
+// }
 
-export type DomainSubtypeResolution<domain extends Domain> = {
-    readonly [k in domain]: defined<DomainsNode[domain]>
-}
+// export type DomainSubtypeResolution<domain extends Domain> = {
+//     readonly [k in domain]: defined<DomainsNode[domain]>
+// }
 
-export const resolutionExtendsDomain = <domain extends Domain>(
-    resolution: ResolvedNode,
-    domain: domain
-): resolution is DomainSubtypeResolution<domain> => {
-    const domains = keysOf(resolution)
-    return domains.length === 1 && domains[0] === domain
-}
+// export const resolutionExtendsDomain = <domain extends Domain>(
+//     resolution: ResolvedNode,
+//     domain: domain
+// ): resolution is DomainSubtypeResolution<domain> => {
+//     const domains = keysOf(resolution)
+//     return domains.length === 1 && domains[0] === domain
+// }

@@ -1,4 +1,4 @@
-import type { DomainsNode } from "../../nodes/node.ts"
+import type { DomainsJson } from "../../nodes/node.ts"
 import { isConfigNode, rootIntersection } from "../../nodes/node.ts"
 import type { TraversalState } from "../../nodes/traverse.ts"
 import type { asIn } from "../../scopes/type.ts"
@@ -25,7 +25,7 @@ export const parseNarrowTuple: PostfixParser<"=>"> = (def, ctx) => {
         ctx.type
     )
     return hasConfig
-        ? { config: resolution.config, node: result as DomainsNode }
+        ? { config: resolution.config, node: result as DomainsJson }
         : result
 }
 

@@ -1,4 +1,4 @@
-import type { DomainsNode } from "../../nodes/node.ts"
+import type { DomainsJson } from "../../nodes/node.ts"
 import type { NarrowableRules } from "../../nodes/rules/rules.ts"
 import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
@@ -51,7 +51,7 @@ export const distributeFunctionToNode = <
     ruleKey extends keyof NarrowableRules
 >(
     distributableFunction: distributable<f>,
-    node: DomainsNode,
+    node: DomainsJson,
     ctx: ParseContext,
     ruleKey: ruleKey
 ): DistributedFunctionNode<f, ruleKey> => {

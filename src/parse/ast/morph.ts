@@ -1,6 +1,6 @@
 import type { Branch, MetaBranch } from "../../nodes/branch.ts"
 import { isTransformationBranch } from "../../nodes/branch.ts"
-import type { DomainsNode } from "../../nodes/node.ts"
+import type { DomainsJson } from "../../nodes/node.ts"
 import type { Problem } from "../../nodes/problems.ts"
 import type { CheckResult, TraversalState } from "../../nodes/traverse.ts"
 import type { asIn, asOut } from "../../scopes/type.ts"
@@ -22,7 +22,7 @@ export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
     const morph = def[2] as Morph
     ctx.type.includesMorph = true
     let domain: Domain
-    const result: mutable<DomainsNode> = {}
+    const result: mutable<DomainsJson> = {}
     for (domain in resolution) {
         const predicate = resolution[domain]
         if (predicate === true) {

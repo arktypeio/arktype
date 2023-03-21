@@ -22,7 +22,7 @@ import {
     isEquality
 } from "./compose.ts"
 import { compileBranches } from "./discriminate.ts"
-import type { DomainsNode } from "./node.ts"
+import type { DomainsJson } from "./node.ts"
 import type { LiteralRules } from "./rules/rules.ts"
 
 /** If scope is provided, we also narrow each predicate to match its domain.
@@ -225,7 +225,7 @@ export const comparePredicates = (
     return comparison
 }
 
-export const predicateIntersection: KeyIntersectionFn<Required<DomainsNode>> = (
+export const predicateIntersection: KeyIntersectionFn<Required<DomainsJson>> = (
     domain,
     l,
     r,

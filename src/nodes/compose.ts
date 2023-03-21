@@ -5,23 +5,22 @@ import { keysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { Branches } from "./branch.ts"
 import type { Compilation } from "./compile.ts"
 import type { Range } from "./rules/range.ts"
 import type { LiteralRules, NarrowableRules } from "./rules/rules.ts"
 
-export type TypeRelation = OverlappingTypeRelation | "disjoint"
-
-type OverlappingTypeRelation = "subtype" | "supertype" | "equality" | "overlap"
-
 export type IntersectionResult<t> =
     | {
-          value: t
-          relation: OverlappingTypeRelation
+          result: t
+          isSubtype: boolean
+          isSupertype: boolean
+          isDisjoint: false
       }
     | {
-          value: DisjointContext
-          relation: "disjoint"
+          result: DisjointContext
+          isSubtype: false
+          isSupertype: false
+          isDisjoint: true
       }
 
 export type DisjointKinds = extend<
@@ -108,10 +107,15 @@ export class IntersectionState {
         kind: kind,
         l: DisjointKinds[kind]["l"],
         r: DisjointKinds[kind]["r"]
-    ) {
+    ): IntersectionResult<never> {
         const result = { kind, l, r }
         this.#disjoints[`${this.path}`] = result
-        return result
+        return {
+            result,
+            isSubtype: false,
+            isSupertype: false,
+            isDisjoint: true
+        }
     }
 }
 
@@ -121,10 +125,8 @@ export type DisjointContext<kind extends DisjointKind = DisjointKind> = {
     kind: kind
 } & DisjointKinds[kind]
 
-export abstract class BaseNode<json> {
-    constructor(public json: json) {}
-
-    abstract intersection(
+export abstract class BaseNode {
+    abstract intersect(
         node: this,
         s: IntersectionState
     ): IntersectionResult<this>
@@ -135,11 +137,11 @@ export abstract class BaseNode<json> {
 }
 
 export abstract class KeyedNode<
-    JSON extends Dict<string, BaseNode<unknown>>
-> extends BaseNode<JSON> {
+    JSON extends Dict<string, BaseNode>
+> extends BaseNode {
     abstract onEmpty: "omit" | "bubble"
 
-    intersection(node: this, state: IntersectionState) {
+    intersect(node: this, state: IntersectionState) {
         const result = {} as mutable<JSON>
         const keys = keysOf({ ...this.json, ...node.json })
         let thisImpliesNode = true

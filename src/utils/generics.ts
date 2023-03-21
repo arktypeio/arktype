@@ -134,10 +134,10 @@ export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
     return result as evaluate<keyof t>[]
 }
 
-export const hasKey = <o, k extends string>(
+export const hasKey = <o, k extends keyof o>(
     o: o,
     k: k
-): o is Extract<o, { [_ in k]: {} }> => {
+): o is requireKeys<o, k> => {
     const valueAtKey = (o as any)?.[k]
     return valueAtKey !== undefined && valueAtKey !== null
 }

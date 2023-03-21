@@ -1,5 +1,5 @@
 import { Compilation, createTraverse } from "../nodes/compile.ts"
-import type { DomainsNode, Node, ResolvedNode } from "../nodes/node.ts"
+import type { DomainsJson, Node, ResolvedNode } from "../nodes/node.ts"
 import { isConfigNode } from "../nodes/node.ts"
 import type { ProblemCode, ProblemOptionsByCode } from "../nodes/problems.ts"
 import { CheckResult, TraversalState } from "../nodes/traverse.ts"
@@ -333,7 +333,7 @@ export class Scope<context extends ScopeContext = any> {
             : node
     }
 
-    resolveTypeNode(node: Node): DomainsNode {
+    resolveTypeNode(node: Node): DomainsJson {
         const resolution = this.resolveNode(node)
         return isConfigNode(resolution) ? resolution.node : resolution
     }
