@@ -27,12 +27,10 @@ export class TypeNode extends BaseNode {
     }
 
     intersect(node: this, s: IntersectionState) {
-        const intersection: IntersectionResult<mutable<TypeDomains>> = {
-            result: {},
-            isSubtype: true,
-            isSupertype: true,
-            isDisjoint: false
-        }
+        const result: mutable<TypeDomains> = {}
+        let isSubtype = true
+        let isSupertype = true
+        let isDisjoint = true
         let domain: Domain
         for (domain of domainKeys) {
             if (hasKey(this.domains, domain)) {
@@ -41,23 +39,30 @@ export class TypeNode extends BaseNode {
                         domain
                     ].intersection(node.domains[domain], s)
                     if (domainIntersection.isDisjoint) {
-                        intersection.isSubtype = false
-                        intersection.isSupertype = false
+                        isSubtype = false
+                        isSupertype = false
                         continue
                     }
-                    intersection.result[domain] = domainIntersection.result
-                    intersection.isSubtype &&= domainIntersection.isSubtype
-                    intersection.isSupertype &&= domainIntersection.isSupertype
+                    result[domain] = domainIntersection.result
+                    isSubtype &&= domainIntersection.isSubtype
+                    isSupertype &&= domainIntersection.isSupertype
+                    isDisjoint = false
                 }
             }
         }
-        return hasKeys(intersection.result)
-            ? intersection
-            : s.addDisjoint(
-                  "domain",
-                  keysOf(this.domains),
-                  keysOf(node.domains)
-              )
+        if (isDisjoint) {
+            return s.addDisjoint(
+                "domain",
+                keysOf(this.domains),
+                keysOf(node.domains)
+            )
+        }
+        return {
+            isSubtype,
+            isSupertype,
+            isDisjoint,
+            result: isSupertype ? this : isSubtype ? node : new TypeNode(result)
+        }
     }
 
     union(node: this, type: Type) {
