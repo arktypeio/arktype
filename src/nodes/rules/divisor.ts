@@ -1,5 +1,5 @@
 import type { Compilation } from "../compile.ts"
-import { composeIntersection } from "../compose.ts"
+import { BaseNode } from "../compose.ts"
 
 export const intersectDivisors = composeIntersection<number>((l, r) =>
     Math.abs((l * r) / greatestCommonDivisor(l, r))
@@ -20,3 +20,5 @@ const greatestCommonDivisor = (l: number, r: number) => {
     }
     return greatestCommonDivisor
 }
+
+export class DivisibilityRule extends BaseNode<number> {}

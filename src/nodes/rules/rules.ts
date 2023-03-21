@@ -7,14 +7,8 @@ import type {
     evaluate
 } from "../../utils/generics.ts"
 import type { Compilation } from "../compile.ts"
-import type { IntersectionState, Intersector } from "../compose.ts"
-import {
-    BaseNode,
-    composeIntersection,
-    composeKeyedIntersection,
-    equality,
-    KeyedNode
-} from "../compose.ts"
+import type { IntersectionState } from "../compose.ts"
+import { BaseNode, KeyedNode } from "../compose.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
 import { compileDivisor, intersectDivisors } from "./divisor.ts"
 import { compileInstance, instanceIntersection } from "./instance.ts"
@@ -25,12 +19,49 @@ import { compileRange, rangeIntersection } from "./range.ts"
 import { compileRegex, regexIntersection } from "./regex.ts"
 import { compileValueCheck } from "./value.ts"
 
-export abstract class RuleNode<def> extends BaseNode<def> {}
+export abstract class RuleNode<JSON> extends BaseNode<JSON> {
+    intersection(node: this, s: IntersectionState): IntersectionResult<this> {}
+}
 
 export class BranchNode<domain extends Domain = Domain> extends KeyedNode<{
     [ruleName in RuleName]?: RuleNode<unknown>
 }> {
     readonly onEmpty = "bubble"
+
+    compile(c: Compilation): string {
+        let result = ""
+        if (this.json.value) {
+            result += compileValueCheck(this.json.value, c)
+        }
+        if (this.json.instance) {
+            result += compileInstance(this.json.instance, c)
+        }
+
+        const shallowChecks: string[] = []
+
+        if (this.json.divisor) {
+            shallowChecks.push(compileDivisor(this.json.divisor, c))
+        }
+        if (this.json.range) {
+            shallowChecks.push(compileRange(this.json.range, c))
+        }
+        if (this.json.regex) {
+            shallowChecks.push(compileRegex(this.json.regex, c))
+        }
+
+        if (shallowChecks.length) {
+            result += " && " + c.mergeChecks(shallowChecks)
+        }
+
+        if (this.json.props) {
+            result += " && "
+            result += compileProps(this.json.props, c)
+        }
+
+        if (this.json.narrow) {
+        }
+        return result
+    }
 }
 
 export type NarrowableRules<$ = Dict> = {
@@ -87,56 +118,7 @@ export const rulesIntersection: Intersector<Rules> = (l, r, state) =>
             : state.addDisjoint("rightAssignability", l, r)
         : narrowableRulesIntersection(l, r, state)
 
-const narrowIntersection =
-    composeIntersection<CollapsibleList<Narrow>>(collapsibleListUnion)
-
-export const narrowableRulesIntersection =
-    composeKeyedIntersection<NarrowableRules>(
-        {
-            divisor: intersectDivisors,
-            regex: regexIntersection,
-            props: propsIntersection,
-            instance: instanceIntersection,
-            range: rangeIntersection,
-            narrow: narrowIntersection
-        },
-        { onEmpty: "bubble" }
-    )
-
-export const compileRules = (rules: UnknownRules, c: Compilation) => {
-    let result = ""
-    if (rules.value) {
-        result += compileValueCheck(rules.value, c)
-    }
-    if (rules.instance) {
-        result += compileInstance(rules.instance, c)
-    }
-
-    const shallowChecks: string[] = []
-
-    if (rules.divisor) {
-        shallowChecks.push(compileDivisor(rules.divisor, c))
-    }
-    if (rules.range) {
-        shallowChecks.push(compileRange(rules.range, c))
-    }
-    if (rules.regex) {
-        shallowChecks.push(compileRegex(rules.regex, c))
-    }
-
-    if (shallowChecks.length) {
-        result += " && " + c.mergeChecks(shallowChecks)
-    }
-
-    if (rules.props) {
-        result += " && "
-        result += compileProps(rules.props, c)
-    }
-
-    if (rules.narrow) {
-    }
-    return result
-}
+export const compileRules = (rules: UnknownRules, c: Compilation) => {}
 
 type UnknownRules = NarrowableRules & Partial<LiteralRules>
 

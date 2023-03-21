@@ -1,36 +1,74 @@
-import { compileDisjointReasonsMessage } from "../parse/ast/intersection.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
-import { throwInternalError, throwParseError } from "../utils/errors.ts"
+import { throwInternalError } from "../utils/errors.ts"
 import type { defined, Dict, mutable, stringKeyOf } from "../utils/generics.ts"
-import { hasKey, hasKeys, keysOf } from "../utils/generics.ts"
-import type { IntersectionResult, Intersector } from "./compose.ts"
-import {
-    anonymousDisjoint,
-    composeKeyedIntersection,
-    IntersectionState,
-    isDisjoint,
-    isEquality,
-    KeyedNode,
-    undefinedOperandsMessage
-} from "./compose.ts"
+import { hasKey, keysOf } from "../utils/generics.ts"
+import { KeyedNode, undefinedOperandsMessage } from "./compose.ts"
 import type { DomainNode, Predicate } from "./predicate.ts"
-import {
-    isLiteralCondition,
-    predicateIntersection,
-    predicateUnion
-} from "./predicate.ts"
+import { isLiteralCondition, predicateUnion } from "./predicate.ts"
 import { mappedKeys } from "./rules/props.ts"
 import type { LiteralRules } from "./rules/rules.ts"
 
-export type Node<$ = Dict> = Identifier<$> | ResolvedNode<$>
-
-export type Identifier<$ = Dict> = stringKeyOf<$>
-
-export type ResolvedNode<$ = Dict> = DomainsNode<$> | ConfigNode<$>
+export type TypeJson<$ = Dict> = DomainsNode<$> | ConfigNode<$>
 
 export class TypeNode extends KeyedNode<TypeNodeDefinition> {
     readonly onEmpty = "omit"
+
+    union(node: this, type: Type) {
+        const result = {} as mutable<DomainsNode>
+        const domains = keysOf({ ...this.json, ...node.json })
+        for (const domain of domains) {
+            result[domain] = hasKey(this.json, domain)
+                ? hasKey(node.json, domain)
+                    ? predicateUnion(
+                          domain,
+                          this.json[domain],
+                          node.json[domain],
+                          type
+                      )
+                    : this.json[domain]
+                : hasKey(node.json[domain], domain)
+                ? node.json[domain]
+                : throwInternalError(undefinedOperandsMessage)
+        }
+        return result
+    }
+
+    toArray() {
+        return {
+            object: {
+                instance: Array,
+                props: {
+                    [mappedKeys.index]: this
+                }
+            }
+        }
+    }
+
+    // if (l === undefined) {
+    //     return r === undefined
+    //         ? throwInternalError(undefinedOperandsMessage)
+    //         : undefined
+    // }
+    // if (r === undefined) {
+    //     return undefined
+    // }
+    // return predicateIntersection(domain, l, r, context)
+
+    // if (typeof result === "object" && !hasKeys(result)) {
+    //     return hasKeys(state.disjoints)
+    //         ? anonymousDisjoint()
+    //         : state.addDisjoint("domain", keysOf(lDomains), keysOf(rDomains))
+    // }
+    // return result === lDomains ? l : result === rDomains ? r : result
+
+    // const state = new IntersectionState(type, "&")
+    // const result = nodeIntersection(l, r, state)
+    // return isDisjoint(result)
+    //     ? throwParseError(compileDisjointReasonsMessage(state.disjoints))
+    //     : isEquality(result)
+    //     ? l
+    //     : result
 }
 
 export type TypeNodeDefinition = {
@@ -47,66 +85,6 @@ export const isConfigNode = (node: ResolvedNode): node is ConfigNode =>
 
 export type DomainsNode<$ = Dict> = {
     readonly [domain in Domain]?: Predicate<domain, $>
-}
-
-export const nodeIntersection: Intersector<Node> = (l, r, state) => {
-    state.domain = undefined
-    const lDomains = state.type.scope.resolveTypeNode(l)
-    const rDomains = state.type.scope.resolveTypeNode(r)
-    const result = typeNodeIntersection(lDomains, rDomains, state)
-    if (typeof result === "object" && !hasKeys(result)) {
-        return hasKeys(state.disjoints)
-            ? anonymousDisjoint()
-            : state.addDisjoint("domain", keysOf(lDomains), keysOf(rDomains))
-    }
-    return result === lDomains ? l : result === rDomains ? r : result
-}
-
-const typeNodeIntersection = composeKeyedIntersection<DomainsNode>(
-    (domain, l, r, context) => {
-        if (l === undefined) {
-            return r === undefined
-                ? throwInternalError(undefinedOperandsMessage)
-                : undefined
-        }
-        if (r === undefined) {
-            return undefined
-        }
-        return predicateIntersection(domain, l, r, context)
-    },
-    { onEmpty: "omit" }
-)
-
-export const rootIntersection = (l: Node, r: Node, type: Type): Node => {
-    const state = new IntersectionState(type, "&")
-    const result = nodeIntersection(l, r, state)
-    return isDisjoint(result)
-        ? throwParseError(compileDisjointReasonsMessage(state.disjoints))
-        : isEquality(result)
-        ? l
-        : result
-}
-
-export const rootUnion = (l: Node, r: Node, type: Type): ResolvedNode => {
-    const lDomains = type.scope.resolveTypeNode(l)
-    const rDomains = type.scope.resolveTypeNode(r)
-    const result = {} as mutable<DomainsNode>
-    const domains = keysOf({ ...lDomains, ...rDomains })
-    for (const domain of domains) {
-        result[domain] = hasKey(lDomains, domain)
-            ? hasKey(rDomains, domain)
-                ? predicateUnion(
-                      domain,
-                      lDomains[domain],
-                      rDomains[domain],
-                      type
-                  )
-                : lDomains[domain]
-            : hasKey(rDomains, domain)
-            ? rDomains[domain]
-            : throwInternalError(undefinedOperandsMessage)
-    }
-    return result
 }
 
 export type LiteralNode<
@@ -137,12 +115,3 @@ export const resolutionExtendsDomain = <domain extends Domain>(
     const domains = keysOf(resolution)
     return domains.length === 1 && domains[0] === domain
 }
-
-export const toArrayNode = (node: Node): ResolvedNode => ({
-    object: {
-        instance: Array,
-        props: {
-            [mappedKeys.index]: node
-        }
-    }
-})

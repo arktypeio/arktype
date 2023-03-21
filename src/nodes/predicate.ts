@@ -45,21 +45,31 @@ export type DomainComparison = {
 export class DomainNode<domain extends Domain = Domain> extends BaseNode<
     Branch<domain>[]
 > {
+    constructor(predicate: Predicate<domain>) {
+        super()
+        if (predicate === true) {
+            this.json = [{}]
+        } else if (isArray(predicate)) {
+            this.json = predicate
+        } else {
+            this.json = [predicate]
+        }
+    }
+
     intersection(
         node: this,
         state: IntersectionState
     ): IntersectionResult<this> {
-        // TODO: Fix
         // state.domain = domain
         const comparison = this.compare(node, state)
         const resultBranches = [
             ...comparison.intersections,
-            ...comparison.equalities.map((indices) => this.def[indices[0]]),
-            ...comparison.subtypes.map((lIndex) => this.def[lIndex]),
-            ...comparison.supertypes.map((rIndex) => node.def[rIndex])
+            ...comparison.equalities.map((indices) => this.json[indices[0]]),
+            ...comparison.subtypes.map((lIndex) => this.json[lIndex]),
+            ...comparison.supertypes.map((rIndex) => node.json[rIndex])
         ]
         if (resultBranches.length === 0) {
-            state.addDisjoint("union", this.def, node.def)
+            state.addDisjoint("union", this.json, node.json)
         }
         return resultBranches.length === 1 ? resultBranches[0] : resultBranches
     }
@@ -83,14 +93,14 @@ export class DomainNode<domain extends Domain = Domain> extends BaseNode<
             //       ])
         }
         const resultBranches = [
-            ...this.def.filter(
+            ...this.json.filter(
                 (_, lIndex) =>
                     !comparison.subtypes.includes(lIndex) &&
                     !comparison.equalities.some(
                         (indexPair) => indexPair[0] === lIndex
                     )
             ),
-            ...node.def.filter(
+            ...node.json.filter(
                 (_, rIndex) =>
                     !comparison.supertypes.includes(rIndex) &&
                     !comparison.equalities.some(
@@ -108,11 +118,11 @@ export class DomainNode<domain extends Domain = Domain> extends BaseNode<
             equalities: [],
             intersections: []
         }
-        const pairs = predicate.def.map((condition) => ({
+        const pairs = predicate.json.map((condition) => ({
             condition,
             distinct: [] as Branch[] | null
         }))
-        this.def.forEach((l, lIndex) => {
+        this.json.forEach((l, lIndex) => {
             let lImpliesR = false
             const distinct = pairs.map((rPairs, rIndex): Branch | null => {
                 if (lImpliesR || !rPairs.distinct) {
