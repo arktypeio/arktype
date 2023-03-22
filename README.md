@@ -105,6 +105,24 @@ In the meantime, check out the examples here and use the type hints you get to l
 
 <!--@snipEnd -->
 
+## Integrations
+
+### tRPC
+
+ArkType can easily be used with tRPC via the `assert` prop:
+
+```ts
+...
+t.procedure
+  .input(
+    type({
+      name: "string",
+      "age?": "number"
+    }).assert
+  )
+...
+```
+
 ## How?
 
 ArkType's isomorphic parser has parallel static and dynamic implementations. This means as soon as you type a definition in your editor, you'll know the eventual result at runtime.
