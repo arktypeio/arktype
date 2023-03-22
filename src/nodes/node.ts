@@ -1,13 +1,14 @@
-import type { Type, TypeConfig } from "../scopes/type.ts"
+import type { Type } from "../scopes/type.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { domainDescriptions } from "../utils/domains.ts"
 import { throwInternalError } from "../utils/errors.ts"
 import type { Dict, mutable } from "../utils/generics.ts"
-import { defined, hasKey, hasKeys, keysOf } from "../utils/generics.ts"
+import { hasKey, keysOf } from "../utils/generics.ts"
+import type { Compilation } from "./compile.ts"
 import type { IntersectionResult, IntersectionState } from "./compose.ts"
-import { BaseNode, KeyedNode } from "./compose.ts"
+import { BaseNode } from "./compose.ts"
 import type { DomainNode, Predicate } from "./predicate.ts"
-import { isLiteralCondition, predicateUnion } from "./predicate.ts"
+import { predicateUnion } from "./predicate.ts"
 import { mappedKeys } from "./rules/props.ts"
 import type { LiteralRules } from "./rules/rules.ts"
 
@@ -26,7 +27,11 @@ export class TypeNode extends BaseNode {
         super()
     }
 
-    intersect(node: this, s: IntersectionState) {
+    compile(c: Compilation): string {
+        return ""
+    }
+
+    intersect(node: this, s: IntersectionState): IntersectionResult<this> {
         const result: mutable<TypeDomains> = {}
         let isSubtype = true
         let isSupertype = true
@@ -61,7 +66,11 @@ export class TypeNode extends BaseNode {
             isSubtype,
             isSupertype,
             isDisjoint,
-            result: isSupertype ? this : isSubtype ? node : new TypeNode(result)
+            result: isSupertype
+                ? this
+                : isSubtype
+                ? node
+                : (new TypeNode(result) as this)
         }
     }
 
