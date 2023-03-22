@@ -7,26 +7,25 @@ import type {
     evaluate
 } from "../../utils/generics.ts"
 import type { Compilation } from "../compile.ts"
-import type { IntersectionState } from "../compose.ts"
-import { BaseNode, KeyedNode } from "../compose.ts"
-import { collapsibleListUnion } from "./collapsibleSet.ts"
-import { compileDivisor, intersectDivisors } from "./divisor.ts"
-import { compileInstance, instanceIntersection } from "./instance.ts"
+import type { IntersectionResult, IntersectionState } from "../compose.ts"
+import { BaseNode } from "../compose.ts"
+import { compileDivisor } from "./divisor.ts"
+import { compileInstance } from "./instance.ts"
 import type { PropsRule } from "./props.ts"
-import { compileProps, propsIntersection } from "./props.ts"
+import { compileProps } from "./props.ts"
 import type { Range } from "./range.ts"
-import { compileRange, rangeIntersection } from "./range.ts"
-import { compileRegex, regexIntersection } from "./regex.ts"
+import { compileRange } from "./range.ts"
+import { compileRegex } from "./regex.ts"
 import { compileValueCheck } from "./value.ts"
 
-export abstract class RuleNode<JSON> extends BaseNode<JSON> {
-    intersection(node: this, s: IntersectionState): IntersectionResult<this> {}
-}
+export abstract class RuleNode extends BaseNode {}
 
-export class BranchNode<domain extends Domain = Domain> extends KeyedNode<{
-    [ruleName in RuleName]?: RuleNode<unknown>
-}> {
-    readonly onEmpty = "bubble"
+export class BranchNode<domain extends Domain = Domain> {
+    constructor(public domain: domain, public rules: Rules<domain>) {}
+
+    intersect(node: this, s: IntersectionState): IntersectionResult<this> {
+        return this
+    }
 
     compile(c: Compilation): string {
         let result = ""

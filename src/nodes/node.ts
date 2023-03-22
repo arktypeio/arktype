@@ -7,23 +7,18 @@ import { hasKey, keysOf } from "../utils/generics.ts"
 import type { Compilation } from "./compile.ts"
 import type { IntersectionResult, IntersectionState } from "./compose.ts"
 import { BaseNode } from "./compose.ts"
-import type { DomainNode, Predicate } from "./predicate.ts"
-import { predicateUnion } from "./predicate.ts"
 import { mappedKeys } from "./rules/props.ts"
-import type { LiteralRules } from "./rules/rules.ts"
+import type { BranchNode, LiteralRules } from "./rules/rules.ts"
 
-export type TypeJson<$ = Dict> = {
-    readonly [domain in Domain]?: Predicate<domain, $>
-} //| ConfigNode<$>
-
-export type TypeDomains = {
-    readonly [domain in Domain]?: DomainNode<domain>
+export type BranchesComparison = {
+    lStrictSubtypeIndices: number[]
+    rStrictSubtypeIndices: number[]
+    equalIndexPairs: [lIndex: number, rIndex: number][]
+    intersections: BranchNode[]
 }
 
-const domainKeys = keysOf(domainDescriptions)
-
 export class TypeNode extends BaseNode {
-    constructor(public domains: TypeDomains) {
+    constructor(public branches: BranchNode[]) {
         super()
     }
 
@@ -31,68 +26,72 @@ export class TypeNode extends BaseNode {
         return ""
     }
 
-    intersect(node: this, s: IntersectionState): IntersectionResult<this> {
-        const result: mutable<TypeDomains> = {}
-        let isSubtype = true
-        let isSupertype = true
-        let isDisjoint = true
-        let domain: Domain
-        for (domain of domainKeys) {
-            if (hasKey(this.domains, domain)) {
-                if (hasKey(node.domains, domain)) {
-                    const domainIntersection = this.domains[
-                        domain
-                    ].intersection(node.domains[domain], s)
-                    if (domainIntersection.isDisjoint) {
-                        isSubtype = false
-                        isSupertype = false
-                        continue
-                    }
-                    result[domain] = domainIntersection.result
-                    isSubtype &&= domainIntersection.isSubtype
-                    isSupertype &&= domainIntersection.isSupertype
-                    isDisjoint = false
-                }
-            }
-        }
-        if (isDisjoint) {
-            return s.addDisjoint(
-                "domain",
-                keysOf(this.domains),
-                keysOf(node.domains)
+    intersect(node: this, state: IntersectionState): IntersectionResult<this> {
+        // state.domain = domain
+        const comparison = this.compare(node, state)
+        const resultBranches = [
+            ...comparison.intersections,
+            ...comparison.equalIndexPairs.map(
+                (indices) => this.branches[indices[0]]
+            ),
+            ...comparison.subtypeIndices.map((lIndex) => this.branches[lIndex]),
+            ...comparison.supertypeIndices.map(
+                (rIndex) => node.branches[rIndex]
             )
+        ]
+        if (resultBranches.length === 0) {
+            return state.addDisjoint("union", this.branches, node.branches)
         }
         return {
-            isSubtype,
-            isSupertype,
-            isDisjoint,
-            result: isSupertype
-                ? this
-                : isSubtype
-                ? node
-                : (new TypeNode(result) as this)
+            result: new TypeNode([]) as this,
+            isSubtype:
+                comparison.subtypeIndices.length +
+                    comparison.equalIndexPairs.length ===
+                node.branches.length,
+            isSupertype:
+                comparison.supertypeIndices.length +
+                    comparison.equalIndexPairs.length ===
+                this.branches.length,
+            isDisjoint: false
         }
     }
 
-    union(node: this, type: Type) {
-        const result = {} as mutable<DomainsJson>
-        const domains = keysOf({ ...this.json, ...node.json })
-        for (const domain of domains) {
-            result[domain] = hasKey(this.json, domain)
-                ? hasKey(node.json, domain)
-                    ? predicateUnion(
-                          domain,
-                          this.json[domain],
-                          node.json[domain],
-                          type
-                      )
-                    : this.json[domain]
-                : hasKey(node.json[domain], domain)
-                ? node.json[domain]
-                : throwInternalError(undefinedOperandsMessage)
-        }
-        return result
-    }
+    // union(node: this, s: IntersectionState) {
+    //     const state = new IntersectionState(type, "|")
+    //     const comparison = this.compare(node, state)
+    //     if (!isBranchComparison(comparison)) {
+    //         // return isEquality(comparison) || comparison === l
+    //         //     ? r
+    //         //     : comparison === r
+    //         //     ? l
+    //         //     : // if a boolean has multiple branches, neither of which is a
+    //         //     // subtype of the other, it consists of two opposite literals
+    //         //     // and can be simplified to a non-literal boolean.
+    //         //     domain === "boolean"
+    //         //     ? true
+    //         //     : ([emptyRulesIfTrue(l), emptyRulesIfTrue(r)] as [
+    //         //           Branch,
+    //         //           Branch
+    //         //       ])
+    //     }
+    //     const resultBranches = [
+    //         ...this.json.filter(
+    //             (_, lIndex) =>
+    //                 !comparison.subtypes.includes(lIndex) &&
+    //                 !comparison.equalities.some(
+    //                     (indexPair) => indexPair[0] === lIndex
+    //                 )
+    //         ),
+    //         ...node.json.filter(
+    //             (_, rIndex) =>
+    //                 !comparison.supertypes.includes(rIndex) &&
+    //                 !comparison.equalities.some(
+    //                     (indexPair) => indexPair[1] === rIndex
+    //                 )
+    //         )
+    //     ]
+    //     return resultBranches.length === 1 ? resultBranches[0] : resultBranches
+    // }
 
     toArray() {
         return {
@@ -103,6 +102,49 @@ export class TypeNode extends BaseNode {
                 }
             }
         }
+    }
+
+    compare(node: this, state: IntersectionState) {
+        const comparison: BranchesComparison = {
+            lStrictSubtypeIndices: [],
+            rStrictSubtypeIndices: [],
+            equalIndexPairs: [],
+            intersections: []
+        }
+        const rSubtypeIndices: Record<number, true> = {}
+        for (let lIndex = 0; lIndex < this.branches.length; lIndex++) {
+            const intersectionsOfL: BranchNode[] = []
+            for (let rIndex = 0; rIndex < node.branches.length; rIndex++) {
+                if (rSubtypeIndices[rIndex]) {
+                    continue
+                }
+                const intersection = this.branches[lIndex].intersect(
+                    node.branches[rIndex],
+                    state
+                )
+                if (intersection.isDisjoint) {
+                    continue
+                }
+                if (intersection.isSubtype) {
+                    if (intersection.isSupertype) {
+                        rSubtypeIndices[rIndex] = true
+                        comparison.equalIndexPairs.push([lIndex, rIndex])
+                    } else {
+                        comparison.lStrictSubtypeIndices.push(lIndex)
+                    }
+                    intersectionsOfL.length = 0
+                    break
+                }
+                if (intersection.isSupertype) {
+                    rSubtypeIndices[rIndex] = true
+                    comparison.rStrictSubtypeIndices.push(rIndex)
+                } else {
+                    intersectionsOfL.push(intersection.result)
+                }
+            }
+            comparison.intersections.push(...intersectionsOfL)
+        }
+        return comparison
     }
 
     // const state = new IntersectionState(type, "&")
