@@ -1,8 +1,6 @@
 {
-    "extends": "../../tsconfig",
+    "extends": "../configs/tsconfig.json",
     "compilerOptions": {
-        "module": "ESNext",
-        "moduleResolution": "bundler",
         "target": "ES2017",
         "jsx": "react",
         "types": [
@@ -10,8 +8,9 @@
             "@docusaurus/module-type-aliases",
             "@docusaurus/preset-classic"
         ],
-        "lib": ["DOM"]
+        "lib": ["DOM"],
+        // avoid docusaurus config triggering type errors in node_modules
+        "allowJs": true
     },
-    "include": ["src", "docs"],
     "exclude": ["node_modules", "dist"]
 }
