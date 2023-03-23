@@ -1,14 +1,10 @@
 import type { Type } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
-import type { constructor, Dict, extend, mutable } from "../utils/generics.ts"
-import { keysOf } from "../utils/generics.ts"
-import type { DefaultObjectKind } from "../utils/objectKinds.ts"
+import type { constructor, extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { BranchNode, RuleSet } from "./branch.ts"
-import type { Compilation } from "./compile.ts"
+import type { BranchNode, RuleSet, RuleSet } from "./branch.ts"
 import type { Range } from "./rules/range.ts"
-import type { LiteralRules, NarrowableRules } from "./rules/rules.ts"
 
 export type IntersectionResult<t> =
     | {
@@ -137,6 +133,15 @@ export class IntersectionState {
             result,
             isSubtype: false,
             isSupertype: true,
+            isDisjoint: false
+        } satisfies IntersectionResult<result>
+    }
+
+    overlap<result>(result: result) {
+        return {
+            result,
+            isSubtype: false,
+            isSupertype: false,
             isDisjoint: false
         } satisfies IntersectionResult<result>
     }

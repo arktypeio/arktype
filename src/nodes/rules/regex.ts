@@ -1,9 +1,10 @@
 import type { CollapsibleList } from "../../utils/generics.ts"
 import { listFrom } from "../../utils/generics.ts"
 import type { Compilation } from "../compile.ts"
-import { composeIntersection } from "../compose.ts"
+import type { IntersectionResult, IntersectionState } from "../compose.ts"
 import { registerRegex } from "../registry.ts"
 import { collapsibleListUnion } from "./collapsibleSet.ts"
+import type { RuleNode } from "./rule.ts"
 
 export const regexIntersection = composeIntersection<CollapsibleList<string>>(
     collapsibleListUnion<string>
@@ -19,3 +20,12 @@ export const compileRegex = (rule: CollapsibleList<string>, c: Compilation) =>
                 )}` as const
         )
         .join(";")
+
+export class RegexNode implements RuleNode<RegexNode> {
+    constructor(public rule: string[]) {}
+
+    intersect(
+        r: RegexNode,
+        s: IntersectionState
+    ): IntersectionResult<RegexNode> {}
+}

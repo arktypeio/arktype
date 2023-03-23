@@ -137,18 +137,10 @@ export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
     return result as evaluate<keyof t>[]
 }
 
-export const hasKey = <o, k extends keyof o>(
+export const hasKey = <o extends object, k extends keyof o>(
     o: o,
     k: k
-): o is requireKeys<o, k> => {
-    const valueAtKey = (o as any)?.[k]
-    return valueAtKey !== undefined && valueAtKey !== null
-}
-
-export const hasSingleKey = <o extends object, k extends string>(
-    o: o,
-    k: k
-): o is o & { [_ in k]: {} } => k in o && Object.keys(o).length === 1
+): o is requireKeys<o, k> => k in o
 
 export const keyCount = (o: object) => Object.keys(o).length
 

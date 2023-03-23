@@ -2,22 +2,40 @@ import { hasDomain } from "../../utils/domains.ts"
 import type { SerializablePrimitive } from "../../utils/serialize.ts"
 import { serializePrimitive } from "../../utils/serialize.ts"
 import type { Compilation } from "../compile.ts"
+import type { IntersectionResult, IntersectionState } from "../compose.ts"
 import { registerValue } from "../registry.ts"
 
-export const compileValueCheck = (value: unknown, c: Compilation) => {
-    if (hasDomain(value, "object") || typeof value === "symbol") {
+export class ValueNode {
+    constructor(public value: unknown) {}
+
+    intersect(
+        r: ValueNode,
+        s: IntersectionState
+    ): IntersectionResult<ValueNode> {
+        return this.value === r.value
+            ? s.equality(this)
+            : s.disjoint("value", this.value, r.value)
+    }
+
+    compile(c: Compilation) {
+        if (hasDomain(this.value, "object") || typeof this.value === "symbol") {
+            return c.check(
+                "value",
+                `data === ${registerValue(
+                    `${c.type.name}${
+                        c.path.length ? "_" + c.path.join("_") : ""
+                    }`,
+                    this.value
+                )}`,
+                this.value
+            )
+        }
         return c.check(
             "value",
-            `data === ${registerValue(
-                `${c.type.name}${c.path.length ? "_" + c.path.join("_") : ""}`,
-                value
+            `data === ${serializePrimitive(
+                this.value as SerializablePrimitive
             )}`,
-            value
+            this.value as {}
         )
     }
-    return c.check(
-        "value",
-        `data === ${serializePrimitive(value as SerializablePrimitive)}`,
-        value as {}
-    )
 }

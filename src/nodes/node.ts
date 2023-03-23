@@ -54,14 +54,12 @@ export class TypeNode {
         const resultBranches = [
             ...this.branches.filter(
                 (_, lIndex) =>
-                    !comparison.lStrictSubtypeIndices.includes(lIndex) &&
-                    !comparison.equalIndexPairs.some(
-                        (indexPair) => indexPair[0] === lIndex
-                    )
+                    !comparison.lStrictSubtypeIndices.includes(lIndex)
             ),
             ...node.branches.filter(
                 (_, rIndex) =>
                     !comparison.rStrictSubtypeIndices.includes(rIndex) &&
+                    // ensure equal branches are only included once
                     !comparison.equalIndexPairs.some(
                         (indexPair) => indexPair[1] === rIndex
                     )

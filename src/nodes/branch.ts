@@ -1,13 +1,22 @@
 import { writeImplicitNeverMessage } from "../parse/ast/intersection.ts"
 import type { Morph } from "../parse/ast/morph.ts"
 import type { Narrow } from "../parse/ast/narrow.ts"
-import type { Domain, inferDomain } from "../utils/domains.ts"
+import type { Domain, domainOf, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type { constructor, evaluate, mutable } from "../utils/generics.ts"
+import type {
+    constructor,
+    defined,
+    evaluate,
+    mutable
+} from "../utils/generics.ts"
+import { hasKey } from "../utils/generics.ts"
 import type { Compilation } from "./compile.ts"
 import type { IntersectionResult, IntersectionState } from "./compose.ts"
+import { listUnion } from "./rules/collapsibleSet.ts"
 import { compileDivisor } from "./rules/divisor.ts"
+import type { DomainNode } from "./rules/domain.ts"
 import { compileInstance } from "./rules/instance.ts"
+import type { NarrowNode } from "./rules/narrow.ts"
 import type { PropsRule } from "./rules/props.ts"
 import { compileProps } from "./rules/props.ts"
 import type { Range } from "./rules/range.ts"
@@ -23,15 +32,13 @@ type RuleSetIntersection = Extract<
 >
 
 export abstract class BranchNode<domain extends Domain = Domain> {
-    constructor(public rules: RuleSet<domain>) {}
+    constructor(public rules: RuleNodes<domain>) {}
 
     intersect(
         r: BranchNode,
         s: IntersectionState
     ): IntersectionResult<BranchNode> {
-        if (this.rules.domain !== r.rules.domain) {
-            return s.disjoint("domain", this.rules.domain, r.rules.domain)
-        }
+        const domain = this.rules.domain
         const intersection: RuleSetIntersection = {
             result: {
                 domain: this.rules.domain
@@ -41,7 +48,6 @@ export abstract class BranchNode<domain extends Domain = Domain> {
             isDisjoint: false
         }
         this.#addMorphIntersectionIfPresent(intersection, r, s)
-        this.#addValueIntersectionIfPresent(intersection, r, s)
         return s.equality(this as unknown as BranchNode)
     }
 
@@ -77,13 +83,66 @@ export abstract class BranchNode<domain extends Domain = Domain> {
         intersection.isSupertype = false
     }
 
+    allows(value: unknown) {
+        return true
+    }
+
+    // compile(c: Compilation): string {
+    //     let result = ""
+    //     if (this.rules.value) {
+    //         result += compileValueCheck(this.rules.value, c)
+    //     }
+    //     if (this.rules.instance) {
+    //         result += compileInstance(this.rules.instance, c)
+    //     }
+
+    //     const shallowChecks: string[] = []
+
+    //     if (this.rules.divisor) {
+    //         shallowChecks.push(compileDivisor(this.rules.divisor, c))
+    //     }
+    //     if (this.rules.range) {
+    //         shallowChecks.push(compileRange(this.rules.range, c))
+    //     }
+    //     if (this.rules.regex) {
+    //         shallowChecks.push(compileRegex(this.rules.regex, c))
+    //     }
+
+    //     if (shallowChecks.length) {
+    //         result += " && " + c.mergeChecks(shallowChecks)
+    //     }
+
+    //     if (this.rules.props) {
+    //         result += " && "
+    //         result += compileProps(this.rules.props, c)
+    //     }
+
+    //     if (this.rules.narrow) {
+    //     }
+    //     return result
+    // }
+}
+
+type NonNullishDomain = Exclude<Domain, "null" | "undefined">
+
+export class NonNullishBranchNode<
+    domain extends NonNullishDomain = NonNullishDomain
+> extends BranchNode<domain> {
+    addIntersections(
+        intersection: RuleSetIntersection,
+        r: BranchNode,
+        s: IntersectionState
+    ) {
+        this.#addValueIntersectionIfPresent(intersection, r, s)
+    }
+
     #addValueIntersectionIfPresent(
         intersection: RuleSetIntersection,
         r: BranchNode,
         s: IntersectionState
     ) {
-        if ("value" in this.rules) {
-            if ("value" in r.rules) {
+        if (this.rules.value !== undefined) {
+            if (r.rules.value !== undefined) {
                 if (this.rules.value === r.rules.value) {
                     intersection.result.value = this.rules.value
                 } else {
@@ -101,7 +160,7 @@ export abstract class BranchNode<domain extends Domain = Domain> {
                 )
             }
         }
-        if ("value" in r.rules) {
+        if (r.rules.value !== undefined) {
             if (this.allows(r.rules.value)) {
                 intersection.result.value = r.rules.value
                 intersection.isSubtype = false
@@ -115,73 +174,44 @@ export abstract class BranchNode<domain extends Domain = Domain> {
         }
     }
 
-    allows(value: unknown) {
-        return true
-    }
-
-    compile(c: Compilation): string {
-        let result = ""
-        if (this.rules.value) {
-            result += compileValueCheck(this.rules.value, c)
-        }
-        if (this.rules.instance) {
-            result += compileInstance(this.rules.instance, c)
-        }
-
-        const shallowChecks: string[] = []
-
-        if (this.rules.divisor) {
-            shallowChecks.push(compileDivisor(this.rules.divisor, c))
-        }
-        if (this.rules.range) {
-            shallowChecks.push(compileRange(this.rules.range, c))
-        }
-        if (this.rules.regex) {
-            shallowChecks.push(compileRegex(this.rules.regex, c))
-        }
-
-        if (shallowChecks.length) {
-            result += " && " + c.mergeChecks(shallowChecks)
-        }
-
-        if (this.rules.props) {
-            result += " && "
-            result += compileProps(this.rules.props, c)
-        }
-
+    #addNarrowIntersectionIfPresent(
+        intersection: RuleSetIntersection,
+        r: BranchNode,
+        s: IntersectionState
+    ) {
         if (this.rules.narrow) {
+            if (r.rules.narrow) {
+                intersection.result.narrow = this.rules.narrow
+            }
         }
-        return result
     }
 }
 
 export type RuleSet<domain extends Domain = Domain> = Domain extends domain
     ? evaluate<UniversalRules<Domain> & NonNullishRules<Domain> & CustomRules>
-    : RuleSetsByDomain[domain]
+    : RulesByDomain[domain]
 
 // TODO: evaluate not working?
-type RuleSetsByDomain = {
+type RulesByDomain = {
     object: defineCustomRules<"object", "props" | "range" | "instance">
     string: defineCustomRules<"string", "regex" | "range">
     number: defineCustomRules<"number", "divisor" | "range">
     boolean: defineNonNullishRules<"boolean">
     bigint: defineNonNullishRules<"bigint">
     symbol: defineNonNullishRules<"symbol">
-    undefined: UniversalRules<"undefined">
-    null: UniversalRules<"null">
+    undefined: UniversalRules
+    null: UniversalRules
 }
 
 type defineCustomRules<
     domain extends Domain,
     ruleKeys extends keyof CustomRules
 > = evaluate<
-    UniversalRules<domain> &
-        NonNullishRules<domain> &
-        Pick<CustomRules, ruleKeys>
+    UniversalRules & NonNullishRules<domain> & Pick<CustomRules, ruleKeys>
 >
 
 type defineNonNullishRules<domain extends Domain> = evaluate<
-    UniversalRules<domain> & NonNullishRules<domain>
+    UniversalRules & NonNullishRules<domain>
 >
 
 type CustomRules = {
@@ -194,10 +224,10 @@ type CustomRules = {
 
 type NonNullishRules<domain extends Domain> = {
     readonly value?: inferDomain<domain>
-    readonly narrow?: Narrow[]
+    readonly narrow?: NarrowNode
 }
 
-type UniversalRules<domain extends Domain> = {
-    readonly domain: domain
+type UniversalRules = {
+    readonly domain: DomainNode
     readonly morph?: Morph[]
 }
