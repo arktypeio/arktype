@@ -1,180 +1,165 @@
-import type { Narrow } from "../../parse/ast/narrow.ts"
-import type { Domain, inferDomain } from "../../utils/domains.ts"
-import type {
-    CollapsibleList,
-    constructor,
-    Dict,
-    evaluate
-} from "../../utils/generics.ts"
-import type { Compilation } from "../compile.ts"
-import type { IntersectionResult, IntersectionState } from "../compose.ts"
-import { BaseNode } from "../compose.ts"
-import { compileDivisor } from "./divisor.ts"
-import { compileInstance } from "./instance.ts"
-import type { PropsRule } from "./props.ts"
-import { compileProps } from "./props.ts"
-import type { Range } from "./range.ts"
-import { compileRange } from "./range.ts"
-import { compileRegex } from "./regex.ts"
-import { compileValueCheck } from "./value.ts"
+import { writeImplicitNeverMessage } from "../parse/ast/intersection.ts"
+import type { Morph } from "../parse/ast/morph.ts"
+import type { Narrow } from "../parse/ast/narrow.ts"
+import type { Domain, inferDomain } from "../utils/domains.ts"
+import { throwParseError } from "../utils/errors.ts"
+import type { constructor, evaluate, mutable } from "../utils/generics.ts"
+import type { Compilation } from "./compile.ts"
+import type { IntersectionResult, IntersectionState } from "./compose.ts"
+import { compileDivisor } from "./rules/divisor.ts"
+import { compileInstance } from "./rules/instance.ts"
+import type { PropsRule } from "./rules/props.ts"
+import { compileProps } from "./rules/props.ts"
+import type { Range } from "./rules/range.ts"
+import { compileRange } from "./rules/range.ts"
+import { compileRegex } from "./rules/regex.ts"
+import { compileValueCheck } from "./rules/value.ts"
 
-export abstract class RuleNode extends BaseNode {}
+export abstract class RuleNode {}
 
-export class BranchNode<domain extends Domain = Domain> {
-    constructor(public domain: domain, public rules: Rules<domain>) {}
+export abstract class BranchNode<domain extends Domain = Domain> {
+    // internal reference to rules without a domain constraint
+    readonly #rules: RuleSet
 
-    intersect(node: this, s: IntersectionState): IntersectionResult<this> {
-        return this
+    constructor(public rules: RuleSet<domain>) {
+        this.#rules = rules
+    }
+
+    intersect(r: this, s: IntersectionState): IntersectionResult<this> {
+        if (this.#rules.domain !== r.#rules.domain) {
+            return s.disjoint("domain", this.#rules.domain, r.#rules.domain)
+        }
+        const result: mutable<RuleSet> = {
+            domain: this.#rules.domain
+        }
+
+        if (this.#rules.morph) {
+            if (r.#rules.morph) {
+                if (this.#rules.morph === r.#rules.morph) {
+                    result.morph = this.#rules.morph
+                } else if (s.lastOperator === "&") {
+                    throwParseError(
+                        writeImplicitNeverMessage(
+                            s.path,
+                            "Intersection",
+                            "of morphs"
+                        )
+                    )
+                }
+            } else {
+                result.morph = this.#rules.morph
+            }
+        }
+        if (r.#rules.morph) {
+            result.morph = r.#rules.morph
+        }
+        if ("value" in this.#rules) {
+            if ("value" in r.#rules) {
+                return this.#rules.value === r.#rules.value
+                    ? s.equality(this)
+                    : s.disjoint("value", this.#rules.value, r.#rules.value)
+            }
+            return r.allows(this.#rules.value)
+                ? s.subtype(this)
+                : s.disjoint("leftAssignability", this.#rules.value, r)
+        }
+        if ("value" in r.#rules) {
+            return this.allows(r.#rules.value)
+                ? s.subtype(r)
+                : s.disjoint("rightAssignability", this, r.#rules.value)
+        }
+        return s.equality(this)
+    }
+
+    allows(value: unknown) {
+        return true
     }
 
     compile(c: Compilation): string {
         let result = ""
-        if (this.json.value) {
-            result += compileValueCheck(this.json.value, c)
+        if (this.#rules.value) {
+            result += compileValueCheck(this.#rules.value, c)
         }
-        if (this.json.instance) {
-            result += compileInstance(this.json.instance, c)
+        if (this.#rules.instance) {
+            result += compileInstance(this.#rules.instance, c)
         }
 
         const shallowChecks: string[] = []
 
-        if (this.json.divisor) {
-            shallowChecks.push(compileDivisor(this.json.divisor, c))
+        if (this.#rules.divisor) {
+            shallowChecks.push(compileDivisor(this.#rules.divisor, c))
         }
-        if (this.json.range) {
-            shallowChecks.push(compileRange(this.json.range, c))
+        if (this.#rules.range) {
+            shallowChecks.push(compileRange(this.#rules.range, c))
         }
-        if (this.json.regex) {
-            shallowChecks.push(compileRegex(this.json.regex, c))
+        if (this.#rules.regex) {
+            shallowChecks.push(compileRegex(this.#rules.regex, c))
         }
 
         if (shallowChecks.length) {
             result += " && " + c.mergeChecks(shallowChecks)
         }
 
-        if (this.json.props) {
+        if (this.#rules.props) {
             result += " && "
-            result += compileProps(this.json.props, c)
+            result += compileProps(this.#rules.props, c)
         }
 
-        if (this.json.narrow) {
+        if (this.#rules.narrow) {
         }
         return result
     }
 }
 
-export type NarrowableRules<$ = Dict> = {
-    readonly regex?: CollapsibleList<string>
+export type RuleSet<domain extends Domain = Domain> = Domain extends domain
+    ? evaluate<UniversalRules<Domain> & NonNullishRules<Domain> & CustomRules>
+    : RuleSetsByDomain[domain]
+
+// TODO: evaluate not working?
+type RuleSetsByDomain = {
+    object: defineCustomRules<"object", "props" | "range" | "instance">
+    string: defineCustomRules<"string", "regex" | "range">
+    number: defineCustomRules<"number", "divisor" | "range">
+    boolean: defineNonNullishRules<"boolean">
+    bigint: defineNonNullishRules<"bigint">
+    symbol: defineNonNullishRules<"symbol">
+    undefined: UniversalRules<"undefined">
+    null: UniversalRules<"null">
+}
+
+type defineCustomRules<
+    domain extends Domain,
+    ruleKeys extends keyof CustomRules
+> = evaluate<
+    UniversalRules<domain> &
+        NonNullishRules<domain> &
+        Pick<CustomRules, ruleKeys>
+>
+
+type defineNonNullishRules<domain extends Domain> = evaluate<
+    UniversalRules<domain> & NonNullishRules<domain>
+>
+
+type CustomRules = {
+    readonly regex?: string[]
     readonly divisor?: number
     readonly range?: Range
-    readonly props?: PropsRule<$>
+    readonly props?: PropsRule
     readonly instance?: constructor
-    readonly narrow?: NarrowRule
 }
 
-export type LiteralRules<
-    domain extends Domain = Domain,
-    value extends inferDomain<domain> = inferDomain<domain>
-> = {
-    readonly value: value
+type NonNullishRules<domain extends Domain> = {
+    readonly value?: inferDomain<domain>
+    readonly narrow?: Narrow[]
 }
 
-export type NarrowRule = CollapsibleList<Narrow>
-
-export type Rules<
-    domain extends Domain = Domain,
-    $ = Dict
-> = Domain extends domain
-    ? NarrowableRules | LiteralRules
-    : domain extends "object"
-    ? defineRuleSet<domain, "props" | "range" | "narrow" | "instance", $>
-    : domain extends "string"
-    ? defineRuleSet<domain, "regex" | "range" | "narrow", $>
-    : domain extends "number"
-    ? defineRuleSet<domain, "divisor" | "range" | "narrow", $>
-    : defineRuleSet<domain, "narrow", $>
-
-export type RuleName = evaluate<keyof NarrowableRules | keyof LiteralRules>
-
-type defineRuleSet<
-    domain extends Domain,
-    keys extends keyof NarrowableRules,
-    $
-> = Pick<NarrowableRules<$>, keys> | LiteralRules<domain>
-
-export const rulesIntersection: Intersector<Rules> = (l, r, state) =>
-    "value" in l
-        ? "value" in r
-            ? l.value === r.value
-                ? equality()
-                : state.addDisjoint("value", l.value, r.value)
-            : literalSatisfiesRules(l.value, r, state)
-            ? l
-            : state.addDisjoint("leftAssignability", l, r)
-        : "value" in r
-        ? literalSatisfiesRules(r.value, l, state)
-            ? r
-            : state.addDisjoint("rightAssignability", l, r)
-        : narrowableRulesIntersection(l, r, state)
-
-export const compileRules = (rules: UnknownRules, c: Compilation) => {}
-
-type UnknownRules = NarrowableRules & Partial<LiteralRules>
+type UniversalRules<domain extends Domain> = {
+    readonly domain: domain
+    readonly morph?: Morph[]
+}
 
 export const literalSatisfiesRules = (
     data: unknown,
-    rules: NarrowableRules,
+    rules: CustomRules,
     state: IntersectionState
 ) => !state.type.scope.type(["node", { [state.domain!]: rules }])(data).problems
-
-export type Branch<domain extends Domain = Domain, $ = Dict> =
-    | Rules<domain, $>
-    | MetaBranch<domain, $>
-
-export type MetaBranch<domain extends Domain = Domain, $ = Dict> = {
-    rules: Rules<domain, $>
-    morph?: CollapsibleList<Morph>
-    config?: TypeConfig
-}
-
-export const branchIntersection: Intersector<Branch> = (l, r, state) => {
-    const lRules = rulesOf(l)
-    const rRules = rulesOf(r)
-    const rulesResult = rulesIntersection(lRules, rRules, state)
-    if ("morph" in l) {
-        if ("morph" in r) {
-            if (l.morph === r.morph) {
-                return isEquality(rulesResult) || isDisjoint(rulesResult)
-                    ? rulesResult
-                    : {
-                          rules: rulesResult,
-                          morph: l.morph
-                      }
-            }
-            return state.lastOperator === "&"
-                ? throwParseError(
-                      writeImplicitNeverMessage(
-                          state.path,
-                          "Intersection",
-                          "of morphs"
-                      )
-                  )
-                : {}
-        }
-        return isDisjoint(rulesResult)
-            ? rulesResult
-            : {
-                  rules: isEquality(rulesResult) ? l.rules : rulesResult,
-                  morph: l.morph
-              }
-    }
-    if ("morph" in r) {
-        return isDisjoint(rulesResult)
-            ? rulesResult
-            : {
-                  rules: isEquality(rulesResult) ? r.rules : rulesResult,
-                  morph: r.morph
-              }
-    }
-    return rulesResult
-}

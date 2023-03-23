@@ -1,8 +1,7 @@
-import type { Domain, inferDomain } from "../utils/domains.ts"
+import type { BranchNode } from "./branch.ts"
 import type { Compilation } from "./compile.ts"
 import type { IntersectionResult } from "./compose.ts"
 import { IntersectionState } from "./compose.ts"
-import type { BranchNode, LiteralRules } from "./rules/rules.ts"
 
 export type BranchesComparison = {
     lStrictSubtypeIndices: number[]
@@ -18,11 +17,8 @@ export class TypeNode {
         return ""
     }
 
-    intersect(
-        node: this,
-        state: IntersectionState
-    ): IntersectionResult<TypeNode> {
-        const comparison = compareTypes(this, node, state)
+    intersect(r: this, state: IntersectionState): IntersectionResult<TypeNode> {
+        const comparison = compareTypes(this, r, state)
         const resultBranches = [
             ...comparison.distinctIntersections,
             ...comparison.equalIndexPairs.map(
@@ -32,11 +28,11 @@ export class TypeNode {
                 (lIndex) => this.branches[lIndex]
             ),
             ...comparison.rStrictSubtypeIndices.map(
-                (rIndex) => node.branches[rIndex]
+                (rIndex) => r.branches[rIndex]
             )
         ]
         if (resultBranches.length === 0) {
-            return state.addDisjoint("union", this.branches, node.branches)
+            return state.disjoint("union", this.branches, r.branches)
         }
         return {
             result: new TypeNode(resultBranches),
@@ -47,7 +43,7 @@ export class TypeNode {
             isSupertype:
                 comparison.rStrictSubtypeIndices.length +
                     comparison.equalIndexPairs.length ===
-                node.branches.length,
+                r.branches.length,
             isDisjoint: false
         }
     }
