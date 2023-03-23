@@ -4,8 +4,18 @@ hide_table_of_contents: true
 
 # arrayOf
 
-## text
+## operator
 
-```ts
-arrayOf: Ark["arrayOf"]
-```
+-   arrayOf
+
+## string
+
+-   "type[]"
+
+## tuple
+
+-   ["arrayOf", &lt;object&gt;]
+
+## helper
+
+-   arrayOf(&lt;object&gt;)

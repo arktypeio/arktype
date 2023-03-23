@@ -4,8 +4,14 @@ hide_table_of_contents: true
 
 # valueOf
 
-## text
+## operator
 
-```ts
-valueOf: Ark["valueOf"]
-```
+-   valueOf
+
+## tuple
+
+-   ["===", value]
+
+## helper
+
+-   valueOf(&lt;object&gt;)

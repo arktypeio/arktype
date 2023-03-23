@@ -35,6 +35,12 @@ type KeyDomain = "number" | "string" | "symbol"
 
 type KeyNode = { [domain in KeyDomain]?: Rules<domain>[] }
 
+/**
+ * @operator keyof
+ * @docgenTable
+ * @tuple [keyof, <object>]
+ * @example [[keyof], {a: string}]
+ */
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
     const resolution = ctx.type.scope.resolveNode(parseDefinition(def[1], ctx))
     const predicateKeys = objectKeysOf(resolution).map((domain) =>

@@ -4,8 +4,14 @@ hide_table_of_contents: true
 
 # instanceOf
 
-## text
+## operator
 
-```ts
-instanceOf: Ark["instanceOf"]
-```
+-   instanceOf
+
+## helper
+
+-   instanceOf(&lt;object&gt;)
+
+## tuple
+
+-   ["instanceOf", &lt;object&gt;]

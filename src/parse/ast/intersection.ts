@@ -16,6 +16,13 @@ import { objectKeysOf } from "../../utils/generics.ts"
 import type { Path, pathToString } from "../../utils/paths.ts"
 import type { ParsedMorph } from "./morph.ts"
 
+/**
+ * @operator intersection
+ * @docgenTable
+ * @tuple  [a, &, b]
+ * @helper  intersection(a,b)
+ * @string "a&b"
+ */
 export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, []>
 
 type inferIntersectionRecurse<

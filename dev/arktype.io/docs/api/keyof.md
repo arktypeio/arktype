@@ -4,8 +4,14 @@ hide_table_of_contents: true
 
 # keyOf
 
-## text
+## operator
 
-```ts
-keyOf: Ark["keyOf"]
-```
+-   keyOf
+
+## tuple
+
+-   ["keyOf", &lt;object&gt;]
+
+## helper
+
+-   keyOf(&lt;object&gt;)

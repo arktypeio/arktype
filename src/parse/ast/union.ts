@@ -9,6 +9,13 @@ import type {
 } from "../../utils/generics.ts"
 import type { objectKindOf } from "../../utils/objectKinds.ts"
 
+/**
+ * @operator union
+ * @docgenTable
+ * @tuple [a, | , b]
+ * @helper union(a,b)
+ * @string "a|b"
+ */
 export type inferUnion<l, r> = isAny<l | r> extends true
     ? any
     : [l] extends [never]

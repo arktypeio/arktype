@@ -36,12 +36,37 @@ export const intersection: Ark["intersection"] = scopes.ark.intersection
 
 export const union: Ark["union"] = scopes.ark.union
 
+/**
+ * @operator arrayOf
+ * @docgenTable
+ * @string "type[]"
+ * @tuple ["arrayOf", <object>]
+ * @helper arrayOf(<object>)
+ */
 export const arrayOf: Ark["arrayOf"] = scopes.ark.arrayOf
 
+/**
+ * @operator keyOf
+ * @docgenTable
+ * @tuple ["keyOf", <object>]
+ * @helper  keyOf(<object>)
+ */
 export const keyOf: Ark["keyOf"] = scopes.ark.keyOf
 
+/**
+ * @operator instanceOf
+ * @docgenTable
+ * @helper instanceOf(<object>)
+ * @tuple ["instanceOf", <object>]
+ */
 export const instanceOf: Ark["instanceOf"] = scopes.ark.instanceOf
 
+/**
+ * @operator valueOf
+ * @docgenTable
+ * @tuple ["===", value]
+ * @helper valueOf(<object>)
+ */
 export const valueOf: Ark["valueOf"] = scopes.ark.valueOf
 
 export const narrow: Ark["narrow"] = scopes.ark.narrow

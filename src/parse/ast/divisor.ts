@@ -2,6 +2,11 @@ import type { error, isAny } from "../../utils/generics.ts"
 import type { inferAst, validateAst } from "./ast.ts"
 import type { astToString } from "./utils.ts"
 
+/**
+ * @operator divisor
+ * @docgenTable
+ * @string "type%divisor"
+ */
 export type validateDivisor<l, $> = isDivisible<inferAst<l, $>> extends true
     ? validateAst<l, $>
     : error<writeIndivisibleMessage<astToString<l>>>

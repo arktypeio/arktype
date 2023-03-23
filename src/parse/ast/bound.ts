@@ -4,6 +4,11 @@ import type { NumberLiteral } from "../../utils/numericLiterals.ts"
 import type { inferAst, validateAst } from "./ast.ts"
 import type { astToString } from "./utils.ts"
 
+/**
+ * @operator bound
+ * @docgenTable
+ * @string "number<5"
+ */
 export type validateBound<l, r, $> = l extends NumberLiteral
     ? validateAst<r, $>
     : isBoundable<inferAst<l, $>> extends true

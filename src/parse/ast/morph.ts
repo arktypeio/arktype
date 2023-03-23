@@ -13,6 +13,12 @@ import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { PostfixParser, TupleExpression } from "./tuple.ts"
 
+/**
+ * @operator morph
+ * @docgenTable
+ * @tuple [inputType, |>, (data) => output]
+ * @helper morph(inputType, (data) => output)
+ */
 export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {
         return throwParseError(writeMalformedMorphExpressionMessage(def[2]))

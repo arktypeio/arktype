@@ -1,7 +1,7 @@
-import type { ExportData } from "./extractApi"
-import type { TsTagData } from "./tsDocTransforms"
+import type { TsTagData } from "../tsDocTransforms.ts"
+import { constructRow, defaultKeywordsHeader, Table } from "./table.ts"
 
-export const tabulateData = (exportData: ExportData, tags: TsTagData) => {
+export const keywordTable = (text: string, tags: TsTagData) => {
     const keywords = tags.keywords
     const keywordMatcher = /(?<=keywords: ).+/
     let descriptionsByKeyword: { [keyword: string]: string } | undefined
@@ -14,26 +14,20 @@ export const tabulateData = (exportData: ExportData, tags: TsTagData) => {
         }
     }
 
-    const scopeAliases = exportData.text.split("\n").slice(1, -1)
-
-    const section = [
-        `| Name   | Type   | Description          |`,
-        `| ------ | ------ | -------------------- |`
-    ]
+    const scopeAliases = text.split("\n").slice(1, -1)
+    const table = new Table(defaultKeywordsHeader)
     for (const prop of scopeAliases) {
         const keyword = prop.trim().match(/^([^:]+):(.+)$/)
         if (keyword) {
             const description = descriptionsByKeyword
                 ? descriptionsByKeyword[keyword[1]] ?? ""
                 : ""
-            section.push(
-                `| ${keyword[1]} | \`${keyword[2].replace(
-                    ";",
-                    ""
-                )}\` | ${description} |`
+            const row = constructRow(
+                [keyword[1], keyword[2].replace(";", ""), description],
+                ["1"]
             )
+            table.pushRow(row)
         }
     }
-
-    return `${section.join("\n")}\n`
+    return table
 }

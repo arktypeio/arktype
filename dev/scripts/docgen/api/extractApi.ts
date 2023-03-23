@@ -87,23 +87,20 @@ const extractExportsFromDts = (entryPointDts: SourceFile): ExportData[] => {
     return exports
 }
 
-const expectedTsDocAncestorKinds = {
-    [SyntaxKind.VariableDeclaration]: SyntaxKind.VariableStatement
-}
-
+//todoshawn better way of casting than any?
 const findAssociatedDocs = (
     declaration: ExportedDeclarations
 ): JSDoc[] | undefined => {
-    const ancestorKind = (expectedTsDocAncestorKinds as any)[
-        declaration.getKind()
-    ]
-    if (ancestorKind) {
-        const possiblyDocumentedAncestor = declaration.getFirstAncestorByKind(
-            ancestorKind
-        ) as undefined | JSDocableNode
-        if (possiblyDocumentedAncestor) {
-            return possiblyDocumentedAncestor.getJsDocs()
-        }
+    if (declaration.getKind() === SyntaxKind.TypeAliasDeclaration) {
+        console.log()
+    }
+    const possiblyDocumentedAncestor = (declaration as any).getJsDocs
+        ? declaration
+        : declaration.getParentWhile(
+              (parent, child) => !(child as any).getJsDocs
+          )
+    if (possiblyDocumentedAncestor) {
+        return (possiblyDocumentedAncestor as any as JSDocableNode).getJsDocs()
     }
 }
 
