@@ -49,10 +49,10 @@ export type DisjointKinds = extend<
         }
         leftAssignability: {
             l: unknown
-            r: BranchNode
+            r: RuleSet
         }
         rightAssignability: {
-            l: BranchNode
+            l: RuleSet
             r: unknown
         }
         union: {
@@ -63,7 +63,7 @@ export type DisjointKinds = extend<
 >
 
 export const disjointDescriptionWriters = {
-    domain: ({ l, r }) => `${l.join(", ")} and ${r.join(", ")}`,
+    domain: ({ l, r }) => `${l} and ${r}`,
     range: ({ l, r }) => `${stringifyRange(l)} and ${stringifyRange(r)}`,
     class: ({ l, r }) =>
         `classes ${typeof l === "string" ? l : l.name} and ${
@@ -72,9 +72,9 @@ export const disjointDescriptionWriters = {
     tupleLength: ({ l, r }) => `tuples of length ${l} and ${r}`,
     value: ({ l, r }) => `literal values ${stringify(l)} and ${stringify(r)}`,
     leftAssignability: ({ l, r }) =>
-        `literal value ${stringify(l.value)} and ${stringify(r)}`,
+        `literal value ${stringify(l)} and ${stringify(r)}`,
     rightAssignability: ({ l, r }) =>
-        `literal value ${stringify(r.value)} and ${stringify(l)}`,
+        `literal value ${stringify(r)} and ${stringify(l)}`,
     union: ({ l, r }) => `branches ${stringify(l)} and branches ${stringify(r)}`
 } satisfies {
     [k in DisjointKind]: (context: DisjointContext<k>) => string

@@ -27,6 +27,9 @@ export type evaluate<t> = { [k in keyof t]: t[k] } & unknown
  */
 export type defer<t> = t & {}
 
+// TODO: Try replacing defer
+export type noInfer<t> = [t][t extends any ? 0 : never]
+
 export type merge<base, merged> = evaluate<Omit<base, keyof merged> & merged>
 
 /** Replace existing keys of o without altering readonly or optional modifiers  */

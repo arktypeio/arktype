@@ -15,28 +15,45 @@ import { compileRange } from "./rules/range.ts"
 import { compileRegex } from "./rules/regex.ts"
 import { compileValueCheck } from "./rules/value.ts"
 
-export abstract class RuleNode {}
+type RuleSetIntersection = Extract<
+    IntersectionResult<mutable<RuleSet>>,
+    {
+        isDisjoint: false
+    }
+>
 
 export abstract class BranchNode<domain extends Domain = Domain> {
-    // internal reference to rules without a domain constraint
-    readonly #rules: RuleSet
+    constructor(public rules: RuleSet<domain>) {}
 
-    constructor(public rules: RuleSet<domain>) {
-        this.#rules = rules
+    intersect(
+        r: BranchNode,
+        s: IntersectionState
+    ): IntersectionResult<BranchNode> {
+        if (this.rules.domain !== r.rules.domain) {
+            return s.disjoint("domain", this.rules.domain, r.rules.domain)
+        }
+        const intersection: RuleSetIntersection = {
+            result: {
+                domain: this.rules.domain
+            },
+            isSubtype: true,
+            isSupertype: true,
+            isDisjoint: false
+        }
+        this.#addMorphIntersectionIfPresent(intersection, r, s)
+        this.#addValueIntersectionIfPresent(intersection, r, s)
+        return s.equality(this as unknown as BranchNode)
     }
 
-    intersect(r: this, s: IntersectionState): IntersectionResult<this> {
-        if (this.#rules.domain !== r.#rules.domain) {
-            return s.disjoint("domain", this.#rules.domain, r.#rules.domain)
-        }
-        const result: mutable<RuleSet> = {
-            domain: this.#rules.domain
-        }
-
-        if (this.#rules.morph) {
-            if (r.#rules.morph) {
-                if (this.#rules.morph === r.#rules.morph) {
-                    result.morph = this.#rules.morph
+    #addMorphIntersectionIfPresent(
+        intersection: RuleSetIntersection,
+        r: BranchNode,
+        s: IntersectionState
+    ) {
+        if (this.rules.morph) {
+            if (r.rules.morph) {
+                if (this.rules.morph === r.rules.morph) {
+                    intersection.result.morph = this.rules.morph
                 } else if (s.lastOperator === "&") {
                     throwParseError(
                         writeImplicitNeverMessage(
@@ -46,29 +63,56 @@ export abstract class BranchNode<domain extends Domain = Domain> {
                         )
                     )
                 }
+                return
+            }
+            intersection.result.morph = this.rules.morph
+        } else if (r.rules.morph) {
+            intersection.result.morph = r.rules.morph
+        } else {
+            return
+        }
+        // an intersection between a morph type and a non-morph type precludes
+        // assignability in either direction.
+        intersection.isSubtype = false
+        intersection.isSupertype = false
+    }
+
+    #addValueIntersectionIfPresent(
+        intersection: RuleSetIntersection,
+        r: BranchNode,
+        s: IntersectionState
+    ) {
+        if ("value" in this.rules) {
+            if ("value" in r.rules) {
+                if (this.rules.value === r.rules.value) {
+                    intersection.result.value = this.rules.value
+                } else {
+                    return s.disjoint("value", this.rules.value, r.rules.value)
+                }
+            }
+            if (r.allows(this.rules.value)) {
+                intersection.result.value = this.rules.value
+                intersection.isSupertype = false
             } else {
-                result.morph = this.#rules.morph
+                return s.disjoint(
+                    "leftAssignability",
+                    this.rules.value,
+                    r.rules
+                )
             }
         }
-        if (r.#rules.morph) {
-            result.morph = r.#rules.morph
-        }
-        if ("value" in this.#rules) {
-            if ("value" in r.#rules) {
-                return this.#rules.value === r.#rules.value
-                    ? s.equality(this)
-                    : s.disjoint("value", this.#rules.value, r.#rules.value)
+        if ("value" in r.rules) {
+            if (this.allows(r.rules.value)) {
+                intersection.result.value = r.rules.value
+                intersection.isSubtype = false
+            } else {
+                return s.disjoint(
+                    "rightAssignability",
+                    this.rules,
+                    r.rules.value
+                )
             }
-            return r.allows(this.#rules.value)
-                ? s.subtype(this)
-                : s.disjoint("leftAssignability", this.#rules.value, r)
         }
-        if ("value" in r.#rules) {
-            return this.allows(r.#rules.value)
-                ? s.subtype(r)
-                : s.disjoint("rightAssignability", this, r.#rules.value)
-        }
-        return s.equality(this)
     }
 
     allows(value: unknown) {
@@ -77,35 +121,35 @@ export abstract class BranchNode<domain extends Domain = Domain> {
 
     compile(c: Compilation): string {
         let result = ""
-        if (this.#rules.value) {
-            result += compileValueCheck(this.#rules.value, c)
+        if (this.rules.value) {
+            result += compileValueCheck(this.rules.value, c)
         }
-        if (this.#rules.instance) {
-            result += compileInstance(this.#rules.instance, c)
+        if (this.rules.instance) {
+            result += compileInstance(this.rules.instance, c)
         }
 
         const shallowChecks: string[] = []
 
-        if (this.#rules.divisor) {
-            shallowChecks.push(compileDivisor(this.#rules.divisor, c))
+        if (this.rules.divisor) {
+            shallowChecks.push(compileDivisor(this.rules.divisor, c))
         }
-        if (this.#rules.range) {
-            shallowChecks.push(compileRange(this.#rules.range, c))
+        if (this.rules.range) {
+            shallowChecks.push(compileRange(this.rules.range, c))
         }
-        if (this.#rules.regex) {
-            shallowChecks.push(compileRegex(this.#rules.regex, c))
+        if (this.rules.regex) {
+            shallowChecks.push(compileRegex(this.rules.regex, c))
         }
 
         if (shallowChecks.length) {
             result += " && " + c.mergeChecks(shallowChecks)
         }
 
-        if (this.#rules.props) {
+        if (this.rules.props) {
             result += " && "
-            result += compileProps(this.#rules.props, c)
+            result += compileProps(this.rules.props, c)
         }
 
-        if (this.#rules.narrow) {
+        if (this.rules.narrow) {
         }
         return result
     }
@@ -157,9 +201,3 @@ type UniversalRules<domain extends Domain> = {
     readonly domain: domain
     readonly morph?: Morph[]
 }
-
-export const literalSatisfiesRules = (
-    data: unknown,
-    rules: CustomRules,
-    state: IntersectionState
-) => !state.type.scope.type(["node", { [state.domain!]: rules }])(data).problems

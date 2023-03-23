@@ -4,11 +4,6 @@ import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
 import { entriesOf, keysOf, listFrom } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import { isTransformationBranch } from "./branch.ts"
-import type { ConfigNode, Node } from "./node.ts"
-import { isConfigNode } from "./node.ts"
-import type { Predicate } from "./predicate.ts"
-import { compilePredicate } from "./predicate.ts"
 
 export const createTraverse = (name: string, js: string) =>
     Function(`return (data, state) => {
