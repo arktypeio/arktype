@@ -1,14 +1,11 @@
 import type { Narrow } from "../../parse/ast/narrow.ts"
 import type { Compilation } from "../compile.ts"
-import type { IntersectionResult, IntersectionState } from "../compose.ts"
+import type { Comparison, ComparisonState } from "../compose.ts"
 import { listUnion } from "./collapsibleSet.ts"
 import { intersectUniqueLists, RuleNode } from "./rule.ts"
 
 export class NarrowNode extends RuleNode<Narrow[]> {
-    intersect(
-        r: NarrowNode,
-        s: IntersectionState
-    ): IntersectionResult<NarrowNode> {
+    compare(r: NarrowNode, s: ComparisonState): Comparison<NarrowNode> {
         const result = listUnion(this.rule, r.rule)
         return result.length === this.rule.length
             ? result.length === r.rule.length
@@ -26,6 +23,6 @@ export class NarrowNode extends RuleNode<Narrow[]> {
 
 export const narrowNode: RuleNode<readonly Narrow[]> = {
     constructor() {},
-    intersect: intersectUniqueLists<Narrow>,
+    compare: intersectUniqueLists<Narrow>,
     compile: () => ""
 }

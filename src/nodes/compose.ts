@@ -6,15 +6,15 @@ import { stringify } from "../utils/serialize.ts"
 import type { BranchNode, RuleSet, RuleSet } from "./branch.ts"
 import type { Range } from "./rules/range.ts"
 
-export type IntersectionResult<t> =
+export type Comparison<t> =
     | {
-          result: t
+          intersection: t
           isSubtype: boolean
           isSupertype: boolean
           isDisjoint: false
       }
     | {
-          result: DisjointContext
+          intersection: DisjointContext
           isSubtype: false
           isSupertype: false
           isDisjoint: true
@@ -89,11 +89,11 @@ export const stringifyRange = (range: Range) =>
 
 export type DisjointKind = keyof DisjointKinds
 
-export class IntersectionState {
+export class ComparisonState {
     path = new Path()
     disjointsByPath: DisjointsByPath = {}
 
-    constructor(public type: Type, public lastOperator: "|" | "&") {}
+    constructor(public lastOperator: "|" | "&") {}
 
     disjoint<kind extends DisjointKind>(
         kind: kind,
@@ -103,47 +103,47 @@ export class IntersectionState {
         const result = { kind, l, r }
         this.disjointsByPath[`${this.path}`] = result
         return {
-            result,
+            intersection: result,
             isSubtype: false,
             isSupertype: false,
             isDisjoint: true
-        } satisfies IntersectionResult<never>
+        } satisfies Comparison<never>
     }
 
     equality<result>(result: result) {
         return {
-            result,
+            intersection: result,
             isSubtype: true,
             isSupertype: true,
             isDisjoint: false
-        } satisfies IntersectionResult<result>
+        } satisfies Comparison<result>
     }
 
     subtype<result>(result: result) {
         return {
-            result,
+            intersection: result,
             isSubtype: true,
             isSupertype: false,
             isDisjoint: false
-        } satisfies IntersectionResult<result>
+        } satisfies Comparison<result>
     }
 
     supertype<result>(result: result) {
         return {
-            result,
+            intersection: result,
             isSubtype: false,
             isSupertype: true,
             isDisjoint: false
-        } satisfies IntersectionResult<result>
+        } satisfies Comparison<result>
     }
 
     overlap<result>(result: result) {
         return {
-            result,
+            intersection: result,
             isSubtype: false,
             isSupertype: false,
             isDisjoint: false
-        } satisfies IntersectionResult<result>
+        } satisfies Comparison<result>
     }
 }
 

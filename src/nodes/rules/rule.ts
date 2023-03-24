@@ -1,39 +1,33 @@
 import type { Compilation } from "../compile"
-import type { IntersectionResult, IntersectionState } from "../compose.ts"
+import type { Comparison, ComparisonState } from "../compose.ts"
 
-export abstract class RuleNode<rule> {
+export abstract class RuleNode<
+    kind extends RuleKind = RuleKind,
+    rule = unknown
+> {
+    abstract readonly kind: kind
+
+    get precedence() {
+        return precedenceByRule[this.kind]
+    }
+
     constructor(public rule: rule) {}
 
-    abstract intersect(
-        r: RuleNode<rule>,
-        s: IntersectionState
-    ): IntersectionResult<RuleNode<rule>>
+    abstract compare(rule: rule, s: ComparisonState): Comparison<rule>
 
     abstract compile(c: Compilation): string
 }
 
-export abstract class UniqueListNode<
-    list extends readonly any[]
-> extends RuleNode<list> {
-    intersect(r: UniqueListNode<list>, s: IntersectionState) {
-        const result = [...this.rule]
-        for (const item of r.rule) {
-            if (!l.includes(item)) {
-                result.push(item)
-            }
-        }
-        return result.length === l.length
-            ? result.length === r.length
-                ? s.equality(l)
-                : s.supertype(l)
-            : result.length === l.length
-            ? s.subtype(r)
-            : s.overlap(result)
-    }
-}
+const precedenceByRule = {
+    value: 0,
+    instance: 1,
+    range: 2,
+    divisor: 3,
+    regex: 4,
+    props: 5,
+    narrow: 6
+} as const satisfies Record<string, number>
 
-export const intersectUniqueLists = <item>(
-    l: readonly item[],
-    r: readonly item[],
-    s: IntersectionState
-): IntersectionResult<readonly item[]> => {}
+export type PrecedenceByRule = typeof precedenceByRule
+
+export type RuleKind = keyof PrecedenceByRule

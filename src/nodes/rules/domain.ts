@@ -1,13 +1,10 @@
 import type { Domain } from "../../utils/domains.ts"
 import { RuleNode } from "../branch.ts"
 import type { Compilation } from "../compile.ts"
-import type { IntersectionResult, IntersectionState } from "../compose.ts"
+import type { Comparison, ComparisonState } from "../compose.ts"
 
 export class DomainNode extends RuleNode<Domain, DomainNode> {
-    intersect(
-        r: DomainNode,
-        s: IntersectionState
-    ): IntersectionResult<DomainNode> {
+    compare(r: DomainNode, s: ComparisonState): Comparison<DomainNode> {
         return this.rule === r.rule
             ? s.equality(this)
             : s.disjoint("domain", this.rule, r.rule)

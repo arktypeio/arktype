@@ -18,7 +18,7 @@ import { serializePrimitive } from "../utils/serialize.ts"
 import type { Branch, Branches } from "./branch.ts"
 import { branchIntersection, compileBranch } from "./branch.ts"
 import type { Compilation } from "./compile.ts"
-import { IntersectionState } from "./compose.ts"
+import { ComparisonState } from "./compose.ts"
 import type { Node } from "./node.ts"
 import { mappedKeys, propToNode } from "./rules/props.ts"
 
@@ -213,7 +213,7 @@ const calculateDiscriminants = (
             const pairKey = `${lIndex}/${rIndex}` as const
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
-            const intersectionState = new IntersectionState(ctx.type, "|")
+            const intersectionState = new ComparisonState(ctx.type, "|")
             branchIntersection(
                 branches[lIndex],
                 branches[rIndex],
