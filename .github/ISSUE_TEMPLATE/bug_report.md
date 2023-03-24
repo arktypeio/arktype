@@ -1,3 +1,11 @@
+---
+name: Bug
+about: Report a bug
+title: ""
+labels: ""
+assignees: ""
+---
+
 # Report a bug
 
 ### 🔎 Search Terms

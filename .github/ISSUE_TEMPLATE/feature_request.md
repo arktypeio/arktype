@@ -1,3 +1,11 @@
+---
+name: Feature Request
+about: Suggest a new feature
+title: ""
+labels: ""
+assignees: ""
+---
+
 # Request a feature
 
 The maintainers of ArkType will do our best to provide prompt feedback for any feature requests- especially those that are concise and persuasive!
