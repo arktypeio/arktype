@@ -10,5 +10,3 @@ Please verify that:
 Refer to CONTRIBUTING.MD for more details.
   https://github.com/arktypeio/arktype/blob/main/.github/CONTRIBUTING.md
 -->
-
-fix:
