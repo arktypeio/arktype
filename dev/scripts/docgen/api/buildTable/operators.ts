@@ -13,10 +13,13 @@ export const operatorTable = (tableData: string[]) => {
 export const possibleFormats = ["string", "tuple", "helper"]
 
 export const getFormats = (tagData: TsTagData) => {
-    return possibleFormats.reduce((formatsArr, possible) => {
-        const supportsFormat =
-            tagData[possible] === undefined ? "❌" : tagData[possible][0]
-        formatsArr.push(supportsFormat)
-        return formatsArr
-    }, [] as string[])
+    const formats: string[] = []
+    for (const possibleFormat of possibleFormats) {
+        const format =
+            tagData[possibleFormat] === undefined
+                ? "❌"
+                : tagData[possibleFormat][0]
+        formats.push(format)
+    }
+    return formats
 }
