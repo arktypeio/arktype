@@ -17,6 +17,6 @@ export const operatorsTable = (path: string, tableData: string[]) => {
     const operatingTable = operatorTable(tableData)
     const md = new MarkdownSection("Operators")
     md.options({ hide_table_of_contents: true })
-    md.section("Operating Table").text(operatingTable.toString())
+    md.section("Operating Table").text(operatingTable.join("\n"))
     writeFileSync(path, md.toString())
 }

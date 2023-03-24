@@ -1,5 +1,9 @@
 import type { TsTagData } from "../tsDocTransforms.ts"
-import { constructRow, defaultKeywordsHeader, Table } from "./table.ts"
+import {
+    constructHeader,
+    constructRow,
+    defaultKeywordsHeader
+} from "./table.ts"
 
 export const keywordTable = (text: string, tags: TsTagData) => {
     const keywords = tags.keywords
@@ -15,7 +19,8 @@ export const keywordTable = (text: string, tags: TsTagData) => {
     }
 
     const scopeAliases = text.split("\n").slice(1, -1)
-    const table = new Table(defaultKeywordsHeader)
+    const table: string[] = []
+    constructHeader(defaultKeywordsHeader, table)
     for (const prop of scopeAliases) {
         const keyword = prop.trim().match(/^([^:]+):(.+)$/)
         if (keyword) {
@@ -23,10 +28,10 @@ export const keywordTable = (text: string, tags: TsTagData) => {
                 ? descriptionsByKeyword[keyword[1]] ?? ""
                 : ""
             const row = constructRow(
-                [keyword[1], keyword[2].replace(";", ""), description],
+                [keyword[1], keyword[2], description],
                 ["1"]
             )
-            table.pushRow(row)
+            table.push(row)
         }
     }
     return table

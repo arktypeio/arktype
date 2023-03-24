@@ -3,8 +3,8 @@ import { join } from "node:path"
 import { ensureDir, shell } from "../../../runtime/main.ts"
 import type { DocGenApiConfig } from "../main.ts"
 import { keywordTable } from "./buildTable/keywords.ts"
-import { convertToHTML, getFormats } from "./buildTable/operators.ts"
-import { constructRow } from "./buildTable/table.ts"
+import { getFormats } from "./buildTable/operators.ts"
+import { constructRow, convertToHTML } from "./buildTable/table.ts"
 import type {
     ApiEntryPoint,
     ExportData,
@@ -84,7 +84,7 @@ const generateMarkdownForExport = (
         }
         if (tagData.docgenScope) {
             const table = keywordTable(exported.text, tagData)
-            const text = table.toString()
+            const text = table.join("\n")
             md.section("text").text(text)
             scopeData.push({ name: exported.name, text })
         }

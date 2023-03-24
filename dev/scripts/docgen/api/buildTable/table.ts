@@ -1,4 +1,4 @@
-import { convertToHTML, possibleFormats } from "./operators.ts"
+import { possibleFormats } from "./operators.ts"
 
 export const defaultOperatorHeader = ["operator", ...possibleFormats]
 export const defaultKeywordsHeader = ["Name", "Type", "Description"]
@@ -26,23 +26,30 @@ export const constructRow = (
     }
     return row
 }
+export const constructHeader = (columns: string[], table: string[]) => {
+    table.push(constructRow(columns))
+    const separator = "---"
+    const tableSeparator: string[] = []
+    columns.forEach((_) => tableSeparator.push(separator))
+    table.push(constructRow(tableSeparator))
+}
 
-export class Table {
-    private table: string[] = []
-    private rowStarter = "| "
-    constructor(private columns: string[]) {
-        this.pushRow(constructRow(this.columns))
-        const separator = "---"
-        const tableSeparator: string[] = []
-        this.columns.forEach((_) => tableSeparator.push(separator))
-        this.pushRow(constructRow(tableSeparator))
-    }
+const specialChars: { [k: string]: string } = {
+    "\n": "",
+    ";": "",
+    "<": "&lt;",
+    ">": "&gt;",
+    "|": "&vert;"
+}
 
-    pushRow(row: string) {
-        this.table.push(row)
-    }
+const specialCharsKeys = Object.keys(specialChars)
 
-    toString() {
-        return this.table.join("\n")
-    }
+export const convertToHTML = (row: string[]) => {
+    return row.map((item) => {
+        specialCharsKeys.forEach(
+            (char) => (item = item.replaceAll(char, specialChars[char]))
+        )
+
+        return item
+    })
 }

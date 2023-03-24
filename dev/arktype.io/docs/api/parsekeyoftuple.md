@@ -4,14 +4,8 @@ hide_table_of_contents: true
 
 # parseKeyOfTuple
 
-## operator
+## text
 
--   keyof
-
-## tuple
-
--   [keyof, &lt;object&gt;]
-
-## example
-
--   [[keyof], {a: string}]
+```ts
+parseKeyOfTuple: PrefixParser<"keyof">
+```
