@@ -10,6 +10,7 @@ import type { PropsRule } from "./rules/props.ts"
 import type { Range } from "./rules/range.ts"
 import type { RuleNode } from "./rules/rule.ts"
 
+// TODO: subclasses for rules/value
 export class BranchNode<domain extends Domain = Domain> {
     public domain: domain
     public value: unknown
