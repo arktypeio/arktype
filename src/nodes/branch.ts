@@ -17,9 +17,18 @@ type RuleSetComparison = Extract<
     }
 >
 
-export abstract class BranchNode<domain extends Domain = Domain> {
+export type BranchInput<domain extends Domain = Domain> = {
+    domain: domain
+    // TODO: add domain constraint
+    rules: RuleNode[]
+    morphs: Morph[]
+}
+
+export type Rules = []
+
+export class BranchNode<domain extends Domain = Domain> {
     constructor(
-        public domain: domain,
+        public base: BaseRule<domain>,
         // TODO: add domain constraint
         public rules: RuleNode[],
         public morphs: Morph[]
@@ -30,8 +39,8 @@ export abstract class BranchNode<domain extends Domain = Domain> {
     }
 
     intersect(branch: BranchNode, s: ComparisonState): Comparison<BranchNode> {
-        if (this.domain !== branch.domain) {
-            return s.disjoint("domain", this.domain, branch.domain)
+        if (this.base !== branch.base) {
+            return s.disjoint("domain", this.base, branch.base)
         }
         if (
             s.lastOperator === "&" &&
@@ -56,12 +65,35 @@ export abstract class BranchNode<domain extends Domain = Domain> {
             while (this.rules[i].precedence < branch.rules[j].precedence) {
                 result.intersection.push(this.rules[i])
                 result.isSubtype = false
+                i++
             }
             if (this.rules[i].precedence === this.rules[j].precedence) {
                 const subresult = this.rules[i].compare(this.rules[j], s)
+                if (subresult.isDisjoint) {
+                    return subresult
+                }
+                result.isSubtype &&= subresult.isSubtype
+                result.isSupertype &&= subresult.isSupertype
+                i++
+            } else {
+                result.intersection.push(branch.rules[j])
             }
         }
-        return s.equality(this as unknown as BranchNode)
+        while (i < this.rules.length) {
+            result.intersection.push(this.rules[i])
+        }
+        return {
+            ...result,
+            intersection: result.isSupertype
+                ? this
+                : result.isSubtype
+                ? branch
+                : new BranchNode(
+                      this.base,
+                      result.intersection,
+                      this.hasMorphs ? this.morphs : branch.morphs
+                  )
+        }
     }
 
     allows(value: unknown) {
