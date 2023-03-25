@@ -16,16 +16,7 @@ export class BranchNode<domain extends Domain = Domain> {
     public rules: RuleNode[]
     public morphs: Morph[]
 
-    constructor(public definition: RuleSet<domain>) {
-        const { domain, morphs, value, ...rules } = definition
-        this.domain = domain as domain
-        this.value = value
-        this.morphs = morphs ?? []
-        this.rules = []
-        for (const k in rules) {
-            this.rules.push(rules[k])
-        }
-    }
+    constructor(public definition: RuleSet<domain>) {}
 
     get hasMorphs() {
         return this.morphs.length !== 0
