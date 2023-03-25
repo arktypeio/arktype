@@ -111,7 +111,7 @@ const compareBranches = (
                 // an lBranch and will not yield any distinct intersections.
                 continue
             }
-            const intersection = lBranches[lIndex].intersect(
+            const intersection = lBranches[lIndex].compare(
                 rBranches[rIndex],
                 state
             )

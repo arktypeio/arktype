@@ -2,45 +2,41 @@ import { writeImplicitNeverMessage } from "../parse/ast/intersection.ts"
 import type { Morph } from "../parse/ast/morph.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type { constructor, evaluate, mutable } from "../utils/generics.ts"
+import type { constructor, evaluate } from "../utils/generics.ts"
+import type { Compilation } from "./compile.ts"
 import type { Comparison, ComparisonState } from "./compose.ts"
-import type { DomainNode } from "./rules/domain.ts"
 import type { NarrowNode } from "./rules/narrow.ts"
 import type { PropsRule } from "./rules/props.ts"
 import type { Range } from "./rules/range.ts"
 import type { RuleNode } from "./rules/rule.ts"
 
-type RuleSetComparison = Extract<
-    Comparison<mutable<RuleSet>>,
-    {
-        isDisjoint: false
-    }
->
-
-export type BranchInput<domain extends Domain = Domain> = {
-    domain: domain
-    // TODO: add domain constraint
-    rules: RuleNode[]
-    morphs: Morph[]
-}
-
-export type Rules = []
-
 export class BranchNode<domain extends Domain = Domain> {
-    constructor(
-        public base: BaseRule<domain>,
-        // TODO: add domain constraint
-        public rules: RuleNode[],
-        public morphs: Morph[]
-    ) {}
+    public domain: domain
+    public value: unknown
+    public rules: RuleNode[]
+    public morphs: Morph[]
+
+    constructor(public definition: RuleSet<domain>) {
+        const { domain, morphs, value, ...rules } = definition
+        this.domain = domain as domain
+        this.value = value
+        this.morphs = morphs ?? []
+        this.rules = []
+        for (const k in rules) {
+            this.rules.push(rules[k])
+        }
+    }
 
     get hasMorphs() {
         return this.morphs.length !== 0
     }
 
-    intersect(branch: BranchNode, s: ComparisonState): Comparison<BranchNode> {
-        if (this.base !== branch.base) {
-            return s.disjoint("domain", this.base, branch.base)
+    compare(
+        branch: BranchNode,
+        s: ComparisonState
+    ): Comparison<RuleSet<domain>> {
+        if (this.domain !== branch.domain) {
+            return s.disjoint("domain", this.domain, branch.domain)
         }
         if (
             s.lastOperator === "&" &&
@@ -53,13 +49,14 @@ export class BranchNode<domain extends Domain = Domain> {
         // an intersection between a morph type and a non-morph type precludes
         // assignability in either direction.
         const morphAssignable = this.hasMorphs === branch.hasMorphs
-        const result: Comparison<RuleNode[]> = {
-            intersection: [],
+        const result: Comparison<RuleSet> = {
+            intersection: {
+                domain: this.domain
+            },
             isSubtype: morphAssignable,
             isSupertype: morphAssignable,
             isDisjoint: false
         }
-
         let i = 0
         for (let j = 0; j < branch.rules.length; j++) {
             while (this.rules[i].precedence < branch.rules[j].precedence) {
@@ -82,22 +79,19 @@ export class BranchNode<domain extends Domain = Domain> {
         while (i < this.rules.length) {
             result.intersection.push(this.rules[i])
         }
-        return {
-            ...result,
-            intersection: result.isSupertype
-                ? this
-                : result.isSubtype
-                ? branch
-                : new BranchNode(
-                      this.base,
-                      result.intersection,
-                      this.hasMorphs ? this.morphs : branch.morphs
-                  )
-        }
+        return result
     }
 
     allows(value: unknown) {
         return true
+    }
+
+    compile(c: Compilation) {
+        return this.domain === "object"
+            ? `(typeof ${c.data} === "object" && ${c.data} !== null) || typeof ${c.data} === "function"`
+            : this.domain === "null" || this.domain === "undefined"
+            ? `${c.data} === ${this.domain}`
+            : `typeof ${c.data} === "${this.domain}"`
     }
 
     // compile(c: Compilation): string {
@@ -136,72 +130,8 @@ export class BranchNode<domain extends Domain = Domain> {
     // }
 }
 
-type NonNullishDomain = Exclude<Domain, "null" | "undefined">
-
-export class NonNullishBranchNode<
-    domain extends NonNullishDomain = NonNullishDomain
-> extends BranchNode<domain> {
-    addIntersections(
-        intersection: RuleSetComparison,
-        r: BranchNode,
-        s: ComparisonState
-    ) {
-        this.#addValueIntersectionIfPresent(intersection, r, s)
-    }
-
-    #addValueIntersectionIfPresent(
-        intersection: RuleSetComparison,
-        r: BranchNode,
-        s: ComparisonState
-    ) {
-        if (this.rules.value !== undefined) {
-            if (r.rules.value !== undefined) {
-                if (this.rules.value === r.rules.value) {
-                    intersection.intersection.value = this.rules.value
-                } else {
-                    return s.disjoint("value", this.rules.value, r.rules.value)
-                }
-            }
-            if (r.allows(this.rules.value)) {
-                intersection.intersection.value = this.rules.value
-                intersection.isSupertype = false
-            } else {
-                return s.disjoint(
-                    "leftAssignability",
-                    this.rules.value,
-                    r.rules
-                )
-            }
-        }
-        if (r.rules.value !== undefined) {
-            if (this.allows(r.rules.value)) {
-                intersection.intersection.value = r.rules.value
-                intersection.isSubtype = false
-            } else {
-                return s.disjoint(
-                    "rightAssignability",
-                    this.rules,
-                    r.rules.value
-                )
-            }
-        }
-    }
-
-    #addNarrowIntersectionIfPresent(
-        intersection: RuleSetComparison,
-        r: BranchNode,
-        s: ComparisonState
-    ) {
-        if (this.rules.narrow) {
-            if (r.rules.narrow) {
-                intersection.intersection.narrow = this.rules.narrow
-            }
-        }
-    }
-}
-
 export type RuleSet<domain extends Domain = Domain> = Domain extends domain
-    ? evaluate<UniversalRules & NonNullishRules<Domain> & CustomRules>
+    ? evaluate<UniversalRules<domain> & CustomRules>
     : RulesByDomain[domain]
 
 // TODO: evaluate not working?
@@ -209,23 +139,17 @@ type RulesByDomain = {
     object: defineCustomRules<"object", "props" | "range" | "instance">
     string: defineCustomRules<"string", "regex" | "range">
     number: defineCustomRules<"number", "divisor" | "range">
-    boolean: defineNonNullishRules<"boolean">
-    bigint: defineNonNullishRules<"bigint">
-    symbol: defineNonNullishRules<"symbol">
-    undefined: UniversalRules
-    null: UniversalRules
+    boolean: UniversalRules<"boolean">
+    bigint: UniversalRules<"bigint">
+    symbol: UniversalRules<"symbol">
+    undefined: UniversalRules<"undefined">
+    null: UniversalRules<"null">
 }
 
 type defineCustomRules<
     domain extends Domain,
     ruleKeys extends keyof CustomRules
-> = evaluate<
-    UniversalRules & NonNullishRules<domain> & Pick<CustomRules, ruleKeys>
->
-
-type defineNonNullishRules<domain extends Domain> = evaluate<
-    UniversalRules & NonNullishRules<domain>
->
+> = evaluate<UniversalRules<domain> & Pick<CustomRules, ruleKeys>>
 
 type CustomRules = {
     readonly regex?: string[]
@@ -235,12 +159,9 @@ type CustomRules = {
     readonly instance?: constructor
 }
 
-type NonNullishRules<domain extends Domain> = {
+type UniversalRules<domain extends Domain> = {
+    readonly domain: domain
     readonly value?: inferDomain<domain>
     readonly narrow?: NarrowNode
-}
-
-type UniversalRules = {
-    readonly domain: DomainNode
-    readonly morph?: Morph[]
+    readonly morphs?: Morph[]
 }

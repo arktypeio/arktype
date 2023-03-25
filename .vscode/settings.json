@@ -81,6 +81,7 @@
         "typecheck",
         "typeof",
         "Typesafe",
+        "Unassignable",
         "Unboundable",
         "uncompiled",
         "undici",

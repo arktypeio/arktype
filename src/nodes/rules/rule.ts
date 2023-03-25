@@ -19,12 +19,13 @@ export abstract class RuleNode<
 }
 
 const precedenceByRule = {
-    base: 0,
-    range: 1,
-    divisor: 2,
-    regex: 3,
-    props: 4,
-    narrow: 5
+    value: 0,
+    instance: 1,
+    range: 2,
+    divisor: 3,
+    regex: 4,
+    props: 5,
+    narrow: 6
 } as const satisfies Record<string, number>
 
 export type PrecedenceByRule = typeof precedenceByRule

@@ -3,7 +3,7 @@ import type { Domain } from "../utils/domains.ts"
 import type { constructor, extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { BranchNode, RuleSet, RuleSet } from "./branch.ts"
+import type { BranchNode } from "./branch.ts"
 import type { Range } from "./rules/range.ts"
 
 export type Comparison<t> =
@@ -45,10 +45,10 @@ export type DisjointKinds = extend<
         }
         leftAssignability: {
             l: unknown
-            r: RuleSet
+            r: BranchNode
         }
         rightAssignability: {
-            l: RuleSet
+            l: BranchNode
             r: unknown
         }
         union: {
