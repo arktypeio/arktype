@@ -8,16 +8,10 @@ import type { Comparison, ComparisonState } from "./compose.ts"
 import type { NarrowNode } from "./rules/narrow.ts"
 import type { PropsRule } from "./rules/props.ts"
 import type { Range } from "./rules/range.ts"
-import type { RuleNode } from "./rules/rule.ts"
 
 // TODO: subclasses for rules/value
 export class BranchNode<domain extends Domain = Domain> {
-    public domain: domain
-    public value: unknown
-    public rules: RuleNode[]
-    public morphs: Morph[]
-
-    constructor(public definition: RuleSet<domain>) {}
+    constructor(public domain: domain, public morphs: Morph[] = []) {}
 
     get hasMorphs() {
         return this.morphs.length !== 0
