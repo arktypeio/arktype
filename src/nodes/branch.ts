@@ -11,7 +11,7 @@ import type { Range } from "./rules/range.ts"
 
 // TODO: subclasses for rules/value
 export class BranchNode<domain extends Domain = Domain> {
-    constructor(public domain: domain, public morphs: Morph[] = []) {}
+    constructor(public domain: domain, public morphs: Morph[]) {}
 
     get hasMorphs() {
         return this.morphs.length !== 0
@@ -32,15 +32,14 @@ export class BranchNode<domain extends Domain = Domain> {
                 writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
             )
         }
-        // an intersection between a morph type and a non-morph type precludes
-        // assignability in either direction.
-        const morphAssignable = this.hasMorphs === branch.hasMorphs
         const result: Comparison<RuleSet> = {
             intersection: {
                 domain: this.domain
             },
-            isSubtype: morphAssignable,
-            isSupertype: morphAssignable,
+            // an intersection between a morph type and a non-morph type precludes
+            // assignability in either direction.
+            isSubtype: this.hasMorphs === branch.hasMorphs,
+            isSupertype: this.hasMorphs === branch.hasMorphs,
             isDisjoint: false
         }
         let i = 0
@@ -114,6 +113,18 @@ export class BranchNode<domain extends Domain = Domain> {
     //     }
     //     return result
     // }
+}
+
+export class ValueNode<
+    domain extends Domain = Domain
+> extends BranchNode<domain> {
+    constructor(
+        domain: domain,
+        public value: inferDomain<domain>,
+        morphs: Morph[] = []
+    ) {
+        super(domain, morphs)
+    }
 }
 
 export type RuleSet<domain extends Domain = Domain> = Domain extends domain
