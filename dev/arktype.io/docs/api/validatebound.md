@@ -10,7 +10,7 @@ hide_table_of_contents: true
 
 ## string
 
--   "(value comparitor)? type comparitor value"
+-   "[value?][comparitor?]type[comparitor][value]"
 
 ## comparitors
 

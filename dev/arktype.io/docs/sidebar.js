@@ -6,7 +6,8 @@ module.exports = {
             items: [
                 { type: "doc", label: "Types", id: "intro" },
                 { type: "doc", label: "Scopes", id: "scopes" },
-                { type: "doc", label: "Keywords", id: "api/keywords" }
+                { type: "doc", label: "Keywords", id: "api/keywords" },
+                { type: "doc", label: "Operators", id: "api/operators" }
             ]
         },
         {

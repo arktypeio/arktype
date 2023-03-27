@@ -87,18 +87,17 @@ const extractExportsFromDts = (entryPointDts: SourceFile): ExportData[] => {
     return exports
 }
 
-//todoshawn better way of casting than any?
+const isJSDocableNode = (declaration: unknown): declaration is JSDocableNode =>
+    (declaration as JSDocableNode).getJsDocs !== undefined
+
 const findAssociatedDocs = (
     declaration: ExportedDeclarations
 ): JSDoc[] | undefined => {
-    if (declaration.getKind() === SyntaxKind.TypeAliasDeclaration) {
-        console.log()
-    }
-    const possiblyDocumentedAncestor = (declaration as any).getJsDocs
+    const possiblyDocumentedAncestor = isJSDocableNode(declaration)
         ? declaration
-        : declaration.getParentWhile(
-              (parent, child) => !(child as any).getJsDocs
-          )
+        : declaration
+              .getAncestors()
+              .find((ancestor) => isJSDocableNode(ancestor))
     if (possiblyDocumentedAncestor) {
         return (possiblyDocumentedAncestor as any as JSDocableNode).getJsDocs()
     }

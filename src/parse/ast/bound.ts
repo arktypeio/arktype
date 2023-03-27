@@ -7,7 +7,7 @@ import type { astToString } from "./utils.ts"
 /**
  * @operator {@link validateBound | bound}
  * @docgenTable
- * @string "(value comparitor)? type comparitor value"
+ * @string "[value?][comparitor?]type[comparitor][value]"
  * @comparitors [<,>,<=,>=,==]
  * @example "number<5"
  * @example "2>=number>=5"
