@@ -20,7 +20,9 @@ export const constructHeader = (columns: string[], table: string[]) => {
     table.push(constructRow(columns))
     const separator = "---"
     const tableSeparator: string[] = []
-    columns.forEach((_) => tableSeparator.push(separator))
+    for (let i = 0; i < columns.length; i++) {
+        tableSeparator.push(separator)
+    }
     table.push(constructRow(tableSeparator))
 }
 
