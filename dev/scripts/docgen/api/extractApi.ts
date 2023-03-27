@@ -90,16 +90,20 @@ const extractExportsFromDts = (entryPointDts: SourceFile): ExportData[] => {
 const isJSDocableNode = (declaration: unknown): declaration is JSDocableNode =>
     (declaration as JSDocableNode).getJsDocs !== undefined
 
+const find = <t extends readonly unknown[], narrowed>(
+    t: t,
+    condition: (item: t[number]) => item is narrowed
+): narrowed | undefined => t.find(condition)
+
 const findAssociatedDocs = (
     declaration: ExportedDeclarations
 ): JSDoc[] | undefined => {
     const possiblyDocumentedAncestor = isJSDocableNode(declaration)
         ? declaration
-        : declaration
-              .getAncestors()
-              .find((ancestor) => isJSDocableNode(ancestor))
+        : find(declaration.getAncestors(), isJSDocableNode)
+
     if (possiblyDocumentedAncestor) {
-        return (possiblyDocumentedAncestor as any as JSDocableNode).getJsDocs()
+        return possiblyDocumentedAncestor.getJsDocs()
     }
 }
 
