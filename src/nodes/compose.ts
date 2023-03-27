@@ -1,24 +1,11 @@
-import type { Type } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
-import type { constructor, extend } from "../utils/generics.ts"
+import { hasDomain } from "../utils/domains.ts"
+import type { constructor, Dict, extend, nominal } from "../utils/generics.ts"
+import { hasKeys } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 import type { BranchNode } from "./branch.ts"
 import type { Range } from "./rules/range.ts"
-
-export type Comparison<t> =
-    | {
-          intersection: t
-          isSubtype: boolean
-          isSupertype: boolean
-          isDisjoint: false
-      }
-    | {
-          intersection: DisjointContext
-          isSubtype: false
-          isSupertype: false
-          isDisjoint: true
-      }
 
 export type DisjointKinds = extend<
     Record<string, { l: unknown; r: unknown }>,
@@ -89,66 +76,64 @@ export const stringifyRange = (range: Range) =>
 
 export type DisjointKind = keyof DisjointKinds
 
-export class ComparisonState {
+export type OverlappingIntersection<t = unknown> = nominal<t, "intersection">
+
+export type IntersectionResult<t = unknown> =
+    | OverlappingIntersection<t>
+    | DisjointContext
+
+export class Intersection<result extends Dict = Dict> {
     path = new Path()
     disjointsByPath: DisjointsByPath = {}
 
-    constructor(public lastOperator: "|" | "&") {}
+    isSubtype = true
+    isSupertype = true
+
+    constructor(public result: result) {}
+
+    get isDisjoint() {
+        return hasKeys(this.disjointsByPath)
+    }
 
     disjoint<kind extends DisjointKind>(
         kind: kind,
         l: DisjointKinds[kind]["l"],
         r: DisjointKinds[kind]["r"]
     ) {
-        const result = { kind, l, r }
+        const result: DisjointContext = { disjointKind: kind, l, r }
         this.disjointsByPath[`${this.path}`] = result
-        return {
-            intersection: result,
-            isSubtype: false,
-            isSupertype: false,
-            isDisjoint: true
-        } satisfies Comparison<never>
+        this.isSubtype = false
+        this.isSupertype = false
+        return result
     }
 
     equality<result>(result: result) {
-        return {
-            intersection: result,
-            isSubtype: true,
-            isSupertype: true,
-            isDisjoint: false
-        } satisfies Comparison<result>
+        return result as OverlappingIntersection<result>
     }
 
     subtype<result>(result: result) {
-        return {
-            intersection: result,
-            isSubtype: true,
-            isSupertype: false,
-            isDisjoint: false
-        } satisfies Comparison<result>
+        this.isSupertype = false
+        return result as OverlappingIntersection<result>
     }
 
     supertype<result>(result: result) {
-        return {
-            intersection: result,
-            isSubtype: false,
-            isSupertype: true,
-            isDisjoint: false
-        } satisfies Comparison<result>
+        this.isSubtype = false
+        return result as OverlappingIntersection<result>
     }
 
     overlap<result>(result: result) {
-        return {
-            intersection: result,
-            isSubtype: false,
-            isSupertype: false,
-            isDisjoint: false
-        } satisfies Comparison<result>
+        this.isSubtype = false
+        this.isSupertype = false
+        return result as OverlappingIntersection<result>
     }
 }
 
 export type DisjointsByPath = Record<string, DisjointContext>
 
-export type DisjointContext<kind extends DisjointKind = DisjointKind> = {
-    kind: kind
-} & DisjointKinds[kind]
+export type DisjointContext<disjointKind extends DisjointKind = DisjointKind> =
+    {
+        disjointKind: disjointKind
+    } & DisjointKinds[disjointKind]
+
+export const isDisjoint = (value: unknown): value is DisjointContext =>
+    hasDomain(value, "object") && "disjointKind" in value

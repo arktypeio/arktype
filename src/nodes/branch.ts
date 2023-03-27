@@ -4,7 +4,7 @@ import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { constructor, evaluate } from "../utils/generics.ts"
 import type { Compilation } from "./compile.ts"
-import type { Comparison, ComparisonState } from "./compose.ts"
+import { Intersection, IntersectionResult } from "./compose.ts"
 import type { NarrowNode } from "./rules/narrow.ts"
 import type { PropsRule } from "./rules/props.ts"
 import type { Range } from "./rules/range.ts"
@@ -17,54 +17,26 @@ export class BranchNode<domain extends Domain = Domain> {
         return this.morphs.length !== 0
     }
 
-    compare(
-        branch: BranchNode,
-        s: ComparisonState
-    ): Comparison<RuleSet<domain>> {
+    intersect(branch: BranchNode) {
         if (this.domain !== branch.domain) {
-            return s.disjoint("domain", this.domain, branch.domain)
+            return { kind: "domain", l: this.domain, r: branch.domain }
         }
+        const s = new Intersection()
         if (
-            s.lastOperator === "&" &&
+            // TODO: lastOperator?
+            // s.lastOperator === "&" &&
             this.morphs.some((morph, i) => morph !== branch.morphs[i])
         ) {
             throwParseError(
                 writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
             )
         }
-        const result: Comparison<RuleSet> = {
-            intersection: {
-                domain: this.domain
-            },
+        if (this.hasMorphs !== branch.hasMorphs) {
             // an intersection between a morph type and a non-morph type precludes
             // assignability in either direction.
-            isSubtype: this.hasMorphs === branch.hasMorphs,
-            isSupertype: this.hasMorphs === branch.hasMorphs,
-            isDisjoint: false
+            s.isSubtype = false
+            s.isSupertype = false
         }
-        let i = 0
-        for (let j = 0; j < branch.rules.length; j++) {
-            while (this.rules[i].precedence < branch.rules[j].precedence) {
-                result.intersection.push(this.rules[i])
-                result.isSubtype = false
-                i++
-            }
-            if (this.rules[i].precedence === this.rules[j].precedence) {
-                const subresult = this.rules[i].compare(this.rules[j], s)
-                if (subresult.isDisjoint) {
-                    return subresult
-                }
-                result.isSubtype &&= subresult.isSubtype
-                result.isSupertype &&= subresult.isSupertype
-                i++
-            } else {
-                result.intersection.push(branch.rules[j])
-            }
-        }
-        while (i < this.rules.length) {
-            result.intersection.push(this.rules[i])
-        }
-        return result
     }
 
     allows(value: unknown) {
@@ -124,6 +96,47 @@ export class ValueNode<
         morphs: Morph[] = []
     ) {
         super(domain, morphs)
+    }
+}
+
+export class RulesNode<
+    domain extends Domain = Domain
+> extends BranchNode<domain> {
+    constructor(
+        domain: domain,
+        public rules: RuleSet<domain>,
+        morphs: Morph[] = []
+    ) {
+        super(domain, morphs)
+    }
+
+    intersect(
+        branch: BranchNode,
+        s: Intersection
+    ): Intersection<RuleSet<domain>> {
+        let i = 0
+        for (let j = 0; j < branch.rules.length; j++) {
+            while (this.rules[i].precedence < branch.rules[j].precedence) {
+                result.intersection.push(this.rules[i])
+                result.isSubtype = false
+                i++
+            }
+            if (this.rules[i].precedence === this.rules[j].precedence) {
+                const subresult = this.rules[i].compare(this.rules[j], s)
+                if (subresult.isDisjoint) {
+                    return subresult
+                }
+                result.isSubtype &&= subresult.isSubtype
+                result.isSupertype &&= subresult.isSupertype
+                i++
+            } else {
+                result.intersection.push(branch.rules[j])
+            }
+        }
+        while (i < this.rules.length) {
+            result.intersection.push(this.rules[i])
+        }
+        return result
     }
 }
 
