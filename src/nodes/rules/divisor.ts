@@ -1,12 +1,6 @@
 import type { Compilation } from "../compile.ts"
-import { BaseNode } from "../compose.ts"
-
-export const intersectDivisors = composeIntersection<number>((l, r) =>
-    Math.abs((l * r) / greatestCommonDivisor(l, r))
-)
-
-export const compileDivisor = (divisor: number, c: Compilation) =>
-    c.check("divisor", `${c.data} % ${divisor} === 0` as const, divisor)
+import type { Comparison, ComparisonState } from "../compose.ts"
+import { RuleNode } from "./rule.ts"
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {
@@ -21,4 +15,14 @@ const greatestCommonDivisor = (l: number, r: number) => {
     return greatestCommonDivisor
 }
 
-export class DivisibilityRule extends BaseNode<number> {}
+export class DivisorRule extends RuleNode<"divisor", number> {
+    compare(rule: number, s: ComparisonState): Comparison<number> {}
+
+    compile(c: Compilation) {
+        return c.check(
+            "divisor",
+            `${c.data} % ${divisor} === 0` as const,
+            divisor
+        )
+    }
+}

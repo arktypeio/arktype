@@ -93,7 +93,7 @@ export class ComparisonState {
     path = new Path()
     disjointsByPath: DisjointsByPath = {}
 
-    constructor(public lastOperator: "|" | "&") {}
+    constructor() {}
 
     disjoint<kind extends DisjointKind>(
         kind: kind,

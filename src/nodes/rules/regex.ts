@@ -1,28 +1,32 @@
-import type { CollapsibleList } from "../../utils/generics.ts"
-import { listFrom } from "../../utils/generics.ts"
 import type { Compilation } from "../compile.ts"
 import type { Comparison, ComparisonState } from "../compose.ts"
 import { registerRegex } from "../registry.ts"
-import { collapsibleListUnion } from "./collapsibleSet.ts"
-import type { RuleNode } from "./rule.ts"
+import { listUnion } from "./collapsibleSet.ts"
+import { RuleNode } from "./rule.ts"
 
-export const regexIntersection = composeIntersection<CollapsibleList<string>>(
-    collapsibleListUnion<string>
-)
+export class RegexNode extends RuleNode<"regex", string[]> {
+    readonly kind = "regex"
 
-export const compileRegex = (rule: CollapsibleList<string>, c: Compilation) =>
-    listFrom(rule)
-        .map(
-            (source) =>
-                `${registerRegex(source)}.test(${c.data}) || ${c.problem(
-                    "regex",
-                    "`" + source + "`"
-                )}` as const
-        )
-        .join(";")
+    compare(rule: string[], s: ComparisonState): Comparison<string[]> {
+        const intersection = listUnion(this.rule, rule)
+        return this.rule.length === intersection.length
+            ? rule.length === intersection.length
+                ? s.equality(intersection)
+                : s.subtype(this.rule)
+            : rule.length === intersection.length
+            ? s.supertype(rule)
+            : s.overlap(intersection)
+    }
 
-export class RegexNode implements RuleNode<RegexNode> {
-    constructor(public rule: string[]) {}
-
-    compare(r: RegexNode, s: ComparisonState): Comparison<RegexNode> {}
+    compile(c: Compilation): string {
+        return this.rule
+            .map(
+                (source) =>
+                    `${registerRegex(source)}.test(${c.data}) || ${c.problem(
+                        "regex",
+                        "`" + source + "`"
+                    )}` as const
+            )
+            .join(";")
+    }
 }

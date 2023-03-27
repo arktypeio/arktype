@@ -25,7 +25,8 @@ export class BranchNode<domain extends Domain = Domain> {
             return s.disjoint("domain", this.domain, branch.domain)
         }
         if (
-            s.lastOperator === "&" &&
+            // TODO: Fix
+            // s.lastOperator === "&" &&
             this.morphs.some((morph, i) => morph !== branch.morphs[i])
         ) {
             throwParseError(
