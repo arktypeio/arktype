@@ -1,13 +1,13 @@
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type { Compilation } from "../compile.ts"
-import type { Intersection, Intersection } from "../compose.ts"
+import type { Comparison, ComparisonState } from "../compose.ts"
 
 export class BaseNode<domain extends Domain = Domain> {
     readonly kind = "base"
 
     constructor(public domain: Domain, public value?: inferDomain<domain>) {}
 
-    compare(base: BaseNode, s: Intersection): Intersection<BaseNode> {
+    compare(base: BaseNode, s: ComparisonState): Comparison<BaseNode> {
         if (this.value !== undefined) {
             if (base.value !== undefined) {
                 if (this.value !== base.value) {

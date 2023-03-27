@@ -1,5 +1,5 @@
 import type { Compilation } from "../compile"
-import type { Intersection, Intersection } from "../compose.ts"
+import type { Comparison, ComparisonState } from "../compose.ts"
 
 export abstract class RuleNode<
     kind extends RuleKind = RuleKind,
@@ -13,7 +13,7 @@ export abstract class RuleNode<
 
     constructor(public rule: rule) {}
 
-    abstract compare(rule: rule, s: Intersection): Intersection<rule>
+    abstract compare(rule: rule, s: ComparisonState): Comparison<rule>
 
     abstract compile(c: Compilation): string
 }

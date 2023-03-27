@@ -1,11 +1,7 @@
 import type { BranchNode } from "./branch.ts"
 import type { Compilation } from "./compile.ts"
-import { isDisjoint } from "./compose.ts"
-import type {
-    Intersection,
-    IntersectionResult,
-    OverlappingIntersection
-} from "./compose.ts"
+import type { Comparison } from "./compose.ts"
+import { ComparisonState } from "./compose.ts"
 
 export type BranchesComparison = {
     lStrictSubtypeIndices: number[]
@@ -21,8 +17,11 @@ export class TypeNode {
         return ""
     }
 
-    compare(node: TypeNode, state: Intersection): IntersectionResult<TypeNode> {
-        const comparison = compareBranches(this.branches, node.branches, state)
+    compare(
+        branches: BranchNode[],
+        state: ComparisonState
+    ): Comparison<TypeNode> {
+        const comparison = compareBranches(this.branches, branches, state)
         const resultBranches = [
             ...comparison.distinctIntersections,
             ...comparison.equalIndexPairs.map(
@@ -32,37 +31,35 @@ export class TypeNode {
                 (lIndex) => this.branches[lIndex]
             ),
             ...comparison.rStrictSubtypeIndices.map(
-                (rIndex) => node.branches[rIndex]
+                (rIndex) => branches[rIndex]
             )
         ]
         if (resultBranches.length === 0) {
-            return state.disjoint("union", this.branches, node.branches)
+            return state.disjoint("union", this.branches, branches)
         }
-        const isSubtype =
-            comparison.lStrictSubtypeIndices.length +
-                comparison.equalIndexPairs.length ===
-            this.branches.length
-        const isSupertype =
-            comparison.rStrictSubtypeIndices.length +
-                comparison.equalIndexPairs.length ===
-            node.branches.length
-        return isSubtype
-            ? isSupertype
-                ? state.equality(this as TypeNode)
-                : state.subtype(node)
-            : isSupertype
-            ? state.supertype(this as TypeNode)
-            : state.overlap(new TypeNode(resultBranches))
+        return {
+            intersection: new TypeNode(resultBranches),
+            isSubtype:
+                comparison.lStrictSubtypeIndices.length +
+                    comparison.equalIndexPairs.length ===
+                this.branches.length,
+            isSupertype:
+                comparison.rStrictSubtypeIndices.length +
+                    comparison.equalIndexPairs.length ===
+                branches.length,
+            isDisjoint: false
+        }
     }
 
-    union(node: TypeNode) {
-        const comparison = compareBranches(this.branches, node.branches)
+    union(branches: BranchNode[]) {
+        const state = new ComparisonState("|")
+        const comparison = compareBranches(this.branches, branches, state)
         const resultBranches = [
             ...this.branches.filter(
                 (_, lIndex) =>
                     !comparison.lStrictSubtypeIndices.includes(lIndex)
             ),
-            ...node.branches.filter(
+            ...branches.filter(
                 (_, rIndex) =>
                     !comparison.rStrictSubtypeIndices.includes(rIndex) &&
                     // ensure equal branches are only included once
@@ -77,19 +74,23 @@ export class TypeNode {
         return new TypeNode(resultBranches)
     }
 
-    // toArray() {
-    //     return {
-    //         object: {
-    //             instance: Array,
-    //             props: {
-    //                 [mappedKeys.index]: this
-    //             }
-    //         }
-    //     }
-    // }
+    toArray() {
+        return {
+            object: {
+                instance: Array,
+                props: {
+                    [mappedKeys.index]: this
+                }
+            }
+        }
+    }
 }
 
-const compareBranches = (lBranches: BranchNode[], rBranches: BranchNode[]) => {
+const compareBranches = (
+    lBranches: BranchNode[],
+    rBranches: BranchNode[],
+    state: ComparisonState
+) => {
     const comparison: BranchesComparison = {
         lStrictSubtypeIndices: [],
         rStrictSubtypeIndices: [],
@@ -110,13 +111,16 @@ const compareBranches = (lBranches: BranchNode[], rBranches: BranchNode[]) => {
                 // an lBranch and will not yield any distinct intersections.
                 continue
             }
-            const branchResult = lBranches[lIndex].intersect(rBranches[rIndex])
-            if (isDisjoint(branchResult)) {
+            const intersection = lBranches[lIndex].compare(
+                rBranches[rIndex],
+                state
+            )
+            if (intersection.isDisjoint) {
                 // doesn't tell us about any redundancies or add a distinct intersection
                 continue
             }
-            if (branchState.isSubtype) {
-                if (branchState.isSupertype) {
+            if (intersection.isSubtype) {
+                if (intersection.isSupertype) {
                     // If branches are equal, execute logic explained in supertype case.
                     intersectionsByR[rIndex] = null
                     comparison.equalIndexPairs.push([lIndex, rIndex])
@@ -130,7 +134,7 @@ const compareBranches = (lBranches: BranchNode[], rBranches: BranchNode[]) => {
                 intersectionsOfL.length = 0
                 break
             }
-            if (branchState.isSupertype) {
+            if (intersection.isSupertype) {
                 // If r is a subtype of the current l branch, we set its
                 // intersections to null, removing any previous
                 // intersections including it and preventing any of its
@@ -142,7 +146,7 @@ const compareBranches = (lBranches: BranchNode[], rBranches: BranchNode[]) => {
                 // intersection as a candidate for the final result (could
                 // still be removed if it is determined l or r is a subtype
                 // of a remaining branch).
-                intersectionsOfL.push(branchResult)
+                intersectionsOfL.push(intersection.intersection)
             }
         }
         comparison.distinctIntersections.push(...intersectionsOfL)

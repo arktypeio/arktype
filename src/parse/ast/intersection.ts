@@ -98,15 +98,15 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
         const path = paths[0]
         return `${
             path === "/" ? "" : `At ${path}: `
-        }Intersection of ${disjointDescriptionWriters[
-            disjoints[path].disjointKind
-        ](disjoints[path] as never)} results in an unsatisfiable type`
+        }Intersection of ${disjointDescriptionWriters[disjoints[path].kind](
+            disjoints[path] as never
+        )} results in an unsatisfiable type`
     }
     let message = `
         "Intersection results in unsatisfiable types at the following paths:\n`
     for (const path in disjoints) {
         message += `  ${path}: ${disjointDescriptionWriters[
-            disjoints[path].disjointKind
+            disjoints[path].kind
         ](disjoints[path] as never)}\n`
     }
     return message
