@@ -9,12 +9,6 @@ import type { distributable } from "./distributableFunction.ts"
 import { distributeFunctionToNode } from "./distributableFunction.ts"
 import type { PostfixParser, TupleExpression } from "./tuple.ts"
 
-//type predicate vs non
-/**
- * @operator narrow
- * @docgenTable
- * @tuple ["type", => , condition]
- */
 export const parseNarrowTuple: PostfixParser<"=>"> = (def, ctx) => {
     const inputNode = parseDefinition(def[0], ctx)
     const resolution = ctx.type.scope.resolveNode(inputNode)

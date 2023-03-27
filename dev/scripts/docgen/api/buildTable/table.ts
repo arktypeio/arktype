@@ -3,16 +3,6 @@ import { possibleFormats } from "./operators.ts"
 export const defaultOperatorHeader = ["operator", ...possibleFormats]
 export const defaultKeywordsHeader = ["Name", "Type", "Description"]
 
-/**
- * todo
- * When it comes to examples I thought about doing stuff within the TSDocs but it's also a ton of clutter
- * can I either
- *      -> link to the github tests
- *      -> take snippets from the tests and place inside the individual doc
- */
-export const githubTestsPath =
-    "https://github.com/arktypeio/arktype/blob/main/dev/test/"
-
 export const constructRow = (
     rowData: string[],
     indexesToWrap: string[] = []
@@ -49,7 +39,6 @@ export const convertToHTML = (row: string[]) => {
         specialCharsKeys.forEach(
             (char) => (item = item.replaceAll(char, specialChars[char]))
         )
-
         return item
     })
 }

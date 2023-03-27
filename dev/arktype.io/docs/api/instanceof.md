@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 ## operator
 
--   instanceOf
+-   [instanceOf](./instanceof.md)
 
 ## helper
 
@@ -15,3 +15,8 @@ hide_table_of_contents: true
 ## tuple
 
 -   ["instanceOf", &lt;object&gt;]
+
+## example
+
+-   const instanceOf = type(["instanceOf", Date]) <br/>
+-   const instanceOf = instanceOf(Date) <br/>

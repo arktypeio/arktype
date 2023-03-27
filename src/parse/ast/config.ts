@@ -9,7 +9,7 @@ export type ConfigTuple<
 > = readonly [def, ":", config]
 
 /**
- * @operator config
+ * @operator {@link parseConfigTuple | config}
  * @docgenTable
  * @tuple ["type", ":", config]
  */

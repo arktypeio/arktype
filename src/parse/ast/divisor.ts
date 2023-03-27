@@ -3,7 +3,7 @@ import type { inferAst, validateAst } from "./ast.ts"
 import type { astToString } from "./utils.ts"
 
 /**
- * @operator divisor
+ * @operator {@link validateDivisor | divisor}
  * @docgenTable
  * @string "type%divisor"
  */

@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 ## operator
 
--   keyOf
+-   [keyOf](./keyof.md)
 
 ## tuple
 
@@ -15,3 +15,8 @@ hide_table_of_contents: true
 ## helper
 
 -   keyOf(&lt;object&gt;)
+
+## example
+
+-   const keyOf = type(["keyOf", {a:"string"}]) <br/>
+-   const keyOf = keyOf({a:"string"}) <br/>

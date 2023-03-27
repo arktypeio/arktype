@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 ## operator
 
--   arrayOf
+-   [arrayOf](./arrayof.md)
 
 ## string
 
@@ -19,3 +19,9 @@ hide_table_of_contents: true
 ## helper
 
 -   arrayOf(&lt;object&gt;)
+
+## example
+
+-   const arrayOf = type("number[]") <br/>
+-   const arrayOf = type(["arrayOf", "number"]) <br/>
+-   const arrayOf = arrayOf("number") <br/>

@@ -1,28 +1,23 @@
 export { scope } from "./scopes/scope.ts"
 export { type, ark, arkScope } from "./scopes/ark.ts"
 export type { Infer } from "./parse/definition.ts"
+export type { Scope, Space } from "./scopes/scope.ts"
 export {
-    intersection,
-    union,
     arrayOf,
     instanceOf,
-    valueOf,
+    intersection,
+    keyOf,
     morph,
     narrow,
-    keyOf
+    union,
+    valueOf
 } from "./scopes/expressions.ts"
-export type { Scope, Space } from "./scopes/scope.ts"
 export { jsObjectsScope } from "./scopes/jsObjects.ts"
 export { tsKeywordsScope } from "./scopes/tsKeywords.ts"
 export { validationScope } from "./scopes/validation/validation.ts"
 export type { Type } from "./scopes/type.ts"
 export { Problems, Problem } from "./traverse/problems.ts"
-export { parseKeyOfTuple } from "./parse/ast/keyof.ts"
-export { parseMorphTuple } from "./parse/ast/morph.ts"
-export { parseNarrowTuple } from "./parse/ast/narrow.ts"
 export { parseConfigTuple } from "./parse/ast/config.ts"
 export type { validateBound } from "./parse/ast/bound.ts"
 export type { validateDivisor } from "./parse/ast/divisor.ts"
-export type { inferUnion } from "./parse/ast/union.ts"
-export type { inferIntersection } from "./parse/ast/intersection.ts"
 export type { inferNode } from "./parse/ast/node.ts"

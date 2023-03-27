@@ -29,7 +29,7 @@ export const transformLinkTagToURL = (
             if (entryNames.includes(basename)) {
                 data.text = data.text.replace(
                     match[0],
-                    `[${alias ?? basename}](./${basename}.md)`
+                    `[${alias ?? basename}](./${basename.toLowerCase()}.md)`
                 )
             } else {
                 throw new Error(
@@ -56,25 +56,25 @@ export const packTsDocTags = (docs: TsDocData[] | undefined) => {
     return tsTagData
 }
 
-export const formatTagData = (arr: string[], tag: string) => {
-    let ret = ""
+export const formatTagData = (splitData: string[], tag: string) => {
+    let formattedData = ""
     if (tag === "param") {
         const tableHeaders = `| Variable      | Description |
         | ----------- | ----------- |\n`
-        ret += tableHeaders
-        for (const data of arr) {
+        formattedData += tableHeaders
+        for (const data of splitData) {
             const variable = data.trim().split(" ")[0]
             const description = data
                 .replace(variable, "")
                 .replace("\n", "")
                 .trim()
-            ret += `| ${variable}  | ${description} |\n`
+            formattedData += `| ${variable}  | ${description} |\n`
         }
-        return ret
+        return formattedData
     }
-    for (const data of arr) {
-        ret += `- ${data}`
-        ret += arr.length === 1 ? "\n" : "<br/>\n"
+    for (const data of splitData) {
+        formattedData += `- ${data}`
+        formattedData += splitData.length === 1 ? "\n" : "<br/>\n"
     }
-    return ret
+    return formattedData
 }

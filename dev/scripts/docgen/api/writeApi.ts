@@ -80,7 +80,7 @@ const generateMarkdownForExport = (
     if (tagData.docgenTable) {
         if (tagData.operator) {
             const row = [tagData.operator[0], ...getFormats(tagData)]
-            operatingTable.push(constructRow(row, ["1"]))
+            operatingTable.push(constructRow(row, ["1", "2", "3"]))
         }
         if (tagData.docgenScope) {
             const table = keywordTable(exported.text, tagData)

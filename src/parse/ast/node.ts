@@ -21,7 +21,7 @@ import type { BuiltinClass, inferObjectKind } from "../../utils/objectKinds.ts"
 import type { inferTerminal } from "./ast.ts"
 
 /**
- * @operator node
+ * @operator {@link inferNode | node}
  * @docgenTable
  * @tuple ["node", nodeDefinition]
  * @helper type.from(nodeDefinition)

@@ -4,8 +4,15 @@ hide_table_of_contents: true
 
 # narrow
 
-## text
+## operator
 
-```ts
-narrow: Ark["narrow"]
-```
+-   [narrow](./narrow.md)
+
+## tuple
+
+-   ["type", =&gt; , condition]
+
+## example
+
+-   const narrow = type( ["number", =&gt; , (n) =&gt; n % 2 === 0]) <br/>
+-   const isEven = (x: unknown): x is number =&gt; x % 2 === 0 <br/>

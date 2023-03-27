@@ -5,9 +5,13 @@ import type { inferAst, validateAst } from "./ast.ts"
 import type { astToString } from "./utils.ts"
 
 /**
- * @operator bound
+ * @operator {@link validateBound | bound}
  * @docgenTable
- * @string "number<5"
+ * @string "(value comparitor)? type comparitor value"
+ * @comparitors [<,>,<=,>=,==]
+ * @example "number<5"
+ * @example "2>=number>=5"
+ * @example "number===5"
  */
 export type validateBound<l, r, $> = l extends NumberLiteral
     ? validateAst<r, $>
