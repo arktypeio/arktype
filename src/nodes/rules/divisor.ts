@@ -1,4 +1,4 @@
-import type { Compilation } from "../compile.ts"
+import type { Compilation } from "../node.ts"
 import { RuleNode } from "./rule.ts"
 
 export class DivisorRule extends RuleNode<"divisor"> {

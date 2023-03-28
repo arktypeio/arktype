@@ -1,7 +1,6 @@
 import type { constructor } from "../../utils/generics.ts"
 import { constructorExtends } from "../../utils/generics.ts"
-import type { Compilation } from "../compile.ts"
-import type { ComparisonState } from "../compose.ts"
+import type { ComparisonState, Compilation } from "../node.ts"
 import { registerConstructor } from "../registry.ts"
 import { RuleNode } from "./rule.ts"
 
@@ -20,7 +19,7 @@ export class InstanceRule extends RuleNode<"instance"> {
             ? this
             : constructorExtends(other.instanceOf, this.instanceOf)
             ? other
-            : s.addDisjoint("class", this.instanceOf, other.instanceOf)
+            : s.addDisjoint("class", this, other)
     }
 
     compile(c: Compilation) {

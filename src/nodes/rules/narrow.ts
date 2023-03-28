@@ -1,5 +1,5 @@
 import type { Narrow } from "../../parse/ast/narrow.ts"
-import type { Compilation } from "../compile.ts"
+import type { Compilation } from "../node.ts"
 import { intersectUniqueLists, RuleNode } from "./rule.ts"
 
 export class NarrowRule extends RuleNode<"narrow"> {

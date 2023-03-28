@@ -1,6 +1,5 @@
-import { Compilation, createTraverse } from "../nodes/compile.ts"
 import type { DomainsJson, Node, ResolvedNode } from "../nodes/node.ts"
-import { isConfigNode } from "../nodes/node.ts"
+import { Compilation, createTraverse, isConfigNode } from "../nodes/node.ts"
 import type { ProblemCode, ProblemOptionsByCode } from "../nodes/problems.ts"
 import { CheckResult, TraversalState } from "../nodes/traverse.ts"
 import type { ConfigTuple } from "../parse/ast/config.ts"

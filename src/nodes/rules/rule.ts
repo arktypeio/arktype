@@ -1,5 +1,4 @@
-import type { Compilation } from "../compile.ts"
-import type { ComparisonState, DisjointContext } from "../compose.ts"
+import { Node } from "../node.ts"
 import type { DivisorRule } from "./divisor.ts"
 import type { InstanceRule } from "./instance.ts"
 import type { NarrowRule } from "./narrow.ts"
@@ -7,19 +6,16 @@ import type { RangeNode } from "./range.ts"
 import type { RegexNode } from "./regex.ts"
 import type { EqualityRule } from "./value.ts"
 
-export abstract class RuleNode<kind extends RuleKind = RuleKind> {
-    constructor(public readonly kind: kind, public readonly id: string) {}
+export abstract class RuleNode<kind extends RuleKind = RuleKind> extends Node<
+    RuleKinds[kind]
+> {
+    constructor(public readonly kind: kind, id: string) {
+        super(id)
+    }
 
     get precedence() {
         return precedenceByRule[this.kind]
     }
-
-    abstract intersect(
-        other: RuleKinds[kind],
-        s: ComparisonState
-    ): RuleKinds[kind] | DisjointContext
-
-    abstract compile(c: Compilation): string
 }
 
 type RuleKinds = {

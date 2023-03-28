@@ -1,4 +1,4 @@
-import type { Compilation } from "../compile.ts"
+import type { Compilation } from "../node.ts"
 import { registerRegex } from "../registry.ts"
 import { intersectUniqueLists, RuleNode } from "./rule.ts"
 

@@ -1,4 +1,4 @@
-import { createTraverse } from "../nodes/compile.ts"
+import { createTraverse } from "../nodes/node.ts"
 import type { Node } from "../nodes/node.ts"
 import type { CheckResult, TraversalState } from "../nodes/traverse.ts"
 import type { ParsedMorph } from "../parse/ast/morph.ts"

@@ -1,5 +1,5 @@
-import type { DisjointsByPath } from "../../nodes/compose.ts"
-import { disjointDescriptionWriters } from "../../nodes/compose.ts"
+import type { DisjointsByPath } from "../../nodes/node.ts"
+import { disjointDescriptionWriters } from "../../nodes/node.ts"
 import type { MappedKeys } from "../../nodes/rules/props.ts"
 import type {
     asConst,

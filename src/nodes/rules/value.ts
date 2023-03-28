@@ -2,13 +2,12 @@ import type { Domain, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
 import type { SerializablePrimitive } from "../../utils/serialize.ts"
 import { serializePrimitive } from "../../utils/serialize.ts"
-import type { Compilation } from "../compile.ts"
-import type { ComparisonState } from "../compose.ts"
+import type { ComparisonState, Compilation } from "../node.ts"
 import { registerValue } from "../registry.ts"
 import { RuleNode } from "./rule.ts"
 
 export class EqualityRule<
-    domain extends Domain = Domain
+    domain extends Domain = any
 > extends RuleNode<"value"> {
     constructor(public value: inferDomain<domain>) {
         const id =
@@ -21,7 +20,7 @@ export class EqualityRule<
     intersect(other: EqualityRule, s: ComparisonState) {
         return this.value === other.value
             ? this
-            : s.addDisjoint("value", this.value, other.value)
+            : s.addDisjoint("value", this, other)
     }
 
     compile(c: Compilation) {

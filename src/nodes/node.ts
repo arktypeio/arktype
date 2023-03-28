@@ -1,197 +1,238 @@
-import type { BranchNode } from "./branch.ts"
-import type { Compilation } from "./compile.ts"
-import type { Comparison } from "./compose.ts"
-import { ComparisonState } from "./compose.ts"
+import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
+import type { Scope } from "../scopes/scope.ts"
+import type { Type, TypeConfig } from "../scopes/type.ts"
+import type { Domain } from "../utils/domains.ts"
+import type { constructor, extend } from "../utils/generics.ts"
+import { entriesOf, keysOf, listFrom } from "../utils/generics.ts"
+import { Path } from "../utils/paths.ts"
+import { stringify } from "../utils/serialize.ts"
+import type { BranchNode, ValueNode } from "./branch.ts"
+import type { InstanceRule } from "./rules/instance.ts"
+import type { RangeNode } from "./rules/range.ts"
+import type { EqualityRule } from "./rules/value.ts"
 
-export type BranchesComparison = {
-    lStrictSubtypeIndices: number[]
-    rStrictSubtypeIndices: number[]
-    equalIndexPairs: [lIndex: number, rIndex: number][]
-    distinctIntersections: BranchNode[]
+export abstract class Node<subclass extends Node = any> {
+    constructor(public readonly id: string) {}
+
+    abstract intersect(
+        other: subclass,
+        s: ComparisonState
+    ): subclass | DisjointContext
+
+    abstract compile(c: Compilation): string
 }
 
-export class TypeNode {
-    constructor(public branches: BranchNode[]) {}
-
-    compile(c: Compilation): string {
-        return ""
-    }
-
-    compare(
-        branches: BranchNode[],
-        state: ComparisonState
-    ): Comparison<TypeNode> {
-        const comparison = compareBranches(this.branches, branches, state)
-        const resultBranches = [
-            ...comparison.distinctIntersections,
-            ...comparison.equalIndexPairs.map(
-                (indices) => this.branches[indices[0]]
-            ),
-            ...comparison.lStrictSubtypeIndices.map(
-                (lIndex) => this.branches[lIndex]
-            ),
-            ...comparison.rStrictSubtypeIndices.map(
-                (rIndex) => branches[rIndex]
-            )
-        ]
-        if (resultBranches.length === 0) {
-            return state.addDisjoint("union", this.branches, branches)
+export type DisjointKinds = extend<
+    Record<string, { l: unknown; r: unknown }>,
+    {
+        domain: {
+            l: Domain
+            r: Domain
         }
-        return {
-            intersection: new TypeNode(resultBranches),
-            isSubtype:
-                comparison.lStrictSubtypeIndices.length +
-                    comparison.equalIndexPairs.length ===
-                this.branches.length,
-            isSupertype:
-                comparison.rStrictSubtypeIndices.length +
-                    comparison.equalIndexPairs.length ===
-                branches.length,
-            isDisjoint: false
+        range: {
+            l: RangeNode
+            r: RangeNode
+        }
+        class: {
+            l: InstanceRule
+            r: InstanceRule
+        }
+        value: {
+            l: EqualityRule
+            r: EqualityRule
+        }
+        leftAssignability: {
+            l: EqualityRule
+            r: BranchNode
+        }
+        rightAssignability: {
+            l: BranchNode
+            r: EqualityRule
+        }
+        union: {
+            l: BranchNode[]
+            r: BranchNode[]
         }
     }
+>
 
-    union(branches: BranchNode[]) {
-        const state = new ComparisonState()
-        const comparison = compareBranches(this.branches, branches, state)
-        const resultBranches = [
-            ...this.branches.filter(
-                (_, lIndex) =>
-                    !comparison.lStrictSubtypeIndices.includes(lIndex)
-            ),
-            ...branches.filter(
-                (_, rIndex) =>
-                    !comparison.rStrictSubtypeIndices.includes(rIndex) &&
-                    // ensure equal branches are only included once
-                    !comparison.equalIndexPairs.some(
-                        (indexPair) => indexPair[1] === rIndex
-                    )
-            )
-        ]
-        // TODO: if a boolean has multiple branches, neither of which is a
-        // subtype of the other, it consists of two opposite literals
-        // and can be simplified to a non-literal boolean.
-        return new TypeNode(resultBranches)
-    }
+export type DisjointKind = keyof DisjointKinds
 
-    toArray() {
-        return {
-            object: {
-                instance: Array,
-                props: {
-                    [mappedKeys.index]: this
-                }
-            }
-        }
+export class ComparisonState {
+    path = new Path()
+    disjointsByPath: DisjointsByPath = {}
+
+    constructor() {}
+
+    addDisjoint<kind extends DisjointKind>(
+        kind: kind,
+        l: DisjointKinds[kind]["l"],
+        r: DisjointKinds[kind]["r"]
+    ) {
+        const result = { kind, l, r } as DisjointContext<kind>
+        this.disjointsByPath[`${this.path}`] = result
+        return result
     }
 }
 
-const compareBranches = (
-    lBranches: BranchNode[],
-    rBranches: BranchNode[],
-    state: ComparisonState
-) => {
-    const comparison: BranchesComparison = {
-        lStrictSubtypeIndices: [],
-        rStrictSubtypeIndices: [],
-        equalIndexPairs: [],
-        distinctIntersections: []
-    }
-    // Each rBranch is initialized to an empty array to which distinct
-    // intersections will be appended. If the rBranch is identified as a
-    // subtype (or equal) of any lBranch, the corresponding value should be
-    // set to null so we can avoid including previous/future intersections
-    // in the final result.
-    const intersectionsByR: (BranchNode[] | null)[] = rBranches.map(() => [])
-    for (let lIndex = 0; lIndex < lBranches.length; lIndex++) {
-        const intersectionsOfL: BranchNode[] = []
-        for (let rIndex = 0; rIndex < rBranches.length; rIndex++) {
-            if (!intersectionsByR[rIndex]) {
-                // we've identified this rBranch as a subtype of
-                // an lBranch and will not yield any distinct intersections.
-                continue
-            }
-            const intersection = lBranches[lIndex].compare(
-                rBranches[rIndex],
-                state
-            )
-            if (intersection.isDisjoint) {
-                // doesn't tell us about any redundancies or add a distinct intersection
-                continue
-            }
-            if (intersection.isSubtype) {
-                if (intersection.isSupertype) {
-                    // If branches are equal, execute logic explained in supertype case.
-                    intersectionsByR[rIndex] = null
-                    comparison.equalIndexPairs.push([lIndex, rIndex])
-                } else {
-                    comparison.lStrictSubtypeIndices.push(lIndex)
-                }
-                // If l is a subtype of the current r branch, intersections
-                // with previous and remaining branches of r won't lead to
-                // distinct intersections, so empty lIntersections and break
-                // from the inner loop.
-                intersectionsOfL.length = 0
-                break
-            }
-            if (intersection.isSupertype) {
-                // If r is a subtype of the current l branch, we set its
-                // intersections to null, removing any previous
-                // intersections including it and preventing any of its
-                // remaining intersections from being computed.
-                intersectionsByR[rIndex] = null
-                comparison.rStrictSubtypeIndices.push(rIndex)
-            } else {
-                // If neither l nor r is a subtype of the other, add their
-                // intersection as a candidate for the final result (could
-                // still be removed if it is determined l or r is a subtype
-                // of a remaining branch).
-                intersectionsOfL.push(intersection.intersection)
-            }
-        }
-        comparison.distinctIntersections.push(...intersectionsOfL)
-    }
-    return comparison
+export type DisjointsByPath = Record<string, DisjointContext>
+
+export type DisjointContext<kind extends DisjointKind = DisjointKind> = {
+    kind: kind
+} & DisjointKinds[kind]
+
+export const createTraverse = (name: string, js: string) =>
+    Function(`return (data, state) => {
+${js} 
+}`)()
+
+export type TraversalConfig = {
+    [k in keyof TypeConfig]-?: TypeConfig[k][]
 }
 
-// const state = new IntersectionState(type, "&")
-// const result = nodeIntersection(l, r, state)
-// return isDisjoint(result)
-//     ? throwParseError(compileDisjointReasonsMessage(state.disjoints))
-//     : isEquality(result)
-//     ? l
-//     : result
+const initializeCompilationConfig = (): TraversalConfig => ({
+    mustBe: [],
+    keys: []
+})
 
-// export type ConfigNode<$ = Dict> = {
-//     config: TypeConfig
-//     node: DomainsJson<$>
-// }
+export class Compilation {
+    path = new Path()
+    lastDomain: Domain = "undefined"
+    failFast = false
+    traversalConfig = initializeCompilationConfig()
+    readonly rootScope: Scope
 
-// export type LiteralNode<
-//     domain extends Domain = Domain,
-//     value extends inferDomain<domain> = inferDomain<domain>
-// > = {
-//     [k in domain]: LiteralRules<domain, value>
-// }
+    constructor(public type: Type) {
+        this.rootScope = type.scope
+    }
 
-// export const isLiteralNode = <domain extends Domain>(
-//     node: ResolvedNode,
-//     domain: domain
-// ): node is LiteralNode<domain> => {
-//     return (
-//         resolutionExtendsDomain(node, domain) &&
-//         isLiteralCondition(node[domain])
-//     )
-// }
+    check<code extends ProblemCode, condition extends string>(
+        code: code,
+        condition: condition,
+        rule: ProblemRules[code]
+    ) {
+        return `(${condition} || ${this.problem(code, rule)})` as const
+    }
 
-// export type DomainSubtypeResolution<domain extends Domain> = {
-//     readonly [k in domain]: defined<DomainsNode[domain]>
-// }
+    mergeChecks(checks: string[]) {
+        if (checks.length === 1) {
+            return checks[0]
+        }
+        let result = `(() => {
+let valid = ${checks[0]};\n`
+        for (let i = 1; i < checks.length - 1; i++) {
+            result += `valid = ${checks[i]} && valid;\n`
+        }
+        result += `return ${checks[checks.length - 1]} && valid
+})()`
+        return result
+    }
 
-// export const resolutionExtendsDomain = <domain extends Domain>(
-//     resolution: ResolvedNode,
-//     domain: domain
-// ): resolution is DomainSubtypeResolution<domain> => {
-//     const domains = keysOf(resolution)
-//     return domains.length === 1 && domains[0] === domain
-// }
+    get data() {
+        return this.path.toPropChain()
+    }
+
+    problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
+        return `state.reject("${code}", ${
+            typeof rule === "function" ? rule.name : JSON.stringify(rule)
+        }, ${this.data}, ${this.path.json})` as const
+    }
+
+    arrayOf(node: Node) {
+        // TODO: increment. does this work for logging?
+        this.path.push("${i}")
+        const result = `(() => {
+    let valid = true;
+    for(let i = 0; i < ${this.data}.length; i++) {
+        valid = ${this.node(node)} && isValid;
+    }
+    return valid
+})()`
+        this.path.pop()
+        return result
+    }
+
+    compileDomainCondition = (domain: Domain) =>
+        domain === "object"
+            ? `(typeof ${this.data} === "object" && ${this.data} !== null) || typeof ${this.data} === "function"`
+            : domain === "null" || domain === "undefined"
+            ? `${this.data} === ${domain}`
+            : `typeof ${this.data} === "${domain}"`
+
+    #hasImpliedDomain(predicate: Predicate) {
+        return (
+            predicate !== true &&
+            listFrom(predicate).every((branch) => {
+                const rules = isTransformationBranch(branch)
+                    ? branch.rules
+                    : branch
+                return "value" in rules || rules.instance
+            })
+        )
+    }
+
+    node(node: Node) {
+        if (typeof node === "string") {
+            return (
+                this.type.scope
+                    .resolve(node)
+                    // TODO: improve
+                    .js.replaceAll("data", this.path.toPropChain())
+            )
+        }
+        if (isConfigNode(node)) {
+            return this.compileConfigNode(node)
+        }
+        const domains = keysOf(node)
+        if (domains.length === 1) {
+            const domain = domains[0]
+            const predicate = node[domain]!
+            const domainCheck = this.check(
+                "domain",
+                this.compileDomainCondition(domain),
+                domain
+            )
+            if (predicate === true) {
+                return domainCheck
+            }
+            const checks = compilePredicate(predicate, this)
+            if (!this.#hasImpliedDomain(predicate)) {
+                return domainCheck + checks
+            }
+            return checks
+        }
+        // const result = {}
+        // for (const domain of domains) {
+        //     result[domain] = compilePredicate(node[domain]!, state)
+        // }
+        return `console.log("unimplemented!")` //[["domains", result]]
+    }
+
+    // getProblemConfig<code extends ProblemCode>(
+    //     code: code
+    // ): ProblemWriters<code> {
+    //     const result = {} as ProblemWriters<code>
+    //     for (const k of problemWriterKeys) {
+    //         result[k] =
+    //             this.traversalConfig[k][0] ??
+    //             (this.rootScope.config.codes[code][k] as any)
+    //     }
+    //     return result
+    // }
+
+    getConfigKey<k extends keyof TypeConfig>(k: k) {
+        return this.traversalConfig[k][0] as TypeConfig[k] | undefined
+    }
+
+    compileConfigNode(node: ConfigNode): string {
+        const configEntries = entriesOf(node.config)
+        for (const entry of configEntries) {
+            this.traversalConfig[entry[0]].unshift(entry[1] as any)
+        }
+        const result = this.node(node.node)
+        for (const entry of configEntries) {
+            this.traversalConfig[entry[0]].shift()
+        }
+        return result
+    }
+}

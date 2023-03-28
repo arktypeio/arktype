@@ -1,14 +1,14 @@
 import type { Dict } from "../../utils/generics.ts"
-import type { Compilation } from "../compile.ts"
+import type { Compilation, Node } from "../node.ts"
 import {
     composeIntersection,
     composeKeyedIntersection,
     equality,
     isDisjoint,
-    isEquality
-} from "../compose.ts"
-import type { Node } from "../node.ts"
-import { isLiteralNode, nodeIntersection } from "../node.ts"
+    isEquality,
+    isLiteralNode,
+    nodeIntersection
+} from "../node.ts"
 
 export type PropsRule<$ = Dict> = {
     [propKey in string]: Prop<$>

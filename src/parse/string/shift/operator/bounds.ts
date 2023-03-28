@@ -1,4 +1,4 @@
-import { stringifyRange } from "../../../../nodes/compose.ts"
+import { stringifyRange } from "../../../../nodes/node.ts"
 import type { DomainsJson } from "../../../../nodes/node.ts"
 import type {
     Bound,
