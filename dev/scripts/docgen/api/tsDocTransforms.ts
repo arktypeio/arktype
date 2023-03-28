@@ -2,18 +2,13 @@ import type { ExportData, TsDocData } from "./extractApi.ts"
 
 type LinkDetails = [name: string, alias?: string]
 
-const trimWhitespace = (text: string) => text.trim()
-
 const extractLinkDetails = (regexMatch: RegExpMatchArray): LinkDetails => {
     const BASE_NAME = 1
     const ALIAS = 2
     const BASE_NAME_NO_ALIAS = 3
     return regexMatch[BASE_NAME_NO_ALIAS]
-        ? [trimWhitespace(regexMatch[BASE_NAME_NO_ALIAS])]
-        : [
-              trimWhitespace(regexMatch[BASE_NAME]),
-              trimWhitespace(regexMatch[ALIAS])
-          ]
+        ? [regexMatch[BASE_NAME_NO_ALIAS].trim()]
+        : [regexMatch[BASE_NAME].trim(), regexMatch[ALIAS].trim()]
 }
 
 export const transformLinkTagToURL = (
@@ -21,7 +16,7 @@ export const transformLinkTagToURL = (
     exportData: ExportData,
     entryNames: string[]
 ) => {
-    const extractApiNameRegex = /{@link(.+)\|(.+)?}|{@link(.+)}/
+    const extractApiNameRegex = /{@link(.+?)\|(.+)?}|{@link(.+)}/
     for (const data of exportData.tsDocs ?? []) {
         const match = data.text.match(extractApiNameRegex)
         if (match) {

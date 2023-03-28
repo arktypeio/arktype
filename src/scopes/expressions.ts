@@ -33,38 +33,38 @@ export type Expressions<$> = {
 type Ark = Expressions<PrecompiledDefaults>
 
 /**
- * @operator {@link intersection}
+ * @operator {@link intersection | &}
  * @docgenTable
- * @tuple  [a, &, b]
- * @helper  intersection(a,b)
- * @string "a&b"
- * @example const intersection = type("string&uppercase")
- * @example const intersection = type(["string", "&", "uppercase"])
- * @example const intersection = intersection("string","uppercase")
+ * @string "L&R"
+ * @tuple  [L, "&", R]
+ * @helper  intersection(L,R)
+ * @example const intersection = type("/@arktype\.io$/ & email")
+ * @example const tupleIntersection = type(["string", "&", "uppercase"])
+ * @example const helperIntersection = intersection("string","uppercase")
  */
 export const intersection: Ark["intersection"] = scopes.ark.intersection
 
 /**
- * @operator {@link union}
+ * @operator {@link union | |}
  * @docgenTable
- * @tuple [a, | , b]
- * @helper union(a,b)
- * @string "a|b"
+ * @string "L|R"
+ * @tuple [L, "|" , R]
+ * @helper union(L,R)
  * @example const union = type("string|number")
- * @example const union = type(["string", "|", "number"])
- * @example const union = union("string", "number")
+ * @example const tupleUnion = type(["string", "|", "number"])
+ * @example const helperUnion = union("string", "number")
  */
 export const union: Ark["union"] = scopes.ark.union
 
 /**
  * @operator {@link arrayOf}
  * @docgenTable
- * @string "type[]"
+ * @string "T[]"
  * @tuple ["arrayOf", <object>]
  * @helper arrayOf(<object>)
- * @example const arrayOf = type("number[]")
- * @example const arrayOf = type(["arrayOf", "number"])
- * @example const arrayOf = arrayOf("number")
+ * @example const numberArray = type("[]")
+ * @example const tupleArray = type([T, "[]"])
+ * @example const helperArray = arrayOf("T")
  */
 export const arrayOf: Ark["arrayOf"] = scopes.ark.arrayOf
 
@@ -73,33 +73,33 @@ export const arrayOf: Ark["arrayOf"] = scopes.ark.arrayOf
  * @docgenTable
  * @tuple ["keyOf", <object>]
  * @helper  keyOf(<object>)
- * @example const keyOf = type(["keyOf", {a:"string"}])
- * @example const keyOf = keyOf({a:"string"})
+ * @example const tupleKeyOf = type(["keyOf", {a:"string"}])
+ * @example const helperKeyOf = keyOf({a:"string"})
  */
 export const keyOf: Ark["keyOf"] = scopes.ark.keyOf
 
 /**
  * @operator {@link instanceOf}
  * @docgenTable
- * @helper instanceOf(<object>)
  * @tuple ["instanceOf", <object>]
- * @example const instanceOf = type(["instanceOf", Date])
- * @example const instanceOf = instanceOf(Date)
+ * @helper instanceOf(<object>)
+ * @example const tupleInstanceOf = type(["instanceOf", Date])
+ * @example const helperInstanceOf = instanceOf(Date)
  */
 export const instanceOf: Ark["instanceOf"] = scopes.ark.instanceOf
 
 /**
- * @operator {@link valueOf}
+ * @operator {@link valueOf | ===}
  * @docgenTable
  * @tuple ["===", value]
  * @helper valueOf(<object>)
- * @example const valueOf = type(["valueOf", {a:"string"}])
- * @example const valueOf = valueOf({a:"string"})
+ * @example const tupleValueOf = type(["valueOf", {a:"string"}])
+ * @example const helperValueOf = valueOf({a:"string"})
  */
 export const valueOf: Ark["valueOf"] = scopes.ark.valueOf
 
 /**
- * @operator {@link narrow}
+ * @operator {@link narrow | =>}
  * @docgenTable
  * @tuple ["type", => , condition]
  * @example const narrow = type( ["number", => , (n) => n % 2 === 0])
@@ -108,12 +108,12 @@ export const valueOf: Ark["valueOf"] = scopes.ark.valueOf
 export const narrow: Ark["narrow"] = scopes.ark.narrow
 
 /**
- * @operator {@link morph}
+ * @operator {@link morph | |>}
  * @docgenTable
  * @tuple [inputType, |>, (data) => output]
  * @helper morph(inputType, (data) => output)
- * @example const morph = type( ["string", |> , (data) => `morphed ${data}`])
- * @example const morph = morph("string", (data) => `morphed ${input}`)
+ * @example const tupleMorph = type( ["string", |> , (data) => `morphed ${data}`])
+ * @example const helperMorph = morph("string", (data) => `morphed ${input}`)
  */
 export const morph: Ark["morph"] = scopes.ark.morph
 

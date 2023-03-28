@@ -3,9 +3,9 @@ import type { inferAst, validateAst } from "./ast.ts"
 import type { astToString } from "./utils.ts"
 
 /**
- * @operator {@link validateDivisor | divisor}
+ * @operator {@link validateDivisor | %}
  * @docgenTable
- * @string "type%divisor"
+ * @string "N%D", where `N` is a number and `D` is a non-zero integer
  */
 export type validateDivisor<l, $> = isDivisible<inferAst<l, $>> extends true
     ? validateAst<l, $>

@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 ## operator
 
--   [valueOf](./valueof.md)
+-   [===](./valueof.md)
 
 ## tuple
 
@@ -18,5 +18,5 @@ hide_table_of_contents: true
 
 ## example
 
--   const valueOf = type(["valueOf", {a:"string"}]) <br/>
--   const valueOf = valueOf({a:"string"}) <br/>
+-   const tupleValueOf = type(["valueOf", {a:"string"}]) <br/>
+-   const helperValueOf = valueOf({a:"string"}) <br/>

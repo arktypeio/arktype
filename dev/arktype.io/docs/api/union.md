@@ -6,22 +6,22 @@ hide_table_of_contents: true
 
 ## operator
 
--   [union](./union.md)
-
-## tuple
-
--   [a, &vert; , b]
-
-## helper
-
--   union(a,b)
+-   [&vert;](./union.md)
 
 ## string
 
--   "a&vert;b"
+-   "L&vert;R"
+
+## tuple
+
+-   [L, "&vert;" , R]
+
+## helper
+
+-   union(L,R)
 
 ## example
 
 -   const union = type("string&vert;number") <br/>
--   const union = type(["string", "&vert;", "number"]) <br/>
--   const union = union("string", "number") <br/>
+-   const tupleUnion = type(["string", "&vert;", "number"]) <br/>
+-   const helperUnion = union("string", "number") <br/>

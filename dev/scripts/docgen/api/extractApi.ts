@@ -101,9 +101,7 @@ const findAssociatedDocs = (
         ? declaration
         : find(declaration.getAncestors(), isJSDocableNode)
 
-    if (possiblyDocumentedAncestor) {
-        return possiblyDocumentedAncestor.getJsDocs()
-    }
+    return possiblyDocumentedAncestor?.getJsDocs()
 }
 
 const extractExportData = (

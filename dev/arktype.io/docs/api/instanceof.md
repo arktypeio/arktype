@@ -8,15 +8,15 @@ hide_table_of_contents: true
 
 -   [instanceOf](./instanceof.md)
 
-## helper
-
--   instanceOf(&lt;object&gt;)
-
 ## tuple
 
 -   ["instanceOf", &lt;object&gt;]
 
+## helper
+
+-   instanceOf(&lt;object&gt;)
+
 ## example
 
--   const instanceOf = type(["instanceOf", Date]) <br/>
--   const instanceOf = instanceOf(Date) <br/>
+-   const tupleInstanceOf = type(["instanceOf", Date]) <br/>
+-   const helperInstanceOf = instanceOf(Date) <br/>

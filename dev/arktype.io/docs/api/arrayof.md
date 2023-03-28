@@ -10,7 +10,7 @@ hide_table_of_contents: true
 
 ## string
 
--   "type[]"
+-   "T[]"
 
 ## tuple
 
@@ -22,6 +22,6 @@ hide_table_of_contents: true
 
 ## example
 
--   const arrayOf = type("number[]") <br/>
--   const arrayOf = type(["arrayOf", "number"]) <br/>
--   const arrayOf = arrayOf("number") <br/>
+-   const numberArray = type("[]") <br/>
+-   const tupleArray = type([T, "[]"]) <br/>
+-   const helperArray = arrayOf("T") <br/>

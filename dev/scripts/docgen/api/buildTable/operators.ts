@@ -17,7 +17,7 @@ export const getFormats = (tagData: TsTagData) => {
     for (const possibleFormat of possibleFormats) {
         const format =
             tagData[possibleFormat] === undefined
-                ? "❌"
+                ? ""
                 : tagData[possibleFormat][0]
         formats.push(format)
     }

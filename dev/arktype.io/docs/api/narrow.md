@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 ## operator
 
--   [narrow](./narrow.md)
+-   [=&gt;](./narrow.md)
 
 ## tuple
 

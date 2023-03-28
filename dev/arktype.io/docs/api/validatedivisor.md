@@ -6,8 +6,8 @@ hide_table_of_contents: true
 
 ## operator
 
--   [divisor](./validatedivisor.md)
+-   [%](./validatedivisor.md)
 
 ## string
 
--   "type%divisor"
+-   "N%D", where `N` is a number and `D` is a non-zero integer

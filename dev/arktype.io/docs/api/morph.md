@@ -6,7 +6,7 @@ hide_table_of_contents: true
 
 ## operator
 
--   [morph](./morph.md)
+-   [&vert;&gt;](./morph.md)
 
 ## tuple
 
@@ -18,5 +18,5 @@ hide_table_of_contents: true
 
 ## example
 
--   const morph = type( ["string", &vert;&gt; , (data) =&gt; `morphed ${data}`]) <br/>
--   const morph = morph("string", (data) =&gt; `morphed ${input}`) <br/>
+-   const tupleMorph = type( ["string", &vert;&gt; , (data) =&gt; `morphed ${data}`]) <br/>
+-   const helperMorph = morph("string", (data) =&gt; `morphed ${input}`) <br/>

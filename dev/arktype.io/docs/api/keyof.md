@@ -18,5 +18,5 @@ hide_table_of_contents: true
 
 ## example
 
--   const keyOf = type(["keyOf", {a:"string"}]) <br/>
--   const keyOf = keyOf({a:"string"}) <br/>
+-   const tupleKeyOf = type(["keyOf", {a:"string"}]) <br/>
+-   const helperKeyOf = keyOf({a:"string"}) <br/>
