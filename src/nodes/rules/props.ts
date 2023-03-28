@@ -1,6 +1,4 @@
-import type { Dict } from "../../utils/generics.ts"
-import type { ComparisonState, Compilation, Node } from "../node.ts"
-import { Disjoint } from "../node.ts"
+import type { ComparisonState, Compilation } from "../node.ts"
 import type { TypeNode } from "../type.ts"
 import { RuleNode } from "./rule.ts"
 
