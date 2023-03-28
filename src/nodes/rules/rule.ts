@@ -3,6 +3,7 @@ import type { ComparisonState, DisjointContext } from "../compose.ts"
 import type { DivisorRule } from "./divisor.ts"
 import type { InstanceRule } from "./instance.ts"
 import type { NarrowRule } from "./narrow.ts"
+import type { RangeNode } from "./range.ts"
 import type { RegexNode } from "./regex.ts"
 import type { EqualityRule } from "./value.ts"
 
@@ -24,7 +25,7 @@ export abstract class RuleNode<kind extends RuleKind = RuleKind> {
 type RuleKinds = {
     value: EqualityRule
     instance: InstanceRule
-    range: RegexNode
+    range: RangeNode
     divisor: DivisorRule
     regex: RegexNode
     props: RegexNode
