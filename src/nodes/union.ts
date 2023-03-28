@@ -1,5 +1,22 @@
-import type { Branch, Branches, BranchNode } from "./branch.ts"
-import { ComparisonState, ComparisonState, Node, Node } from "./node.ts"
+import type { Domain } from "../utils/domains.ts"
+import { domainOf } from "../utils/domains.ts"
+import type { evaluate, keySet } from "../utils/generics.ts"
+import { isKeyOf, keysOf } from "../utils/generics.ts"
+import type { DefaultObjectKind } from "../utils/objectKinds.ts"
+import {
+    getExactConstructorObjectKind,
+    objectKindOf
+} from "../utils/objectKinds.ts"
+import { Path } from "../utils/paths.ts"
+import type {
+    SerializablePrimitive,
+    SerializedPrimitive
+} from "../utils/serialize.ts"
+import { serializePrimitive } from "../utils/serialize.ts"
+import type { BranchNode } from "./branch.ts"
+import type { Compilation } from "./node.ts"
+import { ComparisonState, Node } from "./node.ts"
+import { mappedKeys } from "./rules/props.ts"
 
 export type BranchesComparison = {
     lStrictSubtypeIndices: number[]
@@ -8,12 +25,12 @@ export type BranchesComparison = {
     distinctIntersections: BranchNode[]
 }
 
-export class TypeNode extends Node<TypeNode> {
+export class Union extends Node<Union> {
     constructor(public branches: BranchNode[]) {
         super(JSON.stringify(branches.map((_) => _.id)))
     }
 
-    intersect(other: TypeNode, state: ComparisonState) {
+    intersect(other: Union, state: ComparisonState) {
         const comparison = compareBranches(this.branches, other.branches, state)
         const resultBranches = [
             ...comparison.distinctIntersections,
@@ -30,7 +47,7 @@ export class TypeNode extends Node<TypeNode> {
         if (resultBranches.length === 0) {
             return state.addDisjoint("union", this.branches, other.branches)
         }
-        return new TypeNode(resultBranches)
+        return new Union(resultBranches)
     }
 
     union(branches: BranchNode[]) {
@@ -53,7 +70,11 @@ export class TypeNode extends Node<TypeNode> {
         // TODO: if a boolean has multiple branches, neither of which is a
         // subtype of the other, it consists of two opposite literals
         // and can be simplified to a non-literal boolean.
-        return new TypeNode(resultBranches)
+        return new Union(resultBranches)
+    }
+
+    allows(value: unknown) {
+        return !value
     }
 
     compile(c: Compilation): string {
@@ -90,6 +111,7 @@ const compareBranches = (
     // in the final result.
     const intersectionsByR: (BranchNode[] | null)[] = rBranches.map(() => [])
     for (let lIndex = 0; lIndex < lBranches.length; lIndex++) {
+        const l = lBranches[lIndex]
         const intersectionsOfL: BranchNode[] = []
         for (let rIndex = 0; rIndex < rBranches.length; rIndex++) {
             if (!intersectionsByR[rIndex]) {
@@ -97,16 +119,14 @@ const compareBranches = (
                 // an lBranch and will not yield any distinct intersections.
                 continue
             }
-            const intersection = lBranches[lIndex].intersect(
-                rBranches[rIndex],
-                state
-            )
-            if (intersection.isDisjoint) {
+            const r = rBranches[rIndex]
+            const intersection = l.intersect(r, state)
+            if (intersection.isDisjoint()) {
                 // doesn't tell us about any redundancies or add a distinct intersection
                 continue
             }
-            if (intersection.isSubtype) {
-                if (intersection.isSupertype) {
+            if (intersection === l) {
+                if (intersection === r) {
                     // If branches are equal, execute logic explained in supertype case.
                     intersectionsByR[rIndex] = null
                     comparison.equalIndexPairs.push([lIndex, rIndex])
@@ -120,7 +140,7 @@ const compareBranches = (
                 intersectionsOfL.length = 0
                 break
             }
-            if (intersection.isSupertype) {
+            if (intersection === r) {
                 // If r is a subtype of the current l branch, we set its
                 // intersections to null, removing any previous
                 // intersections including it and preventing any of its
@@ -132,7 +152,7 @@ const compareBranches = (
                 // intersection as a candidate for the final result (could
                 // still be removed if it is determined l or r is a subtype
                 // of a remaining branch).
-                intersectionsOfL.push(intersection.intersection)
+                intersectionsOfL.push(intersection)
             }
         }
         comparison.distinctIntersections.push(...intersectionsOfL)
@@ -182,31 +202,10 @@ const compareBranches = (
 //     return domains.length === 1 && domains[0] === domain
 // }
 
-import type { Scope } from "../scopes/scope.ts"
-import type { Domain } from "../utils/domains.ts"
-import { domainOf } from "../utils/domains.ts"
-import type { evaluate, keySet } from "../utils/generics.ts"
-import { isKeyOf, keysOf } from "../utils/generics.ts"
-import type { DefaultObjectKind } from "../utils/objectKinds.ts"
-import {
-    getExactConstructorObjectKind,
-    isArray,
-    objectKindOf
-} from "../utils/objectKinds.ts"
-import { Path } from "../utils/paths.ts"
-import type {
-    SerializablePrimitive,
-    SerializedPrimitive
-} from "../utils/serialize.ts"
-import { serializePrimitive } from "../utils/serialize.ts"
-import { branchIntersection, compileBranch } from "./branch.ts"
-import type { Compilation, Compilation } from "./node.ts"
-import { mappedKeys, propToNode } from "./rules/props.ts"
-
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-export const compileBranches = (branches: Branches, c: Compilation) => {
+export const compileBranches = (branches: BranchNode[], c: Compilation) => {
     const discriminants = calculateDiscriminants(branches, c)
     const indices = branches.map((_, i) => i)
     return discriminate(branches, indices, discriminants, c)
@@ -221,12 +220,12 @@ export type QualifiedDisjoint =
     | `${string}/${DiscriminantKind}`
 
 const discriminate = (
-    originalBranches: Branches,
+    originalBranches: BranchNode[],
     remainingIndices: number[],
     discriminants: Discriminants,
-    ctx: Compilation
+    c: Compilation
 ) => {
-    return compileBranch(originalBranches[remainingIndices[0]], ctx)
+    return originalBranches[remainingIndices[0]].compile(c)
     // if (remainingIndices.length === 1) {
     //     return compileBranch(originalBranches[remainingIndices[0]], ctx)
     // }
@@ -382,7 +381,7 @@ const discriminantKinds: keySet<DiscriminantKind> = {
 export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 const calculateDiscriminants = (
-    branches: Branches,
+    branches: BranchNode[],
     ctx: Compilation
 ): Discriminants => {
     const discriminants: Discriminants = {
@@ -394,12 +393,8 @@ const calculateDiscriminants = (
             const pairKey = `${lIndex}/${rIndex}` as const
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
-            const intersectionState = new ComparisonState(ctx.type, "|")
-            branchIntersection(
-                branches[lIndex],
-                branches[rIndex],
-                intersectionState
-            )
+            const intersectionState = new ComparisonState()
+            branches[lIndex].intersect(branches[rIndex], intersectionState)
             for (const path in intersectionState.disjointsByPath) {
                 if (path.includes(mappedKeys.index)) {
                     // containers could be empty and therefore their elements cannot be used to discriminate
@@ -560,23 +555,3 @@ export const serializeCase = <kind extends DiscriminantKind>(
     kind: kind,
     data: unknown
 ) => serializeData[kind](data)
-
-const branchIncludesMorph = (branch: Branch, $: Scope) =>
-    "morph" in branch
-        ? true
-        : "props" in branch
-        ? Object.values(branch.props!).some((prop) =>
-              nodeIncludesMorph(propToNode(prop), $)
-          )
-        : false
-
-const nodeIncludesMorph = (node: Node, $: Scope): boolean =>
-    typeof node === "string"
-        ? $.resolve(node).includesMorph
-        : Object.values($.resolveTypeNode(node)).some((predicate) =>
-              predicate === true
-                  ? false
-                  : isArray(predicate)
-                  ? predicate.some((branch) => branchIncludesMorph(branch, $))
-                  : branchIncludesMorph(predicate, $)
-          )

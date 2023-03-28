@@ -1,15 +1,15 @@
 import { writeImplicitNeverMessage } from "../parse/ast/intersection.ts"
 import type { Morph } from "../parse/ast/morph.ts"
+import { domainOf } from "../utils/domains.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { constructor, evaluate } from "../utils/generics.ts"
 import type { ComparisonState, Compilation } from "./node.ts"
 import { Node } from "./node.ts"
 import type { NarrowRule } from "./rules/narrow.ts"
-import type { PropsRule } from "./rules/props.ts"
+import type { PropsNode } from "./rules/props.ts"
 import type { Range } from "./rules/range.ts"
 
-// TODO: subclasses for rules/value
 export class BranchNode<
     domain extends Domain = Domain
 > extends Node<BranchNode> {
@@ -35,39 +35,6 @@ export class BranchNode<
             )
         }
         return this
-        // const result: Comparison<RuleSet> = {
-        //     intersection: {
-        //         domain: this.domain
-        //     },
-        //     // an intersection between a morph type and a non-morph type precludes
-        //     // assignability in either direction.
-        //     isSubtype: this.hasMorphs === branch.hasMorphs,
-        //     isSupertype: this.hasMorphs === branch.hasMorphs,
-        //     isDisjoint: false
-        // }
-        // let i = 0
-        // for (let j = 0; j < branch.rules.length; j++) {
-        //     while (this.rules[i].precedence < branch.rules[j].precedence) {
-        //         result.intersection.push(this.rules[i])
-        //         result.isSubtype = false
-        //         i++
-        //     }
-        //     if (this.rules[i].precedence === this.rules[j].precedence) {
-        //         const subresult = this.rules[i].compare(this.rules[j], s)
-        //         if (subresult.isDisjoint) {
-        //             return subresult
-        //         }
-        //         result.isSubtype &&= subresult.isSubtype
-        //         result.isSupertype &&= subresult.isSupertype
-        //         i++
-        //     } else {
-        //         result.intersection.push(branch.rules[j])
-        //     }
-        // }
-        // while (i < this.rules.length) {
-        //     result.intersection.push(this.rules[i])
-        // }
-        // return result
     }
 
     allows(value: unknown) {
@@ -118,15 +85,9 @@ export class BranchNode<
     // }
 }
 
-export class ValueNode<
-    domain extends Domain = Domain
-> extends BranchNode<domain> {
-    constructor(
-        domain: domain,
-        public value: inferDomain<domain>,
-        morphs: Morph[] = []
-    ) {
-        super(domain, morphs)
+export class ValueNode<value = unknown> extends BranchNode<domainOf<value>> {
+    constructor(public value: value, morphs: Morph[] = []) {
+        super(domainOf(value), morphs)
     }
 }
 
@@ -155,7 +116,7 @@ type CustomRules = {
     readonly regex?: string[]
     readonly divisor?: number
     readonly range?: Range
-    readonly props?: PropsRule
+    readonly props?: PropsNode
     readonly instance?: constructor
 }
 

@@ -1,15 +1,15 @@
 import type { ComparisonState, Compilation } from "../node.ts"
-import type { TypeNode } from "../type.ts"
+import type { Union } from "../union.ts"
 import { RuleNode } from "./rule.ts"
 
 export type NamedProps = Record<string, NamedProp>
 
 export type NamedProp = {
-    type: TypeNode
+    type: Union
     kind: "required" | "optional" | "prerequisite"
 }
 
-export type IndexProps = [keyType: TypeNode, valueType: TypeNode][]
+export type IndexProps = [keyType: Union, valueType: Union][]
 
 export class PropsNode extends RuleNode<"props"> {
     constructor(public named: NamedProps, public indexed?: IndexProps) {
@@ -33,6 +33,9 @@ export class PropsNode extends RuleNode<"props"> {
                           other.named[k].kind === "required"
                         ? "required"
                         : "optional"
+                if (type.isDisjoint() && kind !== "optional") {
+                    return type
+                }
                 prop = {
                     type,
                     kind
@@ -107,7 +110,7 @@ export class PropsNode extends RuleNode<"props"> {
                 propChecks.push(c.arrayOf(prop.type))
             } else {
                 c.path.push(k)
-                propChecks.push(c.node(prop.type))
+                propChecks.push(prop.type.compile(c))
                 c.path.pop()
             }
         }
