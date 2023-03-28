@@ -1,5 +1,7 @@
+import type { Scanner } from "../../parse/string/shift/scanner.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import type { xor } from "../../utils/generics.ts"
+import { stringify } from "../../utils/serialize.ts"
 import type { Compilation } from "../compile.ts"
 import type { ComparisonState } from "../compose.ts"
 import { RuleNode } from "./rule.ts"
@@ -73,7 +75,7 @@ export class RangeNode extends RuleNode<"range"> {
     }
 
     allows(size: number) {
-        return true
+        return size
     }
 
     intersect(other: RangeNode, s: ComparisonState) {
@@ -148,45 +150,38 @@ export class RangeNode extends RuleNode<"range"> {
     }
 
     compile(c: Compilation): string {
-        const compileRange = (range: Range, c: Compilation) =>
-            isEqualityRange(range)
-                ? compileBounds(c, range)
-                : range.min
-                ? range.max
-                    ? compileBounds(c, range.min, range.max)
-                    : compileBounds(c, range.min)
-                : compileBounds(c, range.max)
-
-        const compileSizeAssignment = (data: string) =>
-            `const size = typeof ${data} === "number" ? ${data} : ${data}.length;` as const
-
-        const compileBounds = (c: Compilation, ...bounds: Bound[]) => {
-            const units =
-                c.lastDomain === "string"
-                    ? "characters"
-                    : c.lastDomain === "object"
-                    ? "items long"
-                    : c.lastDomain === "number"
-                    ? ""
-                    : throwInternalError(
-                          `Unexpected lastDomain '${c.lastDomain}' while compiling range.`
-                      )
-            return `${compileSizeAssignment(c.data)}${compileBoundCheck(
-                { ...bounds[0], units },
-                c
-            )}${
-                bounds.length === 2
-                    ? ` && ${compileBoundCheck({ ...bounds[1], units }, c)}`
-                    : ""
-            }` as const
+        const comparatorEntries = Object.entries(this.comparators) as [
+            Scanner.Comparator,
+            number
+        ][]
+        if (comparatorEntries.length === 0 || comparatorEntries.length > 2) {
+            return throwInternalError(
+                `Unexpected comparators: ${stringify(this.comparators)}`
+            )
         }
-
-        const compileBoundCheck = (bound: BoundWithUnits, c: Compilation) =>
-            c.check("range", `size ${bound.comparator} ${bound.limit}`, bound)
+        const sizeAssignment = `const size = ${
+            c.lastDomain === "number" ? c.data : `${c.data}.length`
+        };` as const
+        const units =
+            c.lastDomain === "string"
+                ? "characters"
+                : c.lastDomain === "object"
+                ? "items long"
+                : ""
+        const checks = comparatorEntries
+            .map(([comparator, limit]) =>
+                c.check("range", `size ${comparator} ${limit}`, {
+                    comparator,
+                    limit,
+                    units
+                })
+            )
+            .join(" && ")
+        return `${sizeAssignment}${checks}`
     }
 }
 
-export const compareStrictness = (
+const compareStrictness = (
     kind: "min" | "max",
     l: Bound | undefined,
     r: Bound | undefined
