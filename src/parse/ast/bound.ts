@@ -17,6 +17,8 @@ import type { astToString } from "./utils.ts"
  * @example "string<5"
  * @example "2>=number>=5"
  * @example "string[]===5"
+ * @example
+ * const abc = 2
  */
 export type validateBound<l, r, $> = l extends NumberLiteral
     ? validateAst<r, $>
