@@ -1,30 +1,37 @@
-import { hasDomain } from "../../utils/domains.ts"
 import type { Compilation } from "../compile.ts"
 import type { ComparisonState, DisjointContext } from "../compose.ts"
+import type { DivisorRule } from "./divisor.ts"
+import type { InstanceRule } from "./instance.ts"
+import type { NarrowRule } from "./narrow.ts"
+import type { RegexNode } from "./regex.ts"
+import type { EqualityRule } from "./value.ts"
 
-export abstract class RuleNode<
-    kind extends RuleKind = RuleKind,
-    rule = unknown
-> {
-    key: string
-    abstract readonly kind: kind
-    protected abstract serialize(): string
+export abstract class RuleNode<kind extends RuleKind = RuleKind> {
+    constructor(public readonly kind: kind, public readonly id: string) {}
 
     get precedence() {
         return precedenceByRule[this.kind]
     }
 
-    constructor(public rule: rule) {
-        this.key = this.serialize()
-    }
-
-    abstract intersectRule(
-        other: rule,
+    abstract intersect(
+        other: RuleKinds[kind],
         s: ComparisonState
-    ): rule | DisjointContext
+    ): RuleKinds[kind] | DisjointContext
 
     abstract compile(c: Compilation): string
 }
+
+type RuleKinds = {
+    value: EqualityRule
+    instance: InstanceRule
+    range: RegexNode
+    divisor: DivisorRule
+    regex: RegexNode
+    props: RegexNode
+    narrow: NarrowRule
+}
+
+export type RuleKind = keyof RuleKinds
 
 const precedenceByRule = {
     value: 0,
@@ -34,11 +41,9 @@ const precedenceByRule = {
     regex: 4,
     props: 5,
     narrow: 6
-} as const satisfies Record<string, number>
+} as const satisfies Record<RuleKind, number>
 
 export type PrecedenceByRule = typeof precedenceByRule
-
-export type RuleKind = keyof PrecedenceByRule
 
 export const intersectUniqueLists = <item>(
     l: readonly item[],
@@ -50,9 +55,5 @@ export const intersectUniqueLists = <item>(
             intersection.push(item)
         }
     }
-    return intersection.length === l.length
-        ? l
-        : intersection.length === r.length
-        ? r
-        : intersection
+    return intersection
 }

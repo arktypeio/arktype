@@ -1,23 +1,22 @@
 import type { Narrow } from "../../parse/ast/narrow.ts"
-import type { constructor } from "../../utils/generics.ts"
-import { constructorExtends } from "../../utils/generics.ts"
 import type { Compilation } from "../compile.ts"
-import type { ComparisonState } from "../compose.ts"
-import { registerConstructor } from "../registry.ts"
 import { intersectUniqueLists, RuleNode } from "./rule.ts"
 
-export class NarrowRule extends RuleNode<"narrow", readonly Narrow[]> {
-    readonly kind = "narrow"
-
-    intersectRule(other: readonly Narrow[]) {
-        return intersectUniqueLists(this.rule, other)
+export class NarrowRule extends RuleNode<"narrow"> {
+    constructor(public narrows: Narrow[]) {
+        super("narrow", "not implemented")
     }
 
-    serialize() {
-        return "not implemented"
+    intersect(other: NarrowRule) {
+        const intersection = intersectUniqueLists(this.narrows, other.narrows)
+        return intersection.length === this.narrows.length
+            ? this
+            : intersection.length === other.narrows.length
+            ? other
+            : new NarrowRule(intersection)
     }
 
     compile(c: Compilation) {
-        return c.check("custom", this.key, this.key)
+        return c.check("custom", this.id, this.id)
     }
 }

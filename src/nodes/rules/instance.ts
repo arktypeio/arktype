@@ -5,29 +5,29 @@ import type { ComparisonState } from "../compose.ts"
 import { registerConstructor } from "../registry.ts"
 import { RuleNode } from "./rule.ts"
 
-export class InstanceRule extends RuleNode<"instance", constructor> {
-    readonly kind = "instance"
-
-    intersectRule(other: constructor, s: ComparisonState) {
-        return constructorExtends(this.rule, other)
-            ? this.rule
-            : constructorExtends(other, this.rule)
-            ? other
-            : s.addDisjoint("class", this.rule, other)
+export class InstanceRule extends RuleNode<"instance"> {
+    constructor(public instanceOf: constructor) {
+        super(
+            "instance",
+            instanceOf === Array
+                ? "Array"
+                : registerConstructor(instanceOf.name, instanceOf)
+        )
     }
 
-    serialize() {
-        return registerConstructor(this.rule.name, this.rule)
+    intersect(other: InstanceRule, s: ComparisonState) {
+        return constructorExtends(this.instanceOf, other.instanceOf)
+            ? this
+            : constructorExtends(other.instanceOf, this.instanceOf)
+            ? other
+            : s.addDisjoint("class", this.instanceOf, other.instanceOf)
     }
 
     compile(c: Compilation) {
-        if (this.rule === Array) {
-            return c.check("instance", `Array.isArray(${c.data})`, Array)
-        }
         return c.check(
             "instance",
-            `${c.data} instanceof ${this.key}`,
-            this.rule
+            `${c.data} instanceof ${this.id}`,
+            this.instanceOf
         )
     }
 }

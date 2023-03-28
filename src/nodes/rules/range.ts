@@ -2,7 +2,6 @@ import type { Scanner } from "../../parse/string/shift/scanner.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import type { evaluate, xor } from "../../utils/generics.ts"
 import type { Compilation } from "../compile.ts"
-import { composeIntersection, equality } from "../compose.ts"
 
 export type Range = RelativeRange | Bound<"==">
 
