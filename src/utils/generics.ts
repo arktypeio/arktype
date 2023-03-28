@@ -137,6 +137,22 @@ export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
     return result as evaluate<keyof t>[]
 }
 
+export const constructorExtends = (
+    constructor: constructor,
+    base: constructor
+) => {
+    let current = constructor.prototype
+
+    while (current !== null) {
+        if (current === base.prototype) {
+            return true
+        }
+
+        current = Object.getPrototypeOf(current)
+    }
+    return false
+}
+
 export const hasKey = <o extends object, k extends keyof o>(
     o: o,
     k: k

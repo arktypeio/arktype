@@ -1,30 +1,33 @@
 import type { constructor } from "../../utils/generics.ts"
+import { constructorExtends } from "../../utils/generics.ts"
 import type { Compilation } from "../compile.ts"
-import { composeIntersection, equality } from "../compose.ts"
+import type { ComparisonState } from "../compose.ts"
 import { registerConstructor } from "../registry.ts"
+import { RuleNode } from "./rule.ts"
 
-export const instanceIntersection = composeIntersection<constructor>(
-    (l, r, state) => {
-        return l === r
-            ? equality()
-            : l instanceof r
-            ? l
-            : r instanceof l
-            ? r
-            : state.addDisjoint("class", l, r)
-    }
-)
+export class InstanceRule extends RuleNode<"instance", constructor> {
+    readonly kind = "instance"
 
-export const compileInstance = (instanceOf: constructor, c: Compilation) => {
-    if (instanceOf === Array) {
-        return c.check("instance", `Array.isArray(${c.data})`, Array)
+    intersectRule(other: constructor, s: ComparisonState) {
+        return constructorExtends(this.rule, other)
+            ? this.rule
+            : constructorExtends(other, this.rule)
+            ? other
+            : s.addDisjoint("class", this.rule, other)
     }
-    return c.check(
-        "instance",
-        `${c.data} instanceof ${registerConstructor(
-            instanceOf.name,
-            instanceOf
-        )}`,
-        instanceOf
-    )
+
+    serialize() {
+        return registerConstructor(this.rule.name, this.rule)
+    }
+
+    compile(c: Compilation) {
+        if (this.rule === Array) {
+            return c.check("instance", `Array.isArray(${c.data})`, Array)
+        }
+        return c.check(
+            "instance",
+            `${c.data} instanceof ${this.key}`,
+            this.rule
+        )
+    }
 }

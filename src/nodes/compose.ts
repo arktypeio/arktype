@@ -1,24 +1,9 @@
-import type { Type } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
 import type { constructor, extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
 import type { BranchNode } from "./branch.ts"
 import type { Range } from "./rules/range.ts"
-
-export type Comparison<t> =
-    | {
-          intersection: t
-          isSubtype: boolean
-          isSupertype: boolean
-          isDisjoint: false
-      }
-    | {
-          intersection: DisjointContext
-          isSubtype: false
-          isSupertype: false
-          isDisjoint: true
-      }
 
 export type DisjointKinds = extend<
     Record<string, { l: unknown; r: unknown }>,
@@ -95,55 +80,14 @@ export class ComparisonState {
 
     constructor() {}
 
-    disjoint<kind extends DisjointKind>(
+    addDisjoint<kind extends DisjointKind>(
         kind: kind,
         l: DisjointKinds[kind]["l"],
         r: DisjointKinds[kind]["r"]
     ) {
         const result = { kind, l, r }
         this.disjointsByPath[`${this.path}`] = result
-        return {
-            intersection: result,
-            isSubtype: false,
-            isSupertype: false,
-            isDisjoint: true
-        } satisfies Comparison<never>
-    }
-
-    equality<result>(result: result) {
-        return {
-            intersection: result,
-            isSubtype: true,
-            isSupertype: true,
-            isDisjoint: false
-        } satisfies Comparison<result>
-    }
-
-    subtype<result>(result: result) {
-        return {
-            intersection: result,
-            isSubtype: true,
-            isSupertype: false,
-            isDisjoint: false
-        } satisfies Comparison<result>
-    }
-
-    supertype<result>(result: result) {
-        return {
-            intersection: result,
-            isSubtype: false,
-            isSupertype: true,
-            isDisjoint: false
-        } satisfies Comparison<result>
-    }
-
-    overlap<result>(result: result) {
-        return {
-            intersection: result,
-            isSubtype: false,
-            isSupertype: false,
-            isDisjoint: false
-        } satisfies Comparison<result>
+        return result
     }
 }
 

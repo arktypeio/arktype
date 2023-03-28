@@ -1,9 +1,15 @@
 import type { Compilation } from "../compile.ts"
+import type { ComparisonState } from "../compose.ts"
+import { DisjointContext } from "../compose.ts"
 import { registerRegex } from "../registry.ts"
-import { SetRule } from "./rule.ts"
+import { intersectUniqueLists, RuleNode } from "./rule.ts"
 
-export class RegexNode extends SetRule<"regex", string> {
+export class RegexNode extends RuleNode<"regex", readonly string[]> {
     readonly kind = "regex"
+
+    intersectRule(other: readonly string[]) {
+        return intersectUniqueLists(this.rule, other)
+    }
 
     compile(c: Compilation): string {
         return [...this.rule]

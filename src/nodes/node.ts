@@ -35,7 +35,7 @@ export class TypeNode {
             )
         ]
         if (resultBranches.length === 0) {
-            return state.disjoint("union", this.branches, branches)
+            return state.addDisjoint("union", this.branches, branches)
         }
         return {
             intersection: new TypeNode(resultBranches),
@@ -52,7 +52,7 @@ export class TypeNode {
     }
 
     union(branches: BranchNode[]) {
-        const state = new ComparisonState("|")
+        const state = new ComparisonState()
         const comparison = compareBranches(this.branches, branches, state)
         const resultBranches = [
             ...this.branches.filter(

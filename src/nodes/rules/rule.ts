@@ -1,19 +1,27 @@
-import type { Compilation } from "../compile"
-import type { Comparison, ComparisonState } from "../compose"
+import { hasDomain } from "../../utils/domains.ts"
+import type { Compilation } from "../compile.ts"
+import type { ComparisonState, DisjointContext } from "../compose.ts"
 
 export abstract class RuleNode<
     kind extends RuleKind = RuleKind,
     rule = unknown
 > {
+    key: string
     abstract readonly kind: kind
+    protected abstract serialize(): string
 
     get precedence() {
         return precedenceByRule[this.kind]
     }
 
-    constructor(public rule: rule) {}
+    constructor(public rule: rule) {
+        this.key = this.serialize()
+    }
 
-    abstract compare(rule: rule, s: ComparisonState): Comparison<rule>
+    abstract intersectRule(
+        other: rule,
+        s: ComparisonState
+    ): rule | DisjointContext
 
     abstract compile(c: Compilation): string
 }
@@ -32,18 +40,19 @@ export type PrecedenceByRule = typeof precedenceByRule
 
 export type RuleKind = keyof PrecedenceByRule
 
-export abstract class SetRule<
-    kind extends RuleKind = RuleKind,
-    item = unknown
-> extends RuleNode<kind, Set<item>> {
-    compare(rule: Set<item>, s: ComparisonState): Comparison<Set<item>> {
-        const intersection = new Set([...this.rule, ...rule])
-        return intersection.size === this.rule.size
-            ? rule.size === intersection.size
-                ? s.equality(intersection)
-                : s.subtype(this.rule)
-            : rule.size === intersection.size
-            ? s.supertype(rule)
-            : s.overlap(intersection)
+export const intersectUniqueLists = <item>(
+    l: readonly item[],
+    r: readonly item[]
+) => {
+    const intersection = [...l]
+    for (const item of r) {
+        if (!l.includes(item)) {
+            intersection.push(item)
+        }
     }
+    return intersection.length === l.length
+        ? l
+        : intersection.length === r.length
+        ? r
+        : intersection
 }

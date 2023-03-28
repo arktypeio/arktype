@@ -9,10 +9,10 @@ import { RuleNode } from "./rule.ts"
 export class ValueNode extends RuleNode<"value"> {
     readonly kind = "value"
 
-    compare(rule: unknown, s: ComparisonState): Comparison<unknown> {
+    intersectRule(rule: unknown, s: ComparisonState): Comparison<unknown> {
         return this.rule === rule
             ? s.equality(rule)
-            : s.disjoint("value", this.rule, rule)
+            : s.addDisjoint("value", this.rule, rule)
     }
 
     compile(c: Compilation) {

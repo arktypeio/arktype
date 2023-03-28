@@ -22,7 +22,7 @@ export class BranchNode<domain extends Domain = Domain> {
         s: ComparisonState
     ): Comparison<RuleSet<domain>> {
         if (this.domain !== branch.domain) {
-            return s.disjoint("domain", this.domain, branch.domain)
+            return s.addDisjoint("domain", this.domain, branch.domain)
         }
         if (
             // TODO: Fix
