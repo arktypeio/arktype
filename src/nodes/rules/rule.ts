@@ -2,6 +2,7 @@ import { Node } from "../node.ts"
 import type { DivisorRule } from "./divisor.ts"
 import type { InstanceRule } from "./instance.ts"
 import type { NarrowRule } from "./narrow.ts"
+import type { PropsNode } from "./props.ts"
 import type { RangeNode } from "./range.ts"
 import type { RegexNode } from "./regex.ts"
 import type { EqualityRule } from "./value.ts"
@@ -11,6 +12,10 @@ export abstract class RuleNode<kind extends RuleKind = RuleKind> extends Node<
 > {
     constructor(public readonly kind: kind, id: string) {
         super(id)
+    }
+
+    allows(value: unknown) {
+        return true
     }
 
     get precedence() {
@@ -24,7 +29,7 @@ type RuleKinds = {
     range: RangeNode
     divisor: DivisorRule
     regex: RegexNode
-    props: RegexNode
+    props: PropsNode
     narrow: NarrowRule
 }
 

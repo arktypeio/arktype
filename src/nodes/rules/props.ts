@@ -1,41 +1,121 @@
 import type { Dict } from "../../utils/generics.ts"
-import type { Compilation, Node } from "../node.ts"
-import {
-    composeIntersection,
-    composeKeyedIntersection,
-    equality,
-    isDisjoint,
-    isEquality,
-    isLiteralNode,
-    nodeIntersection
-} from "../node.ts"
+import type { ComparisonState, Compilation, Node } from "../node.ts"
+import { Disjoint } from "../node.ts"
+import type { TypeNode } from "../type.ts"
+import { RuleNode } from "./rule.ts"
 
-export type PropsRule<$ = Dict> = {
-    [propKey in string]: Prop<$>
+export type NamedProps = Record<string, NamedProp>
+
+export type NamedProp = {
+    type: TypeNode
+    kind: "required" | "optional" | "prerequisite"
 }
 
-export type Prop<$ = Dict, node extends Node<$> = Node<$>> =
-    | node
-    | OptionalProp<$, node>
-    | PrerequisiteProp<$, node>
+export type IndexProps = [keyType: TypeNode, valueType: TypeNode][]
 
-export type OptionalProp<$ = Dict, node extends Node<$> = Node<$>> = ["?", node]
+export class PropsNode extends RuleNode<"props"> {
+    constructor(public named: NamedProps, public indexed?: IndexProps) {
+        super("props", "TODO")
+    }
 
-export type PrerequisiteProp<$ = Dict, node extends Node<$> = Node<$>> = [
-    "!",
-    node
-]
+    intersect(other: PropsNode, s: ComparisonState) {
+        const named: NamedProps = {}
+        for (const k in this.named) {
+            let prop: NamedProp
+            if (k in other.named) {
+                const type = this.named[k].type.intersect(
+                    other.named[k].type,
+                    s
+                )
+                const kind =
+                    this.named[k].kind === "prerequisite" ||
+                    other.named[k].kind === "prerequisite"
+                        ? "prerequisite"
+                        : this.named[k].kind === "required" ||
+                          other.named[k].kind === "required"
+                        ? "required"
+                        : "optional"
+                prop = {
+                    type,
+                    kind
+                }
+            } else {
+                prop = this.named[k]
+            }
+            if (other.indexed) {
+                for (const [indexK, indexV] of other.indexed) {
+                    if (indexK.allows(k)) {
+                        prop.type = prop.type.intersect(indexV, s)
+                    }
+                }
+            }
+        }
+        for (const name in other.named) {
+            named[name] ??= other.named[name]
+            if (this.indexed) {
+                for (const [indexK, indexV] of this.indexed) {
+                    if (indexK.allows(name)) {
+                        named[name].type = named[name].type.intersect(indexV, s)
+                    }
+                }
+            }
+        }
+        return new PropsNode(named, this.intersectIndices(other, s))
+    }
 
-export type TraversalProp<
-    key extends string = string,
-    node extends string = string
-> = [key, node]
+    intersectIndices(other: PropsNode, s: ComparisonState) {
+        if (!this.indexed) {
+            if (!other.indexed) {
+                return
+            }
+            return other.indexed
+        }
+        if (!other.indexed) {
+            return this.indexed
+        }
+        const intersection: IndexProps = []
+        for (const thisEntry of this.indexed) {
+            for (const otherEntry of other.indexed) {
+                if (thisEntry[0] === otherEntry[0]) {
+                    intersection.push([
+                        thisEntry[0],
+                        // TODO: path updates here
+                        thisEntry[1].intersect(otherEntry[1], s)
+                    ])
+                } else {
+                    // we could check for subtypes between keys, but
+                    // without the ability to arbitrarily difference types, we
+                    // can't directly exploit those relationships.
+                    intersection.push(thisEntry, otherEntry)
+                }
+            }
+        }
+        return intersection
+    }
 
-export const isOptional = (prop: Prop): prop is OptionalProp =>
-    (prop as OptionalProp)[0] === "?"
+    compile(c: Compilation): string {
+        const keyConfig = c.type.config?.keys ?? c.type.scope.config.keys
+        return keyConfig === "loose"
+            ? this.#compileLooseProps(c)
+            : "unimplemented"
+    }
 
-export const isPrerequisite = (prop: Prop): prop is PrerequisiteProp =>
-    (prop as PrerequisiteProp)[0] === "!"
+    #compileLooseProps(c: Compilation) {
+        const propChecks: string[] = []
+        // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
+        for (const k in this.named) {
+            const prop = this.named[k]
+            if (k === mappedKeys.index) {
+                propChecks.push(c.arrayOf(prop.type))
+            } else {
+                c.path.push(k)
+                propChecks.push(c.node(prop.type))
+                c.path.pop()
+            }
+        }
+        return propChecks.length ? c.mergeChecks(propChecks) : "true"
+    }
+}
 
 export const mappedKeys = {
     index: "[index]"
@@ -44,141 +124,3 @@ export const mappedKeys = {
 export type MappedKeys = typeof mappedKeys
 
 export type MappedPropKey = MappedKeys[keyof MappedKeys]
-
-export const propToNode = (prop: Prop) =>
-    isOptional(prop) || isPrerequisite(prop) ? prop[1] : prop
-
-const getTupleLengthIfPresent = (result: PropsRule) => {
-    if (
-        typeof result.length === "object" &&
-        isPrerequisite(result.length) &&
-        typeof result.length[1] !== "string" &&
-        isLiteralNode(result.length[1], "number")
-    ) {
-        return result.length[1].number.value
-    }
-}
-
-export const propsIntersection = composeIntersection<PropsRule>(
-    (l, r, state) => {
-        const result = propKeysIntersection(l, r, state)
-        if (typeof result === "symbol") {
-            return result
-        }
-        const lengthValue = getTupleLengthIfPresent(result)
-        if (lengthValue === undefined || !(mappedKeys.index in result)) {
-            return result
-        }
-        // if we are at this point, we have an array with an exact length (i.e.
-        // a tuple) and an index signature. Intersection each tuple item with
-        // the index signature node and remove the index signature via a new
-        // updated result, copied from result to avoid mutating existing references.
-        const { [mappedKeys.index]: indexProp, ...updatedResult } = result
-        const indexNode = propToNode(indexProp)
-        for (let i = 0; i < lengthValue; i++) {
-            if (!updatedResult[i]) {
-                updatedResult[i] = indexNode
-                continue
-            }
-            const existingNodeAtIndex = propToNode(updatedResult[i])
-            state.path.push(i)
-            const updatedResultAtIndex = nodeIntersection(
-                existingNodeAtIndex,
-                indexNode,
-                state
-            )
-            state.path.pop()
-            if (isDisjoint(updatedResultAtIndex)) {
-                return updatedResultAtIndex
-            } else if (
-                !isEquality(updatedResultAtIndex) &&
-                updatedResultAtIndex !== existingNodeAtIndex
-            ) {
-                updatedResult[i] = updatedResultAtIndex
-            }
-        }
-        return updatedResult
-    }
-)
-
-const propKeysIntersection = composeKeyedIntersection<PropsRule>(
-    (propKey, l, r, context) => {
-        if (l === undefined) {
-            return r === undefined ? equality() : r
-        }
-        if (r === undefined) {
-            return l
-        }
-        context.path.push(propKey)
-        const result = nodeIntersection(propToNode(l), propToNode(r), context)
-        context.path.pop()
-        const resultIsOptional = isOptional(l) && isOptional(r)
-        if (isDisjoint(result) && resultIsOptional) {
-            // If an optional key has an empty intersection, the type can
-            // still be satisfied as long as the key is not included. Set
-            // the node to never rather than invalidating the type.
-            return {}
-        }
-        return result
-    },
-    { onEmpty: "bubble" }
-)
-
-export const compileProps = (props: PropsRule, c: Compilation) => {
-    const keyConfig = c.type.config?.keys ?? c.type.scope.config.keys
-    return compileLooseProps(props, c)
-    // keyConfig === "loose"
-    //     ? compileLooseProps(props, state)
-    //     : compilePropsRecord(keyConfig, props, state)
-}
-
-const compileLooseProps = (props: PropsRule, c: Compilation) => {
-    const propChecks: string[] = []
-    // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
-    for (const k in props) {
-        const prop = props[k]
-        if (k === mappedKeys.index) {
-            propChecks.push(c.arrayOf(prop as Node))
-        } else {
-            c.path.push(k)
-            propChecks.push(
-                isOptional(prop) || isPrerequisite(prop)
-                    ? c.node(prop[1])
-                    : c.node(prop)
-            )
-            c.path.pop()
-        }
-    }
-    return propChecks.length ? c.mergeChecks(propChecks) : "true"
-}
-
-// const compilePropsRecord = (
-//     kind: Exclude<KeyCheckKind, "loose">,
-//     props: PropsRule,
-//     state: CompilationState
-// ) => {
-//     const result: PropsRecordEntry[1] = {
-//         required: {},
-//         optional: {}
-//     }
-//     // if we need to keep track of extraneous keys, either to add problems or
-//     // remove them, store the props as a Record to optimize for presence
-//     // checking as we iterate over the data
-//     for (const k in props) {
-//         const prop = props[k]
-//         state.path.push(k)
-//         if (k === mappedKeys.index) {
-//             result.index = compileNode(propToNode(prop), state)
-//         } else if (isOptional(prop)) {
-//             result.optional[k] = compileNode(prop[1], state)
-//         } else if (isPrerequisite(prop)) {
-//             // we still have to push prerequisite props as normal entries so they can be checked first
-//             // entries.push(["prerequisiteProp", [k, compileNode(prop[1], ctx)]])
-//         } else {
-//             result.required[k] = compileNode(prop, state)
-//         }
-//         state.path.pop()
-//     }
-//     // entries.push([`${kind}Props`, result])
-//     return ""
-// }

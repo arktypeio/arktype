@@ -30,18 +30,7 @@ export class TypeNode extends Node<TypeNode> {
         if (resultBranches.length === 0) {
             return state.addDisjoint("union", this.branches, other.branches)
         }
-        return {
-            intersection: new TypeNode(resultBranches),
-            isSubtype:
-                comparison.lStrictSubtypeIndices.length +
-                    comparison.equalIndexPairs.length ===
-                this.branches.length,
-            isSupertype:
-                comparison.rStrictSubtypeIndices.length +
-                    comparison.equalIndexPairs.length ===
-                other.branches.length,
-            isDisjoint: false
-        }
+        return new TypeNode(resultBranches)
     }
 
     union(branches: BranchNode[]) {

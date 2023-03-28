@@ -75,10 +75,6 @@ export class RangeNode extends RuleNode<"range"> {
         return this.comparatorToBound("<") ?? this.comparatorToBound("<=")
     }
 
-    allows(size: number) {
-        return size
-    }
-
     intersect(other: RangeNode, s: ComparisonState) {
         if (this.isEqualityRange()) {
             if (other.isEqualityRange()) {

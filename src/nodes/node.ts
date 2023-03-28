@@ -2,24 +2,23 @@ import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
 import type { Scope } from "../scopes/scope.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
-import type { constructor, extend } from "../utils/generics.ts"
+import type { extend } from "../utils/generics.ts"
 import { entriesOf, keysOf, listFrom } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import { stringify } from "../utils/serialize.ts"
-import type { BranchNode, ValueNode } from "./branch.ts"
+import type { BranchNode } from "./branch.ts"
 import type { InstanceRule } from "./rules/instance.ts"
 import type { RangeNode } from "./rules/range.ts"
 import type { EqualityRule } from "./rules/value.ts"
+import { TypeNode } from "./type.ts"
 
 export abstract class Node<subclass extends Node = any> {
     constructor(public readonly id: string) {}
 
-    abstract intersect(
-        other: subclass,
-        s: ComparisonState
-    ): subclass | DisjointContext
+    abstract intersect(other: subclass, s: ComparisonState): subclass | Disjoint
 
     abstract compile(c: Compilation): string
+
+    abstract allows(value: unknown): boolean
 }
 
 export type DisjointKinds = extend<
@@ -69,17 +68,25 @@ export class ComparisonState {
         l: DisjointKinds[kind]["l"],
         r: DisjointKinds[kind]["r"]
     ) {
-        const result = { kind, l, r } as DisjointContext<kind>
+        const result = new Disjoint(kind, l, r)
         this.disjointsByPath[`${this.path}`] = result
         return result
     }
 }
 
-export type DisjointsByPath = Record<string, DisjointContext>
+export class Disjoint<
+    kind extends DisjointKind = DisjointKind
+> extends TypeNode {
+    constructor(
+        public kind: kind,
+        public l: DisjointKinds[kind]["l"],
+        public r: DisjointKinds[kind]["r"]
+    ) {
+        super([])
+    }
+}
 
-export type DisjointContext<kind extends DisjointKind = DisjointKind> = {
-    kind: kind
-} & DisjointKinds[kind]
+export type DisjointsByPath = Record<string, Disjoint>
 
 export const createTraverse = (name: string, js: string) =>
     Function(`return (data, state) => {
