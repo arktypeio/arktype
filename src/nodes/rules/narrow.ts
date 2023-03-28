@@ -4,7 +4,13 @@ import { intersectUniqueLists, RuleNode } from "./rule.ts"
 
 export class NarrowRule extends RuleNode<"narrow"> {
     constructor(public narrows: Narrow[]) {
-        super("narrow", "not implemented")
+        super(
+            "narrow",
+            narrows
+                .map((_) => String(_))
+                .sort()
+                .join()
+        )
     }
 
     intersect(other: NarrowRule) {
