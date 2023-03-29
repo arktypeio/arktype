@@ -5,7 +5,7 @@ import type { astToString } from "./utils.ts"
 /**
  * @operator {@link validateDivisor | %}
  * @docgenTable
- * @string "N%D", where `N` is a number and `D` is a non-zero integer
+ * @string "N%D", where "N" is a number and "D" is a non-zero integer
  */
 export type validateDivisor<l, $> = isDivisible<inferAst<l, $>> extends true
     ? validateAst<l, $>

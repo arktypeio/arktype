@@ -10,18 +10,18 @@ hide_table_of_contents: true
 
 ## text
 
-| Name          | Type                                     | Description                  |
-| ------------- | ---------------------------------------- | ---------------------------- |
-| alpha         | <code> string</code>                     | only letters                 |
-| alphanumeric  | <code> string</code>                     | only letters and digits      |
-| lowercase     | <code> string</code>                     | only lowercase letters       |
-| uppercase     | <code> string</code>                     | only uppercase letters       |
-| creditCard    | <code> string</code>                     | a valid credit card number   |
-| email         | <code> string</code>                     | a valid email                |
-| uuid          | <code> string</code>                     | a valid UUID                 |
-| parsedNumber  | <code> (In: string) =&gt; number</code>  | a well-formed numeric string |
-| parsedInteger | <code> (In: string) =&gt; number</code>  | a well-formed integer string |
-| parsedDate    | <code> (In: string) =&gt; Date</code>    | a valid date                 |
-| semver        | <code> string</code>                     | a valid semantic version     |
-| json          | <code> (In: string) =&gt; unknown</code> | a JSON-parsable string       |
-| integer       | <code> number</code>                     | an integer                   |
+| Name          | Type                       | Description                  |
+| ------------- | -------------------------- | ---------------------------- |
+| alpha         | ` string`                  | only letters                 |
+| alphanumeric  | ` string`                  | only letters and digits      |
+| lowercase     | ` string`                  | only lowercase letters       |
+| uppercase     | ` string`                  | only uppercase letters       |
+| creditCard    | ` string`                  | a valid credit card number   |
+| email         | ` string`                  | a valid email                |
+| uuid          | ` string`                  | a valid UUID                 |
+| parsedNumber  | ` (In: string) => number`  | a well-formed numeric string |
+| parsedInteger | ` (In: string) => number`  | a well-formed integer string |
+| parsedDate    | ` (In: string) => Date`    | a valid date                 |
+| semver        | ` string`                  | a valid semantic version     |
+| json          | ` (In: string) => unknown` | a JSON-parsable string       |
+| integer       | ` number`                  | an integer                   |

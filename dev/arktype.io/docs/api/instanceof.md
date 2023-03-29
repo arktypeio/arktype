@@ -10,10 +10,10 @@ hide_table_of_contents: true
 
 ## tuple
 
--   ["instanceOf", &lt;object&gt;] <br/>
+-   ["instanceOf", T] <br/>
 -   const tupleInstanceOf = type(["instanceOf", Date])<br/>
 
 ## helper
 
--   instanceOf(&lt;object&gt;) <br/>
+-   instanceOf(T) <br/>
 -   const helperInstanceOf = instanceOf(Date)<br/>

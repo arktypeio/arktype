@@ -6,13 +6,13 @@ hide_table_of_contents: true
 
 ## operator
 
--   [=&gt;](./narrow.md)
+-   [=>](./narrow.md)
 
 ## tuple
 
--   ["type", "=&gt;" , condition] <br/>
--   const narrow = type( ["number", "=&gt;" , (n) =&gt; n % 2 === 0])<br/>
+-   ["type", "=>" , condition] <br/>
+-   const narrow = type( ["number", "=>" , (n) => n % 2 === 0])<br/>
 
-## helper
+## example
 
--   const isEven = (x: unknown): x is number =&gt; x % 2 === 0
+-            const isEven = (x: unknown): x is number => x % 2 === 0

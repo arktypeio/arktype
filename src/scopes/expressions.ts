@@ -67,7 +67,7 @@ export const union: Ark["union"] = scopes.ark.union
  * @docgenTable
  * @string "T[]"
  * @tuple [T, "[]"]
- * @helper arrayOf(<object>)
+ * @helper arrayOf(T)
  * @example string
  *      const numberArray = type("number[]")
  * @example tuple
@@ -80,8 +80,8 @@ export const arrayOf: Ark["arrayOf"] = scopes.ark.arrayOf
 /**
  * @operator {@link keyOf}
  * @docgenTable
- * @tuple "["keyOf", <object>]"
- * @helper  "keyOf(<object>)"
+ * @tuple "["keyOf", T]"
+ * @helper  keyOf(T)
  * @example tuple
  *      const tupleKeyOf = type(["keyOf", {a:"string"}])
  * @example helper
@@ -92,8 +92,8 @@ export const keyOf: Ark["keyOf"] = scopes.ark.keyOf
 /**
  * @operator {@link instanceOf}
  * @docgenTable
- * @tuple ["instanceOf", <object>]
- * @helper instanceOf(<object>)
+ * @tuple ["instanceOf", T]
+ * @helper instanceOf(T)
  * @example tuple
  *      const tupleInstanceOf = type(["instanceOf", Date])
  * @example helper
@@ -104,8 +104,8 @@ export const instanceOf: Ark["instanceOf"] = scopes.ark.instanceOf
 /**
  * @operator {@link valueOf | ===}
  * @docgenTable
- * @tuple ["===", value]
- * @helper valueOf(<object>)
+ * @tuple ["===", T]
+ * @helper valueOf(T)
  * @example tuple
  *      const tupleValueOf = type(["valueOf", {a:"string"}])
  * @example helper
@@ -119,7 +119,7 @@ export const valueOf: Ark["valueOf"] = scopes.ark.valueOf
  * @tuple ["type", "=>" , condition]
  * @example tuple
  *      const narrow = type( ["number", "=>" , (n) => n % 2 === 0])
- * @example helper
+ * @example
  *      const isEven = (x: unknown): x is number => x % 2 === 0
  */
 export const narrow: Ark["narrow"] = scopes.ark.narrow
@@ -132,7 +132,7 @@ export const narrow: Ark["narrow"] = scopes.ark.narrow
  * @example tuple
  *      const tupleMorph = type( ["string", "|>" , (data) => `morphed ${data}`])
  * @example helper
- *      const helperMorph = morph("string", (data) => `morphed ${input}`)
+ *      const helperMorph = morph("string", (data) => `morphed ${data}`)
  */
 export const morph: Ark["morph"] = scopes.ark.morph
 

@@ -1,4 +1,8 @@
-import { constructHeader, constructRow } from "./buildTable/table.ts"
+import {
+    constructHeader,
+    constructRow,
+    convertToHTML
+} from "./buildTable/table.ts"
 import type { ExportData, TsDocData } from "./extractApi.ts"
 
 type LinkDetails = [name: string, alias?: string]
@@ -54,7 +58,7 @@ export const packTsDocTags = (docs: TsDocData[] | undefined) => {
 
 export const formatTagData = (tagData: string[], tag: string) => {
     let formattedData = ""
-    if (tag === "param") {
+    if (tag === "param" || tag === "tablifiedInfo") {
         const table: string[] = []
         constructHeader(["Variable", "Description"], table)
         for (const data of tagData) {
@@ -64,7 +68,8 @@ export const formatTagData = (tagData: string[], tag: string) => {
         }
         return table.join("\n")
     }
-    for (const data of tagData) {
+    const convertedTagData = convertToHTML(tagData)
+    for (const data of convertedTagData) {
         formattedData += `- ${data}`
         formattedData += tagData.length === 1 ? "\n" : "<br/>\n"
     }

@@ -8,15 +8,15 @@ import type { astToString } from "./utils.ts"
  * @operator {@link validateBound | bound}
  * @docgenTable
  * @string "N<S<N", with comparators restricted to < or <=
- * @param N: number literal
- * @param S: sized data (a number, string or array)
- * @param <: Comparator (one of <, <=, ==, >=, >)
+ * @tablifiedInfo N number literal
+ * @tablifiedInfo S sized data (a number, string or array)
+ * @tablifiedInfo < Comparator (one of <, <=, ==, >=, >)
  * @Bound "S<N"
  * @Range "N<S<N", with comparators restricted to < or <=
  * @example string
- * "2<=number<5"
+ *  const range = type("2<=number<5")
  * @example string
- * "string[]===5"
+ *  const bound = type("string[]==5")
  */
 export type validateBound<l, r, $> = l extends NumberLiteral
     ? validateAst<r, $>

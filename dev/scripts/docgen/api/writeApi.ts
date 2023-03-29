@@ -74,13 +74,12 @@ const generateMarkdownForExport = (
         if (tagsToIgnore.test(tag)) {
             continue
         }
-        const convertedData = convertToHTML(arrayOfTagData)
-        md.section(tag).text(formatTagData(convertedData, tag))
+        md.section(tag).text(formatTagData(arrayOfTagData, tag))
     }
     if (tagData.docgenTable) {
         if (tagData.operator) {
             const row = [tagData.operator[0], ...getFormats(tagData)]
-            operatingTable.push(constructRow(row, ["1", "2", "3"]))
+            operatingTable.push(constructRow(row))
         }
         if (tagData.docgenScope) {
             const table = keywordTable(exported.text, tagData)

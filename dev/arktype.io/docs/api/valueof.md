@@ -10,10 +10,10 @@ hide_table_of_contents: true
 
 ## tuple
 
--   ["===", value] <br/>
+-   ["===", T] <br/>
 -   const tupleValueOf = type(["valueOf", {a:"string"}])<br/>
 
 ## helper
 
--   valueOf(&lt;object&gt;) <br/>
+-   valueOf(T) <br/>
 -   const helperValueOf = valueOf({a:"string"})<br/>

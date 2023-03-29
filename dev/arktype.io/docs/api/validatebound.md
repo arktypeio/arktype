@@ -10,22 +10,22 @@ hide_table_of_contents: true
 
 ## string
 
--   "N&lt;S&lt;N", with comparators restricted to &lt; or &lt;= <br/>
--   "2&lt;=number&lt;5"<br/>
--   "string[]===5"<br/>
+-   "N<S<N", with comparators restricted to < or <= <br/>
+-   const range = type("2<=number<5")<br/>
+-   const bound = type("string[]==5")<br/>
 
-## param
+## tablifiedInfo
 
-| Variable | Description                                  |
-| -------- | -------------------------------------------- |
-| N:       | number literal                               |
-| S:       | sized data (a number, string or array)       |
-| &lt:     | Comparator (one of &lt, &lt=, ==, &gt=, &gt) |
+| Variable | Description                            |
+| -------- | -------------------------------------- |
+| N        | number literal                         |
+| S        | sized data (a number, string or array) |
+| <        | Comparator (one of <, <=, ==, >=, >)   |
 
 ## Bound
 
--   "S&lt;N"
+-   "S<N"
 
 ## Range
 
--   "N&lt;S&lt;N", with comparators restricted to &lt; or &lt;=
+-   "N<S<N", with comparators restricted to < or <=

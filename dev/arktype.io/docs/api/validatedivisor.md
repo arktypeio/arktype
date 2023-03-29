@@ -10,4 +10,4 @@ hide_table_of_contents: true
 
 ## string
 
--   "N%D", where \`N\` is a number and \`D\` is a non-zero integer
+-   "N%D", where "N" is a number and "D" is a non-zero integer

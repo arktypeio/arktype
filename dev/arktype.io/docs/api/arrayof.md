@@ -20,5 +20,5 @@ hide_table_of_contents: true
 
 ## helper
 
--   arrayOf(&lt;object&gt;) <br/>
+-   arrayOf(T) <br/>
 -   const helperArray = arrayOf("number")<br/>

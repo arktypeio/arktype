@@ -10,10 +10,10 @@ hide_table_of_contents: true
 
 ## tuple
 
--   "["keyOf", &lt;object&gt;]" <br/>
+-   "["keyOf", T]" <br/>
 -   const tupleKeyOf = type(["keyOf", {a:"string"}])<br/>
 
 ## helper
 
--   "keyOf(&lt;object&gt;)" <br/>
+-   keyOf(T) <br/>
 -   const helperKeyOf = keyOf({a:"string"})<br/>

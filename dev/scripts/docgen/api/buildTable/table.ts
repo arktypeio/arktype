@@ -11,7 +11,7 @@ export const constructRow = (
     for (const index in rowData) {
         const alteredData = convertToHTML(rowData)
         row += indexesToWrap.includes(index)
-            ? `<code>${alteredData[index]}</code>|`
+            ? `\`${alteredData[index]}\`|`
             : `${alteredData[index]} |`
     }
     return row
@@ -29,8 +29,6 @@ export const constructHeader = (columns: string[], table: string[]) => {
 const specialChars: { [k: string]: string } = {
     "\n": "",
     ";": "",
-    "<": "&lt;",
-    ">": "&gt;",
     "|": "&vert;",
     "`": "\\`"
 }

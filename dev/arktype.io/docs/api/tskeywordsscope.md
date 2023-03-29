@@ -10,19 +10,19 @@ hide_table_of_contents: true
 
 ## text
 
-| Name      | Type                    | Description |
-| --------- | ----------------------- | ----------- |
-| any       | <code> any</code>       | any         |
-| bigint    | <code> bigint</code>    | a bigint    |
-| boolean   | <code> boolean</code>   | a boolean   |
-| false     | <code> false</code>     | false       |
-| never     | <code> never</code>     | never       |
-| null      | <code> null</code>      | null        |
-| number    | <code> number</code>    | a number    |
-| object    | <code> object</code>    | an object   |
-| string    | <code> string</code>    | a string    |
-| symbol    | <code> symbol</code>    | a symbol    |
-| true      | <code> true</code>      | true        |
-| unknown   | <code> unknown</code>   | unknown     |
-| void      | <code> void</code>      | void        |
-| undefined | <code> undefined</code> | undefined   |
+| Name      | Type         | Description |
+| --------- | ------------ | ----------- |
+| any       | ` any`       | any         |
+| bigint    | ` bigint`    | a bigint    |
+| boolean   | ` boolean`   | a boolean   |
+| false     | ` false`     | false       |
+| never     | ` never`     | never       |
+| null      | ` null`      | null        |
+| number    | ` number`    | a number    |
+| object    | ` object`    | an object   |
+| string    | ` string`    | a string    |
+| symbol    | ` symbol`    | a symbol    |
+| true      | ` true`      | true        |
+| unknown   | ` unknown`   | unknown     |
+| void      | ` void`      | void        |
+| undefined | ` undefined` | undefined   |
