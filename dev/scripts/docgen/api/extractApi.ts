@@ -3,10 +3,10 @@ import type {
     ExportedDeclarations,
     JSDoc,
     JSDocableNode,
+    JSDocTag,
     Project,
     SourceFile
 } from "ts-morph"
-import { SyntaxKind } from "ts-morph"
 import { readPackageJson } from "../../../runtime/main.ts"
 import { getEntryPointsToRelativeDtsPaths } from "./utils.ts"
 
@@ -87,24 +87,22 @@ const extractExportsFromDts = (entryPointDts: SourceFile): ExportData[] => {
     return exports
 }
 
-const expectedTsDocAncestorKinds = {
-    [SyntaxKind.VariableDeclaration]: SyntaxKind.VariableStatement
-}
+const isJSDocableNode = (declaration: unknown): declaration is JSDocableNode =>
+    (declaration as JSDocableNode).getJsDocs !== undefined
+
+const find = <t extends readonly unknown[], narrowed>(
+    t: t,
+    condition: (item: t[number]) => item is narrowed
+): narrowed | undefined => t.find(condition)
 
 const findAssociatedDocs = (
     declaration: ExportedDeclarations
 ): JSDoc[] | undefined => {
-    const ancestorKind = (expectedTsDocAncestorKinds as any)[
-        declaration.getKind()
-    ]
-    if (ancestorKind) {
-        const possiblyDocumentedAncestor = declaration.getFirstAncestorByKind(
-            ancestorKind
-        ) as undefined | JSDocableNode
-        if (possiblyDocumentedAncestor) {
-            return possiblyDocumentedAncestor.getJsDocs()
-        }
-    }
+    const possiblyDocumentedAncestor = isJSDocableNode(declaration)
+        ? declaration
+        : find(declaration.getAncestors(), isJSDocableNode)
+
+    return possiblyDocumentedAncestor?.getJsDocs()
 }
 
 const extractExportData = (
@@ -130,10 +128,29 @@ const extractTsDocData = (
     const associatedTsDocTags = findAssociatedDocs(declaration)?.flatMap(
         (tsDocs) => tsDocs.getTags()
     )
-    if (associatedTsDocTags) {
-        return associatedTsDocTags.map((tagNode) => ({
-            tag: tagNode.getTagName(),
-            text: tagNode.getText()
-        }))
+    if (associatedTsDocTags?.length) {
+        return associatedTsDocTags.map((tagNode) => {
+            const tagDetails = getTagDetails(tagNode)
+            return tagDetails
+        })
+    }
+}
+
+export const possibleFormats = ["string", "tuple", "helper"]
+
+const getTagDetails = (tagNode: JSDocTag) => {
+    let tag
+    const baseTag = tagNode.getTagName()
+    let text = tagNode.getText().replace(`@${baseTag}`, "").replaceAll("*", "")
+    if (baseTag === "example") {
+        const possibleTag = text.split("\n")[0].trim()
+        if (possibleFormats.includes(possibleTag)) {
+            tag = possibleTag
+            text = text.replace(possibleTag, "").trim()
+        }
+    }
+    return {
+        tag: tag ?? baseTag,
+        text
     }
 }

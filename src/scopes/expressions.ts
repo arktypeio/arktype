@@ -32,20 +32,108 @@ export type Expressions<$> = {
 
 type Ark = Expressions<PrecompiledDefaults>
 
+/**
+ * @operator {@link intersection | &}
+ * @docgenTable
+ * @string "L&R"
+ * @tuple  [L, "&", R]
+ * @helper  intersection(L,R)
+ * @example string
+ *      const intersection = type("/@arktype\.io$/ & email")
+ * @example tuple
+ *      const tupleIntersection = type(["/@arktype\.io$/", "&", "email"])
+ * @example helper
+ *      const helperIntersection = intersection("/@arktype\.io$/","email")
+ */
 export const intersection: Ark["intersection"] = scopes.ark.intersection
 
+/**
+ * @operator {@link union | |}
+ * @docgenTable
+ * @string "L|R"
+ * @tuple [L, "|" , R]
+ * @helper union(L,R)
+ * @example string
+ *      const union = type("string|number")
+ * @example tuple
+ *      const tupleUnion = type(["string", "|", "number"])
+ * @example helper
+ *      const helperUnion = union("string", "number")
+ */
 export const union: Ark["union"] = scopes.ark.union
 
+/**
+ * @operator {@link arrayOf}
+ * @docgenTable
+ * @string "T[]"
+ * @tuple [T, "[]"]
+ * @helper arrayOf(T)
+ * @example string
+ *      const numberArray = type("number[]")
+ * @example tuple
+ *      const tupleArray = type(["number", "[]"])
+ * @example helper
+ *      const helperArray = arrayOf("number")
+ */
 export const arrayOf: Ark["arrayOf"] = scopes.ark.arrayOf
 
+/**
+ * @operator {@link keyOf}
+ * @docgenTable
+ * @tuple "["keyOf", T]"
+ * @helper  keyOf(T)
+ * @example tuple
+ *      const tupleKeyOf = type(["keyOf", {a:"string"}])
+ * @example helper
+ *      const helperKeyOf = keyOf({a:"string"})
+ */
 export const keyOf: Ark["keyOf"] = scopes.ark.keyOf
 
+/**
+ * @operator {@link instanceOf}
+ * @docgenTable
+ * @tuple ["instanceOf", T]
+ * @helper instanceOf(T)
+ * @example tuple
+ *      const tupleInstanceOf = type(["instanceOf", Date])
+ * @example helper
+ *      const helperInstanceOf = instanceOf(Date)
+ */
 export const instanceOf: Ark["instanceOf"] = scopes.ark.instanceOf
 
+/**
+ * @operator {@link valueOf | ===}
+ * @docgenTable
+ * @tuple ["===", T]
+ * @helper valueOf(T)
+ * @example tuple
+ *      const tupleValueOf = type(["valueOf", {a:"string"}])
+ * @example helper
+ *      const helperValueOf = valueOf({a:"string"})
+ */
 export const valueOf: Ark["valueOf"] = scopes.ark.valueOf
 
+/**
+ * @operator {@link narrow | =>}
+ * @docgenTable
+ * @tuple ["type", "=>" , condition]
+ * @example tuple
+ *      const narrow = type( ["number", "=>" , (n) => n % 2 === 0])
+ * @example
+ *      const isEven = (x: unknown): x is number => x % 2 === 0
+ */
 export const narrow: Ark["narrow"] = scopes.ark.narrow
 
+/**
+ * @operator {@link morph | |>}
+ * @docgenTable
+ * @tuple [inputType, "|>", (data) => output]
+ * @helper morph(inputType, (data) => output)
+ * @example tuple
+ *      const tupleMorph = type( ["string", "|>" , (data) => `morphed ${data}`])
+ * @example helper
+ *      const helperMorph = morph("string", (data) => `morphed ${data}`)
+ */
 export const morph: Ark["morph"] = scopes.ark.morph
 
 export type BinaryExpressionParser<$, operator extends "&" | "|"> = {

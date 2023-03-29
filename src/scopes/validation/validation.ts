@@ -56,7 +56,8 @@ const json = rootType([tsKeywords.string, "|>", (s) => JSON.parse(s)], {
         "json": "a JSON-parsable string",
         "integer": "an integer"
 }
- * @scope
+ * @docgenScope
+ * @docgenTable
  */
 export const validationScope = scope(
     {
