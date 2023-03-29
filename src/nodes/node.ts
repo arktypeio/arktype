@@ -37,6 +37,12 @@ export type Node<$ = Dict> = Identifier<$> | ResolvedNode<$>
 
 export type Identifier<$ = Dict> = stringKeyOf<$>
 
+/**
+ * @operator {@link ResolvedNode | node}
+ * @docgenTable
+ * @tuple ["node", nodeDefinition]
+ * @helper type.from(nodeDefinition)
+ */
 export type ResolvedNode<$ = Dict> = TypeNode<$> | ConfigNode<$>
 
 export type ConfigNode<$ = Dict> = {
