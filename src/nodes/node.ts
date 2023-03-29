@@ -63,8 +63,8 @@ export type DisjointKinds = extend<
             r: EqualityRule
         }
         union: {
-            l: BranchNode[]
-            r: BranchNode[]
+            l: readonly BranchNode[]
+            r: readonly BranchNode[]
         }
     }
 >
