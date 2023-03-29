@@ -1,3 +1,4 @@
+import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import type { evaluate, keySet } from "../utils/generics.ts"
@@ -25,12 +26,18 @@ export type BranchesComparison = {
     distinctIntersections: BranchNode[]
 }
 
-export class Union extends Node<Union> {
+export class Union<
+    branches extends BranchNode[] = BranchNode[]
+> extends Node<Union> {
     constructor(public branches: BranchNode[]) {
         super(JSON.stringify(branches.map((_) => _.id)))
     }
 
-    intersect(other: Union, state: ComparisonState) {
+    get infer(): branches[number]["infer"] {
+        return chainableNoOpProxy
+    }
+
+    intersect(other: Union, state: ComparisonState): Union {
         const comparison = compareBranches(this.branches, other.branches, state)
         const resultBranches = [
             ...comparison.distinctIntersections,

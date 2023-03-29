@@ -91,7 +91,7 @@ export const initializeType = (
         config
         // the "as" symbol from inferred is not used at runtime, so we check
         // that the rest of the type is correct then cast it
-    } satisfies Omit<TypeRoot, typeof as> as TypeRoot
+    } satisfies Omit<TypeRoot, typeof as> as unknown as TypeRoot
 
     // define within a key to dynamically assign a name to the function
     const namedTraverse = {

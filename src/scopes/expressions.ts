@@ -1,4 +1,3 @@
-import type { distributable } from "../parse/ast/distributableFunction.ts"
 import type { Morph } from "../parse/ast/morph.ts"
 import type { Narrow } from "../parse/ast/narrow.ts"
 import type {
@@ -108,7 +107,7 @@ export type FunctionWithInferredInput<
     operator extends FunctionalTupleOperator,
     inDef
 > = operator extends "=>"
-    ? distributable<Narrow<asIn<inferDefinition<inDef, $>>>>
+    ? Narrow<asIn<inferDefinition<inDef, $>>>
     : Morph<asOut<inferDefinition<inDef, $>>>
 
 type unaryToTupleExpression<

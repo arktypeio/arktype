@@ -1,3 +1,4 @@
+import { BranchNode } from "../nodes/branch.ts"
 import type { Node } from "../nodes/node.ts"
 import type { Type } from "../scopes/type.ts"
 import { isType } from "../scopes/type.ts"
@@ -46,7 +47,10 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): Node => {
         case "Array":
             return parseTuple(def as List, ctx)
         case "RegExp":
-            return { string: { regex: (def as RegExp).source } }
+            return new BranchNode({
+                domain: "string",
+                regex: [(def as RegExp).source]
+            })
         case "Function":
             if (isType(def)) {
                 return ctx.type.scope.addAnonymousTypeReference(def, ctx)

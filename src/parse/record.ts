@@ -1,12 +1,13 @@
-import type { ResolvedNode } from "../nodes/node.ts"
-import type { PropsRule } from "../nodes/rules/props.ts"
+import { BranchNode } from "../nodes/branch.ts"
+import type { NamedProps } from "../nodes/rules/props.ts"
+import { PropsNode } from "../nodes/rules/props.ts"
 import type { Dict, evaluate, mutable } from "../utils/generics.ts"
 import type { inferDefinition, ParseContext } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"
 import { Scanner } from "./string/shift/scanner.ts"
 
-export const parseRecord = (def: Dict, ctx: ParseContext): ResolvedNode => {
-    const props: mutable<PropsRule> = {}
+export const parseRecord = (def: Dict, ctx: ParseContext): BranchNode => {
+    const props: NamedProps = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
         let isOptional = false
@@ -23,13 +24,12 @@ export const parseRecord = (def: Dict, ctx: ParseContext): ResolvedNode => {
         ctx.path.push(keyName)
         const propNode = parseDefinition(def[definitionKey], ctx)
         ctx.path.pop()
-        props[keyName] = isOptional ? ["?", propNode] : propNode
-    }
-    return {
-        object: {
-            props
+        props[keyName] = {
+            type: propNode,
+            kind: isOptional ? "optional" : "required"
         }
     }
+    return new BranchNode({ domain: "object", props: new PropsNode(props) })
 }
 
 type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`

@@ -1,8 +1,6 @@
-import type { Branch } from "../../nodes/branch.ts"
-import type { Predicate } from "../../nodes/predicate.ts"
-import { mappedKeys } from "../../nodes/rules/props.ts"
-import type { Rules } from "../../nodes/rules/rules.ts"
-import type { Domain } from "../../utils/domains.ts"
+import { BranchNode, RuleSet, ValueNode } from "../../nodes/branch.ts"
+import { Union } from "../../nodes/union.ts"
+import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import { deepFreeze } from "../../utils/freeze.ts"
 import type { evaluate, List } from "../../utils/generics.ts"
@@ -17,18 +15,26 @@ import { parseDefinition } from "../definition.ts"
 import { writeImplicitNeverMessage } from "./intersection.ts"
 import type { PrefixParser } from "./tuple.ts"
 
-const arrayIndexStringBranch = deepFreeze({
-    regex: wellFormedNonNegativeIntegerMatcher.source
-}) satisfies Rules<"string">
+const arrayIndexStringBranch = new BranchNode({
+    domain: "string",
+    // TODO: non array input
+    regex: [wellFormedNonNegativeIntegerMatcher.source]
+})
 
-const arrayIndexNumberBranch = deepFreeze({
-    range: { min: { comparator: ">=", limit: 0 } },
+const arrayIndexNumberBranch = new BranchNode({
+    domain: "number",
+    // TODO: non array input
+    range: {
+        ">=": 0
+    },
     divisor: 1
-}) satisfies Rules<"number">
+})
 
-type KeyDomain = "number" | "string" | "symbol"
+type KeyType = number | string | symbol
 
-type KeyNode = { [domain in KeyDomain]?: Rules<domain>[] }
+type KeyDomain = domainOf<KeyType>
+
+type KeyBranch = { [domain in KeyDomain]: BranchNode<domain> }[KeyDomain]
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
     const resolution = ctx.type.scope.resolveNode(parseDefinition(def[1], ctx))
@@ -41,7 +47,7 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
         return writeImplicitNeverMessage(ctx.path, "keyof")
     }
 
-    const keyNode: KeyNode = {}
+    const keyBranches: KeyBranch[] = []
 
     for (const key of sharedKeys) {
         const keyType = typeof key
@@ -50,13 +56,9 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
             keyType === "number" ||
             keyType === "symbol"
         ) {
-            keyNode[keyType] ??= []
-            keyNode[keyType]!.push({ value: key as any })
+            keyBranches.push(new ValueNode(key) as KeyBranch)
         } else if (key === wellFormedNonNegativeIntegerMatcher) {
-            keyNode.string ??= []
-            keyNode.string!.push(arrayIndexStringBranch)
-            keyNode.number ??= []
-            keyNode.number.push(arrayIndexNumberBranch)
+            keyBranches.push(arrayIndexStringBranch, arrayIndexNumberBranch)
         } else {
             return throwInternalError(
                 `Unexpected keyof key '${stringify(key)}'`
@@ -64,12 +66,7 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
         }
     }
 
-    return Object.fromEntries(
-        Object.entries(keyNode).map(([domain, branches]) => [
-            domain,
-            branches.length === 1 ? branches[0] : branches
-        ])
-    )
+    return new Union(keyBranches)
 }
 
 type KeyValue = string | number | symbol | RegExp
@@ -107,7 +104,7 @@ const sharedKeysOf = (keyBranches: List<KeyValue>[]): List<KeyValue> => {
     return sharedKeys
 }
 
-const keysOfObjectBranch = (branch: Branch): KeyValue[] => {
+const keysOfObjectBranch = (branch: BranchNode<"object">): KeyValue[] => {
     const result: KeyValue[] = []
     if ("props" in branch) {
         for (const key of Object.keys(branch.props)) {

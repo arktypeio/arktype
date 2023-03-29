@@ -1,12 +1,8 @@
-import type { DomainsJson } from "../../nodes/node.ts"
-import { isConfigNode, rootIntersection } from "../../nodes/node.ts"
 import type { TraversalState } from "../../nodes/traverse.ts"
 import type { asIn } from "../../scopes/type.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
-import type { distributable } from "./distributableFunction.ts"
-import { distributeFunctionToNode } from "./distributableFunction.ts"
 import type { PostfixParser, TupleExpression } from "./tuple.ts"
 
 export const parseNarrowTuple: PostfixParser<"=>"> = (def, ctx) => {

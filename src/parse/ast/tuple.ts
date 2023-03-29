@@ -1,6 +1,3 @@
-import type { Node, ResolvedNode } from "../../nodes/node.ts"
-import { rootIntersection, rootUnion, toArrayNode } from "../../nodes/node.ts"
-import type { Prop } from "../../nodes/rules/props.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type {

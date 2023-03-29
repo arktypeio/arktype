@@ -2,7 +2,6 @@ import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
 import type { Scope } from "../scopes/scope.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
-import { throwInternalError } from "../utils/errors.ts"
 import type { extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { BranchNode } from "./branch.ts"
@@ -85,6 +84,10 @@ export class Disjoint<kind extends DisjointKind = DisjointKind> extends Union {
         public r: DisjointKinds[kind]["r"]
     ) {
         super([])
+    }
+
+    toString() {
+        return `intersection of ${this.l} and ${this.r}`
     }
 }
 

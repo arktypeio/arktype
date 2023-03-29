@@ -169,6 +169,8 @@ export type mutable<o> = {
     -readonly [k in keyof o]: o[k]
 }
 
+export const mutable = <t>(t: t) => t as mutable<t>
+
 export type immutable<o> = {
     readonly [k in keyof o]: o[k]
 }

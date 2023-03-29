@@ -1,34 +1,44 @@
 import { writeImplicitNeverMessage } from "../parse/ast/intersection.ts"
 import type { Morph } from "../parse/ast/morph.ts"
-import { domainOf } from "../utils/domains.ts"
+import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
+import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type { constructor, evaluate } from "../utils/generics.ts"
+import { mutable } from "../utils/generics.ts"
 import type { ComparisonState, Compilation } from "./node.ts"
 import { Node } from "./node.ts"
 import type { NarrowRule } from "./rules/narrow.ts"
 import type { PropsNode } from "./rules/props.ts"
 import type { Range } from "./rules/range.ts"
 
-export class BranchNode<
-    domain extends Domain = Domain
-> extends Node<BranchNode> {
-    constructor(public domain: domain, public morphs: Morph[]) {
+export class BranchNode<domain extends Domain = any> extends Node<BranchNode> {
+    constructor(public rules: RuleSet<domain>) {
         super("TODO")
     }
 
+    get infer(): inferDomain<domain> {
+        return chainableNoOpProxy
+    }
+
     get hasMorphs() {
-        return this.morphs.length !== 0
+        return this.rules.morphs
     }
 
     intersect(branch: BranchNode, s: ComparisonState) {
-        if (this.domain !== branch.domain) {
-            return s.addDisjoint("domain", this.domain, branch.domain)
+        if (this.rules.domain !== branch.rules.domain) {
+            return s.addDisjoint(
+                "domain",
+                this.rules.domain,
+                branch.rules.domain
+            )
         }
         if (
             // TODO: Fix
             // s.lastOperator === "&" &&
-            this.morphs.some((morph, i) => morph !== branch.morphs[i])
+            this.rules.morphs?.some(
+                (morph, i) => morph !== branch.rules.morphs?.[i]
+            )
         ) {
             throwParseError(
                 writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
@@ -37,16 +47,16 @@ export class BranchNode<
         return this
     }
 
-    allows(value: unknown) {
+    allows() {
         return true
     }
 
     compile(c: Compilation) {
-        return this.domain === "object"
+        return this.rules.domain === "object"
             ? `(typeof ${c.data} === "object" && ${c.data} !== null) || typeof ${c.data} === "function"`
-            : this.domain === "null" || this.domain === "undefined"
-            ? `${c.data} === ${this.domain}`
-            : `typeof ${c.data} === "${this.domain}"`
+            : this.rules.domain === "null" || this.rules.domain === "undefined"
+            ? `${c.data} === ${this.rules.domain}`
+            : `typeof ${c.data} === "${this.rules.domain}"`
     }
 
     // compile(c: Compilation): string {
@@ -86,8 +96,14 @@ export class BranchNode<
 }
 
 export class ValueNode<value = unknown> extends BranchNode<domainOf<value>> {
-    constructor(public value: value, morphs: Morph[] = []) {
-        super(domainOf(value), morphs)
+    constructor(public value: value, morphs?: Morph[]) {
+        const rules = { domain: domainOf(value), value } as RuleSet<
+            domainOf<value>
+        >
+        if (morphs) {
+            mutable(rules).morphs = morphs
+        }
+        super(rules)
     }
 }
 

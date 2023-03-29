@@ -1,5 +1,4 @@
 import type { DisjointsByPath } from "../../nodes/node.ts"
-import { disjointDescriptionWriters } from "../../nodes/node.ts"
 import type { MappedKeys } from "../../nodes/rules/props.ts"
 import type {
     asConst,
@@ -96,18 +95,14 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
     const paths = keysOf(disjoints)
     if (paths.length === 1) {
         const path = paths[0]
-        return `${
-            path === "/" ? "" : `At ${path}: `
-        }Intersection of ${disjointDescriptionWriters[disjoints[path].kind](
-            disjoints[path] as never
-        )} results in an unsatisfiable type`
+        return `${path === "/" ? "" : `At ${path}: `}Intersection of ${
+            disjoints[path]
+        } results in an unsatisfiable type`
     }
     let message = `
         "Intersection results in unsatisfiable types at the following paths:\n`
     for (const path in disjoints) {
-        message += `  ${path}: ${disjointDescriptionWriters[
-            disjoints[path].kind
-        ](disjoints[path] as never)}\n`
+        message += `  ${path}: ${disjoints[path]}\n`
     }
     return message
 }
