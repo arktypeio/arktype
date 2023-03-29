@@ -116,7 +116,7 @@ export const valueOf: Ark["valueOf"] = scopes.ark.valueOf
 /**
  * @operator {@link narrow | =>}
  * @docgenTable
- * @tuple ["type", => , condition]
+ * @tuple ["type", "=>" , condition]
  * @example tuple
  *      const narrow = type( ["number", "=>" , (n) => n % 2 === 0])
  * @example helper
@@ -127,7 +127,7 @@ export const narrow: Ark["narrow"] = scopes.ark.narrow
 /**
  * @operator {@link morph | |>}
  * @docgenTable
- * @tuple [inputType, |>, (data) => output]
+ * @tuple [inputType, "|>", (data) => output]
  * @helper morph(inputType, (data) => output)
  * @example tuple
  *      const tupleMorph = type( ["string", "|>" , (data) => `morphed ${data}`])
