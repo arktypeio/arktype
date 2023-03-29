@@ -8,13 +8,7 @@ hide_table_of_contents: true
 
 -   [bound](./validatebound.md)
 
-## string
-
--   "N<S<N", with comparators restricted to < or <= <br/>
--   const range = type("2<=number<5")<br/>
--   const bound = type("string[]==5")<br/>
-
-## tablifiedInfo
+## tableRow
 
 | Variable | Description                            |
 | -------- | -------------------------------------- |
@@ -22,10 +16,12 @@ hide_table_of_contents: true
 | S        | sized data (a number, string or array) |
 | <        | Comparator (one of <, <=, ==, >=, >)   |
 
-## Bound
+## description
 
--   "S<N"
+-   Bound operators allow data to be bounded in the format "S<N", or as a Range: "N<S<N", with comparators restricted to < or <=
 
-## Range
+## string
 
--   "N<S<N", with comparators restricted to < or <=
+-   "N<S<N", with comparators restricted to < or <= <br/>
+-   const range = type("2<=number<5")<br/>
+-   const bound = type("string[]==5")<br/>

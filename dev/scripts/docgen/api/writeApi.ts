@@ -4,7 +4,7 @@ import { ensureDir, shell } from "../../../runtime/main.ts"
 import type { DocGenApiConfig } from "../main.ts"
 import { keywordTable } from "./buildTable/keywords.ts"
 import { getFormats } from "./buildTable/operators.ts"
-import { constructRow, convertToHTML } from "./buildTable/table.ts"
+import { constructRow } from "./buildTable/table.ts"
 import type {
     ApiEntryPoint,
     ExportData,

@@ -58,7 +58,7 @@ export const packTsDocTags = (docs: TsDocData[] | undefined) => {
 
 export const formatTagData = (tagData: string[], tag: string) => {
     let formattedData = ""
-    if (tag === "param" || tag === "tablifiedInfo") {
+    if (tag === "param" || tag === "tableRow") {
         const table: string[] = []
         constructHeader(["Variable", "Description"], table)
         for (const data of tagData) {

@@ -7,12 +7,12 @@ import type { astToString } from "./utils.ts"
 /**
  * @operator {@link validateBound | bound}
  * @docgenTable
+ *  * @tableRow N number literal
+ * @tableRow S sized data (a number, string or array)
+ * @tableRow < Comparator (one of <, <=, ==, >=, >)
+ * @description
+ * Bound operators allow data to be bounded in the format "S<N", or as a Range: "N<S<N", with comparators restricted to < or <=
  * @string "N<S<N", with comparators restricted to < or <=
- * @tablifiedInfo N number literal
- * @tablifiedInfo S sized data (a number, string or array)
- * @tablifiedInfo < Comparator (one of <, <=, ==, >=, >)
- * @Bound "S<N"
- * @Range "N<S<N", with comparators restricted to < or <=
  * @example string
  *  const range = type("2<=number<5")
  * @example string
