@@ -6,7 +6,7 @@ import type { extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { BranchNode } from "./branch.ts"
 import type { InstanceRule } from "./rules/instance.ts"
-import type { RangeNode } from "./rules/range.ts"
+import type { RangeRule } from "./rules/range.ts"
 import type { EqualityRule } from "./rules/value.ts"
 import { TypeNode } from "./type.ts"
 
@@ -32,8 +32,8 @@ export type DisjointKinds = extend<
             r: Domain
         }
         range: {
-            l: RangeNode
-            r: RangeNode
+            l: RangeRule
+            r: RangeRule
         }
         class: {
             l: InstanceRule

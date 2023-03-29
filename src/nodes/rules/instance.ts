@@ -2,9 +2,9 @@ import type { constructor } from "../../utils/generics.ts"
 import { constructorExtends } from "../../utils/generics.ts"
 import type { ComparisonState, Compilation } from "../node.ts"
 import { registerConstructor } from "../registry.ts"
-import { RuleNode } from "./rule.ts"
+import { Rule } from "./rule.ts"
 
-export class InstanceRule extends RuleNode<"instance"> {
+export class InstanceRule extends Rule<"instance"> {
     constructor(public instanceOf: constructor) {
         super(
             "instance",

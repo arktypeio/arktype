@@ -9,8 +9,8 @@ import { mutable } from "../utils/generics.ts"
 import type { ComparisonState, Compilation } from "./node.ts"
 import { Node } from "./node.ts"
 import type { NarrowRule } from "./rules/narrow.ts"
-import type { PropsNode } from "./rules/props.ts"
-import type { Range } from "./rules/range.ts"
+import type { PropsRule } from "./rules/props.ts"
+import type { Bounds } from "./rules/range.ts"
 
 export class BranchNode<rules extends RuleSet = any> extends Node<BranchNode> {
     constructor(public rules: rules) {
@@ -138,8 +138,8 @@ type defineCustomRules<
 type CustomRules = {
     readonly regex?: string[]
     readonly divisor?: number
-    readonly range?: Range
-    readonly props?: PropsNode
+    readonly range?: Bounds
+    readonly props?: PropsRule
     readonly instance?: constructor
 }
 

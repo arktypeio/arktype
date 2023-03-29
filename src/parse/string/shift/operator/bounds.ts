@@ -1,12 +1,12 @@
 import { stringifyRange } from "../../../../nodes/node.ts"
 import type { DomainsJson } from "../../../../nodes/node.ts"
 import type {
-    Bound,
-    MaxComparator,
-    Range
+    BoundContext,
+    Bounds,
+    Comparator,
+    MaxComparator
 } from "../../../../nodes/rules/range.ts"
 import {
-    compareStrictness,
     maxComparators,
     minComparators
 } from "../../../../nodes/rules/range.ts"
@@ -19,12 +19,9 @@ import { writeUnboundableMessage } from "../../../ast/bound.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import { writeUnpairableComparatorMessage } from "../../reduce/shared.ts"
 import type { state, StaticState } from "../../reduce/static.ts"
-import { Scanner } from "../scanner.ts"
+import type { Scanner } from "../scanner.ts"
 
-export const parseBound = (
-    s: DynamicState,
-    start: Scanner.ComparatorStartChar
-) => {
+export const parseBound = (s: DynamicState, start: ComparatorStartChar) => {
     const comparator = shiftComparator(s, start)
     const maybeMin = s.ejectRootIfLimit()
     return maybeMin === undefined
@@ -34,11 +31,11 @@ export const parseBound = (
 
 export type parseBound<
     s extends StaticState,
-    start extends Scanner.ComparatorStartChar,
+    start extends ComparatorStartChar,
     unscanned extends string
 > = shiftComparator<start, unscanned> extends infer shiftResultOrError
     ? shiftResultOrError extends Scanner.shiftResult<
-          infer comparator extends Scanner.Comparator,
+          infer comparator extends Comparator,
           infer nextUnscanned
       >
         ? s["root"] extends NumberLiteral
@@ -47,32 +44,46 @@ export type parseBound<
         : shiftResultOrError
     : never
 
+const oneCharComparators = {
+    "<": true,
+    ">": true
+} as const
+
+type OneCharComparator = keyof typeof oneCharComparators
+
+export type ComparatorStartChar = Comparator extends `${infer char}${string}`
+    ? char
+    : never
+
+export const comparatorStartChars: keySet<ComparatorStartChar> = {
+    "<": true,
+    ">": true,
+    "=": true
+}
+
 const shiftComparator = (
     s: DynamicState,
-    start: Scanner.ComparatorStartChar
-): Scanner.Comparator =>
+    start: ComparatorStartChar
+): Comparator =>
     s.scanner.lookaheadIs("=")
         ? `${start}${s.scanner.shift()}`
-        : isKeyOf(start, Scanner.oneCharComparators)
+        : isKeyOf(start, oneCharComparators)
         ? start
         : s.error(singleEqualsMessage)
 
 type shiftComparator<
-    start extends Scanner.ComparatorStartChar,
+    start extends ComparatorStartChar,
     unscanned extends string
 > = unscanned extends `=${infer nextUnscanned}`
     ? [`${start}=`, nextUnscanned]
-    : start extends Scanner.OneCharComparator
+    : start extends OneCharComparator
     ? [start, unscanned]
     : error<singleEqualsMessage>
 
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage
 
-export const parseRightBound = (
-    s: DynamicState,
-    comparator: Scanner.Comparator
-) => {
+export const parseRightBound = (s: DynamicState, comparator: Comparator) => {
     const limitToken = s.scanner.shiftUntilNextTerminator()
     const limit = tryParseWellFormedNumber(
         limitToken,
@@ -80,7 +91,7 @@ export const parseRightBound = (
     )
     const openRange = s.ejectRangeIfOpen()
     const rightBound = { comparator, limit }
-    const range: Range = openRange
+    const range: Bounds = openRange
         ? !hasComparatorIn(rightBound, maxComparators)
             ? s.error(writeUnpairableComparatorMessage(comparator))
             : compareStrictness("min", openRange, rightBound) === "l"
@@ -101,7 +112,7 @@ export const parseRightBound = (
     s.intersect(distributeRange(range, s))
 }
 
-const distributeRange = (range: Range, s: DynamicState) => {
+const distributeRange = (range: Bounds, s: DynamicState) => {
     const resolution = s.resolveRoot()
     const domains = keysOf(resolution)
     const distributedRange: mutable<DomainsJson> = {}
@@ -133,20 +144,19 @@ const distributeRange = (range: Range, s: DynamicState) => {
     return distributedRange
 }
 
-const hasComparator = <comparator extends Scanner.Comparator>(
-    bound: Bound,
+const hasComparator = <comparator extends Comparator>(
+    bound: BoundContext,
     comparator: comparator
-): bound is Bound<comparator> => bound.comparator === comparator
+): bound is BoundContext<comparator> => bound.comparator === comparator
 
-const hasComparatorIn = <comparators extends keySet<Scanner.Comparator>>(
-    bound: Bound,
+const hasComparatorIn = <comparators extends keySet<Comparator>>(
+    bound: BoundContext,
     comparators: comparators
-): bound is Bound<keyof comparators & Scanner.Comparator> =>
-    bound.comparator in comparators
+): bound is BoundContext<keyof comparators> => bound.comparator in comparators
 
 export type parseRightBound<
     s extends StaticState,
-    comparator extends Scanner.Comparator,
+    comparator extends Comparator,
     unscanned extends string
 > = Scanner.shiftUntilNextTerminator<unscanned> extends Scanner.shiftResult<
     infer scanned,
@@ -179,7 +189,7 @@ export type parseRightBound<
     : never
 
 export const writeInvalidLimitMessage = <
-    comparator extends Scanner.Comparator,
+    comparator extends Comparator,
     limit extends string
 >(
     comparator: comparator,
@@ -188,11 +198,11 @@ export const writeInvalidLimitMessage = <
     `Comparator ${comparator} must be followed by a number literal (was '${limit}')`
 
 export type writeInvalidLimitMessage<
-    comparator extends Scanner.Comparator,
+    comparator extends Comparator,
     limit extends string
 > = `Comparator ${comparator} must be followed by a number literal (was '${limit}')`
 
-export const writeEmptyRangeMessage = (range: Range) =>
+export const writeEmptyRangeMessage = (range: Bounds) =>
     `${stringifyRange(range)} is empty`
 
 export type BoundableDomain = "string" | "number" | "object"

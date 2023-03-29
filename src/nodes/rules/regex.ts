@@ -1,8 +1,8 @@
 import type { Compilation } from "../node.ts"
 import { registerRegex } from "../registry.ts"
-import { intersectUniqueLists, RuleNode } from "./rule.ts"
+import { intersectUniqueLists, Rule } from "./rule.ts"
 
-export class RegexNode extends RuleNode<"regex"> {
+export class RegexRule extends Rule<"regex"> {
     constructor(public sources: string[]) {
         super(
             "regex",
@@ -10,13 +10,8 @@ export class RegexNode extends RuleNode<"regex"> {
         )
     }
 
-    intersect(other: RegexNode) {
-        const intersection = intersectUniqueLists(this.sources, other.sources)
-        return intersection.length === this.sources.length
-            ? this
-            : intersection.length === other.sources.length
-            ? other
-            : new RegexNode(intersection)
+    intersect(other: RegexRule) {
+        return new RegexRule(intersectUniqueLists(this.sources, other.sources))
     }
 
     compile(c: Compilation): string {

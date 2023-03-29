@@ -1,8 +1,8 @@
 import type { Narrow } from "../../parse/ast/narrow.ts"
 import type { Compilation } from "../node.ts"
-import { intersectUniqueLists, RuleNode } from "./rule.ts"
+import { intersectUniqueLists, Rule } from "./rule.ts"
 
-export class NarrowRule extends RuleNode<"narrow"> {
+export class NarrowRule extends Rule<"narrow"> {
     constructor(public narrows: Narrow[]) {
         super(
             "narrow",
@@ -14,12 +14,7 @@ export class NarrowRule extends RuleNode<"narrow"> {
     }
 
     intersect(other: NarrowRule) {
-        const intersection = intersectUniqueLists(this.narrows, other.narrows)
-        return intersection.length === this.narrows.length
-            ? this
-            : intersection.length === other.narrows.length
-            ? other
-            : new NarrowRule(intersection)
+        return new NarrowRule(intersectUniqueLists(this.narrows, other.narrows))
     }
 
     compile(c: Compilation) {

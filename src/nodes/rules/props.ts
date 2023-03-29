@@ -1,6 +1,6 @@
 import type { ComparisonState, Compilation } from "../node.ts"
 import type { TypeNode } from "../type.ts"
-import { RuleNode } from "./rule.ts"
+import { Rule } from "./rule.ts"
 
 export type NamedProps = Record<string, NamedProp>
 
@@ -11,12 +11,12 @@ export type NamedProp = {
 
 export type IndexProps = [keyType: TypeNode, valueType: TypeNode][]
 
-export class PropsNode extends RuleNode<"props"> {
+export class PropsRule extends Rule<"props"> {
     constructor(public named: NamedProps, public indexed?: IndexProps) {
         super("props", "TODO")
     }
 
-    intersect(other: PropsNode, s: ComparisonState) {
+    intersect(other: PropsRule, s: ComparisonState) {
         const named: NamedProps = {}
         for (const k in this.named) {
             let prop: NamedProp
@@ -61,10 +61,10 @@ export class PropsNode extends RuleNode<"props"> {
                 }
             }
         }
-        return new PropsNode(named, this.intersectIndices(other, s))
+        return new PropsRule(named, this.intersectIndices(other, s))
     }
 
-    intersectIndices(other: PropsNode, s: ComparisonState) {
+    intersectIndices(other: PropsRule, s: ComparisonState) {
         if (!this.indexed) {
             if (!other.indexed) {
                 return

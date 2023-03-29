@@ -1,8 +1,6 @@
-import { BranchNode, RuleSet, ValueNode } from "../../nodes/branch.ts"
-import { TypeNode } from "../../nodes/union.ts"
-import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
+import { BranchNode, ValueNode } from "../../nodes/branch.ts"
+import type { Domain, domainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
-import { deepFreeze } from "../../utils/freeze.ts"
 import type { evaluate, List } from "../../utils/generics.ts"
 import { keysOf, listFrom, prototypeKeysOf } from "../../utils/generics.ts"
 import {

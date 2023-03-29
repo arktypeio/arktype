@@ -1,12 +1,9 @@
 import type { Node } from "../../../nodes/node.ts"
+import type { Comparator, LowerBound } from "../../../nodes/rules/range.ts"
 import {
-    isLiteralNode,
-    rootIntersection,
-    rootUnion,
-    toArrayNode
-} from "../../../nodes/node.ts"
-import type { LowerBound } from "../../../nodes/rules/range.ts"
-import { minComparators } from "../../../nodes/rules/range.ts"
+    invertedComparators,
+    minComparators
+} from "../../../nodes/rules/range.ts"
 import { throwInternalError, throwParseError } from "../../../utils/errors.ts"
 import { isKeyOf } from "../../../utils/generics.ts"
 import { stringify } from "../../../utils/serialize.ts"
@@ -122,8 +119,8 @@ export class DynamicState {
         this.scanner.finalized = true
     }
 
-    reduceLeftBound(limit: number, comparator: Scanner.Comparator) {
-        const invertedComparator = Scanner.invertedComparators[comparator]
+    reduceLeftBound(limit: number, comparator: Comparator) {
+        const invertedComparator = invertedComparators[comparator]
         if (!isKeyOf(invertedComparator, minComparators)) {
             return this.error(writeUnpairableComparatorMessage(comparator))
         }

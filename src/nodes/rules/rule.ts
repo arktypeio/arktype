@@ -1,13 +1,13 @@
 import { Node } from "../node.ts"
-import type { DivisorRule } from "./divisor.ts"
+import type { DivisibilityRule } from "./divisibility.ts"
+import type { EqualityRule } from "./equality.ts"
 import type { InstanceRule } from "./instance.ts"
 import type { NarrowRule } from "./narrow.ts"
-import type { PropsNode } from "./props.ts"
-import type { RangeNode } from "./range.ts"
-import type { RegexNode } from "./regex.ts"
-import type { EqualityRule } from "./value.ts"
+import type { PropsRule } from "./props.ts"
+import type { RangeRule } from "./range.ts"
+import type { RegexRule } from "./regex.ts"
 
-export abstract class RuleNode<kind extends RuleKind = RuleKind> extends Node<
+export abstract class Rule<kind extends RuleKind = RuleKind> extends Node<
     RuleKinds[kind]
 > {
     constructor(public readonly kind: kind, id: string) {
@@ -15,7 +15,7 @@ export abstract class RuleNode<kind extends RuleKind = RuleKind> extends Node<
     }
 
     allows(value: unknown) {
-        return true
+        return !value
     }
 
     get precedence() {
@@ -24,22 +24,22 @@ export abstract class RuleNode<kind extends RuleKind = RuleKind> extends Node<
 }
 
 type RuleKinds = {
-    value: EqualityRule
+    equality: EqualityRule
     instance: InstanceRule
-    range: RangeNode
-    divisor: DivisorRule
-    regex: RegexNode
-    props: PropsNode
+    range: RangeRule
+    divisibility: DivisibilityRule
+    regex: RegexRule
+    props: PropsRule
     narrow: NarrowRule
 }
 
 export type RuleKind = keyof RuleKinds
 
 const precedenceByRule = {
-    value: 0,
+    equality: 0,
     instance: 1,
     range: 2,
-    divisor: 3,
+    divisibility: 3,
     regex: 4,
     props: 5,
     narrow: 6

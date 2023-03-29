@@ -1,6 +1,10 @@
-import type { MinComparator } from "../../../nodes/rules/range.ts"
+import type {
+    Comparator,
+    InvertedComparators,
+    MinComparator
+} from "../../../nodes/rules/range.ts"
+import { invertedComparators } from "../../../nodes/rules/range.ts"
 import type { NumberLiteral } from "../../../utils/numericLiterals.ts"
-import { Scanner } from "../shift/scanner.ts"
 
 export const writeUnmatchedGroupCloseMessage = <unscanned extends string>(
     unscanned: unscanned
@@ -28,14 +32,10 @@ export type writeOpenRangeMessage<
     comparator extends MinComparator
 > = `Left bounds are only valid when paired with right bounds (try ...${comparator}${min})`
 
-export type writeUnpairableComparatorMessage<
-    comparator extends Scanner.Comparator
-> =
+export type writeUnpairableComparatorMessage<comparator extends Comparator> =
     `Left-bounded expressions must specify their limits using < or <= (was ${comparator})`
 
-export const writeUnpairableComparatorMessage = <
-    comparator extends Scanner.Comparator
->(
+export const writeUnpairableComparatorMessage = <comparator extends Comparator>(
     comparator: comparator
 ): writeUnpairableComparatorMessage<comparator> =>
     `Left-bounded expressions must specify their limits using < or <= (was ${comparator})`
@@ -56,11 +56,11 @@ export const writeMultipleLeftBoundsMessage = <
     limit,
     comparator
 > =>
-    `An expression may have at most one left bound (parsed ${openLimit}${Scanner.invertedComparators[openComparator]}, ${limit}${Scanner.invertedComparators[comparator]})`
+    `An expression may have at most one left bound (parsed ${openLimit}${invertedComparators[openComparator]}, ${limit}${invertedComparators[comparator]})`
 
 export type writeMultipleLeftBoundsMessage<
     openLimit extends NumberLiteral,
     openComparator extends MinComparator,
     limit extends NumberLiteral,
     comparator extends MinComparator
-> = `An expression may have at most one left bound (parsed ${openLimit}${Scanner.InvertedComparators[openComparator]}, ${limit}${Scanner.InvertedComparators[comparator]})`
+> = `An expression may have at most one left bound (parsed ${openLimit}${InvertedComparators[openComparator]}, ${limit}${InvertedComparators[comparator]})`

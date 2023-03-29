@@ -178,40 +178,6 @@ const compareBranches = (
 //     ? l
 //     : result
 
-// export type ConfigNode<$ = Dict> = {
-//     config: TypeConfig
-//     node: DomainsJson<$>
-// }
-
-// export type LiteralNode<
-//     domain extends Domain = Domain,
-//     value extends inferDomain<domain> = inferDomain<domain>
-// > = {
-//     [k in domain]: LiteralRules<domain, value>
-// }
-
-// export const isLiteralNode = <domain extends Domain>(
-//     node: ResolvedNode,
-//     domain: domain
-// ): node is LiteralNode<domain> => {
-//     return (
-//         resolutionExtendsDomain(node, domain) &&
-//         isLiteralCondition(node[domain])
-//     )
-// }
-
-// export type DomainSubtypeResolution<domain extends Domain> = {
-//     readonly [k in domain]: defined<DomainsNode[domain]>
-// }
-
-// export const resolutionExtendsDomain = <domain extends Domain>(
-//     resolution: ResolvedNode,
-//     domain: domain
-// ): resolution is DomainSubtypeResolution<domain> => {
-//     const domains = keysOf(resolution)
-//     return domains.length === 1 && domains[0] === domain
-// }
-
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 

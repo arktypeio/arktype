@@ -1,4 +1,5 @@
-import type { Dict } from "../../../utils/generics.ts"
+import type { Comparator } from "../../../nodes/rules/range.ts"
+import type { Dict, keySet } from "../../../utils/generics.ts"
 
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]
@@ -70,14 +71,10 @@ export namespace Scanner {
         scanner: Scanner
     ) => scanner.lookahead !== whiteSpaceToken
 
-    export const comparatorStartChars = {
+    export const terminatingChars = {
         "<": true,
         ">": true,
-        "=": true
-    } as const
-
-    export const terminatingChars = {
-        ...comparatorStartChars,
+        "=": true,
         "|": true,
         "&": true,
         ")": true,
@@ -87,43 +84,6 @@ export namespace Scanner {
     } as const
 
     export type TerminatingChar = keyof typeof Scanner.terminatingChars
-
-    export const comparators = {
-        "<": true,
-        ">": true,
-        "<=": true,
-        ">=": true,
-        "==": true
-    } as const
-
-    export type Comparator = keyof typeof comparators
-
-    export type ComparatorStartChar = keyof typeof comparatorStartChars
-
-    export const oneCharComparators = {
-        "<": true,
-        ">": true
-    } as const
-
-    export type OneCharComparator = keyof typeof oneCharComparators
-
-    export const comparatorDescriptions = {
-        "<": "less than",
-        ">": "more than",
-        "<=": "at most",
-        ">=": "at least",
-        "==": "exactly"
-    } as const
-
-    export const invertedComparators = {
-        "<": ">",
-        ">": "<",
-        "<=": ">=",
-        ">=": "<=",
-        "==": "=="
-    } as const
-
-    export type InvertedComparators = typeof invertedComparators
 
     export const branchTokens = {
         "|": true,

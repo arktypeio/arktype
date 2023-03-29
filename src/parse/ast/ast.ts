@@ -1,3 +1,4 @@
+import type { Comparator } from "../../nodes/rules/range.ts"
 import type { resolve } from "../../scopes/scope.ts"
 import type {
     castOnError,
@@ -35,7 +36,7 @@ export type inferExpression<ast extends List, $> = ast[1] extends "[]"
       > extends infer result
         ? castOnError<result, never>
         : never
-    : ast[1] extends Scanner.Comparator
+    : ast[1] extends Comparator
     ? ast[0] extends NumberLiteral
         ? inferAst<ast[2], $>
         : inferAst<ast[0], $>
@@ -65,7 +66,7 @@ export type validateExpression<
               inferUnion<inferAst<l, $>, inferAst<r, $>>,
               validateInfix<ast, $>
           >
-        : operator extends Scanner.Comparator
+        : operator extends Comparator
         ? validateBound<l, r, $>
         : operator extends "%"
         ? validateDivisor<l, $>
@@ -97,14 +98,7 @@ export type PostfixExpression<
     operand = unknown
 > = [operand, operator]
 
-export type InfixOperator =
-    | "|"
-    | "&"
-    | Scanner.Comparator
-    | "%"
-    | ":"
-    | "=>"
-    | "|>"
+export type InfixOperator = "|" | "&" | Comparator | "%" | ":" | "=>" | "|>"
 
 export type InfixExpression<
     operator extends InfixOperator = InfixOperator,

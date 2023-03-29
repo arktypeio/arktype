@@ -1,21 +1,17 @@
 import type { Compilation } from "../node.ts"
-import { RuleNode } from "./rule.ts"
+import { Rule } from "./rule.ts"
 
-export class DivisorRule extends RuleNode<"divisor"> {
+export class DivisibilityRule extends Rule<"divisibility"> {
     constructor(public readonly divisor: number) {
-        super("divisor", `${divisor}`)
+        super("divisibility", `${divisor}`)
     }
 
-    intersect(other: DivisorRule) {
+    intersect(other: DivisibilityRule) {
         const leastCommonMultiple = Math.abs(
             (this.divisor * other.divisor) /
                 greatestCommonDivisor(this.divisor, other.divisor)
         )
-        return leastCommonMultiple === this.divisor
-            ? this
-            : leastCommonMultiple === other.divisor
-            ? other
-            : new DivisorRule(leastCommonMultiple)
+        return new DivisibilityRule(leastCommonMultiple)
     }
 
     compile(c: Compilation) {

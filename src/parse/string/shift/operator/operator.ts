@@ -4,7 +4,8 @@ import { isKeyOf } from "../../../../utils/generics.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { state, StaticState } from "../../reduce/static.ts"
 import { Scanner } from "../scanner.ts"
-import { parseBound } from "./bounds.ts"
+import type { ComparatorStartChar } from "./bounds.ts"
+import { comparatorStartChars, parseBound } from "./bounds.ts"
 import { parseDivisor } from "./divisor.ts"
 
 // @snipStart:parseOperator
@@ -20,7 +21,7 @@ export const parseOperator = (s: DynamicState): void => {
         ? s.pushRootToBranch(lookahead)
         : lookahead === ")"
         ? s.finalizeGroup()
-        : isKeyOf(lookahead, Scanner.comparatorStartChars)
+        : isKeyOf(lookahead, comparatorStartChars)
         ? parseBound(s, lookahead)
         : lookahead === "%"
         ? parseDivisor(s)
@@ -39,7 +40,7 @@ export type parseOperator<s extends StaticState> =
             ? state.reduceBranch<s, lookahead, unscanned>
             : lookahead extends ")"
             ? state.finalizeGroup<s, unscanned>
-            : lookahead extends Scanner.ComparatorStartChar
+            : lookahead extends ComparatorStartChar
             ? parseBound<s, lookahead, unscanned>
             : lookahead extends "%"
             ? parseDivisor<s, unscanned>

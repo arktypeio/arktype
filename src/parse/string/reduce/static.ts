@@ -1,4 +1,6 @@
 import type {
+    Comparator,
+    InvertedComparators,
     MaxComparator,
     MinComparator
 } from "../../../nodes/rules/range.ts"
@@ -74,7 +76,7 @@ export namespace state {
     export type reduceLeftBound<
         s extends StaticState,
         limit extends NumberLiteral,
-        comparator extends Scanner.Comparator,
+        comparator extends Comparator,
         unscanned extends string
     > = comparator extends "<" | "<="
         ? s["branches"]["range"] extends {}
@@ -83,7 +85,7 @@ export namespace state {
                       s["branches"]["range"]["limit"],
                       s["branches"]["range"]["comparator"],
                       limit,
-                      Scanner.InvertedComparators[comparator]
+                      InvertedComparators[comparator]
                   >
               >
             : from<{
@@ -91,7 +93,7 @@ export namespace state {
                   branches: {
                       range: {
                           limit: limit
-                          comparator: Scanner.InvertedComparators[comparator]
+                          comparator: InvertedComparators[comparator]
                       }
                       "&": s["branches"]["&"]
                       "|": s["branches"]["|"]
@@ -121,7 +123,7 @@ export namespace state {
 
     export type reduceSingleBound<
         s extends StaticState,
-        comparator extends Scanner.Comparator,
+        comparator extends Comparator,
         limit extends NumberLiteral,
         unscanned extends string
     > = state.from<{
