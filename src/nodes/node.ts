@@ -8,7 +8,7 @@ import type { BranchNode } from "./branch.ts"
 import type { InstanceRule } from "./rules/instance.ts"
 import type { RangeNode } from "./rules/range.ts"
 import type { EqualityRule } from "./rules/value.ts"
-import { Union } from "./union.ts"
+import { TypeNode } from "./type.ts"
 
 export abstract class Node<subclass extends Node = any> {
     constructor(public readonly id: string) {}
@@ -77,13 +77,15 @@ export class ComparisonState {
     }
 }
 
-export class Disjoint<kind extends DisjointKind = DisjointKind> extends Union {
+export class Disjoint<
+    kind extends DisjointKind = DisjointKind
+> extends TypeNode {
     constructor(
         public kind: kind,
         public l: DisjointKinds[kind]["l"],
         public r: DisjointKinds[kind]["r"]
     ) {
-        super([])
+        super()
     }
 
     toString() {

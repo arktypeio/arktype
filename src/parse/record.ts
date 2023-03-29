@@ -1,7 +1,7 @@
 import { BranchNode } from "../nodes/branch.ts"
 import type { NamedProps } from "../nodes/rules/props.ts"
 import { PropsNode } from "../nodes/rules/props.ts"
-import type { Dict, evaluate, mutable } from "../utils/generics.ts"
+import type { Dict, evaluate } from "../utils/generics.ts"
 import type { inferDefinition, ParseContext } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"
 import { Scanner } from "./string/shift/scanner.ts"

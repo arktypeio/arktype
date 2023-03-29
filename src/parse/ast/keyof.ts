@@ -1,5 +1,5 @@
 import { BranchNode, RuleSet, ValueNode } from "../../nodes/branch.ts"
-import { Union } from "../../nodes/union.ts"
+import { TypeNode } from "../../nodes/union.ts"
 import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import { deepFreeze } from "../../utils/freeze.ts"
@@ -66,7 +66,7 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
         }
     }
 
-    return new Union(keyBranches)
+    return new TypeNode(keyBranches)
 }
 
 type KeyValue = string | number | symbol | RegExp

@@ -1,15 +1,15 @@
 import type { ComparisonState, Compilation } from "../node.ts"
-import type { Union } from "../union.ts"
+import type { TypeNode } from "../type.ts"
 import { RuleNode } from "./rule.ts"
 
 export type NamedProps = Record<string, NamedProp>
 
 export type NamedProp = {
-    type: Union
+    type: TypeNode
     kind: "required" | "optional" | "prerequisite"
 }
 
-export type IndexProps = [keyType: Union, valueType: Union][]
+export type IndexProps = [keyType: TypeNode, valueType: TypeNode][]
 
 export class PropsNode extends RuleNode<"props"> {
     constructor(public named: NamedProps, public indexed?: IndexProps) {

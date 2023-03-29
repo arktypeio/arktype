@@ -26,18 +26,21 @@ export type BranchesComparison = {
     distinctIntersections: BranchNode[]
 }
 
-export class Union<
+export class TypeNode<
     branches extends BranchNode[] = BranchNode[]
-> extends Node<Union> {
-    constructor(public branches: BranchNode[]) {
+> extends Node<TypeNode> {
+    branches: branches
+
+    constructor(...branches: branches) {
         super(JSON.stringify(branches.map((_) => _.id)))
+        this.branches = branches
     }
 
     get infer(): branches[number]["infer"] {
         return chainableNoOpProxy
     }
 
-    intersect(other: Union, state: ComparisonState): Union {
+    intersect(other: TypeNode, state: ComparisonState): TypeNode {
         const comparison = compareBranches(this.branches, other.branches, state)
         const resultBranches = [
             ...comparison.distinctIntersections,
@@ -54,7 +57,7 @@ export class Union<
         if (resultBranches.length === 0) {
             return state.addDisjoint("union", this.branches, other.branches)
         }
-        return new Union(resultBranches)
+        return new TypeNode(...resultBranches)
     }
 
     union(branches: BranchNode[]) {
@@ -77,7 +80,7 @@ export class Union<
         // TODO: if a boolean has multiple branches, neither of which is a
         // subtype of the other, it consists of two opposite literals
         // and can be simplified to a non-literal boolean.
-        return new Union(resultBranches)
+        return new TypeNode(...resultBranches)
     }
 
     allows(value: unknown) {

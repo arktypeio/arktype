@@ -12,12 +12,12 @@ import type { NarrowRule } from "./rules/narrow.ts"
 import type { PropsNode } from "./rules/props.ts"
 import type { Range } from "./rules/range.ts"
 
-export class BranchNode<domain extends Domain = any> extends Node<BranchNode> {
-    constructor(public rules: RuleSet<domain>) {
+export class BranchNode<rules extends RuleSet = any> extends Node<BranchNode> {
+    constructor(public rules: rules) {
         super("TODO")
     }
 
-    get infer(): inferDomain<domain> {
+    get infer(): inferDomain<this["rules"]["domain"]> {
         return chainableNoOpProxy
     }
 
@@ -95,15 +95,22 @@ export class BranchNode<domain extends Domain = any> extends Node<BranchNode> {
     // }
 }
 
-export class ValueNode<value = unknown> extends BranchNode<domainOf<value>> {
+export class ValueNode<
+    value = unknown,
+    morphs extends Morph[] | undefined = undefined
+> extends BranchNode<{
+    value: value
+    domain: domainOf<value>
+}> {
     constructor(public value: value, morphs?: Morph[]) {
-        const rules = { domain: domainOf(value), value } as RuleSet<
-            domainOf<value>
-        >
+        const rules = {} as RuleSet<domainOf<value>>
         if (morphs) {
             mutable(rules).morphs = morphs
         }
-        super(rules)
+        super({
+            domain: domainOf(value),
+            value
+        })
     }
 }
 

@@ -1,4 +1,3 @@
-import { toArrayNode } from "../../nodes/node.ts"
 import type { error } from "../../utils/generics.ts"
 import type { inferAst } from "../ast/ast.ts"
 import type { ParseContext } from "../definition.ts"
