@@ -6,22 +6,26 @@ hide_table_of_contents: true
 
 ## operator
 
--   [&](./intersection.md)
+&lt;code&gt;- [&](./intersection.md)  
+&lt;/code&gt;
 
 ## string
 
--   "L&R"
+&lt;code&gt;- "L&R" <br/>
+
+-   const intersection = type("/@arktype\.io$/ & email")<br/>
+    &lt;/code&gt;
 
 ## tuple
 
--   [L, "&", R]
+&lt;code&gt;- [L, "&", R] <br/>
+
+-   const tupleIntersection = type(["/@arktype\.io$/", "&", "email"])<br/>
+    &lt;/code&gt;
 
 ## helper
 
--   intersection(L,R)
+&lt;code&gt;- intersection(L,R) <br/>
 
-## example
-
--   const intersection = type("/@arktype\.io$/ & email") <br/>
--   const tupleIntersection = type(["string", "&", "uppercase"]) <br/>
--   const helperIntersection = intersection("string","uppercase") <br/>
+-   const helperIntersection = intersection("/@arktype\.io$/","email")<br/>
+    &lt;/code&gt;

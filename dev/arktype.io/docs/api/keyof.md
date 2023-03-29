@@ -6,17 +6,19 @@ hide_table_of_contents: true
 
 ## operator
 
--   [keyOf](./keyof.md)
+&lt;code&gt;- [keyOf](./keyof.md)  
+&lt;/code&gt;
 
 ## tuple
 
--   ["keyOf", &lt;object&gt;]
+&lt;code&gt;- "["keyOf", &lt;object&gt;]" <br/>
+
+-   const tupleKeyOf = type(["keyOf", {a:"string"}])<br/>
+    &lt;/code&gt;
 
 ## helper
 
--   keyOf(&lt;object&gt;)
+&lt;code&gt;- "keyOf(&lt;object&gt;)" <br/>
 
-## example
-
--   const tupleKeyOf = type(["keyOf", {a:"string"}]) <br/>
--   const helperKeyOf = keyOf({a:"string"}) <br/>
+-   const helperKeyOf = keyOf({a:"string"})<br/>
+    &lt;/code&gt;

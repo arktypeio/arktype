@@ -1,3 +1,4 @@
+import { possibleFormats } from "../extractApi.ts"
 import type { TsTagData } from "../tsDocTransforms.ts"
 import { constructHeader, defaultOperatorHeader } from "./table.ts"
 
@@ -9,8 +10,6 @@ export const operatorTable = (tableData: string[]) => {
     }
     return operatingTable
 }
-
-export const possibleFormats = ["string", "tuple", "helper"]
 
 export const getFormats = (tagData: TsTagData) => {
     const formats: string[] = []

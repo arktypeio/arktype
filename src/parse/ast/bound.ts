@@ -7,18 +7,16 @@ import type { astToString } from "./utils.ts"
 /**
  * @operator {@link validateBound | bound}
  * @docgenTable
- * @string "N<S<N", with comparators restricted to `<` or `<=`
+ * @string "N<S<N", with comparators restricted to < or <=
  * @param N: number literal
  * @param S: sized data (a number, string or array)
- * @param <: Comparator (one of  "<", "<=", "==", ">=", ">")
- * @comparators [<,>,<=,>=,==]
+ * @param <: Comparator (one of <, <=, ==, >=, >)
  * @Bound "S<N"
- * @Range "N<S<N", with comparators restricted to `<` or `<=`
- * @example "string<5"
- * @example "2>=number>=5"
- * @example "string[]===5"
- * @example
- * const abc = 2
+ * @Range "N<S<N", with comparators restricted to < or <=
+ * @example string
+ * "2<=number<5"
+ * @example string
+ * "string[]===5"
  */
 export type validateBound<l, r, $> = l extends NumberLiteral
     ? validateAst<r, $>

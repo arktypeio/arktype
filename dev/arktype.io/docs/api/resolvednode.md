@@ -4,8 +4,17 @@ hide_table_of_contents: true
 
 # ResolvedNode
 
-## text
+## operator
 
-```ts
-export type ResolvedNode<$ = Dict> = TypeNode<$> | ConfigNode<$>
-```
+&lt;code&gt;- [node](./resolvednode.md)  
+&lt;/code&gt;
+
+## tuple
+
+&lt;code&gt;- ["node", nodeDefinition]  
+&lt;/code&gt;
+
+## helper
+
+&lt;code&gt;- type.from(nodeDefinition)
+&lt;/code&gt;

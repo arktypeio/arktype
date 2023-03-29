@@ -6,8 +6,10 @@ hide_table_of_contents: true
 
 ## operator
 
--   [:](./parseconfigtuple.md)
+&lt;code&gt;- [:](./parseconfigtuple.md)  
+&lt;/code&gt;
 
 ## tuple
 
--   ["type", ":", config]
+&lt;code&gt;- ["type", ":", config]
+&lt;/code&gt;

@@ -6,17 +6,19 @@ hide_table_of_contents: true
 
 ## operator
 
--   [===](./valueof.md)
+&lt;code&gt;- [===](./valueof.md)  
+&lt;/code&gt;
 
 ## tuple
 
--   ["===", value]
+&lt;code&gt;- ["===", value] <br/>
+
+-   const tupleValueOf = type(["valueOf", {a:"string"}])<br/>
+    &lt;/code&gt;
 
 ## helper
 
--   valueOf(&lt;object&gt;)
+&lt;code&gt;- valueOf(&lt;object&gt;) <br/>
 
-## example
-
--   const tupleValueOf = type(["valueOf", {a:"string"}]) <br/>
--   const helperValueOf = valueOf({a:"string"}) <br/>
+-   const helperValueOf = valueOf({a:"string"})<br/>
+    &lt;/code&gt;

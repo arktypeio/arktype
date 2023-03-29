@@ -1,4 +1,4 @@
-import { possibleFormats } from "./operators.ts"
+import { possibleFormats } from "../extractApi.ts"
 
 export const defaultOperatorHeader = ["operator", ...possibleFormats]
 export const defaultKeywordsHeader = ["Name", "Type", "Description"]
@@ -31,7 +31,8 @@ const specialChars: { [k: string]: string } = {
     ";": "",
     "<": "&lt;",
     ">": "&gt;",
-    "|": "&vert;"
+    "|": "&vert;",
+    "`": "\\`"
 }
 
 const specialCharsKeys = Object.keys(specialChars)

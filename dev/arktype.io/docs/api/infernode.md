@@ -4,14 +4,16 @@ hide_table_of_contents: true
 
 # inferNode
 
-## operator
+## text
 
--   [node](./infernode.md)
-
-## tuple
-
--   ["node", nodeDefinition]
-
-## helper
-
--   type.from(nodeDefinition)
+```ts
+export type inferNode<node extends Node<$>, $ = {}> = node extends string
+    ? inferTerminal<node, $>
+    : node extends Node<$>
+    ? inferResolution<node, $> extends infer result
+        ? result extends BuiltinClass
+            ? result
+            : evaluateObjectOrFunction<result>
+        : never
+    : never
+```

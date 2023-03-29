@@ -1,3 +1,4 @@
+import { constructHeader, constructRow } from "./buildTable/table.ts"
 import type { ExportData, TsDocData } from "./extractApi.ts"
 
 type LinkDetails = [name: string, alias?: string]
@@ -41,7 +42,7 @@ export const packTsDocTags = (docs: TsDocData[] | undefined) => {
     const tsTagData: TsTagData = {}
     for (const doc of docs ?? []) {
         const tagName = doc.tag
-        const tagText = doc.text.replace(`@${tagName}`, "").replaceAll("*", "")
+        const tagText = doc.text
         if (tsTagData[tagName]) {
             tsTagData[tagName].push(tagText)
         } else {
@@ -51,25 +52,21 @@ export const packTsDocTags = (docs: TsDocData[] | undefined) => {
     return tsTagData
 }
 
-export const formatTagData = (splitData: string[], tag: string) => {
-    let formattedData = ""
+export const formatTagData = (tagData: string[], tag: string) => {
+    let formattedData = "&lt;code&gt;"
     if (tag === "param") {
-        const tableHeaders = `| Variable      | Description |
-        | ----------- | ----------- |\n`
-        formattedData += tableHeaders
-        for (const data of splitData) {
+        const table: string[] = []
+        constructHeader(["Variable", "Description"], table)
+        for (const data of tagData) {
             const variable = data.trim().split(" ")[0]
-            const description = data
-                .replace(variable, "")
-                .replace("\n", "")
-                .trim()
-            formattedData += `| ${variable}  | ${description} |\n`
+            const row = constructRow([variable, data.replace(variable, "")])
+            table.push(row)
         }
-        return formattedData
+        return table.join("\n")
     }
-    for (const data of splitData) {
+    for (const data of tagData) {
         formattedData += `- ${data}`
-        formattedData += splitData.length === 1 ? "\n" : "<br/>\n"
+        formattedData += tagData.length === 1 ? "\n" : "<br/>\n"
     }
-    return formattedData
+    return `${formattedData}&lt;/code&gt;`
 }

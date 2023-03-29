@@ -20,12 +20,6 @@ import type {
 import type { BuiltinClass, inferObjectKind } from "../../utils/objectKinds.ts"
 import type { inferTerminal } from "./ast.ts"
 
-/**
- * @operator {@link inferNode | node}
- * @docgenTable
- * @tuple ["node", nodeDefinition]
- * @helper type.from(nodeDefinition)
- */
 export type inferNode<node extends Node<$>, $ = {}> = node extends string
     ? inferTerminal<node, $>
     : node extends Node<$>

@@ -3,6 +3,7 @@ import type {
     ExportedDeclarations,
     JSDoc,
     JSDocableNode,
+    JSDocTag,
     Project,
     SourceFile
 } from "ts-morph"
@@ -127,10 +128,29 @@ const extractTsDocData = (
     const associatedTsDocTags = findAssociatedDocs(declaration)?.flatMap(
         (tsDocs) => tsDocs.getTags()
     )
-    if (associatedTsDocTags) {
-        return associatedTsDocTags.map((tagNode) => ({
-            tag: tagNode.getTagName(),
-            text: tagNode.getText()
-        }))
+    if (associatedTsDocTags?.length) {
+        return associatedTsDocTags.map((tagNode) => {
+            const tagDetails = getTagDetails(tagNode)
+            return tagDetails
+        })
+    }
+}
+
+export const possibleFormats = ["string", "tuple", "helper"]
+
+const getTagDetails = (tagNode: JSDocTag) => {
+    let tag
+    const baseTag = tagNode.getTagName()
+    let text = tagNode.getText().replace(`@${baseTag}`, "").replaceAll("*", "")
+    if (baseTag === "example") {
+        const possibleTag = text.split("\n")[0].trim()
+        if (possibleFormats.includes(possibleTag)) {
+            tag = possibleTag
+            text = text.replace(possibleTag, "").trim()
+        }
+    }
+    return {
+        tag: tag ?? baseTag,
+        text
     }
 }

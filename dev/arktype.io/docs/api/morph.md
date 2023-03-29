@@ -6,17 +6,19 @@ hide_table_of_contents: true
 
 ## operator
 
--   [&vert;&gt;](./morph.md)
+&lt;code&gt;- [&vert;&gt;](./morph.md)  
+&lt;/code&gt;
 
 ## tuple
 
--   [inputType, &vert;&gt;, (data) =&gt; output]
+&lt;code&gt;- [inputType, &vert;&gt;, (data) =&gt; output] <br/>
+
+-   const tupleMorph = type( ["string", "&vert;&gt;" , (data) =&gt; \`morphed ${data}\`])<br/>
+    &lt;/code&gt;
 
 ## helper
 
--   morph(inputType, (data) =&gt; output)
+&lt;code&gt;- morph(inputType, (data) =&gt; output) <br/>
 
-## example
-
--   const tupleMorph = type( ["string", &vert;&gt; , (data) =&gt; `morphed ${data}`]) <br/>
--   const helperMorph = morph("string", (data) =&gt; `morphed ${input}`) <br/>
+-   const helperMorph = morph("string", (data) =&gt; \`morphed ${input}\`)<br/>
+    &lt;/code&gt;
