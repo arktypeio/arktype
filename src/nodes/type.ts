@@ -29,19 +29,25 @@ export type BranchesComparison = {
 export class TypeNode<
     branches extends BranchNode[] = BranchNode[]
 > extends Node<TypeNode> {
-    branches: branches
-
-    constructor(...branches: branches) {
+    constructor(public branches: branches) {
         super(JSON.stringify(branches.map((_) => _.id)))
-        this.branches = branches
     }
 
     get infer(): branches[number]["infer"] {
         return chainableNoOpProxy
     }
 
-    intersect(other: TypeNode, state: ComparisonState): TypeNode {
-        const comparison = compareBranches(this.branches, other.branches, state)
+    intersect(other: TypeNode, s: ComparisonState): TypeNode {
+        if (this.branches.length === 1 && other.branches.length === 1) {
+            const intersection = this.branches[0].intersect(
+                other.branches[0],
+                s
+            )
+            return intersection.isDisjoint()
+                ? intersection
+                : new TypeNode([intersection])
+        }
+        const comparison = compareBranches(this.branches, other.branches, s)
         const resultBranches = [
             ...comparison.distinctIntersections,
             ...comparison.equalIndexPairs.map(
@@ -55,20 +61,34 @@ export class TypeNode<
             )
         ]
         if (resultBranches.length === 0) {
-            return state.addDisjoint("union", this.branches, other.branches)
+            return s.addDisjoint("union", this.branches, other.branches)
         }
-        return new TypeNode(...resultBranches)
+        return new TypeNode(resultBranches)
     }
 
-    union(branches: BranchNode[]) {
-        const state = new ComparisonState()
-        const comparison = compareBranches(this.branches, branches, state)
+    union(other: TypeNode): TypeNode {
+        const s = new ComparisonState()
+        if (this.branches.length === 1 && other.branches.length === 1) {
+            const intersection = this.branches[0].intersect(
+                other.branches[0],
+                s
+            )
+            return intersection === this.branches[0]
+                ? // this is a subtype of other, return other
+                  other
+                : intersection === other.branches[0]
+                ? // other is a subtype of this, return this
+                  this
+                : // this and other are mutually distinct, return a new type
+                  new TypeNode([this.branches[0], other.branches[0]])
+        }
+        const comparison = compareBranches(this.branches, other.branches, s)
         const resultBranches = [
             ...this.branches.filter(
                 (_, lIndex) =>
                     !comparison.lStrictSubtypeIndices.includes(lIndex)
             ),
-            ...branches.filter(
+            ...other.branches.filter(
                 (_, rIndex) =>
                     !comparison.rStrictSubtypeIndices.includes(rIndex) &&
                     // ensure equal branches are only included once
@@ -80,7 +100,7 @@ export class TypeNode<
         // TODO: if a boolean has multiple branches, neither of which is a
         // subtype of the other, it consists of two opposite literals
         // and can be simplified to a non-literal boolean.
-        return new TypeNode(...resultBranches)
+        return new TypeNode(resultBranches)
     }
 
     allows(value: unknown) {

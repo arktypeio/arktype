@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
 import { keyOf, type } from "../../src/main.ts"
-import type { Branch } from "../../src/nodes/branch.ts"
+import type { RuleSet } from "../../src/nodes/branch.ts"
 import type { DomainsJson } from "../../src/nodes/node.ts"
 import { writeImplicitNeverMessage } from "../../src/parse/ast/intersection.ts"
 import { Path } from "../../src/utils/paths.ts"
@@ -51,8 +51,8 @@ describe("keyof", () => {
         ).throwsAndHasTypeError(expectedNeverKeyOfMessage)
     })
     const attestHasStringBranches = (
-        branches: Branch<"string">[],
-        expectedBranches: Branch<"string">[]
+        branches: RuleSet<"string">[],
+        expectedBranches: RuleSet<"string">[]
     ) => {
         for (const expected of expectedBranches) {
             const expectedString = stringify(expected)
@@ -68,7 +68,7 @@ describe("keyof", () => {
         // the array prototype has many items and they vary based on the JS
         // flavor we're running in, so just check that the indices from the type
         // and one prototype key are present as a heuristic
-        attestHasStringBranches(node.string as Branch<"string">[], [
+        attestHasStringBranches(node.string as RuleSet<"string">[], [
             { value: "0" },
             { value: "1" },
             { value: "map" }
@@ -82,7 +82,7 @@ describe("keyof", () => {
     it("wellFormedNonNegativeInteger intersection", () => {
         const t = type(["keyof", [{ "1": "1" }, "&", "string[]"]])
         const node = t.node as DomainsJson
-        attestHasStringBranches(node.string as Branch<"string">[], [
+        attestHasStringBranches(node.string as RuleSet<"string">[], [
             { value: "1" },
             { regex: "^(?:0|(?:[1-9]\\d*))$" }
         ])

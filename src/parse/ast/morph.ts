@@ -1,4 +1,4 @@
-import type { Branch, MetaBranch } from "../../nodes/branch.ts"
+import type { RuleSet, MetaBranch } from "../../nodes/branch.ts"
 import { isTransformationBranch } from "../../nodes/branch.ts"
 import type { DomainsJson } from "../../nodes/node.ts"
 import type { Problem } from "../../nodes/problems.ts"
@@ -42,7 +42,7 @@ export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
     return result
 }
 
-const applyMorph = (branch: Branch, morph: Morph): MetaBranch =>
+const applyMorph = (branch: RuleSet, morph: Morph): MetaBranch =>
     isTransformationBranch(branch)
         ? {
               ...branch,

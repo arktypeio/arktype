@@ -1,5 +1,3 @@
-import type { BoundWithUnits } from "../nodes/rules/range.ts"
-import { Scanner } from "../parse/string/shift/scanner.ts"
 import type { SizedData } from "../utils/data.ts"
 import { DataWrapper } from "../utils/data.ts"
 import type { Domain } from "../utils/domains.ts"
@@ -17,6 +15,8 @@ import {
 } from "../utils/objectKinds.ts"
 import type { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
+import type { BoundContextWithUnits } from "./rules/range.ts"
+import { comparatorDescriptions } from "./rules/range.ts"
 
 export class ArkTypeError extends TypeError {
     cause: Problems
@@ -214,11 +214,11 @@ export class KeyProblem extends Problem<KeyProblemKind> {
     mustBe = this.rule === "missing" ? "defined" : "extraneous"
 }
 
-export class RangeProblem extends Problem<BoundWithUnits, SizedData> {
+export class RangeProblem extends Problem<BoundContextWithUnits, SizedData> {
     readonly code = "range"
 
     get mustBe() {
-        return `${Scanner.comparatorDescriptions[this.rule.comparator]} ${
+        return `${comparatorDescriptions[this.rule.comparator]} ${
             this.rule.limit
         }${this.data.units ? ` ${this.data.units}` : ""}`
     }

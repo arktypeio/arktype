@@ -5,9 +5,9 @@ import type { Domain } from "../utils/domains.ts"
 import type { extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { BranchNode } from "./branch.ts"
+import type { EqualityRule } from "./rules/equality.ts"
 import type { InstanceRule } from "./rules/instance.ts"
 import type { RangeRule } from "./rules/range.ts"
-import type { EqualityRule } from "./rules/value.ts"
 import { TypeNode } from "./type.ts"
 
 export abstract class Node<subclass extends Node = any> {
@@ -85,7 +85,7 @@ export class Disjoint<
         public l: DisjointKinds[kind]["l"],
         public r: DisjointKinds[kind]["r"]
     ) {
-        super()
+        super([])
     }
 
     toString() {
