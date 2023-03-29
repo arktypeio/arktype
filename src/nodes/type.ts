@@ -14,7 +14,8 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
-import type { BranchNode } from "./branch.ts"
+import type { RuleSet } from "./branch.ts"
+import { BranchNode } from "./branch.ts"
 import type { Compilation } from "./node.ts"
 import { ComparisonState, Node } from "./node.ts"
 import { mappedKeys } from "./rules/props.ts"
@@ -26,14 +27,33 @@ export type BranchesComparison = {
     distinctIntersections: BranchNode[]
 }
 
+type InstantiateBranch<branch extends BranchInput> = branch extends RuleSet
+    ? BranchNode<branch>
+    : branch
+
+type BranchInput = RuleSet | BranchNode
+
 export class TypeNode<
-    branches extends BranchNode[] = BranchNode[]
+    branches extends BranchInput[] = BranchInput[]
 > extends Node<TypeNode> {
-    constructor(public branches: branches) {
-        super(JSON.stringify(branches.map((_) => _.id)))
+    branches: BranchNode[]
+
+    // TODO: move union checks here
+    constructor(...branches: branches) {
+        const branchNodes: BranchNode[] = []
+        for (const branch of branches) {
+            const candidateNode: BranchNode =
+                branch instanceof BranchNode ? branch : new BranchNode(branch)
+            if (!branchNodes.some(candidateNode.extends)) {
+                branchNodes.push(candidateNode)
+            }
+        }
+        // TODO: fix
+        super(JSON.stringify(branchNodes.map((_) => _.id)))
+        this.branches = branchNodes
     }
 
-    get infer(): branches[number]["infer"] {
+    get infer(): InstantiateBranch<branches[number]>["infer"] {
         return chainableNoOpProxy
     }
 
@@ -45,7 +65,7 @@ export class TypeNode<
             )
             return intersection.isDisjoint()
                 ? intersection
-                : new TypeNode([intersection])
+                : new TypeNode(intersection)
         }
         const comparison = compareBranches(this.branches, other.branches, s)
         const resultBranches = [
@@ -63,7 +83,7 @@ export class TypeNode<
         if (resultBranches.length === 0) {
             return s.addDisjoint("union", this.branches, other.branches)
         }
-        return new TypeNode(resultBranches)
+        return new TypeNode(...resultBranches)
     }
 
     union(other: TypeNode): TypeNode {
@@ -80,7 +100,7 @@ export class TypeNode<
                 ? // other is a subtype of this, return this
                   this
                 : // this and other are mutually distinct, return a new type
-                  new TypeNode([this.branches[0], other.branches[0]])
+                  new TypeNode(this.branches[0], other.branches[0])
         }
         const comparison = compareBranches(this.branches, other.branches, s)
         const resultBranches = [
@@ -100,7 +120,7 @@ export class TypeNode<
         // TODO: if a boolean has multiple branches, neither of which is a
         // subtype of the other, it consists of two opposite literals
         // and can be simplified to a non-literal boolean.
-        return new TypeNode(resultBranches)
+        return new TypeNode(...resultBranches)
     }
 
     allows(value: unknown) {
@@ -139,26 +159,26 @@ const compareBranches = (
     // subtype (or equal) of any lBranch, the corresponding value should be
     // set to null so we can avoid including previous/future intersections
     // in the final result.
-    const intersectionsByR: (BranchNode[] | null)[] = rBranches.map(() => [])
+    const candidatesByR: (BranchNode[] | null)[] = rBranches.map(() => [])
     for (let lIndex = 0; lIndex < lBranches.length; lIndex++) {
         const l = lBranches[lIndex]
-        const intersectionsOfL: BranchNode[] = []
+        let intersectionsOfL: { [rIndex in number]: BranchNode } = {}
         for (let rIndex = 0; rIndex < rBranches.length; rIndex++) {
-            if (!intersectionsByR[rIndex]) {
+            if (!candidatesByR[rIndex]) {
                 // we've identified this rBranch as a subtype of
                 // an lBranch and will not yield any distinct intersections.
                 continue
             }
             const r = rBranches[rIndex]
-            const intersection = l.intersect(r, state)
-            if (intersection.isDisjoint()) {
+            const branchIntersection = l.intersect(r, state)
+            if (branchIntersection.isDisjoint()) {
                 // doesn't tell us about any redundancies or add a distinct intersection
                 continue
             }
-            if (intersection === l) {
-                if (intersection === r) {
-                    // If branches are equal, execute logic explained in supertype case.
-                    intersectionsByR[rIndex] = null
+            if (branchIntersection === l) {
+                if (branchIntersection === r) {
+                    // If branches are equal, also execute logic explained in supertype case.
+                    candidatesByR[rIndex] = null
                     comparison.equalIndexPairs.push([lIndex, rIndex])
                 } else {
                     comparison.lStrictSubtypeIndices.push(lIndex)
@@ -167,25 +187,27 @@ const compareBranches = (
                 // with previous and remaining branches of r won't lead to
                 // distinct intersections, so empty lIntersections and break
                 // from the inner loop.
-                intersectionsOfL.length = 0
+                intersectionsOfL = {}
                 break
             }
-            if (intersection === r) {
+            if (branchIntersection === r) {
                 // If r is a subtype of the current l branch, we set its
                 // intersections to null, removing any previous
                 // intersections including it and preventing any of its
                 // remaining intersections from being computed.
-                intersectionsByR[rIndex] = null
+                candidatesByR[rIndex] = null
                 comparison.rStrictSubtypeIndices.push(rIndex)
             } else {
                 // If neither l nor r is a subtype of the other, add their
                 // intersection as a candidate for the final result (could
                 // still be removed if it is determined l or r is a subtype
                 // of a remaining branch).
-                intersectionsOfL.push(intersection)
+                intersectionsOfL[rIndex] = branchIntersection
             }
         }
-        comparison.distinctIntersections.push(...intersectionsOfL)
+        for (const rIndex in intersectionsOfL) {
+            candidatesByR[rIndex]?.push(intersectionsOfL[rIndex])
+        }
     }
     return comparison
 }

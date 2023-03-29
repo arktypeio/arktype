@@ -15,6 +15,17 @@ export abstract class Node<subclass extends Node = any> {
 
     abstract intersect(other: subclass, s: ComparisonState): subclass | Disjoint
 
+    extends(other: subclass) {
+        return (
+            this.intersect(other, new ComparisonState()) ===
+            (this as unknown as subclass)
+        )
+    }
+
+    subsumes(other: subclass) {
+        return !this.extends(other)
+    }
+
     isDisjoint(): this is Disjoint {
         return this instanceof Disjoint
     }
@@ -85,7 +96,7 @@ export class Disjoint<
         public l: DisjointKinds[kind]["l"],
         public r: DisjointKinds[kind]["r"]
     ) {
-        super([])
+        super()
     }
 
     toString() {
