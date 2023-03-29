@@ -6,16 +6,13 @@ hide_table_of_contents: true
 
 ## operator
 
-&lt;code&gt;- [bound](./validatebound.md)  
-&lt;/code&gt;
+-   [bound](./validatebound.md)
 
 ## string
 
-&lt;code&gt;- "N&lt;S&lt;N", with comparators restricted to &lt; or &lt;= <br/>
-
+-   "N&lt;S&lt;N", with comparators restricted to &lt; or &lt;= <br/>
 -   "2&lt;=number&lt;5"<br/>
 -   "string[]===5"<br/>
-    &lt;/code&gt;
 
 ## param
 
@@ -27,10 +24,8 @@ hide_table_of_contents: true
 
 ## Bound
 
-&lt;code&gt;- "S&lt;N"  
-&lt;/code&gt;
+-   "S&lt;N"
 
 ## Range
 
-&lt;code&gt;- "N&lt;S&lt;N", with comparators restricted to &lt; or &lt;=  
-&lt;/code&gt;
+-   "N&lt;S&lt;N", with comparators restricted to &lt; or &lt;=

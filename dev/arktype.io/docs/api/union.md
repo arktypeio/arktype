@@ -6,26 +6,19 @@ hide_table_of_contents: true
 
 ## operator
 
-&lt;code&gt;- [&vert;](./union.md)  
-&lt;/code&gt;
+-   [&vert;](./union.md)
 
 ## string
 
-&lt;code&gt;- "L&vert;R" <br/>
-
+-   "L&vert;R" <br/>
 -   const union = type("string&vert;number")<br/>
-    &lt;/code&gt;
 
 ## tuple
 
-&lt;code&gt;- [L, "&vert;" , R] <br/>
-
+-   [L, "&vert;" , R] <br/>
 -   const tupleUnion = type(["string", "&vert;", "number"])<br/>
-    &lt;/code&gt;
 
 ## helper
 
-&lt;code&gt;- union(L,R) <br/>
-
+-   union(L,R) <br/>
 -   const helperUnion = union("string", "number")<br/>
-    &lt;/code&gt;

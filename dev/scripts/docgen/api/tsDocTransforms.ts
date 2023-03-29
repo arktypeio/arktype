@@ -53,7 +53,7 @@ export const packTsDocTags = (docs: TsDocData[] | undefined) => {
 }
 
 export const formatTagData = (tagData: string[], tag: string) => {
-    let formattedData = "&lt;code&gt;"
+    let formattedData = ""
     if (tag === "param") {
         const table: string[] = []
         constructHeader(["Variable", "Description"], table)
@@ -68,5 +68,5 @@ export const formatTagData = (tagData: string[], tag: string) => {
         formattedData += `- ${data}`
         formattedData += tagData.length === 1 ? "\n" : "<br/>\n"
     }
-    return `${formattedData}&lt;/code&gt;`
+    return formattedData
 }

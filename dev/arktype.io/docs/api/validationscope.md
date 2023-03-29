@@ -6,8 +6,7 @@ hide_table_of_contents: true
 
 ## keywords
 
-&lt;code&gt;- keywords: { "alpha": "only letters", "alphanumeric": "only letters and digits", "lowercase": "only lowercase letters", "uppercase": "only uppercase letters", "creditCard": "a valid credit card number", "email": "a valid email", "uuid": "a valid UUID", "parsedNumber": "a well-formed numeric string", "parsedInteger": "a well-formed integer string", "parsedDate": "a valid date", "semver": "a valid semantic version", "json": "a JSON-parsable string", "integer": "an integer"}  
-&lt;/code&gt;
+-   keywords: { "alpha": "only letters", "alphanumeric": "only letters and digits", "lowercase": "only lowercase letters", "uppercase": "only uppercase letters", "creditCard": "a valid credit card number", "email": "a valid email", "uuid": "a valid UUID", "parsedNumber": "a well-formed numeric string", "parsedInteger": "a well-formed integer string", "parsedDate": "a valid date", "semver": "a valid semantic version", "json": "a JSON-parsable string", "integer": "an integer"}
 
 ## text
 
