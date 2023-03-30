@@ -167,7 +167,7 @@ module.exports = defineConfig({
             }
         },
         {
-            files: ["./dev/**", "dist"],
+            files: ["./dev/**"],
             rules: {
                 "no-restricted-imports": "off"
             }
