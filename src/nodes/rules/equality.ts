@@ -9,11 +9,11 @@ import { Rule } from "./rule.ts"
 export class EqualityRule<
     domain extends Domain = any
 > extends Rule<"equality"> {
-    constructor(public value: inferDomain<domain>) {
+    constructor(public definition: inferDomain<domain>) {
         const id =
-            hasDomain(value, "object") || typeof value === "symbol"
-                ? registerValue(typeof value, value)
-                : serializePrimitive(value as SerializablePrimitive)
+            hasDomain(definition, "object") || typeof definition === "symbol"
+                ? registerValue(typeof definition, definition)
+                : serializePrimitive(definition as SerializablePrimitive)
         super("equality", id)
     }
 
@@ -22,6 +22,6 @@ export class EqualityRule<
     }
 
     compile(c: Compilation) {
-        return c.check("value", `data === ${this.id}`, this.value)
+        return c.check("value", `data === ${this.id}`, this.definition)
     }
 }

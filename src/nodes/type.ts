@@ -34,19 +34,19 @@ type InstantiateBranch<branch extends BranchInput> = branch extends RuleSet
 type BranchInput = RuleSet | BranchNode
 
 export class TypeNode<
-    branches extends BranchInput[] = BranchInput[]
+    definition extends BranchInput[] = BranchInput[]
 > extends Node<TypeNode> {
     branches: readonly BranchNode[]
 
-    constructor(...branches: branches) {
-        const nodes: BranchNode[] = branches.map((branch) =>
+    constructor(...definition: definition) {
+        const nodes: BranchNode[] = definition.map((branch) =>
             branch instanceof BranchNode ? branch : new BranchNode(branch)
         )
         const uniquenessByIndex: Record<number, boolean> = nodes.map(() => true)
-        for (let i = 0; i < branches.length; i++) {
+        for (let i = 0; i < definition.length; i++) {
             for (
                 let j = i + 1;
-                j < branches.length && uniquenessByIndex[i];
+                j < definition.length && uniquenessByIndex[i];
                 j++
             ) {
                 if (!uniquenessByIndex[j]) {
@@ -71,12 +71,15 @@ export class TypeNode<
             }
         }
         const filteredNodes = nodes.filter((_, i) => uniquenessByIndex[i])
-        // TODO: fix
-        super(JSON.stringify(filteredNodes.map((_) => _.id)))
+        super()
         this.branches = filteredNodes
     }
 
-    get infer(): InstantiateBranch<branches[number]>["infer"] {
+    get id() {
+        return JSON.stringify("TODO")
+    }
+
+    get infer(): InstantiateBranch<definition[number]>["infer"] {
         return chainableNoOpProxy
     }
 

@@ -2,35 +2,37 @@ import type { ComparisonState, Compilation } from "../node.ts"
 import type { TypeNode } from "../type.ts"
 import { Rule } from "./rule.ts"
 
-export type NamedProps = Record<string, NamedProp>
-
-export type NamedProp = {
-    type: TypeNode
-    kind: "required" | "optional" | "prerequisite"
+export type Props = {
+    required?: NamedProps
+    optional?: NamedProps
+    prerequisite?: NamedProps
+    index?: IndexProps
 }
+
+export type NamedProps = Record<string, TypeNode>
 
 export type IndexProps = [keyType: TypeNode, valueType: TypeNode][]
 
 export class PropsRule extends Rule<"props"> {
-    constructor(public named: NamedProps, public indexed?: IndexProps) {
+    constructor(public definition: Props) {
         super("props", "TODO")
     }
 
     intersect(other: PropsRule, s: ComparisonState) {
-        const named: NamedProps = {}
-        for (const k in this.named) {
-            let prop: NamedProp
-            if (k in other.named) {
-                const type = this.named[k].type.intersect(
-                    other.named[k].type,
+        const named: Props = {}
+        for (const k in this.definition) {
+            let prop: Prop
+            if (k in other.definition) {
+                const type = this.definition[k].type.intersect(
+                    other.definition[k].type,
                     s
                 )
                 const kind =
-                    this.named[k].kind === "prerequisite" ||
-                    other.named[k].kind === "prerequisite"
+                    this.definition[k].kind === "prerequisite" ||
+                    other.definition[k].kind === "prerequisite"
                         ? "prerequisite"
-                        : this.named[k].kind === "required" ||
-                          other.named[k].kind === "required"
+                        : this.definition[k].kind === "required" ||
+                          other.definition[k].kind === "required"
                         ? "required"
                         : "optional"
                 if (type.isDisjoint() && kind !== "optional") {
@@ -41,7 +43,7 @@ export class PropsRule extends Rule<"props"> {
                     kind
                 }
             } else {
-                prop = this.named[k]
+                prop = this.definition[k]
             }
             if (other.indexed) {
                 for (const [indexK, indexV] of other.indexed) {
@@ -51,8 +53,8 @@ export class PropsRule extends Rule<"props"> {
                 }
             }
         }
-        for (const name in other.named) {
-            named[name] ??= other.named[name]
+        for (const name in other.definition) {
+            named[name] ??= other.definition[name]
             if (this.indexed) {
                 for (const [indexK, indexV] of this.indexed) {
                     if (indexK.allows(name)) {
@@ -104,8 +106,8 @@ export class PropsRule extends Rule<"props"> {
     #compileLooseProps(c: Compilation) {
         const propChecks: string[] = []
         // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
-        for (const k in this.named) {
-            const prop = this.named[k]
+        for (const k in this.definition) {
+            const prop = this.definition[k]
             if (k === mappedKeys.index) {
                 propChecks.push(c.arrayOf(prop.type))
             } else {

@@ -5,19 +5,19 @@ import { registerConstructor } from "../registry.ts"
 import { Rule } from "./rule.ts"
 
 export class InstanceRule extends Rule<"instance"> {
-    constructor(public instanceOf: constructor) {
+    constructor(public definition: constructor) {
         super(
             "instance",
-            instanceOf === Array
+            definition === Array
                 ? "Array"
-                : registerConstructor(instanceOf.name, instanceOf)
+                : registerConstructor(definition.name, definition)
         )
     }
 
     intersect(other: InstanceRule, s: ComparisonState) {
-        return constructorExtends(this.instanceOf, other.instanceOf)
+        return constructorExtends(this.definition, other.definition)
             ? this
-            : constructorExtends(other.instanceOf, this.instanceOf)
+            : constructorExtends(other.definition, this.definition)
             ? other
             : s.addDisjoint("class", this, other)
     }
@@ -26,7 +26,7 @@ export class InstanceRule extends Rule<"instance"> {
         return c.check(
             "instance",
             `${c.data} instanceof ${this.id}`,
-            this.instanceOf
+            this.definition
         )
     }
 }

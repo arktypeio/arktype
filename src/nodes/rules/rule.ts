@@ -11,6 +11,8 @@ import type { RegexRule } from "./regex.ts"
 export abstract class Rule<kind extends RuleKind = RuleKind> extends Node<
     RuleKinds[kind]
 > {
+    abstract readonly definition: unknown
+
     constructor(public readonly kind: kind, id: string) {
         super(id)
     }

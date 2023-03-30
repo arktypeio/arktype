@@ -1,5 +1,5 @@
 import { BranchNode } from "../nodes/branch.ts"
-import type { NamedProps } from "../nodes/rules/props.ts"
+import type { Props } from "../nodes/rules/props.ts"
 import { PropsRule } from "../nodes/rules/props.ts"
 import type { Dict, evaluate } from "../utils/generics.ts"
 import type { inferDefinition, ParseContext } from "./definition.ts"
@@ -7,7 +7,7 @@ import { parseDefinition } from "./definition.ts"
 import { Scanner } from "./string/shift/scanner.ts"
 
 export const parseRecord = (def: Dict, ctx: ParseContext): BranchNode => {
-    const props: NamedProps = {}
+    const props: Props = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
         let isOptional = false

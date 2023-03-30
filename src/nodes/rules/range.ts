@@ -44,41 +44,41 @@ export const invertedComparators = {
 
 export type InvertedComparators = typeof invertedComparators
 
-export type Bounds = xor<{ "==": number }, LowerBound & UpperBound>
+export type Range = xor<{ "==": number }, MinComparators & MaxComparators>
 
-export type LowerBound = xor<{ ">"?: number }, { ">="?: number }>
+export type MinComparators = xor<{ ">"?: number }, { ">="?: number }>
 
-export type UpperBound = xor<{ "<"?: number }, { "<="?: number }>
+export type MaxComparators = xor<{ "<"?: number }, { "<="?: number }>
 
-export type BoundContext = {
+export type Bound = {
     limit: number
     comparator: Comparator
 }
 
-export type BoundContextWithUnits = evaluate<BoundContext & { units: string }>
+export type BoundWithUnits = evaluate<Bound & { units: string }>
 
 export class RangeRule extends Rule<"range"> {
-    constructor(public bounds: Bounds) {
+    constructor(public definition: Range) {
         super(
             "range",
             // TODO: sort
-            JSON.stringify(bounds)
+            JSON.stringify(definition)
         )
     }
 
     intersect(other: RangeRule, s: ComparisonState) {
         if (this.isEqualityRange()) {
             if (other.isEqualityRange()) {
-                return this.bounds["=="] === other.bounds["=="]
+                return this.definition["=="] === other.definition["=="]
                     ? this
                     : s.addDisjoint("range", this, other)
             }
-            return other.allows(this.bounds["=="])
+            return other.allows(this.definition["=="])
                 ? this
                 : s.addDisjoint("range", this, other)
         }
         if (other.isEqualityRange()) {
-            return this.allows(other.bounds["=="])
+            return this.allows(other.definition["=="])
                 ? other
                 : s.addDisjoint("range", this, other)
         }
@@ -126,13 +126,13 @@ export class RangeRule extends Rule<"range"> {
     }
 
     compile(c: Compilation): string {
-        const comparatorEntries = Object.entries(this.bounds) as [
+        const comparatorEntries = Object.entries(this.definition) as [
             Comparator,
             number
         ][]
         if (comparatorEntries.length === 0 || comparatorEntries.length > 2) {
             return throwInternalError(
-                `Unexpected comparators: ${stringify(this.bounds)}`
+                `Unexpected comparators: ${stringify(this.definition)}`
             )
         }
         const sizeAssignment = `const size = ${
@@ -157,15 +157,13 @@ export class RangeRule extends Rule<"range"> {
     }
 
     isEqualityRange(): this is { comparators: { "==": number } } {
-        return this.bounds["=="] !== undefined
+        return this.definition["=="] !== undefined
     }
 
-    getBound(
-        comparator: MinComparator | MaxComparator
-    ): BoundContext | undefined {
-        if (this.bounds[comparator] !== undefined) {
+    getBound(comparator: MinComparator | MaxComparator): Bound | undefined {
+        if (this.definition[comparator] !== undefined) {
             return {
-                limit: this.bounds[comparator]!,
+                limit: this.definition[comparator]!,
                 comparator
             }
         }
@@ -180,16 +178,16 @@ export class RangeRule extends Rule<"range"> {
     }
 
     #extractComparators(prefix: ">" | "<") {
-        return this.bounds[prefix] !== undefined
-            ? { [prefix]: this.bounds[">"] }
-            : this.bounds[`${prefix}=`] !== undefined
-            ? { [`${prefix}=`]: this.bounds[`${prefix}=`] }
+        return this.definition[prefix] !== undefined
+            ? { [prefix]: this.definition[">"] }
+            : this.definition[`${prefix}=`] !== undefined
+            ? { [`${prefix}=`]: this.definition[`${prefix}=`] }
             : {}
     }
 
     toString() {
         if (this.isEqualityRange()) {
-            return `the range of exactly ${this.bounds["=="]}`
+            return `the range of exactly ${this.definition["=="]}`
         }
         const lower = this.lowerBound
         const upper = this.upperBound
@@ -203,12 +201,12 @@ export class RangeRule extends Rule<"range"> {
     }
 }
 
-const isExclusive = (bound: BoundContext) => bound.comparator[1] === "="
+const isExclusive = (bound: Bound) => bound.comparator[1] === "="
 
 const compareStrictness = (
     kind: "min" | "max",
-    l: BoundContext | undefined,
-    r: BoundContext | undefined
+    l: Bound | undefined,
+    r: Bound | undefined
 ) =>
     !l
         ? !r

@@ -11,8 +11,10 @@ import type { InstanceRule } from "./rules/instance.ts"
 import type { RangeRule } from "./rules/range.ts"
 import { TypeNode } from "./type.ts"
 
-export abstract class Node<subclass extends Node = any> {
-    constructor(public readonly id: string) {}
+export abstract class Node<subclass extends Node = any, definition = unknown> {
+    constructor(public readonly definition: definition) {}
+
+    abstract get id(): string
 
     abstract intersect(other: subclass, s: ComparisonState): subclass | Disjoint
 

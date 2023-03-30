@@ -4,10 +4,10 @@ import type { Compilation } from "../node.ts"
 import { intersectUniqueLists, Rule } from "./rule.ts"
 
 export class NarrowRule<domain extends Domain = any> extends Rule<"narrow"> {
-    constructor(public narrows: Narrow<domain>[]) {
+    constructor(public definition: Narrow<domain>[]) {
         super(
             "narrow",
-            narrows
+            definition
                 .map((_) => String(_))
                 .sort()
                 .join()
@@ -15,7 +15,9 @@ export class NarrowRule<domain extends Domain = any> extends Rule<"narrow"> {
     }
 
     intersect(other: NarrowRule<domain>) {
-        return new NarrowRule(intersectUniqueLists(this.narrows, other.narrows))
+        return new NarrowRule(
+            intersectUniqueLists(this.definition, other.definition)
+        )
     }
 
     compile(c: Compilation) {

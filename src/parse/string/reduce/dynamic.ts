@@ -1,5 +1,5 @@
 import type { Node } from "../../../nodes/node.ts"
-import type { Comparator, LowerBound } from "../../../nodes/rules/range.ts"
+import type { Comparator, MinComparators } from "../../../nodes/rules/range.ts"
 import {
     invertedComparators,
     minComparators
@@ -18,7 +18,7 @@ import {
 } from "./shared.ts"
 
 type BranchState = {
-    range?: LowerBound
+    range?: MinComparators
     intersection?: Node
     union?: Node
 }
