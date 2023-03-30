@@ -2,22 +2,28 @@ import { writeImplicitNeverMessage } from "../parse/ast/intersection.ts"
 import type { Morph } from "../parse/ast/morph.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
-import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type { constructor, evaluate } from "../utils/generics.ts"
-import { mutable } from "../utils/generics.ts"
+import type { evaluate } from "../utils/generics.ts"
 import type { ComparisonState, Compilation } from "./node.ts"
 import { Node } from "./node.ts"
+import type { DivisibilityRule } from "./rules/divisibility.ts"
+import type { DomainRule } from "./rules/domain.ts"
+import type { EqualityRule } from "./rules/equality.ts"
+import type { InstanceRule } from "./rules/instance.ts"
 import type { NarrowRule } from "./rules/narrow.ts"
 import type { PropsRule } from "./rules/props.ts"
-import type { Bounds } from "./rules/range.ts"
+import type { RangeRule } from "./rules/range.ts"
+import type { RegexRule } from "./rules/regex.ts"
 
-export class BranchNode<rules extends RuleSet = any> extends Node<BranchNode> {
+export class BranchNode<
+    rules extends RuleSet<domain> = any,
+    domain extends Domain = any
+> extends Node<BranchNode> {
     constructor(public rules: rules) {
         super("TODO")
     }
 
-    get infer(): inferDomain<this["rules"]["domain"]> {
+    get infer(): inferDomain<this["rules"]["domain"]["domain"]> {
         return chainableNoOpProxy
     }
 
@@ -52,11 +58,7 @@ export class BranchNode<rules extends RuleSet = any> extends Node<BranchNode> {
     }
 
     compile(c: Compilation) {
-        return this.rules.domain === "object"
-            ? `(typeof ${c.data} === "object" && ${c.data} !== null) || typeof ${c.data} === "function"`
-            : this.rules.domain === "null" || this.rules.domain === "undefined"
-            ? `${c.data} === ${this.rules.domain}`
-            : `typeof ${c.data} === "${this.rules.domain}"`
+        return ""
     }
 
     // compile(c: Compilation): string {
@@ -95,25 +97,6 @@ export class BranchNode<rules extends RuleSet = any> extends Node<BranchNode> {
     // }
 }
 
-export class ValueNode<
-    value = unknown,
-    morphs extends Morph[] | undefined = undefined
-> extends BranchNode<{
-    value: value
-    domain: domainOf<value>
-}> {
-    constructor(public value: value, morphs?: Morph[]) {
-        const rules = {} as RuleSet<domainOf<value>>
-        if (morphs) {
-            mutable(rules).morphs = morphs
-        }
-        super({
-            domain: domainOf(value),
-            value
-        })
-    }
-}
-
 export type RuleSet<domain extends Domain = Domain> = Domain extends domain
     ? evaluate<UniversalRules<domain> & CustomRules>
     : RulesByDomain[domain]
@@ -136,16 +119,16 @@ type defineCustomRules<
 > = evaluate<UniversalRules<domain> & Pick<CustomRules, ruleKeys>>
 
 type CustomRules = {
-    readonly regex?: string[]
-    readonly divisor?: number
-    readonly range?: Bounds
+    readonly regex?: RegexRule
+    readonly divisor?: DivisibilityRule
+    readonly range?: RangeRule
     readonly props?: PropsRule
-    readonly instance?: constructor
+    readonly instance?: InstanceRule
 }
 
 type UniversalRules<domain extends Domain> = {
-    readonly domain: domain
-    readonly value?: inferDomain<domain>
-    readonly narrow?: NarrowRule
-    readonly morphs?: Morph[]
+    readonly domain: DomainRule<domain>
+    readonly value?: EqualityRule<domain>
+    readonly narrow?: NarrowRule<domain>
+    readonly morphs?: Morph<domain>[]
 }

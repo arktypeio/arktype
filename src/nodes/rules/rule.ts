@@ -1,5 +1,6 @@
 import { Node } from "../node.ts"
 import type { DivisibilityRule } from "./divisibility.ts"
+import type { DomainRule } from "./domain.ts"
 import type { EqualityRule } from "./equality.ts"
 import type { InstanceRule } from "./instance.ts"
 import type { NarrowRule } from "./narrow.ts"
@@ -17,13 +18,10 @@ export abstract class Rule<kind extends RuleKind = RuleKind> extends Node<
     allows(value: unknown) {
         return !value
     }
-
-    get precedence() {
-        return precedenceByRule[this.kind]
-    }
 }
 
 type RuleKinds = {
+    domain: DomainRule
     equality: EqualityRule
     instance: InstanceRule
     range: RangeRule
@@ -34,18 +32,6 @@ type RuleKinds = {
 }
 
 export type RuleKind = keyof RuleKinds
-
-const precedenceByRule = {
-    equality: 0,
-    instance: 1,
-    range: 2,
-    divisibility: 3,
-    regex: 4,
-    props: 5,
-    narrow: 6
-} as const satisfies Record<RuleKind, number>
-
-export type PrecedenceByRule = typeof precedenceByRule
 
 export const intersectUniqueLists = <item>(
     l: readonly item[],

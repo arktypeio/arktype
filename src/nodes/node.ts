@@ -5,6 +5,7 @@ import type { Domain } from "../utils/domains.ts"
 import type { extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { BranchNode } from "./branch.ts"
+import type { DomainRule } from "./rules/domain.ts"
 import type { EqualityRule } from "./rules/equality.ts"
 import type { InstanceRule } from "./rules/instance.ts"
 import type { RangeRule } from "./rules/range.ts"
@@ -39,8 +40,8 @@ export type DisjointKinds = extend<
     Record<string, { l: unknown; r: unknown }>,
     {
         domain: {
-            l: Domain
-            r: Domain
+            l: DomainRule
+            r: DomainRule
         }
         range: {
             l: RangeRule
