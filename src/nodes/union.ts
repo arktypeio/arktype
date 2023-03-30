@@ -1,7 +1,7 @@
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import type { evaluate, keySet } from "../utils/generics.ts"
+import type { conform, evaluate, keySet } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
@@ -14,7 +14,7 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
-import type { RuleNodes, RuleSet } from "./branch.ts"
+import type { RuleNodes, RuleSet, validateRuleSet } from "./branch.ts"
 import { BranchNode } from "./branch.ts"
 import type { Compilation } from "./node.ts"
 import { ComparisonState, Node } from "./node.ts"
@@ -31,6 +31,10 @@ export type TypeNode = UnionNode | BranchNode
 
 type BranchNodes<definition extends RuleSet[]> = {
     [i in keyof definition]: BranchNode<definition[i]>
+}
+
+type validateBranches<ruleSets extends RuleSet[]> = {
+    [i in keyof ruleSets]: validateRuleSet<ruleSets[i]>
 }
 
 export class UnionNode<
@@ -81,7 +85,7 @@ export class UnionNode<
         return chainableNoOpProxy
     }
 
-    intersect(other: TypeNode, s: ComparisonState) {
+    intersect(other: TypeNode, s: ComparisonState): TypeNode {
         const lBranches = this.branches
         const rBranches = other instanceof UnionNode ? other.branches : [other]
         // Branches that are determined to be a subtype of an opposite branch are
@@ -154,7 +158,7 @@ export class UnionNode<
             return s.addDisjoint("union", lBranches, rBranches)
         }
         // TODO: avoid revalidating here
-        return new UnionNode(finalBranches)
+        return new UnionNode(finalBranches.map((_) => _.definition))
     }
 
     allows(value: unknown) {

@@ -2,7 +2,12 @@ import { writeImplicitNeverMessage } from "../parse/ast/intersection.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type { constructor, evaluate, mutable } from "../utils/generics.ts"
+import type {
+    conform,
+    constructor,
+    evaluate,
+    mutable
+} from "../utils/generics.ts"
 import type { ComparisonState, Compilation } from "./node.ts"
 import { Node } from "./node.ts"
 import { DivisibilityNode } from "./rules/divisibility.ts"
@@ -15,18 +20,25 @@ import { PropsNode } from "./rules/props.ts"
 import { RangeNode } from "./rules/range.ts"
 import { RegexNode } from "./rules/regex.ts"
 
+export type validateRuleSet<ruleSet extends RuleSet> = conform<
+    ruleSet,
+    RuleSet<ruleSet["domain"]>
+>
+
 export class BranchNode<
     definition extends RuleSet = RuleSet
 > extends Node<BranchNode> {
+    definition: definition
     rules: RuleNodes
 
-    constructor(public definition: definition) {
+    constructor(definition: validateRuleSet<definition>) {
         super("TODO")
         const rules = {} as mutable<RuleNodes>
         let kind: RuleKind
         for (kind in definition as RuleSet) {
             rules[kind] = createRuleNode(kind, definition) as any
         }
+        this.definition = definition as definition
         this.rules = rules
     }
 
