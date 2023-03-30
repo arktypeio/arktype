@@ -4,14 +4,14 @@ import type { ComparisonState, Compilation } from "../node.ts"
 import { Node } from "../node.ts"
 import { registerConstructor } from "../registry.ts"
 
-export class InstanceRule extends Node<InstanceRule, constructor> {
+export class InstanceNode extends Node<InstanceNode, constructor> {
     serialize(): string {
         return this.definition === Array
             ? "Array"
             : registerConstructor(this.definition.name, this.definition)
     }
 
-    intersect(other: InstanceRule, s: ComparisonState) {
+    intersect(other: InstanceNode, s: ComparisonState) {
         return constructorExtends(this.definition, other.definition)
             ? this
             : constructorExtends(other.definition, this.definition)

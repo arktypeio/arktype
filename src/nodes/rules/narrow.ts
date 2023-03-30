@@ -4,8 +4,8 @@ import type { Compilation } from "../node.ts"
 import { Node } from "../node.ts"
 import { intersectUniqueLists } from "./rule.ts"
 
-export class NarrowRule<domain extends Domain = any> extends Node<
-    NarrowRule,
+export class NarrowNode<domain extends Domain = any> extends Node<
+    NarrowNode,
     Narrow[]
 > {
     serialize() {
@@ -16,8 +16,8 @@ export class NarrowRule<domain extends Domain = any> extends Node<
             .join()
     }
 
-    intersect(other: NarrowRule<domain>) {
-        return new NarrowRule(
+    intersect(other: NarrowNode<domain>) {
+        return new NarrowNode(
             intersectUniqueLists(this.definition, other.definition)
         )
     }

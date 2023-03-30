@@ -71,7 +71,7 @@ export class TypeNode<
             }
         }
         const filteredNodes = nodes.filter((_, i) => uniquenessByIndex[i])
-        super(filteredNodes)
+        super(filteredNo)
         this.branches = filteredNodes
     }
 

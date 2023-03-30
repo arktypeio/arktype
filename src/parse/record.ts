@@ -1,6 +1,6 @@
 import { BranchNode } from "../nodes/branch.ts"
 import type { Props } from "../nodes/rules/props.ts"
-import { PropsRule } from "../nodes/rules/props.ts"
+import { PropsNode } from "../nodes/rules/props.ts"
 import type { Dict, evaluate } from "../utils/generics.ts"
 import type { inferDefinition, ParseContext } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"
@@ -29,7 +29,7 @@ export const parseRecord = (def: Dict, ctx: ParseContext): BranchNode => {
             kind: isOptional ? "optional" : "required"
         }
     }
-    return new BranchNode({ domain: "object", props: new PropsRule(props) })
+    return new BranchNode({ domain: "object", props: new PropsNode(props) })
 }
 
 type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`

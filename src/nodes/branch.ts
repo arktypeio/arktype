@@ -6,19 +6,19 @@ import { throwParseError } from "../utils/errors.ts"
 import type { evaluate } from "../utils/generics.ts"
 import type { ComparisonState, Compilation } from "./node.ts"
 import { Node } from "./node.ts"
-import type { DivisibilityRule } from "./rules/divisibility.ts"
-import type { DomainRule } from "./rules/domain.ts"
-import type { EqualityRule } from "./rules/equality.ts"
-import type { InstanceRule } from "./rules/instance.ts"
-import type { NarrowRule } from "./rules/narrow.ts"
-import type { PropsRule } from "./rules/props.ts"
-import type { RangeRule } from "./rules/range.ts"
-import type { RegexRule } from "./rules/regex.ts"
+import type { DivisibilityNode } from "./rules/divisibility.ts"
+import type { DomainNode } from "./rules/domain.ts"
+import type { EqualityNode } from "./rules/equality.ts"
+import type { InstanceNode } from "./rules/instance.ts"
+import type { NarrowNode } from "./rules/narrow.ts"
+import type { PropsNode } from "./rules/props.ts"
+import type { RangeNode } from "./rules/range.ts"
+import type { RegexNode } from "./rules/regex.ts"
 
 export class BranchNode<
     definition extends RuleSet<domain> = any,
     domain extends Domain = any
-> extends Node<BranchNode, definition> {
+> extends Node<BranchNode<definition, domain>, definition> {
     serialize() {
         return "TODO"
     }
@@ -112,16 +112,16 @@ type defineCustomRules<
 > = evaluate<UniversalRules<domain> & Pick<CustomRules, ruleKeys>>
 
 type CustomRules = {
-    readonly regex?: RegexRule
-    readonly divisor?: DivisibilityRule
-    readonly range?: RangeRule
-    readonly props?: PropsRule
-    readonly instance?: InstanceRule
+    readonly regex?: RegexNode
+    readonly divisor?: DivisibilityNode
+    readonly range?: RangeNode
+    readonly props?: PropsNode
+    readonly instance?: InstanceNode
 }
 
 type UniversalRules<domain extends Domain> = {
-    readonly domain: DomainRule<domain>
-    readonly value?: EqualityRule<domain>
-    readonly narrow?: NarrowRule<domain>
+    readonly domain: DomainNode<domain>
+    readonly value?: EqualityNode<domain>
+    readonly narrow?: NarrowNode<domain>
     readonly morphs?: Morph<domain>[]
 }

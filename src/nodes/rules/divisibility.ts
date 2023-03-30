@@ -1,17 +1,17 @@
 import type { Compilation } from "../node.ts"
 import { Node } from "../node.ts"
 
-export class DivisibilityRule extends Node<DivisibilityRule, number> {
+export class DivisibilityNode extends Node<DivisibilityNode, number> {
     serialize() {
         return `${this.definition}`
     }
 
-    intersect(other: DivisibilityRule) {
+    intersect(other: DivisibilityNode) {
         const leastCommonMultiple = Math.abs(
             (this.definition * other.definition) /
                 greatestCommonDivisor(this.definition, other.definition)
         )
-        return new DivisibilityRule(leastCommonMultiple)
+        return new DivisibilityNode(leastCommonMultiple)
     }
 
     compile(c: Compilation) {

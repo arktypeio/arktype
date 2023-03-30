@@ -5,10 +5,10 @@ import type { Domain } from "../utils/domains.ts"
 import type { extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { BranchNode } from "./branch.ts"
-import type { DomainRule } from "./rules/domain.ts"
-import type { EqualityRule } from "./rules/equality.ts"
-import type { InstanceRule } from "./rules/instance.ts"
-import type { RangeRule } from "./rules/range.ts"
+import type { DomainNode } from "./rules/domain.ts"
+import type { EqualityNode } from "./rules/equality.ts"
+import type { InstanceNode } from "./rules/instance.ts"
+import type { RangeNode } from "./rules/range.ts"
 import { TypeNode } from "./type.ts"
 
 export abstract class Node<subclass extends Node = any, definition = unknown> {
@@ -48,28 +48,28 @@ export type DisjointKinds = extend<
     Record<string, { l: unknown; r: unknown }>,
     {
         domain: {
-            l: DomainRule
-            r: DomainRule
+            l: DomainNode
+            r: DomainNode
         }
         range: {
-            l: RangeRule
-            r: RangeRule
+            l: RangeNode
+            r: RangeNode
         }
         class: {
-            l: InstanceRule
-            r: InstanceRule
+            l: InstanceNode
+            r: InstanceNode
         }
         value: {
-            l: EqualityRule
-            r: EqualityRule
+            l: EqualityNode
+            r: EqualityNode
         }
         leftAssignability: {
-            l: EqualityRule
+            l: EqualityNode
             r: BranchNode
         }
         rightAssignability: {
             l: BranchNode
-            r: EqualityRule
+            r: EqualityNode
         }
         union: {
             l: readonly BranchNode[]
@@ -99,7 +99,7 @@ export class ComparisonState {
 
 export class Disjoint<
     kind extends DisjointKind = DisjointKind
-> extends TypeNode {
+> extends TypeNode<[]> {
     constructor(
         public kind: kind,
         public l: DisjointKinds[kind]["l"],

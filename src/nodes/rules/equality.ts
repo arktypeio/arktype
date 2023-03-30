@@ -6,8 +6,8 @@ import type { ComparisonState, Compilation } from "../node.ts"
 import { Node } from "../node.ts"
 import { registerValue } from "../registry.ts"
 
-export class EqualityRule<domain extends Domain = any> extends Node<
-    EqualityRule<domain>,
+export class EqualityNode<domain extends Domain = any> extends Node<
+    EqualityNode<domain>,
     inferDomain<domain>
 > {
     serialize() {
@@ -17,7 +17,7 @@ export class EqualityRule<domain extends Domain = any> extends Node<
             : serializePrimitive(this.definition as SerializablePrimitive)
     }
 
-    intersect(other: EqualityRule, s: ComparisonState) {
+    intersect(other: EqualityNode, s: ComparisonState) {
         return this === other ? this : s.addDisjoint("value", this, other)
     }
 

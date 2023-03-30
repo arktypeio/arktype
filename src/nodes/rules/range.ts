@@ -57,13 +57,13 @@ export type Bound = {
 
 export type BoundWithUnits = evaluate<Bound & { units: string }>
 
-export class RangeRule extends Node<RangeRule, Range> {
+export class RangeNode extends Node<RangeNode, Range> {
     serialize() {
         // TODO: sort
         return JSON.stringify(this.definition)
     }
 
-    intersect(other: RangeRule, s: ComparisonState) {
+    intersect(other: RangeNode, s: ComparisonState) {
         if (this.isEqualityRange()) {
             if (other.isEqualityRange()) {
                 return this.definition["=="] === other.definition["=="]
@@ -97,7 +97,7 @@ export class RangeRule extends Node<RangeRule, Range> {
                     other.upperBound
                 ) === "l"
                     ? s.addDisjoint("range", this, other)
-                    : new RangeRule({
+                    : new RangeNode({
                           ...this.#extractComparators(">"),
                           ...other.#extractComparators("<")
                       })
@@ -112,7 +112,7 @@ export class RangeRule extends Node<RangeRule, Range> {
                     other.lowerBound
                 ) === "l"
                     ? s.addDisjoint("range", this, other)
-                    : new RangeRule({
+                    : new RangeNode({
                           ...other.#extractComparators(">"),
                           ...this.#extractComparators("<")
                       })

@@ -1,22 +1,22 @@
 import { Node } from "../node.ts"
-import type { DivisibilityRule } from "./divisibility.ts"
-import type { DomainRule } from "./domain.ts"
-import type { EqualityRule } from "./equality.ts"
-import type { InstanceRule } from "./instance.ts"
-import type { NarrowRule } from "./narrow.ts"
-import type { PropsRule } from "./props.ts"
-import type { RangeRule } from "./range.ts"
-import type { RegexRule } from "./regex.ts"
+import type { DivisibilityNode } from "./divisibility.ts"
+import type { DomainNode } from "./domain.ts"
+import type { EqualityNode } from "./equality.ts"
+import type { InstanceNode } from "./instance.ts"
+import type { NarrowNode } from "./narrow.ts"
+import type { PropsNode } from "./props.ts"
+import type { RangeNode } from "./range.ts"
+import type { RegexNode } from "./regex.ts"
 
 type RuleKinds = {
-    domain: DomainRule
-    equality: EqualityRule
-    instance: InstanceRule
-    range: RangeRule
-    divisibility: DivisibilityRule
-    regex: RegexRule
-    props: PropsRule
-    narrow: NarrowRule
+    domain: DomainNode
+    equality: EqualityNode
+    instance: InstanceNode
+    range: RangeNode
+    divisibility: DivisibilityNode
+    regex: RegexNode
+    props: PropsNode
+    narrow: NarrowNode
 }
 
 export type RuleKind = keyof RuleKinds

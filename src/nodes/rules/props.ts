@@ -13,12 +13,12 @@ export type NamedProps = Record<string, TypeNode>
 
 export type IndexProps = [keyType: TypeNode, valueType: TypeNode][]
 
-export class PropsRule extends Node<PropsRule, Props> {
+export class PropsNode extends Node<PropsNode, Props> {
     serialize() {
         return "TODO"
     }
 
-    intersect(other: PropsRule, s: ComparisonState) {
+    intersect(other: PropsNode, s: ComparisonState) {
         const named: Props = {}
         for (const k in this.definition) {
             let prop: Prop
@@ -63,10 +63,10 @@ export class PropsRule extends Node<PropsRule, Props> {
                 }
             }
         }
-        return new PropsRule(named, this.intersectIndices(other, s))
+        return new PropsNode(named, this.intersectIndices(other, s))
     }
 
-    intersectIndices(other: PropsRule, s: ComparisonState) {
+    intersectIndices(other: PropsNode, s: ComparisonState) {
         if (!this.indexed) {
             if (!other.indexed) {
                 return

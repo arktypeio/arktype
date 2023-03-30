@@ -3,7 +3,7 @@ import { Node } from "../node.ts"
 import { registerRegex } from "../registry.ts"
 import { intersectUniqueLists } from "./rule.ts"
 
-export class RegexRule extends Node<RegexRule, string[]> {
+export class RegexNode extends Node<RegexNode, string[]> {
     serialize() {
         return JSON.stringify(
             this.definition.length === 1
@@ -12,8 +12,8 @@ export class RegexRule extends Node<RegexRule, string[]> {
         )
     }
 
-    intersect(other: RegexRule) {
-        return new RegexRule(
+    intersect(other: RegexNode) {
+        return new RegexNode(
             intersectUniqueLists(this.definition, other.definition)
         )
     }

@@ -2,8 +2,8 @@ import type { Domain } from "../../utils/domains.ts"
 import type { ComparisonState, Compilation, Disjoint } from "../node.ts"
 import { Node } from "../node.ts"
 
-export class DomainRule<domain extends Domain = any> extends Node<
-    DomainRule<domain>,
+export class DomainNode<domain extends Domain = any> extends Node<
+    DomainNode<domain>,
     domain
 > {
     serialize() {
@@ -11,9 +11,9 @@ export class DomainRule<domain extends Domain = any> extends Node<
     }
 
     intersect(
-        other: DomainRule,
+        other: DomainNode,
         s: ComparisonState
-    ): DomainRule<domain> | Disjoint {
+    ): DomainNode<domain> | Disjoint {
         return this === other ? this : s.addDisjoint("domain", this, other)
     }
 

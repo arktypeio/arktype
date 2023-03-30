@@ -5,7 +5,7 @@ import type {
     MappedPropKey,
     OptionalProp,
     Prop,
-    PropsRule
+    PropsNode
 } from "../../nodes/rules/props.ts"
 import type { LiteralRules, NarrowableRules } from "../../nodes/rules/rules.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
@@ -86,11 +86,11 @@ type inferObjectRules<
     ? inferObjectKind<"Function">
     : rules["instance"] extends constructor<infer instance>
     ? instance
-    : rules["props"] extends PropsRule
+    : rules["props"] extends PropsNode
     ? inferProps<rules["props"], $>
     : object
 
-type inferProps<props extends PropsRule, $> = evaluate<
+type inferProps<props extends PropsNode, $> = evaluate<
     {
         [k in requiredKeyOf<props>]: props[k] extends Prop<$, infer node>
             ? inferNode<node, $>
@@ -102,13 +102,13 @@ type inferProps<props extends PropsRule, $> = evaluate<
     }
 >
 
-type optionalKeyOf<props extends PropsRule> = {
+type optionalKeyOf<props extends PropsNode> = {
     [k in keyof props]: props[k] extends OptionalProp ? k : never
 }[keyof props]
 
-type mappedKeyOf<props extends PropsRule> = Extract<keyof props, MappedPropKey>
+type mappedKeyOf<props extends PropsNode> = Extract<keyof props, MappedPropKey>
 
-type requiredKeyOf<props extends PropsRule> = Exclude<
+type requiredKeyOf<props extends PropsNode> = Exclude<
     keyof props,
     optionalKeyOf<props> | mappedKeyOf<props>
 >
