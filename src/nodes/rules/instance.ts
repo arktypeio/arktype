@@ -1,17 +1,14 @@
 import type { constructor } from "../../utils/generics.ts"
 import { constructorExtends } from "../../utils/generics.ts"
 import type { ComparisonState, Compilation } from "../node.ts"
+import { Node } from "../node.ts"
 import { registerConstructor } from "../registry.ts"
-import { Rule } from "./rule.ts"
 
-export class InstanceRule extends Rule<"instance"> {
-    constructor(public definition: constructor) {
-        super(
-            "instance",
-            definition === Array
-                ? "Array"
-                : registerConstructor(definition.name, definition)
-        )
+export class InstanceRule extends Node<InstanceRule, constructor> {
+    serialize(): string {
+        return this.definition === Array
+            ? "Array"
+            : registerConstructor(this.definition.name, this.definition)
     }
 
     intersect(other: InstanceRule, s: ComparisonState) {

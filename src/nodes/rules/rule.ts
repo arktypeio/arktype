@@ -8,20 +8,6 @@ import type { PropsRule } from "./props.ts"
 import type { RangeRule } from "./range.ts"
 import type { RegexRule } from "./regex.ts"
 
-export abstract class Rule<kind extends RuleKind = RuleKind> extends Node<
-    RuleKinds[kind]
-> {
-    abstract readonly definition: unknown
-
-    constructor(public readonly kind: kind, id: string) {
-        super(id)
-    }
-
-    allows(value: unknown) {
-        return !value
-    }
-}
-
 type RuleKinds = {
     domain: DomainRule
     equality: EqualityRule

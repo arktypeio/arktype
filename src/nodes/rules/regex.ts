@@ -1,14 +1,14 @@
 import type { Compilation } from "../node.ts"
+import { Node } from "../node.ts"
 import { registerRegex } from "../registry.ts"
-import { intersectUniqueLists, Rule } from "./rule.ts"
+import { intersectUniqueLists } from "./rule.ts"
 
-export class RegexRule extends Rule<"regex"> {
-    constructor(public definition: string[]) {
-        super(
-            "regex",
-            JSON.stringify(
-                definition.length === 1 ? definition[0] : definition.sort()
-            )
+export class RegexRule extends Node<RegexRule, string[]> {
+    serialize() {
+        return JSON.stringify(
+            this.definition.length === 1
+                ? this.definition[0]
+                : this.definition.sort()
         )
     }
 

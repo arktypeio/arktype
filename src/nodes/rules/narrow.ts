@@ -1,17 +1,19 @@
 import type { Narrow } from "../../parse/ast/narrow.ts"
 import type { Domain } from "../../utils/domains.ts"
 import type { Compilation } from "../node.ts"
-import { intersectUniqueLists, Rule } from "./rule.ts"
+import { Node } from "../node.ts"
+import { intersectUniqueLists } from "./rule.ts"
 
-export class NarrowRule<domain extends Domain = any> extends Rule<"narrow"> {
-    constructor(public definition: Narrow<domain>[]) {
-        super(
-            "narrow",
-            definition
-                .map((_) => String(_))
-                .sort()
-                .join()
-        )
+export class NarrowRule<domain extends Domain = any> extends Node<
+    NarrowRule,
+    Narrow[]
+> {
+    serialize() {
+        // TODO: fix
+        return this.definition
+            .map((_) => String(_))
+            .sort()
+            .join()
     }
 
     intersect(other: NarrowRule<domain>) {

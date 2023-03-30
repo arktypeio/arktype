@@ -1,10 +1,13 @@
 import type { Domain } from "../../utils/domains.ts"
 import type { ComparisonState, Compilation, Disjoint } from "../node.ts"
-import { Rule } from "./rule.ts"
+import { Node } from "../node.ts"
 
-export class DomainRule<domain extends Domain = any> extends Rule<"domain"> {
-    constructor(public domain: domain) {
-        super("domain", domain)
+export class DomainRule<domain extends Domain = any> extends Node<
+    DomainRule<domain>,
+    domain
+> {
+    serialize() {
+        return this.definition
     }
 
     intersect(
@@ -15,10 +18,10 @@ export class DomainRule<domain extends Domain = any> extends Rule<"domain"> {
     }
 
     compile(c: Compilation) {
-        return this.domain === "object"
+        return this.definition === "object"
             ? `(typeof ${c.data} === "object" && ${c.data} !== null) || typeof ${c.data} === "function"`
-            : this.domain === "null" || this.domain === "undefined"
-            ? `${c.data} === ${this.domain}`
-            : `typeof ${c.data} === "${this.domain}"`
+            : this.definition === "null" || this.definition === "undefined"
+            ? `${c.data} === ${this.definition}`
+            : `typeof ${c.data} === "${this.definition}"`
     }
 }

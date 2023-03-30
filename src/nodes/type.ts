@@ -71,11 +71,11 @@ export class TypeNode<
             }
         }
         const filteredNodes = nodes.filter((_, i) => uniquenessByIndex[i])
-        super()
+        super(filteredNodes)
         this.branches = filteredNodes
     }
 
-    get id() {
+    serialize() {
         return JSON.stringify("TODO")
     }
 

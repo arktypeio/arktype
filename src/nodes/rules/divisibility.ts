@@ -1,9 +1,9 @@
 import type { Compilation } from "../node.ts"
-import { Rule } from "./rule.ts"
+import { Node } from "../node.ts"
 
-export class DivisibilityRule extends Rule<"divisibility"> {
-    constructor(public readonly definition: number) {
-        super("divisibility", `${definition}`)
+export class DivisibilityRule extends Node<DivisibilityRule, number> {
+    serialize() {
+        return `${this.definition}`
     }
 
     intersect(other: DivisibilityRule) {

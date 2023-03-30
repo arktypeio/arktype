@@ -1,6 +1,6 @@
 import type { ComparisonState, Compilation } from "../node.ts"
+import { Node } from "../node.ts"
 import type { TypeNode } from "../type.ts"
-import { Rule } from "./rule.ts"
 
 export type Props = {
     required?: NamedProps
@@ -13,9 +13,9 @@ export type NamedProps = Record<string, TypeNode>
 
 export type IndexProps = [keyType: TypeNode, valueType: TypeNode][]
 
-export class PropsRule extends Rule<"props"> {
-    constructor(public definition: Props) {
-        super("props", "TODO")
+export class PropsRule extends Node<PropsRule, Props> {
+    serialize() {
+        return "TODO"
     }
 
     intersect(other: PropsRule, s: ComparisonState) {

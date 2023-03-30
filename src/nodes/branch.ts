@@ -16,34 +16,27 @@ import type { RangeRule } from "./rules/range.ts"
 import type { RegexRule } from "./rules/regex.ts"
 
 export class BranchNode<
-    rules extends RuleSet<domain> = any,
+    definition extends RuleSet<domain> = any,
     domain extends Domain = any
-> extends Node<BranchNode> {
-    constructor(public rules: rules) {
-        super("TODO")
+> extends Node<BranchNode, definition> {
+    serialize() {
+        return "TODO"
     }
 
-    get infer(): inferDomain<this["rules"]["domain"]["domain"]> {
+    get infer(): inferDomain<this["definition"]["domain"]["domain"]> {
         return chainableNoOpProxy
     }
 
     get hasMorphs() {
-        return this.rules.morphs
+        return this.definition.morphs
     }
 
     intersect(branch: BranchNode, s: ComparisonState) {
-        if (this.rules.domain !== branch.rules.domain) {
-            return s.addDisjoint(
-                "domain",
-                this.rules.domain,
-                branch.rules.domain
-            )
-        }
         if (
             // TODO: Fix
             // s.lastOperator === "&" &&
-            this.rules.morphs?.some(
-                (morph, i) => morph !== branch.rules.morphs?.[i]
+            this.definition.morphs?.some(
+                (morph, i) => morph !== branch.definition.morphs?.[i]
             )
         ) {
             throwParseError(

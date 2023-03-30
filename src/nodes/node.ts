@@ -12,9 +12,13 @@ import type { RangeRule } from "./rules/range.ts"
 import { TypeNode } from "./type.ts"
 
 export abstract class Node<subclass extends Node = any, definition = unknown> {
-    constructor(public readonly definition: definition) {}
+    public readonly id: string
 
-    abstract get id(): string
+    constructor(public readonly definition: definition) {
+        this.id = this.serialize()
+    }
+
+    abstract serialize(): string
 
     abstract intersect(other: subclass, s: ComparisonState): subclass | Disjoint
 
@@ -35,7 +39,9 @@ export abstract class Node<subclass extends Node = any, definition = unknown> {
 
     abstract compile(c: Compilation): string
 
-    abstract allows(value: unknown): boolean
+    allows(value: unknown) {
+        return true
+    }
 }
 
 export type DisjointKinds = extend<

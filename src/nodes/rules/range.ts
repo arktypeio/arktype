@@ -2,7 +2,7 @@ import { throwInternalError } from "../../utils/errors.ts"
 import type { evaluate, xor } from "../../utils/generics.ts"
 import { stringify } from "../../utils/serialize.ts"
 import type { ComparisonState, Compilation } from "../node.ts"
-import { Rule } from "./rule.ts"
+import { Node } from "../node.ts"
 
 export const minComparators = {
     ">": true,
@@ -57,13 +57,10 @@ export type Bound = {
 
 export type BoundWithUnits = evaluate<Bound & { units: string }>
 
-export class RangeRule extends Rule<"range"> {
-    constructor(public definition: Range) {
-        super(
-            "range",
-            // TODO: sort
-            JSON.stringify(definition)
-        )
+export class RangeRule extends Node<RangeRule, Range> {
+    serialize() {
+        // TODO: sort
+        return JSON.stringify(this.definition)
     }
 
     intersect(other: RangeRule, s: ComparisonState) {
