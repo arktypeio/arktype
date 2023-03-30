@@ -1,12 +1,14 @@
 import { writeImplicitNeverMessage } from "../parse/ast/intersection.ts"
+import { as } from "../parse/definition.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
-import type { Domain, inferDomain } from "../utils/domains.ts"
+import type { Domain, domainOf, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
 import type {
     conform,
     constructor,
     evaluate,
-    mutable
+    mutable,
+    xor
 } from "../utils/generics.ts"
 import type { ComparisonState, Compilation } from "./node.ts"
 import { Node } from "./node.ts"
@@ -19,19 +21,30 @@ import { NarrowNode } from "./rules/narrow.ts"
 import { PropsNode } from "./rules/props.ts"
 import { RangeNode } from "./rules/range.ts"
 import { RegexNode } from "./rules/regex.ts"
+import type { UnionNode } from "./union.ts"
 
-export type validateRuleSet<ruleSet extends RuleSet> = conform<
-    ruleSet,
-    RuleSet<ruleSet["domain"]>
->
+export type TypeNode = UnionNode | BranchNode
+// TODO: create central constructor
+
+const z = new BranchNode({})
+//    ^?
+
+export type validateRuleSet<ruleSet extends RuleSet> = {
+    readonly [k in keyof ruleSet]: k extends keyof RuleSet<
+        domainOfRuleSet<ruleSet>
+    >
+        ? ruleSet[k]
+        : `'${k & string}' is not allowed in ${ruleSet["domain"]} nodes`
+}
 
 export class BranchNode<
-    definition extends RuleSet = RuleSet
-> extends Node<BranchNode> {
+    domain extends Domain = Domain,
+    const definition extends RuleSet = RuleSet
+> extends Node<TypeNode> {
     definition: definition
     rules: RuleNodes
 
-    constructor(definition: validateRuleSet<definition>) {
+    constructor(definition: { domain: domain } & definition) {
         super("TODO")
         const rules = {} as mutable<RuleNodes>
         let kind: RuleKind
@@ -42,7 +55,9 @@ export class BranchNode<
         this.rules = rules
     }
 
-    get infer(): inferDomain<this["definition"]["domain"]> {
+    declare [as]: this["infer"]
+
+    get infer(): inferDomain<domainOfRuleSet<this["definition"]>> {
         return chainableNoOpProxy
     }
 
@@ -109,6 +124,10 @@ export class BranchNode<
     // }
 }
 
+type domainOfRuleSet<ruleSet extends RuleSet> = ruleSet["domain"] extends Domain
+    ? ruleSet["domain"]
+    : domainOf<ruleSet["value"]>
+
 export type RuleSet<domain extends Domain = Domain> = {
     [k in keyof RuleNodes<domain>]: RuleNodes<domain>[k] extends
         | {
@@ -150,9 +169,10 @@ type CustomRules = {
     readonly instance?: InstanceNode
 }
 
-type UniversalRules<domain extends Domain> = {
-    readonly domain: DomainNode<domain>
-    readonly value?: EqualityNode<domain>
+type UniversalRules<domain extends Domain> = xor<
+    { readonly domain: DomainNode<domain> },
+    { readonly value: EqualityNode<domain> }
+> & {
     readonly narrow?: NarrowNode<domain>
     readonly morphs?: MorphNode
 }

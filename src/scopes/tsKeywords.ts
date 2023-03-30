@@ -1,17 +1,6 @@
+import { node } from "../nodes/node.ts"
 import type { Infer } from "../parse/definition.ts"
-import type { Domain } from "../utils/domains.ts"
 import { scope } from "./scope.ts"
-
-const always: Record<Domain, true> = {
-    bigint: true,
-    boolean: true,
-    null: true,
-    number: true,
-    object: true,
-    string: true,
-    symbol: true,
-    undefined: true
-}
 
 /**
  * @keywords keywords: {"any": "any",
@@ -32,20 +21,23 @@ const always: Record<Domain, true> = {
  */
 export const tsKeywordsScope = scope(
     {
-        any: ["node", always] as Infer<any>,
-        bigint: ["node", { bigint: true }],
-        boolean: ["node", { boolean: true }],
-        false: ["node", { boolean: { value: false } }],
-        never: ["node", {}],
-        null: ["node", { null: true }],
-        number: ["node", { number: true }],
-        object: ["node", { object: true }],
-        string: ["node", { string: true }],
-        symbol: ["node", { symbol: true }],
-        true: ["node", { boolean: { value: true } }],
-        unknown: ["node", always] as Infer<unknown>,
-        void: ["node", { undefined: true }] as Infer<void>,
-        undefined: ["node", { undefined: true }]
+        any: "unknown" as Infer<any>,
+        bigint: node({ domain: "bigint" }),
+        boolean: node({ domain: "boolean" }),
+        // TODO: value only
+        false: node({ domain: "boolean", value: false }),
+        never: node(),
+        null: node({ domain: "null" }),
+        number: node({ domain: "number" }),
+        object: node({ domain: "object" }),
+        string: node({ domain: "string" }),
+        symbol: node({ domain: "symbol" }),
+        true: node({ value: true }),
+        //^?
+        unknown:
+            "bigint|boolean|null|number|object|string|symbol|undefined" as Infer<unknown>,
+        void: node({ domain: "undefined" }) as Infer<void>,
+        undefined: node({ domain: "undefined" })
     },
     { name: "ts", standard: false }
 )

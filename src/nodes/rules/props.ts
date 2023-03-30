@@ -1,6 +1,6 @@
+import type { TypeNode } from "../branch.ts"
 import type { ComparisonState, Compilation } from "../node.ts"
 import { Node } from "../node.ts"
-import type { TypeNode } from "../type.ts"
 
 export type Props = {
     required?: NamedProps

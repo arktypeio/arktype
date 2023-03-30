@@ -6,6 +6,7 @@ import type { inferDefinition, ParseContext } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"
 import { Scanner } from "./string/shift/scanner.ts"
 
+// TODO: other optional options?
 export const parseRecord = (def: Dict, ctx: ParseContext): BranchNode => {
     const props: Props = {}
     for (const definitionKey in def) {
@@ -24,9 +25,12 @@ export const parseRecord = (def: Dict, ctx: ParseContext): BranchNode => {
         ctx.path.push(keyName)
         const propNode = parseDefinition(def[definitionKey], ctx)
         ctx.path.pop()
-        props[keyName] = {
-            type: propNode,
-            kind: isOptional ? "optional" : "required"
+        if (isOptional) {
+            props.optional ??= {}
+            props.optional[keyName] = propNode
+        } else {
+            props.required ??= {}
+            props.required[keyName] = propNode
         }
     }
     return new BranchNode({ domain: "object", props: new PropsNode(props) })

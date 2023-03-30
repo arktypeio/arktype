@@ -1,3 +1,4 @@
+import { as } from "../parse/definition.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
@@ -14,7 +15,7 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
-import type { RuleNodes, RuleSet, validateRuleSet } from "./branch.ts"
+import type { RuleNodes, RuleSet, TypeNode, validateRuleSet } from "./branch.ts"
 import { BranchNode } from "./branch.ts"
 import type { Compilation } from "./node.ts"
 import { ComparisonState, Node } from "./node.ts"
@@ -27,18 +28,12 @@ export type BranchesComparison = {
     distinctIntersections: BranchNode[]
 }
 
-export type TypeNode = UnionNode | BranchNode
-
-type BranchNodes<definition extends RuleSet[]> = {
+type BranchNodes<definition extends readonly RuleSet[]> = {
     [i in keyof definition]: BranchNode<definition[i]>
 }
 
-type validateBranches<ruleSets extends RuleSet[]> = {
-    [i in keyof ruleSets]: validateRuleSet<ruleSets[i]>
-}
-
 export class UnionNode<
-    definition extends RuleSet[] = RuleSet[]
+    definition extends readonly RuleSet[] = readonly RuleSet[]
 > extends Node<TypeNode> {
     branches: BranchNodes<definition>
 
@@ -80,6 +75,8 @@ export class UnionNode<
         super("TODO")
         this.branches = filteredNodes
     }
+
+    declare [as]: this["infer"]
 
     get infer(): this["branches"][number]["infer"] {
         return chainableNoOpProxy
