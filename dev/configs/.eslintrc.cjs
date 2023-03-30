@@ -62,6 +62,17 @@ module.exports = defineConfig({
                 }
             }
         ],
+        "import/no-restricted-paths": [
+            "error",
+            {
+                zones: [
+                    {
+                        target: "./src",
+                        from: "./node_modules"
+                    }
+                ]
+            }
+        ],
         // Generally too strict but can be enabled for hints about actual circular import problems
         // "import/no-cycle": "warn",
         // Sort destructured variables within a single import statement
