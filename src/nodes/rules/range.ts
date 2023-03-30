@@ -57,10 +57,12 @@ export type Bound = {
 
 export type BoundWithUnits = evaluate<Bound & { units: string }>
 
-export class RangeNode extends Node<RangeNode, Range> {
-    serialize() {
-        // TODO: sort
-        return JSON.stringify(this.definition)
+export class RangeNode extends Node<RangeNode> {
+    constructor(public readonly definition: Range) {
+        super(
+            // TODO: sort
+            JSON.stringify(definition)
+        )
     }
 
     intersect(other: RangeNode, s: ComparisonState) {

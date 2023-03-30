@@ -96,8 +96,8 @@ type unresolvableError<token extends string, $> = possibleCompletions<
     : never
 
 type possibleCompletions<token extends string, $> = {
-    [alias in keyof $]: alias extends `${token}${infer rest}`
-        ? `${token}${rest}`
+    [alias in keyof $]: alias extends `${token}${infer suffix}`
+        ? `${token}${suffix}`
         : never
 }[keyof $]
 

@@ -13,9 +13,9 @@ export type NamedProps = Record<string, TypeNode>
 
 export type IndexProps = [keyType: TypeNode, valueType: TypeNode][]
 
-export class PropsNode extends Node<PropsNode, Props> {
-    serialize() {
-        return "TODO"
+export class PropsNode extends Node<PropsNode> {
+    constructor(public readonly definition: Props) {
+        super(JSON.stringify(definition))
     }
 
     intersect(other: PropsNode, s: ComparisonState) {

@@ -1,29 +1,36 @@
 import { writeImplicitNeverMessage } from "../parse/ast/intersection.ts"
-import type { Morph } from "../parse/ast/morph.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { Domain, inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type { evaluate } from "../utils/generics.ts"
+import type { constructor, evaluate, mutable } from "../utils/generics.ts"
 import type { ComparisonState, Compilation } from "./node.ts"
 import { Node } from "./node.ts"
-import type { DivisibilityNode } from "./rules/divisibility.ts"
-import type { DomainNode } from "./rules/domain.ts"
-import type { EqualityNode } from "./rules/equality.ts"
-import type { InstanceNode } from "./rules/instance.ts"
-import type { NarrowNode } from "./rules/narrow.ts"
-import type { PropsNode } from "./rules/props.ts"
-import type { RangeNode } from "./rules/range.ts"
-import type { RegexNode } from "./rules/regex.ts"
+import { DivisibilityNode } from "./rules/divisibility.ts"
+import { DomainNode } from "./rules/domain.ts"
+import { EqualityNode } from "./rules/equality.ts"
+import { InstanceNode } from "./rules/instance.ts"
+import { MorphNode } from "./rules/morph.ts"
+import { NarrowNode } from "./rules/narrow.ts"
+import { PropsNode } from "./rules/props.ts"
+import { RangeNode } from "./rules/range.ts"
+import { RegexNode } from "./rules/regex.ts"
 
 export class BranchNode<
-    definition extends RuleSet<domain> = any,
-    domain extends Domain = any
-> extends Node<BranchNode<definition, domain>, definition> {
-    serialize() {
-        return "TODO"
+    definition extends RuleSet = RuleSet
+> extends Node<BranchNode> {
+    rules: RuleNodes
+
+    constructor(public definition: definition) {
+        super("TODO")
+        const rules = {} as mutable<RuleNodes>
+        let kind: RuleKind
+        for (kind in definition as RuleSet) {
+            rules[kind] = createRuleNode(kind, definition) as any
+        }
+        this.rules = rules
     }
 
-    get infer(): inferDomain<this["definition"]["domain"]["domain"]> {
+    get infer(): inferDomain<this["definition"]["domain"]> {
         return chainableNoOpProxy
     }
 
@@ -90,9 +97,21 @@ export class BranchNode<
     // }
 }
 
-export type RuleSet<domain extends Domain = Domain> = Domain extends domain
+export type RuleSet<domain extends Domain = Domain> = {
+    [k in keyof RuleNodes<domain>]: RuleNodes<domain>[k] extends
+        | {
+              definition: infer definition
+          }
+        | undefined
+        ? definition
+        : never
+}
+
+export type RuleNodes<domain extends Domain = Domain> = Domain extends domain
     ? evaluate<UniversalRules<domain> & CustomRules>
     : RulesByDomain[domain]
+
+export type RuleKind = evaluate<keyof RuleNodes>
 
 // TODO: evaluate not working?
 type RulesByDomain = {
@@ -123,5 +142,24 @@ type UniversalRules<domain extends Domain> = {
     readonly domain: DomainNode<domain>
     readonly value?: EqualityNode<domain>
     readonly narrow?: NarrowNode<domain>
-    readonly morphs?: Morph<domain>[]
+    readonly morphs?: MorphNode
 }
+
+export const ruleNodeKinds = {
+    domain: DomainNode,
+    value: EqualityNode,
+    instance: InstanceNode,
+    range: RangeNode,
+    divisor: DivisibilityNode,
+    regex: RegexNode,
+    props: PropsNode,
+    narrow: NarrowNode,
+    morphs: MorphNode
+} as const satisfies Record<RuleKind, constructor<Node>>
+
+const createRuleNode = <kind extends RuleKind>(
+    kind: kind,
+    def: RuleSet[kind]
+) => new ruleNodeKinds[kind](def as never) as RuleNodes[kind]
+
+export type RuleNodeKinds = typeof ruleNodeKinds

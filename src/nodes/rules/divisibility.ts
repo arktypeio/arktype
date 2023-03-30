@@ -1,9 +1,9 @@
 import type { Compilation } from "../node.ts"
 import { Node } from "../node.ts"
 
-export class DivisibilityNode extends Node<DivisibilityNode, number> {
-    serialize() {
-        return `${this.definition}`
+export class DivisibilityNode extends Node<DivisibilityNode> {
+    constructor(public readonly definition: number) {
+        super(`${definition}`)
     }
 
     intersect(other: DivisibilityNode) {

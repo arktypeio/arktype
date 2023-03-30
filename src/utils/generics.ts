@@ -319,3 +319,16 @@ export type CollapsibleList<t> = t | readonly t[]
 export type xor<a, b> =
     | evaluate<a & { [k in keyof b]?: undefined }>
     | evaluate<b & { [k in keyof a]?: undefined }>
+
+export const intersectUniqueLists = <item>(
+    l: readonly item[],
+    r: readonly item[]
+) => {
+    const intersection = [...l]
+    for (const item of r) {
+        if (!l.includes(item)) {
+            intersection.push(item)
+        }
+    }
+    return intersection
+}

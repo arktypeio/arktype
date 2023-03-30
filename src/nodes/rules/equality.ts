@@ -7,14 +7,14 @@ import { Node } from "../node.ts"
 import { registerValue } from "../registry.ts"
 
 export class EqualityNode<domain extends Domain = any> extends Node<
-    EqualityNode<domain>,
-    inferDomain<domain>
+    EqualityNode<domain>
 > {
-    serialize() {
-        return hasDomain(this.definition, "object") ||
-            typeof this.definition === "symbol"
-            ? registerValue(typeof this.definition, this.definition)
-            : serializePrimitive(this.definition as SerializablePrimitive)
+    constructor(public readonly definition: inferDomain<domain>) {
+        const id =
+            hasDomain(definition, "object") || typeof definition === "symbol"
+                ? registerValue(typeof definition, definition)
+                : serializePrimitive(definition as SerializablePrimitive)
+        super(id)
     }
 
     intersect(other: EqualityNode, s: ComparisonState) {

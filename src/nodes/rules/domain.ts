@@ -3,11 +3,10 @@ import type { ComparisonState, Compilation, Disjoint } from "../node.ts"
 import { Node } from "../node.ts"
 
 export class DomainNode<domain extends Domain = any> extends Node<
-    DomainNode<domain>,
-    domain
+    DomainNode<domain>
 > {
-    serialize() {
-        return this.definition
+    constructor(public readonly definition: domain) {
+        super(definition)
     }
 
     intersect(

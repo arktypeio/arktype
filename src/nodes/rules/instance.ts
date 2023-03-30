@@ -4,11 +4,13 @@ import type { ComparisonState, Compilation } from "../node.ts"
 import { Node } from "../node.ts"
 import { registerConstructor } from "../registry.ts"
 
-export class InstanceNode extends Node<InstanceNode, constructor> {
-    serialize(): string {
-        return this.definition === Array
-            ? "Array"
-            : registerConstructor(this.definition.name, this.definition)
+export class InstanceNode extends Node<InstanceNode> {
+    constructor(public readonly definition: constructor) {
+        const id = // TODO: also for other builtins
+            definition === Array
+                ? "Array"
+                : registerConstructor(definition.name, definition)
+        super(id)
     }
 
     intersect(other: InstanceNode, s: ComparisonState) {

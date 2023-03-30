@@ -14,7 +14,7 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
-import type { RuleSet } from "./branch.ts"
+import type { RuleNodes, RuleSet } from "./branch.ts"
 import { BranchNode } from "./branch.ts"
 import type { Compilation } from "./node.ts"
 import { ComparisonState, Node } from "./node.ts"
@@ -27,18 +27,18 @@ export type BranchesComparison = {
     distinctIntersections: BranchNode[]
 }
 
-type InstantiateBranch<branch extends BranchInput> = branch extends RuleSet
-    ? BranchNode<branch>
-    : branch
+export type TypeNode = UnionNode | BranchNode
 
-type BranchInput = RuleSet | BranchNode
+type BranchNodes<definition extends RuleSet[]> = {
+    [i in keyof definition]: BranchNode<definition[i]>
+}
 
-export class TypeNode<
-    definition extends BranchInput[] = BranchInput[]
+export class UnionNode<
+    definition extends RuleSet[] = RuleSet[]
 > extends Node<TypeNode> {
-    branches: readonly BranchNode[]
+    branches: BranchNodes<definition>
 
-    constructor(...definition: definition) {
+    constructor(public definition: definition) {
         const nodes: BranchNode[] = definition.map((branch) =>
             branch instanceof BranchNode ? branch : new BranchNode(branch)
         )
@@ -70,36 +70,20 @@ export class TypeNode<
                 }
             }
         }
-        const filteredNodes = nodes.filter((_, i) => uniquenessByIndex[i])
-        super(filteredNo)
+        const filteredNodes = nodes.filter(
+            (_, i) => uniquenessByIndex[i]
+        ) as BranchNodes<definition>
+        super("TODO")
         this.branches = filteredNodes
     }
 
-    serialize() {
-        return JSON.stringify("TODO")
-    }
-
-    get infer(): InstantiateBranch<definition[number]>["infer"] {
+    get infer(): this["branches"][number]["infer"] {
         return chainableNoOpProxy
     }
 
-    intersect(other: TypeNode, s: ComparisonState): TypeNode {
-        // If both nodes have only one branch, intersect them directly
-        if (this.branches.length === 1 && other.branches.length === 1) {
-            const intersection = this.branches[0].intersect(
-                other.branches[0],
-                s
-            )
-            return intersection.isDisjoint()
-                ? intersection
-                : new TypeNode(intersection)
-        }
-        return this.#branchwiseIntersection(other, s)
-    }
-
-    #branchwiseIntersection(other: TypeNode, s: ComparisonState): TypeNode {
+    intersect(other: TypeNode, s: ComparisonState) {
         const lBranches = this.branches
-        const rBranches = other.branches
+        const rBranches = other instanceof UnionNode ? other.branches : [other]
         // Branches that are determined to be a subtype of an opposite branch are
         // guaranteed to be a member of the final reduced intersection, so long as
         // each individual set of branches has been correctly reduced to exclude
@@ -167,10 +151,10 @@ export class TypeNode<
             candidates?.forEach((candidate) => finalBranches.push(candidate))
         }
         if (finalBranches.length === 0) {
-            return s.addDisjoint("union", this.branches, other.branches)
+            return s.addDisjoint("union", lBranches, rBranches)
         }
         // TODO: avoid revalidating here
-        return new TypeNode(...finalBranches)
+        return new UnionNode(finalBranches)
     }
 
     allows(value: unknown) {

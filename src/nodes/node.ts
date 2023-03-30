@@ -9,16 +9,12 @@ import type { DomainNode } from "./rules/domain.ts"
 import type { EqualityNode } from "./rules/equality.ts"
 import type { InstanceNode } from "./rules/instance.ts"
 import type { RangeNode } from "./rules/range.ts"
-import { TypeNode } from "./type.ts"
+import { UnionNode } from "./union.ts"
 
-export abstract class Node<subclass extends Node = any, definition = unknown> {
-    public readonly id: string
+export abstract class Node<subclass extends Node = any> {
+    abstract readonly definition: unknown
 
-    constructor(public readonly definition: definition) {
-        this.id = this.serialize()
-    }
-
-    abstract serialize(): string
+    constructor(public readonly id: string) {}
 
     abstract intersect(other: subclass, s: ComparisonState): subclass | Disjoint
 
@@ -99,13 +95,13 @@ export class ComparisonState {
 
 export class Disjoint<
     kind extends DisjointKind = DisjointKind
-> extends TypeNode<[]> {
+> extends UnionNode<[]> {
     constructor(
         public kind: kind,
         public l: DisjointKinds[kind]["l"],
         public r: DisjointKinds[kind]["r"]
     ) {
-        super()
+        super([])
     }
 
     toString() {
