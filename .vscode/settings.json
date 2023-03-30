@@ -1,6 +1,7 @@
 {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
+    "editor.snippetSuggestions": "bottom",
     "editor.codeActionsOnSave": ["source.fixAll.eslint"],
     "eslint.codeActionsOnSave.rules": [
         "import/order",

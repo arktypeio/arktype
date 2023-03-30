@@ -5,9 +5,8 @@ import { shell } from "../runtime/shell.ts"
 const versions: { [k: string]: string } = {
     // Disabled because of the changes made to accommodate StackBlitz. Reenable:
     // https://github.com/arktypeio/arktype/issues/659
-    // "4.8": "16"
-    // As of now, current is 4.9. Once 5.0 is supported in ts-morph, 4.9 should
-    // be added here so it is still tested.
+    // "4.8": "16",
+    "4.9": "17"
 }
 
 const rootJson = readPackageJson(fromPackageRoot())
