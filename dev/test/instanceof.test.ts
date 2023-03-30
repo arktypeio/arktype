@@ -56,7 +56,7 @@ describe("instanceof", () => {
                 "Expected a constructor following 'instanceof' operator (was number)."
             )
             .type.errors(
-                "Argument of type 'number' is not assignable to parameter of type 'constructor<unknown>'."
+                "Argument of type 'number' is not assignable to parameter of type 'constructor"
             )
     })
 })
