@@ -1,4 +1,4 @@
-import type { error } from "../../../../utils/generics.ts"
+import type { error, stringKeyOf } from "../../../../utils/generics.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { state, StaticState } from "../../reduce/static.ts"
 import type { Scanner } from "../scanner.ts"
@@ -28,4 +28,4 @@ export type parseOperand<
         : lookahead extends " "
         ? parseOperand<state.scanTo<s, unscanned>, $>
         : parseUnenclosed<s, $>
-    : error<writeMissingOperandMessage<s>>
+    : error<stringKeyOf<$>>

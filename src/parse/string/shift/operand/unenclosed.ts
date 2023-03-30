@@ -81,11 +81,13 @@ type tryResolve<
     : // bigint extends value
       //     ? error<writeMalformedNumericLiteralMessage<token, "bigint">>
       //     : token
-      error<
-          token extends ""
-              ? writeMissingOperandMessage<s>
-              : writeUnresolvableMessage<token>
-      >
+      error<possibleCompletions<token, $>>
+
+type possibleCompletions<token extends string, $> = {
+    [alias in keyof $]: alias extends `${token}${infer rest}`
+        ? `${token}${rest}`
+        : never
+}[keyof $]
 
 export const writeUnresolvableMessage = <token extends string>(
     token: token

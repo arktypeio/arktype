@@ -95,9 +95,9 @@ export type validateDefinition<def, $> = [def] extends [(...args: any[]) => any]
     ? writeBadDefinitionTypeMessage<
           objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
       >
-    : isUnknown<def> extends true
-    ? unknownDefinitionMessage
-    : [def] extends [readonly unknown[]]
+    : // : isUnknown<def> extends true
+    // ? unknownDefinitionMessage
+    [def] extends [readonly unknown[]]
     ? {
           [k in keyof def]: validateDefinition<def[k], $>
       }
