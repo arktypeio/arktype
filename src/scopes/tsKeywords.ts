@@ -23,21 +23,19 @@ export const tsKeywordsScope = scope(
     {
         any: "unknown" as Infer<any>,
         bigint: node({ domain: "bigint" }),
-        boolean: node({ domain: "boolean" }),
-        // TODO: value only
-        false: node({ domain: "boolean", value: false }),
+        boolean: node({ value: true }, { value: false }),
+        false: node({ value: false }),
         never: node(),
-        null: node({ domain: "null" }),
+        null: node({ value: null }),
         number: node({ domain: "number" }),
         object: node({ domain: "object" }),
         string: node({ domain: "string" }),
         symbol: node({ domain: "symbol" }),
         true: node({ value: true }),
-        //^?
         unknown:
             "bigint|boolean|null|number|object|string|symbol|undefined" as Infer<unknown>,
-        void: node({ domain: "undefined" }) as Infer<void>,
-        undefined: node({ domain: "undefined" })
+        void: node({ value: undefined }) as Infer<void>,
+        undefined: node({ value: undefined })
     },
     { name: "ts", standard: false }
 )

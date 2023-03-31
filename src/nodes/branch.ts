@@ -1,16 +1,12 @@
 import { writeImplicitNeverMessage } from "../parse/ast/intersection.ts"
+import type { Morph } from "../parse/ast/morph.ts"
+import type { Narrow } from "../parse/ast/narrow.ts"
 import { as } from "../parse/definition.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
-import type { Domain, domainOf, inferDomain } from "../utils/domains.ts"
+import type { inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type {
-    conform,
-    constructor,
-    evaluate,
-    mutable,
-    xor
-} from "../utils/generics.ts"
-import type { ComparisonState, Compilation } from "./node.ts"
+import type { constructor, mutable } from "../utils/generics.ts"
+import type { ComparisonState, Compilation, TypeNode } from "./node.ts"
 import { Node } from "./node.ts"
 import { DivisibilityNode } from "./rules/divisibility.ts"
 import { DomainNode } from "./rules/domain.ts"
@@ -18,37 +14,23 @@ import { EqualityNode } from "./rules/equality.ts"
 import { InstanceNode } from "./rules/instance.ts"
 import { MorphNode } from "./rules/morph.ts"
 import { NarrowNode } from "./rules/narrow.ts"
+import type { Props } from "./rules/props.ts"
 import { PropsNode } from "./rules/props.ts"
+import type { Range } from "./rules/range.ts"
 import { RangeNode } from "./rules/range.ts"
 import { RegexNode } from "./rules/regex.ts"
-import type { UnionNode } from "./union.ts"
-
-export type TypeNode = UnionNode | BranchNode
-// TODO: create central constructor
-
-const z = new BranchNode({})
-//    ^?
-
-export type validateRuleSet<ruleSet extends RuleSet> = {
-    readonly [k in keyof ruleSet]: k extends keyof RuleSet<
-        domainOfRuleSet<ruleSet>
-    >
-        ? ruleSet[k]
-        : `'${k & string}' is not allowed in ${ruleSet["domain"]} nodes`
-}
 
 export class BranchNode<
-    domain extends Domain = Domain,
     const definition extends RuleSet = RuleSet
 > extends Node<TypeNode> {
     definition: definition
     rules: RuleNodes
 
-    constructor(definition: { domain: domain } & definition) {
+    constructor(definition: definition) {
         super("TODO")
         const rules = {} as mutable<RuleNodes>
         let kind: RuleKind
-        for (kind in definition as RuleSet) {
+        for (kind in definition as RuleDefinitions) {
             rules[kind] = createRuleNode(kind, definition) as any
         }
         this.definition = definition as definition
@@ -57,7 +39,7 @@ export class BranchNode<
 
     declare [as]: this["infer"]
 
-    get infer(): inferDomain<domainOfRuleSet<this["definition"]>> {
+    get infer(): inferRuleSet<definition> {
         return chainableNoOpProxy
     }
 
@@ -124,59 +106,6 @@ export class BranchNode<
     // }
 }
 
-type domainOfRuleSet<ruleSet extends RuleSet> = ruleSet["domain"] extends Domain
-    ? ruleSet["domain"]
-    : domainOf<ruleSet["value"]>
-
-export type RuleSet<domain extends Domain = Domain> = {
-    [k in keyof RuleNodes<domain>]: RuleNodes<domain>[k] extends
-        | {
-              definition: infer definition
-          }
-        | undefined
-        ? definition
-        : never
-}
-
-export type RuleNodes<domain extends Domain = Domain> = Domain extends domain
-    ? evaluate<UniversalRules<domain> & CustomRules>
-    : RulesByDomain[domain]
-
-export type RuleKind = evaluate<keyof RuleNodes>
-
-// TODO: evaluate not working?
-type RulesByDomain = {
-    object: defineCustomRules<"object", "props" | "range" | "instance">
-    string: defineCustomRules<"string", "regex" | "range">
-    number: defineCustomRules<"number", "divisor" | "range">
-    boolean: UniversalRules<"boolean">
-    bigint: UniversalRules<"bigint">
-    symbol: UniversalRules<"symbol">
-    undefined: UniversalRules<"undefined">
-    null: UniversalRules<"null">
-}
-
-type defineCustomRules<
-    domain extends Domain,
-    ruleKeys extends keyof CustomRules
-> = evaluate<UniversalRules<domain> & Pick<CustomRules, ruleKeys>>
-
-type CustomRules = {
-    readonly regex?: RegexNode
-    readonly divisor?: DivisibilityNode
-    readonly range?: RangeNode
-    readonly props?: PropsNode
-    readonly instance?: InstanceNode
-}
-
-type UniversalRules<domain extends Domain> = xor<
-    { readonly domain: DomainNode<domain> },
-    { readonly value: EqualityNode<domain> }
-> & {
-    readonly narrow?: NarrowNode<domain>
-    readonly morphs?: MorphNode
-}
-
 export const ruleNodeKinds = {
     domain: DomainNode,
     value: EqualityNode,
@@ -187,11 +116,67 @@ export const ruleNodeKinds = {
     props: PropsNode,
     narrow: NarrowNode,
     morphs: MorphNode
-} as const satisfies Record<RuleKind, constructor<Node>>
+} as const
+
+type inferRuleSet<rules extends RuleSet> = rules extends Constraints
+    ? inferDomain<rules["domain"]>
+    : rules extends ExactValue<infer value>
+    ? value
+    : never
+
+export type RuleSet = ExactValue | Constraints
+
+type ExactValue<value = unknown> = {
+    value: value
+    morphs?: Morph[]
+}
+
+type Constraints = {
+    narrows?: Narrow[]
+    morphs?: Morph[]
+} & (
+    | {
+          domain: "object"
+          instance?: constructor
+          props?: Props
+      }
+    | {
+          domain: "object"
+          instance: Array<any>
+          props?: Props
+          range?: Range
+      }
+    | {
+          domain: "string"
+          regex?: string[]
+          range?: Range
+      }
+    | {
+          domain: "number"
+          divisor?: number
+          range?: Range
+      }
+    | { domain: "bigint" }
+    | { domain: "symbol" }
+)
+
+type RuleNodeKinds = typeof ruleNodeKinds
+
+type RuleKind = keyof RuleNodeKinds
+
+type RuleNodes = {
+    [k in RuleKind]: RuleNodeKinds[k] extends constructor<infer node>
+        ? node
+        : never
+}
+
+type RuleDefinitions = {
+    [k in RuleKind]: RuleNodes[k] extends { definition: infer def }
+        ? def
+        : never
+}
 
 const createRuleNode = <kind extends RuleKind>(
     kind: kind,
-    def: RuleSet[kind]
+    def: RuleDefinitions[kind]
 ) => new ruleNodeKinds[kind](def as never) as RuleNodes[kind]
-
-export type RuleNodeKinds = typeof ruleNodeKinds

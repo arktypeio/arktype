@@ -2,9 +2,9 @@ import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
 import type { Scope } from "../scopes/scope.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
-import type { conform, extend } from "../utils/generics.ts"
+import type { extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import type { RuleSet, validateRuleSet } from "./branch.ts"
+import type { RuleSet } from "./branch.ts"
 import { BranchNode } from "./branch.ts"
 import type { DomainNode } from "./rules/domain.ts"
 import type { EqualityNode } from "./rules/equality.ts"
@@ -12,18 +12,16 @@ import type { InstanceNode } from "./rules/instance.ts"
 import type { RangeNode } from "./rules/range.ts"
 import { UnionNode } from "./union.ts"
 
-type validateBranches<ruleSets extends readonly RuleSet[]> = {
-    [i in keyof ruleSets]: conform<ruleSets[i], validateRuleSet<ruleSets[i]>>
-}
-
 export const node = <const branches extends readonly RuleSet[]>(
-    ...branches: validateBranches<branches>
+    ...branches: branches
 ) =>
     (branches.length === 1
         ? new BranchNode(branches[0])
         : new UnionNode(branches)) as branches["length"] extends 1
         ? BranchNode<branches[0]>
         : UnionNode<branches>
+
+export type TypeNode = UnionNode | BranchNode
 
 export abstract class Node<subclass extends Node = any> {
     abstract readonly definition: unknown

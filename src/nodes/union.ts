@@ -15,9 +15,9 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
-import type { RuleNodes, RuleSet, TypeNode, validateRuleSet } from "./branch.ts"
+import type { RuleSet } from "./branch.ts"
 import { BranchNode } from "./branch.ts"
-import type { Compilation } from "./node.ts"
+import type { Compilation, TypeNode } from "./node.ts"
 import { ComparisonState, Node } from "./node.ts"
 import { mappedKeys } from "./rules/props.ts"
 
