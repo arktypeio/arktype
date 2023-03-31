@@ -19,7 +19,7 @@ export const parseConfigTuple: PostfixParser<":"> = (def, ctx) => ({
 })
 
 export type validateConfigTuple<def extends TupleExpression, $> = readonly [
-    _: validateDefinition<def[0], $>,
-    _: ":",
-    _: TypeOptions
+    validateDefinition<def[0], $>,
+    ":",
+    TypeOptions
 ]

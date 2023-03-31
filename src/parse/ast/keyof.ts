@@ -35,9 +35,9 @@ type KeyDomain = domainOf<KeyType>
 type KeyBranch = { [domain in KeyDomain]: BranchNode<domain> }[KeyDomain]
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
-    const resolution = ctx.type.scope.resolveNode(parseDefinition(def[1], ctx))
-    const predicateKeys = keysOf(resolution).map((domain) =>
-        keysOfPredicate(domain, resolution[domain]!)
+    const node = parseDefinition(def[1], ctx)
+    const predicateKeys = keysOf(node).map((domain) =>
+        keysOfPredicate(domain, node[domain]!)
     )
     const sharedKeys = sharedKeysOf(predicateKeys)
 

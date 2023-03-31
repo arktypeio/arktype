@@ -1,5 +1,6 @@
 import type { TypeNode } from "../../nodes/node.ts"
 import { node } from "../../nodes/node.ts"
+import type { Props } from "../../nodes/rules/props.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type {
@@ -35,23 +36,26 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     if (isIndexZeroExpression(def)) {
         return prefixParsers[def[0]](def as never, ctx)
     }
-    const props: Record<number | "length", Prop> = {
+    const props: Props = {
         //  length is created as a prerequisite prop, ensuring if it is invalid,
         //  no other props will be checked, which is usually desirable for tuple
         //  definitions.
-        length: ["!", { number: { value: def.length } }]
-    }
-    for (let i = 0; i < def.length; i++) {
-        ctx.path.push(i)
-        props[i] = parseDefinition(def[i], ctx)
-        ctx.path.pop()
-    }
-    return {
-        object: {
-            instance: Array,
-            props
+        prerequisite: {
+            length: {
+                value: def.length
+            }
         }
     }
+    if (def.length > 0) {
+        props.required = {}
+        for (let i = 0; i < def.length; i++) {
+            ctx.path.push(i)
+            props.required[i] = parseDefinition(def[i], ctx)
+            ctx.path.pop()
+        }
+    }
+
+    return node({ domain: "object", instance: Array, props })
 }
 
 export type validateTupleExpression<

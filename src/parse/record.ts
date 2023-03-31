@@ -1,6 +1,6 @@
-import { BranchNode } from "../nodes/branch.ts"
+import type { BranchNode } from "../nodes/branch.ts"
+import { node } from "../nodes/node.ts"
 import type { Props } from "../nodes/rules/props.ts"
-import { PropsNode } from "../nodes/rules/props.ts"
 import type { Dict, evaluate } from "../utils/generics.ts"
 import type { inferDefinition, ParseContext } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"
@@ -33,7 +33,7 @@ export const parseRecord = (def: Dict, ctx: ParseContext): BranchNode => {
             props.required[keyName] = propNode
         }
     }
-    return new BranchNode({ domain: "object", props: new PropsNode(props) })
+    return node({ domain: "object", props })
 }
 
 type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`

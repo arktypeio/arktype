@@ -1,29 +1,20 @@
 import type { TraversalState } from "../../nodes/traverse.ts"
 import type { asIn } from "../../scopes/type.ts"
 import type { Domain, inferDomain } from "../../utils/domains.ts"
+import { throwParseError } from "../../utils/errors.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { PostfixParser, TupleExpression } from "./tuple.ts"
 
 export const parseNarrowTuple: PostfixParser<"=>"> = (def, ctx) => {
-    const inputNode = parseDefinition(def[0], ctx)
-    const resolution = ctx.type.scope.resolveNode(inputNode)
-    const hasConfig = isConfigNode(resolution)
-    const typeNode = hasConfig ? resolution.node : resolution
-    const result = rootIntersection(
-        inputNode,
-        distributeFunctionToNode(
-            def[2] as distributable<Narrow>,
-            typeNode,
-            ctx,
-            "narrow"
-        ),
-        ctx.type
-    )
-    return hasConfig
-        ? { config: resolution.config, node: result as DomainsJson }
-        : result
+    if (typeof def[2] !== "function") {
+        return throwParseError(writeMalformedNarrowExpressionMessage(def[2]))
+    }
+    return parseDefinition(def[0], ctx).intersect({ narrow: def[2] })
 }
+
+export const writeMalformedNarrowExpressionMessage = (value: unknown) =>
+    `Narrow expression requires a function following '=>' (was ${typeof value})`
 
 export type Narrow<data = any> = (data: data, state: TraversalState) => boolean
 
@@ -35,7 +26,7 @@ export type NarrowPredicate<data = any, narrowed extends data = data> = (
 export type validateNarrowTuple<def extends TupleExpression, $> = readonly [
     validateDefinition<def[0], $>,
     "=>",
-    distributable<Narrow<asIn<inferDefinition<def[0], $>>>>
+    Narrow<asIn<inferDefinition<def[0], $>>>
 ]
 
 export type inferNarrow<inDef, narrow, $> = narrow extends {

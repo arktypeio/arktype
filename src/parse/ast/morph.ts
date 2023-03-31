@@ -1,14 +1,7 @@
-import type { MetaBranch, RuleNodes } from "../../nodes/branch.ts"
-import { isTransformationBranch } from "../../nodes/branch.ts"
-import type { DomainsJson } from "../../nodes/node.ts"
 import type { Problem } from "../../nodes/problems.ts"
 import type { CheckResult, TraversalState } from "../../nodes/traverse.ts"
 import type { asIn, asOut } from "../../scopes/type.ts"
-import type { Domain } from "../../utils/domains.ts"
-import { throwInternalError, throwParseError } from "../../utils/errors.ts"
-import type { mutable } from "../../utils/generics.ts"
-import { isArray } from "../../utils/objectKinds.ts"
-import { stringify } from "../../utils/serialize.ts"
+import { throwParseError } from "../../utils/errors.ts"
 import type { inferDefinition, validateDefinition } from "../definition.ts"
 import { parseDefinition } from "../definition.ts"
 import type { PostfixParser, TupleExpression } from "./tuple.ts"
@@ -18,44 +11,13 @@ export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
         return throwParseError(writeMalformedMorphExpressionMessage(def[2]))
     }
     const node = parseDefinition(def[0], ctx)
-    const resolution = ctx.type.scope.resolveTypeNode(node)
-    const morph = def[2] as Morph
     ctx.type.includesMorph = true
-    let domain: Domain
-    const result: mutable<DomainsJson> = {}
-    for (domain in resolution) {
-        const predicate = resolution[domain]
-        if (predicate === true) {
-            result[domain] = { rules: {}, morph }
-        } else if (typeof predicate === "object") {
-            result[domain] = isArray(predicate)
-                ? predicate.map((branch) => applyMorph(branch, morph))
-                : applyMorph(predicate, morph)
-        } else {
-            throwInternalError(
-                `Unexpected predicate value for domain '${domain}': ${stringify(
-                    predicate
-                )}`
-            )
-        }
-    }
-    return result
-}
 
-const applyMorph = (branch: RuleNodes, morph: Morph): MetaBranch =>
-    isTransformationBranch(branch)
-        ? {
-              ...branch,
-              morph: branch.morph
-                  ? Array.isArray(branch.morph)
-                      ? [...branch.morph, morph]
-                      : [branch.morph, morph]
-                  : morph
-          }
-        : {
-              rules: branch,
-              morph
-          }
+    return {
+        ...node,
+        morphs: node.morphs ? [...node.morphs, def[2]] : def[2]
+    }
+}
 
 export type validateMorphTuple<def extends TupleExpression, $> = readonly [
     validateDefinition<def[0], $>,

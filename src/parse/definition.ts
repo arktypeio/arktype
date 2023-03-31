@@ -1,6 +1,5 @@
-import type { TypeNode } from "../nodes/branch.ts"
 import { BranchNode } from "../nodes/branch.ts"
-import type { Node } from "../nodes/node.ts"
+import type { TypeNode } from "../nodes/node.ts"
 import type { Type } from "../scopes/type.ts"
 import { isType } from "../scopes/type.ts"
 import type { Primitive } from "../utils/domains.ts"
