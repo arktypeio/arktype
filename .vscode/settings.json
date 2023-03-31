@@ -1,8 +1,9 @@
 {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
-    "editor.snippetSuggestions": "bottom",
+    "editor.snippetSuggestions": "top",
     "editor.codeActionsOnSave": ["source.fixAll.eslint"],
+    "typescript.preferences.autoImportFileExcludePatterns": ["/node_modules"],
     "eslint.codeActionsOnSave.rules": [
         "import/order",
         "sort-imports",
