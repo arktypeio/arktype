@@ -23,6 +23,7 @@ export const tsKeywordsScope = scope(
     {
         any: "unknown" as Infer<any>,
         bigint: node({ domain: "bigint" }),
+        // TODO: exact?
         boolean: node({ value: true }, { value: false }),
         false: node({ value: false }),
         never: node(),
