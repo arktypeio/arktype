@@ -1,4 +1,3 @@
-import type { InferredObjectKinds } from "../utils/objectKinds.ts"
 import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
 import type { Space } from "./scope.ts"
 import { rootScope, scope } from "./scope.ts"
@@ -66,6 +65,16 @@ export type PrecompiledDefaults = {
     parsedInteger: (In: string) => number
     parsedDate: (In: string) => Date
     // jsObjects
-} & InferredObjectKinds
+    Function: (...args: any[]) => unknown
+    Array: object
+    Date: object
+    Error: object
+    Map: object
+    RegExp: object
+    Set: object
+    WeakMap: object
+    WeakSet: object
+    Promise: object
+}
 
 export const type: TypeParser<PrecompiledDefaults> = arkScope.type

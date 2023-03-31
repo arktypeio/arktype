@@ -10,7 +10,6 @@ import type {
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { defer, evaluate } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
-import type { Expressions } from "./expressions.ts"
 import type { Scope } from "./scope.ts"
 
 export type TypeParser<$> = {
@@ -19,10 +18,6 @@ export type TypeParser<$> = {
     <def>(def: validateDefinition<def, $>): parseType<def, $>
 
     <def>(def: validateDefinition<def, $>, opts: TypeOptions): parseType<def, $>
-} & TypeParserProps<$>
-
-export type TypeParserProps<$> = {
-    from: Expressions<$>["node"]
 }
 
 // Reuse the validation result to determine if the type will be successfully created.

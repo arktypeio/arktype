@@ -1,4 +1,5 @@
 import type { TypeNode } from "../../nodes/node.ts"
+import { node } from "../../nodes/node.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type {
@@ -27,7 +28,7 @@ import type { inferNarrow, validateNarrowTuple } from "./narrow.ts"
 import { parseNarrowTuple } from "./narrow.ts"
 import type { inferUnion } from "./union.ts"
 
-export const parseTuple = (def: List, ctx: ParseContext): Node => {
+export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     if (isIndexOneExpression(def)) {
         return indexOneParsers[def[1]](def as never, ctx)
     }
@@ -197,10 +198,106 @@ const prefixParsers: {
                 `Expected a constructor following 'instanceof' operator (was ${typeof def[1]}).`
             )
         }
-        return { object: { instance: def[1] as constructor } }
+        return node({ domain: "object", instance: def[1] as constructor })
     },
-    "===": (def) => ({ [domainOf(def[1])]: { value: def[1] } })
+    "===": (def) => node({ value: def[1] })
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>
     prefixParsers[def[0] as IndexZeroOperator] !== undefined
+
+/**
+ * @operator {@link intersection | &}
+ * @docgenTable
+ * @string "L&R"
+ * @tuple  [L, "&", R]
+ * @helper  intersection(L,R)
+ * @example string
+ *      const intersection = type("/@arktype\.io$/ & email")
+ * @example tuple
+ *      const tupleIntersection = type(["/@arktype\.io$/", "&", "email"])
+ * @example helper
+ *      const helperIntersection = intersection("/@arktype\.io$/","email")
+ */
+
+/**
+ * @operator {@link union | |}
+ * @docgenTable
+ * @string "L|R"
+ * @tuple [L, "|" , R]
+ * @helper union(L,R)
+ * @example string
+ *      const union = type("string|number")
+ * @example tuple
+ *      const tupleUnion = type(["string", "|", "number"])
+ * @example helper
+ *      const helperUnion = union("string", "number")
+ */
+
+/**
+ * @operator {@link arrayOf}
+ * @docgenTable
+ * @string "T[]"
+ * @tuple [T, "[]"]
+ * @helper arrayOf(T)
+ * @example string
+ *      const numberArray = type("number[]")
+ * @example tuple
+ *      const tupleArray = type(["number", "[]"])
+ * @example helper
+ *      const helperArray = arrayOf("number")
+ */
+
+/**
+ * @operator {@link keyOf}
+ * @docgenTable
+ * @tuple "["keyOf", T]"
+ * @helper  keyOf(T)
+ * @example tuple
+ *      const tupleKeyOf = type(["keyOf", {a:"string"}])
+ * @example helper
+ *      const helperKeyOf = keyOf({a:"string"})
+ */
+
+/**
+ * @operator {@link instanceOf}
+ * @docgenTable
+ * @tuple ["instanceOf", T]
+ * @helper instanceOf(T)
+ * @example tuple
+ *      const tupleInstanceOf = type(["instanceOf", Date])
+ * @example helper
+ *      const helperInstanceOf = instanceOf(Date)
+ */
+
+/**
+ * @operator {@link valueOf | ===}
+ * @docgenTable
+ * @tuple ["===", T]
+ * @helper valueOf(T)
+ * @example tuple
+ *      const tupleValueOf = type(["valueOf", {a:"string"}])
+ * @example helper
+ *      const helperValueOf = valueOf({a:"string"})
+ */
+
+/**
+ * @operator {@link narrow | =>}
+ * @docgenTable
+ * @tuple ["type", "=>" , condition]
+ * @example tuple
+ *      const narrow = type( ["number", "=>" , (n) => n % 2 === 0])
+ * @example
+ *      const isEven = (x: unknown): x is number => x % 2 === 0
+ */
+
+/**
+ * @operator {@link morph | |>}
+ * @docgenTable
+ * @tuple [inputType, "|>", (data) => output]
+ * @helper morph(inputType, (data) => output)
+ * @example tuple
+ *      const tupleMorph = type( ["string", "|>" , (data) => `morphed ${data}`])
+ * @example helper
+ *      const helperMorph = morph("string", (data) => `morphed ${data}`)
+ */

@@ -4,7 +4,6 @@ import type { ProblemCode, ProblemOptionsByCode } from "../nodes/problems.ts"
 import { CheckResult, TraversalState } from "../nodes/traverse.ts"
 import type { ConfigTuple } from "../parse/ast/config.ts"
 import type {
-    Infer,
     inferDefinition,
     ParseContext,
     validateDefinition
@@ -21,12 +20,10 @@ import type {
     List,
     nominal
 } from "../utils/generics.ts"
-import { hasKeys } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { stringifyUnion } from "../utils/unionToTuple.ts"
 import type { PrecompiledDefaults } from "./ark.ts"
 import { Cache, FreezingCache } from "./cache.ts"
-import type { Expressions } from "./expressions.ts"
 import type {
     AnonymousTypeName,
     KeyCheckKind,
@@ -329,38 +326,6 @@ export class Scope<context extends ScopeContext = any> {
         return t
     }
 
-    expressions: Expressions<resolutions<context>> = {
-        intersection: (l, r, opts) =>
-            this.type([l, "&", r] as Infer<unknown>, opts),
-        union: (l, r, opts) => this.type([l, "|", r] as Infer<unknown>, opts),
-        arrayOf: (def, opts) => this.type([def, "[]"] as Infer<unknown>, opts),
-        keyOf: (def, opts) => this.type(["keyof", def] as Infer<unknown>, opts),
-        node: (def, opts) => this.type(["node", def] as Infer<unknown>, opts),
-        instanceOf: (def, opts) =>
-            this.type(["instanceof", def] as Infer<unknown>, opts),
-        valueOf: (def, opts) => this.type(["===", def] as Infer<unknown>, opts),
-        narrow: (def, fn, opts) =>
-            this.type([def, "=>", fn] as Infer<unknown>, opts),
-        morph: (def, fn, opts) =>
-            this.type([def, "|>", fn] as Infer<unknown>, opts)
-    } as Expressions<resolutions<context>>
-
-    intersection = this.expressions.intersection
-
-    union = this.expressions.union
-
-    arrayOf = this.expressions.arrayOf
-
-    keyOf = this.expressions.keyOf
-
-    valueOf = this.expressions.valueOf
-
-    instanceOf = this.expressions.instanceOf
-
-    narrow = this.expressions.narrow
-
-    morph = this.expressions.morph
-
     type: TypeParser<resolutions<context>> = Object.assign(
         (def: unknown, config: TypeOptions = {}) => {
             const t = initializeType("λtype", def, config, this)
@@ -388,8 +353,7 @@ export class Scope<context extends ScopeContext = any> {
                 return result
             }
             return t
-        },
-        { from: this.expressions.node }
+        }
     ) as TypeParser<resolutions<context>>
 
     isResolvable(name: string) {
