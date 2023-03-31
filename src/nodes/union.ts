@@ -2,7 +2,7 @@ import { as } from "../parse/definition.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import type { conform, evaluate, keySet } from "../utils/generics.ts"
+import type { evaluate, keySet } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
