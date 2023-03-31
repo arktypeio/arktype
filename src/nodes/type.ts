@@ -19,7 +19,6 @@ import type { RulesDefinition, validateRules } from "./branch.ts"
 import { BranchNode } from "./branch.ts"
 import type { Compilation } from "./node.ts"
 import { ComparisonState, Node } from "./node.ts"
-import { mappedKeys } from "./rules/props.ts"
 
 export const node = <branches extends RulesDefinition[]>(
     ...branches: validateBranches<branches>
@@ -28,6 +27,8 @@ export const node = <branches extends RulesDefinition[]>(
 type validateBranches<branches extends RulesDefinition[]> = {
     [i in keyof branches]: conform<branches[i], validateRules<branches[i]>>
 }
+
+export type TypeNodeDefinition = readonly RulesDefinition[]
 
 export class TypeNode<
     branches extends BranchNode[] = BranchNode[]
@@ -377,7 +378,7 @@ const calculateDiscriminants = (
             const intersectionState = new ComparisonState()
             branches[lIndex].intersect(branches[rIndex], intersectionState)
             for (const path in intersectionState.disjointsByPath) {
-                if (path.includes(mappedKeys.index)) {
+                if (path.includes("mapped")) {
                     // containers could be empty and therefore their elements cannot be used to discriminate
                     // allowing this via a special case where both are length >0 tracked here:
                     // https://github.com/arktypeio/arktype/issues/593

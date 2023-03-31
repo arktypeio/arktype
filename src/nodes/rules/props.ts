@@ -1,40 +1,55 @@
 import type { ComparisonState, Compilation } from "../node.ts"
 import { Node } from "../node.ts"
+import type { TypeNode, TypeNodeDefinition } from "../type.ts"
 
-export type PropsRule = {
-    required?: NamedPropsNodes
-    optional?: NamedPropsNodes
-    prerequisite?: NamedPropsNodes
-    index?: IndexPropsNodes
+export type PropsDefinition = {
+    required?: NamedPropsDefinition
+    optional?: NamedPropsDefinition
+    prerequisite?: NamedPropsDefinition
+    index?: IndexPropDefinition[]
 }
 
-type unwrapChildren<rule> = rule extends Node
-    ? unwrapChildren<rule["tree"]>
-    : { [k in keyof rule]: unwrapChildren<rule[k]> }
+type NamedPropsDefinition = Record<string, TypeNodeDefinition>
 
-type PropsDefinition = unwrapChildren<PropsRule>
+type IndexPropDefinition = [
+    keyType: TypeNodeDefinition,
+    valueType: TypeNodeDefinition
+]
 
-type NamedPropsNodes = Record<string, Node>
+type PropKind = "required" | "optional" | "prerequisite"
 
-export type IndexPropsNodes = [keyType: Node, valueType: Node][]
+type NamedPropNode = {
+    kind: PropKind
+    type: TypeNode
+}
+
+type NamedPropNodes = Record<string, NamedPropNode>
+
+type IndexPropNode = [keyType: TypeNode, valueType: TypeNode]
 
 export class PropsNode extends Node {
-    constructor(public readonly tree: PropsRule) {
-        super(JSON.stringify(tree))
+    constructor(
+        public named: NamedPropNodes,
+        public indexed?: IndexPropNode[]
+    ) {
+        super(JSON.stringify(named))
     }
 
     intersect(other: PropsNode, s: ComparisonState) {
-        const named: PropsDefinition = {}
-        for (const k in this.tree) {
-            let prop: Prop
-            if (k in other.tree) {
-                const type = this.tree[k].type.intersect(other.tree[k].type, s)
+        const named: NamedPropNodes = {}
+        for (const k in this.named) {
+            let prop: NamedPropNode
+            if (k in other.named) {
+                const type = this.named[k].type.intersect(
+                    other.named[k].type,
+                    s
+                )
                 const kind =
-                    this.tree[k].kind === "prerequisite" ||
-                    other.tree[k].kind === "prerequisite"
+                    this.named[k].kind === "prerequisite" ||
+                    other.named[k].kind === "prerequisite"
                         ? "prerequisite"
-                        : this.tree[k].kind === "required" ||
-                          other.tree[k].kind === "required"
+                        : this.named[k].kind === "required" ||
+                          other.named[k].kind === "required"
                         ? "required"
                         : "optional"
                 if (type.isDisjoint() && kind !== "optional") {
@@ -45,7 +60,7 @@ export class PropsNode extends Node {
                     kind
                 }
             } else {
-                prop = this.tree[k]
+                prop = this.named[k]
             }
             if (other.indexed) {
                 for (const [indexK, indexV] of other.indexed) {
@@ -55,8 +70,8 @@ export class PropsNode extends Node {
                 }
             }
         }
-        for (const name in other.tree) {
-            named[name] ??= other.tree[name]
+        for (const name in other.named) {
+            named[name] ??= other.named[name]
             if (this.indexed) {
                 for (const [indexK, indexV] of this.indexed) {
                     if (indexK.allows(name)) {
@@ -78,7 +93,7 @@ export class PropsNode extends Node {
         if (!other.indexed) {
             return this.indexed
         }
-        const intersection: IndexPropsNodes = []
+        const intersection: IndexPropNode[] = []
         for (const thisEntry of this.indexed) {
             for (const otherEntry of other.indexed) {
                 if (thisEntry[0] === otherEntry[0]) {
@@ -108,24 +123,13 @@ export class PropsNode extends Node {
     #compileLooseProps(c: Compilation) {
         const propChecks: string[] = []
         // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
-        for (const k in this.tree) {
-            const prop = this.tree[k]
-            if (k === mappedKeys.index) {
-                propChecks.push(c.arrayOf(prop.type))
-            } else {
-                c.path.push(k)
-                propChecks.push(prop.type.compile(c))
-                c.path.pop()
-            }
+        for (const k in this.named) {
+            const prop = this.named[k]
+
+            c.path.push(k)
+            propChecks.push(prop.type.compile(c))
+            c.path.pop()
         }
         return propChecks.length ? c.mergeChecks(propChecks) : "true"
     }
 }
-
-export const mappedKeys = {
-    index: "[index]"
-} as const
-
-export type MappedKeys = typeof mappedKeys
-
-export type MappedPropKey = MappedKeys[keyof MappedKeys]
