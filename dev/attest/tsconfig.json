@@ -1,0 +1,12 @@
+{
+    "extends": "../configs/tsconfig.json",
+    "compilerOptions": {
+        "target": "ESNext",
+        "paths": {
+            "get-current-line": [
+                "./node_modules/get-current-line/compiled-types/index.d.ts"
+            ]
+        }
+    },
+    "exclude": ["node_modules", "dist"]
+}

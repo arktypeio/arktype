@@ -1,6 +1,6 @@
 import { performance } from "node:perf_hooks"
-import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.ts"
-import { caller } from "../../../runtime/main.ts"
+import { chainableNoOpProxy } from "arktype/internal/utils/chainableNoOpProxy.js"
+import { caller } from "../runtime/main.ts"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
 import type { BenchableFunction, BenchContext, UntilOptions } from "./bench.ts"
 import { unhandledExceptionMessages } from "./bench.ts"

@@ -1,6 +1,6 @@
 import { mkdirSync, rmSync } from "node:fs"
-import { writeJson } from "../../../runtime/main.ts"
 import { getAttestConfig } from "../config.ts"
+import { writeJson } from "../runtime/main.ts"
 import { writeCachedInlineSnapshotUpdates } from "../writeSnapshot.ts"
 import { getAssertionsByFile } from "./analysis.ts"
 

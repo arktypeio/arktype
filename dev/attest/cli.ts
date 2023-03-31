@@ -6,7 +6,7 @@ import {
     fromPackageRoot,
     shell,
     walkPaths
-} from "../runtime/main.ts"
+} from "../attest/src/runtime/main.ts"
 import { cacheAssertions, cleanupAssertions } from "./main.ts"
 
 const args: string[] =

@@ -1,10 +1,10 @@
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
-import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.ts"
-import { snapshot, stringify } from "../../../../src/utils/serialize.ts"
-import { caller } from "../../../runtime/main.ts"
+import { chainableNoOpProxy } from "arktype/internal/utils/chainableNoOpProxy.js"
+import { snapshot, stringify } from "arktype/internal/utils/serialize.js"
 import { assertEquals } from "../assertions.ts"
 import type { AssertionContext } from "../attest.ts"
+import { caller } from "../runtime/main.ts"
 import type { SnapshotArgs } from "../snapshot.ts"
 import {
     getSnapshotByName,

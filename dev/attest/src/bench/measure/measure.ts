@@ -1,4 +1,4 @@
-import { isKeyOf } from "../../../../../src/utils/generics.ts"
+import { isKeyOf } from "arktype/internal/utils/generics.js"
 import type { StatName } from "../call.ts"
 import type { TimeUnit } from "./time.ts"
 import { stringifyTimeMeasure, TIME_UNIT_RATIOS } from "./time.ts"

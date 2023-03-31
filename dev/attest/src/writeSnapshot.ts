@@ -2,10 +2,10 @@ import { randomUUID } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
 import { basename, join } from "node:path"
 import type { Node, ts } from "ts-morph"
-import { readJson, shell, writeJson } from "../../runtime/main.ts"
 import type { BenchData } from "./bench/history.ts"
 import { updateIsBench, upsertBenchResult } from "./bench/history.ts"
 import { getAttestConfig } from "./config.ts"
+import { readJson, shell, writeJson } from "./runtime/main.ts"
 import type { QueuedUpdate, SnapshotArgs } from "./snapshot.ts"
 import {
     queueInlineSnapshotWriteOnProcessExit,

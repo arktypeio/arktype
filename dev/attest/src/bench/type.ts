@@ -1,7 +1,7 @@
 import type { Node, Project, SourceFile, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { caller } from "../../../runtime/main.ts"
 import { getAttestConfig } from "../config.ts"
+import { caller } from "../runtime/main.ts"
 import { findCallExpressionAncestor } from "../snapshot.ts"
 import {
     forceCreateTsMorphProject,
