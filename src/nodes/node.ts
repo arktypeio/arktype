@@ -2,9 +2,9 @@ import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
 import type { Scope } from "../scopes/scope.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
-import type { extend } from "../utils/generics.ts"
+import type { conform, extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import type { RuleSet } from "./branch.ts"
+import type { RuleSet, validateRules } from "./branch.ts"
 import { BranchNode } from "./branch.ts"
 import type { DomainNode } from "./rules/domain.ts"
 import type { EqualityNode } from "./rules/equality.ts"
@@ -12,14 +12,18 @@ import type { InstanceNode } from "./rules/instance.ts"
 import type { RangeNode } from "./rules/range.ts"
 import { UnionNode } from "./union.ts"
 
-export const node = <const branches extends readonly RuleSet[]>(
-    ...branches: branches
+export const node = <branches extends RuleSet[]>(
+    ...branches: validateBranches<branches>
 ) =>
     (branches.length === 1
-        ? new BranchNode(branches[0])
+        ? new BranchNode(branches[0] as any)
         : new UnionNode(branches)) as branches["length"] extends 1
         ? BranchNode<branches[0]>
         : UnionNode<branches>
+
+type validateBranches<branches extends RuleSet[]> = {
+    [i in keyof branches]: conform<branches[i], validateRules<branches[i]>>
+}
 
 export type TypeNode = UnionNode | BranchNode
 

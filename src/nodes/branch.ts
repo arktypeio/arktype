@@ -5,7 +5,7 @@ import { as } from "../parse/definition.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type { constructor, mutable } from "../utils/generics.ts"
+import type { conform, constructor, mutable } from "../utils/generics.ts"
 import type { ComparisonState, Compilation, TypeNode } from "./node.ts"
 import { Node } from "./node.ts"
 import { DivisibilityNode } from "./rules/divisibility.ts"
@@ -123,6 +123,14 @@ type inferRuleSet<rules extends RuleSet> = rules extends Constraints
     : rules extends ExactValue<infer value>
     ? value
     : never
+
+type ruleBranch<rules extends RuleSet> = rules extends Constraints
+    ? Constraints & { domain: rules["domain"] }
+    : ExactValue
+
+export type validateRules<rules extends RuleSet> = {
+    [k in keyof rules]: k extends keyof ruleBranch<rules> ? rules[k] : never
+}
 
 export type RuleSet = ExactValue | Constraints
 
