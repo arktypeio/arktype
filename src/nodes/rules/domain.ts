@@ -5,8 +5,8 @@ import { Node } from "../node.ts"
 export class DomainNode<domain extends Domain = any> extends Node<
     DomainNode<domain>
 > {
-    constructor(public readonly definition: domain) {
-        super(definition)
+    constructor(public readonly children: domain) {
+        super(children)
     }
 
     intersect(
@@ -17,10 +17,10 @@ export class DomainNode<domain extends Domain = any> extends Node<
     }
 
     compile(c: Compilation) {
-        return this.definition === "object"
+        return this.children === "object"
             ? `(typeof ${c.data} === "object" && ${c.data} !== null) || typeof ${c.data} === "function"`
-            : this.definition === "null" || this.definition === "undefined"
-            ? `${c.data} === ${this.definition}`
-            : `typeof ${c.data} === "${this.definition}"`
+            : this.children === "null" || this.children === "undefined"
+            ? `${c.data} === ${this.children}`
+            : `typeof ${c.data} === "${this.children}"`
     }
 }

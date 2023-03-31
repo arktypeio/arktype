@@ -4,13 +4,13 @@ import type { Compilation } from "../node.ts"
 import { Node } from "../node.ts"
 
 export class MorphNode extends Node<MorphNode> {
-    constructor(public definition: Morph[]) {
+    constructor(public children: Morph[]) {
         super("TODO")
     }
 
     intersect(other: MorphNode) {
         return new MorphNode(
-            intersectUniqueLists(this.definition, other.definition)
+            intersectUniqueLists(this.children, other.children)
         )
     }
 

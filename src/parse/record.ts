@@ -1,6 +1,6 @@
 import type { BranchNode } from "../nodes/branch.ts"
 import { node } from "../nodes/node.ts"
-import type { Props } from "../nodes/rules/props.ts"
+import type { PropsDefinition } from "../nodes/rules/props.ts"
 import type { Dict, evaluate } from "../utils/generics.ts"
 import type { inferDefinition, ParseContext } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"
@@ -8,7 +8,7 @@ import { Scanner } from "./string/shift/scanner.ts"
 
 // TODO: other optional options?
 export const parseRecord = (def: Dict, ctx: ParseContext): BranchNode => {
-    const props: Props = {}
+    const props: PropsDefinition = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
         let isOptional = false

@@ -5,8 +5,8 @@ import { as } from "../parse/definition.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { inferDomain } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
-import type { conform, constructor, mutable } from "../utils/generics.ts"
-import type { ComparisonState, Compilation, TypeNode } from "./node.ts"
+import type { constructor, defined } from "../utils/generics.ts"
+import type { ComparisonState, Compilation, Disjoint } from "./node.ts"
 import { Node } from "./node.ts"
 import { DivisibilityNode } from "./rules/divisibility.ts"
 import { DomainNode } from "./rules/domain.ts"
@@ -14,51 +14,44 @@ import { EqualityNode } from "./rules/equality.ts"
 import { InstanceNode } from "./rules/instance.ts"
 import { MorphNode } from "./rules/morph.ts"
 import { NarrowNode } from "./rules/narrow.ts"
-import type { Props } from "./rules/props.ts"
 import { PropsNode } from "./rules/props.ts"
 import type { Range } from "./rules/range.ts"
 import { RangeNode } from "./rules/range.ts"
 import { RegexNode } from "./rules/regex.ts"
 
-export class BranchNode<
-    const definition extends RuleSet = RuleSet
-> extends Node<TypeNode> {
-    definition: definition
-    rules: RuleNodes
-
-    constructor(definition: definition) {
+export class BranchNode<rules extends RuleNodes = RuleNodes> extends Node {
+    constructor(public rules: rules) {
         super("TODO")
-        const rules = {} as mutable<RuleNodes>
-        let kind: RuleKind
-        for (kind in definition as RuleDefinitions) {
-            rules[kind] = createRuleNode(kind, definition) as any
-        }
-        this.definition = definition as definition
-        this.rules = rules
+
+        // const rules = {} as mutable<RuleNodes>
+        // let kind: RuleKind
+        // for (kind in definition as RuleDefinitions) {
+        //     rules[kind] = createRuleNode(kind, definition) as any
+        // }
     }
 
     declare [as]: this["infer"]
 
-    get infer(): inferRuleSet<definition> {
+    get infer(): inferRuleSet<rules> {
         return chainableNoOpProxy
     }
 
     get hasMorphs() {
-        return this.definition.morphs
+        return this.rules.morphs
     }
 
-    intersect(branch: BranchNode, s: ComparisonState) {
-        if (
-            // TODO: Fix
-            // s.lastOperator === "&" &&
-            this.definition.morphs?.some(
-                (morph, i) => morph !== branch.definition.morphs?.[i]
-            )
-        ) {
-            throwParseError(
-                writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
-            )
-        }
+    intersect(branch: BranchNode, s: ComparisonState): BranchNode | Disjoint {
+        // if (
+        //     // TODO: Fix
+        //     // s.lastOperator === "&" &&
+        //     this.rules.morphs?.some(
+        //         (morph, i) => morph !== branch.tree.morphs?.[i]
+        //     )
+        // ) {
+        //     throwParseError(
+        //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
+        //     )
+        // }
         return this
     }
 
@@ -118,21 +111,21 @@ export const ruleNodeKinds = {
     morphs: MorphNode
 } as const
 
-type inferRuleSet<rules extends RuleSet> = rules extends Constraints
+type inferRuleSet<rules extends RulesDefinition> = rules extends Constraints
     ? inferDomain<rules["domain"]>
     : rules extends ExactValue<infer value>
     ? value
     : never
 
-type ruleBranch<rules extends RuleSet> = rules extends Constraints
+type ruleBranch<rules extends RulesDefinition> = rules extends Constraints
     ? Constraints & { domain: rules["domain"] }
     : ExactValue
 
-export type validateRules<rules extends RuleSet> = {
+export type validateRules<rules extends RulesDefinition> = {
     [k in keyof rules]: k extends keyof ruleBranch<rules> ? rules[k] : never
 }
 
-export type RuleSet = ExactValue | Constraints
+export type RulesDefinition = ExactValue | Constraints
 
 type ExactValue<value = unknown> = {
     value: value
@@ -146,12 +139,12 @@ type Constraints = {
     | {
           domain: "object"
           instance?: constructor
-          props?: Props
+          props?: PropsDefinition
       }
     | {
           domain: "object"
           instance: Array<any>
-          props?: Props
+          props?: PropsDefinition
           range?: Range
       }
     | {
@@ -172,19 +165,13 @@ type RuleNodeKinds = typeof ruleNodeKinds
 
 type RuleKind = keyof RuleNodeKinds
 
-type RuleNodes = {
-    [k in RuleKind]: RuleNodeKinds[k] extends constructor<infer node>
+export type RuleNodes = {
+    [k in RuleKind]?: RuleNodeKinds[k] extends constructor<infer node>
         ? node
-        : never
-}
-
-type RuleDefinitions = {
-    [k in RuleKind]: RuleNodes[k] extends { definition: infer def }
-        ? def
         : never
 }
 
 const createRuleNode = <kind extends RuleKind>(
     kind: kind,
-    def: RuleDefinitions[kind]
+    def: defined<RuleNodes[kind]>
 ) => new ruleNodeKinds[kind](def as never) as RuleNodes[kind]

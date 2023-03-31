@@ -57,27 +57,27 @@ export type Bound = {
 
 export type BoundWithUnits = evaluate<Bound & { units: string }>
 
-export class RangeNode extends Node<RangeNode> {
-    constructor(public readonly definition: Range) {
+export class RangeNode extends Node {
+    constructor(public readonly children: Range) {
         super(
             // TODO: sort
-            JSON.stringify(definition)
+            JSON.stringify(children)
         )
     }
 
     intersect(other: RangeNode, s: ComparisonState) {
         if (this.isEqualityRange()) {
             if (other.isEqualityRange()) {
-                return this.definition["=="] === other.definition["=="]
+                return this.children["=="] === other.children["=="]
                     ? this
                     : s.addDisjoint("range", this, other)
             }
-            return other.allows(this.definition["=="])
+            return other.allows(this.children["=="])
                 ? this
                 : s.addDisjoint("range", this, other)
         }
         if (other.isEqualityRange()) {
-            return this.allows(other.definition["=="])
+            return this.allows(other.children["=="])
                 ? other
                 : s.addDisjoint("range", this, other)
         }
@@ -125,13 +125,13 @@ export class RangeNode extends Node<RangeNode> {
     }
 
     compile(c: Compilation): string {
-        const comparatorEntries = Object.entries(this.definition) as [
+        const comparatorEntries = Object.entries(this.children) as [
             Comparator,
             number
         ][]
         if (comparatorEntries.length === 0 || comparatorEntries.length > 2) {
             return throwInternalError(
-                `Unexpected comparators: ${stringify(this.definition)}`
+                `Unexpected comparators: ${stringify(this.children)}`
             )
         }
         const sizeAssignment = `const size = ${
@@ -156,13 +156,13 @@ export class RangeNode extends Node<RangeNode> {
     }
 
     isEqualityRange(): this is { comparators: { "==": number } } {
-        return this.definition["=="] !== undefined
+        return this.children["=="] !== undefined
     }
 
     getBound(comparator: MinComparator | MaxComparator): Bound | undefined {
-        if (this.definition[comparator] !== undefined) {
+        if (this.children[comparator] !== undefined) {
             return {
-                limit: this.definition[comparator]!,
+                limit: this.children[comparator]!,
                 comparator
             }
         }
@@ -177,16 +177,16 @@ export class RangeNode extends Node<RangeNode> {
     }
 
     #extractComparators(prefix: ">" | "<") {
-        return this.definition[prefix] !== undefined
-            ? { [prefix]: this.definition[">"] }
-            : this.definition[`${prefix}=`] !== undefined
-            ? { [`${prefix}=`]: this.definition[`${prefix}=`] }
+        return this.children[prefix] !== undefined
+            ? { [prefix]: this.children[">"] }
+            : this.children[`${prefix}=`] !== undefined
+            ? { [`${prefix}=`]: this.children[`${prefix}=`] }
             : {}
     }
 
     toString() {
         if (this.isEqualityRange()) {
-            return `the range of exactly ${this.definition["=="]}`
+            return `the range of exactly ${this.children["=="]}`
         }
         const lower = this.lowerBound
         const upper = this.upperBound

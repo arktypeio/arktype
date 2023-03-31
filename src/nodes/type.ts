@@ -2,7 +2,7 @@ import { as } from "../parse/definition.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import type { evaluate, keySet } from "../utils/generics.ts"
+import type { conform, evaluate, keySet } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
@@ -15,65 +15,25 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
-import type { RuleSet } from "./branch.ts"
+import type { RulesDefinition, validateRules } from "./branch.ts"
 import { BranchNode } from "./branch.ts"
-import type { Compilation, TypeNode } from "./node.ts"
+import type { Compilation } from "./node.ts"
 import { ComparisonState, Node } from "./node.ts"
 import { mappedKeys } from "./rules/props.ts"
 
-export type BranchesComparison = {
-    lStrictSubtypeIndices: number[]
-    rStrictSubtypeIndices: number[]
-    equalIndexPairs: [lIndex: number, rIndex: number][]
-    distinctIntersections: BranchNode[]
+export const node = <branches extends RulesDefinition[]>(
+    ...branches: validateBranches<branches>
+) => new TypeNode(pruneSubtypes(branches.map((def) => new BranchNode(def))))
+
+type validateBranches<branches extends RulesDefinition[]> = {
+    [i in keyof branches]: conform<branches[i], validateRules<branches[i]>>
 }
 
-type BranchNodes<definition extends readonly RuleSet[]> = {
-    [i in keyof definition]: BranchNode<definition[i]>
-}
-
-export class UnionNode<
-    definition extends readonly RuleSet[] = readonly RuleSet[]
+export class TypeNode<
+    branches extends BranchNode[] = BranchNode[]
 > extends Node<TypeNode> {
-    branches: BranchNodes<definition>
-
-    constructor(public definition: definition) {
-        const nodes: BranchNode[] = definition.map((branch) =>
-            branch instanceof BranchNode ? branch : new BranchNode(branch)
-        )
-        const uniquenessByIndex: Record<number, boolean> = nodes.map(() => true)
-        for (let i = 0; i < definition.length; i++) {
-            for (
-                let j = i + 1;
-                j < definition.length && uniquenessByIndex[i];
-                j++
-            ) {
-                if (!uniquenessByIndex[j]) {
-                    continue
-                }
-                if (nodes[i] === nodes[j]) {
-                    // if the two branches are equal, only "j" is marked as
-                    // redundant so at least one copy could still be included in
-                    // the final set of branches.
-                    uniquenessByIndex[j] = false
-                    continue
-                }
-                const intersection = nodes[i].intersect(
-                    nodes[j],
-                    new ComparisonState()
-                )
-                if (intersection === nodes[i]) {
-                    uniquenessByIndex[i] = false
-                } else if (intersection === nodes[j]) {
-                    uniquenessByIndex[j] = false
-                }
-            }
-        }
-        const filteredNodes = nodes.filter(
-            (_, i) => uniquenessByIndex[i]
-        ) as BranchNodes<definition>
+    constructor(public branches: branches) {
         super("TODO")
-        this.branches = filteredNodes
     }
 
     declare [as]: this["infer"]
@@ -84,7 +44,16 @@ export class UnionNode<
 
     intersect(other: TypeNode, s: ComparisonState): TypeNode {
         const lBranches = this.branches
-        const rBranches = other instanceof UnionNode ? other.branches : [other]
+        const rBranches = other.branches
+        if (lBranches.length === 1 && rBranches.length === 1) {
+            const intersection = lBranches[0].intersect(
+                rBranches[0],
+                new ComparisonState()
+            )
+            return intersection.isDisjoint()
+                ? intersection
+                : new TypeNode([intersection])
+        }
         // Branches that are determined to be a subtype of an opposite branch are
         // guaranteed to be a member of the final reduced intersection, so long as
         // each individual set of branches has been correctly reduced to exclude
@@ -155,7 +124,7 @@ export class UnionNode<
             return s.addDisjoint("union", lBranches, rBranches)
         }
         // TODO: avoid revalidating here
-        return new UnionNode(finalBranches.map((_) => _.definition))
+        return new TypeNode(finalBranches)
     }
 
     allows(value: unknown) {
@@ -176,6 +145,34 @@ export class UnionNode<
     //         }
     //     }
     // }
+}
+
+const pruneSubtypes = (branches: BranchNode[]) => {
+    const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
+    for (let i = 0; i < branches.length; i++) {
+        for (let j = i + 1; j < branches.length && uniquenessByIndex[i]; j++) {
+            if (!uniquenessByIndex[j]) {
+                continue
+            }
+            if (branches[i] === branches[j]) {
+                // if the two branches are equal, only "j" is marked as
+                // redundant so at least one copy could still be included in
+                // the final set of branches.
+                uniquenessByIndex[j] = false
+                continue
+            }
+            const intersection = branches[i].intersect(
+                branches[j],
+                new ComparisonState()
+            )
+            if (intersection === branches[i]) {
+                uniquenessByIndex[i] = false
+            } else if (intersection === branches[j]) {
+                uniquenessByIndex[j] = false
+            }
+        }
+    }
+    return branches.filter((_, i) => uniquenessByIndex[i])
 }
 
 // const state = new IntersectionState(type, "&")

@@ -1,4 +1,4 @@
-import type { TypeNode } from "../nodes/node.ts"
+import type { Node } from "../nodes/node.ts"
 import { Compilation, createTraverse } from "../nodes/node.ts"
 import type { ProblemCode, ProblemOptionsByCode } from "../nodes/problems.ts"
 import { CheckResult, TraversalState } from "../nodes/traverse.ts"
@@ -177,7 +177,7 @@ export const isConfigTuple = (def: unknown): def is ConfigTuple =>
 export class Scope<context extends ScopeContext = any> {
     name: string
     config: ScopeConfig
-    parseCache = new FreezingCache<TypeNode>()
+    parseCache = new FreezingCache<Node>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
 
@@ -235,10 +235,7 @@ export class Scope<context extends ScopeContext = any> {
         return `${this.name}.${id}`
     }
 
-    addAnonymousTypeReference(
-        referencedType: Type,
-        ctx: ParseContext
-    ): TypeNode {
+    addAnonymousTypeReference(referencedType: Type, ctx: ParseContext): Node {
         ctx.type.includesMorph ||= referencedType.includesMorph
         return referencedType.node
     }

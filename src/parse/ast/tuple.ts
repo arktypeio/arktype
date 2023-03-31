@@ -1,6 +1,6 @@
-import type { TypeNode } from "../../nodes/node.ts"
+import type { Node } from "../../nodes/node.ts"
 import { node } from "../../nodes/node.ts"
-import type { Props } from "../../nodes/rules/props.ts"
+import type { PropsDefinition } from "../../nodes/rules/props.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type {
@@ -29,14 +29,14 @@ import type { inferNarrow, validateNarrowTuple } from "./narrow.ts"
 import { parseNarrowTuple } from "./narrow.ts"
 import type { inferUnion } from "./union.ts"
 
-export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
+export const parseTuple = (def: List, ctx: ParseContext): Node => {
     if (isIndexOneExpression(def)) {
         return indexOneParsers[def[1]](def as never, ctx)
     }
     if (isIndexZeroExpression(def)) {
         return prefixParsers[def[0]](def as never, ctx)
     }
-    const props: Props = {
+    const props: PropsDefinition = {
         //  length is created as a prerequisite prop, ensuring if it is invalid,
         //  no other props will be checked, which is usually desirable for tuple
         //  definitions.
@@ -143,12 +143,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
 export type PostfixParser<token extends IndexOneOperator> = (
     def: IndexOneExpression<token>,
     ctx: ParseContext
-) => TypeNode
+) => Node
 
 export type PrefixParser<token extends IndexZeroOperator> = (
     def: IndexZeroExpression<token>,
     ctx: ParseContext
-) => TypeNode
+) => Node
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 

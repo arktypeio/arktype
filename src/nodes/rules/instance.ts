@@ -5,18 +5,18 @@ import { Node } from "../node.ts"
 import { registerConstructor } from "../registry.ts"
 
 export class InstanceNode extends Node<InstanceNode> {
-    constructor(public readonly definition: constructor) {
+    constructor(public readonly children: constructor) {
         const id = // TODO: also for other builtins
-            definition === Array
+            children === Array
                 ? "Array"
-                : registerConstructor(definition.name, definition)
+                : registerConstructor(children.name, children)
         super(id)
     }
 
     intersect(other: InstanceNode, s: ComparisonState) {
-        return constructorExtends(this.definition, other.definition)
+        return constructorExtends(this.children, other.children)
             ? this
-            : constructorExtends(other.definition, this.definition)
+            : constructorExtends(other.children, this.children)
             ? other
             : s.addDisjoint("class", this, other)
     }
@@ -25,7 +25,7 @@ export class InstanceNode extends Node<InstanceNode> {
         return c.check(
             "instance",
             `${c.data} instanceof ${this.id}`,
-            this.definition
+            this.children
         )
     }
 }

@@ -4,32 +4,22 @@ import type { Type, TypeConfig } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
 import type { conform, extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import type { RuleSet, validateRules } from "./branch.ts"
-import { BranchNode } from "./branch.ts"
+import type { BranchNode, RulesDefinition, validateRules } from "./branch.ts"
 import type { DomainNode } from "./rules/domain.ts"
 import type { EqualityNode } from "./rules/equality.ts"
 import type { InstanceNode } from "./rules/instance.ts"
 import type { RangeNode } from "./rules/range.ts"
-import { UnionNode } from "./union.ts"
+import { TypeNode } from "./type.ts"
 
-export const node = <branches extends RuleSet[]>(
+export const node = <branches extends RulesDefinition[]>(
     ...branches: validateBranches<branches>
-) =>
-    (branches.length === 1
-        ? new BranchNode(branches[0] as any)
-        : new UnionNode(branches)) as branches["length"] extends 1
-        ? BranchNode<branches[0]>
-        : UnionNode<branches>
+) => new TypeNode(branches)
 
-type validateBranches<branches extends RuleSet[]> = {
+type validateBranches<branches extends RulesDefinition[]> = {
     [i in keyof branches]: conform<branches[i], validateRules<branches[i]>>
 }
 
-export type TypeNode = UnionNode | BranchNode
-
 export abstract class Node<subclass extends Node = any> {
-    abstract readonly definition: unknown
-
     constructor(public readonly id: string) {}
 
     abstract intersect(other: subclass, s: ComparisonState): subclass | Disjoint
@@ -111,7 +101,7 @@ export class ComparisonState {
 
 export class Disjoint<
     kind extends DisjointKind = DisjointKind
-> extends UnionNode<[]> {
+> extends TypeNode<[]> {
     constructor(
         public kind: kind,
         public l: DisjointKinds[kind]["l"],

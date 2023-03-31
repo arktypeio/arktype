@@ -1,5 +1,5 @@
 import { BranchNode } from "../nodes/branch.ts"
-import type { TypeNode } from "../nodes/node.ts"
+import type { Node } from "../nodes/node.ts"
 import type { Type } from "../scopes/type.ts"
 import { isType } from "../scopes/type.ts"
 import type { Primitive } from "../utils/domains.ts"
@@ -32,7 +32,7 @@ export type ParseContext = {
     path: Path
 }
 
-export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
+export const parseDefinition = (def: unknown, ctx: ParseContext): Node => {
     const domain = domainOf(def)
     if (domain === "string") {
         return parseString(def as string, ctx)

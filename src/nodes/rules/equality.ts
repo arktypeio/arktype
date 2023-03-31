@@ -9,11 +9,11 @@ import { registerValue } from "../registry.ts"
 export class EqualityNode<domain extends Domain = any> extends Node<
     EqualityNode<domain>
 > {
-    constructor(public readonly definition: inferDomain<domain>) {
+    constructor(public readonly children: inferDomain<domain>) {
         const id =
-            hasDomain(definition, "object") || typeof definition === "symbol"
-                ? registerValue(typeof definition, definition)
-                : serializePrimitive(definition as SerializablePrimitive)
+            hasDomain(children, "object") || typeof children === "symbol"
+                ? registerValue(typeof children, children)
+                : serializePrimitive(children as SerializablePrimitive)
         super(id)
     }
 
@@ -22,6 +22,6 @@ export class EqualityNode<domain extends Domain = any> extends Node<
     }
 
     compile(c: Compilation) {
-        return c.check("value", `data === ${this.id}`, this.definition)
+        return c.check("value", `data === ${this.id}`, this.children)
     }
 }

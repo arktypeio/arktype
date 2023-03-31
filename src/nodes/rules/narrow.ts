@@ -5,13 +5,13 @@ import type { Compilation } from "../node.ts"
 import { Node } from "../node.ts"
 
 export class NarrowNode<domain extends Domain = any> extends Node<NarrowNode> {
-    constructor(public readonly definition: Narrow[]) {
-        super(definition.map(() => "TODO").join())
+    constructor(public readonly children: Narrow[]) {
+        super(children.map(() => "TODO").join())
     }
 
     intersect(other: NarrowNode<domain>) {
         return new NarrowNode(
-            intersectUniqueLists(this.definition, other.definition)
+            intersectUniqueLists(this.children, other.children)
         )
     }
 
