@@ -2,8 +2,8 @@
 name: Bug
 about: Report a bug
 title: ""
-labels: ""
-assignees: ""
+labels: "bug"
+assignees: "ssalbdivad"
 ---
 
 # Report a bug
@@ -21,28 +21,20 @@ assignees: ""
 -   TypeScript version (4.8, 4.9, or 5.0):
 -   Other context you think may be relevant (Node version, OS, etc.):
 
-### 🛝 TS Playground Link
+### 🧑‍💻 Repro
 
 <!--
-  A link to a TypeScript Playground "Share" link which shows this behavior
+1. Update the template link below so that it reproduces the problem you're having.
+2. Add comments to describe differences between actual and expected behavior.
+3. Click "Fork" in the top-left corner of StackBlitz
+4. Copy the new URL and use it to replace the template URL below.
+5. Copy the source code you used to repro the bug and paste it into the code block below.
 -->
 
-[Update this template, click "share", and paste the new link here](https://www.typescriptlang.org/play?#code/JYWwDg9gTgLgBAbzjAnmApnAvnAZlCEOAIgEMoBrVDYgKFoHoG4AldMAG1IGNMYALYAGc43CABNMAd2AC4pOFHYFxAV24xgEAHZwIuOCgiqocAEaqA5gEJ6TOAFUhmMSBDptMETAhxxwzlIUODACMw50EFJNbmQ0dCFaMW0heA5gCkwAXhIBYTp7OCKAPQB+O2YWVU9QTHQoAigRIX5jDnFzTAA3YWBw7uAFAUxiDghLIWIQ0m10Dj1dYcVgS354IWBJPQM8kRltcQgpeiSdVLhVZ1Mc6nQACgRaIqLtUncALhJUqGBtS2IADRPZ6SHq8T6PZ5QkJcGC4aAgT7EADkM3EBE2yIAPsitEJkYDgdCSF16hsdKViEjtKoQGZ6nQoVhaFgAJT0ZLnJDiaKkAEhMIREAiHA5S71B5EuCvD4kACCXF0ABUTL9-kCoaDgODEFKoYE4QikR4VlFGc9mWzaEA)
-
-### 🧑‍💻 Code
-
-<!-- Please post the Playground code here directly for reference -->
+https://stackblitz.com/edit/arktype-bug?devToolsHeight=33&file=demo.ts
 
 ```ts
-import { type } from "arktype"
+import { type, scope } from "arktype"
 
-// ...
+// Paste reproduction code here
 ```
-
-### 👎 Actual behavior
-
-<!-- What happened, and why it was wrong -->
-
-### 👍 Expected behavior
-
-<!-- What you expected to happen instead, and why -->

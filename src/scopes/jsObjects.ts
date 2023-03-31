@@ -3,7 +3,8 @@ import type { inferObjectKind } from "../utils/objectKinds.ts"
 import { scope } from "./scope.ts"
 
 /**
- * @scope
+ * @docgenScope
+ * @docgenTable
  */
 export const jsObjectsScope = scope(
     {

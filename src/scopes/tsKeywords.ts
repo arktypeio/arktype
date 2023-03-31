@@ -17,7 +17,8 @@ import { scope } from "./scope.ts"
         "unknown": "unknown",
         "void": "void",
         "undefined": "undefined"}
- * @scope
+ * @docgenScope
+ * @docgenTable
  */
 export const tsKeywordsScope = scope(
     {

@@ -1,9 +1,9 @@
+import type { TypeNode } from "../../nodes/node.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type {
     conform,
     constructor,
-    Dict,
     error,
     evaluate,
     List
@@ -25,7 +25,6 @@ import type { inferMorph, validateMorphTuple } from "./morph.ts"
 import { parseMorphTuple } from "./morph.ts"
 import type { inferNarrow, validateNarrowTuple } from "./narrow.ts"
 import { parseNarrowTuple } from "./narrow.ts"
-import type { inferNode } from "./node.ts"
 import type { inferUnion } from "./union.ts"
 
 export const parseTuple = (def: List, ctx: ParseContext): Node => {
@@ -80,21 +79,16 @@ export type validateTupleExpression<
     ? conform<def, readonly ["===", unknown]>
     : def[0] extends "instanceof"
     ? conform<def, readonly ["instanceof", constructor]>
-    : def[0] extends "node"
-    ? conform<def, readonly ["node", ResolvedNode<$>]>
     : def[0] extends "keyof"
     ? conform<def, validateKeyOfExpression<def[1], $>>
     : never
 
-export type UnparsedTupleExpressionInput<$> = {
+export type UnparsedTupleExpressionInput = {
     instanceof: constructor
-    node: ResolvedNode<$>
     "===": unknown
 }
 
-export type UnparsedTupleOperator = evaluate<
-    keyof UnparsedTupleExpressionInput<Dict>
->
+export type UnparsedTupleOperator = evaluate<keyof UnparsedTupleExpressionInput>
 
 export type inferTuple<def extends List, $> = def extends TupleExpression
     ? inferTupleExpression<def, $>
@@ -123,10 +117,6 @@ export type inferTupleExpression<
     ? def[1] extends constructor<infer t>
         ? t
         : never
-    : def[0] extends "node"
-    ? def[1] extends ResolvedNode<$>
-        ? inferNode<def[1], $>
-        : never
     : def[0] extends "keyof"
     ? inferKeyOfExpression<def[1], $>
     : never
@@ -143,17 +133,17 @@ const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
 }
 
 const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
-    toArrayNode(parseDefinition(def[0], scope))
+    parseDefinition(def[0], scope).toArray()
 
 export type PostfixParser<token extends IndexOneOperator> = (
     def: IndexOneExpression<token>,
     ctx: ParseContext
-) => Node
+) => TypeNode
 
 export type PrefixParser<token extends IndexZeroOperator> = (
     def: IndexZeroExpression<token>,
     ctx: ParseContext
-) => Node
+) => TypeNode
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 
@@ -191,7 +181,7 @@ const indexOneParsers: {
 
 export type FunctionalTupleOperator = "=>" | "|>"
 
-export type IndexZeroOperator = "keyof" | "instanceof" | "===" | "node"
+export type IndexZeroOperator = "keyof" | "instanceof" | "==="
 
 export type IndexZeroExpression<
     token extends IndexZeroOperator = IndexZeroOperator
@@ -209,8 +199,7 @@ const prefixParsers: {
         }
         return { object: { instance: def[1] as constructor } }
     },
-    "===": (def) => ({ [domainOf(def[1])]: { value: def[1] } }),
-    node: (def) => def[1] as ResolvedNode
+    "===": (def) => ({ [domainOf(def[1])]: { value: def[1] } })
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>

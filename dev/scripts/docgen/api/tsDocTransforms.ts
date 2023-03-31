@@ -1,19 +1,19 @@
+import {
+    constructHeader,
+    constructRow,
+    convertToHTML
+} from "./buildTable/table.ts"
 import type { ExportData, TsDocData } from "./extractApi.ts"
 
 type LinkDetails = [name: string, alias?: string]
-
-const trimWhitespace = (text: string) => text.trim()
 
 const extractLinkDetails = (regexMatch: RegExpMatchArray): LinkDetails => {
     const BASE_NAME = 1
     const ALIAS = 2
     const BASE_NAME_NO_ALIAS = 3
     return regexMatch[BASE_NAME_NO_ALIAS]
-        ? [trimWhitespace(regexMatch[BASE_NAME_NO_ALIAS])]
-        : [
-              trimWhitespace(regexMatch[BASE_NAME]),
-              trimWhitespace(regexMatch[ALIAS])
-          ]
+        ? [regexMatch[BASE_NAME_NO_ALIAS].trim()]
+        : [regexMatch[BASE_NAME].trim(), regexMatch[ALIAS].trim()]
 }
 
 export const transformLinkTagToURL = (
@@ -21,7 +21,7 @@ export const transformLinkTagToURL = (
     exportData: ExportData,
     entryNames: string[]
 ) => {
-    const extractApiNameRegex = /{@link(.+)\|(.+)?}|{@link(.+)}/
+    const extractApiNameRegex = /{@link(.+?)\|(.+)?}|{@link(.+)}/
     for (const data of exportData.tsDocs ?? []) {
         const match = data.text.match(extractApiNameRegex)
         if (match) {
@@ -29,7 +29,7 @@ export const transformLinkTagToURL = (
             if (entryNames.includes(basename)) {
                 data.text = data.text.replace(
                     match[0],
-                    `[${alias ?? basename}](./${basename}.md)`
+                    `[${alias ?? basename}](./${basename.toLowerCase()}.md)`
                 )
             } else {
                 throw new Error(
@@ -46,7 +46,7 @@ export const packTsDocTags = (docs: TsDocData[] | undefined) => {
     const tsTagData: TsTagData = {}
     for (const doc of docs ?? []) {
         const tagName = doc.tag
-        const tagText = doc.text.replace(`@${tagName}`, "").replaceAll("*", "")
+        const tagText = doc.text
         if (tsTagData[tagName]) {
             tsTagData[tagName].push(tagText)
         } else {
@@ -56,25 +56,22 @@ export const packTsDocTags = (docs: TsDocData[] | undefined) => {
     return tsTagData
 }
 
-export const formatTagData = (arr: string[], tag: string) => {
-    let ret = ""
-    if (tag === "param") {
-        const tableHeaders = `| Variable      | Description |
-        | ----------- | ----------- |\n`
-        ret += tableHeaders
-        for (const data of arr) {
+export const formatTagData = (tagData: string[], tag: string) => {
+    let formattedData = ""
+    if (tag === "param" || tag === "tableRow") {
+        const table: string[] = []
+        constructHeader(["Variable", "Description"], table)
+        for (const data of tagData) {
             const variable = data.trim().split(" ")[0]
-            const description = data
-                .replace(variable, "")
-                .replace("\n", "")
-                .trim()
-            ret += `| ${variable}  | ${description} |\n`
+            const row = constructRow([variable, data.replace(variable, "")])
+            table.push(row)
         }
-        return ret
+        return table.join("\n")
     }
-    for (const data of arr) {
-        ret += `- ${data}`
-        ret += arr.length === 1 ? "\n" : "<br/>\n"
+    const convertedTagData = convertToHTML(tagData)
+    for (const data of convertedTagData) {
+        formattedData += `- ${data}`
+        formattedData += tagData.length === 1 ? "\n" : "<br/>\n"
     }
-    return ret
+    return formattedData
 }
