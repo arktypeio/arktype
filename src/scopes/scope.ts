@@ -1,3 +1,5 @@
+import type { TypeNode } from "../nodes/node.ts"
+import { Compilation, createTraverse } from "../nodes/node.ts"
 import type { ProblemCode, ProblemOptionsByCode } from "../nodes/problems.ts"
 import { CheckResult, TraversalState } from "../nodes/traverse.ts"
 import type { ConfigTuple } from "../parse/ast/config.ts"
@@ -178,7 +180,7 @@ export const isConfigTuple = (def: unknown): def is ConfigTuple =>
 export class Scope<context extends ScopeContext = any> {
     name: string
     config: ScopeConfig
-    parseCache = new FreezingCache<Node>()
+    parseCache = new FreezingCache<TypeNode>()
     #resolutions = new Cache<Type>()
     #exports = new Cache<Type>()
 
@@ -236,7 +238,10 @@ export class Scope<context extends ScopeContext = any> {
         return `${this.name}.${id}`
     }
 
-    addAnonymousTypeReference(referencedType: Type, ctx: ParseContext): Node {
+    addAnonymousTypeReference(
+        referencedType: Type,
+        ctx: ParseContext
+    ): TypeNode {
         ctx.type.includesMorph ||= referencedType.includesMorph
         return referencedType.node
     }
@@ -304,7 +309,7 @@ export class Scope<context extends ScopeContext = any> {
             node = this.#resolveRecurse(node, "throw", seen).node
         }
         t.node = deepFreeze(node)
-        t.js = new Compilation(t).node(node)
+        t.js = t.node.compile(new Compilation(t))
         t.traverse = createTraverse(t.name, t.js)
         t.check = (data) => {
             const state = new TraversalState(t)
@@ -322,17 +327,6 @@ export class Scope<context extends ScopeContext = any> {
             return result
         }
         return t
-    }
-
-    resolveNode(node: Node): ResolvedNode {
-        return typeof node === "string"
-            ? this.resolveNode(this.resolve(node).node)
-            : node
-    }
-
-    resolveTypeNode(node: Node): DomainsJson {
-        const resolution = this.resolveNode(node)
-        return isConfigNode(resolution) ? resolution.node : resolution
     }
 
     expressions: Expressions<resolutions<context>> = {
@@ -372,15 +366,11 @@ export class Scope<context extends ScopeContext = any> {
             const t = initializeType("λtype", def, config, this)
             const ctx = this.#initializeContext(t)
             const root = parseDefinition(def, ctx)
-            t.node = deepFreeze(
-                hasKeys(config)
-                    ? { config, node: this.resolveTypeNode(root) }
-                    : root
-            )
+            t.node = deepFreeze(root)
             // TODO: refactor TODO: each node should compile completely or until
             // it hits a loop with itself. it should rely on other nodes that
             // have been compiled the same way, parametrized with the current path.
-            t.js = new Compilation(t).node(t.node)
+            t.js = t.node.compile(new Compilation(t))
             t.traverse = createTraverse(t.name, t.js)
             t.check = (data) => {
                 const state = new TraversalState(t)

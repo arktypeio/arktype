@@ -1,3 +1,4 @@
+import { node } from "../../nodes/node.ts"
 import {
     wellFormedIntegerMatcher,
     wellFormedNumberMatcher
@@ -77,7 +78,7 @@ export const validationScope = scope(
         parsedDate,
         semver,
         json,
-        integer: ["node", { number: { divisor: 1 } }]
+        integer: node({ domain: "number", divisor: 1 })
     },
     { name: "validation", standard: false }
 )

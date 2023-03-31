@@ -1,5 +1,5 @@
+import type { TypeNode } from "../nodes/node.ts"
 import { createTraverse } from "../nodes/node.ts"
-import type { Node } from "../nodes/node.ts"
 import type { CheckResult, TraversalState } from "../nodes/traverse.ts"
 import type { ParsedMorph } from "../parse/ast/morph.ts"
 import type {
@@ -40,7 +40,7 @@ type TypeRoot<t = unknown> = evaluate<{
     js: string
     traverse: CompiledTraversal
     check: Checker<t>
-    node: Node
+    node: TypeNode
     qualifiedName: QualifiedTypeName
     definition: unknown
     scope: Scope
