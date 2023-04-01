@@ -1,10 +1,10 @@
 import type { Narrow } from "../../parse/ast/narrow.ts"
 import type { Domain } from "../../utils/domains.ts"
 import { intersectUniqueLists } from "../../utils/generics.ts"
-import type { Compilation } from "../node.ts"
+import type { CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 
-export class NarrowNode<domain extends Domain = any> extends Node<NarrowNode> {
+export class NarrowNode<domain extends Domain = any> extends Node {
     constructor(public readonly children: Narrow[]) {
         super(children.map(() => "TODO").join())
     }
@@ -15,7 +15,7 @@ export class NarrowNode<domain extends Domain = any> extends Node<NarrowNode> {
         )
     }
 
-    compile(c: Compilation) {
+    compile(c: CompilationState) {
         return c.check("custom", this.compiled, this.compiled)
     }
 }

@@ -1,7 +1,7 @@
 import { throwInternalError } from "../../utils/errors.ts"
 import type { evaluate, xor } from "../../utils/generics.ts"
 import { stringify } from "../../utils/serialize.ts"
-import type { ComparisonState, Compilation } from "../node.ts"
+import type { ComparisonState, CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 
 export const minComparators = {
@@ -59,9 +59,36 @@ export type BoundWithUnits = evaluate<Bound & { units: string }>
 
 export class RangeNode extends Node {
     constructor(public readonly range: Range) {
+        const comparatorEntries = Object.entries(range) as [
+            Comparator,
+            number
+        ][]
+        if (comparatorEntries.length === 0 || comparatorEntries.length > 2) {
+            return throwInternalError(
+                `Unexpected comparators: ${stringify(range)}`
+            )
+        }
+        const sizeAssignment = `const size = ${
+            c.lastDomain === "number" ? c.data : `${c.data}.length`
+        };` as const
+        const units =
+            c.lastDomain === "string"
+                ? "characters"
+                : c.lastDomain === "object"
+                ? "items long"
+                : ""
+        const checks = comparatorEntries
+            .map(([comparator, limit]) =>
+                c.check("range", `size ${comparator} ${limit}`, {
+                    comparator,
+                    limit,
+                    units
+                })
+            )
+            .join(" && ")
         super(
             // TODO: sort
-            JSON.stringify(range)
+            `${sizeAssignment}${checks}`
         )
     }
 
@@ -122,37 +149,6 @@ export class RangeNode extends Node {
             return other
         }
         return stricterMax === "l" ? this : other
-    }
-
-    compile(c: Compilation): string {
-        const comparatorEntries = Object.entries(this.range) as [
-            Comparator,
-            number
-        ][]
-        if (comparatorEntries.length === 0 || comparatorEntries.length > 2) {
-            return throwInternalError(
-                `Unexpected comparators: ${stringify(this.range)}`
-            )
-        }
-        const sizeAssignment = `const size = ${
-            c.lastDomain === "number" ? c.data : `${c.data}.length`
-        };` as const
-        const units =
-            c.lastDomain === "string"
-                ? "characters"
-                : c.lastDomain === "object"
-                ? "items long"
-                : ""
-        const checks = comparatorEntries
-            .map(([comparator, limit]) =>
-                c.check("range", `size ${comparator} ${limit}`, {
-                    comparator,
-                    limit,
-                    units
-                })
-            )
-            .join(" && ")
-        return `${sizeAssignment}${checks}`
     }
 
     isEqualityRange(): this is { range: { "==": number } } {

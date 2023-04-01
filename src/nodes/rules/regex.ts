@@ -1,28 +1,26 @@
 import { intersectUniqueLists } from "../../utils/generics.ts"
-import type { Compilation } from "../node.ts"
+import type { CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
-import { registerRegex } from "../registry.ts"
 
-export class RegexNode extends Node {
-    constructor(public sources: string[]) {
-        super(
-            JSON.stringify(sources.length === 1 ? sources[0] : sources.sort())
-        )
+export class RegexNode extends Node<string[]> {
+    constructor(public readonly sources: string[]) {
+        super(sources, RegexNode)
     }
 
-    intersect(other: RegexNode) {
-        return new RegexNode(intersectUniqueLists(this.sources, other.sources))
-    }
-
-    compile(c: Compilation): string {
-        return this.sources
+    static compile(sources: string[], c: CompilationState) {
+        return sources
+            .sort()
             .map(
                 (source) =>
-                    `${registerRegex(source)}.test(${c.data}) || ${c.problem(
+                    `${source}.test(${c.data}) || ${c.problem(
                         "regex",
                         "`" + source + "`"
                     )}` as const
             )
             .join(";")
+    }
+
+    static intersect(l: string[], r: string[]) {
+        return intersectUniqueLists(l, r)
     }
 }

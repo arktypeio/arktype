@@ -4,7 +4,7 @@ import type { Scope } from "../scopes/scope.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { Domain } from "../utils/domains.ts"
-import type { conform, evaluate, extend } from "../utils/generics.ts"
+import type { conform, extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { BranchNode, RulesDefinition, validateRules } from "./branch.ts"
 import type { DomainNode } from "./rules/domain.ts"
@@ -21,21 +21,36 @@ type validateBranches<branches extends RulesDefinition[]> = {
     [i in keyof branches]: conform<branches[i], validateRules<branches[i]>>
 }
 
-export abstract class Node<t = unknown> extends Function {
-    constructor(public readonly compiled: string) {
-        super("data", `return ${compiled}`)
+// export type Node<subclass extends Node = any> = {
+//     intersect(other: subclass, s: ComparisonState): subclass | Disjoint
+//     compile(c: CompilationState): string
+// }
+
+type NodeClass<rule> = {
+    intersect(l: rule, r: rule, c: ComparisonState): rule
+
+    compile(rule: rule, c: CompilationState): string
+}
+
+// @ts-expect-error
+const defaultState = new CompilationState()
+
+export abstract class Node<rule = any> extends Function {
+    constructor(
+        public readonly rule: rule,
+        protected subclass: NodeClass<rule>
+    ) {
+        super("data", `return ${subclass.compile(rule, defaultState)}`)
     }
 
-    declare [as]: t
-
-    get infer(): t {
-        return chainableNoOpProxy
+    compile(c: CompilationState) {
+        return this.subclass.compile(this.rule, c)
     }
 
-    protected abstract intersect(
-        other: Node,
-        s: ComparisonState
-    ): Node | Disjoint
+    // protected abstract intersect(
+    //     other: Node,
+    //     s: ComparisonState
+    // ): Node | Disjoint
 
     // extends(other: subclass) {
     //     return (
@@ -142,7 +157,7 @@ const initializeCompilationConfig = (): TraversalConfig => ({
     keys: []
 })
 
-export class Compilation {
+export class CompilationState {
     path = new Path()
     lastDomain: Domain = "undefined"
     failFast = false

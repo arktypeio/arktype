@@ -1,5 +1,5 @@
 import type { Node } from "../nodes/node.ts"
-import { Compilation, createTraverse } from "../nodes/node.ts"
+import { CompilationState, createTraverse } from "../nodes/node.ts"
 import type { ProblemCode, ProblemOptionsByCode } from "../nodes/problems.ts"
 import { CheckResult, TraversalState } from "../nodes/traverse.ts"
 import type { ConfigTuple } from "../parse/ast/config.ts"
@@ -303,7 +303,7 @@ export class Scope<context extends ScopeContext = any> {
             node = this.#resolveRecurse(node, "throw", seen).node
         }
         t.node = deepFreeze(node)
-        t.js = t.node.compile(new Compilation(t))
+        t.js = t.node.compile(new CompilationState(t))
         t.traverse = createTraverse(t.name, t.js)
         t.check = (data) => {
             const state = new TraversalState(t)
@@ -332,7 +332,7 @@ export class Scope<context extends ScopeContext = any> {
             // TODO: refactor TODO: each node should compile completely or until
             // it hits a loop with itself. it should rely on other nodes that
             // have been compiled the same way, parametrized with the current path.
-            t.js = t.node.compile(new Compilation(t))
+            t.js = t.node.compile(new CompilationState(t))
             t.traverse = createTraverse(t.name, t.js)
             t.check = (data) => {
                 const state = new TraversalState(t)

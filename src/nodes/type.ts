@@ -17,7 +17,7 @@ import type {
 import { serializePrimitive } from "../utils/serialize.ts"
 import type { RulesDefinition, validateRules } from "./branch.ts"
 import { BranchNode } from "./branch.ts"
-import type { Compilation } from "./node.ts"
+import type { CompilationState } from "./node.ts"
 import { ComparisonState, Node } from "./node.ts"
 
 export const node = <branches extends RulesDefinition[]>(
@@ -30,12 +30,16 @@ type validateBranches<branches extends RulesDefinition[]> = {
 
 export type TypeNodeDefinition = readonly RulesDefinition[]
 
-export class TypeNode<
-    branches extends BranchNode[] = BranchNode[]
-> extends Node<branches[number]["infer"]> {
-    constructor(public branches: branches) {
+export class TypeNode<t = unknown> extends Node<BranchNode[]> {
+    constructor(public branches: BranchNode[]) {
         const compiled = branches.map((branch) => branch.compiled).join(";")
-        super(compiled)
+        super(branches, TypeNode)
+    }
+
+    declare [as]: t
+
+    get infer(): t {
+        return chainableNoOpProxy
     }
 
     intersect(other: TypeNode, s: ComparisonState): TypeNode {
@@ -178,7 +182,10 @@ const pruneSubtypes = (branches: BranchNode[]) => {
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-export const compileBranches = (branches: BranchNode[], c: Compilation) => {
+export const compileBranches = (
+    branches: BranchNode[],
+    c: CompilationState
+) => {
     const discriminants = calculateDiscriminants(branches, c)
     const indices = branches.map((_, i) => i)
     return discriminate(branches, indices, discriminants, c)
@@ -196,7 +203,7 @@ const discriminate = (
     originalBranches: BranchNode[],
     remainingIndices: number[],
     discriminants: Discriminants,
-    c: Compilation
+    c: CompilationState
 ) => {
     return originalBranches[remainingIndices[0]].compile(c)
     // if (remainingIndices.length === 1) {
@@ -355,7 +362,7 @@ export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 const calculateDiscriminants = (
     branches: BranchNode[],
-    ctx: Compilation
+    ctx: CompilationState
 ): Discriminants => {
     const discriminants: Discriminants = {
         disjointsByPair: {},

@@ -1,4 +1,4 @@
-import type { ComparisonState, Compilation } from "../node.ts"
+import type { ComparisonState, CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 import type { TypeNode, TypeNodeDefinition } from "../type.ts"
 
@@ -32,7 +32,15 @@ export class PropsNode extends Node {
         public named: NamedPropNodes,
         public indexed?: IndexPropNode[]
     ) {
-        super(JSON.stringify(named))
+        const propChecks: string[] = []
+        // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
+        for (const k in named) {
+            const prop = named[k]
+            c.path.push(k)
+            propChecks.push(prop.type.compile(c))
+            c.path.pop()
+        }
+        super(propChecks.length ? c.mergeChecks(propChecks) : "true")
     }
 
     intersect(other: PropsNode, s: ComparisonState) {
@@ -111,25 +119,5 @@ export class PropsNode extends Node {
             }
         }
         return intersection
-    }
-
-    compile(c: Compilation): string {
-        const keyConfig = c.type.config?.keys ?? c.type.scope.config.keys
-        return keyConfig === "loose"
-            ? this.#compileLooseProps(c)
-            : "unimplemented"
-    }
-
-    #compileLooseProps(c: Compilation) {
-        const propChecks: string[] = []
-        // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
-        for (const k in this.named) {
-            const prop = this.named[k]
-
-            c.path.push(k)
-            propChecks.push(prop.type.compile(c))
-            c.path.pop()
-        }
-        return propChecks.length ? c.mergeChecks(propChecks) : "true"
     }
 }

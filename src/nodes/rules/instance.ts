@@ -1,6 +1,6 @@
 import type { constructor } from "../../utils/generics.ts"
 import { constructorExtends } from "../../utils/generics.ts"
-import type { ComparisonState, Compilation } from "../node.ts"
+import type { ComparisonState, CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 import { registerConstructor } from "../registry.ts"
 
@@ -21,7 +21,7 @@ export class InstanceNode extends Node<InstanceNode> {
             : s.addDisjoint("class", this, other)
     }
 
-    compile(c: Compilation) {
+    compile(c: CompilationState) {
         return c.check(
             "instance",
             `${c.data} instanceof ${this.compiled}`,

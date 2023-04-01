@@ -32,16 +32,3 @@ const composeUncachedRegistrar =
 export const registerValue = composeUncachedRegistrar("value")
 
 export const registerConstructor = composeUncachedRegistrar("constructor")
-
-const regexKeysBySource: { [source: string]: string } = {}
-let regexCacheSize = 0
-
-export const registerRegex = (source: string) => {
-    if (!regexKeysBySource[source]) {
-        const registryKey = "$" + regexCacheSize
-        registry.regex[registryKey] = new RegExp(source)
-        regexKeysBySource[source] = registryKey
-        regexCacheSize++
-    }
-    return `globalThis.$ark.regex.${regexKeysBySource[source]}`
-}

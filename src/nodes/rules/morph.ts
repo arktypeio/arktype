@@ -1,6 +1,6 @@
 import type { Morph } from "../../parse/ast/morph.ts"
 import { intersectUniqueLists } from "../../utils/generics.ts"
-import type { Compilation } from "../node.ts"
+import type { CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 
 export class MorphNode extends Node<MorphNode> {
@@ -14,7 +14,7 @@ export class MorphNode extends Node<MorphNode> {
         )
     }
 
-    compile(c: Compilation): string {
+    compile(c: CompilationState): string {
         return c.data
     }
 }

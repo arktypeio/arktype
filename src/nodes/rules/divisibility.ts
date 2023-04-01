@@ -1,7 +1,7 @@
-import type { Compilation } from "../node.ts"
+import type { CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 
-export class DivisibilityNode extends Node<DivisibilityNode> {
+export class DivisibilityNode {
     constructor(public readonly children: number) {
         super(`${children}`)
     }
@@ -14,7 +14,7 @@ export class DivisibilityNode extends Node<DivisibilityNode> {
         return new DivisibilityNode(leastCommonMultiple)
     }
 
-    compile(c: Compilation) {
+    compile(c: CompilationState) {
         return c.check(
             "divisor",
             `${c.data} % ${this.children} === 0` as const,
