@@ -32,6 +32,7 @@ type NodeClass<rule> = {
     compile(rule: rule, c: CompilationState): string
 }
 
+// TODO: would it be modified?
 // @ts-expect-error
 const defaultState = new CompilationState()
 
