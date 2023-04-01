@@ -3,18 +3,25 @@ import { intersectUniqueLists } from "../../utils/generics.ts"
 import type { CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 
-export class MorphNode extends Node<MorphNode> {
-    constructor(public children: Morph[]) {
-        super("TODO")
+export class MorphNode extends Node<typeof MorphNode> {
+    constructor(public predicates: Morph[]) {
+        super(MorphNode, predicates)
     }
 
-    intersect(other: MorphNode) {
-        return new MorphNode(
-            intersectUniqueLists(this.children, other.children)
-        )
+    static compile(sources: Morph[], c: CompilationState) {
+        return sources
+            .sort()
+            .map(
+                (source) =>
+                    `${source}.test(${c.data}) || ${c.problem(
+                        "regex",
+                        "`" + source + "`"
+                    )}` as const
+            )
+            .join(";")
     }
 
-    compile(c: CompilationState): string {
-        return c.data
+    static intersect(l: MorphNode, r: MorphNode) {
+        return new MorphNode(intersectUniqueLists(l.predicates, r.predicates))
     }
 }

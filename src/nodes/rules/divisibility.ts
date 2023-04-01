@@ -1,24 +1,24 @@
 import type { CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 
-export class DivisibilityNode {
-    constructor(public readonly children: number) {
-        super(`${children}`)
+export class DivisibilityNode extends Node<typeof DivisibilityNode> {
+    constructor(public readonly divisor: number) {
+        super(DivisibilityNode, divisor)
     }
 
-    intersect(other: DivisibilityNode) {
+    static intersect(l: DivisibilityNode, r: DivisibilityNode) {
         const leastCommonMultiple = Math.abs(
-            (this.children * other.children) /
-                greatestCommonDivisor(this.children, other.children)
+            (l.divisor * r.divisor) /
+                greatestCommonDivisor(l.divisor, r.divisor)
         )
         return new DivisibilityNode(leastCommonMultiple)
     }
 
-    compile(c: CompilationState) {
-        return c.check(
+    static compile(divisor: number, s: CompilationState) {
+        return s.check(
             "divisor",
-            `${c.data} % ${this.children} === 0` as const,
-            this.children
+            `${s.data} % ${divisor} === 0` as const,
+            divisor
         )
     }
 }

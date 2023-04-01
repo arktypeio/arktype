@@ -1,26 +1,21 @@
 import type { Domain } from "../../utils/domains.ts"
-import type { ComparisonState, CompilationState, Disjoint } from "../node.ts"
+import type { ComparisonState, CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 
-export class DomainNode<domain extends Domain = any> extends Node<
-    DomainNode<domain>
-> {
-    constructor(public readonly children: domain) {
-        super(children)
+export class DomainNode extends Node<typeof DomainNode> {
+    constructor(public readonly constraint: Domain) {
+        super(DomainNode, constraint)
     }
 
-    intersect(
-        other: DomainNode,
-        s: ComparisonState
-    ): DomainNode<domain> | Disjoint {
-        return this === other ? this : s.addDisjoint("domain", this, other)
+    static intersect(l: DomainNode, r: DomainNode, s: ComparisonState) {
+        return l === r ? l : s.addDisjoint("domain", l, r)
     }
 
-    compile(c: CompilationState) {
-        return this.children === "object"
-            ? `(typeof ${c.data} === "object" && ${c.data} !== null) || typeof ${c.data} === "function"`
-            : this.children === "null" || this.children === "undefined"
-            ? `${c.data} === ${this.children}`
-            : `typeof ${c.data} === "${this.children}"`
+    static compile(constraint: Domain, s: CompilationState) {
+        return constraint === "object"
+            ? `(typeof ${s.data} === "object" && ${s.data} !== null) || typeof ${s.data} === "function"`
+            : constraint === "null" || constraint === "undefined"
+            ? `${s.data} === ${constraint}`
+            : `typeof ${s.data} === "${constraint}"`
     }
 }

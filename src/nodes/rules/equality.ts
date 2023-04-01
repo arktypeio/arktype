@@ -1,4 +1,3 @@
-import type { Domain, inferDomain } from "../../utils/domains.ts"
 import { hasDomain } from "../../utils/domains.ts"
 import type { SerializablePrimitive } from "../../utils/serialize.ts"
 import { serializePrimitive } from "../../utils/serialize.ts"
@@ -6,22 +5,20 @@ import type { ComparisonState, CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 import { registerValue } from "../registry.ts"
 
-export class EqualityNode<domain extends Domain = any> extends Node<
-    EqualityNode<domain>
-> {
-    constructor(public readonly children: inferDomain<domain>) {
-        const id =
-            hasDomain(children, "object") || typeof children === "symbol"
-                ? registerValue(typeof children, children)
-                : serializePrimitive(children as SerializablePrimitive)
-        super(id)
+export class EqualityNode extends Node<typeof EqualityNode> {
+    constructor(public readonly value: unknown) {
+        super(EqualityNode, value)
     }
 
-    intersect(other: EqualityNode, s: ComparisonState) {
-        return this === other ? this : s.addDisjoint("value", this, other)
+    static intersect(l: EqualityNode, r: EqualityNode, s: ComparisonState) {
+        return l === r ? l : s.addDisjoint("value", l, r)
     }
 
-    compile(c: CompilationState) {
-        return c.check("value", `data === ${this.compiled}`, this.children)
+    static compile(value: unknown, s: CompilationState) {
+        const serialized =
+            hasDomain(value, "object") || typeof value === "symbol"
+                ? registerValue(typeof value, value)
+                : serializePrimitive(value as SerializablePrimitive)
+        return s.check("value", `data === ${serialized}`, value)
     }
 }

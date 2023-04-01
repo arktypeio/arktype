@@ -3,9 +3,9 @@ import { intersectUniqueLists } from "../../utils/generics.ts"
 import type { CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 
-export class FiltersNode extends Node<typeof FiltersNode> {
-    constructor(public checkers: Filter[]) {
-        super(FiltersNode, checkers)
+export class FilterNode extends Node<typeof FilterNode> {
+    constructor(public predicates: Filter[]) {
+        super(FilterNode, predicates)
     }
 
     static compile(sources: Filter[], c: CompilationState) {
@@ -21,7 +21,7 @@ export class FiltersNode extends Node<typeof FiltersNode> {
             .join(";")
     }
 
-    static intersect(l: FiltersNode, r: FiltersNode) {
-        return new FiltersNode(intersectUniqueLists(l.checkers, r.checkers))
+    static intersect(l: FilterNode, r: FilterNode) {
+        return new FilterNode(intersectUniqueLists(l.predicates, r.predicates))
     }
 }

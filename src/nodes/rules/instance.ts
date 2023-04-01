@@ -4,28 +4,24 @@ import type { ComparisonState, CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 import { registerConstructor } from "../registry.ts"
 
-export class InstanceNode extends Node<InstanceNode> {
-    constructor(public readonly children: constructor) {
-        const id = // TODO: also for other builtins
-            children === Array
+export class InstanceNode extends Node<typeof InstanceNode> {
+    constructor(public readonly ancestor: constructor) {
+        super(InstanceNode, ancestor)
+    }
+
+    static intersect(l: InstanceNode, r: InstanceNode, s: ComparisonState) {
+        return constructorExtends(l.ancestor, r.ancestor)
+            ? l
+            : constructorExtends(r.ancestor, l.ancestor)
+            ? r
+            : s.addDisjoint("class", l, r)
+    }
+
+    static compile(ancestor: constructor, s: CompilationState) {
+        const compiled = // TODO: also for other builtins
+            ancestor === Array
                 ? "Array"
-                : registerConstructor(children.name, children)
-        super(id)
-    }
-
-    intersect(other: InstanceNode, s: ComparisonState) {
-        return constructorExtends(this.children, other.children)
-            ? this
-            : constructorExtends(other.children, this.children)
-            ? other
-            : s.addDisjoint("class", this, other)
-    }
-
-    compile(c: CompilationState) {
-        return c.check(
-            "instance",
-            `${c.data} instanceof ${this.compiled}`,
-            this.children
-        )
+                : registerConstructor(ancestor.name, ancestor)
+        return s.check("instance", `${s.data} instanceof ${compiled}`, ancestor)
     }
 }

@@ -13,7 +13,7 @@ import { TypeNode } from "./type.ts"
 
 export const node = <branches extends RulesDefinition[]>(
     ...branches: validateBranches<branches>
-) => new TypeNode(branches)
+) => new TypeNode(branches as any)
 
 type validateBranches<branches extends RulesDefinition[]> = {
     [i in keyof branches]: conform<branches[i], validateRules<branches[i]>>
@@ -43,15 +43,18 @@ const defaultState = new CompilationState()
 export abstract class Node<
     subclass extends NodeClass<ConstructorParameters<subclass>>
 > extends Function {
+    private args: ConstructorParameters<subclass>
+
     constructor(
         protected subclass: subclass,
         ...args: ConstructorParameters<subclass>
     ) {
         super("data", `return ${subclass.compile(...args, defaultState)}`)
+        this.args = args
     }
 
-    compile(c: CompilationState) {
-        return this.subclass.compile(c)
+    compile(s: CompilationState) {
+        return this.subclass.compile(...this.args, s)
     }
 
     // protected abstract intersect(
@@ -75,7 +78,7 @@ export abstract class Node<
     }
 
     allows(value: unknown) {
-        return true
+        return !value
     }
 }
 
@@ -207,7 +210,7 @@ let valid = ${checks[0]};\n`
         }, ${this.data}, ${this.path.json})` as const
     }
 
-    arrayOf(node: Node) {
+    arrayOf(node: Node<any>) {
         // TODO: increment. does this work for logging?
         this.path.push("${i}")
         const result = `(() => {
