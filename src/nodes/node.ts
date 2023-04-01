@@ -24,32 +24,34 @@ type validateBranches<branches extends RulesDefinition[]> = {
 //     compile(c: CompilationState): string
 // }
 
-type NodeClass<rule> = {
-    new (rule: rule): Node<rule>
+type NodeClass<args extends any[]> = {
+    new (...args: args): Node<NodeClass<args>>
 
     intersect(
-        l: Node<rule>,
-        r: Node<rule>,
-        c: ComparisonState
-    ): Node<rule> | Disjoint
+        l: Node<NodeClass<args>>,
+        r: Node<NodeClass<args>>,
+        s: ComparisonState
+    ): Node<NodeClass<args>> | Disjoint
 
-    compile(rule: rule, c: CompilationState): string
+    compile(...args: [...args: args, s: CompilationState]): string
 }
 
 // TODO: would it be modified?
 // @ts-expect-error
 const defaultState = new CompilationState()
 
-export abstract class Node<rule> extends Function {
+export abstract class Node<
+    subclass extends NodeClass<ConstructorParameters<subclass>>
+> extends Function {
     constructor(
-        public readonly rule: rule,
-        protected subclass: NodeClass<rule>
+        protected subclass: subclass,
+        ...args: ConstructorParameters<subclass>
     ) {
-        super("data", `return ${subclass.compile(rule, defaultState)}`)
+        super("data", `return ${subclass.compile(...args, defaultState)}`)
     }
 
     compile(c: CompilationState) {
-        return this.subclass.compile(this.rule, c)
+        return this.subclass.compile(c)
     }
 
     // protected abstract intersect(

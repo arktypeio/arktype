@@ -2,9 +2,9 @@ import { intersectUniqueLists } from "../../utils/generics.ts"
 import type { CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 
-export class RegexNode extends Node<string[]> {
-    constructor(rule: string[]) {
-        super(rule, RegexNode)
+export class RegexNode extends Node<typeof RegexNode> {
+    constructor(public sources: string[]) {
+        super(RegexNode, sources)
     }
 
     static compile(sources: string[], c: CompilationState) {
@@ -21,6 +21,6 @@ export class RegexNode extends Node<string[]> {
     }
 
     static intersect(l: RegexNode, r: RegexNode) {
-        return new RegexNode(intersectUniqueLists(l.rule, r.rule))
+        return new RegexNode(intersectUniqueLists(l.sources, r.sources))
     }
 }
