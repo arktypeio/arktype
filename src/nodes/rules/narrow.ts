@@ -16,6 +16,6 @@ export class NarrowNode<domain extends Domain = any> extends Node<NarrowNode> {
     }
 
     compile(c: Compilation) {
-        return c.check("custom", this.id, this.id)
+        return c.check("custom", this.compiled, this.compiled)
     }
 }

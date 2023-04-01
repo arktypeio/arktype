@@ -1,8 +1,10 @@
 import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
+import { as } from "../parse/definition.ts"
 import type { Scope } from "../scopes/scope.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
+import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { Domain } from "../utils/domains.ts"
-import type { conform, extend } from "../utils/generics.ts"
+import type { conform, evaluate, extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { BranchNode, RulesDefinition, validateRules } from "./branch.ts"
 import type { DomainNode } from "./rules/domain.ts"
@@ -19,27 +21,36 @@ type validateBranches<branches extends RulesDefinition[]> = {
     [i in keyof branches]: conform<branches[i], validateRules<branches[i]>>
 }
 
-export abstract class Node<subclass extends Node = any> {
-    constructor(public readonly id: string) {}
-
-    abstract intersect(other: subclass, s: ComparisonState): subclass | Disjoint
-
-    extends(other: subclass) {
-        return (
-            this.intersect(other, new ComparisonState()) ===
-            (this as unknown as subclass)
-        )
+export abstract class Node<t = unknown> extends Function {
+    constructor(public readonly compiled: string) {
+        super("data", `return ${compiled}`)
     }
 
-    subsumes(other: subclass) {
-        return !this.extends(other)
+    declare [as]: t
+
+    get infer(): t {
+        return chainableNoOpProxy
     }
+
+    protected abstract intersect(
+        other: Node,
+        s: ComparisonState
+    ): Node | Disjoint
+
+    // extends(other: subclass) {
+    //     return (
+    //         this.intersect(other, new ComparisonState()) ===
+    //         (this as unknown as subclass)
+    //     )
+    // }
+
+    // subsumes(other: subclass) {
+    //     return !this.extends(other)
+    // }
 
     isDisjoint(): this is Disjoint {
         return this instanceof Disjoint
     }
-
-    abstract compile(c: Compilation): string
 
     allows(value: unknown) {
         return true

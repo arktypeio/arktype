@@ -32,15 +32,10 @@ export type TypeNodeDefinition = readonly RulesDefinition[]
 
 export class TypeNode<
     branches extends BranchNode[] = BranchNode[]
-> extends Node<TypeNode> {
+> extends Node<branches[number]["infer"]> {
     constructor(public branches: branches) {
-        super("TODO")
-    }
-
-    declare [as]: this["infer"]
-
-    get infer(): this["branches"][number]["infer"] {
-        return chainableNoOpProxy
+        const compiled = branches.map((branch) => branch.compiled).join(";")
+        super(compiled)
     }
 
     intersect(other: TypeNode, s: ComparisonState): TypeNode {
@@ -130,10 +125,6 @@ export class TypeNode<
 
     allows(value: unknown) {
         return !value
-    }
-
-    compile(c: Compilation): string {
-        return ""
     }
 
     // toArray() {

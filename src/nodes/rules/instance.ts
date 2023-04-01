@@ -24,7 +24,7 @@ export class InstanceNode extends Node<InstanceNode> {
     compile(c: Compilation) {
         return c.check(
             "instance",
-            `${c.data} instanceof ${this.id}`,
+            `${c.data} instanceof ${this.compiled}`,
             this.children
         )
     }

@@ -22,6 +22,6 @@ export class EqualityNode<domain extends Domain = any> extends Node<
     }
 
     compile(c: Compilation) {
-        return c.check("value", `data === ${this.id}`, this.children)
+        return c.check("value", `data === ${this.compiled}`, this.children)
     }
 }

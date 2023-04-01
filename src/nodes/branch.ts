@@ -1,12 +1,8 @@
-import { writeImplicitNeverMessage } from "../parse/ast/intersection.ts"
 import type { Morph } from "../parse/ast/morph.ts"
 import type { Narrow } from "../parse/ast/narrow.ts"
-import { as } from "../parse/definition.ts"
-import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { inferDomain } from "../utils/domains.ts"
-import { throwParseError } from "../utils/errors.ts"
 import type { constructor, defined } from "../utils/generics.ts"
-import type { ComparisonState, Compilation, Disjoint } from "./node.ts"
+import type { ComparisonState } from "./node.ts"
 import { Node } from "./node.ts"
 import { DivisibilityNode } from "./rules/divisibility.ts"
 import { DomainNode } from "./rules/domain.ts"
@@ -22,7 +18,6 @@ import { RegexNode } from "./rules/regex.ts"
 export class BranchNode<rules extends RuleNodes = RuleNodes> extends Node {
     constructor(public rules: rules) {
         super("TODO")
-
         // const rules = {} as mutable<RuleNodes>
         // let kind: RuleKind
         // for (kind in definition as RuleDefinitions) {
@@ -30,17 +25,11 @@ export class BranchNode<rules extends RuleNodes = RuleNodes> extends Node {
         // }
     }
 
-    declare [as]: this["infer"]
-
-    get infer(): inferRuleSet<rules> {
-        return chainableNoOpProxy
-    }
-
     get hasMorphs() {
         return this.rules.morphs
     }
 
-    intersect(branch: BranchNode, s: ComparisonState): BranchNode | Disjoint {
+    intersect(branch: BranchNode, s: ComparisonState) {
         // if (
         //     // TODO: Fix
         //     // s.lastOperator === "&" &&
@@ -57,10 +46,6 @@ export class BranchNode<rules extends RuleNodes = RuleNodes> extends Node {
 
     allows() {
         return true
-    }
-
-    compile(c: Compilation) {
-        return ""
     }
 
     // compile(c: Compilation): string {
