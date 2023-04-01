@@ -1,23 +1,22 @@
 import type { Filter } from "../parse/ast/filter.ts"
 import type { Morph } from "../parse/ast/morph.ts"
-import type { inferDomain } from "../utils/domains.ts"
-import type { constructor, defined } from "../utils/generics.ts"
-import type { ComparisonState } from "./node.ts"
+import type { constructor } from "../utils/generics.ts"
+import type { ComparisonState, CompilationState } from "./node.ts"
 import { Node } from "./node.ts"
 import { DivisibilityNode } from "./rules/divisibility.ts"
 import { DomainNode } from "./rules/domain.ts"
 import { EqualityNode } from "./rules/equality.ts"
+import { FilterNode } from "./rules/filter.ts"
 import { InstanceNode } from "./rules/instance.ts"
 import { MorphNode } from "./rules/morph.ts"
-import { FiltersNode } from "./rules/narrow.ts"
 import { PropsNode } from "./rules/props.ts"
 import type { Bounds } from "./rules/range.ts"
 import { RangeNode } from "./rules/range.ts"
 import { RegexNode } from "./rules/regex.ts"
 
-export class BranchNode<rules extends RuleNodes = RuleNodes> extends Node {
-    constructor(public rules: rules) {
-        super("TODO")
+export class Branch extends Node<typeof Branch> {
+    constructor(public rules: RuleNodes) {
+        super(Branch, rules)
         // const rules = {} as mutable<RuleNodes>
         // let kind: RuleKind
         // for (kind in definition as RuleDefinitions) {
@@ -25,11 +24,11 @@ export class BranchNode<rules extends RuleNodes = RuleNodes> extends Node {
         // }
     }
 
-    get hasMorphs() {
-        return this.rules.morphs
+    static compile(rules: RuleNodes, s: CompilationState) {
+        return s.data ? `${rules.range}` : ""
     }
 
-    intersect(branch: BranchNode, s: ComparisonState) {
+    static intersect(l: Branch, r: Branch, s: ComparisonState) {
         // if (
         //     // TODO: Fix
         //     // s.lastOperator === "&" &&
@@ -41,11 +40,7 @@ export class BranchNode<rules extends RuleNodes = RuleNodes> extends Node {
         //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
         //     )
         // }
-        return this
-    }
-
-    allows() {
-        return true
+        return s.path ? l : r
     }
 
     // compile(c: Compilation): string {
@@ -92,15 +87,15 @@ export const ruleNodeKinds = {
     divisor: DivisibilityNode,
     regex: RegexNode,
     props: PropsNode,
-    filters: FiltersNode,
+    filters: FilterNode,
     morphs: MorphNode
 } as const
 
-type inferRuleSet<rules extends RulesDefinition> = rules extends Constraints
-    ? inferDomain<rules["domain"]>
-    : rules extends ExactValue<infer value>
-    ? value
-    : never
+// type inferRuleSet<rules extends RulesDefinition> = rules extends Constraints
+//     ? inferDomain<rules["domain"]>
+//     : rules extends ExactValue<infer value>
+//     ? value
+//     : never
 
 type ruleBranch<rules extends RulesDefinition> = rules extends Constraints
     ? Constraints & { domain: rules["domain"] }

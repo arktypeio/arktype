@@ -1,4 +1,4 @@
-import { BranchNode, ValueNode } from "../../nodes/branch.ts"
+import { Branch, ValueNode } from "../../nodes/branch.ts"
 import type { Domain, domainOf } from "../../utils/domains.ts"
 import { throwInternalError } from "../../utils/errors.ts"
 import type { evaluate, List } from "../../utils/generics.ts"
@@ -13,13 +13,13 @@ import { parseDefinition } from "../definition.ts"
 import { writeImplicitNeverMessage } from "./intersection.ts"
 import type { PrefixParser } from "./tuple.ts"
 
-const arrayIndexStringBranch = new BranchNode({
+const arrayIndexStringBranch = new Branch({
     domain: "string",
     // TODO: non array input
     regex: [wellFormedNonNegativeIntegerMatcher.source]
 })
 
-const arrayIndexNumberBranch = new BranchNode({
+const arrayIndexNumberBranch = new Branch({
     domain: "number",
     // TODO: non array input
     range: {
@@ -32,7 +32,7 @@ type KeyType = number | string | symbol
 
 type KeyDomain = domainOf<KeyType>
 
-type KeyBranch = { [domain in KeyDomain]: BranchNode<domain> }[KeyDomain]
+type KeyBranch = { [domain in KeyDomain]: Branch<domain> }[KeyDomain]
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
     const node = parseDefinition(def[1], ctx)
@@ -102,7 +102,7 @@ const sharedKeysOf = (keyBranches: List<KeyValue>[]): List<KeyValue> => {
     return sharedKeys
 }
 
-const keysOfObjectBranch = (branch: BranchNode<"object">): KeyValue[] => {
+const keysOfObjectBranch = (branch: Branch<"object">): KeyValue[] => {
     const result: KeyValue[] = []
     if ("props" in branch) {
         for (const key of Object.keys(branch.props)) {

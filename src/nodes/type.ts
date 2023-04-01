@@ -16,13 +16,13 @@ import type {
 } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
 import type { RulesDefinition, validateRules } from "./branch.ts"
-import { BranchNode } from "./branch.ts"
+import { Branch } from "./branch.ts"
 import type { CompilationState } from "./node.ts"
 import { ComparisonState, Node } from "./node.ts"
 
 export const node = <branches extends RulesDefinition[]>(
     ...branches: validateBranches<branches>
-) => new TypeNode(pruneSubtypes(branches.map((def) => new BranchNode(def))))
+) => new Type(pruneSubtypes(branches.map((def) => new Branch(def as any))))
 
 type validateBranches<branches extends RulesDefinition[]> = {
     [i in keyof branches]: conform<branches[i], validateRules<branches[i]>>
@@ -30,9 +30,9 @@ type validateBranches<branches extends RulesDefinition[]> = {
 
 export type TypeNodeDefinition = readonly RulesDefinition[]
 
-export class TypeNode<t = unknown> extends Node<BranchNode[]> {
-    constructor(public branches: BranchNode[]) {
-        super(branches, TypeNode)
+export class Type<t = unknown> extends Node<typeof Type> {
+    constructor(public branches: Branch[]) {
+        super(Type, branches)
     }
 
     declare [as]: t
@@ -45,59 +45,65 @@ export class TypeNode<t = unknown> extends Node<BranchNode[]> {
         return ""
     }
 
-    static intersect(l: TypeNode, r: TypeNode, s: ComparisonState): TypeNode {
+    static intersect(l: Type, r: Type, s: ComparisonState) {
         if (l.length === 1 && r.length === 1) {
-            const intersection = l[0].intersect(r[0], new ComparisonState())
+            const intersection = Branch.intersect(
+                l.branches[0],
+                r.branches[0],
+                new ComparisonState()
+            )
             return intersection.isDisjoint()
                 ? intersection
-                : new TypeNode([intersection])
+                : new Type([intersection])
         }
         // Branches that are determined to be a subtype of an opposite branch are
         // guaranteed to be a member of the final reduced intersection, so long as
         // each individual set of branches has been correctly reduced to exclude
         // redundancies.
-        const finalBranches: BranchNode[] = []
+        const finalBranches: Branch[] = []
         // Each rBranch is initialized to an empty array to which distinct
         // intersections will be appended. If the rBranch is identified as a
         // subtype (or equal) of any lBranch, the corresponding value should be
         // set to null so we can avoid including previous/future intersections
         // in the final result.
-        const candidatesByR: (BranchNode[] | null)[] = r.map(() => [])
+        const candidatesByR: (Branch[] | null)[] = r.branches.map(() => [])
         for (let lIndex = 0; lIndex < l.length; lIndex++) {
-            let currentCandidateByR: { [rIndex in number]: BranchNode } = {}
+            const lBranch = l.branches[lIndex]
+            let currentCandidateByR: { [rIndex in number]: Branch } = {}
             for (let rIndex = 0; rIndex < r.length; rIndex++) {
+                const rBranch = r.branches[rIndex]
                 if (!candidatesByR[rIndex]) {
                     // we've identified this rBranch as a subtype of
                     // an lBranch and will not yield any distinct intersections.
                     continue
                 }
-                if (l[lIndex] === r[rIndex]) {
+                if (lBranch === rBranch) {
                     // Combination of subtype and supertype cases
-                    finalBranches.push(l[lIndex])
+                    finalBranches.push(lBranch)
                     candidatesByR[rIndex] = null
                     currentCandidateByR = {}
                     break
                 }
-                const branchIntersection = l[lIndex].intersect(r[rIndex], s)
+                const branchIntersection = Branch.intersect(lBranch, rBranch, s)
                 if (branchIntersection.isDisjoint()) {
                     // doesn't tell us about any redundancies or add a distinct intersection
                     continue
                 }
-                if (branchIntersection === l[lIndex]) {
+                if (branchIntersection === lBranch) {
                     // If l is a subtype of the current r branch, intersections
                     // with previous and remaining branches of r won't lead to
                     // distinct intersections, so empty currentCandidatesByR and break
                     // from the inner loop.
-                    finalBranches.push(l[lIndex])
+                    finalBranches.push(lBranch)
                     currentCandidateByR = {}
                     break
                 }
-                if (branchIntersection === r[rIndex]) {
+                if (branchIntersection === rBranch) {
                     // If r is a subtype of the current l branch, set its
                     // intersections to null, removing any previous
                     // intersections and preventing any of its
                     // remaining intersections from being computed.
-                    finalBranches.push(r[rIndex])
+                    finalBranches.push(rBranch)
                     candidatesByR[rIndex] = null
                     continue
                 }
@@ -119,7 +125,7 @@ export class TypeNode<t = unknown> extends Node<BranchNode[]> {
         if (finalBranches.length === 0) {
             return s.addDisjoint("union", l, r)
         }
-        return new TypeNode(finalBranches)
+        return new Type(finalBranches)
     }
 
     allows(value: unknown) {
@@ -138,7 +144,7 @@ export class TypeNode<t = unknown> extends Node<BranchNode[]> {
     // }
 }
 
-const pruneSubtypes = (branches: BranchNode[]) => {
+const pruneSubtypes = (branches: Branch[]) => {
     const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
     for (let i = 0; i < branches.length; i++) {
         for (let j = i + 1; j < branches.length && uniquenessByIndex[i]; j++) {
@@ -152,7 +158,8 @@ const pruneSubtypes = (branches: BranchNode[]) => {
                 uniquenessByIndex[j] = false
                 continue
             }
-            const intersection = branches[i].intersect(
+            const intersection = Branch.intersect(
+                branches[i],
                 branches[j],
                 new ComparisonState()
             )
@@ -177,10 +184,7 @@ const pruneSubtypes = (branches: BranchNode[]) => {
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-export const compileBranches = (
-    branches: BranchNode[],
-    c: CompilationState
-) => {
+export const compileBranches = (branches: Branch[], c: CompilationState) => {
     const discriminants = calculateDiscriminants(branches, c)
     const indices = branches.map((_, i) => i)
     return discriminate(branches, indices, discriminants, c)
@@ -195,7 +199,7 @@ export type QualifiedDisjoint =
     | `${string}/${DiscriminantKind}`
 
 const discriminate = (
-    originalBranches: BranchNode[],
+    originalBranches: Branch[],
     remainingIndices: number[],
     discriminants: Discriminants,
     c: CompilationState
@@ -356,7 +360,7 @@ const discriminantKinds: keySet<DiscriminantKind> = {
 export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 const calculateDiscriminants = (
-    branches: BranchNode[],
+    branches: Branch[],
     ctx: CompilationState
 ): Discriminants => {
     const discriminants: Discriminants = {
@@ -369,7 +373,11 @@ const calculateDiscriminants = (
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
             const intersectionState = new ComparisonState()
-            branches[lIndex].intersect(branches[rIndex], intersectionState)
+            Branch.intersect(
+                branches[lIndex],
+                branches[rIndex],
+                intersectionState
+            )
             for (const path in intersectionState.disjointsByPath) {
                 if (path.includes("mapped")) {
                     // containers could be empty and therefore their elements cannot be used to discriminate

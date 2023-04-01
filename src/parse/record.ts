@@ -1,4 +1,4 @@
-import type { BranchNode } from "../nodes/branch.ts"
+import type { Branch } from "../nodes/branch.ts"
 import { node } from "../nodes/node.ts"
 import type { defineProps } from "../nodes/rules/props.ts"
 import type { Dict, evaluate } from "../utils/generics.ts"
@@ -7,7 +7,7 @@ import { parseDefinition } from "./definition.ts"
 import { Scanner } from "./string/shift/scanner.ts"
 
 // TODO: other optional options?
-export const parseRecord = (def: Dict, ctx: ParseContext): BranchNode => {
+export const parseRecord = (def: Dict, ctx: ParseContext): Branch => {
     const props: defineProps = {}
     for (const definitionKey in def) {
         let keyName = definitionKey

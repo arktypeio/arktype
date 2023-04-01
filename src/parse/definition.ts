@@ -1,4 +1,4 @@
-import { BranchNode } from "../nodes/branch.ts"
+import { Branch } from "../nodes/branch.ts"
 import type { Node } from "../nodes/node.ts"
 import type { Type } from "../scopes/type.ts"
 import { isType } from "../scopes/type.ts"
@@ -47,7 +47,7 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): Node => {
         case "Array":
             return parseTuple(def as List, ctx)
         case "RegExp":
-            return new BranchNode({
+            return new Branch({
                 domain: "string",
                 regex: [(def as RegExp).source]
             })

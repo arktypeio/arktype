@@ -1,19 +1,18 @@
 import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
-import type { Scope } from "../scopes/scope.ts"
-import type { Type, TypeConfig } from "../scopes/type.ts"
+import type { TypeConfig } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
 import type { conform, extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import type { BranchNode, RulesDefinition, validateRules } from "./branch.ts"
+import type { Branch, RulesDefinition, validateRules } from "./branch.ts"
 import type { DomainNode } from "./rules/domain.ts"
 import type { EqualityNode } from "./rules/equality.ts"
 import type { InstanceNode } from "./rules/instance.ts"
 import type { RangeNode } from "./rules/range.ts"
-import { TypeNode } from "./type.ts"
+import { Type } from "./type.ts"
 
 export const node = <branches extends RulesDefinition[]>(
     ...branches: validateBranches<branches>
-) => new TypeNode(branches as any)
+) => new Type(branches as any)
 
 type validateBranches<branches extends RulesDefinition[]> = {
     [i in keyof branches]: conform<branches[i], validateRules<branches[i]>>
@@ -103,15 +102,15 @@ export type DisjointKinds = extend<
         }
         leftAssignability: {
             l: EqualityNode
-            r: BranchNode
+            r: Branch
         }
         rightAssignability: {
-            l: BranchNode
+            l: Branch
             r: EqualityNode
         }
         union: {
-            l: readonly BranchNode[]
-            r: readonly BranchNode[]
+            l: Type
+            r: Type
         }
     }
 >
@@ -135,9 +134,9 @@ export class ComparisonState {
     }
 }
 
-export class Disjoint<
-    kind extends DisjointKind = DisjointKind
-> extends TypeNode<[]> {
+export class Disjoint<kind extends DisjointKind = DisjointKind> extends Type<
+    []
+> {
     constructor(
         public kind: kind,
         public l: DisjointKinds[kind]["l"],
@@ -172,11 +171,8 @@ export class CompilationState {
     lastDomain: Domain = "undefined"
     failFast = false
     traversalConfig = initializeCompilationConfig()
-    readonly rootScope: Scope
 
-    constructor(public type: Type) {
-        this.rootScope = type.scope
-    }
+    constructor(public type: Type) {}
 
     check<code extends ProblemCode, condition extends string>(
         code: code,

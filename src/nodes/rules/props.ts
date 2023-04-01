@@ -1,11 +1,11 @@
 import type { Dict } from "../../utils/generics.ts"
 import type { ComparisonState, CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
-import { TypeNode } from "../type.ts"
+import { Type } from "../type.ts"
 
 type PropKind = "required" | "optional" | "prerequisite"
 
-type IndexProp = [keyType: TypeNode, valueType: TypeNode]
+type IndexProp = [keyType: Type, valueType: Type]
 
 type NamedProps = Dict<string, NamedProp>
 type IndexedProps = readonly IndexProp[]
@@ -42,7 +42,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                 indexed.push([rKey, rValue])
             } else {
                 // TODO: path updates here
-                indexed[matchingIndex][1] = TypeNode.intersect(
+                indexed[matchingIndex][1] = Type.intersect(
                     indexed[matchingIndex][1],
                     rValue,
                     s
@@ -104,14 +104,11 @@ export class PropsNode extends Node<typeof PropsNode> {
 }
 
 export class NamedProp extends Node<typeof NamedProp> {
-    constructor(
-        public readonly kind: PropKind,
-        public readonly type: TypeNode
-    ) {
+    constructor(public readonly kind: PropKind, public readonly type: Type) {
         super(NamedProp, kind, type)
     }
 
-    static compile(kind: PropKind, type: TypeNode, s: CompilationState) {
+    static compile(kind: PropKind, type: Type, s: CompilationState) {
         return type.compile(s)
     }
 
@@ -122,7 +119,7 @@ export class NamedProp extends Node<typeof NamedProp> {
                 : l.kind === "required" || r.kind === "required"
                 ? "required"
                 : "optional"
-        const type = TypeNode.intersect(l.type, r.type, s)
+        const type = Type.intersect(l.type, r.type, s)
 
         return new NamedProp(kind, type)
     }
