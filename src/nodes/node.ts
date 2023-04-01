@@ -35,7 +35,7 @@ type NodeClass<rule> = {
 // @ts-expect-error
 const defaultState = new CompilationState()
 
-export abstract class Node<rule = any> extends Function {
+export abstract class Node<rule> extends Function {
     constructor(
         public readonly rule: rule,
         protected subclass: NodeClass<rule>

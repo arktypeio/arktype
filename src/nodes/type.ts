@@ -32,7 +32,6 @@ export type TypeNodeDefinition = readonly RulesDefinition[]
 
 export class TypeNode<t = unknown> extends Node<BranchNode[]> {
     constructor(public branches: BranchNode[]) {
-        const compiled = branches.map((branch) => branch.compiled).join(";")
         super(branches, TypeNode)
     }
 
@@ -42,14 +41,17 @@ export class TypeNode<t = unknown> extends Node<BranchNode[]> {
         return chainableNoOpProxy
     }
 
-    intersect(other: TypeNode, s: ComparisonState): TypeNode {
-        const lBranches = this.branches
-        const rBranches = other.branches
-        if (lBranches.length === 1 && rBranches.length === 1) {
-            const intersection = lBranches[0].intersect(
-                rBranches[0],
-                new ComparisonState()
-            )
+    static compile() {
+        return ""
+    }
+
+    static intersect(
+        l: BranchNode[],
+        r: BranchNode[],
+        s: ComparisonState
+    ): TypeNode {
+        if (l.length === 1 && r.length === 1) {
+            const intersection = l[0].intersect(r[0], new ComparisonState())
             return intersection.isDisjoint()
                 ? intersection
                 : new TypeNode([intersection])
@@ -64,44 +66,42 @@ export class TypeNode<t = unknown> extends Node<BranchNode[]> {
         // subtype (or equal) of any lBranch, the corresponding value should be
         // set to null so we can avoid including previous/future intersections
         // in the final result.
-        const candidatesByR: (BranchNode[] | null)[] = rBranches.map(() => [])
-        for (let lIndex = 0; lIndex < lBranches.length; lIndex++) {
-            const l = lBranches[lIndex]
+        const candidatesByR: (BranchNode[] | null)[] = r.map(() => [])
+        for (let lIndex = 0; lIndex < l.length; lIndex++) {
             let currentCandidateByR: { [rIndex in number]: BranchNode } = {}
-            for (let rIndex = 0; rIndex < rBranches.length; rIndex++) {
+            for (let rIndex = 0; rIndex < r.length; rIndex++) {
                 if (!candidatesByR[rIndex]) {
                     // we've identified this rBranch as a subtype of
                     // an lBranch and will not yield any distinct intersections.
                     continue
                 }
-                const r = rBranches[rIndex]
-                if (l === r) {
+                if (l[lIndex] === r[rIndex]) {
                     // Combination of subtype and supertype cases
-                    finalBranches.push(l)
+                    finalBranches.push(l[lIndex])
                     candidatesByR[rIndex] = null
                     currentCandidateByR = {}
                     break
                 }
-                const branchIntersection = l.intersect(r, s)
+                const branchIntersection = l[lIndex].intersect(r[rIndex], s)
                 if (branchIntersection.isDisjoint()) {
                     // doesn't tell us about any redundancies or add a distinct intersection
                     continue
                 }
-                if (branchIntersection === l) {
+                if (branchIntersection === l[lIndex]) {
                     // If l is a subtype of the current r branch, intersections
                     // with previous and remaining branches of r won't lead to
                     // distinct intersections, so empty currentCandidatesByR and break
                     // from the inner loop.
-                    finalBranches.push(l)
+                    finalBranches.push(l[lIndex])
                     currentCandidateByR = {}
                     break
                 }
-                if (branchIntersection === r) {
+                if (branchIntersection === r[rIndex]) {
                     // If r is a subtype of the current l branch, set its
                     // intersections to null, removing any previous
                     // intersections and preventing any of its
                     // remaining intersections from being computed.
-                    finalBranches.push(r)
+                    finalBranches.push(r[rIndex])
                     candidatesByR[rIndex] = null
                     continue
                 }
@@ -121,9 +121,8 @@ export class TypeNode<t = unknown> extends Node<BranchNode[]> {
             candidates?.forEach((candidate) => finalBranches.push(candidate))
         }
         if (finalBranches.length === 0) {
-            return s.addDisjoint("union", lBranches, rBranches)
+            return s.addDisjoint("union", l, r)
         }
-        // TODO: avoid revalidating here
         return new TypeNode(finalBranches)
     }
 
