@@ -111,8 +111,8 @@ export class NamedProp extends Node<typeof NamedProp> {
         super(NamedProp, kind, type)
     }
 
-    static compile(kind: PropKind, type: TypeNode, c: CompilationState) {
-        return ""
+    static compile(kind: PropKind, type: TypeNode, s: CompilationState) {
+        return type.compile(s)
     }
 
     static intersect(l: NamedProp, r: NamedProp, s: ComparisonState) {

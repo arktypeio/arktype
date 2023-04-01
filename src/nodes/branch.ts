@@ -12,7 +12,7 @@ import { MorphNode } from "./rules/morph.ts"
 import { NarrowNode } from "./rules/narrow.ts"
 import type { defineProps } from "./rules/props.ts"
 import { PropsNode } from "./rules/props.ts"
-import type { Range } from "./rules/range.ts"
+import type { Bounds } from "./rules/range.ts"
 import { RangeNode } from "./rules/range.ts"
 import { RegexNode } from "./rules/regex.ts"
 
@@ -131,17 +131,17 @@ type Constraints = {
           domain: "object"
           instance: Array<any>
           props?: defineProps
-          range?: Range
+          range?: Bounds
       }
     | {
           domain: "string"
           regex?: string[]
-          range?: Range
+          range?: Bounds
       }
     | {
           domain: "number"
           divisor?: number
-          range?: Range
+          range?: Bounds
       }
     | { domain: "bigint" }
     | { domain: "symbol" }

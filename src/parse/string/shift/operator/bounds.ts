@@ -1,8 +1,8 @@
 import { stringifyRange } from "../../../../nodes/node.ts"
 import type { DomainsJson } from "../../../../nodes/node.ts"
 import type {
-    Bound,
-    Range,
+    BoundContext,
+    Bounds,
     Comparator,
     MaxComparator
 } from "../../../../nodes/rules/range.ts"
@@ -91,7 +91,7 @@ export const parseRightBound = (s: DynamicState, comparator: Comparator) => {
     )
     const openRange = s.ejectRangeIfOpen()
     const rightBound = { comparator, limit }
-    const range: Range = openRange
+    const range: Bounds = openRange
         ? !hasComparatorIn(rightBound, maxComparators)
             ? s.error(writeUnpairableComparatorMessage(comparator))
             : compareStrictness("min", openRange, rightBound) === "l"
@@ -112,7 +112,7 @@ export const parseRightBound = (s: DynamicState, comparator: Comparator) => {
     s.intersect(distributeRange(range, s))
 }
 
-const distributeRange = (range: Range, s: DynamicState) => {
+const distributeRange = (range: Bounds, s: DynamicState) => {
     const resolution = s.resolveRoot()
     const domains = keysOf(resolution)
     const distributedRange: mutable<DomainsJson> = {}
@@ -145,14 +145,14 @@ const distributeRange = (range: Range, s: DynamicState) => {
 }
 
 const hasComparator = <comparator extends Comparator>(
-    bound: Bound,
+    bound: BoundContext,
     comparator: comparator
-): bound is Bound<comparator> => bound.comparator === comparator
+): bound is BoundContext<comparator> => bound.comparator === comparator
 
 const hasComparatorIn = <comparators extends keySet<Comparator>>(
-    bound: Bound,
+    bound: BoundContext,
     comparators: comparators
-): bound is Bound<keyof comparators> => bound.comparator in comparators
+): bound is BoundContext<keyof comparators> => bound.comparator in comparators
 
 export type parseRightBound<
     s extends StaticState,
@@ -202,7 +202,7 @@ export type writeInvalidLimitMessage<
     limit extends string
 > = `Comparator ${comparator} must be followed by a number literal (was '${limit}')`
 
-export const writeEmptyRangeMessage = (range: Range) =>
+export const writeEmptyRangeMessage = (range: Bounds) =>
     `${stringifyRange(range)} is empty`
 
 export type BoundableDomain = "string" | "number" | "object"
