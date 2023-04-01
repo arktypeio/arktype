@@ -3,8 +3,8 @@ import type { CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 
 export class RegexNode extends Node<string[]> {
-    constructor(public readonly sources: string[]) {
-        super(sources, RegexNode)
+    constructor(rule: string[]) {
+        super(rule, RegexNode)
     }
 
     static compile(sources: string[], c: CompilationState) {
@@ -20,7 +20,7 @@ export class RegexNode extends Node<string[]> {
             .join(";")
     }
 
-    static intersect(l: string[], r: string[]) {
-        return intersectUniqueLists(l, r)
+    static intersect(l: RegexNode, r: RegexNode) {
+        return new RegexNode(intersectUniqueLists(l.rule, r.rule))
     }
 }

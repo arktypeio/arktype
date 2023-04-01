@@ -45,11 +45,7 @@ export class TypeNode<t = unknown> extends Node<BranchNode[]> {
         return ""
     }
 
-    static intersect(
-        l: BranchNode[],
-        r: BranchNode[],
-        s: ComparisonState
-    ): TypeNode {
+    static intersect(l: TypeNode, r: TypeNode, s: ComparisonState): TypeNode {
         if (l.length === 1 && r.length === 1) {
             const intersection = l[0].intersect(r[0], new ComparisonState())
             return intersection.isDisjoint()

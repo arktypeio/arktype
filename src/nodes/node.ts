@@ -1,8 +1,6 @@
 import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
-import { as } from "../parse/definition.ts"
 import type { Scope } from "../scopes/scope.ts"
 import type { Type, TypeConfig } from "../scopes/type.ts"
-import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
 import type { Domain } from "../utils/domains.ts"
 import type { conform, extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
@@ -27,7 +25,13 @@ type validateBranches<branches extends RulesDefinition[]> = {
 // }
 
 type NodeClass<rule> = {
-    intersect(l: rule, r: rule, c: ComparisonState): rule
+    new (rule: rule): Node<rule>
+
+    intersect(
+        l: Node<rule>,
+        r: Node<rule>,
+        c: ComparisonState
+    ): Node<rule> | Disjoint
 
     compile(rule: rule, c: CompilationState): string
 }

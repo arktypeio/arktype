@@ -10,7 +10,7 @@ import { EqualityNode } from "./rules/equality.ts"
 import { InstanceNode } from "./rules/instance.ts"
 import { MorphNode } from "./rules/morph.ts"
 import { NarrowNode } from "./rules/narrow.ts"
-import type { PropsDefinition } from "./rules/props.ts"
+import type { defineProps } from "./rules/props.ts"
 import { PropsNode } from "./rules/props.ts"
 import type { Range } from "./rules/range.ts"
 import { RangeNode } from "./rules/range.ts"
@@ -125,12 +125,12 @@ type Constraints = {
     | {
           domain: "object"
           instance?: constructor
-          props?: PropsDefinition
+          props?: defineProps
       }
     | {
           domain: "object"
           instance: Array<any>
-          props?: PropsDefinition
+          props?: defineProps
           range?: Range
       }
     | {

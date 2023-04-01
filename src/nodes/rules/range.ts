@@ -57,15 +57,16 @@ export type Bound = {
 
 export type BoundWithUnits = evaluate<Bound & { units: string }>
 
-export class RangeNode extends Node {
-    constructor(public readonly range: Range) {
-        const comparatorEntries = Object.entries(range) as [
-            Comparator,
-            number
-        ][]
+export class RangeNode extends Node<Range> {
+    constructor(rule: Range) {
+        super(rule, RangeNode)
+    }
+
+    static compile(rule: Range, c: CompilationState) {
+        const comparatorEntries = Object.entries(rule) as [Comparator, number][]
         if (comparatorEntries.length === 0 || comparatorEntries.length > 2) {
             return throwInternalError(
-                `Unexpected comparators: ${stringify(range)}`
+                `Unexpected comparators: ${stringify(rule)}`
             )
         }
         const sizeAssignment = `const size = ${
@@ -86,79 +87,58 @@ export class RangeNode extends Node {
                 })
             )
             .join(" && ")
-        super(
-            // TODO: sort
-            `${sizeAssignment}${checks}`
-        )
+        return `${sizeAssignment}${checks}`
     }
 
-    intersect(other: RangeNode, s: ComparisonState) {
-        if (this.isEqualityRange()) {
-            if (other.isEqualityRange()) {
-                return this.range["=="] === other.range["=="]
-                    ? this
-                    : s.addDisjoint("range", this, other)
+    static intersect(l: RangeNode, r: RangeNode, s: ComparisonState) {
+        if (l.isEqualityRange()) {
+            if (r.isEqualityRange()) {
+                return l.rule["=="] === r.rule["=="]
+                    ? l
+                    : s.addDisjoint("range", l, r)
             }
-            return other.allows(this.range["=="])
-                ? this
-                : s.addDisjoint("range", this, other)
+            return r.allows(l.rule["=="]) ? l : s.addDisjoint("range", l, r)
         }
-        if (other.isEqualityRange()) {
-            return this.allows(other.range["=="])
-                ? other
-                : s.addDisjoint("range", this, other)
+        if (r.isEqualityRange()) {
+            return l.allows(r.rule["=="]) ? r : s.addDisjoint("range", l, r)
         }
-        const stricterMin = compareStrictness(
-            "min",
-            this.lowerBound,
-            other.lowerBound
-        )
-        const stricterMax = compareStrictness(
-            "max",
-            this.upperBound,
-            other.upperBound
-        )
+        const stricterMin = compareStrictness("min", l.lowerBound, r.lowerBound)
+        const stricterMax = compareStrictness("max", l.upperBound, r.upperBound)
         if (stricterMin === "l") {
             if (stricterMax === "r") {
-                return compareStrictness(
-                    "min",
-                    this.lowerBound,
-                    other.upperBound
-                ) === "l"
-                    ? s.addDisjoint("range", this, other)
+                return compareStrictness("min", l.lowerBound, r.upperBound) ===
+                    "l"
+                    ? s.addDisjoint("range", l, r)
                     : new RangeNode({
-                          ...this.#extractComparators(">"),
-                          ...other.#extractComparators("<")
+                          ...l.#extractComparators(">"),
+                          ...r.#extractComparators("<")
                       })
             }
-            return this
+            return l
         }
         if (stricterMin === "r") {
             if (stricterMax === "l") {
-                return compareStrictness(
-                    "max",
-                    this.upperBound,
-                    other.lowerBound
-                ) === "l"
-                    ? s.addDisjoint("range", this, other)
+                return compareStrictness("max", l.upperBound, r.lowerBound) ===
+                    "l"
+                    ? s.addDisjoint("range", l, r)
                     : new RangeNode({
-                          ...other.#extractComparators(">"),
-                          ...this.#extractComparators("<")
+                          ...r.#extractComparators(">"),
+                          ...l.#extractComparators("<")
                       })
             }
-            return other
+            return r
         }
-        return stricterMax === "l" ? this : other
+        return stricterMax === "l" ? l : r
     }
 
-    isEqualityRange(): this is { range: { "==": number } } {
-        return this.range["=="] !== undefined
+    isEqualityRange(): this is { rule: { "==": number } } {
+        return this.rule["=="] !== undefined
     }
 
     getBound(comparator: MinComparator | MaxComparator): Bound | undefined {
-        if (this.range[comparator] !== undefined) {
+        if (this.rule[comparator] !== undefined) {
             return {
-                limit: this.range[comparator]!,
+                limit: this.rule[comparator]!,
                 comparator
             }
         }
@@ -173,16 +153,16 @@ export class RangeNode extends Node {
     }
 
     #extractComparators(prefix: ">" | "<") {
-        return this.range[prefix] !== undefined
-            ? { [prefix]: this.range[">"] }
-            : this.range[`${prefix}=`] !== undefined
-            ? { [`${prefix}=`]: this.range[`${prefix}=`] }
+        return this.rule[prefix] !== undefined
+            ? { [prefix]: this.rule[">"] }
+            : this.rule[`${prefix}=`] !== undefined
+            ? { [`${prefix}=`]: this.rule[`${prefix}=`] }
             : {}
     }
 
     toString(): string {
         if (this.isEqualityRange()) {
-            return `the range of exactly ${this.range["=="]}`
+            return `the range of exactly ${this.rule["=="]}`
         }
         const lower = this.lowerBound
         const upper = this.upperBound
