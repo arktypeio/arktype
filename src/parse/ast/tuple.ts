@@ -20,13 +20,13 @@ import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclo
 import type { Scanner } from "../string/shift/scanner.ts"
 import type { validateConfigTuple } from "./config.ts"
 import { parseConfigTuple } from "./config.ts"
+import { parseNarrowTuple } from "./filter.ts"
+import type { inferNarrow, validateNarrowTuple } from "./filter.ts"
 import type { inferIntersection } from "./intersection.ts"
 import type { inferKeyOfExpression, validateKeyOfExpression } from "./keyof.ts"
 import { parseKeyOfTuple } from "./keyof.ts"
 import type { inferMorph, validateMorphTuple } from "./morph.ts"
 import { parseMorphTuple } from "./morph.ts"
-import type { inferNarrow, validateNarrowTuple } from "./narrow.ts"
-import { parseNarrowTuple } from "./narrow.ts"
 import type { inferUnion } from "./union.ts"
 
 export const parseTuple = (def: List, ctx: ParseContext): Node => {

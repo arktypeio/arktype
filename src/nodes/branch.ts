@@ -1,5 +1,5 @@
+import type { Filter } from "../parse/ast/filter.ts"
 import type { Morph } from "../parse/ast/morph.ts"
-import type { Narrow } from "../parse/ast/narrow.ts"
 import type { inferDomain } from "../utils/domains.ts"
 import type { constructor, defined } from "../utils/generics.ts"
 import type { ComparisonState } from "./node.ts"
@@ -9,8 +9,7 @@ import { DomainNode } from "./rules/domain.ts"
 import { EqualityNode } from "./rules/equality.ts"
 import { InstanceNode } from "./rules/instance.ts"
 import { MorphNode } from "./rules/morph.ts"
-import { NarrowNode } from "./rules/narrow.ts"
-import type { defineProps } from "./rules/props.ts"
+import { FiltersNode } from "./rules/narrow.ts"
 import { PropsNode } from "./rules/props.ts"
 import type { Bounds } from "./rules/range.ts"
 import { RangeNode } from "./rules/range.ts"
@@ -93,7 +92,7 @@ export const ruleNodeKinds = {
     divisor: DivisibilityNode,
     regex: RegexNode,
     props: PropsNode,
-    narrow: NarrowNode,
+    filters: FiltersNode,
     morphs: MorphNode
 } as const
 
@@ -119,18 +118,18 @@ type ExactValue<value = unknown> = {
 }
 
 type Constraints = {
-    narrows?: Narrow[]
+    filters?: Filter[]
     morphs?: Morph[]
 } & (
     | {
           domain: "object"
           instance?: constructor
-          props?: defineProps
+          props?: ""
       }
     | {
           domain: "object"
           instance: Array<any>
-          props?: defineProps
+          props?: ""
           range?: Bounds
       }
     | {
@@ -156,8 +155,3 @@ export type RuleNodes = {
         ? node
         : never
 }
-
-const createRuleNode = <kind extends RuleKind>(
-    kind: kind,
-    def: defined<RuleNodes[kind]>
-) => new ruleNodeKinds[kind](def as never) as RuleNodes[kind]

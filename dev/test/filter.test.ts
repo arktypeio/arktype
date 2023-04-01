@@ -5,7 +5,7 @@ import type { assertEqual } from "../../src/utils/generics.ts"
 import { Path } from "../../src/utils/paths.ts"
 import { attest } from "../attest/main.ts"
 
-describe("narrow", () => {
+describe("filter", () => {
     it("implicit problem", () => {
         const isOdd = (n: number) => n % 2 === 1
         const odd = type(["number", "=>", isOdd])
@@ -24,7 +24,6 @@ describe("narrow", () => {
         const even = type([
             "number",
             "=>",
-
             (n, problems) =>
                 // TODO: fix input
                 n % 3 === 0 || !problems.mustBe("divisible by 3", n, new Path())
@@ -54,47 +53,6 @@ describe("narrow", () => {
                 (data: number | string[]) => !!data
             ])
         }).type.errors("Type 'boolean' is not assignable to type 'string'.")
-    })
-    it("distributed", () => {
-        const distributedBlacklist = {
-            string: (s: string) => s !== "drop tables",
-            number: (n: number) => !Number.isNaN(n)
-        }
-        const t = type(["string|number", "=>", distributedBlacklist])
-        attest(t.infer).typed as string | number
-        attest(t.node).equals({
-            string: { narrow: distributedBlacklist.string },
-            number: { narrow: distributedBlacklist.number }
-        })
-    })
-    it("distributed predicates", () => {
-        const t = type([
-            "string|number",
-            "=>",
-            {
-                // with predicate is narrowed
-                number: (n): n is 0 => n === 0,
-                // without predicate is allowed but not narrowed
-                string: (s) => s === "zero"
-            }
-        ])
-        attest(t).typed as Type<0 | string>
-    })
-    it("distributed parameter inference", () => {
-        const validateInferredAsZero = (input: 0) => !input
-        attest(() => {
-            type([
-                "0|boolean[]",
-                "=>",
-                {
-                    number: (n) => validateInferredAsZero(n),
-                    // @ts-expect-error bad parameter type
-                    object: (data: string[]) => !!data,
-                    // @ts-expect-error domain not in original type
-                    string: (data) => data === ""
-                }
-            ])
-        }).type.errors("Type 'boolean[]' is not assignable to type 'string[]'.")
     })
     it("narrow problem", () => {
         const palindrome = type([

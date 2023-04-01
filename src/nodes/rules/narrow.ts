@@ -1,21 +1,27 @@
-import type { Narrow } from "../../parse/ast/narrow.ts"
-import type { Domain } from "../../utils/domains.ts"
+import type { Filter } from "../../parse/ast/filter.ts"
 import { intersectUniqueLists } from "../../utils/generics.ts"
 import type { CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 
-export class NarrowNode<domain extends Domain = any> extends Node {
-    constructor(public readonly children: Narrow[]) {
-        super(children.map(() => "TODO").join())
+export class FiltersNode extends Node<typeof FiltersNode> {
+    constructor(public checkers: Filter[]) {
+        super(FiltersNode, checkers)
     }
 
-    intersect(other: NarrowNode<domain>) {
-        return new NarrowNode(
-            intersectUniqueLists(this.children, other.children)
-        )
+    static compile(sources: Filter[], c: CompilationState) {
+        return sources
+            .sort()
+            .map(
+                (source) =>
+                    `${source}.test(${c.data}) || ${c.problem(
+                        "regex",
+                        "`" + source + "`"
+                    )}` as const
+            )
+            .join(";")
     }
 
-    compile(c: CompilationState) {
-        return c.check("custom", this.compiled, this.compiled)
+    static intersect(l: FiltersNode, r: FiltersNode) {
+        return new FiltersNode(intersectUniqueLists(l.checkers, r.checkers))
     }
 }
