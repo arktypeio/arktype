@@ -35,12 +35,6 @@ export class Type<t = unknown> extends Node<typeof Type> {
         super(Type, branches)
     }
 
-    declare [as]: t
-
-    get infer(): t {
-        return chainableNoOpProxy
-    }
-
     static compile() {
         return ""
     }
@@ -126,10 +120,6 @@ export class Type<t = unknown> extends Node<typeof Type> {
             return s.addDisjoint("union", l, r)
         }
         return new Type(finalBranches)
-    }
-
-    allows(value: unknown) {
-        return !value
     }
 
     // toArray() {

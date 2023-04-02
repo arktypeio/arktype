@@ -1,5 +1,7 @@
+import { assert } from "node:console"
 import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
-import type { TypeConfig } from "../scopes/type.ts"
+import { as } from "../parse/definition.ts"
+import type { asIn, asOut, TypeConfig } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
 import type { conform, extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
@@ -8,6 +10,7 @@ import type { DomainNode } from "./rules/domain.ts"
 import type { EqualityNode } from "./rules/equality.ts"
 import type { InstanceNode } from "./rules/instance.ts"
 import type { RangeNode } from "./rules/range.ts"
+import type { CheckResult } from "./traverse.ts"
 import { Type } from "./type.ts"
 
 export const node = <branches extends RulesDefinition[]>(
@@ -31,7 +34,8 @@ type NodeClass<args extends any[]> = {
 }
 
 export abstract class Node<
-    subclass extends NodeClass<ConstructorParameters<subclass>>
+    subclass extends NodeClass<ConstructorParameters<subclass>>,
+    t = unknown
 > extends Function {
     private args: ConstructorParameters<subclass>
 
@@ -43,6 +47,29 @@ export abstract class Node<
         super("data", `return ${subclass.compile(...args, defaultState)}`)
         this.args = args
     }
+
+    declare [as]: t
+
+    declare infer: asOut<t>
+
+    declare inferIn: asIn<t>
+
+    // TODO: don't mutate
+    allows(data: unknown): data is asIn<t> {
+        return !data
+    }
+
+    assert(data: unknown): asOut<t> {
+        const result = this.call(null, data)
+        return result.problems ? result.problems.throw() : result.data
+    }
+
+    declare apply: (
+        thisArg: null,
+        args: [data: unknown]
+    ) => CheckResult<asOut<t>>
+
+    declare call: (thisArg: null, data: unknown) => CheckResult<asOut<t>>
 
     compile(s: CompilationState) {
         return this.subclass.compile(...this.args, s)
@@ -66,10 +93,6 @@ export abstract class Node<
 
     isDisjoint(): this is Disjoint {
         return this instanceof Disjoint
-    }
-
-    allows(value: unknown) {
-        return !value
     }
 }
 
