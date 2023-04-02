@@ -18,11 +18,6 @@ type validateBranches<branches extends RulesDefinition[]> = {
     [i in keyof branches]: conform<branches[i], validateRules<branches[i]>>
 }
 
-// export type Node<subclass extends Node = any> = {
-//     intersect(other: subclass, s: ComparisonState): subclass | Disjoint
-//     compile(c: CompilationState): string
-// }
-
 type NodeClass<args extends any[]> = {
     new (...args: args): Node<NodeClass<args>>
 
@@ -35,10 +30,6 @@ type NodeClass<args extends any[]> = {
     compile(...args: [...args: args, s: CompilationState]): string
 }
 
-// TODO: would it be modified?
-// @ts-expect-error
-const defaultState = new CompilationState()
-
 export abstract class Node<
     subclass extends NodeClass<ConstructorParameters<subclass>>
 > extends Function {
@@ -48,6 +39,7 @@ export abstract class Node<
         protected subclass: subclass,
         ...args: ConstructorParameters<subclass>
     ) {
+        const defaultState = new CompilationState()
         super("data", `return ${subclass.compile(...args, defaultState)}`)
         this.args = args
     }
@@ -172,7 +164,7 @@ export class CompilationState {
     failFast = false
     traversalConfig = initializeCompilationConfig()
 
-    constructor(public type: Type) {}
+    constructor() {}
 
     check<code extends ProblemCode, condition extends string>(
         code: code,
