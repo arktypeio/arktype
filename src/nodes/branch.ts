@@ -15,7 +15,7 @@ import { RangeNode } from "./rules/range.ts"
 import { RegexNode } from "./rules/regex.ts"
 
 export class Branch extends Node<typeof Branch> {
-    constructor(public rules: RuleNodes) {
+    constructor(public rules: BranchDefinition) {
         super(Branch, rules)
         // const rules = {} as mutable<RuleNodes>
         // let kind: RuleKind
@@ -24,8 +24,8 @@ export class Branch extends Node<typeof Branch> {
         // }
     }
 
-    static compile(rules: RuleNodes, s: CompilationState) {
-        return s.data ? `${rules.range}` : ""
+    static compile(rules: BranchDefinition, s: CompilationState) {
+        return s.data ? `${rules}` : ""
     }
 
     static intersect(l: Branch, r: Branch, s: ComparisonState) {
@@ -97,15 +97,15 @@ export const ruleNodeKinds = {
 //     ? value
 //     : never
 
-type ruleBranch<rules extends RulesDefinition> = rules extends Constraints
+type ruleBranch<rules extends BranchDefinition> = rules extends Constraints
     ? Constraints & { domain: rules["domain"] }
     : ExactValue
 
-export type validateRules<rules extends RulesDefinition> = {
+export type validateRules<rules extends BranchDefinition> = {
     [k in keyof rules]: k extends keyof ruleBranch<rules> ? rules[k] : never
 }
 
-export type RulesDefinition = ExactValue | Constraints
+export type BranchDefinition = ExactValue | Constraints
 
 type ExactValue<value = unknown> = {
     value: value

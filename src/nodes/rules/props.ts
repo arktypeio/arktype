@@ -3,17 +3,10 @@ import type { ComparisonState, CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
 import { Type } from "../type.ts"
 
-type PropKind = "required" | "optional" | "prerequisite"
-
-type IndexProp = [keyType: Type, valueType: Type]
-
-type NamedProps = Dict<string, NamedProp>
-type IndexedProps = readonly IndexProp[]
-
 export class PropsNode extends Node<typeof PropsNode> {
     constructor(
         public readonly named: NamedProps,
-        public readonly indexed: IndexedProps
+        public readonly indexed: IndexedProps = []
     ) {
         super(PropsNode, named, indexed)
     }
@@ -102,6 +95,13 @@ export class PropsNode extends Node<typeof PropsNode> {
         return new PropsNode(named, indexed)
     }
 }
+
+export type PropKind = "required" | "optional" | "prerequisite"
+
+export type NamedProps = Dict<string, NamedProp>
+type IndexedProps = readonly IndexProp[]
+
+type IndexProp = [keyType: Type, valueType: Type]
 
 export class NamedProp extends Node<typeof NamedProp> {
     constructor(public readonly kind: PropKind, public readonly type: Type) {

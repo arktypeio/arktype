@@ -1,25 +1,16 @@
-import { assert } from "node:console"
 import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
 import { as } from "../parse/definition.ts"
-import type { asIn, asOut, TypeConfig } from "../scopes/type.ts"
 import type { Domain } from "../utils/domains.ts"
-import type { conform, extend } from "../utils/generics.ts"
+import type { extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import type { Branch, RulesDefinition, validateRules } from "./branch.ts"
+import type { BranchDefinition } from "./branch.ts"
 import type { DomainNode } from "./rules/domain.ts"
 import type { EqualityNode } from "./rules/equality.ts"
 import type { InstanceNode } from "./rules/instance.ts"
 import type { RangeNode } from "./rules/range.ts"
 import type { CheckResult } from "./traverse.ts"
-import { Type } from "./type.ts"
-
-export const node = <branches extends RulesDefinition[]>(
-    ...branches: validateBranches<branches>
-) => new Type(branches as any)
-
-type validateBranches<branches extends RulesDefinition[]> = {
-    [i in keyof branches]: conform<branches[i], validateRules<branches[i]>>
-}
+import type { inferIn, inferOut, TypeConfig } from "./type.ts"
+import { Union } from "./union.ts"
 
 type NodeClass<args extends any[]> = {
     new (...args: args): Node<NodeClass<args>>
@@ -39,27 +30,32 @@ export abstract class Node<
 > extends Function {
     private args: ConstructorParameters<subclass>
 
+    compiled: string
+
     constructor(
         protected subclass: subclass,
         ...args: ConstructorParameters<subclass>
     ) {
+        // TOOD: Cache
         const defaultState = new CompilationState()
-        super("data", `return ${subclass.compile(...args, defaultState)}`)
+        const compiled = subclass.compile(...args, defaultState)
+        super("data", `return ${compiled}`)
         this.args = args
+        this.compiled = compiled
     }
 
     declare [as]: t
 
-    declare infer: asOut<t>
+    declare infer: inferOut<t>
 
-    declare inferIn: asIn<t>
+    declare inferIn: inferIn<t>
 
     // TODO: don't mutate
-    allows(data: unknown): data is asIn<t> {
+    allows(data: unknown): data is inferIn<t> {
         return !data
     }
 
-    assert(data: unknown): asOut<t> {
+    assert(data: unknown): inferOut<t> {
         const result = this.call(null, data)
         return result.problems ? result.problems.throw() : result.data
     }
@@ -67,9 +63,9 @@ export abstract class Node<
     declare apply: (
         thisArg: null,
         args: [data: unknown]
-    ) => CheckResult<asOut<t>>
+    ) => CheckResult<inferOut<t>>
 
-    declare call: (thisArg: null, data: unknown) => CheckResult<asOut<t>>
+    declare call: (thisArg: null, data: unknown) => CheckResult<inferOut<t>>
 
     compile(s: CompilationState) {
         return this.subclass.compile(...this.args, s)
@@ -117,15 +113,15 @@ export type DisjointKinds = extend<
         }
         leftAssignability: {
             l: EqualityNode
-            r: Branch
+            r: BranchDefinition
         }
         rightAssignability: {
-            l: Branch
+            l: BranchDefinition
             r: EqualityNode
         }
         union: {
-            l: Type
-            r: Type
+            l: Union
+            r: Union
         }
     }
 >
@@ -149,9 +145,7 @@ export class ComparisonState {
     }
 }
 
-export class Disjoint<kind extends DisjointKind = DisjointKind> extends Type<
-    []
-> {
+export class Disjoint<kind extends DisjointKind = DisjointKind> extends Union {
     constructor(
         public kind: kind,
         public l: DisjointKinds[kind]["l"],

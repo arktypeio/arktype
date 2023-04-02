@@ -1,5 +1,4 @@
 import type { Scope } from "../scopes/scope.ts"
-import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
 import type { xor } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { Problem, ProblemCode, ProblemParameters } from "./problems.ts"
@@ -23,7 +22,8 @@ export class TraversalState {
 
     readonly rootScope: Scope
 
-    #seen: { [name in QualifiedTypeName]?: object[] } = {}
+    // Qualified
+    #seen: { [name in string]?: object[] } = {}
 
     constructor(public type: Type) {
         this.rootScope = type.scope

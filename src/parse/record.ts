@@ -1,17 +1,21 @@
-import type { Branch } from "../nodes/branch.ts"
-import { node } from "../nodes/node.ts"
-import type { defineProps } from "../nodes/rules/props.ts"
-import type { Dict, evaluate } from "../utils/generics.ts"
+import type { BranchDefinition } from "../nodes/branch.ts"
+import { NamedProp } from "../nodes/rules/props.ts"
+import type {
+    type NamedProps,
+    PropKind,
+    type PropsNode
+} from "../nodes/rules/props.ts"
+import type { Dict, evaluate, mutable } from "../utils/generics.ts"
 import type { inferDefinition, ParseContext } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"
 import { Scanner } from "./string/shift/scanner.ts"
 
 // TODO: other optional options?
-export const parseRecord = (def: Dict, ctx: ParseContext): Branch => {
-    const props: defineProps = {}
+export const parseRecord = (def: Dict, ctx: ParseContext): BranchDefinition => {
+    const props: mutable<NamedProps> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
-        let isOptional = false
+        let kind: PropKind = "required"
         if (definitionKey[definitionKey.length - 1] === "?") {
             if (
                 definitionKey[definitionKey.length - 2] === Scanner.escapeToken
@@ -19,19 +23,15 @@ export const parseRecord = (def: Dict, ctx: ParseContext): Branch => {
                 keyName = `${definitionKey.slice(0, -2)}?`
             } else {
                 keyName = definitionKey.slice(0, -1)
-                isOptional = true
+                kind = "optional"
             }
         }
         ctx.path.push(keyName)
-        const propNode = parseDefinition(def[definitionKey], ctx)
+        props[keyName] = new NamedProp(
+            kind,
+            parseDefinition(def[definitionKey], ctx)
+        )
         ctx.path.pop()
-        if (isOptional) {
-            props.optional ??= {}
-            props.optional[keyName] = propNode
-        } else {
-            props.required ??= {}
-            props.required[keyName] = propNode
-        }
     }
     return node({ domain: "object", props })
 }
