@@ -46,10 +46,10 @@ type inferBranches<branches extends List<ConstraintsDefinition>> = {
 
 export class Type<t = unknown> extends Node<typeof Type, t> {
     constructor(public definition: unknown) {
-        const rules = isConstraintsArray(definition)
+        const rule = isConstraintsArray(definition)
             ? definition
             : parseDefinition(definition, { path: new Path() }).rule
-        super(Type, rules)
+        super(Type, rule)
     }
 
     static from<branches extends List<ConstraintsDefinition>>(

@@ -62,7 +62,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                         if (rKey.allows(k)) {
                             const rValueAsProp = new NamedPropNode({
                                 kind: "optional",
-                                type: rValue
+                                value: rValue
                             })
                             propResult = NamedPropNode.intersection(
                                 propResult,
@@ -79,7 +79,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                     if (lKey.allows(k)) {
                         const lValueAsProp = new NamedPropNode({
                             kind: "optional",
-                            type: lValue
+                            value: lValue
                         })
                         propResult = NamedPropNode.intersection(
                             propResult,
@@ -90,10 +90,10 @@ export class PropsNode extends Node<typeof PropsNode> {
                 }
             }
             if (
-                propResult.rule.type.isDisjoint() &&
+                propResult.rule.value.isDisjoint() &&
                 propResult.rule.kind !== "optional"
             ) {
-                return propResult.rule.type
+                return propResult.rule.value
             }
             named[k] = propResult
         }
@@ -115,21 +115,27 @@ export type PropKind = "required" | "optional" | "prerequisite"
 
 export type NamedPropDefinition = {
     kind: PropKind
-    definition: unknown
+    value: unknown
 }
 
+// TODO: attach these to class instead pass and infer as variadic args
 export type NamedPropRule = {
     kind: PropKind
-    type: Type
+    value: Type
 }
 
 export class NamedPropNode extends Node<typeof NamedPropNode> {
-    constructor(public rule: NamedPropRule) {
+    constructor(public definition: NamedPropDefinition) {
+        const rule: NamedPropRule = {
+            kind: definition.kind,
+            // TODO: path shouldn't be here
+            value: new Type(definition.value)
+        }
         super(NamedPropNode, rule)
     }
 
     static compile(rule: NamedPropRule, s: CompilationState) {
-        return rule.type.compile(s)
+        return rule.value.compile(s)
     }
 
     static intersection(
@@ -143,7 +149,9 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
                 : l.rule.kind === "required" || r.rule.kind === "required"
                 ? "required"
                 : "optional"
-        const type = Type.intersection(l.rule.type, r.rule.type, s)
-        return new NamedPropNode({ kind, type })
+        return new NamedPropNode({
+            kind,
+            value: Type.intersection(l.rule.value, r.rule.value, s)
+        })
     }
 }

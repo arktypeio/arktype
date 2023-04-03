@@ -25,7 +25,7 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
         ctx.path.push(keyName)
         named[keyName] = new NamedPropNode({
             kind,
-            type: parseDefinition(def[definitionKey], ctx)
+            value: parseDefinition(def[definitionKey], ctx)
         })
         ctx.path.pop()
     }
