@@ -1,10 +1,10 @@
 import type { BranchDefinition } from "../nodes/branch.ts"
-import { NamedProp } from "../nodes/rules/props.ts"
+import { NamedPropNode } from "../nodes/constraints/props.ts"
 import type {
     type NamedProps,
     PropKind,
     type PropsNode
-} from "../nodes/rules/props.ts"
+} from "../nodes/constraints/props.ts"
 import type { Dict, evaluate, mutable } from "../utils/generics.ts"
 import type { inferDefinition, ParseContext } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"
@@ -27,7 +27,7 @@ export const parseRecord = (def: Dict, ctx: ParseContext): BranchDefinition => {
             }
         }
         ctx.path.push(keyName)
-        props[keyName] = new NamedProp(
+        props[keyName] = new NamedPropNode(
             kind,
             parseDefinition(def[definitionKey], ctx)
         )

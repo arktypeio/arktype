@@ -2,8 +2,8 @@ import type {
     Comparator,
     InvertedComparators,
     MinComparator
-} from "../../../nodes/rules/range.ts"
-import { invertedComparators } from "../../../nodes/rules/range.ts"
+} from "../../../nodes/constraints/range.ts"
+import { invertedComparators } from "../../../nodes/constraints/range.ts"
 import type { NumberLiteral } from "../../../utils/numericLiterals.ts"
 
 export const writeUnmatchedGroupCloseMessage = <unscanned extends string>(

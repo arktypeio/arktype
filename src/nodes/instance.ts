@@ -1,18 +1,18 @@
-import type { constructor } from "../../utils/generics.ts"
-import { constructorExtends } from "../../utils/generics.ts"
-import type { ComparisonState, CompilationState } from "../node.ts"
-import { Node } from "../node.ts"
-import { registerConstructor } from "../registry.ts"
+import type { constructor } from "../utils/generics.ts"
+import { constructorExtends } from "../utils/generics.ts"
+import type { ComparisonState, CompilationState } from "./node.ts"
+import { Node } from "./node.ts"
+import { registerConstructor } from "./registry.ts"
 
 export class InstanceNode extends Node<typeof InstanceNode> {
-    constructor(public readonly ancestor: constructor) {
-        super(InstanceNode, ancestor)
+    constructor(public rule: constructor) {
+        super(InstanceNode, rule)
     }
 
     static intersect(l: InstanceNode, r: InstanceNode, s: ComparisonState) {
-        return constructorExtends(l.ancestor, r.ancestor)
+        return constructorExtends(l.rule, r.rule)
             ? l
-            : constructorExtends(r.ancestor, l.ancestor)
+            : constructorExtends(r.rule, l.rule)
             ? r
             : s.addDisjoint("class", l, r)
     }

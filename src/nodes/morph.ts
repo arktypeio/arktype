@@ -1,11 +1,11 @@
-import type { Morph } from "../../parse/ast/morph.ts"
-import { intersectUniqueLists } from "../../utils/generics.ts"
-import type { CompilationState } from "../node.ts"
-import { Node } from "../node.ts"
+import type { Morph } from "../parse/ast/morph.js"
+import { intersectUniqueLists } from "../utils/generics.js"
+import type { CompilationState } from "./node.js"
+import { Node } from "./node.js"
 
 export class MorphNode extends Node<typeof MorphNode> {
-    constructor(public predicates: Morph[]) {
-        super(MorphNode, predicates)
+    constructor(public rule: Morph[]) {
+        super(MorphNode, rule)
     }
 
     static compile(sources: Morph[], c: CompilationState) {
@@ -22,6 +22,6 @@ export class MorphNode extends Node<typeof MorphNode> {
     }
 
     static intersect(l: MorphNode, r: MorphNode) {
-        return new MorphNode(intersectUniqueLists(l.predicates, r.predicates))
+        return new MorphNode(intersectUniqueLists(l.rule, r.rule))
     }
 }

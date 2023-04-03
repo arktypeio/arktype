@@ -1,8 +1,8 @@
-import { throwInternalError } from "../../utils/errors.ts"
-import type { evaluate, xor } from "../../utils/generics.ts"
-import { stringify } from "../../utils/serialize.ts"
-import type { ComparisonState, CompilationState } from "../node.ts"
-import { Node } from "../node.ts"
+import { throwInternalError } from "../utils/errors.ts"
+import type { evaluate, xor } from "../utils/generics.ts"
+import { stringify } from "../utils/serialize.ts"
+import type { ComparisonState, CompilationState } from "./node.ts"
+import { Node } from "./node.ts"
 
 export const minComparators = {
     ">": true,
@@ -58,18 +58,18 @@ export type BoundContext = {
 export type BoundContextWithUnits = evaluate<BoundContext & { units: string }>
 
 export class RangeNode extends Node<typeof RangeNode> {
-    constructor(public readonly bounds: Bounds) {
-        super(RangeNode, bounds)
+    constructor(public readonly rule: Bounds) {
+        super(RangeNode, rule)
     }
 
-    static compile(bounds: Bounds, c: CompilationState) {
-        const comparatorEntries = Object.entries(bounds) as [
+    static compile(definition: Bounds, c: CompilationState) {
+        const comparatorEntries = Object.entries(definition) as [
             Comparator,
             number
         ][]
         if (comparatorEntries.length === 0 || comparatorEntries.length > 2) {
             return throwInternalError(
-                `Unexpected comparators: ${stringify(bounds)}`
+                `Unexpected comparators: ${stringify(definition)}`
             )
         }
         const sizeAssignment = `const size = ${
@@ -96,14 +96,14 @@ export class RangeNode extends Node<typeof RangeNode> {
     static intersect(l: RangeNode, r: RangeNode, s: ComparisonState) {
         if (l.isEqualityRange()) {
             if (r.isEqualityRange()) {
-                return l.bounds["=="] === r.bounds["=="]
+                return l.rule["=="] === r.rule["=="]
                     ? l
                     : s.addDisjoint("range", l, r)
             }
-            return r.allows(l.bounds["=="]) ? l : s.addDisjoint("range", l, r)
+            return r.allows(l.rule["=="]) ? l : s.addDisjoint("range", l, r)
         }
         if (r.isEqualityRange()) {
-            return l.allows(r.bounds["=="]) ? r : s.addDisjoint("range", l, r)
+            return l.allows(r.rule["=="]) ? r : s.addDisjoint("range", l, r)
         }
         const stricterMin = compareStrictness("min", l.lowerBound, r.lowerBound)
         const stricterMax = compareStrictness("max", l.upperBound, r.upperBound)
@@ -135,15 +135,15 @@ export class RangeNode extends Node<typeof RangeNode> {
     }
 
     isEqualityRange(): this is { rule: { "==": number } } {
-        return this.bounds["=="] !== undefined
+        return this.rule["=="] !== undefined
     }
 
     getComparator(
         comparator: MinComparator | MaxComparator
     ): BoundContext | undefined {
-        if (this.bounds[comparator] !== undefined) {
+        if (this.rule[comparator] !== undefined) {
             return {
-                limit: this.bounds[comparator]!,
+                limit: this.rule[comparator]!,
                 comparator
             }
         }
@@ -158,16 +158,16 @@ export class RangeNode extends Node<typeof RangeNode> {
     }
 
     #extractComparators(prefix: ">" | "<") {
-        return this.bounds[prefix] !== undefined
-            ? { [prefix]: this.bounds[">"] }
-            : this.bounds[`${prefix}=`] !== undefined
-            ? { [`${prefix}=`]: this.bounds[`${prefix}=`] }
+        return this.rule[prefix] !== undefined
+            ? { [prefix]: this.rule[">"] }
+            : this.rule[`${prefix}=`] !== undefined
+            ? { [`${prefix}=`]: this.rule[`${prefix}=`] }
             : {}
     }
 
     toString(): string {
         if (this.isEqualityRange()) {
-            return `the range of exactly ${this.bounds["=="]}`
+            return `the range of exactly ${this.rule["=="]}`
         }
         const lower = this.lowerBound
         const upper = this.upperBound

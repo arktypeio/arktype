@@ -1,47 +1,40 @@
 import type { Filter } from "../parse/ast/filter.ts"
 import type { Morph } from "../parse/ast/morph.ts"
-import type { constructor, instanceOf } from "../utils/generics.ts"
-import type {
-    ComparisonState,
-    CompilationState,
-    nodeDefinition
-} from "./node.ts"
+import type { constructor } from "../utils/generics.ts"
+import { DivisibilityNode } from "./divisibility.ts"
+import { DomainNode } from "./domain.ts"
+import { EqualityNode } from "./equality.ts"
+import { FilterNode } from "./filter.ts"
+import { InstanceNode } from "./instance.ts"
+import { MorphNode } from "./morph.ts"
 import { Node } from "./node.ts"
-import { DivisibilityNode } from "./rules/divisibility.ts"
-import { DomainNode } from "./rules/domain.ts"
-import { EqualityNode } from "./rules/equality.ts"
-import { FilterNode } from "./rules/filter.ts"
-import { InstanceNode } from "./rules/instance.ts"
-import { MorphNode } from "./rules/morph.ts"
-import { PropsNode } from "./rules/props.ts"
-import type { Bounds } from "./rules/range.ts"
-import { RangeNode } from "./rules/range.ts"
-import { RegexNode } from "./rules/regex.ts"
+import type { ComparisonState, CompilationState } from "./node.ts"
+import { PropsNode } from "./props.ts"
+import type { Bounds } from "./range.ts"
+import { RangeNode } from "./range.ts"
+import { RegexNode } from "./regex.ts"
 
-export class Rules extends Node<typeof Rules> {
-    constructor(definition: RulesDefinition) {
-        super(Rules, definition)
-        // const rules = {} as mutable<RuleNodes>
-        // let kind: RuleKind
-        // for (kind in definition as RuleDefinitions) {
-        //     rules[kind] = createRuleNode(kind, definition) as any
-        // }
+export class Constraints extends Node<typeof Constraints> {
+    constructor(rule: ConstraintsRule) {
+        super(Constraints, rule)
     }
 
-    static createChildren(def: RulesDefinition) {
-        const children: RulesChildren = {}
-        let kind: RuleKind
+    static from(def: ConstraintsDefinition) {
+        const children: ConstraintsRule = {}
+        let kind: ConstraintKind
         for (kind in def) {
-            children[kind] = createRule(kind, def[kind as never]) as any
+            children[kind] = new constraintNodeKinds[kind](
+                (def as any)[kind] as never
+            ) as any
         }
-        return children
+        return new Constraints(children)
     }
 
-    static compile(rules: RulesChildren, s: CompilationState) {
+    static compile(rules: ConstraintsRule, s: CompilationState) {
         return s.data ? `${rules}` : ""
     }
 
-    static intersect(l: Rules, r: Rules, s: ComparisonState) {
+    static intersect(l: Constraints, r: Constraints, s: ComparisonState) {
         // if (
         //     // TODO: Fix
         //     // s.lastOperator === "&" &&
@@ -92,7 +85,7 @@ export class Rules extends Node<typeof Rules> {
     // }
 }
 
-export const ruleNodeKinds = {
+export const constraintNodeKinds = {
     domain: DomainNode,
     value: EqualityNode,
     instance: InstanceNode,
@@ -104,14 +97,9 @@ export const ruleNodeKinds = {
     morphs: MorphNode
 } as const
 
-type RuleNodeKinds = typeof ruleNodeKinds
+type ConstraintNodeKinds = typeof constraintNodeKinds
 
-type RuleKind = keyof RuleNodeKinds
-
-const createRule = <kind extends RuleKind>(
-    kind: kind,
-    def: nodeDefinition<RuleNodeKinds[kind]>
-) => new ruleNodeKinds[kind](def as never) as instanceOf<RuleNodeKinds[kind]>
+type ConstraintKind = keyof ConstraintNodeKinds
 
 // type inferRuleSet<rules extends RulesDefinition> = rules extends Constraints
 //     ? inferDomain<rules["domain"]>
@@ -119,27 +107,25 @@ const createRule = <kind extends RuleKind>(
 //     ? value
 //     : never
 
-type ruleBranch<rules extends RulesDefinition> =
-    rules extends ConstraintsDefinition
-        ? ConstraintsDefinition & { domain: rules["domain"] }
+type constraintBranch<rules extends ConstraintsDefinition> =
+    rules extends DomainDefinition
+        ? DomainDefinition & { domain: rules["domain"] }
         : ExactValueDefinition
 
-export type validateRules<rules extends RulesDefinition> = {
-    [k in keyof rules]: k extends keyof ruleBranch<rules> ? rules[k] : never
+export type validateConstraints<rules extends ConstraintsDefinition> = {
+    [k in keyof rules]: k extends keyof constraintBranch<rules>
+        ? rules[k]
+        : never
 }
 
-export type RulesDefinition = ExactValueDefinition | ConstraintsDefinition
-
-type UnknownRulesDefinition = {
-    [k in RuleKind]: nodeDefinition<RuleNodeKinds[k]>
-}
+export type ConstraintsDefinition = ExactValueDefinition | DomainDefinition
 
 type ExactValueDefinition<value = unknown> = {
     value: value
     morphs?: Morph[]
 }
 
-type ConstraintsDefinition = {
+type DomainDefinition = {
     filters?: Filter[]
     morphs?: Morph[]
 } & (
@@ -168,8 +154,10 @@ type ConstraintsDefinition = {
     | { domain: "symbol" }
 )
 
-export type RulesChildren = {
-    [k in RuleKind]?: RuleNodeKinds[k] extends constructor<infer node>
+export type ConstraintsRule = {
+    [k in ConstraintKind]?: ConstraintNodeKinds[k] extends constructor<
+        infer node
+    >
         ? node
         : never
 }

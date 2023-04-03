@@ -1,13 +1,13 @@
-import { hasDomain } from "../../utils/domains.ts"
-import type { SerializablePrimitive } from "../../utils/serialize.ts"
-import { serializePrimitive } from "../../utils/serialize.ts"
-import type { ComparisonState, CompilationState } from "../node.ts"
-import { Node } from "../node.ts"
-import { registerValue } from "../registry.ts"
+import { hasDomain } from "../utils/domains.ts"
+import type { SerializablePrimitive } from "../utils/serialize.ts"
+import { serializePrimitive } from "../utils/serialize.ts"
+import type { ComparisonState, CompilationState } from "./node.ts"
+import { Node } from "./node.ts"
+import { registerValue } from "./registry.ts"
 
 export class EqualityNode extends Node<typeof EqualityNode> {
-    constructor(public readonly value: unknown) {
-        super(EqualityNode, value)
+    constructor(public rule: unknown) {
+        super(EqualityNode, rule)
     }
 
     static intersect(l: EqualityNode, r: EqualityNode, s: ComparisonState) {

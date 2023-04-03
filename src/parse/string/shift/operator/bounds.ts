@@ -5,11 +5,11 @@ import type {
     Bounds,
     Comparator,
     MaxComparator
-} from "../../../../nodes/rules/range.ts"
+} from "../../../../nodes/constraints/range.ts"
 import {
     maxComparators,
     minComparators
-} from "../../../../nodes/rules/range.ts"
+} from "../../../../nodes/constraints/range.ts"
 import { throwInternalError } from "../../../../utils/errors.ts"
 import type { error, keySet, mutable } from "../../../../utils/generics.ts"
 import { isKeyOf, keysOf, listFrom } from "../../../../utils/generics.ts"

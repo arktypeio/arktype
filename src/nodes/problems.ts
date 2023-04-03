@@ -15,8 +15,8 @@ import {
 } from "../utils/objectKinds.ts"
 import type { Path } from "../utils/paths.ts"
 import { stringify } from "../utils/serialize.ts"
-import type { BoundContextWithUnits } from "./rules/range.ts"
-import { comparatorDescriptions } from "./rules/range.ts"
+import type { BoundContextWithUnits } from "./range.ts"
+import { comparatorDescriptions } from "./range.ts"
 
 export class ArkTypeError extends TypeError {
     cause: Problems

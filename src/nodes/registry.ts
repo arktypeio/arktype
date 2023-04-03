@@ -1,4 +1,5 @@
 import type { constructor, extend } from "../utils/generics.ts"
+// TODO: move this and other non-nodes out of nodes dir
 
 const registry = {
     constructor: {} as Record<string, constructor>,

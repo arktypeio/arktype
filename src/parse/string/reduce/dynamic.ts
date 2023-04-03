@@ -1,9 +1,9 @@
-import type { Node } from "../../../nodes/node.ts"
-import type { Comparator, MinBounds } from "../../../nodes/rules/range.ts"
+import type { Comparator, MinBounds } from "../../../nodes/constraints/range.ts"
 import {
     invertedComparators,
     minComparators
-} from "../../../nodes/rules/range.ts"
+} from "../../../nodes/constraints/range.ts"
+import type { Node } from "../../../nodes/node.ts"
 import { throwInternalError, throwParseError } from "../../../utils/errors.ts"
 import { isKeyOf } from "../../../utils/generics.ts"
 import { stringify } from "../../../utils/serialize.ts"

@@ -1,10 +1,10 @@
-import type { Domain } from "../../utils/domains.ts"
-import type { ComparisonState, CompilationState } from "../node.ts"
-import { Node } from "../node.ts"
+import type { Domain } from "../utils/domains.ts"
+import type { ComparisonState, CompilationState } from "./node.ts"
+import { Node } from "./node.ts"
 
 export class DomainNode extends Node<typeof DomainNode> {
-    constructor(public readonly constraint: Domain) {
-        super(DomainNode, constraint)
+    constructor(public rule: Domain) {
+        super(DomainNode, rule)
     }
 
     static intersect(l: DomainNode, r: DomainNode, s: ComparisonState) {

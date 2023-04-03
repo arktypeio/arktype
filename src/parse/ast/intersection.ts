@@ -1,5 +1,5 @@
 import type { DisjointsByPath } from "../../nodes/node.ts"
-import type { MappedKeys } from "../../nodes/rules/props.ts"
+import type { MappedKeys } from "../../nodes/constraints/props.ts"
 import type {
     asConst,
     Dict,

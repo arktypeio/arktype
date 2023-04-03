@@ -6,9 +6,9 @@ import {
 } from "../parse/definition.ts"
 import type { evaluate } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
+import type { Constraints } from "./constraints.ts"
 import type { ComparisonState, CompilationState } from "./node.ts"
 import { Node } from "./node.ts"
-import type { Rules } from "./rules.ts"
 import type { Union } from "./union.ts"
 
 export type TypeParser<$> = {
@@ -25,26 +25,21 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
 
-export type RootNode = Union | Rules
+export type TypeRule = Union | Constraints
 
 export class Type<t = unknown> extends Node<typeof Type, t> {
-    root: RootNode
-
     constructor(public definition: unknown) {
         // TODO; fix
-        const root = parseDefinition(definition, {} as never)
-        super(Type, root)
-        this.root = root
+        const rule = parseDefinition(definition, {} as never)
+        super(Type, rule)
     }
-
-    static createChildren() {}
 
     static intersect(l: Type, r: Type, s: ComparisonState) {
         return l ?? r
     }
 
-    static compile(definition: unknown, s: CompilationState) {
-        return ""
+    static compile(rule: TypeRule, s: CompilationState) {
+        return rule.compile(s)
     }
 }
 

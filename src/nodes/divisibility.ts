@@ -1,15 +1,14 @@
-import type { CompilationState } from "../node.ts"
-import { Node } from "../node.ts"
+import type { CompilationState } from "./node.ts"
+import { Node } from "./node.ts"
 
 export class DivisibilityNode extends Node<typeof DivisibilityNode> {
-    constructor(public readonly divisor: number) {
-        super(DivisibilityNode, divisor)
+    constructor(public rule: number) {
+        super(DivisibilityNode, rule)
     }
 
     static intersect(l: DivisibilityNode, r: DivisibilityNode) {
         const leastCommonMultiple = Math.abs(
-            (l.divisor * r.divisor) /
-                greatestCommonDivisor(l.divisor, r.divisor)
+            (l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
         )
         return new DivisibilityNode(leastCommonMultiple)
     }

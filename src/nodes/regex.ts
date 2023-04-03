@@ -1,14 +1,14 @@
-import { intersectUniqueLists } from "../../utils/generics.ts"
-import type { CompilationState } from "../node.ts"
-import { Node } from "../node.ts"
+import { intersectUniqueLists } from "./../utils/generics.ts"
+import type { CompilationState } from "./node.ts"
+import { Node } from "./node.ts"
 
 export class RegexNode extends Node<typeof RegexNode> {
-    constructor(public sources: string[]) {
-        super(RegexNode, sources)
+    constructor(public rule: string[]) {
+        super(RegexNode, rule)
     }
 
-    static compile(sources: string[], c: CompilationState) {
-        return sources
+    static compile(definition: string[], c: CompilationState) {
+        return definition
             .sort()
             .map(
                 (source) =>
@@ -21,6 +21,6 @@ export class RegexNode extends Node<typeof RegexNode> {
     }
 
     static intersect(l: RegexNode, r: RegexNode) {
-        return new RegexNode(intersectUniqueLists(l.sources, r.sources))
+        return new RegexNode(intersectUniqueLists(l.rule, r.rule))
     }
 }

@@ -3,19 +3,17 @@ import { as } from "../parse/definition.ts"
 import type { Domain } from "../utils/domains.ts"
 import type { extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import type { DomainNode } from "./rules/domain.ts"
-import type { EqualityNode } from "./rules/equality.ts"
-import type { InstanceNode } from "./rules/instance.ts"
-import type { RangeNode } from "./rules/range.ts"
-import type { RulesDefinition } from "./rules.ts"
+import type { ConstraintsDefinition } from "./constraints.ts"
+import type { DomainNode } from "./domain.ts"
+import type { EqualityNode } from "./equality.ts"
+import type { InstanceNode } from "./instance.ts"
+import type { RangeNode } from "./range.ts"
 import type { CheckResult } from "./traverse.ts"
 import type { inferIn, inferOut, TypeConfig } from "./type.ts"
 import { Union } from "./union.ts"
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
-    new (def: nodeDefinition<subclass>): Node<subclass>
-
-    createChildren?: (def: nodeDefinition<subclass>) => nodeChildren<subclass>
+    new (...args: any[]): Node<subclass>
 
     intersect(
         l: Node<subclass>,
@@ -23,40 +21,24 @@ type NodeSubclass<subclass extends NodeSubclass<any>> = {
         s: ComparisonState
     ): Node<subclass> | Disjoint
 
-    compile(children: nodeChildren<subclass>, s: CompilationState): string
+    compile(children: any, s: CompilationState): string
 }
-
-export type nodeDefinition<subclass> = subclass extends new (
-    definition: infer definition
-) => any
-    ? definition
-    : never
-
-type nodeChildren<subclass> = subclass extends {
-    createChildren: (def: any) => infer children
-}
-    ? children
-    : nodeDefinition<subclass>
 
 export abstract class Node<
     subclass extends NodeSubclass<subclass>,
     t = unknown
 > extends Function {
     compiled: string
-    children: nodeChildren<subclass>
 
     constructor(
         protected subclass: subclass,
-        public definition: nodeDefinition<subclass>
+        public rule: Parameters<subclass["compile"]>[0]
     ) {
-        const children = (subclass.createChildren?.(definition) ??
-            definition) as nodeChildren<subclass>
         // TOOD: Cache
         const defaultState = new CompilationState()
-        const compiled = subclass.compile(children, defaultState)
+        const compiled = subclass.compile(rule, defaultState)
         super("data", `return ${compiled}`)
         this.compiled = compiled
-        this.children = children
     }
 
     declare [as]: t
@@ -83,7 +65,7 @@ export abstract class Node<
     declare call: (thisArg: null, data: unknown) => CheckResult<inferOut<t>>
 
     compile(s: CompilationState) {
-        return this.subclass.compile(this.children, s)
+        return this.subclass.compile(this.rule, s)
     }
 
     // protected abstract intersect(
@@ -128,10 +110,10 @@ export type DisjointKinds = extend<
         }
         leftAssignability: {
             l: EqualityNode
-            r: RulesDefinition
+            r: ConstraintsDefinition
         }
         rightAssignability: {
-            l: RulesDefinition
+            l: ConstraintsDefinition
             r: EqualityNode
         }
         union: {

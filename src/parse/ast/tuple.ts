@@ -1,6 +1,6 @@
 import type { Node } from "../../nodes/node.ts"
 import { node } from "../../nodes/node.ts"
-import type { defineProps } from "../../nodes/rules/props.ts"
+import type { defineProps } from "../../nodes/constraints/props.ts"
 import { domainOf } from "../../utils/domains.ts"
 import { throwParseError } from "../../utils/errors.ts"
 import type {

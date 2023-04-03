@@ -1,11 +1,11 @@
-import type { Filter } from "../../parse/ast/filter.ts"
-import { intersectUniqueLists } from "../../utils/generics.ts"
-import type { CompilationState } from "../node.ts"
-import { Node } from "../node.ts"
+import type { Filter } from "../parse/ast/filter.ts"
+import { intersectUniqueLists } from "../utils/generics.ts"
+import { Node } from "./node.ts"
+import type { CompilationState } from "./node.ts"
 
 export class FilterNode extends Node<typeof FilterNode> {
-    constructor(public predicates: Filter[]) {
-        super(FilterNode, predicates)
+    constructor(public rule: Filter[]) {
+        super(FilterNode, rule)
     }
 
     static compile(sources: Filter[], c: CompilationState) {
@@ -22,6 +22,6 @@ export class FilterNode extends Node<typeof FilterNode> {
     }
 
     static intersect(l: FilterNode, r: FilterNode) {
-        return new FilterNode(intersectUniqueLists(l.predicates, r.predicates))
+        return new FilterNode(intersectUniqueLists(l.rule, r.rule))
     }
 }

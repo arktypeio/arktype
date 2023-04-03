@@ -1,28 +1,19 @@
-import type { Dict } from "../../utils/generics.ts"
-import type { ComparisonState, CompilationState } from "../node.ts"
-import { Node } from "../node.ts"
-import { RootNode, Type } from "../type.ts"
-
-export type PropsNodeDefinition = {
-    named: NamedProps
-    indexed: IndexedProps
-}
+import type { Dict, List } from "../utils/generics.ts"
+import type { ComparisonState, CompilationState } from "./node.ts"
+import { Node } from "./node.ts"
+import { Type } from "./type.ts"
 
 export class PropsNode extends Node<typeof PropsNode> {
-    readonly named: NamedProps
-    readonly indexed: IndexedProps
+    readonly named: PropsRule["named"]
+    readonly indexed: PropsRule["indexed"]
 
-    constructor(definition: PropsNodeDefinition) {
+    constructor(definition: PropsRule) {
         super(PropsNode, definition)
         this.named = definition.named
         this.indexed = definition.indexed
     }
 
-    static compile(
-        named: NamedProps,
-        indexed: IndexedProps,
-        s: CompilationState
-    ) {
+    static compile(rule: PropsRule, s: CompilationState) {
         const propChecks: string[] = []
         // // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
         // for (const k in named) {
@@ -59,17 +50,21 @@ export class PropsNode extends Node<typeof PropsNode> {
                     // with any matching index props. Therefore, the
                     // intersection result will already include index values
                     // from both sides whose key types allow k.
-                    propResult = NamedProp.intersect(l.named[k], r.named[k], s)
+                    propResult = NamedPropNode.intersect(
+                        l.named[k],
+                        r.named[k],
+                        s
+                    )
                 } else {
                     // If a named key from l matches any index keys of r, intersect
                     // the value associated with the name with the index value.
                     for (const [rKey, rValue] of r.indexed) {
                         if (rKey.allows(k)) {
-                            const rValueAsProp = new NamedProp(
-                                "optional",
-                                rValue
-                            )
-                            propResult = NamedProp.intersect(
+                            const rValueAsProp = new NamedPropNode({
+                                kind: "optional",
+                                type: rValue
+                            })
+                            propResult = NamedPropNode.intersect(
                                 propResult,
                                 rValueAsProp,
                                 s
@@ -82,8 +77,11 @@ export class PropsNode extends Node<typeof PropsNode> {
                 // the value associated with the name with the index value.
                 for (const [lKey, lValue] of l.indexed) {
                     if (lKey.allows(k)) {
-                        const lValueAsProp = new NamedProp("optional", lValue)
-                        propResult = NamedProp.intersect(
+                        const lValueAsProp = new NamedPropNode({
+                            kind: "optional",
+                            type: lValue
+                        })
+                        propResult = NamedPropNode.intersect(
                             propResult,
                             lValueAsProp,
                             s
@@ -103,40 +101,38 @@ export class PropsNode extends Node<typeof PropsNode> {
     }
 }
 
-export type NamedProps = Dict<string, NamedProp>
-type IndexedProps = readonly IndexProp[]
+export type PropsRule = {
+    named: Dict<string, NamedPropNode>
+    indexed: List<[keyType: Type, valueType: Type]>
+}
 
 export type PropKind = "required" | "optional" | "prerequisite"
-
-type IndexProp = [keyType: Type, valueType: Type]
 
 export type NamedPropDefinition = {
     kind: PropKind
     type: Type
 }
 
-export class NamedProp extends Node<typeof NamedProp> {
+export type NamedPropRule = {
+    kind: PropKind
+    type: Type
+}
+
+export class NamedPropNode extends Node<typeof NamedPropNode> {
     kind: PropKind
     type: Type
 
-    constructor(definition: NamedPropDefinition) {
-        super(NamedProp, definition)
-        this.kind = definition.kind
-        this.type = new Type(definition)
+    constructor(public rule: NamedPropRule) {
+        super(NamedPropNode, rule)
+        this.kind = rule.kind
+        this.type = new Type(rule)
     }
 
-    static createChildren(definition: NamedPropDefinition) {
-        return {
-            kind: definition.kind,
-            type: definition.type
-        }
+    static compile(rule: NamedPropRule, s: CompilationState) {
+        return rule.type.compile(s)
     }
 
-    static compile(def: NamedPropDefinition, s: CompilationState) {
-        return type.compile(s)
-    }
-
-    static intersect(l: NamedProp, r: NamedProp, s: ComparisonState) {
+    static intersect(l: NamedPropNode, r: NamedPropNode, s: ComparisonState) {
         const kind =
             l.kind === "prerequisite" || r.kind === "prerequisite"
                 ? "prerequisite"
@@ -144,6 +140,6 @@ export class NamedProp extends Node<typeof NamedProp> {
                 ? "required"
                 : "optional"
         const type = Type.intersect(l.type, r.type, s)
-        return new NamedProp({ kind, root: type })
+        return new NamedPropNode({ kind, type })
     }
 }

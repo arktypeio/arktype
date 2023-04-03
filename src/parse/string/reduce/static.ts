@@ -3,7 +3,7 @@ import type {
     InvertedComparators,
     MaxComparator,
     MinComparator
-} from "../../../nodes/rules/range.ts"
+} from "../../../nodes/constraints/range.ts"
 import type { defined, error } from "../../../utils/generics.ts"
 import type { NumberLiteral } from "../../../utils/numericLiterals.ts"
 import type { astToString } from "../../ast/utils.ts"
