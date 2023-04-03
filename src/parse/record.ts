@@ -1,18 +1,14 @@
-import type { BranchDefinition } from "../nodes/branch.ts"
-import { NamedPropNode } from "../nodes/constraints/props.ts"
-import type {
-    type NamedProps,
-    PropKind,
-    type PropsNode
-} from "../nodes/constraints/props.ts"
+import { Constraints } from "../nodes/constraints.ts"
+import { NamedPropNode } from "../nodes/props.ts"
+import type { PropKind, PropsRule } from "../nodes/props.ts"
+import { Type } from "../nodes/type.ts"
 import type { Dict, evaluate, mutable } from "../utils/generics.ts"
 import type { inferDefinition, ParseContext } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"
 import { Scanner } from "./string/shift/scanner.ts"
 
-// TODO: other optional options?
-export const parseRecord = (def: Dict, ctx: ParseContext): BranchDefinition => {
-    const props: mutable<NamedProps> = {}
+export const parseRecord = (def: Dict, ctx: ParseContext) => {
+    const named: mutable<PropsRule["named"]> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
         let kind: PropKind = "required"
@@ -27,13 +23,13 @@ export const parseRecord = (def: Dict, ctx: ParseContext): BranchDefinition => {
             }
         }
         ctx.path.push(keyName)
-        props[keyName] = new NamedPropNode(
+        named[keyName] = new NamedPropNode({
             kind,
-            parseDefinition(def[definitionKey], ctx)
-        )
+            type: parseDefinition(def[definitionKey], ctx)
+        })
         ctx.path.pop()
     }
-    return node({ domain: "object", props })
+    return Type.from({ domain: "object", props: "" })
 }
 
 type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`

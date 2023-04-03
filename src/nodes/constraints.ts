@@ -1,5 +1,6 @@
 import type { Filter } from "../parse/ast/filter.ts"
 import type { Morph } from "../parse/ast/morph.ts"
+import type { inferDomain } from "../utils/domains.ts"
 import type { constructor } from "../utils/generics.ts"
 import { DivisibilityNode } from "./divisibility.ts"
 import { DomainNode } from "./domain.ts"
@@ -19,12 +20,12 @@ export class Constraints extends Node<typeof Constraints> {
         super(Constraints, rule)
     }
 
-    static from(def: ConstraintsDefinition) {
+    static from(constraints: ConstraintsDefinition) {
         const children: ConstraintsRule = {}
         let kind: ConstraintKind
-        for (kind in def) {
-            children[kind] = new constraintNodeKinds[kind](
-                (def as any)[kind] as never
+        for (kind in constraints) {
+            children[kind] = new constraintKinds[kind](
+                (constraints as any)[kind] as never
             ) as any
         }
         return new Constraints(children)
@@ -85,7 +86,7 @@ export class Constraints extends Node<typeof Constraints> {
     // }
 }
 
-export const constraintNodeKinds = {
+export const constraintKinds = {
     domain: DomainNode,
     value: EqualityNode,
     instance: InstanceNode,
@@ -97,15 +98,16 @@ export const constraintNodeKinds = {
     morphs: MorphNode
 } as const
 
-type ConstraintNodeKinds = typeof constraintNodeKinds
+type ConstraintNodeKinds = typeof constraintKinds
 
 type ConstraintKind = keyof ConstraintNodeKinds
 
-// type inferRuleSet<rules extends RulesDefinition> = rules extends Constraints
-//     ? inferDomain<rules["domain"]>
-//     : rules extends ExactValue<infer value>
-//     ? value
-//     : never
+export type inferConstraints<constraints extends ConstraintsDefinition> =
+    constraints extends DomainDefinition
+        ? inferDomain<constraints["domain"]>
+        : constraints extends ExactValueDefinition<infer value>
+        ? value
+        : never
 
 type constraintBranch<rules extends ConstraintsDefinition> =
     rules extends DomainDefinition

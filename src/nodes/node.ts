@@ -46,6 +46,13 @@ export abstract class Node<
 
     declare inferIn: inferIn<t>
 
+    declare apply: (
+        thisArg: null,
+        args: [data: unknown]
+    ) => CheckResult<inferOut<t>>
+
+    declare call: (thisArg: null, data: unknown) => CheckResult<inferOut<t>>
+
     // TODO: don't mutate
     allows(data: unknown): data is inferIn<t> {
         return !data
@@ -55,13 +62,6 @@ export abstract class Node<
         const result = this.call(null, data)
         return result.problems ? result.problems.throw() : result.data
     }
-
-    declare apply: (
-        thisArg: null,
-        args: [data: unknown]
-    ) => CheckResult<inferOut<t>>
-
-    declare call: (thisArg: null, data: unknown) => CheckResult<inferOut<t>>
 
     compile(s: CompilationState) {
         return this.subclass.compile(this.rule, s)

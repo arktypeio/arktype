@@ -4,9 +4,14 @@ import {
     parseDefinition,
     type validateDefinition
 } from "../parse/definition.ts"
-import type { evaluate } from "../utils/generics.ts"
+import type { conform, evaluate, List } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
+import type {
+    ConstraintsDefinition,
+    inferConstraints,
+    validateConstraints
+} from "./constraints.ts"
 import { Constraints } from "./constraints.ts"
 import type { ComparisonState } from "./node.ts"
 import { Node } from "./node.ts"
@@ -30,6 +35,15 @@ const isConstraintsArray = (definition: unknown): definition is Constraints[] =>
     Array.isArray(definition) &&
     definition.every((_) => _ instanceof Constraints)
 
+type validateBranches<branches extends List<ConstraintsDefinition>> = conform<
+    branches,
+    { [i in keyof branches]: validateConstraints<branches[i]> }
+>
+
+type inferBranches<branches extends List<ConstraintsDefinition>> = {
+    [i in keyof branches]: inferConstraints<branches[i]>
+}[number]
+
 export class Type<t = unknown> extends Node<typeof Type, t> {
     constructor(public definition: unknown) {
         const rules = isConstraintsArray(definition)
@@ -38,7 +52,15 @@ export class Type<t = unknown> extends Node<typeof Type, t> {
         super(Type, rules)
     }
 
-    static compile(rule: Constraints[]) {
+    static from<branches extends List<ConstraintsDefinition>>(
+        ...branches: validateBranches<branches>
+    ) {
+        return new Type<inferBranches<branches>>(
+            branches.map((branch) => Constraints.from(branch))
+        )
+    }
+
+    static compile(rule: List<Constraints>) {
         return `${rule}`
     }
 

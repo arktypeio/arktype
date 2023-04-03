@@ -106,11 +106,16 @@ export type PropsRule = {
     indexed: List<[keyType: Type, valueType: Type]>
 }
 
+export type PropsDefinition = {
+    named: Dict<string, NamedPropDefinition>
+    indexed: List<[keyType: unknown, valueType: unknown]>
+}
+
 export type PropKind = "required" | "optional" | "prerequisite"
 
 export type NamedPropDefinition = {
     kind: PropKind
-    type: Type
+    definition: unknown
 }
 
 export type NamedPropRule = {

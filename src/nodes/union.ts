@@ -1,6 +1,6 @@
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import type { evaluate, keySet } from "../utils/generics.ts"
+import type { evaluate, keySet, List } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
@@ -18,8 +18,8 @@ import type { CompilationState } from "./node.ts"
 import { ComparisonState } from "./node.ts"
 
 export const branchwiseIntersection = (
-    lBranches: Constraints[],
-    rBranches: Constraints[],
+    lBranches: List<Constraints>,
+    rBranches: List<Constraints>,
     s: ComparisonState
 ) => {
     // Branches that are determined to be a subtype of an opposite branch are
