@@ -28,7 +28,6 @@ import type { inferString } from "./string/string.ts"
 import { parseString } from "./string/string.ts"
 
 export type ParseContext = {
-    type: Type
     path: Path
 }
 
@@ -52,9 +51,6 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): Type => {
                 regex: [(def as RegExp).source]
             })
         case "Function":
-            if (isType(def)) {
-                return ctx.type.scope.addAnonymousTypeReference(def, ctx)
-            }
             if (isThunk(def)) {
                 const returned = def()
                 if (isType(returned)) {

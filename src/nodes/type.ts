@@ -6,10 +6,11 @@ import {
 } from "../parse/definition.ts"
 import type { evaluate } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
-import type { Constraints } from "./constraints.ts"
+import { Path } from "../utils/paths.ts"
+import { Constraints } from "./constraints.ts"
 import type { ComparisonState, CompilationState } from "./node.ts"
 import { Node } from "./node.ts"
-import type { Union } from "./union.ts"
+import { Union } from "./union.ts"
 
 export type TypeParser<$> = {
     // Parse and check the definition, returning either the original input for a
@@ -29,9 +30,14 @@ export type TypeRule = Union | Constraints
 
 export class Type<t = unknown> extends Node<typeof Type, t> {
     constructor(public definition: unknown) {
-        // TODO; fix
-        const rule = parseDefinition(definition, {} as never)
-        super(Type, rule)
+        if (definition instanceof Type) {
+            return definition
+        }
+        if (definition instanceof Constraints || definition instanceof Union) {
+            super(Type, definition)
+        }
+        // TODO: have to preserve def, figure out a better way to parse
+        return parseDefinition(definition, { path: new Path() })
     }
 
     static intersect(l: Type, r: Type, s: ComparisonState) {
