@@ -122,10 +122,17 @@ export class NamedProp extends Node<typeof NamedProp> {
     constructor(definition: NamedPropDefinition) {
         super(NamedProp, definition)
         this.kind = definition.kind
-        this.type = new Type(definition.root)
+        this.type = new Type(definition)
     }
 
-    static compile(kind: PropKind, type: Type, s: CompilationState) {
+    static createChildren(definition: NamedPropDefinition) {
+        return {
+            kind: definition.kind,
+            type: definition.type
+        }
+    }
+
+    static compile(def: NamedPropDefinition, s: CompilationState) {
         return type.compile(s)
     }
 

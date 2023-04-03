@@ -37,6 +37,8 @@ export class Type<t = unknown> extends Node<typeof Type, t> {
         this.root = root
     }
 
+    static createChildren() {}
+
     static intersect(l: Type, r: Type, s: ComparisonState) {
         return l ?? r
     }

@@ -1,5 +1,5 @@
 import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
-import { as, inferDefinition } from "../parse/definition.ts"
+import { as } from "../parse/definition.ts"
 import type { Domain } from "../utils/domains.ts"
 import type { extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
@@ -12,7 +12,7 @@ import type { CheckResult } from "./traverse.ts"
 import type { inferIn, inferOut, TypeConfig } from "./type.ts"
 import { Union } from "./union.ts"
 
-interface NodeSubclass<subclass extends NodeSubclass<any>> {
+type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (def: nodeDefinition<subclass>): Node<subclass>
 
     createChildren?: (def: nodeDefinition<subclass>) => nodeChildren<subclass>
@@ -83,7 +83,7 @@ export abstract class Node<
     declare call: (thisArg: null, data: unknown) => CheckResult<inferOut<t>>
 
     compile(s: CompilationState) {
-        return this.subclass.compile(this.definition, s)
+        return this.subclass.compile(this.children, s)
     }
 
     // protected abstract intersect(
