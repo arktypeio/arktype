@@ -8,9 +8,9 @@ import type { evaluate } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
 import { Constraints } from "./constraints.ts"
-import type { ComparisonState, CompilationState } from "./node.ts"
+import type { ComparisonState } from "./node.ts"
 import { Node } from "./node.ts"
-import { Union } from "./union.ts"
+import { branchwiseIntersection } from "./union.ts"
 
 export type TypeParser<$> = {
     // Parse and check the definition, returning either the original input for a
@@ -26,27 +26,46 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
 
-export type TypeRule = Union | Constraints
+const isConstraintsArray = (definition: unknown): definition is Constraints[] =>
+    Array.isArray(definition) &&
+    definition.every((_) => _ instanceof Constraints)
 
 export class Type<t = unknown> extends Node<typeof Type, t> {
     constructor(public definition: unknown) {
-        if (definition instanceof Type) {
-            return definition
-        }
-        if (definition instanceof Constraints || definition instanceof Union) {
-            super(Type, definition)
-        }
-        // TODO: have to preserve def, figure out a better way to parse
-        return parseDefinition(definition, { path: new Path() })
+        const rules = isConstraintsArray(definition)
+            ? definition
+            : parseDefinition(definition, { path: new Path() }).rule
+        super(Type, rules)
     }
 
-    static intersect(l: Type, r: Type, s: ComparisonState) {
-        return l ?? r
+    static compile(rule: Constraints[]) {
+        return `${rule}`
     }
 
-    static compile(rule: TypeRule, s: CompilationState) {
-        return rule.compile(s)
+    static intersection(l: Type, r: Type, s: ComparisonState): Type {
+        if (l === r) {
+            return l
+        }
+        if (l.rule.length === 1 && r.rule.length === 1) {
+            const result = Constraints.intersection(l.rule[0], r.rule[0], s)
+            return result.isDisjoint() ? result : new Type([result])
+        }
+        const branches = branchwiseIntersection(l.rule, r.rule, s)
+        return branches.length
+            ? new Type(branches)
+            : s.addDisjoint("union", l, r)
     }
+
+    // toArray() {
+    //     return {
+    //         object: {
+    //             instance: Array,
+    //             props: {
+    //                 [mappedKeys.index]: this
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 export type KeyCheckKind = "loose" | "strict" | "distilled"

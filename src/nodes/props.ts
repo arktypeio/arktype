@@ -25,7 +25,7 @@ export class PropsNode extends Node<typeof PropsNode> {
         return propChecks.length ? s.mergeChecks(propChecks) : "true"
     }
 
-    static intersect(l: PropsNode, r: PropsNode, s: ComparisonState) {
+    static intersection(l: PropsNode, r: PropsNode, s: ComparisonState) {
         const indexed = [...l.indexed]
         for (const [rKey, rValue] of r.indexed) {
             const matchingIndex = indexed.findIndex(([lKey]) => lKey === rKey)
@@ -33,7 +33,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                 indexed.push([rKey, rValue])
             } else {
                 // TODO: path updates here
-                indexed[matchingIndex][1] = Type.intersect(
+                indexed[matchingIndex][1] = Type.intersection(
                     indexed[matchingIndex][1],
                     rValue,
                     s
@@ -50,7 +50,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                     // with any matching index props. Therefore, the
                     // intersection result will already include index values
                     // from both sides whose key types allow k.
-                    propResult = NamedPropNode.intersect(
+                    propResult = NamedPropNode.intersection(
                         l.named[k],
                         r.named[k],
                         s
@@ -64,7 +64,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                                 kind: "optional",
                                 type: rValue
                             })
-                            propResult = NamedPropNode.intersect(
+                            propResult = NamedPropNode.intersection(
                                 propResult,
                                 rValueAsProp,
                                 s
@@ -81,7 +81,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                             kind: "optional",
                             type: lValue
                         })
-                        propResult = NamedPropNode.intersect(
+                        propResult = NamedPropNode.intersection(
                             propResult,
                             lValueAsProp,
                             s
@@ -90,10 +90,10 @@ export class PropsNode extends Node<typeof PropsNode> {
                 }
             }
             if (
-                propResult.type.isDisjoint() &&
-                propResult.kind !== "optional"
+                propResult.rule.type.isDisjoint() &&
+                propResult.rule.kind !== "optional"
             ) {
-                return propResult.type
+                return propResult.rule.type
             }
             named[k] = propResult
         }
@@ -119,27 +119,26 @@ export type NamedPropRule = {
 }
 
 export class NamedPropNode extends Node<typeof NamedPropNode> {
-    kind: PropKind
-    type: Type
-
     constructor(public rule: NamedPropRule) {
         super(NamedPropNode, rule)
-        this.kind = rule.kind
-        this.type = new Type(rule)
     }
 
     static compile(rule: NamedPropRule, s: CompilationState) {
         return rule.type.compile(s)
     }
 
-    static intersect(l: NamedPropNode, r: NamedPropNode, s: ComparisonState) {
+    static intersection(
+        l: NamedPropNode,
+        r: NamedPropNode,
+        s: ComparisonState
+    ) {
         const kind =
-            l.kind === "prerequisite" || r.kind === "prerequisite"
+            l.rule.kind === "prerequisite" || r.rule.kind === "prerequisite"
                 ? "prerequisite"
-                : l.kind === "required" || r.kind === "required"
+                : l.rule.kind === "required" || r.rule.kind === "required"
                 ? "required"
                 : "optional"
-        const type = Type.intersect(l.type, r.type, s)
+        const type = Type.intersection(l.rule.type, r.rule.type, s)
         return new NamedPropNode({ kind, type })
     }
 }

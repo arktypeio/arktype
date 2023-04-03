@@ -7,7 +7,7 @@ export class DomainNode extends Node<typeof DomainNode> {
         super(DomainNode, rule)
     }
 
-    static intersect(l: DomainNode, r: DomainNode, s: ComparisonState) {
+    static intersection(l: DomainNode, r: DomainNode, s: ComparisonState) {
         return l === r ? l : s.addDisjoint("domain", l, r)
     }
 

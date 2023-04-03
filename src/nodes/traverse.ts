@@ -3,6 +3,7 @@ import type { xor } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { Problem, ProblemCode, ProblemParameters } from "./problems.ts"
 import { Problems, problemsByCode } from "./problems.ts"
+import type { Type } from "./type.ts"
 
 export const CheckResult = class {
     data?: unknown

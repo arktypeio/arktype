@@ -9,13 +9,12 @@ import type { EqualityNode } from "./equality.ts"
 import type { InstanceNode } from "./instance.ts"
 import type { RangeNode } from "./range.ts"
 import type { CheckResult } from "./traverse.ts"
-import type { inferIn, inferOut, TypeConfig } from "./type.ts"
-import { Union } from "./union.ts"
+import { type inferIn, type inferOut, Type, type TypeConfig } from "./type.ts"
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (...args: any[]): Node<subclass>
 
-    intersect(
+    intersection(
         l: Node<subclass>,
         r: Node<subclass>,
         s: ComparisonState
@@ -117,8 +116,8 @@ export type DisjointKinds = extend<
             r: EqualityNode
         }
         union: {
-            l: Union
-            r: Union
+            l: Type
+            r: Type
         }
     }
 >
@@ -142,7 +141,9 @@ export class ComparisonState {
     }
 }
 
-export class Disjoint<kind extends DisjointKind = DisjointKind> extends Union {
+export class Disjoint<
+    kind extends DisjointKind = DisjointKind
+> extends Type<never> {
     constructor(
         public kind: kind,
         public l: DisjointKinds[kind]["l"],

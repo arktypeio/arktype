@@ -10,7 +10,7 @@ export class EqualityNode extends Node<typeof EqualityNode> {
         super(EqualityNode, rule)
     }
 
-    static intersect(l: EqualityNode, r: EqualityNode, s: ComparisonState) {
+    static intersection(l: EqualityNode, r: EqualityNode, s: ComparisonState) {
         return l === r ? l : s.addDisjoint("value", l, r)
     }
 

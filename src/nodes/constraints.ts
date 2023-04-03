@@ -34,7 +34,7 @@ export class Constraints extends Node<typeof Constraints> {
         return s.data ? `${rules}` : ""
     }
 
-    static intersect(l: Constraints, r: Constraints, s: ComparisonState) {
+    static intersection(l: Constraints, r: Constraints, s: ComparisonState) {
         // if (
         //     // TODO: Fix
         //     // s.lastOperator === "&" &&

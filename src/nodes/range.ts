@@ -93,7 +93,7 @@ export class RangeNode extends Node<typeof RangeNode> {
         return `${sizeAssignment}${checks}`
     }
 
-    static intersect(l: RangeNode, r: RangeNode, s: ComparisonState) {
+    static intersection(l: RangeNode, r: RangeNode, s: ComparisonState) {
         if (l.isEqualityRange()) {
             if (r.isEqualityRange()) {
                 return l.rule["=="] === r.rule["=="]

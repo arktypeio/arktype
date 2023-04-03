@@ -9,7 +9,7 @@ export class InstanceNode extends Node<typeof InstanceNode> {
         super(InstanceNode, rule)
     }
 
-    static intersect(l: InstanceNode, r: InstanceNode, s: ComparisonState) {
+    static intersection(l: InstanceNode, r: InstanceNode, s: ComparisonState) {
         return constructorExtends(l.rule, r.rule)
             ? l
             : constructorExtends(r.rule, l.rule)
