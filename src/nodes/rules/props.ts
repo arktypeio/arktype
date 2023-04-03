@@ -1,14 +1,21 @@
 import type { Dict } from "../../utils/generics.ts"
 import type { ComparisonState, CompilationState } from "../node.ts"
 import { Node } from "../node.ts"
-import { Type } from "../type.ts"
+import { RootNode, Type } from "../type.ts"
+
+export type PropsNodeDefinition = {
+    named: NamedProps
+    indexed: IndexedProps
+}
 
 export class PropsNode extends Node<typeof PropsNode> {
-    constructor(
-        public readonly named: NamedProps,
-        public readonly indexed: IndexedProps = []
-    ) {
-        super(PropsNode, named, indexed)
+    readonly named: NamedProps
+    readonly indexed: IndexedProps
+
+    constructor(definition: PropsNodeDefinition) {
+        super(PropsNode, definition)
+        this.named = definition.named
+        this.indexed = definition.indexed
     }
 
     static compile(
@@ -92,20 +99,30 @@ export class PropsNode extends Node<typeof PropsNode> {
             }
             named[k] = propResult
         }
-        return new PropsNode(named, indexed)
+        return new PropsNode({ named, indexed })
     }
 }
-
-export type PropKind = "required" | "optional" | "prerequisite"
 
 export type NamedProps = Dict<string, NamedProp>
 type IndexedProps = readonly IndexProp[]
 
+export type PropKind = "required" | "optional" | "prerequisite"
+
 type IndexProp = [keyType: Type, valueType: Type]
 
+export type NamedPropDefinition = {
+    kind: PropKind
+    type: Type
+}
+
 export class NamedProp extends Node<typeof NamedProp> {
-    constructor(public readonly kind: PropKind, public readonly type: Type) {
-        super(NamedProp, kind, type)
+    kind: PropKind
+    type: Type
+
+    constructor(definition: NamedPropDefinition) {
+        super(NamedProp, definition)
+        this.kind = definition.kind
+        this.type = new Type(definition.root)
     }
 
     static compile(kind: PropKind, type: Type, s: CompilationState) {
@@ -120,7 +137,6 @@ export class NamedProp extends Node<typeof NamedProp> {
                 ? "required"
                 : "optional"
         const type = Type.intersect(l.type, r.type, s)
-
-        return new NamedProp(kind, type)
+        return new NamedProp({ kind, root: type })
     }
 }

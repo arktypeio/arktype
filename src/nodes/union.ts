@@ -13,12 +13,12 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
-import { Branch } from "./branch.ts"
 import type { CompilationState } from "./node.ts"
 import { ComparisonState, Node } from "./node.ts"
+import { Rules } from "./rules.ts"
 
 export class Union extends Node<typeof Union> {
-    constructor(public branches: Branch[]) {
+    constructor(public branches: Rules[]) {
         super(Union, branches)
     }
 
@@ -31,16 +31,16 @@ export class Union extends Node<typeof Union> {
         // guaranteed to be a member of the final reduced intersection, so long as
         // each individual set of branches has been correctly reduced to exclude
         // redundancies.
-        const finalBranches: Branch[] = []
+        const finalBranches: Rules[] = []
         // Each rBranch is initialized to an empty array to which distinct
         // intersections will be appended. If the rBranch is identified as a
         // subtype (or equal) of any lBranch, the corresponding value should be
         // set to null so we can avoid including previous/future intersections
         // in the final result.
-        const candidatesByR: (Branch[] | null)[] = r.branches.map(() => [])
+        const candidatesByR: (Rules[] | null)[] = r.branches.map(() => [])
         for (let lIndex = 0; lIndex < l.length; lIndex++) {
             const lBranch = l.branches[lIndex]
-            let currentCandidateByR: { [rIndex in number]: Branch } = {}
+            let currentCandidateByR: { [rIndex in number]: Rules } = {}
             for (let rIndex = 0; rIndex < r.length; rIndex++) {
                 const rBranch = r.branches[rIndex]
                 if (!candidatesByR[rIndex]) {
@@ -55,7 +55,7 @@ export class Union extends Node<typeof Union> {
                     currentCandidateByR = {}
                     break
                 }
-                const branchIntersection = Branch.intersect(lBranch, rBranch, s)
+                const branchIntersection = Rules.intersect(lBranch, rBranch, s)
                 if (branchIntersection.isDisjoint()) {
                     // doesn't tell us about any redundancies or add a distinct intersection
                     continue
@@ -111,7 +111,7 @@ export class Union extends Node<typeof Union> {
     // }
 }
 
-const pruneSubtypes = (branches: Branch[]) => {
+const pruneSubtypes = (branches: Rules[]) => {
     const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
     for (let i = 0; i < branches.length; i++) {
         for (let j = i + 1; j < branches.length && uniquenessByIndex[i]; j++) {
@@ -125,7 +125,7 @@ const pruneSubtypes = (branches: Branch[]) => {
                 uniquenessByIndex[j] = false
                 continue
             }
-            const intersection = Branch.intersect(
+            const intersection = Rules.intersect(
                 branches[i],
                 branches[j],
                 new ComparisonState()
@@ -151,7 +151,7 @@ const pruneSubtypes = (branches: Branch[]) => {
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-export const compileBranches = (branches: Branch[], c: CompilationState) => {
+export const compileBranches = (branches: Rules[], c: CompilationState) => {
     const discriminants = calculateDiscriminants(branches, c)
     const indices = branches.map((_, i) => i)
     return discriminate(branches, indices, discriminants, c)
@@ -166,7 +166,7 @@ export type QualifiedDisjoint =
     | `${string}/${DiscriminantKind}`
 
 const discriminate = (
-    originalBranches: Branch[],
+    originalBranches: Rules[],
     remainingIndices: number[],
     discriminants: Discriminants,
     c: CompilationState
@@ -327,7 +327,7 @@ const discriminantKinds: keySet<DiscriminantKind> = {
 export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 const calculateDiscriminants = (
-    branches: Branch[],
+    branches: Rules[],
     ctx: CompilationState
 ): Discriminants => {
     const discriminants: Discriminants = {
@@ -340,7 +340,7 @@ const calculateDiscriminants = (
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
             const intersectionState = new ComparisonState()
-            Branch.intersect(
+            Rules.intersect(
                 branches[lIndex],
                 branches[rIndex],
                 intersectionState

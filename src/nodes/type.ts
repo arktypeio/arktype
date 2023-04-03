@@ -6,9 +6,9 @@ import {
 } from "../parse/definition.ts"
 import type { evaluate } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
-import type { BranchDefinition } from "./branch.ts"
 import type { ComparisonState, CompilationState } from "./node.ts"
 import { Node } from "./node.ts"
+import type { Rules } from "./rules.ts"
 import type { Union } from "./union.ts"
 
 export type TypeParser<$> = {
@@ -25,8 +25,10 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
 
+export type RootNode = Union | Rules
+
 export class Type<t = unknown> extends Node<typeof Type, t> {
-    root: Union | BranchDefinition
+    root: RootNode
 
     constructor(public definition: unknown) {
         // TODO; fix

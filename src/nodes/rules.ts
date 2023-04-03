@@ -1,7 +1,11 @@
 import type { Filter } from "../parse/ast/filter.ts"
 import type { Morph } from "../parse/ast/morph.ts"
-import type { constructor } from "../utils/generics.ts"
-import type { ComparisonState, CompilationState } from "./node.ts"
+import type { constructor, instanceOf } from "../utils/generics.ts"
+import type {
+    ComparisonState,
+    CompilationState,
+    nodeDefinition
+} from "./node.ts"
 import { Node } from "./node.ts"
 import { DivisibilityNode } from "./rules/divisibility.ts"
 import { DomainNode } from "./rules/domain.ts"
@@ -14,9 +18,9 @@ import type { Bounds } from "./rules/range.ts"
 import { RangeNode } from "./rules/range.ts"
 import { RegexNode } from "./rules/regex.ts"
 
-export class Branch extends Node<typeof Branch> {
-    constructor(public rules: BranchDefinition) {
-        super(Branch, rules)
+export class Rules extends Node<typeof Rules> {
+    constructor(definition: RulesDefinition) {
+        super(Rules, definition)
         // const rules = {} as mutable<RuleNodes>
         // let kind: RuleKind
         // for (kind in definition as RuleDefinitions) {
@@ -24,11 +28,20 @@ export class Branch extends Node<typeof Branch> {
         // }
     }
 
-    static compile(rules: BranchDefinition, s: CompilationState) {
+    static createChildren(def: RulesDefinition) {
+        const children: RulesChildren = {}
+        let kind: RuleKind
+        for (kind in def) {
+            children[kind] = createRule(kind, def[kind as never]) as any
+        }
+        return children
+    }
+
+    static compile(rules: RulesChildren, s: CompilationState) {
         return s.data ? `${rules}` : ""
     }
 
-    static intersect(l: Branch, r: Branch, s: ComparisonState) {
+    static intersect(l: Rules, r: Rules, s: ComparisonState) {
         // if (
         //     // TODO: Fix
         //     // s.lastOperator === "&" &&
@@ -91,28 +104,42 @@ export const ruleNodeKinds = {
     morphs: MorphNode
 } as const
 
+type RuleNodeKinds = typeof ruleNodeKinds
+
+type RuleKind = keyof RuleNodeKinds
+
+const createRule = <kind extends RuleKind>(
+    kind: kind,
+    def: nodeDefinition<RuleNodeKinds[kind]>
+) => new ruleNodeKinds[kind](def as never) as instanceOf<RuleNodeKinds[kind]>
+
 // type inferRuleSet<rules extends RulesDefinition> = rules extends Constraints
 //     ? inferDomain<rules["domain"]>
 //     : rules extends ExactValue<infer value>
 //     ? value
 //     : never
 
-type ruleBranch<rules extends BranchDefinition> = rules extends Constraints
-    ? Constraints & { domain: rules["domain"] }
-    : ExactValue
+type ruleBranch<rules extends RulesDefinition> =
+    rules extends ConstraintsDefinition
+        ? ConstraintsDefinition & { domain: rules["domain"] }
+        : ExactValueDefinition
 
-export type validateRules<rules extends BranchDefinition> = {
+export type validateRules<rules extends RulesDefinition> = {
     [k in keyof rules]: k extends keyof ruleBranch<rules> ? rules[k] : never
 }
 
-export type BranchDefinition = ExactValue | Constraints
+export type RulesDefinition = ExactValueDefinition | ConstraintsDefinition
 
-type ExactValue<value = unknown> = {
+type UnknownRulesDefinition = {
+    [k in RuleKind]: nodeDefinition<RuleNodeKinds[k]>
+}
+
+type ExactValueDefinition<value = unknown> = {
     value: value
     morphs?: Morph[]
 }
 
-type Constraints = {
+type ConstraintsDefinition = {
     filters?: Filter[]
     morphs?: Morph[]
 } & (
@@ -141,11 +168,7 @@ type Constraints = {
     | { domain: "symbol" }
 )
 
-type RuleNodeKinds = typeof ruleNodeKinds
-
-type RuleKind = keyof RuleNodeKinds
-
-export type RuleNodes = {
+export type RulesChildren = {
     [k in RuleKind]?: RuleNodeKinds[k] extends constructor<infer node>
         ? node
         : never
