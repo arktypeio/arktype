@@ -1,12 +1,28 @@
 {
-    "extends": "../configs/tsconfig.json",
     "compilerOptions": {
+        "module": "ESNext",
         "target": "ESNext",
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "noEmit": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "isolatedModules": true,
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+        "composite": true,
+        "exactOptionalPropertyTypes": true,
+        "noErrorTruncation": true,
+        "lib": ["ESNext"],
         "paths": {
             "get-current-line": [
                 "./node_modules/get-current-line/compiled-types/index.d.ts"
             ]
         }
     },
-    "exclude": ["node_modules", "dist"]
+    "ts-node": {
+        "esm": true,
+        "swc": true,
+        "transpileOnly": true
+    }
 }

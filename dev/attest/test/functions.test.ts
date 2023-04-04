@@ -1,7 +1,7 @@
 import * as assert from "node:assert/strict"
 import { basename } from "node:path"
 import { describe, it } from "mocha"
-import { attest } from "../main.ts"
+import { attest } from "../src/main.ts"
 import { fileName } from "../src/runtime/main.ts"
 
 const n = 5
