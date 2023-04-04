@@ -65,12 +65,10 @@ if (args[attestArgIndex + 1] === "bench") {
         const runnerStart = Date.now()
 
         const prefix = attestArgs.includes("--coverage")
-            ? `node --require ${fromHere("patchC8.cjs")} ${fromPackageRoot(
-                  "node_modules",
-                  "c8",
-                  "bin",
-                  "c8.js"
-              )} mocha`
+            ? `node --require ${fromHere(
+                  "..",
+                  "patchC8.cjs"
+              )} ${fromPackageRoot("node_modules", "c8", "bin", "c8.js")} mocha`
             : "npx mocha"
 
         shell(`${prefix} ${isBuildTest ? "**/test/*.test.js" : ""}`, {
