@@ -4,7 +4,7 @@ import {
     unknownDefinitionMessage,
     writeBadDefinitionTypeMessage
 } from "../../src/parse/definition.ts"
-import { attest } from "../attest/main.ts"
+import { attest } from "../attest/src/main.ts"
 
 describe("bad definition types", () => {
     it("unknown", () => {

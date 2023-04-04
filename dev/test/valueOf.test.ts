@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
 import { type, valueOf } from "../../src/main.ts"
-import { attest } from "../attest/main.ts"
+import { attest } from "../attest/src/main.ts"
 
 describe("===", () => {
     it("base", () => {

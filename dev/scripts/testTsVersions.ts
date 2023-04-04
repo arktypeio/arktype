@@ -1,6 +1,6 @@
 import { rmSync, writeFileSync } from "node:fs"
-import { fromPackageRoot, readPackageJson } from "../runtime/fs.ts"
-import { shell } from "../runtime/shell.ts"
+import { fromPackageRoot, readPackageJson } from "../attest/src/runtime/fs"
+import { shell } from "../attest/src/runtime/shell"
 
 const versions: { [k: string]: string } = {
     // Disabled because of the changes made to accommodate StackBlitz. Reenable:

@@ -2,9 +2,9 @@ import {
     fromPackageRoot,
     readFile,
     readJson,
-    shell,
     writeFile
-} from "../../../runtime/main.ts"
+} from "../../../attest/src/runtime/fs.ts"
+import { shell } from "../../../attest/src/runtime/shell.ts"
 import type { SnippetsByPath } from "./extractSnippets.ts"
 import { referenceTokens } from "./snipTokens.ts"
 

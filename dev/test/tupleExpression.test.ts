@@ -4,7 +4,7 @@ import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
 } from "../../src/parse/string/shift/operand/unenclosed.ts"
-import { attest } from "../attest/main.ts"
+import { attest } from "../attest/src/main.ts"
 
 describe("tuple expression", () => {
     it("union", () => {

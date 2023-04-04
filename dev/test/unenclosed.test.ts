@@ -2,7 +2,7 @@ import { describe, it } from "mocha"
 import { scope, type } from "../../src/main.ts"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.ts"
 import { writeMalformedNumericLiteralMessage } from "../../src/utils/numericLiterals.ts"
-import { attest } from "../attest/main.ts"
+import { attest } from "../attest/src/main.ts"
 
 describe("parse unenclosed", () => {
     describe("identifier", () => {

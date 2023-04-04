@@ -9,7 +9,7 @@ import {
     walkPaths,
     writeFile,
     writeJson
-} from "../runtime/main.ts"
+} from "../attest/src/runtime/main.ts"
 import { repoDirs } from "./common.ts"
 
 const isTestBuild = process.argv.includes("--test")
@@ -85,7 +85,6 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
             "dev/attest/main.ts",
             "dev/attest/cli.ts",
             "dev/attest/src",
-            "dev/runtime",
             "dev/scripts",
             "dev/examples",
             "dev/test"

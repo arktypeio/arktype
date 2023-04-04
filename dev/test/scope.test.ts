@@ -2,7 +2,7 @@ import { describe, it } from "mocha"
 import { scope, type } from "../../src/main.ts"
 import { writeUnboundableMessage } from "../../src/parse/ast/bound.ts"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.ts"
-import { attest } from "../attest/main.ts"
+import { attest } from "../attest/src/main.ts"
 
 describe("scope", () => {
     it("base definition", () => {

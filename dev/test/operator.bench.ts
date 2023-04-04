@@ -6,7 +6,7 @@ import {
     type,
     union
 } from "../../src/main.ts"
-import { bench, suite } from "../attest/main.ts"
+import { bench, suite } from "../attest/src/main.ts"
 
 suite("operators", () => {
     suite("array", () => {

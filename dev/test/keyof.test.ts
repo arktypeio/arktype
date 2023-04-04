@@ -5,7 +5,7 @@ import type { TypeNode } from "../../src/nodes/node.ts"
 import { writeImplicitNeverMessage } from "../../src/parse/ast/intersection.ts"
 import { Path } from "../../src/utils/paths.ts"
 import { stringify } from "../../src/utils/serialize.ts"
-import { attest } from "../attest/main.ts"
+import { attest } from "../attest/src/main.ts"
 
 describe("keyof", () => {
     it("object literal", () => {

@@ -1,5 +1,5 @@
 import { writeFileSync } from "node:fs"
-import { getSourceFileEntries } from "../runtime/fs.ts"
+import { getSourceFileEntries } from "../attest/src/runtime/fs"
 
 const allContents = getSourceFileEntries()
     .filter(([path]) => path.startsWith("src") || path.startsWith("dev/test"))

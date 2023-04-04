@@ -1,4 +1,4 @@
-import { shell } from "../runtime/main.ts"
+import { shell } from "../attest/src/runtime/shell.ts"
 import { repoDirs } from "./common.ts"
 
 export const testBuild = (outDir: string) => {

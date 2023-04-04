@@ -1,13 +1,14 @@
 import { rmSync, writeFileSync } from "node:fs"
 import { dirname, join, relative } from "node:path"
 import * as process from "node:process"
+
 import {
     ensureDir,
     fileName,
-    shell,
     walkPaths,
     writeJson
-} from "../../runtime/main.ts"
+} from "../../attest/src/runtime/fs.ts"
+import { shell } from "../../attest/src/runtime/shell.ts"
 import { repoDirs } from "../common.ts"
 import type { DocGenMappedDirsConfig } from "./main.ts"
 import type { SnippetsByPath } from "./snippets/extractSnippets.ts"

@@ -1,5 +1,5 @@
 import type { Project } from "ts-morph"
-import { readFile, tsFileMatcher } from "../../../runtime/main.ts"
+import { readFile, tsFileMatcher } from "../../../attest/src/runtime/fs.ts"
 import type { DocGenSnippetsConfig } from "../main.ts"
 import { defaultConfig } from "../main.ts"
 import type { ExtractionToken } from "./snipTokens.ts"

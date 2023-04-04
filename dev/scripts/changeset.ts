@@ -1,5 +1,5 @@
-import { fromPackageRoot } from "../runtime/fs.ts"
-import { shell } from "../runtime/shell.ts"
+import { fromPackageRoot } from "../attest/src/runtime/fs.ts"
+import { shell } from "../attest/src/runtime/shell.ts"
 import { repoDirs } from "./common.ts"
 
 shell(

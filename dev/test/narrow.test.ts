@@ -2,7 +2,7 @@ import { describe, it } from "mocha"
 import type { Type } from "../../src/main.ts"
 import { type } from "../../src/main.ts"
 import type { assertEqual } from "../../src/utils/generics.ts"
-import { attest } from "../attest/main.ts"
+import { attest } from "../attest/src/main.ts"
 
 describe("narrow", () => {
     it("implicit problem", () => {

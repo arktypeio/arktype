@@ -1,6 +1,7 @@
 import { appendFileSync, rmSync } from "node:fs"
 import { join } from "node:path"
-import { ensureDir, shell } from "../../../runtime/main.ts"
+import { ensureDir } from "../../../attest/src/runtime/fs.ts"
+import { shell } from "../../../attest/src/runtime/shell.ts"
 import type { DocGenApiConfig } from "../main.ts"
 import { keywordTable } from "./buildTable/keywords.ts"
 import { getFormats } from "./buildTable/operators.ts"

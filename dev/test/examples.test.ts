@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
 import type { TraversalNode } from "../../src/nodes/node.ts"
-import { attest } from "../attest/main.ts"
+import { attest } from "../attest/src/main.ts"
 
 describe("snippets", () => {
     it("demo", async () => {
