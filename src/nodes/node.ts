@@ -10,6 +10,7 @@ import type { InstanceNode } from "./instance.ts"
 import type { RangeNode } from "./range.ts"
 import type { CheckResult } from "./traverse.ts"
 import { type inferIn, type inferOut, Type, type TypeConfig } from "./type.ts"
+import type { Union } from "./union.ts"
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (...args: any[]): Node<subclass>
@@ -116,8 +117,8 @@ export type DisjointKinds = extend<
             r: EqualityNode
         }
         union: {
-            l: Type
-            r: Type
+            l: Union
+            r: Union
         }
     }
 >

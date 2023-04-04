@@ -58,7 +58,7 @@ export type BoundContext = {
 export type BoundContextWithUnits = evaluate<BoundContext & { units: string }>
 
 export class RangeNode extends Node<typeof RangeNode> {
-    constructor(public readonly rule: Bounds) {
+    constructor(rule: Bounds) {
         super(RangeNode, rule)
     }
 

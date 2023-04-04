@@ -1,6 +1,7 @@
+import { parseDefinition } from "../parse/definition.ts"
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import type { evaluate, keySet, List } from "../utils/generics.ts"
+import type { conform, evaluate, keySet, List } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
@@ -13,9 +14,55 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
+import type {
+    ConstraintsDefinition,
+    inferConstraints,
+    validateConstraints
+} from "./constraints.ts"
 import { Constraints } from "./constraints.ts"
 import type { CompilationState } from "./node.ts"
-import { ComparisonState } from "./node.ts"
+import { ComparisonState, Node } from "./node.ts"
+
+type validateBranches<branches extends List<ConstraintsDefinition>> = conform<
+    branches,
+    { [i in keyof branches]: validateConstraints<branches[i]> }
+>
+
+type inferBranches<branches extends List<ConstraintsDefinition>> = {
+    [i in keyof branches]: inferConstraints<branches[i]>
+}[number]
+
+export class Union<t = unknown> extends Node<typeof Union, t> {
+    constructor(rule: Constraints[]) {
+        super(Union, rule)
+    }
+
+    static from<branches extends List<ConstraintsDefinition>>(
+        ...branches: validateBranches<branches>
+    ) {
+        return new Union<inferBranches<branches>>(
+            branches.map((branch) => Constraints.from(branch))
+        )
+    }
+
+    static compile(rule: List<Constraints>) {
+        return `${rule}`
+    }
+
+    static intersection(l: Union, r: Union, s: ComparisonState): Union {
+        if (l === r) {
+            return l
+        }
+        if (l.rule.length === 1 && r.rule.length === 1) {
+            const result = Constraints.intersection(l.rule[0], r.rule[0], s)
+            return result.isDisjoint() ? result : new Union([result])
+        }
+        const branches = branchwiseIntersection(l.rule, r.rule, s)
+        return branches.length
+            ? new Union(branches)
+            : s.addDisjoint("union", l, r)
+    }
+}
 
 export const branchwiseIntersection = (
     lBranches: List<Constraints>,
