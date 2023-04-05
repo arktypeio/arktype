@@ -23,26 +23,9 @@ import { Constraints } from "./constraints.ts"
 import type { CompilationState } from "./node.ts"
 import { ComparisonState, Node } from "./node.ts"
 
-type validateBranches<branches extends List<ConstraintsDefinition>> = conform<
-    branches,
-    { [i in keyof branches]: validateConstraints<branches[i]> }
->
-
-type inferBranches<branches extends List<ConstraintsDefinition>> = {
-    [i in keyof branches]: inferConstraints<branches[i]>
-}[number]
-
-export class Union<t = unknown> extends Node<typeof Union, t> {
+export class Union extends Node<typeof Union> {
     constructor(rule: Constraints[]) {
         super(Union, rule)
-    }
-
-    static from<branches extends List<ConstraintsDefinition>>(
-        ...branches: validateBranches<branches>
-    ) {
-        return new Union<inferBranches<branches>>(
-            branches.map((branch) => Constraints.from(branch))
-        )
     }
 
     static compile(rule: List<Constraints>) {

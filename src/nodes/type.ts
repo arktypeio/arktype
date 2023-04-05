@@ -1,15 +1,21 @@
 import type { ParsedMorph } from "../parse/ast/morph.ts"
 import {
+    as,
     type inferDefinition,
     parseDefinition,
     type validateDefinition
 } from "../parse/definition.ts"
-import type { evaluate, List } from "../utils/generics.ts"
+import type { conform, evaluate, List } from "../utils/generics.ts"
 import type { BuiltinClass } from "../utils/objectKinds.ts"
 import { Path } from "../utils/paths.ts"
+import type {
+    ConstraintsDefinition,
+    inferConstraints,
+    validateConstraints
+} from "./constraints.ts"
 import { Constraints } from "./constraints.ts"
-import type { ComparisonState } from "./node.ts"
-import { Node } from "./node.ts"
+import type { ComparisonState, Node } from "./node.ts"
+import type { CheckResult } from "./traverse.ts"
 import { branchwiseIntersection } from "./union.ts"
 
 export type TypeParser<$> = {
@@ -26,16 +32,45 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
 
-const isConstraintsArray = (definition: unknown): definition is Constraints[] =>
-    Array.isArray(definition) &&
-    definition.every((_) => _ instanceof Constraints)
+export class Type<t = unknown> extends Function {
+    root: Node
 
-export class Type<t = unknown> extends Node<typeof Type, t> {
     constructor(public definition: unknown) {
-        const rule = isConstraintsArray(definition)
-            ? definition
-            : parseDefinition(definition, { path: new Path() }).rule
-        super(Type, rule)
+        const root = parseDefinition(definition, { path: new Path() })
+        super("data", `return ${root.compiled}`)
+        this.root = root
+    }
+
+    // TODO: convert to definition type
+    // static from<branches extends List<ConstraintsDefinition>>(
+    //     ...branches: validateBranches<branches>
+    // ) {
+    //     return new Type<inferBranches<branches>>(
+    //         branches.map((branch) => Constraints.from(branch))
+    //     )
+    // }
+
+    declare [as]: t
+
+    declare infer: inferOut<t>
+
+    declare inferIn: inferIn<t>
+
+    declare apply: (
+        thisArg: null,
+        args: [data: unknown]
+    ) => CheckResult<inferOut<t>>
+
+    declare call: (thisArg: null, data: unknown) => CheckResult<inferOut<t>>
+
+    // TODO: don't mutate
+    allows(data: unknown): data is inferIn<t> {
+        return !data
+    }
+
+    assert(data: unknown): inferOut<t> {
+        const result = this.call(null, data)
+        return result.problems ? result.problems.throw() : result.data
     }
 
     static compile(rule: List<Constraints>) {
@@ -46,11 +81,11 @@ export class Type<t = unknown> extends Node<typeof Type, t> {
         if (l === r) {
             return l
         }
-        if (l.rule.length === 1 && r.rule.length === 1) {
-            const result = Constraints.intersection(l.rule[0], r.rule[0], s)
+        if (l.root.length === 1 && r.root.length === 1) {
+            const result = Constraints.intersection(l.root[0], r.root[0], s)
             return result.isDisjoint() ? result : new Type([result])
         }
-        const branches = branchwiseIntersection(l.rule, r.rule, s)
+        const branches = branchwiseIntersection(l.root, r.root, s)
         return branches.length
             ? new Type(branches)
             : s.addDisjoint("union", l, r)
@@ -67,6 +102,15 @@ export class Type<t = unknown> extends Node<typeof Type, t> {
     //     }
     // }
 }
+
+type validateBranches<branches extends List<ConstraintsDefinition>> = conform<
+    branches,
+    { [i in keyof branches]: validateConstraints<branches[i]> }
+>
+
+type inferBranches<branches extends List<ConstraintsDefinition>> = {
+    [i in keyof branches]: inferConstraints<branches[i]>
+}[number]
 
 export type KeyCheckKind = "loose" | "strict" | "distilled"
 

@@ -1,16 +1,15 @@
 import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
-import { as } from "../parse/definition.ts"
 import type { Domain } from "../utils/domains.ts"
 import type { extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
+import { Constraints } from "./constraints.ts"
 import type { ConstraintsDefinition } from "./constraints.ts"
 import type { DomainNode } from "./domain.ts"
 import type { EqualityNode } from "./equality.ts"
 import type { InstanceNode } from "./instance.ts"
 import type { RangeNode } from "./range.ts"
-import type { CheckResult } from "./traverse.ts"
-import { type inferIn, type inferOut, Type, type TypeConfig } from "./type.ts"
-import type { Union } from "./union.ts"
+import { Type, type TypeConfig } from "./type.ts"
+import { Union } from "./union.ts"
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (...args: any[]): Node<subclass>
@@ -24,11 +23,13 @@ type NodeSubclass<subclass extends NodeSubclass<any>> = {
     compile(children: any, s: CompilationState): string
 }
 
+export type AllowsCheck = (data: unknown) => boolean
+
 export abstract class Node<
-    subclass extends NodeSubclass<subclass> = NodeSubclass<any>,
-    t = unknown
-> extends Function {
+    subclass extends NodeSubclass<subclass> = NodeSubclass<any>
+> {
     compiled: string
+    allows: AllowsCheck
 
     constructor(
         protected subclass: subclass,
@@ -37,39 +38,13 @@ export abstract class Node<
         const defaultState = new CompilationState()
         const compiled = subclass.compile(rule, defaultState)
         // TODO: Cache
-        // TODO: add a wrapper that converts the result to data/problems
-        super("data", `return ${compiled}`)
         this.compiled = compiled
-    }
-
-    declare [as]: t
-
-    declare infer: inferOut<t>
-
-    declare inferIn: inferIn<t>
-
-    declare apply: (
-        thisArg: null,
-        args: [data: unknown]
-    ) => CheckResult<inferOut<t>>
-
-    declare call: (thisArg: null, data: unknown) => CheckResult<inferOut<t>>
-
-    // TODO: don't mutate
-    allows(data: unknown): data is inferIn<t> {
-        return !data
-    }
-
-    assert(data: unknown): inferOut<t> {
-        const result = this.call(null, data)
-        return result.problems ? result.problems.throw() : result.data
+        this.allows = new Function("data", `return ${compiled}`) as AllowsCheck
     }
 
     compile(s: CompilationState) {
         return this.subclass.compile(this.rule, s)
     }
-
-    intersect(other: Node, s: ComparisonState) {}
 
     // protected abstract intersect(
     //     other: Node,
@@ -89,6 +64,30 @@ export abstract class Node<
 
     isDisjoint(): this is Disjoint {
         return this instanceof Disjoint
+    }
+}
+
+export abstract class TypeNode<
+    subclass extends NodeSubclass<subclass> = NodeSubclass<any>
+> extends Node<subclass> {
+    abstract branches: Constraints[]
+
+    intersect(other: TypeNode, s: ComparisonState): TypeNode {
+        if (this === other) {
+            return this
+        }
+        if (this.branches.length === 1 && other.branches.length === 1) {
+            const result = Constraints.intersection(
+                this.branches[0],
+                other.branches[0],
+                s
+            )
+            return result
+        }
+        const branches = branchwiseIntersection(l.rule, r.rule, s)
+        return branches.length
+            ? new Union(branches)
+            : s.addDisjoint("union", l, r)
     }
 }
 
@@ -145,15 +144,36 @@ export class ComparisonState {
     }
 }
 
+type DisjointContext<kind extends DisjointKind = DisjointKind> = {
+    kind: kind
+    l: DisjointKinds[kind]["l"]
+    r: DisjointKinds[kind]["r"]
+}
+
 export class Disjoint<
     kind extends DisjointKind = DisjointKind
-> extends Type<never> {
+> extends TypeNode<typeof Disjoint> {
+    branches = []
+
     constructor(
         public kind: kind,
         public l: DisjointKinds[kind]["l"],
         public r: DisjointKinds[kind]["r"]
     ) {
-        super([])
+        const context: DisjointContext<kind> = {
+            kind,
+            l,
+            r
+        }
+        super(Disjoint, context)
+    }
+
+    static compile(context: DisjointContext) {
+        return `throw new Error(${context.l})`
+    }
+
+    static intersection(l: Disjoint) {
+        return l
     }
 
     toString() {
