@@ -25,7 +25,7 @@ type NodeSubclass<subclass extends NodeSubclass<any>> = {
 }
 
 export abstract class Node<
-    subclass extends NodeSubclass<subclass>,
+    subclass extends NodeSubclass<subclass> = NodeSubclass<any>,
     t = unknown
 > extends Function {
     compiled: string
@@ -34,9 +34,10 @@ export abstract class Node<
         protected subclass: subclass,
         public rule: Parameters<subclass["compile"]>[0]
     ) {
-        // TOOD: Cache
         const defaultState = new CompilationState()
         const compiled = subclass.compile(rule, defaultState)
+        // TODO: Cache
+        // TODO: add a wrapper that converts the result to data/problems
         super("data", `return ${compiled}`)
         this.compiled = compiled
     }
@@ -67,6 +68,8 @@ export abstract class Node<
     compile(s: CompilationState) {
         return this.subclass.compile(this.rule, s)
     }
+
+    intersect(other: Node, s: ComparisonState) {}
 
     // protected abstract intersect(
     //     other: Node,
