@@ -1,17 +1,27 @@
 import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
-import { as } from "../parse/definition.ts"
 import type { Domain } from "../utils/domains.ts"
 import type { extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { ConstraintsDefinition } from "./constraints.ts"
-import { Constraints } from "./constraints.ts"
 import type { DomainNode } from "./domain.ts"
 import type { EqualityNode } from "./equality.ts"
 import type { InstanceNode } from "./instance.ts"
 import type { RangeNode } from "./range.ts"
-import type { CheckResult } from "./traverse.ts"
-import type { inferIn, inferOut, type TypeConfig } from "./type.ts"
-import type { Union } from "./union.ts"
+import type { TypeConfig } from "./type.ts"
+import type { TypeNode } from "./union.ts"
+
+export const CompiledFunction = Function as unknown as new <
+    args extends any[],
+    returns
+>(
+    ...args: ConstructorParameters<typeof Function>
+) => {
+    (...args: args): returns
+
+    apply(thisArg: null, args: args): returns
+
+    call(thisArg: null, ...args: args): returns
+}
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (...args: any[]): Node<subclass>
@@ -25,13 +35,10 @@ type NodeSubclass<subclass extends NodeSubclass<any>> = {
     compile(children: any, s: CompilationState): string
 }
 
-export type AllowsCheck = (data: unknown) => boolean
-
 export abstract class Node<
     subclass extends NodeSubclass<subclass> = NodeSubclass<any>,
-    args extends any[] = any[],
-    returns = unknown
-> extends Function {
+    input = any
+> extends CompiledFunction<[data: input], boolean> {
     compiled: string
 
     constructor(
@@ -43,20 +50,6 @@ export abstract class Node<
         // TODO: Cache
         super("data", `return ${compiled}`)
         this.compiled = compiled
-    }
-
-    declare apply: (thisArg: null, args: args) => returns
-
-    declare call: (thisArg: null, ...args: args) => returns
-
-    // TODO: don't mutate
-    allows(data: unknown): data is inferIn<t> {
-        return !data
-    }
-
-    assert(data: unknown): inferOut<t> {
-        const result = this.call(null, data)
-        return result.problems ? result.problems.throw() : result.data
     }
 
     compile(s: CompilationState) {
@@ -83,8 +76,6 @@ export abstract class Node<
         return this instanceof Disjoint
     }
 }
-
-export type TypeNode = {}
 
 export type DisjointKinds = extend<
     Record<string, { l: unknown; r: unknown }>,
@@ -114,8 +105,8 @@ export type DisjointKinds = extend<
             r: EqualityNode
         }
         union: {
-            l: Union
-            r: Union
+            l: TypeNode
+            r: TypeNode
         }
     }
 >

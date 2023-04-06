@@ -100,10 +100,10 @@ export class RangeNode extends Node<typeof RangeNode> {
                     ? l
                     : s.addDisjoint("range", l, r)
             }
-            return r.allows(l.rule["=="]) ? l : s.addDisjoint("range", l, r)
+            return r(l.rule["=="]) ? l : s.addDisjoint("range", l, r)
         }
         if (r.isEqualityRange()) {
-            return l.allows(r.rule["=="]) ? r : s.addDisjoint("range", l, r)
+            return l(r.rule["=="]) ? r : s.addDisjoint("range", l, r)
         }
         const stricterMin = compareStrictness("min", l.lowerBound, r.lowerBound)
         const stricterMax = compareStrictness("max", l.upperBound, r.upperBound)

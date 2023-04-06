@@ -14,8 +14,8 @@ import type {
     validateConstraints
 } from "./constraints.ts"
 import { Constraints } from "./constraints.ts"
-import type { ComparisonState } from "./node.ts"
-import { Node } from "./node.ts"
+import type { ComparisonState, Node } from "./node.ts"
+import { CompiledFunction } from "./node.ts"
 import type { CheckResult } from "./traverse.ts"
 import { branchwiseIntersection } from "./union.ts"
 
@@ -33,8 +33,7 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
 
-export class Type<t = unknown> extends Node<
-    typeof Type,
+export class Type<t = unknown> extends CompiledFunction<
     [data: unknown],
     CheckResult<inferOut<t>>
 > {
@@ -42,7 +41,7 @@ export class Type<t = unknown> extends Node<
 
     constructor(public definition: unknown) {
         const root = parseDefinition(definition, { path: new Path() })
-        super("data", `return ${root.compiled}`)
+        super("data", "")
         this.root = root
     }
 
@@ -61,22 +60,14 @@ export class Type<t = unknown> extends Node<
 
     declare inferIn: inferIn<t>
 
-    static compile(rule: List<Constraints>) {
-        return `${rule}`
+    // TODO: don't mutate
+    allows(data: unknown): data is inferIn<t> {
+        return !data
     }
 
-    static intersection(l: Type, r: Type, s: ComparisonState): Type {
-        if (l === r) {
-            return l
-        }
-        if (l.root.length === 1 && r.root.length === 1) {
-            const result = Constraints.intersection(l.root[0], r.root[0], s)
-            return result.isDisjoint() ? result : new Type([result])
-        }
-        const branches = branchwiseIntersection(l.root, r.root, s)
-        return branches.length
-            ? new Type(branches)
-            : s.addDisjoint("union", l, r)
+    assert(data: unknown): inferOut<t> {
+        const result = this.call(null, data)
+        return result.problems ? result.problems.throw() : result.data
     }
 
     // toArray() {

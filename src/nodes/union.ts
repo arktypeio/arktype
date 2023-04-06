@@ -20,93 +20,109 @@ import type {
     validateConstraints
 } from "./constraints.ts"
 import { Constraints } from "./constraints.ts"
-import type { CompilationState } from "./node.ts"
-import { ComparisonState, Node, TypeNode } from "./node.ts"
+import type { CompilationState, Disjoint } from "./node.ts"
+import { ComparisonState, Node } from "./node.ts"
 
-export class Union extends TypeNode<typeof Union> {
-    constructor(public branches: Constraints[]) {
-        super(Union, branches)
+export class TypeNode extends Node<typeof TypeNode> {
+    constructor(rule: Constraints[]) {
+        super(TypeNode, rule)
     }
 
     static compile(rule: List<Constraints>) {
         return `${rule}`
     }
 
-    static intersection(l: Union, r: Union, s: ComparisonState): Union {
-        // Branches that are determined to be a subtype of an opposite branch are
-        // guaranteed to be a member of the final reduced intersection, so long as
-        // each individual set of branches has been correctly reduced to exclude
-        // redundancies.
-        const finalBranches: Constraints[] = []
-        // Each rBranch is initialized to an empty array to which distinct
-        // intersections will be appended. If the rBranch is identified as a
-        // subtype (or equal) of any lBranch, the corresponding value should be
-        // set to null so we can avoid including previous/future intersections
-        // in the final result.
-        const candidatesByR: (Constraints[] | null)[] = r.branches.map(() => [])
-        for (let lIndex = 0; lIndex < l.branches.length; lIndex++) {
-            const lBranch = l.branches[lIndex]
-            let currentCandidateByR: { [rIndex in number]: Constraints } = {}
-            for (let rIndex = 0; rIndex < r.branches.length; rIndex++) {
-                const rBranch = r.branches[rIndex]
-                if (!candidatesByR[rIndex]) {
-                    // we've identified this rBranch as a subtype of
-                    // an lBranch and will not yield any distinct intersections.
-                    continue
-                }
-                if (lBranch === rBranch) {
-                    // Combination of subtype and supertype cases
-                    finalBranches.push(lBranch)
-                    candidatesByR[rIndex] = null
-                    currentCandidateByR = {}
-                    break
-                }
-                const branchIntersection = Constraints.intersection(
-                    lBranch,
-                    rBranch,
-                    s
-                )
-                if (branchIntersection.isDisjoint()) {
-                    // doesn't tell us about any redundancies or add a distinct intersection
-                    continue
-                }
-                if (branchIntersection === lBranch) {
-                    // If l is a subtype of the current r branch, intersections
-                    // with previous and remaining branches of r won't lead to
-                    // distinct intersections, so empty currentCandidatesByR and break
-                    // from the inner loop.
-                    finalBranches.push(lBranch)
-                    currentCandidateByR = {}
-                    break
-                }
-                if (branchIntersection === rBranch) {
-                    // If r is a subtype of the current l branch, set its
-                    // intersections to null, removing any previous
-                    // intersections and preventing any of its
-                    // remaining intersections from being computed.
-                    finalBranches.push(rBranch)
-                    candidatesByR[rIndex] = null
-                    continue
-                }
-                // If neither l nor r is a subtype of the other, add their
-                // intersection as a candidate to the current batch (could
-                // still be removed if it is determined l or r is a subtype
-                // of a remaining branch).
-                currentCandidateByR[rIndex] = branchIntersection
-            }
-            for (const rIndex in currentCandidateByR) {
-                // candidatesByR at rIndex should never be null if it is in currentCandidates
-                candidatesByR[rIndex]!.push(currentCandidateByR[rIndex])
-            }
+    static intersection(
+        l: TypeNode,
+        r: TypeNode,
+        s: ComparisonState
+    ): TypeNode | Disjoint {
+        if (l === r) {
+            return l
         }
-        // All remaining candidates are distinct, so include them in the final result
-        for (const candidates of candidatesByR) {
-            candidates?.forEach((candidate) => finalBranches.push(candidate))
+        if (l.rule.length === 1 && r.rule.length === 1) {
+            const result = Constraints.intersection(l.rule[0], r.rule[0], s)
+            return result.isDisjoint() ? result : new TypeNode([result])
         }
-        return finalBranches.length
-            ? new Union(finalBranches)
+        const branches = branchwiseIntersection(l.rule, r.rule, s)
+        return branches.length
+            ? new TypeNode(branches)
             : s.addDisjoint("union", l, r)
     }
+}
+
+export const branchwiseIntersection = (
+    lBranches: List<Constraints>,
+    rBranches: List<Constraints>,
+    s: ComparisonState
+) => {
+    // Branches that are determined to be a subtype of an opposite branch are
+    // guaranteed to be a member of the final reduced intersection, so long as
+    // each individual set of branches has been correctly reduced to exclude
+    // redundancies.
+    const finalBranches: Constraints[] = []
+    // Each rBranch is initialized to an empty array to which distinct
+    // intersections will be appended. If the rBranch is identified as a
+    // subtype (or equal) of any lBranch, the corresponding value should be
+    // set to null so we can avoid including previous/future intersections
+    // in the final result.
+    const candidatesByR: (Constraints[] | null)[] = rBranches.map(() => [])
+    for (let lIndex = 0; lIndex < lBranches.length; lIndex++) {
+        const l = lBranches[lIndex]
+        let currentCandidateByR: { [rIndex in number]: Constraints } = {}
+        for (let rIndex = 0; rIndex < rBranches.length; rIndex++) {
+            const r = rBranches[rIndex]
+            if (!candidatesByR[rIndex]) {
+                // we've identified this rBranch as a subtype of
+                // an lBranch and will not yield any distinct intersections.
+                continue
+            }
+            if (l === r) {
+                // Combination of subtype and supertype cases
+                finalBranches.push(l)
+                candidatesByR[rIndex] = null
+                currentCandidateByR = {}
+                break
+            }
+            const branchIntersection = Constraints.intersection(l, r, s)
+            if (branchIntersection.isDisjoint()) {
+                // doesn't tell us about any redundancies or add a distinct intersection
+                continue
+            }
+            if (branchIntersection === l) {
+                // If l is a subtype of the current r branch, intersections
+                // with previous and remaining branches of r won't lead to
+                // distinct intersections, so empty currentCandidatesByR and break
+                // from the inner loop.
+                finalBranches.push(l)
+                currentCandidateByR = {}
+                break
+            }
+            if (branchIntersection === r) {
+                // If r is a subtype of the current l branch, set its
+                // intersections to null, removing any previous
+                // intersections and preventing any of its
+                // remaining intersections from being computed.
+                finalBranches.push(r)
+                candidatesByR[rIndex] = null
+                continue
+            }
+            // If neither l nor r is a subtype of the other, add their
+            // intersection as a candidate to the current batch (could
+            // still be removed if it is determined l or r is a subtype
+            // of a remaining branch).
+            currentCandidateByR[rIndex] = branchIntersection
+        }
+        for (const rIndex in currentCandidateByR) {
+            // candidatesByR at rIndex should never be null if it is in currentCandidates
+            candidatesByR[rIndex]!.push(currentCandidateByR[rIndex])
+        }
+    }
+    // All remaining candidates are distinct, so include them in the final result
+    for (const candidates of candidatesByR) {
+        candidates?.forEach((candidate) => finalBranches.push(candidate))
+    }
+    return finalBranches
 }
 
 const pruneSubtypes = (branches: Constraints[]) => {
