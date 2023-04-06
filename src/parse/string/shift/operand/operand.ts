@@ -32,4 +32,4 @@ export type parseOperand<
         : lookahead extends " "
         ? parseOperand<state.scanTo<s, unscanned>, $>
         : parseUnenclosed<s, $>
-    : possibleCompletions<s, "", $>
+    : error<`${s["scanned"]}${stringKeyOf<$>}`>

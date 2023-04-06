@@ -4,7 +4,6 @@ import { attest } from "../attest/main.js"
 
 describe("autocomplete", () => {
     it("multiple suggestions", () => {
-        type("s")
         // @ts-expect-error
         attest(() => type("s")).type.errors(`"string" | "symbol" | "semver"`)
     })

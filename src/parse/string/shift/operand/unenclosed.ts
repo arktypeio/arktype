@@ -63,7 +63,7 @@ type tryResolve<
     s extends StaticState,
     token extends string,
     $
-> = token extends keyof $
+> = token extends stringKeyOf<$>
     ? token
     : token extends NumberLiteral
     ? token
