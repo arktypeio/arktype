@@ -1,6 +1,6 @@
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import type { evaluate, keySet, List } from "../utils/generics.ts"
+import type { conform, evaluate, keySet, List } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
@@ -13,16 +13,21 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
-import { Constraints } from "./constraints.ts"
+import type {
+    ConstraintsDefinition,
+    inferConstraints,
+    validateConstraints
+} from "./constraints.ts"
+import { ConstraintsNode } from "./constraints.ts"
 import type { CompilationState, Disjoint } from "./node.ts"
 import { ComparisonState, Node } from "./node.ts"
 
 export class TypeNode extends Node<typeof TypeNode> {
-    constructor(rule: Constraints[]) {
+    constructor(rule: ConstraintsNode[]) {
         super(TypeNode, rule)
     }
 
-    static compile(rule: List<Constraints>) {
+    static compile(rule: List<ConstraintsNode>) {
         return `${rule}`
     }
 
@@ -35,7 +40,7 @@ export class TypeNode extends Node<typeof TypeNode> {
             return l
         }
         if (l.rule.length === 1 && r.rule.length === 1) {
-            const result = Constraints.intersection(l.rule[0], r.rule[0], s)
+            const result = ConstraintsNode.intersection(l.rule[0], r.rule[0], s)
             return result.isDisjoint() ? result : new TypeNode([result])
         }
         const branches = branchwiseIntersection(l.rule, r.rule, s)
@@ -48,24 +53,24 @@ export class TypeNode extends Node<typeof TypeNode> {
 export const never = new TypeNode([])
 
 const branchwiseIntersection = (
-    lBranches: List<Constraints>,
-    rBranches: List<Constraints>,
+    lBranches: List<ConstraintsNode>,
+    rBranches: List<ConstraintsNode>,
     s: ComparisonState
 ) => {
     // Branches that are determined to be a subtype of an opposite branch are
     // guaranteed to be a member of the final reduced intersection, so long as
     // each individual set of branches has been correctly reduced to exclude
     // redundancies.
-    const finalBranches: Constraints[] = []
+    const finalBranches: ConstraintsNode[] = []
     // Each rBranch is initialized to an empty array to which distinct
     // intersections will be appended. If the rBranch is identified as a
     // subtype (or equal) of any lBranch, the corresponding value should be
     // set to null so we can avoid including previous/future intersections
     // in the final result.
-    const candidatesByR: (Constraints[] | null)[] = rBranches.map(() => [])
+    const candidatesByR: (ConstraintsNode[] | null)[] = rBranches.map(() => [])
     for (let lIndex = 0; lIndex < lBranches.length; lIndex++) {
         const l = lBranches[lIndex]
-        let currentCandidateByR: { [rIndex in number]: Constraints } = {}
+        let currentCandidateByR: { [rIndex in number]: ConstraintsNode } = {}
         for (let rIndex = 0; rIndex < rBranches.length; rIndex++) {
             const r = rBranches[rIndex]
             if (!candidatesByR[rIndex]) {
@@ -80,7 +85,7 @@ const branchwiseIntersection = (
                 currentCandidateByR = {}
                 break
             }
-            const branchIntersection = Constraints.intersection(l, r, s)
+            const branchIntersection = ConstraintsNode.intersection(l, r, s)
             if (branchIntersection.isDisjoint()) {
                 // doesn't tell us about any redundancies or add a distinct intersection
                 continue
@@ -121,7 +126,7 @@ const branchwiseIntersection = (
     return finalBranches
 }
 
-const pruneSubtypes = (branches: Constraints[]) => {
+const pruneSubtypes = (branches: ConstraintsNode[]) => {
     const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
     for (let i = 0; i < branches.length; i++) {
         for (let j = i + 1; j < branches.length && uniquenessByIndex[i]; j++) {
@@ -135,7 +140,7 @@ const pruneSubtypes = (branches: Constraints[]) => {
                 uniquenessByIndex[j] = false
                 continue
             }
-            const intersection = Constraints.intersection(
+            const intersection = ConstraintsNode.intersection(
                 branches[i],
                 branches[j],
                 new ComparisonState()
@@ -162,7 +167,7 @@ export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
 export const compileBranches = (
-    branches: Constraints[],
+    branches: ConstraintsNode[],
     c: CompilationState
 ) => {
     const discriminants = calculateDiscriminants(branches, c)
@@ -179,7 +184,7 @@ export type QualifiedDisjoint =
     | `${string}/${DiscriminantKind}`
 
 const discriminate = (
-    originalBranches: Constraints[],
+    originalBranches: ConstraintsNode[],
     remainingIndices: number[],
     discriminants: Discriminants,
     c: CompilationState
@@ -340,7 +345,7 @@ const discriminantKinds: keySet<DiscriminantKind> = {
 export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 const calculateDiscriminants = (
-    branches: Constraints[],
+    branches: ConstraintsNode[],
     ctx: CompilationState
 ): Discriminants => {
     const discriminants: Discriminants = {
@@ -353,7 +358,7 @@ const calculateDiscriminants = (
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
             const intersectionState = new ComparisonState()
-            Constraints.intersection(
+            ConstraintsNode.intersection(
                 branches[lIndex],
                 branches[rIndex],
                 intersectionState

@@ -7,10 +7,10 @@ export class PropsNode extends Node<typeof PropsNode> {
     readonly named: PropsRule["named"]
     readonly indexed: PropsRule["indexed"]
 
-    constructor(definition: PropsRule) {
-        super(PropsNode, definition)
-        this.named = definition.named
-        this.indexed = definition.indexed
+    constructor(rule: PropsRule) {
+        super(PropsNode, rule)
+        this.named = rule.named
+        this.indexed = rule.indexed
     }
 
     static compile(rule: PropsRule, s: CompilationState) {

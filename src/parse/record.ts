@@ -1,4 +1,4 @@
-import { Constraints } from "../nodes/constraints.ts"
+import { ConstraintsNode } from "../nodes/constraints.ts"
 import { NamedPropNode } from "../nodes/props.ts"
 import type { PropKind, PropsRule } from "../nodes/props.ts"
 import { Type } from "../type.ts"

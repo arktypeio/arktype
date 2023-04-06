@@ -15,12 +15,9 @@ import type { Bounds } from "./range.ts"
 import { RangeNode } from "./range.ts"
 import { RegexNode } from "./regex.ts"
 
-export class Constraints extends Node<typeof Constraints> {
-    branches: [Constraints]
-
+export class ConstraintsNode extends Node<typeof ConstraintsNode> {
     constructor(rule: ConstraintsRule) {
-        super(Constraints, rule)
-        this.branches = [this]
+        super(ConstraintsNode, rule)
     }
 
     static from(constraints: ConstraintsDefinition) {
@@ -31,14 +28,18 @@ export class Constraints extends Node<typeof Constraints> {
                 (constraints as any)[kind] as never
             ) as any
         }
-        return new Constraints(children)
+        return new ConstraintsNode(children)
     }
 
     static compile(rules: ConstraintsRule, s: CompilationState) {
         return s.data ? `${rules}` : ""
     }
 
-    static intersection(l: Constraints, r: Constraints, s: ComparisonState) {
+    static intersection(
+        l: ConstraintsNode,
+        r: ConstraintsNode,
+        s: ComparisonState
+    ) {
         // if (
         //     // TODO: Fix
         //     // s.lastOperator === "&" &&

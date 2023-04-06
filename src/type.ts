@@ -1,10 +1,12 @@
-import type {
-    ConstraintsDefinition,
-    inferConstraints,
-    validateConstraints
+import {
+    type ConstraintsDefinition,
+    ConstraintsNode,
+    type inferConstraints,
+    type validateConstraints
 } from "./nodes/constraints.ts"
 import type { Node } from "./nodes/node.ts"
 import type { CheckResult } from "./nodes/traverse.ts"
+import { TypeNode } from "./nodes/type.ts"
 import type { ParsedMorph } from "./parse/ast/morph.ts"
 import {
     as,
@@ -35,11 +37,27 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
 
+type validateBranches<branches extends List<ConstraintsDefinition>> = conform<
+    branches,
+    { [i in keyof branches]: validateConstraints<branches[i]> }
+>
+
+type inferBranches<branches extends List<ConstraintsDefinition>> = {
+    [i in keyof branches]: inferConstraints<branches[i]>
+}[number]
+
+export const node = <branches extends List<ConstraintsDefinition>>(
+    ...branches: validateBranches<branches>
+): Type<inferBranches<branches>> =>
+    new Type(
+        new TypeNode(branches.map((branch) => ConstraintsNode.from(branch)))
+    )
+
 export class Type<t = unknown> extends CompiledFunction<
     [data: unknown],
     CheckResult<inferOut<t>>
 > {
-    root: Node
+    root: TypeNode
 
     constructor(public definition: unknown) {
         const root = parseDefinition(definition, { path: new Path() })
@@ -83,15 +101,6 @@ export class Type<t = unknown> extends CompiledFunction<
     //     }
     // }
 }
-
-type validateBranches<branches extends List<ConstraintsDefinition>> = conform<
-    branches,
-    { [i in keyof branches]: validateConstraints<branches[i]> }
->
-
-type inferBranches<branches extends List<ConstraintsDefinition>> = {
-    [i in keyof branches]: inferConstraints<branches[i]>
-}[number]
 
 export type KeyCheckKind = "loose" | "strict" | "distilled"
 
