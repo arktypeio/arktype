@@ -17,9 +17,3 @@ export const { data, problems } = user({
         platform: "enigma"
     }
 })
-
-const tz = type({
-    a: "strig"
-})
-
-const t = type("string")
