@@ -1,4 +1,3 @@
-import type { InferredObjectKinds } from "../utils/objectKinds.js"
 import { jsObjects, jsObjectsScope } from "./jsObjects.js"
 import type { Space } from "./scope.js"
 import { rootScope, scope } from "./scope.js"

@@ -1,9 +1,5 @@
 import type { Node } from "../../../../nodes/node.js"
-import type {
-    autocomplete,
-    error,
-    stringKeyOf
-} from "../../../../utils/generics.js"
+import type { error } from "../../../../utils/generics.js"
 import type {
     BigintLiteral,
     NumberLiteral
@@ -13,7 +9,7 @@ import {
     tryParseWellFormedNumber
 } from "../../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
-import type { state, StaticState } from "../../reduce/static.js"
+import type { StaticState, state } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
@@ -81,19 +77,23 @@ type tryResolve<
     : // bigint extends value
       //     ? error<writeMalformedNumericLiteralMessage<token, "bigint">>
       //     : token
-      possibleCompletions<s, token, $>
+      unresolvable<s, token, $>
+
+type unresolvable<s extends StaticState, token extends string, $> = error<
+    possibleCompletions<s, token, $> extends never
+        ? writeUnresolvableMessage<token>
+        : possibleCompletions<s, token, $>
+>
 
 export type possibleCompletions<
     s extends StaticState,
     token extends string,
     $
-> = error<
-    {
-        [alias in keyof $]: alias extends `${token}${infer rest}`
-            ? `${s["scanned"]}${token}${rest}`
-            : never
-    }[keyof $]
->
+> = {
+    [alias in keyof $]: alias extends `${token}${infer rest}`
+        ? `${s["scanned"]}${token}${rest}`
+        : never
+}[keyof $]
 
 export const writeUnresolvableMessage = <token extends string>(
     token: token
