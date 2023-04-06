@@ -4,8 +4,10 @@ import type { ComparisonState, CompilationState } from "./node.ts"
 import { Node } from "./node.ts"
 import { registerConstructor } from "./registry.ts"
 
-export class InstanceNode extends Node<typeof InstanceNode> {
-    constructor(public rule: constructor) {
+export class InstanceNode<rule extends constructor = constructor> extends Node<
+    typeof InstanceNode
+> {
+    constructor(rule: rule) {
         super(InstanceNode, rule)
     }
 

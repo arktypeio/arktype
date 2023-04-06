@@ -1,6 +1,6 @@
 import type { Domain } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
-import type { conform, evaluate, keySet, List } from "../utils/generics.ts"
+import type { evaluate, keySet, List } from "../utils/generics.ts"
 import { isKeyOf, keysOf } from "../utils/generics.ts"
 import type { DefaultObjectKind } from "../utils/objectKinds.ts"
 import {
@@ -13,11 +13,6 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.ts"
 import { serializePrimitive } from "../utils/serialize.ts"
-import type {
-    ConstraintsDefinition,
-    inferConstraints,
-    validateConstraints
-} from "./constraints.ts"
 import { ConstraintsNode } from "./constraints.ts"
 import type { CompilationState, Disjoint } from "./node.ts"
 import { ComparisonState, Node } from "./node.ts"

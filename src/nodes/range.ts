@@ -62,14 +62,11 @@ export class RangeNode extends Node<typeof RangeNode> {
         super(RangeNode, rule)
     }
 
-    static compile(definition: Bounds, c: CompilationState) {
-        const comparatorEntries = Object.entries(definition) as [
-            Comparator,
-            number
-        ][]
+    static compile(rule: Bounds, c: CompilationState) {
+        const comparatorEntries = Object.entries(rule) as [Comparator, number][]
         if (comparatorEntries.length === 0 || comparatorEntries.length > 2) {
             return throwInternalError(
-                `Unexpected comparators: ${stringify(definition)}`
+                `Unexpected comparators: ${stringify(rule)}`
             )
         }
         const sizeAssignment = `const size = ${

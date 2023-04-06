@@ -1,5 +1,5 @@
 import {
-    type ConstraintsDefinition,
+    type ConstraintsRule,
     ConstraintsNode,
     type inferConstraints,
     type validateConstraints
@@ -37,16 +37,16 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
 
-type validateBranches<branches extends List<ConstraintsDefinition>> = conform<
+type validateBranches<branches extends List<ConstraintsRule>> = conform<
     branches,
     { [i in keyof branches]: validateConstraints<branches[i]> }
 >
 
-type inferBranches<branches extends List<ConstraintsDefinition>> = {
+type inferBranches<branches extends List<ConstraintsRule>> = {
     [i in keyof branches]: inferConstraints<branches[i]>
 }[number]
 
-export const node = <branches extends List<ConstraintsDefinition>>(
+export const node = <branches extends List<ConstraintsRule>>(
     ...branches: validateBranches<branches>
 ): Type<inferBranches<branches>> =>
     new Type(

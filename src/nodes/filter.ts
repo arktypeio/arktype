@@ -4,7 +4,7 @@ import { Node } from "./node.ts"
 import type { CompilationState } from "./node.ts"
 
 export class FilterNode extends Node<typeof FilterNode> {
-    constructor(public rule: Filter[]) {
+    constructor(rule: Filter[]) {
         super(FilterNode, rule)
     }
 

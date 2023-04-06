@@ -3,7 +3,7 @@ import type { CompilationState } from "./node.ts"
 import { Node } from "./node.ts"
 
 export class RegexNode extends Node<typeof RegexNode> {
-    constructor(public rule: string[]) {
+    constructor(rule: string[]) {
         super(RegexNode, rule)
     }
 

@@ -20,7 +20,7 @@ export class ConstraintsNode extends Node<typeof ConstraintsNode> {
         super(ConstraintsNode, rule)
     }
 
-    static from(constraints: ConstraintsDefinition) {
+    static from(constraints: ConstraintsRule) {
         const children: ConstraintsRule = {}
         let kind: ConstraintKind
         for (kind in constraints) {
@@ -106,64 +106,56 @@ type ConstraintNodeKinds = typeof constraintKinds
 
 type ConstraintKind = keyof ConstraintNodeKinds
 
-export type inferConstraints<constraints extends ConstraintsDefinition> =
-    constraints extends DomainDefinition
+export type inferConstraints<constraints extends ConstraintsRule> =
+    constraints extends DomainConstraintsRule
         ? inferDomain<constraints["domain"]>
-        : constraints extends ExactValueDefinition<infer value>
+        : constraints extends ExactValueConstraintsRule<infer value>
         ? value
         : never
 
-type constraintBranch<rules extends ConstraintsDefinition> =
-    rules extends DomainDefinition
-        ? DomainDefinition & { domain: rules["domain"] }
-        : ExactValueDefinition
+type constraintBranch<rules extends ConstraintsRule> =
+    rules extends DomainConstraintsRule
+        ? DomainConstraintsRule & { domain: rules["domain"] }
+        : ExactValueConstraintsRule
 
-export type validateConstraints<rules extends ConstraintsDefinition> = {
+export type validateConstraints<rules extends ConstraintsRule> = {
     [k in keyof rules]: k extends keyof constraintBranch<rules>
         ? rules[k]
         : never
 }
 
-export type ConstraintsDefinition = ExactValueDefinition | DomainDefinition
+export type ConstraintsRule = ExactValueConstraintsRule | DomainConstraintsRule
 
-type ExactValueDefinition<value = unknown> = {
-    value: value
-    morphs?: Morph[]
+type ExactValueConstraintsRule = {
+    value: EqualityNode
+    morphs?: MorphNode
 }
 
-type DomainDefinition = {
-    filters?: Filter[]
-    morphs?: Morph[]
+type DomainConstraintsRule = {
+    filters?: FilterNode
+    morphs?: MorphNode
 } & (
     | {
-          domain: "object"
-          instance?: constructor
-          props?: ""
+          domain: DomainNode<"object">
+          instance?: InstanceNode
+          props?: PropsNode
       }
     | {
-          domain: "object"
-          instance: Array<any>
-          props?: ""
-          range?: Bounds
+          domain: DomainNode<"object">
+          instance: InstanceNode<typeof Array>
+          props?: PropsNode
+          range?: RangeNode
       }
     | {
-          domain: "string"
-          regex?: string[]
-          range?: Bounds
+          domain: DomainNode<"string">
+          regex?: RegexNode
+          range?: RangeNode
       }
     | {
-          domain: "number"
-          divisor?: number
-          range?: Bounds
+          domain: DomainNode<"number">
+          divisor?: DivisibilityNode
+          range?: RangeNode
       }
-    | { domain: "bigint" }
-    | { domain: "symbol" }
+    | { domain: DomainNode<"bigint"> }
+    | { domain: DomainNode<"symbol"> }
 )
-
-export type ConstraintsRule = {
-    [k in ConstraintKind]?: ConstraintNodeKinds[k] extends constructor<
-        infer node
-    >
-        ? node
-        : never
-}

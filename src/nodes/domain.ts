@@ -2,8 +2,10 @@ import type { Domain } from "../utils/domains.ts"
 import type { ComparisonState, CompilationState } from "./node.ts"
 import { Node } from "./node.ts"
 
-export class DomainNode extends Node<typeof DomainNode> {
-    constructor(public rule: Domain) {
+export class DomainNode<rule extends Domain = Domain> extends Node<
+    typeof DomainNode
+> {
+    constructor(rule: rule) {
         super(DomainNode, rule)
     }
 

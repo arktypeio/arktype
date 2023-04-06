@@ -3,7 +3,7 @@ import type { TypeConfig } from "../type.ts"
 import type { Domain } from "../utils/domains.ts"
 import { CompiledFunction, type extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
-import type { ConstraintsDefinition } from "./constraints.ts"
+import type { ConstraintsRule } from "./constraints.ts"
 import type { DomainNode } from "./domain.ts"
 import type { EqualityNode } from "./equality.ts"
 import type { InstanceNode } from "./instance.ts"
@@ -85,10 +85,10 @@ export type DisjointKinds = extend<
         }
         leftAssignability: {
             l: EqualityNode
-            r: ConstraintsDefinition
+            r: ConstraintsRule
         }
         rightAssignability: {
-            l: ConstraintsDefinition
+            l: ConstraintsRule
             r: EqualityNode
         }
         union: {

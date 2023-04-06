@@ -2,7 +2,7 @@ import type { CompilationState } from "./node.ts"
 import { Node } from "./node.ts"
 
 export class DivisibilityNode extends Node<typeof DivisibilityNode> {
-    constructor(public rule: number) {
+    constructor(rule: number) {
         super(DivisibilityNode, rule)
     }
 

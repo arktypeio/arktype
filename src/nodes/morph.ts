@@ -4,7 +4,7 @@ import type { CompilationState } from "./node.js"
 import { Node } from "./node.js"
 
 export class MorphNode extends Node<typeof MorphNode> {
-    constructor(public rule: Morph[]) {
+    constructor(rule: Morph[]) {
         super(MorphNode, rule)
     }
 

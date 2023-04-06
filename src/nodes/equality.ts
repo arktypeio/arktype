@@ -5,8 +5,8 @@ import type { ComparisonState, CompilationState } from "./node.ts"
 import { Node } from "./node.ts"
 import { registerValue } from "./registry.ts"
 
-export class EqualityNode extends Node<typeof EqualityNode> {
-    constructor(public rule: unknown) {
+export class EqualityNode<rule = unknown> extends Node<typeof EqualityNode> {
+    constructor(rule: rule) {
         super(EqualityNode, rule)
     }
 
