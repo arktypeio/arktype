@@ -45,6 +45,8 @@ export class TypeNode extends Node<typeof TypeNode> {
     }
 }
 
+export const never = new TypeNode([])
+
 const branchwiseIntersection = (
     lBranches: List<Constraints>,
     rBranches: List<Constraints>,

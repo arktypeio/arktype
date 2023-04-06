@@ -1,8 +1,7 @@
-import type { Type } from "../type.ts"
 import type { Dict, List } from "../utils/generics.ts"
 import type { ComparisonState, CompilationState } from "./node.ts"
 import { Disjoint, Node } from "./node.ts"
-import { TypeNode } from "./type.ts"
+import { never, TypeNode } from "./type.ts"
 
 export class PropsNode extends Node<typeof PropsNode> {
     readonly named: PropsRule["named"]
@@ -34,11 +33,13 @@ export class PropsNode extends Node<typeof PropsNode> {
                 indexed.push([rKey, rValue])
             } else {
                 // TODO: path updates here
-                indexed[matchingIndex][1] = TypeNode.intersection(
+                const result = TypeNode.intersection(
                     indexed[matchingIndex][1],
                     rValue,
                     s
                 )
+                indexed[matchingIndex][1] =
+                    result instanceof Disjoint ? never : result
             }
         }
         const named = { ...l.named, ...r.named }
@@ -51,11 +52,15 @@ export class PropsNode extends Node<typeof PropsNode> {
                     // with any matching index props. Therefore, the
                     // intersection result will already include index values
                     // from both sides whose key types allow k.
-                    propResult = NamedPropNode.intersection(
+                    const result = NamedPropNode.intersection(
                         l.named[k],
                         r.named[k],
                         s
                     )
+                    if (result instanceof Disjoint) {
+                        return result
+                    }
+                    propResult = result
                 } else {
                     // If a named key from l matches any index keys of r, intersect
                     // the value associated with the name with the index value.
@@ -65,11 +70,15 @@ export class PropsNode extends Node<typeof PropsNode> {
                                 kind: "optional",
                                 value: rValue
                             })
-                            propResult = NamedPropNode.intersection(
+                            const result = NamedPropNode.intersection(
                                 propResult,
                                 rValueAsProp,
                                 s
                             )
+                            if (result instanceof Disjoint) {
+                                return result
+                            }
+                            propResult = result
                         }
                     }
                 }
@@ -82,19 +91,17 @@ export class PropsNode extends Node<typeof PropsNode> {
                             kind: "optional",
                             value: lValue
                         })
-                        propResult = NamedPropNode.intersection(
+                        const result = NamedPropNode.intersection(
                             propResult,
                             lValueAsProp,
                             s
                         )
+                        if (result instanceof Disjoint) {
+                            return result
+                        }
+                        propResult = result
                     }
                 }
-            }
-            if (
-                propResult.rule.value.isDisjoint() &&
-                propResult.rule.kind !== "optional"
-            ) {
-                return propResult.rule.value
             }
             named[k] = propResult
         }
@@ -147,7 +154,12 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
                 : "optional"
         const result = TypeNode.intersection(l.rule.value, r.rule.value, s)
         return result instanceof Disjoint
-            ? result
+            ? kind === "optional"
+                ? new NamedPropNode({
+                      kind,
+                      value: never
+                  })
+                : result
             : new NamedPropNode({
                   kind,
                   value: result
