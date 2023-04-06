@@ -14,7 +14,8 @@ import type {
     validateConstraints
 } from "./constraints.ts"
 import { Constraints } from "./constraints.ts"
-import type { ComparisonState, Node } from "./node.ts"
+import type { ComparisonState } from "./node.ts"
+import { Node } from "./node.ts"
 import type { CheckResult } from "./traverse.ts"
 import { branchwiseIntersection } from "./union.ts"
 
@@ -32,7 +33,11 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
 
-export class Type<t = unknown> extends Function {
+export class Type<t = unknown> extends Node<
+    typeof Type,
+    [data: unknown],
+    CheckResult<inferOut<t>>
+> {
     root: Node
 
     constructor(public definition: unknown) {
@@ -55,23 +60,6 @@ export class Type<t = unknown> extends Function {
     declare infer: inferOut<t>
 
     declare inferIn: inferIn<t>
-
-    declare apply: (
-        thisArg: null,
-        args: [data: unknown]
-    ) => CheckResult<inferOut<t>>
-
-    declare call: (thisArg: null, data: unknown) => CheckResult<inferOut<t>>
-
-    // TODO: don't mutate
-    allows(data: unknown): data is inferIn<t> {
-        return !data
-    }
-
-    assert(data: unknown): inferOut<t> {
-        const result = this.call(null, data)
-        return result.problems ? result.problems.throw() : result.data
-    }
 
     static compile(rule: List<Constraints>) {
         return `${rule}`

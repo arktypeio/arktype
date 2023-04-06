@@ -8,16 +8,19 @@ import { EqualityNode } from "./equality.ts"
 import { FilterNode } from "./filter.ts"
 import { InstanceNode } from "./instance.ts"
 import { MorphNode } from "./morph.ts"
-import { Node } from "./node.ts"
 import type { ComparisonState, CompilationState } from "./node.ts"
+import { Node } from "./node.ts"
 import { PropsNode } from "./props.ts"
 import type { Bounds } from "./range.ts"
 import { RangeNode } from "./range.ts"
 import { RegexNode } from "./regex.ts"
 
 export class Constraints extends Node<typeof Constraints> {
+    branches: [Constraints]
+
     constructor(rule: ConstraintsRule) {
         super(Constraints, rule)
+        this.branches = [this]
     }
 
     static from(constraints: ConstraintsDefinition) {
