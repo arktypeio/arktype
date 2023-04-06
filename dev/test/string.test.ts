@@ -23,7 +23,9 @@ describe("string", () => {
         attest(() =>
             // @ts-expect-error
             type("string | boo lean[]")
-        ).throwsAndHasTypeError(writeUnresolvableMessage("boo"))
+        )
+            .throws(writeUnresolvableMessage("boo"))
+            .type.errors("string | boolean")
     })
     it("unterminated string", () => {
         // @ts-expect-error

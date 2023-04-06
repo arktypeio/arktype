@@ -62,7 +62,7 @@ describe("union/parse", () => {
         })
         it("consecutive tokens", () => {
             // @ts-expect-error
-            attest(() => type("boolean||null")).throwsAndHasTypeError(
+            attest(() => type("boolean||null")).throws(
                 writeMissingRightOperandMessage("|", "|null")
             )
         })
@@ -76,9 +76,7 @@ describe("union/parse", () => {
             attest(() =>
                 // @ts-expect-error
                 type("boolean[]|(string|number|)|object")
-            ).throwsAndHasTypeError(
-                writeMissingRightOperandMessage("|", ")|object")
-            )
+            ).throws(writeMissingRightOperandMessage("|", ")|object"))
         })
         it("helper bad reference", () => {
             // @ts-expect-error

@@ -95,8 +95,6 @@ export type validateDefinition<def, $> = [def] extends [(...args: any[]) => any]
     ? writeBadDefinitionTypeMessage<
           objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
       >
-    : isUnknown<def> extends true
-    ? unknownDefinitionMessage
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], $>
       }>
@@ -106,11 +104,6 @@ export const as = Symbol("as")
 export type Infer<t> = {
     [as]?: t
 }
-
-export const unknownDefinitionMessage =
-    "Cannot statically parse a definition inferred as unknown. Consider using 'as Infer<...>' to cast it."
-
-export type unknownDefinitionMessage = typeof unknownDefinitionMessage
 
 const isThunk = (def: unknown): def is () => unknown =>
     typeof def === "function" && def.length === 0

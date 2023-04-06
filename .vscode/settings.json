@@ -17,6 +17,7 @@
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "typescript.tsdk": "./node_modules/typescript/lib",
     "typescript.tsserver.experimental.enableProjectDiagnostics": true,
+    "typescript.preferences.importModuleSpecifierEnding": "js",
     "prettier.ignorePath": "dev/configs/.prettierignore",
     "mochaExplorer.nodeArgv": [
         "--loader=ts-node/esm",

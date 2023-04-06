@@ -24,7 +24,7 @@ describe("group", () => {
             attest(() => {
                 // @ts-expect-error
                 type("()")
-            }).throwsAndHasTypeError(writeExpressionExpectedMessage(")"))
+            }).throws(writeExpressionExpectedMessage(")"))
         })
         it("unmatched (", () => {
             attest(() => {
@@ -42,7 +42,7 @@ describe("group", () => {
             attest(() => {
                 // @ts-expect-error
                 type(")")
-            }).throwsAndHasTypeError(writeExpressionExpectedMessage(")"))
+            }).throws(writeExpressionExpectedMessage(")"))
         })
         it("lone (", () => {
             attest(() => {
@@ -66,7 +66,7 @@ describe("group", () => {
             attest(() => {
                 // @ts-expect-error
                 type(")number(")
-            }).throwsAndHasTypeError(writeExpressionExpectedMessage(")number("))
+            }).throws(writeExpressionExpectedMessage(")number("))
         })
     })
 })

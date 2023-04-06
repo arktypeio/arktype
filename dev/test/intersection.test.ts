@@ -173,13 +173,13 @@ describe("intersection", () => {
         describe("errors", () => {
             it("bad reference", () => {
                 // @ts-expect-error
-                attest(() => type("boolean&tru")).throwsAndHasTypeError(
-                    writeUnresolvableMessage("tru")
-                )
+                attest(() => type("boolean&tru"))
+                    .throws(writeUnresolvableMessage("tru"))
+                    .type.errors("boolean&true")
             })
             it("double and", () => {
                 // @ts-expect-error
-                attest(() => type("boolean&&true")).throwsAndHasTypeError(
+                attest(() => type("boolean&&true")).throws(
                     writeMissingRightOperandMessage("&", "&true")
                 )
             })
