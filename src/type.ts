@@ -4,7 +4,6 @@ import type {
     validateConstraints
 } from "./nodes/constraints.ts"
 import type { Node } from "./nodes/node.ts"
-import { CompiledFunction } from "./nodes/node.ts"
 import type { CheckResult } from "./nodes/traverse.ts"
 import type { ParsedMorph } from "./parse/ast/morph.ts"
 import {
@@ -13,7 +12,12 @@ import {
     parseDefinition,
     type validateDefinition
 } from "./parse/definition.ts"
-import type { conform, evaluate, List } from "./utils/generics.ts"
+import {
+    CompiledFunction,
+    type conform,
+    type evaluate,
+    type List
+} from "./utils/generics.ts"
 import type { BuiltinClass } from "./utils/objectKinds.ts"
 import { Path } from "./utils/paths.ts"
 

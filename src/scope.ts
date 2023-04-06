@@ -11,15 +11,7 @@ import type {
 import { parseDefinition } from "./parse/definition.ts"
 import type { PrecompiledDefaults } from "./scopes/ark.ts"
 import { Cache, FreezingCache } from "./scopes/cache.ts"
-import type {
-    AnonymousTypeName,
-    KeyCheckKind,
-    QualifiedTypeName,
-    Type,
-    TypeOptions,
-    TypeParser
-} from "./type.ts"
-import { initializeType } from "./type.ts"
+import type { KeyCheckKind, Type, TypeOptions, TypeParser } from "./type.ts"
 import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
 import { throwInternalError, throwParseError } from "./utils/errors.ts"
 import { deepFreeze } from "./utils/freeze.ts"

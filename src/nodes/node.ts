@@ -1,7 +1,7 @@
 import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
 import type { TypeConfig } from "../type.ts"
 import type { Domain } from "../utils/domains.ts"
-import type { extend } from "../utils/generics.ts"
+import { CompiledFunction, type extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
 import type { ConstraintsDefinition } from "./constraints.ts"
 import type { DomainNode } from "./domain.ts"
@@ -9,19 +9,6 @@ import type { EqualityNode } from "./equality.ts"
 import type { InstanceNode } from "./instance.ts"
 import type { RangeNode } from "./range.ts"
 import type { TypeNode } from "./type.ts"
-
-export const CompiledFunction = Function as unknown as new <
-    args extends any[],
-    returns
->(
-    ...args: ConstructorParameters<typeof Function>
-) => {
-    (...args: args): returns
-
-    apply(thisArg: null, args: args): returns
-
-    call(thisArg: null, ...args: args): returns
-}
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (...args: any[]): Node<subclass>
