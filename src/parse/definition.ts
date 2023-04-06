@@ -4,23 +4,17 @@ import { isType } from "../scopes/type.js"
 import type { Primitive } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
-import type {
-    Dict,
-    evaluate,
-    isAny,
-    isUnknown,
-    List
-} from "../utils/generics.ts"
+import type { Dict, evaluate, isAny, List } from "../utils/generics.ts"
 import { objectKindOf } from "../utils/objectKinds.js"
 import type { Path } from "../utils/paths.js"
 import { stringify } from "../utils/serialize.js"
 import type { validateString } from "./ast/ast.js"
+import { parseTuple } from "./ast/tuple.js"
 import type {
     inferTuple,
     TupleExpression,
     validateTupleExpression
 } from "./ast/tuple.ts"
-import { parseTuple } from "./ast/tuple.js"
 import type { inferRecord } from "./record.js"
 import { parseRecord } from "./record.js"
 import type { inferString } from "./string/string.js"

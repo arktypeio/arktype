@@ -3,11 +3,8 @@ import { join } from "node:path"
 import * as process from "node:process"
 import {
     getSourceFilePaths,
-    readFile,
     readJson,
     shell,
-    walkPaths,
-    writeFile,
     writeJson
 } from "../runtime/main.js"
 import { repoDirs } from "./common.js"
