@@ -4,17 +4,24 @@ import { isType } from "../scopes/type.js"
 import type { Primitive } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
-import type { Dict, evaluate, isAny, List } from "../utils/generics.ts"
+import type {
+    Dict,
+    evaluate,
+    isAny,
+    isUnknown,
+    List,
+    stringKeyOf
+} from "../utils/generics.js"
 import { objectKindOf } from "../utils/objectKinds.js"
 import type { Path } from "../utils/paths.js"
 import { stringify } from "../utils/serialize.js"
 import type { validateString } from "./ast/ast.js"
-import { parseTuple } from "./ast/tuple.js"
 import type {
     inferTuple,
     TupleExpression,
     validateTupleExpression
-} from "./ast/tuple.ts"
+} from "./ast/tuple.js"
+import { parseTuple } from "./ast/tuple.js"
 import type { inferRecord } from "./record.js"
 import { parseRecord } from "./record.js"
 import type { inferString } from "./string/string.js"
@@ -89,6 +96,8 @@ export type validateDefinition<def, $> = [def] extends [(...args: any[]) => any]
     ? writeBadDefinitionTypeMessage<
           objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
       >
+    : isUnknown<def> extends true
+    ? stringKeyOf<$>
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], $>
       }>

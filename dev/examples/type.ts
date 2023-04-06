@@ -17,3 +17,13 @@ export const { data, problems } = user({
         platform: "enigma"
     }
 })
+
+const z = type({
+    a: "string|number"
+})
+
+const ffoo = type("string|number")
+
+type("string|number")
+
+type("s")
