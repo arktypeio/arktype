@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
 import { scope } from "../../src/main.ts"
-import { writeDuplicateAliasesMessage } from "../../src/scopes/scope.ts"
+import { writeDuplicateAliasesMessage } from "../../src/scope.ts"
 import { attest } from "../attest/main.ts"
 
 describe("scope imports", () => {

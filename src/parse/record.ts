@@ -1,7 +1,7 @@
 import { Constraints } from "../nodes/constraints.ts"
 import { NamedPropNode } from "../nodes/props.ts"
 import type { PropKind, PropsRule } from "../nodes/props.ts"
-import { Type } from "../nodes/type.ts"
+import { Type } from "../type.ts"
 import type { Dict, evaluate, mutable } from "../utils/generics.ts"
 import type { inferDefinition, ParseContext } from "./definition.ts"
 import { parseDefinition } from "./definition.ts"

@@ -1,7 +1,7 @@
-import type { TypeParser } from "../nodes/type.ts"
+import type { TypeParser } from "../type.ts"
 import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
-import type { Space } from "./scope.ts"
-import { rootScope, scope } from "./scope.ts"
+import type { Space } from "../scope.ts"
+import { rootScope, scope } from "../scope.ts"
 import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
 import { validation, validationScope } from "./validation/validation.ts"
 

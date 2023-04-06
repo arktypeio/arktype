@@ -1,7 +1,8 @@
+import type { Type } from "../type.ts"
 import type { Dict, List } from "../utils/generics.ts"
 import type { ComparisonState, CompilationState } from "./node.ts"
-import { Node } from "./node.ts"
-import { Type } from "./type.ts"
+import { Disjoint, Node } from "./node.ts"
+import { TypeNode } from "./type.ts"
 
 export class PropsNode extends Node<typeof PropsNode> {
     readonly named: PropsRule["named"]
@@ -33,7 +34,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                 indexed.push([rKey, rValue])
             } else {
                 // TODO: path updates here
-                indexed[matchingIndex][1] = Type.intersection(
+                indexed[matchingIndex][1] = TypeNode.intersection(
                     indexed[matchingIndex][1],
                     rValue,
                     s
@@ -59,7 +60,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                     // If a named key from l matches any index keys of r, intersect
                     // the value associated with the name with the index value.
                     for (const [rKey, rValue] of r.indexed) {
-                        if (rKey.allows(k)) {
+                        if (rKey(k)) {
                             const rValueAsProp = new NamedPropNode({
                                 kind: "optional",
                                 value: rValue
@@ -76,7 +77,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                 // If a named key from r matches any index keys of l, intersect
                 // the value associated with the name with the index value.
                 for (const [lKey, lValue] of l.indexed) {
-                    if (lKey.allows(k)) {
+                    if (lKey(k)) {
                         const lValueAsProp = new NamedPropNode({
                             kind: "optional",
                             value: lValue
@@ -103,7 +104,7 @@ export class PropsNode extends Node<typeof PropsNode> {
 
 export type PropsRule = {
     named: Dict<string, NamedPropNode>
-    indexed: List<[keyType: Type, valueType: Type]>
+    indexed: List<[keyType: TypeNode, valueType: TypeNode]>
 }
 
 export type PropsDefinition = {
@@ -121,16 +122,11 @@ export type NamedPropDefinition = {
 // TODO: attach these to class instead pass and infer as variadic args
 export type NamedPropRule = {
     kind: PropKind
-    value: Type
+    value: TypeNode
 }
 
 export class NamedPropNode extends Node<typeof NamedPropNode> {
-    constructor(public definition: NamedPropDefinition) {
-        const rule: NamedPropRule = {
-            kind: definition.kind,
-            // TODO: path shouldn't be here
-            value: new Type(definition.value)
-        }
+    constructor(rule: NamedPropRule) {
         super(NamedPropNode, rule)
     }
 
@@ -142,16 +138,19 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
         l: NamedPropNode,
         r: NamedPropNode,
         s: ComparisonState
-    ) {
+    ): NamedPropNode | Disjoint {
         const kind =
             l.rule.kind === "prerequisite" || r.rule.kind === "prerequisite"
                 ? "prerequisite"
                 : l.rule.kind === "required" || r.rule.kind === "required"
                 ? "required"
                 : "optional"
-        return new NamedPropNode({
-            kind,
-            value: Type.intersection(l.rule.value, r.rule.value, s)
-        })
+        const result = TypeNode.intersection(l.rule.value, r.rule.value, s)
+        return result instanceof Disjoint
+            ? result
+            : new NamedPropNode({
+                  kind,
+                  value: result
+              })
     }
 }

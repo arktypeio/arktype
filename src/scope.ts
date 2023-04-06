@@ -1,29 +1,16 @@
-import type { Node } from "../nodes/node.ts"
-import { CompilationState, createTraverse } from "../nodes/node.ts"
-import type { ProblemCode, ProblemOptionsByCode } from "../nodes/problems.ts"
-import { CheckResult, TraversalState } from "../nodes/traverse.ts"
-import type { ConfigTuple } from "../parse/ast/config.ts"
+import type { Node } from "./nodes/node.ts"
+import { CompilationState, createTraverse } from "./nodes/node.ts"
+import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.ts"
+import { CheckResult, TraversalState } from "./nodes/traverse.ts"
+import type { ConfigTuple } from "./parse/ast/config.ts"
 import type {
     inferDefinition,
     ParseContext,
     validateDefinition
-} from "../parse/definition.ts"
-import { parseDefinition } from "../parse/definition.ts"
-import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
-import { throwInternalError, throwParseError } from "../utils/errors.ts"
-import { deepFreeze } from "../utils/freeze.ts"
-import type {
-    Dict,
-    error,
-    evaluate,
-    isAny,
-    List,
-    nominal
-} from "../utils/generics.ts"
-import { Path } from "../utils/paths.ts"
-import type { stringifyUnion } from "../utils/unionToTuple.ts"
-import type { PrecompiledDefaults } from "./ark.ts"
-import { Cache, FreezingCache } from "./cache.ts"
+} from "./parse/definition.ts"
+import { parseDefinition } from "./parse/definition.ts"
+import type { PrecompiledDefaults } from "./scopes/ark.ts"
+import { Cache, FreezingCache } from "./scopes/cache.ts"
 import type {
     AnonymousTypeName,
     KeyCheckKind,
@@ -33,6 +20,19 @@ import type {
     TypeParser
 } from "./type.ts"
 import { initializeType } from "./type.ts"
+import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
+import { throwInternalError, throwParseError } from "./utils/errors.ts"
+import { deepFreeze } from "./utils/freeze.ts"
+import type {
+    Dict,
+    error,
+    evaluate,
+    isAny,
+    List,
+    nominal
+} from "./utils/generics.ts"
+import { Path } from "./utils/paths.ts"
+import type { stringifyUnion } from "./utils/unionToTuple.ts"
 
 type ScopeParser = {
     <aliases>(aliases: validateAliases<aliases, {}>): Scope<
@@ -303,8 +303,8 @@ export class Scope<context extends ScopeContext = any> {
             node = this.#resolveRecurse(node, "throw", seen).node
         }
         t.node = deepFreeze(node)
-        t.js = t.node.compile(new CompilationState(t))
-        t.traverse = createTraverse(t.name, t.js)
+        t.ts = t.node.compile(new CompilationState(t))
+        t.traverse = createTraverse(t.name, t.ts)
         t.check = (data) => {
             const state = new TraversalState(t)
             t.traverse(data, state)
@@ -332,8 +332,8 @@ export class Scope<context extends ScopeContext = any> {
             // TODO: refactor TODO: each node should compile completely or until
             // it hits a loop with itself. it should rely on other nodes that
             // have been compiled the same way, parametrized with the current path.
-            t.js = t.node.compile(new CompilationState(t))
-            t.traverse = createTraverse(t.name, t.js)
+            t.ts = t.node.compile(new CompilationState(t))
+            t.traverse = createTraverse(t.name, t.ts)
             t.check = (data) => {
                 const state = new TraversalState(t)
                 t.traverse(data, state)

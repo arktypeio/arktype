@@ -1,6 +1,6 @@
 import { node } from "../nodes/node.ts"
 import type { Infer } from "../parse/definition.ts"
-import { scope } from "./scope.ts"
+import { scope } from "../scope.ts"
 
 /**
  * @keywords keywords: {"any": "any",

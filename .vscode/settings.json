@@ -15,7 +15,7 @@
     "typescript.tsdk": "./node_modules/typescript/lib",
     "typescript.tsserver.experimental.enableProjectDiagnostics": true,
     // temporarily disabled until .ts suffixes are preserved
-    "typescript.updateImportsOnFileMove.enabled": "never",
+    // "typescript.updateImportsOnFileMove.enabled": "never",
     "prettier.ignorePath": "dev/configs/.prettierignore",
     "mochaExplorer.nodeArgv": [
         "--loader=ts-node/esm",

@@ -1,4 +1,5 @@
 import type { ProblemCode, ProblemRules } from "../nodes/problems.ts"
+import type { TypeConfig } from "../type.ts"
 import type { Domain } from "../utils/domains.ts"
 import type { extend } from "../utils/generics.ts"
 import { Path } from "../utils/paths.ts"
@@ -7,8 +8,7 @@ import type { DomainNode } from "./domain.ts"
 import type { EqualityNode } from "./equality.ts"
 import type { InstanceNode } from "./instance.ts"
 import type { RangeNode } from "./range.ts"
-import type { TypeConfig } from "./type.ts"
-import type { TypeNode } from "./union.ts"
+import type { TypeNode } from "./type.ts"
 
 export const CompiledFunction = Function as unknown as new <
     args extends any[],

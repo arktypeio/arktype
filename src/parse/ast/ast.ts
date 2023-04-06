@@ -1,5 +1,5 @@
 import type { Comparator } from "../../nodes/constraints/range.ts"
-import type { resolve } from "../../scopes/scope.ts"
+import type { resolve } from "../../scope.ts"
 import type {
     castOnError,
     error,

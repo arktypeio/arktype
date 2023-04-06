@@ -3,7 +3,7 @@ import {
     wellFormedIntegerMatcher,
     wellFormedNumberMatcher
 } from "../../utils/numericLiterals.ts"
-import { rootType, scope } from "../scope.ts"
+import { rootType, scope } from "../../scope.ts"
 import { tsKeywords } from "../tsKeywords.ts"
 import { creditCard } from "./creditCard.ts"
 import { parsedDate } from "./date.ts"

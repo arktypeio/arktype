@@ -1,4 +1,4 @@
-import { rootType } from "../scope.ts"
+import { rootType } from "../../scope.ts"
 import { tsKeywords } from "../tsKeywords.ts"
 
 type DayDelimiter = "." | "/" | "-"

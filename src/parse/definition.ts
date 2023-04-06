@@ -1,5 +1,5 @@
 import type { Node } from "../nodes/node.ts"
-import type { Type } from "../nodes/type.ts"
+import type { Type } from "../type.ts"
 import type { Primitive } from "../utils/domains.ts"
 import { domainOf } from "../utils/domains.ts"
 import { throwParseError } from "../utils/errors.ts"
