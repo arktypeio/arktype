@@ -1,13 +1,16 @@
-import { appendFileSync, rmSync, writeFileSync } from "node:fs"
+import { appendFileSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import { ensureDir, shell } from "../../../runtime/main.ts"
 import type { DocGenApiConfig } from "../main.ts"
+import { keywordTable } from "./buildTable/keywords.ts"
+import { getFormats } from "./buildTable/operators.ts"
+import { constructRow } from "./buildTable/table.ts"
 import type {
     ApiEntryPoint,
     ExportData,
     PackageExtractionData
 } from "./extractApi.ts"
-import { tabulateData } from "./keywordTable.ts"
+import { generateKeywordMasterList, operatorsTable } from "./postProcess.ts"
 import type { TsTagData } from "./tsDocTransforms.ts"
 import {
     formatTagData,
@@ -48,36 +51,42 @@ const writeEntryPoint = (
         // avoid a docusaurus build failure
         appendFileSync(mdFilePath, generateMarkdownForExport(exported, data))
     }
-    generateKeywordMasterList(entryPointOutDir)
+    postProcessMarkdownSpawners(entryPointOutDir)
 }
 
-const scopeData: { [k: string]: string }[] = []
+export type ScopeData = { [k: string]: string }
+const scopeData: ScopeData[] = []
+const operatingTable: string[] = []
 
-const generateKeywordMasterList = (entryPointOutDir: string) => {
-    const keywordsPath = join(entryPointOutDir, "keywords.md")
-    const md = new MarkdownSection("Keywords")
-    md.options({ hide_table_of_contents: true })
-    scopeData.forEach((data) => md.section(data.name).text(data.text))
-    writeFileSync(keywordsPath, md.toString())
+const postProcessMarkdownSpawners = (entryPointOutDir: string) => {
+    generateKeywordMasterList(join(entryPointOutDir, "keywords.md"), scopeData)
+    operatorsTable(join(entryPointOutDir, "operators.md"), operatingTable)
 }
 
 const generateMarkdownForExport = (
     exported: ExportData,
     tagData: TsTagData
 ) => {
-    const tagsToIgnore = ["keywords", "scope"]
+    const tagsToIgnore = /docgen\w+/
     const md = new MarkdownSection(exported.name)
     md.options({ hide_table_of_contents: true })
     for (const [tag, arrayOfTagData] of Object.entries(tagData)) {
-        if (tagsToIgnore.includes(tag)) {
+        if (tagsToIgnore.test(tag)) {
             continue
         }
         md.section(tag).text(formatTagData(arrayOfTagData, tag))
     }
-    if (tagData.scope) {
-        const textAsTable = tabulateData(exported, tagData)
-        md.section("text").text(textAsTable)
-        scopeData.push({ name: exported.name, text: textAsTable })
+    if (tagData.docgenTable) {
+        if (tagData.operator) {
+            const row = [tagData.operator[0], ...getFormats(tagData)]
+            operatingTable.push(constructRow(row))
+        }
+        if (tagData.docgenScope) {
+            const table = keywordTable(exported.text, tagData)
+            const text = table.join("\n")
+            md.section("text").text(text)
+            scopeData.push({ name: exported.name, text })
+        }
     } else {
         md.section("text").tsBlock(exported.text)
     }
@@ -85,7 +94,7 @@ const generateMarkdownForExport = (
     return md.toString()
 }
 
-class MarkdownSection {
+export class MarkdownSection {
     private contents: (string | MarkdownSection)[]
     private optionsAdded = false
     constructor(header: string, private depth = 1) {
