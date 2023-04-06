@@ -1,4 +1,4 @@
-import type { Node } from "../../../../nodes/node.ts"
+import type { Node } from "../../../../nodes/node.js"
 import type {
     autocomplete,
     error,
@@ -12,9 +12,9 @@ import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "../../../../utils/numericLiterals.ts"
-import type { DynamicState } from "../../reduce/dynamic.ts"
-import type { state, StaticState } from "../../reduce/static.ts"
-import type { Scanner } from "../scanner.ts"
+import type { DynamicState } from "../../reduce/dynamic.js"
+import type { state, StaticState } from "../../reduce/static.js"
+import type { Scanner } from "../scanner.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
     const token = s.scanner.shiftUntilNextTerminator()

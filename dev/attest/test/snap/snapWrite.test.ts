@@ -1,7 +1,7 @@
 import * as assert from "node:assert/strict"
 import { describe, it } from "mocha"
-import { fromHere, readFile } from "../../../runtime/main.ts"
-import { runThenGetContents } from "../utils.ts"
+import { fromHere, readFile } from "../../../runtime/main.js"
+import { runThenGetContents } from "../utils.js"
 
 const snapshotTemplate = fromHere("snapWriteTemplate.ts")
 const expectedOutput = readFile(fromHere("snapWriteExpectedOutput.ts"))

@@ -2,7 +2,7 @@ import { Stack, Typography } from "@mui/material"
 import React from "react"
 import { Boat } from "../components/boat.tsx"
 import { LogoCloud } from "../components/logoCloud.tsx"
-import { useIsMobile } from "./useWindowSize.ts"
+import { useIsMobile } from "./useWindowSize.js"
 
 export const Header = ({ title, tagline }: Record<string, string>) => {
     return (

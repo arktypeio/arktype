@@ -1,6 +1,6 @@
-import type { distributable } from "../parse/ast/distributableFunction.ts"
-import type { Morph } from "../parse/ast/morph.ts"
-import type { Narrow } from "../parse/ast/narrow.ts"
+import type { distributable } from "../parse/ast/distributableFunction.js"
+import type { Morph } from "../parse/ast/morph.js"
+import type { Narrow } from "../parse/ast/narrow.js"
 import type {
     FunctionalTupleOperator,
     inferTupleExpression,
@@ -13,10 +13,10 @@ import type {
     inferDefinition,
     validateDefinition
 } from "../parse/definition.ts"
-import type { conform } from "../utils/generics.ts"
-import type { PrecompiledDefaults } from "./ark.ts"
-import { scopes } from "./ark.ts"
-import type { asIn, asOut, Type, TypeOptions } from "./type.ts"
+import type { conform } from "../utils/generics.js"
+import type { PrecompiledDefaults } from "./ark.js"
+import { scopes } from "./ark.js"
+import type { asIn, asOut, Type, TypeOptions } from "./type.js"
 
 export type Expressions<$> = {
     intersection: BinaryExpressionParser<$, "&">

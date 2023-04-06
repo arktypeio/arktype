@@ -3,8 +3,8 @@ import type {
     LinePositionRange,
     SourcePosition
 } from "../utils.ts"
-import { getFileKey } from "../utils.ts"
-import { getAssertionsByFile } from "./analysis.ts"
+import { getFileKey } from "../utils.js"
+import { getAssertionsByFile } from "./analysis.js"
 
 const isPositionWithinRange = (
     { line, char }: LinePosition,

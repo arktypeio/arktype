@@ -10,7 +10,7 @@ import {
     writeFile,
     writeJson
 } from "../runtime/main.ts"
-import { repoDirs } from "./common.ts"
+import { repoDirs } from "./common.js"
 
 const isTestBuild = process.argv.includes("--test")
 
@@ -42,7 +42,6 @@ const buildTypes = () => {
             `pnpm tsc --project ${tempTsConfig} --outDir ${repoDirs.outRoot} --noEmit false --emitDeclarationOnly`
         )
         renameSync(join(repoDirs.outRoot, "src"), repoDirs.typesOut)
-        rewriteTsImports(repoDirs.typesOut)
     } finally {
         rmSync(tempTsConfig, { force: true })
     }
@@ -71,7 +70,6 @@ const swc = (kind: "mjs" | "cjs") => {
     } else {
         buildWithTests(kind, kindOutDir)
     }
-    rewriteTsImports(kindOutDir)
     writeJson(join(kindOutDir, "package.json"), {
         type: kind === "cjs" ? "commonjs" : "module"
     })
@@ -99,13 +97,5 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
         )
     }
 }
-
-const rewriteTsImports = (dir: string) => {
-    walkPaths(dir, { excludeDirs: true }).forEach((path) => {
-        writeFile(path, replaceTsImports(readFile(path)))
-    })
-}
-
-const replaceTsImports = (source: string) => source.replaceAll('.ts"', '.js"')
 
 arktypeTsc()

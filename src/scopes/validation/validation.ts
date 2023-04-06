@@ -2,10 +2,10 @@ import {
     wellFormedIntegerMatcher,
     wellFormedNumberMatcher
 } from "../../utils/numericLiterals.ts"
-import { rootType, scope } from "../scope.ts"
-import { tsKeywords } from "../tsKeywords.ts"
-import { creditCard } from "./creditCard.ts"
-import { parsedDate } from "./date.ts"
+import { rootType, scope } from "../scope.js"
+import { tsKeywords } from "../tsKeywords.js"
+import { creditCard } from "./creditCard.js"
+import { parsedDate } from "./date.js"
 
 // Non-trivial expressions should have an explanation or attribution
 

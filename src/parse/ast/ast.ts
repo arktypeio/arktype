@@ -1,4 +1,4 @@
-import type { resolve } from "../../scopes/scope.ts"
+import type { resolve } from "../../scopes/scope.js"
 import type {
     castOnError,
     error,
@@ -10,13 +10,13 @@ import type {
     BigintLiteral,
     NumberLiteral
 } from "../../utils/numericLiterals.ts"
-import type { StringLiteral } from "../string/shift/operand/enclosed.ts"
-import type { Scanner } from "../string/shift/scanner.ts"
-import type { parseString } from "../string/string.ts"
-import type { validateBound } from "./bound.ts"
-import type { validateDivisor } from "./divisor.ts"
-import type { inferIntersection } from "./intersection.ts"
-import type { inferUnion } from "./union.ts"
+import type { StringLiteral } from "../string/shift/operand/enclosed.js"
+import type { Scanner } from "../string/shift/scanner.js"
+import type { parseString } from "../string/string.js"
+import type { validateBound } from "./bound.js"
+import type { validateDivisor } from "./divisor.js"
+import type { inferIntersection } from "./intersection.js"
+import type { inferUnion } from "./union.js"
 
 export type inferAst<ast, $> = ast extends List
     ? inferExpression<ast, $>

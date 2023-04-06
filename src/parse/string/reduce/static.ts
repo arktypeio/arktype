@@ -2,10 +2,9 @@ import type {
     MaxComparator,
     MinComparator
 } from "../../../nodes/rules/range.ts"
-import type { defined, error } from "../../../utils/generics.ts"
-import type { NumberLiteral } from "../../../utils/numericLiterals.ts"
-import type { astToString } from "../../ast/utils.ts"
-import type { Scanner } from "../shift/scanner.ts"
+import type { defined, error } from "../../../utils/generics.js"
+import type { NumberLiteral } from "../../../utils/numericLiterals.js"
+import type { Scanner } from "../shift/scanner.js"
 import type {
     unclosedGroupMessage,
     writeMultipleLeftBoundsMessage,

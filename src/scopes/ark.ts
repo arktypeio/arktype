@@ -1,10 +1,10 @@
-import type { InferredObjectKinds } from "../utils/objectKinds.ts"
-import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
-import type { Space } from "./scope.ts"
-import { rootScope, scope } from "./scope.ts"
-import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
-import type { TypeParser } from "./type.ts"
-import { validation, validationScope } from "./validation/validation.ts"
+import type { InferredObjectKinds } from "../utils/objectKinds.js"
+import { jsObjects, jsObjectsScope } from "./jsObjects.js"
+import type { Space } from "./scope.js"
+import { rootScope, scope } from "./scope.js"
+import { tsKeywords, tsKeywordsScope } from "./tsKeywords.js"
+import type { TypeParser } from "./type.js"
+import { validation, validationScope } from "./validation/validation.js"
 
 export const arkScope = scope(
     {},

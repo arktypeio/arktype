@@ -1,31 +1,31 @@
-import type { Narrow } from "../../parse/ast/narrow.ts"
-import type { Domain, inferDomain } from "../../utils/domains.ts"
+import type { Narrow } from "../../parse/ast/narrow.js"
+import type { Domain, inferDomain } from "../../utils/domains.js"
 import type {
     CollapsibleList,
     constructor,
     Dict
 } from "../../utils/generics.ts"
-import { listFrom } from "../../utils/generics.ts"
-import type { IntersectionState, Intersector } from "../compose.ts"
+import { listFrom } from "../../utils/generics.js"
+import type { IntersectionState, Intersector } from "../compose.js"
 import {
     composeIntersection,
     composeKeyedIntersection,
     equality
 } from "../compose.ts"
-import type { FlattenContext, TraversalEntry, TraversalKey } from "../node.ts"
-import { classIntersection } from "./class.ts"
-import { collapsibleListUnion } from "./collapsibleSet.ts"
-import { divisorIntersection } from "./divisor.ts"
+import type { FlattenContext, TraversalEntry, TraversalKey } from "../node.js"
+import { classIntersection } from "./class.js"
+import { collapsibleListUnion } from "./collapsibleSet.js"
+import { divisorIntersection } from "./divisor.js"
 import type {
     DistilledPropsEntry,
     PropEntry,
     PropsRule,
     StrictPropsEntry
 } from "./props.ts"
-import { flattenProps, propsIntersection } from "./props.ts"
-import type { FlatBound, Range } from "./range.ts"
-import { flattenRange, rangeIntersection } from "./range.ts"
-import { regexIntersection } from "./regex.ts"
+import { flattenProps, propsIntersection } from "./props.js"
+import type { FlatBound, Range } from "./range.js"
+import { flattenRange, rangeIntersection } from "./range.js"
+import { regexIntersection } from "./regex.js"
 
 export type NarrowableRules<$ = Dict> = {
     readonly regex?: CollapsibleList<string>

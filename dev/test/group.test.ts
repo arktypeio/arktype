@@ -1,11 +1,11 @@
 import { describe, it } from "mocha"
-import { type } from "../../src/main.ts"
+import { type } from "../../src/main.js"
 import {
     unclosedGroupMessage,
     writeUnmatchedGroupCloseMessage
 } from "../../src/parse/string/reduce/shared.ts"
-import { writeExpressionExpectedMessage } from "../../src/parse/string/shift/operand/unenclosed.ts"
-import { attest } from "../attest/main.ts"
+import { writeExpressionExpectedMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
+import { attest } from "../attest/main.js"
 
 describe("group", () => {
     it("entire expression", () => {

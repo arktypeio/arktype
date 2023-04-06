@@ -1,5 +1,5 @@
-import { rootType } from "../scope.ts"
-import { tsKeywords } from "../tsKeywords.ts"
+import { rootType } from "../scope.js"
+import { tsKeywords } from "../tsKeywords.js"
 
 type DayDelimiter = "." | "/" | "-"
 

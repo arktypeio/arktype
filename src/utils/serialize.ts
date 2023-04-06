@@ -1,8 +1,8 @@
-import type { inferDomain, Primitive } from "./domains.ts"
-import { domainOf } from "./domains.ts"
-import type { Dict, isTopType, List } from "./generics.ts"
-import { isKeyOf } from "./generics.ts"
-import type { BigintLiteral, NumberLiteral } from "./numericLiterals.ts"
+import type { inferDomain, Primitive } from "./domains.js"
+import { domainOf } from "./domains.js"
+import type { Dict, isTopType, List } from "./generics.js"
+import { isKeyOf } from "./generics.js"
+import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
 import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber

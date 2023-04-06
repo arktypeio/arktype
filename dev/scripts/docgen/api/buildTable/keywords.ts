@@ -1,4 +1,4 @@
-import type { TsTagData } from "../tsDocTransforms.ts"
+import type { TsTagData } from "../tsDocTransforms.js"
 import {
     constructHeader,
     constructRow,

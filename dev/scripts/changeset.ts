@@ -1,6 +1,6 @@
-import { fromPackageRoot } from "../runtime/fs.ts"
-import { shell } from "../runtime/shell.ts"
-import { repoDirs } from "./common.ts"
+import { fromPackageRoot } from "../runtime/fs.js"
+import { shell } from "../runtime/shell.js"
+import { repoDirs } from "./common.js"
 
 shell(
     `node ${fromPackageRoot(

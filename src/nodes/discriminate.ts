@@ -1,32 +1,32 @@
-import { writeUndiscriminatableMorphUnionMessage } from "../parse/ast/union.ts"
-import type { Scope } from "../scopes/scope.ts"
-import type { Domain } from "../utils/domains.ts"
-import { domainOf } from "../utils/domains.ts"
-import { throwInternalError, throwParseError } from "../utils/errors.ts"
-import type { evaluate, keySet } from "../utils/generics.ts"
-import { isKeyOf, keyCount, objectKeysOf } from "../utils/generics.ts"
-import type { DefaultObjectKind } from "../utils/objectKinds.ts"
+import { writeUndiscriminatableMorphUnionMessage } from "../parse/ast/union.js"
+import type { Scope } from "../scopes/scope.js"
+import type { Domain } from "../utils/domains.js"
+import { domainOf } from "../utils/domains.js"
+import { throwInternalError, throwParseError } from "../utils/errors.js"
+import type { evaluate, keySet } from "../utils/generics.js"
+import { isKeyOf, keyCount, objectKeysOf } from "../utils/generics.js"
+import type { DefaultObjectKind } from "../utils/objectKinds.js"
 import {
     getExactConstructorObjectKind,
     isArray,
     objectKindOf
 } from "../utils/objectKinds.ts"
-import { Path } from "../utils/paths.ts"
+import { Path } from "../utils/paths.js"
 import type {
     SerializablePrimitive,
     SerializedPrimitive
 } from "../utils/serialize.ts"
-import { serializePrimitive } from "../utils/serialize.ts"
-import type { Branch, Branches } from "./branch.ts"
-import { branchIntersection, flattenBranch } from "./branch.ts"
-import { IntersectionState } from "./compose.ts"
+import { serializePrimitive } from "../utils/serialize.js"
+import type { Branch, Branches } from "./branch.js"
+import { branchIntersection, flattenBranch } from "./branch.js"
+import { IntersectionState } from "./compose.js"
 import type {
     FlattenContext,
     Node,
     TraversalEntry,
     TraversalValue
 } from "./node.ts"
-import { mappedKeys, propToNode } from "./rules/props.ts"
+import { mappedKeys, propToNode } from "./rules/props.js"
 
 export type DiscriminatedSwitch<
     kind extends DiscriminantKind = DiscriminantKind

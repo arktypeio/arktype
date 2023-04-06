@@ -1,6 +1,6 @@
 import type { CallExpression } from "ts-morph"
 import { Project, SyntaxKind } from "ts-morph"
-import { type } from "../../src/main.ts"
+import { type } from "../../src/main.js"
 
 const arktypeFunctions = {
     type

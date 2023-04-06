@@ -1,11 +1,11 @@
-import { throwInternalError } from "../../../../utils/errors.ts"
-import type { error } from "../../../../utils/generics.ts"
-import { isKeyOf } from "../../../../utils/generics.ts"
-import type { DynamicState } from "../../reduce/dynamic.ts"
-import type { state, StaticState } from "../../reduce/static.ts"
-import { Scanner } from "../scanner.ts"
-import { parseBound } from "./bounds.ts"
-import { parseDivisor } from "./divisor.ts"
+import { throwInternalError } from "../../../../utils/errors.js"
+import type { error } from "../../../../utils/generics.js"
+import { isKeyOf } from "../../../../utils/generics.js"
+import type { DynamicState } from "../../reduce/dynamic.js"
+import type { state, StaticState } from "../../reduce/static.js"
+import { Scanner } from "../scanner.js"
+import { parseBound } from "./bounds.js"
+import { parseDivisor } from "./divisor.js"
 
 // @snipStart:parseOperator
 export const parseOperator = (s: DynamicState): void => {

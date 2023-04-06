@@ -1,5 +1,5 @@
-import type { KeyCheckKind } from "../../scopes/type.ts"
-import type { Dict } from "../../utils/generics.ts"
+import type { KeyCheckKind } from "../../scopes/type.js"
+import type { Dict } from "../../utils/generics.js"
 import {
     composeIntersection,
     composeKeyedIntersection,
@@ -13,8 +13,8 @@ import type {
     TraversalEntry,
     TraversalNode
 } from "../node.ts"
-import { flattenNode, isLiteralNode, nodeIntersection } from "../node.ts"
-import type { FlattenAndPushRule } from "./rules.ts"
+import { flattenNode, isLiteralNode, nodeIntersection } from "../node.js"
+import type { FlattenAndPushRule } from "./rules.js"
 
 export type PropsRule<$ = Dict> = {
     [propKey in string]: Prop<$>

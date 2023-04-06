@@ -1,6 +1,6 @@
-import type { Infer } from "../main.ts"
-import type { inferObjectKind } from "../utils/objectKinds.ts"
-import { scope } from "./scope.ts"
+import type { Infer } from "../main.js"
+import type { inferObjectKind } from "../utils/objectKinds.js"
+import { scope } from "./scope.js"
 
 /**
  * @docgenScope

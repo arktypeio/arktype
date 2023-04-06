@@ -1,7 +1,7 @@
-import type { EntryChecker } from "../../traverse/traverse.ts"
-import type { CollapsibleList } from "../../utils/generics.ts"
-import { composeIntersection } from "../compose.ts"
-import { collapsibleListUnion } from "./collapsibleSet.ts"
+import type { EntryChecker } from "../../traverse/traverse.js"
+import type { CollapsibleList } from "../../utils/generics.js"
+import { composeIntersection } from "../compose.js"
+import { collapsibleListUnion } from "./collapsibleSet.js"
 
 const regexCache: Record<string, RegExp> = {}
 

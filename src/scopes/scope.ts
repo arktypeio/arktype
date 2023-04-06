@@ -1,21 +1,21 @@
-import type { Node, ResolvedNode, TypeNode } from "../nodes/node.ts"
-import { flattenType, isConfigNode } from "../nodes/node.ts"
-import type { ConfigTuple } from "../parse/ast/config.ts"
+import type { Node, ResolvedNode, TypeNode } from "../nodes/node.js"
+import { flattenType, isConfigNode } from "../nodes/node.js"
+import type { ConfigTuple } from "../parse/ast/config.js"
 import type {
     Infer,
     inferDefinition,
     ParseContext,
     validateDefinition
 } from "../parse/definition.ts"
-import { parseDefinition } from "../parse/definition.ts"
+import { parseDefinition } from "../parse/definition.js"
 import type {
     ProblemsConfig,
     ProblemWritersByCode
 } from "../traverse/problems.ts"
-import { compileProblemWriters } from "../traverse/problems.ts"
-import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
-import { throwInternalError, throwParseError } from "../utils/errors.ts"
-import { deepFreeze } from "../utils/freeze.ts"
+import { compileProblemWriters } from "../traverse/problems.js"
+import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.js"
+import { throwInternalError, throwParseError } from "../utils/errors.js"
+import { deepFreeze } from "../utils/freeze.js"
 import type {
     Dict,
     error,
@@ -24,12 +24,12 @@ import type {
     List,
     nominal
 } from "../utils/generics.ts"
-import { hasKeys } from "../utils/generics.ts"
-import { Path } from "../utils/paths.ts"
-import type { stringifyUnion } from "../utils/unionToTuple.ts"
-import type { PrecompiledDefaults } from "./ark.ts"
-import { Cache, FreezingCache } from "./cache.ts"
-import type { Expressions } from "./expressions.ts"
+import { hasKeys } from "../utils/generics.js"
+import { Path } from "../utils/paths.js"
+import type { stringifyUnion } from "../utils/unionToTuple.js"
+import type { PrecompiledDefaults } from "./ark.js"
+import { Cache, FreezingCache } from "./cache.js"
+import type { Expressions } from "./expressions.js"
 import type {
     AnonymousTypeName,
     KeyCheckKind,
@@ -38,7 +38,7 @@ import type {
     TypeOptions,
     TypeParser
 } from "./type.ts"
-import { initializeType } from "./type.ts"
+import { initializeType } from "./type.js"
 
 type ScopeParser = {
     <aliases>(aliases: validateAliases<aliases, {}>): Scope<

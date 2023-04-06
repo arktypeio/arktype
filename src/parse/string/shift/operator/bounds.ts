@@ -1,5 +1,5 @@
-import { stringifyRange } from "../../../../nodes/compose.ts"
-import type { TypeNode } from "../../../../nodes/node.ts"
+import { stringifyRange } from "../../../../nodes/compose.js"
+import type { TypeNode } from "../../../../nodes/node.js"
 import type {
     Bound,
     MaxComparator,
@@ -10,16 +10,16 @@ import {
     maxComparators,
     minComparators
 } from "../../../../nodes/rules/range.ts"
-import { throwInternalError } from "../../../../utils/errors.ts"
-import type { error, keySet, mutable } from "../../../../utils/generics.ts"
-import { isKeyOf, listFrom, objectKeysOf } from "../../../../utils/generics.ts"
-import type { NumberLiteral } from "../../../../utils/numericLiterals.ts"
-import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.ts"
-import { writeUnboundableMessage } from "../../../ast/bound.ts"
-import type { DynamicState } from "../../reduce/dynamic.ts"
-import { writeUnpairableComparatorMessage } from "../../reduce/shared.ts"
-import type { state, StaticState } from "../../reduce/static.ts"
-import { Scanner } from "../scanner.ts"
+import { throwInternalError } from "../../../../utils/errors.js"
+import type { error, keySet, mutable } from "../../../../utils/generics.js"
+import { isKeyOf, listFrom, objectKeysOf } from "../../../../utils/generics.js"
+import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
+import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
+import { writeUnboundableMessage } from "../../../ast/bound.js"
+import type { DynamicState } from "../../reduce/dynamic.js"
+import { writeUnpairableComparatorMessage } from "../../reduce/shared.js"
+import type { state, StaticState } from "../../reduce/static.js"
+import { Scanner } from "../scanner.js"
 
 export const parseBound = (
     s: DynamicState,

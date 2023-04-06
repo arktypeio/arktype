@@ -1,5 +1,5 @@
-import { domainOf } from "./domains.ts"
-import { stringify } from "./serialize.ts"
+import { domainOf } from "./domains.js"
+import { stringify } from "./serialize.js"
 
 export type SizedData = string | number | readonly unknown[]
 
