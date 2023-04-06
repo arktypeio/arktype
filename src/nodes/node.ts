@@ -9,7 +9,7 @@ import type {
     entryOf,
     mutable,
     stringKeyOf
-} from "../utils/generics.ts"
+} from "../utils/generics.js"
 import { entriesOf, hasKey, hasKeys, objectKeysOf } from "../utils/generics.js"
 import { Path } from "../utils/paths.js"
 import type { MorphEntry } from "./branch.js"
@@ -21,7 +21,7 @@ import {
     isDisjoint,
     isEquality,
     undefinedOperandsMessage
-} from "./compose.ts"
+} from "./compose.js"
 import type { DiscriminatedSwitch } from "./discriminate.js"
 import type { Predicate } from "./predicate.js"
 import {
@@ -29,7 +29,7 @@ import {
     isLiteralCondition,
     predicateIntersection,
     predicateUnion
-} from "./predicate.ts"
+} from "./predicate.js"
 import { mappedKeys } from "./rules/props.js"
 import type { LiteralRules, RuleEntry } from "./rules/rules.js"
 

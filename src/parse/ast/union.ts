@@ -6,7 +6,7 @@ import type {
     extractValues,
     isAny,
     requiredKeyOf
-} from "../../utils/generics.ts"
+} from "../../utils/generics.js"
 import type { objectKindOf } from "../../utils/objectKinds.js"
 
 export type inferUnion<l, r> = isAny<l | r> extends true

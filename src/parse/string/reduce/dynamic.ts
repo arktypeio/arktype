@@ -4,7 +4,7 @@ import {
     rootIntersection,
     rootUnion,
     toArrayNode
-} from "../../../nodes/node.ts"
+} from "../../../nodes/node.js"
 import type { LowerBound } from "../../../nodes/rules/range.js"
 import { minComparators } from "../../../nodes/rules/range.js"
 import { throwInternalError, throwParseError } from "../../../utils/errors.js"
@@ -18,7 +18,7 @@ import {
     writeOpenRangeMessage,
     writeUnmatchedGroupCloseMessage,
     writeUnpairableComparatorMessage
-} from "./shared.ts"
+} from "./shared.js"
 
 type BranchState = {
     range?: LowerBound

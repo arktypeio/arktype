@@ -6,13 +6,13 @@ import {
     equality,
     isDisjoint,
     isEquality
-} from "../compose.ts"
+} from "../compose.js"
 import type {
     FlattenContext,
     Node,
     TraversalEntry,
     TraversalNode
-} from "../node.ts"
+} from "../node.js"
 import { flattenNode, isLiteralNode, nodeIntersection } from "../node.js"
 import type { FlattenAndPushRule } from "./rules.js"
 

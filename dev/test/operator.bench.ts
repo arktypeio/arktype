@@ -5,7 +5,7 @@ import {
     narrow,
     type,
     union
-} from "../../src/main.ts"
+} from "../../src/main.js"
 import { bench, suite } from "../attest/main.js"
 
 suite("operators", () => {

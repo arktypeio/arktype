@@ -11,7 +11,7 @@ import type {
     List,
     stringKeyOf,
     tryCatch
-} from "../../utils/generics.ts"
+} from "../../utils/generics.js"
 import { objectKeysOf } from "../../utils/generics.js"
 import type { Path, pathToString } from "../../utils/paths.js"
 import type { ParsedMorph } from "./morph.js"

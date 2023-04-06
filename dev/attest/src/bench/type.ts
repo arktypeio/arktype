@@ -6,7 +6,7 @@ import { findCallExpressionAncestor } from "../snapshot.js"
 import {
     forceCreateTsMorphProject,
     getVirtualTsMorphProject
-} from "../type/getTsMorphProject.ts"
+} from "../type/getTsMorphProject.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchContext } from "./bench.js"
 import type { Measure, MeasureComparison } from "./measure/measure.js"

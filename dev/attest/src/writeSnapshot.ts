@@ -10,7 +10,7 @@ import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
 import {
     queueInlineSnapshotWriteOnProcessExit,
     resolveSnapshotPath
-} from "./snapshot.ts"
+} from "./snapshot.js"
 import { getFileKey } from "./utils.js"
 
 export type BenchFormat = {

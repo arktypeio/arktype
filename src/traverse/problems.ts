@@ -9,20 +9,20 @@ import type {
     evaluate,
     RegexLiteral,
     requireKeys
-} from "../utils/generics.ts"
+} from "../utils/generics.js"
 import { objectKeysOf } from "../utils/generics.js"
 import { isWellFormedInteger } from "../utils/numericLiterals.js"
 import type { DefaultObjectKind } from "../utils/objectKinds.js"
 import {
     getExactConstructorObjectKind,
     objectKindDescriptions
-} from "../utils/objectKinds.ts"
+} from "../utils/objectKinds.js"
 import { Path } from "../utils/paths.js"
 import { stringify } from "../utils/serialize.js"
 import type {
     ConstrainedRuleTraversalData,
     TraversalState
-} from "./traverse.ts"
+} from "./traverse.js"
 
 export class ArkTypeError extends TypeError {
     cause: Problems

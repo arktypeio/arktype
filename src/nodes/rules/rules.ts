@@ -4,14 +4,14 @@ import type {
     CollapsibleList,
     constructor,
     Dict
-} from "../../utils/generics.ts"
+} from "../../utils/generics.js"
 import { listFrom } from "../../utils/generics.js"
 import type { IntersectionState, Intersector } from "../compose.js"
 import {
     composeIntersection,
     composeKeyedIntersection,
     equality
-} from "../compose.ts"
+} from "../compose.js"
 import type { FlattenContext, TraversalEntry, TraversalKey } from "../node.js"
 import { classIntersection } from "./class.js"
 import { collapsibleListUnion } from "./collapsibleSet.js"
@@ -21,7 +21,7 @@ import type {
     PropEntry,
     PropsRule,
     StrictPropsEntry
-} from "./props.ts"
+} from "./props.js"
 import { flattenProps, propsIntersection } from "./props.js"
 import type { FlatBound, Range } from "./range.js"
 import { flattenRange, rangeIntersection } from "./range.js"

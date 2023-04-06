@@ -3,15 +3,15 @@ import type {
     autocomplete,
     error,
     stringKeyOf
-} from "../../../../utils/generics.ts"
+} from "../../../../utils/generics.js"
 import type {
     BigintLiteral,
     NumberLiteral
-} from "../../../../utils/numericLiterals.ts"
+} from "../../../../utils/numericLiterals.js"
 import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
-} from "../../../../utils/numericLiterals.ts"
+} from "../../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"

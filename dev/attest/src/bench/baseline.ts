@@ -6,7 +6,7 @@ import type {
     MarkMeasure,
     Measure,
     MeasureComparison
-} from "./measure/measure.ts"
+} from "./measure/measure.js"
 import { stringifyMeasure } from "./measure/measure.js"
 
 export const queueBaselineUpdateIfNeeded = (

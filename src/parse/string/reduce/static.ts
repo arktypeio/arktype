@@ -1,7 +1,7 @@
 import type {
     MaxComparator,
     MinComparator
-} from "../../../nodes/rules/range.ts"
+} from "../../../nodes/rules/range.js"
 import type { defined, error } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import type { Scanner } from "../shift/scanner.js"
@@ -11,7 +11,7 @@ import type {
     writeOpenRangeMessage,
     writeUnmatchedGroupCloseMessage,
     writeUnpairableComparatorMessage
-} from "./shared.ts"
+} from "./shared.js"
 
 export type StaticState = {
     root: unknown

@@ -1,7 +1,7 @@
 import {
     wellFormedIntegerMatcher,
     wellFormedNumberMatcher
-} from "../../utils/numericLiterals.ts"
+} from "../../utils/numericLiterals.js"
 import { rootType, scope } from "../scope.js"
 import { tsKeywords } from "../tsKeywords.js"
 import { creditCard } from "./creditCard.js"

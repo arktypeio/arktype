@@ -10,12 +10,12 @@ import {
     getExactConstructorObjectKind,
     isArray,
     objectKindOf
-} from "../utils/objectKinds.ts"
+} from "../utils/objectKinds.js"
 import { Path } from "../utils/paths.js"
 import type {
     SerializablePrimitive,
     SerializedPrimitive
-} from "../utils/serialize.ts"
+} from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
 import type { Branch, Branches } from "./branch.js"
 import { branchIntersection, flattenBranch } from "./branch.js"
@@ -25,7 +25,7 @@ import type {
     Node,
     TraversalEntry,
     TraversalValue
-} from "./node.ts"
+} from "./node.js"
 import { mappedKeys, propToNode } from "./rules/props.js"
 
 export type DiscriminatedSwitch<

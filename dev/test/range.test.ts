@@ -5,7 +5,7 @@ import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
     writeUnpairableComparatorMessage
-} from "../../src/parse/string/reduce/shared.ts"
+} from "../../src/parse/string/reduce/shared.js"
 import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.js"
 import { attest } from "../attest/main.js"
 

@@ -3,7 +3,7 @@ import {
     constructHeader,
     constructRow,
     defaultKeywordsHeader
-} from "./table.ts"
+} from "./table.js"
 
 export const keywordTable = (text: string, tags: TsTagData) => {
     const keywords = tags.keywords

@@ -3,7 +3,7 @@ import { type } from "../../src/main.js"
 import {
     unclosedGroupMessage,
     writeUnmatchedGroupCloseMessage
-} from "../../src/parse/string/reduce/shared.ts"
+} from "../../src/parse/string/reduce/shared.js"
 import { writeExpressionExpectedMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 

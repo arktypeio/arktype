@@ -10,7 +10,7 @@ import { mapDir } from "./mapDir.js"
 import type {
     SnippetsByPath,
     SnippetTransformToggles
-} from "./snippets/extractSnippets.ts"
+} from "./snippets/extractSnippets.js"
 import { extractSnippets } from "./snippets/extractSnippets.js"
 import { updateSnippetReferences } from "./snippets/writeSnippets.js"
 

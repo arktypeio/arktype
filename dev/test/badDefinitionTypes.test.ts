@@ -3,7 +3,7 @@ import { type } from "../../src/main.js"
 import {
     unknownDefinitionMessage,
     writeBadDefinitionTypeMessage
-} from "../../src/parse/definition.ts"
+} from "../../src/parse/definition.js"
 import { attest } from "../attest/main.js"
 
 describe("bad definition types", () => {

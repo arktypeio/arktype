@@ -7,7 +7,7 @@ import {
     extractionTokens,
     includesTokenFrom,
     snipTokens
-} from "./snipTokens.ts"
+} from "./snipTokens.js"
 import { transformTsFileContents } from "./transformTsFileText.js"
 
 /** Represents paths mapped to snippet data for a file */

@@ -6,7 +6,7 @@ import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
 import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
-} from "./numericLiterals.ts"
+} from "./numericLiterals.js"
 
 export type SerializationOptions = {
     onCycle?: (value: object) => string

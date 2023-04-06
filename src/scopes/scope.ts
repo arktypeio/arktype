@@ -6,12 +6,12 @@ import type {
     inferDefinition,
     ParseContext,
     validateDefinition
-} from "../parse/definition.ts"
+} from "../parse/definition.js"
 import { parseDefinition } from "../parse/definition.js"
 import type {
     ProblemsConfig,
     ProblemWritersByCode
-} from "../traverse/problems.ts"
+} from "../traverse/problems.js"
 import { compileProblemWriters } from "../traverse/problems.js"
 import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
@@ -23,7 +23,7 @@ import type {
     isAny,
     List,
     nominal
-} from "../utils/generics.ts"
+} from "../utils/generics.js"
 import { hasKeys } from "../utils/generics.js"
 import { Path } from "../utils/paths.js"
 import type { stringifyUnion } from "../utils/unionToTuple.js"
@@ -37,7 +37,7 @@ import type {
     Type,
     TypeOptions,
     TypeParser
-} from "./type.ts"
+} from "./type.js"
 import { initializeType } from "./type.js"
 
 type ScopeParser = {

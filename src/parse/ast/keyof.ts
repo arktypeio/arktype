@@ -10,11 +10,11 @@ import {
     listFrom,
     objectKeysOf,
     prototypeKeysOf
-} from "../../utils/generics.ts"
+} from "../../utils/generics.js"
 import {
     tryParseWellFormedInteger,
     wellFormedNonNegativeIntegerMatcher
-} from "../../utils/numericLiterals.ts"
+} from "../../utils/numericLiterals.js"
 import { defaultObjectKinds } from "../../utils/objectKinds.js"
 import { stringify } from "../../utils/serialize.js"
 import type { inferDefinition, validateDefinition } from "../definition.js"

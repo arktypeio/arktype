@@ -3,8 +3,8 @@ import { describe, it } from "mocha"
 import { fromHere, readFile } from "../../../runtime/main.js"
 import { runThenGetContents } from "../utils.js"
 
-const snapshotTemplate = fromHere("snapWriteTemplate.ts")
-const expectedOutput = readFile(fromHere("snapWriteExpectedOutput.ts"))
+const snapshotTemplate = fromHere("snapWriteTemplate.js")
+const expectedOutput = readFile(fromHere("snapWriteExpectedOutput.js"))
 const noExternal = { noExternal: true }
 describe("inline snap write", () => {
     it("dynamic", () => {

@@ -4,7 +4,7 @@ import type { Node } from "../../src/nodes/node.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
-} from "../../src/parse/string/shift/operand/unenclosed.ts"
+} from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
 describe("intersection", () => {

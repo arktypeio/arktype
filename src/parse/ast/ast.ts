@@ -5,11 +5,11 @@ import type {
     List,
     RegexLiteral,
     tryCatch
-} from "../../utils/generics.ts"
+} from "../../utils/generics.js"
 import type {
     BigintLiteral,
     NumberLiteral
-} from "../../utils/numericLiterals.ts"
+} from "../../utils/numericLiterals.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { Scanner } from "../string/shift/scanner.js"
 import type { parseString } from "../string/string.js"

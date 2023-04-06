@@ -10,12 +10,12 @@ import type {
     error,
     evaluate,
     List
-} from "../../utils/generics.ts"
+} from "../../utils/generics.js"
 import type {
     inferDefinition,
     ParseContext,
     validateDefinition
-} from "../definition.ts"
+} from "../definition.js"
 import { parseDefinition } from "../definition.js"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
 import type { Scanner } from "../string/shift/scanner.js"

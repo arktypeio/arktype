@@ -9,7 +9,7 @@ import {
     compareBranches,
     flattenBranch,
     isBranchComparison
-} from "./branch.ts"
+} from "./branch.js"
 import type { IntersectionResult, KeyIntersectionFn } from "./compose.js"
 import { equality, IntersectionState, isEquality } from "./compose.js"
 import { flattenBranches } from "./discriminate.js"

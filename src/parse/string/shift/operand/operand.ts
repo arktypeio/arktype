@@ -8,7 +8,7 @@ import {
     parseUnenclosed,
     possibleCompletions,
     writeMissingOperandMessage
-} from "./unenclosed.ts"
+} from "./unenclosed.js"
 
 export const parseOperand = (s: DynamicState): void =>
     s.scanner.lookahead === ""

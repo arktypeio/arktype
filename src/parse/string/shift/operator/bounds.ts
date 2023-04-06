@@ -4,12 +4,12 @@ import type {
     Bound,
     MaxComparator,
     Range
-} from "../../../../nodes/rules/range.ts"
+} from "../../../../nodes/rules/range.js"
 import {
     compareStrictness,
     maxComparators,
     minComparators
-} from "../../../../nodes/rules/range.ts"
+} from "../../../../nodes/rules/range.js"
 import { throwInternalError } from "../../../../utils/errors.js"
 import type { error, keySet, mutable } from "../../../../utils/generics.js"
 import { isKeyOf, listFrom, objectKeysOf } from "../../../../utils/generics.js"

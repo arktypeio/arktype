@@ -5,14 +5,14 @@ import type {
     TraversalKey,
     TraversalNode,
     TraversalValue
-} from "../nodes/node.ts"
+} from "../nodes/node.js"
 import { checkClass } from "../nodes/rules/class.js"
 import { checkDivisor } from "../nodes/rules/divisor.js"
 import type {
     PropsRecordEntry,
     PropsRecordKey,
     TraversalProp
-} from "../nodes/rules/props.ts"
+} from "../nodes/rules/props.js"
 import { checkBound } from "../nodes/rules/range.js"
 import { checkRegex } from "../nodes/rules/regex.js"
 import { precedenceMap } from "../nodes/rules/rules.js"
@@ -32,7 +32,7 @@ import {
     objectKindsToDescriptions,
     Problem,
     Problems
-} from "./problems.ts"
+} from "./problems.js"
 
 const initializeTraversalConfig = (): TraversalConfig => ({
     mustBe: [],

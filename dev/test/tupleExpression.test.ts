@@ -3,7 +3,7 @@ import { type } from "../../src/main.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
-} from "../../src/parse/string/shift/operand/unenclosed.ts"
+} from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
 describe("tuple expression", () => {

@@ -4,7 +4,7 @@ import type {
     as,
     inferDefinition,
     validateDefinition
-} from "../parse/definition.ts"
+} from "../parse/definition.js"
 import type { ProblemOptions } from "../traverse/problems.js"
 import type { CheckResult } from "../traverse/traverse.js"
 import { traverseRoot } from "../traverse/traverse.js"

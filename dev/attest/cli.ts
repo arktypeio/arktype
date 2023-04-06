@@ -6,7 +6,7 @@ import {
     fromPackageRoot,
     shell,
     walkPaths
-} from "../runtime/main.ts"
+} from "../runtime/main.js"
 import { cacheAssertions, cleanupAssertions } from "./main.js"
 
 const args: string[] = globalThis.process.argv

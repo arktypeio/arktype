@@ -6,7 +6,7 @@ import {
     getAssertionsInFile,
     getCachedAssertionData,
     getDiagnosticsByFile
-} from "./internal/main.ts"
+} from "./internal/main.js"
 
 type AnalyzeTypeAssertionsOptions = {
     isInitialCache?: boolean

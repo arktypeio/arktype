@@ -10,7 +10,7 @@ import type {
     isAny,
     isUnknown,
     List
-} from "../utils/generics.ts"
+} from "../utils/generics.js"
 import { objectKindOf } from "../utils/objectKinds.js"
 import type { Path } from "../utils/paths.js"
 import { stringify } from "../utils/serialize.js"
@@ -19,7 +19,7 @@ import type {
     inferTuple,
     TupleExpression,
     validateTupleExpression
-} from "./ast/tuple.ts"
+} from "./ast/tuple.js"
 import { parseTuple } from "./ast/tuple.js"
 import type { inferRecord } from "./record.js"
 import { parseRecord } from "./record.js"

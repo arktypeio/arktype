@@ -2,7 +2,7 @@ import type {
     LinePosition,
     LinePositionRange,
     SourcePosition
-} from "../utils.ts"
+} from "../utils.js"
 import { getFileKey } from "../utils.js"
 import { getAssertionsByFile } from "./analysis.js"
 

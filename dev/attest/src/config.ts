@@ -6,7 +6,7 @@ import {
     ensureDir,
     fromPackageRoot,
     getSourceFileEntries
-} from "../../runtime/main.ts"
+} from "../../runtime/main.js"
 import { getCmdFromPid } from "./utils.js"
 import type { BenchFormat } from "./writeSnapshot.js"
 

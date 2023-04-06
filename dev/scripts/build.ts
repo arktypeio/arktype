@@ -9,7 +9,7 @@ import {
     walkPaths,
     writeFile,
     writeJson
-} from "../runtime/main.ts"
+} from "../runtime/main.js"
 import { repoDirs } from "./common.js"
 
 const isTestBuild = process.argv.includes("--test")

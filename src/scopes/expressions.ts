@@ -8,11 +8,11 @@ import type {
     TuplePostfixOperator,
     UnparsedTupleExpressionInput,
     UnparsedTupleOperator
-} from "../parse/ast/tuple.ts"
+} from "../parse/ast/tuple.js"
 import type {
     inferDefinition,
     validateDefinition
-} from "../parse/definition.ts"
+} from "../parse/definition.js"
 import type { conform } from "../utils/generics.js"
 import type { PrecompiledDefaults } from "./ark.js"
 import { scopes } from "./ark.js"

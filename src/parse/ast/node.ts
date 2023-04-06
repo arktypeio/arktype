@@ -6,7 +6,7 @@ import type {
     OptionalProp,
     Prop,
     PropsRule
-} from "../../nodes/rules/props.ts"
+} from "../../nodes/rules/props.js"
 import type { LiteralRules, NarrowableRules } from "../../nodes/rules/rules.js"
 import type { Domain, inferDomain } from "../../utils/domains.js"
 import type {
@@ -16,7 +16,7 @@ import type {
     HomogenousTuple,
     List,
     returnOf
-} from "../../utils/generics.ts"
+} from "../../utils/generics.js"
 import type { BuiltinClass, inferObjectKind } from "../../utils/objectKinds.js"
 import type { inferTerminal } from "./ast.js"
 

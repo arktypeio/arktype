@@ -9,18 +9,18 @@ import type { SnapshotArgs } from "../snapshot.js"
 import {
     getSnapshotByName,
     queueInlineSnapshotWriteOnProcessExit
-} from "../snapshot.ts"
+} from "../snapshot.js"
 import { getTypeDataAtPos } from "../type/getAssertionAtPos.js"
 import {
     updateExternalSnapshot,
     writeInlineSnapshotUpdateToCacheDir
-} from "../writeSnapshot.ts"
+} from "../writeSnapshot.js"
 import type { ExternalSnapshotArgs, RootAssertions } from "./types.js"
 import {
     assertEqualOrMatching,
     callAssertedFunction,
     getThrownMessage
-} from "./utils.ts"
+} from "./utils.js"
 
 export type ChainableAssertionOptions = {
     isReturn?: boolean

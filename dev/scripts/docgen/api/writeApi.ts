@@ -9,14 +9,14 @@ import type {
     ApiEntryPoint,
     ExportData,
     PackageExtractionData
-} from "./extractApi.ts"
+} from "./extractApi.js"
 import { generateKeywordMasterList, operatorsTable } from "./postProcess.js"
 import type { TsTagData } from "./tsDocTransforms.js"
 import {
     formatTagData,
     packTsDocTags,
     transformLinkTagToURL
-} from "./tsDocTransforms.ts"
+} from "./tsDocTransforms.js"
 
 export const writeApi = (
     apiConfig: DocGenApiConfig,

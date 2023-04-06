@@ -5,7 +5,7 @@ import { writeUnterminatedEnclosedMessage } from "../../src/parse/string/shift/o
 import {
     writeExpressionExpectedMessage,
     writeUnresolvableMessage
-} from "../../src/parse/string/shift/operand/unenclosed.ts"
+} from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
 describe("string", () => {

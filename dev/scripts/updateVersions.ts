@@ -7,7 +7,7 @@ import {
     readPackageJson,
     shell,
     writeJson
-} from "../runtime/main.ts"
+} from "../runtime/main.js"
 import { repoDirs } from "./common.js"
 import { docgen } from "./docgen/main.js"
 
