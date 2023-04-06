@@ -1,5 +1,9 @@
 import type { Node } from "../../../../nodes/node.ts"
-import type { error, stringKeyOf } from "../../../../utils/generics.ts"
+import type {
+    autocomplete,
+    error,
+    stringKeyOf
+} from "../../../../utils/generics.ts"
 import type {
     BigintLiteral,
     NumberLiteral
@@ -59,15 +63,11 @@ const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {
     }
 }
 
-export type isResolvableIdentifier<token, $> = token extends stringKeyOf<$>
-    ? true
-    : false
-
 type tryResolve<
     s extends StaticState,
     token extends string,
     $
-> = isResolvableIdentifier<token, $> extends true
+> = token extends keyof $
     ? token
     : token extends NumberLiteral
     ? token
@@ -81,13 +81,19 @@ type tryResolve<
     : // bigint extends value
       //     ? error<writeMalformedNumericLiteralMessage<token, "bigint">>
       //     : token
-      error<possibleCompletions<token, $>>
+      possibleCompletions<s, token, $>
 
-type possibleCompletions<token extends string, $> = {
-    [alias in keyof $]: alias extends `${token}${infer rest}`
-        ? `${token}${rest}`
-        : never
-}[keyof $]
+export type possibleCompletions<
+    s extends StaticState,
+    token extends string,
+    $
+> = error<
+    {
+        [alias in keyof $]: alias extends `${token}${infer rest}`
+            ? `${s["scanned"]}${token}${rest}`
+            : never
+    }[keyof $]
+>
 
 export const writeUnresolvableMessage = <token extends string>(
     token: token
@@ -130,10 +136,7 @@ export const writeMissingRightOperandMessage = <
 
 export const writeExpressionExpectedMessage = <unscanned extends string>(
     unscanned: unscanned
-) =>
-    `Expected an expression${
-        unscanned ? ` before '${unscanned}'` : ""
-    }` as writeExpressionExpectedMessage<unscanned>
+) => `Expected an expression${unscanned ? ` before '${unscanned}'` : ""}`
 
 export type writeExpressionExpectedMessage<unscanned extends string> =
     `Expected an expression${unscanned extends ""

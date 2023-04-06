@@ -5,7 +5,6 @@ import type { ParseContext } from "../definition.ts"
 import { DynamicState } from "./reduce/dynamic.ts"
 import type { state, StaticState } from "./reduce/static.ts"
 import { parseOperand } from "./shift/operand/operand.ts"
-import type { isResolvableIdentifier } from "./shift/operand/unenclosed.ts"
 import { parseOperator } from "./shift/operator/operator.ts"
 import type { Scanner } from "./shift/scanner.ts"
 
@@ -28,10 +27,10 @@ export type inferString<def extends string, $> = inferAst<
  * This can be much more efficient for simple definitions.
  */
 type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
-    ? isResolvableIdentifier<child, $> extends true
+    ? child extends keyof $
         ? [child, "[]"]
         : fullStringParse<def, $>
-    : isResolvableIdentifier<def, $> extends true
+    : def extends keyof $
     ? def
     : fullStringParse<def, $>
 

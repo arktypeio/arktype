@@ -18,6 +18,7 @@ export type StaticState = {
     root: unknown
     branches: BranchState
     groups: BranchState[]
+    scanned: string
     unscanned: string
 }
 
@@ -34,6 +35,7 @@ export namespace state {
         root: undefined
         branches: initialBranches
         groups: []
+        scanned: ""
         unscanned: def
     }>
 
@@ -43,6 +45,14 @@ export namespace state {
         "|": undefined
     }>
 
+    type updateScanned<
+        previousScanned extends string,
+        previousUnscanned extends string,
+        updatedUnscanned extends string
+    > = previousUnscanned extends `${infer justScanned}${updatedUnscanned}`
+        ? `${previousScanned}${justScanned}`
+        : previousScanned
+
     export type setRoot<
         s extends StaticState,
         root,
@@ -51,6 +61,7 @@ export namespace state {
         root: root
         branches: s["branches"]
         groups: s["groups"]
+        scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>
 
@@ -68,6 +79,7 @@ export namespace state {
                   "|": token extends "|" ? mergeToUnion<s> : s["branches"]["|"]
               }
               groups: s["groups"]
+              scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
               unscanned: unscanned
           }>
 
@@ -97,6 +109,11 @@ export namespace state {
                       "|": s["branches"]["|"]
                   }
                   groups: s["groups"]
+                  scanned: updateScanned<
+                      s["scanned"],
+                      s["unscanned"],
+                      unscanned
+                  >
                   unscanned: unscanned
               }>
         : error<writeUnpairableComparatorMessage<comparator>>
@@ -116,6 +133,7 @@ export namespace state {
             "|": s["branches"]["|"]
         }
         groups: s["groups"]
+        scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>
 
@@ -132,6 +150,7 @@ export namespace state {
             "|": s["branches"]["|"]
         }
         groups: s["groups"]
+        scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>
 
@@ -160,6 +179,7 @@ export namespace state {
               groups: stack
               branches: top
               root: mergeToUnion<s>
+              scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
               unscanned: unscanned
           }>
         : error<writeUnmatchedGroupCloseMessage<unscanned>>
@@ -171,6 +191,7 @@ export namespace state {
         groups: [...s["groups"], s["branches"]]
         branches: initialBranches
         root: undefined
+        scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>
 
@@ -181,6 +202,7 @@ export namespace state {
                   root: mergeToUnion<s>
                   groups: s["groups"]
                   branches: initialBranches
+                  scanned: s["scanned"]
                   unscanned: Scanner.finalized
               }>
         : error<unclosedGroupMessage>
@@ -202,10 +224,9 @@ export namespace state {
         root: s["root"]
         branches: s["branches"]
         groups: s["groups"]
+        scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>
-
-    export type toString<s extends StaticState> = astToString<mergeToUnion<s>>
 
     export type from<s extends StaticState> = s
 

@@ -17,3 +17,5 @@ export const { data, problems } = user({
         platform: "enigma"
     }
 })
+
+type({ a: "string" })
