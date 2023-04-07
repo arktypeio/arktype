@@ -1,13 +1,13 @@
-import type { asIn } from "../../scopes/type.ts"
-import type { domainOf } from "../../utils/domains.ts"
+import type { asIn } from "../../scopes/type.js"
+import type { domainOf } from "../../utils/domains.js"
 import type {
     equals,
     error,
     extractValues,
     isAny,
     requiredKeyOf
-} from "../../utils/generics.ts"
-import type { objectKindOf } from "../../utils/objectKinds.ts"
+} from "../../utils/generics.js"
+import type { objectKindOf } from "../../utils/objectKinds.js"
 
 export type inferUnion<l, r> = isAny<l | r> extends true
     ? any

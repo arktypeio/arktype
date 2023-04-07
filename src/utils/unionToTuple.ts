@@ -1,5 +1,5 @@
-import type { conform } from "./generics.ts"
-import type { join } from "./paths.ts"
+import type { conform } from "./generics.js"
+import type { join } from "./paths.js"
 
 export type stringifyUnion<t extends string> = join<unionToTuple<t>, ", ">
 

@@ -1,9 +1,9 @@
-import type { Scanner } from "../../parse/string/shift/scanner.ts"
-import type { EntryChecker } from "../../traverse/traverse.ts"
-import { sizeOf } from "../../utils/data.ts"
-import type { evaluate } from "../../utils/generics.ts"
-import { composeIntersection, equality } from "../compose.ts"
-import type { FlattenAndPushRule } from "./rules.ts"
+import type { Scanner } from "../../parse/string/shift/scanner.js"
+import type { EntryChecker } from "../../traverse/traverse.js"
+import { sizeOf } from "../../utils/data.js"
+import type { evaluate } from "../../utils/generics.js"
+import { composeIntersection, equality } from "../compose.js"
+import type { FlattenAndPushRule } from "./rules.js"
 
 export type Range = DoubleBound | Bound<"==">
 

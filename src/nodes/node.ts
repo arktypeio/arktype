@@ -1,19 +1,19 @@
-import { compileDisjointReasonsMessage } from "../parse/ast/intersection.ts"
-import type { ParseContext } from "../parse/definition.ts"
-import type { Type, TypeConfig } from "../scopes/type.ts"
-import type { Domain, inferDomain } from "../utils/domains.ts"
-import { throwInternalError, throwParseError } from "../utils/errors.ts"
+import { compileDisjointReasonsMessage } from "../parse/ast/intersection.js"
+import type { ParseContext } from "../parse/definition.js"
+import type { Type, TypeConfig } from "../scopes/type.js"
+import type { Domain, inferDomain } from "../utils/domains.js"
+import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type {
     defined,
     Dict,
     entryOf,
     mutable,
     stringKeyOf
-} from "../utils/generics.ts"
-import { entriesOf, hasKey, hasKeys, objectKeysOf } from "../utils/generics.ts"
-import { Path } from "../utils/paths.ts"
-import type { MorphEntry } from "./branch.ts"
-import type { Intersector } from "./compose.ts"
+} from "../utils/generics.js"
+import { entriesOf, hasKey, hasKeys, objectKeysOf } from "../utils/generics.js"
+import { Path } from "../utils/paths.js"
+import type { MorphEntry } from "./branch.js"
+import type { Intersector } from "./compose.js"
 import {
     anonymousDisjoint,
     composeKeyedIntersection,
@@ -21,17 +21,17 @@ import {
     isDisjoint,
     isEquality,
     undefinedOperandsMessage
-} from "./compose.ts"
-import type { DiscriminatedSwitch } from "./discriminate.ts"
-import type { Predicate } from "./predicate.ts"
+} from "./compose.js"
+import type { DiscriminatedSwitch } from "./discriminate.js"
+import type { Predicate } from "./predicate.js"
 import {
     flattenPredicate,
     isLiteralCondition,
     predicateIntersection,
     predicateUnion
-} from "./predicate.ts"
-import { mappedKeys } from "./rules/props.ts"
-import type { LiteralRules, RuleEntry } from "./rules/rules.ts"
+} from "./predicate.js"
+import { mappedKeys } from "./rules/props.js"
+import type { LiteralRules, RuleEntry } from "./rules/rules.js"
 
 export type Node<$ = Dict> = Identifier<$> | ResolvedNode<$>
 

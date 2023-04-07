@@ -1,6 +1,6 @@
-import type { DisjointsByPath } from "../../nodes/compose.ts"
-import { disjointDescriptionWriters } from "../../nodes/compose.ts"
-import type { MappedKeys } from "../../nodes/rules/props.ts"
+import type { DisjointsByPath } from "../../nodes/compose.js"
+import { disjointDescriptionWriters } from "../../nodes/compose.js"
+import type { MappedKeys } from "../../nodes/rules/props.js"
 import type {
     asConst,
     Dict,
@@ -11,10 +11,10 @@ import type {
     List,
     stringKeyOf,
     tryCatch
-} from "../../utils/generics.ts"
-import { objectKeysOf } from "../../utils/generics.ts"
-import type { Path, pathToString } from "../../utils/paths.ts"
-import type { ParsedMorph } from "./morph.ts"
+} from "../../utils/generics.js"
+import { objectKeysOf } from "../../utils/generics.js"
+import type { Path, pathToString } from "../../utils/paths.js"
+import type { ParsedMorph } from "./morph.js"
 
 export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, []>
 

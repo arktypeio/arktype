@@ -1,30 +1,31 @@
-import type { Node } from "../nodes/node.ts"
-import type { Type } from "../scopes/type.ts"
-import { isType } from "../scopes/type.ts"
-import type { Primitive } from "../utils/domains.ts"
-import { domainOf } from "../utils/domains.ts"
-import { throwParseError } from "../utils/errors.ts"
+import type { Node } from "../nodes/node.js"
+import type { Type } from "../scopes/type.js"
+import { isType } from "../scopes/type.js"
+import type { Primitive } from "../utils/domains.js"
+import { domainOf } from "../utils/domains.js"
+import { throwParseError } from "../utils/errors.js"
 import type {
     Dict,
     evaluate,
     isAny,
     isUnknown,
-    List
-} from "../utils/generics.ts"
-import { objectKindOf } from "../utils/objectKinds.ts"
-import type { Path } from "../utils/paths.ts"
-import { stringify } from "../utils/serialize.ts"
-import type { validateString } from "./ast/ast.ts"
+    List,
+    stringKeyOf
+} from "../utils/generics.js"
+import { objectKindOf } from "../utils/objectKinds.js"
+import type { Path } from "../utils/paths.js"
+import { stringify } from "../utils/serialize.js"
+import type { validateString } from "./ast/ast.js"
 import type {
     inferTuple,
     TupleExpression,
     validateTupleExpression
-} from "./ast/tuple.ts"
-import { parseTuple } from "./ast/tuple.ts"
-import type { inferRecord } from "./record.ts"
-import { parseRecord } from "./record.ts"
-import type { inferString } from "./string/string.ts"
-import { parseString } from "./string/string.ts"
+} from "./ast/tuple.js"
+import { parseTuple } from "./ast/tuple.js"
+import type { inferRecord } from "./record.js"
+import { parseRecord } from "./record.js"
+import type { inferString } from "./string/string.js"
+import { parseString } from "./string/string.js"
 
 export type ParseContext = {
     type: Type
@@ -85,22 +86,18 @@ export type inferDefinition<def, $> = isAny<def> extends true
 // we ignore functions in validation so that cyclic thunk definitions can be inferred in scopes
 export type validateDefinition<def, $> = [def] extends [(...args: any[]) => any]
     ? def
-    : [def] extends [Terminal]
+    : def extends Terminal
     ? def
-    : [def] extends [string]
+    : def extends string
     ? validateString<def, $>
-    : [def] extends [TupleExpression]
+    : def extends TupleExpression
     ? validateTupleExpression<def, $>
-    : [def] extends [BadDefinitionType]
+    : def extends BadDefinitionType
     ? writeBadDefinitionTypeMessage<
           objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
       >
     : isUnknown<def> extends true
-    ? unknownDefinitionMessage
-    : [def] extends [readonly unknown[]]
-    ? {
-          [k in keyof def]: validateDefinition<def[k], $>
-      }
+    ? stringKeyOf<$>
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], $>
       }>
@@ -110,11 +107,6 @@ export const as = Symbol("as")
 export type Infer<t> = {
     [as]?: t
 }
-
-export const unknownDefinitionMessage =
-    "Cannot statically parse a definition inferred as unknown. Consider using 'as Infer<...>' to cast it."
-
-export type unknownDefinitionMessage = typeof unknownDefinitionMessage
 
 const isThunk = (def: unknown): def is () => unknown =>
     typeof def === "function" && def.length === 0

@@ -1,24 +1,24 @@
-import type { Node } from "../../../nodes/node.ts"
+import type { Node } from "../../../nodes/node.js"
 import {
     isLiteralNode,
     rootIntersection,
     rootUnion,
     toArrayNode
-} from "../../../nodes/node.ts"
-import type { LowerBound } from "../../../nodes/rules/range.ts"
-import { minComparators } from "../../../nodes/rules/range.ts"
-import { throwInternalError, throwParseError } from "../../../utils/errors.ts"
-import { isKeyOf } from "../../../utils/generics.ts"
-import { stringify } from "../../../utils/serialize.ts"
-import type { ParseContext } from "../../definition.ts"
-import { Scanner } from "../shift/scanner.ts"
+} from "../../../nodes/node.js"
+import type { LowerBound } from "../../../nodes/rules/range.js"
+import { minComparators } from "../../../nodes/rules/range.js"
+import { throwInternalError, throwParseError } from "../../../utils/errors.js"
+import { isKeyOf } from "../../../utils/generics.js"
+import { stringify } from "../../../utils/serialize.js"
+import type { ParseContext } from "../../definition.js"
+import { Scanner } from "../shift/scanner.js"
 import {
     unclosedGroupMessage,
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
     writeUnmatchedGroupCloseMessage,
     writeUnpairableComparatorMessage
-} from "./shared.ts"
+} from "./shared.js"
 
 type BranchState = {
     range?: LowerBound

@@ -1,7 +1,7 @@
-export { scope } from "./scopes/scope.ts"
-export { type, ark, arkScope } from "./scopes/ark.ts"
-export type { Infer } from "./parse/definition.ts"
-export type { Scope, Space } from "./scopes/scope.ts"
+export { scope } from "./scopes/scope.js"
+export { type, ark, arkScope } from "./scopes/ark.js"
+export type { Infer } from "./parse/definition.js"
+export type { Scope, Space } from "./scopes/scope.js"
 export {
     arrayOf,
     instanceOf,
@@ -11,13 +11,13 @@ export {
     narrow,
     union,
     valueOf
-} from "./scopes/expressions.ts"
-export { jsObjectsScope } from "./scopes/jsObjects.ts"
-export { tsKeywordsScope } from "./scopes/tsKeywords.ts"
-export { validationScope } from "./scopes/validation/validation.ts"
-export type { Type } from "./scopes/type.ts"
-export { Problems, Problem } from "./traverse/problems.ts"
-export { parseConfigTuple } from "./parse/ast/config.ts"
-export type { validateBound } from "./parse/ast/bound.ts"
-export type { validateDivisor } from "./parse/ast/divisor.ts"
-export type { ResolvedNode } from "./nodes/node.ts"
+} from "./scopes/expressions.js"
+export { jsObjectsScope } from "./scopes/jsObjects.js"
+export { tsKeywordsScope } from "./scopes/tsKeywords.js"
+export { validationScope } from "./scopes/validation/validation.js"
+export type { Type } from "./scopes/type.js"
+export { Problems, Problem } from "./traverse/problems.js"
+export { parseConfigTuple } from "./parse/ast/config.js"
+export type { validateBound } from "./parse/ast/bound.js"
+export type { validateDivisor } from "./parse/ast/divisor.js"
+export type { ResolvedNode } from "./nodes/node.js"

@@ -1,6 +1,6 @@
-import type { QueuedUpdate } from "../snapshot.ts"
-import type { TimeUnit } from "./measure/time.ts"
-import type { TypeUnit } from "./measure/types.ts"
+import type { QueuedUpdate } from "../snapshot.js"
+import type { TimeUnit } from "./measure/time.js"
+import type { TypeUnit } from "./measure/types.js"
 
 type MarkData = Record<string, BenchStatTuple>
 

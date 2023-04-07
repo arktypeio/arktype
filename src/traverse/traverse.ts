@@ -1,38 +1,38 @@
-import { serializeCase } from "../nodes/discriminate.ts"
+import { serializeCase } from "../nodes/discriminate.js"
 import type {
     ConfigEntry,
     TraversalEntry,
     TraversalKey,
     TraversalNode,
     TraversalValue
-} from "../nodes/node.ts"
-import { checkClass } from "../nodes/rules/class.ts"
-import { checkDivisor } from "../nodes/rules/divisor.ts"
+} from "../nodes/node.js"
+import { checkClass } from "../nodes/rules/class.js"
+import { checkDivisor } from "../nodes/rules/divisor.js"
 import type {
     PropsRecordEntry,
     PropsRecordKey,
     TraversalProp
-} from "../nodes/rules/props.ts"
-import { checkBound } from "../nodes/rules/range.ts"
-import { checkRegex } from "../nodes/rules/regex.ts"
-import { precedenceMap } from "../nodes/rules/rules.ts"
-import type { Scope } from "../scopes/scope.ts"
-import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.ts"
-import type { SizedData } from "../utils/data.ts"
-import type { Domain } from "../utils/domains.ts"
-import { domainOf, hasDomain } from "../utils/domains.ts"
-import { throwInternalError } from "../utils/errors.ts"
-import type { extend, stringKeyOf, xor } from "../utils/generics.ts"
-import { hasKey, objectKeysOf } from "../utils/generics.ts"
-import type { DefaultObjectKind } from "../utils/objectKinds.ts"
-import { getPath, Path } from "../utils/paths.ts"
-import type { ProblemCode, ProblemOptions, ProblemWriters } from "./problems.ts"
+} from "../nodes/rules/props.js"
+import { checkBound } from "../nodes/rules/range.js"
+import { checkRegex } from "../nodes/rules/regex.js"
+import { precedenceMap } from "../nodes/rules/rules.js"
+import type { Scope } from "../scopes/scope.js"
+import type { QualifiedTypeName, Type, TypeConfig } from "../scopes/type.js"
+import type { SizedData } from "../utils/data.js"
+import type { Domain } from "../utils/domains.js"
+import { domainOf, hasDomain } from "../utils/domains.js"
+import { throwInternalError } from "../utils/errors.js"
+import type { extend, stringKeyOf, xor } from "../utils/generics.js"
+import { hasKey, objectKeysOf } from "../utils/generics.js"
+import type { DefaultObjectKind } from "../utils/objectKinds.js"
+import { getPath, Path } from "../utils/paths.js"
+import type { ProblemCode, ProblemOptions, ProblemWriters } from "./problems.js"
 import {
     domainsToDescriptions,
     objectKindsToDescriptions,
     Problem,
     Problems
-} from "./problems.ts"
+} from "./problems.js"
 
 const initializeTraversalConfig = (): TraversalConfig => ({
     mustBe: [],

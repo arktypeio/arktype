@@ -6,11 +6,10 @@ import {
     fromPackageRoot,
     shell,
     walkPaths
-} from "../runtime/main.ts"
-import { cacheAssertions, cleanupAssertions } from "./main.ts"
+} from "../runtime/main.js"
+import { cacheAssertions, cleanupAssertions } from "./main.js"
 
-const args: string[] =
-    (globalThis as any).process?.argv ?? (globalThis as any).Deno.args
+const args: string[] = globalThis.process.argv
 
 let attestArgIndex = args.findIndex((arg) => /.*cli\.c?(j|t)s$/.test(arg))
 attestArgIndex = attestArgIndex === -1 ? 0 : attestArgIndex

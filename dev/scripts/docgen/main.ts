@@ -1,18 +1,18 @@
 import { basename, join, relative } from "node:path"
 import * as process from "node:process"
 import { Project } from "ts-morph"
-import type { WalkOptions } from "../../runtime/main.ts"
-import { dirName, getSourceControlPaths } from "../../runtime/main.ts"
-import { repoDirs } from "../common.ts"
-import { extractApi } from "./api/extractApi.ts"
-import { writeApi } from "./api/writeApi.ts"
-import { mapDir } from "./mapDir.ts"
+import type { WalkOptions } from "../../runtime/main.js"
+import { dirName, getSourceControlPaths } from "../../runtime/main.js"
+import { repoDirs } from "../common.js"
+import { extractApi } from "./api/extractApi.js"
+import { writeApi } from "./api/writeApi.js"
+import { mapDir } from "./mapDir.js"
 import type {
     SnippetsByPath,
     SnippetTransformToggles
-} from "./snippets/extractSnippets.ts"
-import { extractSnippets } from "./snippets/extractSnippets.ts"
-import { updateSnippetReferences } from "./snippets/writeSnippets.ts"
+} from "./snippets/extractSnippets.js"
+import { extractSnippets } from "./snippets/extractSnippets.js"
+import { updateSnippetReferences } from "./snippets/writeSnippets.js"
 
 export type DocGenConfig = {
     apis: DocGenApiConfig[]

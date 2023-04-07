@@ -1,5 +1,5 @@
-import { type, union } from "../../src/main.ts"
-import { asConst } from "../../src/utils/generics.ts"
+import { type, union } from "../../src/main.js"
+import { asConst } from "../../src/utils/generics.js"
 
 // @snipStatement:union
 export const deepLeftOrRight = union(

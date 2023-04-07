@@ -1,20 +1,20 @@
-import type { Type } from "../scopes/type.ts"
-import type { Domain } from "../utils/domains.ts"
-import type { CollapsibleList, Dict } from "../utils/generics.ts"
-import { listFrom } from "../utils/generics.ts"
-import { isArray } from "../utils/objectKinds.ts"
-import type { Branch, Branches, BranchesComparison } from "./branch.ts"
+import type { Type } from "../scopes/type.js"
+import type { Domain } from "../utils/domains.js"
+import type { CollapsibleList, Dict } from "../utils/generics.js"
+import { listFrom } from "../utils/generics.js"
+import { isArray } from "../utils/objectKinds.js"
+import type { Branch, Branches, BranchesComparison } from "./branch.js"
 import {
     branchIntersection,
     compareBranches,
     flattenBranch,
     isBranchComparison
-} from "./branch.ts"
-import type { IntersectionResult, KeyIntersectionFn } from "./compose.ts"
-import { equality, IntersectionState, isEquality } from "./compose.ts"
-import { flattenBranches } from "./discriminate.ts"
-import type { FlattenContext, TraversalEntry, TypeNode } from "./node.ts"
-import type { LiteralRules } from "./rules/rules.ts"
+} from "./branch.js"
+import type { IntersectionResult, KeyIntersectionFn } from "./compose.js"
+import { equality, IntersectionState, isEquality } from "./compose.js"
+import { flattenBranches } from "./discriminate.js"
+import type { FlattenContext, TraversalEntry, TypeNode } from "./node.js"
+import type { LiteralRules } from "./rules/rules.js"
 
 /** If scope is provided, we also narrow each predicate to match its domain.
  * Otherwise, we use a base predicate for all types, which is easier to

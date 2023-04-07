@@ -1,10 +1,10 @@
 import { fileURLToPath } from "node:url"
-import { caller, getCallStack } from "../../runtime/main.ts"
-import { Assertions } from "./assertions/assertions.ts"
-import type { RootAssertions } from "./assertions/types.ts"
-import type { AttestConfig } from "./config.ts"
-import { getAttestConfig } from "./config.ts"
-import type { SourcePosition } from "./utils.ts"
+import { caller, getCallStack } from "../../runtime/main.js"
+import { Assertions } from "./assertions/assertions.js"
+import type { RootAssertions } from "./assertions/types.js"
+import type { AttestConfig } from "./config.js"
+import { getAttestConfig } from "./config.js"
+import type { SourcePosition } from "./utils.js"
 
 export type AssertFn = <T>(value: T) => RootAssertions<T, true>
 

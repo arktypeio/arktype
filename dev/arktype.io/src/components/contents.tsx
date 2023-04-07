@@ -1,13 +1,13 @@
 import { useColorMode } from "@docusaurus/theme-common"
 import { Stack, Typography } from "@mui/material"
 import React from "react"
-import { Features } from "../components/features.tsx"
-import { HomeDemo } from "./homeDemo.tsx"
+import { Features } from "../components/features"
+import { HomeDemo } from "./homeDemo"
 import {
     FloatingInstallationBlock,
     MobileInstallationBlock
-} from "./installationBlock.tsx"
-import { useInstallationBlockShouldFloat } from "./useWindowSize.ts"
+} from "./installationBlock"
+import { useInstallationBlockShouldFloat } from "./useWindowSize"
 
 export const Contents = () => {
     const { colorMode } = useColorMode()

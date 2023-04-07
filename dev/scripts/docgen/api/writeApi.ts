@@ -1,22 +1,22 @@
 import { appendFileSync, rmSync } from "node:fs"
 import { join } from "node:path"
-import { ensureDir, shell } from "../../../runtime/main.ts"
-import type { DocGenApiConfig } from "../main.ts"
-import { keywordTable } from "./buildTable/keywords.ts"
-import { getFormats } from "./buildTable/operators.ts"
-import { constructRow } from "./buildTable/table.ts"
+import { ensureDir, shell } from "../../../runtime/main.js"
+import type { DocGenApiConfig } from "../main.js"
+import { keywordTable } from "./buildTable/keywords.js"
+import { getFormats } from "./buildTable/operators.js"
+import { constructRow } from "./buildTable/table.js"
 import type {
     ApiEntryPoint,
     ExportData,
     PackageExtractionData
-} from "./extractApi.ts"
-import { generateKeywordMasterList, operatorsTable } from "./postProcess.ts"
-import type { TsTagData } from "./tsDocTransforms.ts"
+} from "./extractApi.js"
+import { generateKeywordMasterList, operatorsTable } from "./postProcess.js"
+import type { TsTagData } from "./tsDocTransforms.js"
 import {
     formatTagData,
     packTsDocTags,
     transformLinkTagToURL
-} from "./tsDocTransforms.ts"
+} from "./tsDocTransforms.js"
 
 export const writeApi = (
     apiConfig: DocGenApiConfig,

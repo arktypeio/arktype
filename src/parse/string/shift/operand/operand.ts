@@ -1,10 +1,10 @@
-import type { error } from "../../../../utils/generics.ts"
-import type { DynamicState } from "../../reduce/dynamic.ts"
-import type { state, StaticState } from "../../reduce/static.ts"
-import type { Scanner } from "../scanner.ts"
-import type { EnclosingChar } from "./enclosed.ts"
-import { enclosingChar, parseEnclosed } from "./enclosed.ts"
-import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.ts"
+import type { error, stringKeyOf } from "../../../../utils/generics.js"
+import type { DynamicState } from "../../reduce/dynamic.js"
+import type { state, StaticState } from "../../reduce/static.js"
+import type { Scanner } from "../scanner.js"
+import type { EnclosingChar } from "./enclosed.js"
+import { enclosingChar, parseEnclosed } from "./enclosed.js"
+import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.js"
 
 export const parseOperand = (s: DynamicState): void =>
     s.scanner.lookahead === ""
@@ -28,4 +28,4 @@ export type parseOperand<
         : lookahead extends " "
         ? parseOperand<state.scanTo<s, unscanned>, $>
         : parseUnenclosed<s, $>
-    : error<writeMissingOperandMessage<s>>
+    : error<`${s["scanned"]}${stringKeyOf<$>}`>

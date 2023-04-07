@@ -1,6 +1,6 @@
-import type { MinComparator } from "../../../nodes/rules/range.ts"
-import type { NumberLiteral } from "../../../utils/numericLiterals.ts"
-import { Scanner } from "../shift/scanner.ts"
+import type { MinComparator } from "../../../nodes/rules/range.js"
+import type { NumberLiteral } from "../../../utils/numericLiterals.js"
+import { Scanner } from "../shift/scanner.js"
 
 export const writeUnmatchedGroupCloseMessage = <unscanned extends string>(
     unscanned: unscanned

@@ -7,10 +7,10 @@ import {
     shell,
     walkPaths,
     writeJson
-} from "../../runtime/main.ts"
-import { repoDirs } from "../common.ts"
-import type { DocGenMappedDirsConfig } from "./main.ts"
-import type { SnippetsByPath } from "./snippets/extractSnippets.ts"
+} from "../../runtime/main.js"
+import { repoDirs } from "../common.js"
+import type { DocGenMappedDirsConfig } from "./main.js"
+import type { SnippetsByPath } from "./snippets/extractSnippets.js"
 
 export const mapDir = (
     snippetsByPath: SnippetsByPath,

@@ -1,17 +1,17 @@
 import type { Node, Project, SourceFile, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { caller } from "../../../runtime/main.ts"
-import { getAttestConfig } from "../config.ts"
-import { findCallExpressionAncestor } from "../snapshot.ts"
+import { caller } from "../../../runtime/main.js"
+import { getAttestConfig } from "../config.js"
+import { findCallExpressionAncestor } from "../snapshot.js"
 import {
     forceCreateTsMorphProject,
     getVirtualTsMorphProject
-} from "../type/getTsMorphProject.ts"
-import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
-import type { BenchContext } from "./bench.ts"
-import type { Measure, MeasureComparison } from "./measure/measure.ts"
-import type { TypeUnit } from "./measure/types.ts"
-import { createTypeComparison } from "./measure/types.ts"
+} from "../type/getTsMorphProject.js"
+import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
+import type { BenchContext } from "./bench.js"
+import type { Measure, MeasureComparison } from "./measure/measure.js"
+import type { TypeUnit } from "./measure/types.js"
+import { createTypeComparison } from "./measure/types.js"
 
 export type BenchTypeAssertions = {
     type: (instantiations?: Measure<TypeUnit>) => void

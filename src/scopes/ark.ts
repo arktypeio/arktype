@@ -1,10 +1,9 @@
-import type { InferredObjectKinds } from "../utils/objectKinds.ts"
-import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
-import type { Space } from "./scope.ts"
-import { rootScope, scope } from "./scope.ts"
-import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
-import type { TypeParser } from "./type.ts"
-import { validation, validationScope } from "./validation/validation.ts"
+import { jsObjects, jsObjectsScope } from "./jsObjects.js"
+import type { Space } from "./scope.js"
+import { rootScope, scope } from "./scope.js"
+import { tsKeywords, tsKeywordsScope } from "./tsKeywords.js"
+import type { TypeParser } from "./type.js"
+import { validation, validationScope } from "./validation/validation.js"
 
 export const arkScope = scope(
     {},
@@ -66,6 +65,15 @@ export type PrecompiledDefaults = {
     parsedInteger: (In: string) => number
     parsedDate: (In: string) => Date
     // jsObjects
-} & InferredObjectKinds
+    Function: (...args: any[]) => unknown
+    Date: Date
+    Error: Error
+    Map: Map<unknown, unknown>
+    RegExp: RegExp
+    Set: Set<unknown>
+    WeakMap: WeakMap<object, unknown>
+    WeakSet: WeakSet<object>
+    Promise: Promise<unknown>
+}
 
 export const type: TypeParser<PrecompiledDefaults> = arkScope.type

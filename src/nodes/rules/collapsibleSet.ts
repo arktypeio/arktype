@@ -1,6 +1,6 @@
-import type { CollapsibleList, List } from "../../utils/generics.ts"
-import type { Equal } from "../compose.ts"
-import { equality } from "../compose.ts"
+import type { CollapsibleList, List } from "../../utils/generics.js"
+import type { Equal } from "../compose.js"
+import { equality } from "../compose.js"
 
 export const collapsibleListUnion: <t>(
     l: CollapsibleList<t>,

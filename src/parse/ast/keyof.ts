@@ -1,26 +1,26 @@
-import type { Branch } from "../../nodes/branch.ts"
-import type { Predicate } from "../../nodes/predicate.ts"
-import { mappedKeys } from "../../nodes/rules/props.ts"
-import type { Rules } from "../../nodes/rules/rules.ts"
-import type { Domain } from "../../utils/domains.ts"
-import { throwInternalError } from "../../utils/errors.ts"
-import { deepFreeze } from "../../utils/freeze.ts"
-import type { constructor, evaluate, List } from "../../utils/generics.ts"
+import type { Branch } from "../../nodes/branch.js"
+import type { Predicate } from "../../nodes/predicate.js"
+import { mappedKeys } from "../../nodes/rules/props.js"
+import type { Rules } from "../../nodes/rules/rules.js"
+import type { Domain } from "../../utils/domains.js"
+import { throwInternalError } from "../../utils/errors.js"
+import { deepFreeze } from "../../utils/freeze.js"
+import type { constructor, evaluate, List } from "../../utils/generics.js"
 import {
     listFrom,
     objectKeysOf,
     prototypeKeysOf
-} from "../../utils/generics.ts"
+} from "../../utils/generics.js"
 import {
     tryParseWellFormedInteger,
     wellFormedNonNegativeIntegerMatcher
-} from "../../utils/numericLiterals.ts"
-import { defaultObjectKinds } from "../../utils/objectKinds.ts"
-import { stringify } from "../../utils/serialize.ts"
-import type { inferDefinition, validateDefinition } from "../definition.ts"
-import { parseDefinition } from "../definition.ts"
-import { writeImplicitNeverMessage } from "./intersection.ts"
-import type { PrefixParser } from "./tuple.ts"
+} from "../../utils/numericLiterals.js"
+import { defaultObjectKinds } from "../../utils/objectKinds.js"
+import { stringify } from "../../utils/serialize.js"
+import type { inferDefinition, validateDefinition } from "../definition.js"
+import { parseDefinition } from "../definition.js"
+import { writeImplicitNeverMessage } from "./intersection.js"
+import type { PrefixParser } from "./tuple.js"
 
 const arrayIndexStringBranch = deepFreeze({
     regex: wellFormedNonNegativeIntegerMatcher.source
