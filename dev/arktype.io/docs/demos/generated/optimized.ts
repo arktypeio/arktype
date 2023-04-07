@@ -1,5 +1,5 @@
-export default `import { type, union } from "arktype"
-import { asConst } from "../../src/utils/generics"
+export default `import { type, union } from "../../src/main.js"
+import { asConst } from "../../src/utils/generics.js"
 
 export const deepLeftOrRight = union(
     {
