@@ -27,6 +27,11 @@ export const createStackblitzDemo = async ({ embedId }: DemoProps) =>
             files: {
                 [`${embedId}.ts`]: contentsByEmbedId[embedId],
                 "index.ts": buildStackblitzIndexText(embedId),
+                ".prettierrc": JSON.stringify({
+                    tabWidth: 4,
+                    semi: false,
+                    trailingComma: "none"
+                }),
                 ...defaultStaticFiles
             },
             title: embedId,
