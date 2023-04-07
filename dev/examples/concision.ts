@@ -1,6 +1,6 @@
 import z from "zod"
-import type { Infer } from "../../src/main.js"
 import { morph, type } from "../../src/main.js"
+import type { Infer } from "../../src/main.js"
 
 {
     // @snipStatement:arkUserExpression

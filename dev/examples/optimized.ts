@@ -1,5 +1,4 @@
 import { type, union } from "../../src/main.js"
-import { asConst } from "../../src/utils/generics.js"
 
 // @snipStatement:union
 export const deepLeftOrRight = union(
@@ -15,7 +14,7 @@ export const deepLeftOrRight = union(
     }
 )
 
-export const unionInternalRepresentation = asConst([
+export const unionInternalRepresentation = [
     ["domain", "object"],
     [
         "switch",
@@ -28,7 +27,7 @@ export const unionInternalRepresentation = asConst([
             }
         }
     ]
-])
+] as const
 
 // @snipStatement:number
 export const numericIntersection = type(
