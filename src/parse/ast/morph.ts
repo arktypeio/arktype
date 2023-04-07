@@ -1,10 +1,10 @@
-import type { Problem } from "../../nodes/problems.ts"
-import type { CheckResult, TraversalState } from "../../nodes/traverse.ts"
-import type { asIn, asOut } from "../../scopes/type.ts"
-import { throwParseError } from "../../utils/errors.ts"
-import type { inferDefinition, validateDefinition } from "../definition.ts"
-import { parseDefinition } from "../definition.ts"
-import type { PostfixParser, TupleExpression } from "./tuple.ts"
+import type { Problem } from "../../nodes/problems.js"
+import type { CheckResult, TraversalState } from "../../nodes/traverse.js"
+import type { asIn, asOut } from "../../scopes/type.js"
+import { throwParseError } from "../../utils/errors.js"
+import type { inferDefinition, validateDefinition } from "../definition.js"
+import { parseDefinition } from "../definition.js"
+import type { PostfixParser, TupleExpression } from "./tuple.js"
 
 export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {

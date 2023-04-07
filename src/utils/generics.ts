@@ -1,4 +1,4 @@
-import { hasDomain } from "./domains.ts"
+import { hasDomain } from "./domains.js"
 
 export const asConst = <t>(t: asConstRecurse<t>) => t
 

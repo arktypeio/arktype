@@ -3,18 +3,18 @@ import type {
     InvertedComparators,
     MaxComparator,
     MinComparator
-} from "../../../nodes/constraints/range.ts"
-import type { defined, error } from "../../../utils/generics.ts"
-import type { NumberLiteral } from "../../../utils/numericLiterals.ts"
-import type { astToString } from "../../ast/utils.ts"
-import type { Scanner } from "../shift/scanner.ts"
+} from "../../../nodes/constraints/range.js"
+import type { defined, error } from "../../../utils/generics.js"
+import type { NumberLiteral } from "../../../utils/numericLiterals.js"
+import type { astToString } from "../../ast/utils.js"
+import type { Scanner } from "../shift/scanner.js"
 import type {
     unclosedGroupMessage,
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
     writeUnmatchedGroupCloseMessage,
     writeUnpairableComparatorMessage
-} from "./shared.ts"
+} from "./shared.js"
 
 export type StaticState = {
     root: unknown

@@ -1,5 +1,5 @@
-import type { Comparator } from "../../../nodes/constraints/range.ts"
-import type { Dict, keySet } from "../../../utils/generics.ts"
+import type { Comparator } from "../../../nodes/constraints/range.js"
+import type { Dict, keySet } from "../../../utils/generics.js"
 
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]

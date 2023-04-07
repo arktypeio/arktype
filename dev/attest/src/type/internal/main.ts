@@ -1,3 +1,3 @@
-export * from "./getAssertionsInFile.ts"
-export * from "./getCachedAssertionData.ts"
-export * from "./getDiagnosticsByFile.ts"
+export * from "./getAssertionsInFile.js"
+export * from "./getCachedAssertionData.js"
+export * from "./getDiagnosticsByFile.js"

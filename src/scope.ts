@@ -1,20 +1,20 @@
-import type { Node } from "./nodes/node.ts"
-import { CompilationState, createTraverse } from "./nodes/node.ts"
-import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.ts"
-import { CheckResult, TraversalState } from "./nodes/traverse.ts"
-import type { ConfigTuple } from "./parse/ast/config.ts"
+import type { Node } from "./nodes/node.js"
+import { CompilationState, createTraverse } from "./nodes/node.js"
+import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
+import { CheckResult, TraversalState } from "./nodes/traverse.js"
+import type { ConfigTuple } from "./parse/ast/config.js"
 import type {
     inferDefinition,
     ParseContext,
     validateDefinition
-} from "./parse/definition.ts"
-import { parseDefinition } from "./parse/definition.ts"
-import type { PrecompiledDefaults } from "./scopes/ark.ts"
-import { Cache, FreezingCache } from "./scopes/cache.ts"
-import type { KeyCheckKind, Type, TypeOptions, TypeParser } from "./type.ts"
-import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.ts"
-import { throwInternalError, throwParseError } from "./utils/errors.ts"
-import { deepFreeze } from "./utils/freeze.ts"
+} from "./parse/definition.js"
+import { parseDefinition } from "./parse/definition.js"
+import type { PrecompiledDefaults } from "./scopes/ark.js"
+import { Cache, FreezingCache } from "./scopes/cache.js"
+import type { KeyCheckKind, Type, TypeOptions, TypeParser } from "./type.js"
+import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
+import { throwInternalError, throwParseError } from "./utils/errors.js"
+import { deepFreeze } from "./utils/freeze.js"
 import type {
     Dict,
     error,
@@ -22,9 +22,9 @@ import type {
     isAny,
     List,
     nominal
-} from "./utils/generics.ts"
-import { Path } from "./utils/paths.ts"
-import type { stringifyUnion } from "./utils/unionToTuple.ts"
+} from "./utils/generics.js"
+import { Path } from "./utils/paths.js"
+import type { stringifyUnion } from "./utils/unionToTuple.js"
 
 type ScopeParser = {
     <aliases>(aliases: validateAliases<aliases, {}>): Scope<

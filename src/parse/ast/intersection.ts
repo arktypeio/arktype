@@ -1,5 +1,5 @@
-import type { DisjointsByPath } from "../../nodes/node.ts"
-import type { MappedKeys } from "../../nodes/constraints/props.ts"
+import type { MappedKeys } from "../../nodes/constraints/props.js"
+import type { DisjointsByPath } from "../../nodes/node.js"
 import type {
     asConst,
     Dict,
@@ -10,10 +10,10 @@ import type {
     List,
     stringKeyOf,
     tryCatch
-} from "../../utils/generics.ts"
-import { keysOf } from "../../utils/generics.ts"
-import type { Path, pathToString, Segments } from "../../utils/paths.ts"
-import type { ParsedMorph } from "./morph.ts"
+} from "../../utils/generics.js"
+import { keysOf } from "../../utils/generics.js"
+import type { Path, pathToString, Segments } from "../../utils/paths.js"
+import type { ParsedMorph } from "./morph.js"
 
 export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, []>
 

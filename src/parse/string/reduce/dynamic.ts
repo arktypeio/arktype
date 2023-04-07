@@ -1,21 +1,21 @@
-import type { Comparator, MinBounds } from "../../../nodes/constraints/range.ts"
+import type { Comparator, MinBounds } from "../../../nodes/constraints/range.js"
 import {
     invertedComparators,
     minComparators
-} from "../../../nodes/constraints/range.ts"
-import type { Node } from "../../../nodes/node.ts"
-import { throwInternalError, throwParseError } from "../../../utils/errors.ts"
-import { isKeyOf } from "../../../utils/generics.ts"
-import { stringify } from "../../../utils/serialize.ts"
-import type { ParseContext } from "../../definition.ts"
-import { Scanner } from "../shift/scanner.ts"
+} from "../../../nodes/constraints/range.js"
+import type { Node } from "../../../nodes/node.js"
+import { throwInternalError, throwParseError } from "../../../utils/errors.js"
+import { isKeyOf } from "../../../utils/generics.js"
+import { stringify } from "../../../utils/serialize.js"
+import type { ParseContext } from "../../definition.js"
+import { Scanner } from "../shift/scanner.js"
 import {
     unclosedGroupMessage,
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
     writeUnmatchedGroupCloseMessage,
     writeUnpairableComparatorMessage
-} from "./shared.ts"
+} from "./shared.js"
 
 type BranchState = {
     range?: MinBounds

@@ -1,9 +1,9 @@
-import { hasDomain } from "../utils/domains.ts"
-import type { SerializablePrimitive } from "../utils/serialize.ts"
-import { serializePrimitive } from "../utils/serialize.ts"
-import type { ComparisonState, CompilationState } from "./node.ts"
-import { Node } from "./node.ts"
-import { registerValue } from "./registry.ts"
+import { hasDomain } from "../utils/domains.js"
+import type { SerializablePrimitive } from "../utils/serialize.js"
+import { serializePrimitive } from "../utils/serialize.js"
+import type { ComparisonState, CompilationState } from "./node.js"
+import { Node } from "./node.js"
+import { registerValue } from "./registry.js"
 
 export class EqualityNode<rule = unknown> extends Node<typeof EqualityNode> {
     constructor(rule: rule) {

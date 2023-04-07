@@ -1,9 +1,9 @@
-import type { TypeParser } from "../type.ts"
-import { jsObjects, jsObjectsScope } from "./jsObjects.ts"
-import type { Space } from "../scope.ts"
-import { rootScope, scope } from "../scope.ts"
-import { tsKeywords, tsKeywordsScope } from "./tsKeywords.ts"
-import { validation, validationScope } from "./validation/validation.ts"
+import type { Space } from "../scope.js"
+import { rootScope, scope } from "../scope.js"
+import type { TypeParser } from "../type.js"
+import { jsObjects, jsObjectsScope } from "./jsObjects.js"
+import { tsKeywords, tsKeywordsScope } from "./tsKeywords.js"
+import { validation, validationScope } from "./validation/validation.js"
 
 export const arkScope = scope(
     {},

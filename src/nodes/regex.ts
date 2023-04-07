@@ -1,6 +1,6 @@
-import { intersectUniqueLists } from "./../utils/generics.ts"
-import type { CompilationState } from "./node.ts"
-import { Node } from "./node.ts"
+import { intersectUniqueLists } from "./../utils/generics.js"
+import type { CompilationState } from "./node.js"
+import { Node } from "./node.js"
 
 export class RegexNode extends Node<typeof RegexNode> {
     constructor(rule: string[]) {

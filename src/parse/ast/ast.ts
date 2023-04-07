@@ -1,23 +1,23 @@
-import type { Comparator } from "../../nodes/constraints/range.ts"
-import type { resolve } from "../../scope.ts"
+import type { Comparator } from "../../nodes/constraints/range.js"
+import type { resolve } from "../../scope.js"
 import type {
     castOnError,
     error,
     List,
     RegexLiteral,
     tryCatch
-} from "../../utils/generics.ts"
+} from "../../utils/generics.js"
 import type {
     BigintLiteral,
     NumberLiteral
-} from "../../utils/numericLiterals.ts"
-import type { StringLiteral } from "../string/shift/operand/enclosed.ts"
-import type { Scanner } from "../string/shift/scanner.ts"
-import type { parseString } from "../string/string.ts"
-import type { validateBound } from "./bound.ts"
-import type { validateDivisor } from "./divisor.ts"
-import type { inferIntersection } from "./intersection.ts"
-import type { inferUnion } from "./union.ts"
+} from "../../utils/numericLiterals.js"
+import type { StringLiteral } from "../string/shift/operand/enclosed.js"
+import type { Scanner } from "../string/shift/scanner.js"
+import type { parseString } from "../string/string.js"
+import type { validateBound } from "./bound.js"
+import type { validateDivisor } from "./divisor.js"
+import type { inferIntersection } from "./intersection.js"
+import type { inferUnion } from "./union.js"
 
 export type inferAst<ast, $> = ast extends List
     ? inferExpression<ast, $>

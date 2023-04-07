@@ -1,5 +1,5 @@
-import type { CompilationState } from "./node.ts"
-import { Node } from "./node.ts"
+import type { CompilationState } from "./node.js"
+import { Node } from "./node.js"
 
 export class DivisibilityNode extends Node<typeof DivisibilityNode> {
     constructor(rule: number) {

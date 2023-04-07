@@ -1,17 +1,18 @@
-import { BranchDefinition, ValueNode } from "../../nodes/branch.ts"
-import type { Domain, domainOf } from "../../utils/domains.ts"
-import { throwInternalError } from "../../utils/errors.ts"
-import type { evaluate, List } from "../../utils/generics.ts"
-import { keysOf, listFrom, prototypeKeysOf } from "../../utils/generics.ts"
+import type { BranchDefinition } from "../../nodes/branch.js"
+import { ValueNode } from "../../nodes/branch.js"
+import type { Domain, domainOf } from "../../utils/domains.js"
+import { throwInternalError } from "../../utils/errors.js"
+import type { evaluate, List } from "../../utils/generics.js"
+import { keysOf, listFrom, prototypeKeysOf } from "../../utils/generics.js"
 import {
     tryParseWellFormedInteger,
     wellFormedNonNegativeIntegerMatcher
-} from "../../utils/numericLiterals.ts"
-import { stringify } from "../../utils/serialize.ts"
-import type { inferDefinition, validateDefinition } from "../definition.ts"
-import { parseDefinition } from "../definition.ts"
-import { writeImplicitNeverMessage } from "./intersection.ts"
-import type { PrefixParser } from "./tuple.ts"
+} from "../../utils/numericLiterals.js"
+import { stringify } from "../../utils/serialize.js"
+import type { inferDefinition, validateDefinition } from "../definition.js"
+import { parseDefinition } from "../definition.js"
+import { writeImplicitNeverMessage } from "./intersection.js"
+import type { PrefixParser } from "./tuple.js"
 
 const arrayIndexStringBranch = new Branch({
     domain: "string",

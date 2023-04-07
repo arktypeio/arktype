@@ -1,16 +1,16 @@
-import type { Node } from "../../../../nodes/node.ts"
-import type { error, stringKeyOf } from "../../../../utils/generics.ts"
+import type { Node } from "../../../../nodes/node.js"
+import type { error, stringKeyOf } from "../../../../utils/generics.js"
 import type {
     BigintLiteral,
     NumberLiteral
-} from "../../../../utils/numericLiterals.ts"
+} from "../../../../utils/numericLiterals.js"
 import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
-} from "../../../../utils/numericLiterals.ts"
-import type { DynamicState } from "../../reduce/dynamic.ts"
-import type { state, StaticState } from "../../reduce/static.ts"
-import type { Scanner } from "../scanner.ts"
+} from "../../../../utils/numericLiterals.js"
+import type { DynamicState } from "../../reduce/dynamic.js"
+import type { state, StaticState } from "../../reduce/static.js"
+import type { Scanner } from "../scanner.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
     const token = s.scanner.shiftUntilNextTerminator()

@@ -1,22 +1,22 @@
-import type { SizedData } from "../utils/data.ts"
-import { DataWrapper } from "../utils/data.ts"
-import type { Domain } from "../utils/domains.ts"
-import { domainDescriptions } from "../utils/domains.ts"
+import type { SizedData } from "../utils/data.js"
+import { DataWrapper } from "../utils/data.js"
+import type { Domain } from "../utils/domains.js"
+import { domainDescriptions } from "../utils/domains.js"
 import type {
     arraySubclassToReadonly,
     conform,
     constructor,
     instanceOf
-} from "../utils/generics.ts"
-import type { DefaultObjectKind } from "../utils/objectKinds.ts"
+} from "../utils/generics.js"
+import type { DefaultObjectKind } from "../utils/objectKinds.js"
 import {
     getExactConstructorObjectKind,
     objectKindDescriptions
-} from "../utils/objectKinds.ts"
-import type { Path } from "../utils/paths.ts"
-import { stringify } from "../utils/serialize.ts"
-import type { BoundContextWithUnits } from "./range.ts"
-import { comparatorDescriptions } from "./range.ts"
+} from "../utils/objectKinds.js"
+import type { Path } from "../utils/paths.js"
+import { stringify } from "../utils/serialize.js"
+import type { BoundContextWithUnits } from "./range.js"
+import { comparatorDescriptions } from "./range.js"
 
 export class ArkTypeError extends TypeError {
     cause: Problems

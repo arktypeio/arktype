@@ -1,7 +1,7 @@
-import type { Filter } from "../parse/ast/filter.ts"
-import { intersectUniqueLists } from "../utils/generics.ts"
-import { Node } from "./node.ts"
-import type { CompilationState } from "./node.ts"
+import type { Filter } from "../parse/ast/filter.js"
+import { intersectUniqueLists } from "../utils/generics.js"
+import { Node } from "./node.js"
+import type { CompilationState } from "./node.js"
 
 export class FilterNode extends Node<typeof FilterNode> {
     constructor(rule: Filter[]) {

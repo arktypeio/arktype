@@ -1,7 +1,7 @@
-import type { TypeConfig, TypeOptions } from "../../scopes/type.ts"
-import type { validateDefinition } from "../definition.ts"
-import { parseDefinition } from "../definition.ts"
-import type { PostfixParser, TupleExpression } from "./tuple.ts"
+import type { TypeConfig, TypeOptions } from "../../scopes/type.js"
+import type { validateDefinition } from "../definition.js"
+import { parseDefinition } from "../definition.js"
+import type { PostfixParser, TupleExpression } from "./tuple.js"
 
 export type ConfigTuple<
     def = unknown,

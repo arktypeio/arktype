@@ -1,8 +1,8 @@
 import { mkdirSync, rmSync } from "node:fs"
-import { writeJson } from "../../../runtime/main.ts"
-import { getAttestConfig } from "../config.ts"
-import { writeCachedInlineSnapshotUpdates } from "../writeSnapshot.ts"
-import { getAssertionsByFile } from "./analysis.ts"
+import { writeJson } from "../../../runtime/main.js"
+import { getAttestConfig } from "../config.js"
+import { writeCachedInlineSnapshotUpdates } from "../writeSnapshot.js"
+import { getAssertionsByFile } from "./analysis.js"
 
 export type SetupCacheOptions = {
     forcePrecache?: boolean

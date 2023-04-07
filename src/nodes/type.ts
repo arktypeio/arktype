@@ -1,21 +1,21 @@
-import type { Domain } from "../utils/domains.ts"
-import { domainOf } from "../utils/domains.ts"
-import type { evaluate, keySet, List } from "../utils/generics.ts"
-import { isKeyOf, keysOf } from "../utils/generics.ts"
-import type { DefaultObjectKind } from "../utils/objectKinds.ts"
+import type { Domain } from "../utils/domains.js"
+import { domainOf } from "../utils/domains.js"
+import type { evaluate, keySet, List } from "../utils/generics.js"
+import { isKeyOf, keysOf } from "../utils/generics.js"
+import type { DefaultObjectKind } from "../utils/objectKinds.js"
 import {
     getExactConstructorObjectKind,
     objectKindOf
-} from "../utils/objectKinds.ts"
-import { Path } from "../utils/paths.ts"
+} from "../utils/objectKinds.js"
+import { Path } from "../utils/paths.js"
 import type {
     SerializablePrimitive,
     SerializedPrimitive
-} from "../utils/serialize.ts"
-import { serializePrimitive } from "../utils/serialize.ts"
-import { ConstraintsNode } from "./constraints.ts"
-import type { CompilationState, Disjoint } from "./node.ts"
-import { ComparisonState, Node } from "./node.ts"
+} from "../utils/serialize.js"
+import { serializePrimitive } from "../utils/serialize.js"
+import { ConstraintsNode } from "./constraints.js"
+import type { CompilationState, Disjoint } from "./node.js"
+import { ComparisonState, Node } from "./node.js"
 
 export class TypeNode extends Node<typeof TypeNode> {
     constructor(rule: ConstraintsNode[]) {

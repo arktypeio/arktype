@@ -1,33 +1,33 @@
-import type { Node } from "../../nodes/node.ts"
-import { node } from "../../nodes/node.ts"
-import type { defineProps } from "../../nodes/constraints/props.ts"
-import { domainOf } from "../../utils/domains.ts"
-import { throwParseError } from "../../utils/errors.ts"
+import type { defineProps } from "../../nodes/constraints/props.js"
+import type { Node } from "../../nodes/node.js"
+import { node } from "../../nodes/node.js"
+import { domainOf } from "../../utils/domains.js"
+import { throwParseError } from "../../utils/errors.js"
 import type {
     conform,
     constructor,
     error,
     evaluate,
     List
-} from "../../utils/generics.ts"
+} from "../../utils/generics.js"
 import type {
     inferDefinition,
     ParseContext,
     validateDefinition
-} from "../definition.ts"
-import { parseDefinition } from "../definition.ts"
-import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.ts"
-import type { Scanner } from "../string/shift/scanner.ts"
-import type { validateConfigTuple } from "./config.ts"
-import { parseConfigTuple } from "./config.ts"
-import { parseNarrowTuple } from "./filter.ts"
-import type { inferNarrow, validateNarrowTuple } from "./filter.ts"
-import type { inferIntersection } from "./intersection.ts"
-import type { inferKeyOfExpression, validateKeyOfExpression } from "./keyof.ts"
-import { parseKeyOfTuple } from "./keyof.ts"
-import type { inferMorph, validateMorphTuple } from "./morph.ts"
-import { parseMorphTuple } from "./morph.ts"
-import type { inferUnion } from "./union.ts"
+} from "../definition.js"
+import { parseDefinition } from "../definition.js"
+import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
+import type { Scanner } from "../string/shift/scanner.js"
+import type { validateConfigTuple } from "./config.js"
+import { parseConfigTuple } from "./config.js"
+import { parseNarrowTuple } from "./filter.js"
+import type { inferNarrow, validateNarrowTuple } from "./filter.js"
+import type { inferIntersection } from "./intersection.js"
+import type { inferKeyOfExpression, validateKeyOfExpression } from "./keyof.js"
+import { parseKeyOfTuple } from "./keyof.js"
+import type { inferMorph, validateMorphTuple } from "./morph.js"
+import { parseMorphTuple } from "./morph.js"
+import type { inferUnion } from "./union.js"
 
 export const parseTuple = (def: List, ctx: ParseContext): Node => {
     if (isIndexOneExpression(def)) {

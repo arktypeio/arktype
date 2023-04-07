@@ -1,7 +1,7 @@
-import type { error, tailOfString } from "../../../../utils/generics.ts"
-import type { DynamicState } from "../../reduce/dynamic.ts"
-import type { state, StaticState } from "../../reduce/static.ts"
-import type { Scanner } from "../scanner.ts"
+import type { error, tailOfString } from "../../../../utils/generics.js"
+import type { DynamicState } from "../../reduce/dynamic.js"
+import type { state, StaticState } from "../../reduce/static.js"
+import type { Scanner } from "../scanner.js"
 
 export type StringLiteral<Text extends string = string> =
     | DoubleQuotedStringLiteral<Text>

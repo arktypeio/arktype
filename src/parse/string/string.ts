@@ -1,12 +1,12 @@
-import type { error } from "../../utils/generics.ts"
-import type { inferAst } from "../ast/ast.ts"
-import type { ParseContext } from "../definition.ts"
-import { DynamicState } from "./reduce/dynamic.ts"
-import type { state, StaticState } from "./reduce/static.ts"
-import { parseOperand } from "./shift/operand/operand.ts"
-import type { isResolvableIdentifier } from "./shift/operand/unenclosed.ts"
-import { parseOperator } from "./shift/operator/operator.ts"
-import type { Scanner } from "./shift/scanner.ts"
+import type { error } from "../../utils/generics.js"
+import type { inferAst } from "../ast/ast.js"
+import type { ParseContext } from "../definition.js"
+import { DynamicState } from "./reduce/dynamic.js"
+import type { state, StaticState } from "./reduce/static.js"
+import { parseOperand } from "./shift/operand/operand.js"
+import type { isResolvableIdentifier } from "./shift/operand/unenclosed.js"
+import { parseOperator } from "./shift/operator/operator.js"
+import type { Scanner } from "./shift/scanner.js"
 
 export const parseString = (def: string, ctx: ParseContext) =>
     ctx.type.scope.parseCache.get(def) ??

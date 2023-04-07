@@ -1,7 +1,7 @@
-import type { Dict, List } from "../utils/generics.ts"
-import type { ComparisonState, CompilationState } from "./node.ts"
-import { Disjoint, Node } from "./node.ts"
-import { never, TypeNode } from "./type.ts"
+import type { Dict, List } from "../utils/generics.js"
+import type { ComparisonState, CompilationState } from "./node.js"
+import { Disjoint, Node } from "./node.js"
+import { never, TypeNode } from "./type.js"
 
 export class PropsNode extends Node<typeof PropsNode> {
     readonly named: PropsRule["named"]

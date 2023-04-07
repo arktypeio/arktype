@@ -1,6 +1,6 @@
-import type { Domain } from "../utils/domains.ts"
-import type { ComparisonState, CompilationState } from "./node.ts"
-import { Node } from "./node.ts"
+import type { Domain } from "../utils/domains.js"
+import type { ComparisonState, CompilationState } from "./node.js"
+import { Node } from "./node.js"
 
 export class DomainNode<rule extends Domain = Domain> extends Node<
     typeof DomainNode

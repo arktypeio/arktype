@@ -1,8 +1,8 @@
-import type { constructor } from "../utils/generics.ts"
-import { constructorExtends } from "../utils/generics.ts"
-import type { ComparisonState, CompilationState } from "./node.ts"
-import { Node } from "./node.ts"
-import { registerConstructor } from "./registry.ts"
+import type { constructor } from "../utils/generics.js"
+import { constructorExtends } from "../utils/generics.js"
+import type { ComparisonState, CompilationState } from "./node.js"
+import { Node } from "./node.js"
+import { registerConstructor } from "./registry.js"
 
 export class InstanceNode<rule extends constructor = constructor> extends Node<
     typeof InstanceNode

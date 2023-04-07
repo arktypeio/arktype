@@ -1,8 +1,8 @@
-import { throwInternalError } from "../utils/errors.ts"
-import type { evaluate, xor } from "../utils/generics.ts"
-import { stringify } from "../utils/serialize.ts"
-import type { ComparisonState, CompilationState } from "./node.ts"
-import { Node } from "./node.ts"
+import { throwInternalError } from "../utils/errors.js"
+import type { evaluate, xor } from "../utils/generics.js"
+import { stringify } from "../utils/serialize.js"
+import type { ComparisonState, CompilationState } from "./node.js"
+import { Node } from "./node.js"
 
 export const minComparators = {
     ">": true,

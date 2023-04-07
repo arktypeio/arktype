@@ -7,7 +7,7 @@ import {
     FloatingInstallationBlock,
     MobileInstallationBlock
 } from "./installationBlock.tsx"
-import { useInstallationBlockShouldFloat } from "./useWindowSize.ts"
+import { useInstallationBlockShouldFloat } from "./useWindowSize.js"
 
 export const Contents = () => {
     const { colorMode } = useColorMode()

@@ -1,30 +1,30 @@
-import type { Node } from "../nodes/node.ts"
-import type { TypeNode } from "../nodes/type.ts"
-import type { Type } from "../type.ts"
-import type { Primitive } from "../utils/domains.ts"
-import { domainOf } from "../utils/domains.ts"
-import { throwParseError } from "../utils/errors.ts"
+import type { Node } from "../nodes/node.js"
+import type { TypeNode } from "../nodes/type.js"
+import type { Type } from "../type.js"
+import type { Primitive } from "../utils/domains.js"
+import { domainOf } from "../utils/domains.js"
+import { throwParseError } from "../utils/errors.js"
 import type {
     Dict,
     evaluate,
     isAny,
     isUnknown,
     List
-} from "../utils/generics.ts"
-import { objectKindOf } from "../utils/objectKinds.ts"
-import type { Path } from "../utils/paths.ts"
-import { stringify } from "../utils/serialize.ts"
-import type { validateString } from "./ast/ast.ts"
+} from "../utils/generics.js"
+import { objectKindOf } from "../utils/objectKinds.js"
+import type { Path } from "../utils/paths.js"
+import { stringify } from "../utils/serialize.js"
+import type { validateString } from "./ast/ast.js"
 import type {
     inferTuple,
     TupleExpression,
     validateTupleExpression
-} from "./ast/tuple.ts"
-import { parseTuple } from "./ast/tuple.ts"
-import type { inferRecord } from "./record.ts"
-import { parseRecord } from "./record.ts"
-import type { inferString } from "./string/string.ts"
-import { parseString } from "./string/string.ts"
+} from "./ast/tuple.js"
+import { parseTuple } from "./ast/tuple.js"
+import type { inferRecord } from "./record.js"
+import { parseRecord } from "./record.js"
+import type { inferString } from "./string/string.js"
+import { parseString } from "./string/string.js"
 
 export type ParseContext = {
     path: Path

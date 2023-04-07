@@ -1,4 +1,4 @@
-import type { constructor, extend } from "../utils/generics.ts"
+import type { constructor, extend } from "../utils/generics.js"
 // TODO: move this and other non-nodes out of nodes dir
 
 const registry = {

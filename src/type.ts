@@ -1,27 +1,27 @@
 import {
-    type ConstraintsRule,
     ConstraintsNode,
+    type ConstraintsRule,
     type inferConstraints,
     type validateConstraints
-} from "./nodes/constraints.ts"
-import type { Node } from "./nodes/node.ts"
-import type { CheckResult } from "./nodes/traverse.ts"
-import { TypeNode } from "./nodes/type.ts"
-import type { ParsedMorph } from "./parse/ast/morph.ts"
+} from "./nodes/constraints.js"
+import type { Node } from "./nodes/node.js"
+import type { CheckResult } from "./nodes/traverse.js"
+import { TypeNode } from "./nodes/type.js"
+import type { ParsedMorph } from "./parse/ast/morph.js"
 import {
     as,
     type inferDefinition,
     parseDefinition,
     type validateDefinition
-} from "./parse/definition.ts"
+} from "./parse/definition.js"
 import {
     CompiledFunction,
     type conform,
     type evaluate,
     type List
-} from "./utils/generics.ts"
-import type { BuiltinClass } from "./utils/objectKinds.ts"
-import { Path } from "./utils/paths.ts"
+} from "./utils/generics.js"
+import type { BuiltinClass } from "./utils/objectKinds.js"
+import { Path } from "./utils/paths.js"
 
 export type TypeParser<$> = {
     // Parse and check the definition, returning either the original input for a

@@ -1,4 +1,4 @@
-import type { Literalable } from "../../utils/generics.ts"
+import type { Literalable } from "../../utils/generics.js"
 
 export type astToString<ast> = `'${astToStringRecurse<ast, "">}'`
 

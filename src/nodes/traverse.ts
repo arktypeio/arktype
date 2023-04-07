@@ -1,9 +1,9 @@
-import type { Scope } from "../scope.ts"
-import type { Type } from "../type.ts"
-import type { xor } from "../utils/generics.ts"
-import { Path } from "../utils/paths.ts"
-import type { Problem, ProblemCode, ProblemParameters } from "./problems.ts"
-import { Problems, problemsByCode } from "./problems.ts"
+import type { Scope } from "../scope.js"
+import type { Type } from "../type.js"
+import type { xor } from "../utils/generics.js"
+import { Path } from "../utils/paths.js"
+import type { Problem, ProblemCode, ProblemParameters } from "./problems.js"
+import { Problems, problemsByCode } from "./problems.js"
 
 export const CheckResult = class {
     data?: unknown

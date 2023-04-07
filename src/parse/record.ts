@@ -1,11 +1,10 @@
-import { ConstraintsNode } from "../nodes/constraints.ts"
-import { NamedPropNode } from "../nodes/props.ts"
-import type { PropKind, PropsRule } from "../nodes/props.ts"
-import { Type } from "../type.ts"
-import type { Dict, evaluate, mutable } from "../utils/generics.ts"
-import type { inferDefinition, ParseContext } from "./definition.ts"
-import { parseDefinition } from "./definition.ts"
-import { Scanner } from "./string/shift/scanner.ts"
+import type { PropKind, PropsRule } from "../nodes/props.js"
+import { NamedPropNode } from "../nodes/props.js"
+import { Type } from "../type.js"
+import type { Dict, evaluate, mutable } from "../utils/generics.js"
+import type { inferDefinition, ParseContext } from "./definition.js"
+import { parseDefinition } from "./definition.js"
+import { Scanner } from "./string/shift/scanner.js"
 
 export const parseRecord = (def: Dict, ctx: ParseContext) => {
     const named: mutable<PropsRule["named"]> = {}
