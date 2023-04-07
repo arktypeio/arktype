@@ -48,7 +48,7 @@ describe("group", () => {
             attest(() => {
                 // @ts-expect-error
                 type("(")
-            }).throwsAndHasTypeError(writeExpressionExpectedMessage(""))
+            }).throws(writeExpressionExpectedMessage(""))
         })
         it("deep unmatched (", () => {
             attest(() => {

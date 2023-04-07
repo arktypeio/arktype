@@ -1,5 +1,4 @@
 import { toArrayNode } from "../../nodes/node.js"
-import { PrecompiledDefaults } from "../../scopes/ark.js"
 import type { error } from "../../utils/generics.js"
 import type { inferAst } from "../ast/ast.js"
 import type { ParseContext } from "../definition.js"
@@ -73,12 +72,6 @@ type loopValid<
 
 const next = (s: DynamicState) =>
     s.hasRoot() ? parseOperator(s) : parseOperand(s)
-
-// TODO: remove
-type Z = next<
-    next<state.initialize<"string|n">, PrecompiledDefaults>,
-    PrecompiledDefaults
->
 
 type next<s extends StaticState, $> = s["root"] extends undefined
     ? parseOperand<s, $>

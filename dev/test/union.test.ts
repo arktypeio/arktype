@@ -68,7 +68,7 @@ describe("union/parse", () => {
         })
         it("ends with |", () => {
             // @ts-expect-error
-            attest(() => type("boolean|")).throwsAndHasTypeError(
+            attest(() => type("boolean|")).throws(
                 writeMissingRightOperandMessage("|", "")
             )
         })

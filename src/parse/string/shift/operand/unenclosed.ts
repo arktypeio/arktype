@@ -1,5 +1,5 @@
 import type { Node } from "../../../../nodes/node.js"
-import type { defer, error, stringKeyOf } from "../../../../utils/generics.js"
+import type { error } from "../../../../utils/generics.js"
 import type {
     BigintLiteral,
     NumberLiteral
@@ -83,11 +83,9 @@ export type possibleCompletions<
     s extends StaticState,
     token extends string,
     $
-> =
-    | error<`${s["scanned"]}${Extract<keyof $, `${token}${string}`>}`>
-    | error<writeUnresolvableMessage<token>>
-
-// error<`${s["scanned"]}${Extract<keyof $, `${token}${string}`>}`>
+> = Extract<keyof $, `${token}${string}`> extends never
+    ? error<writeUnresolvableMessage<token>>
+    : error<`${s["scanned"]}${Extract<keyof $, `${token}${string}`>}`>
 
 export const writeUnresolvableMessage = <token extends string>(
     token: token

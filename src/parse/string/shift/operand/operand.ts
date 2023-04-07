@@ -4,11 +4,7 @@ import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
 import type { EnclosingChar } from "./enclosed.js"
 import { enclosingChar, parseEnclosed } from "./enclosed.js"
-import {
-    parseUnenclosed,
-    possibleCompletions,
-    writeMissingOperandMessage
-} from "./unenclosed.js"
+import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.js"
 
 export const parseOperand = (s: DynamicState): void =>
     s.scanner.lookahead === ""

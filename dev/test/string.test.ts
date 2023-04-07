@@ -11,9 +11,7 @@ import { attest } from "../attest/main.js"
 describe("string", () => {
     it("errors on empty string", () => {
         // @ts-expect-error
-        attest(() => type("")).throwsAndHasTypeError(
-            writeExpressionExpectedMessage("")
-        )
+        attest(() => type("")).throws(writeExpressionExpectedMessage(""))
     })
     it("ignores whitespace between identifiers/operators", () => {
         const t = type("     string  | boolean    []   ")

@@ -5,7 +5,6 @@ import type { Primitive } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
-    conform,
     Dict,
     evaluate,
     isAny,
