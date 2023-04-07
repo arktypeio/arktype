@@ -26,5 +26,4 @@ const ffoo = type("string|number")
 
 type("string|number")
 
-// @ts-expect-error
-type("string|n")
+type("string|number")

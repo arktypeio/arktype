@@ -219,10 +219,7 @@ export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
 /** Type equivalent of ?? */
 export type coalesce<t, fallback> = t extends {} ? t : fallback
 
-export type error<message extends string = string> = nominal<
-    `!${message}`,
-    "error"
->
+export type error<message extends string = string> = `!${message}`
 
 export type castOnError<t, to> = isTopType<t> extends true
     ? t

@@ -2,7 +2,7 @@ import type {
     MaxComparator,
     MinComparator
 } from "../../../nodes/rules/range.js"
-import type { defined, error } from "../../../utils/generics.js"
+import type { defined, error, stringKeyOf } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
