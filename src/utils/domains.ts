@@ -1,4 +1,4 @@
-import type { evaluate, isTopType } from "./generics.ts"
+import type { evaluate, isTopType } from "./generics.js"
 
 export const hasDomain = <data, domain extends Domain>(
     data: data,

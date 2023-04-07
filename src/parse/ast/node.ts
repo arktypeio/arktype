@@ -1,14 +1,14 @@
-import type { MetaBranch } from "../../nodes/branch.ts"
-import type { LiteralNode, Node } from "../../nodes/node.ts"
-import type { Predicate } from "../../nodes/predicate.ts"
+import type { MetaBranch } from "../../nodes/branch.js"
+import type { LiteralNode, Node } from "../../nodes/node.js"
+import type { Predicate } from "../../nodes/predicate.js"
 import type {
     MappedPropKey,
     OptionalProp,
     Prop,
     PropsRule
-} from "../../nodes/rules/props.ts"
-import type { LiteralRules, NarrowableRules } from "../../nodes/rules/rules.ts"
-import type { Domain, inferDomain } from "../../utils/domains.ts"
+} from "../../nodes/rules/props.js"
+import type { LiteralRules, NarrowableRules } from "../../nodes/rules/rules.js"
+import type { Domain, inferDomain } from "../../utils/domains.js"
 import type {
     constructor,
     evaluate,
@@ -16,9 +16,9 @@ import type {
     HomogenousTuple,
     List,
     returnOf
-} from "../../utils/generics.ts"
-import type { BuiltinClass, inferObjectKind } from "../../utils/objectKinds.ts"
-import type { inferTerminal } from "./ast.ts"
+} from "../../utils/generics.js"
+import type { BuiltinClass, inferObjectKind } from "../../utils/objectKinds.js"
+import type { inferTerminal } from "./ast.js"
 
 export type inferNode<node extends Node<$>, $ = {}> = node extends string
     ? inferTerminal<node, $>

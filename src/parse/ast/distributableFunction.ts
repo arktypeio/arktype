@@ -1,12 +1,12 @@
-import type { TypeNode } from "../../nodes/node.ts"
-import type { NarrowableRules } from "../../nodes/rules/rules.ts"
-import type { Domain, domainOf, inferDomain } from "../../utils/domains.ts"
-import { hasDomain } from "../../utils/domains.ts"
-import { throwParseError } from "../../utils/errors.ts"
-import type { evaluate } from "../../utils/generics.ts"
-import { objectKeysOf } from "../../utils/generics.ts"
-import { stringify } from "../../utils/serialize.ts"
-import type { ParseContext } from "../definition.ts"
+import type { TypeNode } from "../../nodes/node.js"
+import type { NarrowableRules } from "../../nodes/rules/rules.js"
+import type { Domain, domainOf, inferDomain } from "../../utils/domains.js"
+import { hasDomain } from "../../utils/domains.js"
+import { throwParseError } from "../../utils/errors.js"
+import type { evaluate } from "../../utils/generics.js"
+import { objectKeysOf } from "../../utils/generics.js"
+import { stringify } from "../../utils/serialize.js"
+import type { ParseContext } from "../definition.js"
 
 export type DistributableFunction<
     input = any,

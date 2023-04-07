@@ -1,28 +1,28 @@
-import type { FlatBound } from "../nodes/rules/range.ts"
-import { Scanner } from "../parse/string/shift/scanner.ts"
-import { DataWrapper } from "../utils/data.ts"
-import type { Domain } from "../utils/domains.ts"
-import { domainDescriptions } from "../utils/domains.ts"
+import type { FlatBound } from "../nodes/rules/range.js"
+import { Scanner } from "../parse/string/shift/scanner.js"
+import { DataWrapper } from "../utils/data.js"
+import type { Domain } from "../utils/domains.js"
+import { domainDescriptions } from "../utils/domains.js"
 import type {
     arraySubclassToReadonly,
     constructor,
     evaluate,
     RegexLiteral,
     requireKeys
-} from "../utils/generics.ts"
-import { objectKeysOf } from "../utils/generics.ts"
-import { isWellFormedInteger } from "../utils/numericLiterals.ts"
-import type { DefaultObjectKind } from "../utils/objectKinds.ts"
+} from "../utils/generics.js"
+import { objectKeysOf } from "../utils/generics.js"
+import { isWellFormedInteger } from "../utils/numericLiterals.js"
+import type { DefaultObjectKind } from "../utils/objectKinds.js"
 import {
     getExactConstructorObjectKind,
     objectKindDescriptions
-} from "../utils/objectKinds.ts"
-import { Path } from "../utils/paths.ts"
-import { stringify } from "../utils/serialize.ts"
+} from "../utils/objectKinds.js"
+import { Path } from "../utils/paths.js"
+import { stringify } from "../utils/serialize.js"
 import type {
     ConstrainedRuleTraversalData,
     TraversalState
-} from "./traverse.ts"
+} from "./traverse.js"
 
 export class ArkTypeError extends TypeError {
     cause: Problems

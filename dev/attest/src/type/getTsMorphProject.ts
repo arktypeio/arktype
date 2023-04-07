@@ -1,6 +1,6 @@
 import { resolve } from "node:path"
 import { Project, ts } from "ts-morph"
-import { getAttestConfig } from "../config.ts"
+import { getAttestConfig } from "../config.js"
 
 export type ForceGetTsProjectOptions = {
     useRealFs: boolean

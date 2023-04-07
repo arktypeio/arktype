@@ -1,10 +1,10 @@
-import type { ResolvedNode } from "../nodes/node.ts"
-import type { PropsRule } from "../nodes/rules/props.ts"
+import type { ResolvedNode } from "../nodes/node.js"
+import type { PropsRule } from "../nodes/rules/props.js"
 
-import type { Dict, evaluate, mutable } from "../utils/generics.ts"
-import type { inferDefinition, ParseContext } from "./definition.ts"
-import { parseDefinition } from "./definition.ts"
-import { Scanner } from "./string/shift/scanner.ts"
+import type { Dict, evaluate, mutable } from "../utils/generics.js"
+import type { inferDefinition, ParseContext } from "./definition.js"
+import { parseDefinition } from "./definition.js"
+import { Scanner } from "./string/shift/scanner.js"
 
 export const parseRecord = (def: Dict, ctx: ParseContext): ResolvedNode => {
     const props: mutable<PropsRule> = {}

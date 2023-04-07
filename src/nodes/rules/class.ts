@@ -1,7 +1,7 @@
-import type { EntryChecker } from "../../traverse/traverse.ts"
-import type { constructor } from "../../utils/generics.ts"
-import { objectKindOf } from "../../utils/objectKinds.ts"
-import { composeIntersection, equality } from "../compose.ts"
+import type { EntryChecker } from "../../traverse/traverse.js"
+import type { constructor } from "../../utils/generics.js"
+import { objectKindOf } from "../../utils/objectKinds.js"
+import { composeIntersection, equality } from "../compose.js"
 
 export const classIntersection = composeIntersection<constructor>(
     (l, r, state) => {

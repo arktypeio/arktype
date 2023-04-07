@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
-import { scope, type } from "../../src/main.ts"
-import { writeBadDefinitionTypeMessage } from "../../src/parse/definition.ts"
-import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.ts"
-import { attest, getTsVersionUnderTest } from "../attest/main.ts"
+import { scope, type } from "../../src/main.js"
+import { writeBadDefinitionTypeMessage } from "../../src/parse/definition.js"
+import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
+import { attest, getTsVersionUnderTest } from "../attest/main.js"
 
 describe("terminal objects", () => {
     it("regex", () => {

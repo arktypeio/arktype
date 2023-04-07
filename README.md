@@ -19,7 +19,7 @@
 <!-- @snipEnd -->
 
 ```ts @blockFrom:dev/examples/type.ts
-import { type } from "arktype"
+import { type } from "../../src/main.js"
 
 // Definitions are statically parsed and inferred as TS.
 export const user = type({
@@ -52,9 +52,9 @@ Check out [how it works](#how), [try it in-browser](https://arktype.io/docs/#you
 <sub>(or whatever package manager you prefer)</sub>
 <br />
 
-<img src="./dev/arktype.io/static/img/deno.svg" alt="Deno Icon" height="16px" /> <code>import { type } from "https://deno.land/x/arktype/main.ts"</code>
-
 Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#strict) with TypeScript versions `4.8`, `4.9`, and `5.0`.
+
+If you're using VSCode, setting `"editor.quickSuggestions"` to `{"strings": true}` will improve its autocomplete suggestions.
 
 _Our APIs have mostly stabilized, but details may still change during the alpha/beta stages of our 1.0 release. If you have suggestions that may require a breaking change, now is the time to let us know!_ ⛵
 
@@ -65,7 +65,7 @@ _Our APIs have mostly stabilized, but details may still change during the alpha/
 [Try this example in-browser.](https://arktype.io/docs/scopes)
 
 ```ts @blockFrom:dev/examples/scope.ts
-import { scope } from "arktype"
+import { scope } from "../../src/main.js"
 
 // Scopes are collections of types that can reference each other.
 export const types = scope({

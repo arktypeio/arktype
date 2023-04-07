@@ -1,16 +1,9 @@
 import { describe, it } from "mocha"
-import { type } from "../../src/main.ts"
-import {
-    unknownDefinitionMessage,
-    writeBadDefinitionTypeMessage
-} from "../../src/parse/definition.ts"
-import { attest } from "../attest/main.ts"
+import { type } from "../../src/main.js"
+import { writeBadDefinitionTypeMessage } from "../../src/parse/definition.js"
+import { attest } from "../attest/main.js"
 
 describe("bad definition types", () => {
-    it("unknown", () => {
-        // @ts-expect-error
-        attest(type({} as unknown)).type.errors(unknownDefinitionMessage)
-    })
     it("undefined", () => {
         // @ts-expect-error
         attest(() => type({ bad: undefined })).throwsAndHasTypeError(

@@ -82,8 +82,6 @@ You can also run any of these commands individually:
 
 All of these commands will run as part of our CI process and must succeed in order for us to accept your Pull Request.
 
-The new ".ts" extension resolution in TS 5.0 in conjunction with our [import map settings](./deno.jsonc) allows us to support editing the same source using either standard Node tooling or via Deno. Since `arktype` has no dependencies, you generally shouldn't have to worry about compatibility. If you want to make sure the tests pass in Deno before running them in CI, you will need to [install Deno](https://deno.land/manual/getting_started/installation). If you don't want to install Deno or prefer to live dangerously, move on to the next step and await the results of our CI 🎲
-
 8. Once everything is passing, commit your changes and ensure your fork is up to date:
 
 ```sh

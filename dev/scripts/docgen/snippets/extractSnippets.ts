@@ -1,14 +1,14 @@
 import type { Project } from "ts-morph"
-import { readFile, tsFileMatcher } from "../../../runtime/main.ts"
-import type { DocGenSnippetsConfig } from "../main.ts"
-import { defaultConfig } from "../main.ts"
-import type { ExtractionToken } from "./snipTokens.ts"
+import { readFile, tsFileMatcher } from "../../../runtime/main.js"
+import type { DocGenSnippetsConfig } from "../main.js"
+import { defaultConfig } from "../main.js"
+import type { ExtractionToken } from "./snipTokens.js"
 import {
     extractionTokens,
     includesTokenFrom,
     snipTokens
-} from "./snipTokens.ts"
-import { transformTsFileContents } from "./transformTsFileText.ts"
+} from "./snipTokens.js"
+import { transformTsFileContents } from "./transformTsFileText.js"
 
 /** Represents paths mapped to snippet data for a file */
 export type SnippetsByPath = Record<string, SnippetsByLabel>

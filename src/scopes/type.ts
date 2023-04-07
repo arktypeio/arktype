@@ -1,18 +1,18 @@
-import type { Node, TraversalNode } from "../nodes/node.ts"
-import type { ParsedMorph } from "../parse/ast/morph.ts"
+import type { Node, TraversalNode } from "../nodes/node.js"
+import type { ParsedMorph } from "../parse/ast/morph.js"
 import type {
     as,
     inferDefinition,
     validateDefinition
-} from "../parse/definition.ts"
-import type { ProblemOptions } from "../traverse/problems.ts"
-import type { CheckResult } from "../traverse/traverse.ts"
-import { traverseRoot } from "../traverse/traverse.ts"
-import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.ts"
-import type { defer, evaluate } from "../utils/generics.ts"
-import type { BuiltinClass } from "../utils/objectKinds.ts"
-import type { Expressions } from "./expressions.ts"
-import type { Scope } from "./scope.ts"
+} from "../parse/definition.js"
+import type { ProblemOptions } from "../traverse/problems.js"
+import type { CheckResult } from "../traverse/traverse.js"
+import { traverseRoot } from "../traverse/traverse.js"
+import { chainableNoOpProxy } from "../utils/chainableNoOpProxy.js"
+import type { defer, evaluate } from "../utils/generics.js"
+import type { BuiltinClass } from "../utils/objectKinds.js"
+import type { Expressions } from "./expressions.js"
+import type { Scope } from "./scope.js"
 
 export type TypeParser<$> = {
     <def>(def: validateDefinition<def, $>): parseType<def, $>

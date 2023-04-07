@@ -1,5 +1,5 @@
-import type { EntryChecker } from "../../traverse/traverse.ts"
-import { composeIntersection, equality } from "../compose.ts"
+import type { EntryChecker } from "../../traverse/traverse.js"
+import { composeIntersection, equality } from "../compose.js"
 
 export const divisorIntersection = composeIntersection<number>(
     (l: number, r: number) =>

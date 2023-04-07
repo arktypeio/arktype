@@ -1,4 +1,4 @@
-export default `import { type } from "arktype"
+export default `import { type } from "../../src/main.js"
 
 // Define your type...
 export const pkg = type({

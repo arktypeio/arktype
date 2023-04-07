@@ -7,9 +7,9 @@ import {
     readPackageJson,
     shell,
     writeJson
-} from "../runtime/main.ts"
-import { repoDirs } from "./common.ts"
-import { docgen } from "./docgen/main.ts"
+} from "../runtime/main.js"
+import { repoDirs } from "./common.js"
+import { docgen } from "./docgen/main.js"
 
 const currentSuffix = "alpha"
 
