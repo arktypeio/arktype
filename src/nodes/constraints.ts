@@ -17,14 +17,14 @@ export class ConstraintsNode extends Node<typeof ConstraintsNode> {
     }
 
     static from(constraints: ConstraintsRule) {
-        const children: ConstraintsRule = {}
-        let kind: ConstraintKind
-        for (kind in constraints) {
-            children[kind] = new constraintKinds[kind](
-                (constraints as any)[kind] as never
-            ) as any
-        }
-        return new ConstraintsNode(children)
+        // const children: ConstraintsRule = {}
+        // let kind: ConstraintKind
+        // for (kind in constraints) {
+        //     children[kind] = new constraintKinds[kind](
+        //         (constraints as any)[kind] as never
+        //     ) as any
+        // }
+        // return new ConstraintsNode(children)
     }
 
     static compile(rules: ConstraintsRule, s: CompilationState) {
@@ -102,12 +102,12 @@ type ConstraintNodeKinds = typeof constraintKinds
 
 type ConstraintKind = keyof ConstraintNodeKinds
 
-export type inferConstraints<constraints extends ConstraintsRule> =
-    constraints extends DomainConstraintsRule
-        ? inferDomain<constraints["domain"]>
-        : constraints extends ExactValueConstraintsRule<infer value>
-        ? value
-        : never
+export type inferConstraints<constraints extends ConstraintsRule> = unknown
+// constraints extends DomainConstraintsRule
+//     ? inferDomain<constraints["domain"]>
+//     : constraints extends ExactValueConstraintsRule<infer value>
+//     ? value
+//     : never
 
 type constraintBranch<rules extends ConstraintsRule> =
     rules extends DomainConstraintsRule

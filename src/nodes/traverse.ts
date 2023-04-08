@@ -1,5 +1,5 @@
 import type { Scope } from "../scope.js"
-import type { Type } from "../type.js"
+import type { Type, TypeConfig } from "../type.js"
 import type { xor } from "../utils/generics.js"
 import { Path } from "../utils/paths.js"
 import type { Problem, ProblemCode, ProblemParameters } from "./problems.js"
@@ -19,16 +19,16 @@ export class TraversalState {
     basePath = new Path()
     problems: Problems = new Problems()
     entriesToPrune: [data: Record<string, unknown>, key: string][] = []
-    config: TypeConfig
+    // config: TypeConfig
 
-    readonly rootScope: Scope
+    // readonly rootScope: Scope
 
     // Qualified
     #seen: { [name in string]?: object[] } = {}
 
     constructor(public type: Type) {
-        this.rootScope = type.scope
-        this.config = type.config
+        // this.rootScope = type.scope
+        // this.config = type.config
     }
 
     mustBe(mustBe: string, data: unknown, path: Path) {
