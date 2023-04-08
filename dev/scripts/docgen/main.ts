@@ -68,11 +68,7 @@ export const defaultConfig = createConfig({
                 return outputFileName
             },
             transformContents: (content) => {
-                let transformed = content
-                transformed = transformed.replaceAll(
-                    /".*\/src\/main\.js"/g,
-                    `"arktype"`
-                )
+                const transformed = content
                 return `export default \`${transformed.replaceAll(
                     // fix template literals within .md files
                     /`|\${/g,
