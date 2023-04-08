@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
-import { scope } from "../../src/main.ts"
-import { writeDuplicateAliasesMessage } from "../../src/scope.ts"
-import { attest } from "../attest/main.ts"
+import { scope } from "../../src/main.js"
+import { writeDuplicateAliasesMessage } from "../../src/scope.js"
+import { attest } from "../attest/main.js"
 
 describe("scope imports", () => {
     it("imports/includes", () => {

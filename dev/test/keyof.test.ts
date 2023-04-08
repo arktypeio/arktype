@@ -1,11 +1,9 @@
 import { describe, it } from "mocha"
-import { keyOf, type } from "../../src/main.ts"
-import type { RuleNodes } from "../../src/nodes/branch.ts"
-import type { DomainsJson } from "../../src/nodes/node.ts"
-import { writeImplicitNeverMessage } from "../../src/parse/ast/intersection.ts"
-import { Path } from "../../src/utils/paths.ts"
-import { stringify } from "../../src/utils/serialize.ts"
-import { attest } from "../attest/main.ts"
+import { keyOf, type } from "../../src/main.js"
+import { writeImplicitNeverMessage } from "../../src/parse/ast/intersection.js"
+import { Path } from "../../src/utils/paths.js"
+import { stringify } from "../../src/utils/serialize.js"
+import { attest } from "../attest/main.js"
 
 describe("keyof", () => {
     it("object literal", () => {

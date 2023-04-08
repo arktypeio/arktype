@@ -3,6 +3,9 @@
     "editor.formatOnSave": true,
     "editor.snippetSuggestions": "bottom",
     "editor.codeActionsOnSave": ["source.fixAll.eslint"],
+    "editor.quickSuggestions": {
+        "strings": true
+    },
     "eslint.codeActionsOnSave.rules": [
         "import/order",
         "sort-imports",
@@ -14,8 +17,7 @@
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "typescript.tsdk": "./node_modules/typescript/lib",
     "typescript.tsserver.experimental.enableProjectDiagnostics": true,
-    // temporarily disabled until .ts suffixes are preserved
-    // "typescript.updateImportsOnFileMove.enabled": "never",
+    "typescript.preferences.importModuleSpecifierEnding": "js",
     "prettier.ignorePath": "dev/configs/.prettierignore",
     "mochaExplorer.nodeArgv": [
         "--loader=ts-node/esm",
@@ -24,9 +26,5 @@
     "mochaExplorer.env": {
         "ARKTYPE_CHECK_CMD": "--skipTypes"
     },
-    "testExplorer.useNativeTesting": true,
-    "deno.config": "./dev/configs/deno.jsonc",
-    "deno.lint": false
-    // Should remain commented when code is submitted for PR so Node is active by default
-    // "deno.enable": true,
+    "testExplorer.useNativeTesting": true
 }

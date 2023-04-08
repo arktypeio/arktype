@@ -1,6 +1,6 @@
 export default `import z from "zod"
-import type { Infer } from "arktype"
 import { morph, type } from "arktype"
+import type { Infer } from "arktype"
 
 {
     const arkUser = type({

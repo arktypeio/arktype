@@ -11,9 +11,9 @@ import { homedir } from "node:os"
 import { dirname, join, parse } from "node:path"
 import * as process from "node:process"
 import { fileURLToPath, URL } from "node:url"
-import { repoDirs } from "../scripts/common.ts"
-import { caller } from "./caller.ts"
-import { shell } from "./shell.ts"
+import { repoDirs } from "../scripts/common.js"
+import { caller } from "./caller.js"
+import { shell } from "./shell.js"
 
 export const ensureDir = (path: string) => {
     if (existsSync(path)) {

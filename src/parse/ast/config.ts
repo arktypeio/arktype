@@ -1,4 +1,4 @@
-import type { TypeConfig, TypeOptions } from "../../scopes/type.js"
+import type { TypeConfig, TypeOptions } from "../../type.js"
 import type { validateDefinition } from "../definition.js"
 import { parseDefinition } from "../definition.js"
 import type { PostfixParser, TupleExpression } from "./tuple.js"

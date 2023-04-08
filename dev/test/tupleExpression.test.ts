@@ -1,10 +1,10 @@
 import { describe, it } from "mocha"
-import { type } from "../../src/main.ts"
+import { type } from "../../src/main.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
-} from "../../src/parse/string/shift/operand/unenclosed.ts"
-import { attest } from "../attest/main.ts"
+} from "../../src/parse/string/shift/operand/unenclosed.js"
+import { attest } from "../attest/main.js"
 
 describe("tuple expression", () => {
     it("union", () => {

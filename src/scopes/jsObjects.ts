@@ -12,7 +12,6 @@ export const jsObjectsScope = scope(
         Function: node({ domain: "object", instance: Function }) as Infer<
             inferObjectKind<"Function">
         >,
-        Array: node({ domain: "object", instance: Array }),
         Date: node({ domain: "object", instance: Date }),
         Error: node({ domain: "object", instance: Error }),
         Map: node({ domain: "object", instance: Map }),

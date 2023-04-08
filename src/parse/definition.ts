@@ -9,7 +9,8 @@ import type {
     evaluate,
     isAny,
     isUnknown,
-    List
+    List,
+    stringKeyOf
 } from "../utils/generics.js"
 import { objectKindOf } from "../utils/objectKinds.js"
 import type { Path } from "../utils/paths.js"
@@ -95,7 +96,7 @@ export type validateDefinition<def, $> = def extends (...args: any[]) => any
           objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
       >
     : isUnknown<def> extends true
-    ? unknownDefinitionMessage
+    ? stringKeyOf<$>
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], $>
       }>
@@ -105,11 +106,6 @@ export const as = Symbol("as")
 export type Infer<t> = {
     [as]?: t
 }
-
-export const unknownDefinitionMessage =
-    "Cannot statically parse a definition inferred as unknown. Consider using 'as Infer<...>' to cast it."
-
-export type unknownDefinitionMessage = typeof unknownDefinitionMessage
 
 const isThunk = (def: unknown): def is () => unknown =>
     typeof def === "function" && def.length === 0

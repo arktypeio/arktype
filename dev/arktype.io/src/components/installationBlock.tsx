@@ -64,7 +64,7 @@ export const InstallationBlock = () => (
             </TabItem>
             <TabItem value="deno" label="deno">
                 <Code language="typescript">
-                    {`import { type } from "https://deno.land/x/arktype/main.js"`}
+                    {`import { type } from "npm:arktype"`}
                 </Code>
             </TabItem>
         </Tabs>

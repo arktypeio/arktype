@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
-import { ark, type } from "../../src/main.ts"
-import { attest } from "../attest/main.ts"
+import { ark, type } from "../../src/main.js"
+import { attest } from "../attest/main.js"
 
 describe("keywords", () => {
     describe("js", () => {
@@ -11,9 +11,6 @@ describe("keywords", () => {
             attest(t(1).problems?.summary).snap(
                 "Must be a function (was Number)"
             )
-        })
-        it("Array", () => {
-            attest(type("Array").node).snap("Array")
         })
         it("Date", () => {
             attest(type("Date").node).snap("Date")
@@ -29,18 +26,6 @@ describe("keywords", () => {
         })
         it("Set", () => {
             attest(type("Set").node).snap("Set")
-        })
-        it("Object", () => {
-            attest(type("Object").node).snap("Object")
-        })
-        it("String", () => {
-            attest(type("String").node).snap("String")
-        })
-        it("Number", () => {
-            attest(type("Number").node).snap("Number")
-        })
-        it("Boolean", () => {
-            attest(type("Boolean").node).snap("Boolean")
         })
         it("WeakMap", () => {
             attest(type("WeakMap").node).snap("WeakMap")

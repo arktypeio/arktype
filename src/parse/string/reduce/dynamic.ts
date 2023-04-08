@@ -1,9 +1,6 @@
-import type { Comparator, MinBounds } from "../../../nodes/constraints/range.js"
-import {
-    invertedComparators,
-    minComparators
-} from "../../../nodes/constraints/range.js"
 import type { Node } from "../../../nodes/node.js"
+import type { Comparator, MinBounds } from "../../../nodes/range.js"
+import { invertedComparators, minComparators } from "../../../nodes/range.js"
 import { throwInternalError, throwParseError } from "../../../utils/errors.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { stringify } from "../../../utils/serialize.js"

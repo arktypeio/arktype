@@ -1,5 +1,4 @@
-import { type, union } from "../../src/main.ts"
-import { asConst } from "../../src/utils/generics.ts"
+import { type } from "../../src/main.js"
 
 // @snipStatement:union
 export const deepLeftOrRight = union(
@@ -15,7 +14,20 @@ export const deepLeftOrRight = union(
     }
 )
 
-export const unionInternalRepresentation = asConst([])
+export const unionInternalRepresentation = [
+    ["domain", "object"],
+    [
+        "switch",
+        {
+            path: ["auto", "discriminated"],
+            kind: "value",
+            cases: {
+                "'left'": [["requiredProp", ["auto", [["domain", "object"]]]]],
+                "'right'": [["requiredProp", ["auto", [["domain", "object"]]]]]
+            }
+        }
+    ]
+] as const
 
 // @snipStatement:number
 export const numericIntersection = type(

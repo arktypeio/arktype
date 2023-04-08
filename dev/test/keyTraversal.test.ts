@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
-import { type } from "../../src/main.ts"
-import { attest } from "../attest/main.ts"
+import { type } from "../../src/main.js"
+import { attest } from "../attest/main.js"
 
 // TODO: update tests
 describe("key traversal", () => {

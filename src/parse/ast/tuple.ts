@@ -1,7 +1,6 @@
-import type { defineProps } from "../../nodes/constraints/props.js"
 import type { Node } from "../../nodes/node.js"
 import { node } from "../../nodes/node.js"
-import { domainOf } from "../../utils/domains.js"
+import type { defineProps } from "../../nodes/props.js"
 import { throwParseError } from "../../utils/errors.js"
 import type {
     conform,

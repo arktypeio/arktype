@@ -1,5 +1,4 @@
-import type { BranchDefinition } from "../../nodes/branch.js"
-import { ValueNode } from "../../nodes/branch.js"
+import { ConstraintsNode } from "../../nodes/constraints.js"
 import type { Domain, domainOf } from "../../utils/domains.js"
 import { throwInternalError } from "../../utils/errors.js"
 import type { evaluate, List } from "../../utils/generics.js"
@@ -14,13 +13,13 @@ import { parseDefinition } from "../definition.js"
 import { writeImplicitNeverMessage } from "./intersection.js"
 import type { PrefixParser } from "./tuple.js"
 
-const arrayIndexStringBranch = new Branch({
+const arrayIndexStringBranch = new ConstraintsNode({
     domain: "string",
     // TODO: non array input
     regex: [wellFormedNonNegativeIntegerMatcher.source]
 })
 
-const arrayIndexNumberBranch = new Branch({
+const arrayIndexNumberBranch = new ConstraintsNode({
     domain: "number",
     // TODO: non array input
     range: {

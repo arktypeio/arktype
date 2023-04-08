@@ -1,5 +1,5 @@
 import type { TraversalState } from "../../nodes/traverse.js"
-import type { asIn } from "../../scopes/type.js"
+import type { inferIn } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { inferDefinition, validateDefinition } from "../definition.js"
 import { parseDefinition } from "../definition.js"
@@ -25,7 +25,7 @@ export type FilterPredicate<data = any, narrowed extends data = data> = (
 export type validateFilterTuple<def extends TupleExpression, $> = readonly [
     validateDefinition<def[0], $>,
     "=>",
-    Filter<asIn<inferDefinition<def[0], $>>>
+    Filter<inferIn<inferDefinition<def[0], $>>>
 ]
 
 export type inferFilter<inDef, narrow, $> = narrow extends (
@@ -33,4 +33,4 @@ export type inferFilter<inDef, narrow, $> = narrow extends (
     ...args: any[]
 ) => data is infer narrowed
     ? narrowed
-    : asIn<inferDefinition<inDef, $>>
+    : inferIn<inferDefinition<inDef, $>>

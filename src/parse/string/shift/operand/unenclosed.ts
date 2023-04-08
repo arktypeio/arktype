@@ -1,5 +1,5 @@
 import type { Node } from "../../../../nodes/node.js"
-import type { error, stringKeyOf } from "../../../../utils/generics.js"
+import type { error } from "../../../../utils/generics.js"
 import type {
     BigintLiteral,
     NumberLiteral
@@ -59,15 +59,11 @@ const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {
     }
 }
 
-export type isResolvableIdentifier<token, $> = token extends stringKeyOf<$>
-    ? true
-    : false
-
 type tryResolve<
     s extends StaticState,
     token extends string,
     $
-> = isResolvableIdentifier<token, $> extends true
+> = token extends keyof $
     ? token
     : token extends NumberLiteral
     ? token
@@ -81,25 +77,15 @@ type tryResolve<
     : // bigint extends value
       //     ? error<writeMalformedNumericLiteralMessage<token, "bigint">>
       //     : token
+      unresolvableError<s, token, $>
 
-      unresolvableError<token, $>
-
-type unresolvableError<token extends string, $> = possibleCompletions<
-    token,
+export type unresolvableError<
+    s extends StaticState,
+    token extends string,
     $
-> extends infer completions
-    ? error<
-          completions extends never
-              ? writeUnresolvableMessage<token>
-              : possibleCompletions<token, $>
-      >
-    : never
-
-type possibleCompletions<token extends string, $> = {
-    [alias in keyof $]: alias extends `${token}${infer suffix}`
-        ? `${token}${suffix}`
-        : never
-}[keyof $]
+> = Extract<keyof $, `${token}${string}`> extends never
+    ? error<writeUnresolvableMessage<token>>
+    : error<`${s["scanned"]}${Extract<keyof $, `${token}${string}`>}`>
 
 export const writeUnresolvableMessage = <token extends string>(
     token: token
@@ -142,10 +128,7 @@ export const writeMissingRightOperandMessage = <
 
 export const writeExpressionExpectedMessage = <unscanned extends string>(
     unscanned: unscanned
-) =>
-    `Expected an expression${
-        unscanned ? ` before '${unscanned}'` : ""
-    }` as writeExpressionExpectedMessage<unscanned>
+) => `Expected an expression${unscanned ? ` before '${unscanned}'` : ""}`
 
 export type writeExpressionExpectedMessage<unscanned extends string> =
     `Expected an expression${unscanned extends ""

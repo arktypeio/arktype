@@ -39,10 +39,8 @@ const getArgsToCheck = () => {
         // If using arktype runner, ARKTYPE_CHECK_CMD will be set to the original cmd.
         return process.env.ARKTYPE_CHECK_CMD.split(" ")
     } else if (process.env.JEST_WORKER_ID) {
-        // If we're in a jest worker process, check the parent process cmd args (with Deno workaround)
-        const parentCmd = getCmdFromPid(
-            (process as any).ppid ?? (globalThis as any).Deno.ppid
-        )
+        // If we're in a jest worker process, check the parent process cmd args
+        const parentCmd = getCmdFromPid(process.ppid)
         if (!parentCmd) {
             throw new Error(
                 `Unable to locate parent thread of jest worker ${process.env.JEST_WORKER_ID}.`
@@ -109,9 +107,9 @@ export const getAttestConfig = (): AttestConfig => {
         updateSnapshots:
             transient ||
             argsToCheck.some((arg) => arg === "-u" || arg === "--update"),
-        skipTypes:
-            argsToCheck.some((arg) => arg === "-s" || arg === "--skipTypes") ||
-            "Deno" in globalThis,
+        skipTypes: argsToCheck.some(
+            (arg) => arg === "-s" || arg === "--skipTypes"
+        ),
         typeSources,
         benchFormat: {
             noInline:

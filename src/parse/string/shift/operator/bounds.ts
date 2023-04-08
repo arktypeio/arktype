@@ -3,13 +3,8 @@ import type {
     Bounds,
     Comparator,
     MaxComparator
-} from "../../../../nodes/constraints/range.js"
-import {
-    maxComparators,
-    minComparators
-} from "../../../../nodes/constraints/range.js"
-import { stringifyRange } from "../../../../nodes/node.js"
-import type { DomainsJson } from "../../../../nodes/node.js"
+} from "../../../../nodes/range.js"
+import { maxComparators, minComparators } from "../../../../nodes/range.js"
 import { throwInternalError } from "../../../../utils/errors.js"
 import type { error, keySet, mutable } from "../../../../utils/generics.js"
 import { isKeyOf, keysOf, listFrom } from "../../../../utils/generics.js"

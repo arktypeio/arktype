@@ -66,15 +66,14 @@ export type PrecompiledDefaults = {
     parsedDate: (In: string) => Date
     // jsObjects
     Function: (...args: any[]) => unknown
-    Array: object
-    Date: object
-    Error: object
-    Map: object
-    RegExp: object
-    Set: object
-    WeakMap: object
-    WeakSet: object
-    Promise: object
+    Date: Date
+    Error: Error
+    Map: Map<unknown, unknown>
+    RegExp: RegExp
+    Set: Set<unknown>
+    WeakMap: WeakMap<object, unknown>
+    WeakSet: WeakSet<object>
+    Promise: Promise<unknown>
 }
 
 export const type: TypeParser<PrecompiledDefaults> = arkScope.type

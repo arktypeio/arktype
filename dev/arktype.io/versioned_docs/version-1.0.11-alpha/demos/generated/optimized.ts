@@ -1,5 +1,4 @@
 export default `import { type, union } from "arktype"
-import { asConst } from "../../src/utils/generics"
 
 export const deepLeftOrRight = union(
     {
@@ -14,7 +13,7 @@ export const deepLeftOrRight = union(
     }
 )
 
-export const unionInternalRepresentation = asConst([
+export const unionInternalRepresentation = [
     ["domain", "object"],
     [
         "switch",
@@ -27,7 +26,7 @@ export const unionInternalRepresentation = asConst([
             }
         }
     ]
-])
+] as const
 
 export const numericIntersection = type(
     "(1 <= number%2 < 100) & (0 < number%3 <= 99)"

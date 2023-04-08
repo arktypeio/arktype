@@ -1,4 +1,3 @@
-import type { MappedKeys } from "../../nodes/constraints/props.js"
 import type { DisjointsByPath } from "../../nodes/node.js"
 import type {
     asConst,

@@ -1,4 +1,4 @@
-import type { Comparator } from "../../nodes/constraints/range.js"
+import type { Comparator } from "../../nodes/range.js"
 import type { resolve } from "../../scope.js"
 import type {
     castOnError,
@@ -12,7 +12,6 @@ import type {
     NumberLiteral
 } from "../../utils/numericLiterals.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
-import type { Scanner } from "../string/shift/scanner.js"
 import type { parseString } from "../string/string.js"
 import type { validateBound } from "./bound.js"
 import type { validateDivisor } from "./divisor.js"
