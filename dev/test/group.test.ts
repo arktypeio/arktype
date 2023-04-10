@@ -5,7 +5,7 @@ import {
     writeUnmatchedGroupCloseMessage
 } from "../../src/parse/string/reduce/shared.ts"
 import { writeExpressionExpectedMessage } from "../../src/parse/string/shift/operand/unenclosed.ts"
-import { attest } from "../attest/src/main.ts"
+import { attest } from "arktype-attest"
 
 describe("group", () => {
     it("entire expression", () => {

@@ -105,6 +105,7 @@ const transformBenchSource = (
 const getInstantiationsContributedByNode = (
     benchCall: Node<ts.CallExpression>
 ) => {
+    const d = Date.now()
     const originalFile = benchCall.getSourceFile()
     const fakePath = originalFile.getFilePath() + ".nonexistent.ts"
     const benchExpression = benchCall.getFirstAncestorByKindOrThrow(
@@ -128,6 +129,11 @@ const getInstantiationsContributedByNode = (
             fakePath
         ),
         fakePath
+    )
+    console.log(
+        `instantiations took ${
+            Date.now() - d
+        } \nstarted with ${instantiationsWithNode}`
     )
     return instantiationsWithNode - instantiationsWithoutNode
 }

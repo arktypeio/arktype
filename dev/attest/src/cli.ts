@@ -1,13 +1,9 @@
 #!/usr/bin/env node
 import { basename } from "node:path"
-import {
-    findPackageRoot,
-    fromHere,
-    fromPackageRoot,
-    shell,
-    walkPaths
-} from "./runtime/main.ts"
+import { fromCwd, fromHere, shell, walkPaths } from "./runtime/main.ts"
 import { cacheAssertions, cleanupAssertions } from "./main.ts"
+import { versions } from "node:process"
+import { version } from "node:os"
 
 const args: string[] =
     (globalThis as any).process?.argv ?? (globalThis as any).Deno.args
@@ -17,13 +13,14 @@ attestArgIndex = attestArgIndex === -1 ? 0 : attestArgIndex
 if (attestArgIndex === -1) {
     attestArgIndex = 0
 }
-
 if (args[attestArgIndex + 1] === "bench") {
-    const packageRoot = findPackageRoot()
-    const benchFilePaths = walkPaths(packageRoot, {
-        ignoreDirsMatching: /node_modules|dist/,
+    const now = Date.now()
+    console.log("started search")
+    const benchFilePaths = walkPaths(fromCwd(), {
         include: (path) => basename(path).includes(".bench.")
     })
+    console.log(`finished search ${Date.now() - now}`)
+
     let threwDuringBench
     for (const path of benchFilePaths) {
         try {
@@ -44,6 +41,26 @@ if (args[attestArgIndex + 1] === "bench") {
 
     const skipTypes = attestArgs.includes("--skipTypes")
 
+    const cmdFlagIndex = process.argv.indexOf("--cmd")
+    if (cmdFlagIndex === -1 || cmdFlagIndex === process.argv.length - 1) {
+        throw new Error(
+            `Must provide a runner command, e.g. 'attest --cmd mocha'`
+        )
+    }
+    const testCmd = process.argv.slice(cmdFlagIndex + 1).join(" ")
+    let prefix = ""
+
+    if (testCmd === "node") {
+        const nodeMajorVersion = Number.parseInt(versions.node.split(".")[0])
+        if (nodeMajorVersion < 18) {
+            throw new Error(
+                `Node's test runner requires at least version 18. You are running ${version}.`
+            )
+        }
+        prefix += `node --loader ts-node/esm --test `
+    } else {
+        prefix += `npx ${testCmd} `
+    }
     let processError: unknown
     const isBuildTest = args[attestArgIndex].includes("dist")
 
@@ -61,15 +78,8 @@ if (args[attestArgIndex + 1] === "bench") {
                 `✅ attest: Finished caching type assertions in ${cacheSeconds} seconds.\n`
             )
         }
-        console.log(`⏳ attest: Using npx mocha to run your tests...`)
-        const runnerStart = Date.now()
 
-        const prefix = attestArgs.includes("--coverage")
-            ? `node --require ${fromHere(
-                  "..",
-                  "patchC8.cjs"
-              )} ${fromPackageRoot("node_modules", "c8", "bin", "c8.js")} mocha`
-            : "npx mocha"
+        const runnerStart = Date.now()
 
         shell(`${prefix} ${isBuildTest ? "**/test/*.test.js" : ""}`, {
             stdio: "inherit",

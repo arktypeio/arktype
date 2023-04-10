@@ -227,10 +227,11 @@ export class BenchAssertions<
 
     median(baseline?: Measure<TimeUnit>) {
         this.ctx.lastSnapCallPosition = caller()
-        return this.createStatMethod(
+        const assertions = this.createStatMethod(
             "median",
             baseline
         ) as any as ReturnedAssertions
+        return assertions
     }
 
     mean(baseline?: Measure<TimeUnit>) {

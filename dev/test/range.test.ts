@@ -7,7 +7,7 @@ import {
     writeUnpairableComparatorMessage
 } from "../../src/parse/string/reduce/shared.ts"
 import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.ts"
-import { attest } from "../attest/src/main.ts"
+import { attest } from "arktype-attest"
 
 describe("range", () => {
     describe("parse", () => {

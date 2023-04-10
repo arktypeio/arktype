@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
 import { type } from "../../src/main.ts"
-import { attest } from "../attest/src/main.ts"
+import { attest } from "arktype-attest"
 
 describe("key traversal", () => {
     const getExtraneousB = () => ({ a: "ok", b: "why?" })

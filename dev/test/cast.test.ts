@@ -2,7 +2,7 @@ import { describe, it } from "mocha"
 import type { Type } from "../../src/main.ts"
 import { type } from "../../src/main.ts"
 import type { Infer } from "../../src/parse/definition.ts"
-import { attest } from "../attest/src/main.ts"
+import { attest } from "arktype-attest"
 
 describe("cast", () => {
     it("primitive", () => {

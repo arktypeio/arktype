@@ -96,6 +96,7 @@ export const getAttestConfig = (): AttestConfig => {
     const noWrite = argsToCheck.some(
         (arg) => arg === "-n" || arg === "--no-write"
     )
+    //TODO remove dev/arktype.io
     const typeSources = getSourceFileEntries()
         .filter(([path]) => !path.startsWith("dev/arktype.io"))
         .map(

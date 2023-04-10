@@ -2,7 +2,7 @@ import { describe, it } from "mocha"
 import type { Problem, Type } from "../../src/main.ts"
 import { ark, intersection, morph, scope, type, union } from "../../src/main.ts"
 import { writeUndiscriminatableMorphUnionMessage } from "../../src/parse/ast/union.ts"
-import { attest } from "../attest/src/main.ts"
+import { attest } from "arktype-attest"
 
 describe("morph", () => {
     it("base", () => {

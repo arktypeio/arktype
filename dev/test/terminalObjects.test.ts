@@ -2,7 +2,7 @@ import { describe, it } from "mocha"
 import { scope, type } from "../../src/main.ts"
 import { writeBadDefinitionTypeMessage } from "../../src/parse/definition.ts"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.ts"
-import { attest, getTsVersionUnderTest } from "../attest/src/main.ts"
+import { attest, getTsVersionUnderTest } from "arktype-attest"
 
 describe("terminal objects", () => {
     it("regex", () => {

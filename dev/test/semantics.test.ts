@@ -2,7 +2,7 @@ import { describe, it } from "mocha"
 import { type } from "../../src/main.ts"
 import { writeUnboundableMessage } from "../../src/parse/ast/bound.ts"
 import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.ts"
-import { attest } from "../attest/src/main.ts"
+import { attest } from "arktype-attest"
 
 describe("semantics", () => {
     describe("bound", () => {

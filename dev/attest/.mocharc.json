@@ -1,4 +1,4 @@
 {
-    "spec": "test/*.test.ts",
+    "spec": "./dev/test/*.test.ts",
     "node-option": ["loader=ts-node/esm", "no-warnings=ExperimentalWarning"]
 }
