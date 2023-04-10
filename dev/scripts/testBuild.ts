@@ -1,5 +1,5 @@
-import { shell } from "../attest/src/runtime/shell.ts"
-import { repoDirs } from "./common.ts"
+import { shell } from "../attest/src/runtime/shell.js"
+import { repoDirs } from "./common.js"
 
 export const testBuild = (outDir: string) => {
     shell(`node ./dev/attest/cli.js --skipTypes --cmd mocha`, {

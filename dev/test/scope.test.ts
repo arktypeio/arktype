@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
-import { scope, type } from "../../src/main.ts"
-import { writeUnboundableMessage } from "../../src/parse/ast/bound.ts"
-import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.ts"
+import { scope, type } from "../../src/main.js"
+import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
+import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "arktype-attest"
 
 describe("scope", () => {

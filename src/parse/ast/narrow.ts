@@ -1,13 +1,13 @@
-import type { TypeNode } from "../../nodes/node.ts"
-import { isConfigNode, rootIntersection } from "../../nodes/node.ts"
-import type { asIn } from "../../scopes/type.ts"
-import type { Problems } from "../../traverse/problems.ts"
-import type { Domain, inferDomain } from "../../utils/domains.ts"
-import type { inferDefinition, validateDefinition } from "../definition.ts"
-import { parseDefinition } from "../definition.ts"
-import type { distributable } from "./distributableFunction.ts"
-import { distributeFunctionToNode } from "./distributableFunction.ts"
-import type { PostfixParser, TupleExpression } from "./tuple.ts"
+import type { TypeNode } from "../../nodes/node.js"
+import { isConfigNode, rootIntersection } from "../../nodes/node.js"
+import type { asIn } from "../../scopes/type.js"
+import type { Problems } from "../../traverse/problems.js"
+import type { Domain, inferDomain } from "../../utils/domains.js"
+import type { inferDefinition, validateDefinition } from "../definition.js"
+import { parseDefinition } from "../definition.js"
+import type { distributable } from "./distributableFunction.js"
+import { distributeFunctionToNode } from "./distributableFunction.js"
+import type { PostfixParser, TupleExpression } from "./tuple.js"
 
 export const parseNarrowTuple: PostfixParser<"=>"> = (def, ctx) => {
     const inputNode = parseDefinition(def[0], ctx)

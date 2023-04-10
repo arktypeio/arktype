@@ -1,10 +1,10 @@
 import { describe, it } from "mocha"
-import { intersection, type } from "../../src/main.ts"
-import type { Node } from "../../src/nodes/node.ts"
+import { intersection, type } from "../../src/main.js"
+import type { Node } from "../../src/nodes/node.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
-} from "../../src/parse/string/shift/operand/unenclosed.ts"
+} from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "arktype-attest"
 
 describe("intersection", () => {
@@ -173,13 +173,13 @@ describe("intersection", () => {
         describe("errors", () => {
             it("bad reference", () => {
                 // @ts-expect-error
-                attest(() => type("boolean&tru")).throwsAndHasTypeError(
-                    writeUnresolvableMessage("tru")
-                )
+                attest(() => type("boolean&tru"))
+                    .throws(writeUnresolvableMessage("tru"))
+                    .type.errors("boolean&true")
             })
             it("double and", () => {
                 // @ts-expect-error
-                attest(() => type("boolean&&true")).throwsAndHasTypeError(
+                attest(() => type("boolean&&true")).throws(
                     writeMissingRightOperandMessage("&", "&true")
                 )
             })

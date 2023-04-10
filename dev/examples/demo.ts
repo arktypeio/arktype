@@ -1,4 +1,4 @@
-import { type } from "../../src/main.ts"
+import { type } from "../../src/main.js"
 
 // Define your type...
 export const pkg = type({

@@ -1,6 +1,6 @@
-import { domainOf } from "./domains.ts"
-import type { constructor, instanceOf, isTopType } from "./generics.ts"
-import { isKeyOf } from "./generics.ts"
+import { domainOf } from "./domains.js"
+import type { constructor, instanceOf, isTopType } from "./generics.js"
+import { isKeyOf } from "./generics.js"
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects

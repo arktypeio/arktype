@@ -1,6 +1,6 @@
 import { rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { shell } from "../attest/src/runtime/shell"
+import { shell } from "../attest/src/runtime/shell.js"
 
 rmSync("dist", { recursive: true, force: true })
 shell("pnpm run typecheck")

@@ -7,10 +7,10 @@ import {
     readJson,
     readPackageJson,
     writeJson
-} from "../attest/src/runtime/fs.ts"
-import { shell } from "../attest/src/runtime/shell.ts"
-import { repoDirs } from "./common.ts"
-import { docgen } from "./docgen/main.ts"
+} from "../attest/src/runtime/fs.js"
+import { shell } from "../attest/src/runtime/shell.js"
+import { repoDirs } from "./common.js"
+import { docgen } from "./docgen/main.js"
 
 const currentSuffix = "alpha"
 

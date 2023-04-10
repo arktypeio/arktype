@@ -3,10 +3,10 @@ import { SyntaxKind } from "ts-morph"
 import {
     findPackageRoot,
     readPackageJson
-} from "../../../attest/src/runtime/fs.ts"
-import type { PackageMetadata } from "../api/extractApi.ts"
-import type { DocGenSnippetsConfig } from "../main.ts"
-import type { SnippetTransformToggles } from "./extractSnippets.ts"
+} from "../../../attest/src/runtime/fs.js"
+import type { PackageMetadata } from "../api/extractApi.js"
+import type { DocGenSnippetsConfig } from "../main.js"
+import type { SnippetTransformToggles } from "./extractSnippets.js"
 
 export type ExtractFileSnippetContext = {
     packageMetadata: PackageMetadata

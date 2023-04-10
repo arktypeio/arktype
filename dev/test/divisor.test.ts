@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
-import { type } from "../../src/main.ts"
-import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.ts"
+import { type } from "../../src/main.js"
+import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
 import { attest } from "arktype-attest"
 
 describe("divisibility", () => {

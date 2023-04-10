@@ -1,6 +1,6 @@
-import type { error, isAny } from "../../utils/generics.ts"
-import type { inferAst, validateAst } from "./ast.ts"
-import type { astToString } from "./utils.ts"
+import type { error, isAny } from "../../utils/generics.js"
+import type { inferAst, validateAst } from "./ast.js"
+import type { astToString } from "./utils.js"
 
 /**
  * @operator {@link validateDivisor | %}

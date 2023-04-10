@@ -1,19 +1,17 @@
 import { describe, it } from "mocha"
-import { type } from "../../src/main.ts"
-import type { ResolvedNode } from "../../src/nodes/node.ts"
-import { writeUnterminatedEnclosedMessage } from "../../src/parse/string/shift/operand/enclosed.ts"
+import { type } from "../../src/main.js"
+import type { ResolvedNode } from "../../src/nodes/node.js"
+import { writeUnterminatedEnclosedMessage } from "../../src/parse/string/shift/operand/enclosed.js"
 import {
     writeExpressionExpectedMessage,
     writeUnresolvableMessage
-} from "../../src/parse/string/shift/operand/unenclosed.ts"
+} from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "arktype-attest"
 
 describe("string", () => {
     it("errors on empty string", () => {
         // @ts-expect-error
-        attest(() => type("")).throwsAndHasTypeError(
-            writeExpressionExpectedMessage("")
-        )
+        attest(() => type("")).throws(writeExpressionExpectedMessage(""))
     })
     it("ignores whitespace between identifiers/operators", () => {
         const t = type("     string  | boolean    []   ")
@@ -23,7 +21,9 @@ describe("string", () => {
         attest(() =>
             // @ts-expect-error
             type("string | boo lean[]")
-        ).throwsAndHasTypeError(writeUnresolvableMessage("boo"))
+        )
+            .throws(writeUnresolvableMessage("boo"))
+            .type.errors("string | boolean")
     })
     it("unterminated string", () => {
         // @ts-expect-error

@@ -5,9 +5,9 @@ import { Project, SyntaxKind } from "ts-morph"
 import {
     findPackageRoot,
     readPackageJson
-} from "../../../attest/src/runtime/fs.ts"
-import { repoDirs } from "../../common.ts"
-import { getEntryPointsToRelativeDtsPaths } from "./utils.ts"
+} from "../../../attest/src/runtime/fs.js"
+import { repoDirs } from "../../common.js"
+import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
 
 const ignoreUnusedComment = "@ignore-unused"
 const publicApiRoots = [repoDirs.root]

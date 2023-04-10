@@ -3,10 +3,10 @@ import {
     readFile,
     readJson,
     writeFile
-} from "../../../attest/src/runtime/fs.ts"
-import { shell } from "../../../attest/src/runtime/shell.ts"
-import type { SnippetsByPath } from "./extractSnippets.ts"
-import { referenceTokens } from "./snipTokens.ts"
+} from "../../../attest/src/runtime/fs.js"
+import { shell } from "../../../attest/src/runtime/shell.js"
+import type { SnippetsByPath } from "./extractSnippets.js"
+import { referenceTokens } from "./snipTokens.js"
 
 export const updateSnippetReferences = (snippetsByPath: SnippetsByPath) => {
     const updatedPaths = Object.keys(snippetsByPath).filter((path) =>

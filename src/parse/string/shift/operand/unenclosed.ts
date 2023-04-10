@@ -1,16 +1,16 @@
-import type { Node } from "../../../../nodes/node.ts"
-import type { error, stringKeyOf } from "../../../../utils/generics.ts"
+import type { Node } from "../../../../nodes/node.js"
+import type { error } from "../../../../utils/generics.js"
 import type {
     BigintLiteral,
     NumberLiteral
-} from "../../../../utils/numericLiterals.ts"
+} from "../../../../utils/numericLiterals.js"
 import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
-} from "../../../../utils/numericLiterals.ts"
-import type { DynamicState } from "../../reduce/dynamic.ts"
-import type { state, StaticState } from "../../reduce/static.ts"
-import type { Scanner } from "../scanner.ts"
+} from "../../../../utils/numericLiterals.js"
+import type { DynamicState } from "../../reduce/dynamic.js"
+import type { state, StaticState } from "../../reduce/static.js"
+import type { Scanner } from "../scanner.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
     const token = s.scanner.shiftUntilNextTerminator()
@@ -59,15 +59,11 @@ const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {
     }
 }
 
-export type isResolvableIdentifier<token, $> = token extends stringKeyOf<$>
-    ? true
-    : false
-
 type tryResolve<
     s extends StaticState,
     token extends string,
     $
-> = isResolvableIdentifier<token, $> extends true
+> = token extends keyof $
     ? token
     : token extends NumberLiteral
     ? token
@@ -81,11 +77,15 @@ type tryResolve<
     : // bigint extends value
       //     ? error<writeMalformedNumericLiteralMessage<token, "bigint">>
       //     : token
-      error<
-          token extends ""
-              ? writeMissingOperandMessage<s>
-              : writeUnresolvableMessage<token>
-      >
+      possibleCompletions<s, token, $>
+
+export type possibleCompletions<
+    s extends StaticState,
+    token extends string,
+    $
+> = Extract<keyof $, `${token}${string}`> extends never
+    ? error<writeUnresolvableMessage<token>>
+    : error<`${s["scanned"]}${Extract<keyof $, `${token}${string}`>}`>
 
 export const writeUnresolvableMessage = <token extends string>(
     token: token
@@ -128,10 +128,7 @@ export const writeMissingRightOperandMessage = <
 
 export const writeExpressionExpectedMessage = <unscanned extends string>(
     unscanned: unscanned
-) =>
-    `Expected an expression${
-        unscanned ? ` before '${unscanned}'` : ""
-    }` as writeExpressionExpectedMessage<unscanned>
+) => `Expected an expression${unscanned ? ` before '${unscanned}'` : ""}`
 
 export type writeExpressionExpectedMessage<unscanned extends string> =
     `Expected an expression${unscanned extends ""

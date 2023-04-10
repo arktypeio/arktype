@@ -2,25 +2,25 @@ import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import { chainableNoOpProxy } from "arktype/internal/utils/chainableNoOpProxy.js"
 import { snapshot, stringify } from "arktype/internal/utils/serialize.js"
-import { assertEquals } from "../assertions.ts"
-import type { AssertionContext } from "../attest.ts"
-import { caller } from "../runtime/main.ts"
-import type { SnapshotArgs } from "../snapshot.ts"
+import { caller } from "../../src/runtime/main.js"
+import { assertEquals } from "../assertions.js"
+import type { AssertionContext } from "../attest.js"
+import type { SnapshotArgs } from "../snapshot.js"
 import {
     getSnapshotByName,
     queueInlineSnapshotWriteOnProcessExit
-} from "../snapshot.ts"
-import { getTypeDataAtPos } from "../type/getAssertionAtPos.ts"
+} from "../snapshot.js"
+import { getTypeDataAtPos } from "../type/getAssertionAtPos.js"
 import {
     updateExternalSnapshot,
     writeInlineSnapshotUpdateToCacheDir
-} from "../writeSnapshot.ts"
-import type { ExternalSnapshotArgs, RootAssertions } from "./types.ts"
+} from "../writeSnapshot.js"
+import type { ExternalSnapshotArgs, RootAssertions } from "./types.js"
 import {
     assertEqualOrMatching,
     callAssertedFunction,
     getThrownMessage
-} from "./utils.ts"
+} from "./utils.js"
 
 export type ChainableAssertionOptions = {
     isReturn?: boolean

@@ -1,12 +1,12 @@
 import { describe, it } from "mocha"
-import { type } from "../../src/main.ts"
-import type { ResolvedNode } from "../../src/nodes/node.ts"
+import { type } from "../../src/main.js"
+import type { ResolvedNode } from "../../src/nodes/node.js"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
     writeUnpairableComparatorMessage
-} from "../../src/parse/string/reduce/shared.ts"
-import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.ts"
+} from "../../src/parse/string/reduce/shared.js"
+import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.js"
 import { attest } from "arktype-attest"
 
 describe("range", () => {

@@ -7,11 +7,11 @@ import {
     fileName,
     walkPaths,
     writeJson
-} from "../../attest/src/runtime/fs.ts"
-import { shell } from "../../attest/src/runtime/shell.ts"
-import { repoDirs } from "../common.ts"
-import type { DocGenMappedDirsConfig } from "./main.ts"
-import type { SnippetsByPath } from "./snippets/extractSnippets.ts"
+} from "../../attest/src/runtime/fs.js"
+import { shell } from "../../attest/src/runtime/shell.js"
+import { repoDirs } from "../common.js"
+import type { DocGenMappedDirsConfig } from "./main.js"
+import type { SnippetsByPath } from "./snippets/extractSnippets.js"
 
 export const mapDir = (
     snippetsByPath: SnippetsByPath,

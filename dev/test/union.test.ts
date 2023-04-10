@@ -1,9 +1,9 @@
 import { describe, it } from "mocha"
-import { type, union } from "../../src/main.ts"
+import { type, union } from "../../src/main.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
-} from "../../src/parse/string/shift/operand/unenclosed.ts"
+} from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "arktype-attest"
 
 describe("union/parse", () => {
@@ -62,13 +62,13 @@ describe("union/parse", () => {
         })
         it("consecutive tokens", () => {
             // @ts-expect-error
-            attest(() => type("boolean||null")).throwsAndHasTypeError(
+            attest(() => type("boolean||null")).throws(
                 writeMissingRightOperandMessage("|", "|null")
             )
         })
         it("ends with |", () => {
             // @ts-expect-error
-            attest(() => type("boolean|")).throwsAndHasTypeError(
+            attest(() => type("boolean|")).throws(
                 writeMissingRightOperandMessage("|", "")
             )
         })
@@ -76,9 +76,7 @@ describe("union/parse", () => {
             attest(() =>
                 // @ts-expect-error
                 type("boolean[]|(string|number|)|object")
-            ).throwsAndHasTypeError(
-                writeMissingRightOperandMessage("|", ")|object")
-            )
+            ).throws(writeMissingRightOperandMessage("|", ")|object"))
         })
         it("helper bad reference", () => {
             // @ts-expect-error

@@ -1,4 +1,4 @@
-import { type } from "../../src/main.ts"
+import { type } from "../../src/main.js"
 
 // Definitions are statically parsed and inferred as TS.
 export const user = type({

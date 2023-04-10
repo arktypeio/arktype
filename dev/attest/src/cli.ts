@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 import { basename } from "node:path"
-import { fromCwd, fromHere, shell, walkPaths } from "./runtime/main.ts"
-import { cacheAssertions, cleanupAssertions } from "./main.ts"
+import { fromCwd, fromHere, shell, walkPaths } from "./runtime/main.js"
+import { cacheAssertions, cleanupAssertions } from "./main.js"
 import { versions } from "node:process"
 import { version } from "node:os"
 
-const args: string[] =
-    (globalThis as any).process?.argv ?? (globalThis as any).Deno.args
+const args: string[] = globalThis.process.argv
 
 let attestArgIndex = args.findIndex((arg) => /.*cli\.c?(j|t)s$/.test(arg))
 attestArgIndex = attestArgIndex === -1 ? 0 : attestArgIndex

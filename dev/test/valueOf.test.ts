@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { type, valueOf } from "../../src/main.ts"
+import { type, valueOf } from "../../src/main.js"
 import { attest } from "arktype-attest"
 
 describe("===", () => {

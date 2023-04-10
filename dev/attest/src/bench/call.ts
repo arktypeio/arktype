@@ -1,14 +1,14 @@
 import { performance } from "node:perf_hooks"
 import { chainableNoOpProxy } from "arktype/internal/utils/chainableNoOpProxy.js"
-import { caller } from "../runtime/main.ts"
-import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
-import type { BenchableFunction, BenchContext, UntilOptions } from "./bench.ts"
-import { unhandledExceptionMessages } from "./bench.ts"
-import type { MarkMeasure, Measure } from "./measure/measure.ts"
-import type { TimeUnit } from "./measure/time.ts"
-import { createTimeComparison, createTimeMeasure } from "./measure/time.ts"
-import type { BenchTypeAssertions } from "./type.ts"
-import { createBenchTypeAssertion } from "./type.ts"
+import { caller } from "../runtime/main.js"
+import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
+import type { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
+import { unhandledExceptionMessages } from "./bench.js"
+import type { MarkMeasure, Measure } from "./measure/measure.js"
+import type { TimeUnit } from "./measure/time.js"
+import { createTimeComparison, createTimeMeasure } from "./measure/time.js"
+import type { BenchTypeAssertions } from "./type.js"
+import { createBenchTypeAssertion } from "./type.js"
 
 export type StatName = keyof typeof stats
 

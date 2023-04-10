@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
-import { type } from "../../src/main.ts"
-import { writeUnterminatedEnclosedMessage } from "../../src/parse/string/shift/operand/enclosed.ts"
+import { type } from "../../src/main.js"
+import { writeUnterminatedEnclosedMessage } from "../../src/parse/string/shift/operand/enclosed.js"
 import { attest } from "arktype-attest"
 
 describe("parse enclosed", () => {

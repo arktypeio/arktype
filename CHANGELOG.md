@@ -1,5 +1,55 @@
 # arktype
 
+## 1.0.11-alpha
+
+### Patch Changes
+
+-   ## remove String, Number, Boolean, Object and Array from the default jsObjects scope
+
+    These types are a footgun in TypeScript. You almost always want to use `string`, `number`, `boolean`, `object` or `unknown[]` instead. Particularly with the addition of autocomplete, we don't want to be confusing people by constantly suggesting `string` and `String`.
+
+    If you do want to use them, you can still define them like any other `"instanceof"` type:
+
+    ```ts
+    const stringObject = type(["instanceof", String])
+    ```
+
+-   Thanks [@{](https://github.com/{)! - ## add autocomplete for string definitions
+
+    Now, when you start typing a string definition, you'll see all valid completions for that definition based on the keywords in your current scope:
+
+    ```ts
+    type({
+        // suggests all built-in keywords (good way to see what's available!)
+        name: ""
+    })
+
+    type({
+        // suggests "string" | "semver" | "symbol"
+        name: "s"
+    })
+
+    type({
+        // suggests "string"
+        name: "str",
+        // suggests "number|undefined" | "number|unknown"
+        age: "number|un"
+    })
+
+    scope({
+
+            name: "string",
+            age: "number|undefined"
+        },
+        // suggests "user" | "undefined" | "unknown" | "uuid" | "uppercase"
+        admin: "u"
+    })
+    ```
+
+    Initially, I was hesitant to add funcitonality like this, because it sometimes leads to type errors like '"" is not assignable to ("string" | "number" | ...a bunch of keywords...)", which is significantly less clear than the previous message "'' is unresolvable."
+
+    That said, the DX was just too good to pass up. Try it out and let me know if you agree 🔥
+
 ## 1.0.10-alpha
 
 ### Patch Changes
