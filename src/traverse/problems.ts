@@ -72,7 +72,7 @@ export class Problem<code extends ProblemCode = ProblemCode> {
 
 export type AddProblemOptions<data = unknown> = {
     data?: data
-    path?: Path
+    path?: string[]
 }
 
 class ProblemArray extends Array<Problem> {
@@ -95,7 +95,7 @@ class ProblemArray extends Array<Problem> {
         opts?: AddProblemOptions<ProblemData<code>>
     ): Problem {
         // copy the path to avoid future mutations affecting it
-        const path = opts?.path ?? Path.from(this.#state.path)
+        const path = Path.from(opts?.path ?? this.#state.path)
         const data =
             // we have to check for the presence of the key explicitly since the
             // data could be undefined or null
