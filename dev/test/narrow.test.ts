@@ -27,6 +27,27 @@ describe("narrow", () => {
         ])
         attest(even(1).problems?.summary).snap("Must be divisible by 3 (was 1)")
     })
+    it("problem at path", () => {
+        const abEqual = type([
+            {
+                a: "number",
+                b: "number"
+            },
+            "=>",
+            ({ a, b }, problems) => {
+                if (a === b) {
+                    return true
+                }
+                problems.mustBe("equal to b", { path: ["a"] })
+                problems.mustBe("equal to a", { path: ["b"] })
+                return false
+            }
+        ])
+        attest(abEqual({ a: 1, b: 1 }).data).equals({ a: 1, b: 1 })
+        attest(abEqual({ a: 1, b: 2 }).problems?.summary).snap(
+            'a must be equal to b (was {"a":1,"b":2})\nb must be equal to a (was {"a":1,"b":2})'
+        )
+    })
     it("functional predicate", () => {
         const one = type(["number", "=>", (n): n is 1 => n === 1])
         attest(one).typed as Type<1>
