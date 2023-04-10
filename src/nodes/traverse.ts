@@ -1,4 +1,3 @@
-import type { Scope } from "../scope.js"
 import type { Type, TypeConfig } from "../type.js"
 import type { xor } from "../utils/generics.js"
 import { Path } from "../utils/paths.js"
