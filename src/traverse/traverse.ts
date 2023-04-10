@@ -312,7 +312,7 @@ const entryCheckers = {
         }
         let isValid = true
         for (let i = 0; i < state.data.length; i++) {
-            isValid &&= state.traverseKey(`${i}`, node)
+            isValid = state.traverseKey(`${i}`, node) && isValid
             if (!isValid && state.failFast) {
                 return false
             }
