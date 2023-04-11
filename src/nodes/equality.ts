@@ -10,7 +10,7 @@ export class EqualityNode<value = unknown> extends Node<typeof EqualityNode> {
         super(EqualityNode, value)
     }
 
-    and(other: EqualityNode, s: ComparisonState) {
+    intersect(other: EqualityNode, s: ComparisonState) {
         return this === other ? this : s.addDisjoint("value", this, other)
     }
 

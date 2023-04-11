@@ -1,6 +1,7 @@
 import { as } from "../parse/definition.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
+import { throwParseError } from "../utils/errors.js"
 import type { conform, evaluate, keySet, List } from "../utils/generics.js"
 import { isKeyOf, keysOf } from "../utils/generics.js"
 import type { DefaultObjectKind } from "../utils/objectKinds.js"
@@ -20,6 +21,7 @@ import type {
     validateConstraintsInput
 } from "./constraints.js"
 import { ConstraintsNode } from "./constraints.js"
+import type { EqualityNode } from "./equality.js"
 import type { CompilationState, Disjoint } from "./node.js"
 import { ComparisonState, Node } from "./node.js"
 
@@ -62,18 +64,48 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         return `${child}`
     }
 
-    and(other: TypeNode, s: ComparisonState): TypeNode | Disjoint {
+    intersect(other: TypeNode, s: ComparisonState): TypeNode | Disjoint {
         if (this === other) {
             return this
         }
         if (this.child.length === 1 && other.child.length === 1) {
-            const result = this.child[0].and(other.child[0], s)
+            const result = this.child[0].intersect(other.child[0], s)
             return result.isDisjoint() ? result : new TypeNode([result])
         }
         const branches = branchwiseIntersection(this.child, other.child, s)
         return branches.length
             ? new TypeNode(branches)
             : s.addDisjoint("union", this, other)
+    }
+
+    and(other: TypeNode): TypeNode {
+        const result = this.intersect(other, new ComparisonState())
+        return result instanceof TypeNode
+            ? result
+            : throwParseError(`Unsatisfiable`)
+    }
+
+    or(other: TypeNode): TypeNode {
+        if (this === other) {
+            return this
+        }
+        return new TypeNode([...this.child, ...other.child])
+    }
+
+    get literalValue(): EqualityNode | undefined {
+        return this.child.length === 1 ? this.child[0].child.value : undefined
+    }
+
+    toArray() {
+        return TypeNode.from({
+            domain: "object",
+            instance: Array,
+            props: {
+                named: {},
+                // TODO: fix
+                indexed: []
+            }
+        })
     }
 }
 
@@ -112,7 +144,7 @@ const branchwiseIntersection = (
                 currentCandidateByR = {}
                 break
             }
-            const branchIntersection = l.and(r, s)
+            const branchIntersection = l.intersect(r, s)
             if (branchIntersection.isDisjoint()) {
                 // doesn't tell us about any redundancies or add a distinct intersection
                 continue
@@ -167,7 +199,7 @@ const pruneSubtypes = (branches: ConstraintsNode[]) => {
                 uniquenessByIndex[j] = false
                 continue
             }
-            const intersection = branches[i].and(
+            const intersection = branches[i].intersect(
                 branches[j],
                 new ComparisonState()
             )
@@ -384,7 +416,7 @@ const calculateDiscriminants = (
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
             const intersectionState = new ComparisonState()
-            branches[lIndex].and(branches[rIndex], intersectionState)
+            branches[lIndex].intersect(branches[rIndex], intersectionState)
             for (const path in intersectionState.disjointsByPath) {
                 if (path.includes("mapped")) {
                     // containers could be empty and therefore their elements cannot be used to discriminate

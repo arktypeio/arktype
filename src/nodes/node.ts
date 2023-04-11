@@ -37,7 +37,7 @@ export abstract class Node<
         return this.subclass.compile(this.child, s)
     }
 
-    abstract and(
+    abstract intersect(
         other: instanceOf<subclass>,
         s: ComparisonState
     ): instanceOf<subclass> | Disjoint

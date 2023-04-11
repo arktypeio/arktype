@@ -6,7 +6,7 @@ export class DivisibilityNode extends Node<typeof DivisibilityNode> {
         super(DivisibilityNode, divisor)
     }
 
-    and(other: DivisibilityNode) {
+    intersect(other: DivisibilityNode) {
         const leastCommonMultiple = Math.abs(
             (this.child * other.child) /
                 greatestCommonDivisor(this.child, other.child)

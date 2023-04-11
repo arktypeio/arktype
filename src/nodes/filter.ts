@@ -21,7 +21,7 @@ export class FilterNode extends Node<typeof FilterNode> {
             .join(";")
     }
 
-    and(other: FilterNode) {
+    intersect(other: FilterNode) {
         return new FilterNode(intersectUniqueLists(this.child, other.child))
     }
 }

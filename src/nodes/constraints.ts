@@ -45,7 +45,7 @@ export class ConstraintsNode<t = unknown> extends Node<typeof ConstraintsNode> {
         return s.data ? `${rules}` : ""
     }
 
-    and(other: ConstraintsNode, s: ComparisonState) {
+    intersect(other: ConstraintsNode, s: ComparisonState) {
         // if (
         //     // TODO: Fix
         //     // s.lastOperator === "&" &&

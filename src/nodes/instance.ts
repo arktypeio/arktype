@@ -11,7 +11,7 @@ export class InstanceNode<rule extends constructor = constructor> extends Node<
         super(InstanceNode, rule)
     }
 
-    and(other: InstanceNode, s: ComparisonState) {
+    intersect(other: InstanceNode, s: ComparisonState) {
         return constructorExtends(this.child, other.child)
             ? this
             : constructorExtends(other.child, this.child)

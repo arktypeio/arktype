@@ -20,7 +20,7 @@ export class RegexNode extends Node<typeof RegexNode> {
             .join(";")
     }
 
-    and(other: RegexNode) {
+    intersect(other: RegexNode) {
         return new RegexNode(intersectUniqueLists(this.child, other.child))
     }
 }

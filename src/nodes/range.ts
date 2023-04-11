@@ -90,7 +90,7 @@ export class RangeNode extends Node<typeof RangeNode> {
         return `${sizeAssignment}${checks}`
     }
 
-    and(other: RangeNode, s: ComparisonState): RangeNode | Disjoint {
+    intersect(other: RangeNode, s: ComparisonState): RangeNode | Disjoint {
         if (this.isEqualityRange()) {
             if (other.isEqualityRange()) {
                 return this === other

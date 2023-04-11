@@ -9,7 +9,7 @@ export class DomainNode<domain extends Domain = Domain> extends Node<
         super(DomainNode, domain)
     }
 
-    and(other: DomainNode, s: ComparisonState) {
+    intersect(other: DomainNode, s: ComparisonState) {
         return this.child === other.child
             ? this
             : s.addDisjoint("domain", this, other)
