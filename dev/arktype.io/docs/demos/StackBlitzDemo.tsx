@@ -9,7 +9,7 @@ import {
 export const StackBlitzDemo = (demoProps: DemoProps) => {
     const [isLoading, setIsLoading] = useState(true)
     useEffect(() => {
-        activateDemo(demoProps, setIsLoading)
+        createStackblitzDemo(demoProps).then(() => setIsLoading(false))
     }, [])
     return (
         <Stack width="100%" height="600px">
@@ -17,12 +17,4 @@ export const StackBlitzDemo = (demoProps: DemoProps) => {
             <div id={DEMO_ELEMENT_ID} />
         </Stack>
     )
-}
-
-const activateDemo = async (
-    props: DemoProps,
-    setIsLoading: (value: boolean) => void
-) => {
-    await createStackblitzDemo(props)
-    setIsLoading(false)
 }
