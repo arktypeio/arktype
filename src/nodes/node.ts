@@ -1,7 +1,8 @@
 import type { ProblemCode, ProblemRules } from "../nodes/problems.js"
 import type { TypeConfig } from "../type.js"
 import type { Domain } from "../utils/domains.js"
-import { CompiledFunction, type extend } from "../utils/generics.js"
+import { CompiledFunction } from "../utils/generics.js"
+import type { extend, instanceOf } from "../utils/generics.js"
 import { Path } from "../utils/paths.js"
 import type { ConstraintsInput } from "./constraints.js"
 import type { DomainNode } from "./domain.js"
@@ -12,13 +13,6 @@ import type { TypeNode } from "./type.js"
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (...args: any[]): Node<subclass>
-
-    intersection(
-        l: Node<subclass>,
-        r: Node<subclass>,
-        s: ComparisonState
-    ): Node<subclass> | Disjoint
-
     compile(children: any, s: CompilationState): string
 }
 
@@ -42,6 +36,11 @@ export abstract class Node<
     compile(s: CompilationState) {
         return this.subclass.compile(this.child, s)
     }
+
+    abstract and(
+        other: instanceOf<subclass>,
+        s: ComparisonState
+    ): instanceOf<subclass> | Disjoint
 
     // protected abstract intersect(
     //     other: Node,

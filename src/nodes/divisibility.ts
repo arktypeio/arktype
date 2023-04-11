@@ -2,13 +2,14 @@ import type { CompilationState } from "./node.js"
 import { Node } from "./node.js"
 
 export class DivisibilityNode extends Node<typeof DivisibilityNode> {
-    constructor(rule: number) {
-        super(DivisibilityNode, rule)
+    constructor(divisor: number) {
+        super(DivisibilityNode, divisor)
     }
 
-    static intersection(l: DivisibilityNode, r: DivisibilityNode) {
+    and(other: DivisibilityNode) {
         const leastCommonMultiple = Math.abs(
-            (l.child * r.child) / greatestCommonDivisor(l.child, r.child)
+            (this.child * other.child) /
+                greatestCommonDivisor(this.child, other.child)
         )
         return new DivisibilityNode(leastCommonMultiple)
     }

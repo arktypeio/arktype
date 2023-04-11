@@ -1,7 +1,7 @@
 import { throwInternalError } from "../utils/errors.js"
 import type { evaluate, xor } from "../utils/generics.js"
 import { stringify } from "../utils/serialize.js"
-import type { ComparisonState, CompilationState } from "./node.js"
+import type { ComparisonState, CompilationState, Disjoint } from "./node.js"
 import { Node } from "./node.js"
 
 export const minComparators = {
@@ -90,45 +90,63 @@ export class RangeNode extends Node<typeof RangeNode> {
         return `${sizeAssignment}${checks}`
     }
 
-    static intersection(l: RangeNode, r: RangeNode, s: ComparisonState) {
-        if (l.isEqualityRange()) {
-            if (r.isEqualityRange()) {
-                return l.child["=="] === r.child["=="]
-                    ? l
-                    : s.addDisjoint("range", l, r)
+    and(other: RangeNode, s: ComparisonState): RangeNode | Disjoint {
+        if (this.isEqualityRange()) {
+            if (other.isEqualityRange()) {
+                return this === other
+                    ? this
+                    : s.addDisjoint("range", this, other)
             }
-            return r(l.child["=="]) ? l : s.addDisjoint("range", l, r)
+            return other(this.child["=="])
+                ? this
+                : s.addDisjoint("range", this, other)
         }
-        if (r.isEqualityRange()) {
-            return l(r.child["=="]) ? r : s.addDisjoint("range", l, r)
+        if (other.isEqualityRange()) {
+            return this(other.child["=="])
+                ? other
+                : s.addDisjoint("range", this, other)
         }
-        const stricterMin = compareStrictness("min", l.lowerBound, r.lowerBound)
-        const stricterMax = compareStrictness("max", l.upperBound, r.upperBound)
+        const stricterMin = compareStrictness(
+            "min",
+            this.lowerBound,
+            other.lowerBound
+        )
+        const stricterMax = compareStrictness(
+            "max",
+            this.upperBound,
+            other.upperBound
+        )
         if (stricterMin === "l") {
             if (stricterMax === "r") {
-                return compareStrictness("min", l.lowerBound, r.upperBound) ===
-                    "l"
-                    ? s.addDisjoint("range", l, r)
+                return compareStrictness(
+                    "min",
+                    this.lowerBound,
+                    other.upperBound
+                ) === "l"
+                    ? s.addDisjoint("range", this, other)
                     : new RangeNode({
-                          ...l.#extractComparators(">"),
-                          ...r.#extractComparators("<")
+                          ...this.#extractComparators(">"),
+                          ...other.#extractComparators("<")
                       })
             }
-            return l
+            return this
         }
         if (stricterMin === "r") {
             if (stricterMax === "l") {
-                return compareStrictness("max", l.upperBound, r.lowerBound) ===
-                    "l"
-                    ? s.addDisjoint("range", l, r)
+                return compareStrictness(
+                    "max",
+                    this.upperBound,
+                    other.lowerBound
+                ) === "l"
+                    ? s.addDisjoint("range", this, other)
                     : new RangeNode({
-                          ...r.#extractComparators(">"),
-                          ...l.#extractComparators("<")
+                          ...this.#extractComparators(">"),
+                          ...other.#extractComparators("<")
                       })
             }
-            return r
+            return other
         }
-        return stricterMax === "l" ? l : r
+        return stricterMax === "l" ? this : other
     }
 
     isEqualityRange(): this is { rule: { "==": number } } {

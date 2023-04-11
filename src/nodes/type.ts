@@ -62,26 +62,18 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         return `${child}`
     }
 
-    static intersection(
-        l: TypeNode,
-        r: TypeNode,
-        s: ComparisonState
-    ): TypeNode | Disjoint {
-        if (l === r) {
-            return l
+    and(other: TypeNode, s: ComparisonState): TypeNode | Disjoint {
+        if (this === other) {
+            return this
         }
-        if (l.child.length === 1 && r.child.length === 1) {
-            const result = ConstraintsNode.intersection(
-                l.child[0],
-                r.child[0],
-                s
-            )
+        if (this.child.length === 1 && other.child.length === 1) {
+            const result = this.child[0].and(other.child[0], s)
             return result.isDisjoint() ? result : new TypeNode([result])
         }
-        const branches = branchwiseIntersection(l.child, r.child, s)
+        const branches = branchwiseIntersection(this.child, other.child, s)
         return branches.length
             ? new TypeNode(branches)
-            : s.addDisjoint("union", l, r)
+            : s.addDisjoint("union", this, other)
     }
 }
 
@@ -120,7 +112,7 @@ const branchwiseIntersection = (
                 currentCandidateByR = {}
                 break
             }
-            const branchIntersection = ConstraintsNode.intersection(l, r, s)
+            const branchIntersection = l.and(r, s)
             if (branchIntersection.isDisjoint()) {
                 // doesn't tell us about any redundancies or add a distinct intersection
                 continue
@@ -175,8 +167,7 @@ const pruneSubtypes = (branches: ConstraintsNode[]) => {
                 uniquenessByIndex[j] = false
                 continue
             }
-            const intersection = ConstraintsNode.intersection(
-                branches[i],
+            const intersection = branches[i].and(
                 branches[j],
                 new ComparisonState()
             )
@@ -393,11 +384,7 @@ const calculateDiscriminants = (
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
             const intersectionState = new ComparisonState()
-            ConstraintsNode.intersection(
-                branches[lIndex],
-                branches[rIndex],
-                intersectionState
-            )
+            branches[lIndex].and(branches[rIndex], intersectionState)
             for (const path in intersectionState.disjointsByPath) {
                 if (path.includes("mapped")) {
                     // containers could be empty and therefore their elements cannot be used to discriminate

@@ -5,13 +5,13 @@ import type { ComparisonState, CompilationState } from "./node.js"
 import { Node } from "./node.js"
 import { registerValue } from "./registry.js"
 
-export class EqualityNode<rule = unknown> extends Node<typeof EqualityNode> {
-    constructor(rule: rule) {
-        super(EqualityNode, rule)
+export class EqualityNode<value = unknown> extends Node<typeof EqualityNode> {
+    constructor(value: value) {
+        super(EqualityNode, value)
     }
 
-    static intersection(l: EqualityNode, r: EqualityNode, s: ComparisonState) {
-        return l === r ? l : s.addDisjoint("value", l, r)
+    and(other: EqualityNode, s: ComparisonState) {
+        return this === other ? this : s.addDisjoint("value", this, other)
     }
 
     static compile(value: unknown, s: CompilationState) {

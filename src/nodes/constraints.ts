@@ -45,11 +45,7 @@ export class ConstraintsNode<t = unknown> extends Node<typeof ConstraintsNode> {
         return s.data ? `${rules}` : ""
     }
 
-    static intersection(
-        l: ConstraintsNode,
-        r: ConstraintsNode,
-        s: ComparisonState
-    ) {
+    and(other: ConstraintsNode, s: ComparisonState) {
         // if (
         //     // TODO: Fix
         //     // s.lastOperator === "&" &&
@@ -61,7 +57,7 @@ export class ConstraintsNode<t = unknown> extends Node<typeof ConstraintsNode> {
         //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
         //     )
         // }
-        return s.path ? l : r
+        return s.path ? this : other
     }
 
     // compile(c: Compilation): string {

@@ -11,12 +11,12 @@ export class InstanceNode<rule extends constructor = constructor> extends Node<
         super(InstanceNode, rule)
     }
 
-    static intersection(l: InstanceNode, r: InstanceNode, s: ComparisonState) {
-        return constructorExtends(l.child, r.child)
-            ? l
-            : constructorExtends(r.child, l.child)
-            ? r
-            : s.addDisjoint("class", l, r)
+    and(other: InstanceNode, s: ComparisonState) {
+        return constructorExtends(this.child, other.child)
+            ? this
+            : constructorExtends(other.child, this.child)
+            ? other
+            : s.addDisjoint("class", this, other)
     }
 
     static compile(ancestor: constructor, s: CompilationState) {
