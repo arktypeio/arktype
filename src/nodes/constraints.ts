@@ -1,8 +1,8 @@
 import type { Filter } from "../parse/ast/filter.js"
 import type { Morph } from "../parse/ast/morph.js"
 import { as } from "../parse/definition.js"
-import type { inferDomain } from "../utils/domains.js"
-import type { constructor, instanceOf } from "../utils/generics.js"
+import type { Domain, inferDomain } from "../utils/domains.js"
+import type { constructor, exact, instanceOf } from "../utils/generics.js"
 import { DivisibilityNode } from "./divisibility.js"
 import { DomainNode } from "./domain.js"
 import { EqualityNode } from "./equality.js"
@@ -129,16 +129,21 @@ export type inferConstraintsInput<input extends ConstraintsInput> =
         ? value
         : never
 
-type constraintInputBranch<input extends ConstraintsInput> =
-    input extends DomainConstraintsInput
-        ? DomainConstraintsInput & { domain: input["domain"] }
+type discriminateConstraintsInputBranch<branch extends ConstraintsInput> =
+    branch extends {
+        domain: infer domain extends Domain
+    }
+        ? domain extends "object"
+            ? branch extends { instance: typeof Array }
+                ? ArrayConstraints
+                : NonArrayObjectConstraints
+            : DomainConstraintsInput & { domain: branch["domain"] }
         : ExactValueInput
 
-export type validateConstraintsInput<input extends ConstraintsInput> = {
-    [k in keyof input]: k extends keyof constraintInputBranch<input>
-        ? input[k]
-        : never
-}
+export type validateConstraintsInput<input extends ConstraintsInput> = exact<
+    input,
+    discriminateConstraintsInputBranch<input>
+>
 
 export type ConstraintsInput = ExactValueInput | DomainConstraintsInput
 
@@ -151,27 +156,39 @@ type DomainConstraintsInput = {
     filters?: Filter[]
     morphs?: Morph[]
 } & (
-    | {
-          domain: "object"
-          instance?: constructor
-          props?: PropsInput
-      }
-    | {
-          domain: "object"
-          instance: typeof Array
-          props?: PropsInput
-          range?: Bounds
-      }
-    | {
-          domain: "string"
-          regex?: string[]
-          range?: Bounds
-      }
-    | {
-          domain: "number"
-          divisor?: number
-          range?: Bounds
-      }
-    | { domain: "bigint" }
-    | { domain: "symbol" }
+    | NonArrayObjectConstraints
+    | ArrayConstraints
+    | StringConstraints
+    | NumberConstraints
+    | BigintConstraints
+    | SymbolConstraints
 )
+
+type NonArrayObjectConstraints = {
+    domain: "object"
+    instance?: constructor
+    props?: PropsInput
+}
+
+type ArrayConstraints = {
+    domain: "object"
+    instance: typeof Array
+    props?: PropsInput
+    range?: Bounds
+}
+
+type StringConstraints = {
+    domain: "string"
+    regex?: string[]
+    range?: Bounds
+}
+
+type NumberConstraints = {
+    domain: "number"
+    divisor?: number
+    range?: Bounds
+}
+
+type BigintConstraints = { domain: "bigint" }
+
+type SymbolConstraints = { domain: "symbol" }

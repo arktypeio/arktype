@@ -22,6 +22,14 @@ export type evaluateObjectOrFunction<t> = isTopType<t> extends true
 
 export type evaluate<t> = { [k in keyof t]: t[k] } & unknown
 
+export type exact<t, u> = {
+    [k in keyof t]: k extends keyof u
+        ? t[k] extends u[k]
+            ? t[k]
+            : u[k]
+        : never
+}
+
 /** Causes a type that would be eagerly calculated to be displayed as-is.
  *  WARNING: Makes t NonNullable as a side effect.
  */
