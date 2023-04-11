@@ -23,27 +23,6 @@ const activateDemo = async (
     props: DemoProps,
     setIsLoading: (value: boolean) => void
 ) => {
-    const vm = await createStackblitzDemo(props)
-    // hack to workaround a caching issue where tsconfig is not applied until it is modified
-    setTimeout(
-        () =>
-            vm.applyFsDiff({
-                create: {
-                    "tsconfig.json": JSON.stringify(
-                        {
-                            compilerOptions: {
-                                module: "esnext",
-                                target: "esnext",
-                                strict: true
-                            }
-                        },
-                        null,
-                        4
-                    )
-                },
-                destroy: []
-            }),
-        5000
-    )
+    await createStackblitzDemo(props)
     setIsLoading(false)
 }
