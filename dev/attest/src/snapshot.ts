@@ -4,7 +4,7 @@ import { SyntaxKind } from "ts-morph"
 import { getAttestConfig } from "./config.js"
 import { readJson } from "./runtime/main.js"
 import { addListener } from "./runtime/shell.js"
-import { getRealTsMorphProject } from "./type/getTsMorphProject.js"
+import { getTsMorphProject } from "./type/getTsMorphProject.js"
 import { getTsNodeAtPosition } from "./type/getTsNodeAtPos.js"
 import type { SourcePosition } from "./utils.js"
 import { positionToString } from "./utils.js"
@@ -78,7 +78,7 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
 }: SnapshotArgs) => {
     const { transient } = getAttestConfig()
     const snapCall = findCallExpressionAncestor(
-        getRealTsMorphProject(),
+        getTsMorphProject(),
         position,
         snapFunctionName
     )

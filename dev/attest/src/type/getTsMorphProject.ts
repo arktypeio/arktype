@@ -39,13 +39,13 @@ export const forceCreateTsMorphProject = ({
     return project
 }
 
-let __realProjectCache: undefined | Project
-export const getRealTsMorphProject = () => {
-    if (!__realProjectCache) {
-        __realProjectCache = forceCreateTsMorphProject({
+let __projectCache: undefined | Project
+export const getTsMorphProject = () => {
+    if (!__projectCache) {
+        __projectCache = forceCreateTsMorphProject({
             useRealFs: true,
             preloadFiles: true
         })
     }
-    return __realProjectCache
+    return __projectCache
 }

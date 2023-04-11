@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-import { basename } from "node:path"
-import { fromCwd, fromHere, shell, walkPaths } from "./runtime/main.js"
-import { cacheAssertions, cleanupAssertions } from "./main.js"
-import { versions } from "node:process"
 import { version } from "node:os"
+import { basename } from "node:path"
+import { versions } from "node:process"
+import { cacheAssertions, cleanupAssertions } from "./main.js"
+import { fromCwd, shell, walkPaths } from "./runtime/main.js"
 
 const args: string[] = globalThis.process.argv
 
@@ -79,7 +79,6 @@ if (args[attestArgIndex + 1] === "bench") {
         }
 
         const runnerStart = Date.now()
-
         shell(`${prefix} ${isBuildTest ? "**/test/*.test.js" : ""}`, {
             stdio: "inherit",
             env: { ARKTYPE_CHECK_CMD: attestArgs.join(" ") }

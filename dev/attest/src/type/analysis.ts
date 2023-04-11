@@ -1,6 +1,6 @@
 import { getAttestConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
-import { getRealTsMorphProject } from "./getTsMorphProject.js"
+import { getTsMorphProject } from "./getTsMorphProject.js"
 import type { AssertionData } from "./internal/main.js"
 import {
     getAssertionsInFile,
@@ -24,7 +24,7 @@ export const getAssertionsByFile = ({
     if (config.precached && !isInitialCache) {
         return getCachedAssertionData(config)
     }
-    const project = getRealTsMorphProject()
+    const project = getTsMorphProject()
     const diagnosticsByFile = getDiagnosticsByFile()
     const assertionsByFile: AssertionsByFile = {}
     for (const file of project.getSourceFiles()) {

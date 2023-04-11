@@ -3,6 +3,7 @@ import { join, resolve } from "node:path"
 import * as process from "node:process"
 import {
     ensureDir,
+    fromCwd,
     fromPackageRoot,
     getSourceFileEntries
 } from "./runtime/main.js"
@@ -78,7 +79,7 @@ export const getAttestConfig = (): AttestConfig => {
     if (cachedConfig) {
         return cachedConfig
     }
-    const possibleTsconfigPath = fromPackageRoot("tsconfig.json")
+    const possibleTsconfigPath = fromCwd("tsconfig.json")
     const tsconfig = existsSync(possibleTsconfigPath)
         ? possibleTsconfigPath
         : undefined
@@ -95,15 +96,9 @@ export const getAttestConfig = (): AttestConfig => {
         (arg) => arg === "-n" || arg === "--no-write"
     )
     //TODO remove dev/arktype.io
-    const typeSources = getSourceFileEntries()
-        .filter(([path]) => !path.startsWith("dev/arktype.io"))
-        .map(
-            ([path, contents]): SourceFileEntry => [
-                path,
-                // Use .js imports for node + pre 5.0 versions of TS
-                contents.replaceAll('.ts"', '.js"')
-            ]
-        )
+    const typeSources = getSourceFileEntries().filter(
+        ([path]) => !path.startsWith("dev/arktype.io")
+    )
     cachedConfig = {
         updateSnapshots:
             transient ||

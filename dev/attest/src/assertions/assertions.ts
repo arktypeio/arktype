@@ -2,9 +2,9 @@ import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import { chainableNoOpProxy } from "arktype/internal/utils/chainableNoOpProxy.js"
 import { snapshot, stringify } from "arktype/internal/utils/serialize.js"
-import { caller } from "../../src/runtime/main.js"
 import { assertEquals } from "../assertions.js"
 import type { AssertionContext } from "../attest.js"
+import { caller } from "../runtime/main.js"
 import type { SnapshotArgs } from "../snapshot.js"
 import {
     getSnapshotByName,
