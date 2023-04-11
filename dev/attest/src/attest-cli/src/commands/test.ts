@@ -1,7 +1,7 @@
 import { Args, Command, Flags } from "@oclif/core"
 import { version } from "os"
 import { versions } from "process"
-import { shell } from "../../../src/runtime/shell.js"
+import { shell } from "../../../runtime/shell.js"
 
 export default class Test extends Command {
     static description = "describe the command here"
@@ -55,7 +55,7 @@ export default class Test extends Command {
             } else {
                 console.log(`⏳ attest: Analyzing type assertions...`)
                 const cacheStart = Date.now()
-                cacheAssertions({ forcePrecache: true })
+                // cacheAssertions({ forcePrecache: true })
                 const cacheSeconds = (Date.now() - cacheStart) / 1000
                 console.log(
                     `✅ attest: Finished caching type assertions in ${cacheSeconds} seconds.\n`

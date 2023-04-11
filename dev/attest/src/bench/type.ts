@@ -5,7 +5,7 @@ import { caller } from "../runtime/main.js"
 import { findCallExpressionAncestor } from "../snapshot.js"
 import {
     forceCreateTsMorphProject,
-    getVirtualTsMorphProject
+    getRealTsMorphProject
 } from "../type/getTsMorphProject.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchContext } from "./bench.js"
@@ -144,7 +144,7 @@ export const createBenchTypeAssertion = (
     type: (...args: [instantiations?: Measure<TypeUnit> | undefined]) => {
         ctx.lastSnapCallPosition = caller()
         const benchFnCall = findCallExpressionAncestor(
-            getVirtualTsMorphProject(),
+            getRealTsMorphProject(),
             ctx.benchCallPosition,
             "bench"
         )
