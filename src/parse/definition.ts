@@ -1,6 +1,4 @@
-import type { Node } from "../nodes/node.js"
-import type { TypeNode } from "../nodes/type.js"
-import type { Type } from "../type.js"
+import { TypeNode } from "../nodes/type.js"
 import type { Primitive } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
@@ -46,7 +44,7 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
         case "Array":
             return parseTuple(def as List, ctx)
         case "RegExp":
-            return new Branch({
+            return TypeNode.from({
                 domain: "string",
                 regex: [(def as RegExp).source]
             })

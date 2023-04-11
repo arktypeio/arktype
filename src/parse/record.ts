@@ -1,15 +1,13 @@
-import { DomainNode } from "../nodes/domain.js"
-import type { PropKind, PropsRule } from "../nodes/props.js"
-import { NamedPropNode, PropsNode } from "../nodes/props.js"
-import { node } from "../nodes/type.js"
-import { Type } from "../type.js"
+import type { PropKind, PropsInput } from "../nodes/props.js"
+import { NamedPropNode } from "../nodes/props.js"
+import { TypeNode } from "../nodes/type.js"
 import type { Dict, evaluate, mutable } from "../utils/generics.js"
 import type { inferDefinition, ParseContext } from "./definition.js"
 import { parseDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseRecord = (def: Dict, ctx: ParseContext) => {
-    const named: mutable<PropsRule["named"]> = {}
+    const named: mutable<PropsInput["named"]> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
         let kind: PropKind = "required"
@@ -30,9 +28,12 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
         })
         ctx.path.pop()
     }
-    return node({
-        domain: new DomainNode("object"),
-        props: new PropsNode({ named: {}, indexed: [] })
+    return TypeNode.from({
+        domain: "object",
+        props: {
+            named,
+            indexed: []
+        }
     })
 }
 

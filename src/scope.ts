@@ -218,20 +218,6 @@ export class Scope<context extends ScopeContext = any> {
         }
     }
 
-    getAnonymousQualifiedName(base: AnonymousTypeName): QualifiedTypeName {
-        let increment = 0
-        let id = base
-        while (this.isResolvable(id)) {
-            id = `${base}${increment++}`
-        }
-        return `${this.name}.${id}`
-    }
-
-    addAnonymousTypeReference(referencedType: Type, ctx: ParseContext): Node {
-        ctx.type.includesMorph ||= referencedType.includesMorph
-        return referencedType.node
-    }
-
     get infer(): exportsOf<context> {
         return chainableNoOpProxy
     }
@@ -246,15 +232,6 @@ export class Scope<context extends ScopeContext = any> {
             >
         }
         return this.#exports.root as Space<exportsOf<context>>
-    }
-
-    addParsedReferenceIfResolvable(name: name<context>, ctx: ParseContext) {
-        const resolution = this.#resolveRecurse(name, "undefined", [name])
-        if (!resolution) {
-            return false
-        }
-        ctx.type.includesMorph ||= resolution.includesMorph
-        return true
     }
 
     resolve(name: name<context>) {

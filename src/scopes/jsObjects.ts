@@ -1,5 +1,5 @@
 import type { Infer } from "../main.js"
-import { node } from "../nodes/node.js"
+import { TypeNode } from "../nodes/type.js"
 import { scope } from "../scope.js"
 import type { inferObjectKind } from "../utils/objectKinds.js"
 
@@ -9,17 +9,18 @@ import type { inferObjectKind } from "../utils/objectKinds.js"
  */
 export const jsObjectsScope = scope(
     {
-        Function: node({ domain: "object", instance: Function }) as Infer<
-            inferObjectKind<"Function">
-        >,
-        Date: node({ domain: "object", instance: Date }),
-        Error: node({ domain: "object", instance: Error }),
-        Map: node({ domain: "object", instance: Map }),
-        RegExp: node({ domain: "object", instance: RegExp }),
-        Set: node({ domain: "object", instance: Set }),
-        WeakMap: node({ domain: "object", instance: WeakMap }),
-        WeakSet: node({ domain: "object", instance: WeakSet }),
-        Promise: node({ domain: "object", instance: Promise })
+        Function: TypeNode.from({
+            domain: "object",
+            instance: Function
+        }) as Infer<inferObjectKind<"Function">>,
+        Date: TypeNode.from({ domain: "object", instance: Date }),
+        Error: TypeNode.from({ domain: "object", instance: Error }),
+        Map: TypeNode.from({ domain: "object", instance: Map }),
+        RegExp: TypeNode.from({ domain: "object", instance: RegExp }),
+        Set: TypeNode.from({ domain: "object", instance: Set }),
+        WeakMap: TypeNode.from({ domain: "object", instance: WeakMap }),
+        WeakSet: TypeNode.from({ domain: "object", instance: WeakSet }),
+        Promise: TypeNode.from({ domain: "object", instance: Promise })
     },
     { name: "jsObjects", standard: false }
 )

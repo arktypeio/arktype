@@ -1,6 +1,7 @@
 import type { Filter } from "../parse/ast/filter.js"
 import type { Morph } from "../parse/ast/morph.js"
 import { as } from "../parse/definition.js"
+import type { inferDomain } from "../utils/domains.js"
 import type { constructor, instanceOf } from "../utils/generics.js"
 import { DivisibilityNode } from "./divisibility.js"
 import { DomainNode } from "./domain.js"
@@ -23,7 +24,9 @@ export class ConstraintsNode<t = unknown> extends Node<typeof ConstraintsNode> {
         super(ConstraintsNode, child)
     }
 
-    static from(input: ConstraintsInput) {
+    static from<input extends ConstraintsInput>(
+        input: validateConstraintsInput<input>
+    ) {
         const child: ConstraintsChild = {}
         const constraints = input as UnknownConstraintsInput
         let kind: ConstraintKind
@@ -35,7 +38,7 @@ export class ConstraintsNode<t = unknown> extends Node<typeof ConstraintsNode> {
                           constraints[kind]
                       )
         }
-        return new ConstraintsNode(child)
+        return new ConstraintsNode<inferConstraintsInput<input>>(child)
     }
 
     static compile(rules: ConstraintsChild, s: CompilationState) {
@@ -123,12 +126,12 @@ type UnknownConstraintsInput = {
 
 type ConstraintKind = keyof ConstraintNodeKinds
 
-export type inferConstraintsInput<input extends ConstraintsInput> = unknown
-// constraints extends DomainConstraintsRule
-//     ? inferDomain<constraints["domain"]>
-//     : constraints extends ExactValueConstraintsRule<infer value>
-//     ? value
-//     : never
+export type inferConstraintsInput<input extends ConstraintsInput> =
+    input extends DomainConstraintsInput
+        ? inferDomain<input["domain"]>
+        : input extends ExactValueInput<infer value>
+        ? value
+        : never
 
 type constraintInputBranch<input extends ConstraintsInput> =
     input extends DomainConstraintsInput
@@ -142,16 +145,6 @@ export type validateConstraintsInput<input extends ConstraintsInput> = {
 }
 
 export type ConstraintsInput = ExactValueInput | DomainConstraintsInput
-
-const z: ConstraintsInput = {
-    domain: "object",
-    props: {
-        named: {
-            a: { kind: "required", value: [] }
-        },
-        indexed: []
-    }
-}
 
 type ExactValueInput<value = unknown> = {
     value: value

@@ -1,6 +1,5 @@
 import type { Node } from "../../nodes/node.js"
-import { node } from "../../nodes/node.js"
-import type { defineProps } from "../../nodes/props.js"
+import type { TypeNode } from "../../nodes/type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type {
     conform,
@@ -20,7 +19,6 @@ import type { Scanner } from "../string/shift/scanner.js"
 import type { validateConfigTuple } from "./config.js"
 import { parseConfigTuple } from "./config.js"
 import { parseNarrowTuple } from "./filter.js"
-import type { inferNarrow, validateNarrowTuple } from "./filter.js"
 import type { inferIntersection } from "./intersection.js"
 import type { inferKeyOfExpression, validateKeyOfExpression } from "./keyof.js"
 import { parseKeyOfTuple } from "./keyof.js"
@@ -28,7 +26,7 @@ import type { inferMorph, validateMorphTuple } from "./morph.js"
 import { parseMorphTuple } from "./morph.js"
 import type { inferUnion } from "./union.js"
 
-export const parseTuple = (def: List, ctx: ParseContext): Node => {
+export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     if (isIndexOneExpression(def)) {
         return indexOneParsers[def[1]](def as never, ctx)
     }

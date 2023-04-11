@@ -1,4 +1,3 @@
-import { node } from "../../nodes/node.js"
 import { rootType, scope } from "../../scope.js"
 import {
     wellFormedIntegerMatcher,

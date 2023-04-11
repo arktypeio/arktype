@@ -1,6 +1,12 @@
 import type { Node } from "../../../nodes/node.js"
-import type { Comparator, MinBounds } from "../../../nodes/range.js"
+import type {
+    BoundContext,
+    Comparator,
+    MinBounds,
+    MinComparator
+} from "../../../nodes/range.js"
 import { invertedComparators, minComparators } from "../../../nodes/range.js"
+import type { TypeNode } from "../../../nodes/type.js"
 import { throwInternalError, throwParseError } from "../../../utils/errors.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import { stringify } from "../../../utils/serialize.js"
@@ -15,14 +21,14 @@ import {
 } from "./shared.js"
 
 type BranchState = {
-    range?: MinBounds
-    intersection?: Node
-    union?: Node
+    range?: BoundContext<MinComparator>
+    intersection?: TypeNode
+    union?: TypeNode
 }
 
 export class DynamicState {
     public readonly scanner: Scanner
-    private root: Node | undefined
+    private root: TypeNode | undefined
     private branches: BranchState = {}
     private groups: BranchState[] = []
 
@@ -38,11 +44,6 @@ export class DynamicState {
         return this.root !== undefined
     }
 
-    resolveRoot() {
-        this.assertHasRoot()
-        return this.ctx.type.scope.resolveTypeNode(this.root!)
-    }
-
     rootToString() {
         this.assertHasRoot()
         return stringify(this.root)
@@ -50,10 +51,6 @@ export class DynamicState {
 
     ejectRootIfLimit() {
         this.assertHasRoot()
-        const resolution =
-            typeof this.root === "string"
-                ? this.ctx.type.scope.resolveNode(this.root)
-                : this.root!
         if (isLiteralNode(resolution, "number")) {
             const limit = resolution.number.value
             this.root = undefined

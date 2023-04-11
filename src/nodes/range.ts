@@ -50,9 +50,9 @@ export type MinBounds = xor<{ ">"?: number }, { ">="?: number }>
 
 export type MaxBounds = xor<{ "<"?: number }, { "<="?: number }>
 
-export type BoundContext = {
+export type BoundContext<comparator extends Comparator = Comparator> = {
     limit: number
-    comparator: Comparator
+    comparator: comparator
 }
 
 export type BoundContextWithUnits = evaluate<BoundContext & { units: string }>

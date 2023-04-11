@@ -23,14 +23,11 @@ import { ConstraintsNode } from "./constraints.js"
 import type { CompilationState, Disjoint } from "./node.js"
 import { ComparisonState, Node } from "./node.js"
 
-type validateBranches<branches extends TypeNodeInput> = conform<
-    branches,
-    {
-        [i in keyof branches]: branches[i] extends ConstraintsInput
-            ? validateConstraintsInput<branches[i]>
-            : branches[i]
-    }
->
+type validateBranches<branches extends TypeNodeInput> = {
+    [i in keyof branches]: branches[i] extends ConstraintsInput
+        ? conform<branches[i], validateConstraintsInput<branches[i]>>
+        : branches[i]
+}
 
 type inferBranches<branches extends TypeNodeInput> = {
     [i in keyof branches]: branches[i] extends ConstraintsInput
@@ -56,7 +53,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
             branches.map((branch) =>
                 branch instanceof ConstraintsNode
                     ? branch
-                    : ConstraintsNode.from(branch)
+                    : ConstraintsNode.from(branch as any)
             )
         )
     }
