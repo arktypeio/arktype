@@ -1,18 +1,11 @@
-import type { Node } from "./nodes/node.js"
 import { CompilationState, createTraverse } from "./nodes/node.js"
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
 import { CheckResult, TraversalState } from "./nodes/traverse.js"
 import type { ConfigTuple } from "./parse/ast/config.js"
-import type {
-    inferDefinition,
-    ParseContext,
-    validateDefinition
-} from "./parse/definition.js"
+import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
-import type { PrecompiledDefaults } from "./scopes/ark.js"
-import { Cache, FreezingCache } from "./scopes/cache.js"
+import { ark, type PrecompiledDefaults } from "./scopes/ark.js"
 import type { KeyCheckKind, Type, TypeOptions, TypeParser } from "./type.js"
-import { chainableNoOpProxy } from "./utils/chainableNoOpProxy.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
 import { deepFreeze } from "./utils/freeze.js"
 import type {
@@ -23,7 +16,6 @@ import type {
     List,
     nominal
 } from "./utils/generics.js"
-import { Path } from "./utils/paths.js"
 import type { stringifyUnion } from "./utils/unionToTuple.js"
 
 type ScopeParser = {
@@ -55,8 +47,8 @@ export type ScopeOptions = {
 }
 
 export type ScopeConfig = evaluate<{
-    keys: KeyCheckKind
-    codes: ProblemOptionsByCode
+    readonly keys: KeyCheckKind
+    readonly codes: ProblemOptionsByCode
 }>
 
 export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
@@ -80,7 +72,7 @@ type validateOptions<opts extends ScopeOptions> = {
         : opts[k]
 }
 
-export type ScopeContext = Dict | ScopeContextTuple
+export type ScopeInferenceContext = Dict | ScopeContextTuple
 
 type ScopeContextTuple = [exports: Dict, locals: Dict, standard?: false]
 
@@ -107,14 +99,14 @@ export type resolve<name extends keyof $, $> = isAny<$[name]> extends true
     ? inferDefinition<def, $>
     : $[name]
 
-type exportsOf<context extends ScopeContext> = context extends [
+type exportsOf<context extends ScopeInferenceContext> = context extends [
     infer exports,
     ...unknown[]
 ]
     ? exports
     : context
 
-type localsOf<context extends ScopeContext> = context extends List
+type localsOf<context extends ScopeInferenceContext> = context extends List
     ? context["1"] & (context["2"] extends false ? {} : PrecompiledDefaults)
     : PrecompiledDefaults
 
@@ -154,37 +146,36 @@ export type Space<exports = Dict> = {
     [k in keyof exports]: Type<exports[k]>
 }
 
-type resolutions<context extends ScopeContext> = localsOf<context> &
+type resolutions<context extends ScopeInferenceContext> = localsOf<context> &
     exportsOf<context>
 
-type name<context extends ScopeContext> = keyof resolutions<context> & string
-
-let anonymousScopeCount = 0
-const scopeRegistry: Record<string, Scope | undefined> = {}
-const spaceRegistry: Record<string, Space | undefined> = {}
+type name<context extends ScopeInferenceContext> = keyof resolutions<context> &
+    string
 
 export const isConfigTuple = (def: unknown): def is ConfigTuple =>
     Array.isArray(def) && def[1] === ":"
 
-export class Scope<context extends ScopeContext = any> {
-    name: string
-    config: ScopeConfig
-    parseCache = new FreezingCache<Node>()
-    #resolutions = new Cache<Type>()
-    #exports = new Cache<Type>()
+let anonymousScopeCount = 0
+const scopeRegistry: Record<string, Scope | undefined> = {}
+
+export class Scope<context extends ScopeInferenceContext = any> {
+    declare infer: exportsOf<context>
+
+    readonly name: string
+    readonly config: ScopeConfig
+    // TODO: runtime error for overlapping aliases?
+    imports: Space[]
+    includes: Space[]
+    types: Partial<Space<this["infer"]>> = {}
 
     constructor(public aliases: Dict, opts: ScopeOptions = {}) {
         this.name = this.#register(opts)
-        if (opts.standard !== false) {
-            this.#cacheSpaces([spaceRegistry["standard"]!], "imports")
-        }
-        if (opts.imports) {
-            this.#cacheSpaces(opts.imports, "imports")
-        }
-        if (opts.includes) {
-            this.#cacheSpaces(opts.includes, "includes")
-        }
         this.config = compileScopeOptions(opts)
+        this.imports = opts.imports ?? []
+        this.includes = opts.includes ?? []
+        if (opts.standard !== false) {
+            this.imports.push(ark)
+        }
     }
 
     #register(opts: ScopeOptions) {
@@ -197,41 +188,17 @@ export class Scope<context extends ScopeContext = any> {
         return name
     }
 
-    #cacheSpaces(spaces: Space[], kind: "imports" | "includes") {
-        for (const space of spaces) {
-            for (const name in space) {
-                if (this.#resolutions.has(name) || name in this.aliases) {
-                    throwParseError(writeDuplicateAliasesMessage(name))
-                }
-                this.#resolutions.set(name, space[name])
-                if (kind === "includes") {
-                    this.#exports.set(name, space[name])
-                }
-            }
-        }
-    }
-
-    #initializeContext(type: Type): ParseContext {
-        return {
-            type,
-            path: new Path()
-        }
-    }
-
-    get infer(): exportsOf<context> {
-        return chainableNoOpProxy
-    }
-
+    #compiled = false
     compile() {
-        if (!spaceRegistry[this.name]) {
-            for (const name in this.aliases) {
-                this.resolve(name)
-            }
-            spaceRegistry[this.name] = this.#exports.root as Space<
-                exportsOf<context>
-            >
+        if (this.#compiled) {
+            return this.types as Space<this["infer"]>
         }
-        return this.#exports.root as Space<exportsOf<context>>
+        let name: name<context>
+        for (name in this.aliases) {
+            this.types[name] ??= this.resolve(name) as Type<any>
+        }
+        this.#compiled = true
+        return this.types
     }
 
     resolve(name: name<context>) {
@@ -298,7 +265,8 @@ export class Scope<context extends ScopeContext = any> {
             const ctx = this.#initializeContext(t)
             const root = parseDefinition(def, ctx)
             t.node = deepFreeze(root)
-            // TODO: refactor TODO: each node should compile completely or until
+            // TODO: refactor
+            // TODO: each node should compile completely or until
             // it hits a loop with itself. it should rely on other nodes that
             // have been compiled the same way, parametrized with the current path.
             t.ts = t.node.compile(new CompilationState(t))

@@ -1,4 +1,4 @@
-import type { Bounds, Comparator } from "../../../nodes/range.js"
+import type { Comparator } from "../../../nodes/range.js"
 import {
     invertedComparators,
     minComparators,
