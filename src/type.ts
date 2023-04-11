@@ -1,10 +1,3 @@
-import {
-    type ConstraintsInput,
-    ConstraintsNode,
-    type inferConstraintsInput,
-    type validateConstraintsInput
-} from "./nodes/constraints.js"
-import type { Node } from "./nodes/node.js"
 import type { CheckResult } from "./nodes/traverse.js"
 import type { TypeNode } from "./nodes/type.js"
 import type { ParsedMorph } from "./parse/ast/morph.js"
@@ -14,12 +7,7 @@ import {
     parseDefinition,
     type validateDefinition
 } from "./parse/definition.js"
-import {
-    CompiledFunction,
-    type conform,
-    type evaluate,
-    type List
-} from "./utils/generics.js"
+import { CompiledFunction, type evaluate } from "./utils/generics.js"
 import type { BuiltinClass } from "./utils/objectKinds.js"
 import { Path } from "./utils/paths.js"
 
