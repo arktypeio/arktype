@@ -1,5 +1,4 @@
 import type { Node } from "../../../../nodes/node.js"
-import type { TypeNodeInput } from "../../../../nodes/type.js"
 import { TypeNode } from "../../../../nodes/type.js"
 import type { error } from "../../../../utils/generics.js"
 import type {

@@ -225,7 +225,7 @@ export type subsume<t extends u, u> = u
 export type defined<t> = Exclude<t, undefined>
 
 export type requireKeys<o, key extends keyof o> = o & {
-    [requiredKey in key]-?: o[requiredKey]
+    [requiredKey in key]-?: defined<o[requiredKey]>
 }
 
 export type optionalizeKeys<o, key extends keyof o> = Omit<o, key> & {

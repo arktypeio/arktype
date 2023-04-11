@@ -153,9 +153,9 @@ export class RangeNode extends Node<typeof RangeNode> {
         return this.child["=="] !== undefined
     }
 
-    getComparator(
-        comparator: MinComparator | MaxComparator
-    ): BoundContext | undefined {
+    getComparator<comparator extends MinComparator | MaxComparator>(
+        comparator: comparator
+    ): BoundContext<comparator> | undefined {
         if (this.child[comparator] !== undefined) {
             return {
                 limit: this.child[comparator]!,
@@ -198,7 +198,7 @@ export class RangeNode extends Node<typeof RangeNode> {
 
 const isExclusive = (bound: BoundContext) => bound.comparator[1] === "="
 
-const compareStrictness = (
+export const compareStrictness = (
     kind: "min" | "max",
     l: BoundContext | undefined,
     r: BoundContext | undefined

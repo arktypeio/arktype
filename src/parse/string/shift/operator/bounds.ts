@@ -1,26 +1,29 @@
-import type {
-    BoundContext,
-    Bounds,
-    Comparator,
-    MaxComparator
-} from "../../../../nodes/range.js"
-import { maxComparators, minComparators } from "../../../../nodes/range.js"
-import { throwInternalError } from "../../../../utils/errors.js"
+import { ComparisonState, Disjoint } from "../../../../nodes/node.js"
+import type { Comparator, MaxComparator } from "../../../../nodes/range.js"
+import { maxComparators, RangeNode } from "../../../../nodes/range.js"
 import type { error, keySet } from "../../../../utils/generics.js"
 import { isKeyOf } from "../../../../utils/generics.js"
 import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
-import type { DynamicState } from "../../reduce/dynamic.js"
+import type {
+    DynamicState,
+    DynamicStateWithRoot
+} from "../../reduce/dynamic.js"
 import { writeUnpairableComparatorMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
 
-export const parseBound = (s: DynamicState, start: ComparatorStartChar) => {
+export const parseBound = (
+    s: DynamicStateWithRoot,
+    start: ComparatorStartChar
+) => {
     const comparator = shiftComparator(s, start)
-    const maybeMin = s.ejectRootIfLimit()
-    return maybeMin === undefined
-        ? parseRightBound(s, comparator)
-        : s.reduceLeftBound(maybeMin, comparator)
+    const value = s.root.literalValue?.child
+    if (typeof value === "number") {
+        s.ejectRoot()
+        return s.reduceLeftBound(value, comparator)
+    }
+    return parseRightBound(s, comparator)
 }
 
 export type parseBound<
@@ -77,44 +80,32 @@ type shiftComparator<
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage
 
-export const parseRightBound = (s: DynamicState, comparator: Comparator) => {
+export const parseRightBound = (
+    s: DynamicStateWithRoot,
+    comparator: Comparator
+) => {
     const limitToken = s.scanner.shiftUntilNextTerminator()
     const limit = tryParseWellFormedNumber(
         limitToken,
         writeInvalidLimitMessage(comparator, limitToken + s.scanner.unscanned)
     )
-    const openRange = s.ejectRangeIfOpen()
-    const rightBound = { comparator, limit }
-    const range: Bounds = openRange
-        ? !hasComparatorIn(rightBound, maxComparators)
-            ? s.error(writeUnpairableComparatorMessage(comparator))
-            : compareStrictness("min", openRange, rightBound) === "l"
-            ? s.error(
-                  writeEmptyRangeMessage({ min: openRange, max: rightBound })
-              )
-            : {
-                  min: openRange,
-                  max: rightBound
-              }
-        : hasComparator(rightBound, "==")
-        ? rightBound
-        : hasComparatorIn(rightBound, minComparators)
-        ? { min: rightBound }
-        : hasComparatorIn(rightBound, maxComparators)
-        ? { max: rightBound }
-        : throwInternalError(`Unexpected comparator '${rightBound.comparator}'`)
-    s.root = s.root?.and()
+    if (!s.branches.range) {
+        s.root.constrain({ [comparator]: limit })
+        return
+    }
+    if (!isKeyOf(comparator, maxComparators)) {
+        return s.error(writeUnpairableComparatorMessage(comparator))
+    }
+    const intersectionResult = s.branches.range.intersect(
+        new RangeNode({ [comparator]: limit }),
+        new ComparisonState()
+    )
+    if (intersectionResult instanceof Disjoint) {
+        return s.error(`${intersectionResult} is empty`)
+    }
+    delete s.branches.range
+    s.root.constrain({ range: intersectionResult.child })
 }
-
-const hasComparator = <comparator extends Comparator>(
-    bound: BoundContext,
-    comparator: comparator
-): bound is BoundContext<comparator> => bound.comparator === comparator
-
-const hasComparatorIn = <comparators extends keySet<Comparator>>(
-    bound: BoundContext,
-    comparators: comparators
-): bound is BoundContext<keyof comparators> => bound.comparator in comparators
 
 export type parseRightBound<
     s extends StaticState,
@@ -163,8 +154,3 @@ export type writeInvalidLimitMessage<
     comparator extends Comparator,
     limit extends string
 > = `Comparator ${comparator} must be followed by a number literal (was '${limit}')`
-
-export const writeEmptyRangeMessage = (range: Bounds) =>
-    `${stringifyRange(range)} is empty`
-
-export type BoundableDomain = "string" | "number" | "object"

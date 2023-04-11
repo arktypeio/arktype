@@ -55,7 +55,8 @@ const loop = (s: DynamicState) => {
     while (!s.scanner.finalized) {
         next(s)
     }
-    return s.ejectFinalizedRoot()
+    s.finalize()
+    return s.ejectRoot()
 }
 
 type loop<s extends StaticState | error, $> = s extends StaticState
@@ -67,7 +68,8 @@ type loopValid<
     $
 > = s["unscanned"] extends Scanner.finalized ? s["root"] : loop<next<s, $>, $>
 
-const next = (s: DynamicState) => (s.root ? parseOperator(s) : parseOperand(s))
+const next = (s: DynamicState) =>
+    s.hasRoot() ? parseOperator(s) : parseOperand(s)
 
 type next<s extends StaticState, $> = s["root"] extends undefined
     ? parseOperand<s, $>

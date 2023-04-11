@@ -1,7 +1,7 @@
 import { throwInternalError } from "../../../../utils/errors.js"
 import type { error } from "../../../../utils/generics.js"
 import { isKeyOf } from "../../../../utils/generics.js"
-import type { DynamicState } from "../../reduce/dynamic.js"
+import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import { Scanner } from "../scanner.js"
 import type { ComparatorStartChar } from "./bounds.js"
@@ -9,13 +9,13 @@ import { comparatorStartChars, parseBound } from "./bounds.js"
 import { parseDivisor } from "./divisor.js"
 
 // @snipStart:parseOperator
-export const parseOperator = (s: DynamicState): void => {
+export const parseOperator = (s: DynamicStateWithRoot): void => {
     const lookahead = s.scanner.shift()
     return lookahead === ""
         ? s.finalize()
         : lookahead === "["
         ? s.scanner.shift() === "]"
-            ? s.rootToArray()
+            ? s.setRoot(s.root.toArray())
             : s.error(incompleteArrayTokenMessage)
         : isKeyOf(lookahead, Scanner.branchTokens)
         ? s.pushRootToBranch(lookahead)

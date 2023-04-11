@@ -1,11 +1,12 @@
-import type {
-    BoundContext,
-    Comparator,
-    MinComparator
+import type { Bounds, Comparator } from "../../../nodes/range.js"
+import {
+    invertedComparators,
+    minComparators,
+    RangeNode
 } from "../../../nodes/range.js"
-import { invertedComparators, minComparators } from "../../../nodes/range.js"
 import type { TypeNode } from "../../../nodes/type.js"
 import { throwInternalError, throwParseError } from "../../../utils/errors.js"
+import type { requireKeys } from "../../../utils/generics.js"
 import { isKeyOf } from "../../../utils/generics.js"
 import type { ParseContext } from "../../definition.js"
 import { Scanner } from "../shift/scanner.js"
@@ -18,10 +19,12 @@ import {
 } from "./shared.js"
 
 type BranchState = {
-    range?: BoundContext<MinComparator>
+    range?: RangeNode
     intersection?: TypeNode
     union?: TypeNode
 }
+
+export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 
 export class DynamicState {
     readonly scanner: Scanner
@@ -37,59 +40,22 @@ export class DynamicState {
         return throwParseError(message)
     }
 
-    ejectRootIfLimit() {
-        this.assertHasRoot()
-        const value = this.root?.literalValue?.child
-        if (typeof value === "number") {
-            this.root = undefined
-            return value
+    hasRoot(): this is DynamicStateWithRoot {
+        return this.root !== undefined
+    }
+
+    setRoot(root: TypeNode) {
+        this.root = root
+    }
+
+    ejectRoot() {
+        if (!this.root) {
+            return throwInternalError(
+                `Unexpected attempt to eject an unset root.`
+            )
         }
-    }
-
-    ejectRangeIfOpen() {
-        if (this.branches.range) {
-            const range = this.branches.range
-            delete this.branches.range
-            return range
-        }
-    }
-
-    private assertHasRoot() {
-        if (this.root === undefined) {
-            return throwInternalError("Unexpected interaction with unset root")
-        }
-    }
-
-    private assertUnsetRoot() {
-        if (this.root !== undefined) {
-            return throwInternalError("Unexpected attempt to overwrite root")
-        }
-    }
-
-    setRoot(node: TypeNode) {
-        this.assertUnsetRoot()
-        this.root = node
-    }
-
-    rootToArray() {
-        this.root = this.ejectRoot().toArray()
-    }
-
-    intersect(node: TypeNode) {
-        this.root = this.ejectRoot().and(node)
-    }
-
-    private ejectRoot() {
-        this.assertHasRoot()
-        const root = this.root!
+        const root = this.root
         this.root = undefined
-        return root
-    }
-
-    ejectFinalizedRoot() {
-        this.assertHasRoot()
-        const root = this.root!
-        this.root = ejectedProxy
         return root
     }
 
@@ -107,28 +73,26 @@ export class DynamicState {
             return this.error(writeUnpairableComparatorMessage(comparator))
         }
         if (this.branches.range) {
+            const { limit, comparator } = this.branches.range.lowerBound!
             return this.error(
                 writeMultipleLeftBoundsMessage(
-                    `${this.branches.range.limit}`,
-                    this.branches.range.comparator,
+                    `${limit}`,
+                    comparator,
                     `${limit}`,
                     invertedComparator
                 )
             )
         }
-        this.branches.range = {
-            limit,
-            comparator: invertedComparator
-        }
+        this.branches.range = new RangeNode({ [invertedComparator]: limit })
     }
 
     finalizeBranches() {
         this.assertRangeUnset()
         if (this.branches.union) {
             this.pushRootToBranch("|")
-            this.setRoot(this.branches.union)
+            this.root = this.branches.union
         } else if (this.branches.intersection) {
-            this.setRoot(this.branches.intersection.and(this.ejectRoot()))
+            this.root = this.ejectRoot().and(this.branches.intersection)
         }
     }
 
@@ -158,12 +122,8 @@ export class DynamicState {
 
     private assertRangeUnset() {
         if (this.branches.range) {
-            return this.error(
-                writeOpenRangeMessage(
-                    `${this.branches.range.limit}`,
-                    this.branches.range.comparator
-                )
-            )
+            const { limit, comparator } = this.branches.range.lowerBound!
+            return this.error(writeOpenRangeMessage(`${limit}`, comparator))
         }
     }
 
@@ -173,7 +133,8 @@ export class DynamicState {
     }
 
     previousOperator() {
-        return this.branches.range?.comparator ?? this.branches.intersection
+        return this.branches.range?.lowerBound?.comparator ??
+            this.branches.intersection
             ? "&"
             : this.branches.union
             ? "|"
@@ -185,13 +146,3 @@ export class DynamicState {
         return this
     }
 }
-
-const ejectedProxy: any = new Proxy(
-    {},
-    {
-        get: () =>
-            throwInternalError(
-                `Unexpected attempt to access ejected attributes`
-            )
-    }
-)
