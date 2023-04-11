@@ -15,41 +15,54 @@ import type {
 } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
 import type {
-    ConstraintsDefinition,
-    inferConstraints,
-    validateConstraints
+    ConstraintsInput,
+    inferConstraintsInput,
+    validateConstraintsInput
 } from "./constraints.js"
 import { ConstraintsNode } from "./constraints.js"
 import type { CompilationState, Disjoint } from "./node.js"
 import { ComparisonState, Node } from "./node.js"
 
-type validateBranches<branches extends TypeNodeDefinition> = conform<
+type validateBranches<branches extends TypeNodeInput> = conform<
     branches,
-    { [i in keyof branches]: validateConstraints<branches[i]> }
+    {
+        [i in keyof branches]: branches[i] extends ConstraintsInput
+            ? validateConstraintsInput<branches[i]>
+            : branches[i]
+    }
 >
 
-type inferBranches<branches extends TypeNodeDefinition> = {
-    [i in keyof branches]: inferConstraints<branches[i]>
+type inferBranches<branches extends TypeNodeInput> = {
+    [i in keyof branches]: branches[i] extends ConstraintsInput
+        ? inferConstraintsInput<branches[i]>
+        : branches[i] extends ConstraintsNode<infer t>
+        ? t
+        : never
 }[number]
 
-export type TypeNodeDefinition = List<ConstraintsDefinition>
-
-export const node = <branches extends TypeNodeDefinition>(
-    ...branches: validateBranches<branches>
-) =>
-    new TypeNode<inferBranches<branches>>(
-        branches.map((branch) => ConstraintsNode.from(branch))
-    )
+export type TypeNodeInput = List<ConstraintsInput | ConstraintsNode>
 
 export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     declare [as]: t
 
-    constructor(rule: TypeNodeDefinition) {
-        super(TypeNode, rule)
+    constructor(child: ConstraintsNode[]) {
+        super(TypeNode, child)
     }
 
-    static compile(rule: List<ConstraintsNode>) {
-        return `${rule}`
+    static from<branches extends TypeNodeInput>(
+        ...branches: validateBranches<branches>
+    ) {
+        return new TypeNode<inferBranches<branches>>(
+            branches.map((branch) =>
+                branch instanceof ConstraintsNode
+                    ? branch
+                    : ConstraintsNode.from(branch)
+            )
+        )
+    }
+
+    static compile(child: List<ConstraintsNode>) {
+        return `${child}`
     }
 
     static intersection(

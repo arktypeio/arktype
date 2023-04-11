@@ -1,8 +1,8 @@
 import {
-    type ConstraintsDefinition,
+    type ConstraintsInput,
     ConstraintsNode,
-    type inferConstraints,
-    type validateConstraints
+    type inferConstraintsInput,
+    type validateConstraintsInput
 } from "./nodes/constraints.js"
 import type { Node } from "./nodes/node.js"
 import type { CheckResult } from "./nodes/traverse.js"

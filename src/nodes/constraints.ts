@@ -1,5 +1,6 @@
 import type { Filter } from "../parse/ast/filter.js"
 import type { Morph } from "../parse/ast/morph.js"
+import { as } from "../parse/definition.js"
 import type { constructor, instanceOf } from "../utils/generics.js"
 import { DivisibilityNode } from "./divisibility.js"
 import { DomainNode } from "./domain.js"
@@ -9,29 +10,35 @@ import { InstanceNode } from "./instance.js"
 import { MorphNode } from "./morph.js"
 import type { ComparisonState, CompilationState } from "./node.js"
 import { Node } from "./node.js"
-import type { PropsDefinition } from "./props.js"
+import type { PropsInput } from "./props.js"
 import { PropsNode } from "./props.js"
 import type { Bounds } from "./range.js"
 import { RangeNode } from "./range.js"
 import { RegexNode } from "./regex.js"
 
-export class ConstraintsNode extends Node<typeof ConstraintsNode> {
-    constructor(rule: ConstraintsDefinition) {
-        super(ConstraintsNode, rule)
+export class ConstraintsNode<t = unknown> extends Node<typeof ConstraintsNode> {
+    declare [as]: t
+
+    constructor(child: ConstraintsChild) {
+        super(ConstraintsNode, child)
     }
 
-    static from(constraints: ConstraintsDefinition) {
-        // const children: ConstraintsRule = {}
-        // let kind: ConstraintKind
-        // for (kind in constraints) {
-        //     children[kind] = new constraintKinds[kind](
-        //         (constraints as any)[kind] as never
-        //     ) as any
-        // }
-        // return new ConstraintsNode(children)
+    static from(input: ConstraintsInput) {
+        const child: ConstraintsChild = {}
+        const constraints = input as UnknownConstraintsInput
+        let kind: ConstraintKind
+        for (kind in constraints) {
+            child[kind] =
+                kind === "props"
+                    ? PropsNode.from(constraints[kind])
+                    : new (constraintKinds[kind] as constructor<any>)(
+                          constraints[kind]
+                      )
+        }
+        return new ConstraintsNode(child)
     }
 
-    static compile(rules: ConstraintsDefinition, s: CompilationState) {
+    static compile(rules: ConstraintsChild, s: CompilationState) {
         return s.data ? `${rules}` : ""
     }
 
@@ -104,36 +111,39 @@ export const constraintKinds = {
 
 type ConstraintNodeKinds = typeof constraintKinds
 
-type ConstraintsRule = {
+type ConstraintsChild = {
     [k in ConstraintKind]?: instanceOf<ConstraintNodeKinds[k]>
+}
+
+type UnknownConstraintsInput = {
+    [k in ConstraintKind]: k extends "props"
+        ? PropsInput
+        : instanceOf<ConstraintNodeKinds[k]>["child"]
 }
 
 type ConstraintKind = keyof ConstraintNodeKinds
 
-export type inferConstraints<constraints extends ConstraintsDefinition> =
-    unknown
+export type inferConstraintsInput<input extends ConstraintsInput> = unknown
 // constraints extends DomainConstraintsRule
 //     ? inferDomain<constraints["domain"]>
 //     : constraints extends ExactValueConstraintsRule<infer value>
 //     ? value
 //     : never
 
-type constraintBranch<rules extends ConstraintsDefinition> =
-    rules extends DomainConstraintsDefinition
-        ? DomainConstraintsDefinition & { domain: rules["domain"] }
-        : ExactValueConstraintsRule
+type constraintInputBranch<input extends ConstraintsInput> =
+    input extends DomainConstraintsInput
+        ? DomainConstraintsInput & { domain: input["domain"] }
+        : ExactValueInput
 
-export type validateConstraints<rules extends ConstraintsDefinition> = {
-    [k in keyof rules]: k extends keyof constraintBranch<rules>
-        ? rules[k]
+export type validateConstraintsInput<input extends ConstraintsInput> = {
+    [k in keyof input]: k extends keyof constraintInputBranch<input>
+        ? input[k]
         : never
 }
 
-export type ConstraintsDefinition =
-    | ExactValueConstraintsRule
-    | DomainConstraintsDefinition
+export type ConstraintsInput = ExactValueInput | DomainConstraintsInput
 
-const z: ConstraintsDefinition = {
+const z: ConstraintsInput = {
     domain: "object",
     props: {
         named: {
@@ -143,24 +153,24 @@ const z: ConstraintsDefinition = {
     }
 }
 
-type ExactValueConstraintsRule<value = unknown> = {
+type ExactValueInput<value = unknown> = {
     value: value
     morphs?: Morph[]
 }
 
-type DomainConstraintsDefinition = {
+type DomainConstraintsInput = {
     filters?: Filter[]
     morphs?: Morph[]
 } & (
     | {
           domain: "object"
           instance?: constructor
-          props?: PropsDefinition
+          props?: PropsInput
       }
     | {
           domain: "object"
           instance: typeof Array
-          props?: PropsDefinition
+          props?: PropsInput
           range?: Bounds
       }
     | {

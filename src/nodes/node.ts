@@ -3,7 +3,7 @@ import type { TypeConfig } from "../type.js"
 import type { Domain } from "../utils/domains.js"
 import { CompiledFunction, type extend } from "../utils/generics.js"
 import { Path } from "../utils/paths.js"
-import type { ConstraintsDefinition } from "./constraints.js"
+import type { ConstraintsInput } from "./constraints.js"
 import type { DomainNode } from "./domain.js"
 import type { EqualityNode } from "./equality.js"
 import type { InstanceNode } from "./instance.js"
@@ -85,10 +85,10 @@ export type DisjointKinds = extend<
         }
         leftAssignability: {
             l: EqualityNode
-            r: ConstraintsDefinition
+            r: ConstraintsInput
         }
         rightAssignability: {
-            l: ConstraintsDefinition
+            l: ConstraintsInput
             r: EqualityNode
         }
         union: {

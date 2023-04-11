@@ -1,39 +1,43 @@
 import type { Dict, List, mutable } from "../utils/generics.js"
 import type { ComparisonState, CompilationState } from "./node.js"
 import { Disjoint, Node } from "./node.js"
-import type { TypeNodeDefinition } from "./type.js"
+import type { TypeNodeInput } from "./type.js"
 import { never, TypeNode } from "./type.js"
 
 export class PropsNode extends Node<typeof PropsNode> {
     readonly named: PropsChild["named"]
     readonly indexed: PropsChild["indexed"]
 
-    constructor(input: PropsDefinition) {
+    constructor(child: PropsChild) {
+        super(PropsNode, child)
+        this.named = child.named
+        this.indexed = child.indexed
+    }
+
+    static from(input: PropsInput) {
         const named = {} as mutable<PropsChild["named"]>
         for (const k in input.named) {
             const namedPropDefinition = input.named[k]
             named[k] =
                 namedPropDefinition instanceof NamedPropNode
                     ? namedPropDefinition
-                    : new NamedPropNode(namedPropDefinition)
+                    : NamedPropNode.from(namedPropDefinition)
         }
         const indexed: PropsChild["indexed"] = input.indexed.map(
             ([keyInput, valueInput]) => [
                 keyInput instanceof TypeNode
                     ? keyInput
-                    : new TypeNode(keyInput),
+                    : TypeNode.from(...keyInput),
                 valueInput instanceof TypeNode
                     ? valueInput
-                    : new TypeNode(valueInput)
+                    : TypeNode.from(...valueInput)
             ]
         )
         const child: PropsChild = {
             named,
             indexed
         }
-        super(PropsNode, child)
-        this.named = child.named
-        this.indexed = child.indexed
+        return new PropsNode(child)
     }
 
     static compile(child: PropsChild, s: CompilationState) {
@@ -132,13 +136,11 @@ export class PropsNode extends Node<typeof PropsNode> {
     }
 }
 
-export type PropValueDefinition = TypeNode | TypeNodeDefinition
+export type PropValueInput = TypeNode | TypeNodeInput
 
-export type PropsDefinition = {
-    named: Dict<string, NamedPropNode | NamedPropDefinition>
-    indexed: List<
-        [keyType: PropValueDefinition, valueType: PropValueDefinition]
-    >
+export type PropsInput = {
+    named: Dict<string, NamedPropNode | NamedPropInput>
+    indexed: List<[keyType: PropValueInput, valueType: PropValueInput]>
 }
 
 export type PropsChild = {
@@ -148,9 +150,9 @@ export type PropsChild = {
 
 export type PropKind = "required" | "optional" | "prerequisite"
 
-export type NamedPropDefinition = {
+export type NamedPropInput = {
     kind: PropKind
-    value: PropValueDefinition
+    value: PropValueInput
 }
 
 export type NamedPropChild = {
@@ -159,15 +161,19 @@ export type NamedPropChild = {
 }
 
 export class NamedPropNode extends Node<typeof NamedPropNode> {
-    constructor(input: NamedPropDefinition) {
+    constructor(child: NamedPropChild) {
+        super(NamedPropNode, child)
+    }
+
+    static from(input: NamedPropInput) {
         const child: NamedPropChild = {
             kind: input.kind,
             value:
                 input.value instanceof TypeNode
                     ? input.value
-                    : new TypeNode(input.value)
+                    : TypeNode.from(...input.value)
         }
-        super(NamedPropNode, child)
+        return new NamedPropNode(child)
     }
 
     static compile(child: NamedPropChild, s: CompilationState) {
