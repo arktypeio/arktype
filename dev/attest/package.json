@@ -12,18 +12,18 @@
         "arktype": "1.0.10-alpha",
         "ts-node": "10.9.1",
         "get-current-line": "6.6.0",
-        "@swc/cli": "0.1.62",
-        "@swc/core": "1.3.42",
         "ts-morph": "18.0.0",
         "typescript": "5.0.3",
         "c8": "7.13.0",
         "oclif": "3.7.3",
-        "@oclif/test": "2.3.14",
         "@oclif/core": "2.8.0",
-        "zod": "3.21.4",
-        "mocha": "10.2.0",
-        "shx": "^0.3.3"
+        "shx": "^0.3.3",
+        "mocha": "10.2.0"
     },
+    "files": [
+        "/src",
+        "/dist"
+    ],
     "exports": {
         ".": {
             "types": "./dist/types/main.d.ts",
@@ -42,15 +42,13 @@
     "main": "./dist/cjs/main.js",
     "types": "./dist/types/main.d.ts",
     "bin": {
-        "attest": "./dist/cjs/cli.js"
+        "at": "./dist/cjs/assertions.ts"
     },
     "keywords": [
         "typescript"
     ],
     "oclif": {
-        "bin": "attest",
-        "dirname": "attest",
-        "commands": "./dist/commands",
+        "commands": "./dist/cjs/commands/",
         "plugins": [
             "@oclif/plugin-help",
             "@oclif/plugin-plugins"
@@ -59,16 +57,15 @@
         "topics": {
             "hello": {
                 "description": "Say hello to the world and others"
+            },
+            "test": {
+                "description": "Run some tests or something"
             }
         }
     },
     "scripts": {
         "build": "ts-node ../scripts/build.ts",
-        "buildCli": "shx rm -rf dist && tsc -b",
         "lint": "eslint . --ext .ts --config .eslintrc",
-        "postpack": "shx rm -f oclif.manifest.json",
-        "posttest": "yarn lint",
-        "prepack": "yarn build && oclif manifest && oclif readme",
         "test": "mocha --forbid-only \"test/**/*.test.ts\"",
         "version": "oclif readme && git add README.md"
     }

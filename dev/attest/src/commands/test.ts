@@ -1,15 +1,16 @@
-import { Args, Command, Flags } from "@oclif/core"
-import { version } from "os"
-import { versions } from "process"
-import { shell } from "../../../runtime/shell.js"
-
+import { version } from "node:os"
+import { versions } from "node:process"
+import { Args, Command, Errors, Flags, flush } from "@oclif/core"
+import { cacheAssertions, cleanupAssertions } from "../main.js"
+import { shell } from "../runtime/shell.js"
 export default class Test extends Command {
     static description = "describe the command here"
 
     static examples = ["<%= config.bin %> <%= command.id %>"]
 
     static flags = {
-        skipTypes: Flags.boolean({ char: "s" })
+        skipTypes: Flags.boolean({ char: "s" }),
+        help: Flags.help()
     }
 
     //this might not be possible unless jest/mocha/other suites allow for this kind of config in an easyish way
@@ -29,7 +30,7 @@ export default class Test extends Command {
         const runner = args.runner ?? undefined
         if (!runner) {
             throw new Error(
-                `Must provide a runner command, e.g. 'attest --cmd mocha'`
+                `Must provide a runner command, e.g. 'runner mocha'`
             )
         }
         if (runner === "node") {
@@ -55,7 +56,7 @@ export default class Test extends Command {
             } else {
                 console.log(`⏳ attest: Analyzing type assertions...`)
                 const cacheStart = Date.now()
-                // cacheAssertions({ forcePrecache: true })
+                cacheAssertions({ forcePrecache: true })
                 const cacheSeconds = (Date.now() - cacheStart) / 1000
                 console.log(
                     `✅ attest: Finished caching type assertions in ${cacheSeconds} seconds.\n`
@@ -76,7 +77,7 @@ export default class Test extends Command {
                 `⏳ attest: Updating inline snapshots and cleaning up cache...`
             )
             const cleanupStart = Date.now()
-            // cleanupAssertions()
+            cleanupAssertions()
             const cleanupSeconds = (Date.now() - cleanupStart) / 1000
             console.log(
                 `✅ attest: Finished cleanup in ${cleanupSeconds} seconds.`
@@ -87,3 +88,11 @@ export default class Test extends Command {
         }
     }
 }
+Test.run().then(
+    () => {
+        flush
+    },
+    (e) => {
+        Errors.handle(e)
+    }
+)
