@@ -32,9 +32,7 @@
         }
     },
     "mocha": {
-        "spec": [
-            "./dev/test/*.test.ts"
-        ],
+        "spec": [],
         "ignore": "**/node_modules/*",
         "node-option": [
             "loader=ts-node/esm",
