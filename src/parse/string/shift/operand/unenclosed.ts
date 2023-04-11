@@ -2,7 +2,8 @@ import type { Node } from "../../../../nodes/node.js"
 import type { error } from "../../../../utils/generics.js"
 import type {
     BigintLiteral,
-    NumberLiteral
+    NumberLiteral,
+    writeMalformedNumericLiteralMessage
 } from "../../../../utils/numericLiterals.js"
 import {
     tryParseWellFormedBigint,
@@ -65,19 +66,15 @@ type tryResolve<
     $
 > = token extends keyof $
     ? token
-    : token extends NumberLiteral
-    ? token
-    : // These checks are temporarily disabled because we're unable to update our TS version in StackBlitz to 4.8+
-    // https://github.com/arktypeio/arktype/issues/659
-    // number extends value
-    //     ? error<writeMalformedNumericLiteralMessage<token, "number">>
-    //     : token
-    token extends BigintLiteral
-    ? token
-    : // bigint extends value
-      //     ? error<writeMalformedNumericLiteralMessage<token, "bigint">>
-      //     : token
-      unresolvableError<s, token, $>
+    : token extends NumberLiteral<infer value>
+    ? number extends value
+        ? error<writeMalformedNumericLiteralMessage<token, "number">>
+        : token
+    : token extends BigintLiteral<infer value>
+    ? bigint extends value
+        ? error<writeMalformedNumericLiteralMessage<token, "bigint">>
+        : token
+    : unresolvableError<s, token, $>
 
 export type unresolvableError<
     s extends StaticState,

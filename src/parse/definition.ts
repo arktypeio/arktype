@@ -1,4 +1,5 @@
 import { TypeNode } from "../nodes/type.js"
+import { Type } from "../type.js"
 import type { Primitive } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
@@ -51,11 +52,9 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
         case "Function":
             if (isThunk(def)) {
                 const returned = def()
-                if (isType(returned)) {
-                    return ctx.type.scope.addAnonymousTypeReference(
-                        returned,
-                        ctx
-                    )
+                if (returned instanceof Type) {
+                    // TODO: configs?
+                    return returned.root
                 }
             }
             return throwParseError(writeBadDefinitionTypeMessage("Function"))

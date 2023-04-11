@@ -7,12 +7,9 @@ import { parseOperand } from "./shift/operand/operand.js"
 import { parseOperator } from "./shift/operator/operator.js"
 import type { Scanner } from "./shift/scanner.js"
 
+// TODO: cache
 export const parseString = (def: string, ctx: ParseContext) =>
-    ctx.type.scope.parseCache.get(def) ??
-    ctx.type.scope.parseCache.set(
-        def,
-        maybeNaiveParse(def, ctx) ?? fullStringParse(def, ctx)
-    )
+    maybeNaiveParse(def, ctx) ?? fullStringParse(def, ctx)
 
 export type parseString<def extends string, $> = maybeNaiveParse<def, $>
 

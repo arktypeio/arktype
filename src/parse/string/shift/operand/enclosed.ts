@@ -1,3 +1,4 @@
+import { TypeNode } from "../../../../nodes/type.js"
 import type { error, tailOfString } from "../../../../utils/generics.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
@@ -20,9 +21,9 @@ export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
     }
     // Shift the scanner one additional time for the second enclosing token
     if (s.scanner.shift() === "/") {
-        s.setRoot({ string: { regex: token } })
+        s.setRoot(TypeNode.from({ domain: "string", regex: [token] }))
     } else {
-        s.setRoot({ string: { value: token } })
+        s.setRoot(TypeNode.from({ value: token }))
     }
 }
 

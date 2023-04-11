@@ -1,3 +1,4 @@
+import { TypeNode } from "../../../../nodes/type.js"
 import type { error } from "../../../../utils/generics.js"
 import { keysOf } from "../../../../utils/generics.js"
 import { tryParseWellFormedInteger } from "../../../../utils/numericLiterals.js"
@@ -17,7 +18,7 @@ export const parseDivisor = (s: DynamicState) => {
     }
     const rootDomains = keysOf(s.resolveRoot())
     if (rootDomains.length === 1 && rootDomains[0] === "number") {
-        s.intersect({ number: { divisor } })
+        s.intersect(TypeNode.from({ domain: "number", divisor }))
     } else {
         s.error(writeIndivisibleMessage(s.rootToString()))
     }
