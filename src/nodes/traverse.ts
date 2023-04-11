@@ -30,6 +30,8 @@ export class TraversalState {
         // this.config = type.config
     }
 
+    // TODO: add at custom path
+
     mustBe(mustBe: string, data: unknown, path: Path) {
         return this.addProblem("custom", mustBe, data, path)
     }

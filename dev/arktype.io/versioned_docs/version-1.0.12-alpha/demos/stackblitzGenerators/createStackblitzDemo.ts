@@ -27,6 +27,11 @@ export const createStackblitzDemo = async ({ embedId }: DemoProps) =>
             files: {
                 [`${embedId}.ts`]: contentsByEmbedId[embedId],
                 "index.ts": buildStackblitzIndexText(embedId),
+                ".prettierrc": JSON.stringify({
+                    tabWidth: 4,
+                    semi: false,
+                    trailingComma: "none"
+                }),
                 ...defaultStaticFiles
             },
             title: embedId,
@@ -34,7 +39,7 @@ export const createStackblitzDemo = async ({ embedId }: DemoProps) =>
             template: "typescript",
             dependencies: {
                 // @lineFrom:package.json:version |> embed("arktype":,,)
-                arktype: "1.0.11-alpha"
+                arktype: "1.0.12-alpha"
             },
             settings: {
                 compile: {
