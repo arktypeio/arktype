@@ -21,6 +21,6 @@ export class RegexNode extends Node<typeof RegexNode> {
     }
 
     static intersection(l: RegexNode, r: RegexNode) {
-        return new RegexNode(intersectUniqueLists(l.rule, r.rule))
+        return new RegexNode(intersectUniqueLists(l.child, r.child))
     }
 }

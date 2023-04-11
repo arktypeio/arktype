@@ -1,4 +1,6 @@
-import type { inferDomain } from "../utils/domains.js"
+import type { Filter } from "../parse/ast/filter.js"
+import type { Morph } from "../parse/ast/morph.js"
+import type { constructor, instanceOf } from "../utils/generics.js"
 import { DivisibilityNode } from "./divisibility.js"
 import { DomainNode } from "./domain.js"
 import { EqualityNode } from "./equality.js"
@@ -7,16 +9,18 @@ import { InstanceNode } from "./instance.js"
 import { MorphNode } from "./morph.js"
 import type { ComparisonState, CompilationState } from "./node.js"
 import { Node } from "./node.js"
+import type { PropsDefinition } from "./props.js"
 import { PropsNode } from "./props.js"
+import type { Bounds } from "./range.js"
 import { RangeNode } from "./range.js"
 import { RegexNode } from "./regex.js"
 
 export class ConstraintsNode extends Node<typeof ConstraintsNode> {
-    constructor(rule: ConstraintsRule) {
+    constructor(rule: ConstraintsDefinition) {
         super(ConstraintsNode, rule)
     }
 
-    static from(constraints: ConstraintsRule) {
+    static from(constraints: ConstraintsDefinition) {
         // const children: ConstraintsRule = {}
         // let kind: ConstraintKind
         // for (kind in constraints) {
@@ -27,7 +31,7 @@ export class ConstraintsNode extends Node<typeof ConstraintsNode> {
         // return new ConstraintsNode(children)
     }
 
-    static compile(rules: ConstraintsRule, s: CompilationState) {
+    static compile(rules: ConstraintsDefinition, s: CompilationState) {
         return s.data ? `${rules}` : ""
     }
 
@@ -100,58 +104,75 @@ export const constraintKinds = {
 
 type ConstraintNodeKinds = typeof constraintKinds
 
+type ConstraintsRule = {
+    [k in ConstraintKind]?: instanceOf<ConstraintNodeKinds[k]>
+}
+
 type ConstraintKind = keyof ConstraintNodeKinds
 
-export type inferConstraints<constraints extends ConstraintsRule> = unknown
+export type inferConstraints<constraints extends ConstraintsDefinition> =
+    unknown
 // constraints extends DomainConstraintsRule
 //     ? inferDomain<constraints["domain"]>
 //     : constraints extends ExactValueConstraintsRule<infer value>
 //     ? value
 //     : never
 
-type constraintBranch<rules extends ConstraintsRule> =
-    rules extends DomainConstraintsRule
-        ? DomainConstraintsRule & { domain: rules["domain"] }
+type constraintBranch<rules extends ConstraintsDefinition> =
+    rules extends DomainConstraintsDefinition
+        ? DomainConstraintsDefinition & { domain: rules["domain"] }
         : ExactValueConstraintsRule
 
-export type validateConstraints<rules extends ConstraintsRule> = {
+export type validateConstraints<rules extends ConstraintsDefinition> = {
     [k in keyof rules]: k extends keyof constraintBranch<rules>
         ? rules[k]
         : never
 }
 
-export type ConstraintsRule = ExactValueConstraintsRule | DomainConstraintsRule
+export type ConstraintsDefinition =
+    | ExactValueConstraintsRule
+    | DomainConstraintsDefinition
 
-type ExactValueConstraintsRule = {
-    value: EqualityNode
-    morphs?: MorphNode
+const z: ConstraintsDefinition = {
+    domain: "object",
+    props: {
+        named: {
+            a: { kind: "required", value: [] }
+        },
+        indexed: []
+    }
 }
 
-type DomainConstraintsRule = {
-    filters?: FilterNode
-    morphs?: MorphNode
+type ExactValueConstraintsRule<value = unknown> = {
+    value: value
+    morphs?: Morph[]
+}
+
+type DomainConstraintsDefinition = {
+    filters?: Filter[]
+    morphs?: Morph[]
 } & (
     | {
-          domain: DomainNode<"object">
-          instance?: InstanceNode
-          props?: PropsNode
+          domain: "object"
+          instance?: constructor
+          props?: PropsDefinition
       }
     | {
-          domain: DomainNode<"object">
-          instance: InstanceNode<typeof Array>
-          props?: PropsNode
-          range?: RangeNode
+          domain: "object"
+          instance: typeof Array
+          props?: PropsDefinition
+          range?: Bounds
       }
     | {
-          domain: DomainNode<"string">
-          regex?: RegexNode
-          range?: RangeNode
+          domain: "string"
+          regex?: string[]
+          range?: Bounds
       }
     | {
-          domain: DomainNode<"number">
-          divisor?: DivisibilityNode
-          range?: RangeNode
+          domain: "number"
+          divisor?: number
+          range?: Bounds
       }
-    | { domain: DomainNode<"bigint"> }
-    | { domain: DomainNode<"symbol"> }
+    | { domain: "bigint" }
+    | { domain: "symbol" }
 )

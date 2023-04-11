@@ -1,3 +1,4 @@
+import { TypeNode } from "../nodes/type.js"
 import type { Space } from "../scope.js"
 import { rootScope, scope } from "../scope.js"
 import type { TypeParser } from "../type.js"

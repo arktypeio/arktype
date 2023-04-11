@@ -3,7 +3,7 @@ import type { TypeConfig } from "../type.js"
 import type { Domain } from "../utils/domains.js"
 import { CompiledFunction, type extend } from "../utils/generics.js"
 import { Path } from "../utils/paths.js"
-import type { ConstraintsRule } from "./constraints.js"
+import type { ConstraintsDefinition } from "./constraints.js"
 import type { DomainNode } from "./domain.js"
 import type { EqualityNode } from "./equality.js"
 import type { InstanceNode } from "./instance.js"
@@ -30,17 +30,17 @@ export abstract class Node<
 
     constructor(
         protected subclass: subclass,
-        public rule: Parameters<subclass["compile"]>[0]
+        public child: Parameters<subclass["compile"]>[0]
     ) {
         const defaultState = new CompilationState()
-        const compiled = subclass.compile(rule, defaultState)
+        const compiled = subclass.compile(child, defaultState)
         // TODO: Cache
         super("data", `return ${compiled}`)
         this.compiled = compiled
     }
 
     compile(s: CompilationState) {
-        return this.subclass.compile(this.rule, s)
+        return this.subclass.compile(this.child, s)
     }
 
     // protected abstract intersect(
@@ -85,10 +85,10 @@ export type DisjointKinds = extend<
         }
         leftAssignability: {
             l: EqualityNode
-            r: ConstraintsRule
+            r: ConstraintsDefinition
         }
         rightAssignability: {
-            l: ConstraintsRule
+            l: ConstraintsDefinition
             r: EqualityNode
         }
         union: {

@@ -1,6 +1,7 @@
+import { as } from "../parse/definition.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
-import type { evaluate, keySet, List } from "../utils/generics.js"
+import type { conform, evaluate, keySet, List } from "../utils/generics.js"
 import { isKeyOf, keysOf } from "../utils/generics.js"
 import type { DefaultObjectKind } from "../utils/objectKinds.js"
 import {
@@ -13,12 +14,37 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
+import type {
+    ConstraintsDefinition,
+    inferConstraints,
+    validateConstraints
+} from "./constraints.js"
 import { ConstraintsNode } from "./constraints.js"
 import type { CompilationState, Disjoint } from "./node.js"
 import { ComparisonState, Node } from "./node.js"
 
-export class TypeNode extends Node<typeof TypeNode> {
-    constructor(rule: ConstraintsNode[]) {
+type validateBranches<branches extends TypeNodeDefinition> = conform<
+    branches,
+    { [i in keyof branches]: validateConstraints<branches[i]> }
+>
+
+type inferBranches<branches extends TypeNodeDefinition> = {
+    [i in keyof branches]: inferConstraints<branches[i]>
+}[number]
+
+export type TypeNodeDefinition = List<ConstraintsDefinition>
+
+export const node = <branches extends TypeNodeDefinition>(
+    ...branches: validateBranches<branches>
+) =>
+    new TypeNode<inferBranches<branches>>(
+        branches.map((branch) => ConstraintsNode.from(branch))
+    )
+
+export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
+    declare [as]: t
+
+    constructor(rule: TypeNodeDefinition) {
         super(TypeNode, rule)
     }
 
@@ -34,11 +60,15 @@ export class TypeNode extends Node<typeof TypeNode> {
         if (l === r) {
             return l
         }
-        if (l.rule.length === 1 && r.rule.length === 1) {
-            const result = ConstraintsNode.intersection(l.rule[0], r.rule[0], s)
+        if (l.child.length === 1 && r.child.length === 1) {
+            const result = ConstraintsNode.intersection(
+                l.child[0],
+                r.child[0],
+                s
+            )
             return result.isDisjoint() ? result : new TypeNode([result])
         }
-        const branches = branchwiseIntersection(l.rule, r.rule, s)
+        const branches = branchwiseIntersection(l.child, r.child, s)
         return branches.length
             ? new TypeNode(branches)
             : s.addDisjoint("union", l, r)

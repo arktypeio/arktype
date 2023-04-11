@@ -93,14 +93,14 @@ export class RangeNode extends Node<typeof RangeNode> {
     static intersection(l: RangeNode, r: RangeNode, s: ComparisonState) {
         if (l.isEqualityRange()) {
             if (r.isEqualityRange()) {
-                return l.rule["=="] === r.rule["=="]
+                return l.child["=="] === r.child["=="]
                     ? l
                     : s.addDisjoint("range", l, r)
             }
-            return r(l.rule["=="]) ? l : s.addDisjoint("range", l, r)
+            return r(l.child["=="]) ? l : s.addDisjoint("range", l, r)
         }
         if (r.isEqualityRange()) {
-            return l(r.rule["=="]) ? r : s.addDisjoint("range", l, r)
+            return l(r.child["=="]) ? r : s.addDisjoint("range", l, r)
         }
         const stricterMin = compareStrictness("min", l.lowerBound, r.lowerBound)
         const stricterMax = compareStrictness("max", l.upperBound, r.upperBound)
@@ -132,15 +132,15 @@ export class RangeNode extends Node<typeof RangeNode> {
     }
 
     isEqualityRange(): this is { rule: { "==": number } } {
-        return this.rule["=="] !== undefined
+        return this.child["=="] !== undefined
     }
 
     getComparator(
         comparator: MinComparator | MaxComparator
     ): BoundContext | undefined {
-        if (this.rule[comparator] !== undefined) {
+        if (this.child[comparator] !== undefined) {
             return {
-                limit: this.rule[comparator]!,
+                limit: this.child[comparator]!,
                 comparator
             }
         }
@@ -155,16 +155,16 @@ export class RangeNode extends Node<typeof RangeNode> {
     }
 
     #extractComparators(prefix: ">" | "<") {
-        return this.rule[prefix] !== undefined
-            ? { [prefix]: this.rule[">"] }
-            : this.rule[`${prefix}=`] !== undefined
-            ? { [`${prefix}=`]: this.rule[`${prefix}=`] }
+        return this.child[prefix] !== undefined
+            ? { [prefix]: this.child[">"] }
+            : this.child[`${prefix}=`] !== undefined
+            ? { [`${prefix}=`]: this.child[`${prefix}=`] }
             : {}
     }
 
     toString(): string {
         if (this.isEqualityRange()) {
-            return `the range of exactly ${this.rule["=="]}`
+            return `the range of exactly ${this.child["=="]}`
         }
         const lower = this.lowerBound
         const upper = this.upperBound

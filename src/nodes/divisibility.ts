@@ -8,7 +8,7 @@ export class DivisibilityNode extends Node<typeof DivisibilityNode> {
 
     static intersection(l: DivisibilityNode, r: DivisibilityNode) {
         const leastCommonMultiple = Math.abs(
-            (l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
+            (l.child * r.child) / greatestCommonDivisor(l.child, r.child)
         )
         return new DivisibilityNode(leastCommonMultiple)
     }

@@ -1,12 +1,12 @@
 import {
+    type ConstraintsDefinition,
     ConstraintsNode,
-    type ConstraintsRule,
     type inferConstraints,
     type validateConstraints
 } from "./nodes/constraints.js"
 import type { Node } from "./nodes/node.js"
 import type { CheckResult } from "./nodes/traverse.js"
-import { TypeNode } from "./nodes/type.js"
+import type { TypeNode } from "./nodes/type.js"
 import type { ParsedMorph } from "./parse/ast/morph.js"
 import {
     as,
@@ -36,22 +36,6 @@ export type TypeParser<$> = {
 export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
-
-type validateBranches<branches extends List<ConstraintsRule>> = conform<
-    branches,
-    { [i in keyof branches]: validateConstraints<branches[i]> }
->
-
-type inferBranches<branches extends List<ConstraintsRule>> = {
-    [i in keyof branches]: inferConstraints<branches[i]>
-}[number]
-
-export const node = <branches extends List<ConstraintsRule>>(
-    ...branches: validateBranches<branches>
-): Type<inferBranches<branches>> =>
-    new Type(
-        new TypeNode(branches.map((branch) => ConstraintsNode.from(branch)))
-    )
 
 export class Type<t = unknown> extends CompiledFunction<
     [data: unknown],

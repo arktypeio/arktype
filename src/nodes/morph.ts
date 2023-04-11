@@ -22,6 +22,6 @@ export class MorphNode extends Node<typeof MorphNode> {
     }
 
     static intersection(l: MorphNode, r: MorphNode) {
-        return new MorphNode(intersectUniqueLists(l.rule, r.rule))
+        return new MorphNode(intersectUniqueLists(l.child, r.child))
     }
 }

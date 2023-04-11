@@ -1,19 +1,42 @@
-import type { Dict, List } from "../utils/generics.js"
+import type { Dict, List, mutable } from "../utils/generics.js"
 import type { ComparisonState, CompilationState } from "./node.js"
 import { Disjoint, Node } from "./node.js"
+import type { TypeNodeDefinition } from "./type.js"
 import { never, TypeNode } from "./type.js"
 
 export class PropsNode extends Node<typeof PropsNode> {
-    readonly named: PropsRule["named"]
-    readonly indexed: PropsRule["indexed"]
+    readonly named: PropsChild["named"]
+    readonly indexed: PropsChild["indexed"]
 
-    constructor(rule: PropsRule) {
-        super(PropsNode, rule)
-        this.named = rule.named
-        this.indexed = rule.indexed
+    constructor(input: PropsDefinition) {
+        const named = {} as mutable<PropsChild["named"]>
+        for (const k in input.named) {
+            const namedPropDefinition = input.named[k]
+            named[k] =
+                namedPropDefinition instanceof NamedPropNode
+                    ? namedPropDefinition
+                    : new NamedPropNode(namedPropDefinition)
+        }
+        const indexed: PropsChild["indexed"] = input.indexed.map(
+            ([keyInput, valueInput]) => [
+                keyInput instanceof TypeNode
+                    ? keyInput
+                    : new TypeNode(keyInput),
+                valueInput instanceof TypeNode
+                    ? valueInput
+                    : new TypeNode(valueInput)
+            ]
+        )
+        const child: PropsChild = {
+            named,
+            indexed
+        }
+        super(PropsNode, child)
+        this.named = child.named
+        this.indexed = child.indexed
     }
 
-    static compile(rule: PropsRule, s: CompilationState) {
+    static compile(child: PropsChild, s: CompilationState) {
         const propChecks: string[] = []
         // // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
         // for (const k in named) {
@@ -109,36 +132,46 @@ export class PropsNode extends Node<typeof PropsNode> {
     }
 }
 
-export type PropsRule = {
-    named: Dict<string, NamedPropNode>
-    indexed: List<[keyType: TypeNode, valueType: TypeNode]>
-}
+export type PropValueDefinition = TypeNode | TypeNodeDefinition
 
 export type PropsDefinition = {
-    named: Dict<string, NamedPropDefinition>
-    indexed: List<[keyType: unknown, valueType: unknown]>
+    named: Dict<string, NamedPropNode | NamedPropDefinition>
+    indexed: List<
+        [keyType: PropValueDefinition, valueType: PropValueDefinition]
+    >
+}
+
+export type PropsChild = {
+    named: Dict<string, NamedPropNode>
+    indexed: List<[keyType: TypeNode, valueType: TypeNode]>
 }
 
 export type PropKind = "required" | "optional" | "prerequisite"
 
 export type NamedPropDefinition = {
     kind: PropKind
-    value: unknown
+    value: PropValueDefinition
 }
 
-// TODO: attach these to class instead pass and infer as variadic args
-export type NamedPropRule = {
+export type NamedPropChild = {
     kind: PropKind
     value: TypeNode
 }
 
 export class NamedPropNode extends Node<typeof NamedPropNode> {
-    constructor(rule: NamedPropRule) {
-        super(NamedPropNode, rule)
+    constructor(input: NamedPropDefinition) {
+        const child: NamedPropChild = {
+            kind: input.kind,
+            value:
+                input.value instanceof TypeNode
+                    ? input.value
+                    : new TypeNode(input.value)
+        }
+        super(NamedPropNode, child)
     }
 
-    static compile(rule: NamedPropRule, s: CompilationState) {
-        return rule.value.compile(s)
+    static compile(child: NamedPropChild, s: CompilationState) {
+        return child.value.compile(s)
     }
 
     static intersection(
@@ -147,12 +180,12 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
         s: ComparisonState
     ): NamedPropNode | Disjoint {
         const kind =
-            l.rule.kind === "prerequisite" || r.rule.kind === "prerequisite"
+            l.child.kind === "prerequisite" || r.child.kind === "prerequisite"
                 ? "prerequisite"
-                : l.rule.kind === "required" || r.rule.kind === "required"
+                : l.child.kind === "required" || r.child.kind === "required"
                 ? "required"
                 : "optional"
-        const result = TypeNode.intersection(l.rule.value, r.rule.value, s)
+        const result = TypeNode.intersection(l.child.value, r.child.value, s)
         return result instanceof Disjoint
             ? kind === "optional"
                 ? new NamedPropNode({

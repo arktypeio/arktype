@@ -1,5 +1,7 @@
+import { DomainNode } from "../nodes/domain.js"
 import type { PropKind, PropsRule } from "../nodes/props.js"
-import { NamedPropNode } from "../nodes/props.js"
+import { NamedPropNode, PropsNode } from "../nodes/props.js"
+import { node } from "../nodes/type.js"
 import { Type } from "../type.js"
 import type { Dict, evaluate, mutable } from "../utils/generics.js"
 import type { inferDefinition, ParseContext } from "./definition.js"
@@ -28,7 +30,10 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
         })
         ctx.path.pop()
     }
-    return Type.from({ domain: "object", props: "" })
+    return node({
+        domain: new DomainNode("object"),
+        props: new PropsNode({ named: {}, indexed: [] })
+    })
 }
 
 type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`

@@ -12,9 +12,9 @@ export class InstanceNode<rule extends constructor = constructor> extends Node<
     }
 
     static intersection(l: InstanceNode, r: InstanceNode, s: ComparisonState) {
-        return constructorExtends(l.rule, r.rule)
+        return constructorExtends(l.child, r.child)
             ? l
-            : constructorExtends(r.rule, l.rule)
+            : constructorExtends(r.child, l.child)
             ? r
             : s.addDisjoint("class", l, r)
     }
