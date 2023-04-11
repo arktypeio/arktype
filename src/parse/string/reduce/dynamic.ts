@@ -7,7 +7,6 @@ import { invertedComparators, minComparators } from "../../../nodes/range.js"
 import type { TypeNode } from "../../../nodes/type.js"
 import { throwInternalError, throwParseError } from "../../../utils/errors.js"
 import { isKeyOf } from "../../../utils/generics.js"
-import { stringify } from "../../../utils/serialize.js"
 import type { ParseContext } from "../../definition.js"
 import { Scanner } from "../shift/scanner.js"
 import {
@@ -25,10 +24,10 @@ type BranchState = {
 }
 
 export class DynamicState {
-    public readonly scanner: Scanner
-    private root: TypeNode | undefined
-    private branches: BranchState = {}
-    private groups: BranchState[] = []
+    readonly scanner: Scanner
+    root: TypeNode | undefined
+    branches: BranchState = {}
+    groups: BranchState[] = []
 
     constructor(def: string, public readonly ctx: ParseContext) {
         this.scanner = new Scanner(def)
@@ -36,15 +35,6 @@ export class DynamicState {
 
     error(message: string) {
         return throwParseError(message)
-    }
-
-    hasRoot() {
-        return this.root !== undefined
-    }
-
-    rootToString() {
-        this.assertHasRoot()
-        return stringify(this.root)
     }
 
     ejectRootIfLimit() {

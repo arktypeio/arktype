@@ -2,7 +2,15 @@ import type { Filter } from "../parse/ast/filter.js"
 import type { Morph } from "../parse/ast/morph.js"
 import { as } from "../parse/definition.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
-import type { constructor, exact, instanceOf } from "../utils/generics.js"
+import { throwParseError } from "../utils/errors.js"
+import {
+    type constructor,
+    type exact,
+    type instanceOf,
+    type keySet,
+    keysOf
+} from "../utils/generics.js"
+import { stringify } from "../utils/serialize.js"
 import { DivisibilityNode } from "./divisibility.js"
 import { DomainNode } from "./domain.js"
 import { EqualityNode } from "./equality.js"
@@ -28,14 +36,14 @@ export class ConstraintsNode<t = unknown> extends Node<typeof ConstraintsNode> {
         input: validateConstraintsInput<input>
     ) {
         const child: ConstraintsChild = {}
-        const constraints = input as UnknownConstraintsInput
-        let kind: ConstraintKind
-        for (kind in constraints) {
-            child[kind] =
-                kind === "props"
-                    ? PropsNode.from(constraints[kind])
-                    : new (constraintKinds[kind] as constructor<any>)(
-                          constraints[kind]
+        const inputKeys = getValidatedInputKeys(input as ConstraintsInput)
+        const constraints = input as RawConstraintsInput
+        for (const k of inputKeys) {
+            child[k] =
+                k === "props"
+                    ? PropsNode.from(constraints[k]!)
+                    : new (constraintKinds[k] as constructor<any>)(
+                          constraints[k]
                       )
         }
         return new ConstraintsNode<inferConstraintsInput<input>>(child)
@@ -58,6 +66,11 @@ export class ConstraintsNode<t = unknown> extends Node<typeof ConstraintsNode> {
         //     )
         // }
         return s.path ? this : other
+    }
+
+    constrain(constraints: RawConstraintsInput) {
+        // TODO: intersect
+        return ConstraintsNode.from({ ...this.child, ...constraints } as any)
     }
 
     // compile(c: Compilation): string {
@@ -114,8 +127,8 @@ type ConstraintsChild = {
     [k in ConstraintKind]?: instanceOf<ConstraintNodeKinds[k]>
 }
 
-type UnknownConstraintsInput = {
-    [k in ConstraintKind]: k extends "props"
+export type RawConstraintsInput = {
+    [k in ConstraintKind]?: k extends "props"
         ? PropsInput
         : instanceOf<ConstraintNodeKinds[k]>["child"]
 }
@@ -145,12 +158,86 @@ export type validateConstraintsInput<input extends ConstraintsInput> = exact<
     discriminateConstraintsInputBranch<input>
 >
 
+const getValidatedInputKeys = (input: ConstraintsInput) => {
+    if ("value" in input) {
+        return getValidatedInputKeysFromSet(
+            input,
+            exactValueConstraintKeys,
+            "an exact value"
+        )
+    }
+    switch (input.domain) {
+        case "object":
+            const isArray = input.instance instanceof Array
+            const allowedKeys = isArray
+                ? arrayConstraintKeys
+                : nonArrayObjectConstraintKeys
+            return getValidatedInputKeysFromSet(
+                input,
+                allowedKeys,
+                isArray ? "an array" : "a non-array object"
+            )
+        case "string":
+            return getValidatedInputKeysFromSet(
+                input,
+                stringConstraintKeys,
+                "a string"
+            )
+        case "number":
+            return getValidatedInputKeysFromSet(
+                input,
+                numberConstraintKeys,
+                "a number"
+            )
+        case "bigint":
+            return getValidatedInputKeysFromSet(
+                input,
+                baseDomainConstraintKeys,
+                "a bigint"
+            )
+        case "symbol":
+            return getValidatedInputKeysFromSet(
+                input,
+                baseDomainConstraintKeys,
+                "a symbol"
+            )
+        default:
+            return throwParseError(
+                `Constraints input must have either a 'value' or 'domain' key with a constrainable domain as its value (was ${stringify(
+                    input
+                )})`
+            )
+    }
+}
+
+const getValidatedInputKeysFromSet = (
+    input: RawConstraintsInput,
+    allowedKeys: keySet<ConstraintKind>,
+    description: string
+) => {
+    const inputKeys = keysOf(input)
+    const disallowedValueKeys = inputKeys.filter((k) => !(k in allowedKeys))
+    if (disallowedValueKeys.length) {
+        throwParseError(
+            `Constraints ${disallowedValueKeys.join(
+                ", "
+            )} are not allowed for ${description}.`
+        )
+    }
+    return inputKeys
+}
+
 export type ConstraintsInput = ExactValueInput | DomainConstraintsInput
 
 type ExactValueInput<value = unknown> = {
     value: value
     morphs?: Morph[]
 }
+
+const exactValueConstraintKeys: Record<keyof ExactValueInput, true> = {
+    value: true,
+    morphs: true
+} as const
 
 type DomainConstraintsInput = {
     filters?: Filter[]
@@ -164,11 +251,23 @@ type DomainConstraintsInput = {
     | SymbolConstraints
 )
 
+const baseDomainConstraintKeys = {
+    domain: true,
+    filters: true,
+    morphs: true
+} as const
+
 type NonArrayObjectConstraints = {
     domain: "object"
     instance?: constructor
     props?: PropsInput
 }
+
+const nonArrayObjectConstraintKeys = {
+    ...baseDomainConstraintKeys,
+    instance: true,
+    props: true
+} as const satisfies Record<keyof NonArrayObjectConstraints, true>
 
 type ArrayConstraints = {
     domain: "object"
@@ -177,17 +276,36 @@ type ArrayConstraints = {
     range?: Bounds
 }
 
+const arrayConstraintKeys = {
+    ...baseDomainConstraintKeys,
+    instance: true,
+    props: true,
+    range: true
+} as const satisfies Record<keyof ArrayConstraints, true>
+
 type StringConstraints = {
     domain: "string"
     regex?: string[]
     range?: Bounds
 }
 
+const stringConstraintKeys = {
+    ...baseDomainConstraintKeys,
+    regex: true,
+    range: true
+} as const satisfies Record<keyof StringConstraints, true>
+
 type NumberConstraints = {
     domain: "number"
     divisor?: number
     range?: Bounds
 }
+
+const numberConstraintKeys = {
+    ...baseDomainConstraintKeys,
+    divisor: true,
+    range: true
+} as const satisfies Record<keyof NumberConstraints, true>
 
 type BigintConstraints = { domain: "bigint" }
 

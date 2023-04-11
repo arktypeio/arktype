@@ -31,15 +31,16 @@ type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
     : fullStringParse<def, $>
 
 export const maybeNaiveParse = (def: string, ctx: ParseContext) => {
-    if (ctx.type.scope.addParsedReferenceIfResolvable(def, ctx)) {
-        return def
-    }
-    if (def.endsWith("[]")) {
-        const elementDef = def.slice(0, -2)
-        if (ctx.type.scope.addParsedReferenceIfResolvable(def, ctx)) {
-            return toArrayNode(elementDef)
-        }
-    }
+    return fullStringParse(def, ctx)
+    // if (ctx.type.scope.addParsedReferenceIfResolvable(def, ctx)) {
+    //     return def
+    // }
+    // if (def.endsWith("[]")) {
+    //     const elementDef = def.slice(0, -2)
+    //     if (ctx.type.scope.addParsedReferenceIfResolvable(def, ctx)) {
+    //         return toArrayNode(elementDef)
+    //     }
+    // }
 }
 
 export const fullStringParse = (def: string, ctx: ParseContext) => {
@@ -66,8 +67,7 @@ type loopValid<
     $
 > = s["unscanned"] extends Scanner.finalized ? s["root"] : loop<next<s, $>, $>
 
-const next = (s: DynamicState) =>
-    s.hasRoot() ? parseOperator(s) : parseOperand(s)
+const next = (s: DynamicState) => (s.root ? parseOperator(s) : parseOperand(s))
 
 type next<s extends StaticState, $> = s["root"] extends undefined
     ? parseOperand<s, $>

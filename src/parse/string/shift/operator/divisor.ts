@@ -2,6 +2,7 @@ import { TypeNode } from "../../../../nodes/type.js"
 import type { error } from "../../../../utils/generics.js"
 import { keysOf } from "../../../../utils/generics.js"
 import { tryParseWellFormedInteger } from "../../../../utils/numericLiterals.js"
+import { stringify } from "../../../../utils/serialize.js"
 import { writeIndivisibleMessage } from "../../../ast/divisor.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
@@ -20,7 +21,7 @@ export const parseDivisor = (s: DynamicState) => {
     if (rootDomains.length === 1 && rootDomains[0] === "number") {
         s.intersect(TypeNode.from({ domain: "number", divisor }))
     } else {
-        s.error(writeIndivisibleMessage(s.rootToString()))
+        s.error(writeIndivisibleMessage(stringify(s.root)))
     }
 }
 

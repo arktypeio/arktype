@@ -6,11 +6,10 @@ import type {
 } from "../../../../nodes/range.js"
 import { maxComparators, minComparators } from "../../../../nodes/range.js"
 import { throwInternalError } from "../../../../utils/errors.js"
-import type { error, keySet, mutable } from "../../../../utils/generics.js"
-import { isKeyOf, keysOf, listFrom } from "../../../../utils/generics.js"
+import type { error, keySet } from "../../../../utils/generics.js"
+import { isKeyOf } from "../../../../utils/generics.js"
 import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
-import { writeUnboundableMessage } from "../../../ast/bound.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { writeUnpairableComparatorMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
@@ -104,39 +103,7 @@ export const parseRightBound = (s: DynamicState, comparator: Comparator) => {
         : hasComparatorIn(rightBound, maxComparators)
         ? { max: rightBound }
         : throwInternalError(`Unexpected comparator '${rightBound.comparator}'`)
-    s.intersect(distributeRange(range, s))
-}
-
-const distributeRange = (range: Bounds, s: DynamicState) => {
-    const resolution = s.resolveRoot()
-    const domains = keysOf(resolution)
-    const distributedRange: mutable<DomainsJson> = {}
-    const rangePredicate = { range } as const
-    const isBoundable = domains.every((domain) => {
-        switch (domain) {
-            case "string":
-                distributedRange.string = rangePredicate
-                return true
-            case "number":
-                distributedRange.number = rangePredicate
-                return true
-            case "object":
-                distributedRange.object = rangePredicate
-                if (resolution.object === true) {
-                    return false
-                }
-                return listFrom(resolution.object!).every(
-                    (branch) =>
-                        "instance" in branch && branch.instance === Array
-                )
-            default:
-                return false
-        }
-    })
-    if (!isBoundable) {
-        s.error(writeUnboundableMessage(s.rootToString()))
-    }
-    return distributedRange
+    s.root = s.root?.and()
 }
 
 const hasComparator = <comparator extends Comparator>(

@@ -18,6 +18,7 @@ import { serializePrimitive } from "../utils/serialize.js"
 import type {
     ConstraintsInput,
     inferConstraintsInput,
+    RawConstraintsInput,
     validateConstraintsInput
 } from "./constraints.js"
 import { ConstraintsNode } from "./constraints.js"
@@ -76,6 +77,12 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         return branches.length
             ? new TypeNode(branches)
             : s.addDisjoint("union", this, other)
+    }
+
+    constrain(constraints: RawConstraintsInput) {
+        return new TypeNode(
+            this.child.map((branch) => branch.constrain(constraints))
+        )
     }
 
     and(other: TypeNode): TypeNode {

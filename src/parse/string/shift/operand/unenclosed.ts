@@ -1,4 +1,6 @@
 import type { Node } from "../../../../nodes/node.js"
+import type { TypeNodeInput } from "../../../../nodes/type.js"
+import { TypeNode } from "../../../../nodes/type.js"
 import type { error } from "../../../../utils/generics.js"
 import type {
     BigintLiteral,
@@ -15,7 +17,7 @@ import type { Scanner } from "../scanner.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
     const token = s.scanner.shiftUntilNextTerminator()
-    s.setRoot(unenclosedToNode(s, token))
+    s.root = unenclosedToNode(s, token)
 }
 
 export type parseUnenclosed<
@@ -31,7 +33,7 @@ export type parseUnenclosed<
         : never
     : never
 
-const unenclosedToNode = (s: DynamicState, token: string) => {
+const unenclosedToNode = (s: DynamicState, token: string): TypeNode => {
     if (s.ctx.type.scope.addParsedReferenceIfResolvable(token, s.ctx)) {
         return token
     }
@@ -48,15 +50,11 @@ const unenclosedToNode = (s: DynamicState, token: string) => {
 const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
-        return { number: { value: maybeNumber } }
+        return TypeNode.from({ value: maybeNumber })
     }
     const maybeBigint = tryParseWellFormedBigint(token)
     if (maybeBigint !== undefined) {
-        return {
-            bigint: {
-                value: maybeBigint
-            }
-        }
+        return TypeNode.from({ value: maybeBigint })
     }
 }
 
