@@ -38,8 +38,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     const named: mutable<PropsInput["named"]> = {
         length: {
             kind: "prerequisite",
-            // TODO: non-list
-            value: [{ value: def.length }]
+            value: { value: def.length }
         }
     }
     if (def.length > 0) {

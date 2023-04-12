@@ -57,7 +57,6 @@ export class ConstraintsNode<t = unknown> extends Node<typeof ConstraintsNode> {
 
     intersect(other: ConstraintsNode, s: ComparisonState) {
         // if (
-        //     // TODO: Fix
         //     // s.lastOperator === "&" &&
         //     this.rules.morphs?.some(
         //         (morph, i) => morph !== branch.tree.morphs?.[i]
@@ -127,8 +126,7 @@ const baseKeysByDomain: Record<Domain, readonly KeyValue[]> = {
 
 const arrayIndexStringBranch = ConstraintsNode.from({
     domain: "string",
-    // TODO: non array input
-    regex: [wellFormedNonNegativeIntegerMatcher.source]
+    regex: wellFormedNonNegativeIntegerMatcher.source
 })
 
 const arrayIndexNumberBranch = ConstraintsNode.from({
@@ -160,7 +158,7 @@ type ConstraintsChild = {
 export type RawConstraintsInput = {
     [k in ConstraintKind]?: k extends "props"
         ? PropsInput
-        : instanceOf<ConstraintNodeKinds[k]>["child"]
+        : ConstructorParameters<ConstraintNodeKinds[k]>[0]
 }
 
 type ConstraintKind = keyof ConstraintNodeKinds
@@ -324,7 +322,7 @@ const arrayConstraintKeys = {
 
 type StringConstraints = {
     domain: "string"
-    regex?: string[]
+    regex?: string | string[]
     range?: Bounds
 }
 

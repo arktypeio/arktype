@@ -1,4 +1,9 @@
-import type { Dict, List, mutable } from "../utils/generics.js"
+import {
+    type Dict,
+    type List,
+    listFrom,
+    type mutable
+} from "../utils/generics.js"
 import type { ComparisonState, CompilationState } from "./node.js"
 import { Disjoint, Node } from "./node.js"
 import type { TypeNodeInput } from "./type.js"
@@ -27,10 +32,10 @@ export class PropsNode extends Node<typeof PropsNode> {
             ([keyInput, valueInput]) => [
                 keyInput instanceof TypeNode
                     ? keyInput
-                    : TypeNode.from(...keyInput),
+                    : TypeNode.from(...listFrom(keyInput)),
                 valueInput instanceof TypeNode
                     ? valueInput
-                    : TypeNode.from(...valueInput)
+                    : TypeNode.from(...listFrom(valueInput))
             ]
         )
         const child: PropsChild = {
@@ -120,7 +125,7 @@ export class PropsNode extends Node<typeof PropsNode> {
     }
 }
 
-export type PropValueInput = TypeNode | TypeNodeInput
+export type PropValueInput = TypeNode | TypeNodeInput | TypeNodeInput[number]
 
 export type PropsInput = {
     named: Dict<string, NamedPropNode | NamedPropInput>
@@ -155,7 +160,7 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
             value:
                 input.value instanceof TypeNode
                     ? input.value
-                    : TypeNode.from(...input.value)
+                    : TypeNode.from(...listFrom(input.value))
         }
         return new NamedPropNode(child)
     }

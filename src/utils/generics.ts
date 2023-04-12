@@ -30,12 +30,6 @@ export type exact<t, u> = {
         : never
 }
 
-/** Causes a type that would be eagerly calculated to be displayed as-is.
- *  WARNING: Makes t NonNullable as a side effect.
- */
-export type defer<t> = t & {}
-
-// TODO: Try replacing defer
 export type noInfer<t> = [t][t extends any ? 0 : never]
 
 export type merge<base, merged> = evaluate<Omit<base, keyof merged> & merged>

@@ -4,8 +4,11 @@ import { Node } from "./node.js"
 import type { CompilationState } from "./node.js"
 
 export class FilterNode extends Node<typeof FilterNode> {
-    constructor(rule: Filter[]) {
-        super(FilterNode, rule)
+    constructor(predicates: Filter | Filter[]) {
+        super(
+            FilterNode,
+            typeof predicates === "function" ? [predicates] : predicates
+        )
     }
 
     static compile(sources: Filter[], c: CompilationState) {
