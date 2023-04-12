@@ -10,14 +10,15 @@ import {
     objectKindOf
 } from "../utils/objectKinds.js"
 import { Path } from "../utils/paths.js"
+import { registry } from "../utils/registry.js"
 import type {
     SerializablePrimitive,
     SerializedPrimitive
 } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
 import type { EqualityNode } from "./equality.js"
-import type { CompilationState, Disjoint } from "./node.js"
-import { ComparisonState, Node } from "./node.js"
+import type { Disjoint } from "./node.js"
+import { ComparisonState, CompilationState, Node } from "./node.js"
 import type {
     Constraints,
     inferRuleSet,
@@ -45,8 +46,15 @@ export type TypeNodeInput = List<RuleSet | RulesNode>
 export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     declare [as]: t
 
+    compiledRootTraversal: string
+
     constructor(child: RulesNode[]) {
         super(TypeNode, child)
+        this.compiledRootTraversal = `(() => {
+const state = new ${registry().reference("state")}();
+        ${this.compile(new CompilationState("traverse"))};
+return state.finalize(data);
+})()`
     }
 
     static from<const branches extends TypeNodeInput>(

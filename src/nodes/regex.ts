@@ -7,8 +7,13 @@ export class RegexNode extends Node<typeof RegexNode> {
         super(RegexNode, typeof sources === "string" ? [sources] : sources)
     }
 
-    static checks(sources: string[], c: CompilationState) {
-        return sources.map((source) => `/${source}/.test(${c.data})` as const)
+    static checks(sources: string[], s: CompilationState) {
+        return sources.map((source) => {
+            const check = `/${source}/.test(${s.data})`
+            return s.kind === "traverse"
+                ? s.traverse("regex", check, source)
+                : check
+        })
     }
 
     // c.problem(

@@ -16,12 +16,15 @@ export class DomainNode<domain extends Domain = Domain> extends Node<
     }
 
     static checks(constraint: Domain, s: CompilationState) {
-        return [
+        let check =
             constraint === "object"
                 ? `((typeof ${s.data} === "object" && ${s.data} !== null) || typeof ${s.data} === "function")`
                 : constraint === "null" || constraint === "undefined"
                 ? `${s.data} === ${constraint}`
                 : `typeof ${s.data} === "${constraint}"`
-        ]
+        if (s.kind === "traverse") {
+            check = s.traverse("domain", check, constraint)
+        }
+        return [check]
     }
 }

@@ -49,7 +49,8 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     constructor(public definition: unknown, public scope: Scope) {
         const root = parseDefinition(definition, { path: new Path(), scope })
         const checkResult = registry().reference("result")
-        const compiled = `(${root.compiled} && new ${checkResult}(true, data)) || new ${checkResult}(false)`
+        const state = registry().reference("state")
+        const compiled = `(${root.compiledRootCheck} && new ${checkResult}(true, data)) || ${root.compiledRootTraversal}`
         super("data", `return ${compiled}`)
         this.compiled = compiled
         this.root = root

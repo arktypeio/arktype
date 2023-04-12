@@ -4,6 +4,7 @@ import type { Domain } from "../utils/domains.js"
 import { CompiledFunction } from "../utils/generics.js"
 import type { extend, instanceOf } from "../utils/generics.js"
 import { Path } from "../utils/paths.js"
+import { registry } from "../utils/registry.js"
 import type { DomainNode } from "./domain.js"
 import type { EqualityNode } from "./equality.js"
 import type { InstanceNode } from "./instance.js"
@@ -22,25 +23,21 @@ export abstract class Node<
     subclass extends NodeSubclass<subclass> = NodeSubclass<any>,
     input = any
 > extends CompiledFunction<[data: input], boolean> {
-    compiled: string
+    compiledRootCheck: string
+
     constructor(
         protected subclass: subclass,
         public child: Parameters<subclass["checks"]>[0]
     ) {
-        const defaultState = new CompilationState("check")
-        const checks = subclass.checks(child, defaultState)
-        const compiled = checks.sort().join(" && ")
+        const checks = subclass.checks(child, new CompilationState("check"))
+        const compiledChecks = checks.sort().join(" && ")
         // TODO: Cache
-        super("data", `return ${compiled}`)
-        this.compiled = compiled
+        super("data", `return ${compiledChecks}`)
+        this.compiledRootCheck = compiledChecks
     }
 
     compile(s: CompilationState) {
-        let checks = this.subclass.checks(this.child, s)
-        if (s.kind === "traverse") {
-            checks = checks.map((check) => s.check("custom", check, "bad"))
-        }
-        return checks.join(" && ")
+        return this.subclass.checks(this.child, s).join(" && ")
     }
 
     abstract intersect(
@@ -156,7 +153,7 @@ export class CompilationState {
 
     constructor(public kind: CompilationKind) {}
 
-    check<code extends ProblemCode, condition extends string>(
+    traverse<code extends ProblemCode, condition extends string>(
         code: code,
         condition: condition,
         rule: ProblemRules[code]
@@ -179,6 +176,7 @@ let valid = ${checks[0]};\n`
     }
 
     get data() {
+        // TODO: remove from path
         return this.path.toPropChain()
     }
 

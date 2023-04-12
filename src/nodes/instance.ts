@@ -24,12 +24,15 @@ export class InstanceNode<rule extends constructor = constructor> extends Node<
 
     static checks(ancestor: constructor, s: CompilationState) {
         // TODO: also for other builtins
+        const check = `${s.data} instanceof ${
+            ancestor === Array
+                ? "Array"
+                : registry().register(ancestor.name, ancestor)
+        }`
         return [
-            `${s.data} instanceof ${
-                ancestor === Array
-                    ? "Array"
-                    : registry().register(ancestor.name, ancestor)
-            }`
+            s.kind === "traverse"
+                ? s.traverse("instance", check, ancestor)
+                : check
         ]
         // return s.check("instance", `${s.data} instanceof ${compiled}`, ancestor)
     }

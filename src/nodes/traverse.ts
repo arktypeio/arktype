@@ -32,15 +32,16 @@ export class TraversalState {
         // this.config = type.config
     }
 
-    // finalize(data: unknown): CheckResult {
-    //     if (this.problems.count) {
-    //         return new CheckResult(this.problems)
-    //     }
-    //     for (const [o, k] of this.entriesToPrune) {
-    //         delete o[k]
-    //     }
-    //     return new CheckResult(data)
-    // }
+    finalize(data: unknown): CheckResult {
+        if (this.problems.count) {
+            return new CheckResult(false, this.problems)
+        }
+        for (const [o, k] of this.entriesToPrune) {
+            delete o[k]
+        }
+        //TODO: should never happen
+        return new CheckResult(true, data)
+    }
 
     // TODO: add at custom path
 

@@ -39,6 +39,6 @@ console.log(format(myType.compiled))
 
 console.log(benchType(benchData).data)
 
-console.log(myType({ even: 3 }).data)
-console.log(myType({ even: "" }).data)
+console.log(myType({ even: 3 }).problems?.summary)
+console.log(myType({ even: "" }).problems?.summary)
 console.log(myType({ even: 2 }).data)
