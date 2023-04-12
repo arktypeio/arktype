@@ -1,3 +1,4 @@
+import type { TypeNode } from "../../nodes/type.js"
 import type { error } from "../../utils/generics.js"
 import type { inferAst } from "../ast/ast.js"
 import type { ParseContext } from "../definition.js"
@@ -30,17 +31,18 @@ type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
     ? def
     : fullStringParse<def, $>
 
-export const maybeNaiveParse = (def: string, ctx: ParseContext) => {
+export const maybeNaiveParse = (def: string, ctx: ParseContext): TypeNode => {
+    if (ctx.scope.isResolvable(def)) {
+        return ctx.scope.resolve(def).root
+    }
+    if (def.endsWith("[]")) {
+        const elementDef = def.slice(0, -2)
+        if (ctx.scope.isResolvable(elementDef)) {
+            // TODO: configs?
+            return ctx.scope.resolve(elementDef).root.toArray()
+        }
+    }
     return fullStringParse(def, ctx)
-    // if (ctx.type.scope.addParsedReferenceIfResolvable(def, ctx)) {
-    //     return def
-    // }
-    // if (def.endsWith("[]")) {
-    //     const elementDef = def.slice(0, -2)
-    //     if (ctx.type.scope.addParsedReferenceIfResolvable(def, ctx)) {
-    //         return toArrayNode(elementDef)
-    //     }
-    // }
 }
 
 export const fullStringParse = (def: string, ctx: ParseContext) => {

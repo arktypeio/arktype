@@ -1,4 +1,3 @@
-import type { Node } from "../../nodes/node.js"
 import type { PropsInput } from "../../nodes/props.js"
 import { TypeNode } from "../../nodes/type.js"
 import { throwParseError } from "../../utils/errors.js"
@@ -29,12 +28,12 @@ import { parseMorphTuple } from "./morph.js"
 import type { inferUnion } from "./union.js"
 
 export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
-    // if (isIndexOneExpression(def)) {
-    //     return indexOneParsers[def[1]](def as never, ctx)
-    // }
-    // if (isIndexZeroExpression(def)) {
-    //     return prefixParsers[def[0]](def as never, ctx)
-    // }
+    if (isIndexOneExpression(def)) {
+        return indexOneParsers[def[1]](def as never, ctx)
+    }
+    if (isIndexZeroExpression(def)) {
+        return prefixParsers[def[0]](def as never, ctx)
+    }
     const named: mutable<PropsInput["named"]> = {
         length: {
             kind: "prerequisite",
@@ -144,12 +143,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
 export type PostfixParser<token extends IndexOneOperator> = (
     def: IndexOneExpression<token>,
     ctx: ParseContext
-) => Node
+) => TypeNode
 
 export type PrefixParser<token extends IndexZeroOperator> = (
     def: IndexZeroExpression<token>,
     ctx: ParseContext
-) => Node
+) => TypeNode
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 
