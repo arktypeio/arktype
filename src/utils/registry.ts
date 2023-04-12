@@ -1,12 +1,13 @@
 // TODO: move this and other non-nodes out of nodes dir
 
 import type { ark } from "../main.js"
-import type { TraversalState } from "../nodes/traverse.js"
+import type { CheckResult, TraversalState } from "../nodes/traverse.js"
 import type { autocomplete } from "./generics.js"
 
 type RequiredEntries = {
     ark: typeof ark
     state: typeof TraversalState
+    result: typeof CheckResult
 }
 
 type RequiredKey = keyof RequiredEntries

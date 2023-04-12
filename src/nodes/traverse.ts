@@ -1,19 +1,20 @@
 import type { TypeConfig } from "../type.js"
-import type { xor } from "../utils/generics.js"
 import { Path } from "../utils/paths.js"
-import { register } from "../utils/registry.js"
 import type { Problem, ProblemCode, ProblemParameters } from "./problems.js"
 import { Problems, problemsByCode } from "./problems.js"
 
-export const CheckResult = class {
-    data?: unknown
-    problems?: Problems
-} as new (state: TraversalState) => CheckResult
+export class CheckResult<out = unknown, valid extends boolean = boolean> {
+    declare data: valid extends true ? out : never
+    declare problems: valid extends true ? never : Problems
 
-export type CheckResult<out = unknown> = xor<
-    { data: out },
-    { problems: Problems }
->
+    constructor(valid: valid, result: valid extends true ? out : Problems) {
+        if (valid) {
+            this.data = result as never
+        } else {
+            this.problems = result as never
+        }
+    }
+}
 
 export class TraversalState {
     basePath = new Path()
@@ -31,18 +32,15 @@ export class TraversalState {
         // this.config = type.config
     }
 
-    finalize(data: unknown): CheckResult {
-        const result = new CheckResult(this)
-        if (this.problems.count) {
-            result.problems = this.problems
-        } else {
-            for (const [o, k] of this.entriesToPrune) {
-                delete o[k]
-            }
-            result.data = data
-        }
-        return result
-    }
+    // finalize(data: unknown): CheckResult {
+    //     if (this.problems.count) {
+    //         return new CheckResult(this.problems)
+    //     }
+    //     for (const [o, k] of this.entriesToPrune) {
+    //         delete o[k]
+    //     }
+    //     return new CheckResult(data)
+    // }
 
     // TODO: add at custom path
 

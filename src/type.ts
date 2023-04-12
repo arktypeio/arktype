@@ -1,4 +1,5 @@
-import { type CheckResult, TraversalState } from "./nodes/traverse.js"
+import { Problems } from "./main.js"
+import { CheckResult, TraversalState } from "./nodes/traverse.js"
 import type { TypeNode } from "./nodes/type.js"
 import type { Filter, inferPredicate } from "./parse/ast/filter.js"
 import type { inferIntersection } from "./parse/ast/intersection.js"
@@ -16,7 +17,7 @@ import type { evaluate } from "./utils/generics.js"
 import { CompiledFunction } from "./utils/generics.js"
 import type { BuiltinClass } from "./utils/objectKinds.js"
 import { Path } from "./utils/paths.js"
-import { register } from "./utils/registry.js"
+import { getRegistered, register } from "./utils/registry.js"
 
 export type TypeParser<$> = {
     // Parse and check the definition, returning either the original input for a
@@ -33,6 +34,7 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     : never
 
 register("state", TraversalState)
+register("result", CheckResult)
 
 export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     [data: unknown],
@@ -47,7 +49,9 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
 
     constructor(public definition: unknown, public scope: Scope) {
         const root = parseDefinition(definition, { path: new Path(), scope })
-        const compiled = `${root.compiled} && { data }`
+        const compiled = `${root.compiled} && new ${getRegistered(
+            "result"
+        )}(true, data)`
         super("data", `return ${compiled}`)
         this.compiled = compiled
         this.root = root
