@@ -1,44 +1,61 @@
 import { TypeNode } from "../../nodes/type.js"
-import { rootType, scope } from "../../scope.js"
+import { scope } from "../../scope.js"
 import {
     wellFormedIntegerMatcher,
     wellFormedNumberMatcher
 } from "../../utils/numericLiterals.js"
-import { tsKeywords } from "../tsKeywords.js"
 import { creditCard } from "./creditCard.js"
 import { parsedDate } from "./date.js"
 
 // Non-trivial expressions should have an explanation or attribution
 
-const parsedNumber = rootType(
-    [wellFormedNumberMatcher, "|>", (s) => parseFloat(s)],
-    { mustBe: "a well-formed numeric string" }
-)
-
-const parsedInteger = rootType(
-    [wellFormedIntegerMatcher, "|>", (s) => parseInt(s)],
-    { mustBe: "a well-formed integer string" }
-)
-
-// https://www.regular-expressions.info/email.html
-const email = rootType(/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/, {
-    mustBe: "a valid email"
+// TODO: { mustBe: "a well-formed numeric string" }
+const parsedNumber = TypeNode.from({
+    domain: "string",
+    regex: wellFormedNumberMatcher.source,
+    morph: (s) => parseFloat(s)
 })
 
+// TODO:  { mustBe: "a well-formed integer string" }
+const parsedInteger = TypeNode.from({
+    domain: "string",
+    regex: wellFormedIntegerMatcher.source,
+    morph: (s) => parseInt(s)
+})
+
+const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
+
+// https://www.regular-expressions.info/email.html
+//  "a valid email"
+const email = TypeNode.from({
+    domain: "string",
+    regex: emailMatcher.source
+})
+
+const uuidMatcher =
+    /^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/
+
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
-const uuid = rootType(
-    /^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/,
-    { mustBe: "a valid UUID" }
-)
+// "a valid UUID"
+const uuid = TypeNode.from({
+    domain: "string",
+    regex: uuidMatcher.source
+})
+
+const semverMatcher =
+    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
 
 // https://semver.org/
-const semver = rootType(
-    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/,
-    { mustBe: "a valid semantic version (see https://semver.org/)" }
-)
+// "a valid semantic version (see https://semver.org/)"
+const semver = TypeNode.from({
+    domain: "string",
+    regex: semverMatcher.source
+})
 
-const json = rootType([tsKeywords.string, "|>", (s) => JSON.parse(s)], {
-    mustBe: "a JSON-parsable string"
+// "a JSON-parsable string"
+const json = TypeNode.from({
+    domain: "string",
+    morph: (s) => JSON.parse(s)
 })
 
 /**

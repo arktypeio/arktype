@@ -30,9 +30,14 @@ export type validateFilterTuple<def extends TupleExpression, $> = readonly [
     Filter<inferIn<inferDefinition<def[0], $>>>
 ]
 
-export type inferFilter<inDef, narrow, $> = narrow extends (
+export type inferFilter<inDef, predicate, $> = inferPredicate<
+    inferIn<inferDefinition<inDef, $>>,
+    predicate
+>
+
+export type inferPredicate<In, predicate> = predicate extends (
     data: any,
     ...args: any[]
 ) => data is infer narrowed
     ? narrowed
-    : inferIn<inferDefinition<inDef, $>>
+    : In

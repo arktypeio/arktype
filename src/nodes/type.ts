@@ -15,16 +15,16 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
-import type {
-    RuleSet,
-    inferRuleSet,
-    Rules,
-    validateConstraintsInput
-} from "./rules.js"
-import { RulesNode } from "./rules.js"
 import type { EqualityNode } from "./equality.js"
 import type { CompilationState, Disjoint } from "./node.js"
 import { ComparisonState, Node } from "./node.js"
+import { RulesNode } from "./rules.js"
+import type {
+    inferRuleSet,
+    Rules,
+    RuleSet,
+    validateConstraintsInput
+} from "./rules.js"
 
 type validateBranches<branches extends TypeNodeInput> = {
     [i in keyof branches]: branches[i] extends RuleSet

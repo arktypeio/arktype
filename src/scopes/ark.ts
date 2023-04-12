@@ -1,5 +1,5 @@
 import type { Space } from "../scope.js"
-import { rootScope, scope } from "../scope.js"
+import { scope } from "../scope.js"
 import type { TypeParser } from "../type.js"
 import { jsObjects, jsObjectsScope } from "./jsObjects.js"
 import { tsKeywords, tsKeywordsScope } from "./tsKeywords.js"
@@ -14,10 +14,9 @@ export const arkScope = scope(
     }
 )
 
-export const ark: Space<PrecompiledDefaults> = arkScope.compile()
+export const ark: Space<Ark> = arkScope.compile()
 
 export const scopes = {
-    root: rootScope,
     tsKeywords: tsKeywordsScope,
     jsObjects: jsObjectsScope,
     validation: validationScope,
@@ -34,7 +33,7 @@ export const spaces = {
 // This is just copied from the inference of defaultScope. Creating an explicit
 // type like this makes validation for the default type and scope functions feel
 // significantly more responsive.
-export type PrecompiledDefaults = {
+export type Ark = {
     // tsKeywords
     any: any
     bigint: bigint
@@ -76,4 +75,9 @@ export type PrecompiledDefaults = {
     Promise: Promise<unknown>
 }
 
-export const type: TypeParser<PrecompiledDefaults> = arkScope.type
+export const type: TypeParser<Ark> = arkScope.type
+
+const z = type({ a: "string" })
+    .and({ b: "number" })
+    .morph(({ a, b }) => ({ b: a, a: b }))
+    .filter((data): data is { a: "foo"; b: number } => data.a === "foo")

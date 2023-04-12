@@ -1,6 +1,9 @@
 import type { CheckResult } from "./nodes/traverse.js"
 import type { TypeNode } from "./nodes/type.js"
-import type { ParsedMorph } from "./parse/ast/morph.js"
+import type { Filter, inferPredicate } from "./parse/ast/filter.js"
+import type { inferIntersection } from "./parse/ast/intersection.js"
+import type { Morph, ParsedMorph } from "./parse/ast/morph.js"
+import type { inferUnion } from "./parse/ast/union.js"
 import {
     as,
     type inferDefinition,
@@ -8,7 +11,9 @@ import {
     type validateDefinition
 } from "./parse/definition.js"
 import type { Scope } from "./scope.js"
-import { CompiledFunction, type evaluate } from "./utils/generics.js"
+import type { Ark } from "./scopes/ark.js"
+import type { evaluate } from "./utils/generics.js"
+import { CompiledFunction } from "./utils/generics.js"
 import type { BuiltinClass } from "./utils/objectKinds.js"
 import { Path } from "./utils/paths.js"
 
@@ -23,10 +28,10 @@ export type TypeParser<$> = {
 // Reuse the validation result to determine if the type will be successfully created.
 // If it will, infer it and create a validator. Otherwise, return never.
 export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
-    ? Type<inferDefinition<def, $>>
+    ? Type<inferDefinition<def, $>, $>
     : never
 
-export class Type<t = unknown> extends CompiledFunction<
+export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     [data: unknown],
     CheckResult<inferOut<t>>
 > {
@@ -46,6 +51,31 @@ return state.finalize(data)
 `
         )
         this.root = root
+    }
+
+    and<def>(
+        def: validateDefinition<def, $>
+    ): Type<inferIntersection<t, inferDefinition<def, $>>, $> {
+        return this as any
+    }
+
+    or<def>(
+        def: validateDefinition<def, $>
+    ): Type<inferUnion<t, inferDefinition<def, $>>, $> {
+        return this as any
+    }
+
+    // TODO: Fix other operations on morphs
+    morph<transform extends Morph<inferIn<t>>>(
+        transform: transform
+    ): Type<(In: inferIn<t>) => ReturnType<transform>, $> {
+        return this as any
+    }
+
+    filter<predicate extends Filter<inferIn<t>>>(
+        predicate: predicate
+    ): Type<inferPredicate<inferIn<t>, predicate>, $> {
+        return this as any
     }
 
     // TODO: don't mutate

@@ -1,5 +1,4 @@
-import { rootType } from "../../scope.js"
-import { tsKeywords } from "../tsKeywords.js"
+import { TypeNode } from "../../nodes/type.js"
 
 type DayDelimiter = "." | "/" | "-"
 
@@ -98,14 +97,13 @@ export const tryParseDate = (
     return writeFormattedMustBe(opts.format)
 }
 
-export const parsedDate = rootType([
-    tsKeywords.string,
-    "|>",
-    (s, state) => {
+export const parsedDate = TypeNode.from({
+    domain: "string",
+    morph: (s, state) => {
         const result = tryParseDate(s)
         return typeof result === "string"
             ? // TODO: Fix
               state.mustBe(result, s, state.basePath)
             : result
     }
-])
+})

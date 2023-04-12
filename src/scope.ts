@@ -1,7 +1,8 @@
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
 import type { ConfigTuple } from "./parse/ast/config.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
-import { ark, type PrecompiledDefaults } from "./scopes/ark.js"
+import type { Ark } from "./scopes/ark.js"
+import { ark } from "./scopes/ark.js"
 import type { KeyCheckKind, TypeOptions, TypeParser } from "./type.js"
 import { Type } from "./type.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
@@ -104,8 +105,8 @@ type exportsOf<context extends ScopeInferenceContext> = context extends [
     : context
 
 type localsOf<context extends ScopeInferenceContext> = context extends List
-    ? context["1"] & (context["2"] extends false ? {} : PrecompiledDefaults)
-    : PrecompiledDefaults
+    ? context["1"] & (context["2"] extends false ? {} : Ark)
+    : Ark
 
 type mergeSpaces<scopes, base extends Dict = {}> = scopes extends readonly [
     Space<infer head>,
@@ -122,7 +123,7 @@ type mergeSpaces<scopes, base extends Dict = {}> = scopes extends readonly [
 
 type preresolved<opts extends ScopeOptions> = includesOf<opts> &
     importsOf<opts> &
-    (opts["standard"] extends false ? {} : PrecompiledDefaults)
+    (opts["standard"] extends false ? {} : Ark)
 
 type alias<def = {}> = nominal<def, "alias">
 

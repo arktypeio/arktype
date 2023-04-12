@@ -29,7 +29,8 @@ export type inferMorph<inDef, morph, $> = morph extends Morph
       ) => inferMorphOut<ReturnType<morph>>
     : never
 
-type inferMorphOut<out> = [out] extends [CheckResult<infer t>]
+// TODO: finalize this type
+export type inferMorphOut<out> = [out] extends [CheckResult<infer t>]
     ? t
     : Exclude<out, Problem>
 

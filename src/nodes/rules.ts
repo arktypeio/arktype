@@ -1,5 +1,5 @@
 import type { Filter } from "../parse/ast/filter.js"
-import type { Morph } from "../parse/ast/morph.js"
+import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
 import { as } from "../parse/definition.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
@@ -164,20 +164,30 @@ export type Rules = {
 type RuleKind = keyof RuleNodeKinds
 
 // TODO: advanced constraints inference
-export type inferRuleSet<input extends RuleSet> =
-    input extends ExactValueRuleSet<infer value>
-        ? value
-        : input extends ArrayRuleSet
-        ? unknown[]
-        : input extends NonArrayObjectRuleSet
-        ? input["instance"] extends constructor<infer t>
-            ? t extends Function
-                ? (...args: any[]) => unknown
-                : t
-            : object
-        : input extends DomainRuleSet
-        ? inferDomain<input["domain"]>
-        : never
+export type inferRuleSet<input extends RuleSet> = input["morph"] extends Morph<
+    any,
+    infer out
+>
+    ? (In: inferInput<input>) => inferMorphOut<out>
+    : input["morph"] extends [...any[], Morph<any, infer out>]
+    ? (In: inferInput<input>) => inferMorphOut<out>
+    : inferInput<input>
+
+export type inferInput<input extends RuleSet> = input extends ExactValueRuleSet<
+    infer value
+>
+    ? value
+    : input extends ArrayRuleSet
+    ? unknown[]
+    : input extends NonArrayObjectRuleSet
+    ? input["instance"] extends constructor<infer t>
+        ? t extends Function
+            ? (...args: any[]) => unknown
+            : t
+        : object
+    : input extends DomainRuleSet
+    ? inferDomain<input["domain"]>
+    : never
 
 type discriminateConstraintsInputBranch<branch extends RuleSet> =
     branch extends {
@@ -275,8 +285,8 @@ const exactValueConstraintKeys: Record<keyof ExactValueRuleSet, true> = {
 } as const
 
 type DomainRuleSet = {
-    filter?: Filter[]
-    morph?: Morph[]
+    filter?: Filter | Filter[]
+    morph?: Morph | Morph[]
 } & (
     | NonArrayObjectRuleSet
     | ArrayRuleSet

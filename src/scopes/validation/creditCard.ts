@@ -1,4 +1,4 @@
-import { rootType } from "../../scope.js"
+import { TypeNode } from "../../nodes/type.js"
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isLuhnNumber.js
 export const isLuhnValid = (creditCardInput: string) => {
@@ -29,14 +29,12 @@ export const isLuhnValid = (creditCardInput: string) => {
 const creditCardMatcher =
     /^(?:4[0-9]{12}(?:[0-9]{3,6})?|5[1-5][0-9]{14}|(222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}|6(?:011|5[0-9][0-9])[0-9]{12,15}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11}|6[27][0-9]{14}|^(81[0-9]{14,17}))$/
 
-export const creditCard = rootType(
-    [
-        creditCardMatcher,
-        "=>",
-        (s, state) =>
-            isLuhnValid(s) ||
-            // TODO: Fix
-            !state.mustBe("a valid credit card number", s, state.basePath)
-    ],
-    { mustBe: "a valid credit card number" }
-)
+// TODO:   { mustBe: "a valid credit card number" }
+export const creditCard = TypeNode.from({
+    domain: "string",
+    regex: creditCardMatcher.source,
+    filter: (s, state) =>
+        isLuhnValid(s) ||
+        // TODO: Fix
+        !state.mustBe("a valid credit card number", s, state.basePath)
+})
