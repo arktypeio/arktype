@@ -55,6 +55,7 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
             child.value?.compile(s) ??
             child.instance?.compile(s) ??
             child.domain!.compile(s)
+        const baseCheckLength = result.length
         if (child.divisor) {
             result += ` && ${child.divisor.compile(s)}`
         }
@@ -67,7 +68,7 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
         if (child.props) {
             result += ` && ${child.props.compile(s)}`
         }
-        return result
+        return result.length === baseCheckLength ? result : `(${result})`
     }
 
     intersect(other: RulesNode, s: ComparisonState) {

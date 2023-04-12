@@ -45,7 +45,7 @@ export class PropsNode extends Node<typeof PropsNode> {
         return new PropsNode(child)
     }
 
-    static compile({ named, indexed }: PropsChild, s: CompilationState) {
+    static compile({ named }: PropsChild, s: CompilationState) {
         const propChecks: string[] = []
         // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
         for (const k in named) {
@@ -53,8 +53,11 @@ export class PropsNode extends Node<typeof PropsNode> {
             propChecks.push(named[k].compile(s))
             s.path.pop()
         }
-        // TODO: prop checks.merge for traverse
-        return propChecks.length ? propChecks.join(" && ") : "true"
+        return propChecks.length === 0
+            ? "true"
+            : propChecks.length === 1
+            ? propChecks[0]
+            : `(${propChecks.join(" && ")})`
     }
 
     intersect(other: PropsNode, s: ComparisonState) {

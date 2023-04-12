@@ -79,20 +79,15 @@ export class RangeNode extends Node<typeof RangeNode> {
         //         : s.lastDomain === "object"
         //         ? "items long"
         //         : ""
-        return comparatorEntries
-            .map(
-                ([comparator, limit]) => `${size} ${comparator} ${limit}`
-                // s.check("range", `size ${comparator} ${limit}`, {
-                //     comparator,
-                //     limit,
-                //     units
-                // })
-            )
-            .join(" && ")
-        //         return `(() => {
-        //     ${sizeAssignment}
-        //     return ${checks}
-        // })()`
+        const checks = comparatorEntries.map(
+            ([comparator, limit]) => `${size} ${comparator} ${limit}`
+            // s.check("range", `size ${comparator} ${limit}`, {
+            //     comparator,
+            //     limit,
+            //     units
+            // })
+        )
+        return checks.length === 1 ? checks[0] : `(${checks.join(" && ")})`
     }
 
     intersect(other: RangeNode, s: ComparisonState): RangeNode | Disjoint {
