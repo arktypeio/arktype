@@ -49,7 +49,7 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
         case "RegExp":
             return TypeNode.from({
                 domain: "string",
-                regex: [(def as RegExp).source]
+                regex: (def as RegExp).source
             })
         case "Function":
             if (isThunk(def)) {

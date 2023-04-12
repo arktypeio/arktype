@@ -26,33 +26,6 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
 
-// const t = initializeType("λtype", def, config, this)
-// const ctx = this.#initializeContext(t)
-// const root = parseDefinition(def, ctx)
-// t.node = deepFreeze(root)
-// // TODO: refactor
-// // TODO: each node should compile completely or until
-// // it hits a loop with itself. it should rely on other nodes that
-// // have been compiled the same way, parametrized with the current path.
-// t.ts = t.node.compile(new CompilationState(t))
-// t.traverse = createTraverse(t.name, t.ts)
-// t.check = (data) => {
-//     const state = new TraversalState(t)
-//     t.traverse(data, state)
-//     const result = new CheckResult(state)
-//     if (state.problems.count) {
-//         result.problems = state.problems
-//     } else {
-//         for (const [o, k] of state.entriesToPrune) {
-//             delete o[k]
-//         }
-//         //state.data
-//         result.data = {}
-//     }
-//     return result
-// }
-// return t
-
 export class Type<t = unknown> extends CompiledFunction<
     [data: unknown],
     CheckResult<inferOut<t>>
@@ -65,18 +38,15 @@ export class Type<t = unknown> extends CompiledFunction<
 
     constructor(public definition: unknown, public scope: Scope) {
         const root = parseDefinition(definition, { path: new Path(), scope })
-        super("data", "")
+        super(
+            "data",
+            `const state = new TraversalState()
+${root.compiled}
+return state.finalize(data)
+`
+        )
         this.root = root
     }
-
-    // TODO: convert to definition type
-    // static from<branches extends List<ConstraintsDefinition>>(
-    //     ...branches: validateBranches<branches>
-    // ) {
-    //     return new Type<inferBranches<branches>>(
-    //         branches.map((branch) => Constraints.from(branch))
-    //     )
-    // }
 
     // TODO: don't mutate
     allows(data: unknown): data is inferIn<t> {
@@ -87,17 +57,6 @@ export class Type<t = unknown> extends CompiledFunction<
         const result = this.call(null, data)
         return result.problems ? result.problems.throw() : result.data
     }
-
-    // toArray() {
-    //     return {
-    //         object: {
-    //             instance: Array,
-    //             props: {
-    //                 [mappedKeys.index]: this
-    //             }
-    //         }
-    //     }
-    // }
 }
 
 export type KeyCheckKind = "loose" | "strict" | "distilled"

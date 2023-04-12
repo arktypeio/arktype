@@ -1,4 +1,4 @@
-import type { Type, TypeConfig } from "../type.js"
+import type { TypeConfig } from "../type.js"
 import type { xor } from "../utils/generics.js"
 import { Path } from "../utils/paths.js"
 import type { Problem, ProblemCode, ProblemParameters } from "./problems.js"
@@ -25,9 +25,22 @@ export class TraversalState {
     // Qualified
     #seen: { [name in string]?: object[] } = {}
 
-    constructor(public type: Type) {
+    constructor() {
         // this.rootScope = type.scope
         // this.config = type.config
+    }
+
+    finalize(data: unknown): CheckResult {
+        const result = new CheckResult(this)
+        if (this.problems.count) {
+            result.problems = this.problems
+        } else {
+            for (const [o, k] of this.entriesToPrune) {
+                delete o[k]
+            }
+            result.data = data
+        }
+        return result
     }
 
     // TODO: add at custom path
