@@ -45,15 +45,14 @@ export class PropsNode extends Node<typeof PropsNode> {
         return new PropsNode(child)
     }
 
-    static compile(child: PropsChild, s: CompilationState) {
+    static compile({ named, indexed }: PropsChild, s: CompilationState) {
         const propChecks: string[] = []
-        // // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
-        // for (const k in named) {
-        //     const prop = named[k]
-        //     c.path.push(k)
-        //     propChecks.push(prop.type.compile(c))
-        //     c.path.pop()
-        // }
+        // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
+        for (const k in named) {
+            s.path.push(k)
+            propChecks.push(named[k].compile(s))
+            s.path.pop()
+        }
         return propChecks.length ? s.mergeChecks(propChecks) : "true"
     }
 

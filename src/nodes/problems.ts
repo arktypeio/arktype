@@ -38,8 +38,7 @@ export abstract class Problem<requirement = unknown, data = unknown> {
     }
 
     hasCode<code extends ProblemCode>(code: code): this is ProblemFrom<code> {
-        // doesn't make much sense we have to cast this, but alas
-        return this.code === (code as ProblemCode)
+        return this.code === code
     }
 
     get message() {
@@ -51,7 +50,7 @@ export abstract class Problem<requirement = unknown, data = unknown> {
     }
 
     get reason() {
-        return `must be ${this.mustBe}${this.was ? ` ( was ${this.was})` : ""}`
+        return `must be ${this.mustBe}${this.was ? ` (was ${this.was})` : ""}`
     }
 
     get was() {
@@ -162,6 +161,10 @@ export class DomainProblem extends Problem<Domain> {
     get mustBe() {
         return domainDescriptions[this.rule]
     }
+
+    override get was() {
+        return this.data.domain
+    }
 }
 
 export class ProblemUnion extends Problem<Problem[]> {
@@ -244,6 +247,10 @@ export class InstanceProblem extends Problem<constructor, object> {
         return possibleObjectKind
             ? objectKindDescriptions[possibleObjectKind]
             : `an instance of ${this.rule.name}`
+    }
+
+    override get was() {
+        return this.data.className
     }
 }
 
