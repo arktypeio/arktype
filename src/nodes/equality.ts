@@ -19,6 +19,7 @@ export class EqualityNode<value = unknown> extends Node<typeof EqualityNode> {
             hasDomain(value, "object") || typeof value === "symbol"
                 ? register(typeof value, value)
                 : serializePrimitive(value as SerializablePrimitive)
-        return s.check("value", `data === ${serialized}`, value)
+        return `data === ${serialized}`
+        // return s.check("value", `data === ${serialized}`, value)
     }
 }

@@ -53,7 +53,8 @@ export class PropsNode extends Node<typeof PropsNode> {
             propChecks.push(named[k].compile(s))
             s.path.pop()
         }
-        return propChecks.length ? s.mergeChecks(propChecks) : "true"
+        // TODO: prop checks.merge for traverse
+        return propChecks.length ? propChecks.join(" && ") : "true"
     }
 
     intersect(other: PropsNode, s: ComparisonState) {

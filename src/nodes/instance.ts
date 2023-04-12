@@ -25,6 +25,7 @@ export class InstanceNode<rule extends constructor = constructor> extends Node<
     static compile(ancestor: constructor, s: CompilationState) {
         const compiled = // TODO: also for other builtins
             ancestor === Array ? "Array" : register(ancestor.name, ancestor)
-        return s.check("instance", `${s.data} instanceof ${compiled}`, ancestor)
+        return `${s.data} instanceof ${compiled}`
+        // return s.check("instance", `${s.data} instanceof ${compiled}`, ancestor)
     }
 }

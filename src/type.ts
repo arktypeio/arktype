@@ -48,7 +48,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     constructor(public definition: unknown, public scope: Scope) {
         const root = parseDefinition(definition, { path: new Path(), scope })
         const compiled = `const state = new ${referenceRegistered("state")}();
-${root.compiled};
+(${root.compiled || "true"}) || state.mustBe("valid");
 return state.finalize(data)`
         super("data", compiled)
         this.compiled = compiled

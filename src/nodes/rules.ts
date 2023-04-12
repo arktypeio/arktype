@@ -51,37 +51,22 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
     }
 
     static compile(child: RulesChild, s: CompilationState) {
-        let result = ""
-        if (child.value) {
-            result += child.value.compile(s)
-        } else {
-            result += child.domain!.compile(s)
-        }
-        if (child.instance) {
-            result += child.instance.compile(s)
-        }
-
-        const shallowChecks: string[] = []
-
+        let result =
+            child.value?.compile(s) ??
+            child.instance?.compile(s) ??
+            child.domain!.compile(s)
         if (child.divisor) {
-            shallowChecks.push(child.divisor.compile(s))
+            result += ` && ${child.divisor.compile(s)}`
         }
         if (child.range) {
-            shallowChecks.push(child.range.compile(s))
+            result += ` && ${child.range.compile(s)}`
         }
         if (child.regex) {
-            shallowChecks.push(child.regex.compile(s))
+            result += ` && ${child.regex.compile(s)}`
         }
-
-        if (shallowChecks.length) {
-            result += " && " + s.mergeChecks(shallowChecks)
-        }
-
         if (child.props) {
-            result += " && "
-            result += child.props.compile(s)
+            result += ` && ${child.props.compile(s)}`
         }
-
         return result
     }
 

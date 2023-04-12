@@ -10,15 +10,14 @@ export class RegexNode extends Node<typeof RegexNode> {
     static compile(sources: string[], c: CompilationState) {
         return sources
             .sort()
-            .map(
-                (source) =>
-                    `/${source}/.test(${c.data}) || ${c.problem(
-                        "regex",
-                        "`" + source + "`"
-                    )}` as const
-            )
-            .join(";")
+            .map((source) => `/${source}/.test(${c.data})` as const)
+            .join(" && ")
     }
+
+    // c.problem(
+    //     "regex",
+    //     "`" + source + "`"
+    // )}
 
     intersect(other: RegexNode) {
         return new RegexNode(intersectUniqueLists(this.child, other.child))
