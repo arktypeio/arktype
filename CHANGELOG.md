@@ -1,5 +1,11 @@
 # arktype
 
+## 1.0.13-alpha
+
+### Patch Changes
+
+-   check all keys when in strict or distilled mode, even if one fails
+
 ## 1.0.12-alpha
 
 ### Patch Changes
