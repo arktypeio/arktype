@@ -23,11 +23,7 @@ export type evaluateObjectOrFunction<t> = isTopType<t> extends true
 export type evaluate<t> = { [k in keyof t]: t[k] } & unknown
 
 export type exact<t, u> = {
-    [k in keyof t]: k extends keyof u
-        ? t[k] extends u[k]
-            ? t[k]
-            : u[k]
-        : never
+    [k in keyof t]: k extends keyof u ? t[k] : never
 }
 
 /** Causes a type that would be eagerly calculated to be displayed as-is.
@@ -194,22 +190,9 @@ export type equals<t, u> = identity<t> extends identity<u> ? true : false
 
 const id = Symbol("id")
 
-export const nominal = <o extends object, name extends string>(
-    o: o,
-    name: name
-): nominal<o, name> => Object.assign(o, { [id]: name })
-
 export type nominal<t, id extends string> = t & {
     readonly [id]: id
 }
-
-export const getNominalId = <data>(data: data) =>
-    hasDomain(data, "object") && id in data ? data[id] : undefined
-
-export const hasNominalId = <data, name extends string>(
-    data: data,
-    name: name
-): data is nominal<data, name> => getNominalId(data) === name
 
 export type assertEqual<t, u> = equals<t, u> extends true
     ? t

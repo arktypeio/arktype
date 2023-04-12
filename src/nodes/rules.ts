@@ -193,7 +193,7 @@ type discriminateConstraintsInputBranch<branch extends RuleSet> =
             ? branch extends { instance: typeof Array }
                 ? ArrayRuleSet
                 : NonArrayObjectRuleSet
-            : DomainRuleSet & { domain: branch["domain"] }
+            : DomainRuleSet & { domain: domain }
         : ExactValueRuleSet
 
 export type validateConstraintsInput<input extends RuleSet> = exact<

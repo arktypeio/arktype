@@ -1,7 +1,7 @@
 import type { constructor } from "../utils/generics.js"
 import { constructorExtends } from "../utils/generics.js"
 import { register } from "../utils/registry.js"
-import type { ComparisonState, CompilationState } from "./node.js"
+import type { ComparisonState, CompilationState, Disjoint } from "./node.js"
 import { Node } from "./node.js"
 
 export class InstanceNode<rule extends constructor = constructor> extends Node<
@@ -11,7 +11,10 @@ export class InstanceNode<rule extends constructor = constructor> extends Node<
         super(InstanceNode, rule)
     }
 
-    intersect(other: InstanceNode, s: ComparisonState) {
+    intersect(
+        other: InstanceNode,
+        s: ComparisonState
+    ): InstanceNode | Disjoint {
         return constructorExtends(this.child, other.child)
             ? this
             : constructorExtends(other.child, this.child)
