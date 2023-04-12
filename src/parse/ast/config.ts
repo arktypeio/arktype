@@ -8,18 +8,22 @@ export type ConfigTuple<
     config extends TypeOptions = TypeOptions
 > = readonly [def, ":", config]
 
-// /**
-//  * @operator {@link parseConfigTuple | :}
-//  * @docgenTable
-//  * @tuple ["type", ":", config]
-//  */
-// export const parseConfigTuple: PostfixParser<":"> = (def, ctx) => ({
-//     node: ctx.type.scope.resolveTypeNode(parseDefinition(def[0], ctx)),
-//     config: def[2] as TypeConfig
-// })
+/**
+ * @operator {@link parseConfigTuple | :}
+ * @docgenTable
+ * @tuple ["type", ":", config]
+ */
+export const parseConfigTuple: PostfixParser<":"> = (def, ctx) =>
+    parseDefinition(
+        def[0],
+        ctx
+    )({
+        node: ctx.type.scope.resolveTypeNode(),
+        config: def[2] as TypeConfig
+    })
 
-// export type validateConfigTuple<def extends TupleExpression, $> = readonly [
-//     validateDefinition<def[0], $>,
-//     ":",
-//     TypeOptions
-// ]
+export type validateConfigTuple<def extends TupleExpression, $> = readonly [
+    validateDefinition<def[0], $>,
+    ":",
+    TypeOptions
+]

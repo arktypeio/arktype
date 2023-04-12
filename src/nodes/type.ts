@@ -1,4 +1,3 @@
-import { Morph } from "../parse/ast/morph.js"
 import { as } from "../parse/definition.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
@@ -103,6 +102,38 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
 
     get literalValue(): EqualityNode | undefined {
         return this.child.length === 1 ? this.child[0].child.value : undefined
+    }
+
+    keyOf() {
+        // const predicateKeys = keysOf(node).map((domain) =>
+        //     keysOfPredicate(domain, node[domain]!)
+        // )
+        // const sharedKeys = sharedKeysOf(predicateKeys)
+
+        // if (!sharedKeys.length) {
+        //     return writeImplicitNeverMessage(ctx.path, "keyof")
+        // }
+
+        // const keyBranches: ConstraintsNode[] = []
+
+        // for (const key of sharedKeys) {
+        //     const keyType = typeof key
+        //     if (
+        //         keyType === "string" ||
+        //         keyType === "number" ||
+        //         keyType === "symbol"
+        //     ) {
+        //         keyBranches.push(ConstraintsNode.from({ value: key }))
+        //     } else if (key === wellFormedNonNegativeIntegerMatcher) {
+        //         keyBranches.push(arrayIndexStringBranch, arrayIndexNumberBranch)
+        //     } else {
+        //         return throwInternalError(
+        //             `Unexpected keyof key '${stringify(key)}'`
+        //         )
+        //     }
+        // }
+
+        return this
     }
 
     toArray() {

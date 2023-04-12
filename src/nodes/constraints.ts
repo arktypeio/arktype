@@ -3,13 +3,15 @@ import type { Morph } from "../parse/ast/morph.js"
 import { as } from "../parse/definition.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
-import {
-    type constructor,
-    type exact,
-    type instanceOf,
-    type keySet,
-    keysOf
+import type {
+    conform,
+    constructor,
+    exact,
+    instanceOf,
+    keySet
 } from "../utils/generics.js"
+import { keysOf, prototypeKeysOf } from "../utils/generics.js"
+import { wellFormedNonNegativeIntegerMatcher } from "../utils/numericLiterals.js"
 import { stringify } from "../utils/serialize.js"
 import { DivisibilityNode } from "./divisibility.js"
 import { DomainNode } from "./domain.js"
@@ -33,7 +35,7 @@ export class ConstraintsNode<t = unknown> extends Node<typeof ConstraintsNode> {
     }
 
     static from<input extends ConstraintsInput>(
-        input: validateConstraintsInput<input>
+        input: conform<input, validateConstraintsInput<input>>
     ) {
         const child: ConstraintsChild = {}
         const inputKeys = getValidatedInputKeys(input as ConstraintsInput)
@@ -108,6 +110,34 @@ export class ConstraintsNode<t = unknown> extends Node<typeof ConstraintsNode> {
     //     return result
     // }
 }
+
+type KeyValue = string | number | symbol | RegExp
+
+const baseKeysByDomain: Record<Domain, readonly KeyValue[]> = {
+    bigint: prototypeKeysOf(0n),
+    boolean: prototypeKeysOf(false),
+    null: [],
+    number: prototypeKeysOf(0),
+    // TS doesn't include the Object prototype in keyof, so keyof object is never
+    object: [],
+    string: prototypeKeysOf(""),
+    symbol: prototypeKeysOf(Symbol()),
+    undefined: []
+}
+
+const arrayIndexStringBranch = ConstraintsNode.from({
+    domain: "string",
+    // TODO: non array input
+    regex: [wellFormedNonNegativeIntegerMatcher.source]
+})
+
+const arrayIndexNumberBranch = ConstraintsNode.from({
+    domain: "number",
+    range: {
+        ">=": 0
+    },
+    divisor: 1
+})
 
 export const constraintKinds = {
     domain: DomainNode,

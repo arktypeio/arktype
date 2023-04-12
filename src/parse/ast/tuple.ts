@@ -1,4 +1,5 @@
 import type { Node } from "../../nodes/node.js"
+import type { PropsInput } from "../../nodes/props.js"
 import { TypeNode } from "../../nodes/type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type {
@@ -6,7 +7,8 @@ import type {
     constructor,
     error,
     evaluate,
-    List
+    List,
+    mutable
 } from "../../utils/generics.js"
 import type {
     inferDefinition,
@@ -16,9 +18,7 @@ import type {
 import { parseDefinition } from "../definition.js"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
 import type { Scanner } from "../string/shift/scanner.js"
-import type { validateConfigTuple } from "./config.js"
-import { parseConfigTuple } from "./config.js"
-import type { validateFilterTuple } from "./filter.js"
+import type { inferFilter, validateFilterTuple } from "./filter.js"
 import { parseNarrowTuple } from "./filter.js"
 import type { inferIntersection } from "./intersection.js"
 import type { inferKeyOfExpression, validateKeyOfExpression } from "./keyof.js"
@@ -28,32 +28,37 @@ import { parseMorphTuple } from "./morph.js"
 import type { inferUnion } from "./union.js"
 
 export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
-    if (isIndexOneExpression(def)) {
-        return indexOneParsers[def[1]](def as never, ctx)
-    }
-    if (isIndexZeroExpression(def)) {
-        return prefixParsers[def[0]](def as never, ctx)
-    }
-    const props: defineProps = {
-        //  length is created as a prerequisite prop, ensuring if it is invalid,
-        //  no other props will be checked, which is usually desirable for tuple
-        //  definitions.
-        prerequisite: {
-            length: {
-                value: def.length
-            }
+    // if (isIndexOneExpression(def)) {
+    //     return indexOneParsers[def[1]](def as never, ctx)
+    // }
+    // if (isIndexZeroExpression(def)) {
+    //     return prefixParsers[def[0]](def as never, ctx)
+    // }
+    const named: mutable<PropsInput["named"]> = {
+        length: {
+            kind: "prerequisite",
+            // TODO: non-list
+            value: [{ value: def.length }]
         }
     }
     if (def.length > 0) {
-        props.required = {}
         for (let i = 0; i < def.length; i++) {
             ctx.path.push(i)
-            props.required[i] = parseDefinition(def[i], ctx)
+            named[i] = {
+                kind: "required",
+                value: parseDefinition(def[i], ctx)
+            }
             ctx.path.pop()
         }
     }
-
-    return TypeNode.from({ domain: "object", instance: Array, props })
+    return TypeNode.from({
+        domain: "object",
+        instance: Array,
+        props: {
+            named,
+            indexed: []
+        }
+    })
 }
 
 export type validateTupleExpression<
@@ -109,7 +114,7 @@ export type inferTupleExpression<
     : def[1] extends "|"
     ? inferUnion<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
     : def[1] extends "=>"
-    ? inferNarrow<def[0], def[2], $>
+    ? inferFilter<def[0], def[2], $>
     : def[1] extends "|>"
     ? inferMorph<def[0], def[2], $>
     : def[1] extends ":"
@@ -130,9 +135,7 @@ const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
     }
     const l = parseDefinition(def[0], ctx)
     const r = parseDefinition(def[2], ctx)
-    return def[1] === "&"
-        ? rootIntersection(l, r, ctx.type)
-        : rootUnion(l, r, ctx.type)
+    return def[1] === "&" ? l.and(r) : l.or(r)
 }
 
 const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
@@ -162,7 +165,7 @@ type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
 
 export type TuplePostfixOperator = "[]"
 
-export type TupleInfixOperator = "&" | "|" | ":" | "=>" | "|>"
+export type TupleInfixOperator = "&" | "|" | "=>" | "|>" | ":"
 
 export type IndexOneExpression<
     token extends IndexOneOperator = IndexOneOperator
