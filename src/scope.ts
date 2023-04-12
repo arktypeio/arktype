@@ -1,13 +1,15 @@
-import { CompilationState, createTraverse } from "./nodes/node.js"
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
-import { CheckResult, TraversalState } from "./nodes/traverse.js"
 import type { ConfigTuple } from "./parse/ast/config.js"
-import type { inferDefinition, validateDefinition } from "./parse/definition.js"
+import type {
+    inferDefinition,
+    ParseContext,
+    validateDefinition
+} from "./parse/definition.js"
 import { parseDefinition } from "./parse/definition.js"
 import { ark, type PrecompiledDefaults } from "./scopes/ark.js"
-import type { KeyCheckKind, Type, TypeOptions, TypeParser } from "./type.js"
+import type { KeyCheckKind, TypeOptions, TypeParser } from "./type.js"
+import { Type } from "./type.js"
 import { throwInternalError, throwParseError } from "./utils/errors.js"
-import { deepFreeze } from "./utils/freeze.js"
 import type {
     Dict,
     error,
@@ -16,6 +18,7 @@ import type {
     List,
     nominal
 } from "./utils/generics.js"
+import { Path } from "./utils/paths.js"
 import type { stringifyUnion } from "./utils/unionToTuple.js"
 
 type ScopeParser = {
@@ -155,50 +158,53 @@ type name<context extends ScopeInferenceContext> = keyof resolutions<context> &
 export const isConfigTuple = (def: unknown): def is ConfigTuple =>
     Array.isArray(def) && def[1] === ":"
 
-let anonymousScopeCount = 0
-const scopeRegistry: Record<string, Scope | undefined> = {}
-
 export class Scope<context extends ScopeInferenceContext = any> {
     declare infer: exportsOf<context>
 
-    readonly name: string
     readonly config: ScopeConfig
-    // TODO: runtime error for overlapping aliases?
-    imports: Space[]
-    includes: Space[]
-    types: Partial<Space<this["infer"]>> = {}
+    #resolutions: Record<string, Type> = {}
+    #exports: Record<string, Type> = {}
 
     constructor(public aliases: Dict, opts: ScopeOptions = {}) {
-        this.name = this.#register(opts)
         this.config = compileScopeOptions(opts)
-        this.imports = opts.imports ?? []
-        this.includes = opts.includes ?? []
         if (opts.standard !== false) {
-            this.imports.push(ark)
+            this.#cacheSpaces([ark], "imports")
+        }
+        if (opts.imports) {
+            this.#cacheSpaces(opts.imports, "imports")
+        }
+        if (opts.includes) {
+            this.#cacheSpaces(opts.includes, "includes")
         }
     }
 
-    #register(opts: ScopeOptions) {
-        const name: string = opts.name
-            ? scopeRegistry[opts.name]
-                ? throwParseError(`A scope named '${opts.name}' already exists`)
-                : opts.name
-            : `scope${++anonymousScopeCount}`
-        scopeRegistry[name] = this
-        return name
+    type = ((def: unknown, config: TypeOptions = {}) => {
+        return new Type(def)
+    }) as TypeParser<resolutions<context>>
+
+    #cacheSpaces(spaces: Space[], kind: "imports" | "includes") {
+        for (const space of spaces) {
+            for (const name in space) {
+                if (name in this.#resolutions || name in this.aliases) {
+                    throwParseError(writeDuplicateAliasesMessage(name))
+                }
+                this.#resolutions[name] = space[name]
+                if (kind === "includes") {
+                    this.#exports[name] = space[name]
+                }
+            }
+        }
     }
 
     #compiled = false
     compile() {
-        if (this.#compiled) {
-            return this.types as Space<this["infer"]>
+        if (!this.#compiled) {
+            for (const name in this.aliases) {
+                this.#exports[name] ??= this.resolve(name) as Type
+            }
+            this.#compiled = true
         }
-        let name: name<context>
-        for (name in this.aliases) {
-            this.types[name] ??= this.resolve(name) as Type<any>
-        }
-        this.#compiled = true
-        return this.types
+        return this.#exports as Space<this["infer"]>
     }
 
     resolve(name: name<context>) {
@@ -210,9 +216,8 @@ export class Scope<context extends ScopeInferenceContext = any> {
         onUnresolvable: onUnresolvable,
         seen: string[]
     ): ResolveResult<onUnresolvable> {
-        const maybeCacheResult = this.#resolutions.get(name)
-        if (maybeCacheResult) {
-            return maybeCacheResult
+        if (this.#resolutions[name]) {
+            return this.#resolutions[name]
         }
         const aliasDef = this.aliases[name]
         if (!aliasDef) {
@@ -224,10 +229,12 @@ export class Scope<context extends ScopeInferenceContext = any> {
                     : undefined
             ) as ResolveResult<onUnresolvable>
         }
-        const t = initializeType(name, aliasDef, {}, this)
-        const ctx = this.#initializeContext(t)
-        this.#resolutions.set(name, t)
-        this.#exports.set(name, t)
+        const t = new Type(aliasDef)
+        const ctx: ParseContext = {
+            path: new Path()
+        }
+        this.#resolutions[name] = t
+        this.#exports[name] = t
         let node = parseDefinition(aliasDef, ctx)
         if (typeof node === "string") {
             if (seen.includes(node)) {
@@ -236,62 +243,13 @@ export class Scope<context extends ScopeInferenceContext = any> {
                 )
             }
             seen.push(node)
-            node = this.#resolveRecurse(node, "throw", seen).node
-        }
-        t.node = deepFreeze(node)
-        t.ts = t.node.compile(new CompilationState(t))
-        t.traverse = createTraverse(t.name, t.ts)
-        t.check = (data) => {
-            const state = new TraversalState(t)
-            t.traverse(data, state)
-            const result = new CheckResult(state)
-            if (state.problems.count) {
-                result.problems = state.problems
-            } else {
-                for (const [o, k] of state.entriesToPrune) {
-                    delete o[k]
-                }
-                result.data = {}
-                //state.data
-            }
-            return result
+            node = this.#resolveRecurse(node, "throw", seen).root
         }
         return t
     }
 
-    type: TypeParser<resolutions<context>> = Object.assign(
-        (def: unknown, config: TypeOptions = {}) => {
-            const t = initializeType("λtype", def, config, this)
-            const ctx = this.#initializeContext(t)
-            const root = parseDefinition(def, ctx)
-            t.node = deepFreeze(root)
-            // TODO: refactor
-            // TODO: each node should compile completely or until
-            // it hits a loop with itself. it should rely on other nodes that
-            // have been compiled the same way, parametrized with the current path.
-            t.ts = t.node.compile(new CompilationState(t))
-            t.traverse = createTraverse(t.name, t.ts)
-            t.check = (data) => {
-                const state = new TraversalState(t)
-                t.traverse(data, state)
-                const result = new CheckResult(state)
-                if (state.problems.count) {
-                    result.problems = state.problems
-                } else {
-                    for (const [o, k] of state.entriesToPrune) {
-                        delete o[k]
-                    }
-                    //state.data
-                    result.data = {}
-                }
-                return result
-            }
-            return t
-        }
-    ) as TypeParser<resolutions<context>>
-
     isResolvable(name: string) {
-        return this.#resolutions.has(name) || this.aliases[name]
+        return this.#resolutions[name] || this.aliases[name]
     }
 }
 

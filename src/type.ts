@@ -25,6 +25,33 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>>
     : never
 
+// const t = initializeType("λtype", def, config, this)
+// const ctx = this.#initializeContext(t)
+// const root = parseDefinition(def, ctx)
+// t.node = deepFreeze(root)
+// // TODO: refactor
+// // TODO: each node should compile completely or until
+// // it hits a loop with itself. it should rely on other nodes that
+// // have been compiled the same way, parametrized with the current path.
+// t.ts = t.node.compile(new CompilationState(t))
+// t.traverse = createTraverse(t.name, t.ts)
+// t.check = (data) => {
+//     const state = new TraversalState(t)
+//     t.traverse(data, state)
+//     const result = new CheckResult(state)
+//     if (state.problems.count) {
+//         result.problems = state.problems
+//     } else {
+//         for (const [o, k] of state.entriesToPrune) {
+//             delete o[k]
+//         }
+//         //state.data
+//         result.data = {}
+//     }
+//     return result
+// }
+// return t
+
 export class Type<t = unknown> extends CompiledFunction<
     [data: unknown],
     CheckResult<inferOut<t>>
