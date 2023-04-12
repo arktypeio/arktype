@@ -19,7 +19,7 @@ export class EqualityNode<value = unknown> extends Node<typeof EqualityNode> {
             hasDomain(value, "object") || typeof value === "symbol"
                 ? registry().register(typeof value, value)
                 : serializePrimitive(value as SerializablePrimitive)
-        const check = `data === ${serialized}`
+        const check = `${s.data} === ${serialized}`
         return [
             s.kind === "traverse"
                 ? s.traverse("value", check, serialized)
