@@ -47,13 +47,8 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
 
     constructor(public definition: unknown, public scope: Scope) {
         const root = parseDefinition(definition, { path: new Path(), scope })
-        const compiled = `return (${
-            root.compiled || "true"
-        }) ? { data } : (() =>{
-const state = new ${referenceRegistered("state")}();
-state.mustBe("valid", data, []);
-return state.finalize(data)})()`
-        super("data", compiled)
+        const compiled = `${root.compiled} && { data }`
+        super("data", `return ${compiled}`)
         this.compiled = compiled
         this.root = root
     }
