@@ -16,7 +16,7 @@ import type { evaluate } from "./utils/generics.js"
 import { CompiledFunction } from "./utils/generics.js"
 import type { BuiltinClass } from "./utils/objectKinds.js"
 import { Path } from "./utils/paths.js"
-import { referenceRegistered, register } from "./utils/registry.js"
+import { register } from "./utils/registry.js"
 
 export type TypeParser<$> = {
     // Parse and check the definition, returning either the original input for a
