@@ -1,11 +1,6 @@
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
 import type { ConfigTuple } from "./parse/ast/config.js"
-import type {
-    inferDefinition,
-    ParseContext,
-    validateDefinition
-} from "./parse/definition.js"
-import { parseDefinition } from "./parse/definition.js"
+import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { ark, type PrecompiledDefaults } from "./scopes/ark.js"
 import type { KeyCheckKind, TypeOptions, TypeParser } from "./type.js"
 import { Type } from "./type.js"
@@ -18,7 +13,6 @@ import type {
     List,
     nominal
 } from "./utils/generics.js"
-import { Path } from "./utils/paths.js"
 import type { stringifyUnion } from "./utils/unionToTuple.js"
 
 type ScopeParser = {
@@ -178,9 +172,12 @@ export class Scope<context extends ScopeInferenceContext = any> {
         }
     }
 
-    type = ((def: unknown, config: TypeOptions = {}) => {
-        return new Type(def)
-    }) as TypeParser<resolutions<context>>
+    type: TypeParser<resolutions<context>> = ((
+        def: unknown,
+        config: TypeOptions = {}
+    ) => {
+        return new Type(def, this)
+    }) as unknown as TypeParser<resolutions<context>>
 
     #cacheSpaces(spaces: Space[], kind: "imports" | "includes") {
         for (const space of spaces) {
@@ -196,6 +193,22 @@ export class Scope<context extends ScopeInferenceContext = any> {
         }
     }
 
+    resolve(name: name<context>): Type {
+        if (this.#resolutions[name]) {
+            return this.#resolutions[name]
+        }
+        const aliasDef = this.aliases[name]
+        if (!aliasDef) {
+            return throwInternalError(
+                `Unexpectedly failed to resolve alias '${name}'`
+            )
+        }
+        const resolution = new Type(aliasDef, this)
+        this.#resolutions[name] = resolution
+        this.#exports[name] = resolution
+        return resolution
+    }
+
     #compiled = false
     compile() {
         if (!this.#compiled) {
@@ -207,50 +220,21 @@ export class Scope<context extends ScopeInferenceContext = any> {
         return this.#exports as Space<this["infer"]>
     }
 
-    resolve(name: name<context>) {
-        return this.#resolveRecurse(name, "throw", [name])
-    }
-
-    #resolveRecurse<onUnresolvable extends "undefined" | "throw">(
-        name: string,
-        onUnresolvable: onUnresolvable,
-        seen: string[]
-    ): ResolveResult<onUnresolvable> {
-        if (this.#resolutions[name]) {
-            return this.#resolutions[name]
-        }
-        const aliasDef = this.aliases[name]
-        if (!aliasDef) {
-            return (
-                onUnresolvable === "throw"
-                    ? throwInternalError(
-                          `Unexpectedly failed to resolve alias '${name}'`
-                      )
-                    : undefined
-            ) as ResolveResult<onUnresolvable>
-        }
-        const t = new Type(aliasDef)
-        const ctx: ParseContext = {
-            path: new Path()
-        }
-        this.#resolutions[name] = t
-        this.#exports[name] = t
-        let node = parseDefinition(aliasDef, ctx)
-        if (typeof node === "string") {
-            if (seen.includes(node)) {
-                return throwParseError(
-                    writeShallowCycleErrorMessage(name, seen)
-                )
-            }
-            seen.push(node)
-            node = this.#resolveRecurse(node, "throw", seen).root
-        }
-        return t
-    }
-
     isResolvable(name: string) {
         return this.#resolutions[name] || this.aliases[name]
     }
+
+    // TODO: shallow cycle?
+    // let node = parseDefinition(aliasDef, ctx)
+    // if (typeof node === "string") {
+    //     if (seen.includes(node)) {
+    //         return throwParseError(
+    //             writeShallowCycleErrorMessage(name, seen)
+    //         )
+    //     }
+    //     seen.push(node)
+    //     node = this.#resolveRecurse(node, "throw", seen).root
+    // }
 }
 
 export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>
@@ -262,11 +246,6 @@ export const rootScope: Scope<[{}, {}, false]> = scope(
 ) as any
 
 export const rootType: TypeParser<{}> = rootScope.type
-
-type OnUnresolvable = "throw" | "undefined"
-
-type ResolveResult<onUnresolvable extends OnUnresolvable> =
-    onUnresolvable extends "throw" ? Type : Type | undefined
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(

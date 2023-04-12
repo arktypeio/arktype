@@ -1,3 +1,4 @@
+import { Morph } from "../parse/ast/morph.js"
 import { as } from "../parse/definition.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
@@ -80,6 +81,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     }
 
     constrain(constraints: RawConstraintsInput) {
+        // TODO: diverge from intersect? What about morphs?
         return new TypeNode(
             this.child.map((branch) => branch.constrain(constraints))
         )

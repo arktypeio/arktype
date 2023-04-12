@@ -79,7 +79,7 @@ type inferArrayIntersection<
     : inferIntersectionRecurse<
           l[number],
           r[number],
-          [...path, MappedKeys["index"]]
+          [...path, "${index}"]
       > extends infer result
     ? tryCatch<result, result[]>
     : never

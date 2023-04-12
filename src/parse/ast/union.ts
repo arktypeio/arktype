@@ -1,4 +1,4 @@
-import type { asIn } from "../../scopes/type.js"
+import type { inferIn } from "../../type.js"
 import type { domainOf } from "../../utils/domains.js"
 import type {
     equals,
@@ -15,7 +15,7 @@ export type inferUnion<l, r> = isAny<l | r> extends true
     ? r
     : [r] extends [never]
     ? l
-    : [asIn<l>, asIn<r>] extends [infer lIn, infer rIn]
+    : [inferIn<l>, inferIn<r>] extends [infer lIn, infer rIn]
     ? [equals<l, lIn>, equals<r, rIn>] extends [true, true]
         ? l | r
         : discriminatable<lIn, rIn> extends true

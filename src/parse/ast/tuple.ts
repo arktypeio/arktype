@@ -1,5 +1,5 @@
 import type { Node } from "../../nodes/node.js"
-import type { TypeNode } from "../../nodes/type.js"
+import { TypeNode } from "../../nodes/type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type {
     conform,
@@ -18,6 +18,7 @@ import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclo
 import type { Scanner } from "../string/shift/scanner.js"
 import type { validateConfigTuple } from "./config.js"
 import { parseConfigTuple } from "./config.js"
+import type { validateFilterTuple } from "./filter.js"
 import { parseNarrowTuple } from "./filter.js"
 import type { inferIntersection } from "./intersection.js"
 import type { inferKeyOfExpression, validateKeyOfExpression } from "./keyof.js"
@@ -52,7 +53,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
         }
     }
 
-    return node({ domain: "object", instance: Array, props })
+    return TypeNode.from({ domain: "object", instance: Array, props })
 }
 
 export type validateTupleExpression<
@@ -72,7 +73,7 @@ export type validateTupleExpression<
               ]
           >
     : def[1] extends "=>"
-    ? validateNarrowTuple<def, $>
+    ? validateFilterTuple<def, $>
     : def[1] extends "|>"
     ? validateMorphTuple<def, $>
     : def[1] extends ":"
@@ -199,9 +200,12 @@ const prefixParsers: {
                 `Expected a constructor following 'instanceof' operator (was ${typeof def[1]}).`
             )
         }
-        return node({ domain: "object", instance: def[1] as constructor })
+        return TypeNode.from({
+            domain: "object",
+            instance: def[1] as constructor
+        })
     },
-    "===": (def) => node({ value: def[1] })
+    "===": (def) => TypeNode.from({ value: def[1] })
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>

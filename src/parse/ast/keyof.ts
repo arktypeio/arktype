@@ -1,4 +1,5 @@
 import { ConstraintsNode } from "../../nodes/constraints.js"
+import { TypeNode } from "../../nodes/type.js"
 import type { Domain, domainOf } from "../../utils/domains.js"
 import { throwInternalError } from "../../utils/errors.js"
 import type { evaluate, List } from "../../utils/generics.js"
@@ -13,26 +14,19 @@ import { parseDefinition } from "../definition.js"
 import { writeImplicitNeverMessage } from "./intersection.js"
 import type { PrefixParser } from "./tuple.js"
 
-const arrayIndexStringBranch = new ConstraintsNode({
+const arrayIndexStringBranch = ConstraintsNode.from({
     domain: "string",
     // TODO: non array input
     regex: [wellFormedNonNegativeIntegerMatcher.source]
 })
 
-const arrayIndexNumberBranch = new ConstraintsNode({
+const arrayIndexNumberBranch = ConstraintsNode.from({
     domain: "number",
-    // TODO: non array input
     range: {
         ">=": 0
     },
     divisor: 1
 })
-
-type KeyType = number | string | symbol
-
-type KeyDomain = domainOf<KeyType>
-
-type KeyBranch = { [domain in KeyDomain]: BranchDefinition<domain> }[KeyDomain]
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
     const node = parseDefinition(def[1], ctx)
@@ -45,7 +39,7 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
         return writeImplicitNeverMessage(ctx.path, "keyof")
     }
 
-    const keyBranches: KeyBranch[] = []
+    const keyBranches: ConstraintsNode[] = []
 
     for (const key of sharedKeys) {
         const keyType = typeof key
@@ -54,7 +48,7 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) => {
             keyType === "number" ||
             keyType === "symbol"
         ) {
-            keyBranches.push(new ValueNode(key) as KeyBranch)
+            keyBranches.push(ConstraintsNode.from({ value: key }))
         } else if (key === wellFormedNonNegativeIntegerMatcher) {
             keyBranches.push(arrayIndexStringBranch, arrayIndexNumberBranch)
         } else {

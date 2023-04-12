@@ -1,4 +1,3 @@
-import type { Node } from "../../../../nodes/node.js"
 import { TypeNode } from "../../../../nodes/type.js"
 import type { error } from "../../../../utils/generics.js"
 import type {
@@ -32,9 +31,10 @@ export type parseUnenclosed<
         : never
     : never
 
+// TODO: configs attached to type?
 const unenclosedToNode = (s: DynamicState, token: string): TypeNode => {
-    if (s.ctx.type.scope.addParsedReferenceIfResolvable(token, s.ctx)) {
-        return token
+    if (s.ctx.scope.isResolvable(token)) {
+        return s.ctx.scope.resolve(token).root
     }
     return (
         maybeParseUnenclosedLiteral(token) ??
@@ -46,7 +46,7 @@ const unenclosedToNode = (s: DynamicState, token: string): TypeNode => {
     )
 }
 
-const maybeParseUnenclosedLiteral = (token: string): Node | undefined => {
+const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
         return TypeNode.from({ value: maybeNumber })

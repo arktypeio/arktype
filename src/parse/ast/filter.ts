@@ -9,7 +9,9 @@ export const parseNarrowTuple: PostfixParser<"=>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {
         return throwParseError(writeMalformedNarrowExpressionMessage(def[2]))
     }
-    return parseDefinition(def[0], ctx).intersect({ narrow: def[2] })
+    return parseDefinition(def[0], ctx).constrain({
+        filters: [def[2] as Filter]
+    })
 }
 
 export const writeMalformedNarrowExpressionMessage = (value: unknown) =>

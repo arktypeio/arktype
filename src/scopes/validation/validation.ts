@@ -1,3 +1,4 @@
+import { TypeNode } from "../../nodes/type.js"
 import { rootType, scope } from "../../scope.js"
 import {
     wellFormedIntegerMatcher,
@@ -78,7 +79,7 @@ export const validationScope = scope(
         parsedDate,
         semver,
         json,
-        integer: node({ domain: "number", divisor: 1 })
+        integer: TypeNode.from({ domain: "number", divisor: 1 })
     },
     { name: "validation", standard: false }
 )

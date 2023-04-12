@@ -7,6 +7,7 @@ import {
     parseDefinition,
     type validateDefinition
 } from "./parse/definition.js"
+import type { Scope } from "./scope.js"
 import { CompiledFunction, type evaluate } from "./utils/generics.js"
 import type { BuiltinClass } from "./utils/objectKinds.js"
 import { Path } from "./utils/paths.js"
@@ -56,10 +57,14 @@ export class Type<t = unknown> extends CompiledFunction<
     [data: unknown],
     CheckResult<inferOut<t>>
 > {
+    declare [as]: t
+    declare infer: inferOut<t>
+    declare inferIn: inferIn<t>
+
     root: TypeNode
 
-    constructor(public definition: unknown) {
-        const root = parseDefinition(definition, { path: new Path() })
+    constructor(public definition: unknown, public scope: Scope) {
+        const root = parseDefinition(definition, { path: new Path(), scope })
         super("data", "")
         this.root = root
     }
@@ -72,12 +77,6 @@ export class Type<t = unknown> extends CompiledFunction<
     //         branches.map((branch) => Constraints.from(branch))
     //     )
     // }
-
-    declare [as]: t
-
-    declare infer: inferOut<t>
-
-    declare inferIn: inferIn<t>
 
     // TODO: don't mutate
     allows(data: unknown): data is inferIn<t> {

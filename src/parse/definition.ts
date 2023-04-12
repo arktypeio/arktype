@@ -1,4 +1,5 @@
 import { TypeNode } from "../nodes/type.js"
+import type { Scope } from "../scope.js"
 import { Type } from "../type.js"
 import type { Primitive } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
@@ -28,6 +29,7 @@ import { parseString } from "./string/string.js"
 
 export type ParseContext = {
     path: Path
+    scope: Scope
 }
 
 export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
