@@ -49,7 +49,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         super(TypeNode, child)
     }
 
-    static from<branches extends TypeNodeInput>(
+    static from<const branches extends TypeNodeInput>(
         ...branches: validateBranches<branches>
     ) {
         return new TypeNode<inferBranches<branches>>(

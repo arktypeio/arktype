@@ -18,6 +18,7 @@ import type {
 import { parseDefinition } from "../definition.js"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
 import type { Scanner } from "../string/shift/scanner.js"
+import { parseConfigTuple, type validateConfigTuple } from "./config.js"
 import type { inferFilter, validateFilterTuple } from "./filter.js"
 import { parseNarrowTuple } from "./filter.js"
 import type { inferIntersection } from "./intersection.js"

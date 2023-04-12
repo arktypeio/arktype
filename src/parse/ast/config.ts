@@ -1,4 +1,4 @@
-import type { TypeConfig, TypeOptions } from "../../type.js"
+import type { TypeOptions } from "../../type.js"
 import type { validateDefinition } from "../definition.js"
 import { parseDefinition } from "../definition.js"
 import type { PostfixParser, TupleExpression } from "./tuple.js"
@@ -14,13 +14,7 @@ export type ConfigTuple<
  * @tuple ["type", ":", config]
  */
 export const parseConfigTuple: PostfixParser<":"> = (def, ctx) =>
-    parseDefinition(
-        def[0],
-        ctx
-    )({
-        node: ctx.type.scope.resolveTypeNode(),
-        config: def[2] as TypeConfig
-    })
+    parseDefinition(def[0], ctx)
 
 export type validateConfigTuple<def extends TupleExpression, $> = readonly [
     validateDefinition<def[0], $>,

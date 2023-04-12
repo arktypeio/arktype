@@ -12,7 +12,7 @@ export const jsObjectsScope = scope(
         Function: TypeNode.from({
             domain: "object",
             instance: Function
-        }) as Infer<inferObjectKind<"Function">>,
+        }),
         Date: TypeNode.from({ domain: "object", instance: Date }),
         Error: TypeNode.from({ domain: "object", instance: Error }),
         Map: TypeNode.from({ domain: "object", instance: Map }),

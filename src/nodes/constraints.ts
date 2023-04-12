@@ -34,7 +34,7 @@ export class ConstraintsNode<t = unknown> extends Node<typeof ConstraintsNode> {
         super(ConstraintsNode, child)
     }
 
-    static from<input extends ConstraintsInput>(
+    static from<const input extends ConstraintsInput>(
         input: conform<input, validateConstraintsInput<input>>
     ) {
         const child: ConstraintsChild = {}
@@ -165,11 +165,20 @@ export type RawConstraintsInput = {
 
 type ConstraintKind = keyof ConstraintNodeKinds
 
+// TODO: advanced constraints inference
 export type inferConstraintsInput<input extends ConstraintsInput> =
-    input extends DomainConstraintsInput
-        ? inferDomain<input["domain"]>
-        : input extends ExactValueInput<infer value>
+    input extends ExactValueInput<infer value>
         ? value
+        : input extends ArrayConstraints
+        ? unknown[]
+        : input extends NonArrayObjectConstraints
+        ? input["instance"] extends constructor<infer t>
+            ? t extends Function
+                ? (...args: any[]) => unknown
+                : t
+            : object
+        : input extends DomainConstraintsInput
+        ? inferDomain<input["domain"]>
         : never
 
 type discriminateConstraintsInputBranch<branch extends ConstraintsInput> =
