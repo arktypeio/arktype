@@ -12,7 +12,7 @@ export class MorphNode extends Node<typeof MorphNode> {
     }
 
     static compile(transforms: Morph[], c: CompilationState) {
-        return "true"
+        return ["true"]
     }
 
     intersect(other: MorphNode) {

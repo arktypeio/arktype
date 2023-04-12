@@ -16,10 +16,12 @@ export class DomainNode<domain extends Domain = Domain> extends Node<
     }
 
     static compile(constraint: Domain, s: CompilationState) {
-        return constraint === "object"
-            ? `((typeof ${s.data} === "object" && ${s.data} !== null) || typeof ${s.data} === "function")`
-            : constraint === "null" || constraint === "undefined"
-            ? `${s.data} === ${constraint}`
-            : `typeof ${s.data} === "${constraint}"`
+        return [
+            constraint === "object"
+                ? `((typeof ${s.data} === "object" && ${s.data} !== null) || typeof ${s.data} === "function")`
+                : constraint === "null" || constraint === "undefined"
+                ? `${s.data} === ${constraint}`
+                : `typeof ${s.data} === "${constraint}"`
+        ]
     }
 }

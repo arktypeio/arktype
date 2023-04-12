@@ -13,7 +13,7 @@ import type { TypeNode } from "./type.js"
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (...args: any[]): Node<subclass>
-    compile(children: any, s: CompilationState): string
+    compile(children: any, s: CompilationState): string[]
 }
 
 export abstract class Node<
@@ -27,7 +27,8 @@ export abstract class Node<
         public child: Parameters<subclass["compile"]>[0]
     ) {
         const defaultState = new CompilationState()
-        const compiled = subclass.compile(child, defaultState)
+        const checks = subclass.compile(child, defaultState)
+        const compiled = checks.sort().join(" && ")
         // TODO: Cache
         super("data", `return ${compiled}`)
         this.compiled = compiled

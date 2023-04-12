@@ -50,14 +50,10 @@ export class PropsNode extends Node<typeof PropsNode> {
         // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
         for (const k in named) {
             s.path.push(k)
-            propChecks.push(named[k].compile(s))
+            propChecks.push(...named[k].compile(s))
             s.path.pop()
         }
-        return propChecks.length === 0
-            ? "true"
-            : propChecks.length === 1
-            ? propChecks[0]
-            : `(${propChecks.join(" && ")})`
+        return propChecks
     }
 
     intersect(other: PropsNode, s: ComparisonState) {

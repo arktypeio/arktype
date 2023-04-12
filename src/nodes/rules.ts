@@ -51,24 +51,23 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
     }
 
     static compile(child: RulesChild, s: CompilationState) {
-        let result =
+        const checks =
             child.value?.compile(s) ??
             child.instance?.compile(s) ??
             child.domain!.compile(s)
-        const baseCheckLength = result.length
         if (child.divisor) {
-            result += ` && ${child.divisor.compile(s)}`
+            checks.push(...child.divisor.compile(s))
         }
         if (child.range) {
-            result += ` && ${child.range.compile(s)}`
+            checks.push(...child.range.compile(s))
         }
         if (child.regex) {
-            result += ` && ${child.regex.compile(s)}`
+            checks.push(...child.regex.compile(s))
         }
         if (child.props) {
-            result += ` && ${child.props.compile(s)}`
+            checks.push(...child.props.compile(s))
         }
-        return result.length === baseCheckLength ? result : `(${result})`
+        return checks
     }
 
     intersect(other: RulesNode, s: ComparisonState) {

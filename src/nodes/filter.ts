@@ -12,7 +12,7 @@ export class FilterNode extends Node<typeof FilterNode> {
     }
 
     static compile(sources: Filter[], c: CompilationState) {
-        return "true"
+        return ["true"]
     }
 
     intersect(other: FilterNode) {

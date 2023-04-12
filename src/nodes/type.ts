@@ -61,12 +61,19 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         )
     }
 
-    static compile(child: List<RulesNode>, s: CompilationState) {
-        return child.length === 0
-            ? "false"
-            : child.length === 1
-            ? child[0].compile(s)
-            : `(${child.map((branch) => branch.compile(s)).join(" || ")})`
+    static compile(branches: List<RulesNode>, s: CompilationState) {
+        switch (branches.length) {
+            case 0:
+                return ["false"]
+            case 1:
+                return branches[0].compile(s)
+            default:
+                return [
+                    `(${branches
+                        .map((branch) => branch.compile(s))
+                        .join(" || ")})`
+                ]
+        }
     }
 
     intersect(other: TypeNode, s: ComparisonState): TypeNode | Disjoint {

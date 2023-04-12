@@ -8,10 +8,7 @@ export class RegexNode extends Node<typeof RegexNode> {
     }
 
     static compile(sources: string[], c: CompilationState) {
-        return sources
-            .sort()
-            .map((source) => `/${source}/.test(${c.data})` as const)
-            .join(" && ")
+        return sources.map((source) => `/${source}/.test(${c.data})` as const)
     }
 
     // c.problem(
