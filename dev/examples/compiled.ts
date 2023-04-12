@@ -14,6 +14,8 @@ console.log(t([""]))
 
 console.log(type("number%2").compiled)
 
+console.log(type("number%2")(3).problems?.summary)
+
 console.log(type({ a: "string", b: "boolean" }).compiled)
 
 const o = type({ a: "string", b: "boolean" })

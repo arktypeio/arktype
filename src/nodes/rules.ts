@@ -19,8 +19,8 @@ import { EqualityNode } from "./equality.js"
 import { FilterNode } from "./filter.js"
 import { InstanceNode } from "./instance.js"
 import { MorphNode } from "./morph.js"
-import type { ComparisonState, CompilationState } from "./node.js"
-import { Node } from "./node.js"
+import type { CompilationState } from "./node.js"
+import { ComparisonState, Node } from "./node.js"
 import type { PropsInput } from "./props.js"
 import { PropsNode } from "./props.js"
 import type { Bounds } from "./range.js"
@@ -31,6 +31,7 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
     declare [as]: t
 
     constructor(child: RulesChild) {
+        validateRuleKeys(child)
         super(RulesNode, child)
     }
 
@@ -38,9 +39,9 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
         input: conform<input, validateConstraintsInput<input>>
     ) {
         const child: RulesChild = {}
-        const inputKeys = getValidatedRuleKeys(input as RuleSet)
         const constraints = input as Rules
-        for (const k of inputKeys) {
+        let k: RuleKind
+        for (k in constraints) {
             child[k] =
                 k === "props"
                     ? PropsNode.from(constraints[k]!)
@@ -105,6 +106,25 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
                 ) as any
             } else {
                 result[k] = other.child as any
+            }
+        }
+        return new RulesNode(result)
+    }
+
+    constrain(constraints: Constraints) {
+        let k: RuleKind
+        const result = { ...this.child }
+        for (k in constraints) {
+            const constraintNode = new (ruleKinds[k] as constructor<any>)(
+                constraints[k]
+            )
+            if (hasKey(this.child, k)) {
+                result[k] = this.child[k].intersect(
+                    constraintNode,
+                    new ComparisonState()
+                ) as any
+            } else {
+                result[k] = constraintNode
             }
         }
         return new RulesNode(result)
@@ -181,58 +201,55 @@ export type validateConstraintsInput<input extends RuleSet> = exact<
     discriminateConstraintsInputBranch<input>
 >
 
-const getValidatedRuleKeys = (rules: RuleSet) => {
+const validateRuleKeys = (rules: RulesChild) => {
     if ("value" in rules) {
-        return getValidatedRuleKeysFromSet(
+        return validateRuleKeysFromSet(
             rules,
             exactValueConstraintKeys,
             "an exact value"
         )
     }
-    switch (rules.domain) {
+    if (!rules.domain) {
+        return throwParseError(
+            `Constraints input must have either a 'value' or 'domain' key (got keys ${stringify(
+                Object.keys(rules).join(", ")
+            )})`
+        )
+    }
+    switch (rules.domain.child) {
         case "object":
             const isArray = rules.instance instanceof Array
             const allowedKeys = isArray ? arrayRuleKeys : nonArrayObjectRuleKeys
-            return getValidatedRuleKeysFromSet(
+            return validateRuleKeysFromSet(
                 rules,
                 allowedKeys,
                 isArray ? "an array" : "a non-array object"
             )
         case "string":
-            return getValidatedRuleKeysFromSet(
-                rules,
-                stringRuleKeys,
-                "a string"
-            )
+            return validateRuleKeysFromSet(rules, stringRuleKeys, "a string")
         case "number":
-            return getValidatedRuleKeysFromSet(
-                rules,
-                numberRuleKeys,
-                "a number"
-            )
+            return validateRuleKeysFromSet(rules, numberRuleKeys, "a number")
         case "bigint":
-            return getValidatedRuleKeysFromSet(
+            return validateRuleKeysFromSet(
                 rules,
                 baseDomainRuleKeys,
                 "a bigint"
             )
         case "symbol":
-            return getValidatedRuleKeysFromSet(
+            return validateRuleKeysFromSet(
                 rules,
                 baseDomainRuleKeys,
                 "a symbol"
             )
         default:
             return throwParseError(
-                `Constraints input must have either a 'value' or 'domain' key with a constrainable domain as its value (was ${stringify(
-                    rules
-                )})`
+                `Constraints input domain must be either object, string, number, bigint or symbol (was ${rules.domain.child})`
             )
     }
 }
 
-const getValidatedRuleKeysFromSet = (
-    input: Rules,
+const validateRuleKeysFromSet = (
+    input: RulesChild,
     allowedKeys: keySet<RuleKind>,
     description: string
 ) => {
@@ -245,7 +262,6 @@ const getValidatedRuleKeysFromSet = (
             )} are not allowed for ${description}.`
         )
     }
-    return inputKeys
 }
 
 export type RuleSet = ExactValueRuleSet | DomainRuleSet

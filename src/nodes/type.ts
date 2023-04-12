@@ -82,7 +82,9 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
 
     constrain(constraints: Constraints) {
         // TODO: diverge from intersect? What about morphs?
-        return new TypeNode(this.child.map((branch) => branch))
+        return new TypeNode(
+            this.child.map((branch) => branch.constrain(constraints))
+        )
     }
 
     and(other: TypeNode): TypeNode {
