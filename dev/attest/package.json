@@ -9,16 +9,16 @@
     "description": "",
     "type": "module",
     "devDependencies": {
-        "arktype": "1.0.10-alpha",
-        "ts-node": "10.9.1",
-        "get-current-line": "6.6.0",
-        "ts-morph": "18.0.0",
-        "typescript": "5.0.3",
-        "c8": "7.13.0",
-        "oclif": "3.7.3",
         "@oclif/core": "2.8.0",
+        "arktype": "1.0.10-alpha",
+        "c8": "7.13.0",
+        "get-current-line": "6.6.0",
+        "mocha": "10.2.0",
+        "oclif": "3.7.3",
         "shx": "^0.3.3",
-        "mocha": "10.2.0"
+        "ts-morph": "18.0.0",
+        "ts-node": "10.9.1",
+        "typescript": "5.0.3"
     },
     "files": [
         "/src",
@@ -42,7 +42,7 @@
     "main": "./dist/cjs/main.js",
     "types": "./dist/types/main.d.ts",
     "bin": {
-        "at": "./dist/cjs/assertions.ts"
+        "attest": "./dist/cjs/commands/test.js"
     },
     "keywords": [
         "typescript"
@@ -68,5 +68,8 @@
         "lint": "eslint . --ext .ts --config .eslintrc",
         "test": "mocha --forbid-only \"test/**/*.test.ts\"",
         "version": "oclif readme && git add README.md"
+    },
+    "dependencies": {
+        "@types/node": "^18.15.11"
     }
 }

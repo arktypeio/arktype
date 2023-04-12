@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { version } from "node:os"
 import { versions } from "node:process"
 import { Args, Command, Errors, Flags, flush } from "@oclif/core"
