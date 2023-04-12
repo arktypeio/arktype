@@ -1,7 +1,5 @@
-import type { Infer } from "../main.js"
 import { TypeNode } from "../nodes/type.js"
 import { scope } from "../scope.js"
-import type { inferObjectKind } from "../utils/objectKinds.js"
 
 /**
  * @docgenScope

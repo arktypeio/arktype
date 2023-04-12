@@ -32,19 +32,14 @@ export type parseUnenclosed<
     : never
 
 // TODO: configs attached to type?
-const unenclosedToNode = (s: DynamicState, token: string): TypeNode => {
-    if (s.ctx.scope.isResolvable(token)) {
-        return s.ctx.scope.resolve(token).root
-    }
-    return (
-        maybeParseUnenclosedLiteral(token) ??
-        s.error(
-            token === ""
-                ? writeMissingOperandMessage(s)
-                : writeUnresolvableMessage(token)
-        )
+const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
+    s.ctx.scope.maybeResolve(token)?.root ??
+    maybeParseUnenclosedLiteral(token) ??
+    s.error(
+        token === ""
+            ? writeMissingOperandMessage(s)
+            : writeUnresolvableMessage(token)
     )
-}
 
 const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)

@@ -194,15 +194,13 @@ export class Scope<context extends ScopeInferenceContext = any> {
         }
     }
 
-    resolve(name: name<context>): Type {
+    maybeResolve(name: name<context>): Type | undefined {
         if (this.#resolutions[name]) {
             return this.#resolutions[name]
         }
         const aliasDef = this.aliases[name]
         if (!aliasDef) {
-            return throwInternalError(
-                `Unexpectedly failed to resolve alias '${name}'`
-            )
+            return
         }
         const resolution = new Type(aliasDef, this)
         this.#resolutions[name] = resolution
@@ -214,15 +212,11 @@ export class Scope<context extends ScopeInferenceContext = any> {
     compile() {
         if (!this.#compiled) {
             for (const name in this.aliases) {
-                this.#exports[name] ??= this.resolve(name) as Type
+                this.#exports[name] ??= this.maybeResolve(name) as Type
             }
             this.#compiled = true
         }
         return this.#exports as Space<this["infer"]>
-    }
-
-    isResolvable(name: string) {
-        return this.#resolutions[name] || this.aliases[name]
     }
 
     // TODO: shallow cycle?

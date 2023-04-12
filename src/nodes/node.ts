@@ -4,11 +4,11 @@ import type { Domain } from "../utils/domains.js"
 import { CompiledFunction } from "../utils/generics.js"
 import type { extend, instanceOf } from "../utils/generics.js"
 import { Path } from "../utils/paths.js"
-import type { RuleSet } from "./rules.js"
 import type { DomainNode } from "./domain.js"
 import type { EqualityNode } from "./equality.js"
 import type { InstanceNode } from "./instance.js"
 import type { RangeNode } from "./range.js"
+import type { RuleSet } from "./rules.js"
 import type { TypeNode } from "./type.js"
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {

@@ -62,7 +62,7 @@ export class RangeNode extends Node<typeof RangeNode> {
         super(RangeNode, rule)
     }
 
-    static compile(rule: Bounds, c: CompilationState) {
+    static compile(rule: Bounds, s: CompilationState) {
         const comparatorEntries = Object.entries(rule) as [Comparator, number][]
         if (comparatorEntries.length === 0 || comparatorEntries.length > 2) {
             return throwInternalError(
@@ -70,24 +70,27 @@ export class RangeNode extends Node<typeof RangeNode> {
             )
         }
         const sizeAssignment = `const size = ${
-            c.lastDomain === "number" ? c.data : `${c.data}.length`
+            s.lastDomain === "number" ? s.data : `${s.data}.length`
         };` as const
         const units =
-            c.lastDomain === "string"
+            s.lastDomain === "string"
                 ? "characters"
-                : c.lastDomain === "object"
+                : s.lastDomain === "object"
                 ? "items long"
                 : ""
         const checks = comparatorEntries
             .map(([comparator, limit]) =>
-                c.check("range", `size ${comparator} ${limit}`, {
+                s.check("range", `size ${comparator} ${limit}`, {
                     comparator,
                     limit,
                     units
                 })
             )
             .join(" && ")
-        return `${sizeAssignment}${checks}`
+        return `(() => {
+    ${sizeAssignment}
+    return ${checks}
+})()`
     }
 
     intersect(other: RangeNode, s: ComparisonState): RangeNode | Disjoint {

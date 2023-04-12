@@ -12,7 +12,7 @@ export class RegexNode extends Node<typeof RegexNode> {
             .sort()
             .map(
                 (source) =>
-                    `${source}.test(${c.data}) || ${c.problem(
+                    `/${source}/.test(${c.data}) || ${c.problem(
                         "regex",
                         "`" + source + "`"
                     )}` as const

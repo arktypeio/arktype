@@ -49,14 +49,47 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
         return new RulesNode<inferRuleSet<input>>(child)
     }
 
-    static compile(rules: RulesChild, s: CompilationState) {
-        return s.data ? `${rules}` : ""
+    static compile(child: RulesChild, s: CompilationState) {
+        let result = ""
+        if (child.value) {
+            result += child.value.compile(s)
+        } else {
+            result += child.domain!.compile(s)
+        }
+        if (child.instance) {
+            result += child.instance.compile(s)
+        }
+
+        const shallowChecks: string[] = []
+
+        if (child.divisor) {
+            shallowChecks.push(child.divisor.compile(s))
+        }
+        if (child.range) {
+            shallowChecks.push(child.range.compile(s))
+        }
+        if (child.regex) {
+            shallowChecks.push(child.regex.compile(s))
+        }
+
+        if (shallowChecks.length) {
+            result += " && " + s.mergeChecks(shallowChecks)
+        }
+
+        if (child.props) {
+            result += " && "
+            result += child.props.compile(s)
+        }
+
+        if (child.filter) {
+        }
+        return result
     }
 
     intersect(other: RulesNode, s: ComparisonState) {
         // if (
         //     // s.lastOperator === "&" &&
-        //     this.rules.morphs?.some(
+        //     rules.morphs?.some(
         //         (morph, i) => morph !== branch.tree.morphs?.[i]
         //     )
         // ) {
@@ -71,69 +104,7 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
         // TODO: intersect?
         return RulesNode.from({ ...this.child, ...constraints } as any)
     }
-
-    // compile(c: Compilation): string {
-    //     let result = ""
-    //     if (this.rules.value) {
-    //         result += compileValueCheck(this.rules.value, c)
-    //     }
-    //     if (this.rules.instance) {
-    //         result += compileInstance(this.rules.instance, c)
-    //     }
-
-    //     const shallowChecks: string[] = []
-
-    //     if (this.rules.divisor) {
-    //         shallowChecks.push(compileDivisor(this.rules.divisor, c))
-    //     }
-    //     if (this.rules.range) {
-    //         shallowChecks.push(compileRange(this.rules.range, c))
-    //     }
-    //     if (this.rules.regex) {
-    //         shallowChecks.push(compileRegex(this.rules.regex, c))
-    //     }
-
-    //     if (shallowChecks.length) {
-    //         result += " && " + c.mergeChecks(shallowChecks)
-    //     }
-
-    //     if (this.rules.props) {
-    //         result += " && "
-    //         result += compileProps(this.rules.props, c)
-    //     }
-
-    //     if (this.rules.narrow) {
-    //     }
-    //     return result
-    // }
 }
-
-type KeyValue = string | number | symbol | RegExp
-
-const baseKeysByDomain: Record<Domain, readonly KeyValue[]> = {
-    bigint: prototypeKeysOf(0n),
-    boolean: prototypeKeysOf(false),
-    null: [],
-    number: prototypeKeysOf(0),
-    // TS doesn't include the Object prototype in keyof, so keyof object is never
-    object: [],
-    string: prototypeKeysOf(""),
-    symbol: prototypeKeysOf(Symbol()),
-    undefined: []
-}
-
-const arrayIndexStringBranch = RulesNode.from({
-    domain: "string",
-    regex: wellFormedNonNegativeIntegerMatcher.source
-})
-
-const arrayIndexNumberBranch = RulesNode.from({
-    domain: "number",
-    range: {
-        ">=": 0
-    },
-    divisor: 1
-})
 
 export const ruleKinds = {
     domain: DomainNode,
@@ -355,3 +326,30 @@ const numberRuleKeys = {
 type BigintRuleSet = { domain: "bigint" }
 
 type SymbolRuleSet = { domain: "symbol" }
+
+type KeyValue = string | number | symbol | RegExp
+
+const baseKeysByDomain: Record<Domain, readonly KeyValue[]> = {
+    bigint: prototypeKeysOf(0n),
+    boolean: prototypeKeysOf(false),
+    null: [],
+    number: prototypeKeysOf(0),
+    // TS doesn't include the Object prototype in keyof, so keyof object is never
+    object: [],
+    string: prototypeKeysOf(""),
+    symbol: prototypeKeysOf(Symbol()),
+    undefined: []
+}
+
+const arrayIndexStringBranch = RulesNode.from({
+    domain: "string",
+    regex: wellFormedNonNegativeIntegerMatcher.source
+})
+
+const arrayIndexNumberBranch = RulesNode.from({
+    domain: "number",
+    range: {
+        ">=": 0
+    },
+    divisor: 1
+})

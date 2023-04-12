@@ -1,5 +1,5 @@
 import z from "zod"
-import { morph, type } from "../../src/main.js"
+import { type } from "../../src/main.js"
 import type { Infer } from "../../src/main.js"
 
 {
@@ -14,7 +14,7 @@ import type { Infer } from "../../src/main.js"
 // @snipStatement:arkUserHelper
 const arkUser = type({
     name: /^ark.*$/ as Infer<`ark${string}`>,
-    birthday: morph("string", (s) => new Date(s)),
+    birthday: type("string").morph((s) => new Date(s)),
     "powerLevel?": "1<=number<9000"
 })
 

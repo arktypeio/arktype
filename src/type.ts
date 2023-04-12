@@ -40,16 +40,15 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     declare inferIn: inferIn<t>
 
     root: TypeNode
+    compiled: string
 
     constructor(public definition: unknown, public scope: Scope) {
         const root = parseDefinition(definition, { path: new Path(), scope })
-        super(
-            "data",
-            `const state = new TraversalState()
+        const compiled = `const state = new TraversalState()
 ${root.compiled}
-return state.finalize(data)
-`
-        )
+return state.finalize(data)`
+        super("data", compiled)
+        this.compiled = compiled
         this.root = root
     }
 
@@ -65,7 +64,7 @@ return state.finalize(data)
         return this as any
     }
 
-    // TODO: Fix other operations on morphs
+    // TODO: Fix other operations on morphs (e.g. morph then filter?)
     morph<transform extends Morph<inferIn<t>>>(
         transform: transform
     ): Type<(In: inferIn<t>) => ReturnType<transform>, $> {

@@ -31,19 +31,11 @@ type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
     ? def
     : fullStringParse<def, $>
 
-export const maybeNaiveParse = (def: string, ctx: ParseContext): TypeNode => {
-    if (ctx.scope.isResolvable(def)) {
-        return ctx.scope.resolve(def).root
-    }
-    if (def.endsWith("[]")) {
-        const elementDef = def.slice(0, -2)
-        if (ctx.scope.isResolvable(elementDef)) {
-            // TODO: configs?
-            return ctx.scope.resolve(elementDef).root.toArray()
-        }
-    }
-    return fullStringParse(def, ctx)
-}
+export const maybeNaiveParse = (def: string, ctx: ParseContext): TypeNode =>
+    ctx.scope.maybeResolve(def)?.root ??
+    ((def.endsWith("[]") &&
+        ctx.scope.maybeResolve(def.slice(0, -2))?.root.toArray()) ||
+        fullStringParse(def, ctx))
 
 export const fullStringParse = (def: string, ctx: ParseContext) => {
     const s = new DynamicState(def, ctx)

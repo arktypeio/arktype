@@ -1,18 +1,15 @@
 import { type } from "../../src/main.js"
 
 // @snipStatement:union
-export const deepLeftOrRight = union(
-    {
-        auto: {
-            discriminated: "'left'"
-        }
-    },
-    {
-        auto: {
-            discriminated: "'right'"
-        }
+export const deepLeftOrRight = type({
+    auto: {
+        discriminated: "'left'"
     }
-)
+}).or({
+    auto: {
+        discriminated: "'right'"
+    }
+})
 
 export const unionInternalRepresentation = [
     ["domain", "object"],

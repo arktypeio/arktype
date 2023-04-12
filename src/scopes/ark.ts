@@ -76,8 +76,3 @@ export type Ark = {
 }
 
 export const type: TypeParser<Ark> = arkScope.type
-
-const z = type({ a: "string" })
-    .and({ b: "number" })
-    .morph(({ a, b }) => ({ b: a, a: b }))
-    .filter((data): data is { a: "foo"; b: number } => data.a === "foo")
