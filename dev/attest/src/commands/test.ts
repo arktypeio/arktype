@@ -7,11 +7,11 @@ import { shell } from "../runtime/shell.js"
 export default class Test extends Command {
     static description = "describe the command here"
 
-    static examples = ["<%= config.bin %> <%= command.id %>"]
+    // static examples = ["<%= config.bin %> <%= command.id %>"]
 
     static flags = {
         skipTypes: Flags.boolean({ char: "s" }),
-        help: Flags.help()
+        aFlag: Flags.help()
     }
 
     //this might not be possible unless jest/mocha/other suites allow for this kind of config in an easyish way
@@ -26,6 +26,9 @@ export default class Test extends Command {
     public async run(): Promise<void> {
         const { args, flags } = await this.parse(Test)
         //command should include --precache
+        console.log("why")
+        console.log(args)
+        console.log(flags)
 
         let prefix = ""
         const runner = args.runner ?? undefined

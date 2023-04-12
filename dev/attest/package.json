@@ -6,7 +6,7 @@
         "email": "david@arktype.io",
         "url": "https://arktype.io"
     },
-    "description": "",
+    "description": "Amazing tool from Arktype",
     "type": "module",
     "devDependencies": {
         "@oclif/core": "2.8.0",
@@ -18,7 +18,9 @@
         "shx": "^0.3.3",
         "ts-morph": "18.0.0",
         "ts-node": "10.9.1",
-        "typescript": "5.0.3"
+        "typescript": "5.0.3",
+        "@types/node": "18.15.11",
+        "commander": "10.0.0"
     },
     "files": [
         "/src",
@@ -42,13 +44,13 @@
     "main": "./dist/cjs/main.js",
     "types": "./dist/types/main.d.ts",
     "bin": {
-        "attest": "./dist/cjs/commands/test.js"
+        "abc": "./dist/cjs/2cli.js"
     },
     "keywords": [
         "typescript"
     ],
     "oclif": {
-        "commands": "./dist/cjs/commands/",
+        "commands": "./dist/commands/",
         "plugins": [
             "@oclif/plugin-help",
             "@oclif/plugin-plugins"
@@ -68,8 +70,5 @@
         "lint": "eslint . --ext .ts --config .eslintrc",
         "test": "mocha --forbid-only \"test/**/*.test.ts\"",
         "version": "oclif readme && git add README.md"
-    },
-    "dependencies": {
-        "@types/node": "^18.15.11"
     }
 }

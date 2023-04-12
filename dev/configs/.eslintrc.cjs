@@ -145,6 +145,7 @@ module.exports = defineConfig({
          */
         {
             files: ["**/src/**"],
+
             rules: {
                 /**
                  * In tests and scripts, we can safely import from the monorepo's root devDependencies,
@@ -169,7 +170,8 @@ module.exports = defineConfig({
         {
             files: ["./dev/**"],
             rules: {
-                "no-restricted-imports": "off"
+                "no-restricted-imports": "off",
+                "import/no-extraneous-dependencies": "off"
             }
         }
     ]
