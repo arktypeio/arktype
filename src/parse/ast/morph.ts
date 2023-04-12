@@ -10,7 +10,7 @@ export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {
         return throwParseError(writeMalformedMorphExpressionMessage(def[2]))
     }
-    return parseDefinition(def[0], ctx).constrain({ morphs: [def[2] as Morph] })
+    return parseDefinition(def[0], ctx).constrain({ morph: def[2] as Morph })
 }
 
 export type validateMorphTuple<def extends TupleExpression, $> = readonly [

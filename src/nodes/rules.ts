@@ -27,35 +27,33 @@ import type { Bounds } from "./range.js"
 import { RangeNode } from "./range.js"
 import { RegexNode } from "./regex.js"
 
-export class ConstraintsNode<t = unknown> extends Node<typeof ConstraintsNode> {
+export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
     declare [as]: t
 
-    constructor(child: ConstraintsChild) {
-        super(ConstraintsNode, child)
+    constructor(child: RulesChild) {
+        super(RulesNode, child)
     }
 
-    static from<const input extends ConstraintsInput>(
+    static from<const input extends RuleSet>(
         input: conform<input, validateConstraintsInput<input>>
     ) {
-        const child: ConstraintsChild = {}
-        const inputKeys = getValidatedInputKeys(input as ConstraintsInput)
-        const constraints = input as RawConstraintsInput
+        const child: RulesChild = {}
+        const inputKeys = getValidatedRuleKeys(input as RuleSet)
+        const constraints = input as Rules
         for (const k of inputKeys) {
             child[k] =
                 k === "props"
                     ? PropsNode.from(constraints[k]!)
-                    : new (constraintKinds[k] as constructor<any>)(
-                          constraints[k]
-                      )
+                    : new (ruleKinds[k] as constructor<any>)(constraints[k])
         }
-        return new ConstraintsNode<inferConstraintsInput<input>>(child)
+        return new RulesNode<inferRuleSet<input>>(child)
     }
 
-    static compile(rules: ConstraintsChild, s: CompilationState) {
+    static compile(rules: RulesChild, s: CompilationState) {
         return s.data ? `${rules}` : ""
     }
 
-    intersect(other: ConstraintsNode, s: ComparisonState) {
+    intersect(other: RulesNode, s: ComparisonState) {
         // if (
         //     // s.lastOperator === "&" &&
         //     this.rules.morphs?.some(
@@ -69,9 +67,9 @@ export class ConstraintsNode<t = unknown> extends Node<typeof ConstraintsNode> {
         return s.path ? this : other
     }
 
-    constrain(constraints: RawConstraintsInput) {
-        // TODO: intersect
-        return ConstraintsNode.from({ ...this.child, ...constraints } as any)
+    constrain(constraints: Constraints) {
+        // TODO: intersect?
+        return RulesNode.from({ ...this.child, ...constraints } as any)
     }
 
     // compile(c: Compilation): string {
@@ -124,12 +122,12 @@ const baseKeysByDomain: Record<Domain, readonly KeyValue[]> = {
     undefined: []
 }
 
-const arrayIndexStringBranch = ConstraintsNode.from({
+const arrayIndexStringBranch = RulesNode.from({
     domain: "string",
     regex: wellFormedNonNegativeIntegerMatcher.source
 })
 
-const arrayIndexNumberBranch = ConstraintsNode.from({
+const arrayIndexNumberBranch = RulesNode.from({
     domain: "number",
     range: {
         ">=": 0
@@ -137,7 +135,7 @@ const arrayIndexNumberBranch = ConstraintsNode.from({
     divisor: 1
 })
 
-export const constraintKinds = {
+export const ruleKinds = {
     domain: DomainNode,
     value: EqualityNode,
     instance: InstanceNode,
@@ -145,111 +143,111 @@ export const constraintKinds = {
     divisor: DivisibilityNode,
     regex: RegexNode,
     props: PropsNode,
-    filters: FilterNode,
-    morphs: MorphNode
+    filter: FilterNode,
+    morph: MorphNode
 } as const
 
-type ConstraintNodeKinds = typeof constraintKinds
+type RuleNodeKinds = typeof ruleKinds
 
-type ConstraintsChild = {
-    [k in ConstraintKind]?: instanceOf<ConstraintNodeKinds[k]>
+type RulesChild = {
+    [k in RuleKind]?: instanceOf<RuleNodeKinds[k]>
 }
 
-export type RawConstraintsInput = {
-    [k in ConstraintKind]?: k extends "props"
+export type Constraints = Omit<Rules, "morphs">
+
+export type Rules = {
+    [k in RuleKind]?: k extends "props"
         ? PropsInput
-        : ConstructorParameters<ConstraintNodeKinds[k]>[0]
+        : ConstructorParameters<RuleNodeKinds[k]>[0]
 }
 
-type ConstraintKind = keyof ConstraintNodeKinds
+type RuleKind = keyof RuleNodeKinds
 
 // TODO: advanced constraints inference
-export type inferConstraintsInput<input extends ConstraintsInput> =
-    input extends ExactValueInput<infer value>
+export type inferRuleSet<input extends RuleSet> =
+    input extends ExactValueRuleSet<infer value>
         ? value
-        : input extends ArrayConstraints
+        : input extends ArrayRuleSet
         ? unknown[]
-        : input extends NonArrayObjectConstraints
+        : input extends NonArrayObjectRuleSet
         ? input["instance"] extends constructor<infer t>
             ? t extends Function
                 ? (...args: any[]) => unknown
                 : t
             : object
-        : input extends DomainConstraintsInput
+        : input extends DomainRuleSet
         ? inferDomain<input["domain"]>
         : never
 
-type discriminateConstraintsInputBranch<branch extends ConstraintsInput> =
+type discriminateConstraintsInputBranch<branch extends RuleSet> =
     branch extends {
         domain: infer domain extends Domain
     }
         ? domain extends "object"
             ? branch extends { instance: typeof Array }
-                ? ArrayConstraints
-                : NonArrayObjectConstraints
-            : DomainConstraintsInput & { domain: branch["domain"] }
-        : ExactValueInput
+                ? ArrayRuleSet
+                : NonArrayObjectRuleSet
+            : DomainRuleSet & { domain: branch["domain"] }
+        : ExactValueRuleSet
 
-export type validateConstraintsInput<input extends ConstraintsInput> = exact<
+export type validateConstraintsInput<input extends RuleSet> = exact<
     input,
     discriminateConstraintsInputBranch<input>
 >
 
-const getValidatedInputKeys = (input: ConstraintsInput) => {
-    if ("value" in input) {
-        return getValidatedInputKeysFromSet(
-            input,
+const getValidatedRuleKeys = (rules: RuleSet) => {
+    if ("value" in rules) {
+        return getValidatedRuleKeysFromSet(
+            rules,
             exactValueConstraintKeys,
             "an exact value"
         )
     }
-    switch (input.domain) {
+    switch (rules.domain) {
         case "object":
-            const isArray = input.instance instanceof Array
-            const allowedKeys = isArray
-                ? arrayConstraintKeys
-                : nonArrayObjectConstraintKeys
-            return getValidatedInputKeysFromSet(
-                input,
+            const isArray = rules.instance instanceof Array
+            const allowedKeys = isArray ? arrayRuleKeys : nonArrayObjectRuleKeys
+            return getValidatedRuleKeysFromSet(
+                rules,
                 allowedKeys,
                 isArray ? "an array" : "a non-array object"
             )
         case "string":
-            return getValidatedInputKeysFromSet(
-                input,
-                stringConstraintKeys,
+            return getValidatedRuleKeysFromSet(
+                rules,
+                stringRuleKeys,
                 "a string"
             )
         case "number":
-            return getValidatedInputKeysFromSet(
-                input,
-                numberConstraintKeys,
+            return getValidatedRuleKeysFromSet(
+                rules,
+                numberRuleKeys,
                 "a number"
             )
         case "bigint":
-            return getValidatedInputKeysFromSet(
-                input,
-                baseDomainConstraintKeys,
+            return getValidatedRuleKeysFromSet(
+                rules,
+                baseDomainRuleKeys,
                 "a bigint"
             )
         case "symbol":
-            return getValidatedInputKeysFromSet(
-                input,
-                baseDomainConstraintKeys,
+            return getValidatedRuleKeysFromSet(
+                rules,
+                baseDomainRuleKeys,
                 "a symbol"
             )
         default:
             return throwParseError(
                 `Constraints input must have either a 'value' or 'domain' key with a constrainable domain as its value (was ${stringify(
-                    input
+                    rules
                 )})`
             )
     }
 }
 
-const getValidatedInputKeysFromSet = (
-    input: RawConstraintsInput,
-    allowedKeys: keySet<ConstraintKind>,
+const getValidatedRuleKeysFromSet = (
+    input: Rules,
+    allowedKeys: keySet<RuleKind>,
     description: string
 ) => {
     const inputKeys = keysOf(input)
@@ -264,86 +262,86 @@ const getValidatedInputKeysFromSet = (
     return inputKeys
 }
 
-export type ConstraintsInput = ExactValueInput | DomainConstraintsInput
+export type RuleSet = ExactValueRuleSet | DomainRuleSet
 
-type ExactValueInput<value = unknown> = {
+type ExactValueRuleSet<value = unknown> = {
     value: value
-    morphs?: Morph[]
+    morph?: Morph[]
 }
 
-const exactValueConstraintKeys: Record<keyof ExactValueInput, true> = {
+const exactValueConstraintKeys: Record<keyof ExactValueRuleSet, true> = {
     value: true,
-    morphs: true
+    morph: true
 } as const
 
-type DomainConstraintsInput = {
-    filters?: Filter[]
-    morphs?: Morph[]
+type DomainRuleSet = {
+    filter?: Filter[]
+    morph?: Morph[]
 } & (
-    | NonArrayObjectConstraints
-    | ArrayConstraints
-    | StringConstraints
-    | NumberConstraints
-    | BigintConstraints
-    | SymbolConstraints
+    | NonArrayObjectRuleSet
+    | ArrayRuleSet
+    | StringRuleSet
+    | NumberRuleSet
+    | BigintRuleSet
+    | SymbolRuleSet
 )
 
-const baseDomainConstraintKeys = {
+const baseDomainRuleKeys = {
     domain: true,
-    filters: true,
-    morphs: true
+    filter: true,
+    morph: true
 } as const
 
-type NonArrayObjectConstraints = {
+type NonArrayObjectRuleSet = {
     domain: "object"
     instance?: constructor
     props?: PropsInput
 }
 
-const nonArrayObjectConstraintKeys = {
-    ...baseDomainConstraintKeys,
+const nonArrayObjectRuleKeys = {
+    ...baseDomainRuleKeys,
     instance: true,
     props: true
-} as const satisfies Record<keyof NonArrayObjectConstraints, true>
+} as const satisfies Record<keyof NonArrayObjectRuleSet, true>
 
-type ArrayConstraints = {
+type ArrayRuleSet = {
     domain: "object"
     instance: typeof Array
     props?: PropsInput
     range?: Bounds
 }
 
-const arrayConstraintKeys = {
-    ...baseDomainConstraintKeys,
+const arrayRuleKeys = {
+    ...baseDomainRuleKeys,
     instance: true,
     props: true,
     range: true
-} as const satisfies Record<keyof ArrayConstraints, true>
+} as const satisfies Record<keyof ArrayRuleSet, true>
 
-type StringConstraints = {
+type StringRuleSet = {
     domain: "string"
     regex?: string | string[]
     range?: Bounds
 }
 
-const stringConstraintKeys = {
-    ...baseDomainConstraintKeys,
+const stringRuleKeys = {
+    ...baseDomainRuleKeys,
     regex: true,
     range: true
-} as const satisfies Record<keyof StringConstraints, true>
+} as const satisfies Record<keyof StringRuleSet, true>
 
-type NumberConstraints = {
+type NumberRuleSet = {
     domain: "number"
     divisor?: number
     range?: Bounds
 }
 
-const numberConstraintKeys = {
-    ...baseDomainConstraintKeys,
+const numberRuleKeys = {
+    ...baseDomainRuleKeys,
     divisor: true,
     range: true
-} as const satisfies Record<keyof NumberConstraints, true>
+} as const satisfies Record<keyof NumberRuleSet, true>
 
-type BigintConstraints = { domain: "bigint" }
+type BigintRuleSet = { domain: "bigint" }
 
-type SymbolConstraints = { domain: "symbol" }
+type SymbolRuleSet = { domain: "symbol" }

@@ -7,15 +7,15 @@ import type { PostfixParser, TupleExpression } from "./tuple.js"
 
 export const parseNarrowTuple: PostfixParser<"=>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {
-        return throwParseError(writeMalformedNarrowExpressionMessage(def[2]))
+        return throwParseError(writeMalformedFilterExpressionMessage(def[2]))
     }
     return parseDefinition(def[0], ctx).constrain({
-        filters: [def[2] as Filter]
+        filter: def[2] as Filter
     })
 }
 
-export const writeMalformedNarrowExpressionMessage = (value: unknown) =>
-    `Narrow expression requires a function following '=>' (was ${typeof value})`
+export const writeMalformedFilterExpressionMessage = (value: unknown) =>
+    `Filter expression requires a function following '=>' (was ${typeof value})`
 
 export type Filter<data = any> = (data: data, state: TraversalState) => boolean
 

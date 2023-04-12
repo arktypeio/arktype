@@ -16,36 +16,36 @@ import type {
 } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
 import type {
-    ConstraintsInput,
-    inferConstraintsInput,
-    RawConstraintsInput,
+    RuleSet,
+    inferRuleSet,
+    Rules,
     validateConstraintsInput
-} from "./constraints.js"
-import { ConstraintsNode } from "./constraints.js"
+} from "./rules.js"
+import { RulesNode } from "./rules.js"
 import type { EqualityNode } from "./equality.js"
 import type { CompilationState, Disjoint } from "./node.js"
 import { ComparisonState, Node } from "./node.js"
 
 type validateBranches<branches extends TypeNodeInput> = {
-    [i in keyof branches]: branches[i] extends ConstraintsInput
+    [i in keyof branches]: branches[i] extends RuleSet
         ? conform<branches[i], validateConstraintsInput<branches[i]>>
         : branches[i]
 }
 
 type inferBranches<branches extends TypeNodeInput> = {
-    [i in keyof branches]: branches[i] extends ConstraintsInput
-        ? inferConstraintsInput<branches[i]>
-        : branches[i] extends ConstraintsNode<infer t>
+    [i in keyof branches]: branches[i] extends RuleSet
+        ? inferRuleSet<branches[i]>
+        : branches[i] extends RulesNode<infer t>
         ? t
         : never
 }[number]
 
-export type TypeNodeInput = List<ConstraintsInput | ConstraintsNode>
+export type TypeNodeInput = List<RuleSet | RulesNode>
 
 export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     declare [as]: t
 
-    constructor(child: ConstraintsNode[]) {
+    constructor(child: RulesNode[]) {
         super(TypeNode, child)
     }
 
@@ -54,14 +54,14 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     ) {
         return new TypeNode<inferBranches<branches>>(
             branches.map((branch) =>
-                branch instanceof ConstraintsNode
+                branch instanceof RulesNode
                     ? branch
-                    : ConstraintsNode.from(branch as any)
+                    : RulesNode.from(branch as any)
             )
         )
     }
 
-    static compile(child: List<ConstraintsNode>) {
+    static compile(child: List<RulesNode>) {
         return `${child}`
     }
 
@@ -79,7 +79,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
             : s.addDisjoint("union", this, other)
     }
 
-    constrain(constraints: RawConstraintsInput) {
+    constrain(constraints: Rules) {
         // TODO: diverge from intersect? What about morphs?
         return new TypeNode(
             this.child.map((branch) => branch.constrain(constraints))
@@ -152,24 +152,24 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
 export const never = new TypeNode([])
 
 const branchwiseIntersection = (
-    lBranches: List<ConstraintsNode>,
-    rBranches: List<ConstraintsNode>,
+    lBranches: List<RulesNode>,
+    rBranches: List<RulesNode>,
     s: ComparisonState
 ) => {
     // Branches that are determined to be a subtype of an opposite branch are
     // guaranteed to be a member of the final reduced intersection, so long as
     // each individual set of branches has been correctly reduced to exclude
     // redundancies.
-    const finalBranches: ConstraintsNode[] = []
+    const finalBranches: RulesNode[] = []
     // Each rBranch is initialized to an empty array to which distinct
     // intersections will be appended. If the rBranch is identified as a
     // subtype (or equal) of any lBranch, the corresponding value should be
     // set to null so we can avoid including previous/future intersections
     // in the final result.
-    const candidatesByR: (ConstraintsNode[] | null)[] = rBranches.map(() => [])
+    const candidatesByR: (RulesNode[] | null)[] = rBranches.map(() => [])
     for (let lIndex = 0; lIndex < lBranches.length; lIndex++) {
         const l = lBranches[lIndex]
-        let currentCandidateByR: { [rIndex in number]: ConstraintsNode } = {}
+        let currentCandidateByR: { [rIndex in number]: RulesNode } = {}
         for (let rIndex = 0; rIndex < rBranches.length; rIndex++) {
             const r = rBranches[rIndex]
             if (!candidatesByR[rIndex]) {
@@ -225,7 +225,7 @@ const branchwiseIntersection = (
     return finalBranches
 }
 
-const pruneSubtypes = (branches: ConstraintsNode[]) => {
+const pruneSubtypes = (branches: RulesNode[]) => {
     const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
     for (let i = 0; i < branches.length; i++) {
         for (let j = i + 1; j < branches.length && uniquenessByIndex[i]; j++) {
@@ -264,10 +264,7 @@ const pruneSubtypes = (branches: ConstraintsNode[]) => {
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-export const compileBranches = (
-    branches: ConstraintsNode[],
-    c: CompilationState
-) => {
+export const compileBranches = (branches: RulesNode[], c: CompilationState) => {
     const discriminants = calculateDiscriminants(branches, c)
     const indices = branches.map((_, i) => i)
     return discriminate(branches, indices, discriminants, c)
@@ -282,7 +279,7 @@ export type QualifiedDisjoint =
     | `${string}/${DiscriminantKind}`
 
 const discriminate = (
-    originalBranches: ConstraintsNode[],
+    originalBranches: RulesNode[],
     remainingIndices: number[],
     discriminants: Discriminants,
     c: CompilationState
@@ -443,7 +440,7 @@ const discriminantKinds: keySet<DiscriminantKind> = {
 export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 const calculateDiscriminants = (
-    branches: ConstraintsNode[],
+    branches: RulesNode[],
     ctx: CompilationState
 ): Discriminants => {
     const discriminants: Discriminants = {

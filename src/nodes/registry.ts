@@ -1,21 +1,18 @@
-import type { constructor, extend } from "../utils/generics.js"
+import type { constructor } from "../utils/generics.js"
 // TODO: move this and other non-nodes out of nodes dir
 
 const registry = {
     constructor: {} as Record<string, constructor>,
-    value: {} as Record<string, object | symbol>,
-    regex: {} as Record<string, RegExp>
+    value: {} as Record<string, object | symbol>
 }
 
 type Registry = typeof registry
 ;(globalThis as any).$ark = registry
 
-type CachedRegistryKey = extend<keyof Registry, "regex">
-
-type UncachedRegistryKey = Exclude<keyof Registry, CachedRegistryKey>
+type RegistryKey = keyof Registry
 
 const composeUncachedRegistrar =
-    <kind extends UncachedRegistryKey>(kind: kind) =>
+    <kind extends RegistryKey>(kind: kind) =>
     (baseName: string, value: Registry[kind][string]) => {
         let registryKey = baseName
         let suffix = 2
