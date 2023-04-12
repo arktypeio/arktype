@@ -14,7 +14,7 @@ export class DivisibilityNode extends Node<typeof DivisibilityNode> {
         return new DivisibilityNode(leastCommonMultiple)
     }
 
-    static compile(divisor: number, s: CompilationState) {
+    static checks(divisor: number, s: CompilationState) {
         return [`${s.data} % ${divisor} === 0`]
     }
 }

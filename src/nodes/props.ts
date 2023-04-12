@@ -45,7 +45,7 @@ export class PropsNode extends Node<typeof PropsNode> {
         return new PropsNode(child)
     }
 
-    static compile({ named }: PropsChild, s: CompilationState) {
+    static checks({ named }: PropsChild, s: CompilationState) {
         const propChecks: string[] = []
         // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
         for (const k in named) {
@@ -164,8 +164,8 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
         return new NamedPropNode(child)
     }
 
-    static compile(child: NamedPropChild, s: CompilationState) {
-        return child.value.compile(s)
+    static checks(child: NamedPropChild, s: CompilationState) {
+        return [child.value.compile(s)]
     }
 
     intersect(

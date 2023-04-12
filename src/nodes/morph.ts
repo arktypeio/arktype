@@ -11,7 +11,7 @@ export class MorphNode extends Node<typeof MorphNode> {
         )
     }
 
-    static compile(transforms: Morph[], c: CompilationState) {
+    static checks(transforms: Morph[], c: CompilationState) {
         return ["true"]
     }
 

@@ -13,21 +13,22 @@ import type { TypeNode } from "./type.js"
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (...args: any[]): Node<subclass>
-    compile(children: any, s: CompilationState): string[]
+    checks(children: any, s: CompilationState): string[]
 }
+
+type CompilationKind = "check" | "traverse"
 
 export abstract class Node<
     subclass extends NodeSubclass<subclass> = NodeSubclass<any>,
     input = any
 > extends CompiledFunction<[data: input], boolean> {
     compiled: string
-
     constructor(
         protected subclass: subclass,
-        public child: Parameters<subclass["compile"]>[0]
+        public child: Parameters<subclass["checks"]>[0]
     ) {
-        const defaultState = new CompilationState()
-        const checks = subclass.compile(child, defaultState)
+        const defaultState = new CompilationState("check")
+        const checks = subclass.checks(child, defaultState)
         const compiled = checks.sort().join(" && ")
         // TODO: Cache
         super("data", `return ${compiled}`)
@@ -35,7 +36,11 @@ export abstract class Node<
     }
 
     compile(s: CompilationState) {
-        return this.subclass.compile(this.child, s)
+        let checks = this.subclass.checks(this.child, s)
+        if (s.kind === "traverse") {
+            checks = checks.map((check) => s.check("custom", check, "bad"))
+        }
+        return checks.join(" && ")
     }
 
     abstract intersect(
@@ -149,7 +154,7 @@ export class CompilationState {
     failFast = false
     traversalConfig = initializeCompilationConfig()
 
-    constructor() {}
+    constructor(public kind: CompilationKind) {}
 
     check<code extends ProblemCode, condition extends string>(
         code: code,

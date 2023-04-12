@@ -15,7 +15,7 @@ export class DomainNode<domain extends Domain = Domain> extends Node<
             : s.addDisjoint("domain", this, other)
     }
 
-    static compile(constraint: Domain, s: CompilationState) {
+    static checks(constraint: Domain, s: CompilationState) {
         return [
             constraint === "object"
                 ? `((typeof ${s.data} === "object" && ${s.data} !== null) || typeof ${s.data} === "function")`

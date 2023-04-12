@@ -7,7 +7,7 @@ export class RegexNode extends Node<typeof RegexNode> {
         super(RegexNode, typeof sources === "string" ? [sources] : sources)
     }
 
-    static compile(sources: string[], c: CompilationState) {
+    static checks(sources: string[], c: CompilationState) {
         return sources.map((source) => `/${source}/.test(${c.data})` as const)
     }
 

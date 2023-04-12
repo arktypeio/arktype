@@ -62,7 +62,7 @@ export class RangeNode extends Node<typeof RangeNode> {
         super(RangeNode, rule)
     }
 
-    static compile(rule: Bounds, s: CompilationState) {
+    static checks(rule: Bounds, s: CompilationState) {
         const comparatorEntries = Object.entries(rule) as [Comparator, number][]
         if (comparatorEntries.length === 0 || comparatorEntries.length > 2) {
             return throwInternalError(

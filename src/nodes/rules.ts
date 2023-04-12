@@ -50,11 +50,12 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
         return new RulesNode<inferRuleSet<input>>(child)
     }
 
-    static compile(child: RulesChild, s: CompilationState) {
-        const checks =
+    static checks(child: RulesChild, s: CompilationState) {
+        const checks = [
             child.value?.compile(s) ??
-            child.instance?.compile(s) ??
-            child.domain!.compile(s)
+                child.instance?.compile(s) ??
+                child.domain!.compile(s)
+        ]
         if (child.divisor) {
             checks.push(...child.divisor.compile(s))
         }

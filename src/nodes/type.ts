@@ -61,12 +61,12 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         )
     }
 
-    static compile(branches: List<RulesNode>, s: CompilationState) {
+    static checks(branches: List<RulesNode>, s: CompilationState) {
         switch (branches.length) {
             case 0:
                 return ["false"]
             case 1:
-                return branches[0].compile(s)
+                return [branches[0].compile(s)]
             default:
                 return [
                     `(${branches

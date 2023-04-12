@@ -22,7 +22,7 @@ export class InstanceNode<rule extends constructor = constructor> extends Node<
             : s.addDisjoint("class", this, other)
     }
 
-    static compile(ancestor: constructor, s: CompilationState) {
+    static checks(ancestor: constructor, s: CompilationState) {
         // TODO: also for other builtins
         return [
             `${s.data} instanceof ${
