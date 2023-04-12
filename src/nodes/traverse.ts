@@ -1,6 +1,7 @@
 import type { TypeConfig } from "../type.js"
 import type { xor } from "../utils/generics.js"
 import { Path } from "../utils/paths.js"
+import { register } from "../utils/registry.js"
 import type { Problem, ProblemCode, ProblemParameters } from "./problems.js"
 import { Problems, problemsByCode } from "./problems.js"
 

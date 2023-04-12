@@ -52,6 +52,12 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
                 regex: (def as RegExp).source
             })
         case "Function":
+            if (def instanceof TypeNode) {
+                return def
+            }
+            if (def instanceof Type) {
+                return def.root
+            }
             if (isThunk(def)) {
                 const returned = def()
                 if (returned instanceof Type) {

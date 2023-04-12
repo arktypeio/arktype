@@ -12,16 +12,7 @@ export class FilterNode extends Node<typeof FilterNode> {
     }
 
     static compile(sources: Filter[], c: CompilationState) {
-        return sources
-            .sort()
-            .map(
-                (source) =>
-                    `${source}.test(${c.data}) || ${c.problem(
-                        "regex",
-                        "`" + source + "`"
-                    )}` as const
-            )
-            .join(";")
+        return ""
     }
 
     intersect(other: FilterNode) {

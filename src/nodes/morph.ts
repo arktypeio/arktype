@@ -11,17 +11,8 @@ export class MorphNode extends Node<typeof MorphNode> {
         )
     }
 
-    static compile(sources: Morph[], c: CompilationState) {
-        return sources
-            .sort()
-            .map(
-                (source) =>
-                    `${source}.test(${c.data}) || ${c.problem(
-                        "regex",
-                        "`" + source + "`"
-                    )}` as const
-            )
-            .join(";")
+    static compile(transforms: Morph[], c: CompilationState) {
+        return ""
     }
 
     intersect(other: MorphNode) {

@@ -2,10 +2,9 @@ import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
 import type { ConfigTuple } from "./parse/ast/config.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import type { Ark } from "./scopes/ark.js"
-import { ark } from "./scopes/ark.js"
 import type { KeyCheckKind, TypeOptions, TypeParser } from "./type.js"
 import { Type } from "./type.js"
-import { throwInternalError, throwParseError } from "./utils/errors.js"
+import { throwParseError } from "./utils/errors.js"
 import type {
     Dict,
     error,
@@ -14,6 +13,7 @@ import type {
     List,
     nominal
 } from "./utils/generics.js"
+import { getRegistered } from "./utils/registry.js"
 import type { stringifyUnion } from "./utils/unionToTuple.js"
 
 type ScopeParser = {
@@ -163,7 +163,7 @@ export class Scope<context extends ScopeInferenceContext = any> {
     constructor(public aliases: Dict, opts: ScopeOptions = {}) {
         this.config = compileScopeOptions(opts)
         if (opts.standard !== false) {
-            this.#cacheSpaces([ark], "imports")
+            this.#cacheSpaces([getRegistered("ark")], "imports")
         }
         if (opts.imports) {
             this.#cacheSpaces(opts.imports, "imports")

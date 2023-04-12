@@ -20,6 +20,7 @@ import type { CompilationState, Disjoint } from "./node.js"
 import { ComparisonState, Node } from "./node.js"
 import { RulesNode } from "./rules.js"
 import type {
+    Constraints,
     inferRuleSet,
     Rules,
     RuleSet,
@@ -61,8 +62,8 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         )
     }
 
-    static compile(child: List<RulesNode>) {
-        return `${child}`
+    static compile(child: List<RulesNode>, s: CompilationState) {
+        return child.map((branch) => branch.compile(s)).join(" || ")
     }
 
     intersect(other: TypeNode, s: ComparisonState): TypeNode | Disjoint {
@@ -79,11 +80,9 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
             : s.addDisjoint("union", this, other)
     }
 
-    constrain(constraints: Rules) {
+    constrain(constraints: Constraints) {
         // TODO: diverge from intersect? What about morphs?
-        return new TypeNode(
-            this.child.map((branch) => branch.constrain(constraints))
-        )
+        return new TypeNode(this.child.map((branch) => branch))
     }
 
     and(other: TypeNode): TypeNode {

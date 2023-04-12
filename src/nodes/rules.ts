@@ -10,7 +10,7 @@ import type {
     instanceOf,
     keySet
 } from "../utils/generics.js"
-import { keysOf, prototypeKeysOf } from "../utils/generics.js"
+import { hasKey, keysOf, prototypeKeysOf } from "../utils/generics.js"
 import { wellFormedNonNegativeIntegerMatcher } from "../utils/numericLiterals.js"
 import { stringify } from "../utils/serialize.js"
 import { DivisibilityNode } from "./divisibility.js"
@@ -81,8 +81,6 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
             result += child.props.compile(s)
         }
 
-        if (child.filter) {
-        }
         return result
     }
 
@@ -97,12 +95,19 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
         //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
         //     )
         // }
-        return s.path ? this : other
-    }
-
-    constrain(constraints: Constraints) {
-        // TODO: intersect?
-        return RulesNode.from({ ...this.child, ...constraints } as any)
+        let k: RuleKind
+        const result = { ...this.child }
+        for (k in other.child) {
+            if (hasKey(this.child, k)) {
+                result[k] = this.child[k].intersect(
+                    other.child[k] as never,
+                    s
+                ) as any
+            } else {
+                result[k] = other.child as any
+            }
+        }
+        return new RulesNode(result)
     }
 }
 
