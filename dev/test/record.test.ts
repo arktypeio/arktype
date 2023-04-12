@@ -62,4 +62,10 @@ describe("record", () => {
             }
         })
     })
+    it("multiple bad strict", () => {
+        const t = type({ a: "string", b: "boolean" }, { keys: "strict" })
+        attest(t({ a: 1, b: 2 }).problems?.summary).snap(
+            "a must be a string (was number)\nb must be boolean (was number)"
+        )
+    })
 })
