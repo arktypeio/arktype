@@ -1,7 +1,7 @@
 import type { Space } from "../scope.js"
 import { scope } from "../scope.js"
 import type { TypeParser } from "../type.js"
-import { register } from "../utils/registry.js"
+import { registry } from "../utils/registry.js"
 import { jsObjects, jsObjectsScope } from "./jsObjects.js"
 import { tsKeywords, tsKeywordsScope } from "./tsKeywords.js"
 import { validation, validationScope } from "./validation/validation.js"
@@ -17,7 +17,7 @@ export const arkScope = scope(
 
 export const ark: Space<Ark> = arkScope.compile()
 
-register("ark", ark)
+registry().register("ark", ark)
 
 export const scopes = {
     tsKeywords: tsKeywordsScope,

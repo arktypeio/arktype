@@ -1,6 +1,6 @@
 import type { constructor } from "../utils/generics.js"
 import { constructorExtends } from "../utils/generics.js"
-import { register } from "../utils/registry.js"
+import { registry } from "../utils/registry.js"
 import type { ComparisonState, CompilationState, Disjoint } from "./node.js"
 import { Node } from "./node.js"
 
@@ -26,7 +26,9 @@ export class InstanceNode<rule extends constructor = constructor> extends Node<
         // TODO: also for other builtins
         return [
             `${s.data} instanceof ${
-                ancestor === Array ? "Array" : register(ancestor.name, ancestor)
+                ancestor === Array
+                    ? "Array"
+                    : registry().register(ancestor.name, ancestor)
             }`
         ]
         // return s.check("instance", `${s.data} instanceof ${compiled}`, ancestor)

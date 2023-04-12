@@ -13,7 +13,7 @@ import type {
     List,
     nominal
 } from "./utils/generics.js"
-import { getRegistered } from "./utils/registry.js"
+import { registry } from "./utils/registry.js"
 import type { stringifyUnion } from "./utils/unionToTuple.js"
 
 type ScopeParser = {
@@ -163,7 +163,7 @@ export class Scope<context extends ScopeInferenceContext = any> {
     constructor(public aliases: Dict, opts: ScopeOptions = {}) {
         this.config = compileScopeOptions(opts)
         if (opts.standard !== false) {
-            this.#cacheSpaces([getRegistered("ark")], "imports")
+            this.#cacheSpaces([registry().ark], "imports")
         }
         if (opts.imports) {
             this.#cacheSpaces(opts.imports, "imports")
