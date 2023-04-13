@@ -1,9 +1,10 @@
+import { assert } from "node:console"
 import { as } from "../parse/definition.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type { conform, evaluate, keySet, List } from "../utils/generics.js"
-import { isKeyOf, keysOf } from "../utils/generics.js"
+import { CompiledFunction, isKeyOf, keysOf } from "../utils/generics.js"
 import type { DefaultObjectKind } from "../utils/objectKinds.js"
 import {
     getExactConstructorObjectKind,
@@ -47,6 +48,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     declare [as]: t
 
     compiledRootTraversal: string
+    assert: (data: unknown) => asserts data is t
 
     constructor(child: RulesNode[]) {
         super(TypeNode, child)
@@ -55,9 +57,17 @@ const state = new ${registry().reference("state")}();
         ${this.compile(new CompilationState("traverse"))};
 return state.finalize(data);
 })()`
+        this.assert = new CompiledFunction(
+            "data",
+            `
+if (${this.compiledRootCheck}) {
+    return
+}
+throw new TypeError("Data was invalid")`
+        )
     }
 
-    static from<const branches extends TypeNodeInput>(
+    static from<branches extends TypeNodeInput>(
         ...branches: validateBranches<branches>
     ) {
         return new TypeNode<inferBranches<branches>>(
