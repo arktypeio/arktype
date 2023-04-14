@@ -11,7 +11,6 @@
         "resolveJsonModule": true,
         "composite": true,
         "exactOptionalPropertyTypes": true,
-        "noErrorTruncation": true,
         "lib": ["ESNext"]
     },
     "ts-node": {

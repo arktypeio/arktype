@@ -10,7 +10,7 @@ import {
     parseDefinition,
     type validateDefinition
 } from "./parse/definition.js"
-import type { Scope } from "./scope.js"
+import type { bind, Scope } from "./scope.js"
 import type { Ark } from "./scopes/ark.js"
 import type { evaluate } from "./utils/generics.js"
 import { CompiledFunction } from "./utils/generics.js"
@@ -21,15 +21,23 @@ import { registry } from "./utils/registry.js"
 export type TypeParser<$> = {
     // Parse and check the definition, returning either the original input for a
     // valid definition or a string representing an error message.
-    <def>(def: validateDefinition<def, $>): parseType<def, $>
+    <def>(def: validateDefinition<def, bind<$, def>>): parseType<
+        def,
+        bind<$, def>
+    >
 
-    <def>(def: validateDefinition<def, $>, opts: TypeOptions): parseType<def, $>
+    <def>(
+        def: validateDefinition<def, bind<$, def>>,
+        opts: TypeOptions
+    ): parseType<def, bind<$, def>>
 }
 
 // Reuse the validation result to determine if the type will be successfully created.
 // If it will, infer it and create a validator. Otherwise, return never.
-export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
-    ? Type<inferDefinition<def, $>, $>
+export type parseType<def, $ extends { this: unknown }> = [def] extends [
+    validateDefinition<def, $>
+]
+    ? Type<$["this"]>
     : never
 
 // TODO: needed?

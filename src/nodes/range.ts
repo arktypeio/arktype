@@ -69,9 +69,7 @@ export class RangeNode extends Node<typeof RangeNode> {
                 `Unexpected comparators: ${stringify(rule)}`
             )
         }
-        // const sizeAssignment = `const size = ${
-        //     s.lastDomain === "number" ? s.data : `${s.data}.length`
-        // };` as const
+
         const size = s.lastDomain === "number" ? s.data : `${s.data}.length`
 
         const units =

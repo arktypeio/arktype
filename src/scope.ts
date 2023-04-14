@@ -97,6 +97,10 @@ export type resolve<name extends keyof $, $> = isAny<$[name]> extends true
     ? inferDefinition<def, $>
     : $[name]
 
+export type bind<$, thisDef> = $ & {
+    this: inferDefinition<thisDef, bind<$, thisDef>>
+}
+
 type exportsOf<context extends ScopeInferenceContext> = context extends [
     infer exports,
     ...unknown[]
@@ -125,7 +129,7 @@ type preresolved<opts extends ScopeOptions> = includesOf<opts> &
     importsOf<opts> &
     (opts["standard"] extends false ? {} : Ark)
 
-type alias<def = {}> = nominal<def, "alias">
+export type alias<def = {}> = nominal<def, "alias">
 
 type bootstrapScope<aliases, opts extends ScopeOptions> = {
     [k in keyof aliases]: alias<aliases[k]>
