@@ -14,11 +14,11 @@ export class EqualityNode<value = unknown> extends Node<typeof EqualityNode> {
         return this === other ? this : s.addDisjoint("value", this, other)
     }
 
-    static checks(value: unknown, s: CompilationState) {
-        const expected =
+    static compile(value: unknown, s: CompilationState) {
+        return `${s.data} === ${
             hasDomain(value, "object") || typeof value === "symbol"
                 ? registry().register(typeof value, value)
                 : serializePrimitive(value as SerializablePrimitive)
-        return [`${s.data} === ${expected}`]
+        }`
     }
 }

@@ -6,6 +6,10 @@ export class DivisibilityNode extends Node<typeof DivisibilityNode> {
         super(DivisibilityNode, divisor)
     }
 
+    static compile(divisor: number, s: CompilationState) {
+        return `${s.data} % ${divisor} === 0`
+    }
+
     intersect(other: DivisibilityNode) {
         const leastCommonMultiple = Math.abs(
             (this.child * other.child) /
@@ -14,9 +18,7 @@ export class DivisibilityNode extends Node<typeof DivisibilityNode> {
         return new DivisibilityNode(leastCommonMultiple)
     }
 
-    static checks(divisor: number, s: CompilationState) {
-        return [`${s.data} % ${divisor} === 0`]
-    }
+    problem(s: CompilationState) {}
 }
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm

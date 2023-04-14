@@ -7,14 +7,12 @@ export class RegexNode extends Node<typeof RegexNode> {
         super(RegexNode, typeof sources === "string" ? [sources] : sources)
     }
 
-    static checks(sources: string[], s: CompilationState) {
-        return sources.map((source) => `/${source}/.test(${s.data})`).sort()
+    static compile(sources: string[], s: CompilationState) {
+        return sources
+            .sort()
+            .map((source) => `/${source}/.test(${s.data})`)
+            .join(" && ")
     }
-
-    // c.problem(
-    //     "regex",
-    //     "`" + source + "`"
-    // )}
 
     intersect(other: RegexNode) {
         return new RegexNode(intersectUniqueLists(this.child, other.child))

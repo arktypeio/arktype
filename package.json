@@ -32,6 +32,7 @@
     ],
     "packageManager": "pnpm@7.27.0",
     "scripts": {
+        "compile": "ts-node ./dev/examples/compiled.ts",
         "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm testRepo && pnpm docgen && pnpm buildSite",
         "typecheck": "tsc --noEmit",
         "build": "ts-node ./dev/scripts/build.ts",

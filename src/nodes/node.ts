@@ -12,30 +12,26 @@ import type { TypeNode } from "./type.js"
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (...args: any[]): Node<subclass>
-    checks(children: any, s: CompilationState): string[]
+    compile(children: any, s: CompilationState): string
 }
 
 export abstract class Node<
     subclass extends NodeSubclass<subclass> = NodeSubclass<any>,
     input = any
 > extends CompiledFunction<[data: input], boolean> {
-    checks: string[]
-    condition: string
-
     constructor(
         protected subclass: subclass,
-        public child: Parameters<subclass["checks"]>[0]
+        public child: Parameters<subclass["compile"]>[0]
     ) {
-        const checks = subclass.checks(child, new CompilationState())
-        const condition = checks.join(" && ")
         // TODO: Cache
-        super("data", `return ${condition}`)
-        this.condition = condition
-        this.checks = checks
+        super(
+            "data",
+            `return ${subclass.compile(child, new CompilationState())}`
+        )
     }
 
-    compile(s: CompilationState) {
-        return this.subclass.checks(this.child, s)
+    condition(s: CompilationState) {
+        return this.subclass.compile(this.child, s)
     }
 
     abstract intersect(
@@ -194,7 +190,7 @@ let valid = ${checks[0]};\n`
         const result = `(() => {
     let valid = true;
     for(let i = 0; i < ${this.data}.length; i++) {
-        valid = ${node.compile(this)} && isValid;
+        valid = ${node.condition(this)} && isValid;
     }
     return valid
 })()`

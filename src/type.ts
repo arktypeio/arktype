@@ -1,3 +1,4 @@
+import { CompilationState } from "./nodes/node.js"
 import { CheckResult, TraversalState } from "./nodes/traverse.js"
 import type { TypeNode } from "./nodes/type.js"
 import type { Filter, inferPredicate } from "./parse/ast/filter.js"
@@ -56,16 +57,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
 
     constructor(public definition: unknown, public scope: Scope) {
         const root = parseDefinition(definition, { path: new Path(), scope })
-        super(
-            "data",
-            root.checks
-                .map(
-                    (check) => `if (!(${check})) {
-        throw new Error()
-    }`
-                )
-                .join("\n")
-        )
+        super("data", `return ${root.condition(new CompilationState())}`)
         this.root = root
     }
 

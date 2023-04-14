@@ -64,16 +64,16 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         )
     }
 
-    static checks(branches: List<RulesNode>, s: CompilationState) {
+    static compile(branches: List<RulesNode>, s: CompilationState) {
         switch (branches.length) {
             case 0:
-                return ["false"]
+                return "false"
             case 1:
-                return branches[0].compile(s)
+                return branches[0].condition(s)
             default:
-                return [
-                    branches.map((branch) => branch.compile(s)).join(" || ")
-                ]
+                return branches
+                    .map((branch) => branch.condition(s))
+                    .join(" || ")
         }
     }
 
@@ -288,7 +288,7 @@ const discriminate = (
     discriminants: Discriminants,
     c: CompilationState
 ) => {
-    return originalBranches[remainingIndices[0]].compile(c)
+    return originalBranches[remainingIndices[0]].condition(c)
     // if (remainingIndices.length === 1) {
     //     return compileBranch(originalBranches[remainingIndices[0]], ctx)
     // }
