@@ -15,12 +15,7 @@ export class DivisibilityNode extends Node<typeof DivisibilityNode> {
     }
 
     static checks(divisor: number, s: CompilationState) {
-        return [
-            {
-                if: `${s.data} % ${divisor} !== 0`,
-                then: s.problem
-            }
-        ]
+        return [`${s.data} % ${divisor} === 0`]
     }
 }
 

@@ -12,12 +12,7 @@ export class FilterNode extends Node<typeof FilterNode> {
     }
 
     static checks(sources: Filter[], s: CompilationState) {
-        return [
-            {
-                if: `true`,
-                then: s.problem
-            }
-        ]
+        return ["false"]
     }
 
     intersect(other: FilterNode) {

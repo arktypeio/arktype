@@ -16,7 +16,7 @@ import type {
 } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
 import type { EqualityNode } from "./equality.js"
-import type { CompilationState, CompiledNode, Disjoint } from "./node.js"
+import type { CompilationState, Disjoint } from "./node.js"
 import { ComparisonState, Node } from "./node.js"
 import type {
     Constraints,
@@ -64,34 +64,15 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         )
     }
 
-    static checks(
-        branches: List<RulesNode>,
-        s: CompilationState
-    ): CompiledNode[] {
+    static checks(branches: List<RulesNode>, s: CompilationState) {
         switch (branches.length) {
             case 0:
-                return [
-                    {
-                        if: "true",
-                        then: s.problem
-                    }
-                ]
+                return ["false"]
             case 1:
                 return branches[0].compile(s)
             default:
-                // TODO: sort
                 return [
-                    {
-                        if: `!(${branches
-                            .map((branch) =>
-                                branch
-                                    .compile(s)
-                                    .map((s) => s.if)
-                                    .join("&&")
-                            )
-                            .join(" || ")})`,
-                        then: s.problem
-                    }
+                    branches.map((branch) => branch.compile(s)).join(" || ")
                 ]
         }
     }

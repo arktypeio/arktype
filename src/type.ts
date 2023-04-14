@@ -12,7 +12,6 @@ import {
 } from "./parse/definition.js"
 import type { bind, Scope } from "./scope.js"
 import type { Ark } from "./scopes/ark.js"
-import { type } from "./scopes/ark.js"
 import type { evaluate } from "./utils/generics.js"
 import { CompiledFunction } from "./utils/generics.js"
 import type { BuiltinClass } from "./utils/objectKinds.js"
@@ -61,8 +60,8 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
             "data",
             root.checks
                 .map(
-                    (check) => `if (${check.if}) {
-        ${check.then}
+                    (check) => `if (!(${check})) {
+        throw new Error()
     }`
                 )
                 .join("\n")

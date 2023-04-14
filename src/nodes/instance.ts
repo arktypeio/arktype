@@ -25,14 +25,11 @@ export class InstanceNode<rule extends constructor = constructor> extends Node<
     static checks(ancestor: constructor, s: CompilationState) {
         // TODO: also for other builtins
         return [
-            {
-                if: `!(${s.data} instanceof ${
-                    ancestor === Array
-                        ? "Array"
-                        : registry().register(ancestor.name, ancestor)
-                })`,
-                then: s.problem
-            }
+            `${s.data} instanceof ${
+                ancestor === Array
+                    ? "Array"
+                    : registry().register(ancestor.name, ancestor)
+            }`
         ]
     }
 }

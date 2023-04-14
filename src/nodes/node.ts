@@ -10,21 +10,16 @@ import type { RangeNode } from "./range.js"
 import type { RuleSet } from "./rules.js"
 import type { TypeNode } from "./type.js"
 
-export type CompiledNode = {
-    if: string
-    then: string
-}
-
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (...args: any[]): Node<subclass>
-    checks(children: any, s: CompilationState): CompiledNode[]
+    checks(children: any, s: CompilationState): string[]
 }
 
 export abstract class Node<
     subclass extends NodeSubclass<subclass> = NodeSubclass<any>,
     input = any
 > extends CompiledFunction<[data: input], boolean> {
-    checks: CompiledNode[]
+    checks: string[]
     condition: string
 
     constructor(
@@ -32,7 +27,7 @@ export abstract class Node<
         public child: Parameters<subclass["checks"]>[0]
     ) {
         const checks = subclass.checks(child, new CompilationState())
-        const condition = checks.map((check) => check.if).join(" && ")
+        const condition = checks.join(" && ")
         // TODO: Cache
         super("data", `return ${condition}`)
         this.condition = condition
