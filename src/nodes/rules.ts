@@ -19,7 +19,7 @@ import { EqualityNode } from "./equality.js"
 import { FilterNode } from "./filter.js"
 import { InstanceNode } from "./instance.js"
 import { MorphNode } from "./morph.js"
-import type { CompilationState } from "./node.js"
+import type { CompilationState, CompiledNode } from "./node.js"
 import { ComparisonState, Node } from "./node.js"
 import type { PropsInput } from "./props.js"
 import { PropsNode } from "./props.js"
@@ -52,7 +52,7 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
 
     static checks(child: RulesChild, s: CompilationState) {
         // TODO: check multiple for traverse
-        const checks: string[] =
+        const checks: CompiledNode[] =
             child.value?.compile(s) ??
             child.instance?.compile(s) ??
             child.domain!.compile(s)

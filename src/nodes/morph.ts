@@ -12,7 +12,12 @@ export class MorphNode extends Node<typeof MorphNode> {
     }
 
     static checks(transforms: Morph[], s: CompilationState) {
-        return ["false"]
+        return [
+            {
+                if: `true`,
+                then: `${s.problem}`
+            }
+        ]
     }
 
     intersect(other: MorphNode) {

@@ -22,9 +22,13 @@ export class DomainNode<
 
     static checks(constraint: NonEnumerableDomain, s: CompilationState) {
         return [
-            constraint === "object"
-                ? `((typeof ${s.data} === "object" && ${s.data} !== null) || typeof ${s.data} === "function")`
-                : `typeof ${s.data} === "${constraint}"`
+            {
+                if:
+                    constraint === "object"
+                        ? `((typeof ${s.data} !== "object" || ${s.data} === null) && typeof ${s.data} !== "function")`
+                        : `typeof ${s.data} !== "${constraint}"`,
+                then: s.problem
+            }
         ]
     }
 }

@@ -8,7 +8,10 @@ export class RegexNode extends Node<typeof RegexNode> {
     }
 
     static checks(sources: string[], s: CompilationState) {
-        return sources.map((source) => `/${source}/.test(${s.data})`).sort()
+        return sources.sort().map((source) => ({
+            if: `!/${source}/.test(${s.data})`,
+            then: s.problem
+        }))
     }
 
     // c.problem(

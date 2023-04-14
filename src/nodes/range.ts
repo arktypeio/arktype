@@ -1,5 +1,6 @@
 import { throwInternalError } from "../utils/errors.js"
 import type { evaluate, xor } from "../utils/generics.js"
+import { keysOf } from "../utils/generics.js"
 import { stringify } from "../utils/serialize.js"
 import type { ComparisonState, CompilationState, Disjoint } from "./node.js"
 import { Node } from "./node.js"
@@ -57,35 +58,37 @@ export type BoundContext<comparator extends Comparator = Comparator> = {
 
 export type BoundContextWithUnits = evaluate<BoundContext & { units: string }>
 
+const invertedComparisonOperators = {
+    "<": ">=",
+    "<=": ">",
+    ">": "<=",
+    ">=": "<",
+    "==": "==="
+} as const satisfies Record<Comparator, string>
+
 export class RangeNode extends Node<typeof RangeNode> {
     constructor(rule: Bounds) {
         super(RangeNode, rule)
     }
 
     static checks(rule: Bounds, s: CompilationState) {
-        const comparatorEntries = Object.entries(rule) as [Comparator, number][]
-        if (comparatorEntries.length === 0 || comparatorEntries.length > 2) {
+        const comparators = keysOf(rule)
+        if (comparators.length === 0 || comparators.length > 2) {
             return throwInternalError(
                 `Unexpected comparators: ${stringify(rule)}`
             )
         }
-
         const size = s.lastDomain === "number" ? s.data : `${s.data}.length`
-
         const units =
             s.lastDomain === "string"
                 ? "characters"
                 : s.lastDomain === "object"
                 ? "items long"
                 : ""
-        return comparatorEntries
-            .map(
-                ([comparator, limit]) =>
-                    `${size} ${
-                        comparator === "==" ? "===" : comparator
-                    } ${limit}`
-            )
-            .sort()
+        return comparators.sort().map((comparator) => ({
+            if: `${size} ${invertedComparisonOperators[comparator]} ${rule[comparator]}`,
+            then: s.problem
+        }))
     }
 
     intersect(other: RangeNode, s: ComparisonState): RangeNode | Disjoint {

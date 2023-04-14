@@ -4,7 +4,7 @@ import {
     listFrom,
     type mutable
 } from "../utils/generics.js"
-import type { ComparisonState, CompilationState } from "./node.js"
+import type { ComparisonState, CompilationState, CompiledNode } from "./node.js"
 import { Disjoint, Node } from "./node.js"
 import type { TypeNodeInput } from "./type.js"
 import { never, TypeNode } from "./type.js"
@@ -46,7 +46,7 @@ export class PropsNode extends Node<typeof PropsNode> {
     }
 
     static checks({ named }: PropsChild, s: CompilationState) {
-        const checks: string[] = []
+        const checks: CompiledNode[] = []
         const names = Object.keys(named).sort()
         for (const k of names) {
             s.path.push(k)
