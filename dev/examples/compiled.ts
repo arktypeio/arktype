@@ -33,9 +33,9 @@ const benchType = type({
     }
 })
 
-console.log(format(benchType.compiled))
+console.log(format(benchType.toString()))
 
-console.log(format(myType.compiled))
+console.log(format(myType.toString()))
 
 console.log(benchType(benchData).data)
 
