@@ -20,7 +20,8 @@
         "ts-node": "10.9.1",
         "typescript": "5.0.3",
         "@types/node": "18.15.11",
-        "commander": "10.0.0"
+        "commander": "10.0.0",
+        "source-map-js": "1.0.2"
     },
     "files": [
         "/src",
@@ -49,22 +50,6 @@
     "keywords": [
         "typescript"
     ],
-    "oclif": {
-        "commands": "./dist/commands/",
-        "plugins": [
-            "@oclif/plugin-help",
-            "@oclif/plugin-plugins"
-        ],
-        "topicSeparator": " ",
-        "topics": {
-            "hello": {
-                "description": "Say hello to the world and others"
-            },
-            "test": {
-                "description": "Run some tests or something"
-            }
-        }
-    },
     "scripts": {
         "build": "ts-node ../scripts/build.ts",
         "lint": "eslint . --ext .ts --config .eslintrc",

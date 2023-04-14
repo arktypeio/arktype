@@ -38,7 +38,7 @@
         "buildSite": "cd dev/arktype.io && pnpm install && pnpm build",
         "buildAttest": "cd dev/attest && pnpm i && pnpm build",
         "docgen": "ts-node ./dev/scripts/docgen.ts",
-        "test": "ts-node ./dev/attest/src/commands/test.ts runner mocha",
+        "test": "ts-node ./dev/attest/src/cli.ts --coverage --cmd mocha",
         "tnt": "ts-node ./dev/attest/src/cli.ts --coverage --skipTypes --cmd mocha",
         "testRepo": " pnpm testBuild && pnpm testTsVersions && pnpm testAttest",
         "testBuild": "ts-node ./dev/scripts/testBuild.ts",

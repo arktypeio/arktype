@@ -10,6 +10,7 @@ specifiers:
   mocha: 10.2.0
   oclif: 3.7.3
   shx: ^0.3.3
+  source-map-js: 1.0.2
   ts-morph: 18.0.0
   ts-node: 10.9.1
   typescript: 5.0.3
@@ -24,6 +25,7 @@ devDependencies:
   mocha: 10.2.0
   oclif: 3.7.3_pj3xut33gta66wns5w7rs6cilm
   shx: 0.3.4
+  source-map-js: 1.0.2
   ts-morph: 18.0.0
   ts-node: 10.9.1_pj3xut33gta66wns5w7rs6cilm
   typescript: 5.0.3
@@ -3487,6 +3489,11 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       is-plain-obj: 2.1.0
+    dev: true
+
+  /source-map-js/1.0.2:
+    resolution: {integrity: sha512-R0XvVJ9WusLiqTCEiGCmICCMplcCkIwwR11mOSD9CR5u+IXYdiseeEuXCVAjS54zqwkLcPNnmU4OeJ6tUrWhDw==}
+    engines: {node: '>=0.10.0'}
     dev: true
 
   /spawn-command/0.0.2-1:

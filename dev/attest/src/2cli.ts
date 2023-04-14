@@ -3,14 +3,14 @@ import { version } from "node:os"
 import { basename } from "node:path"
 import { versions } from "node:process"
 import { Command } from "commander"
+import { Project } from "ts-morph"
+import { getInternalTypeChecker } from "./bench/type.js"
 import { cacheAssertions, cleanupAssertions } from "./main.js"
-import { readJson } from "./runtime/fs.js"
 import { fromCwd, shell, walkPaths } from "./runtime/main.js"
 
 const attest = new Command()
-const packageInfo = readJson("package.json")
-const packageVersion = packageInfo.version
-const description = packageInfo.description
+const packageVersion = "0.0.0"
+const description = "ArkType Testing"
 
 attest
     .version(packageVersion)
@@ -23,24 +23,49 @@ attest
     )
     .option("-h, --help, View details about the cli")
     .option("-b, --bench, Runs benchmarks found in *.bench.ts files")
+    .option("-p --benchmarksPath, defines where to save bench results (json)")
     .parse(process.argv)
 
 const options = attest.opts()
-console.log(options)
-
-if (!process.argv.slice(2).length || options.help) {
+const processArgs = process.argv
+const passedArgs = processArgs.slice(2)
+if (!passedArgs.length || options.help) {
     attest.outputHelp()
+    process.exit(0)
 }
 if (options.bench) {
-    console.log("started search")
     const benchFilePaths = walkPaths(fromCwd(), {
         include: (path) => basename(path).includes(".bench.")
     })
-
     let threwDuringBench
+    //TODO we don't want do automatically write to a file, rather let people pass in that as an option if they want it
+    // and maybe add a config to let people specify
+    console.log(
+        `found ${benchFilePaths.length} paths matching .bench file format`
+    )
     for (const path of benchFilePaths) {
+        const project = new Project()
+        project.addSourceFileAtPath(path)
+        console.log(`getting instantiation count for ${path}`)
+        const typeChecker = getInternalTypeChecker(project)
+        // Every time the project is updated, we need to emit to recalculate instantiation count.
+        // If we try to get the count after modifying a file in memory without emitting, it will be 0.
+        project.emitToMemory()
+        const initCount = typeChecker.getInstantiationCount()
+        console.log(initCount)
         try {
-            shell(`npx ts-node ${path}`)
+            shell(
+                `npx ts-node ${path}  --benchmarksPath ${fromCwd(
+                    "benchmarks.json"
+                )}`,
+                {
+                    env: {
+                        ARKTYPE_CHECK_CMD: `${passedArgs.join(
+                            " "
+                        )} --count ${initCount}}`
+                    }
+                }
+            )
         } catch {
             threwDuringBench = true
         }
@@ -86,7 +111,8 @@ if (options.bench) {
 
         const runnerStart = Date.now()
         shell(`${prefix}`, {
-            stdio: "inherit"
+            stdio: "inherit",
+            env: { ARKTYPE_CHECK_CMD: `${processArgs.join(" ")} --precache` }
         })
         const runnerSeconds = (Date.now() - runnerStart) / 1000
         console.log(

@@ -7,7 +7,6 @@ import {
     fromPackageRoot,
     getSourceFileEntries
 } from "./runtime/main.js"
-import type { SourceFileEntry } from "./runtime/main.js"
 import { getCmdFromPid } from "./utils.js"
 import type { BenchFormat } from "./writeSnapshot.js"
 
@@ -22,10 +21,10 @@ export type AttestConfig = {
     snapCacheDir: string
     skipTypes: boolean
     typeSources: [path: string, contents: string][]
-    transient: boolean
     benchPercentThreshold: number
     benchErrorOnThresholdExceeded: boolean
     filter: string[] | string | undefined
+    count: number
 }
 
 const checkArgsForParam = (args: string[], param: `-${string}`) => {
@@ -89,9 +88,6 @@ export const getAttestConfig = (): AttestConfig => {
     const snapCacheDir = join(cacheDir, "snaps")
     ensureDir(cacheDir)
     ensureDir(snapCacheDir)
-    const transient = argsToCheck.some(
-        (arg) => arg === "-t" || arg === "--transient"
-    )
     const noWrite = argsToCheck.some(
         (arg) => arg === "-n" || arg === "--no-write"
     )
@@ -100,16 +96,15 @@ export const getAttestConfig = (): AttestConfig => {
         ([path]) => !path.startsWith("dev/arktype.io")
     )
     cachedConfig = {
-        updateSnapshots:
-            transient ||
-            argsToCheck.some((arg) => arg === "-u" || arg === "--update"),
+        updateSnapshots: argsToCheck.some(
+            (arg) => arg === "-u" || arg === "--update"
+        ),
         skipTypes: argsToCheck.some(
             (arg) => arg === "-s" || arg === "--skipTypes"
         ),
         typeSources,
         benchFormat: {
-            noInline:
-                argsToCheck.includes("--no-inline") || noWrite || transient,
+            noInline: argsToCheck.includes("--no-inline") || noWrite,
             noExternal: argsToCheck.includes("--no-external") || noWrite,
             path:
                 checkArgsForParam(argsToCheck, "--benchmarksPath") ||
@@ -124,7 +119,7 @@ export const getAttestConfig = (): AttestConfig => {
         assertionCacheFile: join(cacheDir, "assertions.json"),
         benchPercentThreshold: 20,
         benchErrorOnThresholdExceeded: false,
-        transient
+        count: parseInt(checkArgsForParam(argsToCheck, "--count")!)
     }
     return cachedConfig
 }

@@ -76,7 +76,6 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
     baselinePath,
     benchFormat
 }: SnapshotArgs) => {
-    const { transient } = getAttestConfig()
     const snapCall = findCallExpressionAncestor(
         getTsMorphProject(),
         position,
@@ -89,8 +88,7 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
         snapFunctionName,
         newArgText,
         baselinePath,
-        benchFormat,
-        transient
+        benchFormat
     })
 }
 
@@ -100,7 +98,6 @@ export type QueuedUpdate = {
     snapFunctionName: string
     newArgText: string
     baselinePath: string[] | undefined
-    transient: boolean
     benchFormat: Required<BenchFormat>
 }
 
