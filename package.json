@@ -44,7 +44,7 @@
         "testBuild": "ts-node ./dev/scripts/testBuild.ts",
         "testAttest": "ts-node ./dev/scripts/testAttest.ts",
         "testTsVersions": "ts-node ./dev/scripts/testTsVersions.ts",
-        "bench": "ts-node ./dev/attest/cli.ts bench --benchmarksPath ./test/benchmarks.json",
+        "bench": "ts-node ./dev/test/comparison.bench.ts --noExternal",
         "lint": "eslint --max-warnings=0 .",
         "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
         "findUnused": "ts-node ./dev/scripts/findUnusedExports.ts",

@@ -19,18 +19,19 @@ export abstract class Node<
     subclass extends NodeSubclass<subclass> = NodeSubclass<any>,
     input = any
 > extends CompiledFunction<[data: input], boolean> {
-    compiled: string
+    checks: string[]
+    condition: string
 
     constructor(
         protected subclass: subclass,
         public child: Parameters<subclass["checks"]>[0]
     ) {
-        const compiled = subclass
-            .checks(child, new CompilationState())
-            .join(" && ")
+        const checks = subclass.checks(child, new CompilationState())
+        const condition = checks.join(" && ")
         // TODO: Cache
-        super("data", `return ${compiled}`)
-        this.compiled = compiled
+        super("data", `return ${condition}`)
+        this.condition = condition
+        this.checks = checks
     }
 
     compile(s: CompilationState) {

@@ -1,8 +1,8 @@
-// @ts-ignore
-import { format } from "prettier"
+import z from "zod"
 import { type } from "../../src/main.js"
+import { bench } from "../attest/main.js"
 
-const benchData = {
+const validInput = {
     number: 1,
     negNumber: -1,
     maxNumber: Number.MAX_VALUE,
@@ -17,9 +17,7 @@ const benchData = {
     }
 }
 
-const myType = type({ even: "number%2" })
-
-const benchType = type({
+const arkType = type({
     number: "number",
     negNumber: "number",
     maxNumber: "number",
@@ -33,14 +31,33 @@ const benchType = type({
     }
 })
 
-console.log(format(benchType.toString()))
+const zodType = z.object({
+    number: z.number(),
+    negNumber: z.number(),
+    maxNumber: z.number(),
+    string: z.string(),
+    longString: z.string(),
+    boolean: z.boolean(),
+    deeplyNested: z.object({
+        foo: z.string(),
+        num: z.number(),
+        bool: z.boolean()
+    })
+})
 
-console.log(format(myType.toString()))
+const dataArray = [...new Array(1000)].map((_, i) => ({
+    ...validInput,
+    number: i
+}))
 
-console.log(benchType(benchData))
+bench("arktype", () => {
+    for (let i = 0; i < 1000; i++) {
+        arkType(dataArray[i])
+    }
+}).median([6.79, "us"])
 
-try {
-    benchType({})
-} catch (e) {
-    console.log(e)
-}
+bench("zod", () => {
+    for (let i = 0; i < 1000; i++) {
+        zodType.parse(dataArray[i])
+    }
+}).median([1.12, "ms"])

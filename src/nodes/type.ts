@@ -71,7 +71,6 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
             case 1:
                 return branches[0].compile(s)
             default:
-                // TODO: fix
                 return [
                     branches.map((branch) => branch.compile(s)).join(" || ")
                 ]
@@ -265,14 +264,6 @@ const pruneSubtypes = (branches: RulesNode[]) => {
     }
     return branches.filter((_, i) => uniquenessByIndex[i])
 }
-
-// const state = new IntersectionState(type, "&")
-// const result = nodeIntersection(l, r, state)
-// return isDisjoint(result)
-//     ? throwParseError(compileDisjointReasonsMessage(state.disjoints))
-//     : isEquality(result)
-//     ? l
-//     : result
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
