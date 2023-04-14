@@ -1,4 +1,3 @@
-import type { ProblemCode, ProblemRules } from "../nodes/problems.js"
 import type { TypeConfig } from "../type.js"
 import type { Domain } from "../utils/domains.js"
 import type { extend, instanceOf } from "../utils/generics.js"
@@ -16,27 +15,26 @@ type NodeSubclass<subclass extends NodeSubclass<any>> = {
     checks(children: any, s: CompilationState): string[]
 }
 
-type CompilationKind = "check" | "traverse"
-
 export abstract class Node<
     subclass extends NodeSubclass<subclass> = NodeSubclass<any>,
     input = any
 > extends CompiledFunction<[data: input], boolean> {
-    compiledRootCheck: string
+    compiled: string
 
     constructor(
         protected subclass: subclass,
         public child: Parameters<subclass["checks"]>[0]
     ) {
-        const checks = subclass.checks(child, new CompilationState("check"))
-        const compiledChecks = checks.sort().join(" && ")
+        const compiled = subclass
+            .checks(child, new CompilationState())
+            .join(" && ")
         // TODO: Cache
-        super("data", `return ${compiledChecks}`)
-        this.compiledRootCheck = compiledChecks
+        super("data", `return ${compiled}`)
+        this.compiled = compiled
     }
 
     compile(s: CompilationState) {
-        return this.subclass.checks(this.child, s).join(" && ")
+        return this.subclass.checks(this.child, s)
     }
 
     abstract intersect(
@@ -150,15 +148,15 @@ export class CompilationState {
     failFast = false
     traversalConfig = initializeCompilationConfig()
 
-    constructor(public kind: CompilationKind) {}
+    constructor() {}
 
-    traverse<code extends ProblemCode, condition extends string>(
-        code: code,
-        condition: condition,
-        rule: ProblemRules[code]
-    ) {
-        return `(${condition} || ${this.problem(code, rule)})` as const
-    }
+    // traverse<code extends ProblemCode, condition extends string>(
+    //     code: code,
+    //     condition: condition,
+    //     rule: ProblemRules[code]
+    // ) {
+    //     return `(${condition} || ${this.problem(code, rule)})` as const
+    // }
 
     mergeChecks(checks: string[]) {
         if (checks.length === 1) {
@@ -179,11 +177,15 @@ let valid = ${checks[0]};\n`
         return this.path.toPropChain()
     }
 
-    problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
-        return `state.reject("${code}", ${
-            typeof rule === "function" ? rule.name : JSON.stringify(rule)
-        }, ${this.data}, ${this.path.json})` as const
+    get problem() {
+        return "throw new Error()"
     }
+
+    // problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
+    //     return `state.reject("${code}", ${
+    //         typeof rule === "function" ? rule.name : JSON.stringify(rule)
+    //     }, ${this.data}, ${this.path.json})` as const
+    // }
 
     arrayOf(node: Node<any>) {
         // TODO: increment. does this work for logging?

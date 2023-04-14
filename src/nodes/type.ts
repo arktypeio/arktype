@@ -1,25 +1,23 @@
-import { assert } from "node:console"
 import { as } from "../parse/definition.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type { conform, evaluate, keySet, List } from "../utils/generics.js"
-import { CompiledFunction, isKeyOf, keysOf } from "../utils/generics.js"
+import { isKeyOf, keysOf } from "../utils/generics.js"
 import type { DefaultObjectKind } from "../utils/objectKinds.js"
 import {
     getExactConstructorObjectKind,
     objectKindOf
 } from "../utils/objectKinds.js"
 import { Path } from "../utils/paths.js"
-import { registry } from "../utils/registry.js"
 import type {
     SerializablePrimitive,
     SerializedPrimitive
 } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
 import type { EqualityNode } from "./equality.js"
-import type { Disjoint } from "./node.js"
-import { ComparisonState, CompilationState, Node } from "./node.js"
+import type { CompilationState, Disjoint } from "./node.js"
+import { ComparisonState, Node } from "./node.js"
 import type {
     Constraints,
     inferRuleSet,
@@ -47,24 +45,11 @@ export type TypeNodeInput = List<RuleSet | RulesNode>
 export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     declare [as]: t
 
-    compiledRootTraversal: string
     assert: (data: unknown) => asserts data is t
 
     constructor(child: RulesNode[]) {
         super(TypeNode, child)
-        this.compiledRootTraversal = `(() => {
-const state = new ${registry().reference("state")}();
-        ${this.compile(new CompilationState("traverse"))};
-return state.finalize(data);
-})()`
-        this.assert = new CompiledFunction(
-            "data",
-            `
-if (${this.compiledRootCheck}) {
-    return
-}
-throw new TypeError("Data was invalid")`
-        )
+        this.assert = this
     }
 
     static from<branches extends TypeNodeInput>(
@@ -84,12 +69,11 @@ throw new TypeError("Data was invalid")`
             case 0:
                 return ["false"]
             case 1:
-                return [branches[0].compile(s)]
+                return branches[0].compile(s)
             default:
+                // TODO: fix
                 return [
-                    `(${branches
-                        .map((branch) => branch.compile(s))
-                        .join(" || ")})`
+                    branches.map((branch) => branch.compile(s)).join(" || ")
                 ]
         }
     }

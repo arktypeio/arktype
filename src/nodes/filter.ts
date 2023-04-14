@@ -11,8 +11,8 @@ export class FilterNode extends Node<typeof FilterNode> {
         )
     }
 
-    static checks(sources: Filter[], c: CompilationState) {
-        return ["true"]
+    static checks(sources: Filter[], s: CompilationState) {
+        return ["false"]
     }
 
     intersect(other: FilterNode) {

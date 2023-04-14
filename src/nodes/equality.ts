@@ -15,15 +15,10 @@ export class EqualityNode<value = unknown> extends Node<typeof EqualityNode> {
     }
 
     static checks(value: unknown, s: CompilationState) {
-        const serialized =
+        const expected =
             hasDomain(value, "object") || typeof value === "symbol"
                 ? registry().register(typeof value, value)
                 : serializePrimitive(value as SerializablePrimitive)
-        const check = `${s.data} === ${serialized}`
-        return [
-            s.kind === "traverse"
-                ? s.traverse("value", check, serialized)
-                : check
-        ]
+        return [`${s.data} === ${expected}`]
     }
 }

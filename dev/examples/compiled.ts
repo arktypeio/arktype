@@ -37,8 +37,10 @@ console.log(format(benchType.toString()))
 
 console.log(format(myType.toString()))
 
-console.log(benchType(benchData).data)
+console.log(benchType(benchData))
 
-console.log(myType({ even: 3 }).problems?.summary)
-console.log(myType({ even: "" }).problems?.summary)
-console.log(myType({ even: 2 }).data)
+try {
+    myType({ even: 2 })
+} catch (e) {
+    console.log(e)
+}

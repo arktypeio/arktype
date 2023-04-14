@@ -32,6 +32,7 @@ export type parseType<def, $> = [def] extends [validateDefinition<def, $>]
     ? Type<inferDefinition<def, $>, $>
     : never
 
+// TODO: needed?
 registry().register("state", TraversalState)
 registry().register("result", CheckResult)
 
@@ -47,15 +48,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
 
     constructor(public definition: unknown, public scope: Scope) {
         const root = parseDefinition(definition, { path: new Path(), scope })
-        const checkResult = registry().reference("result")
-        super(
-            "data",
-            `
-if (${root.compiledRootCheck}) {
-    return new ${checkResult}(true, data)
-}
-return ${root.compiledRootTraversal}`
-        )
+        super("data", `return ${root.compiled}`)
         this.root = root
     }
 

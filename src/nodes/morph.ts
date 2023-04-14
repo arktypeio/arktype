@@ -11,8 +11,8 @@ export class MorphNode extends Node<typeof MorphNode> {
         )
     }
 
-    static checks(transforms: Morph[], c: CompilationState) {
-        return ["true"]
+    static checks(transforms: Morph[], s: CompilationState) {
+        return ["false"]
     }
 
     intersect(other: MorphNode) {

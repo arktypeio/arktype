@@ -8,12 +8,7 @@ export class RegexNode extends Node<typeof RegexNode> {
     }
 
     static checks(sources: string[], s: CompilationState) {
-        return sources.map((source) => {
-            const check = `/${source}/.test(${s.data})`
-            return s.kind === "traverse"
-                ? s.traverse("regex", check, source)
-                : check
-        })
+        return sources.map((source) => `/${source}/.test(${s.data})`).sort()
     }
 
     // c.problem(

@@ -2,9 +2,14 @@ import type { Domain } from "../utils/domains.js"
 import type { ComparisonState, CompilationState } from "./node.js"
 import { Node } from "./node.js"
 
-export class DomainNode<domain extends Domain = Domain> extends Node<
-    typeof DomainNode
-> {
+export type NonEnumerableDomain = Exclude<
+    Domain,
+    "undefined" | "null" | "boolean"
+>
+
+export class DomainNode<
+    domain extends NonEnumerableDomain = NonEnumerableDomain
+> extends Node<typeof DomainNode> {
     constructor(domain: domain) {
         super(DomainNode, domain)
     }
@@ -15,16 +20,11 @@ export class DomainNode<domain extends Domain = Domain> extends Node<
             : s.addDisjoint("domain", this, other)
     }
 
-    static checks(constraint: Domain, s: CompilationState) {
-        let check =
+    static checks(constraint: NonEnumerableDomain, s: CompilationState) {
+        return [
             constraint === "object"
                 ? `((typeof ${s.data} === "object" && ${s.data} !== null) || typeof ${s.data} === "function")`
-                : constraint === "null" || constraint === "undefined"
-                ? `${s.data} === ${constraint}`
                 : `typeof ${s.data} === "${constraint}"`
-        if (s.kind === "traverse") {
-            check = s.traverse("domain", check, constraint)
-        }
-        return [check]
+        ]
     }
 }

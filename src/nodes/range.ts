@@ -73,22 +73,21 @@ export class RangeNode extends Node<typeof RangeNode> {
         //     s.lastDomain === "number" ? s.data : `${s.data}.length`
         // };` as const
         const size = s.lastDomain === "number" ? s.data : `${s.data}.length`
+
         const units =
             s.lastDomain === "string"
                 ? "characters"
                 : s.lastDomain === "object"
                 ? "items long"
                 : ""
-        return comparatorEntries.map(([comparator, limit]) => {
-            const check = `${size} ${comparator} ${limit}`
-            return s.kind === "traverse"
-                ? s.traverse("range", `size ${comparator} ${limit}`, {
-                      comparator,
-                      limit,
-                      units
-                  })
-                : check
-        })
+        return comparatorEntries
+            .map(
+                ([comparator, limit]) =>
+                    `${size} ${
+                        comparator === "==" ? "===" : comparator
+                    } ${limit}`
+            )
+            .sort()
     }
 
     intersect(other: RangeNode, s: ComparisonState): RangeNode | Disjoint {

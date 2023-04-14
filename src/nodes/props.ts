@@ -46,14 +46,15 @@ export class PropsNode extends Node<typeof PropsNode> {
     }
 
     static checks({ named }: PropsChild, s: CompilationState) {
-        const propChecks: string[] = []
-        // if we don't care about extraneous keys, compile props so we can iterate over the definitions directly
-        for (const k in named) {
+        const checks: string[] = []
+        const names = Object.keys(named).sort()
+        for (const k of names) {
             s.path.push(k)
-            propChecks.push(named[k].compile(s))
+            // TODO: precedence
+            checks.push(...named[k].compile(s))
             s.path.pop()
         }
-        return propChecks
+        return checks
     }
 
     intersect(other: PropsNode, s: ComparisonState) {
@@ -165,7 +166,7 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
     }
 
     static checks(child: NamedPropChild, s: CompilationState) {
-        return [child.value.compile(s)]
+        return child.value.compile(s)
     }
 
     intersect(

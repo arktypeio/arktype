@@ -52,22 +52,22 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
 
     static checks(child: RulesChild, s: CompilationState) {
         // TODO: check multiple for traverse
-        const checks = [
+        const checks: string[] =
             child.value?.compile(s) ??
-                child.instance?.compile(s) ??
-                child.domain!.compile(s)
-        ]
+            child.instance?.compile(s) ??
+            child.domain!.compile(s)
+
         if (child.divisor) {
-            checks.push(child.divisor.compile(s))
+            checks.push(...child.divisor.compile(s))
         }
         if (child.range) {
-            checks.push(child.range.compile(s))
+            checks.push(...child.range.compile(s))
         }
         if (child.regex) {
-            checks.push(child.regex.compile(s))
+            checks.push(...child.regex.compile(s))
         }
         if (child.props) {
-            checks.push(child.props.compile(s))
+            checks.push(...child.props.compile(s))
         }
         return checks
     }
