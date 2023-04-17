@@ -241,10 +241,10 @@ const createPropChecker =
         const remainingUnseenRequired = { ...props.required }
         for (const k in state.data) {
             if (props.required[k]) {
-                isValid &&= state.traverseKey(k, props.required[k])
+                isValid = state.traverseKey(k, props.required[k]) && isValid
                 delete remainingUnseenRequired[k]
             } else if (props.optional[k]) {
-                isValid &&= state.traverseKey(k, props.optional[k])
+                isValid = state.traverseKey(k, props.optional[k]) && isValid
             } else if (kind === "distilledProps") {
                 if (state.failFast) {
                     // If we're in a union (i.e. failFast is enabled) in
@@ -312,7 +312,7 @@ const entryCheckers = {
         }
         let isValid = true
         for (let i = 0; i < state.data.length; i++) {
-            isValid &&= state.traverseKey(`${i}`, node)
+            isValid = state.traverseKey(`${i}`, node) && isValid
             if (!isValid && state.failFast) {
                 return false
             }
