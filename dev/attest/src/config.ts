@@ -47,13 +47,8 @@ const getArgsToCheck = () => {
     return process.argv
 }
 
-/** Determine which benches to run:
- *    If a "--filter" (or "-f") arg is present...
- *       1. If the arg starts with "/", run benches at that "/"-delimited path
- *       2. Otherwise, run benches including a segment anywhere in their path with the arg's value
- *    Otherwise, return undefined, and all benches will be run
- */
 const getFilter = (argsToCheck: string[]) => {
+    console.log("a")
     const filter =
         checkArgsForParam(argsToCheck, "--filter") ||
         checkArgsForParam(argsToCheck, "-f")
@@ -112,7 +107,7 @@ export const getAttestConfig = (): AttestConfig => {
         assertionCacheFile: join(cacheDir, "assertions.json"),
         benchPercentThreshold: 20,
         benchErrorOnThresholdExceeded: false,
-        filter: checkArgsForParam(argsToCheck, "--filter")
+        filter: getFilter(argsToCheck)
     }
     return cachedConfig
 }

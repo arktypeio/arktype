@@ -1,10 +1,9 @@
 #!/usr/bin/env node
-import { readFile, readFileSync } from "node:fs"
+import { readFileSync } from "node:fs"
 import { version } from "node:os"
 import { basename } from "node:path"
 import { versions } from "node:process"
 import { Command } from "commander"
-import { checkArgsForParam } from "./config.js"
 import { cacheAssertions, cleanupAssertions } from "./main.js"
 import { fromCwd, shell, walkPaths } from "./runtime/main.js"
 
@@ -15,7 +14,7 @@ const description = "ArkType Testing"
 attest
     .version(packageVersion)
     .description(description)
-    .option("-r, --runner  [value]", "Run using a specified test runner")
+    .option("-r, --runner  <value>", "Run using a specified test runner")
     .option("-s, --skipTypes", "Skip type assertions")
     .option(
         "-f, --files <value>",
@@ -23,16 +22,18 @@ attest
     )
     .option("-h, --help, View details about the cli")
     .option("-b, --bench, Runs benchmarks found in *.bench.ts files")
-    .option("-p --benchmarksPath, defines where to save bench results (json)")
     .option(
-        "--filter, runs benches based on a filter (/options.bench.ts || nameOfBench?)"
+        "-p --benchmarksPath <path>, defines where to save bench results (json)"
+    )
+    .option(
+        "--filter <filter>, runs benches based on a filter (/options.bench.ts || nameOfBench?)"
     )
     .parse(process.argv)
 
 const options = attest.opts()
 const processArgs = process.argv
 const passedArgs = processArgs.slice(2)
-const isValidFilter = () => {}
+
 if (!passedArgs.length || options.help) {
     attest.outputHelp()
     process.exit(0)
@@ -43,27 +44,21 @@ if (options.bench) {
     })
     let threwDuringBench
     let filteredPaths = benchFilePaths
-    const filterParam = checkArgsForParam(passedArgs, "--filter")
 
-    if (filterParam) {
-        //todo if you want to pass in multiple put them in ""
-        let arrayOfFilters
-        if (filterParam?.startsWith('"')) {
-            arrayOfFilters = filterParam.split(",").sort()
-        } else {
-        }
+    if (options.filter) {
+        const filterParam = options.filter
         const isPath = filterParam.startsWith("/")
         filteredPaths = filteredPaths.filter((path) =>
             isPath
                 ? new RegExp(filterParam).test(path)
-                : new RegExp(`bench("${filterParam})`).test(
+                : new RegExp(`suite("${filterParam})`).test(
                       readFileSync(path, "utf-8")
                   )
         )
         if (filteredPaths.length === 0) {
             throw new Error(
                 `Couldn't find any ${
-                    isPath ? "files" : "test nammes"
+                    isPath ? "files" : "test names"
                 } matching ${filterParam}`
             )
         }
@@ -79,10 +74,9 @@ if (options.bench) {
             const command = `npx ts-node ${path} --benchmarksPath ${fromCwd(
                 "benchmarks.json"
             )}`
-            console.log(command)
             shell(command, {
                 env: {
-                    ARKTYPE_CHECK_CMD: `${passedArgs.join(" ")}}`
+                    ARKTYPE_CHECK_CMD: `${passedArgs.join(" ")}`
                 }
             })
         } catch {
