@@ -17,13 +17,13 @@ export type BenchTypeAssertions = {
     type: (instantiations?: Measure<TypeUnit>) => void
 }
 
-const getInternalTypeChecker = (project: Project) =>
+export const getInternalTypeChecker = (project: Project) =>
     project.getTypeChecker().compilerObject as ts.TypeChecker & {
         // This API is not publicly exposed
         getInstantiationCount: () => number
     }
 
-const getUpdatedInstantiationCount = (project: Project) => {
+export const getUpdatedInstantiationCount = (project: Project) => {
     const typeChecker = getInternalTypeChecker(project)
     // Every time the project is updated, we need to emit to recalculate instantiation count.
     // If we try to get the count after modifying a file in memory without emitting, it will be 0.
@@ -83,17 +83,6 @@ const transformBenchSource = (
             node.isKind(SyntaxKind.ExpressionStatement) &&
             node.getText() === isolatedBenchExressionText
     ) as Node<ts.ExpressionStatement>
-    const siblingStatements = [
-        ...currentBenchStatement.getPreviousSiblings(),
-        ...currentBenchStatement.getNextSiblings()
-    ].filter((node) =>
-        node.isKind(SyntaxKind.ExpressionStatement)
-    ) as Node<ts.ExpressionStatement>[]
-    for (const statement of siblingStatements) {
-        if (isBenchExpression(statement)) {
-            statement.replaceWithText("")
-        }
-    }
     if (!includeBenchFn) {
         emptyBenchFn(currentBenchStatement)
     }
@@ -102,25 +91,29 @@ const transformBenchSource = (
     return text
 }
 
+const cache: { [path: string]: number } = {}
 const getInstantiationsContributedByNode = (
     benchCall: Node<ts.CallExpression>
 ) => {
-    const d = Date.now()
     const originalFile = benchCall.getSourceFile()
     const fakePath = originalFile.getFilePath() + ".nonexistent.ts"
     const benchExpression = benchCall.getFirstAncestorByKindOrThrow(
         SyntaxKind.ExpressionStatement
     )
     const originalBenchExpressionText = benchExpression.getText()
-    const instantiationsWithNode = getInstantiationsWithFile(
-        transformBenchSource(
-            originalFile,
-            originalBenchExpressionText,
-            true,
+    if (!cache[fakePath]) {
+        const instantiationsWithNode = getInstantiationsWithFile(
+            transformBenchSource(
+                originalFile,
+                originalBenchExpressionText,
+                true,
+                fakePath
+            ),
             fakePath
-        ),
-        fakePath
-    )
+        )
+        cache[fakePath] = instantiationsWithNode
+    }
+
     const instantiationsWithoutNode = getInstantiationsWithFile(
         transformBenchSource(
             originalFile,
@@ -130,12 +123,7 @@ const getInstantiationsContributedByNode = (
         ),
         fakePath
     )
-    console.log(
-        `instantiations took ${
-            Date.now() - d
-        } \nstarted with ${instantiationsWithNode}`
-    )
-    return instantiationsWithNode - instantiationsWithoutNode
+    return cache[fakePath] - instantiationsWithoutNode
 }
 
 export const createBenchTypeAssertion = (

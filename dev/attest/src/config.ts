@@ -1,12 +1,7 @@
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import * as process from "node:process"
-import {
-    ensureDir,
-    fromCwd,
-    fromPackageRoot,
-    getSourceFileEntries
-} from "./runtime/main.js"
+import { ensureDir, fromCwd, getSourceFileEntries } from "./runtime/main.js"
 import { getCmdFromPid } from "./utils.js"
 import type { BenchFormat } from "./writeSnapshot.js"
 
@@ -23,11 +18,10 @@ export type AttestConfig = {
     typeSources: [path: string, contents: string][]
     benchPercentThreshold: number
     benchErrorOnThresholdExceeded: boolean
-    filter: string[] | string | undefined
-    count: number
+    filter: string | string[] | undefined
 }
 
-const checkArgsForParam = (args: string[], param: `-${string}`) => {
+export const checkArgsForParam = (args: string[], param: `-${string}`) => {
     const filterFlagIndex = args.indexOf(param)
     if (filterFlagIndex === -1) {
         return undefined
@@ -110,7 +104,6 @@ export const getAttestConfig = (): AttestConfig => {
                 checkArgsForParam(argsToCheck, "--benchmarksPath") ||
                 join(process.cwd(), "benchmarks.json")
         },
-        filter: getFilter(argsToCheck),
         tsconfig,
         precached: argsToCheck.includes("--precache"),
         preserveCache: true,
@@ -119,7 +112,7 @@ export const getAttestConfig = (): AttestConfig => {
         assertionCacheFile: join(cacheDir, "assertions.json"),
         benchPercentThreshold: 20,
         benchErrorOnThresholdExceeded: false,
-        count: parseInt(checkArgsForParam(argsToCheck, "--count")!)
+        filter: checkArgsForParam(argsToCheck, "--filter")
     }
     return cachedConfig
 }

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
+import { readFile, readFileSync } from "node:fs"
 import { version } from "node:os"
 import { basename } from "node:path"
 import { versions } from "node:process"
 import { Command } from "commander"
-import { Project } from "ts-morph"
-import { getInternalTypeChecker } from "./bench/type.js"
+import { checkArgsForParam } from "./config.js"
 import { cacheAssertions, cleanupAssertions } from "./main.js"
 import { fromCwd, shell, walkPaths } from "./runtime/main.js"
 
@@ -24,11 +24,15 @@ attest
     .option("-h, --help, View details about the cli")
     .option("-b, --bench, Runs benchmarks found in *.bench.ts files")
     .option("-p --benchmarksPath, defines where to save bench results (json)")
+    .option(
+        "--filter, runs benches based on a filter (/options.bench.ts || nameOfBench?)"
+    )
     .parse(process.argv)
 
 const options = attest.opts()
 const processArgs = process.argv
 const passedArgs = processArgs.slice(2)
+const isValidFilter = () => {}
 if (!passedArgs.length || options.help) {
     attest.outputHelp()
     process.exit(0)
@@ -38,34 +42,49 @@ if (options.bench) {
         include: (path) => basename(path).includes(".bench.")
     })
     let threwDuringBench
+    let filteredPaths = benchFilePaths
+    const filterParam = checkArgsForParam(passedArgs, "--filter")
+
+    if (filterParam) {
+        //todo if you want to pass in multiple put them in ""
+        let arrayOfFilters
+        if (filterParam?.startsWith('"')) {
+            arrayOfFilters = filterParam.split(",").sort()
+        } else {
+        }
+        const isPath = filterParam.startsWith("/")
+        filteredPaths = filteredPaths.filter((path) =>
+            isPath
+                ? new RegExp(filterParam).test(path)
+                : new RegExp(`bench("${filterParam})`).test(
+                      readFileSync(path, "utf-8")
+                  )
+        )
+        if (filteredPaths.length === 0) {
+            throw new Error(
+                `Couldn't find any ${
+                    isPath ? "files" : "test nammes"
+                } matching ${filterParam}`
+            )
+        }
+    }
     //TODO we don't want do automatically write to a file, rather let people pass in that as an option if they want it
     // and maybe add a config to let people specify
     console.log(
-        `found ${benchFilePaths.length} paths matching .bench file format`
+        `found ${filteredPaths.length} paths matching .bench file format`
     )
-    for (const path of benchFilePaths) {
-        const project = new Project()
-        project.addSourceFileAtPath(path)
-        console.log(`getting instantiation count for ${path}`)
-        const typeChecker = getInternalTypeChecker(project)
-        // Every time the project is updated, we need to emit to recalculate instantiation count.
-        // If we try to get the count after modifying a file in memory without emitting, it will be 0.
-        project.emitToMemory()
-        const initCount = typeChecker.getInstantiationCount()
-        console.log(initCount)
+    //if filter is passed in we don't wanna run all the files
+    for (const path of filteredPaths) {
         try {
-            shell(
-                `npx ts-node ${path}  --benchmarksPath ${fromCwd(
-                    "benchmarks.json"
-                )}`,
-                {
-                    env: {
-                        ARKTYPE_CHECK_CMD: `${passedArgs.join(
-                            " "
-                        )} --count ${initCount}}`
-                    }
+            const command = `npx ts-node ${path} --benchmarksPath ${fromCwd(
+                "benchmarks.json"
+            )}`
+            console.log(command)
+            shell(command, {
+                env: {
+                    ARKTYPE_CHECK_CMD: `${passedArgs.join(" ")}}`
                 }
-            )
+            })
         } catch {
             threwDuringBench = true
         }

@@ -113,7 +113,6 @@ export const bench = <Fn extends BenchableFunction>(
         lastSnapCallPosition: undefined,
         isAsync: fn.constructor.name === "AsyncFunction"
     }
-
     if (
         typeof ctx.cfg.filter === "string" &&
         !qualifiedPath.includes(ctx.cfg.filter)

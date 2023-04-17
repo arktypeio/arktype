@@ -7,7 +7,6 @@ type MarkData = Record<string, BenchStatTuple>
 export type BenchResult = {
     date: string
     mark: MarkData
-    transient?: true
 }
 
 export type BenchStatTuple = [number, TimeUnit | TypeUnit]
@@ -69,12 +68,6 @@ export const addResultToMatchingData = (
         latestResult.mark = { ...latestResult.mark, ...mark }
     } else {
         const newResult: BenchResult = { date, mark }
-        if (benchUpdate.transient) {
-            newResult.transient = true
-        }
-        if (latestResult?.transient) {
-            matchingResults.shift()
-        }
         matchingResults.unshift(newResult)
     }
 }
