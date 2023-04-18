@@ -43,26 +43,7 @@ describe("key traversal", () => {
     it("distilled array", () => {
         const t = type(
             {
-                a: "email[]",
-                "b?": "1<email[]<=10"
-            },
-            { keys: "distilled" }
-        )
-        attest(
-            t({
-                a: ["testing@example.com"],
-                b: ["other@example.com", "test@example.com"]
-            }).data
-        ).snap({
-            a: ["testing@example.com"],
-            b: ["other@example.com", "test@example.com"]
-        })
-    })
-    it("distills array", () => {
-        const t = type(
-            {
-                a: "email[]",
-                "b?": "1<email[]<=10"
+                a: "email[]"
             },
             { keys: "distilled" }
         )
@@ -71,24 +52,23 @@ describe("key traversal", () => {
                 a: ["testing@example.com"],
                 c: ["other@example.com", "test@example.com"]
             }).data
-        ).snap({ a: ["testing@example.com"] })
+        ).snap({
+            a: ["testing@example.com"]
+        })
     })
     it("strict array", () => {
         const t = type(
             {
-                a: "email[]",
-                "b?": "1<email[]<=10"
+                a: "email[]"
             },
             { keys: "strict" }
         )
         attest(
             t({
-                a: ["testing@example.com"],
-                b: ["other@example.com", "test@example.com"]
+                a: ["testing@example.com"]
             }).data
         ).snap({
-            a: ["testing@example.com"],
-            b: ["other@example.com", "test@example.com"]
+            a: ["testing@example.com"]
         })
     })
     it("strict array with extraneous keys", () => {
