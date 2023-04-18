@@ -6,7 +6,7 @@ export class DivisibilityNode extends Node<typeof DivisibilityNode> {
         super(DivisibilityNode, divisor)
     }
 
-    static compile(divisor: number, s: CompilationState) {
+    static compileChildren(divisor: number, s: CompilationState) {
         return [
             {
                 condition: `${s.data} % ${divisor} !== 0`,

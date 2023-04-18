@@ -8,7 +8,7 @@ import type { EqualityNode } from "./equality.js"
 import type { InstanceNode } from "./instance.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import type { RangeNode } from "./range.js"
-import type { RuleSet, RulesNode } from "./rules.js"
+import type { RuleSet } from "./rules.js"
 import type { TypeNode } from "./type.js"
 
 export type CompiledValidator = {
@@ -18,7 +18,7 @@ export type CompiledValidator = {
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (...args: any[]): Node<subclass>
-    compile(children: any, s: CompilationState): CompiledValidator[]
+    compileChildren(children: any, s: CompilationState): CompiledValidator[]
 }
 
 export abstract class Node<
@@ -27,13 +27,13 @@ export abstract class Node<
 > extends CompiledFunction<[data: input], boolean> {
     constructor(
         protected subclass: subclass,
-        public child: Parameters<subclass["compile"]>[0]
+        public child: Parameters<subclass["compileChildren"]>[0]
     ) {
         // TODO: Cache
         super(
             "data",
             `return ${Node.joinSubconditions(
-                subclass.compile(child, new CompilationState())
+                subclass.compileChildren(child, new CompilationState("check"))
             )}`
         )
     }
@@ -42,22 +42,21 @@ export abstract class Node<
         return validators.map((validator) => validator.condition).join(" || ")
     }
 
-    compileTraversal(s: CompilationState) {
-        return this.compile(s)
-            .map(
-                (validator) => `if (${validator.condition}) {
-            ${validator.problem}
-        }`
-            )
-            .join("\n")
-    }
-
-    compileCondition(s: CompilationState) {
-        return Node.joinSubconditions(this.compile(s))
-    }
-
     compile(s: CompilationState) {
-        return this.subclass.compile(this.child, s)
+        const children = this.subclass.compileChildren(this.child, s)
+        return s.kind === "check"
+            ? Node.joinSubconditions(children)
+            : children
+                  .map(
+                      (validator) => `if (${validator.condition}) {
+        ${validator.problem}
+    }`
+                  )
+                  .join("\n")
+    }
+
+    compileChildren(s: CompilationState) {
+        return this.subclass.compileChildren(this.child, s)
     }
 
     abstract intersect(
@@ -146,7 +145,7 @@ export class CompilationState {
     unionDepth = 0
     traversalConfig = initializeCompilationConfig()
 
-    constructor() {}
+    constructor(public kind: "traversal" | "check") {}
 
     get data() {
         return toPropChain(this.path)

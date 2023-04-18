@@ -11,7 +11,7 @@ export class FilterNode extends Node<typeof FilterNode> {
         )
     }
 
-    static compile(sources: Filter[], s: CompilationState) {
+    static compileChildren(sources: Filter[], s: CompilationState) {
         return [
             {
                 condition: "true",

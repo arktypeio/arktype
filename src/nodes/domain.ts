@@ -20,7 +20,7 @@ export class DomainNode<
             : s.addDisjoint("domain", this, other)
     }
 
-    static compile(domain: NonEnumerableDomain, s: CompilationState) {
+    static compileChildren(domain: NonEnumerableDomain, s: CompilationState) {
         return [
             {
                 condition:

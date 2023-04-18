@@ -49,13 +49,13 @@ export class PropsNode extends Node<typeof PropsNode> {
         return new PropsNode(child)
     }
 
-    static compile({ named }: PropsChild, s: CompilationState) {
+    static compileChildren({ named }: PropsChild, s: CompilationState) {
         const checks: CompiledValidator[] = []
         const names = Object.keys(named).sort()
         for (const k of names) {
             s.path.push(k)
             // TODO: precedence
-            checks.push(...named[k].compile(s))
+            checks.push(...named[k].compileChildren(s))
             s.path.pop()
         }
         return checks
@@ -169,8 +169,8 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
         return new NamedPropNode(child)
     }
 
-    static compile(child: NamedPropChild, s: CompilationState) {
-        return child.value.compile(s)
+    static compileChildren(child: NamedPropChild, s: CompilationState) {
+        return child.value.compileChildren(s)
     }
 
     intersect(

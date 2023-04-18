@@ -61,7 +61,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         )
     }
 
-    static compile(branches: List<RulesNode>, s: CompilationState) {
+    static compileChildren(branches: List<RulesNode>, s: CompilationState) {
         switch (branches.length) {
             case 0:
                 return [
@@ -71,12 +71,17 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
                     }
                 ]
             case 1:
-                return branches[0].compile(s)
+                return branches[0].compileChildren(s)
             default:
                 return [
                     {
                         condition: branches
-                            .map((branch) => branch.compileCondition(s))
+                            .map((branch) =>
+                                branch
+                                    .compileChildren(s)
+                                    .map((rules) => rules.condition)
+                                    .join(" || ")
+                            )
                             .sort()
                             .join(" && "),
                         problem: s.problem("custom", "valid (union)")
@@ -85,16 +90,20 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         }
     }
 
-    override compileTraversal(s: CompilationState) {
-        if (this.child.length === 0 || this.child.length === 1) {
-            return super.compileTraversal(s)
+    override compile(s: CompilationState) {
+        if (
+            this.child.length === 0 ||
+            this.child.length === 1 ||
+            s.kind === "check"
+        ) {
+            return super.compile(s)
         }
         s.unionDepth++
         const result = `state.pushUnion();
             ${this.child
                 .map(
                     (branch) => `(() => {
-                ${branch.compileTraversal(s)}
+                ${branch.compile(s)}
                 })()`
                 )
                 .join(" && ")};

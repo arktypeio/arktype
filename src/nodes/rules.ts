@@ -50,22 +50,22 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
         return new RulesNode<inferRuleSet<input>>(child)
     }
 
-    static compile(child: RulesChild, s: CompilationState) {
+    static compileChildren(child: RulesChild, s: CompilationState) {
         const checks: CompiledValidator[] =
-            child.value?.compile(s) ??
-            child.instance?.compile(s) ??
-            child.domain!.compile(s)
+            child.value?.compileChildren(s) ??
+            child.instance?.compileChildren(s) ??
+            child.domain!.compileChildren(s)
         if (child.divisor) {
-            checks.push(...child.divisor.compile(s))
+            checks.push(...child.divisor.compileChildren(s))
         }
         if (child.range) {
-            checks.push(...child.range.compile(s))
+            checks.push(...child.range.compileChildren(s))
         }
         if (child.regex) {
-            checks.push(...child.regex.compile(s))
+            checks.push(...child.regex.compileChildren(s))
         }
         if (child.props) {
-            checks.push(...child.props.compile(s))
+            checks.push(...child.props.compileChildren(s))
         }
         return checks
     }
