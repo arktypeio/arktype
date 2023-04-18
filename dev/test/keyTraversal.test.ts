@@ -40,6 +40,71 @@ describe("key traversal", () => {
         attest(t({ a: "ok" }).data).equals({ a: "ok" })
         attest(t(getExtraneousB()).data).snap({ a: "ok" })
     })
+    it("distilled array", () => {
+        const t = type(
+            {
+                a: "email[]",
+                "b?": "1<email[]<=10"
+            },
+            { keys: "distilled" }
+        )
+        attest(
+            t({
+                a: ["testing@example.com"],
+                b: ["other@example.com", "test@example.com"]
+            }).data
+        ).snap({
+            a: ["testing@example.com"],
+            b: ["other@example.com", "test@example.com"]
+        })
+    })
+    it("distills array", () => {
+        const t = type(
+            {
+                a: "email[]",
+                "b?": "1<email[]<=10"
+            },
+            { keys: "distilled" }
+        )
+        attest(
+            t({
+                a: ["testing@example.com"],
+                c: ["other@example.com", "test@example.com"]
+            }).data
+        ).snap({ a: ["testing@example.com"] })
+    })
+    it("strict array", () => {
+        const t = type(
+            {
+                a: "email[]",
+                "b?": "1<email[]<=10"
+            },
+            { keys: "strict" }
+        )
+        attest(
+            t({
+                a: ["testing@example.com"],
+                b: ["other@example.com", "test@example.com"]
+            }).data
+        ).snap({
+            a: ["testing@example.com"],
+            b: ["other@example.com", "test@example.com"]
+        })
+    })
+    it("strict array with extraneous keys", () => {
+        const t = type(
+            {
+                a: "email[]",
+                "b?": "1<email[]<=10"
+            },
+            { keys: "strict" }
+        )
+        attest(
+            t({
+                c: ["testing@example.com"]
+            }).problems?.summary
+        ).snap("c must be removed\na must be defined")
+    })
     it("distilled union", () => {
         const o = type([{ a: "string" }, "|", { b: "boolean" }], {
             keys: "distilled"
