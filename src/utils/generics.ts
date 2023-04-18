@@ -14,7 +14,7 @@ export type castWithExclusion<t, castTo, excluded> = t extends excluded
 
 export type Literalable = string | boolean | number | bigint
 
-export type evaluateObjectOrFunction<t> = isTopType<t> extends true
+export type evaluateObjectOrFunction<t> = unknown extends t
     ? t
     : t extends (...args: infer args) => infer ret
     ? (...args: args) => ret
@@ -38,8 +38,6 @@ export type replaceProps<
 > = evaluate<{
     [k in keyof o]: k extends keyof replacements ? replacements[k] : o[k]
 }>
-
-export type isTopType<t> = unknown extends t ? true : false
 
 export type isAny<t> = [unknown, t] extends [t, {}] ? true : false
 
@@ -209,7 +207,7 @@ export type coalesce<t, fallback> = t extends {} ? t : fallback
 
 export type error<message extends string = string> = `!${message}`
 
-export type castOnError<t, to> = isTopType<t> extends true
+export type castOnError<t, to> = unknown extends t
     ? t
     : t extends never
     ? t

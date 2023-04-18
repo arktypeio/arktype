@@ -1,5 +1,5 @@
 import { domainOf } from "./domains.js"
-import type { constructor, instanceOf, isTopType } from "./generics.js"
+import type { constructor, instanceOf } from "./generics.js"
 import { isKeyOf } from "./generics.js"
 
 // Built-in object constructors based on a subset of:
@@ -54,7 +54,7 @@ export type DefaultObjectKind = keyof DefaultObjectKindSet
 export type objectKindOf<
     data,
     kinds extends ObjectKindSet = DefaultObjectKindSet
-> = isTopType<data> extends true
+> = unknown extends data
     ? undefined | keyof kinds
     : data extends object
     ? object extends data

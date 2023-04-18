@@ -1,6 +1,6 @@
 import type { inferDomain, Primitive } from "./domains.js"
 import { domainOf } from "./domains.js"
-import type { Dict, isTopType, List } from "./generics.js"
+import type { Dict, List } from "./generics.js"
 import { isKeyOf } from "./generics.js"
 import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
 import {
@@ -17,7 +17,7 @@ export type SerializationOptions = {
 export const snapshot = <t>(data: t, opts: SerializationOptions = {}) =>
     serializeRecurse(data, opts, []) as snapshot<t>
 
-export type snapshot<t, depth extends 1[] = []> = isTopType<t> extends true
+export type snapshot<t, depth extends 1[] = []> = unknown extends t
     ? unknown
     : t extends Primitive
     ? snapshotPrimitive<t>

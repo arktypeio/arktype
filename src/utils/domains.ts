@@ -1,4 +1,4 @@
-import type { evaluate, isTopType } from "./generics.js"
+import type { evaluate } from "./generics.js"
 
 export const hasDomain = <data, domain extends Domain>(
     data: data,
@@ -30,7 +30,7 @@ export type PrimitiveDomain = Exclude<Domain, "object">
 
 export type Primitive = inferDomain<PrimitiveDomain>
 
-export type domainOf<data> = isTopType<data> extends true
+export type domainOf<data> = unknown extends data
     ? Domain
     : data extends object
     ? "object"
