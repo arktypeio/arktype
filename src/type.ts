@@ -1,5 +1,6 @@
 import { CompilationState } from "./nodes/node.js"
-import { CheckResult, TraversalState } from "./nodes/traverse.js"
+import type { CheckResult } from "./nodes/traverse.js"
+import { TraversalState } from "./nodes/traverse.js"
 import type { TypeNode } from "./nodes/type.js"
 import type { Filter, inferPredicate } from "./parse/ast/filter.js"
 import type { inferIntersection } from "./parse/ast/intersection.js"
@@ -43,7 +44,6 @@ export type parseType<def, $ extends { this: unknown }> = [def] extends [
 
 // TODO: needed?
 registry().register("state", TraversalState)
-registry().register("result", CheckResult)
 
 export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     [data: unknown],

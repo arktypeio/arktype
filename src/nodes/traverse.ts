@@ -60,13 +60,6 @@ export class TraversalState {
         return this.problems.add(problem)
     }
 
-    reject<code extends ProblemCode>(
-        code: code,
-        ...args: ProblemParameters<code>
-    ) {
-        return !this.addProblem(code, ...args)
-    }
-
     // traverseKey(key: stringKeyOf<this["data"]>, node: TraversalNode): boolean {
     //     const lastData = this.data
     //     this.data = this.data[key] as data

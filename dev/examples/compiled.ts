@@ -1,6 +1,7 @@
 // @ts-ignore
 import { format } from "prettier"
-import { type } from "../../src/main.js"
+import { Problems, type } from "../../src/main.js"
+import { Path } from "../../src/utils/paths.js"
 
 const benchData = {
     number: 1,
@@ -12,8 +13,8 @@ const benchData = {
     boolean: true,
     deeplyNested: {
         foo: "bar",
-        num: 1,
-        bool: 56
+        num: 5,
+        bool: false
     }
 }
 
@@ -37,7 +38,11 @@ console.log(format(benchType.toString()))
 
 console.log(format(myType.toString()))
 
-console.log(benchType(benchData))
+const result = benchType(benchData)
+
+const problems = result.problems
+
+console.log(problems?.summary)
 
 try {
     benchType({})

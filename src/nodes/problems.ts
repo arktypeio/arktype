@@ -13,7 +13,8 @@ import {
     getExactConstructorObjectKind,
     objectKindDescriptions
 } from "../utils/objectKinds.js"
-import type { Path } from "../utils/paths.js"
+import type { Segments } from "../utils/paths.js"
+import { Path } from "../utils/paths.js"
 import { stringify } from "../utils/serialize.js"
 import type { BoundContextWithUnits } from "./range.js"
 import { comparatorDescriptions } from "./range.js"
@@ -29,11 +30,13 @@ export class ArkTypeError extends TypeError {
 
 export abstract class Problem<requirement = unknown, data = unknown> {
     data: DataWrapper<data>
+    path: Path
 
     abstract readonly code: ProblemCode
     abstract mustBe: string
 
-    constructor(public rule: requirement, data: data, public path: Path) {
+    constructor(public rule: requirement, data: data, segments: Segments) {
+        this.path = new Path(...segments)
         this.data = new DataWrapper(data)
     }
 

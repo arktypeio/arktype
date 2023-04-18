@@ -153,28 +153,6 @@ export class CompilationState {
 
     constructor() {}
 
-    // traverse<code extends ProblemCode, condition extends string>(
-    //     code: code,
-    //     condition: condition,
-    //     rule: ProblemRules[code]
-    // ) {
-    //     return `(${condition} || ${this.problem(code, rule)})` as const
-    // }
-
-    mergeChecks(checks: string[]) {
-        if (checks.length === 1) {
-            return checks[0]
-        }
-        let result = `(() => {
-let valid = ${checks[0]};\n`
-        for (let i = 1; i < checks.length - 1; i++) {
-            result += `valid = ${checks[i]} && valid;\n`
-        }
-        result += `return ${checks[checks.length - 1]} && valid
-})()`
-        return result
-    }
-
     get data() {
         let result = "data"
         for (const segment of this.path) {
@@ -196,22 +174,22 @@ let valid = ${checks[0]};\n`
     }
 
     problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
-        return `state.reject("${code}", ${
+        return `state.addProblem("${code}", ${
             typeof rule === "function" ? rule.name : JSON.stringify(rule)
         }, ${this.data}, ${this.path.json})` as const
     }
 
-    arrayOf(node: Node<any>) {
-        // TODO: increment. does this work for logging?
-        this.path.push("${i}")
-        const result = `(() => {
-    let valid = true;
-    for(let i = 0; i < ${this.data}.length; i++) {
-        valid = ${node.compile(this)} && isValid;
-    }
-    return valid
-})()`
-        this.path.pop()
-        return result
-    }
+    //     arrayOf(node: Node<any>) {
+    //         // TODO: increment. does this work for logging?
+    //         this.path.push("${i}")
+    //         const result = `(() => {
+    //     let valid = true;
+    //     for(let i = 0; i < ${this.data}.length; i++) {
+    //         valid = ${node.compile(this)} && isValid;
+    //     }
+    //     return valid
+    // })()`
+    //         this.path.pop()
+    //         return result
+    //     }
 }

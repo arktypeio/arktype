@@ -3,7 +3,7 @@ import type { ark } from "../main.js"
 import type { CheckResult, TraversalState } from "../nodes/traverse.js"
 import type { autocomplete } from "./generics.js"
 
-type PrepopulatedKey = "ark" | "state" | "result"
+type PrepopulatedKey = "ark" | "state"
 
 class Registry {
     [k: string]: unknown
