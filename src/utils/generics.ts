@@ -39,26 +39,14 @@ export type replaceProps<
     [k in keyof o]: k extends keyof replacements ? replacements[k] : o[k]
 }>
 
-export type isTopType<t> = (any extends t ? true : false) extends true
-    ? true
-    : false
+export type isTopType<t> = unknown extends t ? true : false
 
-export type isAny<t> = (any extends t ? topTypeIsAny<t> : false) extends true
-    ? true
-    : false
+export type isAny<t> = [unknown, t] extends [t, {}] ? true : false
 
-export type isUnknown<t> = (
-    any extends t ? topTypeIsUnknown<t> : false
-) extends true
-    ? true
-    : false
-
-type topTypeIsAny<t> = (t extends {} ? true : false) extends false
-    ? false
-    : true
-
-type topTypeIsUnknown<t> = (t extends {} ? true : false) extends false
-    ? true
+export type isUnknown<t> = unknown extends t
+    ? [t] extends [{}]
+        ? false
+        : true
     : false
 
 export type extractKeysWithValue<o, filter> = {
