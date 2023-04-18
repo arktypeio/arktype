@@ -247,7 +247,7 @@ const createPropChecker =
             } else if (props.optional[k]) {
                 isValid = state.traverseKey(k, props.optional[k]) && isValid
             } else if (props.index && wellFormedIntegerMatcher.test(k)) {
-                continue
+                isValid = state.traverseKey(k, props.index) && isValid
             } else if (kind === "distilledProps") {
                 if (state.failFast) {
                     // If we're in a union (i.e. failFast is enabled) in
