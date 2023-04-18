@@ -24,6 +24,7 @@ import { domainOf, hasDomain } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { extend, stringKeyOf, xor } from "../utils/generics.js"
 import { hasKey, objectKeysOf } from "../utils/generics.js"
+import { wellFormedIntegerMatcher } from "../utils/numericLiterals.js"
 import type { DefaultObjectKind } from "../utils/objectKinds.js"
 import { getPath, Path } from "../utils/paths.js"
 import type { ProblemCode, ProblemOptions, ProblemWriters } from "./problems.js"
@@ -245,6 +246,8 @@ const createPropChecker =
                 delete remainingUnseenRequired[k]
             } else if (props.optional[k]) {
                 isValid = state.traverseKey(k, props.optional[k]) && isValid
+            } else if (props.index && wellFormedIntegerMatcher.test(k)) {
+                isValid = state.traverseKey(k, props.index) && isValid
             } else if (kind === "distilledProps") {
                 if (state.failFast) {
                     // If we're in a union (i.e. failFast is enabled) in
