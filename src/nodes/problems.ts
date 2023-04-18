@@ -170,7 +170,7 @@ export class DomainProblem extends Problem<Domain> {
     }
 }
 
-export class ProblemUnion extends Problem<Problem[]> {
+export class ProblemUnion extends Problem<Problems> {
     readonly code = "union"
 
     get mustBe() {

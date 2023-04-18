@@ -2,13 +2,13 @@ import type { TypeConfig } from "../type.js"
 import type { Domain } from "../utils/domains.js"
 import type { extend, instanceOf } from "../utils/generics.js"
 import { CompiledFunction } from "../utils/generics.js"
-import { Path } from "../utils/paths.js"
+import { Path, toPropChain } from "../utils/paths.js"
 import type { DomainNode } from "./domain.js"
 import type { EqualityNode } from "./equality.js"
 import type { InstanceNode } from "./instance.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import type { RangeNode } from "./range.js"
-import type { RuleSet } from "./rules.js"
+import type { RuleSet, RulesNode } from "./rules.js"
 import type { TypeNode } from "./type.js"
 
 export type CompiledValidator = {
@@ -131,11 +131,6 @@ export class Disjoint<kind extends DisjointKind = DisjointKind> {
 
 export type DisjointsByPath = Record<string, Disjoint>
 
-export const createTraverse = (name: string, js: string) =>
-    Function(`return (data, state) => {
-${js} 
-}`)()
-
 export type TraversalConfig = {
     [k in keyof TypeConfig]-?: TypeConfig[k][]
 }
@@ -148,33 +143,19 @@ const initializeCompilationConfig = (): TraversalConfig => ({
 export class CompilationState {
     path = new Path()
     lastDomain: Domain = "undefined"
-    failFast = false
+    unionDepth = 0
     traversalConfig = initializeCompilationConfig()
 
     constructor() {}
 
     get data() {
-        let result = "data"
-        for (const segment of this.path) {
-            if (typeof segment === "string") {
-                if (/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(segment)) {
-                    result += `.${segment}`
-                } else {
-                    result += `[${
-                        /^\$\{.*\}$/.test(segment)
-                            ? segment.slice(2, -1)
-                            : JSON.stringify(segment)
-                    }]`
-                }
-            } else {
-                result += `[${segment}]`
-            }
-        }
-        return result
+        return toPropChain(this.path)
     }
 
     problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
-        return `state.addProblem("${code}", ${
+        return `${
+            this.unionDepth ? "return " : ""
+        }state.addProblem("${code}", ${
             typeof rule === "function" ? rule.name : JSON.stringify(rule)
         }, ${this.data}, ${this.path.json})` as const
     }

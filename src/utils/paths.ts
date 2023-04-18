@@ -14,6 +14,25 @@ export class Path extends Array<string | number> {
     }
 }
 
+export const toPropChain = (segments: Segments, result = "data") => {
+    for (const segment of segments) {
+        if (typeof segment === "string") {
+            if (/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(segment)) {
+                result += `.${segment}`
+            } else {
+                result += `[${
+                    /^\$\{.*\}$/.test(segment)
+                        ? segment.slice(2, -1)
+                        : JSON.stringify(segment)
+                }]`
+            }
+        } else {
+            result += `[${segment}]`
+        }
+    }
+    return result
+}
+
 export type ReadonlyPath = arraySubclassToReadonly<Path>
 
 export type Segments = (string | number)[]

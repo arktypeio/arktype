@@ -85,6 +85,24 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         }
     }
 
+    override compileTraversal(s: CompilationState) {
+        if (this.child.length === 0 || this.child.length === 1) {
+            return super.compileTraversal(s)
+        }
+        s.unionDepth++
+        const result = `state.pushUnion();
+            ${this.child
+                .map(
+                    (branch) => `(() => {
+                ${branch.compileTraversal(s)}
+                })()`
+                )
+                .join(" && ")};
+            state.popUnion(${this.child.length}, ${s.data}, ${s.path.json});`
+        s.unionDepth--
+        return result
+    }
+
     intersect(other: TypeNode, s: ComparisonState): TypeNode | Disjoint {
         if (this === other) {
             return this

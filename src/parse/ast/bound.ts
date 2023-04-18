@@ -1,3 +1,4 @@
+import type { Comparator } from "../../nodes/range.js"
 import type { SizedData } from "../../utils/data.js"
 import type { error, isAny } from "../../utils/generics.js"
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
@@ -20,6 +21,8 @@ import type { astToString } from "./utils.js"
  */
 export type validateBound<l, r, $> = l extends NumberLiteral
     ? validateAst<r, $>
+    : l extends [unknown, Comparator, unknown]
+    ? error<"An expression may have at most one right bound.">
     : isBoundable<inferAst<l, $>> extends true
     ? validateAst<l, $>
     : error<writeUnboundableMessage<astToString<l>>>

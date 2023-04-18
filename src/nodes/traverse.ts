@@ -18,18 +18,29 @@ export class CheckResult<out = unknown, valid extends boolean = boolean> {
 
 export class TraversalState {
     basePath = new Path()
-    problems: Problems = new Problems()
+    problemsStack: Problems[] = [new Problems()]
     entriesToPrune: [data: Record<string, unknown>, key: string][] = []
     // config: TypeConfig
-
     // readonly rootScope: Scope
 
     // Qualified
     #seen: { [name in string]?: object[] } = {}
 
-    constructor() {
-        // this.rootScope = type.scope
-        // this.config = type.config
+    constructor() {}
+
+    get problems() {
+        return this.problemsStack.at(-1)!
+    }
+
+    pushUnion() {
+        this.problemsStack.push(new Problems())
+    }
+
+    popUnion(branchCount: number, data: unknown, path: string[]) {
+        const branchProblems = this.problemsStack.pop()!
+        if (branchProblems.count === branchCount) {
+            this.addProblem("union", branchProblems, data, path)
+        }
     }
 
     finalize(data: unknown): CheckResult {
@@ -39,7 +50,6 @@ export class TraversalState {
         for (const [o, k] of this.entriesToPrune) {
             delete o[k]
         }
-        //TODO: should never happen
         return new CheckResult(true, data)
     }
 
