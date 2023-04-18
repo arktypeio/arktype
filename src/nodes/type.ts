@@ -61,18 +61,20 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         )
     }
 
-    static compileConditions(branches: List<RulesNode>, s: CompilationState) {
+    static compile(branches: List<RulesNode>, s: CompilationState) {
         switch (branches.length) {
             case 0:
-                return ["false"]
+                return [{ condition: "false" }]
             case 1:
-                return branches[0].compileConditions(s)
+                return branches[0].compile(s)
             default:
                 return [
-                    branches
-                        .map((branch) => branch.compileConditions(s))
-                        .sort()
-                        .join(" || ")
+                    {
+                        condition: branches
+                            .map((branch) => branch.compileCondition(s))
+                            .sort()
+                            .join(" || ")
+                    }
                 ]
         }
     }
@@ -288,7 +290,7 @@ const discriminate = (
     discriminants: Discriminants,
     c: CompilationState
 ) => {
-    return originalBranches[remainingIndices[0]].compileConditions(c)
+    return originalBranches[remainingIndices[0]].compile(c)
     // if (remainingIndices.length === 1) {
     //     return compileBranch(originalBranches[remainingIndices[0]], ctx)
     // }

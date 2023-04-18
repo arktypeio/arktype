@@ -6,8 +6,8 @@ export class DivisibilityNode extends Node<typeof DivisibilityNode> {
         super(DivisibilityNode, divisor)
     }
 
-    static compileConditions(divisor: number, s: CompilationState) {
-        return [`${s.data} % ${divisor} === 0`]
+    static compile(divisor: number, s: CompilationState) {
+        return [{ condition: `${s.data} % ${divisor} === 0` }]
     }
 
     intersect(other: DivisibilityNode) {
@@ -17,8 +17,6 @@ export class DivisibilityNode extends Node<typeof DivisibilityNode> {
         )
         return new DivisibilityNode(leastCommonMultiple)
     }
-
-    problem(s: CompilationState) {}
 }
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm

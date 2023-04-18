@@ -11,8 +11,12 @@ export class FilterNode extends Node<typeof FilterNode> {
         )
     }
 
-    static compileConditions(sources: Filter[], s: CompilationState) {
-        return ["false"]
+    static compile(sources: Filter[], s: CompilationState) {
+        return [
+            {
+                condition: "false"
+            }
+        ]
     }
 
     intersect(other: FilterNode) {

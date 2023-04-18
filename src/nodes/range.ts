@@ -71,7 +71,7 @@ export class RangeNode extends Node<typeof RangeNode> {
         super(RangeNode, rule)
     }
 
-    static compileConditions(rule: Bounds, s: CompilationState) {
+    static compile(rule: Bounds, s: CompilationState) {
         const comparators = keysOf(rule)
         if (comparators.length === 0 || comparators.length > 2) {
             return throwInternalError(
@@ -85,12 +85,9 @@ export class RangeNode extends Node<typeof RangeNode> {
                 : s.lastDomain === "object"
                 ? "items long"
                 : ""
-        return comparators
-            .sort()
-            .map(
-                (comparator) =>
-                    `${size} ${invertedComparisonOperators[comparator]} ${rule[comparator]}`
-            )
+        return comparators.sort().map((comparator) => ({
+            condition: `${size} ${invertedComparisonOperators[comparator]} ${rule[comparator]}`
+        }))
     }
 
     intersect(other: RangeNode, s: ComparisonState): RangeNode | Disjoint {

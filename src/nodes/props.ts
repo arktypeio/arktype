@@ -4,7 +4,11 @@ import {
     listFrom,
     type mutable
 } from "../utils/generics.js"
-import type { ComparisonState, CompilationState } from "./node.js"
+import type {
+    ComparisonState,
+    CompilationState,
+    CompiledValidator
+} from "./node.js"
 import { Disjoint, Node } from "./node.js"
 import type { TypeNodeInput } from "./type.js"
 import { never, TypeNode } from "./type.js"
@@ -45,13 +49,13 @@ export class PropsNode extends Node<typeof PropsNode> {
         return new PropsNode(child)
     }
 
-    static compileConditions({ named }: PropsChild, s: CompilationState) {
-        const checks: string[] = []
+    static compile({ named }: PropsChild, s: CompilationState) {
+        const checks: CompiledValidator[] = []
         const names = Object.keys(named).sort()
         for (const k of names) {
             s.path.push(k)
             // TODO: precedence
-            checks.push(...named[k].compileConditions(s))
+            checks.push(...named[k].compile(s))
             s.path.pop()
         }
         return checks
@@ -165,8 +169,8 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
         return new NamedPropNode(child)
     }
 
-    static compileConditions(child: NamedPropChild, s: CompilationState) {
-        return child.value.compileConditions(s)
+    static compile(child: NamedPropChild, s: CompilationState) {
+        return child.value.compile(s)
     }
 
     intersect(

@@ -11,8 +11,12 @@ export class MorphNode extends Node<typeof MorphNode> {
         )
     }
 
-    static compileConditions(transforms: Morph[], s: CompilationState) {
-        return ["false"]
+    static compile(transforms: Morph[], s: CompilationState) {
+        return [
+            {
+                condition: "false"
+            }
+        ]
     }
 
     intersect(other: MorphNode) {

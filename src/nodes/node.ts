@@ -10,9 +10,13 @@ import type { RangeNode } from "./range.js"
 import type { RuleSet } from "./rules.js"
 import type { TypeNode } from "./type.js"
 
+export type CompiledValidator = {
+    condition: string
+}
+
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (...args: any[]): Node<subclass>
-    compileConditions(children: any, s: CompilationState): string[]
+    compile(children: any, s: CompilationState): CompiledValidator[]
 }
 
 export abstract class Node<
@@ -21,19 +25,27 @@ export abstract class Node<
 > extends CompiledFunction<[data: input], boolean> {
     constructor(
         protected subclass: subclass,
-        public child: Parameters<subclass["compileConditions"]>[0]
+        public child: Parameters<subclass["compile"]>[0]
     ) {
         // TODO: Cache
         super(
             "data",
-            `return ${subclass
-                .compileConditions(child, new CompilationState())
-                .join(" && ")}`
+            `return ${Node.joinCondition(
+                subclass.compile(child, new CompilationState())
+            )}`
         )
     }
 
-    compileConditions(s: CompilationState) {
-        return this.subclass.compileConditions(this.child, s)
+    static joinCondition(validators: CompiledValidator[]) {
+        return validators.map((validator) => validator.condition).join(" && ")
+    }
+
+    compileCondition(s: CompilationState) {
+        return Node.joinCondition(this.compile(s))
+    }
+
+    compile(s: CompilationState) {
+        return this.subclass.compile(this.child, s)
     }
 
     abstract intersect(
@@ -172,7 +184,7 @@ let valid = ${checks[0]};\n`
         const result = `(() => {
     let valid = true;
     for(let i = 0; i < ${this.data}.length; i++) {
-        valid = ${node.compileConditions(this)} && isValid;
+        valid = ${node.compile(this)} && isValid;
     }
     return valid
 })()`
