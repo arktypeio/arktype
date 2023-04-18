@@ -22,12 +22,14 @@ export class InstanceNode<rule extends constructor = constructor> extends Node<
             : s.addDisjoint("class", this, other)
     }
 
-    static compile(ancestor: constructor, s: CompilationState) {
+    static compileConditions(ancestor: constructor, s: CompilationState) {
         // TODO: also for other builtins
-        return `${s.data} instanceof ${
-            ancestor === Array
-                ? "Array"
-                : registry().register(ancestor.name, ancestor)
-        }`
+        return [
+            `${s.data} instanceof ${
+                ancestor === Array
+                    ? "Array"
+                    : registry().register(ancestor.name, ancestor)
+            }`
+        ]
     }
 }

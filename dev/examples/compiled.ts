@@ -1,7 +1,6 @@
 // @ts-ignore
 import { format } from "prettier"
 import { type } from "../../src/main.js"
-import type { autocomplete } from "../../src/utils/generics.js"
 
 const benchData = {
     number: 1,

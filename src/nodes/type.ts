@@ -16,8 +16,8 @@ import type {
 } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
 import type { EqualityNode } from "./equality.js"
-import type { CompilationState, Disjoint } from "./node.js"
-import { ComparisonState, Node } from "./node.js"
+import type { CompilationState } from "./node.js"
+import { ComparisonState, Disjoint, Node } from "./node.js"
 import type {
     Constraints,
     inferRuleSet,
@@ -45,11 +45,8 @@ export type TypeNodeInput = List<RuleSet | RulesNode>
 export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     declare [as]: t
 
-    assert: (data: unknown) => asserts data is t
-
     constructor(child: RulesNode[]) {
         super(TypeNode, child)
-        this.assert = this
     }
 
     static from<branches extends TypeNodeInput>(
@@ -64,16 +61,19 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         )
     }
 
-    static compile(branches: List<RulesNode>, s: CompilationState) {
+    static compileConditions(branches: List<RulesNode>, s: CompilationState) {
         switch (branches.length) {
             case 0:
-                return "false"
+                return ["false"]
             case 1:
-                return branches[0].condition(s)
+                return branches[0].compileConditions(s)
             default:
-                return branches
-                    .map((branch) => branch.condition(s))
-                    .join(" || ")
+                return [
+                    branches
+                        .map((branch) => branch.compileConditions(s))
+                        .sort()
+                        .join(" || ")
+                ]
         }
     }
 
@@ -83,7 +83,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         }
         if (this.child.length === 1 && other.child.length === 1) {
             const result = this.child[0].intersect(other.child[0], s)
-            return result.isDisjoint() ? result : new TypeNode([result])
+            return result instanceof Disjoint ? result : new TypeNode([result])
         }
         const branches = branchwiseIntersection(this.child, other.child, s)
         return branches.length
@@ -197,7 +197,7 @@ const branchwiseIntersection = (
                 break
             }
             const branchIntersection = l.intersect(r, s)
-            if (branchIntersection.isDisjoint()) {
+            if (branchIntersection instanceof Disjoint) {
                 // doesn't tell us about any redundancies or add a distinct intersection
                 continue
             }
@@ -288,7 +288,7 @@ const discriminate = (
     discriminants: Discriminants,
     c: CompilationState
 ) => {
-    return originalBranches[remainingIndices[0]].condition(c)
+    return originalBranches[remainingIndices[0]].compileConditions(c)
     // if (remainingIndices.length === 1) {
     //     return compileBranch(originalBranches[remainingIndices[0]], ctx)
     // }

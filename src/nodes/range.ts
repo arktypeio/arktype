@@ -71,7 +71,7 @@ export class RangeNode extends Node<typeof RangeNode> {
         super(RangeNode, rule)
     }
 
-    static compile(rule: Bounds, s: CompilationState) {
+    static compileConditions(rule: Bounds, s: CompilationState) {
         const comparators = keysOf(rule)
         if (comparators.length === 0 || comparators.length > 2) {
             return throwInternalError(
@@ -91,7 +91,6 @@ export class RangeNode extends Node<typeof RangeNode> {
                 (comparator) =>
                     `${size} ${invertedComparisonOperators[comparator]} ${rule[comparator]}`
             )
-            .join(" && ")
     }
 
     intersect(other: RangeNode, s: ComparisonState): RangeNode | Disjoint {

@@ -12,7 +12,7 @@ import type { TypeNode } from "./type.js"
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (...args: any[]): Node<subclass>
-    compile(children: any, s: CompilationState): string
+    compileConditions(children: any, s: CompilationState): string[]
 }
 
 export abstract class Node<
@@ -21,43 +21,25 @@ export abstract class Node<
 > extends CompiledFunction<[data: input], boolean> {
     constructor(
         protected subclass: subclass,
-        public child: Parameters<subclass["compile"]>[0]
+        public child: Parameters<subclass["compileConditions"]>[0]
     ) {
         // TODO: Cache
         super(
             "data",
-            `return ${subclass.compile(child, new CompilationState())}`
+            `return ${subclass
+                .compileConditions(child, new CompilationState())
+                .join(" && ")}`
         )
     }
 
-    condition(s: CompilationState) {
-        return this.subclass.compile(this.child, s)
+    compileConditions(s: CompilationState) {
+        return this.subclass.compileConditions(this.child, s)
     }
 
     abstract intersect(
         other: instanceOf<subclass>,
         s: ComparisonState
     ): instanceOf<subclass> | Disjoint
-
-    // protected abstract intersect(
-    //     other: Node,
-    //     s: ComparisonState
-    // ): Node | Disjoint
-
-    // extends(other: subclass) {
-    //     return (
-    //         this.intersect(other, new ComparisonState()) ===
-    //         (this as unknown as subclass)
-    //     )
-    // }
-
-    // subsumes(other: subclass) {
-    //     return !this.extends(other)
-    // }
-
-    isDisjoint(): this is Disjoint {
-        return this instanceof Disjoint
-    }
 }
 
 export type DisjointKinds = extend<
@@ -190,7 +172,7 @@ let valid = ${checks[0]};\n`
         const result = `(() => {
     let valid = true;
     for(let i = 0; i < ${this.data}.length; i++) {
-        valid = ${node.condition(this)} && isValid;
+        valid = ${node.compileConditions(this)} && isValid;
     }
     return valid
 })()`

@@ -7,11 +7,8 @@ export class RegexNode extends Node<typeof RegexNode> {
         super(RegexNode, typeof sources === "string" ? [sources] : sources)
     }
 
-    static compile(sources: string[], s: CompilationState) {
-        return sources
-            .sort()
-            .map((source) => `/${source}/.test(${s.data})`)
-            .join(" && ")
+    static compileConditions(sources: string[], s: CompilationState) {
+        return sources.sort().map((source) => `/${source}/.test(${s.data})`)
     }
 
     intersect(other: RegexNode) {

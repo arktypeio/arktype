@@ -50,26 +50,26 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
         return new RulesNode<inferRuleSet<input>>(child)
     }
 
-    static compile(child: RulesChild, s: CompilationState) {
+    static compileConditions(child: RulesChild, s: CompilationState) {
         // TODO: check multiple for traverse
-        const checks: string[] = [
-            child.value?.condition(s) ??
-                child.instance?.condition(s) ??
-                child.domain!.condition(s)
-        ]
+        const checks: string[] =
+            child.value?.compileConditions(s) ??
+            child.instance?.compileConditions(s) ??
+            child.domain!.compileConditions(s)
+
         if (child.divisor) {
-            checks.push(child.divisor.condition(s))
+            checks.push(...child.divisor.compileConditions(s))
         }
         if (child.range) {
-            checks.push(child.range.condition(s))
+            checks.push(...child.range.compileConditions(s))
         }
         if (child.regex) {
-            checks.push(child.regex.condition(s))
+            checks.push(...child.regex.compileConditions(s))
         }
         if (child.props) {
-            checks.push(child.props.condition(s))
+            checks.push(...child.props.compileConditions(s))
         }
-        return checks.join(" && ")
+        return checks
     }
 
     intersect(other: RulesNode, s: ComparisonState) {

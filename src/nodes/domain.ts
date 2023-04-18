@@ -20,9 +20,14 @@ export class DomainNode<
             : s.addDisjoint("domain", this, other)
     }
 
-    static compile(constraint: NonEnumerableDomain, s: CompilationState) {
-        return constraint === "object"
-            ? `((typeof ${s.data} === "object" && ${s.data} !== null) || typeof ${s.data} === "function")`
-            : `typeof ${s.data} === "${constraint}"`
+    static compileConditions(
+        constraint: NonEnumerableDomain,
+        s: CompilationState
+    ) {
+        return [
+            constraint === "object"
+                ? `((typeof ${s.data} === "object" && ${s.data} !== null) || typeof ${s.data} === "function")`
+                : `typeof ${s.data} === "${constraint}"`
+        ]
     }
 }

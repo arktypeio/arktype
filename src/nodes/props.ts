@@ -45,16 +45,16 @@ export class PropsNode extends Node<typeof PropsNode> {
         return new PropsNode(child)
     }
 
-    static compile({ named }: PropsChild, s: CompilationState) {
+    static compileConditions({ named }: PropsChild, s: CompilationState) {
         const checks: string[] = []
         const names = Object.keys(named).sort()
         for (const k of names) {
             s.path.push(k)
             // TODO: precedence
-            checks.push(named[k].condition(s))
+            checks.push(...named[k].compileConditions(s))
             s.path.pop()
         }
-        return checks.join(" && ")
+        return checks
     }
 
     intersect(other: PropsNode, s: ComparisonState) {
@@ -165,8 +165,8 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
         return new NamedPropNode(child)
     }
 
-    static compile(child: NamedPropChild, s: CompilationState) {
-        return child.value.condition(s)
+    static compileConditions(child: NamedPropChild, s: CompilationState) {
+        return child.value.compileConditions(s)
     }
 
     intersect(
