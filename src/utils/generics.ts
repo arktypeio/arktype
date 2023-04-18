@@ -26,11 +26,6 @@ export type exact<t, u> = {
     [k in keyof t]: k extends keyof u ? t[k] : never
 }
 
-/** Causes a type that would be eagerly calculated to be displayed as-is.
- *  WARNING: Makes t NonNullable as a side effect.
- */
-export type defer<t> = t & {}
-
 // TODO: Try replacing defer
 export type noInfer<t> = [t][t extends any ? 0 : never]
 
