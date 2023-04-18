@@ -63,41 +63,6 @@ addListener("beforeExit", () => {
     }
 })
 
-const addUnhandledSuiteException = (originalMessage: string) => {
-    console.error(
-        `Suite ${currentSuitePath.join(
-            "/"
-        )} failed due to the following error:\n${originalMessage}`
-    )
-    unhandledExceptionMessages.push(originalMessage)
-}
-
-export const suite = <Fn extends BenchableFunction>(name: string, body: Fn) => {
-    currentSuitePath.push(...name.split("/"))
-    try {
-        const result = body()
-        if (result instanceof Promise) {
-            return new Promise((resolve) => {
-                result.then(
-                    () => {
-                        currentSuitePath.pop()
-                        resolve(undefined)
-                    },
-                    (e) => {
-                        addUnhandledSuiteException(String(e))
-                        currentSuitePath.pop()
-                        resolve(undefined)
-                    }
-                )
-            })
-        } else {
-            currentSuitePath.pop()
-        }
-    } catch (e) {
-        addUnhandledSuiteException(String(e))
-    }
-}
-
 export const bench = <Fn extends BenchableFunction>(
     name: string,
     fn: Fn,

@@ -32,7 +32,7 @@ attest
 
 const options = attest.opts()
 const processArgs = process.argv
-const passedArgs = processArgs.slice(2)
+let passedArgs = processArgs.slice(2)
 
 if (!passedArgs.length || options.help) {
     attest.outputHelp()
@@ -42,19 +42,33 @@ if (options.bench) {
     const benchFilePaths = walkPaths(fromCwd(), {
         include: (path) => basename(path).includes(".bench.")
     })
+    /**
+     *
+     */
     let threwDuringBench
     let filteredPaths = benchFilePaths
 
     if (options.filter) {
         const filterParam = options.filter
         const isPath = filterParam.startsWith("/")
-        filteredPaths = filteredPaths.filter((path) =>
-            isPath
-                ? new RegExp(filterParam).test(path)
-                : new RegExp(`suite("${filterParam})`).test(
-                      readFileSync(path, "utf-8")
-                  )
-        )
+        filteredPaths = filteredPaths.filter((path) => {
+            console.log(`checking ${path}`)
+            if (isPath) {
+                if (new RegExp(filterParam).test(path)) {
+                    const filterIndex = passedArgs.findIndex((arg) =>
+                        arg.includes("--filter")
+                    )
+                    passedArgs.splice(filterIndex, 2)
+                    return true
+                }
+                return false
+            } else {
+                const contents = readFileSync(path, "utf-8")
+                const matcher = new RegExp(`bench\\("${filterParam}`)
+                // eslint-disable-next-line no-useless-escape
+                return matcher.test(contents)
+            }
+        })
         if (filteredPaths.length === 0) {
             throw new Error(
                 `Couldn't find any ${

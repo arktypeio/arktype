@@ -47,6 +47,7 @@ const emptyBenchFn = (statement: Node<ts.ExpressionStatement>) => {
     benchCall.getArguments()[1].replaceWithText("()=>{}")
 }
 
+//todo this needs to change if getting rid of suites
 const isBenchExpression = (statement: Node<ts.ExpressionStatement>) => {
     const firstCallIdentifier = statement
         .getFirstChildByKind(SyntaxKind.CallExpression)

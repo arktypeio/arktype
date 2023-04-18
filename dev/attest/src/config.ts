@@ -48,7 +48,6 @@ const getArgsToCheck = () => {
 }
 
 const getFilter = (argsToCheck: string[]) => {
-    console.log("a")
     const filter =
         checkArgsForParam(argsToCheck, "--filter") ||
         checkArgsForParam(argsToCheck, "-f")
