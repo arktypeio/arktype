@@ -14,7 +14,8 @@ export class MorphNode extends Node<typeof MorphNode> {
     static compile(transforms: Morph[], s: CompilationState) {
         return [
             {
-                condition: "false"
+                condition: "true",
+                problem: s.problem("custom", "valid")
             }
         ]
     }

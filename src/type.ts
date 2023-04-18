@@ -57,7 +57,12 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
 
     constructor(public definition: unknown, public scope: Scope) {
         const root = parseDefinition(definition, { path: new Path(), scope })
-        super("data", `return ${root.compileCondition(new CompilationState())}`)
+        super(
+            "data",
+            `const state = new ${registry().reference("state")}()
+        ${root.compileTraversal(new CompilationState())}
+        return state.finalize(data)`
+        )
         this.root = root
     }
 

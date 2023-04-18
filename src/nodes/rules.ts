@@ -51,7 +51,6 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
     }
 
     static compile(child: RulesChild, s: CompilationState) {
-        // TODO: check multiple for traverse
         const checks: CompiledValidator[] =
             child.value?.compile(s) ??
             child.instance?.compile(s) ??

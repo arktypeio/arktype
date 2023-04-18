@@ -26,11 +26,12 @@ export class InstanceNode<rule extends constructor = constructor> extends Node<
         // TODO: also for other builtins
         return [
             {
-                condition: `${s.data} instanceof ${
+                condition: `!(${s.data} instanceof ${
                     ancestor === Array
                         ? "Array"
                         : registry().register(ancestor.name, ancestor)
-                }`
+                })`,
+                problem: s.problem("instance", ancestor)
             }
         ]
     }

@@ -64,7 +64,12 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     static compile(branches: List<RulesNode>, s: CompilationState) {
         switch (branches.length) {
             case 0:
-                return [{ condition: "false" }]
+                return [
+                    {
+                        condition: "true",
+                        problem: s.problem("custom", "nothing")
+                    }
+                ]
             case 1:
                 return branches[0].compile(s)
             default:
@@ -73,7 +78,8 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
                         condition: branches
                             .map((branch) => branch.compileCondition(s))
                             .sort()
-                            .join(" || ")
+                            .join(" && "),
+                        problem: s.problem("custom", "valid (union)")
                     }
                 ]
         }

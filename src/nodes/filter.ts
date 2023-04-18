@@ -14,7 +14,8 @@ export class FilterNode extends Node<typeof FilterNode> {
     static compile(sources: Filter[], s: CompilationState) {
         return [
             {
-                condition: "false"
+                condition: "true",
+                problem: s.problem("custom", "valid")
             }
         ]
     }

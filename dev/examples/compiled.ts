@@ -13,7 +13,7 @@ const benchData = {
     deeplyNested: {
         foo: "bar",
         num: 1,
-        bool: false
+        bool: 56
     }
 }
 

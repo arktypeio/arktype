@@ -9,7 +9,8 @@ export class RegexNode extends Node<typeof RegexNode> {
 
     static compile(sources: string[], s: CompilationState) {
         return sources.sort().map((source) => ({
-            condition: `/${source}/.test(${s.data})`
+            condition: `!/${source}/.test(${s.data})`,
+            problem: s.problem("regex", source)
         }))
     }
 

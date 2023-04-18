@@ -7,7 +7,12 @@ export class DivisibilityNode extends Node<typeof DivisibilityNode> {
     }
 
     static compile(divisor: number, s: CompilationState) {
-        return [{ condition: `${s.data} % ${divisor} === 0` }]
+        return [
+            {
+                condition: `${s.data} % ${divisor} !== 0`,
+                problem: s.problem("divisor", divisor)
+            }
+        ]
     }
 
     intersect(other: DivisibilityNode) {

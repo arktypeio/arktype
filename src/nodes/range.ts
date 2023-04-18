@@ -86,7 +86,12 @@ export class RangeNode extends Node<typeof RangeNode> {
                 ? "items long"
                 : ""
         return comparators.sort().map((comparator) => ({
-            condition: `${size} ${invertedComparisonOperators[comparator]} ${rule[comparator]}`
+            condition: `${size} ${invertedComparisonOperators[comparator]} ${rule[comparator]}`,
+            problem: s.problem("range", {
+                comparator,
+                limit: rule[comparator]!,
+                units
+            })
         }))
     }
 

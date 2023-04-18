@@ -6,12 +6,14 @@ import { Path } from "../utils/paths.js"
 import type { DomainNode } from "./domain.js"
 import type { EqualityNode } from "./equality.js"
 import type { InstanceNode } from "./instance.js"
+import type { ProblemCode, ProblemRules } from "./problems.js"
 import type { RangeNode } from "./range.js"
 import type { RuleSet } from "./rules.js"
 import type { TypeNode } from "./type.js"
 
 export type CompiledValidator = {
     condition: string
+    problem: string
 }
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
@@ -30,18 +32,28 @@ export abstract class Node<
         // TODO: Cache
         super(
             "data",
-            `return ${Node.joinCondition(
+            `return ${Node.joinSubconditions(
                 subclass.compile(child, new CompilationState())
             )}`
         )
     }
 
-    static joinCondition(validators: CompiledValidator[]) {
-        return validators.map((validator) => validator.condition).join(" && ")
+    static joinSubconditions(validators: CompiledValidator[]) {
+        return validators.map((validator) => validator.condition).join(" || ")
+    }
+
+    compileTraversal(s: CompilationState) {
+        return this.compile(s)
+            .map(
+                (validator) => `if (${validator.condition}) {
+            ${validator.problem}
+        }`
+            )
+            .join("\n")
     }
 
     compileCondition(s: CompilationState) {
-        return Node.joinCondition(this.compile(s))
+        return Node.joinSubconditions(this.compile(s))
     }
 
     compile(s: CompilationState) {
@@ -164,19 +176,30 @@ let valid = ${checks[0]};\n`
     }
 
     get data() {
-        // TODO: remove from path
-        return this.path.toPropChain()
+        let result = "data"
+        for (const segment of this.path) {
+            if (typeof segment === "string") {
+                if (/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(segment)) {
+                    result += `.${segment}`
+                } else {
+                    result += `[${
+                        /^\$\{.*\}$/.test(segment)
+                            ? segment.slice(2, -1)
+                            : JSON.stringify(segment)
+                    }]`
+                }
+            } else {
+                result += `[${segment}]`
+            }
+        }
+        return result
     }
 
-    get problem() {
-        return "throw new Error()"
+    problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
+        return `state.reject("${code}", ${
+            typeof rule === "function" ? rule.name : JSON.stringify(rule)
+        }, ${this.data}, ${this.path.json})` as const
     }
-
-    // problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
-    //     return `state.reject("${code}", ${
-    //         typeof rule === "function" ? rule.name : JSON.stringify(rule)
-    //     }, ${this.data}, ${this.path.json})` as const
-    // }
 
     arrayOf(node: Node<any>) {
         // TODO: increment. does this work for logging?

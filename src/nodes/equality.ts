@@ -17,11 +17,12 @@ export class EqualityNode<value = unknown> extends Node<typeof EqualityNode> {
     static compile(value: unknown, s: CompilationState) {
         return [
             {
-                condition: `${s.data} === ${
+                condition: `${s.data} !== ${
                     hasDomain(value, "object") || typeof value === "symbol"
                         ? registry().register(typeof value, value)
                         : serializePrimitive(value as SerializablePrimitive)
-                }`
+                }`,
+                problem: s.problem("value", value)
             }
         ]
     }
