@@ -57,6 +57,8 @@ export type BoundContext<comparator extends Comparator = Comparator> = {
 export type BoundContextWithUnits = evaluate<BoundContext & { units: string }>
 
 export class RangeNode extends Node<typeof RangeNode> {
+    readonly kind = "range"
+
     constructor(public bounds: Bounds) {
         super(RangeNode, bounds)
     }

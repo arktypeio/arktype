@@ -6,6 +6,9 @@ import type { ComparisonState, CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 
 export class EqualityNode<value = unknown> extends Node<typeof EqualityNode> {
+    // TODO: align kind and node names
+    readonly kind = "value"
+
     constructor(public value: value) {
         super(EqualityNode, value)
     }

@@ -8,7 +8,7 @@ import type { EqualityNode } from "./equality.js"
 import type { InstanceNode } from "./instance.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import type { RangeNode } from "./range.js"
-import type { RuleSet } from "./rules.js"
+import type { RuleSet, RulesNode } from "./rules.js"
 import type { TypeNode } from "./type.js"
 
 type BaseAssertion = `data${string}` | `typeof data${string}`
@@ -30,6 +30,8 @@ export abstract class Node<
     subclass extends NodeSubclass<subclass> = NodeSubclass<any>,
     input = any
 > extends CompiledFunction<[data: input], boolean> {
+    abstract readonly kind: string
+
     key: CompiledAssertion
 
     constructor(
@@ -156,3 +158,31 @@ export class CompilationState {
     //         return result
     //     }
 }
+
+// export const compileTraversal = (root: TypeNode) => {
+//     const s = new CompilationState()
+//     let result = ""
+//     switch (root.branches.length) {
+//         case 0:
+//             return "throw new Error();"
+//         case 1:
+//             return
+//     }
+// }
+
+// const compileUnion = (branches: RulesNode[], s: CompilationState) => {
+//     s.unionDepth++
+//     const result = `state.pushUnion();
+//             ${branches
+//                 .map(
+//                     (branch) => `(() => {
+//                 ${branch.compile(s)}
+//                 })()`
+//                 )
+//                 .join(" && ")};
+//             state.popUnion(${branches.length}, ${s.data}, ${s.path.json});`
+//     s.unionDepth--
+//     return result
+// }
+
+// const compileRules = (rules: RulesChild, s: CompilationState) => {}

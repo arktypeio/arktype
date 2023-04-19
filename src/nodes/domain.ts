@@ -10,6 +10,8 @@ export type NonEnumerableDomain = Exclude<
 export class DomainNode<
     domain extends NonEnumerableDomain = NonEnumerableDomain
 > extends Node<typeof DomainNode> {
+    readonly kind = "domain"
+
     constructor(public domain: domain) {
         super(DomainNode, domain)
     }

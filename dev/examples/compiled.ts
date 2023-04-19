@@ -1,6 +1,7 @@
 // @ts-ignore
 import { format } from "prettier"
 import { Problems, type } from "../../src/main.js"
+import { CompilationState } from "../../src/nodes/node.js"
 import { Path } from "../../src/utils/paths.js"
 
 const benchData = {

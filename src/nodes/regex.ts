@@ -4,6 +4,7 @@ import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 
 export class RegexNode extends Node<typeof RegexNode> {
+    readonly kind = "regex"
     sources: string[]
 
     constructor(sources: string | string[]) {

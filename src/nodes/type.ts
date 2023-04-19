@@ -45,6 +45,8 @@ export type TypeNodeInput = List<RuleSet | RulesNode>
 export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     declare [as]: t
 
+    readonly kind = "type"
+
     constructor(public branches: RulesNode[]) {
         super(TypeNode, branches)
     }
@@ -74,28 +76,6 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
                     .join(" || ") as CompiledAssertion
         }
     }
-
-    // override compile(s: CompilationState) {
-    //     if (
-    //         this.branches.length === 0 ||
-    //         this.branches.length === 1 ||
-    //         s.kind === "check"
-    //     ) {
-    //         return super.compile(s)
-    //     }
-    //     s.unionDepth++
-    //     const result = `state.pushUnion();
-    //         ${this.branches
-    //             .map(
-    //                 (branch) => `(() => {
-    //             ${branch.compile(s)}
-    //             })()`
-    //             )
-    //             .join(" && ")};
-    //         state.popUnion(${this.branches.length}, ${s.data}, ${s.path.json});`
-    //     s.unionDepth--
-    //     return result
-    // }
 
     intersect(other: TypeNode, s: ComparisonState): TypeNode | Disjoint {
         if (this === other) {
@@ -138,7 +118,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
 
     get literalValue(): EqualityNode | undefined {
         return this.branches.length === 1
-            ? this.branches[0].rules.value
+            ? this.branches[0].getRule("value")
             : undefined
     }
 

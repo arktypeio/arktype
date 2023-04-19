@@ -7,6 +7,8 @@ import { Node } from "./node.js"
 export class InstanceNode<
     ancestor extends constructor = constructor
 > extends Node<typeof InstanceNode> {
+    readonly kind = "instance"
+
     constructor(public ancestor: ancestor) {
         super(InstanceNode, ancestor)
     }

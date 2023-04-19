@@ -11,6 +11,8 @@ import type { TypeNodeInput } from "./type.js"
 import { never, TypeNode } from "./type.js"
 
 export class PropsNode extends Node<typeof PropsNode> {
+    readonly kind = "props"
+
     readonly named: PropsChild["named"]
     readonly indexed: PropsChild["indexed"]
 
@@ -150,6 +152,8 @@ export type NamedPropChild = {
 }
 
 export class NamedPropNode extends Node<typeof NamedPropNode> {
+    readonly kind = "namedProp"
+
     constructor(public prop: NamedPropChild) {
         super(NamedPropNode, prop)
     }

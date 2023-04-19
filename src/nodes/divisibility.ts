@@ -2,6 +2,8 @@ import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 
 export class DivisibilityNode extends Node<typeof DivisibilityNode> {
+    readonly kind = "divisor"
+
     constructor(public divisor: number) {
         super(DivisibilityNode, divisor)
     }
