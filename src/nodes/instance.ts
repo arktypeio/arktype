@@ -9,20 +9,20 @@ import type {
 } from "./node.js"
 import { Node } from "./node.js"
 
-export class InstanceNode<rule extends constructor = constructor> extends Node<
-    typeof InstanceNode
-> {
-    constructor(rule: rule) {
-        super(InstanceNode, rule)
+export class InstanceNode<
+    ancestor extends constructor = constructor
+> extends Node<typeof InstanceNode> {
+    constructor(public ancestor: ancestor) {
+        super(InstanceNode, ancestor)
     }
 
     intersect(
         other: InstanceNode,
         s: ComparisonState
     ): InstanceNode | Disjoint {
-        return constructorExtends(this.child, other.child)
+        return constructorExtends(this.ancestor, other.ancestor)
             ? this
-            : constructorExtends(other.child, this.child)
+            : constructorExtends(other.ancestor, this.ancestor)
             ? other
             : s.addDisjoint("class", this, other)
     }

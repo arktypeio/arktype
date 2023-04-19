@@ -60,7 +60,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         super(
             "data",
             `const state = new ${registry().reference("state")}();
-        ${root.compile(new CompilationState("traversal"))}
+        ${root.key}
         return state.finalize(data);`
         )
         this.root = root

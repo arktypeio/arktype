@@ -10,12 +10,12 @@ export type NonEnumerableDomain = Exclude<
 export class DomainNode<
     domain extends NonEnumerableDomain = NonEnumerableDomain
 > extends Node<typeof DomainNode> {
-    constructor(domain: domain) {
+    constructor(public domain: domain) {
         super(DomainNode, domain)
     }
 
     intersect(other: DomainNode, s: ComparisonState) {
-        return this.child === other.child
+        return this.domain === other.domain
             ? this
             : s.addDisjoint("domain", this, other)
     }

@@ -18,7 +18,7 @@ export const parseBound = (
     start: ComparatorStartChar
 ) => {
     const comparator = shiftComparator(s, start)
-    const value = s.root.literalValue?.child
+    const value = s.root.literalValue?.value
     if (typeof value === "number") {
         s.ejectRoot()
         return s.reduceLeftBound(value, comparator)
@@ -104,7 +104,7 @@ export const parseRightBound = (
         return s.error(`${intersectionResult} is empty`)
     }
     delete s.branches.range
-    s.root.constrain({ range: intersectionResult.child })
+    s.root.constrain({ range: intersectionResult.bounds })
 }
 
 export type parseRightBound<

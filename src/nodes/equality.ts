@@ -10,7 +10,7 @@ import type {
 import { Node } from "./node.js"
 
 export class EqualityNode<value = unknown> extends Node<typeof EqualityNode> {
-    constructor(value: value) {
+    constructor(public value: value) {
         super(EqualityNode, value)
     }
 

@@ -72,8 +72,8 @@ const invertedComparisonOperators = {
 } as const satisfies Record<Comparator, string>
 
 export class RangeNode extends Node<typeof RangeNode> {
-    constructor(rule: Bounds) {
-        super(RangeNode, rule)
+    constructor(public bounds: Bounds) {
+        super(RangeNode, bounds)
     }
 
     // const units =
@@ -113,12 +113,12 @@ export class RangeNode extends Node<typeof RangeNode> {
                     ? this
                     : s.addDisjoint("range", this, other)
             }
-            return other(this.child["=="])
+            return other(this.bounds["=="])
                 ? this
                 : s.addDisjoint("range", this, other)
         }
         if (other.isEqualityRange()) {
-            return this(other.child["=="])
+            return this(other.bounds["=="])
                 ? other
                 : s.addDisjoint("range", this, other)
         }
@@ -166,28 +166,28 @@ export class RangeNode extends Node<typeof RangeNode> {
     }
 
     isEqualityRange(): this is { rule: { "==": number } } {
-        return this.child["=="] !== undefined
+        return this.bounds["=="] !== undefined
     }
 
     get lowerBound() {
-        return extractLower(this.child)
+        return extractLower(this.bounds)
     }
 
     get upperBound() {
-        return extractUpper(this.child)
+        return extractUpper(this.bounds)
     }
 
     #extractComparators(prefix: ">" | "<") {
-        return this.child[prefix] !== undefined
-            ? { [prefix]: this.child[">"] }
-            : this.child[`${prefix}=`] !== undefined
-            ? { [`${prefix}=`]: this.child[`${prefix}=`] }
+        return this.bounds[prefix] !== undefined
+            ? { [prefix]: this.bounds[">"] }
+            : this.bounds[`${prefix}=`] !== undefined
+            ? { [`${prefix}=`]: this.bounds[`${prefix}=`] }
             : {}
     }
 
     toString(): string {
         if (this.isEqualityRange()) {
-            return `the range of exactly ${this.child["=="]}`
+            return `the range of exactly ${this.bounds["=="]}`
         }
         const lower = this.lowerBound
         const upper = this.upperBound

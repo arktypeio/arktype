@@ -1,18 +1,18 @@
 import { throwInternalError } from "../utils/errors.js"
-import { intersectUniqueLists } from "./../utils/generics.js"
+import { intersectUniqueLists, listFrom } from "./../utils/generics.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 
 export class RegexNode extends Node<typeof RegexNode> {
+    sources: string[]
+
     constructor(sources: string | string[]) {
-        super(
-            RegexNode,
-            typeof sources === "string"
-                ? [sources]
-                : sources.length === 0
-                ? throwInternalError(`Unexpectedly received empty regex list`)
-                : sources
-        )
+        const sourceList = listFrom(sources)
+        if (sourceList.length === 0) {
+            throwInternalError(`Unexpectedly received empty regex list`)
+        }
+        super(RegexNode, sourceList)
+        this.sources = sourceList
     }
 
     static compile(sources: string[]) {
@@ -23,6 +23,6 @@ export class RegexNode extends Node<typeof RegexNode> {
     }
 
     intersect(other: RegexNode) {
-        return new RegexNode(intersectUniqueLists(this.child, other.child))
+        return new RegexNode(intersectUniqueLists(this.sources, other.sources))
     }
 }

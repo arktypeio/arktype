@@ -30,9 +30,9 @@ import { RegexNode } from "./regex.js"
 export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
     declare [as]: t
 
-    constructor(child: RulesChild) {
-        validateRuleKeys(child)
-        super(RulesNode, child)
+    constructor(public rules: RulesChild) {
+        validateRuleKeys(rules)
+        super(RulesNode, rules)
     }
 
     static from<const input extends RuleSet>(
@@ -50,24 +50,23 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
         return new RulesNode<inferRuleSet<input>>(child)
     }
 
-    static compile(child: RulesChild, s: CompilationState) {
-        const checks: CompiledAssertion[] =
-            child.value?.compileChildren(s) ??
-            child.instance?.compileChildren(s) ??
-            child.domain!.compileChildren(s)
-        if (child.divisor) {
-            checks.push(...child.divisor.compileChildren(s))
+    static compile(rules: RulesChild) {
+        const checks = [
+            rules.value?.key ?? rules.instance?.key ?? rules.domain!.key
+        ]
+        if (rules.divisor) {
+            checks.push(rules.divisor.key)
         }
-        if (child.range) {
-            checks.push(...child.range.compileChildren(s))
+        if (rules.range) {
+            checks.push(rules.range.key)
         }
-        if (child.regex) {
-            checks.push(...child.regex.compileChildren(s))
+        if (rules.regex) {
+            checks.push(rules.regex.key)
         }
-        if (child.props) {
-            checks.push(...child.props.compileChildren(s))
+        if (rules.props) {
+            checks.push(rules.props.key)
         }
-        return checks
+        return checks.join(" || ") as CompiledAssertion
     }
 
     intersect(other: RulesNode, s: ComparisonState) {
@@ -82,15 +81,15 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
         //     )
         // }
         let k: RuleKind
-        const result = { ...this.child }
-        for (k in other.child) {
-            if (hasKey(this.child, k)) {
-                result[k] = this.child[k].intersect(
-                    other.child[k] as never,
+        const result = { ...this.rules }
+        for (k in other.rules) {
+            if (hasKey(this.rules, k)) {
+                result[k] = this.rules[k].intersect(
+                    other.rules[k] as never,
                     s
                 ) as any
             } else {
-                result[k] = other.child as any
+                result[k] = other.rules as any
             }
         }
         return new RulesNode(result)
@@ -98,13 +97,13 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
 
     constrain(constraints: Constraints) {
         let k: RuleKind
-        const result = { ...this.child }
+        const result = { ...this.rules }
         for (k in constraints) {
             const constraintNode = new (ruleKinds[k] as constructor<any>)(
                 constraints[k]
             )
-            if (hasKey(this.child, k)) {
-                result[k] = this.child[k].intersect(
+            if (hasKey(this.rules, k)) {
+                result[k] = this.rules[k].intersect(
                     constraintNode,
                     new ComparisonState()
                 ) as any
@@ -201,7 +200,7 @@ const validateRuleKeys = (rules: RulesChild) => {
             )})`
         )
     }
-    switch (rules.domain.child) {
+    switch (rules.domain.domain) {
         case "object":
             const isArray = rules.instance instanceof Array
             const allowedKeys = isArray ? arrayRuleKeys : nonArrayObjectRuleKeys
@@ -228,7 +227,7 @@ const validateRuleKeys = (rules: RulesChild) => {
             )
         default:
             return throwParseError(
-                `Constraints input domain must be either object, string, number, bigint or symbol (was ${rules.domain.child})`
+                `Constraints input domain must be either object, string, number, bigint or symbol (was ${rules.domain.domain})`
             )
     }
 }

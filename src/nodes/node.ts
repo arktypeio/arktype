@@ -30,36 +30,16 @@ export abstract class Node<
     subclass extends NodeSubclass<subclass> = NodeSubclass<any>,
     input = any
 > extends CompiledFunction<[data: input], boolean> {
+    key: CompiledAssertion
+
     constructor(
         protected subclass: subclass,
-        public child: Parameters<subclass["compile"]>[0]
+        child: Parameters<subclass["compile"]>[0]
     ) {
         // TODO: Cache
-        super(
-            "data",
-            `return ${Node.joinSubconditions(subclass.compile(child))}`
-        )
-    }
-
-    static joinSubconditions(validators: CompiledAssertion[]) {
-        return validators.map((validator) => validator.condition).join(" || ")
-    }
-
-    compile(s: CompilationState) {
-        const children = this.subclass.compile(this.child, s)
-        return s.kind === "check"
-            ? Node.joinSubconditions(children)
-            : children
-                  .map(
-                      (validator) => `if (${validator.condition}) {
-        ${validator.problem}
-    }`
-                  )
-                  .join("\n")
-    }
-
-    compileChildren(s: CompilationState) {
-        return this.subclass.compile(this.child, s)
+        const key = subclass.compile(child)
+        super("data", `return ${key}`)
+        this.key = key
     }
 
     abstract intersect(

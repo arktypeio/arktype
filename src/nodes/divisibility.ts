@@ -1,19 +1,18 @@
 import { CompiledAssertion, Node } from "./node.js"
 
 export class DivisibilityNode extends Node<typeof DivisibilityNode> {
-    constructor(divisor: number) {
+    constructor(public divisor: number) {
         super(DivisibilityNode, divisor)
     }
 
     static compile(divisor: number): CompiledAssertion {
-        //  s.problem("divisor", divisor)
         return `data % ${divisor} !== 0`
     }
 
     intersect(other: DivisibilityNode) {
         const leastCommonMultiple = Math.abs(
-            (this.child * other.child) /
-                greatestCommonDivisor(this.child, other.child)
+            (this.divisor * other.divisor) /
+                greatestCommonDivisor(this.divisor, other.divisor)
         )
         return new DivisibilityNode(leastCommonMultiple)
     }

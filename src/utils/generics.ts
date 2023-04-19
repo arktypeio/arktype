@@ -276,9 +276,9 @@ export type HomogenousTuple<
     : HomogenousTuple<item, length, [...result, item]>
 
 export const listFrom = <t>(data: t) =>
-    (Array.isArray(data) ? data : [data]) as t extends List ? t : readonly t[]
+    (Array.isArray(data) ? data : [data]) as t extends List ? t : t[]
 
-export type CollapsibleList<t> = t | readonly t[]
+export type CollapsibleList<t> = t | t[]
 
 /** Either:
  * A, with all properties of B undefined

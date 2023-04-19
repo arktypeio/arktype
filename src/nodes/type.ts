@@ -45,8 +45,8 @@ export type TypeNodeInput = List<RuleSet | RulesNode>
 export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     declare [as]: t
 
-    constructor(child: RulesNode[]) {
-        super(TypeNode, child)
+    constructor(public branches: RulesNode[]) {
+        super(TypeNode, branches)
     }
 
     static from<branches extends TypeNodeInput>(
@@ -61,66 +61,70 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         )
     }
 
-    static compile(branches: List<RulesNode>, s: CompilationState) {
-        switch (branches.length) {
-            case 0:
-                return [
-                    {
-                        condition: "true",
-                        problem: s.problem("custom", "nothing")
-                    }
-                ]
-            case 1:
-                return branches[0].compileChildren(s)
-            default:
-                return [
-                    {
-                        condition: branches
-                            .map((branch) =>
-                                branch
-                                    .compileChildren(s)
-                                    .map((rules) => rules.condition)
-                                    .join(" || ")
-                            )
-                            .sort()
-                            .join(" && "),
-                        problem: s.problem("custom", "valid (union)")
-                    }
-                ]
-        }
-    }
+    // static compile(branches: List<RulesNode>, s: CompilationState) {
+    //     switch (branches.length) {
+    //         case 0:
+    //             return [
+    //                 {
+    //                     condition: "true",
+    //                     problem: s.problem("custom", "nothing")
+    //                 }
+    //             ]
+    //         case 1:
+    //             return branches[0].compileChildren(s)
+    //         default:
+    //             return [
+    //                 {
+    //                     condition: branches
+    //                         .map((branch) =>
+    //                             branch
+    //                                 .compileChildren(s)
+    //                                 .map((rules) => rules.condition)
+    //                                 .join(" || ")
+    //                         )
+    //                         .sort()
+    //                         .join(" && "),
+    //                     problem: s.problem("custom", "valid (union)")
+    //                 }
+    //             ]
+    //     }
+    // }
 
-    override compile(s: CompilationState) {
-        if (
-            this.child.length === 0 ||
-            this.child.length === 1 ||
-            s.kind === "check"
-        ) {
-            return super.compile(s)
-        }
-        s.unionDepth++
-        const result = `state.pushUnion();
-            ${this.child
-                .map(
-                    (branch) => `(() => {
-                ${branch.compile(s)}
-                })()`
-                )
-                .join(" && ")};
-            state.popUnion(${this.child.length}, ${s.data}, ${s.path.json});`
-        s.unionDepth--
-        return result
-    }
+    // override compile(s: CompilationState) {
+    //     if (
+    //         this.branches.length === 0 ||
+    //         this.branches.length === 1 ||
+    //         s.kind === "check"
+    //     ) {
+    //         return super.compile(s)
+    //     }
+    //     s.unionDepth++
+    //     const result = `state.pushUnion();
+    //         ${this.branches
+    //             .map(
+    //                 (branch) => `(() => {
+    //             ${branch.compile(s)}
+    //             })()`
+    //             )
+    //             .join(" && ")};
+    //         state.popUnion(${this.branches.length}, ${s.data}, ${s.path.json});`
+    //     s.unionDepth--
+    //     return result
+    // }
 
     intersect(other: TypeNode, s: ComparisonState): TypeNode | Disjoint {
         if (this === other) {
             return this
         }
-        if (this.child.length === 1 && other.child.length === 1) {
-            const result = this.child[0].intersect(other.child[0], s)
+        if (this.branches.length === 1 && other.branches.length === 1) {
+            const result = this.branches[0].intersect(other.branches[0], s)
             return result instanceof Disjoint ? result : new TypeNode([result])
         }
-        const branches = branchwiseIntersection(this.child, other.child, s)
+        const branches = branchwiseIntersection(
+            this.branches,
+            other.branches,
+            s
+        )
         return branches.length
             ? new TypeNode(branches)
             : s.addDisjoint("union", this, other)
@@ -129,7 +133,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     constrain(constraints: Constraints) {
         // TODO: diverge from intersect? What about morphs?
         return new TypeNode(
-            this.child.map((branch) => branch.constrain(constraints))
+            this.branches.map((branch) => branch.constrain(constraints))
         )
     }
 
@@ -144,11 +148,13 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         if (this === other) {
             return this
         }
-        return new TypeNode([...this.child, ...other.child])
+        return new TypeNode([...this.branches, ...other.branches])
     }
 
     get literalValue(): EqualityNode | undefined {
-        return this.child.length === 1 ? this.child[0].child.value : undefined
+        return this.branches.length === 1
+            ? this.branches[0].branches.value
+            : undefined
     }
 
     keyOf() {

@@ -4,6 +4,7 @@ import {
     listFrom,
     type mutable
 } from "../utils/generics.js"
+import { toPropChain } from "../utils/paths.js"
 import type {
     ComparisonState,
     CompilationState,
@@ -17,10 +18,10 @@ export class PropsNode extends Node<typeof PropsNode> {
     readonly named: PropsChild["named"]
     readonly indexed: PropsChild["indexed"]
 
-    constructor(child: PropsChild) {
-        super(PropsNode, child)
-        this.named = child.named
-        this.indexed = child.indexed
+    constructor(props: PropsChild) {
+        super(PropsNode, props)
+        this.named = props.named
+        this.indexed = props.indexed
     }
 
     static from(input: PropsInput) {
@@ -49,16 +50,14 @@ export class PropsNode extends Node<typeof PropsNode> {
         return new PropsNode(child)
     }
 
-    static compile({ named }: PropsChild, s: CompilationState) {
-        const checks: CompiledAssertion[] = []
-        const names = Object.keys(named).sort()
+    static compile(props: PropsChild) {
+        const checks: string[] = []
+        const names = Object.keys(props.named).sort()
         for (const k of names) {
-            s.path.push(k)
-            // TODO: precedence
-            checks.push(...named[k].compileChildren(s))
-            s.path.pop()
+            checks.push(props.named[k].key.replace("data", toPropChain([k])))
         }
-        return checks
+        // TODO: empty?
+        return checks.join(" || ") as CompiledAssertion
     }
 
     intersect(other: PropsNode, s: ComparisonState) {
@@ -154,8 +153,8 @@ export type NamedPropChild = {
 }
 
 export class NamedPropNode extends Node<typeof NamedPropNode> {
-    constructor(child: NamedPropChild) {
-        super(NamedPropNode, child)
+    constructor(public prop: NamedPropChild) {
+        super(NamedPropNode, prop)
     }
 
     static from(input: NamedPropInput) {
@@ -169,8 +168,9 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
         return new NamedPropNode(child)
     }
 
-    static compile(child: NamedPropChild, s: CompilationState) {
-        return child.value.compileChildren(s)
+    static compile(child: NamedPropChild) {
+        // TODO: nested?
+        return child.value.key
     }
 
     intersect(
@@ -178,14 +178,14 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
         s: ComparisonState
     ): NamedPropNode | Disjoint {
         const kind =
-            this.child.kind === "prerequisite" ||
-            other.child.kind === "prerequisite"
+            this.prop.kind === "prerequisite" ||
+            other.prop.kind === "prerequisite"
                 ? "prerequisite"
-                : this.child.kind === "required" ||
-                  other.child.kind === "required"
+                : this.prop.kind === "required" ||
+                  other.prop.kind === "required"
                 ? "required"
                 : "optional"
-        const result = this.child.value.intersect(other.child.value, s)
+        const result = this.prop.value.intersect(other.prop.value, s)
         return result instanceof Disjoint
             ? kind === "optional"
                 ? new NamedPropNode({

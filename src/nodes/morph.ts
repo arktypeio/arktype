@@ -1,21 +1,24 @@
 import type { Morph } from "../parse/ast/morph.js"
-import { intersectUniqueLists } from "../utils/generics.js"
+import { intersectUniqueLists, listFrom } from "../utils/generics.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 
 export class MorphNode extends Node<typeof MorphNode> {
-    constructor(transforms: Morph | Morph[]) {
-        super(
-            MorphNode,
-            typeof transforms === "function" ? [transforms] : transforms
-        )
+    transformations: readonly Morph[]
+
+    constructor(transformations: Morph | Morph[]) {
+        const transformationList = listFrom(transformations)
+        super(MorphNode, transformationList)
+        this.transformations = transformationList
     }
 
-    static compile(transforms: Morph[]): CompiledAssertion {
+    static compile(transforms: readonly Morph[]): CompiledAssertion {
         return `data !== data`
     }
 
     intersect(other: MorphNode) {
-        return new MorphNode(intersectUniqueLists(this.child, other.child))
+        return new MorphNode(
+            intersectUniqueLists(this.transformations, other.transformations)
+        )
     }
 }
