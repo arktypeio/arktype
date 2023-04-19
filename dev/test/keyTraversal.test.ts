@@ -41,6 +41,22 @@ describe("key traversal", () => {
         attest(t({ a: "ok" }).data).equals({ a: "ok" })
         attest(t(getExtraneousB()).data).snap({ a: "ok" })
     })
+    it("distilled array", () => {
+        const o = type(
+            { a: "email[]" },
+            {
+                keys: "distilled"
+            }
+        )
+        attest(o({ a: ["shawn@arktype.io"] }).data).snap({
+            a: ["shawn@arktype.io"]
+        })
+        attest(o({ a: ["notAnEmail"] }).problems?.summary).snap(
+            "a/0 must be a valid email (was 'notAnEmail')"
+        )
+        // can handle missing keys
+        attest(o({ b: ["shawn"] }).problems?.summary).snap("a must be defined")
+    })
     it("distilled union", () => {
         const o = type([{ a: "string" }, "|", { b: "boolean" }], {
             keys: "distilled"
@@ -78,5 +94,20 @@ describe("key traversal", () => {
         // ])
         attest(t({ a: "ok" }).data).equals({ a: "ok" })
         attest(t(getExtraneousB()).problems?.summary).snap("b must be removed")
+    })
+    it("strict array", () => {
+        const o = type(
+            { a: "string[]" },
+            {
+                keys: "strict"
+            }
+        )
+        attest(o({ a: ["shawn"] }).data).snap({ a: ["shawn"] })
+        attest(o({ a: [2] }).problems?.summary).snap(
+            "a/0 must be a string (was number)"
+        )
+        attest(o({ b: ["shawn"] }).problems?.summary).snap(
+            "b must be removed\na must be defined"
+        )
     })
 })

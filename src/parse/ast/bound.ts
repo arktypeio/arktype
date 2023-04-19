@@ -2,6 +2,7 @@ import type { Comparator } from "../../nodes/range.js"
 import type { SizedData } from "../../utils/data.js"
 import type { error, isAny } from "../../utils/generics.js"
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
+import type { Scanner } from "../string/shift/scanner.js"
 import type { inferAst, validateAst } from "./ast.js"
 import type { astToString } from "./utils.js"
 
@@ -21,11 +22,19 @@ import type { astToString } from "./utils.js"
  */
 export type validateBound<l, r, $> = l extends NumberLiteral
     ? validateAst<r, $>
-    : l extends [unknown, Comparator, unknown]
-    ? error<"An expression may have at most one right bound.">
+    : l extends [infer leftAst, Comparator, unknown]
+    ? error<writeDoubleRightBoundMessage<astToString<leftAst>>>
     : isBoundable<inferAst<l, $>> extends true
     ? validateAst<l, $>
     : error<writeUnboundableMessage<astToString<l>>>
+
+export const writeDoubleRightBoundMessage = <root extends string>(
+    root: root
+): writeDoubleRightBoundMessage<root> =>
+    `Expression ${root} must have at most one right bound`
+
+type writeDoubleRightBoundMessage<root extends string> =
+    `Expression ${root} must have at most one right bound`
 
 type isBoundable<data> = isAny<data> extends true
     ? false
