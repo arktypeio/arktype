@@ -5,7 +5,7 @@ import type { TypeNode } from "../../src/nodes/node.js"
 import { writeImplicitNeverMessage } from "../../src/parse/ast/intersection.js"
 import { Path } from "../../src/utils/paths.js"
 import { stringify } from "../../src/utils/serialize.js"
-import { attest } from "arktype-attest"
+import { attest } from "../attest/main.js"
 
 describe("keyof", () => {
     it("object literal", () => {

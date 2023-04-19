@@ -6,7 +6,7 @@ import {
     writeExpressionExpectedMessage,
     writeUnresolvableMessage
 } from "../../src/parse/string/shift/operand/unenclosed.js"
-import { attest } from "arktype-attest"
+import { attest } from "../attest/main.js"
 
 describe("string", () => {
     it("errors on empty string", () => {

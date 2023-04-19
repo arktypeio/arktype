@@ -1,31 +1,88 @@
 #!/usr/bin/env node
+import { readFileSync } from "node:fs"
 import { version } from "node:os"
 import { basename } from "node:path"
 import { versions } from "node:process"
+import { Command } from "commander"
 import { cacheAssertions, cleanupAssertions } from "./main.js"
 import { fromCwd, shell, walkPaths } from "./runtime/main.js"
 
-const args: string[] = globalThis.process.argv
+const attest = new Command()
+const packageVersion = "0.0.0"
+const description = "ArkType Testing"
 
-let attestArgIndex = args.findIndex((arg) => /.*cli\.c?(j|t)s$/.test(arg))
-attestArgIndex = attestArgIndex === -1 ? 0 : attestArgIndex
-if (attestArgIndex === -1) {
-    attestArgIndex = 0
+attest
+    .version(packageVersion)
+    .description(description)
+    .option("-r, --runner  <value>", "Run using a specified test runner")
+    .option("-s, --skipTypes", "Skip type assertions")
+    .option(
+        "-f, --files <value>",
+        "Specify the location of the tests you would like to run (maybe)."
+    )
+    .option("-h, --help, View details about the cli")
+    .option("-b, --bench, Runs benchmarks found in *.bench.ts files")
+    .option(
+        "-p --benchmarksPath <path>, defines where to save json bench results"
+    )
+    .option("--filter <filter>, runs benches based on a filter")
+    .parse(process.argv)
+
+const options = attest.opts()
+const processArgs = process.argv
+const passedArgs = processArgs.slice(2)
+
+if (!passedArgs.length || options.help) {
+    attest.outputHelp()
+    process.exit(0)
 }
-if (args[attestArgIndex + 1] === "bench") {
-    const now = Date.now()
-    console.log("started search")
+
+if (options.bench) {
     const benchFilePaths = walkPaths(fromCwd(), {
         include: (path) => basename(path).includes(".bench.")
     })
-    console.log(`finished search ${Date.now() - now}`)
-
     let threwDuringBench
-    for (const path of benchFilePaths) {
+    let filteredPaths = benchFilePaths
+
+    if (options.filter) {
+        const filterParam = options.filter
+        const isPath = filterParam.startsWith("/")
+        filteredPaths = filteredPaths.filter((path) => {
+            console.log(`checking ${path}`)
+            if (isPath) {
+                if (new RegExp(filterParam).test(path)) {
+                    const filterIndex = passedArgs.findIndex((arg) =>
+                        arg.includes("--filter")
+                    )
+                    passedArgs.splice(filterIndex, 2)
+                    return true
+                }
+                return false
+            } else {
+                const contents = readFileSync(path, "utf-8")
+                const matcher = new RegExp(`bench\\("${filterParam}`)
+                // eslint-disable-next-line no-useless-escape
+                return matcher.test(contents)
+            }
+        })
+        if (filteredPaths.length === 0) {
+            throw new Error(
+                `Couldn't find any ${
+                    isPath ? "files" : "test names"
+                } matching ${filterParam}`
+            )
+        }
+    }
+    const writesToFile = options.benchmarksPath
+        ? `--benchmarksPath ${options.benchmarksPath}`
+        : ""
+    for (const path of filteredPaths) {
         try {
-            shell(`npx ts-node ${path}`, {
+            const command = `npx ts-node ${path} ${writesToFile}`
+            console.log("\n" + path.split("/").slice(-1))
+            shell(command, {
                 env: {
-                    ARKTYPE_CHECK_CMD: args.slice(attestArgIndex + 1).join(" ")
+                    ARKTYPE_CHECK_CMD: `${passedArgs.join(" ")}`
                 }
             })
         } catch {
@@ -36,20 +93,13 @@ if (args[attestArgIndex + 1] === "bench") {
         throw new Error()
     }
 } else {
-    const attestArgs = [...args, "--precache"]
-
-    const skipTypes = attestArgs.includes("--skipTypes")
-
-    const cmdFlagIndex = process.argv.indexOf("--cmd")
-    if (cmdFlagIndex === -1 || cmdFlagIndex === process.argv.length - 1) {
+    if (!options.runner) {
         throw new Error(
-            `Must provide a runner command, e.g. 'attest --cmd mocha'`
+            `Must provide a runner command, e.g. 'attest --runner mocha'`
         )
     }
-    const testCmd = process.argv.slice(cmdFlagIndex + 1).join(" ")
     let prefix = ""
-
-    if (testCmd === "node") {
+    if (options.runner === "node") {
         const nodeMajorVersion = Number.parseInt(versions.node.split(".")[0])
         if (nodeMajorVersion < 18) {
             throw new Error(
@@ -58,13 +108,14 @@ if (args[attestArgIndex + 1] === "bench") {
         }
         prefix += `node --loader ts-node/esm --test `
     } else {
-        prefix += `npx ${testCmd} `
+        prefix += `npx ${options.runner} ${
+            options.files ? `${options.files}` : ""
+        }`
     }
     let processError: unknown
-    const isBuildTest = args[attestArgIndex].includes("dist")
 
     try {
-        if (skipTypes) {
+        if (options.skipTypes) {
             console.log(
                 "✅ Skipping type assertions because --skipTypes was passed."
             )
@@ -79,13 +130,14 @@ if (args[attestArgIndex + 1] === "bench") {
         }
 
         const runnerStart = Date.now()
-        shell(`${prefix} ${isBuildTest ? "**/test/*.test.js" : ""}`, {
+        console.log(prefix)
+        shell(prefix, {
             stdio: "inherit",
-            env: { ARKTYPE_CHECK_CMD: attestArgs.join(" ") }
+            env: { ARKTYPE_CHECK_CMD: processArgs.join(" ") }
         })
         const runnerSeconds = (Date.now() - runnerStart) / 1000
         console.log(
-            `✅ attest: npx mocha completed in ${runnerSeconds} seconds.\n`
+            `✅ attest: npx ${options.runner} completed in ${runnerSeconds} seconds.\n`
         )
     } catch (error) {
         processError = error

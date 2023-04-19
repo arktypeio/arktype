@@ -1,8 +1,8 @@
-import { attest } from "arktype-attest"
 import { describe, it } from "mocha"
 import type { Type } from "../../src/main.js"
 import { type } from "../../src/main.js"
 import type { assertEqual } from "../../src/utils/generics.js"
+import { attest } from "../attest/main.js"
 
 describe("narrow", () => {
     it("implicit problem", () => {

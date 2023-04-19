@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
 import type { TraversalNode } from "../../src/nodes/node.js"
-import { attest } from "arktype-attest"
+import { attest } from "../attest/main.js"
 
 describe("snippets", () => {
     it("demo", async () => {

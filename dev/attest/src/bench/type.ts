@@ -88,12 +88,15 @@ const getInstantiationsContributedByNode = (
     benchCall: Node<ts.CallExpression>
 ) => {
     const originalFile = benchCall.getSourceFile()
-    const fakePath = originalFile.getFilePath() + ".nonexistent.ts"
+    const originalPath = originalFile.getFilePath()
+    const fakePath = originalPath + ".nonexistent.ts"
     const benchExpression = benchCall.getFirstAncestorByKindOrThrow(
         SyntaxKind.ExpressionStatement
     )
     const originalBenchExpressionText = benchExpression.getText()
     if (!cache[fakePath]) {
+        console.log(`⏳ attest: Analyzing type assertions...`)
+        const cacheStart = Date.now()
         const instantiationsWithNode = getInstantiationsWithFile(
             transformBenchSource(
                 originalFile,
@@ -104,6 +107,7 @@ const getInstantiationsContributedByNode = (
             fakePath
         )
         cache[fakePath] = instantiationsWithNode
+        console.log(`⏳ Cached type assertions \n`)
     }
 
     const instantiationsWithoutNode = getInstantiationsWithFile(

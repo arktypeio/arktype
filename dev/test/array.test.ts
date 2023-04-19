@@ -1,8 +1,8 @@
-import { attest } from "arktype-attest"
 import { describe, it } from "mocha"
 import { arrayOf, type } from "../../src/main.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { incompleteArrayTokenMessage } from "../../src/parse/string/shift/operator/operator.js"
+import { attest } from "../attest/main.js"
 
 describe("parse array", () => {
     it("parse", () => {

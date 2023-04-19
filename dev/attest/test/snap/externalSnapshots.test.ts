@@ -7,7 +7,7 @@ import {
     readJson,
     writeJson
 } from "../../../attest/src/runtime/main.js"
-import { attest } from "../../main.js"
+import { attest } from "../../src/main.js"
 const testDir = dirName()
 const testFile = "externalSnapshots.test.ts"
 const o = { re: "do" }

@@ -10,11 +10,9 @@
     "type": "module",
     "devDependencies": {
         "arktype": "1.0.10-alpha",
-        "c8": "7.13.0",
         "get-current-line": "6.6.0",
         "mocha": "10.2.0",
         "ts-morph": "18.0.0",
-        "ts-node": "10.9.1",
         "typescript": "5.0.3",
         "@types/node": "18.15.11",
         "commander": "10.0.0"
@@ -41,15 +39,13 @@
     "main": "./dist/cjs/main.js",
     "types": "./dist/types/main.d.ts",
     "bin": {
-        "abc": "./dist/cjs/2cli.js"
+        "attest": "./dist/cjs/cli.js"
     },
     "keywords": [
         "typescript"
     ],
     "scripts": {
         "build": "ts-node ../scripts/build.ts",
-        "lint": "eslint . --ext .ts --config .eslintrc",
-        "test": "mocha --forbid-only \"test/**/*.test.ts\"",
-        "version": "oclif readme && git add README.md"
+        "test": "ts-node ./src/cli.ts --runner mocha -f ./test/**/*.test.ts"
     }
 }

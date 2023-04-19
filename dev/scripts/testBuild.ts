@@ -2,7 +2,7 @@ import { shell } from "../attest/src/runtime/shell.js"
 import { repoDirs } from "./common.js"
 
 export const testBuild = (outDir: string) => {
-    shell(`node ./dev/attest/cli.js --skipTypes --cmd mocha`, {
+    shell(`node ./dev/attest/src/cli.js --skipTypes --cmd mocha`, {
         cwd: outDir
     })
 }

@@ -1,4 +1,4 @@
-import { bench } from "../main.js"
+import { bench } from "../src/main.js"
 
 const fakeCallOptions = {
     until: { count: 2 },

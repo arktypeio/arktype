@@ -20,7 +20,7 @@
             ]
         }
     },
-    "include": ["src"],
+    "include": ["src", "test"],
     "ts-node": {
         "esm": true,
         "swc": true,

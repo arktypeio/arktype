@@ -38,9 +38,10 @@
         "buildSite": "cd dev/arktype.io && pnpm install && pnpm build",
         "buildAttest": "cd dev/attest && pnpm i && pnpm build",
         "docgen": "ts-node ./dev/scripts/docgen.ts",
-        "test": "ts-node ./dev/attest/src/cli.ts --coverage --runner mocha",
-        "tnt": "ts-node ./dev/attest/src/cli.ts --coverage --skipTypes --runner mocha",
-        "testRepo": " pnpm testBuild && pnpm testTsVersions && pnpm testAttest",
+        "test": "pnpm c8Config ts-node ./dev/attest/src/cli.ts --runner mocha",
+        "tnt": "pnpm c8Config ts-node ./dev/attest/src/cli.ts --skipTypes --runner mocha",
+        "c8Config": "node --require ./dev/configs/patchC8.cjs ./dev/node_modules/c8/bin/c8.js",
+        "testRepo": "pnpm testBuild && pnpm testTsVersions && pnpm testAttest",
         "testBuild": "ts-node ./dev/scripts/testBuild.ts",
         "testAttest": "ts-node ./dev/scripts/testAttest.ts",
         "testTsVersions": "ts-node ./dev/scripts/testTsVersions.ts",
@@ -82,7 +83,7 @@
     },
     "c8": {
         "checkCoverage": true,
-        "lines": 90,
+        "lines": 96,
         "src": "./src",
         "exclude": [
             "test/**",

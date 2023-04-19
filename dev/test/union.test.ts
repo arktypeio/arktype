@@ -4,7 +4,7 @@ import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
 } from "../../src/parse/string/shift/operand/unenclosed.js"
-import { attest } from "arktype-attest"
+import { attest } from "../attest/main.js"
 
 describe("union/parse", () => {
     it("binary", () => {

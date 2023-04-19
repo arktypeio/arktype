@@ -6,10 +6,7 @@ import { assertEquals } from "../assertions.js"
 import type { AssertionContext } from "../attest.js"
 import { caller } from "../runtime/main.js"
 import type { SnapshotArgs } from "../snapshot.js"
-import {
-    getSnapshotByName,
-    queueInlineSnapshotWriteOnProcessExit
-} from "../snapshot.js"
+import { getSnapshotByName } from "../snapshot.js"
 import { getTypeDataAtPos } from "../type/getAssertionAtPos.js"
 import {
     updateExternalSnapshot,

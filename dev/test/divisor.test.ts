@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
 import { type } from "../../src/main.js"
 import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
-import { attest } from "arktype-attest"
+import { attest } from "../attest/main.js"
 
 describe("divisibility", () => {
     describe("parse", () => {

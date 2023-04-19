@@ -1,10 +1,10 @@
-import { attest } from "arktype-attest"
 import { describe, it } from "mocha"
 import { type } from "../../src/main.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
 } from "../../src/parse/string/shift/operand/unenclosed.js"
+import { attest } from "../attest/main.js"
 
 describe("tuple expression", () => {
     it("union", () => {
