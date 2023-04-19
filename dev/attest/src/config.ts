@@ -6,7 +6,6 @@ import { getCmdFromPid } from "./utils.js"
 import type { BenchFormat } from "./writeSnapshot.js"
 
 export type AttestConfig = {
-    precached: boolean
     preserveCache: boolean
     tsconfig: string | undefined
     updateSnapshots: boolean
@@ -79,10 +78,7 @@ export const getAttestConfig = (): AttestConfig => {
     const noWrite = argsToCheck.some(
         (arg) => arg === "-n" || arg === "--no-write"
     )
-    //TODO remove dev/arktype.io
-    const typeSources = getSourceFileEntries().filter(
-        ([path]) => !path.startsWith("dev/arktype.io")
-    )
+    const typeSources = getSourceFileEntries()
     cachedConfig = {
         updateSnapshots: argsToCheck.some(
             (arg) => arg === "-u" || arg === "--update"
@@ -99,7 +95,6 @@ export const getAttestConfig = (): AttestConfig => {
                 join(process.cwd(), "benchmarks.json")
         },
         tsconfig,
-        precached: argsToCheck.includes("--precache"),
         preserveCache: true,
         cacheDir,
         snapCacheDir,

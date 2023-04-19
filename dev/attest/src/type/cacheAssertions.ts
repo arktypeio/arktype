@@ -10,7 +10,7 @@ export type SetupCacheOptions = {
 
 export const cacheAssertions = ({ forcePrecache }: SetupCacheOptions = {}) => {
     const config = getAttestConfig()
-    if (!config.precached && !forcePrecache) {
+    if (!forcePrecache) {
         throw new Error(
             `You must set 'precached' to true in the 'assert' section ` +
                 ` of your re.json config to enable precaching.`

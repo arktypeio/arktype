@@ -23,16 +23,15 @@ attest
     .option("-h, --help, View details about the cli")
     .option("-b, --bench, Runs benchmarks found in *.bench.ts files")
     .option(
-        "-p --benchmarksPath <path>, defines where to save bench results (json)"
+        "-p --benchmarksPath <path>, defines where to save json bench results"
     )
-    .option(
-        "--filter <filter>, runs benches based on a filter (/options.bench.ts || nameOfBench?)"
-    )
+    .option("--filter <filter>, runs benches based on a filter")
+    .option("--coverage, uses c8 to gather test coverage")
     .parse(process.argv)
 
 const options = attest.opts()
 const processArgs = process.argv
-let passedArgs = processArgs.slice(2)
+const passedArgs = processArgs.slice(2)
 
 if (!passedArgs.length || options.help) {
     attest.outputHelp()
@@ -42,9 +41,6 @@ if (options.bench) {
     const benchFilePaths = walkPaths(fromCwd(), {
         include: (path) => basename(path).includes(".bench.")
     })
-    /**
-     *
-     */
     let threwDuringBench
     let filteredPaths = benchFilePaths
 
@@ -77,17 +73,12 @@ if (options.bench) {
             )
         }
     }
-    //TODO we don't want do automatically write to a file, rather let people pass in that as an option if they want it
-    // and maybe add a config to let people specify
-    console.log(
-        `found ${filteredPaths.length} paths matching .bench file format`
-    )
-    //if filter is passed in we don't wanna run all the files
     for (const path of filteredPaths) {
         try {
             const command = `npx ts-node ${path} --benchmarksPath ${fromCwd(
                 "benchmarks.json"
             )}`
+            console.log(command)
             shell(command, {
                 env: {
                     ARKTYPE_CHECK_CMD: `${passedArgs.join(" ")}`
@@ -139,7 +130,7 @@ if (options.bench) {
         const runnerStart = Date.now()
         shell(`${prefix}`, {
             stdio: "inherit",
-            env: { ARKTYPE_CHECK_CMD: `${processArgs.join(" ")} --precache` }
+            env: { ARKTYPE_CHECK_CMD: processArgs.join(" ") }
         })
         const runnerSeconds = (Date.now() - runnerStart) / 1000
         console.log(

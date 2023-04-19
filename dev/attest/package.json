@@ -9,19 +9,15 @@
     "description": "Amazing tool from Arktype",
     "type": "module",
     "devDependencies": {
-        "@oclif/core": "2.8.0",
         "arktype": "1.0.10-alpha",
         "c8": "7.13.0",
         "get-current-line": "6.6.0",
         "mocha": "10.2.0",
-        "oclif": "3.7.3",
-        "shx": "^0.3.3",
         "ts-morph": "18.0.0",
         "ts-node": "10.9.1",
         "typescript": "5.0.3",
         "@types/node": "18.15.11",
-        "commander": "10.0.0",
-        "source-map-js": "1.0.2"
+        "commander": "10.0.0"
     },
     "files": [
         "/src",

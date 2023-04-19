@@ -21,7 +21,7 @@ export const getAssertionsByFile = ({
         return __assertionCache
     }
     const config = getAttestConfig()
-    if (config.precached && !isInitialCache) {
+    if (!isInitialCache) {
         return getCachedAssertionData(config)
     }
     const project = getTsMorphProject()

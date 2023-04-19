@@ -91,11 +91,7 @@ export class Assertions implements AssertionRecord {
                     serializedValue: this.serializedActual,
                     benchFormat: this.ctx.cfg.benchFormat
                 }
-                if (this.ctx.cfg.precached) {
-                    writeInlineSnapshotUpdateToCacheDir(snapshotArgs)
-                } else {
-                    queueInlineSnapshotWriteOnProcessExit(snapshotArgs)
-                }
+                writeInlineSnapshotUpdateToCacheDir(snapshotArgs)
             }
         } else {
             // compare as strings, but if match fails, compare again as objects
