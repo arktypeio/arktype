@@ -3,9 +3,8 @@ import type { Domain } from "../utils/domains.js"
 import type { evaluate, extend, instanceOf } from "../utils/generics.js"
 import { CompiledFunction } from "../utils/generics.js"
 import { Path, toPropChain } from "../utils/paths.js"
-import type { DomainNode } from "./domain.js"
+import type { BaseNode } from "./base.js"
 import type { EqualityNode } from "./equality.js"
-import type { InstanceNode } from "./instance.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import type { RangeNode } from "./range.js"
 import type { RuleSet, RulesNode } from "./rules.js"
@@ -54,8 +53,8 @@ export type DisjointKinds = extend<
     Record<string, { l: unknown; r: unknown }>,
     {
         domain: {
-            l: DomainNode
-            r: DomainNode
+            l: BaseNode
+            r: BaseNode
         }
         range: {
             l: RangeNode
@@ -159,30 +158,40 @@ export class CompilationState {
     //     }
 }
 
-// export const compileTraversal = (root: TypeNode) => {
-//     const s = new CompilationState()
-//     let result = ""
-//     switch (root.branches.length) {
-//         case 0:
-//             return "throw new Error();"
-//         case 1:
-//             return
-//     }
-// }
+export const compileTraversal = (root: TypeNode) => {
+    const s = new CompilationState()
+    switch (root.branches.length) {
+        case 0:
+            return "throw new Error();"
+        case 1:
+            return compileRules(root.branches[0], s)
+        default:
+            return compileUnion(root.branches, s)
+    }
+}
 
-// const compileUnion = (branches: RulesNode[], s: CompilationState) => {
-//     s.unionDepth++
-//     const result = `state.pushUnion();
-//             ${branches
-//                 .map(
-//                     (branch) => `(() => {
-//                 ${branch.compile(s)}
-//                 })()`
-//                 )
-//                 .join(" && ")};
-//             state.popUnion(${branches.length}, ${s.data}, ${s.path.json});`
-//     s.unionDepth--
-//     return result
-// }
+const compileUnion = (branches: RulesNode[], s: CompilationState) => {
+    s.unionDepth++
+    const result = `state.pushUnion();
+            ${branches
+                .map(
+                    (rules) => `(() => {
+                ${compileRules(rules, s)}
+                })()`
+                )
+                .join(" && ")};
+            state.popUnion(${branches.length}, ${s.data}, ${s.path.json});`
+    s.unionDepth--
+    return result
+}
 
-// const compileRules = (rules: RulesChild, s: CompilationState) => {}
+const compileRules = (rules: RulesNode, s: CompilationState) => {
+    // TODO: Better name
+    return rules.rules
+        .map(
+            (rule) => `if (!(${rule.key})) {
+        throw new Error()
+    }`
+        )
+        .join("\n")
+}

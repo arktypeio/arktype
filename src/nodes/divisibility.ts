@@ -2,6 +2,7 @@ import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 
 export class DivisibilityNode extends Node<typeof DivisibilityNode> {
+    // TODO: align kind with node names
     readonly kind = "divisor"
 
     constructor(public divisor: number) {

@@ -11,8 +11,8 @@ import type {
     keySet
 } from "../utils/generics.js"
 import { stringify } from "../utils/serialize.js"
+import { BaseNode } from "./base.js"
 import { DivisibilityNode } from "./divisibility.js"
-import { DomainNode } from "./domain.js"
 import { EqualityNode } from "./equality.js"
 import { FilterNode } from "./filter.js"
 import { InstanceNode } from "./instance.js"
@@ -59,7 +59,7 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
         } else if (constraints.instance) {
             rules.push(new InstanceNode(constraints.instance))
         } else {
-            rules.push(new DomainNode(constraints.domain!))
+            rules.push(new BaseNode(constraints.domain!))
         }
         if (constraints.divisor) {
             rules.push(new DivisibilityNode(constraints.divisor))
@@ -129,7 +129,7 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
 }
 
 export const ruleKinds = {
-    domain: DomainNode,
+    domain: BaseNode,
     value: EqualityNode,
     instance: InstanceNode,
     range: RangeNode,
@@ -213,11 +213,11 @@ const validateRuleKeys = (rules: RulesNode) => {
     if (!domain) {
         return throwParseError(
             `Constraints input must have either a 'value' or 'domain' key (got keys ${stringify(
-                Object.keys(rules).join(", ")
+                rules.getKinds().join(", ")
             )})`
         )
     }
-    switch (domain.domain) {
+    switch (domain.base) {
         case "object":
             const isArray = rules.getRule("instance") instanceof Array
             const allowedKeys = isArray ? arrayRuleKeys : nonArrayObjectRuleKeys
@@ -244,7 +244,7 @@ const validateRuleKeys = (rules: RulesNode) => {
             )
         default:
             return throwParseError(
-                `Constraints input domain must be either object, string, number, bigint or symbol (was ${domain.domain})`
+                `Constraints input domain must be either object, string, number, bigint or symbol (was ${domain.base})`
             )
     }
 }
