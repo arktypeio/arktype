@@ -1,85 +1,101 @@
 import { type Domain, hasDomain } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { constructor } from "../utils/generics.js"
+import { constructorExtends } from "../utils/generics.js"
 import { registry } from "../utils/registry.js"
 import type { SerializablePrimitive } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
-import type { ComparisonState, CompiledAssertion } from "./node.js"
+import type { ComparisonState, CompiledAssertion, Disjoint } from "./node.js"
 import { Node } from "./node.js"
 
-export type BaseConstraint<
-    kind extends BaseConstraintKind = BaseConstraintKind
-> = {
-    readonly kind: kind
-    readonly value: BaseConstraintValuesByKind[kind]
-}
-
-type BaseConstraintValuesByKind = {
-    value: unknown
+type BaseConstraintKinds = {
     domain: Exclude<Domain, "undefined" | "null" | "boolean">
-    instance: constructor
+    constructor: constructor
+    value: { value: unknown }
 }
 
-export type BaseConstraintKind = keyof BaseConstraintValuesByKind
+export type BaseConstraint<baseKind extends BaseKind = BaseKind> =
+    BaseConstraintKinds[baseKind]
 
-export class BaseNode<
-    base extends BaseConstraint = BaseConstraint
-> extends Node<typeof BaseNode> {
+export type BaseKind = keyof BaseConstraintKinds
+
+const baseKindOf = (base: BaseConstraint) =>
+    typeof base === "string"
+        ? "domain"
+        : typeof base === "object"
+        ? "value"
+        : "constructor"
+
+const hasBaseKind = <kind extends BaseKind>(
+    base: BaseConstraint,
+    kind: kind
+): base is BaseConstraint<kind> => baseKindOf(base) === kind
+
+export class BaseNode<baseKind extends BaseKind = BaseKind> extends Node<
+    typeof BaseNode
+> {
     readonly kind = "base"
+    readonly baseKind: baseKind
 
-    constructor(public base: base) {
+    constructor(public base: BaseConstraint<baseKind>) {
         super(BaseNode, base)
+        this.baseKind = baseKindOf(base) as unknown as baseKind
     }
 
-    // intersect(
-    //     other: InstanceNode,
-    //     s: ComparisonState
-    // ): InstanceNode | Disjoint {
-    //     return constructorExtends(this.ancestor, other.ancestor)
-    //         ? this
-    //         : constructorExtends(other.ancestor, this.ancestor)
-    //         ? other
-    //         : s.addDisjoint("class", this, other)
-    // }
-
-    // intersect(other: EqualityNode, s: ComparisonState) {
-    //     return this === other ? this : s.addDisjoint("value", this, other)
-    // }
-
-    intersect(other: BaseNode, s: ComparisonState) {
-        return this.base === other.base
-            ? this
-            : s.addDisjoint("domain", this, other)
+    hasBaseKind<kind extends BaseKind>(
+        kind: kind
+    ): this is { base: BaseConstraint<kind> } {
+        return hasBaseKind(this.base, kind)
     }
 
-    static compile<base extends BaseConstraint>(base: base): CompiledAssertion {
-        switch (base.kind) {
-            case "domain":
-                const domain = base.value as Domain
-                return domain === "object"
-                    ? `((typeof data === "object" && data !== null) || typeof data === "function")`
-                    : `typeof data === "${domain}"`
-            case "value":
-                return `data === ${
-                    hasDomain(base.value, "object") ||
-                    typeof base.value === "symbol"
-                        ? registry().register(typeof base.value, base.value)
-                        : serializePrimitive(
-                              base.value as SerializablePrimitive
-                          )
-                }`
-            case "instance":
-                const ancestor = base.value as constructor
-                // TODO: also for other builtins
-                return `data instanceof ${
-                    ancestor === Array
-                        ? "Array"
-                        : registry().register(ancestor.name, ancestor)
-                }`
-            default:
-                return throwInternalError(
-                    `Unexpected base constraint kind '${base.kind}'`
-                )
+    intersect(other: BaseNode, s: ComparisonState): BaseNode | Disjoint {
+        if (this.hasBaseKind("domain")) {
+            if (other.hasBaseKind("domain")) {
+                return this === other
+                    ? this
+                    : s.addDisjoint("domain", this.base, other.base)
+            }
+            if (other.hasBaseKind("constructor")) {
+                return this.base === "object"
+                    ? other
+                    : s.addDisjoint("domain", this.base as Domain, "object")
+            }
+        }
+        if (this.hasBaseKind("constructor")) {
+            if (other.hasBaseKind("domain")) {
+                return other.base === "object"
+                    ? this
+                    : s.addDisjoint("domain", "object", other.base as Domain)
+            }
+            if (other.hasBaseKind("constructor")) {
+                return constructorExtends(this.base, other.base)
+                    ? this
+                    : constructorExtends(other.base, this.base)
+                    ? other
+                    : s.addDisjoint("class", this.base, other.base)
+            }
+        }
+        return throwInternalError(
+            `Unexpected attempt to directly intersect base kinds ${this.kind} and ${other.kind}`
+        )
+    }
+
+    static compile(base: BaseConstraint): CompiledAssertion {
+        if (hasBaseKind(base, "domain")) {
+            return base === "object"
+                ? `((typeof data === "object" && data !== null) || typeof data === "function")`
+                : `typeof data === "${base}"`
+        } else if (hasBaseKind(base, "value")) {
+            return `data === ${
+                hasDomain(base.value, "object") ||
+                typeof base.value === "symbol"
+                    ? registry().register(typeof base.value, base.value)
+                    : serializePrimitive(base.value as SerializablePrimitive)
+            }`
+        } else {
+            return `data instanceof ${
+                base === Array ? "Array" : registry().register(base.name, base)
+            }`
         }
     }
 }

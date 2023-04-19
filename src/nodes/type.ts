@@ -15,16 +15,16 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
-import type { EqualityNode } from "./equality.js"
+import type { BaseNode } from "./base.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
 import { ComparisonState, Disjoint, Node } from "./node.js"
 import type {
-    Constraints,
     inferRuleSet,
     RuleSet,
-    validateConstraintsInput
-} from "./rules.js"
-import { RulesNode } from "./rules.js"
+    validateConstraintsInput,
+    ValidationConstraints
+} from "./predicate.js"
+import { PredicateNode } from "./predicate.js"
 
 type validateBranches<branches extends TypeNodeInput> = {
     [i in keyof branches]: branches[i] extends RuleSet
@@ -35,19 +35,19 @@ type validateBranches<branches extends TypeNodeInput> = {
 type inferBranches<branches extends TypeNodeInput> = {
     [i in keyof branches]: branches[i] extends RuleSet
         ? inferRuleSet<branches[i]>
-        : branches[i] extends RulesNode<infer t>
+        : branches[i] extends PredicateNode<infer t>
         ? t
         : never
 }[number]
 
-export type TypeNodeInput = List<RuleSet | RulesNode>
+export type TypeNodeInput = List<RuleSet | PredicateNode>
 
 export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     declare [as]: t
 
     readonly kind = "type"
 
-    constructor(public branches: RulesNode[]) {
+    constructor(public branches: PredicateNode[]) {
         super(TypeNode, branches)
     }
 
@@ -56,14 +56,14 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     ) {
         return new TypeNode<inferBranches<branches>>(
             branches.map((branch) =>
-                branch instanceof RulesNode
+                branch instanceof PredicateNode
                     ? branch
-                    : RulesNode.from(branch as any)
+                    : PredicateNode.from(branch as any)
             )
         )
     }
 
-    static compile(branches: readonly RulesNode[]): CompiledAssertion {
+    static compile(branches: readonly PredicateNode[]): CompiledAssertion {
         switch (branches.length) {
             case 0:
                 return "data !== data"
@@ -95,7 +95,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
             : s.addDisjoint("union", this, other)
     }
 
-    constrain(constraints: Constraints) {
+    constrain(constraints: ValidationConstraints) {
         // TODO: diverge from intersect? What about morphs?
         return new TypeNode(
             this.branches.map((branch) => branch.constrain(constraints))
@@ -116,7 +116,9 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         return new TypeNode([...this.branches, ...other.branches])
     }
 
-    get literalValue(): EqualityNode | undefined {
+    get literalValue():
+        | BaseNode<{ kind: "value"; value: unknown }>
+        | undefined {
         return this.branches.length === 1
             ? this.branches[0].getRule("value")
             : undefined
@@ -170,24 +172,24 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
 export const never = new TypeNode([])
 
 const branchwiseIntersection = (
-    lBranches: List<RulesNode>,
-    rBranches: List<RulesNode>,
+    lBranches: List<PredicateNode>,
+    rBranches: List<PredicateNode>,
     s: ComparisonState
 ) => {
     // Branches that are determined to be a subtype of an opposite branch are
     // guaranteed to be a member of the final reduced intersection, so long as
     // each individual set of branches has been correctly reduced to exclude
     // redundancies.
-    const finalBranches: RulesNode[] = []
+    const finalBranches: PredicateNode[] = []
     // Each rBranch is initialized to an empty array to which distinct
     // intersections will be appended. If the rBranch is identified as a
     // subtype (or equal) of any lBranch, the corresponding value should be
     // set to null so we can avoid including previous/future intersections
     // in the final result.
-    const candidatesByR: (RulesNode[] | null)[] = rBranches.map(() => [])
+    const candidatesByR: (PredicateNode[] | null)[] = rBranches.map(() => [])
     for (let lIndex = 0; lIndex < lBranches.length; lIndex++) {
         const l = lBranches[lIndex]
-        let currentCandidateByR: { [rIndex in number]: RulesNode } = {}
+        let currentCandidateByR: { [rIndex in number]: PredicateNode } = {}
         for (let rIndex = 0; rIndex < rBranches.length; rIndex++) {
             const r = rBranches[rIndex]
             if (!candidatesByR[rIndex]) {
@@ -243,7 +245,7 @@ const branchwiseIntersection = (
     return finalBranches
 }
 
-const pruneSubtypes = (branches: RulesNode[]) => {
+const pruneSubtypes = (branches: PredicateNode[]) => {
     const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
     for (let i = 0; i < branches.length; i++) {
         for (let j = i + 1; j < branches.length && uniquenessByIndex[i]; j++) {
@@ -274,7 +276,10 @@ const pruneSubtypes = (branches: RulesNode[]) => {
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-export const compileBranches = (branches: RulesNode[], c: CompilationState) => {
+export const compileBranches = (
+    branches: PredicateNode[],
+    c: CompilationState
+) => {
     const discriminants = calculateDiscriminants(branches, c)
     const indices = branches.map((_, i) => i)
     return discriminate(branches, indices, discriminants, c)
@@ -289,7 +294,7 @@ export type QualifiedDisjoint =
     | `${string}/${DiscriminantKind}`
 
 const discriminate = (
-    originalBranches: RulesNode[],
+    originalBranches: PredicateNode[],
     remainingIndices: number[],
     discriminants: Discriminants,
     c: CompilationState
@@ -450,7 +455,7 @@ const discriminantKinds: keySet<DiscriminantKind> = {
 export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 const calculateDiscriminants = (
-    branches: RulesNode[],
+    branches: PredicateNode[],
     ctx: CompilationState
 ): Discriminants => {
     const discriminants: Discriminants = {

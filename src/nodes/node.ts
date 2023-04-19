@@ -1,13 +1,17 @@
 import type { TypeConfig } from "../type.js"
 import type { Domain } from "../utils/domains.js"
-import type { evaluate, extend, instanceOf } from "../utils/generics.js"
+import type {
+    constructor,
+    evaluate,
+    extend,
+    instanceOf
+} from "../utils/generics.js"
 import { CompiledFunction } from "../utils/generics.js"
 import { Path, toPropChain } from "../utils/paths.js"
 import type { BaseNode } from "./base.js"
-import type { EqualityNode } from "./equality.js"
+import type { PredicateNode, RuleSet } from "./predicate.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import type { RangeNode } from "./range.js"
-import type { RuleSet, RulesNode } from "./rules.js"
 import type { TypeNode } from "./type.js"
 
 type BaseAssertion = `data${string}` | `typeof data${string}`
@@ -53,28 +57,28 @@ export type DisjointKinds = extend<
     Record<string, { l: unknown; r: unknown }>,
     {
         domain: {
-            l: BaseNode
-            r: BaseNode
+            l: Domain
+            r: Domain
         }
         range: {
             l: RangeNode
             r: RangeNode
         }
         class: {
-            l: InstanceNode
-            r: InstanceNode
+            l: constructor
+            r: constructor
         }
         value: {
-            l: EqualityNode
-            r: EqualityNode
+            l: unknown
+            r: unknown
         }
         leftAssignability: {
-            l: EqualityNode
+            l: unknown
             r: RuleSet
         }
         rightAssignability: {
             l: RuleSet
-            r: EqualityNode
+            r: unknown
         }
         union: {
             l: TypeNode
@@ -170,7 +174,7 @@ export const compileTraversal = (root: TypeNode) => {
     }
 }
 
-const compileUnion = (branches: RulesNode[], s: CompilationState) => {
+const compileUnion = (branches: PredicateNode[], s: CompilationState) => {
     s.unionDepth++
     const result = `state.pushUnion();
             ${branches
@@ -185,7 +189,7 @@ const compileUnion = (branches: RulesNode[], s: CompilationState) => {
     return result
 }
 
-const compileRules = (rules: RulesNode, s: CompilationState) => {
+const compileRules = (rules: PredicateNode, s: CompilationState) => {
     // TODO: Better name
     return rules.rules
         .map(

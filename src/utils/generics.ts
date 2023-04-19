@@ -68,6 +68,10 @@ export const isKeyOf = <k extends string | number, obj extends object>(
 
 export type constructor<instance = unknown> = new (...args: any[]) => instance
 
+export type FunctionLike =
+    | ((...args: any[]) => unknown)
+    | (new (...args: any[]) => unknown)
+
 export type instanceOf<classType extends constructor<any>> =
     classType extends constructor<infer Instance> ? Instance : never
 
