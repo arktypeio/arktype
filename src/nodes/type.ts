@@ -16,7 +16,7 @@ import type {
 } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
 import type { EqualityNode } from "./equality.js"
-import type { CompilationState } from "./node.js"
+import type { CompilationState, CompiledAssertion } from "./node.js"
 import { ComparisonState, Disjoint, Node } from "./node.js"
 import type {
     Constraints,
@@ -61,34 +61,19 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         )
     }
 
-    // static compile(branches: List<RulesNode>, s: CompilationState) {
-    //     switch (branches.length) {
-    //         case 0:
-    //             return [
-    //                 {
-    //                     condition: "true",
-    //                     problem: s.problem("custom", "nothing")
-    //                 }
-    //             ]
-    //         case 1:
-    //             return branches[0].compileChildren(s)
-    //         default:
-    //             return [
-    //                 {
-    //                     condition: branches
-    //                         .map((branch) =>
-    //                             branch
-    //                                 .compileChildren(s)
-    //                                 .map((rules) => rules.condition)
-    //                                 .join(" || ")
-    //                         )
-    //                         .sort()
-    //                         .join(" && "),
-    //                     problem: s.problem("custom", "valid (union)")
-    //                 }
-    //             ]
-    //     }
-    // }
+    static compile(branches: readonly RulesNode[]): CompiledAssertion {
+        switch (branches.length) {
+            case 0:
+                return "data !== data"
+            case 1:
+                return branches[0].key
+            default:
+                return branches
+                    .map((branch) => branch.key)
+                    .sort()
+                    .join(" && ") as CompiledAssertion
+        }
+    }
 
     // override compile(s: CompilationState) {
     //     if (
@@ -153,7 +138,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
 
     get literalValue(): EqualityNode | undefined {
         return this.branches.length === 1
-            ? this.branches[0].branches.value
+            ? this.branches[0].rules.value
             : undefined
     }
 
@@ -329,7 +314,7 @@ const discriminate = (
     discriminants: Discriminants,
     c: CompilationState
 ) => {
-    return originalBranches[remainingIndices[0]].compile(c)
+    return originalBranches[remainingIndices[0]].key
     // if (remainingIndices.length === 1) {
     //     return compileBranch(originalBranches[remainingIndices[0]], ctx)
     // }
