@@ -19,7 +19,7 @@ import { EqualityNode } from "./equality.js"
 import { FilterNode } from "./filter.js"
 import { InstanceNode } from "./instance.js"
 import { MorphNode } from "./morph.js"
-import type { CompilationState, CompiledValidator } from "./node.js"
+import type { CompilationState, CompiledAssertion } from "./node.js"
 import { ComparisonState, Node } from "./node.js"
 import type { PropsInput } from "./props.js"
 import { PropsNode } from "./props.js"
@@ -50,8 +50,8 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
         return new RulesNode<inferRuleSet<input>>(child)
     }
 
-    static compileChildren(child: RulesChild, s: CompilationState) {
-        const checks: CompiledValidator[] =
+    static compile(child: RulesChild, s: CompilationState) {
+        const checks: CompiledAssertion[] =
             child.value?.compileChildren(s) ??
             child.instance?.compileChildren(s) ??
             child.domain!.compileChildren(s)

@@ -1,18 +1,13 @@
-import type { CompilationState } from "./node.js"
-import { Node } from "./node.js"
+import { CompiledAssertion, Node } from "./node.js"
 
 export class DivisibilityNode extends Node<typeof DivisibilityNode> {
     constructor(divisor: number) {
         super(DivisibilityNode, divisor)
     }
 
-    static compileChildren(divisor: number, s: CompilationState) {
-        return [
-            {
-                condition: `${s.data} % ${divisor} !== 0`,
-                problem: s.problem("divisor", divisor)
-            }
-        ]
+    static compile(divisor: number): CompiledAssertion {
+        //  s.problem("divisor", divisor)
+        return `data % ${divisor} !== 0`
     }
 
     intersect(other: DivisibilityNode) {

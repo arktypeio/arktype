@@ -2,7 +2,6 @@ import type { Comparator } from "../../nodes/range.js"
 import type { SizedData } from "../../utils/data.js"
 import type { error, isAny } from "../../utils/generics.js"
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
-import type { Scanner } from "../string/shift/scanner.js"
 import type { inferAst, validateAst } from "./ast.js"
 import type { astToString } from "./utils.js"
 

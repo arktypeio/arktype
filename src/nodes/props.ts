@@ -7,7 +7,7 @@ import {
 import type {
     ComparisonState,
     CompilationState,
-    CompiledValidator
+    CompiledAssertion
 } from "./node.js"
 import { Disjoint, Node } from "./node.js"
 import type { TypeNodeInput } from "./type.js"
@@ -49,8 +49,8 @@ export class PropsNode extends Node<typeof PropsNode> {
         return new PropsNode(child)
     }
 
-    static compileChildren({ named }: PropsChild, s: CompilationState) {
-        const checks: CompiledValidator[] = []
+    static compile({ named }: PropsChild, s: CompilationState) {
+        const checks: CompiledAssertion[] = []
         const names = Object.keys(named).sort()
         for (const k of names) {
             s.path.push(k)
@@ -169,7 +169,7 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
         return new NamedPropNode(child)
     }
 
-    static compileChildren(child: NamedPropChild, s: CompilationState) {
+    static compile(child: NamedPropChild, s: CompilationState) {
         return child.value.compileChildren(s)
     }
 

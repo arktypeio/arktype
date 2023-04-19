@@ -1,6 +1,6 @@
 import type { Morph } from "../parse/ast/morph.js"
 import { intersectUniqueLists } from "../utils/generics.js"
-import type { CompilationState } from "./node.js"
+import type { CompilationState, CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 
 export class MorphNode extends Node<typeof MorphNode> {
@@ -11,13 +11,8 @@ export class MorphNode extends Node<typeof MorphNode> {
         )
     }
 
-    static compileChildren(transforms: Morph[], s: CompilationState) {
-        return [
-            {
-                condition: "true",
-                problem: s.problem("custom", "valid")
-            }
-        ]
+    static compile(transforms: Morph[]): CompiledAssertion {
+        return `data !== data`
     }
 
     intersect(other: MorphNode) {

@@ -7,7 +7,7 @@ export class RegexNode extends Node<typeof RegexNode> {
         super(RegexNode, typeof sources === "string" ? [sources] : sources)
     }
 
-    static compileChildren(sources: string[], s: CompilationState) {
+    static compile(sources: string[], s: CompilationState) {
         return sources.sort().map((source) => ({
             condition: `!/${source}/.test(${s.data})`,
             problem: s.problem("regex", source)

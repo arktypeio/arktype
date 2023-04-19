@@ -1,6 +1,6 @@
 import type { TypeConfig } from "../type.js"
 import type { Domain } from "../utils/domains.js"
-import type { extend, instanceOf } from "../utils/generics.js"
+import type { evaluate, extend, instanceOf } from "../utils/generics.js"
 import { CompiledFunction } from "../utils/generics.js"
 import { Path, toPropChain } from "../utils/paths.js"
 import type { DomainNode } from "./domain.js"
@@ -11,14 +11,19 @@ import type { RangeNode } from "./range.js"
 import type { RuleSet } from "./rules.js"
 import type { TypeNode } from "./type.js"
 
-export type CompiledValidator = {
-    condition: string
-    problem: string
-}
+type BaseAssertion = `data ${string}` | `typeof data ${string}`
+
+type parenthesizable<s extends string> = s | `(${s}`
+
+type negatable<s extends string> = s | `!${s}`
+
+export type CompiledAssertion = evaluate<
+    negatable<parenthesizable<parenthesizable<BaseAssertion>>>
+>
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (...args: any[]): Node<subclass>
-    compileChildren(children: any, s: CompilationState): CompiledValidator[]
+    compile(children: any): CompiledAssertion
 }
 
 export abstract class Node<
@@ -27,23 +32,21 @@ export abstract class Node<
 > extends CompiledFunction<[data: input], boolean> {
     constructor(
         protected subclass: subclass,
-        public child: Parameters<subclass["compileChildren"]>[0]
+        public child: Parameters<subclass["compile"]>[0]
     ) {
         // TODO: Cache
         super(
             "data",
-            `return ${Node.joinSubconditions(
-                subclass.compileChildren(child, new CompilationState("check"))
-            )}`
+            `return ${Node.joinSubconditions(subclass.compile(child))}`
         )
     }
 
-    static joinSubconditions(validators: CompiledValidator[]) {
+    static joinSubconditions(validators: CompiledAssertion[]) {
         return validators.map((validator) => validator.condition).join(" || ")
     }
 
     compile(s: CompilationState) {
-        const children = this.subclass.compileChildren(this.child, s)
+        const children = this.subclass.compile(this.child, s)
         return s.kind === "check"
             ? Node.joinSubconditions(children)
             : children
@@ -56,7 +59,7 @@ export abstract class Node<
     }
 
     compileChildren(s: CompilationState) {
-        return this.subclass.compileChildren(this.child, s)
+        return this.subclass.compile(this.child, s)
     }
 
     abstract intersect(

@@ -1,7 +1,7 @@
 import type { Filter } from "../parse/ast/filter.js"
 import { intersectUniqueLists } from "../utils/generics.js"
 import { Node } from "./node.js"
-import type { CompilationState } from "./node.js"
+import type { CompilationState, CompiledAssertion } from "./node.js"
 
 export class FilterNode extends Node<typeof FilterNode> {
     constructor(predicates: Filter | Filter[]) {
@@ -11,13 +11,8 @@ export class FilterNode extends Node<typeof FilterNode> {
         )
     }
 
-    static compileChildren(sources: Filter[], s: CompilationState) {
-        return [
-            {
-                condition: "true",
-                problem: s.problem("custom", "valid")
-            }
-        ]
+    static compile(sources: Filter[]): CompiledAssertion {
+        return `data !== data`
     }
 
     intersect(other: FilterNode) {

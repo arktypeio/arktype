@@ -1,5 +1,5 @@
 import type { Domain } from "../utils/domains.js"
-import type { ComparisonState, CompilationState } from "./node.js"
+import type { ComparisonState, CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 
 export type NonEnumerableDomain = Exclude<
@@ -20,15 +20,9 @@ export class DomainNode<
             : s.addDisjoint("domain", this, other)
     }
 
-    static compileChildren(domain: NonEnumerableDomain, s: CompilationState) {
-        return [
-            {
-                condition:
-                    domain === "object"
-                        ? `((typeof ${s.data} !== "object" || ${s.data} === null) && typeof ${s.data} !== "function")`
-                        : `typeof ${s.data} !== "${domain}"`,
-                problem: s.problem("domain", domain)
-            }
-        ]
+    static compile(domain: NonEnumerableDomain): CompiledAssertion {
+        return domain === "object"
+            ? `((typeof data !== "object" || data === null) && typeof data !== "function")`
+            : `typeof data !== "${domain}"`
     }
 }

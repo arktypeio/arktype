@@ -61,7 +61,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         )
     }
 
-    static compileChildren(branches: List<RulesNode>, s: CompilationState) {
+    static compile(branches: List<RulesNode>, s: CompilationState) {
         switch (branches.length) {
             case 0:
                 return [
