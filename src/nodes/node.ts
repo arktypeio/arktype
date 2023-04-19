@@ -8,7 +8,6 @@ import type {
 } from "../utils/generics.js"
 import { CompiledFunction } from "../utils/generics.js"
 import { Path, toPropChain } from "../utils/paths.js"
-import type { DomainNode } from "./domain.js"
 import type { PredicateNode, RuleSet } from "./predicate.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import type { RangeNode } from "./range.js"
@@ -168,7 +167,7 @@ export const compileTraversal = (root: TypeNode) => {
         case 0:
             return "throw new Error();"
         case 1:
-            return compileRules(root.branches[0], s)
+            return compilePredicate(root.branches[0], s)
         default:
             return compileUnion(root.branches, s)
     }
@@ -180,7 +179,7 @@ const compileUnion = (branches: PredicateNode[], s: CompilationState) => {
             ${branches
                 .map(
                     (rules) => `(() => {
-                ${compileRules(rules, s)}
+                ${compilePredicate(rules, s)}
                 })()`
                 )
                 .join(" && ")};
@@ -189,9 +188,8 @@ const compileUnion = (branches: PredicateNode[], s: CompilationState) => {
     return result
 }
 
-const compileRules = (rules: PredicateNode, s: CompilationState) => {
-    // TODO: Better name
-    return rules.rules
+const compilePredicate = (predicate: PredicateNode, s: CompilationState) => {
+    return predicate.rules
         .map(
             (rule) => `if (!(${rule.key})) {
         throw new Error()

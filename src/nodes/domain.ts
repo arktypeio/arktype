@@ -8,16 +8,16 @@ import { serializePrimitive } from "../utils/serialize.js"
 import type { ComparisonState, CompiledAssertion, Disjoint } from "./node.js"
 import { Node } from "./node.js"
 
-type DomainLevels = {
+type DomainsByLevel = {
     kind: Exclude<Kind, "undefined" | "null" | "boolean">
     constructor: constructor
     value: [unknown]
 }
 
-export type Domain<category extends DomainLevel = DomainLevel> =
-    DomainLevels[category]
+export type Domain<level extends DomainLevel = DomainLevel> =
+    DomainsByLevel[level]
 
-export type DomainLevel = keyof DomainLevels
+export type DomainLevel = keyof DomainsByLevel
 
 const levelOf = (domain: Domain) =>
     typeof domain === "string"
@@ -44,7 +44,10 @@ export class DomainNode<level extends DomainLevel = DomainLevel> extends Node<
 
     hasLevel<level extends DomainLevel>(
         level: level
-    ): this is { rule: Domain<level> } {
+    ): this is {
+        level: level
+        rule: Domain<level>
+    } {
         return hasLevel(this.rule, level)
     }
 

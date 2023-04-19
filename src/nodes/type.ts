@@ -21,15 +21,12 @@ import { ComparisonState, Disjoint, Node } from "./node.js"
 import type {
     inferRuleSet,
     RuleSet,
-    validateConstraintsInput,
     ValidationConstraints
 } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
 
 type validateBranches<branches extends TypeNodeInput> = {
-    [i in keyof branches]: branches[i] extends RuleSet
-        ? conform<branches[i], validateConstraintsInput<branches[i]>>
-        : branches[i]
+    [i in keyof branches]: conform<branches[i], RuleSet | PredicateNode>
 }
 
 type inferBranches<branches extends TypeNodeInput> = {
@@ -116,11 +113,9 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         return new TypeNode([...this.branches, ...other.branches])
     }
 
-    get literalValue():
-        | DomainNode<{ kind: "value"; value: unknown }>
-        | undefined {
+    get literalValue(): DomainNode<"value"> | undefined {
         return this.branches.length === 1
-            ? this.branches[0].getRule("value")
+            ? this.branches[0].literalValue
             : undefined
     }
 
@@ -158,8 +153,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
 
     toArray() {
         return TypeNode.from({
-            kind: "object",
-            instance: Array,
+            domain: "object",
             props: {
                 named: {},
                 // TODO: fix
@@ -598,7 +592,7 @@ export const serializeDefinitionIfAllowed = <kind extends DiscriminantKind>(
     switch (kind) {
         case "value":
             return serializeIfPrimitive(definition)
-        case "domain":
+        case "kind":
             return definition as Kind
         case "class":
             return getExactConstructorObjectKind(definition)

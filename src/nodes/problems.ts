@@ -158,8 +158,8 @@ export class ProblemIntersection extends Problem<Problem[]> {
     }
 }
 
-export class DomainProblem extends Problem<Kind> {
-    readonly code = "domain"
+export class KindProblem extends Problem<Kind> {
+    readonly code = "kind"
 
     get mustBe() {
         return kindDescriptions[this.rule]
@@ -274,7 +274,7 @@ export class ValueProblem extends Problem {
 }
 
 export const problemsByCode = defineProblemsCode({
-    kind: DomainProblem,
+    kind: KindProblem,
     divisor: DivisorProblem,
     instance: InstanceProblem,
     key: KeyProblem,

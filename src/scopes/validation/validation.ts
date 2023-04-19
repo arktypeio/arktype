@@ -11,14 +11,14 @@ import { parsedDate } from "./date.js"
 
 // TODO: { mustBe: "a well-formed numeric string" }
 const parsedNumber = TypeNode.from({
-    base: "string",
+    domain: "string",
     regex: wellFormedNumberMatcher.source,
     morph: (s) => parseFloat(s)
 })
 
 // TODO:  { mustBe: "a well-formed integer string" }
 const parsedInteger = TypeNode.from({
-    base: "string",
+    domain: "string",
     regex: wellFormedIntegerMatcher.source,
     morph: (s) => parseInt(s)
 })
@@ -54,7 +54,7 @@ const semver = TypeNode.from({
 
 // "a JSON-parsable string"
 const json = TypeNode.from({
-    base: "string",
+    domain: "string",
     morph: (s) => JSON.parse(s)
 })
 
