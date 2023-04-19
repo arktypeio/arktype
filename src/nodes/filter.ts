@@ -1,7 +1,7 @@
 import type { Filter } from "../parse/ast/filter.js"
 import { intersectUniqueLists, listFrom } from "../utils/generics.js"
+import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
-import type { CompilationState, CompiledAssertion } from "./node.js"
 
 export class FilterNode extends Node<typeof FilterNode> {
     predicates: readonly Filter[]

@@ -19,7 +19,7 @@ import { EqualityNode } from "./equality.js"
 import { FilterNode } from "./filter.js"
 import { InstanceNode } from "./instance.js"
 import { MorphNode } from "./morph.js"
-import type { CompilationState, CompiledAssertion } from "./node.js"
+import type { CompiledAssertion } from "./node.js"
 import { ComparisonState, Node } from "./node.js"
 import type { PropsInput } from "./props.js"
 import { PropsNode } from "./props.js"
@@ -66,7 +66,7 @@ export class RulesNode<t = unknown> extends Node<typeof RulesNode> {
         if (rules.props) {
             checks.push(rules.props.key)
         }
-        return checks.join(" || ") as CompiledAssertion
+        return checks.join(" && ") as CompiledAssertion
     }
 
     intersect(other: RulesNode, s: ComparisonState) {

@@ -5,11 +5,7 @@ import {
     type mutable
 } from "../utils/generics.js"
 import { toPropChain } from "../utils/paths.js"
-import type {
-    ComparisonState,
-    CompilationState,
-    CompiledAssertion
-} from "./node.js"
+import type { ComparisonState, CompiledAssertion } from "./node.js"
 import { Disjoint, Node } from "./node.js"
 import type { TypeNodeInput } from "./type.js"
 import { never, TypeNode } from "./type.js"
@@ -54,10 +50,11 @@ export class PropsNode extends Node<typeof PropsNode> {
         const checks: string[] = []
         const names = Object.keys(props.named).sort()
         for (const k of names) {
-            checks.push(props.named[k].key.replace("data", toPropChain([k])))
+            // TODO: change data
+            checks.push(props.named[k].key.replaceAll("data", toPropChain([k])))
         }
         // TODO: empty?
-        return checks.join(" || ") as CompiledAssertion
+        return checks.join(" && ") as CompiledAssertion
     }
 
     intersect(other: PropsNode, s: ComparisonState) {

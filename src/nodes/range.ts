@@ -1,13 +1,6 @@
 import { throwInternalError } from "../utils/errors.js"
 import type { evaluate, xor } from "../utils/generics.js"
-import { keysOf } from "../utils/generics.js"
-import { stringify } from "../utils/serialize.js"
-import type {
-    ComparisonState,
-    CompilationState,
-    CompiledAssertion,
-    Disjoint
-} from "./node.js"
+import type { ComparisonState, CompiledAssertion, Disjoint } from "./node.js"
 import { Node } from "./node.js"
 
 export const minComparators = {
@@ -63,14 +56,6 @@ export type BoundContext<comparator extends Comparator = Comparator> = {
 
 export type BoundContextWithUnits = evaluate<BoundContext & { units: string }>
 
-const invertedComparisonOperators = {
-    "<": ">=",
-    "<=": ">",
-    ">": "<=",
-    ">=": "<",
-    "==": "==="
-} as const satisfies Record<Comparator, string>
-
 export class RangeNode extends Node<typeof RangeNode> {
     constructor(public bounds: Bounds) {
         super(RangeNode, bounds)
@@ -85,23 +70,19 @@ export class RangeNode extends Node<typeof RangeNode> {
     static compile(bounds: Bounds): CompiledAssertion {
         const size = "(data.length ?? data)"
         if (bounds["=="] !== undefined) {
-            return `${size} !== ${bounds["=="]}`
+            return `${size} === ${bounds["=="]}`
         }
         const lower = extractLower(bounds)
         const compiledLower = lower
-            ? (`${size} ${invertedComparisonOperators[lower.comparator]} ${
-                  lower.limit
-              }` as const)
+            ? (`${size} ${lower.comparator} ${lower.limit}` as const)
             : undefined
         const upper = extractUpper(bounds)
         const compiledUpper = upper
-            ? (`${size} ${invertedComparisonOperators[upper.comparator]} ${
-                  upper.limit
-              }` as const)
+            ? (`${size} ${upper.comparator} ${upper.limit}` as const)
             : undefined
         return compiledLower
             ? compiledUpper
-                ? `${compiledLower} || ${compiledUpper}`
+                ? `${compiledLower} && ${compiledUpper}`
                 : compiledLower
             : compiledUpper ?? throwInternalError(`Unexpected unbounded range`)
     }

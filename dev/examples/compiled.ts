@@ -14,7 +14,7 @@ const benchData = {
     deeplyNested: {
         foo: "bar",
         num: 5,
-        bool: 7
+        bool: false
     }
 }
 
@@ -39,6 +39,12 @@ console.log(format(type("boolean").toString()))
 const boolean = type("boolean")
 
 console.log(boolean(5))
+
+console.log(format(benchType.root.toString()))
+
+const result2 = benchType.root(benchData)
+
+console.log(result2)
 
 console.log(format(benchType.toString()))
 

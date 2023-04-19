@@ -1,4 +1,5 @@
-import { CompiledAssertion, Node } from "./node.js"
+import type { CompiledAssertion } from "./node.js"
+import { Node } from "./node.js"
 
 export class DivisibilityNode extends Node<typeof DivisibilityNode> {
     constructor(public divisor: number) {
@@ -6,7 +7,7 @@ export class DivisibilityNode extends Node<typeof DivisibilityNode> {
     }
 
     static compile(divisor: number): CompiledAssertion {
-        return `data % ${divisor} !== 0`
+        return `data % ${divisor} === 0`
     }
 
     intersect(other: DivisibilityNode) {

@@ -22,7 +22,7 @@ export class DomainNode<
 
     static compile(domain: NonEnumerableDomain): CompiledAssertion {
         return domain === "object"
-            ? `((typeof data !== "object" || data === null) && typeof data !== "function")`
-            : `typeof data !== "${domain}"`
+            ? `((typeof data === "object" && data !== null) || typeof data === "function")`
+            : `typeof data === "${domain}"`
     }
 }

@@ -1,6 +1,6 @@
 import type { Morph } from "../parse/ast/morph.js"
 import { intersectUniqueLists, listFrom } from "../utils/generics.js"
-import type { CompilationState, CompiledAssertion } from "./node.js"
+import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 
 export class MorphNode extends Node<typeof MorphNode> {

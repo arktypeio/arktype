@@ -71,7 +71,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
                 return branches
                     .map((branch) => branch.key)
                     .sort()
-                    .join(" && ") as CompiledAssertion
+                    .join(" || ") as CompiledAssertion
         }
     }
 

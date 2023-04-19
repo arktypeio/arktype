@@ -128,7 +128,7 @@ export class CompilationState {
     unionDepth = 0
     traversalConfig = initializeCompilationConfig()
 
-    constructor(public kind: "traversal" | "check") {}
+    constructor() {}
 
     get data() {
         return toPropChain(this.path)

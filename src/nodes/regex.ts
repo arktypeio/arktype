@@ -1,6 +1,6 @@
 import { throwInternalError } from "../utils/errors.js"
 import { intersectUniqueLists, listFrom } from "./../utils/generics.js"
-import type { CompilationState, CompiledAssertion } from "./node.js"
+import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 
 export class RegexNode extends Node<typeof RegexNode> {
@@ -18,8 +18,8 @@ export class RegexNode extends Node<typeof RegexNode> {
     static compile(sources: string[]) {
         return sources
             .sort()
-            .map((source): CompiledAssertion => `!data.match(/${source}/)`)
-            .join(" || ") as CompiledAssertion
+            .map((source): CompiledAssertion => `data.match(/${source}/)`)
+            .join(" && ") as CompiledAssertion
     }
 
     intersect(other: RegexNode) {
