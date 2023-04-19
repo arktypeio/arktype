@@ -83,7 +83,7 @@ export class RangeNode extends Node<typeof RangeNode> {
     //     ? "items long"
     //     : ""
     static compile(bounds: Bounds): CompiledAssertion {
-        const size = "data.length ?? data"
+        const size = "(data.length ?? data)"
         if (bounds["=="] !== undefined) {
             return `${size} !== ${bounds["=="]}`
         }
