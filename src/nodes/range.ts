@@ -2,7 +2,12 @@ import { throwInternalError } from "../utils/errors.js"
 import type { evaluate, xor } from "../utils/generics.js"
 import { keysOf } from "../utils/generics.js"
 import { stringify } from "../utils/serialize.js"
-import type { ComparisonState, CompilationState, Disjoint } from "./node.js"
+import type {
+    ComparisonState,
+    CompilationState,
+    CompiledAssertion,
+    Disjoint
+} from "./node.js"
 import { Node } from "./node.js"
 
 export const minComparators = {
@@ -71,28 +76,34 @@ export class RangeNode extends Node<typeof RangeNode> {
         super(RangeNode, rule)
     }
 
-    static compile(rule: Bounds, s: CompilationState) {
-        const comparators = keysOf(rule)
-        if (comparators.length === 0 || comparators.length > 2) {
-            return throwInternalError(
-                `Unexpected comparators: ${stringify(rule)}`
-            )
+    // const units =
+    // s.lastDomain === "string"
+    //     ? "characters"
+    //     : s.lastDomain === "object"
+    //     ? "items long"
+    //     : ""
+    static compile(bounds: Bounds): CompiledAssertion {
+        const size = "data.length ?? data"
+        if (bounds["=="] !== undefined) {
+            return `${size} !== ${bounds["=="]}`
         }
-        const size = s.lastDomain === "number" ? s.data : `${s.data}.length`
-        const units =
-            s.lastDomain === "string"
-                ? "characters"
-                : s.lastDomain === "object"
-                ? "items long"
-                : ""
-        return comparators.sort().map((comparator) => ({
-            condition: `${size} ${invertedComparisonOperators[comparator]} ${rule[comparator]}`,
-            problem: s.problem("range", {
-                comparator,
-                limit: rule[comparator]!,
-                units
-            })
-        }))
+        const lower = extractLower(bounds)
+        const compiledLower = lower
+            ? (`${size} ${invertedComparisonOperators[lower.comparator]} ${
+                  lower.limit
+              }` as const)
+            : undefined
+        const upper = extractUpper(bounds)
+        const compiledUpper = upper
+            ? (`${size} ${invertedComparisonOperators[upper.comparator]} ${
+                  upper.limit
+              }` as const)
+            : undefined
+        return compiledLower
+            ? compiledUpper
+                ? `${compiledLower} || ${compiledUpper}`
+                : compiledLower
+            : compiledUpper ?? throwInternalError(`Unexpected unbounded range`)
     }
 
     intersect(other: RangeNode, s: ComparisonState): RangeNode | Disjoint {
@@ -158,23 +169,12 @@ export class RangeNode extends Node<typeof RangeNode> {
         return this.child["=="] !== undefined
     }
 
-    getComparator<comparator extends MinComparator | MaxComparator>(
-        comparator: comparator
-    ): BoundContext<comparator> | undefined {
-        if (this.child[comparator] !== undefined) {
-            return {
-                limit: this.child[comparator]!,
-                comparator
-            }
-        }
-    }
-
     get lowerBound() {
-        return this.getComparator(">") ?? this.getComparator(">=")
+        return extractLower(this.child)
     }
 
     get upperBound() {
-        return this.getComparator("<") ?? this.getComparator("<=")
+        return extractUpper(this.child)
     }
 
     #extractComparators(prefix: ">" | "<") {
@@ -229,3 +229,21 @@ export const compareStrictness = (
         : l.limit < r.limit
         ? "l"
         : "r"
+
+const getComparator = <comparator extends MinComparator | MaxComparator>(
+    bounds: Bounds,
+    comparator: comparator
+): BoundContext<comparator> | undefined => {
+    if (bounds[comparator] !== undefined) {
+        return {
+            limit: bounds[comparator]!,
+            comparator
+        }
+    }
+}
+
+const extractLower = (bounds: Bounds) =>
+    getComparator(bounds, ">") ?? getComparator(bounds, ">=")
+
+const extractUpper = (bounds: Bounds) =>
+    getComparator(bounds, "<") ?? getComparator(bounds, "<=")

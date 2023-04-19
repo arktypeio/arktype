@@ -11,7 +11,7 @@ import type { RangeNode } from "./range.js"
 import type { RuleSet } from "./rules.js"
 import type { TypeNode } from "./type.js"
 
-type BaseAssertion = `data ${string}` | `typeof data ${string}`
+type BaseAssertion = `data${string}` | `typeof data${string}`
 
 type parenthesizable<s extends string> = s | `(${s}`
 

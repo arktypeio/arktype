@@ -1,7 +1,12 @@
 import type { constructor } from "../utils/generics.js"
 import { constructorExtends } from "../utils/generics.js"
 import { registry } from "../utils/registry.js"
-import type { ComparisonState, CompilationState, Disjoint } from "./node.js"
+import type {
+    ComparisonState,
+    CompilationState,
+    CompiledAssertion,
+    Disjoint
+} from "./node.js"
 import { Node } from "./node.js"
 
 export class InstanceNode<rule extends constructor = constructor> extends Node<
@@ -22,17 +27,12 @@ export class InstanceNode<rule extends constructor = constructor> extends Node<
             : s.addDisjoint("class", this, other)
     }
 
-    static compile(ancestor: constructor, s: CompilationState) {
+    static compile(ancestor: constructor): CompiledAssertion {
         // TODO: also for other builtins
-        return [
-            {
-                condition: `!(${s.data} instanceof ${
-                    ancestor === Array
-                        ? "Array"
-                        : registry().register(ancestor.name, ancestor)
-                })`,
-                problem: s.problem("instance", ancestor)
-            }
-        ]
+        return `!(data instanceof ${
+            ancestor === Array
+                ? "Array"
+                : registry().register(ancestor.name, ancestor)
+        })`
     }
 }
