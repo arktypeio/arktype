@@ -1,5 +1,5 @@
 import type { TypeConfig } from "../type.js"
-import type { Domain } from "../utils/domains.js"
+import type { Kind } from "../utils/domains.js"
 import type {
     constructor,
     evaluate,
@@ -8,7 +8,7 @@ import type {
 } from "../utils/generics.js"
 import { CompiledFunction } from "../utils/generics.js"
 import { Path, toPropChain } from "../utils/paths.js"
-import type { BaseNode } from "./base.js"
+import type { DomainNode } from "./domain.js"
 import type { PredicateNode, RuleSet } from "./predicate.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import type { RangeNode } from "./range.js"
@@ -56,9 +56,9 @@ export abstract class Node<
 export type DisjointKinds = extend<
     Record<string, { l: unknown; r: unknown }>,
     {
-        domain: {
-            l: Domain
-            r: Domain
+        kind: {
+            l: Kind
+            r: Kind
         }
         range: {
             l: RangeNode
@@ -129,7 +129,7 @@ const initializeCompilationConfig = (): TraversalConfig => ({
 
 export class CompilationState {
     path = new Path()
-    lastDomain: Domain = "undefined"
+    lastkind: Kind = "undefined"
     unionDepth = 0
     traversalConfig = initializeCompilationConfig()
 

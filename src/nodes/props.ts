@@ -201,7 +201,7 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
     }
 }
 
-// const keysOfPredicate = (domain: Domain, predicate: Predicate) =>
+// const keysOfPredicate = (kind: Domain, predicate: Predicate) =>
 //     domain !== "object" || predicate === true
 //         ? baseKeysByDomain[domain]
 //         : sharedKeysOf(

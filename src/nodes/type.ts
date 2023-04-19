@@ -1,6 +1,6 @@
 import { as } from "../parse/definition.js"
-import type { Domain } from "../utils/domains.js"
-import { domainOf } from "../utils/domains.js"
+import type { Kind } from "../utils/domains.js"
+import { kindOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type { conform, evaluate, keySet, List } from "../utils/generics.js"
 import { isKeyOf, keysOf } from "../utils/generics.js"
@@ -15,7 +15,7 @@ import type {
     SerializedPrimitive
 } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
-import type { BaseNode } from "./base.js"
+import type { DomainNode } from "./domain.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
 import { ComparisonState, Disjoint, Node } from "./node.js"
 import type {
@@ -117,7 +117,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     }
 
     get literalValue():
-        | BaseNode<{ kind: "value"; value: unknown }>
+        | DomainNode<{ kind: "value"; value: unknown }>
         | undefined {
         return this.branches.length === 1
             ? this.branches[0].getRule("value")
@@ -158,7 +158,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
 
     toArray() {
         return TypeNode.from({
-            domain: "object",
+            kind: "object",
             instance: Array,
             props: {
                 named: {},
@@ -441,13 +441,13 @@ type CasesByDisjoint = {
 }
 
 export type DiscriminantKinds = {
-    domain: Domain
+    kind: Kind
     class: DefaultObjectKind
     value: SerializedPrimitive
 }
 
 const discriminantKinds: keySet<DiscriminantKind> = {
-    domain: true,
+    kind: true,
     class: true,
     value: true
 }
@@ -587,7 +587,7 @@ const findBestDiscriminant = (
 
 type DiscriminantDefinitionKinds = {
     value: unknown
-    domain: Domain
+    kind: Kind
     class: object
 }
 
@@ -599,7 +599,7 @@ export const serializeDefinitionIfAllowed = <kind extends DiscriminantKind>(
         case "value":
             return serializeIfPrimitive(definition)
         case "domain":
-            return definition as Domain
+            return definition as Kind
         case "class":
             return getExactConstructorObjectKind(definition)
         default:
@@ -608,7 +608,7 @@ export const serializeDefinitionIfAllowed = <kind extends DiscriminantKind>(
 }
 
 const serializeIfPrimitive = (data: unknown) => {
-    const domain = domainOf(data)
+    const domain = kindOf(data)
     return domain === "object" || domain === "symbol"
         ? undefined
         : serializePrimitive(data as SerializablePrimitive)
@@ -622,7 +622,7 @@ const serializeData: {
     value: (data) => serializeIfPrimitive(data) ?? "default",
     class: (data) =>
         (objectKindOf(data) as DefaultObjectKind | undefined) ?? "default",
-    domain: domainOf
+    kind: kindOf
 }
 
 export const serializeCase = <kind extends DiscriminantKind>(

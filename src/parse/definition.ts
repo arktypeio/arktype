@@ -1,8 +1,8 @@
 import { TypeNode } from "../nodes/type.js"
 import type { Scope } from "../scope.js"
 import { Type } from "../type.js"
+import { kindOf } from "../utils/domains.js"
 import type { Primitive } from "../utils/domains.js"
-import { domainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
     Dict,
@@ -33,7 +33,7 @@ export type ParseContext = {
 }
 
 export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
-    const domain = domainOf(def)
+    const domain = kindOf(def)
     if (domain === "string") {
         return parseString(def as string, ctx)
     }
@@ -48,7 +48,7 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
             return parseTuple(def as List, ctx)
         case "RegExp":
             return TypeNode.from({
-                domain: "string",
+                kind: "string",
                 regex: (def as RegExp).source
             })
         case "Function":
@@ -98,7 +98,7 @@ export type validateDefinition<def, $> = def extends (...args: any[]) => any
     ? validateTupleExpression<def, $>
     : def extends BadDefinitionType
     ? writeBadDefinitionTypeMessage<
-          objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
+          objectKindOf<def> extends string ? objectKindOf<def> : kindOf<def>
       >
     : isUnknown<def> extends true
     ? stringKeyOf<$>

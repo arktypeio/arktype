@@ -1,11 +1,11 @@
 import type { evaluate } from "./generics.js"
 
-export const hasDomain = <data, domain extends Domain>(
+export const hasKind = <data, domain extends Kind>(
     data: data,
-    domain: domain
-): data is data & inferDomain<domain> => domainOf(data as any) === domain
+    kind: domain
+): data is data & inferKind<domain> => kindOf(data as any) === kind
 
-type DomainTypes = {
+type TypesByKind = {
     bigint: bigint
     boolean: boolean
     number: number
@@ -16,22 +16,22 @@ type DomainTypes = {
     null: null
 }
 
-export type inferDomain<domain extends Domain> = Domain extends domain
+export type inferKind<kind extends Kind> = Kind extends kind
     ? unknown
-    : DomainTypes[domain]
+    : TypesByKind[kind]
 
-export type Domain = evaluate<keyof DomainTypes>
+export type Kind = evaluate<keyof TypesByKind>
 
-export type NullishDomain = "undefined" | "null"
+export type NullishKind = "undefined" | "null"
 
-export type NonNullishDomain = Exclude<Domain, NullishDomain>
+export type NonNullishKind = Exclude<Kind, NullishKind>
 
-export type PrimitiveDomain = Exclude<Domain, "object">
+export type PrimitiveKind = Exclude<Kind, "object">
 
-export type Primitive = inferDomain<PrimitiveDomain>
+export type Primitive = inferKind<PrimitiveKind>
 
-export type domainOf<data> = unknown extends data
-    ? Domain
+export type kindOf<data> = unknown extends data
+    ? Kind
     : data extends object
     ? "object"
     : data extends string
@@ -50,7 +50,7 @@ export type domainOf<data> = unknown extends data
     ? "symbol"
     : never
 
-export const domainOf = <data>(data: data) => {
+export const kindOf = <data>(data: data) => {
     const builtinType = typeof data
     return (
         builtinType === "object"
@@ -60,11 +60,11 @@ export const domainOf = <data>(data: data) => {
             : builtinType === "function"
             ? "object"
             : builtinType
-    ) as domainOf<data>
+    ) as kindOf<data>
 }
 
 /** Each domain's completion for the phrase "Must be _____" */
-export const domainDescriptions = {
+export const kindDescriptions = {
     bigint: "a bigint",
     boolean: "boolean",
     null: "null",
@@ -73,4 +73,4 @@ export const domainDescriptions = {
     string: "a string",
     symbol: "a symbol",
     undefined: "undefined"
-} as const satisfies Record<Domain, string>
+} as const satisfies Record<Kind, string>

@@ -8,17 +8,16 @@ import { scope } from "../scope.js"
 export const jsObjectsScope = scope(
     {
         Function: TypeNode.from({
-            domain: "object",
-            instance: Function
+            base: Function
         }),
-        Date: TypeNode.from({ domain: "object", instance: Date }),
-        Error: TypeNode.from({ domain: "object", instance: Error }),
-        Map: TypeNode.from({ domain: "object", instance: Map }),
-        RegExp: TypeNode.from({ domain: "object", instance: RegExp }),
-        Set: TypeNode.from({ domain: "object", instance: Set }),
-        WeakMap: TypeNode.from({ domain: "object", instance: WeakMap }),
-        WeakSet: TypeNode.from({ domain: "object", instance: WeakSet }),
-        Promise: TypeNode.from({ domain: "object", instance: Promise })
+        Date: TypeNode.from({ base: Date }),
+        Error: TypeNode.from({ base: Error }),
+        Map: TypeNode.from({ base: Map }),
+        RegExp: TypeNode.from({ base: RegExp }),
+        Set: TypeNode.from({ base: Set }),
+        WeakMap: TypeNode.from({ base: WeakMap }),
+        WeakSet: TypeNode.from({ base: WeakSet }),
+        Promise: TypeNode.from({ base: Promise })
     },
     { name: "jsObjects", standard: false }
 )

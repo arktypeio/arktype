@@ -1,7 +1,7 @@
 import type { Filter } from "../parse/ast/filter.js"
 import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
 import { as } from "../parse/definition.js"
-import type { Domain } from "../utils/domains.js"
+import type { Kind } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
     conform,
@@ -10,8 +10,8 @@ import type {
     instanceOf,
     keySet
 } from "../utils/generics.js"
-import type { BaseConstraint } from "./base.js"
 import { DivisibilityNode } from "./divisibility.js"
+import type { Domain } from "./domain.js"
 import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
 import type { CompiledAssertion } from "./node.js"
@@ -140,7 +140,9 @@ type ConstraintEntry = {
     [k in ConstraintKind]: [k, instanceOf<ConstraintKinds[k]>]
 }[ConstraintKind]
 
-export type Constraint = instanceOf<ConstraintKinds[ConstraintKind]>
+export type Constraint<base extends Domain> = instanceOf<
+    ConstraintKinds[ConstraintKind]
+>
 
 export type ValidationConstraints = Omit<PredicateDefinition, "morphs">
 
@@ -181,13 +183,13 @@ export type inferInput<input extends RuleSet> = input
 
 // type discriminateConstraintsInputBranch<branch extends RuleSet> =
 //     branch extends {
-//         domain: infer domain extends Domain
+//         kind: infer domain extends Domain
 //     }
 //         ? domain extends "object"
 //             ? branch extends { instance: typeof Array }
 //                 ? ArrayRuleSet
 //                 : NonArrayObjectRuleSet
-//             : DomainRuleSet & { domain: domain }
+//             : DomainRuleSet & { kind: domain }
 //         : ExactValueRuleSet
 
 export type validateConstraintsInput<input extends RuleSet> = exact<
@@ -200,36 +202,20 @@ const validateRuleKeys = (rules: PredicateNode) => {
     }
 }
 
-const validateRuleKeysFromSet = (
-    rules: PredicateNode,
-    allowedKeys: keySet<ConstraintKind>,
-    description: string
-) => {
-    const inputKeys = rules.getKinds()
-    const disallowedValueKeys = inputKeys.filter((k) => !(k in allowedKeys))
-    if (disallowedValueKeys.length) {
-        throwParseError(
-            `Constraints ${disallowedValueKeys.join(
-                ", "
-            )} are not allowed for ${description}.`
-        )
-    }
-}
-
-export type RuleSet<base extends BaseConstraint = BaseConstraint> = {
+export type RuleSet<base extends Domain = Domain> = {
     base: base
     morph?: Morph[]
     // TODO: Don't allow exact value filter
     filter?: Filter[]
 } & constraintsOf<base>
 
-type constraintsOf<base extends BaseConstraint> = base extends Domain
+type constraintsOf<base extends Domain> = base extends Kind
     ? domainConstraintsOf<base>
     : base extends constructor
     ? constructorConstraintsOf<base>
     : {}
 
-type domainConstraintsOf<base extends Domain> = base extends "object"
+type domainConstraintsOf<base extends Kind> = base extends "object"
     ? {
           props?: PropsInput
       }
@@ -257,7 +243,7 @@ type constructorConstraintsOf<base extends constructor> =
 
 // type KeyValue = string | number | symbol | RegExp
 
-// const baseKeysByDomain: Record<Domain, readonly KeyValue[]> = {
+// const baseKeysBykind: Record<Domain, readonly KeyValue[]> = {
 //     bigint: prototypeKeysOf(0n),
 //     boolean: prototypeKeysOf(false),
 //     null: [],
@@ -270,12 +256,12 @@ type constructorConstraintsOf<base extends constructor> =
 // }
 
 // const arrayIndexStringBranch = RulesNode.from({
-//     domain: "string",
+//     kind: "string",
 //     regex: wellFormedNonNegativeIntegerMatcher.source
 // })
 
 // const arrayIndexNumberBranch = RulesNode.from({
-//     domain: "number",
+//     kind: "number",
 //     range: {
 //         ">=": 0
 //     },

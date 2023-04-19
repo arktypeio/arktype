@@ -29,7 +29,7 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
         ctx.path.pop()
     }
     return TypeNode.from({
-        domain: "object",
+        kind: "object",
         props: {
             named,
             indexed: []

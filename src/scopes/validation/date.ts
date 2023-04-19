@@ -98,7 +98,7 @@ export const tryParseDate = (
 }
 
 export const parsedDate = TypeNode.from({
-    domain: "string",
+    kind: "string",
     morph: (s, state) => {
         const result = tryParseDate(s)
         return typeof result === "string"

@@ -1,7 +1,7 @@
 import type { SizedData } from "../utils/data.js"
 import { DataWrapper } from "../utils/data.js"
-import type { Domain } from "../utils/domains.js"
-import { domainDescriptions } from "../utils/domains.js"
+import type { Kind } from "../utils/domains.js"
+import { kindDescriptions } from "../utils/domains.js"
 import type {
     arraySubclassToReadonly,
     conform,
@@ -116,8 +116,8 @@ export type Problems = arraySubclassToReadonly<ProblemArray>
 
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1)
 
-export const domainsToDescriptions = (domains: Domain[]) =>
-    domains.map((objectKind) => domainDescriptions[objectKind])
+export const domainsToDescriptions = (domains: Kind[]) =>
+    domains.map((objectKind) => kindDescriptions[objectKind])
 
 export const objectKindsToDescriptions = (kinds: DefaultObjectKind[]) =>
     kinds.map((objectKind) => objectKindDescriptions[objectKind])
@@ -158,11 +158,11 @@ export class ProblemIntersection extends Problem<Problem[]> {
     }
 }
 
-export class DomainProblem extends Problem<Domain> {
+export class DomainProblem extends Problem<Kind> {
     readonly code = "domain"
 
     get mustBe() {
-        return domainDescriptions[this.rule]
+        return kindDescriptions[this.rule]
     }
 
     override get was() {
@@ -274,7 +274,7 @@ export class ValueProblem extends Problem {
 }
 
 export const problemsByCode = defineProblemsCode({
-    domain: DomainProblem,
+    kind: DomainProblem,
     divisor: DivisorProblem,
     instance: InstanceProblem,
     key: KeyProblem,

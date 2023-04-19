@@ -1,4 +1,4 @@
-import { hasDomain } from "./domains.js"
+import { hasKind } from "./domains.js"
 
 export const asConst = <t>(t: asConstRecurse<t>) => t
 
@@ -152,7 +152,7 @@ export const keyCount = (o: object) => Object.keys(o).length
 export type keySet<key extends string = string> = { readonly [_ in key]?: true }
 
 export const hasKeys = (value: unknown) =>
-    hasDomain(value, "object") ? Object.keys(value).length !== 0 : false
+    hasKind(value, "object") ? Object.keys(value).length !== 0 : false
 
 export type mutable<o> = {
     -readonly [k in keyof o]: o[k]

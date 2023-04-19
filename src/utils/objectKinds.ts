@@ -1,4 +1,4 @@
-import { domainOf } from "./domains.js"
+import { kindOf } from "./domains.js"
 import type { constructor, instanceOf } from "./generics.js"
 import { isKeyOf } from "./generics.js"
 
@@ -75,7 +75,7 @@ export const objectKindOf = <
     data: data,
     kinds?: kinds
 ) => {
-    if (domainOf(data) !== "object") {
+    if (kindOf(data) !== "object") {
         return undefined
     }
     const kindSet: ObjectKindSet = kinds ?? defaultObjectKinds

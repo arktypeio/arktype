@@ -1,5 +1,4 @@
-import type { inferDomain, Primitive } from "./domains.js"
-import { domainOf } from "./domains.js"
+import { type inferKind, kindOf, type Primitive } from "./domains.js"
 import type { Dict, List } from "./generics.js"
 import { isKeyOf } from "./generics.js"
 import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
@@ -43,7 +42,7 @@ export const print = (data: unknown, indent?: number) =>
     console.log(stringify(data, indent))
 
 export const stringify = (data: unknown, indent?: number) => {
-    switch (domainOf(data)) {
+    switch (kindOf(data)) {
         case "object":
             return JSON.stringify(
                 serializeRecurse(data, stringifyOpts, []),
@@ -68,7 +67,7 @@ const serializeRecurse = (
     context: SerializationOptions,
     seen: unknown[]
 ): unknown => {
-    switch (domainOf(data)) {
+    switch (kindOf(data)) {
         case "object":
             if (typeof data === "function") {
                 return stringifyOpts.onFunction(data)
@@ -116,7 +115,7 @@ export type SerializedPrimitives = {
 export type SerializedPrimitive =
     SerializedPrimitives[keyof SerializedPrimitives]
 
-export type SerializablePrimitive = inferDomain<keyof SerializedPrimitives>
+export type SerializablePrimitive = inferKind<keyof SerializedPrimitives>
 
 export const serializePrimitive = <value extends SerializablePrimitive>(
     value: value
