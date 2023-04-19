@@ -36,7 +36,7 @@ type MakeComplexType<S extends string> = S extends `${infer head}${infer tail}`
 
 bench("bench type", () => {
     return [] as any as MakeComplexType<"defenestration">
-}).type([177, "instantiations"])
+}).type([169, "instantiations"])
 
 bench(
     "bench call and type",
@@ -48,4 +48,4 @@ bench(
     fakeCallOptions
 )
     .mean([2, "ms"])
-    .type([357, "instantiations"])
+    .type([349, "instantiations"])
