@@ -1,9 +1,9 @@
 import type { Filter } from "../parse/ast/filter.js"
 import { intersectUniqueLists, listFrom } from "../utils/generics.js"
-import type { CompiledAssertion } from "./node.js"
-import { RuleNode } from "./rule.js"
+import type { CompilationState, CompiledAssertion } from "./node.js"
+import { Node } from "./node.js"
 
-export class FilterNode extends RuleNode<typeof FilterNode> {
+export class FilterNode extends Node<typeof FilterNode> {
     static readonly kind = "filter"
     predicates: readonly Filter[]
 
@@ -15,6 +15,10 @@ export class FilterNode extends RuleNode<typeof FilterNode> {
 
     static compile(predicates: readonly Filter[]): CompiledAssertion {
         return `data !== data`
+    }
+
+    compileTraversal(s: CompilationState) {
+        return s.ifNotThen(this.key, s.problem("custom", "filters"))
     }
 
     intersect(other: FilterNode) {

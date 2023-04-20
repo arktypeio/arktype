@@ -16,7 +16,7 @@ import {
 import type { Segments } from "../utils/paths.js"
 import { Path } from "../utils/paths.js"
 import { stringify } from "../utils/serialize.js"
-import type { BoundContextWithUnits } from "./range.js"
+import type { RangeConstraint } from "./range.js"
 import { comparatorDescriptions } from "./range.js"
 
 export class ArkTypeError extends TypeError {
@@ -158,8 +158,8 @@ export class ProblemIntersection extends Problem<Problem[]> {
     }
 }
 
-export class KindProblem extends Problem<Domain> {
-    readonly code = "kind"
+export class DomainProblem extends Problem<Domain> {
+    readonly code = "domain"
 
     get mustBe() {
         return domainDescriptions[this.rule]
@@ -220,7 +220,7 @@ export class KeyProblem extends Problem<KeyProblemKind> {
     mustBe = this.rule === "missing" ? "defined" : "extraneous"
 }
 
-export class RangeProblem extends Problem<BoundContextWithUnits, SizedData> {
+export class RangeProblem extends Problem<RangeConstraint, SizedData> {
     readonly code = "range"
 
     get mustBe() {
@@ -242,8 +242,8 @@ export class RegexProblem extends Problem<string> {
     }
 }
 
-export class InstanceProblem extends Problem<constructor, object> {
-    readonly code = "instance"
+export class ClassProblem extends Problem<constructor, object> {
+    readonly code = "class"
 
     get mustBe() {
         const possibleObjectKind = getExactConstructorObjectKind(this.rule)
@@ -274,9 +274,9 @@ export class ValueProblem extends Problem {
 }
 
 export const problemsByCode = defineProblemsCode({
-    kind: KindProblem,
+    domain: DomainProblem,
     divisor: DivisorProblem,
-    instance: InstanceProblem,
+    class: ClassProblem,
     key: KeyProblem,
     range: RangeProblem,
     regex: RegexProblem,

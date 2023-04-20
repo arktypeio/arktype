@@ -1,6 +1,11 @@
 import { throwInternalError } from "../utils/errors.js"
 import type { evaluate, xor } from "../utils/generics.js"
-import type { ComparisonState, CompiledAssertion, Disjoint } from "./node.js"
+import type {
+    ComparisonState,
+    CompilationState,
+    CompiledAssertion,
+    Disjoint
+} from "./node.js"
 import { Node } from "./node.js"
 
 export const minComparators = {
@@ -49,18 +54,38 @@ export type MinBounds = xor<{ ">"?: number }, { ">="?: number }>
 
 export type MaxBounds = xor<{ "<"?: number }, { "<="?: number }>
 
-export type BoundContext<comparator extends Comparator = Comparator> = {
+export type RangeConstraint<comparator extends Comparator = Comparator> = {
     limit: number
     comparator: comparator
 }
 
-export type BoundContextWithUnits = evaluate<BoundContext & { units: string }>
+export type Range =
+    | [RangeConstraint]
+    | [min: RangeConstraint, max: RangeConstraint]
 
 export class RangeNode extends Node<typeof RangeNode> {
     static readonly kind = "range"
 
+    range: Range
+
     constructor(public bounds: Bounds) {
-        super(RangeNode, bounds)
+        let range: Range
+        if (bounds["=="]) {
+            range = [{ comparator: "==", limit: bounds["=="] }]
+        } else {
+            const lower = extractLower(bounds)
+            const upper = extractUpper(bounds)
+            range = lower
+                ? upper
+                    ? [lower, upper]
+                    : [lower]
+                : upper
+                ? [upper]
+                : throwInternalError(`Unexpected unbounded range`)
+        }
+        // TODO: variadic here, could pass min/max
+        super(RangeNode, range)
+        this.range = range
     }
 
     // const units =
@@ -69,24 +94,29 @@ export class RangeNode extends Node<typeof RangeNode> {
     //     : s.lastDomain === "object"
     //     ? "items long"
     //     : ""
-    static compile(bounds: Bounds): CompiledAssertion {
+
+    static compile(range: Range) {
+        return range
+            .map((constraint) => RangeNode.#compileAssertion(constraint))
+            .join(" && ") as CompiledAssertion
+    }
+
+    static #compileAssertion(constraint: RangeConstraint): CompiledAssertion {
         const size = "(data.length ?? data)"
-        if (bounds["=="] !== undefined) {
-            return `${size} === ${bounds["=="]}`
-        }
-        const lower = extractLower(bounds)
-        const compiledLower = lower
-            ? (`${size} ${lower.comparator} ${lower.limit}` as const)
-            : undefined
-        const upper = extractUpper(bounds)
-        const compiledUpper = upper
-            ? (`${size} ${upper.comparator} ${upper.limit}` as const)
-            : undefined
-        return compiledLower
-            ? compiledUpper
-                ? `${compiledLower} && ${compiledUpper}`
-                : compiledLower
-            : compiledUpper ?? throwInternalError(`Unexpected unbounded range`)
+        return `${size} ${
+            constraint.comparator === "==" ? "===" : constraint.comparator
+        } ${constraint.limit}`
+    }
+
+    compileTraversal(s: CompilationState) {
+        return this.range
+            .map((constraint) =>
+                s.ifNotThen(
+                    RangeNode.#compileAssertion(constraint),
+                    s.problem("range", constraint)
+                )
+            )
+            .join("\n")
     }
 
     intersect(other: RangeNode, s: ComparisonState): RangeNode | Disjoint {
@@ -184,12 +214,12 @@ export class RangeNode extends Node<typeof RangeNode> {
     }
 }
 
-const isExclusive = (bound: BoundContext) => bound.comparator[1] === "="
+const isExclusive = (bound: RangeConstraint) => bound.comparator[1] === "="
 
 export const compareStrictness = (
     kind: "min" | "max",
-    l: BoundContext | undefined,
-    r: BoundContext | undefined
+    l: RangeConstraint | undefined,
+    r: RangeConstraint | undefined
 ) =>
     !l
         ? !r
@@ -216,7 +246,7 @@ export const compareStrictness = (
 const getComparator = <comparator extends MinComparator | MaxComparator>(
     bounds: Bounds,
     comparator: comparator
-): BoundContext<comparator> | undefined => {
+): RangeConstraint<comparator> | undefined => {
     if (bounds[comparator] !== undefined) {
         return {
             limit: bounds[comparator]!,

@@ -5,7 +5,11 @@ import {
     type mutable
 } from "../utils/generics.js"
 import { toPropChain } from "../utils/paths.js"
-import type { ComparisonState, CompiledAssertion } from "./node.js"
+import type {
+    ComparisonState,
+    CompilationState,
+    CompiledAssertion
+} from "./node.js"
 import { Disjoint, Node } from "./node.js"
 import type { TypeNodeInput } from "./type.js"
 import { never, TypeNode } from "./type.js"
@@ -57,6 +61,10 @@ export class PropsNode extends Node<typeof PropsNode> {
         }
         // TODO: empty?
         return checks.join(" && ") as CompiledAssertion
+    }
+
+    compileTraversal(s: CompilationState) {
+        return ""
     }
 
     intersect(other: PropsNode, s: ComparisonState) {
@@ -172,6 +180,10 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
     static compile(child: NamedPropChild) {
         // TODO: nested?
         return child.value.key
+    }
+
+    compileTraversal(s: CompilationState) {
+        return ""
     }
 
     intersect(

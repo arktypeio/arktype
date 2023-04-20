@@ -6,8 +6,14 @@ import { constructorExtends } from "../utils/generics.js"
 import { registry } from "../utils/registry.js"
 import type { SerializablePrimitive } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
-import type { ComparisonState, CompiledAssertion, Disjoint } from "./node.js"
+import type {
+    ComparisonState,
+    CompilationState,
+    CompiledAssertion,
+    Disjoint
+} from "./node.js"
 import { Node } from "./node.js"
+import type { ProblemRules } from "./problems.js"
 
 type BasesByLevel = {
     domain: Exclude<Domain, "undefined" | "null" | "boolean">
@@ -108,5 +114,15 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
                 rule === Array ? "Array" : registry().register(rule.name, rule)
             }`
         }
+    }
+
+    compileTraversal(s: CompilationState) {
+        return s.ifNotThen(
+            this.key,
+            s.problem(
+                this.level,
+                this.rule as ProblemRules[(typeof this)["level"]]
+            )
+        )
     }
 }

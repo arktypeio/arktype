@@ -76,6 +76,8 @@ export abstract class Node<
         Node.#cache[kind][key] = this
     }
 
+    abstract compileTraversal(s: CompilationState): string
+
     abstract intersect(
         other: instanceOf<subclass>,
         s: ComparisonState
@@ -174,6 +176,24 @@ export class CompilationState {
         }state.addProblem("${code}", ${
             typeof rule === "function" ? rule.name : JSON.stringify(rule)
         }, ${this.data}, ${this.path.json})` as const
+    }
+
+    ifThen<condition extends string, onTrue extends string>(
+        condition: condition,
+        onTrue: onTrue
+    ) {
+        return `if (${condition}) {
+            ${onTrue}
+        }`
+    }
+
+    ifNotThen<condition extends string, onFalse extends string>(
+        condition: condition,
+        onFalse: onFalse
+    ) {
+        return `if (${condition}) {
+            ${onFalse}
+        }`
     }
 
     //     arrayOf(node: Node<any>) {

@@ -1,4 +1,4 @@
-import type { CompiledAssertion } from "./node.js"
+import type { CompilationState, CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 
 export class DivisibilityNode extends Node<typeof DivisibilityNode> {
@@ -11,6 +11,10 @@ export class DivisibilityNode extends Node<typeof DivisibilityNode> {
 
     static compile(divisor: number): CompiledAssertion {
         return `data % ${divisor} === 0`
+    }
+
+    compileTraversal(s: CompilationState) {
+        return s.ifNotThen(this.key, s.problem("divisor", this.divisor))
     }
 
     intersect(other: DivisibilityNode) {
