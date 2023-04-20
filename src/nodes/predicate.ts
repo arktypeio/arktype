@@ -1,13 +1,12 @@
 import type { Filter } from "../parse/ast/filter.js"
 import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
 import { as } from "../parse/definition.js"
-import type { Kind } from "../utils/domains.js"
+import type { inferKind, Kind } from "../utils/domains.js"
 import type {
-    conform,
     constructor,
     evaluate,
-    exact,
-    instanceOf
+    instanceOf,
+    xor
 } from "../utils/generics.js"
 import { DivisibilityNode } from "./divisibility.js"
 import type { Domain } from "./domain.js"
@@ -31,7 +30,6 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
 
     constructor(public rules: RuleNodes) {
         super(PredicateNode, rules)
-        validateRuleKeys(this)
         this.domain = rules[0]
         this.constraints = rules.slice(1) as ConstraintNode[]
     }
@@ -52,9 +50,17 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
             | undefined
     }
 
-    static from<const input extends RuleSet>(input: input) {
-        const def = input as PredicateDefinition
-        const rules: RuleNodes = [new DomainNode(def.domain)]
+    static from<const input extends RuleSet>({
+        kind,
+        instanceOf,
+        value,
+        ...constraints
+    }: input) {
+        const def = constraints as PredicateConstraintsDefinition
+        // TODO: split up DomainNode
+        const rules: RuleNodes = [
+            new DomainNode(kind ?? instanceOf ?? ([value] as any))
+        ]
         // if (constraints.value) {
         //     rules.push(new EqualityNode(constraints.value))
         // } else if (constraints.instance) {
@@ -62,6 +68,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         // } else {
         //     rules.push(new BaseNode(constraints.domain!))
         // }
+        // TODO: validate input
         if (def.divisor) {
             rules.push(new DivisibilityNode(def.divisor))
         }
@@ -153,17 +160,15 @@ type ConstraintEntry = {
 }[ConstraintKind]
 
 export type ValidationConstraints = Omit<
-    PredicateDefinition,
+    PredicateConstraintsDefinition,
     "domain" | "morphs"
 >
 
-export type PredicateDefinition = evaluate<
-    { domain: Domain } & {
-        [k in ConstraintKind]?: k extends "props"
-            ? PropsInput
-            : ConstructorParameters<ConstraintKinds[k]>[0]
-    }
->
+export type PredicateConstraintsDefinition = evaluate<{
+    [k in ConstraintKind]?: k extends "props"
+        ? PropsInput
+        : ConstructorParameters<ConstraintKinds[k]>[0]
+}>
 
 type ConstraintKind = keyof ConstraintKinds
 
@@ -177,22 +182,19 @@ export type inferRuleSet<input extends RuleSet> = input["morph"] extends Morph<
     ? (In: inferInput<input>) => inferMorphOut<out>
     : inferInput<input>
 
-export type inferInput<input extends RuleSet> = input
-//     input extends ExactValueRuleSet<
-//     infer value
-// >
-//     ? value
-//     : input extends ArrayRuleSet
-//     ? unknown[]
-//     : input extends NonArrayObjectRuleSet
-//     ? input["instance"] extends constructor<infer t>
-//         ? t extends Function
-//             ? (...args: any[]) => unknown
-//             : t
-//         : object
-//     : input extends DomainRuleSet
-//     ? inferDomain<input["domain"]>
-//     : never
+export type inferInput<input extends RuleSet> = input extends {
+    value: infer value
+}
+    ? value
+    : input extends { instanceOf: infer instanceOf }
+    ? instanceOf extends constructor<infer t>
+        ? t extends Function
+            ? (...args: any[]) => unknown
+            : t
+        : object
+    : input extends { kind: infer kind extends Kind }
+    ? inferKind<kind>
+    : never
 
 // type discriminateConstraintsInputBranch<branch extends RuleSet> =
 //     branch extends {
@@ -210,16 +212,15 @@ export type inferInput<input extends RuleSet> = input
 //     input
 // >
 
-const validateRuleKeys = (rules: PredicateNode) => {
-    if (rules.getConstraint("divisor")) {
-    }
-}
+type DomainRule = xor<
+    xor<{ kind: Kind }, { instanceOf: constructor }>,
+    { value: unknown }
+>
 
-export type RuleSet<domain extends Domain = Domain> = {
-    domain: domain
-    morph?: Morph[]
+export type RuleSet<domain extends Domain = Domain> = DomainRule & {
+    morph?: Morph | Morph[]
     // TODO: Don't allow exact value filter
-    filter?: Filter[]
+    filter?: Filter | Filter[]
 } & constraintsOf<domain>
 
 type constraintsOf<base extends Domain> = base extends Kind
@@ -234,7 +235,7 @@ type kindConstraints<base extends Kind> = base extends "object"
       }
     : base extends "string"
     ? {
-          regex?: string[]
+          regex?: string | string[]
           range?: Bounds
       }
     : base extends "number"

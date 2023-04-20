@@ -18,7 +18,7 @@ export const parseBound = (
     start: ComparatorStartChar
 ) => {
     const comparator = shiftComparator(s, start)
-    const value = s.root.literalValue?.value
+    const value = s.root.literalValue?.rule
     if (typeof value === "number") {
         s.ejectRoot()
         return s.reduceLeftBound(value, comparator)

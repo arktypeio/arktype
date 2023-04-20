@@ -153,7 +153,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
 
     toArray() {
         return TypeNode.from({
-            domain: "object",
+            kind: "object",
             props: {
                 named: {},
                 // TODO: fix

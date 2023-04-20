@@ -11,6 +11,7 @@ import { Node } from "./node.js"
 type DomainsByLevel = {
     kind: Exclude<Kind, "undefined" | "null" | "boolean">
     constructor: constructor
+    // TODO: change
     value: [unknown]
 }
 
@@ -83,13 +84,13 @@ export class DomainNode<level extends DomainLevel = DomainLevel> extends Node<
         )
     }
 
-    static compile(base: Domain): CompiledAssertion {
-        if (hasLevel(base, "kind")) {
-            return base === "object"
+    static compile(rule: Domain): CompiledAssertion {
+        if (hasLevel(rule, "kind")) {
+            return rule === "object"
                 ? `((typeof data === "object" && data !== null) || typeof data === "function")`
-                : `typeof data === "${base}"`
-        } else if (hasLevel(base, "value")) {
-            const value = base[0]
+                : `typeof data === "${rule}"`
+        } else if (hasLevel(rule, "value")) {
+            const value = rule[0]
             return `data === ${
                 hasKind(value, "object") || typeof value === "symbol"
                     ? registry().register(typeof value, value)
@@ -97,7 +98,7 @@ export class DomainNode<level extends DomainLevel = DomainLevel> extends Node<
             }`
         } else {
             return `data instanceof ${
-                base === Array ? "Array" : registry().register(base.name, base)
+                rule === Array ? "Array" : registry().register(rule.name, rule)
             }`
         }
     }

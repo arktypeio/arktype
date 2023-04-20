@@ -51,8 +51,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
         }
     }
     return TypeNode.from({
-        kind: "object",
-        instance: Array,
+        instanceOf: Array,
         props: {
             named,
             indexed: []
@@ -203,8 +202,7 @@ const prefixParsers: {
             )
         }
         return TypeNode.from({
-            kind: "object",
-            instance: def[1] as constructor
+            instanceOf: def[1] as constructor
         })
     },
     "===": (def) => TypeNode.from({ value: def[1] })
