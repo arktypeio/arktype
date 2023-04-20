@@ -42,7 +42,7 @@ const hasLevel = <level extends BasisLevel>(
 export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
     typeof BasisNode
 > {
-    readonly kind = "basis"
+    static readonly kind = "basis"
     readonly level: level
 
     constructor(public rule: Basis<level>) {
@@ -97,7 +97,7 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
                 ? `((typeof data === "object" && data !== null) || typeof data === "function")`
                 : `typeof data === "${rule}"`
         } else if (hasLevel(rule, "value")) {
-            const value = rule[0]
+            const value = rule[1]
             return `data === ${
                 hasKind(value, "object") || typeof value === "symbol"
                     ? registry().register(typeof value, value)

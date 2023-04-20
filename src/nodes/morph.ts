@@ -4,7 +4,7 @@ import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 
 export class MorphNode extends Node<typeof MorphNode> {
-    readonly kind = "morph"
+    static readonly kind = "morph"
 
     transformations: readonly Morph[]
 

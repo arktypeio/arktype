@@ -24,31 +24,56 @@ export type CompiledAssertion = evaluate<
 >
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
+    readonly kind: NodeKind
     new (...args: any[]): Node<subclass>
     compile(definition: any): CompiledAssertion
 }
+
+type NodeKind =
+    | "type"
+    | "predicate"
+    | "basis"
+    | "divisor"
+    | "range"
+    | "regex"
+    | "props"
+    | "namedProp"
+    | "filter"
+    | "morph"
 
 export abstract class Node<
     subclass extends NodeSubclass<subclass> = NodeSubclass<any>,
     input = any
 > extends CompiledFunction<[data: input], boolean> {
-    abstract readonly kind: string
-
+    declare kind: subclass["kind"]
     declare key: CompiledAssertion
 
-    static #cache: Record<string, Node> = {}
+    static #cache: { [kind in NodeKind]: Record<CompiledAssertion, Node> } = {
+        type: {},
+        predicate: {},
+        basis: {},
+        divisor: {},
+        range: {},
+        regex: {},
+        props: {},
+        namedProp: {},
+        filter: {},
+        morph: {}
+    }
 
     constructor(
         protected subclass: subclass,
-        child: Parameters<subclass["compile"]>[0]
+        definition: Parameters<subclass["compile"]>[0]
     ) {
-        const key = subclass.compile(child)
-        if (Node.#cache[key]) {
-            return Node.#cache[key] as instanceOf<subclass>
+        const kind = subclass.kind
+        const key = subclass.compile(definition)
+        if (Node.#cache[kind][key]) {
+            return Node.#cache[kind][key] as instanceOf<subclass>
         }
         super("data", `return ${key}`)
+        this.kind = kind
         this.key = key
-        Node.#cache[key] = this
+        Node.#cache[kind][key] = this
     }
 
     abstract intersect(
@@ -197,7 +222,7 @@ const compilePredicate = (predicate: PredicateNode, s: CompilationState) => {
     return predicate.rules
         .map(
             (rule) => `if (!(${rule.key})) {
-        throw new Error()
+        ${s.problem("custom", "rule")}
     }`
         )
         .join("\n")

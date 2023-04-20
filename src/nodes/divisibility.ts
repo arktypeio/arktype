@@ -3,7 +3,7 @@ import { Node } from "./node.js"
 
 export class DivisibilityNode extends Node<typeof DivisibilityNode> {
     // TODO: align kind with node names
-    readonly kind = "divisor"
+    static readonly kind = "divisor"
 
     constructor(public divisor: number) {
         super(DivisibilityNode, divisor)

@@ -4,7 +4,7 @@ import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 
 export class FilterNode extends Node<typeof FilterNode> {
-    readonly kind = "filter"
+    static readonly kind = "filter"
     predicates: readonly Filter[]
 
     constructor(predicates: Filter | Filter[]) {

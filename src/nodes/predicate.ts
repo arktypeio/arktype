@@ -7,8 +7,8 @@ import { BasisNode } from "./basis.js"
 import { DivisibilityNode } from "./divisibility.js"
 import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
-import type { CompiledAssertion } from "./node.js"
-import { ComparisonState, Node } from "./node.js"
+import type { ComparisonState, CompiledAssertion } from "./node.js"
+import { Node } from "./node.js"
 import type { PropsInput } from "./props.js"
 import { PropsNode } from "./props.js"
 import type { Bounds } from "./range.js"
@@ -18,7 +18,7 @@ import { RegexNode } from "./regex.js"
 export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
     declare [as]: t
 
-    readonly kind = "predicate"
+    static readonly kind = "predicate"
     basis: BasisNode
     constraints: ConstraintNode[]
 
@@ -96,25 +96,24 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         return new PredicateNode(resultInput)
     }
 
-    // TODO: find a better way to combine with intersect
-    constrain(constraints: ConstraintsDefinition) {
-        const resultInput = Object.fromEntries(this.getEntries())
-        let kind: ConstraintKind
-        for (kind in constraints) {
-            const constraintNode = new (constraintKinds[
-                kind
-            ] as constructor<any>)(constraints[kind])
-            const matchingRule = this.getConstraint(kind)
-            if (matchingRule) {
-                resultInput[kind] = matchingRule.intersect(
-                    constraintNode as never,
-                    new ComparisonState()
-                ) as any
-            } else {
-                resultInput[kind] = constraintNode
+    constrain<kind extends ConstraintKind>(
+        kind: kind,
+        definition: PredicateDefinition[kind]
+    ) {
+        const constraintNode = new constraintKinds[kind](definition as any)
+        let includedKind = false
+        const constrainedRules = this.rules.map((rule) => {
+            if (rule.kind === kind) {
+                includedKind = true
+                return constraintNode
             }
+            return rule
+        }) as RuleNodes
+        if (!includedKind) {
+            // TODO: add precedence
+            constrainedRules.push(constraintNode)
         }
-        return new PredicateNode(resultInput)
+        return new PredicateNode(constrainedRules)
     }
 }
 
@@ -142,7 +141,7 @@ type ConstraintEntry = {
     [k in ConstraintKind]: [k, instanceOf<ConstraintKinds[k]>]
 }[ConstraintKind]
 
-type ConstraintKind = keyof ConstraintKinds
+export type ConstraintKind = keyof ConstraintKinds
 
 export type PredicateDefinition<basis extends Basis = Basis> = {
     basis: basis

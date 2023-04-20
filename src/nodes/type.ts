@@ -19,6 +19,7 @@ import type { BasisNode } from "./basis.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
 import { ComparisonState, Disjoint, Node } from "./node.js"
 import type {
+    ConstraintKind,
     ConstraintsDefinition,
     inferPredicateDefinition,
     PredicateDefinition
@@ -45,7 +46,7 @@ export type TypeNodeInput = List<PredicateDefinition | PredicateNode>
 export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     declare [as]: t
 
-    readonly kind = "type"
+    static readonly kind = "type"
 
     constructor(public branches: PredicateNode[]) {
         super(TypeNode, branches)
@@ -95,10 +96,13 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
             : s.addDisjoint("union", this, other)
     }
 
-    constrain(constraints: ConstraintsDefinition) {
+    constrain<kind extends ConstraintKind>(
+        kind: kind,
+        definition: PredicateDefinition[kind]
+    ) {
         // TODO: diverge from intersect? What about morphs?
         return new TypeNode(
-            this.branches.map((branch) => branch.constrain(constraints))
+            this.branches.map((branch) => branch.constrain(kind, definition))
         )
     }
 

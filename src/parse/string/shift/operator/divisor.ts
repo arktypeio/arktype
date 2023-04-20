@@ -13,7 +13,7 @@ export const parseDivisor = (s: DynamicStateWithRoot) => {
     if (divisor === 0) {
         s.error(writeInvalidDivisorMessage(0))
     }
-    s.root = s.root.constrain({ divisor })
+    s.root = s.root.constrain("divisor", divisor)
     //  s.error(writeIndivisibleMessage(stringify(s.root)))
 }
 
