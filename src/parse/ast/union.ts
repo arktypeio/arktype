@@ -1,5 +1,5 @@
 import type { inferIn } from "../../type.js"
-import type { kindOf } from "../../utils/domains.js"
+import type { domainOf } from "../../utils/domains.js"
 import type {
     equals,
     error,
@@ -35,7 +35,7 @@ type discriminatableRecurse<
     ? never
     : l & r extends never
     ? path
-    : kindOf<l> & kindOf<r> extends never
+    : domainOf<l> & domainOf<r> extends never
     ? path
     : objectKindOf<l> & objectKindOf<r> extends never
     ? path

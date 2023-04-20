@@ -1,4 +1,4 @@
-import { kindOf } from "./domains.js"
+import { domainOf } from "./domains.js"
 import { stringify } from "./serialize.js"
 
 export type SizedData = string | number | readonly unknown[]
@@ -25,7 +25,7 @@ export class DataWrapper<value = unknown> {
     }
 
     get domain() {
-        return kindOf(this.value)
+        return domainOf(this.value)
     }
 
     get size() {

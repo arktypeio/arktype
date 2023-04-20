@@ -14,7 +14,7 @@ export class MorphNode extends Node<typeof MorphNode> {
         this.transformations = transformationList
     }
 
-    static compile(transforms: readonly Morph[]): CompiledAssertion {
+    static compile(transformations: readonly Morph[]): CompiledAssertion {
         return `data !== data`
     }
 

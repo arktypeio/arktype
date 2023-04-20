@@ -1,4 +1,4 @@
-import { hasKind, type Kind } from "../utils/domains.js"
+import { type Domain, hasKind } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { constructor } from "../utils/generics.js"
 import { constructorExtends } from "../utils/generics.js"
@@ -8,51 +8,49 @@ import { serializePrimitive } from "../utils/serialize.js"
 import type { ComparisonState, CompiledAssertion, Disjoint } from "./node.js"
 import { Node } from "./node.js"
 
-type DomainsByLevel = {
-    kind: Exclude<Kind, "undefined" | "null" | "boolean">
+type BasesByLevel = {
+    kind: Exclude<Domain, "undefined" | "null" | "boolean">
     constructor: constructor
-    // TODO: change
-    value: [unknown]
+    value: ["===", unknown]
 }
 
-export type Domain<level extends DomainLevel = DomainLevel> =
-    DomainsByLevel[level]
+export type Basis<level extends BasisLevel = BasisLevel> = BasesByLevel[level]
 
-export type DomainLevel = keyof DomainsByLevel
+export type BasisLevel = keyof BasesByLevel
 
-const levelOf = (domain: Domain) =>
-    typeof domain === "string"
-        ? "domain"
-        : typeof domain === "object"
+const levelOf = (basis: Basis): BasisLevel =>
+    typeof basis === "string"
+        ? "kind"
+        : typeof basis === "object"
         ? "value"
         : "constructor"
 
-const hasLevel = <type extends DomainLevel>(
-    domain: Domain,
-    type: type
-): domain is Domain<type> => levelOf(domain) === type
+const hasLevel = <level extends BasisLevel>(
+    basis: Basis,
+    level: level
+): basis is Basis<level> => levelOf(basis) === level
 
-export class DomainNode<level extends DomainLevel = DomainLevel> extends Node<
-    typeof DomainNode
+export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
+    typeof BasisNode
 > {
-    readonly kind = "domain"
+    readonly kind = "basis"
     readonly level: level
 
-    constructor(public rule: Domain<level>) {
-        super(DomainNode, rule)
+    constructor(public rule: Basis<level>) {
+        super(BasisNode, rule)
         this.level = levelOf(rule) as unknown as level
     }
 
-    hasLevel<level extends DomainLevel>(
+    hasLevel<level extends BasisLevel>(
         level: level
     ): this is {
         level: level
-        rule: Domain<level>
+        rule: Basis<level>
     } {
         return hasLevel(this.rule, level)
     }
 
-    intersect(other: DomainNode, s: ComparisonState): DomainNode | Disjoint {
+    intersect(other: BasisNode, s: ComparisonState): BasisNode | Disjoint {
         if (this.hasLevel("kind")) {
             if (other.hasLevel("kind")) {
                 return this === other
@@ -62,14 +60,14 @@ export class DomainNode<level extends DomainLevel = DomainLevel> extends Node<
             if (other.hasLevel("constructor")) {
                 return this.rule === "object"
                     ? other
-                    : s.addDisjoint("kind", this.rule as Kind, "object")
+                    : s.addDisjoint("kind", this.rule as Domain, "object")
             }
         }
         if (this.hasLevel("constructor")) {
             if (other.hasLevel("kind")) {
                 return other.rule === "object"
                     ? this
-                    : s.addDisjoint("kind", "object", other.rule as Kind)
+                    : s.addDisjoint("kind", "object", other.rule as Domain)
             }
             if (other.hasLevel("constructor")) {
                 return constructorExtends(this.rule, other.rule)
@@ -84,7 +82,7 @@ export class DomainNode<level extends DomainLevel = DomainLevel> extends Node<
         )
     }
 
-    static compile(rule: Domain): CompiledAssertion {
+    static compile(rule: Basis): CompiledAssertion {
         if (hasLevel(rule, "kind")) {
             return rule === "object"
                 ? `((typeof data === "object" && data !== null) || typeof data === "function")`

@@ -1,7 +1,7 @@
 import { TypeNode } from "../nodes/type.js"
 import type { Scope } from "../scope.js"
 import { Type } from "../type.js"
-import { kindOf } from "../utils/domains.js"
+import { domainOf } from "../utils/domains.js"
 import type { Primitive } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
@@ -33,7 +33,7 @@ export type ParseContext = {
 }
 
 export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
-    const domain = kindOf(def)
+    const domain = domainOf(def)
     if (domain === "string") {
         return parseString(def as string, ctx)
     }
@@ -98,7 +98,7 @@ export type validateDefinition<def, $> = def extends (...args: any[]) => any
     ? validateTupleExpression<def, $>
     : def extends BadDefinitionType
     ? writeBadDefinitionTypeMessage<
-          objectKindOf<def> extends string ? objectKindOf<def> : kindOf<def>
+          objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
       >
     : isUnknown<def> extends true
     ? stringKeyOf<$>

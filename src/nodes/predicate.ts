@@ -1,16 +1,16 @@
 import type { Filter } from "../parse/ast/filter.js"
 import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
 import { as } from "../parse/definition.js"
-import type { inferKind, Kind } from "../utils/domains.js"
+import type { Domain, inferDomain } from "../utils/domains.js"
 import type {
     constructor,
     evaluate,
     instanceOf,
     xor
 } from "../utils/generics.js"
+import type { Basis } from "./basis.js"
+import { BasisNode } from "./basis.js"
 import { DivisibilityNode } from "./divisibility.js"
-import type { Domain } from "./domain.js"
-import { DomainNode } from "./domain.js"
 import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
 import type { CompiledAssertion } from "./node.js"
@@ -25,7 +25,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
     declare [as]: t
 
     readonly kind = "predicate"
-    domain: DomainNode
+    domain: BasisNode
     constraints: ConstraintNode[]
 
     constructor(public rules: RuleNodes) {
@@ -59,15 +59,8 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         const def = constraints as PredicateConstraintsDefinition
         // TODO: split up DomainNode
         const rules: RuleNodes = [
-            new DomainNode(kind ?? instanceOf ?? ([value] as any))
+            new BasisNode(kind ?? instanceOf ?? ([value] as any))
         ]
-        // if (constraints.value) {
-        //     rules.push(new EqualityNode(constraints.value))
-        // } else if (constraints.instance) {
-        //     rules.push(new InstanceNode(constraints.instance))
-        // } else {
-        //     rules.push(new BaseNode(constraints.domain!))
-        // }
         // TODO: validate input
         if (def.divisor) {
             rules.push(new DivisibilityNode(def.divisor))
@@ -88,7 +81,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         return rules.map((rule) => rule.key).join(" && ") as CompiledAssertion
     }
 
-    get literalValue(): DomainNode<"value"> | undefined {
+    get literalValue(): BasisNode<"value"> | undefined {
         return this.domain.hasLevel("value") ? this.domain : undefined
     }
 
@@ -140,7 +133,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
     }
 }
 
-export type RuleNodes = [domain: DomainNode, ...constraints: ConstraintNode[]]
+export type RuleNodes = [domain: BasisNode, ...constraints: ConstraintNode[]]
 
 export const constraintKinds = {
     range: RangeNode,
@@ -150,6 +143,12 @@ export const constraintKinds = {
     filter: FilterNode,
     morph: MorphNode
 } as const
+
+export type PredicateConstraintsDefinition = evaluate<{
+    [k in ConstraintKind]?: k extends "props"
+        ? PropsInput
+        : ConstructorParameters<ConstraintKinds[k]>[0]
+}>
 
 export type ConstraintNode = instanceOf<ConstraintKinds[ConstraintKind]>
 
@@ -163,12 +162,6 @@ export type ValidationConstraints = Omit<
     PredicateConstraintsDefinition,
     "domain" | "morphs"
 >
-
-export type PredicateConstraintsDefinition = evaluate<{
-    [k in ConstraintKind]?: k extends "props"
-        ? PropsInput
-        : ConstructorParameters<ConstraintKinds[k]>[0]
-}>
 
 type ConstraintKind = keyof ConstraintKinds
 
@@ -192,8 +185,8 @@ export type inferInput<input extends RuleSet> = input extends {
             ? (...args: any[]) => unknown
             : t
         : object
-    : input extends { kind: infer kind extends Kind }
-    ? inferKind<kind>
+    : input extends { kind: infer kind extends Domain }
+    ? inferDomain<kind>
     : never
 
 // type discriminateConstraintsInputBranch<branch extends RuleSet> =
@@ -213,23 +206,23 @@ export type inferInput<input extends RuleSet> = input extends {
 // >
 
 type DomainRule = xor<
-    xor<{ kind: Kind }, { instanceOf: constructor }>,
+    xor<{ kind: Domain }, { instanceOf: constructor }>,
     { value: unknown }
 >
 
-export type RuleSet<domain extends Domain = Domain> = DomainRule & {
+export type RuleSet<domain extends Basis = Basis> = DomainRule & {
     morph?: Morph | Morph[]
     // TODO: Don't allow exact value filter
     filter?: Filter | Filter[]
 } & constraintsOf<domain>
 
-type constraintsOf<base extends Domain> = base extends Kind
+type constraintsOf<base extends Basis> = base extends Domain
     ? kindConstraints<base>
     : base extends constructor
     ? constructorConstraints<base>
     : {}
 
-type kindConstraints<base extends Kind> = base extends "object"
+type kindConstraints<base extends Domain> = base extends "object"
     ? {
           props?: PropsInput
       }

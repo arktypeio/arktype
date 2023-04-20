@@ -1,5 +1,5 @@
 import type { TypeConfig } from "../type.js"
-import type { Kind } from "../utils/domains.js"
+import type { Domain } from "../utils/domains.js"
 import type {
     constructor,
     evaluate,
@@ -56,8 +56,8 @@ export type DisjointKinds = extend<
     Record<string, { l: unknown; r: unknown }>,
     {
         kind: {
-            l: Kind
-            r: Kind
+            l: Domain
+            r: Domain
         }
         range: {
             l: RangeNode
@@ -128,7 +128,7 @@ const initializeCompilationConfig = (): TraversalConfig => ({
 
 export class CompilationState {
     path = new Path()
-    lastkind: Kind = "undefined"
+    lastkind: Domain = "undefined"
     unionDepth = 0
     traversalConfig = initializeCompilationConfig()
 
