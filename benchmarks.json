@@ -1,0 +1,32 @@
+{
+    "arktype": [
+        {
+            "date": "4/20/2023",
+            "mark": {
+                "type": [16167, "instantiations"]
+            }
+        }
+    ],
+    "zod": [
+        {
+            "date": "4/20/2023",
+            "mark": {
+                "type": [27703, "instantiations"]
+            }
+        }
+    ],
+    "arktype scope": [
+        {
+            "date": "4/20/2023",
+            "mark": {
+                "type": [26173, "instantiations"]
+            }
+        },
+        {
+            "date": "4/20/2023",
+            "mark": {
+                "type": [431202, "instantiations"]
+            }
+        }
+    ]
+}
