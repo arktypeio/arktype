@@ -2,7 +2,7 @@ import { as } from "../parse/definition.js"
 import type { Domain } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
-import type { conform, evaluate, keySet, List } from "../utils/generics.js"
+import type { evaluate, keySet, List } from "../utils/generics.js"
 import { isKeyOf, keysOf } from "../utils/generics.js"
 import type { DefaultObjectKind } from "../utils/objectKinds.js"
 import {
@@ -25,13 +25,6 @@ import type {
 } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
 
-type validateBranches<branches extends TypeNodeInput> = {
-    [i in keyof branches]: conform<
-        branches[i],
-        PredicateDefinition | PredicateNode
-    >
-}
-
 type inferBranches<branches extends TypeNodeInput> = {
     [i in keyof branches]: branches[i] extends PredicateDefinition
         ? inferPredicateDefinition<branches[i]>
@@ -51,9 +44,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         super(TypeNode, branches)
     }
 
-    static from<branches extends TypeNodeInput>(
-        ...branches: validateBranches<branches>
-    ) {
+    static from<branches extends TypeNodeInput>(...branches: branches) {
         return new TypeNode<inferBranches<branches>>(
             branches.map((branch) =>
                 branch instanceof PredicateNode
@@ -76,6 +67,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
                     .join(" || ")})` as CompiledAssertion
         }
     }
+
     compileTraversal(s: CompilationState) {
         switch (this.branches.length) {
             case 0:

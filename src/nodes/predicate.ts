@@ -172,7 +172,7 @@ export type PredicateDefinition<basis extends Basis = Basis> = {
       }
     : constraintsOf<basis>)
 
-// TODO: advanced constraints inference
+// TODO: migrate remaining inference
 export type inferPredicateDefinition<def extends PredicateDefinition> =
     def["morph"] extends Morph<any, infer out>
         ? (In: inferBasis<def["basis"]>) => inferMorphOut<out>

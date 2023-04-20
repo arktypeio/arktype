@@ -8,7 +8,7 @@ import type {
 } from "../utils/generics.js"
 import { CompiledFunction } from "../utils/generics.js"
 import { Path, toPropChain } from "../utils/paths.js"
-import type { PredicateDefinition, PredicateNode } from "./predicate.js"
+import type { PredicateDefinition } from "./predicate.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import type { RangeNode } from "./range.js"
 import type { TypeNode } from "./type.js"
@@ -23,7 +23,7 @@ export type CompiledAssertion = evaluate<
     negatable<parenthesizable<parenthesizable<BaseAssertion>>>
 >
 
-type NodeSubclass<subclass extends NodeSubclass<any>> = {
+export type NodeSubclass<subclass extends NodeSubclass<any>> = {
     readonly kind: NodeKind
     new (...args: any[]): Node<subclass>
     compile(definition: any): CompiledAssertion
