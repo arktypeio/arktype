@@ -44,11 +44,11 @@ const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
 const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
-        return TypeNode.from({ value: maybeNumber })
+        return TypeNode.from({ basis: ["===", maybeNumber] })
     }
     const maybeBigint = tryParseWellFormedBigint(token)
     if (maybeBigint !== undefined) {
-        return TypeNode.from({ value: maybeBigint })
+        return TypeNode.from({ basis: ["===", maybeBigint] })
     }
 }
 

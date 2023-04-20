@@ -1,14 +1,9 @@
 import type { Filter } from "../parse/ast/filter.js"
 import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
 import { as } from "../parse/definition.js"
-import type { Domain, inferDomain } from "../utils/domains.js"
-import type {
-    constructor,
-    evaluate,
-    instanceOf,
-    xor
-} from "../utils/generics.js"
-import type { Basis } from "./basis.js"
+import type { Domain } from "../utils/domains.js"
+import type { constructor, evaluate, instanceOf } from "../utils/generics.js"
+import type { Basis, inferBasis } from "./basis.js"
 import { BasisNode } from "./basis.js"
 import { DivisibilityNode } from "./divisibility.js"
 import { FilterNode } from "./filter.js"
@@ -25,12 +20,12 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
     declare [as]: t
 
     readonly kind = "predicate"
-    domain: BasisNode
+    basis: BasisNode
     constraints: ConstraintNode[]
 
     constructor(public rules: RuleNodes) {
         super(PredicateNode, rules)
-        this.domain = rules[0]
+        this.basis = rules[0]
         this.constraints = rules.slice(1) as ConstraintNode[]
     }
 
@@ -50,17 +45,9 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
             | undefined
     }
 
-    static from<const input extends RuleSet>({
-        kind,
-        instanceOf,
-        value,
-        ...constraints
-    }: input) {
-        const def = constraints as PredicateConstraintsDefinition
-        // TODO: split up DomainNode
-        const rules: RuleNodes = [
-            new BasisNode(kind ?? instanceOf ?? ([value] as any))
-        ]
+    static from<const input extends RuleSet>(input: input) {
+        const def = input as PredicateDefinition
+        const rules: RuleNodes = [new BasisNode(def.basis)]
         // TODO: validate input
         if (def.divisor) {
             rules.push(new DivisibilityNode(def.divisor))
@@ -82,7 +69,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
     }
 
     get literalValue(): BasisNode<"value"> | undefined {
-        return this.domain.hasLevel("value") ? this.domain : undefined
+        return this.basis.hasLevel("value") ? this.basis : undefined
     }
 
     intersect(other: PredicateNode, s: ComparisonState) {
@@ -112,7 +99,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
     }
 
     // TODO: find a better way to combine with intersect
-    constrain(constraints: ValidationConstraints) {
+    constrain(constraints: ConstraintsDefinition) {
         const resultInput = Object.fromEntries(this.getEntries())
         let kind: ConstraintKind
         for (kind in constraints) {
@@ -133,7 +120,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
     }
 }
 
-export type RuleNodes = [domain: BasisNode, ...constraints: ConstraintNode[]]
+export type RuleNodes = [basis: BasisNode, ...constraints: ConstraintNode[]]
 
 export const constraintKinds = {
     range: RangeNode,
@@ -144,11 +131,18 @@ export const constraintKinds = {
     morph: MorphNode
 } as const
 
-export type PredicateConstraintsDefinition = evaluate<{
-    [k in ConstraintKind]?: k extends "props"
-        ? PropsInput
-        : ConstructorParameters<ConstraintKinds[k]>[0]
-}>
+export type PredicateDefinition = evaluate<
+    { basis: Basis } & {
+        [k in ConstraintKind]?: k extends "props"
+            ? PropsInput
+            : ConstructorParameters<ConstraintKinds[k]>[0]
+    }
+>
+
+export type ConstraintsDefinition = Omit<
+    PredicateDefinition,
+    "basis" | "morphs"
+>
 
 export type ConstraintNode = instanceOf<ConstraintKinds[ConstraintKind]>
 
@@ -157,11 +151,6 @@ type ConstraintKinds = typeof constraintKinds
 type ConstraintEntry = {
     [k in ConstraintKind]: [k, instanceOf<ConstraintKinds[k]>]
 }[ConstraintKind]
-
-export type ValidationConstraints = Omit<
-    PredicateConstraintsDefinition,
-    "domain" | "morphs"
->
 
 type ConstraintKind = keyof ConstraintKinds
 
@@ -175,19 +164,7 @@ export type inferRuleSet<input extends RuleSet> = input["morph"] extends Morph<
     ? (In: inferInput<input>) => inferMorphOut<out>
     : inferInput<input>
 
-export type inferInput<input extends RuleSet> = input extends {
-    value: infer value
-}
-    ? value
-    : input extends { instanceOf: infer instanceOf }
-    ? instanceOf extends constructor<infer t>
-        ? t extends Function
-            ? (...args: any[]) => unknown
-            : t
-        : object
-    : input extends { kind: infer kind extends Domain }
-    ? inferDomain<kind>
-    : never
+export type inferInput<input extends RuleSet> = inferBasis<input["basis"]>
 
 // type discriminateConstraintsInputBranch<branch extends RuleSet> =
 //     branch extends {
@@ -205,16 +182,12 @@ export type inferInput<input extends RuleSet> = input extends {
 //     input
 // >
 
-type DomainRule = xor<
-    xor<{ kind: Domain }, { instanceOf: constructor }>,
-    { value: unknown }
->
-
-export type RuleSet<domain extends Basis = Basis> = DomainRule & {
+export type RuleSet<basis extends Basis = Basis> = {
+    basis: basis
     morph?: Morph | Morph[]
     // TODO: Don't allow exact value filter
     filter?: Filter | Filter[]
-} & constraintsOf<domain>
+} & constraintsOf<basis>
 
 type constraintsOf<base extends Basis> = base extends Domain
     ? kindConstraints<base>

@@ -31,7 +31,7 @@ const creditCardMatcher =
 
 // TODO:   { mustBe: "a valid credit card number" }
 export const creditCard = TypeNode.from({
-    kind: "string",
+    basis: "string",
     regex: creditCardMatcher.source,
     filter: (s, state) =>
         isLuhnValid(s) ||

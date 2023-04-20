@@ -23,20 +23,20 @@ import { scope } from "../scope.js"
 export const tsKeywordsScope = scope(
     {
         any: "unknown" as Infer<any>,
-        bigint: TypeNode.from({ kind: "bigint" }),
-        boolean: TypeNode.from({ value: true }, { value: false }),
-        false: TypeNode.from({ value: false }) as Infer<false>,
+        bigint: TypeNode.from({ basis: "bigint" }),
+        boolean: "true|false",
+        false: TypeNode.from({ basis: ["===", false] }) as Infer<false>,
         never: TypeNode.from(),
-        null: TypeNode.from({ value: null }),
-        number: TypeNode.from({ kind: "number" }),
-        object: TypeNode.from({ kind: "object" }),
-        string: TypeNode.from({ kind: "string" }),
-        symbol: TypeNode.from({ kind: "symbol" }),
-        true: TypeNode.from({ value: true }) as Infer<true>,
+        null: TypeNode.from({ basis: ["===", null] }),
+        number: TypeNode.from({ basis: "number" }),
+        object: TypeNode.from({ basis: "object" }),
+        string: TypeNode.from({ basis: "string" }),
+        symbol: TypeNode.from({ basis: "symbol" }),
+        true: TypeNode.from({ basis: ["===", true] }) as Infer<true>,
         unknown:
             "bigint|boolean|null|number|object|string|symbol|undefined" as Infer<unknown>,
         void: "undefined" as Infer<void>,
-        undefined: TypeNode.from({ value: undefined })
+        undefined: TypeNode.from({ basis: ["===", undefined] })
     },
     { name: "ts", standard: false }
 )

@@ -67,7 +67,7 @@ export type Ark = {
     parsedInteger: (In: string) => number
     parsedDate: (In: string) => Date
     // jsObjects
-    Function: (...args: any[]) => unknown
+    Function: Function
     Date: Date
     Error: Error
     Map: Map<unknown, unknown>

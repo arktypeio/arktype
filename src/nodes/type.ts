@@ -19,9 +19,9 @@ import type { BasisNode } from "./basis.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
 import { ComparisonState, Disjoint, Node } from "./node.js"
 import type {
+    ConstraintsDefinition,
     inferRuleSet,
-    RuleSet,
-    ValidationConstraints
+    RuleSet
 } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
 
@@ -92,7 +92,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
             : s.addDisjoint("union", this, other)
     }
 
-    constrain(constraints: ValidationConstraints) {
+    constrain(constraints: ConstraintsDefinition) {
         // TODO: diverge from intersect? What about morphs?
         return new TypeNode(
             this.branches.map((branch) => branch.constrain(constraints))
@@ -153,7 +153,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
 
     toArray() {
         return TypeNode.from({
-            kind: "object",
+            basis: "object",
             props: {
                 named: {},
                 // TODO: fix

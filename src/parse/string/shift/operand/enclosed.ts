@@ -21,9 +21,9 @@ export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
     }
     // Shift the scanner one additional time for the second enclosing token
     if (s.scanner.shift() === "/") {
-        s.root = TypeNode.from({ kind: "string", regex: [token] })
+        s.root = TypeNode.from({ basis: "string", regex: token })
     } else {
-        s.root = TypeNode.from({ value: token })
+        s.root = TypeNode.from({ basis: ["===", token] })
     }
 }
 

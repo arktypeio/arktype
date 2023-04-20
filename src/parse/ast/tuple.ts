@@ -37,7 +37,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     const named: mutable<PropsInput["named"]> = {
         length: {
             kind: "prerequisite",
-            value: { value: def.length }
+            value: { basis: ["===", def.length] }
         }
     }
     if (def.length > 0) {
@@ -51,7 +51,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
         }
     }
     return TypeNode.from({
-        instanceOf: Array,
+        basis: Array,
         props: {
             named,
             indexed: []
@@ -202,10 +202,10 @@ const prefixParsers: {
             )
         }
         return TypeNode.from({
-            instanceOf: def[1] as constructor
+            basis: def[1] as constructor
         })
     },
-    "===": (def) => TypeNode.from({ value: def[1] })
+    "===": (def) => TypeNode.from({ basis: ["===", def[1]] })
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>

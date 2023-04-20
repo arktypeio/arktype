@@ -48,7 +48,7 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
             return parseTuple(def as List, ctx)
         case "RegExp":
             return TypeNode.from({
-                kind: "string",
+                basis: "string",
                 regex: (def as RegExp).source
             })
         case "Function":
