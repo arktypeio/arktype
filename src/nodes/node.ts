@@ -25,7 +25,7 @@ export type CompiledAssertion = evaluate<
 
 type NodeSubclass<subclass extends NodeSubclass<any>> = {
     new (...args: any[]): Node<subclass>
-    compile(children: any): CompiledAssertion
+    compile(definition: any): CompiledAssertion
 }
 
 export abstract class Node<
@@ -34,16 +34,21 @@ export abstract class Node<
 > extends CompiledFunction<[data: input], boolean> {
     abstract readonly kind: string
 
-    key: CompiledAssertion
+    declare key: CompiledAssertion
+
+    static #cache: Record<string, Node> = {}
 
     constructor(
         protected subclass: subclass,
         child: Parameters<subclass["compile"]>[0]
     ) {
-        // TODO: Cache
         const key = subclass.compile(child)
+        if (Node.#cache[key]) {
+            return Node.#cache[key] as instanceOf<subclass>
+        }
         super("data", `return ${key}`)
         this.key = key
+        Node.#cache[key] = this
     }
 
     abstract intersect(
