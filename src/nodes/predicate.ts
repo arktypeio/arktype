@@ -7,7 +7,11 @@ import { BasisNode } from "./basis.js"
 import { DivisibilityNode } from "./divisibility.js"
 import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
-import type { ComparisonState, CompiledAssertion } from "./node.js"
+import type {
+    ComparisonState,
+    CompilationState,
+    CompiledAssertion
+} from "./node.js"
 import { Node } from "./node.js"
 import type { PropsInput } from "./props.js"
 import { PropsNode } from "./props.js"
@@ -66,6 +70,16 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         return rules.map((rule) => rule.key).join(" && ") as CompiledAssertion
     }
 
+    compileTraversal(s: CompilationState) {
+        return this.rules
+            .map(
+                (rule) => `if (!(${rule.key})) {
+                ${s.problem("custom", "rule")}
+            }`
+            )
+            .join("\n")
+    }
+
     get literalValue(): BasisNode<"value"> | undefined {
         return this.basis.hasLevel("value") ? this.basis : undefined
     }
@@ -81,16 +95,21 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
         //     )
         // }
-        const resultInput = Object.fromEntries(this.getEntries())
-        for (const rule of other.constraints) {
-            const matchingRule = this.getConstraint(rule.kind)
-            if (matchingRule) {
-                resultInput[rule.kind] = matchingRule.intersect(
-                    rule as never,
-                    s
-                ) as any
+        const resultInput: RuleNodes = [
+            // TODO: fix Disjoint
+            this.basis.intersect(other.basis, s) as any,
+            ...this.constraints
+        ]
+        for (let i = 0; i < other.constraints.length; i++) {
+            const matchingIndex = this.constraints.findIndex(
+                (constraint) => constraint.kind === other.constraints[i].kind
+            )
+            if (matchingIndex === -1) {
+                resultInput.push(other.constraints[i])
             } else {
-                resultInput[rule.kind] = rule
+                resultInput[matchingIndex + 1] = this.constraints[
+                    matchingIndex
+                ].intersect(other.constraints[i] as never, s) as any
             }
         }
         return new PredicateNode(resultInput)

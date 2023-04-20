@@ -20,7 +20,6 @@ import type { CompilationState, CompiledAssertion } from "./node.js"
 import { ComparisonState, Disjoint, Node } from "./node.js"
 import type {
     ConstraintKind,
-    ConstraintsDefinition,
     inferPredicateDefinition,
     PredicateDefinition
 } from "./predicate.js"
@@ -71,10 +70,33 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
             case 1:
                 return branches[0].key
             default:
-                return branches
+                return `(${branches
                     .map((branch) => branch.key)
                     .sort()
-                    .join(" || ") as CompiledAssertion
+                    .join(" || ")})` as CompiledAssertion
+        }
+    }
+    compileTraversal(s: CompilationState) {
+        switch (this.branches.length) {
+            case 0:
+                return "throw new Error();"
+            case 1:
+                return this.branches[0].compileTraversal(s)
+            default:
+                s.unionDepth++
+                const result = `state.pushUnion();
+                        ${this.branches
+                            .map(
+                                (rules) => `(() => {
+                            ${rules.compileTraversal(s)}
+                            })()`
+                            )
+                            .join(" && ")};
+                        state.popUnion(${this.branches.length}, ${s.data}, ${
+                    s.path.json
+                });`
+                s.unionDepth--
+                return result
         }
     }
 
@@ -100,7 +122,6 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         kind: kind,
         definition: PredicateDefinition[kind]
     ) {
-        // TODO: diverge from intersect? What about morphs?
         return new TypeNode(
             this.branches.map((branch) => branch.constrain(kind, definition))
         )

@@ -20,6 +20,7 @@ const benchData = {
 const myType = type({ even: "number%2" })
 
 const benchType = type({
+    divisibleBy6: "number%6",
     number: "number",
     negNumber: "number",
     maxNumber: "number",
@@ -33,7 +34,24 @@ const benchType = type({
     }
 })
 
-console.log(format(type("boolean").toString()))
+const number = type("number|never")
+
+const benchType2 = type({
+    divisibleBy6: "number%2&number%3",
+    number,
+    negNumber: "number",
+    maxNumber: "number",
+    string: "string",
+    longString: "string",
+    deeplyNested: {
+        foo: "string",
+        num: "number",
+        bool: "boolean"
+    },
+    boolean: "true|false"
+})
+
+console.log(benchType.root === benchType2.root)
 
 const boolean = type("boolean")
 

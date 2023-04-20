@@ -64,19 +64,19 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
             if (other.hasLevel("domain")) {
                 return this === other
                     ? this
-                    : s.addDisjoint("kind", this.rule, other.rule)
+                    : s.addDisjoint("domain", this.rule, other.rule)
             }
             if (other.hasLevel("class")) {
                 return this.rule === "object"
                     ? other
-                    : s.addDisjoint("kind", this.rule as Domain, "object")
+                    : s.addDisjoint("domain", this.rule as Domain, "object")
             }
         }
         if (this.hasLevel("class")) {
             if (other.hasLevel("domain")) {
                 return other.rule === "object"
                     ? this
-                    : s.addDisjoint("kind", "object", other.rule as Domain)
+                    : s.addDisjoint("domain", "object", other.rule as Domain)
             }
             if (other.hasLevel("class")) {
                 return constructorExtends(this.rule, other.rule)

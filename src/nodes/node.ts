@@ -85,7 +85,7 @@ export abstract class Node<
 export type DisjointKinds = extend<
     Record<string, { l: unknown; r: unknown }>,
     {
-        kind: {
+        domain: {
             l: Domain
             r: Domain
         }
@@ -189,41 +189,4 @@ export class CompilationState {
     //         this.path.pop()
     //         return result
     //     }
-}
-
-export const compileTraversal = (root: TypeNode) => {
-    const s = new CompilationState()
-    switch (root.branches.length) {
-        case 0:
-            return "throw new Error();"
-        case 1:
-            return compilePredicate(root.branches[0], s)
-        default:
-            return compileUnion(root.branches, s)
-    }
-}
-
-const compileUnion = (branches: PredicateNode[], s: CompilationState) => {
-    s.unionDepth++
-    const result = `state.pushUnion();
-            ${branches
-                .map(
-                    (rules) => `(() => {
-                ${compilePredicate(rules, s)}
-                })()`
-                )
-                .join(" && ")};
-            state.popUnion(${branches.length}, ${s.data}, ${s.path.json});`
-    s.unionDepth--
-    return result
-}
-
-const compilePredicate = (predicate: PredicateNode, s: CompilationState) => {
-    return predicate.rules
-        .map(
-            (rule) => `if (!(${rule.key})) {
-        ${s.problem("custom", "rule")}
-    }`
-        )
-        .join("\n")
 }

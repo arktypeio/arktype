@@ -1,4 +1,4 @@
-import { compileTraversal } from "./nodes/node.js"
+import { CompilationState } from "./nodes/node.js"
 import type { CheckResult } from "./nodes/traverse.js"
 import { TraversalState } from "./nodes/traverse.js"
 import type { TypeNode } from "./nodes/type.js"
@@ -60,7 +60,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         super(
             "data",
             `const state = new ${registry().reference("state")}();
-        ${compileTraversal(root)}
+        ${root.compileTraversal(new CompilationState())}
         return state.finalize(data);`
         )
         this.root = root
