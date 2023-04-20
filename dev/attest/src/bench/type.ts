@@ -96,7 +96,6 @@ const getInstantiationsContributedByNode = (
     const originalBenchExpressionText = benchExpression.getText()
     if (!cache[fakePath]) {
         console.log(`⏳ attest: Analyzing type assertions...`)
-        const cacheStart = Date.now()
         const instantiationsWithNode = getInstantiationsWithFile(
             transformBenchSource(
                 originalFile,

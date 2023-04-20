@@ -29,7 +29,7 @@
         }
     },
     "mocha": {
-        "spec": [],
+        "spec": "./test/**/*.test.ts",
         "ignore": "**/node_modules/*",
         "node-option": [
             "loader=ts-node/esm",

@@ -65,6 +65,7 @@
         "@types/node": "18.15.5",
         "@typescript-eslint/eslint-plugin": "5.56.0",
         "@typescript-eslint/parser": "5.56.0",
+        "arktype-attest": "pnpm link ./dev/attest",
         "eslint": "8.36.0",
         "eslint-config-prettier": "8.8.0",
         "eslint-define-config": "1.17.0",
@@ -99,7 +100,7 @@
     },
     "mocha": {
         "spec": [
-            "dev/test/*.test.ts"
+            "./dev/test/*.test.*"
         ],
         "ignore": "**/node_modules/*",
         "node-option": [

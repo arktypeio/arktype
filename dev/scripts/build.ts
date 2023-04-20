@@ -1,7 +1,8 @@
-import { renameSync, rmSync } from "node:fs"
+import { readFileSync, renameSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import * as process from "node:process"
 import {
+    fromCwd,
     getSourceFilePaths,
     readJson,
     shell,
@@ -68,7 +69,8 @@ const swc = (kind: "mjs" | "cjs") => {
         buildWithTests(kind, kindOutDir)
     }
     writeJson(join(kindOutDir, "package.json"), {
-        type: kind === "cjs" ? "commonjs" : "module"
+        type: kind === "cjs" ? "commonjs" : "module",
+        mocha: JSON.parse(readFileSync(fromCwd("package.json"), "utf-8")).mocha
     })
 }
 
@@ -76,14 +78,7 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
     const cjsAddon = kind === "cjs" ? "-C module.type=commonjs" : ""
     const paths = {
         src: ["src"],
-        dev: [
-            "dev/attest/main.ts",
-            "dev/attest/cli.ts",
-            "dev/attest/src",
-            "dev/scripts",
-            "dev/examples",
-            "dev/test"
-        ]
+        dev: ["dev/examples", "dev/test"]
     }
     for (const [baseDir, dirsToInclude] of Object.entries(paths)) {
         shell(
