@@ -8,7 +8,7 @@ import type {
 } from "../utils/generics.js"
 import { CompiledFunction } from "../utils/generics.js"
 import { Path, toPropChain } from "../utils/paths.js"
-import type { PredicateNode, RuleSet } from "./predicate.js"
+import type { PredicateDefinition, PredicateNode } from "./predicate.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import type { RangeNode } from "./range.js"
 import type { TypeNode } from "./type.js"
@@ -78,10 +78,10 @@ export type DisjointKinds = extend<
         }
         leftAssignability: {
             l: unknown
-            r: RuleSet
+            r: PredicateDefinition
         }
         rightAssignability: {
-            l: RuleSet
+            l: PredicateDefinition
             r: unknown
         }
         union: {

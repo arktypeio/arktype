@@ -1,8 +1,7 @@
-import type { Filter } from "../parse/ast/filter.js"
 import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
 import { as } from "../parse/definition.js"
 import type { Domain } from "../utils/domains.js"
-import type { constructor, evaluate, instanceOf } from "../utils/generics.js"
+import type { constructor, instanceOf } from "../utils/generics.js"
 import type { Basis, inferBasis } from "./basis.js"
 import { BasisNode } from "./basis.js"
 import { DivisibilityNode } from "./divisibility.js"
@@ -45,8 +44,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
             | undefined
     }
 
-    static from<const input extends RuleSet>(input: input) {
-        const def = input as PredicateDefinition
+    static from<const def extends PredicateDefinition>(def: def) {
         const rules: RuleNodes = [new BasisNode(def.basis)]
         // TODO: validate input
         if (def.divisor) {
@@ -61,7 +59,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         if (def.props) {
             rules.push(PropsNode.from(def.props))
         }
-        return new PredicateNode<inferRuleSet<input>>(rules)
+        return new PredicateNode<inferPredicateDefinition<def>>(rules)
     }
 
     static compile(rules: RuleNodes) {
@@ -131,14 +129,6 @@ export const constraintKinds = {
     morph: MorphNode
 } as const
 
-export type PredicateDefinition = evaluate<
-    { basis: Basis } & {
-        [k in ConstraintKind]?: k extends "props"
-            ? PropsInput
-            : ConstructorParameters<ConstraintKinds[k]>[0]
-    }
->
-
 export type ConstraintsDefinition = Omit<
     PredicateDefinition,
     "basis" | "morphs"
@@ -154,48 +144,31 @@ type ConstraintEntry = {
 
 type ConstraintKind = keyof ConstraintKinds
 
-// TODO: advanced constraints inference
-export type inferRuleSet<input extends RuleSet> = input["morph"] extends Morph<
-    any,
-    infer out
->
-    ? (In: inferInput<input>) => inferMorphOut<out>
-    : input["morph"] extends [...any[], Morph<any, infer out>]
-    ? (In: inferInput<input>) => inferMorphOut<out>
-    : inferInput<input>
-
-export type inferInput<input extends RuleSet> = inferBasis<input["basis"]>
-
-// type discriminateConstraintsInputBranch<branch extends RuleSet> =
-//     branch extends {
-//         kind: infer domain extends Domain
-//     }
-//         ? domain extends "object"
-//             ? branch extends { instance: typeof Array }
-//                 ? ArrayRuleSet
-//                 : NonArrayObjectRuleSet
-//             : DomainRuleSet & { kind: domain }
-//         : ExactValueRuleSet
-
-// export type validateConstraintsInput<input extends RuleSet> = exact<
-//     input,
-//     input
-// >
-
-export type RuleSet<basis extends Basis = Basis> = {
+export type PredicateDefinition<basis extends Basis = Basis> = {
     basis: basis
-    morph?: Morph | Morph[]
-    // TODO: Don't allow exact value filter
-    filter?: Filter | Filter[]
-} & constraintsOf<basis>
+} & (Basis extends basis
+    ? {
+          [k in ConstraintKind]?: k extends "props"
+              ? PropsInput
+              : ConstructorParameters<ConstraintKinds[k]>[0]
+      }
+    : constraintsOf<basis>)
+
+// TODO: advanced constraints inference
+export type inferPredicateDefinition<def extends PredicateDefinition> =
+    def["morph"] extends Morph<any, infer out>
+        ? (In: inferBasis<def["basis"]>) => inferMorphOut<out>
+        : def["morph"] extends [...any[], Morph<any, infer out>]
+        ? (In: inferBasis<def["basis"]>) => inferMorphOut<out>
+        : inferBasis<def["basis"]>
 
 type constraintsOf<base extends Basis> = base extends Domain
-    ? kindConstraints<base>
+    ? domainConstraints<base>
     : base extends constructor
-    ? constructorConstraints<base>
+    ? classConstraints<base>
     : {}
 
-type kindConstraints<base extends Domain> = base extends "object"
+type domainConstraints<base extends Domain> = base extends "object"
     ? {
           props?: PropsInput
       }
@@ -211,15 +184,14 @@ type kindConstraints<base extends Domain> = base extends "object"
       }
     : {}
 
-type constructorConstraints<base extends constructor> =
-    base extends typeof Array
-        ? {
-              props?: PropsInput
-              range?: Bounds
-          }
-        : {
-              props?: PropsInput
-          }
+type classConstraints<base extends constructor> = base extends typeof Array
+    ? {
+          props?: PropsInput
+          range?: Bounds
+      }
+    : {
+          props?: PropsInput
+      }
 
 // type KeyValue = string | number | symbol | RegExp
 

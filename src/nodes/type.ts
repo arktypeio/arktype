@@ -20,24 +20,27 @@ import type { CompilationState, CompiledAssertion } from "./node.js"
 import { ComparisonState, Disjoint, Node } from "./node.js"
 import type {
     ConstraintsDefinition,
-    inferRuleSet,
-    RuleSet
+    inferPredicateDefinition,
+    PredicateDefinition
 } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
 
 type validateBranches<branches extends TypeNodeInput> = {
-    [i in keyof branches]: conform<branches[i], RuleSet | PredicateNode>
+    [i in keyof branches]: conform<
+        branches[i],
+        PredicateDefinition | PredicateNode
+    >
 }
 
 type inferBranches<branches extends TypeNodeInput> = {
-    [i in keyof branches]: branches[i] extends RuleSet
-        ? inferRuleSet<branches[i]>
+    [i in keyof branches]: branches[i] extends PredicateDefinition
+        ? inferPredicateDefinition<branches[i]>
         : branches[i] extends PredicateNode<infer t>
         ? t
         : never
 }[number]
 
-export type TypeNodeInput = List<RuleSet | PredicateNode>
+export type TypeNodeInput = List<PredicateDefinition | PredicateNode>
 
 export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     declare [as]: t
