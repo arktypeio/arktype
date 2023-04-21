@@ -1,7 +1,7 @@
 import { hasKind } from "../utils/domains.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
-import type { constructor } from "../utils/generics.js"
+import type { constructor, evaluate } from "../utils/generics.js"
 import { constructorExtends } from "../utils/generics.js"
 import { registry } from "../utils/registry.js"
 import type { SerializablePrimitive } from "../utils/serialize.js"
@@ -31,7 +31,7 @@ export type inferBasis<basis extends Basis> = basis extends Domain
     ? value
     : never
 
-export type BasisLevel = keyof BasesByLevel
+export type BasisLevel = evaluate<keyof BasesByLevel>
 
 const levelOf = (basis: Basis): BasisLevel =>
     typeof basis === "string"

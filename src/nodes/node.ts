@@ -191,7 +191,7 @@ export class CompilationState {
         condition: condition,
         onFalse: onFalse
     ) {
-        return `if (${condition}) {
+        return `if (!(${condition})) {
             ${onFalse}
         }`
     }

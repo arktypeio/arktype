@@ -59,12 +59,15 @@ export class PropsNode extends Node<typeof PropsNode> {
             // TODO: change data
             checks.push(props.named[k].key.replaceAll("data", toPropChain([k])))
         }
-        // TODO: empty?
+        // TODO: empty? (same for others)
         return checks.join(" && ") as CompiledAssertion
     }
 
     compileTraversal(s: CompilationState) {
-        return ""
+        return Object.keys(this.named)
+            .sort()
+            .map((k) => this.named[k].compileTraversal(s))
+            .join("\n")
     }
 
     intersect(other: PropsNode, s: ComparisonState) {
@@ -183,7 +186,7 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
     }
 
     compileTraversal(s: CompilationState) {
-        return ""
+        return this.prop.value.compileTraversal(s)
     }
 
     intersect(

@@ -71,13 +71,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
     }
 
     compileTraversal(s: CompilationState) {
-        return this.rules
-            .map(
-                (rule) => `if (!(${rule.key})) {
-                ${s.problem("custom", "rule")}
-            }`
-            )
-            .join("\n")
+        return this.rules.map((rule) => rule.compileTraversal(s)).join("\n")
     }
 
     get literalValue(): BasisNode<"value"> | undefined {

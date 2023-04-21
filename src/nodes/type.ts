@@ -68,7 +68,7 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         }
     }
 
-    compileTraversal(s: CompilationState) {
+    compileTraversal(s: CompilationState): string {
         switch (this.branches.length) {
             case 0:
                 return "throw new Error();"
