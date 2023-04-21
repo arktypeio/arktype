@@ -45,6 +45,94 @@ const zodType = z.object({
     })
 })
 
+const arkCheck = (data: any) => {
+    const state = new (globalThis as any).$ark.state()
+    if (
+        !(
+            (typeof data === "object" && data !== null) ||
+            typeof data === "function"
+        )
+    ) {
+        state.addProblem("domain", "object", data, [])
+    }
+    // state.pushUnion()
+    // ;(() => {
+    //     if (!(data.boolean === true)) {
+    //         return state.addProblem("value", ["===", true], data.boolean, [])
+    //     }
+    // })() &&
+    //     (() => {
+    //         if (!(data.boolean === false)) {
+    //             return state.addProblem(
+    //                 "value",
+    //                 ["===", false],
+    //                 data.boolean,
+    //                 []
+    //             )
+    //         }
+    //     })()
+    // state.popUnion(2, data.boolean, [])
+    // if (
+    //     !(
+    //         (typeof data.deeplyNested === "object" &&
+    //             data.deeplyNested !== null) ||
+    //         typeof data.deeplyNested === "function"
+    //     )
+    // ) {
+    //     state.addProblem("domain", "object", data.deeplyNested, [])
+    // }
+    // state.pushUnion()
+    // ;(() => {
+    //     if (!(data.deeplyNested.bool === true)) {
+    //         return state.addProblem(
+    //             "value",
+    //             ["===", true],
+    //             data.deeplyNested.bool,
+    //             []
+    //         )
+    //     }
+    // })() &&
+    //     (() => {
+    //         if (!(data.deeplyNested.bool === false)) {
+    //             return state.addProblem(
+    //                 "value",
+    //                 ["===", false],
+    //                 data.deeplyNested.bool,
+    //                 []
+    //             )
+    //         }
+    //     })()
+    // state.popUnion(2, data.deeplyNested.bool, [])
+    if (!(typeof data.boolean === "boolean")) {
+        state.addProblem("domain", "boolean", data.boolean, [])
+    }
+    if (!(typeof data.deeplyNested.bool === "boolean")) {
+        state.addProblem("domain", "boolean", data.deeplyNested.bool, [])
+    }
+    if (!(typeof data.deeplyNested.foo === "string")) {
+        state.addProblem("domain", "string", data.deeplyNested.foo, [])
+    }
+    if (!(typeof data.deeplyNested.num === "number")) {
+        state.addProblem("domain", "number", data.deeplyNested.num, [])
+    }
+    if (!(typeof data.longString === "string")) {
+        state.addProblem("domain", "string", data.longString, [])
+    }
+    if (!(typeof data.maxNumber === "number")) {
+        state.addProblem("domain", "number", data.maxNumber, [])
+    }
+    if (!(typeof data.negNumber === "number")) {
+        state.addProblem("domain", "number", data.negNumber, [])
+    }
+    if (!(typeof data.number === "number")) {
+        state.addProblem("domain", "number", data.number, [])
+    }
+    if (!(typeof data.string === "string")) {
+        state.addProblem("domain", "string", data.string, [])
+    }
+    return state.finalize(data)
+}
+
 const dataArray = [...new Array(1000)].map((_, i) => ({
     ...validInput,
     number: i
@@ -54,10 +142,22 @@ bench("arktype", () => {
     for (let i = 0; i < 1000; i++) {
         arkType(dataArray[i])
     }
-}).median([6.79, "us"])
+}).median([600, "us"])
 
-bench("zod", () => {
+bench("arktype check", () => {
     for (let i = 0; i < 1000; i++) {
-        zodType.parse(dataArray[i])
+        arkCheck(dataArray[i])
     }
-}).median([1.12, "ms"])
+}).median([46.16, "us"])
+
+bench("arktype allows", () => {
+    for (let i = 0; i < 1000; i++) {
+        arkType.root(dataArray[i])
+    }
+}).median([6.77, "us"])
+
+// bench("zod", () => {
+//     for (let i = 0; i < 1000; i++) {
+//         zodType.parse(dataArray[i])
+//     }
+// }).median([1.12, "ms"])

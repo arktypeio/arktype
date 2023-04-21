@@ -1,31 +1,17 @@
 {
-    "arktype": [
+    "arktype allows": [
         {
-            "date": "4/20/2023",
+            "date": "4/21/2023",
             "mark": {
-                "type": [16167, "instantiations"]
+                "median": [6.77, "us"]
             }
         }
     ],
-    "zod": [
+    "arktype check": [
         {
-            "date": "4/20/2023",
+            "date": "4/21/2023",
             "mark": {
-                "type": [27703, "instantiations"]
-            }
-        }
-    ],
-    "arktype scope": [
-        {
-            "date": "4/20/2023",
-            "mark": {
-                "type": [26173, "instantiations"]
-            }
-        },
-        {
-            "date": "4/20/2023",
-            "mark": {
-                "type": [431202, "instantiations"]
+                "median": [46.16, "us"]
             }
         }
     ]

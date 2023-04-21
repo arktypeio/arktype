@@ -66,7 +66,11 @@ export class PropsNode extends Node<typeof PropsNode> {
     compileTraversal(s: CompilationState) {
         return Object.keys(this.named)
             .sort()
-            .map((k) => this.named[k].compileTraversal(s))
+            .map((k) =>
+                this.named[k]
+                    .compileTraversal(s)
+                    .replaceAll("data", toPropChain([k]))
+            )
             .join("\n")
     }
 
