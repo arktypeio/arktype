@@ -72,7 +72,11 @@ const swc = (kind: "mjs" | "cjs") => {
     }
     writeJson(join(kindOutDir, "package.json"), {
         type: kind === "cjs" ? "commonjs" : "module",
-        mocha: JSON.parse(readFileSync(fromCwd("package.json"), "utf-8")).mocha
+        mocha: JSON.parse(readFileSync(fromCwd("package.json"), "utf-8")).mocha,
+        imports: {
+            "#arktype": "./src/main.ts",
+            "#attest": "./dev/attest/src/main.ts"
+        }
     })
 }
 
