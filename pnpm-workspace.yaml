@@ -1,0 +1,5 @@
+packages:
+    - "."
+    - "./dev/attest"
+    - "./dev/scripts"
+    - "./dev/examples"

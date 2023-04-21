@@ -1,0 +1,6 @@
+{
+    "type": "module",
+    "devDependencies": {
+        "ts-morph": "18.0.0"
+    }
+}

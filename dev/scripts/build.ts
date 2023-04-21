@@ -1,8 +1,10 @@
-import { readFileSync, renameSync, rmSync } from "node:fs"
+import { copyFileSync, cpSync, readFileSync, renameSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import * as process from "node:process"
 import {
+    ensureDir,
     fromCwd,
+    fromHere,
     getSourceFilePaths,
     readJson,
     shell,
@@ -77,9 +79,10 @@ const swc = (kind: "mjs" | "cjs") => {
 const buildWithTests = (kind: string, kindOutDir: string) => {
     const cjsAddon = kind === "cjs" ? "-C module.type=commonjs" : ""
     const paths = {
-        src: ["src"],
+        "./": ["src"],
         dev: ["dev/examples", "dev/test"]
     }
+
     for (const [baseDir, dirsToInclude] of Object.entries(paths)) {
         shell(
             `pnpm swc ${cjsAddon} ${dirsToInclude.join(
@@ -87,6 +90,17 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
             )} -d ${kindOutDir}/${baseDir} -C jsc.target=es2020 -q`
         )
     }
+    ensureDir(`${kindOutDir}/dev/attest`)
+    cpSync(
+        fromHere("..", "attest", "dist", kind),
+        join(process.cwd(), kindOutDir, "dev", "attest"),
+        { recursive: true }
+    )
+    cpSync(
+        fromHere("..", "attest", "node_modules"),
+        join(process.cwd(), kindOutDir, "node_modules"),
+        { recursive: true }
+    )
 }
 
 arktypeTsc()

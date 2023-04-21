@@ -1,6 +1,6 @@
+import { attest } from "#attest"
 import { describe, it } from "mocha"
 import { scope, type } from "../../src/main.js"
-import { attest } from "../attest/main.js"
 
 describe("traverse", () => {
     it("divisible", () => {

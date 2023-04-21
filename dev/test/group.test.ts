@@ -5,7 +5,7 @@ import {
     writeUnmatchedGroupCloseMessage
 } from "../../src/parse/string/reduce/shared.js"
 import { writeExpressionExpectedMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
-import { attest } from "../attest/main.js"
+import { attest } from "#attest"
 
 describe("group", () => {
     it("entire expression", () => {

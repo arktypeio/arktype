@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
-import { type } from "../../src/main.js"
 import { writeBadDefinitionTypeMessage } from "../../src/parse/definition.js"
-import { attest } from "../attest/main.js"
+import { type } from "#arktype"
+import { attest } from "#attest"
 
 describe("bad definition types", () => {
     it("undefined", () => {

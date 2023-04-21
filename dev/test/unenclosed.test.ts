@@ -1,8 +1,8 @@
+import { attest } from "#attest"
 import { describe, it } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { writeMalformedNumericLiteralMessage } from "../../src/utils/numericLiterals.js"
-import { attest } from "../attest/main.js"
 
 describe("parse unenclosed", () => {
     describe("identifier", () => {

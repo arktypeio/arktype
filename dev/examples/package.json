@@ -1,0 +1,6 @@
+{
+    "type": "module",
+    "devDependencies": {
+        "zod": "3.21.4"
+    }
+}

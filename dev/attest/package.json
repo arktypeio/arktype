@@ -9,7 +9,7 @@
     "description": "Amazing tool from Arktype",
     "type": "module",
     "devDependencies": {
-        "arktype": "1.0.10-alpha",
+        "arktype": "1.0.14-alpha",
         "get-current-line": "6.6.0",
         "mocha": "10.2.0",
         "ts-morph": "18.0.0",
@@ -29,7 +29,7 @@
         }
     },
     "mocha": {
-        "spec": "./test/**/*.test.ts",
+        "spec": "./test/**/*.test.*",
         "ignore": "**/node_modules/*",
         "node-option": [
             "loader=ts-node/esm",

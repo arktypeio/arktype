@@ -1,3 +1,4 @@
+import { attest } from "#attest"
 import { describe, it } from "mocha"
 import { type } from "../../src/main.js"
 import type { ResolvedNode } from "../../src/nodes/node.js"
@@ -6,7 +7,6 @@ import {
     writeExpressionExpectedMessage,
     writeUnresolvableMessage
 } from "../../src/parse/string/shift/operand/unenclosed.js"
-import { attest } from "../attest/main.js"
 
 describe("string", () => {
     it("errors on empty string", () => {

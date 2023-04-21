@@ -1,7 +1,7 @@
+import { attest } from "#attest"
 import { describe, it } from "mocha"
 import { type } from "../../src/main.js"
 import { writeUnterminatedEnclosedMessage } from "../../src/parse/string/shift/operand/enclosed.js"
-import { attest } from "../attest/main.js"
 
 describe("parse enclosed", () => {
     it("with spaces", () => {

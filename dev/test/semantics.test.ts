@@ -1,8 +1,8 @@
+import { attest } from "#attest"
 import { describe, it } from "mocha"
 import { type } from "../../src/main.js"
 import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
-import { attest } from "../attest/main.js"
 
 describe("semantics", () => {
     describe("bound", () => {
