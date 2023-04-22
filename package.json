@@ -29,7 +29,7 @@
     "files": [
         "dist"
     ],
-    "packageManager": "pnpm@7.27.0",
+    "packageManager": "pnpm@7.32.2",
     "scripts": {
         "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm testRepo && pnpm docgen && pnpm buildSite",
         "typecheck": "tsc --noEmit",
