@@ -152,7 +152,7 @@ describe("discriminate", () => {
                                 ["isRainForest", [["value", true]]]
                             ]
                         ],
-                        default: [
+                        "default": [
                             [
                                 "requiredProp",
                                 ["temperature", [["value", "hot"]]]
@@ -179,7 +179,7 @@ describe("discriminate", () => {
                     cases: {
                         "'cold'": [],
                         "'hot'": [],
-                        default: [
+                        "default": [
                             [
                                 "switch",
                                 {

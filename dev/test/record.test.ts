@@ -21,7 +21,7 @@ describe("record", () => {
         })
     })
     it("optional keys", () => {
-        const o = type({ "a?": "string", b: "boolean[]" })
+        const o = type({ "a?": "string", "b": "boolean[]" })
         attest(o.infer).typed as { a?: string; b: boolean[] }
         attest(o.node).snap({
             object: {

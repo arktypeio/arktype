@@ -76,7 +76,7 @@ type inferObjectRules<
 > = rules["class"] extends ArrayConstructor
     ? rules["props"] extends {
           "[index]": Prop<$, infer indexNode>
-          length?: Prop<$, infer lengthNode>
+          "length"?: Prop<$, infer lengthNode>
       }
         ? lengthNode extends LiteralNode<"number", infer value>
             ? HomogenousTuple<inferNode<indexNode, $>, value>

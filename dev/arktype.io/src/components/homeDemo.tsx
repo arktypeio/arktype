@@ -21,18 +21,18 @@ export const HomeDemo = () => {
                 variant="contained"
                 sx={{
                     backgroundColor,
-                    backdropFilter: "blur(4px)",
-                    borderRadius: "2rem",
-                    fontSize: "1.5rem",
-                    fontFamily: cascadiaCodeFamily,
-                    textTransform: "none",
-                    color: palette.primary.main,
+                    "backdropFilter": "blur(4px)",
+                    "borderRadius": "2rem",
+                    "fontSize": "1.5rem",
+                    "fontFamily": cascadiaCodeFamily,
+                    "textTransform": "none",
+                    "color": palette.primary.main,
                     "&:hover": {
                         backgroundColor,
                         color: palette.secondary.main,
                         backdropFilter: "blur(6px)"
                     },
-                    zIndex: 1
+                    "zIndex": 1
                 }}
                 onClick={() => setIsActive(!isActive)}
                 endIcon={

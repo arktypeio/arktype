@@ -30,6 +30,7 @@ export const createStackblitzDemo = async ({ embedId }: DemoProps) =>
                 ".prettierrc": JSON.stringify({
                     tabWidth: 4,
                     semi: false,
+                    quoteProps: "consistent",
                     trailingComma: "none"
                 }),
                 ...defaultStaticFiles

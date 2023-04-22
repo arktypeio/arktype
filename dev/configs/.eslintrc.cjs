@@ -26,8 +26,8 @@ module.exports = defineConfig({
         /**
          * General restrictions
          */
-        curly: "warn",
-        eqeqeq: "warn",
+        "curly": "warn",
+        "eqeqeq": "warn",
         "object-shorthand": ["warn"],
         "@typescript-eslint/no-unused-vars": [
             "warn",

@@ -27,8 +27,8 @@ describe("traverse", () => {
     })
     it("required keys", () => {
         const t = type({
-            name: "string",
-            age: "number",
+            "name": "string",
+            "age": "number",
             "title?": "string"
         })
         attest(t({ name: "Shawn", age: 99 }).data).snap({

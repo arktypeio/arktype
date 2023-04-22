@@ -4,7 +4,7 @@ import { type } from "../../src/main.js"
 export const user = type({
     name: "string",
     device: {
-        platform: "'android'|'ios'",
+        "platform": "'android'|'ios'",
         "version?": "number"
     }
 })

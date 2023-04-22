@@ -5,12 +5,12 @@ import { attest } from "../attest/main.js"
 const getCyclicScope = () =>
     scope({
         package: {
-            name: "string",
+            "name": "string",
             "dependencies?": "package[]",
             "contributors?": "contributor[]"
         },
         contributor: {
-            email: "email",
+            "email": "email",
             "packages?": "package[]"
         }
     })

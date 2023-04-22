@@ -6,9 +6,9 @@ const randomInRange = (min: number, max: number) =>
 
 const cyclicScopeSeed = Object.freeze({
     user: {
-        name: "string",
+        "name": "string",
         "friends?": "user[]",
-        groups: "group[]"
+        "groups": "group[]"
     },
     group: {
         title: "string",

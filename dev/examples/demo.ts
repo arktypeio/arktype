@@ -2,8 +2,8 @@ import { type } from "../../src/main.js"
 
 // Define your type...
 export const pkg = type({
-    name: "string",
-    version: "semver",
+    "name": "string",
+    "version": "semver",
     "contributors?": "1<email[]<=10"
 })
 

@@ -249,7 +249,7 @@ describe("morph", () => {
                         class: `(function Array)`,
                         props: {
                             "0": "string",
-                            length: ["!", { number: { value: 1 } }]
+                            "length": ["!", { number: { value: 1 } }]
                         }
                     },
                     morph: "(function)"
@@ -258,7 +258,7 @@ describe("morph", () => {
                     class: `(function Array)`,
                     props: {
                         "0": "boolean",
-                        length: ["!", { number: { value: 1 } }]
+                        "length": ["!", { number: { value: 1 } }]
                     }
                 }
             ]

@@ -3,13 +3,13 @@ import { scope } from "../../src/main.js"
 // Scopes are collections of types that can reference each other.
 export const types = scope({
     package: {
-        name: "string",
+        "name": "string",
         "dependencies?": "package[]",
         "contributors?": "contributor[]"
     },
     contributor: {
         // Subtypes like 'email' are inferred like 'string' but provide additional validation at runtime.
-        email: "email",
+        "email": "email",
         "packages?": "package[]"
     }
 }).compile()

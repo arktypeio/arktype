@@ -89,7 +89,7 @@ describe("intersection", () => {
                         "0": {
                             object: { props: { a: "string", b: "boolean" } }
                         },
-                        length: ["!", { number: { value: 1 } }]
+                        "length": ["!", { number: { value: 1 } }]
                     }
                 }
             })
@@ -124,7 +124,7 @@ describe("intersection", () => {
                         "0": {
                             object: { props: { a: "string", b: "boolean" } }
                         },
-                        length: ["!", { number: { value: 1 } }]
+                        "length": ["!", { number: { value: 1 } }]
                     }
                 }
             }
@@ -149,7 +149,7 @@ describe("intersection", () => {
                     props: {
                         "0": "alpha",
                         "1": "alpha",
-                        length: ["!", { number: { value: 2 } }]
+                        "length": ["!", { number: { value: 2 } }]
                     }
                 }
             })
@@ -165,7 +165,7 @@ describe("intersection", () => {
                     props: {
                         "0": { number: { value: 1 } },
                         "1": { string: { value: "one" } },
-                        length: ["!", { number: { value: 2 } }]
+                        "length": ["!", { number: { value: 2 } }]
                     }
                 }
             })

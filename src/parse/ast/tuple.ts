@@ -90,8 +90,8 @@ export type validateTupleExpression<
     : never
 
 export type UnparsedTupleExpressionInput<$> = {
-    instanceof: constructor
-    node: ResolvedNode<$>
+    "instanceof": constructor
+    "node": ResolvedNode<$>
     "===": unknown
 }
 
@@ -203,8 +203,8 @@ export type IndexZeroExpression<
 const prefixParsers: {
     [token in IndexZeroOperator]: PrefixParser<token>
 } = {
-    keyof: parseKeyOfTuple,
-    instanceof: (def) => {
+    "keyof": parseKeyOfTuple,
+    "instanceof": (def) => {
         if (typeof def[1] !== "function") {
             return throwParseError(
                 `Expected a constructor following 'instanceof' operator (was ${typeof def[1]}).`
@@ -213,7 +213,7 @@ const prefixParsers: {
         return { object: { class: def[1] as constructor } }
     },
     "===": (def) => ({ [domainOf(def[1])]: { value: def[1] } }),
-    node: (def) => def[1] as ResolvedNode
+    "node": (def) => def[1] as ResolvedNode
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>

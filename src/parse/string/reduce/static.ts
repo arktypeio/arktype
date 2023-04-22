@@ -24,7 +24,7 @@ export type StaticState = {
 type StaticOpenLeftBound = { limit: NumberLiteral; comparator: MinComparator }
 
 type BranchState = {
-    range: StaticOpenLeftBound | undefined
+    "range": StaticOpenLeftBound | undefined
     "&": unknown
     "|": unknown
 }
@@ -39,7 +39,7 @@ export namespace state {
     }>
 
     type initialBranches = branchesFrom<{
-        range: undefined
+        "range": undefined
         "&": undefined
         "|": undefined
     }>
@@ -73,7 +73,7 @@ export namespace state {
         : from<{
               root: undefined
               branches: {
-                  range: undefined
+                  "range": undefined
                   "&": token extends "&" ? mergeToIntersection<s> : undefined
                   "|": token extends "|" ? mergeToUnion<s> : s["branches"]["|"]
               }
@@ -100,7 +100,7 @@ export namespace state {
             : from<{
                   root: undefined
                   branches: {
-                      range: {
+                      "range": {
                           limit: limit
                           comparator: Scanner.InvertedComparators[comparator]
                       }
@@ -127,7 +127,7 @@ export namespace state {
     > = state.from<{
         root: [minLimit, minComparator, [s["root"], maxComparator, maxLimit]]
         branches: {
-            range: undefined
+            "range": undefined
             "&": s["branches"]["&"]
             "|": s["branches"]["|"]
         }
@@ -144,7 +144,7 @@ export namespace state {
     > = state.from<{
         root: [s["root"], comparator, limit]
         branches: {
-            range: undefined
+            "range": undefined
             "&": s["branches"]["&"]
             "|": s["branches"]["|"]
         }

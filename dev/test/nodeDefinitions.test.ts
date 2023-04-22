@@ -72,7 +72,7 @@ describe("node definitions", () => {
                     class: Array,
                     props: {
                         "[index]": "string",
-                        length: { number: { value: 5 } }
+                        "length": { number: { value: 5 } }
                     }
                 }
             } as const

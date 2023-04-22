@@ -97,6 +97,7 @@
     "prettier": {
         "tabWidth": 4,
         "semi": false,
+        "quoteProps": "consistent",
         "trailingComma": "none"
     },
     "mocha": {

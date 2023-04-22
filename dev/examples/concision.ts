@@ -5,16 +5,16 @@ import type { Infer } from "../../src/main.js"
 {
     // @snipStatement:arkUserExpression
     const arkUser = type({
-        name: /^ark.*$/ as Infer<`ark${string}`>,
-        birthday: ["string", "|>", (s) => new Date(s)],
+        "name": /^ark.*$/ as Infer<`ark${string}`>,
+        "birthday": ["string", "|>", (s) => new Date(s)],
         "powerLevel?": "1<=number<9000"
     })
 }
 
 // @snipStatement:arkUserHelper
 const arkUser = type({
-    name: /^ark.*$/ as Infer<`ark${string}`>,
-    birthday: morph("string", (s) => new Date(s)),
+    "name": /^ark.*$/ as Infer<`ark${string}`>,
+    "birthday": morph("string", (s) => new Date(s)),
     "powerLevel?": "1<=number<9000"
 })
 
