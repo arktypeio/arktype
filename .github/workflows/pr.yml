@@ -21,6 +21,9 @@ jobs:
             - name: Setup repo
               uses: ./.github/actions/setup
 
+            - name: Typecheck
+              run: pnpm typecheck
+
             - name: Lint
               run: pnpm lint
 
