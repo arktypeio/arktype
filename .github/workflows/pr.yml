@@ -27,6 +27,9 @@ jobs:
             - name: Lint
               run: pnpm lint
 
+            - name: Format
+              run: pnpm exec prettier --check --ignore-path ./dev/configs/.prettierignore .
+
             - name: Test
               run: pnpm testRepo
 

@@ -31,7 +31,7 @@
     ],
     "packageManager": "pnpm@8.3.1",
     "scripts": {
-        "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm testRepo && pnpm docgen && pnpm buildSite",
+        "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm format && pnpm testRepo && pnpm docgen && pnpm buildSite",
         "typecheck": "tsc --noEmit",
         "build": "ts-node ./dev/scripts/build.ts",
         "buildRepo": "pnpm build && pnpm docgen && pnpm buildSite",
