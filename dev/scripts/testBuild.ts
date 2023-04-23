@@ -3,7 +3,6 @@ import { repoDirs } from "./common.js"
 
 export const testBuild = (outDir: string) => {
     const cli = fromPackageRoot("dev", "attest", outDir, "cli.js")
-    // const output = fromPackageRoot(outDir, "dev", "test")
     shell(`node ${cli} --skipTypes --runner mocha`, { cwd: outDir })
 }
 shell("pnpm buildAttest")

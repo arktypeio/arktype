@@ -16,6 +16,7 @@
     "types": "./dist/types/main.d.ts",
     "imports": {
         "#arktype": "./src/main.ts",
+        "#internal/*.js": "./src/*.js",
         "#attest": "./dev/attest/src/main.ts"
     },
     "exports": {
