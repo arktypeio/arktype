@@ -74,8 +74,8 @@ const swc = (kind: "mjs" | "cjs") => {
         type: kind === "cjs" ? "commonjs" : "module",
         mocha: JSON.parse(readFileSync(fromCwd("package.json"), "utf-8")).mocha,
         imports: {
-            "#arktype": "./src/main.ts",
-            "#attest": "./dev/attest/src/main.ts"
+            "#arktype": "./main.js",
+            "#attest": "./dev/attest/main.js"
         }
     })
 }

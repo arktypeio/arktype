@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { scope, type } from "../../src/main.js"
+import { scope, type } from "#arktype"
 import { attest } from "#attest"
 
 describe("discriminate", () => {

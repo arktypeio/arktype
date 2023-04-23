@@ -1,5 +1,5 @@
+import { writeBadDefinitionTypeMessage } from "arktype/internal/parse/definition.js"
 import { describe, it } from "mocha"
-import { writeBadDefinitionTypeMessage } from "../../src/parse/definition.js"
 import { type } from "#arktype"
 import { attest } from "#attest"
 

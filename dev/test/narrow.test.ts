@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
-import type { Type } from "../../src/main.js"
-import { type } from "../../src/main.js"
 import type { assertEqual } from "../../src/utils/generics.js"
+import { type } from "#arktype"
+import type { Type } from "#arktype"
 import { attest } from "#attest"
 
 describe("narrow", () => {

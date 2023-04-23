@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { scope } from "../../src/main.js"
+import { scope } from "#arktype"
 import { attest } from "#attest"
 
 const getCyclicScope = () =>

@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { type } from "../../src/main.js"
+import { type } from "#arktype"
 import { attest } from "#attest"
 
 describe("key traversal", () => {

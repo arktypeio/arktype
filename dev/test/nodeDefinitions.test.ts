@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
-import type { Type } from "../../src/main.js"
-import { scope, type } from "../../src/main.js"
+import type { Type } from "#arktype"
+import { scope, type } from "#arktype"
 import { attest } from "#attest"
 
 describe("node definitions", () => {

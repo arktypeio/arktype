@@ -1,6 +1,6 @@
-import { scope } from "../../src/main.js"
-import { bench } from "../attest/src/main.js"
 import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
+import { scope } from "#arktype"
+import { bench } from "#attest"
 
 const recursive = scope({ dejaVu: { "dejaVu?": "dejaVu" } }).compile()
 const dejaVu: typeof recursive.dejaVu.infer = {}

@@ -1,10 +1,10 @@
+import type { Branch } from "arktype/internal/nodes/branch.js"
+import type { TypeNode } from "arktype/internal/nodes/node.js"
+import { writeImplicitNeverMessage } from "arktype/internal/parse/ast/intersection.js"
+import { Path } from "arktype/internal/utils/paths.js"
+import { stringify } from "arktype/internal/utils/serialize.js"
 import { describe, it } from "mocha"
-import { keyOf, type } from "../../src/main.js"
-import type { Branch } from "../../src/nodes/branch.js"
-import type { TypeNode } from "../../src/nodes/node.js"
-import { writeImplicitNeverMessage } from "../../src/parse/ast/intersection.js"
-import { Path } from "../../src/utils/paths.js"
-import { stringify } from "../../src/utils/serialize.js"
+import { keyOf, type } from "#arktype"
 import { attest } from "#attest"
 
 describe("keyof", () => {

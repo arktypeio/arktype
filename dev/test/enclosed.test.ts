@@ -1,7 +1,7 @@
-import { attest } from "#attest"
+import { writeUnterminatedEnclosedMessage } from "arktype/internal/parse/string/shift/operand/enclosed.js"
 import { describe, it } from "mocha"
-import { type } from "../../src/main.js"
-import { writeUnterminatedEnclosedMessage } from "../../src/parse/string/shift/operand/enclosed.js"
+import { type } from "#arktype"
+import { attest } from "#attest"
 
 describe("parse enclosed", () => {
     it("with spaces", () => {

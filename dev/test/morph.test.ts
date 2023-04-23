@@ -1,7 +1,7 @@
+import { writeUndiscriminatableMorphUnionMessage } from "arktype/internal/parse/ast/union.js"
 import { describe, it } from "mocha"
-import type { Problem, Type } from "../../src/main.js"
-import { ark, intersection, morph, scope, type, union } from "../../src/main.js"
-import { writeUndiscriminatableMorphUnionMessage } from "../../src/parse/ast/union.js"
+import { ark, intersection, morph, scope, type, union } from "#arktype"
+import type { Problem, Type } from "#arktype"
 import { attest } from "#attest"
 
 describe("morph", () => {

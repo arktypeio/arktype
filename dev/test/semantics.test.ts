@@ -1,8 +1,8 @@
-import { attest } from "#attest"
+import { writeUnboundableMessage } from "arktype/internal/parse/ast/bound.js"
+import { writeIndivisibleMessage } from "arktype/internal/parse/ast/divisor.js"
 import { describe, it } from "mocha"
-import { type } from "../../src/main.js"
-import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
-import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
+import { type } from "#arktype"
+import { attest } from "#attest"
 
 describe("semantics", () => {
     describe("bound", () => {

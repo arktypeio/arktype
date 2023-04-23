@@ -1,12 +1,12 @@
-import { attest } from "#attest"
-import { describe, it } from "mocha"
-import { type } from "../../src/main.js"
-import type { ResolvedNode } from "../../src/nodes/node.js"
-import { writeUnterminatedEnclosedMessage } from "../../src/parse/string/shift/operand/enclosed.js"
+import type { ResolvedNode } from "arktype/internal/nodes/node.js"
+import { writeUnterminatedEnclosedMessage } from "arktype/internal/parse/string/shift/operand/enclosed.js"
 import {
     writeExpressionExpectedMessage,
     writeUnresolvableMessage
-} from "../../src/parse/string/shift/operand/unenclosed.js"
+} from "arktype/internal/parse/string/shift/operand/unenclosed.js"
+import { describe, it } from "mocha"
+import { type } from "#arktype"
+import { attest } from "#attest"
 
 describe("string", () => {
     it("errors on empty string", () => {

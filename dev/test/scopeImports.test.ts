@@ -1,6 +1,6 @@
+import { writeDuplicateAliasesMessage } from "arktype/internal/scopes/scope.js"
 import { describe, it } from "mocha"
-import { scope } from "../../src/main.js"
-import { writeDuplicateAliasesMessage } from "../../src/scopes/scope.js"
+import { scope } from "#arktype"
 import { attest } from "#attest"
 
 describe("scope imports", () => {

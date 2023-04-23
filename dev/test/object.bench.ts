@@ -1,5 +1,5 @@
-import { type } from "../../src/main.js"
-import { bench } from "../attest/src/main.js"
+import { type } from "#arktype"
+import { bench } from "#attest"
 
 bench("dictionary", () => {
     const dict = type({
