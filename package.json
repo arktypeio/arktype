@@ -33,7 +33,7 @@
     "packageManager": "pnpm@8.3.0",
     "scripts": {
         "compile": "ts-node ./dev/examples/compiled.ts",
-        "bench": "ts-node ./dev/test/comparison.bench.ts --noWrite",
+        "compare": "ts-node ./dev/test/comparison.bench.ts --noWrite",
         "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm testRepo && pnpm docgen && pnpm buildSite",
         "typecheck": "tsc --noEmit",
         "build": "ts-node ./dev/scripts/build.ts",
