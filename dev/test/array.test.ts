@@ -1,8 +1,8 @@
-import { writeUnresolvableMessage } from "arktype/internal/parse/string/shift/operand/unenclosed.js"
-import { incompleteArrayTokenMessage } from "arktype/internal/parse/string/shift/operator/operator.js"
 import { describe, it } from "mocha"
 import { arrayOf, type } from "#arktype"
 import { attest } from "#attest"
+import { writeUnresolvableMessage } from "#internal/parse/string/shift/operand/unenclosed.js"
+import { incompleteArrayTokenMessage } from "#internal/parse/string/shift/operator/operator.js"
 
 describe("parse array", () => {
     it("parse", () => {

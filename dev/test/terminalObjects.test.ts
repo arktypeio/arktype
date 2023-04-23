@@ -1,8 +1,8 @@
-import { writeBadDefinitionTypeMessage } from "arktype/internal/parse/definition.js"
-import { writeUnresolvableMessage } from "arktype/internal/parse/string/shift/operand/unenclosed.js"
 import { describe, it } from "mocha"
 import { scope, type } from "#arktype"
 import { attest, getTsVersionUnderTest } from "#attest"
+import { writeBadDefinitionTypeMessage } from "#internal/parse/definition.js"
+import { writeUnresolvableMessage } from "#internal/parse/string/shift/operand/unenclosed.js"
 
 describe("terminal objects", () => {
     it("regex", () => {

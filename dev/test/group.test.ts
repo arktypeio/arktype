@@ -1,11 +1,11 @@
-import {
-    unclosedGroupMessage,
-    writeUnmatchedGroupCloseMessage
-} from "arktype/internal/parse/string/reduce/shared.js"
-import { writeExpressionExpectedMessage } from "arktype/internal/parse/string/shift/operand/unenclosed.js"
 import { describe, it } from "mocha"
 import { type } from "#arktype"
 import { attest } from "#attest"
+import {
+    unclosedGroupMessage,
+    writeUnmatchedGroupCloseMessage
+} from "#internal/parse/string/reduce/shared.js"
+import { writeExpressionExpectedMessage } from "#internal/parse/string/shift/operand/unenclosed.js"
 
 describe("group", () => {
     it("entire expression", () => {

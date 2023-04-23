@@ -1,11 +1,11 @@
-import type { Node } from "arktype/internal/nodes/node.js"
-import {
-    writeMissingRightOperandMessage,
-    writeUnresolvableMessage
-} from "arktype/internal/parse/string/shift/operand/unenclosed.js"
 import { describe, it } from "mocha"
 import { intersection, type } from "#arktype"
 import { attest } from "#attest"
+import type { Node } from "#internal/nodes/node.js"
+import {
+    writeMissingRightOperandMessage,
+    writeUnresolvableMessage
+} from "#internal/parse/string/shift/operand/unenclosed.js"
 
 describe("intersection", () => {
     describe("parse", () => {

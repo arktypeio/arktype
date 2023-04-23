@@ -1,10 +1,10 @@
-import {
-    writeMissingRightOperandMessage,
-    writeUnresolvableMessage
-} from "arktype/internal/parse/string/shift/operand/unenclosed.js"
 import { describe, it } from "mocha"
 import { type } from "#arktype"
 import { attest } from "#attest"
+import {
+    writeMissingRightOperandMessage,
+    writeUnresolvableMessage
+} from "#internal/parse/string/shift/operand/unenclosed.js"
 
 describe("tuple expression", () => {
     it("union", () => {

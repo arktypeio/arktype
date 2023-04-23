@@ -1,8 +1,8 @@
-import { writeUnresolvableMessage } from "arktype/internal/parse/string/shift/operand/unenclosed.js"
-import { writeMalformedNumericLiteralMessage } from "arktype/internal/utils/numericLiterals.js"
 import { describe, it } from "mocha"
 import { scope, type } from "#arktype"
 import { attest } from "#attest"
+import { writeUnresolvableMessage } from "#internal/parse/string/shift/operand/unenclosed.js"
+import { writeMalformedNumericLiteralMessage } from "#internal/utils/numericLiterals.js"
 
 describe("parse unenclosed", () => {
     describe("identifier", () => {
