@@ -69,7 +69,7 @@ export namespace Scanner {
 
     export const lookaheadIsNotWhitespace: UntilCondition = (
         scanner: Scanner
-    ) => scanner.lookahead !== whiteSpaceToken
+    ) => !(scanner.lookahead in whiteSpaceTokens)
 
     export const terminatingChars = {
         "<": true,
@@ -102,9 +102,12 @@ export namespace Scanner {
 
     export type EscapeToken = typeof escapeToken
 
-    export const whiteSpaceToken = " "
+    export const whiteSpaceTokens = {
+        " ": true,
+        "\n": true
+    } as const
 
-    export type WhiteSpaceToken = typeof whiteSpaceToken
+    export type WhiteSpaceToken = keyof typeof whiteSpaceTokens
 
     export type finalized = "{done}"
 

@@ -13,7 +13,7 @@ export const parseOperand = (s: DynamicState): void =>
         ? s.shiftedByOne().reduceGroupOpen()
         : s.scanner.lookaheadIsIn(enclosingChar)
         ? parseEnclosed(s, s.scanner.shift())
-        : s.scanner.lookahead === " "
+        : s.scanner.lookahead === " " || s.scanner.lookahead === "\n"
         ? parseOperand(s.shiftedByOne())
         : parseUnenclosed(s)
 

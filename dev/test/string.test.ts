@@ -14,8 +14,10 @@ describe("string", () => {
         attest(() => type("")).throws(writeExpressionExpectedMessage(""))
     })
     it("ignores whitespace between identifiers/operators", () => {
-        const t = type("     string  | boolean    []   ")
+        const t = type(`  \n   string  |
+        boolean    []   `)
         attest(t.infer).typed as string | boolean[]
+        attest(t.root.toString()).snap()
     })
     it("errors on bad whitespace", () => {
         attest(() =>
