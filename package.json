@@ -33,6 +33,7 @@
     "packageManager": "pnpm@8.3.0",
     "scripts": {
         "compile": "ts-node ./dev/examples/compiled.ts",
+        "bench": "ts-node ./dev/test/comparison.bench.ts --noWrite",
         "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm testRepo && pnpm docgen && pnpm buildSite",
         "typecheck": "tsc --noEmit",
         "build": "ts-node ./dev/scripts/build.ts",
@@ -45,7 +46,6 @@
         "testBuild": "ts-node ./dev/scripts/testBuild.ts",
         "testAttest": "ts-node ./dev/scripts/testAttest.ts",
         "testTsVersions": "ts-node ./dev/scripts/testTsVersions.ts",
-        "bench": "ts-node ./dev/test/comparison.bench.ts --noExternal",
         "lint": "eslint --max-warnings=0 .",
         "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
         "findUnused": "ts-node ./dev/scripts/findUnusedExports.ts",
