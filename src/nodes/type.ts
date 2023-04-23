@@ -1,20 +1,11 @@
 import { as } from "../parse/definition.js"
 import type { Domain } from "../utils/domains.js"
-import { domainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type { evaluate, keySet, List } from "../utils/generics.js"
 import { isKeyOf, keysOf } from "../utils/generics.js"
 import type { DefaultObjectKind } from "../utils/objectKinds.js"
-import {
-    getExactConstructorObjectKind,
-    objectKindOf
-} from "../utils/objectKinds.js"
 import { Path } from "../utils/paths.js"
-import type {
-    SerializablePrimitive,
-    SerializedPrimitive
-} from "../utils/serialize.js"
-import { serializePrimitive } from "../utils/serialize.js"
+import type { SerializedPrimitive } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
 import { ComparisonState, Disjoint, Node } from "./node.js"
@@ -45,12 +36,43 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
     }
 
     static from<branches extends TypeNodeInput>(...branches: branches) {
+        const branchNodes = branches.map((branch) =>
+            branch instanceof PredicateNode
+                ? branch
+                : PredicateNode.from(branch as any)
+        )
+        const uniquenessByIndex: Record<number, boolean> = branchNodes.map(
+            () => true
+        )
+        for (let i = 0; i < branchNodes.length; i++) {
+            for (
+                let j = i + 1;
+                j < branchNodes.length && uniquenessByIndex[i];
+                j++
+            ) {
+                if (!uniquenessByIndex[j]) {
+                    continue
+                }
+                if (branchNodes[i] === branchNodes[j]) {
+                    // if the two branches are equal, only "j" is marked as
+                    // redundant so at least one copy could still be included in
+                    // the final set of branches.
+                    uniquenessByIndex[j] = false
+                    continue
+                }
+                const intersection = branchNodes[i].intersect(
+                    branchNodes[j],
+                    new ComparisonState()
+                )
+                if (intersection === branchNodes[i]) {
+                    uniquenessByIndex[i] = false
+                } else if (intersection === branchNodes[j]) {
+                    uniquenessByIndex[j] = false
+                }
+            }
+        }
         return new TypeNode<inferBranches<branches>>(
-            branches.map((branch) =>
-                branch instanceof PredicateNode
-                    ? branch
-                    : PredicateNode.from(branch as any)
-            )
+            branchNodes.filter((_, i) => uniquenessByIndex[i])
         )
     }
 
@@ -197,7 +219,7 @@ const branchwiseIntersection = (
     const finalBranches: PredicateNode[] = []
     // Each rBranch is initialized to an empty array to which distinct
     // intersections will be appended. If the rBranch is identified as a
-    // subtype (or equal) of any lBranch, the corresponding value should be
+    // subtype or equal of any lBranch, the corresponding value should be
     // set to null so we can avoid including previous/future intersections
     // in the final result.
     const candidatesByR: (PredicateNode[] | null)[] = rBranches.map(() => [])
@@ -259,45 +281,17 @@ const branchwiseIntersection = (
     return finalBranches
 }
 
-const pruneSubtypes = (branches: PredicateNode[]) => {
-    const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
-    for (let i = 0; i < branches.length; i++) {
-        for (let j = i + 1; j < branches.length && uniquenessByIndex[i]; j++) {
-            if (!uniquenessByIndex[j]) {
-                continue
-            }
-            if (branches[i] === branches[j]) {
-                // if the two branches are equal, only "j" is marked as
-                // redundant so at least one copy could still be included in
-                // the final set of branches.
-                uniquenessByIndex[j] = false
-                continue
-            }
-            const intersection = branches[i].intersect(
-                branches[j],
-                new ComparisonState()
-            )
-            if (intersection === branches[i]) {
-                uniquenessByIndex[i] = false
-            } else if (intersection === branches[j]) {
-                uniquenessByIndex[j] = false
-            }
-        }
-    }
-    return branches.filter((_, i) => uniquenessByIndex[i])
-}
-
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-export const compileBranches = (
-    branches: PredicateNode[],
-    c: CompilationState
-) => {
-    const discriminants = calculateDiscriminants(branches, c)
-    const indices = branches.map((_, i) => i)
-    return discriminate(branches, indices, discriminants, c)
-}
+// export const compileBranches = (
+//     branches: PredicateNode[],
+//     c: CompilationState
+// ) => {
+//     const discriminants = calculateDiscriminants(branches, c)
+//     const indices = branches.map((_, i) => i)
+//     return discriminate(branches, indices, discriminants, c)
+// }
 
 type IndexCases = {
     [caseKey in CaseKey]?: number[]
@@ -307,141 +301,64 @@ export type QualifiedDisjoint =
     | `${DiscriminantKind}`
     | `${string}/${DiscriminantKind}`
 
-const discriminate = (
-    originalBranches: PredicateNode[],
-    remainingIndices: number[],
-    discriminants: Discriminants,
-    c: CompilationState
-) => {
-    return originalBranches[remainingIndices[0]].key
-    // if (remainingIndices.length === 1) {
-    //     return compileBranch(originalBranches[remainingIndices[0]], ctx)
-    // }
-    //     const bestDiscriminant = findBestDiscriminant(
-    //         remainingIndices,
-    //         discriminants
-    //     )
-    //     if (!bestDiscriminant) {
-    //         return [
-    //             [
-    //                 "branches",
-    //                 remainingIndices.map((i) =>
-    //                     branchIncludesMorph(originalBranches[i], ctx.type.scope)
-    //                         ? throwParseError(
-    //                               writeUndiscriminatableMorphUnionMessage(
-    //                                   `${ctx.path}`
-    //                               )
-    //                           )
-    //                         : compileBranch(originalBranches[i], ctx)
-    //                 )
-    //             ]
-    //         ]
-    //     }
-    //     const cases = {} as DiscriminatedCases
-    //     for (const caseKey in bestDiscriminant.indexCases) {
-    //         const nextIndices = bestDiscriminant.indexCases[caseKey]!
-    //         cases[caseKey] = discriminate(
-    //             originalBranches,
-    //             nextIndices,
-    //             discriminants,
-    //             ctx
-    //         )
-    //         if (caseKey !== "default") {
-    //             pruneDiscriminant(
-    //                 cases[caseKey]!,
-    //                 bestDiscriminant.path,
-    //                 bestDiscriminant,
-    //                 ctx
-    //             )
-    //         }
-    //     }
-    //     return [
-    //         [
-    //             "switch",
-    //             {
-    //                 path: bestDiscriminant.path,
-    //                 kind: bestDiscriminant.kind,
-    //                 cases
-    //             }
-    //         ]
-    //     ]
-}
-
-// const pruneDiscriminant = (
-//     entries: TraversalEntry[],
-//     segments: string[],
-//     discriminant: Discriminant,
-//     ctx: CompilationState
+// const discriminate = (
+//     originalBranches: PredicateNode[],
+//     remainingIndices: number[],
+//     discriminants: Discriminants,
+//     c: CompilationState
 // ) => {
-//     for (let i = 0; i < entries.length; i++) {
-//         const [k, v] = entries[i]
-//         if (!segments.length) {
-//             if (discriminant.kind === "domain") {
-//                 if (k === "domain" || k === "domains") {
-//                     entries.splice(i, 1)
-//                     return
-//                 } else if (k === "class" || k === "value") {
-//                     // these keys imply a domain, but also add additional
-//                     // information, so can't be pruned
-//                     return
-//                 }
-//             } else if (discriminant.kind === k) {
-//                 entries.splice(i, 1)
-//                 return
-//             }
-//         } else if (
-//             (k === "requiredProp" ||
-//                 k === "prerequisiteProp" ||
-//                 k === "optionalProp") &&
-//             v[0] === segments[0]
-//         ) {
-//             if (typeof v[1] === "string") {
-//                 if (discriminant.kind !== "domain") {
-//                     return throwPruneFailure(discriminant)
-//                 }
-//                 entries.splice(i, 1)
-//                 return
-//             }
-//             pruneDiscriminant(v[1], segments.slice(1), discriminant, ctx)
-//             if (v[1].length === 0) {
-//                 entries.splice(i, 1)
-//             }
-//             return
-//         }
-//         // check for branch keys, which must be traversed even if there are no
-//         // segments left
-//         if (k === "domains") {
-//             /* c8 ignore start */
-//             if (keyCount(v) !== 1 || !v.object) {
-//                 return throwPruneFailure(discriminant)
-//             }
-//             /* c8 ignore stop */
-//             pruneDiscriminant(v.object, segments, discriminant, ctx)
-//             return
-//         } else if (k === "switch") {
-//             for (const caseKey in v.cases) {
-//                 pruneDiscriminant(
-//                     v.cases[caseKey]!,
-//                     segments,
-//                     discriminant,
-//                     ctx
+//     if (remainingIndices.length === 1) {
+//         return compileBranch(originalBranches[remainingIndices[0]], ctx)
+//     }
+//     const bestDiscriminant = findBestDiscriminant(
+//         remainingIndices,
+//         discriminants
+//     )
+//     if (!bestDiscriminant) {
+//         return [
+//             [
+//                 "branches",
+//                 remainingIndices.map((i) =>
+//                     branchIncludesMorph(originalBranches[i], ctx.type.scope)
+//                         ? throwParseError(
+//                               writeUndiscriminatableMorphUnionMessage(
+//                                   `${ctx.path}`
+//                               )
+//                           )
+//                         : compileBranch(originalBranches[i], ctx)
 //                 )
-//             }
-//             return
-//         } else if (k === "branches") {
-//             for (const branch of v) {
-//                 pruneDiscriminant(branch, segments, discriminant, ctx)
-//             }
-//             return
+//             ]
+//         ]
+//     }
+//     const cases = {} as DiscriminatedCases
+//     for (const caseKey in bestDiscriminant.indexCases) {
+//         const nextIndices = bestDiscriminant.indexCases[caseKey]!
+//         cases[caseKey] = discriminate(
+//             originalBranches,
+//             nextIndices,
+//             discriminants,
+//             ctx
+//         )
+//         if (caseKey !== "default") {
+//             pruneDiscriminant(
+//                 cases[caseKey]!,
+//                 bestDiscriminant.path,
+//                 bestDiscriminant,
+//                 ctx
+//             )
 //         }
 //     }
-//     return throwPruneFailure(discriminant)
+//     return [
+//         [
+//             "switch",
+//             {
+//                 path: bestDiscriminant.path,
+//                 kind: bestDiscriminant.kind,
+//                 cases
+//             }
+//         ]
+//     ]
 // }
-
-// const throwPruneFailure = (discriminant: Discriminant) =>
-//     throwInternalError(
-//         `Unexpectedly failed to discriminate ${discriminant.kind} at path '${discriminant.path}'`
-//     )
 
 type Discriminants = {
     disjointsByPair: DisjointsByPair
@@ -470,7 +387,7 @@ export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 const calculateDiscriminants = (
     branches: PredicateNode[],
-    ctx: CompilationState
+    s: CompilationState
 ): Discriminants => {
     const discriminants: Discriminants = {
         disjointsByPair: {},
@@ -494,8 +411,9 @@ const calculateDiscriminants = (
                 if (!isKeyOf(kind, discriminantKinds)) {
                     continue
                 }
-                const lSerialized = serializeDefinitionIfAllowed(kind, l)
-                const rSerialized = serializeDefinitionIfAllowed(kind, r)
+                // TODO: fix
+                const lSerialized = String(l) //serializeDefinitionIfAllowed(kind, l)
+                const rSerialized = String(r) //serializeDefinitionIfAllowed(kind, r)
                 if (lSerialized === undefined || rSerialized === undefined) {
                     continue
                 }
@@ -598,48 +516,3 @@ const findBestDiscriminant = (
     }
     return bestDiscriminant
 }
-
-type DiscriminantDefinitionKinds = {
-    value: unknown
-    kind: Domain
-    class: object
-}
-
-export const serializeDefinitionIfAllowed = <kind extends DiscriminantKind>(
-    kind: kind,
-    definition: DiscriminantDefinitionKinds[kind]
-): string | undefined => {
-    switch (kind) {
-        case "value":
-            return serializeIfPrimitive(definition)
-        case "kind":
-            return definition as Domain
-        case "class":
-            return getExactConstructorObjectKind(definition)
-        default:
-            return
-    }
-}
-
-const serializeIfPrimitive = (data: unknown) => {
-    const domain = domainOf(data)
-    return domain === "object" || domain === "symbol"
-        ? undefined
-        : serializePrimitive(data as SerializablePrimitive)
-}
-
-const serializeData: {
-    [kind in DiscriminantKind]: (
-        data: unknown
-    ) => DiscriminantKinds[kind] | "default"
-} = {
-    value: (data) => serializeIfPrimitive(data) ?? "default",
-    class: (data) =>
-        (objectKindOf(data) as DefaultObjectKind | undefined) ?? "default",
-    kind: domainOf
-}
-
-export const serializeCase = <kind extends DiscriminantKind>(
-    kind: kind,
-    data: unknown
-) => serializeData[kind](data)

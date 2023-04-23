@@ -66,6 +66,9 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         this.root = root
     }
 
+    // TODO: don't mutate
+    allows = this.root as (data: unknown) => data is inferIn<t>
+
     and<def>(
         def: validateDefinition<def, $>
     ): Type<inferIntersection<t, inferDefinition<def, $>>, $> {
@@ -89,11 +92,6 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         predicate: predicate
     ): Type<inferPredicate<inferIn<t>, predicate>, $> {
         return this as any
-    }
-
-    // TODO: don't mutate
-    allows(data: unknown): data is inferIn<t> {
-        return !data
     }
 
     assert(data: unknown): inferOut<t> {
