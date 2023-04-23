@@ -94,7 +94,7 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
             )} -d ${kindOutDir}/${baseDir} -C jsc.target=es2020 -q`
         )
     }
-    ensureDir(`${kindOutDir}/dev/attest`)
+    ensureDir(join(kindOutDir, "dev", "attest"))
     cpSync(
         fromHere("..", "attest", "dist", kind),
         join(process.cwd(), kindOutDir, "dev", "attest"),
