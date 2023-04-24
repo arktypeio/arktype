@@ -13,6 +13,7 @@ import type {
     PredicateDefinition
 } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
+import { In } from "./utils.js"
 
 type inferBranches<branches extends TypeNodeInput> = {
     [i in keyof branches]: branches[i] extends PredicateDefinition
@@ -81,7 +82,7 @@ export class TypeNode<t = unknown> extends Node<
     static compile(branches: readonly PredicateNode[]): CompiledAssertion {
         switch (branches.length) {
             case 0:
-                return "data !== data"
+                return `${In} !== ${In}`
             case 1:
                 return branches[0].key
             default:

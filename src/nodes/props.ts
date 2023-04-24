@@ -52,7 +52,6 @@ export class PropsNode extends Node<typeof PropsNode> {
         const checks: string[] = []
         const names = Object.keys(props.named).sort()
         for (const k of names) {
-            // TODO: change data
             checks.push(
                 props.named[k].key.replaceAll(
                     "data",
@@ -103,7 +102,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                         // TODO: fix partially optional disjoints (either key is
                         // optional (type is still unsatisfiable but can't be
                         // used to discriminate))
-                        return result.withPrefixPath(k)
+                        return result.withPrefixKey(k)
                     }
                     propResult = result
                 } else {
@@ -118,7 +117,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                             const result = propResult.intersect(rValueAsProp)
                             if (result instanceof DisjointNode) {
                                 // TODO: fix these partially optional disjoints
-                                return result.withPrefixPath(k)
+                                return result.withPrefixKey(k)
                             }
                             propResult = result
                         }
@@ -136,7 +135,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                         const result = propResult.intersect(lValueAsProp)
                         if (result instanceof DisjointNode) {
                             // TODO: fix these partially optional disjoints
-                            return result.withPrefixPath(k)
+                            return result.withPrefixKey(k)
                         }
                         propResult = result
                     }

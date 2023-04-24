@@ -1,4 +1,6 @@
 import type { DisjointsByPath } from "../../nodes/node.js"
+import type { CompiledPath } from "../../nodes/utils.js"
+import { In } from "../../nodes/utils.js"
 import type {
     asConst,
     Dict,
@@ -94,13 +96,14 @@ export const compileDisjointReasonsMessage = (disjoints: DisjointsByPath) => {
     const paths = keysOf(disjoints)
     if (paths.length === 1) {
         const path = paths[0]
-        return `${path === "/" ? "" : `At ${path}: `}Intersection of ${
+        return `${path === In ? "" : `At ${path}: `}Intersection of ${
             disjoints[path]
         } results in an unsatisfiable type`
     }
     let message = `
         "Intersection results in unsatisfiable types at the following paths:\n`
-    for (const path in disjoints) {
+    let path: CompiledPath
+    for (path in disjoints) {
         message += `  ${path}: ${disjoints[path]}\n`
     }
     return message

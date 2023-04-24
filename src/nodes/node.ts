@@ -8,9 +8,12 @@ import type { PredicateNode } from "./predicate.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import type { RangeNode } from "./range.js"
 import type { TypeNode } from "./type.js"
-import { compilePathAccess, compilePropAccess } from "./utils.js"
+import type { CompiledPath } from "./utils.js"
+import { compilePathAccess, In, insertInitialPropAccess } from "./utils.js"
 
-type BaseAssertion = `data${string}` | `typeof data${string}`
+type BaseAssertion =
+    | `${CompiledPath}${string}`
+    | `typeof ${CompiledPath}${string}`
 
 type parenthesizable<s extends string> = s | `(${s}`
 
@@ -74,7 +77,7 @@ export abstract class Node<
             return Node.#cache[kind][key] as instanceOf<subclass>
         }
         this.allows = new CompiledFunction<(data: input) => data is narrowed>(
-            "data",
+            In,
             `return ${key}`
         )
         this.kind = kind
@@ -138,7 +141,7 @@ export type Disjoint = {
     }
 }
 
-export type DisjointsByPath = Record<string, Disjoint>
+export type DisjointsByPath = Record<CompiledPath, Disjoint>
 
 export type DisjointKind = keyof Disjoint
 
@@ -146,16 +149,14 @@ export class DisjointNode {
     constructor(public paths: DisjointsByPath) {}
 
     static from(disjoint: Disjoint) {
-        return new DisjointNode({ data: disjoint })
+        return new DisjointNode({ $arkIn: disjoint })
     }
 
-    withPrefixPath(prefix: string) {
+    withPrefixKey(key: string) {
         const disjoints: DisjointsByPath = {}
-        for (const path in this.paths) {
-            // TODO: serializability?
-            disjoints[
-                path.replace("data", `data${compilePropAccess(prefix)}`)
-            ] = this.paths[path]
+        let path: CompiledPath
+        for (path in this.paths) {
+            disjoints[insertInitialPropAccess(path, key)] = this.paths[path]
         }
         return new DisjointNode(disjoints)
     }

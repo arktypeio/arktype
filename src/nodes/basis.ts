@@ -9,6 +9,7 @@ import { serializePrimitive } from "../utils/serialize.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
 import { DisjointNode, Node } from "./node.js"
 import type { ProblemRules } from "./problems.js"
+import { In } from "./utils.js"
 
 type BasesByLevel = {
     domain: Exclude<Domain, "undefined" | "null" | "boolean">
@@ -95,17 +96,17 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
     static compile(rule: Basis): CompiledAssertion {
         if (hasLevel(rule, "domain")) {
             return rule === "object"
-                ? `((typeof data === "object" && data !== null) || typeof data === "function")`
-                : `typeof data === "${rule}"`
+                ? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
+                : `typeof ${In} === "${rule}"`
         } else if (hasLevel(rule, "value")) {
             const value = rule[1]
-            return `data === ${
+            return `${In} === ${
                 hasKind(value, "object") || typeof value === "symbol"
                     ? registry().register(typeof value, value)
                     : serializePrimitive(value as SerializablePrimitive)
             }`
         } else {
-            return `data instanceof ${
+            return `${In} instanceof ${
                 rule === Array ? "Array" : registry().register(rule.name, rule)
             }`
         }

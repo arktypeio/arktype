@@ -2,6 +2,7 @@ import { throwInternalError } from "../utils/errors.js"
 import type { xor } from "../utils/generics.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
 import { DisjointNode, Node } from "./node.js"
+import { In } from "./utils.js"
 
 export const minComparators = {
     ">": true,
@@ -48,10 +49,6 @@ export type Bounds = xor<{ "==": number }, MinBounds & MaxBounds>
 export type MinBounds = xor<{ ">"?: number }, { ">="?: number }>
 
 export type MaxBounds = xor<{ "<"?: number }, { "<="?: number }>
-
-type T = "bar"
-
-type L = `foo${T}` // type inject here
 
 export type RangeConstraint<comparator extends Comparator = Comparator> = {
     limit: number
@@ -100,9 +97,10 @@ export class RangeNode extends Node<typeof RangeNode> {
             .join(" && ") as CompiledAssertion
     }
 
+    static SIZE = `(${In}.length ?? ${In})` as const
+
     static #compileAssertion(constraint: RangeConstraint): CompiledAssertion {
-        const size = "(data.length ?? data)"
-        return `${size} ${
+        return `${RangeNode.SIZE} ${
             constraint.comparator === "==" ? "===" : constraint.comparator
         } ${constraint.limit}`
     }

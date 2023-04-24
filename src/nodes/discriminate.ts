@@ -7,6 +7,7 @@ import type { SerializedPrimitive } from "../utils/serialize.js"
 import type { DisjointKind } from "./node.js"
 import { DisjointNode } from "./node.js"
 import type { PredicateNode } from "./predicate.js"
+import type { CompiledPath } from "./utils.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
@@ -31,9 +32,7 @@ export type DiscriminatedCases<
     [caseKey in CaseKey<kind>]?: DiscriminatedBranches
 }
 
-export type QualifiedDisjoint =
-    | `${DiscriminantKind}`
-    | `${string}/${DiscriminantKind}`
+export type QualifiedDisjoint = `${CompiledPath}:${DiscriminantKind}`
 
 export const discriminate = (branches: PredicateNode[]) => {
     const discriminants = calculateDiscriminants(branches)
@@ -123,7 +122,8 @@ const calculateDiscriminants = (branches: PredicateNode[]): Discriminants => {
             if (!(result instanceof DisjointNode)) {
                 continue
             }
-            for (const path in result.paths) {
+            let path: CompiledPath
+            for (path in result.paths) {
                 if (path.includes("mapped")) {
                     // containers could be empty and therefore their elements cannot be used to discriminate
                     // allowing this via a special case where both are length >0 tracked here:
@@ -145,8 +145,7 @@ const calculateDiscriminants = (branches: PredicateNode[]): Discriminants => {
                     ) {
                         continue
                     }
-                    const qualifiedDisjoint: QualifiedDisjoint =
-                        path === "/" ? kind : `${path}/${kind}`
+                    const qualifiedDisjoint: QualifiedDisjoint = `${path}:${kind}`
                     pairDisjoints.push(qualifiedDisjoint)
                     if (!discriminants.casesByDisjoint[qualifiedDisjoint]) {
                         discriminants.casesByDisjoint[qualifiedDisjoint] = {

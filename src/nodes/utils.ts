@@ -1,10 +1,19 @@
 import type { Segments } from "../utils/paths.js"
 
-export const compilePathAccess = (segments: Segments, result = "data") => {
+export const In = "$arkIn" as const
+
+export type CompiledPath = `${typeof In}${string}`
+
+export const insertInitialPropAccess = (
+    path: CompiledPath,
+    key: string
+): CompiledPath => `${In}${compilePropAccess(key)}${path.slice(In.length)}`
+
+export const compilePathAccess = (segments: Segments, root = In) => {
     for (const segment of segments) {
-        result += compilePropAccess(segment)
+        root += compilePropAccess(segment)
     }
-    return result
+    return root
 }
 
 export const compilePropAccess = (key: string | number) => {

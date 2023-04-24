@@ -2,6 +2,7 @@ import type { Morph } from "../parse/ast/morph.js"
 import { intersectUniqueLists, listFrom } from "../utils/generics.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
+import { In } from "./utils.js"
 
 export class MorphNode extends Node<typeof MorphNode> {
     static readonly kind = "morph"
@@ -15,7 +16,7 @@ export class MorphNode extends Node<typeof MorphNode> {
     }
 
     static compile(transformations: readonly Morph[]): CompiledAssertion {
-        return `data !== data`
+        return `${In} !== ${In}`
     }
 
     compileTraversal(s: CompilationState) {

@@ -2,6 +2,7 @@ import { CompilationState } from "./nodes/node.js"
 import type { CheckResult } from "./nodes/traverse.js"
 import { TraversalState } from "./nodes/traverse.js"
 import type { TypeNode } from "./nodes/type.js"
+import { In } from "./nodes/utils.js"
 import type { Filter, inferPredicate } from "./parse/ast/filter.js"
 import type { inferIntersection } from "./parse/ast/intersection.js"
 import type { Morph, ParsedMorph } from "./parse/ast/morph.js"
@@ -61,10 +62,10 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
             scope
         }) as TypeNode<t>
         super(
-            "data",
+            In,
             `const state = new ${registry().reference("state")}();
         ${root.compileTraversal(new CompilationState())}
-        return state.finalize(data);`
+        return state.finalize(${In});`
         )
         this.root = root
         this.allows = root.allows
