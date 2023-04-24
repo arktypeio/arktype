@@ -22,7 +22,7 @@ export class MorphNode extends Node<typeof MorphNode> {
         return s.ifNotThen(this.key, s.problem("custom", "morphs"))
     }
 
-    static compare(l: MorphNode, r: MorphNode) {
+    static intersect(l: MorphNode, r: MorphNode) {
         return new MorphNode(
             intersectUniqueLists(l.transformations, r.transformations)
         )

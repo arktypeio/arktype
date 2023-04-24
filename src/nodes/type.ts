@@ -120,7 +120,7 @@ export class TypeNode<t = unknown> extends Node<
         }
     }
 
-    static compare(l: TypeNode, r: TypeNode): TypeNode | DisjointNode {
+    static intersect(l: TypeNode, r: TypeNode): TypeNode | DisjointNode {
         if (l === r) {
             return l
         }

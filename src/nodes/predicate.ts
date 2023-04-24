@@ -74,7 +74,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         return this.basis.hasLevel("value") ? this.basis : undefined
     }
 
-    static compare(l: PredicateNode, r: PredicateNode) {
+    static intersect(l: PredicateNode, r: PredicateNode) {
         // if (
         //     // s.lastOperator === "&" &&
         //     rules.morphs?.some(

@@ -118,7 +118,7 @@ export class RangeNode extends Node<typeof RangeNode> {
             .join("\n")
     }
 
-    static compare(l: RangeNode, r: RangeNode): RangeNode | DisjointNode {
+    static intersect(l: RangeNode, r: RangeNode): RangeNode | DisjointNode {
         if (l.isEqualityRange()) {
             if (r.isEqualityRange()) {
                 return l === r ? l : DisjointNode.from({ range: { l, r } })

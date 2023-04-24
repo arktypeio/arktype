@@ -37,7 +37,7 @@ const boolean = type("boolean")
 
 console.log(boolean(5))
 
-console.log(format(benchType.root.toString()))
+console.log(format(benchType.allows.toString()))
 
 const result2 = benchType.allows(benchData)
 

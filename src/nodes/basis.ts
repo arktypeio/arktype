@@ -60,7 +60,7 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
         return hasLevel(this.rule, level)
     }
 
-    static compare(l: BasisNode, r: BasisNode): BasisNode | DisjointNode {
+    static intersect(l: BasisNode, r: BasisNode): BasisNode | DisjointNode {
         if (l.hasLevel("domain")) {
             if (r.hasLevel("domain")) {
                 return l === r
