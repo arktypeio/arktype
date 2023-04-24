@@ -1,4 +1,5 @@
 import { as } from "../parse/definition.js"
+import type { inferIn } from "../type.js"
 import type { Domain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type { evaluate, keySet, List } from "../utils/generics.js"
@@ -26,7 +27,11 @@ type inferBranches<branches extends TypeNodeInput> = {
 
 export type TypeNodeInput = List<PredicateDefinition | PredicateNode>
 
-export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
+export class TypeNode<t = unknown> extends Node<
+    typeof TypeNode,
+    unknown,
+    inferIn<t>
+> {
     declare [as]: t
 
     static readonly kind = "type"
@@ -114,22 +119,22 @@ export class TypeNode<t = unknown> extends Node<typeof TypeNode> {
         }
     }
 
-    intersect(other: TypeNode, s: ComparisonState): TypeNode | Disjoint {
-        if (this === other) {
-            return this
+    static intersect(
+        l: TypeNode,
+        r: TypeNode,
+        s: ComparisonState
+    ): TypeNode | Disjoint {
+        if (l === r) {
+            return l
         }
-        if (this.branches.length === 1 && other.branches.length === 1) {
-            const result = this.branches[0].intersect(other.branches[0], s)
+        if (l.branches.length === 1 && r.branches.length === 1) {
+            const result = l.branches[0].intersect(r.branches[0], s)
             return result instanceof Disjoint ? result : new TypeNode([result])
         }
-        const branches = branchwiseIntersection(
-            this.branches,
-            other.branches,
-            s
-        )
+        const branches = branchwiseIntersection(l.branches, r.branches, s)
         return branches.length
             ? new TypeNode(branches)
-            : s.addDisjoint("union", this, other)
+            : s.addDisjoint("union", l, r)
     }
 
     constrain<kind extends ConstraintKind>(

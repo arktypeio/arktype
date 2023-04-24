@@ -27,6 +27,11 @@ export type NodeSubclass<subclass extends NodeSubclass<any>> = {
     readonly kind: NodeKind
     new (...args: any[]): Node<subclass>
     compile(definition: any): CompiledAssertion
+    intersect(
+        l: instanceOf<subclass>,
+        r: instanceOf<subclass>,
+        s: ComparisonState
+    ): instanceOf<subclass> | Disjoint
 }
 
 type NodeKind =
@@ -43,10 +48,12 @@ type NodeKind =
 
 export abstract class Node<
     subclass extends NodeSubclass<subclass> = NodeSubclass<any>,
-    input = any
-> extends CompiledFunction<[data: input], boolean> {
+    input = any,
+    narrowed extends input = input
+> {
     declare kind: subclass["kind"]
     declare key: CompiledAssertion
+    declare allows: (data: input) => data is narrowed
 
     static #cache: { [kind in NodeKind]: Record<CompiledAssertion, Node> } = {
         type: {},
@@ -70,18 +77,20 @@ export abstract class Node<
         if (Node.#cache[kind][key]) {
             return Node.#cache[kind][key] as instanceOf<subclass>
         }
-        super("data", `return ${key}`)
+        this.allows = new CompiledFunction<(data: input) => data is narrowed>(
+            "data",
+            `return ${key}`
+        )
         this.kind = kind
         this.key = key
         Node.#cache[kind][key] = this
     }
 
-    abstract compileTraversal(s: CompilationState): string
+    intersect(other: instanceOf<subclass>, s: ComparisonState) {
+        return this.subclass.intersect(this as instanceOf<subclass>, other, s)
+    }
 
-    abstract intersect(
-        other: instanceOf<subclass>,
-        s: ComparisonState
-    ): instanceOf<subclass> | Disjoint
+    abstract compileTraversal(s: CompilationState): string
 }
 
 export type DisjointKinds = extend<

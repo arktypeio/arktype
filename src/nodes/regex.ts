@@ -38,7 +38,7 @@ export class RegexNode extends Node<typeof RegexNode> {
             .join("\n")
     }
 
-    intersect(other: RegexNode) {
-        return new RegexNode(intersectUniqueLists(this.sources, other.sources))
+    static intersect(l: RegexNode, r: RegexNode) {
+        return new RegexNode(intersectUniqueLists(l.sources, r.sources))
     }
 }

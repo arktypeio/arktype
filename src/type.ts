@@ -46,17 +46,20 @@ export type parseType<def, $ extends { this: unknown }> = [def] extends [
 registry().register("state", TraversalState)
 
 export class Type<t = unknown, $ = Ark> extends CompiledFunction<
-    [data: unknown],
-    CheckResult<inferOut<t>>
+    (data: unknown) => CheckResult<inferOut<t>>
 > {
     declare [as]: t
     declare infer: inferOut<t>
     declare inferIn: inferIn<t>
 
-    root: TypeNode
+    root: TypeNode<t>
+    allows: this["root"]["allows"]
 
     constructor(public definition: unknown, public scope: Scope) {
-        const root = parseDefinition(definition, { path: new Path(), scope })
+        const root = parseDefinition(definition, {
+            path: new Path(),
+            scope
+        }) as TypeNode<t>
         super(
             "data",
             `const state = new ${registry().reference("state")}();
@@ -64,10 +67,8 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return state.finalize(data);`
         )
         this.root = root
+        this.allows = root.allows
     }
-
-    // TODO: don't mutate
-    allows = this.root as (data: unknown) => data is inferIn<t>
 
     and<def>(
         def: validateDefinition<def, $>

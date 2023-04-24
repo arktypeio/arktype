@@ -78,7 +78,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         return this.basis.hasLevel("value") ? this.basis : undefined
     }
 
-    intersect(other: PredicateNode, s: ComparisonState) {
+    static intersect(l: PredicateNode, r: PredicateNode, s: ComparisonState) {
         // if (
         //     // s.lastOperator === "&" &&
         //     rules.morphs?.some(
@@ -91,19 +91,19 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         // }
         const resultInput: RuleNodes = [
             // TODO: fix Disjoint
-            this.basis.intersect(other.basis, s) as any,
-            ...this.constraints
+            l.basis.intersect(r.basis, s) as any,
+            ...l.constraints
         ]
-        for (let i = 0; i < other.constraints.length; i++) {
-            const matchingIndex = this.constraints.findIndex(
-                (constraint) => constraint.kind === other.constraints[i].kind
+        for (let i = 0; i < r.constraints.length; i++) {
+            const matchingIndex = l.constraints.findIndex(
+                (constraint) => constraint.kind === r.constraints[i].kind
             )
             if (matchingIndex === -1) {
-                resultInput.push(other.constraints[i])
+                resultInput.push(r.constraints[i])
             } else {
-                resultInput[matchingIndex + 1] = this.constraints[
+                resultInput[matchingIndex + 1] = l.constraints[
                     matchingIndex
-                ].intersect(other.constraints[i] as never, s) as any
+                ].intersect(r.constraints[i] as never, s) as any
             }
         }
         return new PredicateNode(resultInput)

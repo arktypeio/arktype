@@ -21,9 +21,7 @@ export class FilterNode extends Node<typeof FilterNode> {
         return s.ifNotThen(this.key, s.problem("custom", "filters"))
     }
 
-    intersect(other: FilterNode) {
-        return new FilterNode(
-            intersectUniqueLists(this.predicates, other.predicates)
-        )
+    static intersect(l: FilterNode, r: FilterNode) {
+        return new FilterNode(intersectUniqueLists(l.predicates, r.predicates))
     }
 }

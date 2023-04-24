@@ -39,7 +39,7 @@ console.log(boolean(5))
 
 console.log(format(benchType.root.toString()))
 
-const result2 = benchType.root(benchData)
+const result2 = benchType.allows(benchData)
 
 console.log(result2)
 

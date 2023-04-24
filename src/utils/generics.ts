@@ -307,14 +307,11 @@ export const intersectUniqueLists = <item>(
 }
 
 export const CompiledFunction = Function as unknown as new <
-    args extends any[],
-    returns
+    f extends (...args: any[]) => unknown
 >(
     ...args: ConstructorParameters<typeof Function>
-) => {
-    (...args: args): returns
+) => f & {
+    apply(thisArg: null, args: Parameters<f>): ReturnType<f>
 
-    apply(thisArg: null, args: args): returns
-
-    call(thisArg: null, ...args: args): returns
+    call(thisArg: null, ...args: Parameters<f>): ReturnType<f>
 }

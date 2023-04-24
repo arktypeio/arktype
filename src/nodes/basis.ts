@@ -65,35 +65,37 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
         return hasLevel(this.rule, level)
     }
 
-    intersect(other: BasisNode, s: ComparisonState): BasisNode | Disjoint {
-        if (this.hasLevel("domain")) {
-            if (other.hasLevel("domain")) {
-                return this === other
-                    ? this
-                    : s.addDisjoint("domain", this.rule, other.rule)
+    static intersect(
+        l: BasisNode,
+        r: BasisNode,
+        s: ComparisonState
+    ): BasisNode | Disjoint {
+        if (l.hasLevel("domain")) {
+            if (r.hasLevel("domain")) {
+                return l === r ? l : s.addDisjoint("domain", l.rule, r.rule)
             }
-            if (other.hasLevel("class")) {
-                return this.rule === "object"
-                    ? other
-                    : s.addDisjoint("domain", this.rule as Domain, "object")
+            if (r.hasLevel("class")) {
+                return l.rule === "object"
+                    ? r
+                    : s.addDisjoint("domain", l.rule as Domain, "object")
             }
         }
-        if (this.hasLevel("class")) {
-            if (other.hasLevel("domain")) {
-                return other.rule === "object"
-                    ? this
-                    : s.addDisjoint("domain", "object", other.rule as Domain)
+        if (l.hasLevel("class")) {
+            if (r.hasLevel("domain")) {
+                return r.rule === "object"
+                    ? l
+                    : s.addDisjoint("domain", "object", r.rule as Domain)
             }
-            if (other.hasLevel("class")) {
-                return constructorExtends(this.rule, other.rule)
-                    ? this
-                    : constructorExtends(other.rule, this.rule)
-                    ? other
-                    : s.addDisjoint("class", this.rule, other.rule)
+            if (r.hasLevel("class")) {
+                return constructorExtends(l.rule, r.rule)
+                    ? l
+                    : constructorExtends(r.rule, l.rule)
+                    ? r
+                    : s.addDisjoint("class", l.rule, r.rule)
             }
         }
         return throwInternalError(
-            `Unexpected attempt to directly intersect base kinds ${this.kind} and ${other.kind}`
+            `Unexpected attempt to directly intersect base kinds ${l.kind} and ${r.kind}`
         )
     }
 

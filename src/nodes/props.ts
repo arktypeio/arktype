@@ -74,9 +74,9 @@ export class PropsNode extends Node<typeof PropsNode> {
             .join("\n")
     }
 
-    intersect(other: PropsNode, s: ComparisonState) {
-        const indexed = [...this.indexed]
-        for (const [rKey, rValue] of other.indexed) {
+    static intersect(l: PropsNode, r: PropsNode, s: ComparisonState) {
+        const indexed = [...l.indexed]
+        for (const [rKey, rValue] of r.indexed) {
             const matchingIndex = indexed.findIndex(([lKey]) => lKey === rKey)
             if (matchingIndex === -1) {
                 indexed.push([rKey, rValue])
@@ -87,17 +87,17 @@ export class PropsNode extends Node<typeof PropsNode> {
                     result instanceof Disjoint ? never : result
             }
         }
-        const named = { ...this.named, ...other.named }
+        const named = { ...l.named, ...r.named }
         for (const k in named) {
             let propResult = named[k]
-            if (k in this.named) {
-                if (k in other.named) {
+            if (k in l.named) {
+                if (k in r.named) {
                     // We assume l and r were properly created and the named
                     // props from each PropsNode have already been intersected
                     // with any matching index props. Therefore, the
                     // intersection result will already include index values
                     // from both sides whose key types allow k.
-                    const result = this.named[k].intersect(other.named[k], s)
+                    const result = l.named[k].intersect(r.named[k], s)
                     if (result instanceof Disjoint) {
                         return result
                     }
@@ -105,8 +105,8 @@ export class PropsNode extends Node<typeof PropsNode> {
                 } else {
                     // If a named key from l matches any index keys of r, intersect
                     // the value associated with the name with the index value.
-                    for (const [rKey, rValue] of other.indexed) {
-                        if (rKey(k)) {
+                    for (const [rKey, rValue] of r.indexed) {
+                        if (rKey.allows(k)) {
                             const rValueAsProp = new NamedPropNode({
                                 kind: "optional",
                                 value: rValue
@@ -122,8 +122,8 @@ export class PropsNode extends Node<typeof PropsNode> {
             } else {
                 // If a named key from r matches any index keys of l, intersect
                 // the value associated with the name with the index value.
-                for (const [lKey, lValue] of this.indexed) {
-                    if (lKey(k)) {
+                for (const [lKey, lValue] of l.indexed) {
+                    if (lKey.allows(k)) {
                         const lValueAsProp = new NamedPropNode({
                             kind: "optional",
                             value: lValue
@@ -193,19 +193,18 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
         return this.prop.value.compileTraversal(s)
     }
 
-    intersect(
-        other: NamedPropNode,
+    static intersect(
+        l: NamedPropNode,
+        r: NamedPropNode,
         s: ComparisonState
     ): NamedPropNode | Disjoint {
         const kind =
-            this.prop.kind === "prerequisite" ||
-            other.prop.kind === "prerequisite"
+            l.prop.kind === "prerequisite" || r.prop.kind === "prerequisite"
                 ? "prerequisite"
-                : this.prop.kind === "required" ||
-                  other.prop.kind === "required"
+                : l.prop.kind === "required" || r.prop.kind === "required"
                 ? "required"
                 : "optional"
-        const result = this.prop.value.intersect(other.prop.value, s)
+        const result = l.prop.value.intersect(r.prop.value, s)
         return result instanceof Disjoint
             ? kind === "optional"
                 ? new NamedPropNode({
