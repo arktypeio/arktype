@@ -330,13 +330,23 @@ describe("morph", () => {
         }).throwsAndHasTypeError(writeUndiscriminatableMorphUnionMessage("/"))
     })
     it("deep undiscriminated reference", () => {
+        const $ = scope({
+            a: { a: ["string", "|>", (s) => s.trim()] },
+            b: { a: "boolean" },
+            c: { b: "boolean" }
+        })
+        const t = $.type("a|b")
+        attest(t).typed as Type<
+            | {
+                  a: (In: string) => string
+              }
+            | {
+                  a: boolean
+              }
+        >
         attest(() => {
-            scope({
-                a: { a: ["string", "|>", (s) => s.trim()] },
-                b: { b: "boolean" },
-                // @ts-expect-error
-                c: "a|b"
-            }).compile()
+            // @ts-expect-error
+            $.type("a|c")
         }).throwsAndHasTypeError(writeUndiscriminatableMorphUnionMessage("/"))
     })
     it("array double intersection", () => {
