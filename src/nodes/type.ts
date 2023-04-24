@@ -300,7 +300,7 @@ type IndexCases = {
     [caseKey in CaseKey]?: number[]
 }
 
-type DiscriminatedBranches = PredicateNode[] | DiscriminatedSwitch
+type DiscriminatedBranches = string[] | DiscriminatedSwitch
 
 export type DiscriminatedSwitch<
     kind extends DiscriminantKind = DiscriminantKind
@@ -332,7 +332,7 @@ const discriminateRecurse = (
     discriminants: Discriminants
 ): DiscriminatedBranches => {
     if (remainingIndices.length === 1) {
-        return [originalBranches[remainingIndices[0]]]
+        return [originalBranches[remainingIndices[0]].key]
     }
     const bestDiscriminant = findBestDiscriminant(
         remainingIndices,
@@ -344,7 +344,7 @@ const discriminateRecurse = (
         //       writeUndiscriminatableMorphUnionMessage(`${ctx.path}`)
         //   )
         // : compileBranch(originalBranches[i], ctx)
-        return remainingIndices.map((i) => originalBranches[i])
+        return remainingIndices.map((i) => originalBranches[i].key)
     }
     const cases = {} as DiscriminatedCases
     for (const caseKey in bestDiscriminant.indexCases) {
@@ -381,13 +381,13 @@ type CasesByDisjoint = {
 }
 
 export type DiscriminantKinds = {
-    kind: Domain
+    domain: Domain
     class: DefaultObjectKind
     value: SerializedPrimitive
 }
 
 const discriminantKinds: keySet<DiscriminantKind> = {
-    kind: true,
+    domain: true,
     class: true,
     value: true
 }
@@ -456,6 +456,13 @@ const calculateDiscriminants = (branches: PredicateNode[]): Discriminants => {
                     }
                 }
             }
+        }
+    }
+    // TODO: sort wasn't necesssary before?
+    let k: QualifiedDisjoint
+    for (k in discriminants.casesByDisjoint) {
+        for (const caseKey in discriminants.casesByDisjoint[k]) {
+            discriminants.casesByDisjoint[k]![caseKey]!.sort()
         }
     }
     return discriminants

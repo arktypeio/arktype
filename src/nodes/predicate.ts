@@ -91,8 +91,8 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
                     ? l
                     : DisjointNode.from({
                           value: {
-                              l: l.literalValue,
-                              r: r.literalValue
+                              l: l.literalValue.rule[1],
+                              r: r.literalValue.rule[1]
                           }
                       })
             }
@@ -100,7 +100,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
                 ? l
                 : DisjointNode.from({
                       leftAssignability: {
-                          l: l.literalValue,
+                          l: l.literalValue.rule[1],
                           r
                       }
                   })

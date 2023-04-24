@@ -65,8 +65,9 @@ const places = scope({
     },
     desert: { climate: "'dry'", color: "'brown'", isDesert: "true" },
     sky: { climate: "'dry'", color: "'blue'", isSky: "true" },
-    ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" },
-    place: "rainForest|desert|sky|ocean"
-}).compile()
+    ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" }
+})
 
-console.log(JSON.stringify(places.place.root.cases))
+const t = places.type("rainForest|desert|sky|ocean")
+
+console.log(JSON.stringify(t.root.cases, null, 4))
