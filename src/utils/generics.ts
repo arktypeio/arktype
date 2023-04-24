@@ -1,4 +1,5 @@
 import { hasKind } from "./domains.js"
+import { throwInternalError } from "./errors.js"
 
 export const asConst = <t>(t: asConstRecurse<t>) => t
 
@@ -306,9 +307,23 @@ export const intersectUniqueLists = <item>(
     return intersection
 }
 
-export const CompiledFunction = Function as unknown as new <
-    f extends (...args: any[]) => unknown
->(
+export const CompiledFunction = class extends Function {
+    constructor(...args: string[]) {
+        try {
+            super(...args)
+        } catch (e) {
+            return throwInternalError(
+                `Encountered an unexpected error during validation:
+                Message: ${e} 
+                Source: (${args.slice(0, -1)}) => {
+                    ${args.at(-1)}
+                }`
+            )
+        }
+    }
+} as CompiledFunction
+
+export type CompiledFunction = new <f extends (...args: any[]) => unknown>(
     ...args: ConstructorParameters<typeof Function>
 ) => f & {
     apply(thisArg: null, args: Parameters<f>): ReturnType<f>

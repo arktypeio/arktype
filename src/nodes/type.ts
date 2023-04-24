@@ -3,6 +3,7 @@ import type { inferIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
 import type { List } from "../utils/generics.js"
 import { isArray } from "../utils/objectKinds.js"
+import { serializePrimitive } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
 import type {
     CaseKey,
@@ -40,7 +41,8 @@ export class TypeNode<t = unknown> extends Node<
     static readonly kind = "type"
 
     constructor(public branches: PredicateNode[]) {
-        super(TypeNode, branches)
+        const discriminated = discriminate(branches)
+        super(TypeNode, discriminated)
     }
 
     static from<branches extends TypeNodeInput>(...branches: branches) {
@@ -81,33 +83,16 @@ export class TypeNode<t = unknown> extends Node<
         )
     }
 
-    static compile(branches: readonly PredicateNode[]): CompiledAssertion {
-        switch (branches.length) {
-            case 0:
-                return `${In} !== ${In}`
-            case 1:
-                return branches[0].key
-            default:
-                // TODO: cache?
-                return TypeNode.#compileDiscriminated(discriminate(branches))
-            // return `(${branches
-            //     .map((branch) => branch.key)
-            //     .sort()
-            //     .join(" || ")})` as CompiledAssertion
-        }
-    }
-
-    static #compileDiscriminated(
-        branches: DiscriminatedBranches
-    ): CompiledAssertion {
+    static compile(branches: DiscriminatedBranches): CompiledAssertion {
         return isArray(branches)
             ? TypeNode.#compileIndiscriminable(branches)
-            : // TODO: look into this assertion
-              (TypeNode.#compileSwitch(branches) as CompiledAssertion)
+            : (TypeNode.#compileSwitch(branches) as CompiledAssertion)
     }
 
     static #compileIndiscriminable(branches: readonly PredicateNode[]) {
-        return branches.length === 1
+        return branches.length === 0
+            ? (`${In} !== ${In}` as const)
+            : branches.length === 1
             ? branches[0].key
             : (`(${branches
                   .map((branch) => branch.key)
@@ -122,13 +107,15 @@ export class TypeNode<t = unknown> extends Node<
         let compiledCases = ""
         let k: CaseKey
         for (k in cases) {
-            compiledCases += `case ${k}:
-                return ${this.#compileDiscriminated(cases[k])}
-            `
+            compiledCases += `case ${serializePrimitive(
+                k
+            )}: return ${TypeNode.compile(cases[k])};`
         }
-        return `switch(${condition}) {
+        return `(() => {
+        switch(${condition}) {
             ${compiledCases}
-        }`
+        }
+    })()`
     }
 
     compileTraverse(s: CompilationState): string {

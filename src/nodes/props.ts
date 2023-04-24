@@ -8,7 +8,7 @@ import type { CompilationState, CompiledAssertion } from "./node.js"
 import { DisjointNode, Node } from "./node.js"
 import type { TypeNodeInput } from "./type.js"
 import { getNever, TypeNode } from "./type.js"
-import { compilePropAccess } from "./utils.js"
+import { insertUniversalPropAccess } from "./utils.js"
 
 export class PropsNode extends Node<typeof PropsNode> {
     static readonly kind = "props"
@@ -52,12 +52,7 @@ export class PropsNode extends Node<typeof PropsNode> {
         const checks: string[] = []
         const names = Object.keys(props.named).sort()
         for (const k of names) {
-            checks.push(
-                props.named[k].key.replaceAll(
-                    "data",
-                    `data${compilePropAccess(k)}`
-                )
-            )
+            checks.push(insertUniversalPropAccess(props.named[k].key, k))
         }
         // TODO: empty? (same for others)
         return checks.join(" && ") as CompiledAssertion
@@ -67,9 +62,7 @@ export class PropsNode extends Node<typeof PropsNode> {
         return Object.keys(this.named)
             .sort()
             .map((k) =>
-                this.named[k]
-                    .compileTraverse(s)
-                    .replaceAll("data", `data${compilePropAccess(k)}`)
+                insertUniversalPropAccess(this.named[k].compileTraverse(s), k)
             )
             .join("\n")
     }

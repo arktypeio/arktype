@@ -9,6 +9,11 @@ export const insertInitialPropAccess = (
     key: string
 ): CompiledPath => `${In}${compilePropAccess(key)}${path.slice(In.length)}`
 
+export const insertUniversalPropAccess = <s extends string>(
+    assertion: s,
+    key: string
+) => assertion.replaceAll(In, `${In}${compilePropAccess(key)}`) as s
+
 export const compilePathAccess = (segments: Segments, root = In) => {
     for (const segment of segments) {
         root += compilePropAccess(segment)
