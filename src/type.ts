@@ -93,13 +93,13 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     // TODO: Fix other operations on morphs (e.g. morph then filter?)
     morph<transform extends Morph<inferIn<t>>>(
         transform: transform
-    ): Type<(In: inferIn<t>) => ReturnType<transform>, $> {
+    ): Type<(In: inferOut<t>) => ReturnType<transform>, $> {
         return this as any
     }
 
     filter<predicate extends Filter<inferIn<t>>>(
         predicate: predicate
-    ): Type<inferPredicate<inferIn<t>, predicate>, $> {
+    ): Type<inferIntersection<t, inferPredicate<inferIn<t>, predicate>>, $> {
         return new Type(this.root.constrain("filter", predicate), this.scope)
     }
 
@@ -108,12 +108,6 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return result.problems ? result.problems.throw() : result.data
     }
 }
-
-declare const type: TypeParser<Ark>
-
-const t = type("string")
-    .morph((s) => s.length)
-    .filter((s): s is "foo" => s === "foo")
 
 export type KeyCheckKind = "loose" | "strict" | "distilled"
 

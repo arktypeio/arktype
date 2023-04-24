@@ -1,6 +1,7 @@
 import { describe, it } from "mocha"
 import type { Type } from "../../src/main.js"
 import { type } from "../../src/main.js"
+import type { Ark } from "../../src/scopes/ark.js"
 import type { assertEqual } from "../../src/utils/generics.js"
 import { attest } from "../attest/main.js"
 
@@ -89,5 +90,12 @@ describe("filter", () => {
         attest(palindrome("david").problems?.summary).snap(
             "Must be a palindrome (was 'david')"
         )
+    })
+    it("filters the input type of a morph", () => {
+        const t = type("string")
+            .morph((s) => s.length)
+            .filter((s): s is "foo" => s === "foo")
+        attest(t).typed as Type<(In: "foo") => number, Ark>
+        attest(t.root.key).snap()
     })
 })
