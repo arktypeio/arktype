@@ -8,7 +8,7 @@ import { toPropChain } from "../utils/paths.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
 import { DisjointNode, Node } from "./node.js"
 import type { TypeNodeInput } from "./type.js"
-import { never, TypeNode } from "./type.js"
+import { getNever, TypeNode } from "./type.js"
 
 export class PropsNode extends Node<typeof PropsNode> {
     static readonly kind = "props"
@@ -80,7 +80,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                 // TODO: path updates here
                 const result = indexed[matchingIndex][1].intersect(rValue)
                 indexed[matchingIndex][1] =
-                    result instanceof DisjointNode ? never : result
+                    result instanceof DisjointNode ? getNever() : result
             }
         }
         const named = { ...l.named, ...r.named }
@@ -95,7 +95,10 @@ export class PropsNode extends Node<typeof PropsNode> {
                     // from both sides whose key types allow k.
                     const result = l.named[k].intersect(r.named[k])
                     if (result instanceof DisjointNode) {
-                        return result
+                        // TODO: fix partially optional disjoints (either key is
+                        // optional (type is still unsatisfiable but can't be
+                        // used to discriminate))
+                        return result.withPrefixPath(k)
                     }
                     propResult = result
                 } else {
@@ -109,7 +112,8 @@ export class PropsNode extends Node<typeof PropsNode> {
                             })
                             const result = propResult.intersect(rValueAsProp)
                             if (result instanceof DisjointNode) {
-                                return result
+                                // TODO: fix these partially optional disjoints
+                                return result.withPrefixPath(k)
                             }
                             propResult = result
                         }
@@ -126,7 +130,8 @@ export class PropsNode extends Node<typeof PropsNode> {
                         })
                         const result = propResult.intersect(lValueAsProp)
                         if (result instanceof DisjointNode) {
-                            return result
+                            // TODO: fix these partially optional disjoints
+                            return result.withPrefixPath(k)
                         }
                         propResult = result
                     }
@@ -200,17 +205,19 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
                 ? "required"
                 : "optional"
         const result = l.prop.value.intersect(r.prop.value)
-        return result instanceof DisjointNode
-            ? kind === "optional"
-                ? new NamedPropNode({
-                      kind,
-                      value: never
-                  })
-                : result
-            : new NamedPropNode({
-                  kind,
-                  value: result
-              })
+        if (result instanceof DisjointNode) {
+            if (kind === "optional") {
+                return new NamedPropNode({
+                    kind,
+                    value: getNever()
+                })
+            }
+            return result
+        }
+        return new NamedPropNode({
+            kind,
+            value: result
+        })
     }
 }
 

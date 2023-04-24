@@ -40,8 +40,11 @@ export class TypeNode<t = unknown> extends Node<
 
     static readonly kind = "type"
 
+    cases: DiscriminatedBranches
+
     constructor(public branches: PredicateNode[]) {
         super(TypeNode, branches)
+        this.cases = discriminate(this.branches)
     }
 
     static from<branches extends TypeNodeInput>(...branches: branches) {
@@ -209,7 +212,13 @@ export class TypeNode<t = unknown> extends Node<
     }
 }
 
-export const never = new TypeNode([])
+let never: TypeNode<never>
+export const getNever = () => {
+    if (!never) {
+        never = new TypeNode([])
+    }
+    return never
+}
 
 const branchwiseIntersection = (
     lBranches: List<PredicateNode>,
@@ -287,81 +296,78 @@ const branchwiseIntersection = (
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-// export const compileBranches = (
-//     branches: PredicateNode[],
-//     c: CompilationState
-// ) => {
-//     const discriminants = calculateDiscriminants(branches, c)
-//     const indices = branches.map((_, i) => i)
-//     return discriminate(branches, indices, discriminants, c)
-// }
-
 type IndexCases = {
     [caseKey in CaseKey]?: number[]
+}
+
+type DiscriminatedBranches = PredicateNode[] | DiscriminatedSwitch
+
+export type DiscriminatedSwitch<
+    kind extends DiscriminantKind = DiscriminantKind
+> = {
+    readonly path: Path
+    readonly kind: kind
+    readonly cases: DiscriminatedCases<kind>
+}
+
+export type DiscriminatedCases<
+    kind extends DiscriminantKind = DiscriminantKind
+> = {
+    [caseKey in CaseKey<kind>]?: DiscriminatedBranches
 }
 
 export type QualifiedDisjoint =
     | `${DiscriminantKind}`
     | `${string}/${DiscriminantKind}`
 
-// const discriminate = (
-//     originalBranches: PredicateNode[],
-//     remainingIndices: number[],
-//     discriminants: Discriminants,
-//     c: CompilationState
-// ) => {
-//     if (remainingIndices.length === 1) {
-//         return compileBranch(originalBranches[remainingIndices[0]], ctx)
-//     }
-//     const bestDiscriminant = findBestDiscriminant(
-//         remainingIndices,
-//         discriminants
-//     )
-//     if (!bestDiscriminant) {
-//         return [
-//             [
-//                 "branches",
-//                 remainingIndices.map((i) =>
-//                     branchIncludesMorph(originalBranches[i], ctx.type.scope)
-//                         ? throwParseError(
-//                               writeUndiscriminatableMorphUnionMessage(
-//                                   `${ctx.path}`
-//                               )
-//                           )
-//                         : compileBranch(originalBranches[i], ctx)
-//                 )
-//             ]
-//         ]
-//     }
-//     const cases = {} as DiscriminatedCases
-//     for (const caseKey in bestDiscriminant.indexCases) {
-//         const nextIndices = bestDiscriminant.indexCases[caseKey]!
-//         cases[caseKey] = discriminate(
-//             originalBranches,
-//             nextIndices,
-//             discriminants,
-//             ctx
-//         )
-//         if (caseKey !== "default") {
-//             pruneDiscriminant(
-//                 cases[caseKey]!,
-//                 bestDiscriminant.path,
-//                 bestDiscriminant,
-//                 ctx
-//             )
-//         }
-//     }
-//     return [
-//         [
-//             "switch",
-//             {
-//                 path: bestDiscriminant.path,
-//                 kind: bestDiscriminant.kind,
-//                 cases
-//             }
-//         ]
-//     ]
-// }
+const discriminate = (branches: PredicateNode[]) => {
+    const discriminants = calculateDiscriminants(branches)
+    const indices = branches.map((_, i) => i)
+    return discriminateRecurse(branches, indices, discriminants)
+}
+
+const discriminateRecurse = (
+    originalBranches: PredicateNode[],
+    remainingIndices: number[],
+    discriminants: Discriminants
+): DiscriminatedBranches => {
+    if (remainingIndices.length === 1) {
+        return [originalBranches[remainingIndices[0]]]
+    }
+    const bestDiscriminant = findBestDiscriminant(
+        remainingIndices,
+        discriminants
+    )
+    if (!bestDiscriminant) {
+        // branchIncludesMorph(originalBranches[i], ctx.type.scope)
+        // ? throwParseError(
+        //       writeUndiscriminatableMorphUnionMessage(`${ctx.path}`)
+        //   )
+        // : compileBranch(originalBranches[i], ctx)
+        return remainingIndices.map((i) => originalBranches[i])
+    }
+    const cases = {} as DiscriminatedCases
+    for (const caseKey in bestDiscriminant.indexCases) {
+        const nextIndices = bestDiscriminant.indexCases[caseKey]!
+        cases[caseKey] = discriminateRecurse(
+            originalBranches,
+            nextIndices,
+            discriminants
+        )
+        // if (caseKey !== "default") {
+        //     pruneDiscriminant(
+        //         cases[caseKey]!,
+        //         bestDiscriminant.path,
+        //         bestDiscriminant
+        //     )
+        // }
+    }
+    return {
+        path: bestDiscriminant.path,
+        kind: bestDiscriminant.kind,
+        cases
+    }
+}
 
 type Discriminants = {
     disjointsByPair: DisjointsByPair
@@ -388,10 +394,7 @@ const discriminantKinds: keySet<DiscriminantKind> = {
 
 export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
-const calculateDiscriminants = (
-    branches: PredicateNode[],
-    s: CompilationState
-): Discriminants => {
+const calculateDiscriminants = (branches: PredicateNode[]): Discriminants => {
     const discriminants: Discriminants = {
         disjointsByPair: {},
         casesByDisjoint: {}
@@ -402,8 +405,10 @@ const calculateDiscriminants = (
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
             const result = branches[lIndex].intersect(branches[rIndex])
-            const disjointsByPath = new DisjointNode({})
-            for (const path in disjointsByPath) {
+            if (!(result instanceof DisjointNode)) {
+                continue
+            }
+            for (const path in result.paths) {
                 if (path.includes("mapped")) {
                     // containers could be empty and therefore their elements cannot be used to discriminate
                     // allowing this via a special case where both are length >0 tracked here:
@@ -411,7 +416,7 @@ const calculateDiscriminants = (
                     continue
                 }
                 let kind: DisjointKind
-                const disjointAtPath = disjointsByPath.byPath[path]
+                const disjointAtPath = result.paths[path]
                 for (kind in disjointAtPath) {
                     if (!isKeyOf(kind, discriminantKinds)) {
                         continue

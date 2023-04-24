@@ -4,7 +4,7 @@ import type { constructor, evaluate, instanceOf } from "../utils/generics.js"
 import { CompiledFunction } from "../utils/generics.js"
 import { Path, toPropChain } from "../utils/paths.js"
 import { stringify } from "../utils/serialize.js"
-import type { PredicateDefinition } from "./predicate.js"
+import type { PredicateDefinition, PredicateNode } from "./predicate.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import type { RangeNode } from "./range.js"
 import type { TypeNode } from "./type.js"
@@ -125,10 +125,10 @@ export type Disjoint = {
     }
     leftAssignability?: {
         l: unknown
-        r: PredicateDefinition
+        r: PredicateNode
     }
     rightAssignability?: {
-        l: PredicateDefinition
+        l: PredicateNode
         r: unknown
     }
     union?: {
@@ -142,14 +142,23 @@ export type DisjointsByPath = Record<string, Disjoint>
 export type DisjointKind = keyof Disjoint
 
 export class DisjointNode {
-    constructor(public byPath: DisjointsByPath) {}
+    constructor(public paths: DisjointsByPath) {}
 
     static from(disjoint: Disjoint) {
         return new DisjointNode({ data: disjoint })
     }
 
+    withPrefixPath(prefix: string) {
+        const disjoints: DisjointsByPath = {}
+        for (const path in this.paths) {
+            // TODO: serializability?
+            disjoints[path.replace("data", `data/${prefix}`)] = this.paths[path]
+        }
+        return new DisjointNode(disjoints)
+    }
+
     toString() {
-        return stringify(this.byPath)
+        return stringify(this.paths)
     }
 }
 

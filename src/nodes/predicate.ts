@@ -85,6 +85,36 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
         //     )
         // }
+        if (l.literalValue) {
+            if (r.literalValue) {
+                return l.literalValue === r.literalValue
+                    ? l
+                    : DisjointNode.from({
+                          value: {
+                              l: l.literalValue,
+                              r: r.literalValue
+                          }
+                      })
+            }
+            return r.allows(l.literalValue.rule[1])
+                ? l
+                : DisjointNode.from({
+                      leftAssignability: {
+                          l: l.literalValue,
+                          r
+                      }
+                  })
+        }
+        if (r.literalValue) {
+            return l.allows(r.literalValue.rule[1])
+                ? l
+                : DisjointNode.from({
+                      rightAssignability: {
+                          l,
+                          r: r.literalValue.rule[1]
+                      }
+                  })
+        }
         const basisResult = l.basis.intersect(r.basis)
         if (basisResult instanceof DisjointNode) {
             return basisResult

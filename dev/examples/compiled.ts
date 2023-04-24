@@ -1,6 +1,6 @@
 // @ts-ignore
 import { format } from "prettier"
-import { type } from "../../src/main.js"
+import { scope, type } from "../../src/main.js"
 
 const benchData = {
     number: 1,
@@ -56,3 +56,17 @@ try {
 } catch (e) {
     console.log(e)
 }
+
+const places = scope({
+    rainForest: {
+        climate: "'wet'",
+        color: "'green'",
+        isRainForest: "true"
+    },
+    desert: { climate: "'dry'", color: "'brown'", isDesert: "true" },
+    sky: { climate: "'dry'", color: "'blue'", isSky: "true" },
+    ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" },
+    place: "rainForest|desert|sky|ocean"
+}).compile()
+
+console.log(JSON.stringify(places.place.root.cases))
