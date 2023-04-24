@@ -18,7 +18,7 @@ describe("Assertions for Inline Snapshots", () => {
     })
     it("snap", () => {
         attest(o).snap({ re: `do` })
-        attest(o).equals({ re: "do" }).type.toString.snap(`{ re: string; }`)
+        attest(o).equals({ re: "do" }).types.toString.snap(`{ re: string; }`)
         assert.throws(
             () => attest(o).snap({ re: `dorf` }),
             assert.AssertionError,
@@ -26,12 +26,12 @@ describe("Assertions for Inline Snapshots", () => {
         )
     })
     it("value and type snap", () => {
-        attest(o).snap({ re: `do` }).type.toString.snap(`{ re: string; }`)
+        attest(o).snap({ re: `do` }).types.toString.snap(`{ re: string; }`)
         assert.throws(
             () =>
                 attest(o)
                     .snap({ re: `do` })
-                    .type.toString.snap(`{ re: number; }`),
+                    .types.toString.snap(`{ re: number; }`),
             assert.AssertionError,
             "number"
         )
@@ -40,7 +40,7 @@ describe("Assertions for Inline Snapshots", () => {
         // @ts-expect-error
         attest(() => shouldThrow(true))
             .throws.snap(`Error: true is not assignable to false`)
-            .type.errors.snap(
+            .types.errors.snap(
                 `Argument of type 'true' is not assignable to parameter of type 'false'.`
             )
         assert.throws(
@@ -48,7 +48,7 @@ describe("Assertions for Inline Snapshots", () => {
                 // @ts-expect-error
                 attest(() => shouldThrow(1))
                     .throws.snap(`Error: 1 is not assignable to false`)
-                    .type.errors.snap(
+                    .types.errors.snap(
                         `Argument of type '2' is not assignable to parameter of type 'false'.`
                     ),
             assert.AssertionError,
@@ -70,7 +70,7 @@ describe("Assertions for Inline Snapshots", () => {
      */
     it("TS diagnostic chain", () => {
         // @ts-expect-error
-        attest(() => shouldThrow({} as {} | false)).type.errors.snap(
+        attest(() => shouldThrow({} as {} | false)).types.errors.snap(
             `Argument of type 'false | {}' is not assignable to parameter of type 'false'.Type '{}' is not assignable to type 'false'.`
         )
     })

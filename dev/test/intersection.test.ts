@@ -175,7 +175,7 @@ describe("intersection", () => {
                 // @ts-expect-error
                 attest(() => type("boolean&tru"))
                     .throws(writeUnresolvableMessage("tru"))
-                    .type.errors("boolean&true")
+                    .types.errors("boolean&true")
             })
             it("double and", () => {
                 // @ts-expect-error

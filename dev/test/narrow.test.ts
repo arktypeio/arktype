@@ -70,7 +70,7 @@ describe("narrow", () => {
                 // @ts-expect-error
                 (data: number | string[]) => !!data
             ])
-        }).type.errors("Type 'boolean' is not assignable to type 'string'.")
+        }).types.errors("Type 'boolean' is not assignable to type 'string'.")
     })
     it("distributed", () => {
         const distributedBlacklist = {
@@ -111,7 +111,9 @@ describe("narrow", () => {
                     string: (data) => data === ""
                 }
             ])
-        }).type.errors("Type 'boolean[]' is not assignable to type 'string[]'.")
+        }).types.errors(
+            "Type 'boolean[]' is not assignable to type 'string[]'."
+        )
     })
     it("narrow problem", () => {
         const palindrome = type([

@@ -17,18 +17,18 @@ const throwError = () => {
 describe("assertion errors", () => {
     it("valid type errors", () => {
         // @ts-expect-error
-        attest(o.re.length.nonexistent).type.errors(
+        attest(o.re.length.nonexistent).types.errors(
             /Property 'nonexistent' does not exist on type 'number'/
         )
-        attest(o).type.errors("")
+        attest(o).types.errors("")
         // @ts-expect-error
-        attest(() => shouldThrow(5, "")).type.errors.is(
+        attest(() => shouldThrow(5, "")).types.errors.is(
             "Expected 1 arguments, but got 2."
         )
     })
     it("bad type errors", () => {
         assert.throws(
-            () => attest(o).type.errors(/This error doesn't exist/),
+            () => attest(o).types.errors(/This error doesn't exist/),
             assert.AssertionError,
             "doesn't exist"
         )
@@ -37,7 +37,7 @@ describe("assertion errors", () => {
                 attest(() =>
                     // @ts-expect-error
                     shouldThrow("this is a type error")
-                ).type.errors.is(""),
+                ).types.errors.is(""),
             assert.AssertionError,
             "not assignable"
         )
@@ -47,19 +47,19 @@ describe("assertion errors", () => {
         // @ts-expect-error
         attest(() => throwError("this is a type error"))
             .throws("Test error.")
-            .type.errors("Expected 0 arguments, but got 1.")
+            .types.errors("Expected 0 arguments, but got 1.")
     })
     it("bad chainable", () => {
         assert.throws(
             () =>
                 attest(n)
                     .equals(5)
-                    .type.errors.equals("Expecting an error here will throw"),
+                    .types.errors.equals("Expecting an error here will throw"),
             assert.AssertionError,
             "Expecting an error"
         )
         assert.throws(
-            () => attest(n).is(7).type.toString("string"),
+            () => attest(n).is(7).types.toString("string"),
             assert.AssertionError,
             "7"
         )

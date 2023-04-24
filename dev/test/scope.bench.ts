@@ -20,16 +20,16 @@ bench("cyclic(10)", () => {
     const types = scope(cyclic10).compile()
 })
     .median([47.02, "us"])
-    .type([2467, "instantiations"])
+    .types([2467, "instantiations"])
 
 bench("cyclic(100)", () => {
     const types = scope(cyclic100).compile()
 })
     .median([417.71, "us"])
-    .type([14599, "instantiations"])
+    .types([14599, "instantiations"])
 
 bench("cyclic(500)", () => {
     const types = scope(cyclic500).compile()
 })
     .median([2.62, "ms"])
-    .type([66895, "instantiations"])
+    .types([66895, "instantiations"])

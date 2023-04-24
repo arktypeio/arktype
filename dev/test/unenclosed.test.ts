@@ -113,7 +113,7 @@ describe("parse unenclosed", () => {
                     .throws(
                         writeMalformedNumericLiteralMessage("007n", "bigint")
                     )
-                    .type.errors(writeUnresolvableMessage("007n"))
+                    .types.errors(writeUnresolvableMessage("007n"))
             })
             it("negative zero", () => {
                 // https://github.com/arktypeio/arktype/issues/65 @ts-expect-error

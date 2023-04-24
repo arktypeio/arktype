@@ -46,7 +46,7 @@ export type ValueFromTypeAssertion<
 > = InferredAssertions<[expected: Expected], false, Chained>
 
 export type TypeAssertionsRoot = {
-    type: TypeAssertionProps
+    types: TypeAssertionProps
     typed: unknown
 }
 

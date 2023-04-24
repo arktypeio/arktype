@@ -4,7 +4,7 @@ import { attest, cacheAssertions, cleanupAssertions } from "../../src/main.js"
 const isPrecached = process.argv.includes("--attestTestPreCached")
 isPrecached && cacheAssertions()
 
-attest({ re: "do" }).equals({ re: "do" }).type.toString.snap(`{ re: string; }`)
+attest({ re: "do" }).equals({ re: "do" }).types.toString.snap(`{ re: string; }`)
 
 attest(5).snap(5)
 

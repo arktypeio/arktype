@@ -6,8 +6,8 @@ const o = { ark: "type" }
 
 describe("attest", () => {
     it("type toString", () => {
-        attest(o).type.toString("{ ark: string; }")
-        attest(o).type.toString.is("{ ark: string; }")
+        attest(o).types.toString("{ ark: string; }")
+        attest(o).types.toString.is("{ ark: string; }")
     })
     it("typed", () => {
         attest(o).typed as { ark: string }

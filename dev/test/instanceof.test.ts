@@ -26,11 +26,11 @@ describe("instanceof", () => {
     })
     it("builtins not evaluated", () => {
         const t = type(["instanceof", Date])
-        attest(t.infer).type.toString("Date")
+        attest(t.infer).types.toString("Date")
     })
     it("non-constructor", () => {
         // @ts-expect-error
-        attest(() => type(["instanceof", () => {}])).type.errors(
+        attest(() => type(["instanceof", () => {}])).types.errors(
             "Type '() => void' is not assignable to type"
         )
     })
@@ -46,7 +46,7 @@ describe("instanceof", () => {
     })
     it("helper", () => {
         const regex = instanceOf(RegExp)
-        attest(regex.infer).type.toString("RegExp")
+        attest(regex.infer).types.toString("RegExp")
         attest(regex.node).snap({ object: { class: "(function RegExp)" } })
     })
     it("helper error", () => {
@@ -55,7 +55,7 @@ describe("instanceof", () => {
             .throws(
                 "Expected a constructor following 'instanceof' operator (was number)."
             )
-            .type.errors(
+            .types.errors(
                 "Argument of type 'number' is not assignable to parameter of type 'constructor"
             )
     })

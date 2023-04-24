@@ -59,7 +59,7 @@ describe("scope", () => {
             }
         }
         // @ts-expect-error
-        attest(types.a.infer.b.a.b.c).type.errors.snap(
+        attest(types.a.infer.b.a.b.c).types.errors.snap(
             `Property 'c' does not exist on type '{ a: { b: any; }; }'.`
         )
     })

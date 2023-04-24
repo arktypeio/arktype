@@ -17,7 +17,7 @@ attest
     .option("-r, --runner  <value>", "Run using a specified test runner")
     .option("-s, --skipTypes", "Skip type assertions")
     .option(
-        "-f, --files <value>",
+        "--files <value>",
         "Specify the location of the tests you would like to run (maybe)."
     )
     .option("-h, --help, View details about the cli")
@@ -25,7 +25,9 @@ attest
     .option(
         "-p --benchmarksPath <path>, defines where to save json bench results"
     )
-    .option("--filter <filter>, runs benches based on a filter")
+    .option(
+        "-f, --filter <filter>, runs benches based on a filter [/filename, benchname]"
+    )
     .parse(process.argv)
 
 const options = attest.opts()
@@ -43,12 +45,10 @@ if (options.bench) {
     })
     let threwDuringBench
     let filteredPaths = benchFilePaths
-
     if (options.filter) {
         const filterParam = options.filter
         const isPath = filterParam.startsWith("/")
         filteredPaths = filteredPaths.filter((path) => {
-            console.log(`checking ${path}`)
             if (isPath) {
                 if (new RegExp(filterParam).test(path)) {
                     const filterIndex = passedArgs.findIndex((arg) =>
@@ -59,10 +59,8 @@ if (options.bench) {
                 }
                 return false
             } else {
-                const contents = readFileSync(path, "utf-8")
                 const matcher = new RegExp(`bench\\("${filterParam}`)
-                // eslint-disable-next-line no-useless-escape
-                return matcher.test(contents)
+                return matcher.test(readFileSync(path, "utf-8"))
             }
         })
         if (filteredPaths.length === 0) {

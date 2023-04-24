@@ -14,7 +14,7 @@ import type { TypeUnit } from "./measure/types.js"
 import { createTypeComparison } from "./measure/types.js"
 
 export type BenchTypeAssertions = {
-    type: (instantiations?: Measure<TypeUnit>) => void
+    types: (instantiations?: Measure<TypeUnit>) => void
 }
 
 export const getInternalTypeChecker = (project: Project) =>
@@ -124,7 +124,7 @@ const getInstantiationsContributedByNode = (
 export const createBenchTypeAssertion = (
     ctx: BenchContext
 ): BenchTypeAssertions => ({
-    type: (...args: [instantiations?: Measure<TypeUnit> | undefined]) => {
+    types: (...args: [instantiations?: Measure<TypeUnit> | undefined]) => {
         ctx.lastSnapCallPosition = caller()
         const benchFnCall = findCallExpressionAncestor(
             getTsMorphProject(),

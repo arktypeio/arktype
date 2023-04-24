@@ -361,7 +361,7 @@ describe("morph", () => {
             }).compile()
         })
             .throws(writeUndiscriminatableMorphUnionMessage("key"))
-            .type.errors(writeUndiscriminatableMorphUnionMessage("/"))
+            .types.errors(writeUndiscriminatableMorphUnionMessage("/"))
     })
     it("helper morph intersection", () => {
         attest(() =>

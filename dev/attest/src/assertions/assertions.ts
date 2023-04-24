@@ -180,7 +180,7 @@ export class Assertions implements AssertionRecord {
         }
     }
 
-    get type() {
+    get types() {
         if (this.ctx.cfg.skipTypes) {
             return chainableNoOpProxy
         }
