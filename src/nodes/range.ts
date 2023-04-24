@@ -1,12 +1,7 @@
 import { throwInternalError } from "../utils/errors.js"
 import type { xor } from "../utils/generics.js"
-import type {
-    ComparisonState,
-    CompilationState,
-    CompiledAssertion,
-    Disjoint
-} from "./node.js"
-import { Node } from "./node.js"
+import type { CompilationState, CompiledAssertion } from "./node.js"
+import { Disjoint, Node } from "./node.js"
 
 export const minComparators = {
     ">": true,
@@ -119,19 +114,15 @@ export class RangeNode extends Node<typeof RangeNode> {
             .join("\n")
     }
 
-    static compare(
-        l: RangeNode,
-        r: RangeNode,
-        s: ComparisonState
-    ): RangeNode | Disjoint {
+    static compare(l: RangeNode, r: RangeNode): RangeNode | Disjoint {
         if (l.isEqualityRange()) {
             if (r.isEqualityRange()) {
-                return l === r ? l : s.addDisjoint("range", l, r)
+                return l === r ? l : new Disjoint("range", l, r)
             }
-            return r.allows(l.bounds["=="]) ? l : s.addDisjoint("range", l, r)
+            return r.allows(l.bounds["=="]) ? l : new Disjoint("range", l, r)
         }
         if (r.isEqualityRange()) {
-            return l.allows(r.bounds["=="]) ? r : s.addDisjoint("range", l, r)
+            return l.allows(r.bounds["=="]) ? r : new Disjoint("range", l, r)
         }
         const stricterMin = compareStrictness("min", l.lowerBound, r.lowerBound)
         const stricterMax = compareStrictness("max", l.upperBound, r.upperBound)
@@ -139,7 +130,7 @@ export class RangeNode extends Node<typeof RangeNode> {
             if (stricterMax === "r") {
                 return compareStrictness("min", l.lowerBound, r.upperBound) ===
                     "l"
-                    ? s.addDisjoint("range", l, r)
+                    ? new Disjoint("range", l, r)
                     : new RangeNode({
                           ...l.#extractComparators(">"),
                           ...r.#extractComparators("<")
@@ -151,7 +142,7 @@ export class RangeNode extends Node<typeof RangeNode> {
             if (stricterMax === "l") {
                 return compareStrictness("max", l.upperBound, r.lowerBound) ===
                     "l"
-                    ? s.addDisjoint("range", l, r)
+                    ? new Disjoint("range", l, r)
                     : new RangeNode({
                           ...l.#extractComparators(">"),
                           ...r.#extractComparators("<")

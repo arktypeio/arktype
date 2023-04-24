@@ -7,11 +7,7 @@ import { BasisNode } from "./basis.js"
 import { DivisibilityNode } from "./divisibility.js"
 import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
-import type {
-    ComparisonState,
-    CompilationState,
-    CompiledAssertion
-} from "./node.js"
+import type { CompilationState, CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 import type { PropsInput } from "./props.js"
 import { PropsNode } from "./props.js"
@@ -78,7 +74,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         return this.basis.hasLevel("value") ? this.basis : undefined
     }
 
-    static compare(l: PredicateNode, r: PredicateNode, s: ComparisonState) {
+    static compare(l: PredicateNode, r: PredicateNode) {
         // if (
         //     // s.lastOperator === "&" &&
         //     rules.morphs?.some(
@@ -91,7 +87,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         // }
         const resultInput: RuleNodes = [
             // TODO: fix Disjoint
-            l.basis.intersect(r.basis, s) as any,
+            l.basis.intersect(r.basis) as any,
             ...l.constraints
         ]
         for (let i = 0; i < r.constraints.length; i++) {
@@ -103,7 +99,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
             } else {
                 resultInput[matchingIndex + 1] = l.constraints[
                     matchingIndex
-                ].intersect(r.constraints[i] as never, s) as any
+                ].intersect(r.constraints[i] as never) as any
             }
         }
         return new PredicateNode(resultInput)

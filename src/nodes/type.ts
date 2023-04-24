@@ -9,7 +9,7 @@ import { Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
-import { ComparisonState, Disjoint, Node } from "./node.js"
+import { Disjoint, Node } from "./node.js"
 import type {
     ConstraintKind,
     inferPredicateDefinition,
@@ -65,10 +65,7 @@ export class TypeNode<t = unknown> extends Node<
                     uniquenessByIndex[j] = false
                     continue
                 }
-                const intersection = branchNodes[i].intersect(
-                    branchNodes[j],
-                    new ComparisonState()
-                )
+                const intersection = branchNodes[i].intersect(branchNodes[j])
                 if (intersection === branchNodes[i]) {
                     uniquenessByIndex[i] = false
                 } else if (intersection === branchNodes[j]) {
@@ -119,22 +116,18 @@ export class TypeNode<t = unknown> extends Node<
         }
     }
 
-    static compare(
-        l: TypeNode,
-        r: TypeNode,
-        s: ComparisonState
-    ): TypeNode | Disjoint {
+    static compare(l: TypeNode, r: TypeNode): TypeNode | Disjoint {
         if (l === r) {
             return l
         }
         if (l.branches.length === 1 && r.branches.length === 1) {
-            const result = l.branches[0].intersect(r.branches[0], s)
+            const result = l.branches[0].intersect(r.branches[0])
             return result instanceof Disjoint ? result : new TypeNode([result])
         }
-        const branches = branchwiseIntersection(l.branches, r.branches, s)
+        const branches = branchwiseIntersection(l.branches, r.branches)
         return branches.length
             ? new TypeNode(branches)
-            : s.addDisjoint("union", l, r)
+            : new Disjoint("union", l, r)
     }
 
     constrain<kind extends ConstraintKind>(
@@ -147,7 +140,7 @@ export class TypeNode<t = unknown> extends Node<
     }
 
     and(other: TypeNode): TypeNode {
-        const result = this.intersect(other, new ComparisonState())
+        const result = this.intersect(other)
         return result instanceof TypeNode
             ? result
             : throwParseError(`Unsatisfiable`)
@@ -214,8 +207,7 @@ export const never = new TypeNode([])
 
 const branchwiseIntersection = (
     lBranches: List<PredicateNode>,
-    rBranches: List<PredicateNode>,
-    s: ComparisonState
+    rBranches: List<PredicateNode>
 ) => {
     // Branches that are determined to be a subtype of an opposite branch are
     // guaranteed to be a member of the final reduced intersection, so long as
@@ -245,7 +237,7 @@ const branchwiseIntersection = (
                 currentCandidateByR = {}
                 break
             }
-            const branchIntersection = l.intersect(r, s)
+            const branchIntersection = l.intersect(r)
             if (branchIntersection instanceof Disjoint) {
                 // doesn't tell us about any redundancies or add a distinct intersection
                 continue
@@ -403,16 +395,16 @@ const calculateDiscriminants = (
             const pairKey = `${lIndex}/${rIndex}` as const
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
-            const intersectionState = new ComparisonState()
-            branches[lIndex].intersect(branches[rIndex], intersectionState)
-            for (const path in intersectionState.disjointsByPath) {
+            const result = branches[lIndex].intersect(branches[rIndex])
+            const disjointsByPath: Record<string, Disjoint> = {}
+            for (const path in disjointsByPath) {
                 if (path.includes("mapped")) {
                     // containers could be empty and therefore their elements cannot be used to discriminate
                     // allowing this via a special case where both are length >0 tracked here:
                     // https://github.com/arktypeio/arktype/issues/593
                     continue
                 }
-                const { l, r, kind } = intersectionState.disjointsByPath[path]
+                const { l, r, kind } = disjointsByPath[path]
                 if (!isKeyOf(kind, discriminantKinds)) {
                     continue
                 }

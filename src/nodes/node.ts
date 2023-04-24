@@ -29,8 +29,7 @@ export type NodeSubclass<subclass extends NodeSubclass<any>> = {
     compile(definition: any): CompiledAssertion
     compare(
         l: instanceOf<subclass>,
-        r: instanceOf<subclass>,
-        s: ComparisonState
+        r: instanceOf<subclass>
     ): instanceOf<subclass> | Disjoint
 }
 
@@ -87,11 +86,10 @@ export abstract class Node<
     }
 
     #intersections: Record<string, instanceOf<subclass> | Disjoint> = {}
-    intersect(other: instanceOf<subclass>, s: ComparisonState) {
+    intersect(other: instanceOf<subclass>) {
         this.#intersections[other.key] ??= this.subclass.compare(
             this as instanceOf<subclass>,
-            other,
-            s
+            other
         )
         return this.#intersections[other.key]
     }
@@ -134,21 +132,6 @@ export type DisjointKinds = extend<
 >
 
 export type DisjointKind = keyof DisjointKinds
-
-export class ComparisonState {
-    path = new Path()
-    disjointsByPath: DisjointsByPath = {}
-
-    addDisjoint<kind extends DisjointKind>(
-        kind: kind,
-        l: DisjointKinds[kind]["l"],
-        r: DisjointKinds[kind]["r"]
-    ) {
-        const result = new Disjoint(kind, l, r)
-        this.disjointsByPath[`${this.path}`] = result
-        return result
-    }
-}
 
 export class Disjoint<kind extends DisjointKind = DisjointKind> {
     constructor(

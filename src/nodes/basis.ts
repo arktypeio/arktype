@@ -1,18 +1,13 @@
-import { hasKind } from "../utils/domains.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
+import { hasKind } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { constructor, evaluate } from "../utils/generics.js"
 import { constructorExtends } from "../utils/generics.js"
 import { registry } from "../utils/registry.js"
 import type { SerializablePrimitive } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
-import type {
-    ComparisonState,
-    CompilationState,
-    CompiledAssertion,
-    Disjoint
-} from "./node.js"
-import { Node } from "./node.js"
+import type { CompilationState, CompiledAssertion } from "./node.js"
+import { Disjoint, Node } from "./node.js"
 import type { ProblemRules } from "./problems.js"
 
 type BasesByLevel = {
@@ -65,33 +60,29 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
         return hasLevel(this.rule, level)
     }
 
-    static compare(
-        l: BasisNode,
-        r: BasisNode,
-        s: ComparisonState
-    ): BasisNode | Disjoint {
+    static compare(l: BasisNode, r: BasisNode): BasisNode | Disjoint {
         if (l.hasLevel("domain")) {
             if (r.hasLevel("domain")) {
-                return l === r ? l : s.addDisjoint("domain", l.rule, r.rule)
+                return l === r ? l : new Disjoint("domain", l.rule, r.rule)
             }
             if (r.hasLevel("class")) {
                 return l.rule === "object"
                     ? r
-                    : s.addDisjoint("domain", l.rule as Domain, "object")
+                    : new Disjoint("domain", l.rule as Domain, "object")
             }
         }
         if (l.hasLevel("class")) {
             if (r.hasLevel("domain")) {
                 return r.rule === "object"
                     ? l
-                    : s.addDisjoint("domain", "object", r.rule as Domain)
+                    : new Disjoint("domain", "object", r.rule as Domain)
             }
             if (r.hasLevel("class")) {
                 return constructorExtends(l.rule, r.rule)
                     ? l
                     : constructorExtends(r.rule, l.rule)
                     ? r
-                    : s.addDisjoint("class", l.rule, r.rule)
+                    : new Disjoint("class", l.rule, r.rule)
             }
         }
         return throwInternalError(
