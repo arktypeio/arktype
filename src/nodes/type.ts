@@ -8,8 +8,12 @@ import type { DefaultObjectKind } from "../utils/objectKinds.js"
 import { Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
-import type { CompilationState, CompiledAssertion } from "./node.js"
-import { Disjoint, Node } from "./node.js"
+import type {
+    CompilationState,
+    CompiledAssertion,
+    DisjointKind
+} from "./node.js"
+import { DisjointNode, Node } from "./node.js"
 import type {
     ConstraintKind,
     inferPredicateDefinition,
@@ -116,18 +120,20 @@ export class TypeNode<t = unknown> extends Node<
         }
     }
 
-    static compare(l: TypeNode, r: TypeNode): TypeNode | Disjoint {
+    static compare(l: TypeNode, r: TypeNode): TypeNode | DisjointNode {
         if (l === r) {
             return l
         }
         if (l.branches.length === 1 && r.branches.length === 1) {
             const result = l.branches[0].intersect(r.branches[0])
-            return result instanceof Disjoint ? result : new TypeNode([result])
+            return result instanceof DisjointNode
+                ? result
+                : new TypeNode([result])
         }
         const branches = branchwiseIntersection(l.branches, r.branches)
         return branches.length
             ? new TypeNode(branches)
-            : new Disjoint("union", l, r)
+            : DisjointNode.from({ union: { l, r } })
     }
 
     constrain<kind extends ConstraintKind>(
@@ -238,7 +244,7 @@ const branchwiseIntersection = (
                 break
             }
             const branchIntersection = l.intersect(r)
-            if (branchIntersection instanceof Disjoint) {
+            if (branchIntersection instanceof DisjointNode) {
                 // doesn't tell us about any redundancies or add a distinct intersection
                 continue
             }
@@ -396,7 +402,7 @@ const calculateDiscriminants = (
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
             const result = branches[lIndex].intersect(branches[rIndex])
-            const disjointsByPath: Record<string, Disjoint> = {}
+            const disjointsByPath = new DisjointNode({})
             for (const path in disjointsByPath) {
                 if (path.includes("mapped")) {
                     // containers could be empty and therefore their elements cannot be used to discriminate
@@ -404,38 +410,45 @@ const calculateDiscriminants = (
                     // https://github.com/arktypeio/arktype/issues/593
                     continue
                 }
-                const { l, r, kind } = disjointsByPath[path]
-                if (!isKeyOf(kind, discriminantKinds)) {
-                    continue
-                }
-                // TODO: fix
-                const lSerialized = String(l) //serializeDefinitionIfAllowed(kind, l)
-                const rSerialized = String(r) //serializeDefinitionIfAllowed(kind, r)
-                if (lSerialized === undefined || rSerialized === undefined) {
-                    continue
-                }
-                const qualifiedDisjoint: QualifiedDisjoint =
-                    path === "/" ? kind : `${path}/${kind}`
-                pairDisjoints.push(qualifiedDisjoint)
-                if (!discriminants.casesByDisjoint[qualifiedDisjoint]) {
-                    discriminants.casesByDisjoint[qualifiedDisjoint] = {
-                        [lSerialized]: [lIndex],
-                        [rSerialized]: [rIndex]
+                let kind: DisjointKind
+                const disjointAtPath = disjointsByPath.byPath[path]
+                for (kind in disjointAtPath) {
+                    if (!isKeyOf(kind, discriminantKinds)) {
+                        continue
                     }
-                    continue
-                }
-                const cases = discriminants.casesByDisjoint[qualifiedDisjoint]!
-                const existingLBranch = cases[lSerialized]
-                if (!existingLBranch) {
-                    cases[lSerialized] = [lIndex]
-                } else if (!existingLBranch.includes(lIndex)) {
-                    existingLBranch.push(lIndex)
-                }
-                const existingRBranch = cases[rSerialized]
-                if (!existingRBranch) {
-                    cases[rSerialized] = [rIndex]
-                } else if (!existingRBranch.includes(rIndex)) {
-                    existingRBranch.push(rIndex)
+                    // TODO: fix
+                    const lSerialized = String(disjointAtPath[kind]!.l)
+                    const rSerialized = String(disjointAtPath[kind]!.r)
+                    if (
+                        lSerialized === undefined ||
+                        rSerialized === undefined
+                    ) {
+                        continue
+                    }
+                    const qualifiedDisjoint: QualifiedDisjoint =
+                        path === "/" ? kind : `${path}/${kind}`
+                    pairDisjoints.push(qualifiedDisjoint)
+                    if (!discriminants.casesByDisjoint[qualifiedDisjoint]) {
+                        discriminants.casesByDisjoint[qualifiedDisjoint] = {
+                            [lSerialized]: [lIndex],
+                            [rSerialized]: [rIndex]
+                        }
+                        continue
+                    }
+                    const cases =
+                        discriminants.casesByDisjoint[qualifiedDisjoint]!
+                    const existingLBranch = cases[lSerialized]
+                    if (!existingLBranch) {
+                        cases[lSerialized] = [lIndex]
+                    } else if (!existingLBranch.includes(lIndex)) {
+                        existingLBranch.push(lIndex)
+                    }
+                    const existingRBranch = cases[rSerialized]
+                    if (!existingRBranch) {
+                        cases[rSerialized] = [rIndex]
+                    } else if (!existingRBranch.includes(rIndex)) {
+                        existingRBranch.push(rIndex)
+                    }
                 }
             }
         }

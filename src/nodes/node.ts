@@ -1,13 +1,9 @@
 import type { TypeConfig } from "../type.js"
 import type { Domain } from "../utils/domains.js"
-import type {
-    constructor,
-    evaluate,
-    extend,
-    instanceOf
-} from "../utils/generics.js"
+import type { constructor, evaluate, instanceOf } from "../utils/generics.js"
 import { CompiledFunction } from "../utils/generics.js"
 import { Path, toPropChain } from "../utils/paths.js"
+import { stringify } from "../utils/serialize.js"
 import type { PredicateDefinition } from "./predicate.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import type { RangeNode } from "./range.js"
@@ -30,7 +26,7 @@ export type NodeSubclass<subclass extends NodeSubclass<any>> = {
     compare(
         l: instanceOf<subclass>,
         r: instanceOf<subclass>
-    ): instanceOf<subclass> | Disjoint
+    ): instanceOf<subclass> | DisjointNode
 }
 
 type NodeKind =
@@ -85,7 +81,7 @@ export abstract class Node<
         Node.#cache[kind][key] = this
     }
 
-    #intersections: Record<string, instanceOf<subclass> | Disjoint> = {}
+    #intersections: Record<string, instanceOf<subclass> | DisjointNode> = {}
     intersect(other: instanceOf<subclass>) {
         this.#intersections[other.key] ??= this.subclass.compare(
             this as instanceOf<subclass>,
@@ -110,55 +106,52 @@ export abstract class Node<
 //     }
 // }
 
-export type DisjointKinds = extend<
-    Record<string, { l: unknown; r: unknown }>,
-    {
-        domain: {
-            l: Domain
-            r: Domain
-        }
-        range: {
-            l: RangeNode
-            r: RangeNode
-        }
-        class: {
-            l: constructor
-            r: constructor
-        }
-        value: {
-            l: unknown
-            r: unknown
-        }
-        leftAssignability: {
-            l: unknown
-            r: PredicateDefinition
-        }
-        rightAssignability: {
-            l: PredicateDefinition
-            r: unknown
-        }
-        union: {
-            l: TypeNode
-            r: TypeNode
-        }
+export type Disjoint = {
+    domain?: {
+        l: Domain
+        r: Domain
     }
->
-
-export type DisjointKind = keyof DisjointKinds
-
-export class Disjoint<kind extends DisjointKind = DisjointKind> {
-    constructor(
-        public kind: kind,
-        public l: DisjointKinds[kind]["l"],
-        public r: DisjointKinds[kind]["r"]
-    ) {}
-
-    toString() {
-        return `intersection of ${this.l} and ${this.r}`
+    range?: {
+        l: RangeNode
+        r: RangeNode
+    }
+    class?: {
+        l: constructor
+        r: constructor
+    }
+    value?: {
+        l: unknown
+        r: unknown
+    }
+    leftAssignability?: {
+        l: unknown
+        r: PredicateDefinition
+    }
+    rightAssignability?: {
+        l: PredicateDefinition
+        r: unknown
+    }
+    union?: {
+        l: TypeNode
+        r: TypeNode
     }
 }
 
 export type DisjointsByPath = Record<string, Disjoint>
+
+export type DisjointKind = keyof Disjoint
+
+export class DisjointNode {
+    constructor(public byPath: DisjointsByPath) {}
+
+    static from(disjoint: Disjoint) {
+        return new DisjointNode({ data: disjoint })
+    }
+
+    toString() {
+        return stringify(this.byPath)
+    }
+}
 
 export type TraversalConfig = {
     [k in keyof TypeConfig]-?: TypeConfig[k][]

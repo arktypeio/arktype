@@ -6,7 +6,7 @@ import {
 } from "../utils/generics.js"
 import { toPropChain } from "../utils/paths.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
-import { Disjoint, Node } from "./node.js"
+import { DisjointNode, Node } from "./node.js"
 import type { TypeNodeInput } from "./type.js"
 import { never, TypeNode } from "./type.js"
 
@@ -80,7 +80,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                 // TODO: path updates here
                 const result = indexed[matchingIndex][1].intersect(rValue)
                 indexed[matchingIndex][1] =
-                    result instanceof Disjoint ? never : result
+                    result instanceof DisjointNode ? never : result
             }
         }
         const named = { ...l.named, ...r.named }
@@ -94,7 +94,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                     // intersection result will already include index values
                     // from both sides whose key types allow k.
                     const result = l.named[k].intersect(r.named[k])
-                    if (result instanceof Disjoint) {
+                    if (result instanceof DisjointNode) {
                         return result
                     }
                     propResult = result
@@ -108,7 +108,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                                 value: rValue
                             })
                             const result = propResult.intersect(rValueAsProp)
-                            if (result instanceof Disjoint) {
+                            if (result instanceof DisjointNode) {
                                 return result
                             }
                             propResult = result
@@ -125,7 +125,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                             value: lValue
                         })
                         const result = propResult.intersect(lValueAsProp)
-                        if (result instanceof Disjoint) {
+                        if (result instanceof DisjointNode) {
                             return result
                         }
                         propResult = result
@@ -192,7 +192,7 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
     static compare(
         l: NamedPropNode,
         r: NamedPropNode
-    ): NamedPropNode | Disjoint {
+    ): NamedPropNode | DisjointNode {
         const kind =
             l.prop.kind === "prerequisite" || r.prop.kind === "prerequisite"
                 ? "prerequisite"
@@ -200,7 +200,7 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
                 ? "required"
                 : "optional"
         const result = l.prop.value.intersect(r.prop.value)
-        return result instanceof Disjoint
+        return result instanceof DisjointNode
             ? kind === "optional"
                 ? new NamedPropNode({
                       kind,

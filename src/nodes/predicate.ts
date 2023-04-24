@@ -8,7 +8,7 @@ import { DivisibilityNode } from "./divisibility.js"
 import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
-import { Disjoint, Node } from "./node.js"
+import { DisjointNode, Node } from "./node.js"
 import type { PropsInput } from "./props.js"
 import { PropsNode } from "./props.js"
 import type { Bounds } from "./range.js"
@@ -86,7 +86,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         //     )
         // }
         const basisResult = l.basis.intersect(r.basis)
-        if (basisResult instanceof Disjoint) {
+        if (basisResult instanceof DisjointNode) {
             return basisResult
         }
         const resultInput: RuleNodes = [basisResult, ...l.constraints]
@@ -100,7 +100,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
                 const constraintResult = l.constraints[matchingIndex].intersect(
                     r.constraints[i] as never
                 )
-                if (constraintResult instanceof Disjoint) {
+                if (constraintResult instanceof DisjointNode) {
                     return constraintResult
                 }
                 resultInput[matchingIndex + 1] = constraintResult

@@ -1,4 +1,4 @@
-import { Disjoint } from "../../../../nodes/node.js"
+import { DisjointNode } from "../../../../nodes/node.js"
 import type { Comparator, MaxComparator } from "../../../../nodes/range.js"
 import { maxComparators, RangeNode } from "../../../../nodes/range.js"
 import type { error, keySet } from "../../../../utils/generics.js"
@@ -99,7 +99,7 @@ export const parseRightBound = (
     const intersectionResult = s.branches.range.intersect(
         new RangeNode({ [comparator]: limit })
     )
-    if (intersectionResult instanceof Disjoint) {
+    if (intersectionResult instanceof DisjointNode) {
         return s.error(`${intersectionResult} is empty`)
     }
     delete s.branches.range

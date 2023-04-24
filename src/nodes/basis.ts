@@ -7,7 +7,7 @@ import { registry } from "../utils/registry.js"
 import type { SerializablePrimitive } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
-import { Disjoint, Node } from "./node.js"
+import { DisjointNode, Node } from "./node.js"
 import type { ProblemRules } from "./problems.js"
 
 type BasesByLevel = {
@@ -60,29 +60,31 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
         return hasLevel(this.rule, level)
     }
 
-    static compare(l: BasisNode, r: BasisNode): BasisNode | Disjoint {
+    static compare(l: BasisNode, r: BasisNode): BasisNode | DisjointNode {
         if (l.hasLevel("domain")) {
             if (r.hasLevel("domain")) {
-                return l === r ? l : new Disjoint("domain", l.rule, r.rule)
+                return l === r
+                    ? l
+                    : DisjointNode.from({ domain: { l: l.rule, r: r.rule } })
             }
             if (r.hasLevel("class")) {
                 return l.rule === "object"
                     ? r
-                    : new Disjoint("domain", l.rule as Domain, "object")
+                    : DisjointNode.from({ domain: { l: l.rule, r: "object" } })
             }
         }
         if (l.hasLevel("class")) {
             if (r.hasLevel("domain")) {
                 return r.rule === "object"
                     ? l
-                    : new Disjoint("domain", "object", r.rule as Domain)
+                    : DisjointNode.from({ domain: { l: "object", r: r.rule } })
             }
             if (r.hasLevel("class")) {
                 return constructorExtends(l.rule, r.rule)
                     ? l
                     : constructorExtends(r.rule, l.rule)
                     ? r
-                    : new Disjoint("class", l.rule, r.rule)
+                    : DisjointNode.from({ class: { l: l.rule, r: r.rule } })
             }
         }
         return throwInternalError(
