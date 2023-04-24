@@ -19,11 +19,11 @@ export class RegexNode extends Node<typeof RegexNode> {
     static compile(sources: string[]) {
         return sources
             .sort()
-            .map(RegexNode.#compileSubconstraint)
+            .map(RegexNode.#compileExpression)
             .join(" && ") as CompiledAssertion
     }
 
-    static #compileSubconstraint(source: string): CompiledAssertion {
+    static #compileExpression(source: string): CompiledAssertion {
         return `data.match(/${source}/)`
     }
 
@@ -31,7 +31,7 @@ export class RegexNode extends Node<typeof RegexNode> {
         return this.sources
             .map((source) =>
                 s.ifNotThen(
-                    RegexNode.#compileSubconstraint(source),
+                    RegexNode.#compileExpression(source),
                     s.problem("regex", source)
                 )
             )

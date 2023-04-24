@@ -48,7 +48,7 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
 
     constructor(public rule: Basis<level>) {
         super(BasisNode, rule)
-        this.level = levelOf(rule) as unknown as level
+        this.level = levelOf(rule) as level
     }
 
     hasLevel<level extends BasisLevel>(

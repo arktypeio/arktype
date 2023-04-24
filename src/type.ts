@@ -90,7 +90,6 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return this.#unary(def, "or")
     }
 
-    // TODO: Fix other operations on morphs (e.g. morph then filter?)
     morph<transform extends Morph<inferIn<t>>>(
         transform: transform
     ): Type<(In: inferOut<t>) => ReturnType<transform>, $> {
