@@ -8,7 +8,7 @@ import { DivisibilityNode } from "./divisibility.js"
 import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
-import { Node } from "./node.js"
+import { Disjoint, Node } from "./node.js"
 import type { PropsInput } from "./props.js"
 import { PropsNode } from "./props.js"
 import type { Bounds } from "./range.js"
@@ -85,11 +85,11 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
         //     )
         // }
-        const resultInput: RuleNodes = [
-            // TODO: fix Disjoint
-            l.basis.intersect(r.basis) as any,
-            ...l.constraints
-        ]
+        const basisResult = l.basis.intersect(r.basis)
+        if (basisResult instanceof Disjoint) {
+            return basisResult
+        }
+        const resultInput: RuleNodes = [basisResult, ...l.constraints]
         for (let i = 0; i < r.constraints.length; i++) {
             const matchingIndex = l.constraints.findIndex(
                 (constraint) => constraint.kind === r.constraints[i].kind
@@ -97,9 +97,13 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
             if (matchingIndex === -1) {
                 resultInput.push(r.constraints[i])
             } else {
-                resultInput[matchingIndex + 1] = l.constraints[
-                    matchingIndex
-                ].intersect(r.constraints[i] as never) as any
+                const constraintResult = l.constraints[matchingIndex].intersect(
+                    r.constraints[i] as never
+                )
+                if (constraintResult instanceof Disjoint) {
+                    return constraintResult
+                }
+                resultInput[matchingIndex + 1] = constraintResult
             }
         }
         return new PredicateNode(resultInput)

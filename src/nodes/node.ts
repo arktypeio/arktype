@@ -97,6 +97,19 @@ export abstract class Node<
     abstract compileTraversal(s: CompilationState): string
 }
 
+// TODO: multiple disjoints
+// intersect ["===", 5], ["===", "foo"]
+// const disjoints = {
+//     domain: {
+//         l: "number",
+//         r: "string"
+//     },
+//     value: {
+//         l: 5,
+//         r: "foo"
+//     }
+// }
+
 export type DisjointKinds = extend<
     Record<string, { l: unknown; r: unknown }>,
     {
