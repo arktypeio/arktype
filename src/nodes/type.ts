@@ -2,8 +2,13 @@ import { as } from "../parse/definition.js"
 import type { inferIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
 import type { List } from "../utils/generics.js"
+import { isArray } from "../utils/objectKinds.js"
 import type { BasisNode } from "./basis.js"
-import type { DiscriminatedBranches } from "./discriminate.js"
+import type {
+    CaseKey,
+    DiscriminatedBranches,
+    DiscriminatedSwitch
+} from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
 import { DisjointNode, Node } from "./node.js"
@@ -34,11 +39,8 @@ export class TypeNode<t = unknown> extends Node<
 
     static readonly kind = "type"
 
-    cases: DiscriminatedBranches
-
     constructor(public branches: PredicateNode[]) {
         super(TypeNode, branches)
-        this.cases = discriminate(this.branches)
     }
 
     static from<branches extends TypeNodeInput>(...branches: branches) {
@@ -86,26 +88,62 @@ export class TypeNode<t = unknown> extends Node<
             case 1:
                 return branches[0].key
             default:
-                return `(${branches
-                    .map((branch) => branch.key)
-                    .sort()
-                    .join(" || ")})` as CompiledAssertion
+                // TODO: cache?
+                return TypeNode.#compileDiscriminated(discriminate(branches))
+            // return `(${branches
+            //     .map((branch) => branch.key)
+            //     .sort()
+            //     .join(" || ")})` as CompiledAssertion
         }
     }
 
-    compileTraversal(s: CompilationState): string {
+    static #compileDiscriminated(
+        branches: DiscriminatedBranches
+    ): CompiledAssertion {
+        return isArray(branches)
+            ? TypeNode.#compileIndiscriminable(branches)
+            : // TODO: look into this assertion
+              (TypeNode.#compileSwitch(branches) as CompiledAssertion)
+    }
+
+    static #compileIndiscriminable(branches: readonly PredicateNode[]) {
+        return branches.length === 1
+            ? branches[0].key
+            : (`(${branches
+                  .map((branch) => branch.key)
+                  .sort()
+                  .join(" || ")})` as CompiledAssertion)
+    }
+
+    static #compileSwitch({ path, kind, cases }: DiscriminatedSwitch): string {
+        // TODO: fix class
+        // TODO: optional access
+        const condition = kind === "domain" ? `typeof ${path}` : `${path}`
+        let compiledCases = ""
+        let k: CaseKey
+        for (k in cases) {
+            compiledCases += `case ${k}:
+                return ${this.#compileDiscriminated(cases[k])}
+            `
+        }
+        return `switch(${condition}) {
+            ${compiledCases}
+        }`
+    }
+
+    compileTraverse(s: CompilationState): string {
         switch (this.branches.length) {
             case 0:
                 return "throw new Error();"
             case 1:
-                return this.branches[0].compileTraversal(s)
+                return this.branches[0].compileTraverse(s)
             default:
                 s.unionDepth++
                 const result = `state.pushUnion();
                         ${this.branches
                             .map(
                                 (rules) => `(() => {
-                            ${rules.compileTraversal(s)}
+                            ${rules.compileTraverse(s)}
                             })()`
                             )
                             .join(" && ")};

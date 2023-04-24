@@ -105,7 +105,7 @@ export class RangeNode extends Node<typeof RangeNode> {
         } ${constraint.limit}`
     }
 
-    compileTraversal(s: CompilationState) {
+    compileTraverse(s: CompilationState) {
         return this.range
             .map((constraint) =>
                 s.ifNotThen(

@@ -63,12 +63,12 @@ export class PropsNode extends Node<typeof PropsNode> {
         return checks.join(" && ") as CompiledAssertion
     }
 
-    compileTraversal(s: CompilationState) {
+    compileTraverse(s: CompilationState) {
         return Object.keys(this.named)
             .sort()
             .map((k) =>
                 this.named[k]
-                    .compileTraversal(s)
+                    .compileTraverse(s)
                     .replaceAll("data", `data${compilePropAccess(k)}`)
             )
             .join("\n")
@@ -194,8 +194,8 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
         return child.value.key
     }
 
-    compileTraversal(s: CompilationState) {
-        return this.prop.value.compileTraversal(s)
+    compileTraverse(s: CompilationState) {
+        return this.prop.value.compileTraverse(s)
     }
 
     static intersect(

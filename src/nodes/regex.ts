@@ -28,7 +28,7 @@ export class RegexNode extends Node<typeof RegexNode> {
         return `${In}.match(/${source}/)`
     }
 
-    compileTraversal(s: CompilationState) {
+    compileTraverse(s: CompilationState) {
         return this.sources
             .map((source) =>
                 s.ifNotThen(

@@ -18,7 +18,7 @@ export class FilterNode extends Node<typeof FilterNode> {
         return `${In} !== ${In}`
     }
 
-    compileTraversal(s: CompilationState) {
+    compileTraverse(s: CompilationState) {
         return s.ifNotThen(this.key, s.problem("custom", "filters"))
     }
 

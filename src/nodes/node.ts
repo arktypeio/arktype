@@ -76,12 +76,12 @@ export abstract class Node<
         if (Node.#cache[kind][key]) {
             return Node.#cache[kind][key] as instanceOf<subclass>
         }
+        this.key = key
+        this.kind = kind
         this.allows = new CompiledFunction<(data: input) => data is narrowed>(
             In,
             `return ${key}`
         )
-        this.kind = kind
-        this.key = key
         Node.#cache[kind][key] = this
     }
 
@@ -94,7 +94,7 @@ export abstract class Node<
         return this.#intersections[other.key]
     }
 
-    abstract compileTraversal(s: CompilationState): string
+    abstract compileTraverse(s: CompilationState): string
 }
 
 // TODO: multiple disjoints

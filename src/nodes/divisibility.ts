@@ -14,7 +14,7 @@ export class DivisibilityNode extends Node<typeof DivisibilityNode> {
         return `${In} % ${divisor} === 0`
     }
 
-    compileTraversal(s: CompilationState) {
+    compileTraverse(s: CompilationState) {
         return s.ifNotThen(this.key, s.problem("divisor", this.divisor))
     }
 

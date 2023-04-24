@@ -66,8 +66,8 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         return rules.map((rule) => rule.key).join(" && ") as CompiledAssertion
     }
 
-    compileTraversal(s: CompilationState) {
-        return this.rules.map((rule) => rule.compileTraversal(s)).join("\n")
+    compileTraverse(s: CompilationState) {
+        return this.rules.map((rule) => rule.compileTraverse(s)).join("\n")
     }
 
     get literalValue(): BasisNode<"value"> | undefined {

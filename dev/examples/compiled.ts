@@ -70,4 +70,4 @@ const places = scope({
 
 const t = places.type("rainForest|desert|sky|ocean")
 
-console.log(JSON.stringify(t.root.cases, null, 4))
+console.log(t.root.toString())

@@ -112,7 +112,7 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
         }
     }
 
-    compileTraversal(s: CompilationState) {
+    compileTraverse(s: CompilationState) {
         return s.ifNotThen(
             this.key,
             s.problem(

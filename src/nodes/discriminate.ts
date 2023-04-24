@@ -7,7 +7,7 @@ import type { SerializedPrimitive } from "../utils/serialize.js"
 import type { DisjointKind } from "./node.js"
 import { DisjointNode } from "./node.js"
 import type { PredicateNode } from "./predicate.js"
-import type { CompiledPath } from "./utils.js"
+import { type CompiledPath, compilePathAccess } from "./utils.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
@@ -21,7 +21,7 @@ export type DiscriminatedBranches = PredicateNode[] | DiscriminatedSwitch
 export type DiscriminatedSwitch<
     kind extends DiscriminantKind = DiscriminantKind
 > = {
-    readonly path: Path
+    readonly path: CompiledPath
     readonly kind: kind
     readonly cases: DiscriminatedCases<kind>
 }
@@ -29,19 +29,19 @@ export type DiscriminatedSwitch<
 export type DiscriminatedCases<
     kind extends DiscriminantKind = DiscriminantKind
 > = {
-    [caseKey in CaseKey<kind>]?: DiscriminatedBranches
+    [caseKey in CaseKey<kind>]: PredicateNode[] | DiscriminatedSwitch
 }
 
 export type QualifiedDisjoint = `${CompiledPath}:${DiscriminantKind}`
 
-export const discriminate = (branches: PredicateNode[]) => {
+export const discriminate = (branches: readonly PredicateNode[]) => {
     const discriminants = calculateDiscriminants(branches)
     const indices = branches.map((_, i) => i)
     return discriminateRecurse(branches, indices, discriminants)
 }
 
 const discriminateRecurse = (
-    originalBranches: PredicateNode[],
+    originalBranches: readonly PredicateNode[],
     remainingIndices: number[],
     discriminants: Discriminants
 ): DiscriminatedBranches => {
@@ -77,7 +77,7 @@ const discriminateRecurse = (
         // }
     }
     return {
-        path: bestDiscriminant.path,
+        path: compilePathAccess(bestDiscriminant.path),
         kind: bestDiscriminant.kind,
         cases
     }
@@ -108,7 +108,9 @@ const discriminantKinds: keySet<DiscriminantKind> = {
 
 export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
-const calculateDiscriminants = (branches: PredicateNode[]): Discriminants => {
+const calculateDiscriminants = (
+    branches: readonly PredicateNode[]
+): Discriminants => {
     const discriminants: Discriminants = {
         disjointsByPair: {},
         casesByDisjoint: {}
