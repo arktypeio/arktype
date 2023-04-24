@@ -70,16 +70,24 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         this.allows = root.allows
     }
 
+    #unary(def: unknown, operation: "and" | "or"): Type<any> {
+        const other = parseDefinition(def, {
+            path: new Path(),
+            scope: this.scope
+        })
+        return new Type(this.root[operation](other), this.scope)
+    }
+
     and<def>(
         def: validateDefinition<def, $>
     ): Type<inferIntersection<t, inferDefinition<def, $>>, $> {
-        return this as any
+        return this.#unary(def, "and")
     }
 
     or<def>(
         def: validateDefinition<def, $>
     ): Type<inferUnion<t, inferDefinition<def, $>>, $> {
-        return this as any
+        return this.#unary(def, "or")
     }
 
     // TODO: Fix other operations on morphs (e.g. morph then filter?)
@@ -92,7 +100,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     filter<predicate extends Filter<inferIn<t>>>(
         predicate: predicate
     ): Type<inferPredicate<inferIn<t>, predicate>, $> {
-        return this as any
+        return new Type(this.root.constrain("filter", predicate), this.scope)
     }
 
     assert(data: unknown): inferOut<t> {
@@ -100,6 +108,12 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return result.problems ? result.problems.throw() : result.data
     }
 }
+
+declare const type: TypeParser<Ark>
+
+const t = type("string")
+    .morph((s) => s.length)
+    .filter((s): s is "foo" => s === "foo")
 
 export type KeyCheckKind = "loose" | "strict" | "distilled"
 
