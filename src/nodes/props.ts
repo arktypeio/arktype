@@ -74,7 +74,7 @@ export class PropsNode extends Node<typeof PropsNode> {
             .join("\n")
     }
 
-    static intersect(l: PropsNode, r: PropsNode, s: ComparisonState) {
+    static compare(l: PropsNode, r: PropsNode, s: ComparisonState) {
         const indexed = [...l.indexed]
         for (const [rKey, rValue] of r.indexed) {
             const matchingIndex = indexed.findIndex(([lKey]) => lKey === rKey)
@@ -193,7 +193,7 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
         return this.prop.value.compileTraversal(s)
     }
 
-    static intersect(
+    static compare(
         l: NamedPropNode,
         r: NamedPropNode,
         s: ComparisonState

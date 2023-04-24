@@ -27,7 +27,7 @@ export type NodeSubclass<subclass extends NodeSubclass<any>> = {
     readonly kind: NodeKind
     new (...args: any[]): Node<subclass>
     compile(definition: any): CompiledAssertion
-    intersect(
+    compare(
         l: instanceOf<subclass>,
         r: instanceOf<subclass>,
         s: ComparisonState
@@ -86,8 +86,14 @@ export abstract class Node<
         Node.#cache[kind][key] = this
     }
 
+    #intersections: Record<string, instanceOf<subclass> | Disjoint> = {}
     intersect(other: instanceOf<subclass>, s: ComparisonState) {
-        return this.subclass.intersect(this as instanceOf<subclass>, other, s)
+        this.#intersections[other.key] ??= this.subclass.compare(
+            this as instanceOf<subclass>,
+            other,
+            s
+        )
+        return this.#intersections[other.key]
     }
 
     abstract compileTraversal(s: CompilationState): string

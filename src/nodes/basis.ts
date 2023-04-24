@@ -65,7 +65,7 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
         return hasLevel(this.rule, level)
     }
 
-    static intersect(
+    static compare(
         l: BasisNode,
         r: BasisNode,
         s: ComparisonState

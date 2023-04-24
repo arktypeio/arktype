@@ -17,7 +17,7 @@ export class DivisibilityNode extends Node<typeof DivisibilityNode> {
         return s.ifNotThen(this.key, s.problem("divisor", this.divisor))
     }
 
-    static intersect(l: DivisibilityNode, r: DivisibilityNode) {
+    static compare(l: DivisibilityNode, r: DivisibilityNode) {
         const leastCommonMultiple = Math.abs(
             (l.divisor * r.divisor) /
                 greatestCommonDivisor(l.divisor, r.divisor)

@@ -119,7 +119,7 @@ export class TypeNode<t = unknown> extends Node<
         }
     }
 
-    static intersect(
+    static compare(
         l: TypeNode,
         r: TypeNode,
         s: ComparisonState

@@ -119,7 +119,7 @@ export class RangeNode extends Node<typeof RangeNode> {
             .join("\n")
     }
 
-    static intersect(
+    static compare(
         l: RangeNode,
         r: RangeNode,
         s: ComparisonState
