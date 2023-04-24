@@ -2,12 +2,13 @@ import type { TypeConfig } from "../type.js"
 import type { Domain } from "../utils/domains.js"
 import type { constructor, evaluate, instanceOf } from "../utils/generics.js"
 import { CompiledFunction } from "../utils/generics.js"
-import { Path, toPropChain } from "../utils/paths.js"
+import { Path } from "../utils/paths.js"
 import { stringify } from "../utils/serialize.js"
-import type { PredicateDefinition, PredicateNode } from "./predicate.js"
+import type { PredicateNode } from "./predicate.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import type { RangeNode } from "./range.js"
 import type { TypeNode } from "./type.js"
+import { compilePathAccess, compilePropAccess } from "./utils.js"
 
 type BaseAssertion = `data${string}` | `typeof data${string}`
 
@@ -152,7 +153,9 @@ export class DisjointNode {
         const disjoints: DisjointsByPath = {}
         for (const path in this.paths) {
             // TODO: serializability?
-            disjoints[path.replace("data", `data/${prefix}`)] = this.paths[path]
+            disjoints[
+                path.replace("data", `data${compilePropAccess(prefix)}`)
+            ] = this.paths[path]
         }
         return new DisjointNode(disjoints)
     }
@@ -180,7 +183,7 @@ export class CompilationState {
     constructor() {}
 
     get data() {
-        return toPropChain(this.path)
+        return compilePathAccess(this.path)
     }
 
     problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {

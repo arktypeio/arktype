@@ -15,7 +15,7 @@ type IndexCases = {
     [caseKey in CaseKey]?: number[]
 }
 
-export type DiscriminatedBranches = string[] | DiscriminatedSwitch
+export type DiscriminatedBranches = PredicateNode[] | DiscriminatedSwitch
 
 export type DiscriminatedSwitch<
     kind extends DiscriminantKind = DiscriminantKind
@@ -47,7 +47,7 @@ const discriminateRecurse = (
     discriminants: Discriminants
 ): DiscriminatedBranches => {
     if (remainingIndices.length === 1) {
-        return [originalBranches[remainingIndices[0]].key]
+        return [originalBranches[remainingIndices[0]]]
     }
     const bestDiscriminant = findBestDiscriminant(
         remainingIndices,
@@ -59,7 +59,7 @@ const discriminateRecurse = (
         //       writeUndiscriminatableMorphUnionMessage(`${ctx.path}`)
         //   )
         // : compileBranch(originalBranches[i], ctx)
-        return remainingIndices.map((i) => originalBranches[i].key)
+        return remainingIndices.map((i) => originalBranches[i])
     }
     const cases = {} as DiscriminatedCases
     for (const caseKey in bestDiscriminant.indexCases) {

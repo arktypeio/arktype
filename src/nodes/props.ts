@@ -4,11 +4,11 @@ import {
     listFrom,
     type mutable
 } from "../utils/generics.js"
-import { toPropChain } from "../utils/paths.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
 import { DisjointNode, Node } from "./node.js"
 import type { TypeNodeInput } from "./type.js"
 import { getNever, TypeNode } from "./type.js"
+import { compilePropAccess } from "./utils.js"
 
 export class PropsNode extends Node<typeof PropsNode> {
     static readonly kind = "props"
@@ -53,7 +53,12 @@ export class PropsNode extends Node<typeof PropsNode> {
         const names = Object.keys(props.named).sort()
         for (const k of names) {
             // TODO: change data
-            checks.push(props.named[k].key.replaceAll("data", toPropChain([k])))
+            checks.push(
+                props.named[k].key.replaceAll(
+                    "data",
+                    `data${compilePropAccess(k)}`
+                )
+            )
         }
         // TODO: empty? (same for others)
         return checks.join(" && ") as CompiledAssertion
@@ -65,7 +70,7 @@ export class PropsNode extends Node<typeof PropsNode> {
             .map((k) =>
                 this.named[k]
                     .compileTraversal(s)
-                    .replaceAll("data", toPropChain([k]))
+                    .replaceAll("data", `data${compilePropAccess(k)}`)
             )
             .join("\n")
     }
