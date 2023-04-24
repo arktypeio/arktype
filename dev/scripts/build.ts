@@ -1,4 +1,10 @@
-import { copyFileSync, cpSync, readFileSync, renameSync, rmSync } from "node:fs"
+import {
+    cpSync,
+    readFileSync,
+    renameSync,
+    rmSync,
+    writeFileSync
+} from "node:fs"
 import { join } from "node:path"
 import * as process from "node:process"
 import {
@@ -8,6 +14,7 @@ import {
     getSourceFilePaths,
     readJson,
     shell,
+    walkPaths,
     writeJson
 } from "../attest/src/runtime/main.js"
 import { repoDirs } from "./common.js"
@@ -84,7 +91,7 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
     const cjsAddon = kind === "cjs" ? "-C module.type=commonjs" : ""
     const paths = {
         "./": ["src"],
-        dev: ["dev/examples", "dev/test"]
+        dev: [join("dev", "test"), join("dev", "examples")]
     }
 
     for (const [baseDir, dirsToInclude] of Object.entries(paths)) {
@@ -94,7 +101,9 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
             )} -d ${kindOutDir}/${baseDir} -C jsc.target=es2020 -q`
         )
     }
-    ensureDir(join(kindOutDir, "dev", "attest"))
+    transformTestBuildOutput(kind, kindOutDir)
+}
+const transformTestBuildOutput = (kind: string, kindOutDir: string) => {
     cpSync(
         fromHere("..", "attest", "dist", kind),
         join(process.cwd(), kindOutDir, "dev", "attest"),
@@ -105,6 +114,31 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
         join(process.cwd(), kindOutDir, "node_modules"),
         { recursive: true }
     )
-}
+    cpSync(
+        fromHere("..", "examples", "node_modules", "zod"),
+        join(process.cwd(), kindOutDir, "node_modules", "zod")
+    )
+    const testPaths = walkPaths(join(kindOutDir, "dev", "test")).filter(
+        (path) => new RegExp("[.]test[.]").test(path)
+    )
 
+    for (const path of testPaths) {
+        const data = readFileSync(path, "utf-8").replaceAll(
+            join("..", "..", "src"),
+            join("..", "..")
+        )
+        writeFileSync(path, data)
+    }
+
+    const examplesPaths = walkPaths(join(kindOutDir, "dev", "examples"), {
+        ignoreDirsMatching: /node_modules/
+    })
+    for (const path of examplesPaths) {
+        const data = readFileSync(path, "utf-8").replaceAll(
+            '"arktype"',
+            '"#arktype"'
+        )
+        writeFileSync(path, data)
+    }
+}
 arktypeTsc()

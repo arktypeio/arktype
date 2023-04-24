@@ -2,7 +2,7 @@ import { AssertionError } from "node:assert"
 import { describe, it } from "mocha"
 import { type } from "#arktype"
 import { attest } from "#attest"
-import { ArkTypeError } from "#internal/traverse/problems.js"
+import { ArkTypeError } from "../../src/traverse/problems.js"
 
 describe("type utilities", () => {
     it("allows", () => {

@@ -4,8 +4,8 @@ import { attest } from "#attest"
 import {
     unclosedGroupMessage,
     writeUnmatchedGroupCloseMessage
-} from "#internal/parse/string/reduce/shared.js"
-import { writeExpressionExpectedMessage } from "#internal/parse/string/shift/operand/unenclosed.js"
+} from "../../src/parse/string/reduce/shared.js"
+import { writeExpressionExpectedMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 
 describe("group", () => {
     it("entire expression", () => {

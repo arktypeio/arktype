@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
+import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
+import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { scope, type } from "#arktype"
 import { attest } from "#attest"
-import { writeUnboundableMessage } from "#internal/parse/ast/bound.js"
-import { writeUnresolvableMessage } from "#internal/parse/string/shift/operand/unenclosed.js"
 
 describe("scope", () => {
     it("base definition", () => {

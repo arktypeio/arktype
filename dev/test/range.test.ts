@@ -1,13 +1,13 @@
 import { describe, it } from "mocha"
-import { type } from "#arktype"
-import { attest } from "#attest"
-import type { ResolvedNode } from "#internal/nodes/node.js"
+import type { ResolvedNode } from "../../src/nodes/node.js"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
     writeUnpairableComparatorMessage
-} from "#internal/parse/string/reduce/shared.js"
-import { singleEqualsMessage } from "#internal/parse/string/shift/operator/bounds.js"
+} from "../../src/parse/string/reduce/shared.js"
+import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.js"
+import { type } from "#arktype"
+import { attest } from "#attest"
 
 describe("range", () => {
     describe("parse", () => {

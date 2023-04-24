@@ -5,7 +5,7 @@ export const testBuild = (outDir: string) => {
     const cli = fromPackageRoot("dev", "attest", outDir, "cli.js")
     shell(`node ${cli} --skipTypes --runner mocha`, { cwd: outDir })
 }
-shell("pnpm buildAttest")
+// shell("pnpm buildAttest")
 shell("pnpm build --test")
 testBuild(repoDirs.mjsOut)
 testBuild(repoDirs.cjsOut)
