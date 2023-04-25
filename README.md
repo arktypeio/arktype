@@ -10,13 +10,19 @@
 
 <!-- @snipStart:intro -->
 
-<p>ArkType is a runtime validation library that can infer <b>TypeScript definitions 1:1</b> and reuse them as <b>highly-optimized validators</b> for your data.</p>
+<p>ArkType is a validation library that can infer TypeScript definitions 1:1 and reuse them as highly-optimized validators for your data at runtime.
 
-<p>With each character you type, you'll get <b>immediate feedback from your editor</b> in the form of either a fully-inferred <code>Type</code> or a specific and helpful <code>ParseError</code>.</p>
+With each character your type, your editor will show you either:
 
-<p>This result exactly mirrors what you can expect to happen at runtime down to the punctuation of the error message- <b>no plugins required</b>.</p>
+-   a list of completions
+-   a detailed ParseError
+-   a type-safe validator
+
+All powered by ArkType's lightning-fast type-level parser- no plugins or dependencies required.</p>
 
 <!-- @snipEnd -->
+
+<!-- combine with above intro -->
 
 ```ts @blockFrom:dev/examples/type.ts
 import { type } from "../../src/main.js"
@@ -40,11 +46,29 @@ export const { data, problems } = user({
 })
 ```
 
-Check out [how it works](#how), [try it in-browser](https://arktype.io/docs/#your-first-type), or [scroll slightly](#install) to read about installation.
+[Try it in-browser](https://arktype.io/docs/#your-first-type), or [scroll slightly](#install) to read about installation.
 
 <a id="install" />
 
 <!-- @snipStart:install -->
+
+## Why use it?
+
+-   Performance:
+    -   In editor: Types are 3x more efficient than Zod
+    -   At runtime: 400x faster than Zod, 2000x faster than Yup
+-   Concision:
+    -   Definitions: About 1/2 as long as equivalent Zod on average
+    -   Types: Tooltips are 1/5 the length of Zod on average
+-   Portability: Definitions are just strings and objects and are serializable by default.
+-   Developer Experience: With semantic validation and contextual autocomplete, ArkType's static parser is unlike anything you've ever seen.
+
+Also...
+
+-   Deeply-computed intersections
+-   Automatically discriminated unions
+-   Clear, customizable error messages
+-   Recursive and cyclic types that can check cyclic data
 
 ## Install <sub><sub>📦`12KB` gzipped, `0` dependencies</sub></sub>
 
@@ -54,9 +78,7 @@ Check out [how it works](#how), [try it in-browser](https://arktype.io/docs/#you
 
 Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#strict) with TypeScript versions `4.8`, `4.9`, and `5.0`.
 
-If you're using VSCode, setting `"editor.quickSuggestions"` to `{"strings": true}` will improve its autocomplete suggestions.
-
-_Our APIs have mostly stabilized, but details may still change during the alpha/beta stages of our 1.0 release. If you have suggestions that may require a breaking change, now is the time to let us know!_ ⛵
+_Our primary APIs have stabilized, but details may still shift during the beta stage of our 1.0 release. If you have suggestions that may require a breaking change, now is the time to let us know!_ ⛵
 
 <!-- @snipEnd -->
 
@@ -95,17 +117,11 @@ packageData.dependencies![0].dependencies = [packageData]
 export const { data, problems } = types.package(packageData)
 ```
 
-## API
-
-<!--@snipStart:api -->
-
-ArkType supports many of TypeScript's built-in types and operators, as well as some new ones dedicated exclusively to runtime validation. In fact, we got a little ahead of ourselves and built a ton of cool features, but we're still working on getting caught up syntax and API docs. Keep an eye out for more in the next couple weeks ⛵
-
-In the meantime, check out the examples here and use the type hints you get to learn how you can customize your types and scopes. If you want to explore some of the more advanced features, take a look at [our unit tests](./dev/test) or ask us [on Discord](https://discord.gg/WSNF3Kc4xh) if your functionality is supported. If not, [create a GitHub issue](https://github.com/arktypeio/arktype/issues/new) so we can prioritize it!
-
-<!--@snipEnd -->
+<!-- TODO: Examples mapped to here, and on website. On website, most examples would be a code block by deafult but would have a button like the one on the homepage to turn it into a StackBlitz demo. -->
 
 ## Integrations
+
+### react-hook-form
 
 ### tRPC
 
@@ -125,9 +141,9 @@ t.procedure
 
 ## How?
 
-ArkType's isomorphic parser has parallel static and dynamic implementations. This means as soon as you type a definition in your editor, you'll know the eventual result at runtime.
+ArkType's mirrored static and dynamic parsers means the feedback you get in your IDE is the same as the eventual parse result at runtime.
 
-If you're curious, below is an example of what that looks like under the hood. If not, close that hood back up, `npm install arktype` and enjoy top-notch developer experience 🧑‍💻
+If you're curious, below is an example of what that looks like under the hood. If not, just close that hood back up, `npm install arktype` and enjoy top-notch developer experience🔥
 
 ```ts @blockFrom:src/parse/string/shift/operator/operator.ts:parseOperator
 export const parseOperator = (s: DynamicState): void => {
@@ -177,14 +193,13 @@ We accept and encourage pull requests from outside ArkType.
 
 Depending on your level of familiarity with type systems and TS generics, some parts of the codebase may be hard to jump into. That said, there's plenty of opportunities for more straightforward contributions.
 
-If you're planning on submitting a non-trivial fix or a new feature, please [create an issue first](https://github.com/arktypeio/arktype/issues/new) so everyone's on the same page. The last thing we want is for you to spend time on a submission we're unable to merge.
+If you're planning on submitting a non-trivial fix or a new feature, please [create an issue first](https://github.com/arktypeio/arktype/issues/new) so everyone's on the same page. The last thing we want is for you to spend time on a submission we're unable to merge. If you're at all in doubt, please reach out on [our Discord](https://discord.gg/WSNF3Kc4xh) to double check!
 
 When you're ready, check out our [guide](./.github/CONTRIBUTING.md) to get started!
 
 ## License
 
-This project is licensed under the terms of the
-[MIT license](./LICENSE).
+This project is licensed under the terms of the [MIT license](./LICENSE).
 
 ## Collaboration
 
@@ -201,6 +216,14 @@ We've been working full-time on this project for over a year and it means a lot 
 If the project has been useful to you and you are in a financial position to do so, please chip in via [GitHub Sponsors](https://github.com/sponsors/arktypeio).
 
 Otherwise, consider sending me an email (david@arktype.io) or [message me on Discord](https://discord.gg/WSNF3Kc4xh) to let me know you're a fan of ArkType. Either would make my day!
+
+### Community
+
+[Discord](https://discord.gg/WSNF3Kc4xh)
+[Twitter (ArkType)](https://twitter.com/arktypeio)
+[Twitter (ssalbdivad)](https://twitter.com/ssalbdivad)
+[Twitch](https://twitch.tv/arktypeio)
+[Docs](https://arktype.io)
 
 ### Current Sponsors 🥰
 

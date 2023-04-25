@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
-import type { Type } from "../../src/main.js"
 import { type } from "../../src/main.js"
 import type { Infer } from "../../src/parse/definition.js"
+import type { Type } from "../../src/type.js"
 import { attest } from "../attest/main.js"
 
 describe("cast", () => {

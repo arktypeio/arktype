@@ -97,10 +97,17 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return this as any
     }
 
+    // TODO: based on below, should maybe filter morph output if used after
     filter<predicate extends Filter<inferIn<t>>>(
         predicate: predicate
     ): Type<inferIntersection<t, inferPredicate<inferIn<t>, predicate>>, $> {
         return new Type(this.root.constrain("filter", predicate), this.scope)
+    }
+
+    // TODO: how should ordering work with morphs? if morphs then array, it should be array of morphs?
+    // so order does matter.
+    toArray(): Type<t[], $> {
+        return new Type(this.root.toArray(), this.scope)
     }
 
     assert(data: unknown): inferOut<t> {
