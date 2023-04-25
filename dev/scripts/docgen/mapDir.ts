@@ -22,7 +22,7 @@ export const mapDir = (
             walkPaths(sourceDir, {
                 ...options.sourceOptions,
                 excludeDirs: true,
-                ignoreDirsMatching: /node_modules/
+                ignoreDirsMatching: /(node_modules)/
             }).map((sourceFilePath) => {
                 const sourceRelativePath = relative(sourceDir, sourceFilePath)
                 const repoRelativePath = relative(repoDirs.root, sourceFilePath)

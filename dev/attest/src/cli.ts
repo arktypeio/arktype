@@ -25,8 +25,6 @@ attest
     .option(
         "-f, --filter <filter>, runs benches based on a filter [/filename, benchname]"
     )
-    .option("--cacheDir")
-    .option("--no-external")
     .parse(process.argv)
 
 const options = attest.opts()

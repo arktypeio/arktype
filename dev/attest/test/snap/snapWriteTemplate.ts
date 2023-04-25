@@ -1,6 +1,5 @@
 import { attest, cacheAssertions, cleanupAssertions } from "../../src/main.js"
 
-//todo placeholder incase wrong
 cacheAssertions()
 
 attest({ re: "do" }).equals({ re: "do" }).types.toString.snap()
