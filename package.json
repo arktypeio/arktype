@@ -116,5 +116,15 @@
     },
     "eslintConfig": {
         "extends": "./dev/configs/.eslintrc.cjs"
+    },
+    "pnpm": {
+        "peerDependencyRules": {
+            "//": "Docusaurus/webpack nonsense",
+            "ignoreMissing": [
+                "@algolia/client-search",
+                "@babel/core",
+                "typescript"
+            ]
+        }
     }
 }
