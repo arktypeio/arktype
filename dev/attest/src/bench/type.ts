@@ -140,7 +140,7 @@ export const createBenchTypeAssertion = (
         compareToBaseline(comparison, ctx)
         queueBaselineUpdateIfNeeded(comparison.updated, args[0], {
             ...ctx,
-            kind: "type"
+            kind: "types"
         })
     }
 })

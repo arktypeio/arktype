@@ -43,7 +43,7 @@ export type BenchContext = {
 }
 
 export type BenchAssertionContext = BenchContext & {
-    kind: TimeAssertionName | "type"
+    kind: TimeAssertionName | "types"
 }
 
 export type BenchableFunction = () => unknown | Promise<unknown>

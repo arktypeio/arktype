@@ -3,3 +3,4 @@ packages:
     - "./dev/attest"
     - "./dev/scripts"
     - "./dev/examples"
+    - "./dev/arktype.io"

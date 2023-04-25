@@ -26,6 +26,7 @@ attest
         "-f, --filter <filter>, runs benches based on a filter [/filename, benchname]"
     )
     .option("--cacheDir")
+    .option("--no-external")
     .parse(process.argv)
 
 const options = attest.opts()
@@ -110,7 +111,7 @@ if (options.bench) {
         prefix += `node --loader ts-node/esm --test `
     } else {
         prefix += `npx ${options.runner} ${
-            options.files ? `${options.files}` : ""
+            options.file ? `'${options.file}'` : ""
         }`
     }
     let processError: unknown
