@@ -16,27 +16,14 @@ export const runThenGetContents = (
 ) => {
     const testFileCopyPath = templatePath + ".temp.ts"
     let ARKTYPE_CHECK_CMD = includeBenches ? " --bench" : ""
-    if (benchFormat?.noExternal) {
-        ARKTYPE_CHECK_CMD += " --no-external"
-    }
-    if (benchFormat?.noInline) {
-        ARKTYPE_CHECK_CMD += " --no-inline"
-    }
+
     copyFileSync(templatePath, testFileCopyPath)
     let testFileContents
+    // pnpm ts-node ./dev/attest/src/cli.ts -b --file ./dev/attest/test/benchTemplate.ts
     try {
-        if (precache) {
-            ARKTYPE_CHECK_CMD += ` --precache --cacheDir ${PATH_TO_TEST_ASSERTIONS_DIR}`
-            shell(`npx ts-node ${testFileCopyPath} --attestTestPreCached`, {
-                env: {
-                    ARKTYPE_CHECK_CMD
-                }
-            })
-        } else {
-            shell(`npx ts-node ${testFileCopyPath}`, {
-                env: { ARKTYPE_CHECK_CMD }
-            })
-        }
+        shell(
+            `npx ts-node ./dev/attest/src/cli.ts -b --file ./dev/attest/test/benchTemplate.ts --cacheDir ${PATH_TO_TEST_ASSERTIONS_DIR}`
+        )
     } finally {
         testFileContents = readFile(testFileCopyPath)
         rmSync(testFileCopyPath)

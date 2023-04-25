@@ -1,5 +1,5 @@
-import { rmSync, writeFileSync } from "node:fs"
-import { fromPackageRoot, readPackageJson } from "../attest/src/runtime/fs.js"
+import { readFileSync, rmSync, writeFileSync } from "node:fs"
+import { fromHere, fromPackageRoot } from "../attest/src/runtime/fs.js"
 import { shell } from "../attest/src/runtime/shell.js"
 
 const versions: { [k: string]: string } = {
@@ -8,8 +8,7 @@ const versions: { [k: string]: string } = {
     // "4.8": "16",
     "4.9": "17"
 }
-
-const rootJson = readPackageJson(fromPackageRoot())
+const rootJson = JSON.parse(readFileSync(fromHere("package.json"), "utf-8"))
 const originalTsMorphVersion = rootJson["devDependencies"]["ts-morph"]
 
 // Allow us to install a different version of ts-morph for testing
@@ -20,7 +19,7 @@ writeFileSync(npmrcPath, "save=false")
 
 let error: unknown = undefined
 for (const [, tsMorphVersion] of Object.entries(versions)) {
-    shell(`pnpm i ts-morph@${tsMorphVersion}`)
+    shell(`pnpm i ts-morph@${tsMorphVersion}`, { cwd: fromHere() })
     try {
         shell(`pnpm test`)
     } catch (e) {
@@ -28,7 +27,7 @@ for (const [, tsMorphVersion] of Object.entries(versions)) {
     }
 }
 
-shell(`pnpm i ts-morph@${originalTsMorphVersion}`)
+shell(`pnpm i ts-morph@${originalTsMorphVersion}`, { cwd: fromHere() })
 rmSync(npmrcPath, { force: true })
 
 if (error) {

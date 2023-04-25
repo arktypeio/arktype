@@ -8,7 +8,6 @@ import {
 import { join } from "node:path"
 import * as process from "node:process"
 import {
-    ensureDir,
     fromCwd,
     fromHere,
     getSourceFilePaths,

@@ -74,6 +74,12 @@
     },
     "bench call single stat median": [
         {
+            "date": "4/24/2023",
+            "mark": {
+                "median": [2, "ms"]
+            }
+        },
+        {
             "date": "4/19/2023",
             "mark": {
                 "median": [2, "ms"]
@@ -82,6 +88,12 @@
     ],
     "bench call single stat": [
         {
+            "date": "4/24/2023",
+            "mark": {
+                "mean": [2, "ms"]
+            }
+        },
+        {
             "date": "4/19/2023",
             "mark": {
                 "mean": [2, "ms"]
@@ -89,6 +101,13 @@
         }
     ],
     "bench call mark": [
+        {
+            "date": "4/24/2023",
+            "mark": {
+                "mean": [2, "ms"],
+                "median": [2, "ms"]
+            }
+        },
         {
             "date": "4/19/2023",
             "mark": {

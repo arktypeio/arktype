@@ -16,10 +16,7 @@ attest
     .description(description)
     .option("-r, --runner  <value>", "Run using a specified test runner")
     .option("-s, --skipTypes", "Skip type assertions")
-    .option(
-        "--files <value>",
-        "Specify the location of the tests you would like to run (maybe)."
-    )
+    .option("--file <value>", "Specify a path for bench or tests")
     .option("-h, --help, View details about the cli")
     .option("-b, --bench, Runs benchmarks found in *.bench.ts files")
     .option(
@@ -28,6 +25,7 @@ attest
     .option(
         "-f, --filter <filter>, runs benches based on a filter [/filename, benchname]"
     )
+    .option("--cacheDir")
     .parse(process.argv)
 
 const options = attest.opts()
@@ -40,15 +38,20 @@ if (!passedArgs.length || options.help) {
 }
 
 if (options.bench) {
-    const benchFilePaths = walkPaths(fromCwd(), {
-        include: (path) => basename(path).includes(".bench.")
-    })
+    let benchFilePaths
+    if (options.file) {
+        benchFilePaths = [options.file]
+    } else {
+        benchFilePaths = walkPaths(fromCwd(), {
+            include: (path) => basename(path).includes(".bench.")
+        })
+    }
     let threwDuringBench
     let filteredPaths = benchFilePaths
     if (options.filter) {
         const filterParam = options.filter
-        const isPath = filterParam.startsWith("/")
-        filteredPaths = filteredPaths.filter((path) => {
+        const isPath = filterParam.startsWith("/") && !options.file
+        filteredPaths = filteredPaths.filter((path: string) => {
             if (isPath) {
                 if (new RegExp(filterParam).test(path)) {
                     const filterIndex = passedArgs.findIndex((arg) =>

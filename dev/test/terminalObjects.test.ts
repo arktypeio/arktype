@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
-import { scope, type } from "#arktype"
-import { attest, getTsVersionUnderTest } from "#attest"
 import { writeBadDefinitionTypeMessage } from "../../src/parse/definition.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
+import { scope, type } from "#arktype"
+import { attest, getTsVersionUnderTest } from "#attest"
 
 describe("terminal objects", () => {
     it("regex", () => {

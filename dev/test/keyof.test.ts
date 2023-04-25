@@ -1,11 +1,11 @@
 import { describe, it } from "mocha"
-import { keyOf, type } from "#arktype"
-import { attest } from "#attest"
 import type { Branch } from "../../src/nodes/branch.js"
 import type { TypeNode } from "../../src/nodes/node.js"
 import { writeImplicitNeverMessage } from "../../src/parse/ast/intersection.js"
 import { Path } from "../../src/utils/paths.js"
 import { stringify } from "../../src/utils/serialize.js"
+import { keyOf, type } from "#arktype"
+import { attest } from "#attest"
 
 describe("keyof", () => {
     it("object literal", () => {

@@ -1,11 +1,11 @@
 import { describe, it } from "mocha"
-import { type } from "#arktype"
-import { attest } from "#attest"
 import {
     unclosedGroupMessage,
     writeUnmatchedGroupCloseMessage
 } from "../../src/parse/string/reduce/shared.js"
 import { writeExpressionExpectedMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
+import { type } from "#arktype"
+import { attest } from "#attest"
 
 describe("group", () => {
     it("entire expression", () => {
