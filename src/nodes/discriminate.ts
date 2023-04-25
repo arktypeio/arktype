@@ -59,7 +59,7 @@ const discriminateRecurse = (
         // : compileBranch(originalBranches[i], ctx)
         return remainingIndices.map((i) => originalBranches[i])
     }
-    const cases = {} as DiscriminatedCases
+    const cases = { default: [] } as DiscriminatedCases
     for (const caseKey in bestDiscriminant.indexCases) {
         const nextIndices = bestDiscriminant.indexCases[caseKey]!
         cases[caseKey] = discriminateRecurse(
