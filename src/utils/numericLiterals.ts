@@ -86,13 +86,7 @@ export const tryParseWellFormedNumber = <ErrorOnFail extends boolean | string>(
 export type tryParseWellFormedNumber<
     token extends string,
     messageOnFail extends string
-> = token extends NumberLiteral<infer value>
-    ? value
-    : // TODO: reenable "well formed" https://github.com/arktypeio/arktype/issues/659
-      //   number extends value
-      //     ? writeMalformedNumericLiteralMessage<token, "number">
-      //     : value
-      messageOnFail
+> = token extends NumberLiteral<infer value> ? value : messageOnFail
 
 export const tryParseWellFormedInteger = <errorOnFail extends boolean | string>(
     token: string,
@@ -106,11 +100,7 @@ export type tryParseWellFormedInteger<
     token extends string,
     messageOnFail extends string
 > = token extends IntegerLiteral<infer value>
-    ? // TODO: reenable "well formed" https://github.com/arktypeio/arktype/issues/659
-      // bigint extends value
-      //     ? writeMalformedNumericLiteralMessage<token, "integer">
-      // :
-      `${value}` extends NumberLiteral<infer valueAsNumber>
+    ? `${value}` extends NumberLiteral<infer valueAsNumber>
         ? valueAsNumber
         : never
     : messageOnFail

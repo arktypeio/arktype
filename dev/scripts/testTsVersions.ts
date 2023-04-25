@@ -3,9 +3,7 @@ import { fromPackageRoot, readPackageJson } from "../runtime/fs.js"
 import { shell } from "../runtime/shell.js"
 
 const versions: { [k: string]: string } = {
-    // Disabled because of the changes made to accommodate StackBlitz. Reenable:
-    // https://github.com/arktypeio/arktype/issues/659
-    // "4.8": "16",
+    "4.8": "16",
     "4.9": "17"
 }
 
