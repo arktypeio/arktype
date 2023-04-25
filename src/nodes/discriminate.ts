@@ -2,12 +2,11 @@ import type { Domain } from "../utils/domains.js"
 import type { evaluate, keySet } from "../utils/generics.js"
 import { isKeyOf, keysOf } from "../utils/generics.js"
 import type { DefaultObjectKind } from "../utils/objectKinds.js"
-import { Path } from "../utils/paths.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import type { DisjointKind } from "./node.js"
 import { DisjointNode } from "./node.js"
 import type { PredicateNode } from "./predicate.js"
-import { type CompiledPath, compilePathAccess } from "./utils.js"
+import { type CompiledPath } from "./utils.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
@@ -77,7 +76,7 @@ const discriminateRecurse = (
         // }
     }
     return {
-        path: compilePathAccess(bestDiscriminant.path),
+        path: bestDiscriminant.path,
         kind: bestDiscriminant.kind,
         cases
     }
@@ -88,7 +87,7 @@ type Discriminants = {
     casesByDisjoint: CasesByDisjoint
 }
 
-type DisjointsByPair = Record<`${number}/${number}`, QualifiedDisjoint[]>
+type DisjointsByPair = Record<`${number},${number}`, QualifiedDisjoint[]>
 
 type CasesByDisjoint = {
     [k in QualifiedDisjoint]?: IndexCases
@@ -117,7 +116,7 @@ const calculateDiscriminants = (
     }
     for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
         for (let rIndex = lIndex + 1; rIndex < branches.length; rIndex++) {
-            const pairKey = `${lIndex}/${rIndex}` as const
+            const pairKey = `${lIndex},${rIndex}` as const
             const pairDisjoints: QualifiedDisjoint[] = []
             discriminants.disjointsByPair[pairKey] = pairDisjoints
             const result = branches[lIndex].intersect(branches[rIndex])
@@ -185,15 +184,18 @@ const calculateDiscriminants = (
 }
 
 type Discriminant = {
-    path: Path
+    path: CompiledPath
     kind: DiscriminantKind
     indexCases: IndexCases
     score: number
 }
 
 const parseQualifiedDisjoint = (qualifiedDisjoint: QualifiedDisjoint) => {
-    const path = Path.fromString(qualifiedDisjoint)
-    return [path, path.pop()] as [path: Path, kind: DiscriminantKind]
+    const splitIndex = qualifiedDisjoint.lastIndexOf(":")
+    return [
+        qualifiedDisjoint.slice(0, splitIndex),
+        qualifiedDisjoint.slice(splitIndex)
+    ] as [path: CompiledPath, kind: DiscriminantKind]
 }
 
 const findBestDiscriminant = (
@@ -206,7 +208,7 @@ const findBestDiscriminant = (
         for (let j = i + 1; j < remainingIndices.length; j++) {
             const rIndex = remainingIndices[j]
             const candidates =
-                discriminants.disjointsByPair[`${lIndex}/${rIndex}`]
+                discriminants.disjointsByPair[`${lIndex},${rIndex}`]
             for (const qualifiedDisjoint of candidates) {
                 const indexCases =
                     discriminants.casesByDisjoint[qualifiedDisjoint]!

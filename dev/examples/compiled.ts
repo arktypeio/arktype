@@ -70,52 +70,6 @@ const places = scope({
 
 const t = places.type("rainForest|desert|sky|ocean")
 
-console.log(t.allows.toString())
+console.log(format(t.allows.toString()))
 
 console.log(t.allows({ climate: "'wet'" }))
-
-const anonymous = ($arkIn: any) => {
-    return (() => {
-        switch ($arkIn) {
-            case "green":
-                return (
-                    ((typeof $arkIn === "object" && $arkIn !== null) ||
-                        typeof $arkIn === "function") &&
-                    $arkIn.climate === "wet" &&
-                    $arkIn.color === "green" &&
-                    $arkIn.isRainForest === true
-                )
-            case "blue":
-                return (() => {
-                    switch ($arkIn) {
-                        case "wet":
-                            return (
-                                ((typeof $arkIn === "object" &&
-                                    $arkIn !== null) ||
-                                    typeof $arkIn === "function") &&
-                                $arkIn.climate === "wet" &&
-                                $arkIn.color === "blue" &&
-                                $arkIn.isOcean === true
-                            )
-                        case "dry":
-                            return (
-                                ((typeof $arkIn === "object" &&
-                                    $arkIn !== null) ||
-                                    typeof $arkIn === "function") &&
-                                $arkIn.climate === "dry" &&
-                                $arkIn.color === "blue" &&
-                                $arkIn.isSky === true
-                            )
-                    }
-                })()
-            case "brown":
-                return (
-                    ((typeof $arkIn === "object" && $arkIn !== null) ||
-                        typeof $arkIn === "function") &&
-                    $arkIn.climate === "dry" &&
-                    $arkIn.color === "brown" &&
-                    $arkIn.isDesert === true
-                )
-        }
-    })()
-}
