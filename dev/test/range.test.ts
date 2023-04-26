@@ -1,7 +1,10 @@
 import { describe, it } from "mocha"
 import { type } from "../../src/main.js"
 import type { ResolvedNode } from "../../src/nodes/node.js"
-import { writeDoubleRightBoundMessage } from "../../src/parse/ast/bound.js"
+import {
+    writeDoubleRightBoundMessage,
+    writeUnboundableMessage
+} from "../../src/parse/ast/bound.js"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
@@ -9,6 +12,7 @@ import {
 } from "../../src/parse/string/reduce/shared.js"
 import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.js"
 import { attest } from "../attest/main.js"
+import { writeMalformedNumericLiteralMessage } from "../../src/utils/numericLiterals.js"
 
 describe("range", () => {
     describe("parse", () => {
@@ -169,7 +173,7 @@ describe("range", () => {
                 attest(type("number<=3&number<3").node).equals(expected)
             })
         })
-        describe("errors", () => {
+        describe("parse errors", () => {
             it("single equals", () => {
                 // @ts-expect-error
                 attest(() => type("string=5")).throwsAndHasTypeError(
@@ -216,6 +220,53 @@ describe("range", () => {
                 attest(() => type("number>0<=200")).type.errors(
                     writeDoubleRightBoundMessage("'number'")
                 )
+            })
+            it("non-narrowed bounds", () => {
+                const a: number = 5
+                const b: number = 7
+                attest(type(`${a}<number<${b}`).infer).typed as number
+            })
+            it("fails at runtime on malformed right", () => {
+                attest(() => type("number<07")).throws(
+                    writeMalformedNumericLiteralMessage("07", "number")
+                )
+            })
+            it("fails at runtime on malformed lower", () => {
+                attest(() => type("3.0<number<5")).throws(
+                    writeMalformedNumericLiteralMessage("3.0", "number")
+                )
+            })
+        })
+        describe("semantic errors", () => {
+            it("number", () => {
+                attest(type("number==-3.14159").infer).typed as number
+            })
+            it("string", () => {
+                attest(type("string<=5").infer).typed as string
+            })
+            it("array", () => {
+                attest(type("87<=boolean[]<89").infer).typed as boolean[]
+            })
+
+            describe("errors", () => {
+                it("unboundable", () => {
+                    // @ts-expect-error
+                    attest(() => type("unknown<10")).throwsAndHasTypeError(
+                        writeUnboundableMessage("'unknown'")
+                    )
+                })
+                it("any", () => {
+                    // @ts-expect-error
+                    attest(() => type("any>10")).throwsAndHasTypeError(
+                        writeUnboundableMessage("'any'")
+                    )
+                })
+                it("overlapping", () => {
+                    attest(() =>
+                        // @ts-expect-error
+                        type("1<(number|boolean)<10")
+                    ).throwsAndHasTypeError("must be a number, string or array")
+                })
             })
         })
     })

@@ -9,7 +9,8 @@ import type {
 } from "../../utils/generics.js"
 import type {
     BigintLiteral,
-    NumberLiteral
+    NumberLiteral,
+    writeMalformedNumericLiteralMessage
 } from "../../utils/numericLiterals.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { parseString } from "../string/string.js"
@@ -43,14 +44,9 @@ export type inferExpression<ast extends List, $> = ast[1] extends "[]"
     ? inferAst<ast[0], $>
     : never
 
-export type validateAst<ast, $> = ast extends List
-    ? validateExpression<ast, $>
-    : ast
-
-export type validateExpression<
-    ast extends List,
-    $
-> = ast extends PostfixExpression<infer operator, infer operand>
+export type validateAst<ast, $> = ast extends string
+    ? validateStringAst<ast>
+    : ast extends PostfixExpression<infer operator, infer operand>
     ? operator extends "[]"
         ? validateAst<operand, $>
         : never
@@ -70,6 +66,18 @@ export type validateExpression<
         : operator extends "%"
         ? validateDivisor<l, $>
         : never
+    : never
+
+type validateStringAst<def extends string> = def extends NumberLiteral<
+    infer value
+>
+    ? number extends value
+        ? error<writeMalformedNumericLiteralMessage<def, "number">>
+        : undefined
+    : def extends BigintLiteral<infer value>
+    ? bigint extends value
+        ? error<writeMalformedNumericLiteralMessage<def, "bigint">>
+        : undefined
     : undefined
 
 export type validateString<def extends string, $> = parseString<

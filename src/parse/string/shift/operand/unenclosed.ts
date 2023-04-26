@@ -58,14 +58,10 @@ type tryResolve<
     $
 > = token extends keyof $
     ? token
-    : token extends NumberLiteral<infer value>
-    ? number extends value
-        ? error<writeMalformedNumericLiteralMessage<token, "number">>
-        : token
-    : token extends BigintLiteral<infer value>
-    ? bigint extends value
-        ? error<writeMalformedNumericLiteralMessage<token, "bigint">>
-        : token
+    : token extends NumberLiteral
+    ? token
+    : token extends BigintLiteral
+    ? token
     : unresolvableError<s, token, $>
 
 export type unresolvableError<

@@ -2,50 +2,68 @@ import { describe, it } from "mocha"
 import { type } from "../../src/main.js"
 import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
 import { attest } from "../attest/main.js"
+import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
 
 describe("divisibility", () => {
     describe("parse", () => {
-        describe("valid", () => {
-            it("integerLiteralDefinition", () => {
-                const divisibleByTwo = type("number%2")
-                attest(divisibleByTwo.node).equals({
-                    number: {
-                        divisor: 2
-                    }
-                })
-                attest(divisibleByTwo.infer).typed as number
+        it("integerLiteralDefinition", () => {
+            const divisibleByTwo = type("number%2")
+            attest(divisibleByTwo.node).equals({
+                number: {
+                    divisor: 2
+                }
             })
-            it("whitespace after modulo", () => {
-                attest(type("number % 5").infer).typed as number
-            })
-            it("with bound", () => {
-                attest(type("number<3&number%8").node).snap({
-                    number: {
-                        range: { max: { limit: 3, comparator: "<" } },
-                        divisor: 8
-                    }
-                })
+            attest(divisibleByTwo.infer).typed as number
+        })
+        it("whitespace after modulo", () => {
+            attest(type("number % 5").infer).typed as number
+        })
+        it("with bound", () => {
+            attest(type("number<3&number%8").node).snap({
+                number: {
+                    range: { max: { limit: 3, comparator: "<" } },
+                    divisor: 8
+                }
             })
         })
-        describe("invalid", () => {
-            it("non-integer divisor", () => {
-                // @ts-expect-error
-                attest(() => type("number%2.3")).throwsAndHasTypeError(
-                    writeInvalidDivisorMessage("2.3")
-                )
-            })
-            it("non-numeric divisor", () => {
-                // @ts-expect-error
-                attest(() => type("number%foobar")).throwsAndHasTypeError(
-                    writeInvalidDivisorMessage("foobar")
-                )
-            })
-            it("zero divisor", () => {
-                // @ts-expect-error
-                attest(() => type("number%0")).throwsAndHasTypeError(
-                    writeInvalidDivisorMessage(0)
-                )
-            })
+        it("allows non-narrowed divisor", () => {
+            const z: number = 5
+            attest(type(`number%${z}`).infer).typed as number
+        })
+        it("fails at runtime on non-integer divisor", () => {
+            attest(() => type("number%2.3")).throws(
+                writeInvalidDivisorMessage("2.3")
+            )
+        })
+        it("non-numeric divisor", () => {
+            // @ts-expect-error
+            attest(() => type("number%foobar")).throwsAndHasTypeError(
+                writeInvalidDivisorMessage("foobar")
+            )
+        })
+        it("zero divisor", () => {
+            // @ts-expect-error
+            attest(() => type("number%0")).throwsAndHasTypeError(
+                writeInvalidDivisorMessage(0)
+            )
+        })
+        it("indivisible unknown", () => {
+            // @ts-expect-error
+            attest(() => type("unknown%2")).throwsAndHasTypeError(
+                writeIndivisibleMessage("'unknown'")
+            )
+        })
+        it("indivisible any", () => {
+            // @ts-expect-error
+            attest(() => type("any%1")).throwsAndHasTypeError(
+                writeIndivisibleMessage("'any'")
+            )
+        })
+        it("overlapping", () => {
+            // @ts-expect-error
+            attest(() => type("(number|string)%10")).throws.snap(
+                'Error: Divisibility operand {"number":true,"string":true} must be a number'
+            )
         })
     })
     describe("intersection", () => {

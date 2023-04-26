@@ -114,29 +114,19 @@ export type parseRightBound<
     infer scanned,
     infer nextUnscanned
 >
-    ? tryParseWellFormedNumber<
-          scanned,
-          writeInvalidLimitMessage<comparator, scanned>
-      > extends infer limit
-        ? limit extends number
-            ? s["branches"]["range"] extends {}
-                ? comparator extends MaxComparator
-                    ? state.reduceRange<
-                          s,
-                          s["branches"]["range"]["limit"],
-                          s["branches"]["range"]["comparator"],
-                          comparator,
-                          `${limit}`,
-                          nextUnscanned
-                      >
-                    : error<writeUnpairableComparatorMessage<comparator>>
-                : state.reduceSingleBound<
+    ? scanned extends NumberLiteral
+        ? s["branches"]["range"] extends {}
+            ? comparator extends MaxComparator
+                ? state.reduceRange<
                       s,
+                      s["branches"]["range"]["limit"],
+                      s["branches"]["range"]["comparator"],
                       comparator,
-                      `${limit}`,
+                      scanned,
                       nextUnscanned
                   >
-            : error<limit & string>
+                : error<writeUnpairableComparatorMessage<comparator>>
+            : state.reduceSingleBound<s, comparator, scanned, nextUnscanned>
         : never
     : never
 

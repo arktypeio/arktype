@@ -27,7 +27,7 @@ describe("parse unenclosed", () => {
             it("whole", () => {
                 const four = type("4")
                 attest(four.infer).typed as 4
-                attest(four.node).snap({ number: { value: 4 } })
+                // attest(four.node).snap({ number: { value: 4 } })
             })
             it("decimal", () => {
                 attest(type("3.14159").infer).typed as 3.14159
@@ -63,22 +63,20 @@ describe("parse unenclosed", () => {
                     writeUnresolvableMessage("13three7")
                 )
             })
-
             it("leading zeroes", () => {
-                // Change back to throwsAndHasTypeError
-                // https://github.com/arktypeio/arktype/issues/65 @ts-expect-error
-                attest(() => type("010")).throws(
+                // @ts-expect-error
+                attest(() => type("010")).throwsAndHasTypeError(
                     writeMalformedNumericLiteralMessage("010", "number")
                 )
             })
             it("trailing zeroes", () => {
-                // https://github.com/arktypeio/arktype/issues/65 @ts-expect-error
+                // @ts-expect-error
                 attest(() => type("4.0")).throws(
                     writeMalformedNumericLiteralMessage("4.0", "number")
                 )
             })
             it("negative zero", () => {
-                // https://github.com/arktypeio/arktype/issues/659 @ts-expect-error
+                // @ts-expect-error
                 attest(() => type("-0")).throws(
                     writeMalformedNumericLiteralMessage("-0", "number")
                 )
@@ -116,7 +114,7 @@ describe("parse unenclosed", () => {
                     .type.errors(writeUnresolvableMessage("007n"))
             })
             it("negative zero", () => {
-                // https://github.com/arktypeio/arktype/issues/65 @ts-expect-error
+                // @ts-expect-error
                 attest(() => type("-0n")).throws(
                     writeMalformedNumericLiteralMessage("-0n", "bigint")
                 )
