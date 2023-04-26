@@ -97,6 +97,10 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return this as any
     }
 
+    extends(other: Type) {
+        return this.root.intersect(other.root) === this.root
+    }
+
     // TODO: based on below, should maybe filter morph output if used after
     filter<predicate extends Filter<inferIn<t>>>(
         predicate: predicate
