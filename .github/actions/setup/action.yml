@@ -3,7 +3,7 @@ description: Install dependencies and perform setup for https://github.com/arkty
 
 inputs:
     node:
-        default: latest
+        default: lts/*
 
 runs:
     using: composite
