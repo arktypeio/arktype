@@ -100,16 +100,17 @@ export class TypeNode<t = unknown> extends Node<
                   .join(" || ")})` as CompiledAssertion)
     }
 
-    static #compileSwitch({ path, kind, cases }: DiscriminatedSwitch): string {
+    static #compileSwitch(swtch: DiscriminatedSwitch): string {
         // TODO: fix class
         // TODO: optional access
-        const condition = kind === "domain" ? `typeof ${path}` : `${path}`
+        const condition =
+            swtch.kind === "domain" ? `typeof ${swtch.path}` : `${swtch.path}`
         let compiledCases = ""
         let k: CaseKey
-        for (k in cases) {
-            compiledCases += `case ${serializePrimitive(
-                k
-            )}: return ${TypeNode.compile(cases[k])};`
+        for (k in swtch.cases) {
+            compiledCases += `case ${serializePrimitive(k)}: {
+                return ${TypeNode.compile(swtch.cases[k])};
+            }`
         }
         return `(() => {
         switch(${condition}) {
