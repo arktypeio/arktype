@@ -41,7 +41,7 @@ jobs:
         timeout-minutes: 20
         strategy:
             matrix:
-                node: [14, 16, 18, 19, 20]
+                node: [lts/-1, lts/*, latest]
                 os: [ubuntu-latest, windows-latest, macos-latest]
 
         runs-on: ${{ matrix.os }}
