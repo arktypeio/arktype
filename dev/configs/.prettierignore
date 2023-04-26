@@ -21,3 +21,5 @@ coverage
 # @blockEnd 
 
 pnpm-lock.yaml
+../arktype.io/docs/api/narrow.md
+../arktype.io/versioned_docs/**/api/narrow.md
