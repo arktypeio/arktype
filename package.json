@@ -31,7 +31,7 @@
     ],
     "packageManager": "pnpm@8.3.1",
     "scripts": {
-        "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm format && pnpm testRepo && pnpm docgen && pnpm buildSite",
+        "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm docgen && pnpm buildSite",
         "typecheck": "tsc --noEmit",
         "build": "ts-node ./dev/scripts/build.ts",
         "buildRepo": "pnpm build && pnpm docgen && pnpm buildSite",
@@ -46,6 +46,7 @@
         "bench": "ts-node ./dev/attest/cli.ts bench --benchmarksPath ./test/benchmarks.json",
         "lint": "eslint --max-warnings=0 .",
         "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
+        "checkFormat": "prettier --check --ignore-path ./dev/configs/.prettierignore .",
         "findUnused": "ts-node ./dev/scripts/findUnusedExports.ts",
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install dev/configs/.husky",
