@@ -102,20 +102,26 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
     }
     transformTestBuildOutput(kind, kindOutDir)
 }
+const copyFiles = (from: string[], to: string[], options = {}) => {
+    cpSync(fromHere(...from), join(to), options)
+}
 const transformTestBuildOutput = (kind: string, kindOutDir: string) => {
-    cpSync(
-        fromHere("..", "attest", "dist", kind),
-        join(process.cwd(), kindOutDir, "dev", "attest"),
+    const attestBasePath = fromHere(join("..", "attest"))
+    const outputBasePath = join(process.cwd(), kindOutDir)
+    const outputNodeModulesPath = join(outputBasePath, "node_modules")
+    copyFiles(
+        [attestBasePath, "dist", kind],
+        [outputBasePath, "dev", "attest"],
         { recursive: true }
     )
     cpSync(
-        fromHere("..", "attest", "node_modules"),
-        join(process.cwd(), kindOutDir, "node_modules"),
+        fromHere(attestBasePath, "node_modules"),
+        join(outputNodeModulesPath),
         { recursive: true }
     )
     cpSync(
         fromHere("..", "examples", "node_modules", "zod"),
-        join(process.cwd(), kindOutDir, "node_modules", "zod")
+        join(outputNodeModulesPath, "zod")
     )
     const testPaths = walkPaths(join(kindOutDir, "dev", "test")).filter(
         (path) => new RegExp("[.]test[.]").test(path)

@@ -142,13 +142,7 @@ if (options.bench) {
     } catch (error) {
         processError = error
     } finally {
-        console.log(
-            `⏳ attest: Updating inline snapshots and cleaning up cache...`
-        )
-        const cleanupStart = Date.now()
         cleanupAssertions()
-        const cleanupSeconds = (Date.now() - cleanupStart) / 1000
-        console.log(`✅ attest: Finished cleanup in ${cleanupSeconds} seconds.`)
     }
     if (processError) {
         throw processError

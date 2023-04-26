@@ -6,27 +6,33 @@
         "email": "david@arktype.io",
         "url": "https://arktype.io"
     },
-    "description": "Amazing tool from Arktype",
     "type": "module",
-    "devDependencies": {
-        "arktype": "1.0.14-alpha",
-        "get-current-line": "6.6.0",
-        "mocha": "10.2.0",
-        "ts-morph": "18.0.0",
-        "typescript": "5.0.3",
-        "@types/node": "18.15.11",
-        "commander": "10.0.0"
+    "main": "./dist/cjs/main.js",
+    "types": "./dist/types/main.d.ts",
+    "bin": {
+        "attest": "./dist/cjs/cli.js"
     },
-    "files": [
-        "/src",
-        "/dist"
-    ],
     "exports": {
         ".": {
             "types": "./dist/types/main.d.ts",
             "import": "./dist/mjs/main.js",
             "require": "./dist/cjs/main.js"
         }
+    },
+    "files": [
+        "dist",
+        "!*.tsbuildinfo"
+    ],
+    "dependencies": {
+        "arktype": "1.0.14-alpha",
+        "ts-morph": "18.0.0",
+        "get-current-line": "6.6.0",
+        "commander": "10.0.0"
+    },
+    "devDependencies": {
+        "mocha": "10.2.0",
+        "typescript": "5.0.3",
+        "@types/node": "18.15.11"
     },
     "mocha": {
         "spec": "./test/**/*.test.*",
@@ -36,16 +42,8 @@
             "no-warnings=ExperimentalWarning"
         ]
     },
-    "main": "./dist/cjs/main.js",
-    "types": "./dist/types/main.d.ts",
-    "bin": {
-        "attest": "./dist/cjs/cli.js"
-    },
-    "keywords": [
-        "typescript"
-    ],
     "scripts": {
         "build": "ts-node ../scripts/build.ts",
-        "test": "ts-node ./src/cli.ts --runner mocha -f ./test/**/*.test.ts"
+        "test": "ts-node ./src/cli.ts --runner mocha --file ./test/**/*.test.ts"
     }
 }

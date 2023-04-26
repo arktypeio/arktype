@@ -170,8 +170,7 @@ module.exports = defineConfig({
         {
             files: ["./dev/**"],
             rules: {
-                "no-restricted-imports": "off",
-                "import/no-extraneous-dependencies": "off"
+                "no-restricted-imports": "off"
             }
         }
     ]

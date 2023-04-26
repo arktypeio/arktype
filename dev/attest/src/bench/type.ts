@@ -83,7 +83,7 @@ const transformBenchSource = (
     return text
 }
 
-const cache: { [path: string]: number } = {}
+const instantiationsByPath: { [path: string]: number } = {}
 const getInstantiationsContributedByNode = (
     benchCall: Node<ts.CallExpression>
 ) => {
@@ -94,7 +94,7 @@ const getInstantiationsContributedByNode = (
         SyntaxKind.ExpressionStatement
     )
     const originalBenchExpressionText = benchExpression.getText()
-    if (!cache[fakePath]) {
+    if (!instantiationsByPath[fakePath]) {
         console.log(`⏳ attest: Analyzing type assertions...`)
         const instantiationsWithNode = getInstantiationsWithFile(
             transformBenchSource(
@@ -105,7 +105,7 @@ const getInstantiationsContributedByNode = (
             ),
             fakePath
         )
-        cache[fakePath] = instantiationsWithNode
+        instantiationsByPath[fakePath] = instantiationsWithNode
         console.log(`⏳ Cached type assertions \n`)
     }
 
@@ -118,7 +118,7 @@ const getInstantiationsContributedByNode = (
         ),
         fakePath
     )
-    return cache[fakePath] - instantiationsWithoutNode
+    return instantiationsByPath[fakePath] - instantiationsWithoutNode
 }
 
 export const createBenchTypeAssertion = (
