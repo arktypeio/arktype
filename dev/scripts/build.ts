@@ -94,35 +94,34 @@ const buildWithTests = (kind: string, kindOutDir: string) => {
     }
 
     for (const [baseDir, dirsToInclude] of Object.entries(paths)) {
+        console.log("aaa")
+
         shell(
             `pnpm swc ${cjsAddon} ${dirsToInclude.join(
                 " "
             )} -d ${kindOutDir}/${baseDir} -C jsc.target=es2020 -q`
         )
     }
+    console.log("Bbb")
     transformTestBuildOutput(kind, kindOutDir)
 }
-const copyFiles = (from: string[], to: string[], options = {}) => {
-    cpSync(fromHere(...from), join(to), options)
+const copyFiles = (
+    from: string[],
+    to: string[],
+    options = { recursive: true }
+) => {
+    cpSync(fromHere(...from), join(...to), options)
 }
 const transformTestBuildOutput = (kind: string, kindOutDir: string) => {
     const attestBasePath = fromHere(join("..", "attest"))
     const outputBasePath = join(process.cwd(), kindOutDir)
     const outputNodeModulesPath = join(outputBasePath, "node_modules")
-    copyFiles(
-        [attestBasePath, "dist", kind],
-        [outputBasePath, "dev", "attest"],
-        { recursive: true }
-    )
-    cpSync(
-        fromHere(attestBasePath, "node_modules"),
-        join(outputNodeModulesPath),
-        { recursive: true }
-    )
-    cpSync(
-        fromHere("..", "examples", "node_modules", "zod"),
-        join(outputNodeModulesPath, "zod")
-    )
+    copyFiles([attestBasePath, "dist", kind], [outputBasePath, "dev", "attest"])
+    copyFiles([attestBasePath, "node_modules"], [outputNodeModulesPath])
+    // cpSync(
+    //     fromHere("..", "examples", "node_modules", "zod"),
+    //     join(outputNodeModulesPath, "zod")
+    // )
     const testPaths = walkPaths(join(kindOutDir, "dev", "test")).filter(
         (path) => new RegExp("[.]test[.]").test(path)
     )
