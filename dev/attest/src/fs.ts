@@ -12,7 +12,6 @@ import { dirname, join, parse } from "node:path"
 import * as process from "node:process"
 import { fileURLToPath, URL } from "node:url"
 import { caller } from "./caller.js"
-import { repoDirs } from "./common.js"
 import { shell } from "./shell.js"
 
 export const ensureDir = (path: string) => {
@@ -143,10 +142,9 @@ const inFileFilter: WalkOptions = {
     ignoreDirsMatching: /node_modules|dist|docgen/
 }
 
-export const getSourceFilePaths = (dir = repoDirs.root) =>
-    walkPaths(dir, inFileFilter)
+export const getSourceFilePaths = (dir = ".") => walkPaths(dir, inFileFilter)
 
 export type SourceFileEntry = [path: string, contents: string]
 
-export const getSourceFileEntries = (dir = repoDirs.root): SourceFileEntry[] =>
+export const getSourceFileEntries = (dir = "."): SourceFileEntry[] =>
     getSourceFilePaths(dir).map((path) => [path, readFile(path)])

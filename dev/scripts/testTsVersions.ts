@@ -1,5 +1,5 @@
-import { readFileSync, rmSync, writeFileSync } from "node:fs"
-import { fromHere, fromPackageRoot } from "../attest/src/fs.js"
+import { rmSync, writeFileSync } from "node:fs"
+import { fromHere, fromPackageRoot, readJson } from "../attest/src/fs.js"
 import { shell } from "../attest/src/shell.js"
 
 const versions: { [k: string]: string } = {
@@ -8,7 +8,7 @@ const versions: { [k: string]: string } = {
     // "4.8": "16",
     "4.9": "17"
 }
-const rootJson = JSON.parse(readFileSync(fromHere("package.json"), "utf-8"))
+const rootJson = readJson(fromHere("package.json"))
 const originalTsMorphVersion = rootJson["devDependencies"]["ts-morph"]
 
 // Allow us to install a different version of ts-morph for testing

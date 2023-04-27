@@ -1,4 +1,5 @@
-export default `import { morph, type } from "arktype"
+export default `//@ts-nocheck
+import { morph, type } from "arktype"
 import type { Infer } from "arktype"
 import z from "zod"
 

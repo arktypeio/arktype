@@ -32,7 +32,8 @@
     "devDependencies": {
         "mocha": "10.2.0",
         "typescript": "5.0.3",
-        "@types/node": "18.15.11"
+        "@types/node": "18.15.11",
+        "get-current-line": "6.6.0"
     },
     "mocha": {
         "spec": "./test/**/*.test.*",
@@ -43,7 +44,6 @@
         ]
     },
     "scripts": {
-        "build": "ts-node ../scripts/build.ts",
-        "test": "ts-node ./src/cli.ts --runner mocha --file ./test/**/*.test.ts"
+        "build": "ts-node ../scripts/build.ts"
     }
 }

@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs"
 import { version } from "node:os"
 import { basename } from "node:path"
 import { versions } from "node:process"
+import type { OptionValues } from "commander"
 import { Command } from "commander"
 import {
     cacheAssertions,
@@ -12,36 +13,44 @@ import {
     walkPaths
 } from "./main.js"
 
-const attest = new Command()
-const packageVersion = "0.0.0"
-const description = "ArkType Testing"
+const cli = () => {
+    const attest = new Command()
+    const packageVersion = "0.0.0"
+    const description = "ArkType Testing"
 
-attest
-    .version(packageVersion)
-    .description(description)
-    .option("-r, --runner  <value>", "Run using a specified test runner")
-    .option("-s, --skipTypes", "Skip type assertions")
-    .option("--file <value>", "Specify a path for bench or tests")
-    .option("-h, --help, View details about the cli")
-    .option("-b, --bench, Runs benchmarks found in *.bench.ts files")
-    .option(
-        "-p --benchmarksPath <path>, defines where to save json bench results"
-    )
-    .option(
-        "-f, --filter <filter>, runs benches based on a filter [/filename, benchname]"
-    )
-    .parse(process.argv)
+    attest
+        .version(packageVersion)
+        .description(description)
+        .option("-r, --runner  <value>", "Run using a specified test runner")
+        .option("-s, --skipTypes", "Skip type assertions")
+        .option("--file <value>", "Specify a path for bench or tests")
+        .option("-h, --help, View details about the cli")
+        .option("-b, --bench, Runs benchmarks found in *.bench.ts files")
+        .option(
+            "-p --benchmarksPath <path>, defines where to save json bench results"
+        )
+        .option(
+            "-f, --filter <filter>, runs benches based on a filter [/filename, benchname]"
+        )
+        .parse(process.argv)
 
-const options = attest.opts()
-const processArgs = process.argv
-const passedArgs = processArgs.slice(2)
+    const options = attest.opts()
+    const processArgs = process.argv
+    const passedArgs = processArgs.slice(2)
 
-if (!passedArgs.length || options.help) {
-    attest.outputHelp()
-    process.exit(0)
+    if (!passedArgs.length || options.help) {
+        attest.outputHelp()
+        process.exit(0)
+    }
+
+    if (options.bench) {
+        benchRunner(options, passedArgs)
+    } else {
+        testRunner(options, processArgs)
+    }
 }
 
-if (options.bench) {
+const benchRunner = (options: OptionValues, passedArgs: string[]) => {
     let benchFilePaths
     if (options.file) {
         benchFilePaths = [options.file]
@@ -97,7 +106,9 @@ if (options.bench) {
     if (threwDuringBench) {
         throw new Error()
     }
-} else {
+}
+
+const testRunner = (options: OptionValues, processArgs: string[]) => {
     if (!options.runner) {
         throw new Error(
             `Must provide a runner command, e.g. 'attest --runner mocha'`
@@ -153,3 +164,4 @@ if (options.bench) {
         throw processError
     }
 }
+cli()

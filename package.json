@@ -16,7 +16,6 @@
     "types": "./dist/types/main.d.ts",
     "imports": {
         "#arktype": "./src/main.ts",
-        "#internal/*.js": "./src/*.ts",
         "#attest": "./dev/attest/src/main.ts"
     },
     "exports": {
@@ -43,9 +42,8 @@
         "buildSite": "cd dev/arktype.io && pnpm install && pnpm build",
         "buildAttest": "cd dev/attest && pnpm build",
         "docgen": "ts-node ./dev/scripts/docgen.ts",
-        "test": "pnpm c8Config ts-node ./dev/attest/src/cli.ts --runner mocha",
-        "tnt": "pnpm c8Config ts-node ./dev/attest/src/cli.ts --skipTypes --runner mocha",
-        "c8Config": "node --require ./dev/configs/patchC8.cjs ./node_modules/c8/bin/c8.js",
+        "test": "ts-node ./dev/scripts/testArktype.ts",
+        "tnt": "ts-node ./dev/scripts/testArktype.ts --skipTypes",
         "testRepo": "pnpm testBuild && pnpm testTsVersions && pnpm testAttest",
         "testBuild": "ts-node ./dev/scripts/testBuild.ts",
         "testAttest": "ts-node ./dev/scripts/testAttest.ts",
@@ -79,6 +77,7 @@
         "eslint-plugin-only-warn": "1.1.0",
         "eslint-plugin-prefer-arrow": "1.2.3",
         "eslint-plugin-unicorn": "46.0.0",
+        "get-current-line": "6.6.0",
         "husky": "8.0.3",
         "mocha": "10.2.0",
         "prettier": "2.8.6",

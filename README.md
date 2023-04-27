@@ -18,8 +18,8 @@
 
 <!-- @snipEnd -->
 
-```ts @blockFrom:dev/examples/type.ts
-import { type } from "arktype"
+```ts @blockFrom:dev/test/examples/type.ts
+import { type } from "#arktype"
 
 // Definitions are statically parsed and inferred as TS.
 export const user = type({
@@ -64,8 +64,8 @@ _Our APIs have mostly stabilized, but details may still change during the alpha/
 
 [Try this example in-browser.](https://arktype.io/docs/scopes)
 
-```ts @blockFrom:dev/examples/scope.ts
-import { scope } from "arktype"
+```ts @blockFrom:dev/test/examples/scope.ts
+import { scope } from "#arktype"
 
 // Scopes are collections of types that can reference each other.
 export const types = scope({

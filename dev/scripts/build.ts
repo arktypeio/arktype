@@ -9,7 +9,7 @@ import { join } from "node:path"
 import * as process from "node:process"
 import {
     fromCwd,
-    fromHere,
+    fromPackageRoot,
     getSourceFilePaths,
     readJson,
     shell,
@@ -74,7 +74,7 @@ const swc = (kind: "mjs" | "cjs") => {
         cmd += inFiles.join(" ")
         shell(cmd)
     } else {
-        buildWithTests(kind, kindOutDir)
+        buildWithTests({ kind, kindOutDir })
     }
     writeJson(join(kindOutDir, "package.json"), {
         type: kind === "cjs" ? "commonjs" : "module",
@@ -86,45 +86,52 @@ const swc = (kind: "mjs" | "cjs") => {
     })
 }
 
-const buildWithTests = (kind: string, kindOutDir: string) => {
-    const cjsAddon = kind === "cjs" ? "-C module.type=commonjs" : ""
+type TestBuildContext = { kind: string; kindOutDir: string }
+
+const buildWithTests = (testBuildContext: TestBuildContext) => {
+    const cjsAddon =
+        testBuildContext.kind === "cjs" ? "-C module.type=commonjs" : ""
     const paths = {
         "./": ["src"],
-        dev: [join("dev", "test"), join("dev", "examples")]
+        dev: [join("dev", "test")]
     }
 
     for (const [baseDir, dirsToInclude] of Object.entries(paths)) {
-        console.log("aaa")
-
         shell(
-            `pnpm swc ${cjsAddon} ${dirsToInclude.join(
-                " "
-            )} -d ${kindOutDir}/${baseDir} -C jsc.target=es2020 -q`
+            `pnpm swc ${cjsAddon} ${dirsToInclude.join(" ")} -d ${
+                testBuildContext.kindOutDir
+            }/${baseDir} -C jsc.target=es2020 -q`
         )
     }
-    console.log("Bbb")
-    transformTestBuildOutput(kind, kindOutDir)
+    transformTestBuildOutput(testBuildContext)
 }
-const copyFiles = (
-    from: string[],
-    to: string[],
-    options = { recursive: true }
-) => {
-    cpSync(fromHere(...from), join(...to), options)
-}
-const transformTestBuildOutput = (kind: string, kindOutDir: string) => {
-    const attestBasePath = fromHere(join("..", "attest"))
-    const outputBasePath = join(process.cwd(), kindOutDir)
+
+const moveRequiredDirsToTestBuildDist = ({
+    kind,
+    kindOutDir
+}: TestBuildContext) => {
+    const attestBasePath = fromPackageRoot("dev", "attest")
+    const outputBasePath = fromPackageRoot(kindOutDir)
     const outputNodeModulesPath = join(outputBasePath, "node_modules")
-    copyFiles([attestBasePath, "dist", kind], [outputBasePath, "dev", "attest"])
-    copyFiles([attestBasePath, "node_modules"], [outputNodeModulesPath])
-    // cpSync(
-    //     fromHere("..", "examples", "node_modules", "zod"),
-    //     join(outputNodeModulesPath, "zod")
-    // )
-    const testPaths = walkPaths(join(kindOutDir, "dev", "test")).filter(
-        (path) => new RegExp("[.]test[.]").test(path)
-    )
+    const inputToOutputPaths = [
+        {
+            in: join(attestBasePath, "dist", kind),
+            out: join(outputBasePath, "dev", "attest")
+        },
+        {
+            in: join(attestBasePath, "node_modules"),
+            out: outputNodeModulesPath
+        }
+    ]
+    for (const pathMapping of inputToOutputPaths) {
+        cpSync(pathMapping.in, pathMapping.out, { recursive: true })
+    }
+}
+
+const transformTestBuildOutput = (testBuildContext: TestBuildContext) => {
+    const testPaths = walkPaths(
+        join(testBuildContext.kindOutDir, "dev", "test")
+    ).filter((path) => new RegExp("[.]test[.]").test(path))
 
     for (const path of testPaths) {
         const data = readFileSync(path, "utf-8").replaceAll(
@@ -134,15 +141,6 @@ const transformTestBuildOutput = (kind: string, kindOutDir: string) => {
         writeFileSync(path, data)
     }
 
-    const examplesPaths = walkPaths(join(kindOutDir, "dev", "examples"), {
-        ignoreDirsMatching: /node_modules/
-    })
-    for (const path of examplesPaths) {
-        const data = readFileSync(path, "utf-8").replaceAll(
-            '"arktype"',
-            '"#arktype"'
-        )
-        writeFileSync(path, data)
-    }
+    moveRequiredDirsToTestBuildDist(testBuildContext)
 }
 arktypeTsc()

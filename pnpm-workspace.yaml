@@ -2,5 +2,5 @@ packages:
     - "."
     - "./dev/attest"
     - "./dev/scripts"
-    - "./dev/examples"
+    - "./dev/test"
     - "./dev/arktype.io"
