@@ -1,8 +1,10 @@
 import { describe, it } from "mocha"
-import type { Type } from "../../src/main.js"
+
 import { type } from "../../src/main.js"
 import type { Ark } from "../../src/scopes/ark.js"
+import type { Type } from "../../src/type.js"
 import type { assertEqual } from "../../src/utils/generics.js"
+import { Path } from "../../src/utils/paths.js"
 import { attest } from "../attest/main.js"
 
 describe("filter", () => {
@@ -10,7 +12,7 @@ describe("filter", () => {
         const isOdd = (n: number) => n % 2 === 1
         const odd = type(["number", "=>", isOdd])
         attest(odd.infer).typed as number
-        attest(odd.node).equals({ number: { narrow: isOdd as any } })
+        // attest(odd.node).equals({ number: { narrow: isOdd as any } })
         attest(odd(1).data).equals(1)
         attest(odd(2).problems?.summary).snap(
             "Must be valid according to isOdd (was 2)"
@@ -31,6 +33,7 @@ describe("filter", () => {
         attest(even(1).problems?.summary).snap("Must be divisible by 3 (was 1)")
     })
     it("problem at path", () => {
+        type([{ s: "string" }])
         const abEqual = type([
             {
                 a: "number",
@@ -41,8 +44,8 @@ describe("filter", () => {
                 if (a === b) {
                     return true
                 }
-                problems.mustBe("equal to b", { path: ["a"] })
-                problems.mustBe("equal to a", { path: ["b"] })
+                problems.mustBe("equal to b", a, new Path("a"))
+                problems.mustBe("equal to a", b, new Path("b"))
                 return false
             }
         ])

@@ -1,11 +1,4 @@
-import {
-    arrayOf,
-    intersection,
-    morph,
-    narrow,
-    type,
-    union
-} from "../../src/main.js"
+import { type } from "../../src/main.js"
 import { bench, suite } from "../attest/main.js"
 
 suite("operators", () => {
@@ -23,7 +16,7 @@ suite("operators", () => {
             .type([146, "instantiations"])
 
         bench("expression", () => {
-            const _ = arrayOf("number")
+            const _ = type("number").toArray()
         })
             .median([1.11, "us"])
             .type([703, "instantiations"])
@@ -43,7 +36,7 @@ suite("operators", () => {
             .type([307, "instantiations"])
 
         bench("expression", () => {
-            const _ = union("number", "string")
+            const _ = type("number").or("string")
         })
             .median([1.48, "us"])
             .type([1522, "instantiations"])
@@ -69,7 +62,7 @@ suite("operators", () => {
             .type([517, "instantiations"])
 
         bench("expression", () => {
-            const _ = intersection("number", "0")
+            const _ = type("number").and("0")
         })
             .median([1.74, "us"])
             .type([1717, "instantiations"])
@@ -128,7 +121,7 @@ suite("operators", () => {
             .median([1.09, "us"])
             .type([409, "instantiations"])
         bench("helper", () => {
-            const _ = narrow("boolean", (b) => b)
+            const _ = type("boolean").filter((b) => b)
         })
             .median([1.09, "us"])
             .type([1059, "instantiations"])
@@ -140,7 +133,7 @@ suite("operators", () => {
             .median([686, "ns"])
             .type([336, "instantiations"])
         bench("helper", () => {
-            const _ = morph("boolean", (b) => b)
+            const _ = type("boolean").morph((b) => b)
         })
             .median([794, "ns"])
             .type([878, "instantiations"])

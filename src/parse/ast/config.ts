@@ -8,11 +8,6 @@ export type ConfigTuple<
     config extends TypeOptions = TypeOptions
 > = readonly [def, ":", config]
 
-/**
- * @operator {@link parseConfigTuple | :}
- * @docgenTable
- * @tuple ["type", ":", config]
- */
 export const parseConfigTuple: PostfixParser<":"> = (def, ctx) =>
     parseDefinition(def[0], ctx)
 

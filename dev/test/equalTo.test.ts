@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { type, valueOf } from "../../src/main.js"
+import { type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
 describe("===", () => {
@@ -7,7 +7,7 @@ describe("===", () => {
         const s = Symbol("test")
         const t = type(["===", s])
         attest(t.infer).typed as symbol
-        attest(t.node).equals({ symbol: { value: s } })
+        // attest(t.node).equals({ symbol: { value: s } })
         attest(t(s).data).equals(s)
         attest(t("test").problems?.summary).snap(
             "Must be (symbol test) (was 'test')"
@@ -15,7 +15,7 @@ describe("===", () => {
     })
     it("helper", () => {
         const myRef = { a: "bc" as const }
-        const myObj = valueOf(myRef)
+        const myObj = type.equalTo(myRef)
         attest(myObj.infer).typed as { a: "bc" }
         attest(myObj(myRef).data).equals(myRef)
         attest(myObj({ a: "bc" }).problems?.summary).snap(

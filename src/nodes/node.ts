@@ -87,10 +87,14 @@ export abstract class Node<
 
     #intersections: Record<string, instanceOf<subclass> | DisjointNode> = {}
     intersect(other: instanceOf<subclass>) {
+        if (this.key === other.key) {
+            return this
+        }
         this.#intersections[other.key] ??= this.subclass.intersect(
             this as instanceOf<subclass>,
             other
         )
+        other.#intersections[this.key] = this.#intersections[other.key]
         return this.#intersections[other.key]
     }
 

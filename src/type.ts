@@ -4,7 +4,6 @@ import { TraversalState } from "./nodes/traverse.js"
 import type { TypeNode } from "./nodes/type.js"
 import { In } from "./nodes/utils.js"
 import type { Filter, inferPredicate } from "./parse/ast/filter.js"
-import type { inferIntersection } from "./parse/ast/intersection.js"
 import type { Morph, ParsedMorph } from "./parse/ast/morph.js"
 import {
     as,
@@ -32,6 +31,8 @@ export type TypeParser<$> = {
         def: validateDefinition<def, bind<$, def>>,
         opts: TypeOptions
     ): parseType<def, bind<$, def>>
+
+    equalTo: <value>(value: value) => Type<value, $>
 }
 
 // Reuse the validation result to determine if the type will be successfully created.
@@ -80,7 +81,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
 
     and<def>(
         def: validateDefinition<def, $>
-    ): Type<inferIntersection<t, inferDefinition<def, $>>, $> {
+    ): Type<t & inferDefinition<def, $>, $> {
         return this.#unary(def, "and")
     }
 
@@ -103,7 +104,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     // TODO: based on below, should maybe filter morph output if used after
     filter<predicate extends Filter<inferIn<t>>>(
         predicate: predicate
-    ): Type<inferIntersection<t, inferPredicate<inferIn<t>, predicate>>, $> {
+    ): Type<inferPredicate<inferIn<t>, predicate>, $> {
         return new Type(this.root.constrain("filter", predicate), this.scope)
     }
 

@@ -1,5 +1,5 @@
 import { type } from "../../src/main.js"
-import { Type } from "../../src/type.js"
+import type { Type } from "../../src/type.js"
 
 const createBox = <T extends string>(of: Type<T>) =>
     type({
