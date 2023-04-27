@@ -7,8 +7,8 @@ import {
     readJson,
     readPackageJson,
     writeJson
-} from "../attest/src/runtime/fs.js"
-import { shell } from "../attest/src/runtime/shell.js"
+} from "../attest/src/fs.js"
+import { shell } from "../attest/src/shell.js"
 import { repoDirs } from "./common.js"
 import { docgen } from "./docgen/main.js"
 

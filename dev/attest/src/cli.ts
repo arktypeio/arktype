@@ -4,8 +4,13 @@ import { version } from "node:os"
 import { basename } from "node:path"
 import { versions } from "node:process"
 import { Command } from "commander"
-import { cacheAssertions, cleanupAssertions } from "./main.js"
-import { fromCwd, shell, walkPaths } from "./runtime/main.js"
+import {
+    cacheAssertions,
+    cleanupAssertions,
+    fromCwd,
+    shell,
+    walkPaths
+} from "./main.js"
 
 const attest = new Command()
 const packageVersion = "0.0.0"

@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import * as process from "node:process"
-import { ensureDir, fromCwd, getSourceFileEntries } from "./runtime/main.js"
+import { ensureDir, fromCwd, getSourceFileEntries } from "./main.js"
 import { getCmdFromPid } from "./utils.js"
 import type { BenchFormat } from "./writeSnapshot.js"
 

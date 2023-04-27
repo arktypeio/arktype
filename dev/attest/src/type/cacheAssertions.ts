@@ -1,6 +1,6 @@
 import { mkdirSync, rmSync } from "node:fs"
 import { getAttestConfig } from "../config.js"
-import { writeJson } from "../runtime/main.js"
+import { writeJson } from "../main.js"
 import { writeCachedInlineSnapshotUpdates } from "../writeSnapshot.js"
 import { getAssertionsByFile } from "./analysis.js"
 

@@ -1,5 +1,5 @@
-import { fromPackageRoot } from "../attest/src/runtime/fs.js"
-import { shell } from "../attest/src/runtime/shell.js"
+import { fromPackageRoot } from "../attest/src/fs.js"
+import { shell } from "../attest/src/shell.js"
 import { repoDirs } from "./common.js"
 
 shell(

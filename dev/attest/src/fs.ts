@@ -11,8 +11,8 @@ import { homedir } from "node:os"
 import { dirname, join, parse } from "node:path"
 import * as process from "node:process"
 import { fileURLToPath, URL } from "node:url"
-import { repoDirs } from "../common.js"
 import { caller } from "./caller.js"
+import { repoDirs } from "./common.js"
 import { shell } from "./shell.js"
 
 export const ensureDir = (path: string) => {

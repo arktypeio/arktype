@@ -1,5 +1,5 @@
 import { copyFileSync, rmSync } from "node:fs"
-import { fromHere, readFile, shell } from "../../attest/src/runtime/main.js"
+import { fromHere, readFile, shell } from "../../attest/src/main.js"
 import type { BenchFormat } from "../src/writeSnapshot.js"
 
 const PATH_TO_TEST_ASSERTIONS_DIR = fromHere(".attest")

@@ -15,7 +15,7 @@ import {
     shell,
     walkPaths,
     writeJson
-} from "../attest/src/runtime/main.js"
+} from "../attest/src/main.js"
 import { repoDirs } from "./common.js"
 
 const isTestBuild = process.argv.includes("--test")

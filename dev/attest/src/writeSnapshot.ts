@@ -5,7 +5,7 @@ import type { Node, ts } from "ts-morph"
 import type { BenchData } from "./bench/history.js"
 import { updateIsBench, upsertBenchResult } from "./bench/history.js"
 import { getAttestConfig } from "./config.js"
-import { readJson, shell, writeJson } from "./runtime/main.js"
+import { readJson, shell, writeJson } from "./main.js"
 import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
 import {
     queueInlineSnapshotWriteOnProcessExit,

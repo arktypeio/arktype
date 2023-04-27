@@ -3,7 +3,7 @@ import { Assertions } from "./assertions/assertions.js"
 import type { RootAssertions } from "./assertions/types.js"
 import type { AttestConfig } from "./config.js"
 import { getAttestConfig } from "./config.js"
-import { caller, getCallStack } from "./runtime/main.js"
+import { caller, getCallStack } from "./main.js"
 import type { SourcePosition } from "./utils.js"
 
 export type AssertFn = <T>(value: T) => RootAssertions<T, true>

@@ -3,8 +3,8 @@ import {
     readFile,
     readJson,
     writeFile
-} from "../../../attest/src/runtime/fs.js"
-import { shell } from "../../../attest/src/runtime/shell.js"
+} from "../../../attest/src/fs.js"
+import { shell } from "../../../attest/src/shell.js"
 import type { SnippetsByPath } from "./extractSnippets.js"
 import { referenceTokens } from "./snipTokens.js"
 

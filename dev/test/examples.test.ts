@@ -3,7 +3,7 @@ import { attest } from "#attest"
 
 describe("snippets", () => {
     it("demo", async () => {
-        const typeSnippet = await import("../examples/demo.js")
+        const typeSnippet = await import("./examples/demo.js")
         attest(typeSnippet.pkg.infer).typed as {
             name: string
             version: string
@@ -14,7 +14,7 @@ describe("snippets", () => {
         )
     })
     it("type", async () => {
-        const typeSnippet = await import("../examples/type.js")
+        const typeSnippet = await import("./examples/type.js")
         attest(typeSnippet.user.infer).typed as {
             name: string
             device: {
@@ -27,7 +27,7 @@ describe("snippets", () => {
         )
     })
     it("scope", async () => {
-        const scopeSnippet = await import("../examples/scope.js")
+        const scopeSnippet = await import("./examples/scope.js")
         attest(scopeSnippet.types.package.infer).typed as {
             name: string
             dependencies?: any[]
@@ -42,7 +42,7 @@ describe("snippets", () => {
         )
     })
     it("optimized", async () => {
-        const example = await import("../examples/optimized.js")
+        const example = await import("./examples/optimized.js")
         attest(example.deepLeftOrRight.infer).typed as
             | {
                   auto: {
