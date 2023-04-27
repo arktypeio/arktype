@@ -15,4 +15,4 @@ hide_table_of_contents: true
 
 ## example
 
--                    const isEven = (x: unknown): x is number => x % 2 === 0
+-                  const isEven = (x: unknown): x is number => x % 2 === 0
