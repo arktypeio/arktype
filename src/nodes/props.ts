@@ -1,9 +1,5 @@
-import {
-    type Dict,
-    type List,
-    listFrom,
-    type mutable
-} from "../utils/generics.js"
+import type { Dict, List, mutable } from "../utils/generics.js"
+import { listFrom } from "../utils/generics.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
 import { DisjointNode, Node } from "./node.js"
 import type { TypeNodeInput } from "./type.js"

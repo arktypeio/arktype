@@ -58,4 +58,26 @@ describe("cyclic data", () => {
             'Must be valid (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
         )
     })
+    it("union cyclic reference", () => {
+        const types = scope({
+            a: {
+                b: "b"
+            },
+            b: {
+                a: "a|3"
+            }
+        })
+        attest(types.infer).type.toString.snap()
+    })
+    it("intersect cyclic reference", () => {
+        const types = scope({
+            a: {
+                b: "b"
+            },
+            b: {
+                c: "a&b"
+            }
+        })
+        attest(types.infer).type.toString.snap()
+    })
 })

@@ -116,7 +116,7 @@ export type Infer<t> = {
 const isThunk = (def: unknown): def is () => unknown =>
     typeof def === "function" && def.length === 0
 
-type InferredThunk<t = unknown> = () => Infer<t>
+export type InferredThunk<t = unknown> = () => Infer<t>
 
 type Terminal = RegExp | Infer<unknown> | InferredThunk
 

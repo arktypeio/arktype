@@ -6,7 +6,6 @@ import { In } from "./nodes/utils.js"
 import type { Filter, inferPredicate } from "./parse/ast/filter.js"
 import type { inferIntersection } from "./parse/ast/intersection.js"
 import type { Morph, ParsedMorph } from "./parse/ast/morph.js"
-import type { inferUnion } from "./parse/ast/union.js"
 import {
     as,
     type inferDefinition,
@@ -87,7 +86,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
 
     or<def>(
         def: validateDefinition<def, $>
-    ): Type<inferUnion<t, inferDefinition<def, $>>, $> {
+    ): Type<t | inferDefinition<def, $>, $> {
         return this.#unary(def, "or")
     }
 

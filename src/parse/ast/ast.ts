@@ -1,11 +1,11 @@
 import type { Comparator } from "../../nodes/range.js"
 import type { resolve } from "../../scope.js"
 import type {
-    castOnError,
     error,
+    evaluate,
+    ifNonError,
     List,
-    RegexLiteral,
-    tryCatch
+    RegexLiteral
 } from "../../utils/generics.js"
 import type {
     BigintLiteral,
@@ -16,8 +16,6 @@ import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { parseString } from "../string/string.js"
 import type { validateBound } from "./bound.js"
 import type { validateDivisor } from "./divisor.js"
-import type { inferIntersection } from "./intersection.js"
-import type { inferUnion } from "./union.js"
 
 export type inferAst<ast, $> = ast extends List
     ? inferExpression<ast, $>
@@ -26,16 +24,9 @@ export type inferAst<ast, $> = ast extends List
 export type inferExpression<ast extends List, $> = ast[1] extends "[]"
     ? inferAst<ast[0], $>[]
     : ast[1] extends "|"
-    ? inferUnion<inferAst<ast[0], $>, inferAst<ast[2], $>> extends infer result
-        ? castOnError<result, never>
-        : never
+    ? inferAst<ast[0], $> | inferAst<ast[2], $>
     : ast[1] extends "&"
-    ? inferIntersection<
-          inferAst<ast[0], $>,
-          inferAst<ast[2], $>
-      > extends infer result
-        ? castOnError<result, never>
-        : never
+    ? evaluate<inferAst<ast[0], $> & inferAst<ast[2], $>>
     : ast[1] extends Comparator
     ? ast[0] extends NumberLiteral
         ? inferAst<ast[2], $>
@@ -52,20 +43,14 @@ export type validateAst<ast, $> = ast extends string
         : never
     : ast extends InfixExpression<infer operator, infer l, infer r>
     ? operator extends "&"
-        ? tryCatch<
-              inferIntersection<inferAst<l, $>, inferAst<r, $>>,
-              validateInfix<ast, $>
-          >
+        ? validateInfix<ast, $>
         : operator extends "|"
-        ? tryCatch<
-              inferUnion<inferAst<l, $>, inferAst<r, $>>,
-              validateInfix<ast, $>
-          >
+        ? validateInfix<ast, $>
         : operator extends Comparator
         ? validateBound<l, r, $>
         : operator extends "%"
         ? validateDivisor<l, $>
-        : never
+        : undefined
     : never
 
 type validateStringAst<def extends string> = def extends NumberLiteral<
@@ -113,9 +98,9 @@ export type InfixExpression<
     r = unknown
 > = [l, operator, r]
 
-type validateInfix<ast extends InfixExpression, $> = tryCatch<
+type validateInfix<ast extends InfixExpression, $> = ifNonError<
     validateAst<ast[0], $>,
-    tryCatch<validateAst<ast[2], $>, ast>
+    ifNonError<validateAst<ast[2], $>, ast>
 >
 
 export type inferTerminal<token, $> = token extends keyof $

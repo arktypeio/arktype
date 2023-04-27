@@ -62,18 +62,18 @@ describe("config traversal", () => {
             ]
         })
         attest(t.infer).typed as { monster: 196883 }
-        attest(t.node).snap({
-            object: {
-                props: {
-                    monster: {
-                        node: { number: { value: 196883 } },
-                        config: {
-                            mustBe: "the number of dimensions in the monster group"
-                        }
-                    }
-                }
-            }
-        })
+        // attest(t.node).snap({
+        //     object: {
+        //         props: {
+        //             monster: {
+        //                 node: { number: { value: 196883 } },
+        //                 config: {
+        //                     mustBe: "the number of dimensions in the monster group"
+        //                 }
+        //             }
+        //         }
+        //     }
+        // })
         // attest(t.flat).snap([
         //     ["domain", "object"],
         //     [

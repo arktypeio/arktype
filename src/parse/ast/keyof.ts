@@ -1,7 +1,6 @@
 import type { evaluate } from "../../utils/generics.js"
 import type { inferDefinition, validateDefinition } from "../definition.js"
 import { parseDefinition } from "../definition.js"
-import type { writeImplicitNeverMessage } from "./intersection.js"
 import type { PrefixParser } from "./tuple.js"
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) =>
@@ -13,7 +12,5 @@ export type inferKeyOfExpression<operandDef, $> = evaluate<
 
 export type validateKeyOfExpression<operandDef, $> = readonly [
     "keyof",
-    inferKeyOfExpression<operandDef, $> extends never
-        ? writeImplicitNeverMessage<[], "keyof">
-        : validateDefinition<operandDef, $>
+    validateDefinition<operandDef, $>
 ]

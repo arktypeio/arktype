@@ -220,13 +220,14 @@ export type castOnError<t, to> = unknown extends t
     ? to
     : t
 
-export type tryCatch<t, onValid> = isAny<t> extends true
-    ? onValid
-    : t extends never
-    ? onValid
-    : t extends error
-    ? t
-    : onValid
+export type ifNonError<possibleError, onValid> =
+    isAny<possibleError> extends true
+        ? onValid
+        : possibleError extends never
+        ? onValid
+        : possibleError extends error
+        ? possibleError
+        : onValid
 
 export type RegexLiteral<expression extends string = string> = `/${expression}/`
 

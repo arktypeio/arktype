@@ -256,3 +256,10 @@ const findBestDiscriminant = (
     }
     return bestDiscriminant
 }
+
+export const writeUndiscriminatableMorphUnionMessage = <path extends string>(
+    path: path
+) =>
+    `${
+        path === "/" ? "A" : `At ${path}, a`
+    } union including one or more morphs must be discriminatable`

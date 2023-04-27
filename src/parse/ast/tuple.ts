@@ -20,12 +20,10 @@ import type { Scanner } from "../string/shift/scanner.js"
 import { parseConfigTuple, type validateConfigTuple } from "./config.js"
 import type { inferFilter, validateFilterTuple } from "./filter.js"
 import { parseNarrowTuple } from "./filter.js"
-import type { inferIntersection } from "./intersection.js"
 import type { inferKeyOfExpression, validateKeyOfExpression } from "./keyof.js"
 import { parseKeyOfTuple } from "./keyof.js"
 import type { inferMorph, validateMorphTuple } from "./morph.js"
 import { parseMorphTuple } from "./morph.js"
-import type { inferUnion } from "./union.js"
 
 export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     if (isIndexOneExpression(def)) {
@@ -108,9 +106,9 @@ export type inferTupleExpression<
 > = def[1] extends "[]"
     ? inferDefinition<def[0], $>[]
     : def[1] extends "&"
-    ? inferIntersection<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
+    ? inferDefinition<def[0], $> & inferDefinition<def[2], $>
     : def[1] extends "|"
-    ? inferUnion<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
+    ? inferDefinition<def[0], $> | inferDefinition<def[2], $>
     : def[1] extends "=>"
     ? inferFilter<def[0], def[2], $>
     : def[1] extends "|>"

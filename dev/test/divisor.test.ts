@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
 import { type } from "../../src/main.js"
+import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
 import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
 import { attest } from "../attest/main.js"
-import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
 
 describe("divisibility", () => {
     describe("parse", () => {
@@ -27,7 +27,7 @@ describe("divisibility", () => {
             })
         })
         it("allows non-narrowed divisor", () => {
-            const z: number = 5
+            const z = 5 as number
             attest(type(`number%${z}`).infer).typed as number
         })
         it("fails at runtime on non-integer divisor", () => {
