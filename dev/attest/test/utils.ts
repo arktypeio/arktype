@@ -27,14 +27,18 @@ export const runThenGetContents = (
     try {
         if (precache) {
             ARKTYPE_CHECK_CMD += ` --precache --cacheDir ${PATH_TO_TEST_ASSERTIONS_DIR}`
-            shell(`npx ts-node ${testFileCopyPath} --attestTestPreCached`, {
+            shell(`node ${testFileCopyPath} --attestTestPreCached`, {
                 env: {
-                    ARKTYPE_CHECK_CMD
+                    ARKTYPE_CHECK_CMD,
+                    NODE_OPTIONS: "--loader=ts-node/esm"
                 }
             })
         } else {
-            shell(`npx ts-node ${testFileCopyPath}`, {
-                env: { ARKTYPE_CHECK_CMD }
+            shell(`node ${testFileCopyPath}`, {
+                env: {
+                    ARKTYPE_CHECK_CMD,
+                    NODE_OPTIONS: "--loader=ts-node/esm"
+                }
             })
         }
     } finally {

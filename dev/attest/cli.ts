@@ -26,9 +26,10 @@ if (args[attestArgIndex + 1] === "bench") {
     let threwDuringBench
     for (const path of benchFilePaths) {
         try {
-            shell(`npx ts-node ${path}`, {
+            shell(`node ${path}`, {
                 env: {
-                    ARKTYPE_CHECK_CMD: args.slice(attestArgIndex + 1).join(" ")
+                    ARKTYPE_CHECK_CMD: args.slice(attestArgIndex + 1).join(" "),
+                    NODE_OPTIONS: "--loader=ts-node/esm"
                 }
             })
         } catch {
