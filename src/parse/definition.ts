@@ -6,6 +6,7 @@ import { domainOf } from "../utils/domains.js"
 import type { Primitive } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
+    conform,
     Dict,
     evaluate,
     isAny,
@@ -18,6 +19,8 @@ import type { Path } from "../utils/paths.js"
 import { stringify } from "../utils/serialize.js"
 import type { validateString } from "./ast/ast.js"
 import type {
+    IndexOneOperator,
+    IndexZeroOperator,
     inferTuple,
     TupleExpression,
     validateTupleExpression
@@ -88,6 +91,14 @@ export type inferDefinition<def, $> = isAny<def> extends true
     ? inferRecord<def, $>
     : never
 
+type validateTuple<
+    def extends List,
+    $,
+    result extends unknown[] = []
+> = def extends [infer head, ...infer tail]
+    ? validateTuple<tail, $, [...result, validateDefinition<head, $>]>
+    : result
+
 // we ignore functions in validation so that cyclic thunk definitions can be inferred in scopes
 export type validateDefinition<def, $> = def extends (...args: any[]) => any
     ? def
@@ -95,8 +106,8 @@ export type validateDefinition<def, $> = def extends (...args: any[]) => any
     ? def
     : def extends string
     ? validateString<def, $>
-    : def extends TupleExpression
-    ? validateTupleExpression<def, $>
+    : def extends List
+    ? validateTuple<def, $>
     : def extends BadDefinitionType
     ? writeBadDefinitionTypeMessage<
           objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>

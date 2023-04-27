@@ -7,6 +7,9 @@ import {
 import { attest } from "../attest/main.js"
 
 describe("tuple expression", () => {
+    const z = type([{ a: "string" }, { b: "boolean" }])
+    //        ^?
+
     it("union", () => {
         const t = type(["string", "|", "number"])
         attest(t.infer).typed as string | number
@@ -24,6 +27,7 @@ describe("tuple expression", () => {
     })
     it("list", () => {
         const t = type(["string", "[]"])
+        type({})
         attest(t.infer).typed as string[]
         // attest(t.node).snap({
         //     object: {

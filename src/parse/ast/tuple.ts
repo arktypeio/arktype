@@ -157,7 +157,7 @@ export const writeMalformedFunctionalExpressionMessage = (
 
 export type TupleExpressionOperator = IndexZeroOperator | IndexOneOperator
 
-type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
+export type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
 
 export type TuplePostfixOperator = "[]"
 
