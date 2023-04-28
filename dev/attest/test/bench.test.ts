@@ -1,6 +1,6 @@
 import * as assert from "node:assert/strict"
 import { describe, it } from "mocha"
-import { fromHere, readFile } from "../../runtime/main.js"
+import { fromHere, readFile } from "../../attest/src/main.js"
 import { runThenGetContents } from "./utils.js"
 
 const benchTemplate = fromHere("benchTemplate.ts")
@@ -15,6 +15,7 @@ describe("bench", () => {
             includeBenches: true,
             benchFormat: { noExternal: true }
         })
+
         assert.equal(actual, expectedOutput)
     }).timeout(30000)
 })

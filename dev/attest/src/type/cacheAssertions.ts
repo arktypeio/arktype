@@ -1,6 +1,6 @@
 import { mkdirSync, rmSync } from "node:fs"
-import { writeJson } from "../../../runtime/main.js"
 import { getAttestConfig } from "../config.js"
+import { writeJson } from "../main.js"
 import { writeCachedInlineSnapshotUpdates } from "../writeSnapshot.js"
 import { getAssertionsByFile } from "./analysis.js"
 
@@ -10,7 +10,7 @@ export type SetupCacheOptions = {
 
 export const cacheAssertions = ({ forcePrecache }: SetupCacheOptions = {}) => {
     const config = getAttestConfig()
-    if (!config.precached && !forcePrecache) {
+    if (!forcePrecache) {
         throw new Error(
             `You must set 'precached' to true in the 'assert' section ` +
                 ` of your re.json config to enable precaching.`

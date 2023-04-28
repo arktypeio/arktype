@@ -1,9 +1,6 @@
-import { fromHere } from "../runtime/fs.js"
-import { shell } from "../runtime/shell.js"
+import { fromHere } from "../attest/src/fs.js"
+import { shell } from "../attest/src/shell.js"
 
-shell(`node cli.ts --cmd mocha`, {
-    cwd: fromHere("..", "attest"),
-    env: {
-        NODE_OPTIONS: "--loader=ts-node/esm"
-    }
+shell(`npx ts-node src/cli.ts --runner mocha -f './test/**/*.test.ts'`, {
+    cwd: fromHere("..", "attest")
 })

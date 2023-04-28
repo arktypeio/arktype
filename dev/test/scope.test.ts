@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
-import { scope, type } from "../../src/main.js"
 import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
-import { attest } from "../attest/main.js"
+import { scope, type } from "#arktype"
+import { attest } from "#attest"
 
 describe("scope", () => {
     it("base definition", () => {
@@ -59,7 +59,7 @@ describe("scope", () => {
             }
         }
         // @ts-expect-error
-        attest(types.a.infer.b.a.b.c).type.errors.snap(
+        attest(types.a.infer.b.a.b.c).types.errors.snap(
             `Property 'c' does not exist on type '{ a: { b: any; }; }'.`
         )
     })

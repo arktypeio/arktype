@@ -1,15 +1,12 @@
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
-import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.js"
-import { snapshot, stringify } from "../../../../src/utils/serialize.js"
-import { caller } from "../../../runtime/main.js"
+import { chainableNoOpProxy } from "arktype/internal/utils/chainableNoOpProxy.js"
+import { snapshot, stringify } from "arktype/internal/utils/serialize.js"
 import { assertEquals } from "../assertions.js"
 import type { AssertionContext } from "../attest.js"
+import { caller } from "../main.js"
 import type { SnapshotArgs } from "../snapshot.js"
-import {
-    getSnapshotByName,
-    queueInlineSnapshotWriteOnProcessExit
-} from "../snapshot.js"
+import { getSnapshotByName } from "../snapshot.js"
 import { getTypeDataAtPos } from "../type/getAssertionAtPos.js"
 import {
     updateExternalSnapshot,
@@ -91,11 +88,7 @@ export class Assertions implements AssertionRecord {
                     serializedValue: this.serializedActual,
                     benchFormat: this.ctx.cfg.benchFormat
                 }
-                if (this.ctx.cfg.precached) {
-                    writeInlineSnapshotUpdateToCacheDir(snapshotArgs)
-                } else {
-                    queueInlineSnapshotWriteOnProcessExit(snapshotArgs)
-                }
+                writeInlineSnapshotUpdateToCacheDir(snapshotArgs)
             }
         } else {
             // compare as strings, but if match fails, compare again as objects
@@ -187,7 +180,7 @@ export class Assertions implements AssertionRecord {
         }
     }
 
-    get type() {
+    get types() {
         if (this.ctx.cfg.skipTypes) {
             return chainableNoOpProxy
         }

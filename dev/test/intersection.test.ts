@@ -1,11 +1,11 @@
 import { describe, it } from "mocha"
-import { intersection, type } from "../../src/main.js"
 import type { Node } from "../../src/nodes/node.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
 } from "../../src/parse/string/shift/operand/unenclosed.js"
-import { attest } from "../attest/main.js"
+import { intersection, type } from "#arktype"
+import { attest } from "#attest"
 
 describe("intersection", () => {
     describe("parse", () => {
@@ -175,7 +175,7 @@ describe("intersection", () => {
                 // @ts-expect-error
                 attest(() => type("boolean&tru"))
                     .throws(writeUnresolvableMessage("tru"))
-                    .type.errors("boolean&true")
+                    .types.errors("boolean&true")
             })
             it("double and", () => {
                 // @ts-expect-error

@@ -1,18 +1,17 @@
 import { copyFileSync, rmSync } from "node:fs"
-import { fromHere, readFile, shell } from "../../runtime/main.js"
+import { fromHere, readFile, shell } from "../../attest/src/main.js"
 import type { BenchFormat } from "../src/writeSnapshot.js"
 
 const PATH_TO_TEST_ASSERTIONS_DIR = fromHere(".attest")
 
 export type RunThenGetContentsOptions = {
-    precache?: boolean
     includeBenches?: boolean
     benchFormat?: BenchFormat
 }
 
 export const runThenGetContents = (
     templatePath: string,
-    { precache, includeBenches, benchFormat }: RunThenGetContentsOptions = {}
+    { includeBenches, benchFormat }: RunThenGetContentsOptions = {}
 ) => {
     const testFileCopyPath = templatePath + ".temp.ts"
     let ARKTYPE_CHECK_CMD = includeBenches ? " --bench" : ""
@@ -25,22 +24,13 @@ export const runThenGetContents = (
     copyFileSync(templatePath, testFileCopyPath)
     let testFileContents
     try {
-        if (precache) {
-            ARKTYPE_CHECK_CMD += ` --precache --cacheDir ${PATH_TO_TEST_ASSERTIONS_DIR}`
-            shell(`node ${testFileCopyPath} --attestTestPreCached`, {
-                env: {
-                    ARKTYPE_CHECK_CMD,
-                    NODE_OPTIONS: "--loader=ts-node/esm"
-                }
-            })
-        } else {
-            shell(`node ${testFileCopyPath}`, {
-                env: {
-                    ARKTYPE_CHECK_CMD,
-                    NODE_OPTIONS: "--loader=ts-node/esm"
-                }
-            })
-        }
+        ARKTYPE_CHECK_CMD += `--cacheDir ${PATH_TO_TEST_ASSERTIONS_DIR}`
+        shell(`npx ts-node ${testFileCopyPath}`, {
+            env: {
+                ARKTYPE_CHECK_CMD,
+                NODE_OPTIONS: "--loader=ts-node/esm"
+            }
+        })
     } finally {
         testFileContents = readFile(testFileCopyPath)
         rmSync(testFileCopyPath)

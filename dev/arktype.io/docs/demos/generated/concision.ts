@@ -1,6 +1,7 @@
-export default `import z from "zod"
+export default `//@ts-nocheck
 import { morph, type } from "arktype"
 import type { Infer } from "arktype"
+import z from "zod"
 
 {
     const arkUser = type({

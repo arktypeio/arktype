@@ -1,5 +1,5 @@
 import * as assert from "node:assert/strict"
-import { hasDomain } from "../../../src/utils/domains.js"
+import { hasDomain } from "arktype/internal/utils/domains.js"
 import type { AssertionContext } from "./attest.js"
 
 export type ThrowAsertionErrorContext = {

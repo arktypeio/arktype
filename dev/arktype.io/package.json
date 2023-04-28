@@ -4,7 +4,7 @@
     "private": true,
     "scripts": {
         "dev": "docusaurus start",
-        "build": "cross-env NODE_OPTIONS=\"--loader=ts-node/esm\" node ../scripts/buildArktypeIo.ts",
+        "build": "tsx node ../scripts/buildArktypeIo.ts",
         "typecheck": "tsc",
         "serve": "docusaurus serve --dir dist",
         "docgen": "cd .. && pnpm docgen"

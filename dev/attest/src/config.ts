@@ -1,17 +1,11 @@
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import * as process from "node:process"
-import type { SourceFileEntry } from "../../runtime/main.js"
-import {
-    ensureDir,
-    fromPackageRoot,
-    getSourceFileEntries
-} from "../../runtime/main.js"
+import { ensureDir, fromCwd, getSourceFileEntries } from "./main.js"
 import { getCmdFromPid } from "./utils.js"
 import type { BenchFormat } from "./writeSnapshot.js"
 
 export type AttestConfig = {
-    precached: boolean
     preserveCache: boolean
     tsconfig: string | undefined
     updateSnapshots: boolean
@@ -21,13 +15,12 @@ export type AttestConfig = {
     snapCacheDir: string
     skipTypes: boolean
     typeSources: [path: string, contents: string][]
-    transient: boolean
     benchPercentThreshold: number
     benchErrorOnThresholdExceeded: boolean
-    filter: string[] | string | undefined
+    filter: string | string[] | undefined
 }
 
-const checkArgsForParam = (args: string[], param: `-${string}`) => {
+export const checkArgsForParam = (args: string[], param: `-${string}`) => {
     const filterFlagIndex = args.indexOf(param)
     if (filterFlagIndex === -1) {
         return undefined
@@ -53,12 +46,6 @@ const getArgsToCheck = () => {
     return process.argv
 }
 
-/** Determine which benches to run:
- *    If a "--filter" (or "-f") arg is present...
- *       1. If the arg starts with "/", run benches at that "/"-delimited path
- *       2. Otherwise, run benches including a segment anywhere in their path with the arg's value
- *    Otherwise, return undefined, and all benches will be run
- */
 const getFilter = (argsToCheck: string[]) => {
     const filter =
         checkArgsForParam(argsToCheck, "--filter") ||
@@ -78,7 +65,7 @@ export const getAttestConfig = (): AttestConfig => {
     if (cachedConfig) {
         return cachedConfig
     }
-    const possibleTsconfigPath = fromPackageRoot("tsconfig.json")
+    const possibleTsconfigPath = fromCwd("tsconfig.json")
     const tsconfig = existsSync(possibleTsconfigPath)
         ? possibleTsconfigPath
         : undefined
@@ -88,47 +75,31 @@ export const getAttestConfig = (): AttestConfig => {
     const snapCacheDir = join(cacheDir, "snaps")
     ensureDir(cacheDir)
     ensureDir(snapCacheDir)
-    const transient = argsToCheck.some(
-        (arg) => arg === "-t" || arg === "--transient"
-    )
     const noWrite = argsToCheck.some(
         (arg) => arg === "-n" || arg === "--no-write"
     )
     const typeSources = getSourceFileEntries()
-        .filter(([path]) => !path.startsWith("dev/arktype.io"))
-        .map(
-            ([path, contents]): SourceFileEntry => [
-                path,
-                // Use .js imports for node + pre 5.0 versions of TS
-                contents.replaceAll('.ts"', '.js"')
-            ]
-        )
     cachedConfig = {
-        updateSnapshots:
-            transient ||
-            argsToCheck.some((arg) => arg === "-u" || arg === "--update"),
+        updateSnapshots: argsToCheck.some(
+            (arg) => arg === "-u" || arg === "--update"
+        ),
         skipTypes: argsToCheck.some(
             (arg) => arg === "-s" || arg === "--skipTypes"
         ),
         typeSources,
         benchFormat: {
-            noInline:
-                argsToCheck.includes("--no-inline") || noWrite || transient,
+            noInline: argsToCheck.includes("--no-inline") || noWrite,
             noExternal: argsToCheck.includes("--no-external") || noWrite,
-            path:
-                checkArgsForParam(argsToCheck, "--benchmarksPath") ||
-                join(process.cwd(), "benchmarks.json")
+            path: checkArgsForParam(argsToCheck, "--benchmarksPath")
         },
-        filter: getFilter(argsToCheck),
         tsconfig,
-        precached: argsToCheck.includes("--precache"),
         preserveCache: true,
         cacheDir,
         snapCacheDir,
         assertionCacheFile: join(cacheDir, "assertions.json"),
         benchPercentThreshold: 20,
         benchErrorOnThresholdExceeded: false,
-        transient
+        filter: getFilter(argsToCheck)
     }
     return cachedConfig
 }

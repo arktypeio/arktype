@@ -1,4 +1,4 @@
-export default `import { type } from "arktype"
+export default `import { type } from "#arktype"
 
 // Define your type...
 export const pkg = type({

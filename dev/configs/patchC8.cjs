@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 // Patch the c8 ignore comment parser to ignore internal errors
-const c8Paths = require.resolve.paths("c8")
+const c8Paths = require.resolve("c8")
 const covSourcePath = require.resolve("v8-to-istanbul/lib/source", {
-    paths: c8Paths
+    paths: [c8Paths]
 })
 const CovSource = require(covSourcePath)
 
