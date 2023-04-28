@@ -63,7 +63,11 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
     }
 
     static compile(rules: RuleNodes) {
-        return rules.map((rule) => rule.key).join(" && ") as CompiledAssertion
+        // TODO: figure out better way to deal with empty
+        return rules
+            .map((rule) => rule.key)
+            .filter((rule) => rule !== ("" as any))
+            .join(" && ") as CompiledAssertion
     }
 
     compileTraverse(s: CompilationState) {

@@ -29,7 +29,7 @@ export type TypeParser<$> = {
 
     <def>(
         def: validateDefinition<def, bind<$, def>>,
-        opts: TypeOptions
+        opts: TypeConfig
     ): parseType<def, bind<$, def>>
 
     equalTo: <value>(value: value) => Type<value, $>
@@ -122,12 +122,10 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
 
 export type KeyCheckKind = "loose" | "strict" | "distilled"
 
-export type TypeOptions = evaluate<{
+export type TypeConfig = evaluate<{
     keys?: KeyCheckKind
     mustBe?: string
 }>
-
-export type TypeConfig = TypeOptions
 
 export type inferIn<t> = inferMorphs<t, "in">
 

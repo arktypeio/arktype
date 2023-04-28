@@ -290,13 +290,13 @@ export class TypeNode<t = unknown> extends Node<
 
     toArray() {
         return TypeNode.from({
-            basis: "object",
+            basis: Array,
             props: {
                 named: {},
-                // TODO: fix
-                indexed: []
+                // TODO: string keys etc.?
+                indexed: [[{ basis: "number" }, this]]
             }
-        })
+        }) as TypeNode<t[]>
     }
 }
 

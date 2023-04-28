@@ -1,0 +1,207 @@
+{
+    "operators": {
+        "array": {
+            "string": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [3.18, "us"],
+                        "type": [99, "instantiations"]
+                    }
+                }
+            ],
+            "tuple": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [3.47, "us"],
+                        "type": [212, "instantiations"]
+                    }
+                }
+            ],
+            "expression": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [5.15, "us"],
+                        "type": [5, "instantiations"]
+                    }
+                }
+            ]
+        },
+        "union": {
+            "string": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [7.07, "us"],
+                        "type": [777, "instantiations"]
+                    }
+                }
+            ],
+            "tuple": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [5.59, "us"],
+                        "type": [273, "instantiations"]
+                    }
+                }
+            ],
+            "expression": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [7.09, "us"],
+                        "type": [488, "instantiations"]
+                    }
+                }
+            ],
+            "10-ary": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [119.87, "us"],
+                        "type": [4841, "instantiations"]
+                    }
+                }
+            ]
+        },
+        "intersection": {
+            "string": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [3.61, "us"],
+                        "type": [686, "instantiations"]
+                    }
+                }
+            ],
+            "tuple": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [3.16, "us"],
+                        "type": [474, "instantiations"]
+                    }
+                }
+            ],
+            "expression": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [4.78, "us"],
+                        "type": [687, "instantiations"]
+                    }
+                }
+            ],
+            "10-ary": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [12.61, "us"],
+                        "type": [4351, "instantiations"]
+                    }
+                }
+            ]
+        },
+        "group": {
+            "shallow": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [9.58, "us"],
+                        "type": [1080, "instantiations"]
+                    }
+                }
+            ],
+            "nested": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [17.22, "us"],
+                        "type": [3008, "instantiations"]
+                    }
+                }
+            ],
+            "deep": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [32.5, "us"],
+                        "type": [37638, "instantiations"]
+                    }
+                }
+            ]
+        },
+        "bounds": {
+            "single": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [3.81, "us"],
+                        "type": [615, "instantiations"]
+                    }
+                }
+            ],
+            "double": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [7.2, "us"],
+                        "type": [1041, "instantiations"]
+                    }
+                }
+            ]
+        },
+        "divisor": [
+            {
+                "date": "4/28/2023",
+                "mark": {
+                    "median": [4.53, "us"],
+                    "type": [1023, "instantiations"]
+                }
+            }
+        ],
+        "narrow": {
+            "tuple expression": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [8.04, "us"],
+                        "type": [583, "instantiations"]
+                    }
+                }
+            ],
+            "helper": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [12.19, "us"],
+                        "type": [42, "instantiations"]
+                    }
+                }
+            ]
+        },
+        "morph": {
+            "tuple expression": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [8.96, "us"],
+                        "type": [562, "instantiations"]
+                    }
+                }
+            ],
+            "helper": [
+                {
+                    "date": "4/28/2023",
+                    "mark": {
+                        "median": [2.98, "us"],
+                        "type": [26, "instantiations"]
+                    }
+                }
+            ]
+        }
+    }
+}

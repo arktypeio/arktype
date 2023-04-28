@@ -1,7 +1,7 @@
 import { type } from "../../main.js"
 import type { PropsInput } from "../../nodes/props.js"
 import { TypeNode } from "../../nodes/type.js"
-import type { inferIn, inferOut, TypeOptions } from "../../type.js"
+import type { inferIn, inferOut, TypeConfig } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type {
     constructor,
@@ -54,8 +54,6 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
         }
     })
 }
-
-const myType = type(["string", "...object[]"])
 
 // TODO: unify
 type InfixExpression = [unknown, InfixOperator, ...unknown[]]
@@ -189,7 +187,7 @@ export type inferKeyOfExpression<operandDef, $> = evaluate<
 
 export type ConfigTuple<
     def = unknown,
-    config extends TypeOptions = TypeOptions
+    config extends TypeConfig = TypeConfig
 > = readonly [def, ":", config]
 
 export const parseConfigTuple: PostfixParser<":"> = (def, ctx) =>

@@ -1,7 +1,7 @@
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import type { Ark } from "./scopes/ark.js"
-import type { KeyCheckKind, TypeOptions, TypeParser } from "./type.js"
+import type { KeyCheckKind, TypeConfig, TypeParser } from "./type.js"
 import { Type } from "./type.js"
 import { throwParseError } from "./utils/errors.js"
 import type {
@@ -174,7 +174,7 @@ export class Scope<context extends ScopeInferenceContext = any> {
 
     type: TypeParser<resolutions<context>> = ((
         def: unknown,
-        config: TypeOptions = {}
+        config: TypeConfig = {}
     ) => {
         return new Type(def, this)
     }) as unknown as TypeParser<resolutions<context>>
