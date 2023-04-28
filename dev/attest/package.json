@@ -24,7 +24,7 @@
         "!*.tsbuildinfo"
     ],
     "dependencies": {
-        "arktype": "1.0.14-alpha",
+        "arktype": "1.0.13-alpha",
         "ts-morph": "18.0.0",
         "get-current-line": "6.6.0",
         "commander": "10.0.0"
