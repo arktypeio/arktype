@@ -1,5 +1,4 @@
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
-import type { ConfigTuple } from "./parse/ast/config.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import type { Ark } from "./scopes/ark.js"
 import type { KeyCheckKind, TypeOptions, TypeParser } from "./type.js"
@@ -152,9 +151,6 @@ type resolutions<ctx extends ScopeInferenceContext> = localsOf<ctx> &
     exportsOf<ctx>
 
 type name<ctx extends ScopeInferenceContext> = keyof resolutions<ctx> & string
-
-export const isConfigTuple = (def: unknown): def is ConfigTuple =>
-    Array.isArray(def) && def[1] === ":"
 
 export class Scope<context extends ScopeInferenceContext = any> {
     declare infer: exportsOf<context>

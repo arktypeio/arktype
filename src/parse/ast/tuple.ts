@@ -1,7 +1,7 @@
 import { type } from "../../main.js"
 import type { PropsInput } from "../../nodes/props.js"
 import { TypeNode } from "../../nodes/type.js"
-import type { inferIn, inferOut } from "../../type.js"
+import type { inferIn, inferOut, TypeOptions } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type {
     constructor,
@@ -18,11 +18,8 @@ import type {
 import { parseDefinition } from "../definition.js"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
 import type { InfixOperator, PostfixExpression } from "./ast.js"
-import { parseConfigTuple } from "./config.js"
 import type { Filter, inferFilter } from "./filter.js"
 import { parseNarrowTuple } from "./filter.js"
-import type { inferKeyOfExpression } from "./keyof.js"
-import { parseKeyOfTuple } from "./keyof.js"
 import type { inferMorph, Morph } from "./morph.js"
 import { parseMorphTuple } from "./morph.js"
 
@@ -182,6 +179,21 @@ export type UnparsedTupleExpressionInput = {
 }
 
 export type UnparsedTupleOperator = evaluate<keyof UnparsedTupleExpressionInput>
+
+export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) =>
+    parseDefinition(def[1], ctx).keyOf()
+
+export type inferKeyOfExpression<operandDef, $> = evaluate<
+    keyof inferDefinition<operandDef, $>
+>
+
+export type ConfigTuple<
+    def = unknown,
+    config extends TypeOptions = TypeOptions
+> = readonly [def, ":", config]
+
+export const parseConfigTuple: PostfixParser<":"> = (def, ctx) =>
+    parseDefinition(def[0], ctx)
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
     if (def[2] === undefined) {
