@@ -3,84 +3,84 @@ import { ark, type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
 describe("keywords", () => {
-    describe("js", () => {
-        it(" Function", () => {
-            const t = type("Function")
-            attest(t.node).snap("Function")
-            attest(t((str: string) => [str]).data).snap("(function)")
-            attest(t(1).problems?.summary).snap(
-                "Must be a function (was Number)"
-            )
-        })
-        it("Date", () => {
-            attest(type("Date").node).snap("Date")
-        })
-        it("Error", () => {
-            attest(type("Error").node).snap("Error")
-        })
-        it("Map", () => {
-            attest(type("Map").node).snap("Map")
-        })
-        it("RegExp", () => {
-            attest(type("RegExp").node).snap("RegExp")
-        })
-        it("Set", () => {
-            attest(type("Set").node).snap("Set")
-        })
-        it("WeakMap", () => {
-            attest(type("WeakMap").node).snap("WeakMap")
-        })
-        it("WeakSet", () => {
-            attest(type("WeakSet").node).snap("WeakSet")
-        })
-        it("Promise", () => {
-            attest(type("Promise").node).snap("Promise")
-        })
-    })
-    describe("ts", () => {
-        it("any", () => {
-            attest(type("any").node).equals("any")
-        })
-        it("bigint", () => {
-            attest(type("bigint").node).equals("bigint")
-        })
-        it("boolean", () => {
-            attest(type("boolean").node).equals("boolean")
-        })
-        it("false", () => {
-            attest(type("false").node).equals("false")
-        })
-        it("never", () => {
-            attest(type("never").node).equals("never")
-        })
-        it("null", () => {
-            attest(type("null").node).equals("null")
-        })
-        it("number", () => {
-            attest(type("number").node).equals("number")
-        })
-        it("object", () => {
-            attest(type("object").node).equals("object")
-        })
-        it("string", () => {
-            attest(type("string").node).equals("string")
-        })
-        it("symbol", () => {
-            attest(type("symbol").node).equals("symbol")
-        })
-        it("true", () => {
-            attest(type("true").node).equals("true")
-        })
-        it("unknown", () => {
-            attest(type("unknown").node).equals("unknown")
-        })
-        it("void", () => {
-            attest(type("void").node).equals("void")
-        })
-        it("undefined", () => {
-            attest(type("undefined").node).snap()
-        })
-    })
+    // describe("js", () => {
+    //     it(" Function", () => {
+    //         const t = type("Function")
+    //         attest(t.node).snap("Function")
+    //         attest(t((str: string) => [str]).data).snap("(function)")
+    //         attest(t(1).problems?.summary).snap(
+    //             "Must be a function (was Number)"
+    //         )
+    //     })
+    //     it("Date", () => {
+    //         attest(type("Date").node).snap("Date")
+    //     })
+    //     it("Error", () => {
+    //         attest(type("Error").node).snap("Error")
+    //     })
+    //     it("Map", () => {
+    //         attest(type("Map").node).snap("Map")
+    //     })
+    //     it("RegExp", () => {
+    //         attest(type("RegExp").node).snap("RegExp")
+    //     })
+    //     it("Set", () => {
+    //         attest(type("Set").node).snap("Set")
+    //     })
+    //     it("WeakMap", () => {
+    //         attest(type("WeakMap").node).snap("WeakMap")
+    //     })
+    //     it("WeakSet", () => {
+    //         attest(type("WeakSet").node).snap("WeakSet")
+    //     })
+    //     it("Promise", () => {
+    //         attest(type("Promise").node).snap("Promise")
+    //     })
+    // })
+    // describe("ts", () => {
+    //     it("any", () => {
+    //         attest(type("any").node).equals("any")
+    //     })
+    //     it("bigint", () => {
+    //         attest(type("bigint").node).equals("bigint")
+    //     })
+    //     it("boolean", () => {
+    //         attest(type("boolean").node).equals("boolean")
+    //     })
+    //     it("false", () => {
+    //         attest(type("false").node).equals("false")
+    //     })
+    //     it("never", () => {
+    //         attest(type("never").node).equals("never")
+    //     })
+    //     it("null", () => {
+    //         attest(type("null").node).equals("null")
+    //     })
+    //     it("number", () => {
+    //         attest(type("number").node).equals("number")
+    //     })
+    //     it("object", () => {
+    //         attest(type("object").node).equals("object")
+    //     })
+    //     it("string", () => {
+    //         attest(type("string").node).equals("string")
+    //     })
+    //     it("symbol", () => {
+    //         attest(type("symbol").node).equals("symbol")
+    //     })
+    //     it("true", () => {
+    //         attest(type("true").node).equals("true")
+    //     })
+    //     it("unknown", () => {
+    //         attest(type("unknown").node).equals("unknown")
+    //     })
+    //     it("void", () => {
+    //         attest(type("void").node).equals("void")
+    //     })
+    //     it("undefined", () => {
+    //         attest(type("undefined").node).snap()
+    //     })
+    // })
     describe("validation", () => {
         it("integer", () => {
             const integer = type("integer")

@@ -91,7 +91,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return this.#unary(def, "or")
     }
 
-    morph<transform extends Morph<inferIn<t>>>(
+    morph<transform extends Morph<inferOut<t>>>(
         transform: transform
     ): Type<(In: inferOut<t>) => ReturnType<transform>, $> {
         return this as any
@@ -102,9 +102,9 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     }
 
     // TODO: based on below, should maybe filter morph output if used after
-    filter<predicate extends Filter<inferIn<t>>>(
+    filter<predicate extends Filter<inferOut<t>>>(
         predicate: predicate
-    ): Type<inferPredicate<inferIn<t>, predicate>, $> {
+    ): Type<inferPredicate<inferOut<t>, predicate>, $> {
         return new Type(this.root.constrain("filter", predicate), this.scope)
     }
 

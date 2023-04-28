@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
 import type { Problem } from "../../src/main.js"
 import { ark, scope, type } from "../../src/main.js"
-import { writeUndiscriminatableMorphUnionMessage } from "../../src/parse/ast/union.js"
+import { writeUndiscriminatableMorphUnionMessage } from "../../src/nodes/discriminate.js"
 import type { Type } from "../../src/type.js"
 import { Path } from "../../src/utils/paths.js"
 import { attest } from "../attest/main.js"

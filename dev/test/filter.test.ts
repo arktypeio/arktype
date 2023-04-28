@@ -94,11 +94,12 @@ describe("filter", () => {
             "Must be a palindrome (was 'david')"
         )
     })
-    it("filters the input type of a morph", () => {
+    it("filters the output type of a morph", () => {
+        // TODO: should preserve morph
         const t = type("string")
             .morph((s) => s.length)
-            .filter((s): s is "foo" => s === "foo")
-        attest(t).typed as Type<(In: "foo") => number, Ark>
+            .filter((n): n is 5 => n === 5)
+        attest(t).typed as Type<(In: "foo") => 5, Ark>
         attest(t.root.key).snap()
     })
 })
