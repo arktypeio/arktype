@@ -90,9 +90,7 @@ export const getAttestConfig = (): AttestConfig => {
         benchFormat: {
             noInline: argsToCheck.includes("--no-inline") || noWrite,
             noExternal: argsToCheck.includes("--no-external") || noWrite,
-            path:
-                checkArgsForParam(argsToCheck, "--benchmarksPath") ||
-                join(process.cwd(), "benchmarks.json")
+            path: checkArgsForParam(argsToCheck, "--benchmarksPath")
         },
         tsconfig,
         preserveCache: true,

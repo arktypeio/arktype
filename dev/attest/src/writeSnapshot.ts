@@ -16,7 +16,7 @@ import { getFileKey } from "./utils.js"
 export type BenchFormat = {
     noInline?: boolean
     noExternal?: boolean
-    path?: string
+    path?: string | undefined
 }
 
 export type ExternalSnapshotArgs = SnapshotArgs & {
@@ -87,9 +87,10 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
         return
     }
     const benchmarksPath = queuedUpdates[0].benchFormat.path
-    const benchData: BenchData = existsSync(benchmarksPath)
-        ? readJson(benchmarksPath)
-        : {}
+    const benchData: BenchData =
+        benchmarksPath && existsSync(benchmarksPath)
+            ? readJson(benchmarksPath)
+            : {}
     for (const update of queuedUpdates) {
         const originalArgs = update.snapCall.getArguments()
         const previousValue = originalArgs.length
@@ -100,7 +101,7 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
             if (!update.benchFormat.noInline) {
                 writeUpdateToFile(originalArgs, update)
             }
-            if (!update.benchFormat.noExternal) {
+            if (!update.benchFormat.noExternal && benchmarksPath) {
                 writeJson(benchmarksPath, benchData)
             }
         } else {
