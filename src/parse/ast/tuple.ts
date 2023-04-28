@@ -7,6 +7,7 @@ import type {
     constructor,
     error,
     evaluate,
+    isAny,
     List,
     mutable
 } from "../../utils/generics.js"
@@ -71,18 +72,51 @@ type validateTupleLiteral<
     $,
     result extends unknown[] = []
 > = def extends [infer head, ...infer tail]
-    ? validateTupleLiteral<tail, $, [...result, validateTupleElement<head, $>]>
+    ? validateTupleLiteral<
+          tail,
+          $,
+          [
+              ...result,
+              head extends variadicExpression<infer operand>
+                  ? validateDefinition<operand, $> extends infer syntacticResult
+                      ? syntacticResult extends operand
+                          ? semanticallyValidateRestElement<
+                                operand,
+                                $
+                            > extends infer semanticResult
+                              ? semanticResult extends operand
+                                  ? result[number] &
+                                        `...${string}` extends never
+                                      ? head
+                                      : doubleRestMessage
+                                  : semanticResult
+                              : never
+                          : syntacticResult
+                      : never
+                  : validateDefinition<head, $>
+          ]
+      >
     : result
 
-type validateTupleElement<def, $> = def extends variadicExpression<
-    infer operand
->
-    ? validateDefinition<operand, $> extends infer result
-        ? result extends error
-            ? result
-            : def
-        : never
-    : validateDefinition<def, $>
+type semanticallyValidateRestElement<
+    operand extends string,
+    $
+> = inferDefinition<operand, $> extends infer result
+    ? result extends never
+        ? writeNonArrayRestMessage<operand>
+        : isAny<result> extends true
+        ? writeNonArrayRestMessage<operand>
+        : result extends readonly unknown[]
+        ? operand
+        : writeNonArrayRestMessage<operand>
+    : never
+
+//TODO: tests const z = type(["...number[]", "string", "...boolean[]"])
+
+type writeNonArrayRestMessage<operand extends string> =
+    `Rest element '${operand}' must be an array.`
+
+type doubleRestMessage = `A tuple may contain at most one rest element.`
 
 type inferTupleLiteral<
     def extends List,

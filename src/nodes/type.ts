@@ -288,7 +288,7 @@ export class TypeNode<t = unknown> extends Node<
         return this
     }
 
-    toArray() {
+    toArray(): TypeNode<t[]> {
         return TypeNode.from({
             basis: Array,
             props: {
@@ -296,7 +296,7 @@ export class TypeNode<t = unknown> extends Node<
                 // TODO: string keys etc.?
                 indexed: [[{ basis: "number" }, this]]
             }
-        }) as TypeNode<t[]>
+        }) as any
     }
 }
 
