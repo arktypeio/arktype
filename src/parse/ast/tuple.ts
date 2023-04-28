@@ -1,4 +1,3 @@
-import { type } from "../../main.js"
 import type { PropsInput } from "../../nodes/props.js"
 import { TypeNode } from "../../nodes/type.js"
 import type { inferIn, inferOut, TypeConfig } from "../../type.js"
@@ -85,10 +84,9 @@ type validateTupleLiteral<
                                 $
                             > extends infer semanticResult
                               ? semanticResult extends operand
-                                  ? result[number] &
-                                        `...${string}` extends never
+                                  ? tail extends []
                                       ? head
-                                      : doubleRestMessage
+                                      : prematureRestMessage
                                   : semanticResult
                               : never
                           : syntacticResult
@@ -111,12 +109,11 @@ type semanticallyValidateRestElement<
         : writeNonArrayRestMessage<operand>
     : never
 
-//TODO: tests const z = type(["...number[]", "string", "...boolean[]"])
-
 type writeNonArrayRestMessage<operand extends string> =
     `Rest element '${operand}' must be an array.`
 
-type doubleRestMessage = `A tuple may contain at most one rest element.`
+type prematureRestMessage =
+    `Rest elements are only allowed at the end of a tuple`
 
 type inferTupleLiteral<
     def extends List,

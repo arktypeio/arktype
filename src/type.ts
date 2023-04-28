@@ -108,8 +108,6 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return new Type(this.root.constrain("filter", predicate), this.scope)
     }
 
-    // TODO: how should ordering work with morphs? if morphs then array, it should be array of morphs?
-    // so order does matter.
     toArray(): Type<t[], $> {
         return new Type(this.root.toArray(), this.scope)
     }
