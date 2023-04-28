@@ -1,10 +1,9 @@
 import { basename, dirname, isAbsolute, join } from "node:path"
 import type { CallExpression, Project, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { readJson } from "../../runtime/main.js"
-import { addListener } from "../../runtime/shell.js"
-import { getAttestConfig } from "./config.js"
-import { getRealTsMorphProject } from "./type/getTsMorphProject.js"
+import { readJson } from "./main.js"
+import { addListener } from "./shell.js"
+import { getTsMorphProject } from "./type/getTsMorphProject.js"
 import { getTsNodeAtPosition } from "./type/getTsNodeAtPos.js"
 import type { SourcePosition } from "./utils.js"
 import { positionToString } from "./utils.js"
@@ -76,9 +75,8 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
     baselinePath,
     benchFormat
 }: SnapshotArgs) => {
-    const { transient } = getAttestConfig()
     const snapCall = findCallExpressionAncestor(
-        getRealTsMorphProject(),
+        getTsMorphProject(),
         position,
         snapFunctionName
     )
@@ -89,8 +87,7 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
         snapFunctionName,
         newArgText,
         baselinePath,
-        benchFormat,
-        transient
+        benchFormat
     })
 }
 
@@ -100,7 +97,6 @@ export type QueuedUpdate = {
     snapFunctionName: string
     newArgText: string
     baselinePath: string[] | undefined
-    transient: boolean
     benchFormat: Required<BenchFormat>
 }
 

@@ -1,6 +1,6 @@
 import { performance } from "node:perf_hooks"
-import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.js"
-import { caller } from "../../../runtime/main.js"
+import { chainableNoOpProxy } from "arktype/internal/utils/chainableNoOpProxy.js"
+import { caller } from "../main.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
 import { unhandledExceptionMessages } from "./bench.js"
@@ -227,10 +227,11 @@ export class BenchAssertions<
 
     median(baseline?: Measure<TimeUnit>) {
         this.ctx.lastSnapCallPosition = caller()
-        return this.createStatMethod(
+        const assertions = this.createStatMethod(
             "median",
             baseline
         ) as any as ReturnedAssertions
+        return assertions
     }
 
     mean(baseline?: Measure<TimeUnit>) {

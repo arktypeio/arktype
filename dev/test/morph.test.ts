@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
-import type { Problem, Type } from "../../src/main.js"
-import { ark, intersection, morph, scope, type, union } from "../../src/main.js"
 import { writeUndiscriminatableMorphUnionMessage } from "../../src/parse/ast/union.js"
-import { attest } from "../attest/main.js"
+import { ark, intersection, morph, scope, type, union } from "#arktype"
+import type { Problem, Type } from "#arktype"
+import { attest } from "#attest"
 
 describe("morph", () => {
     it("base", () => {
@@ -371,7 +371,7 @@ describe("morph", () => {
             }).compile()
         })
             .throws(writeUndiscriminatableMorphUnionMessage("key"))
-            .type.errors(writeUndiscriminatableMorphUnionMessage("/"))
+            .types.errors(writeUndiscriminatableMorphUnionMessage("/"))
     })
     it("helper morph intersection", () => {
         attest(() =>

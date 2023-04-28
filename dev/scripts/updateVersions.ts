@@ -1,13 +1,14 @@
 /** Changesets doesn't understand version suffixes like -alpha by default, so we use this to preserve them */
 import { readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
+
 import {
     fromPackageRoot,
     readJson,
     readPackageJson,
-    shell,
     writeJson
-} from "../runtime/main.js"
+} from "../attest/src/fs.js"
+import { shell } from "../attest/src/shell.js"
 import { repoDirs } from "./common.js"
 import { docgen } from "./docgen/main.js"
 

@@ -1,12 +1,21 @@
-import { renameSync, rmSync } from "node:fs"
+import {
+    cpSync,
+    readFileSync,
+    renameSync,
+    rmSync,
+    writeFileSync
+} from "node:fs"
 import { join } from "node:path"
 import * as process from "node:process"
 import {
+    fromCwd,
+    fromPackageRoot,
     getSourceFilePaths,
     readJson,
     shell,
+    walkPaths,
     writeJson
-} from "../runtime/main.js"
+} from "../attest/src/main.js"
 import { repoDirs } from "./common.js"
 
 const isTestBuild = process.argv.includes("--test")
@@ -65,34 +74,73 @@ const swc = (kind: "mjs" | "cjs") => {
         cmd += inFiles.join(" ")
         shell(cmd)
     } else {
-        buildWithTests(kind, kindOutDir)
+        buildWithTests({ kind, kindOutDir })
     }
     writeJson(join(kindOutDir, "package.json"), {
-        type: kind === "cjs" ? "commonjs" : "module"
+        type: kind === "cjs" ? "commonjs" : "module",
+        mocha: JSON.parse(readFileSync(fromCwd("package.json"), "utf-8")).mocha,
+        imports: {
+            "#arktype": "./main.js",
+            "#attest": "./dev/attest/main.js"
+        }
     })
 }
 
-const buildWithTests = (kind: string, kindOutDir: string) => {
-    const cjsAddon = kind === "cjs" ? "-C module.type=commonjs" : ""
+type TestBuildContext = { kind: string; kindOutDir: string }
+
+const buildWithTests = (testBuildContext: TestBuildContext) => {
+    const cjsAddon =
+        testBuildContext.kind === "cjs" ? "-C module.type=commonjs" : ""
     const paths = {
-        src: ["src"],
-        dev: [
-            "dev/attest/main.ts",
-            "dev/attest/cli.ts",
-            "dev/attest/src",
-            "dev/runtime",
-            "dev/scripts",
-            "dev/examples",
-            "dev/test"
-        ]
+        "./": ["src"],
+        dev: [join("dev", "test")]
     }
+
     for (const [baseDir, dirsToInclude] of Object.entries(paths)) {
         shell(
-            `pnpm swc ${cjsAddon} ${dirsToInclude.join(
-                " "
-            )} -d ${kindOutDir}/${baseDir} -C jsc.target=es2020 -q`
+            `pnpm swc ${cjsAddon} ${dirsToInclude.join(" ")} -d ${
+                testBuildContext.kindOutDir
+            }/${baseDir} -C jsc.target=es2020 -q`
         )
+    }
+    transformTestBuildOutput(testBuildContext)
+}
+
+const moveRequiredDirsToTestBuildDist = ({
+    kind,
+    kindOutDir
+}: TestBuildContext) => {
+    const attestBasePath = fromPackageRoot("dev", "attest")
+    const outputBasePath = fromPackageRoot(kindOutDir)
+    const outputNodeModulesPath = join(outputBasePath, "node_modules")
+    const inputToOutputPaths = [
+        {
+            in: join(attestBasePath, "dist", kind),
+            out: join(outputBasePath, "dev", "attest")
+        },
+        {
+            in: join(attestBasePath, "node_modules"),
+            out: outputNodeModulesPath
+        }
+    ]
+    for (const pathMapping of inputToOutputPaths) {
+        cpSync(pathMapping.in, pathMapping.out, { recursive: true })
     }
 }
 
+const transformTestBuildOutput = (testBuildContext: TestBuildContext) => {
+    const testPaths = walkPaths(
+        join(testBuildContext.kindOutDir, "dev", "test")
+    ).filter((path) => new RegExp("[.]test[.]").test(path))
+
+    for (const path of testPaths) {
+        const data = readFileSync(path, "utf-8").replaceAll(
+            join("..", "..", "src"),
+            join("..", "..")
+        )
+        writeFileSync(path, data)
+    }
+
+    moveRequiredDirsToTestBuildDist(testBuildContext)
+}
 arktypeTsc()

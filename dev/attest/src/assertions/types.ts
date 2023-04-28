@@ -1,4 +1,4 @@
-import type { snapshot } from "../../../../src/utils/serialize.js"
+import type { snapshot } from "arktype/internal/utils/serialize.js"
 
 export type RootAssertions<
     T,
@@ -46,7 +46,7 @@ export type ValueFromTypeAssertion<
 > = InferredAssertions<[expected: Expected], false, Chained>
 
 export type TypeAssertionsRoot = {
-    type: TypeAssertionProps
+    types: TypeAssertionProps
     typed: unknown
 }
 

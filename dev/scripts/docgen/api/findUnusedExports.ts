@@ -2,7 +2,7 @@ import { existsSync } from "node:fs"
 import { join, relative } from "node:path"
 import type { ExportedDeclarations, Node, SourceFile, ts } from "ts-morph"
 import { Project, SyntaxKind } from "ts-morph"
-import { findPackageRoot, readPackageJson } from "../../../runtime/main.js"
+import { findPackageRoot, readPackageJson } from "../../../attest/src/fs.js"
 import { repoDirs } from "../../common.js"
 import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
 
@@ -15,7 +15,7 @@ const project = new Project({
 })
 
 const unusedExports: Record<string, string[]> = {}
-const ignorePaths: string[] = ["dev/examples", "dist"]
+const ignorePaths: string[] = ["dev/test/examples", "dist"]
 const exportAllRenamedRegex = /\* as /
 
 export const findUnusedExports = () => {

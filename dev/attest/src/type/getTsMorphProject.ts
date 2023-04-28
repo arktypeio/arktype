@@ -34,36 +34,18 @@ export const forceCreateTsMorphProject = ({
     if (preloadFiles) {
         if (useRealFs) {
             project.addSourceFilesFromTsConfig(config.tsconfig!)
-        } else {
-            if (!config.typeSources) {
-                throw Error(`Can't use virtual project without typeSources`)
-            }
-            for (const [path, contents] of config.typeSources) {
-                project.createSourceFile(path, contents, { overwrite: true })
-            }
         }
     }
     return project
 }
 
-let __virtualProjectCache: undefined | Project
-export const getVirtualTsMorphProject = () => {
-    if (!__virtualProjectCache) {
-        __virtualProjectCache = forceCreateTsMorphProject({
-            useRealFs: false,
-            preloadFiles: true
-        })
-    }
-    return __virtualProjectCache
-}
-
-let __realProjectCache: undefined | Project
-export const getRealTsMorphProject = () => {
-    if (!__realProjectCache) {
-        __realProjectCache = forceCreateTsMorphProject({
+let __projectCache: undefined | Project
+export const getTsMorphProject = () => {
+    if (!__projectCache) {
+        __projectCache = forceCreateTsMorphProject({
             useRealFs: true,
             preloadFiles: true
         })
     }
-    return __realProjectCache
+    return __projectCache
 }

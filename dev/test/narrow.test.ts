@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
-import type { Type } from "../../src/main.js"
-import { type } from "../../src/main.js"
 import type { assertEqual } from "../../src/utils/generics.js"
-import { attest } from "../attest/main.js"
+import { type } from "#arktype"
+import type { Type } from "#arktype"
+import { attest } from "#attest"
 
 describe("narrow", () => {
     it("implicit problem", () => {
@@ -70,7 +70,7 @@ describe("narrow", () => {
                 // @ts-expect-error
                 (data: number | string[]) => !!data
             ])
-        }).type.errors("Type 'boolean' is not assignable to type 'string'.")
+        }).types.errors("Type 'boolean' is not assignable to type 'string'.")
     })
     it("distributed", () => {
         const distributedBlacklist = {
@@ -111,7 +111,9 @@ describe("narrow", () => {
                     string: (data) => data === ""
                 }
             ])
-        }).type.errors("Type 'boolean[]' is not assignable to type 'string[]'.")
+        }).types.errors(
+            "Type 'boolean[]' is not assignable to type 'string[]'."
+        )
     })
     it("narrow problem", () => {
         const palindrome = type([

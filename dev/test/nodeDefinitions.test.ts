@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
-import type { Type } from "../../src/main.js"
-import { scope, type } from "../../src/main.js"
-import { attest } from "../attest/main.js"
+import type { Type } from "#arktype"
+import { scope, type } from "#arktype"
+import { attest } from "#attest"
 
 describe("node definitions", () => {
     it("base", () => {
@@ -131,7 +131,7 @@ describe("node definitions", () => {
                 }
             }
         ])
-        attest(t.infer).type.toString("Date")
+        attest(t.infer).types.toString("Date")
     })
     it("helper", () => {
         const t = type.from({ string: true })
@@ -142,7 +142,7 @@ describe("node definitions", () => {
         // NOTE: these won't throw at runtime because nodes are assumed valid
         it("bad shallow reference", () => {
             // @ts-expect-error
-            attest(() => type(["node", "whoops"])).type.errors(
+            attest(() => type(["node", "whoops"])).types.errors(
                 `Type 'string' is not assignable to type 'ResolvedNode<PrecompiledDefaults>'`
             )
         })
@@ -159,7 +159,7 @@ describe("node definitions", () => {
                         }
                     }
                 ])
-            ).type.errors(
+            ).types.errors(
                 `Type '"whoops"' is not assignable to type 'Prop<PrecompiledDefaults, Node<PrecompiledDefaults>>'`
             )
         })
@@ -174,13 +174,13 @@ describe("node definitions", () => {
                         }
                     }
                 ])
-            ).type.errors(
+            ).types.errors(
                 `'regex' does not exist in type 'CollapsibleList<Branch<"number", PrecompiledDefaults>>'`
             )
         })
         it("helper error", () => {
             // @ts-expect-error
-            attest(() => type.from({ number: { regex: /.*/ } })).type.errors(
+            attest(() => type.from({ number: { regex: /.*/ } })).types.errors(
                 `'regex' does not exist in type 'CollapsibleList<Branch<"number", PrecompiledDefaults>>'`
             )
         })

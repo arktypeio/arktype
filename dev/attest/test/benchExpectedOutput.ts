@@ -1,4 +1,4 @@
-import { bench } from "../main.js"
+import { bench } from "../src/main.js"
 
 const fakeCallOptions = {
     until: { count: 2 },
@@ -36,7 +36,7 @@ type MakeComplexType<S extends string> = S extends `${infer head}${infer tail}`
 
 bench("bench type", () => {
     return [] as any as MakeComplexType<"defenestration">
-}).type([177, "instantiations"])
+}).types([169, "instantiations"])
 
 bench(
     "bench call and type",
@@ -48,4 +48,4 @@ bench(
     fakeCallOptions
 )
     .mean([2, "ms"])
-    .type([357, "instantiations"])
+    .types([349, "instantiations"])

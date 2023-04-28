@@ -1,12 +1,12 @@
 import { describe, it } from "mocha"
-import { type } from "../../src/main.js"
 import type { ResolvedNode } from "../../src/nodes/node.js"
 import { writeUnterminatedEnclosedMessage } from "../../src/parse/string/shift/operand/enclosed.js"
 import {
     writeExpressionExpectedMessage,
     writeUnresolvableMessage
 } from "../../src/parse/string/shift/operand/unenclosed.js"
-import { attest } from "../attest/main.js"
+import { type } from "#arktype"
+import { attest } from "#attest"
 
 describe("string", () => {
     it("errors on empty string", () => {
@@ -23,7 +23,7 @@ describe("string", () => {
             type("string | boo lean[]")
         )
             .throws(writeUnresolvableMessage("boo"))
-            .type.errors("string | boolean")
+            .types.errors("string | boolean")
     })
     it("unterminated string", () => {
         // @ts-expect-error

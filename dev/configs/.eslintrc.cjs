@@ -145,6 +145,7 @@ module.exports = defineConfig({
          */
         {
             files: ["**/src/**"],
+
             rules: {
                 /**
                  * In tests and scripts, we can safely import from the monorepo's root devDependencies,
@@ -161,7 +162,7 @@ module.exports = defineConfig({
             }
         },
         {
-            files: ["./dev/examples/*.ts"],
+            files: ["./dev/test/examples/*.ts"],
             rules: {
                 "@typescript-eslint/no-unused-vars": "off"
             }

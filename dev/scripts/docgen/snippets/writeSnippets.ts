@@ -2,9 +2,9 @@ import {
     fromPackageRoot,
     readFile,
     readJson,
-    shell,
     writeFile
-} from "../../../runtime/main.js"
+} from "../../../attest/src/fs.js"
+import { shell } from "../../../attest/src/shell.js"
 import type { SnippetsByPath } from "./extractSnippets.js"
 import { referenceTokens } from "./snipTokens.js"
 
