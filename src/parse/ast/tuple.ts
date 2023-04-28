@@ -1,3 +1,4 @@
+import { type } from "../../main.js"
 import type { PropsInput } from "../../nodes/props.js"
 import { TypeNode } from "../../nodes/type.js"
 import type { inferIn, inferOut } from "../../type.js"
@@ -57,6 +58,8 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     })
 }
 
+const myType = type(["string", "...object[]"])
+
 // TODO: unify
 type InfixExpression = [unknown, InfixOperator, ...unknown[]]
 
@@ -68,13 +71,42 @@ export type validateTuple<def extends List, $> = def extends IndexZeroExpression
     ? validateInfixExpression<def, $>
     : validateTupleLiteral<def, $>
 
-export type validateTupleLiteral<
+type validateTupleLiteral<
     def extends List,
     $,
     result extends unknown[] = []
 > = def extends [infer head, ...infer tail]
-    ? validateTupleLiteral<tail, $, [...result, validateDefinition<head, $>]>
+    ? validateTupleLiteral<tail, $, [...result, validateTupleElement<head, $>]>
     : result
+
+type validateTupleElement<def, $> = def extends variadicExpression<
+    infer operand
+>
+    ? validateDefinition<operand, $> extends infer result
+        ? result extends error
+            ? result
+            : def
+        : never
+    : validateDefinition<def, $>
+
+type inferTupleLiteral<
+    def extends List,
+    $,
+    result extends unknown[] = []
+> = def extends [infer head, ...infer tail]
+    ? inferDefinition<
+          head extends variadicExpression<infer operand> ? operand : head,
+          $
+      > extends infer element
+        ? head extends variadicExpression
+            ? element extends readonly unknown[]
+                ? inferTupleLiteral<tail, $, [...result, ...element]>
+                : never
+            : inferTupleLiteral<tail, $, [...result, element]>
+        : never
+    : result
+
+type variadicExpression<operandDef extends string = string> = `...${operandDef}`
 
 type validatePrefixExpression<
     def extends IndexZeroExpression,
@@ -91,6 +123,35 @@ type validatePrefixExpression<
               ? validateDefinition<def[1], $>
               : never
       ]
+
+export type inferTuple<def extends List, $> = def extends TupleExpression
+    ? inferTupleExpression<def, $>
+    : inferTupleLiteral<def, $>
+
+export type inferTupleExpression<
+    def extends TupleExpression,
+    $
+> = def[1] extends "[]"
+    ? inferDefinition<def[0], $>[]
+    : def[1] extends "&"
+    ? inferDefinition<def[0], $> & inferDefinition<def[2], $>
+    : def[1] extends "|"
+    ? inferDefinition<def[0], $> | inferDefinition<def[2], $>
+    : def[1] extends "=>"
+    ? inferFilter<def[0], def[2], $>
+    : def[1] extends "|>"
+    ? inferMorph<def[0], def[2], $>
+    : def[1] extends ":"
+    ? inferDefinition<def[0], $>
+    : def[0] extends "==="
+    ? def[1]
+    : def[0] extends "instanceof"
+    ? def[1] extends constructor<infer t>
+        ? t
+        : never
+    : def[0] extends "keyof"
+    ? inferKeyOfExpression<def[1], $>
+    : never
 
 type validatePostfixExpression<def extends PostfixExpression, $> = [
     validateDefinition<def[0], $>,
@@ -121,37 +182,6 @@ export type UnparsedTupleExpressionInput = {
 }
 
 export type UnparsedTupleOperator = evaluate<keyof UnparsedTupleExpressionInput>
-
-export type inferTuple<def extends List, $> = def extends TupleExpression
-    ? inferTupleExpression<def, $>
-    : {
-          [i in keyof def]: inferDefinition<def[i], $>
-      }
-
-export type inferTupleExpression<
-    def extends TupleExpression,
-    $
-> = def[1] extends "[]"
-    ? inferDefinition<def[0], $>[]
-    : def[1] extends "&"
-    ? inferDefinition<def[0], $> & inferDefinition<def[2], $>
-    : def[1] extends "|"
-    ? inferDefinition<def[0], $> | inferDefinition<def[2], $>
-    : def[1] extends "=>"
-    ? inferFilter<def[0], def[2], $>
-    : def[1] extends "|>"
-    ? inferMorph<def[0], def[2], $>
-    : def[1] extends ":"
-    ? inferDefinition<def[0], $>
-    : def[0] extends "==="
-    ? def[1]
-    : def[0] extends "instanceof"
-    ? def[1] extends constructor<infer t>
-        ? t
-        : never
-    : def[0] extends "keyof"
-    ? inferKeyOfExpression<def[1], $>
-    : never
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
     if (def[2] === undefined) {

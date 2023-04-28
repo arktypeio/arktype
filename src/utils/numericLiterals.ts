@@ -1,10 +1,10 @@
 import { throwParseError } from "./errors.js"
 
-export type BigintLiteral<Value extends bigint = bigint> = `${Value}n`
+export type BigintLiteral<value extends bigint = bigint> = `${value}n`
 
-export type NumberLiteral<Value extends number = number> = `${Value}`
+export type NumberLiteral<value extends number = number> = `${value}`
 
-export type IntegerLiteral<Value extends bigint = bigint> = `${Value}`
+export type IntegerLiteral<value extends bigint = bigint> = `${value}`
 
 /**
  * The goal of the number literal and bigint literal regular expressions is to:

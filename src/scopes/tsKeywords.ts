@@ -2,24 +2,20 @@ import { TypeNode } from "../nodes/type.js"
 import type { Infer } from "../parse/definition.js"
 import { scope } from "../scope.js"
 
-/**
- * @keywords keywords: {"any": "any",
-        "bigint": "a bigint",
-        "boolean": "a boolean",
-        "false": "false",
-        "never": "never",
-        "null": "null",
-        "number": "a number",
-        "object": "an object",
-        "string": "a string",
-        "symbol": "a symbol",
-        "true": "true",
-        "unknown": "unknown",
-        "void": "void",
-        "undefined": "undefined"}
- * @docgenScope
- * @docgenTable
- */
+// "bigint": "a bigint",
+// "boolean": "a boolean",
+// "false": "false",
+// "never": "never",
+// "null": "null",
+// "number": "a number",
+// "object": "an object",
+// "string": "a string",
+// "symbol": "a symbol",
+// "true": "true",
+// "unknown": "unknown",
+// "void": "void",
+// "undefined": "undefined"
+
 export const tsKeywordsScope = scope(
     {
         any: "unknown" as Infer<any>,

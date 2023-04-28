@@ -1,10 +1,6 @@
 import { TypeNode } from "../nodes/type.js"
 import { scope } from "../scope.js"
 
-/**
- * @docgenScope
- * @docgenTable
- */
 export const jsObjectsScope = scope(
     {
         Function: TypeNode.from({ basis: Function }),

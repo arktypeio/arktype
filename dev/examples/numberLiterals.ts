@@ -1,7 +1,7 @@
 import { type } from "../../src/main.js"
 
-const min: number = 2
-const max: number = 2
+const min = 2 as number
+const max = 2 as number
 
 // Non-narrowed number literals are allowed in expressions where they don't affect the inferred type.
 const dynamicBounded = type(`${min}<number<${max}`)
@@ -12,7 +12,7 @@ const dynamicBounded = type(`${min}<number<${max}`)
 const staticLiteral = type("2")
 //    ^?
 
-// @ts-expect-error
+// TODO: Test (doesn't work with 4.9?) (should be // @ts-expect-error)
 const dynamicLiteral = type(`${min}`)
 
 // Or if you define a malformed literal that TypeScript won't narrow:

@@ -217,6 +217,7 @@ describe("morph", () => {
             a: type("string").morph((s) => s.length),
             b: () => $.type({ a: "a" }).morph(({ a }) => a === 0)
         })
+
         const types = $.compile()
         attest(types.b).typed as Type<(In: { a: string }) => boolean>
         // attest(types.b.node).snap({

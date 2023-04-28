@@ -44,7 +44,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
             | undefined
     }
 
-    static from<const def extends PredicateDefinition>(def: def) {
+    static from<def extends PredicateDefinition>(def: def) {
         const rules: RuleNodes = [new BasisNode(def.basis)]
         // TODO: validate input
         if (def.divisor) {
