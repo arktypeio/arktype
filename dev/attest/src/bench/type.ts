@@ -6,7 +6,7 @@ import { findCallExpressionAncestor } from "../snapshot.js"
 import {
     forceCreateTsMorphProject,
     getTsMorphProject
-} from "../type/getTsMorphProject.js"
+} from "../type/cacheAssertions.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchContext } from "./bench.js"
 import type { Measure, MeasureComparison } from "./measure/measure.js"
@@ -48,10 +48,7 @@ const emptyBenchFn = (statement: Node<ts.ExpressionStatement>) => {
 }
 
 const getInstantiationsWithFile = (fileText: string, fakePath: string) => {
-    const isolatedProject = forceCreateTsMorphProject({
-        useRealFs: false,
-        preloadFiles: false
-    })
+    const isolatedProject = forceCreateTsMorphProject()
     const config = getAttestConfig()
     for (const [path, contents] of config.typeSources) {
         if (!path.startsWith("src") && path !== "main.ts") {

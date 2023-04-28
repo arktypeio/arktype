@@ -1,6 +1,6 @@
 import { getAttestConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
-import { getTsMorphProject } from "./getTsMorphProject.js"
+import { getTsMorphProject } from "./cacheAssertions.js"
 import type { AssertionData } from "./internal/main.js"
 import {
     getAssertionsInFile,

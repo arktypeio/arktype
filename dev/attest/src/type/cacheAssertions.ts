@@ -1,21 +1,23 @@
 import { mkdirSync, rmSync } from "node:fs"
+import { Project } from "ts-morph"
 import { getAttestConfig } from "../config.js"
 import { writeJson } from "../main.js"
 import { writeCachedInlineSnapshotUpdates } from "../writeSnapshot.js"
 import { getAssertionsByFile } from "./analysis.js"
 
-export type SetupCacheOptions = {
-    forcePrecache?: boolean
+export const forceCreateTsMorphProject = () =>
+    new Project({ compilerOptions: { diagnostics: true } })
+
+let __projectCache: undefined | Project
+export const getTsMorphProject = () => {
+    if (!__projectCache) {
+        __projectCache = forceCreateTsMorphProject()
+    }
+    return __projectCache
 }
 
-export const cacheAssertions = ({ forcePrecache }: SetupCacheOptions = {}) => {
+export const cacheAssertions = () => {
     const config = getAttestConfig()
-    if (!forcePrecache) {
-        throw new Error(
-            `You must set 'precached' to true in the 'assert' section ` +
-                ` of your re.json config to enable precaching.`
-        )
-    }
     rmSync(config.cacheDir, { recursive: true, force: true })
     mkdirSync(config.cacheDir)
     mkdirSync(config.snapCacheDir)

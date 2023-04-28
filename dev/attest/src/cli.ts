@@ -14,9 +14,9 @@ import {
 } from "./main.js"
 
 const cli = () => {
-    const attest = new Command()
+    const attest = new Command("attest")
     const packageVersion = "0.0.0"
-    const description = "ArkType Testing"
+    const description = "⛵ Type-first testing"
 
     attest
         .version(packageVersion)
@@ -138,7 +138,7 @@ const testRunner = (options: OptionValues, processArgs: string[]) => {
         } else {
             console.log(`⏳ attest: Analyzing type assertions...`)
             const cacheStart = Date.now()
-            cacheAssertions({ forcePrecache: true })
+            cacheAssertions()
             const cacheSeconds = (Date.now() - cacheStart) / 1000
             console.log(
                 `✅ attest: Finished caching type assertions in ${cacheSeconds} seconds.\n`
@@ -153,7 +153,7 @@ const testRunner = (options: OptionValues, processArgs: string[]) => {
         })
         const runnerSeconds = (Date.now() - runnerStart) / 1000
         console.log(
-            `✅ attest: npx ${options.runner} completed in ${runnerSeconds} seconds.\n`
+            `✅ attest: ${options.runner} completed in ${runnerSeconds} seconds.\n`
         )
     } catch (error) {
         processError = error
@@ -164,4 +164,5 @@ const testRunner = (options: OptionValues, processArgs: string[]) => {
         throw processError
     }
 }
+
 cli()

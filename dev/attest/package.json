@@ -42,6 +42,7 @@
         ]
     },
     "scripts": {
-        "build": "tsx ../scripts/build.ts"
+        "build": "tsx ../scripts/build.ts",
+        "test": "tsx src/cli.ts --runner mocha"
     }
 }
