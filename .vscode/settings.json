@@ -20,7 +20,7 @@
     "prettier.ignorePath": "dev/configs/.prettierignore",
     "mochaExplorer.nodeArgv": [
         "--loader=tsx",
-        "no-warnings=ExperimentalWarning"
+        "--no-warnings=ExperimentalWarning"
     ],
     "mochaExplorer.env": {
         "ARKTYPE_CHECK_CMD": "--skipTypes"
