@@ -101,15 +101,15 @@ export type bind<$, thisDef> = $ & {
     this: inferDefinition<thisDef, bind<$, thisDef>>
 }
 
-type exportsOf<context extends ScopeInferenceContext> = context extends [
+type exportsOf<ctx extends ScopeInferenceContext> = ctx extends [
     infer exports,
     ...unknown[]
 ]
     ? exports
-    : context
+    : ctx
 
-type localsOf<context extends ScopeInferenceContext> = context extends List
-    ? context["1"] & (context["2"] extends false ? {} : Ark)
+type localsOf<ctx extends ScopeInferenceContext> = ctx extends List
+    ? ctx["1"] & (ctx["2"] extends false ? {} : Ark)
     : Ark
 
 type mergeSpaces<scopes, base extends Dict = {}> = scopes extends readonly [
@@ -148,11 +148,10 @@ export type Space<exports = Dict> = {
     [k in keyof exports]: Type<exports[k]>
 }
 
-type resolutions<context extends ScopeInferenceContext> = localsOf<context> &
-    exportsOf<context>
+type resolutions<ctx extends ScopeInferenceContext> = localsOf<ctx> &
+    exportsOf<ctx>
 
-type name<context extends ScopeInferenceContext> = keyof resolutions<context> &
-    string
+type name<ctx extends ScopeInferenceContext> = keyof resolutions<ctx> & string
 
 export const isConfigTuple = (def: unknown): def is ConfigTuple =>
     Array.isArray(def) && def[1] === ":"
