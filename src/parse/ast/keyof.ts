@@ -9,8 +9,3 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) =>
 export type inferKeyOfExpression<operandDef, $> = evaluate<
     keyof inferDefinition<operandDef, $>
 >
-
-export type validateKeyOfExpression<operandDef, $> = readonly [
-    "keyof",
-    validateDefinition<operandDef, $>
-]

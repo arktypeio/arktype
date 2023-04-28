@@ -107,7 +107,7 @@ export class DynamicState {
         this.branches = topBranchState
     }
 
-    pushRootToBranch(token: Scanner.BranchToken) {
+    pushRootToBranch(token: "|" | "&") {
         this.assertRangeUnset()
         this.branches.intersection =
             this.branches.intersection?.and(this.ejectRoot()) ??

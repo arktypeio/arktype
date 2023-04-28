@@ -85,14 +85,7 @@ export namespace Scanner {
 
     export type TerminatingChar = keyof typeof Scanner.terminatingChars
 
-    export const branchTokens = {
-        "|": true,
-        "&": true
-    } as const
-
-    export type BranchToken = keyof typeof branchTokens
-
-    export type InfixToken = BranchToken | Comparator | "%" | ":" | "=>" | "|>"
+    export type InfixToken = Comparator | "|" | "&" | "%" | ":" | "=>" | "|>"
 
     export type PostfixToken = "[]"
 

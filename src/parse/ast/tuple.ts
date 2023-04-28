@@ -1,8 +1,8 @@
 import type { PropsInput } from "../../nodes/props.js"
 import { TypeNode } from "../../nodes/type.js"
+import type { inferIn, inferOut } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type {
-    conform,
     constructor,
     error,
     evaluate,
@@ -16,13 +16,13 @@ import type {
 } from "../definition.js"
 import { parseDefinition } from "../definition.js"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
-import type { Scanner } from "../string/shift/scanner.js"
-import { parseConfigTuple, type validateConfigTuple } from "./config.js"
-import type { inferFilter, validateFilterTuple } from "./filter.js"
+import type { InfixOperator, PostfixExpression } from "./ast.js"
+import { parseConfigTuple } from "./config.js"
+import type { Filter, inferFilter } from "./filter.js"
 import { parseNarrowTuple } from "./filter.js"
-import type { inferKeyOfExpression, validateKeyOfExpression } from "./keyof.js"
+import type { inferKeyOfExpression } from "./keyof.js"
 import { parseKeyOfTuple } from "./keyof.js"
-import type { inferMorph, validateMorphTuple } from "./morph.js"
+import type { inferMorph, Morph } from "./morph.js"
 import { parseMorphTuple } from "./morph.js"
 
 export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
@@ -57,35 +57,63 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     })
 }
 
-export type validateTupleExpression<
-    def extends TupleExpression,
+// TODO: unify
+type InfixExpression = [unknown, InfixOperator, ...unknown[]]
+
+export type validateTuple<def extends List, $> = def extends IndexZeroExpression
+    ? validatePrefixExpression<def, $>
+    : def extends PostfixExpression
+    ? validatePostfixExpression<def, $>
+    : def extends InfixExpression
+    ? validateInfixExpression<def, $>
+    : validateTupleLiteral<def, $>
+
+export type validateTupleLiteral<
+    def extends List,
+    $,
+    result extends unknown[] = []
+> = def extends [infer head, ...infer tail]
+    ? validateTupleLiteral<tail, $, [...result, validateDefinition<head, $>]>
+    : result
+
+type validatePrefixExpression<
+    def extends IndexZeroExpression,
     $
-> = def[1] extends "[]"
-    ? conform<def, readonly [validateDefinition<def[0], $>, "[]"]>
-    : def[1] extends Scanner.BranchToken
-    ? def[2] extends undefined
-        ? [def[0], error<writeMissingRightOperandMessage<def[1], "">>]
-        : conform<
-              def,
-              readonly [
-                  validateDefinition<def[0], $>,
-                  def[1],
-                  validateDefinition<def[2], $>
-              ]
-          >
-    : def[1] extends "=>"
-    ? validateFilterTuple<def, $>
-    : def[1] extends "|>"
-    ? validateMorphTuple<def, $>
-    : def[1] extends ":"
-    ? validateConfigTuple<def, $>
-    : def[0] extends "==="
-    ? conform<def, readonly ["===", unknown]>
-    : def[0] extends "instanceof"
-    ? conform<def, readonly ["instanceof", constructor]>
-    : def[0] extends "keyof"
-    ? conform<def, validateKeyOfExpression<def[1], $>>
-    : never
+> = def["length"] extends 1
+    ? [writeMissingRightOperandMessage<def[0]>]
+    : [
+          def[0],
+          def[0] extends "==="
+              ? def[1]
+              : def[0] extends "instanceof"
+              ? constructor
+              : def[0] extends "keyof"
+              ? validateDefinition<def[1], $>
+              : never
+      ]
+
+type validatePostfixExpression<def extends PostfixExpression, $> = [
+    validateDefinition<def[0], $>,
+    "[]"
+]
+
+type validateInfixExpression<
+    def extends InfixExpression,
+    $
+> = def["length"] extends 2
+    ? [def[0], error<writeMissingRightOperandMessage<def[1]>>]
+    : [
+          validateDefinition<def[0], $>,
+          def[1],
+          def[1] extends "|" | "&"
+              ? validateDefinition<def[2], $>
+              : // TODO: move?
+              def[1] extends "=>"
+              ? Filter<inferIn<inferDefinition<def[0], $>>>
+              : def[1] extends "|>"
+              ? Morph<inferOut<inferDefinition<def[0], $>>, unknown>
+              : validateDefinition<def[2], $>
+      ]
 
 export type UnparsedTupleExpressionInput = {
     instanceof: constructor

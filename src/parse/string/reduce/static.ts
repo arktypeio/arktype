@@ -68,7 +68,7 @@ export namespace state {
 
     export type reduceBranch<
         s extends StaticState,
-        token extends Scanner.BranchToken,
+        token extends "|" | "&",
         unscanned extends string
     > = s["branches"]["range"] extends {}
         ? openRangeError<s["branches"]["range"]>

@@ -17,13 +17,12 @@ import { objectKindOf } from "../utils/objectKinds.js"
 import type { Path } from "../utils/paths.js"
 import { stringify } from "../utils/serialize.js"
 import type { validateString } from "./ast/ast.js"
-import type { inferTuple } from "./ast/tuple.js"
+import type { inferTuple, validateTuple } from "./ast/tuple.js"
 import { parseTuple } from "./ast/tuple.js"
 import type { inferRecord } from "./record.js"
 import { parseRecord } from "./record.js"
 import type { inferString } from "./string/string.js"
 import { parseString } from "./string/string.js"
-import type { validateTuple } from "./tuple.js"
 
 export type ParseContext = {
     path: Path

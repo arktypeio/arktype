@@ -58,36 +58,26 @@ const json = TypeNode.from({
     morph: (s) => JSON.parse(s)
 })
 
-/**
- * @keywords keywords: { 
-        "alpha": "only letters",
-        "alphanumeric": "only letters and digits",
-        "lowercase": "only lowercase letters",
-        "uppercase": "only uppercase letters",
-        "creditCard": "a valid credit card number",
-        "email": "a valid email",
-        "uuid": "a valid UUID",
-        "parsedNumber": "a well-formed numeric string",
-        "parsedInteger": "a well-formed integer string",
-        "parsedDate": "a valid date",
-        "semver": "a valid semantic version",
-        "json": "a JSON-parsable string",
-        "integer": "an integer"
-}
- * @docgenScope
- * @docgenTable
- */
+// "alpha": "only letters",
+// "alphanumeric": "only letters and digits",
+// "lowercase": "only lowercase letters",
+// "uppercase": "only uppercase letters",
+// "creditCard": "a valid credit card number",
+// "email": "a valid email",
+// "uuid": "a valid UUID",
+// "parsedNumber": "a well-formed numeric string",
+// "parsedInteger": "a well-formed integer string",
+// "parsedDate": "a valid date",
+// "semver": "a valid semantic version",
+// "json": "a JSON-parsable string",
+// "integer": "an integer"
 export const validationScope = scope(
     {
         // Character sets
-        alpha: [/^[A-Za-z]*$/, ":", { mustBe: "only letters" }],
-        alphanumeric: [
-            /^[A-Za-z\d]*$/,
-            ":",
-            { mustBe: "only letters and digits" }
-        ],
-        lowercase: [/^[a-z]*$/, ":", { mustBe: "only lowercase letters" }],
-        uppercase: [/^[A-Z]*$/, ":", { mustBe: "only uppercase letters" }],
+        alpha: /^[A-Za-z]*$/,
+        alphanumeric: /^[A-Za-z\d]*$/,
+        lowercase: /^[a-z]*$/,
+        uppercase: /^[A-Z]*$/,
         creditCard,
         email,
         uuid,

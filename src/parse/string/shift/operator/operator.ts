@@ -3,7 +3,7 @@ import type { error } from "../../../../utils/generics.js"
 import { isKeyOf } from "../../../../utils/generics.js"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
-import { Scanner } from "../scanner.js"
+import type { Scanner } from "../scanner.js"
 import type { ComparatorStartChar } from "./bounds.js"
 import { comparatorStartChars, parseBound } from "./bounds.js"
 import { parseDivisor } from "./divisor.js"
@@ -17,7 +17,7 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
         ? s.scanner.shift() === "]"
             ? s.setRoot(s.root.toArray())
             : s.error(incompleteArrayTokenMessage)
-        : isKeyOf(lookahead, Scanner.branchTokens)
+        : lookahead === "|" || lookahead === "&"
         ? s.pushRootToBranch(lookahead)
         : lookahead === ")"
         ? s.finalizeGroup()
@@ -36,7 +36,7 @@ export type parseOperator<s extends StaticState> =
             ? unscanned extends Scanner.shift<"]", infer nextUnscanned>
                 ? state.setRoot<s, [s["root"], "[]"], nextUnscanned>
                 : error<incompleteArrayTokenMessage>
-            : lookahead extends Scanner.BranchToken
+            : lookahead extends "|" | "&"
             ? state.reduceBranch<s, lookahead, unscanned>
             : lookahead extends ")"
             ? state.finalizeGroup<s, unscanned>
