@@ -10,9 +10,3 @@ export type ConfigTuple<
 
 export const parseConfigTuple: PostfixParser<":"> = (def, ctx) =>
     parseDefinition(def[0], ctx)
-
-export type validateConfigTuple<def extends TupleExpression, $> = readonly [
-    validateDefinition<def[0], $>,
-    ":",
-    TypeOptions
-]

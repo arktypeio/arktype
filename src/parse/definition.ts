@@ -1,12 +1,11 @@
-import { Node } from "../nodes/node.js"
+import { type } from "../main.js"
 import { TypeNode } from "../nodes/type.js"
 import type { Scope } from "../scope.js"
 import { Type } from "../type.js"
-import { domainOf } from "../utils/domains.js"
 import type { Primitive } from "../utils/domains.js"
+import { domainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type {
-    conform,
     Dict,
     evaluate,
     isAny,
@@ -18,18 +17,13 @@ import { objectKindOf } from "../utils/objectKinds.js"
 import type { Path } from "../utils/paths.js"
 import { stringify } from "../utils/serialize.js"
 import type { validateString } from "./ast/ast.js"
-import type {
-    IndexOneOperator,
-    IndexZeroOperator,
-    inferTuple,
-    TupleExpression,
-    validateTupleExpression
-} from "./ast/tuple.js"
+import type { inferTuple } from "./ast/tuple.js"
 import { parseTuple } from "./ast/tuple.js"
 import type { inferRecord } from "./record.js"
 import { parseRecord } from "./record.js"
 import type { inferString } from "./string/string.js"
 import { parseString } from "./string/string.js"
+import type { validateTuple } from "./tuple.js"
 
 export type ParseContext = {
     path: Path
@@ -90,14 +84,6 @@ export type inferDefinition<def, $> = isAny<def> extends true
     : def extends Dict
     ? inferRecord<def, $>
     : never
-
-type validateTuple<
-    def extends List,
-    $,
-    result extends unknown[] = []
-> = def extends [infer head, ...infer tail]
-    ? validateTuple<tail, $, [...result, validateDefinition<head, $>]>
-    : result
 
 // we ignore functions in validation so that cyclic thunk definitions can be inferred in scopes
 export type validateDefinition<def, $> = def extends (...args: any[]) => any

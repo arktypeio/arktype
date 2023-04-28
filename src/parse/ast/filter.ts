@@ -22,12 +22,6 @@ export type FilterPredicate<data = any, narrowed extends data = data> = (
     state: TraversalState
 ) => data is narrowed
 
-export type validateFilterTuple<def extends TupleExpression, $> = readonly [
-    validateDefinition<def[0], $>,
-    "=>",
-    Filter<inferIn<inferDefinition<def[0], $>>>
-]
-
 export type inferFilter<inDef, predicate, $> = inferPredicate<
     inferIn<inferDefinition<inDef, $>>,
     predicate

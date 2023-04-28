@@ -191,6 +191,7 @@ export type extend<t, u extends t> = u
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type subsume<t extends u, u> = u
 
+// TODO: try & {} | null
 export type defined<t> = Exclude<t, undefined>
 
 export type requireKeys<o, key extends keyof o> = o & {

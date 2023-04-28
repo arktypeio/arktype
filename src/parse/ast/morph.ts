@@ -13,12 +13,6 @@ export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
     return parseDefinition(def[0], ctx).constrain("morph", def[2] as Morph)
 }
 
-export type validateMorphTuple<def extends TupleExpression, $> = readonly [
-    validateDefinition<def[0], $>,
-    "|>",
-    Morph<inferOut<inferDefinition<def[0], $>>, unknown>
-]
-
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
 export type ParsedMorph<i = any, o = unknown> = (In: i) => o

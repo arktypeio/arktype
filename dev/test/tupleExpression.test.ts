@@ -7,7 +7,7 @@ import {
 import { attest } from "../attest/main.js"
 
 describe("tuple expression", () => {
-    const z = type([{ a: "string" }, { b: "boolean" }])
+    const z = type([{ a: "string" }])
     //        ^?
 
     it("union", () => {

@@ -94,18 +94,18 @@ export type writeMissingOperandMessage<
     : writeExpressionExpectedMessage<s["unscanned"]>
 
 export type writeMissingRightOperandMessage<
-    token extends Scanner.InfixToken,
-    unscanned extends string
+    token extends string,
+    unscanned extends string = ""
 > = `Token '${token}' requires a right operand${unscanned extends ""
     ? ""
     : ` before '${unscanned}'`}`
 
 export const writeMissingRightOperandMessage = <
-    token extends Scanner.InfixToken,
+    token extends string,
     unscanned extends string
 >(
     token: token,
-    unscanned: unscanned
+    unscanned = "" as unscanned
 ): writeMissingRightOperandMessage<token, unscanned> =>
     `Token '${token}' requires a right operand${
         unscanned ? (` before '${unscanned}'` as any) : ""
