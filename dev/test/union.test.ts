@@ -87,7 +87,7 @@ describe("union/parse", () => {
         })
         it("helper bad reference", () => {
             // @ts-expect-error
-            attest(() => union("string", "nummer")).throwsAndHasTypeError(
+            attest(() => type("string").or("nummer")).throwsAndHasTypeError(
                 writeUnresolvableMessage("nummer")
             )
         })

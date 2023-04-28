@@ -16,7 +16,7 @@ describe("string", () => {
         const t = type(`  \n   string  |
         boolean    []   `)
         attest(t.infer).typed as string | boolean[]
-        attest(t.root.toString()).snap()
+        attest(t.root.toString()).snap("[object Object]")
     })
     it("errors on bad whitespace", () => {
         attest(() =>
