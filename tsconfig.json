@@ -1,11 +1,4 @@
 {
     "extends": "./dev/configs/tsconfig.json",
-    "compilerOptions": {
-        "paths": {
-            "get-current-line": [
-                "./node_modules/get-current-line/compiled-types/index.d.ts"
-            ]
-        }
-    },
     "exclude": ["dev/arktype.io", "node_modules", "dist"]
 }

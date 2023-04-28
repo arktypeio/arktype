@@ -6,7 +6,7 @@ const c8Runner = `node --require ${fromHere(
     "configs",
     "patchC8.cjs"
 )} ${fromPackageRoot("node_modules", "c8", "bin", "c8.js")}`
-const baseTestCommand = `ts-node ${fromHere(
+const baseTestCommand = `tsx ${fromHere(
     "..",
     "attest",
     "src",

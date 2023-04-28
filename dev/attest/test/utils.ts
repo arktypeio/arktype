@@ -25,10 +25,10 @@ export const runThenGetContents = (
     let testFileContents
     try {
         ARKTYPE_CHECK_CMD += `--cacheDir ${PATH_TO_TEST_ASSERTIONS_DIR}`
-        shell(`npx ts-node ${testFileCopyPath}`, {
+        shell(`npx tsx ${testFileCopyPath}`, {
             env: {
                 ARKTYPE_CHECK_CMD,
-                NODE_OPTIONS: "--loader=ts-node/esm"
+                NODE_OPTIONS: "--loader=tsx/esm"
             }
         })
     } finally {

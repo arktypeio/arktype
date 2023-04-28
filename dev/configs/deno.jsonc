@@ -1,9 +1,4 @@
 {
-    "imports": {
-        "mocha": "https://deno.land/std@0.177.0/testing/bdd.ts",
-        "ts-morph": "https://deno.land/x/ts_morph@17.0.1/mod.ts",
-        "get-current-line": "https://unpkg.com/get-current-line@6.6.0/edition-deno/index.ts"
-    },
     "lint": {
         "rules": {
             "exclude": ["ban-ts-comment", "ban-types", "no-explicit-any"]

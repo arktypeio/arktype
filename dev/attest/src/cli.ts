@@ -92,7 +92,7 @@ const benchRunner = (options: OptionValues, passedArgs: string[]) => {
         : ""
     for (const path of filteredPaths) {
         try {
-            const command = `npx ts-node ${path} ${writesToFile}`
+            const command = `npx tsx ${path} ${writesToFile}`
             console.log("\n" + path.split("/").slice(-1))
             shell(command, {
                 env: {
@@ -122,7 +122,7 @@ const testRunner = (options: OptionValues, processArgs: string[]) => {
                 `Node's test runner requires at least version 18. You are running ${version}.`
             )
         }
-        prefix += `node --loader ts-node/esm --test `
+        prefix += `node --loader tsx --test `
     } else {
         prefix += `npx ${options.runner} ${
             options.file ? `'${options.file}'` : ""

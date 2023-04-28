@@ -4,7 +4,7 @@
     "private": true,
     "scripts": {
         "dev": "docusaurus start",
-        "build": "tsx node ../scripts/buildArktypeIo.ts",
+        "build": "tsx ../scripts/buildArktypeIo.ts",
         "typecheck": "tsc",
         "serve": "docusaurus serve --dir dist",
         "docgen": "cd .. && pnpm docgen"
@@ -35,8 +35,6 @@
         "@types/react": "17.0.2",
         "@types/react-dom": "17.0.2",
         "arktype": "link:../..",
-        "cross-env": "^7.0.3",
-        "ts-node": "10.9.1",
         "typescript": "5.0.3"
     },
     "pnpm": {
