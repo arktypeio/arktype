@@ -1,5 +1,4 @@
 import { describe, it } from "mocha"
-import { type } from "../../src/main.js"
 import type { ResolvedNode } from "../../src/nodes/node.js"
 import { writeDoubleRightBoundMessage } from "../../src/parse/ast/bound.js"
 import {
@@ -8,7 +7,8 @@ import {
     writeUnpairableComparatorMessage
 } from "../../src/parse/string/reduce/shared.js"
 import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.js"
-import { attest } from "../attest/main.js"
+import { type } from "#arktype"
+import { attest } from "#attest"
 
 describe("range", () => {
     describe("parse", () => {
@@ -213,7 +213,7 @@ describe("range", () => {
             })
             it("double right bound", () => {
                 // @ts-expect-error
-                attest(() => type("number>0<=200")).type.errors(
+                attest(() => type("number>0<=200")).types.errors(
                     writeDoubleRightBoundMessage("'number'")
                 )
             })

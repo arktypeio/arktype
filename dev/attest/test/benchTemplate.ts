@@ -1,4 +1,4 @@
-import { bench } from "../main.js"
+import { bench } from "../src/main.js"
 
 const fakeCallOptions = {
     until: { count: 2 },
@@ -12,7 +12,7 @@ bench(
         return "boofoozoo".includes("foo")
     },
     fakeCallOptions
-).median()
+).median([2, "ms"])
 
 bench(
     "bench call single stat",
@@ -20,7 +20,7 @@ bench(
         return "boofoozoo".includes("foo")
     },
     fakeCallOptions
-).mean()
+).mean([2, "ms"])
 
 bench(
     "bench call mark",
@@ -28,7 +28,7 @@ bench(
         return /.*foo.*/.test("boofoozoo")
     },
     fakeCallOptions
-).mark()
+).mark({ mean: [2, "ms"], median: [2, "ms"] })
 
 type MakeComplexType<S extends string> = S extends `${infer head}${infer tail}`
     ? head | tail | MakeComplexType<tail>
@@ -36,7 +36,7 @@ type MakeComplexType<S extends string> = S extends `${infer head}${infer tail}`
 
 bench("bench type", () => {
     return [] as any as MakeComplexType<"defenestration">
-}).type()
+}).types()
 
 bench(
     "bench call and type",
@@ -48,4 +48,4 @@ bench(
     fakeCallOptions
 )
     .mean()
-    .type()
+    .types()

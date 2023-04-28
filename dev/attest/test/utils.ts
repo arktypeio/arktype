@@ -1,5 +1,5 @@
 import { copyFileSync, rmSync } from "node:fs"
-import { fromHere, readFile, shell } from "../../runtime/main.js"
+import { fromHere, readFile, shell } from "../../attest/src/main.js"
 import type { BenchFormat } from "../src/writeSnapshot.js"
 
 const PATH_TO_TEST_ASSERTIONS_DIR = fromHere(".attest")
@@ -26,8 +26,8 @@ export const runThenGetContents = (
     let testFileContents
     try {
         if (precache) {
-            ARKTYPE_CHECK_CMD += ` --precache --cacheDir ${PATH_TO_TEST_ASSERTIONS_DIR}`
-            shell(`npx ts-node ${testFileCopyPath} --attestTestPreCached`, {
+            ARKTYPE_CHECK_CMD += `--cacheDir ${PATH_TO_TEST_ASSERTIONS_DIR}`
+            shell(`npx ts-node ${testFileCopyPath}`, {
                 env: {
                     ARKTYPE_CHECK_CMD
                 }

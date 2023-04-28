@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
-import { scope, type } from "../../src/main.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { writeMalformedNumericLiteralMessage } from "../../src/utils/numericLiterals.js"
-import { attest } from "../attest/main.js"
+import { scope, type } from "#arktype"
+import { attest } from "#attest"
 
 describe("parse unenclosed", () => {
     describe("identifier", () => {
@@ -109,7 +109,7 @@ describe("parse unenclosed", () => {
                     .throws(
                         writeMalformedNumericLiteralMessage("007n", "bigint")
                     )
-                    .type.errors(writeUnresolvableMessage("007n"))
+                    .types.errors(writeUnresolvableMessage("007n"))
             })
             it("negative zero", () => {
                 attest(() => type("-0n")).throws(

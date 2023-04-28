@@ -1,0 +1,49 @@
+{
+    "name": "arktype-attest",
+    "version": "0.0.0",
+    "author": {
+        "name": "David Blass",
+        "email": "david@arktype.io",
+        "url": "https://arktype.io"
+    },
+    "type": "module",
+    "main": "./dist/cjs/main.js",
+    "types": "./dist/types/main.d.ts",
+    "bin": {
+        "attest": "./dist/cjs/cli.js"
+    },
+    "exports": {
+        ".": {
+            "types": "./dist/types/main.d.ts",
+            "import": "./dist/mjs/main.js",
+            "require": "./dist/cjs/main.js"
+        }
+    },
+    "files": [
+        "dist",
+        "!*.tsbuildinfo"
+    ],
+    "dependencies": {
+        "arktype": "1.0.13-alpha",
+        "ts-morph": "18.0.0",
+        "get-current-line": "6.6.0",
+        "commander": "10.0.0"
+    },
+    "devDependencies": {
+        "mocha": "10.2.0",
+        "typescript": "5.0.3",
+        "@types/node": "18.15.11",
+        "get-current-line": "6.6.0"
+    },
+    "mocha": {
+        "spec": "./test/**/*.test.*",
+        "ignore": "**/node_modules/*",
+        "node-option": [
+            "loader=ts-node/esm",
+            "no-warnings=ExperimentalWarning"
+        ]
+    },
+    "scripts": {
+        "build": "ts-node ../scripts/build.ts"
+    }
+}

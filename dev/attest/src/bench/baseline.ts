@@ -1,5 +1,5 @@
 import process from "node:process"
-import { snapshot } from "../../../../src/utils/serialize.js"
+import { snapshot } from "arktype/internal/utils/serialize.js"
 import { queueInlineSnapshotWriteOnProcessExit } from "../snapshot.js"
 import type { BenchAssertionContext, BenchContext } from "./bench.js"
 import type {

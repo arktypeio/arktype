@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
-import type { Type } from "../../src/main.js"
-import { type } from "../../src/main.js"
 import type { Infer } from "../../src/parse/definition.js"
-import { attest } from "../attest/main.js"
+import type { Type } from "#arktype"
+import { type } from "#arktype"
+import { attest } from "#attest"
 
 describe("cast", () => {
     it("primitive", () => {

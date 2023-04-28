@@ -1,4 +1,4 @@
-export default `import { type } from "arktype"
+export default `import { type } from "#arktype"
 
 // Definitions are statically parsed and inferred as TS.
 export const user = type({
