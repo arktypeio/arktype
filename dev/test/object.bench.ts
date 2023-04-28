@@ -9,8 +9,8 @@ suite("parse/struct", () => {
             c: { nested: "boolean[]" }
         })
     })
-        // .median()
-        .type([960, "instantiations"])
+        .median([20.83, "us"])
+        .type([1704, "instantiations"])
 
     bench("dictionary with optional keys", () => {
         const dict = type({
@@ -19,12 +19,12 @@ suite("parse/struct", () => {
             "c?": { "nested?": "boolean[]" }
         })
     })
-        // .median()
-        .type([990, "instantiations"])
+        .median([21.23, "us"])
+        .type([1704, "instantiations"])
 
     bench("tuple", () => {
         const tuple = type(["string[]", "number[]", ["boolean[]"]])
     })
-        // .median()
-        .type([1320, "instantiations"])
+        .median([28.6, "us"])
+        .type([2739, "instantiations"])
 })

@@ -105,7 +105,7 @@ describe("morph", () => {
             aAndB: () => $.type("a&b"),
             bAndA: () => $.type("b&a")
         })
-        const types = $.compile()
+        // const types = $.compile()
         // attest(types.aAndB).typed as Type<(In: 3.14) => string>
         // attest(types.aAndB.node).snap({
         //     number: { rules: { value: 3.14 }, morph: "(function)" }
