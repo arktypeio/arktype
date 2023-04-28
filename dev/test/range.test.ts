@@ -1,5 +1,6 @@
 import { describe, it } from "mocha"
 import type { ResolvedNode } from "../../src/nodes/node.js"
+import { writeDoubleRightBoundMessage } from "../../src/parse/ast/bound.js"
 import {
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
@@ -208,6 +209,12 @@ describe("range", () => {
             it("empty range", () => {
                 attest(() => type("3<=number<2").node).throws.snap(
                     "Error: the range bounded by >=3 and <2 is empty"
+                )
+            })
+            it("double right bound", () => {
+                // @ts-expect-error
+                attest(() => type("number>0<=200")).type.errors(
+                    writeDoubleRightBoundMessage("'number'")
                 )
             })
         })

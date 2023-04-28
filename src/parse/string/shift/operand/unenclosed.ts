@@ -67,17 +67,9 @@ type tryResolve<
     ? token
     : token extends NumberLiteral
     ? token
-    : // These checks are temporarily disabled because we're unable to update our TS version in StackBlitz to 4.8+
-    // https://github.com/arktypeio/arktype/issues/659
-    // number extends value
-    //     ? error<writeMalformedNumericLiteralMessage<token, "number">>
-    //     : token
-    token extends BigintLiteral
+    : token extends BigintLiteral
     ? token
-    : // bigint extends value
-      //     ? error<writeMalformedNumericLiteralMessage<token, "bigint">>
-      //     : token
-      possibleCompletions<s, token, $>
+    : possibleCompletions<s, token, $>
 
 export type possibleCompletions<
     s extends StaticState,

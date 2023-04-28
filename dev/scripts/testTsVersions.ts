@@ -3,9 +3,7 @@ import { fromHere, fromPackageRoot, readJson } from "../attest/src/fs.js"
 import { shell } from "../attest/src/shell.js"
 
 const versions: { [k: string]: string } = {
-    // Disabled because of the changes made to accommodate StackBlitz. Reenable:
-    // https://github.com/arktypeio/arktype/issues/659
-    // "4.8": "16",
+    "4.8": "16",
     "4.9": "17"
 }
 const rootJson = readJson(fromHere("package.json"))
