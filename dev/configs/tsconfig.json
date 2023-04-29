@@ -13,5 +13,10 @@
         "exactOptionalPropertyTypes": true,
         "noErrorTruncation": false,
         "lib": ["ESNext"]
+    },
+    "ts-node": {
+        "esm": true,
+        "swc": true,
+        "transpileOnly": true
     }
 }

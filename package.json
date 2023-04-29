@@ -37,27 +37,27 @@
     "scripts": {
         "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm docgen && pnpm buildSite",
         "typecheck": "tsc --noEmit",
-        "build": "tsx ./dev/scripts/build.ts",
+        "build": "node --loader ts-node/esm ./dev/scripts/build.ts",
         "buildRepo": "pnpm build && pnpm docgen && pnpm buildSite",
         "buildSite": "cd dev/arktype.io && pnpm install && pnpm build",
         "buildAttest": "cd dev/attest && pnpm build",
-        "docgen": "tsx ./dev/scripts/docgen.ts",
-        "test": "tsx ./dev/attest/src/cli.ts -r mocha",
-        "tnt": "tsx ./dev/attest/src/cli.ts -r mocha --skipTypes",
+        "docgen": "node --loader ts-node/esm ./dev/scripts/docgen.ts",
+        "test": "node --loader ts-node/esm ./dev/attest/src/cli.ts -r mocha",
+        "tnt": "node --loader ts-node/esm ./dev/attest/src/cli.ts -r mocha --skipTypes",
         "testRepo": "pnpm -r test && pnpm testBuild && pnpm testTsVersions",
-        "testBuild": "tsx ./dev/scripts/testBuild.ts",
-        "testAttest": "tsx ./dev/scripts/testAttest.ts",
-        "testTsVersions": "tsx ./dev/scripts/testTsVersions.ts",
-        "bench": "tsx ./dev/attest/src/cli.ts --bench",
+        "testBuild": "node --loader ts-node/esm ./dev/scripts/testBuild.ts",
+        "testAttest": "node --loader ts-node/esm ./dev/scripts/testAttest.ts",
+        "testTsVersions": "node --loader ts-node/esm ./dev/scripts/testTsVersions.ts",
+        "bench": "node --loader ts-node/esm ./dev/attest/src/cli.ts --bench",
         "lint": "eslint --max-warnings=0 .",
         "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
         "checkFormat": "prettier --check --ignore-path ./dev/configs/.prettierignore .",
-        "findUnused": "tsx ./dev/scripts/findUnusedExports.ts",
+        "findUnused": "node --loader ts-node/esm ./dev/scripts/findUnusedExports.ts",
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install dev/configs/.husky",
-        "changeset": "tsx ./dev/scripts/changeset.ts",
-        "ci:version": "tsx ./dev/scripts/updateVersions.ts",
-        "ci:publish": "tsx ./dev/scripts/changeset.ts publish"
+        "changeset": "node --loader ts-node/esm ./dev/scripts/changeset.ts",
+        "ci:version": "node --loader ts-node/esm ./dev/scripts/updateVersions.ts",
+        "ci:publish": "node --loader ts-node/esm ./dev/scripts/changeset.ts publish"
     },
     "devDependencies": {
         "@changesets/changelog-github": "0.4.8",
@@ -83,7 +83,7 @@
         "prettier-plugin-jsdoc": "0.4.2",
         "pretty-quick": "3.1.3",
         "ts-morph": "18.0.0",
-        "tsx": "3.12.6",
+        "ts-node": "10.9.1",
         "typescript": "5.0.3"
     },
     "c8": {
@@ -108,7 +108,7 @@
         ],
         "ignore": "**/node_modules/*",
         "node-option": [
-            "loader=tsx",
+            "loader=ts-node/esm",
             "no-warnings=ExperimentalWarning"
         ]
     },

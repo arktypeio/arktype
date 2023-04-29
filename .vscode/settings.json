@@ -19,7 +19,7 @@
     "typescript.preferences.importModuleSpecifierEnding": "js",
     "prettier.ignorePath": "dev/configs/.prettierignore",
     "mochaExplorer.nodeArgv": [
-        "--loader=tsx",
+        "--loader=ts-node/esm",
         "--no-warnings=ExperimentalWarning"
     ],
     "mochaExplorer.env": {
