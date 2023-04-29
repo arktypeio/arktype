@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs"
 import { version } from "node:os"
 import { basename } from "node:path"
 import { versions } from "node:process"
-import type { OptionValues } from "commander"
 import { Command } from "commander"
+import type { OptionValues } from "commander"
 import {
     cacheAssertions,
     cleanupAssertions,
     fromCwd,
+    readFile,
     shell,
     walkPaths
 } from "./main.js"
@@ -16,14 +16,13 @@ import {
 const cli = () => {
     const attest = new Command("attest")
     const packageVersion = "0.0.0"
-    const description = "⛵ Type-first testing"
+    const description = "⛵ Type-first testing from ArkType"
 
     attest
         .version(packageVersion)
         .description(description)
-        .option("-r, --runner  <value>", "Run using a specified test runner")
+        .option("-c, --command  <value>", "How to run the tests")
         .option("-s, --skipTypes", "Skip type assertions")
-        .option("--file <value>", "Specify a path for bench or tests")
         .option("-h, --help, View details about the cli")
         .option("-b, --bench, Runs benchmarks found in *.bench.ts files")
         .option(
@@ -43,6 +42,23 @@ const cli = () => {
         process.exit(0)
     }
 
+    const suffix = options.bench ? ".bench." : ".test."
+    let files = walkPaths(fromCwd(), {
+        include: (path) => basename(path).includes(suffix)
+    })
+    if (typeof options.filter === "string") {
+        if (options.filter.startsWith("/")) {
+            files = files.filter((file) => file.match(options.filter))
+        } else {
+            files = files.filter((file) =>
+                readFile(file).includes(options.filter)
+            )
+        }
+
+        if (files.length === 0) {
+            throw new Error(`No matches for filter ${options.filter}`)
+        }
+    }
     if (options.bench) {
         benchRunner(options, passedArgs)
     } else {
@@ -50,53 +66,18 @@ const cli = () => {
     }
 }
 
-const benchRunner = (options: OptionValues, passedArgs: string[]) => {
-    let benchFilePaths
-    if (options.file) {
-        benchFilePaths = [options.file]
-    } else {
-        benchFilePaths = walkPaths(fromCwd(), {
-            include: (path) => basename(path).includes(".bench.")
-        })
-    }
+const benchRunner = (options: OptionValues, paths: string[]) => {
     let threwDuringBench
-    let filteredPaths = benchFilePaths
-    if (options.filter) {
-        const filterParam = options.filter
-        const isPath = filterParam.startsWith("/") && !options.file
-        filteredPaths = filteredPaths.filter((path: string) => {
-            if (isPath) {
-                if (new RegExp(filterParam).test(path)) {
-                    const filterIndex = passedArgs.findIndex((arg) =>
-                        arg.includes("--filter")
-                    )
-                    passedArgs.splice(filterIndex, 2)
-                    return true
-                }
-                return false
-            } else {
-                const matcher = new RegExp(`bench\\("${filterParam}`)
-                return matcher.test(readFileSync(path, "utf-8"))
-            }
-        })
-        if (filteredPaths.length === 0) {
-            throw new Error(
-                `Couldn't find any ${
-                    isPath ? "files" : "test names"
-                } matching ${filterParam}`
-            )
-        }
-    }
     const writesToFile = options.benchmarksPath
         ? `--benchmarksPath ${options.benchmarksPath}`
         : ""
-    for (const path of filteredPaths) {
+    for (const path of paths) {
         try {
             const command = `node --loader ts-node/esm ${path} ${writesToFile}`
             console.log("\n" + path.split("/").slice(-1))
             shell(command, {
                 env: {
-                    ARKTYPE_CHECK_CMD: `${passedArgs.join(" ")}`
+                    ARKTYPE_CHECK_CMD: `${process.argv.join(" ")}`
                 }
             })
         } catch {
@@ -108,7 +89,7 @@ const benchRunner = (options: OptionValues, passedArgs: string[]) => {
     }
 }
 
-const testRunner = (options: OptionValues, processArgs: string[]) => {
+const testRunner = (options: OptionValues, paths: string[]) => {
     if (!options.runner) {
         throw new Error(
             `Must provide a runner command, e.g. 'attest --runner mocha'`
@@ -149,7 +130,7 @@ const testRunner = (options: OptionValues, processArgs: string[]) => {
         console.log(prefix)
         shell(prefix, {
             stdio: "inherit",
-            env: { ARKTYPE_CHECK_CMD: processArgs.join(" ") }
+            env: { ARKTYPE_CHECK_CMD: process.argv.join(" ") }
         })
         const runnerSeconds = (Date.now() - runnerStart) / 1000
         console.log(
