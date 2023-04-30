@@ -1,19 +1,19 @@
 import { copyFileSync } from "node:fs"
-import { readFile, writeFile } from "../../attest/src/main.js"
+import { readFile } from "../../attest/src/main.js"
 import { writeCachedInlineSnapshotUpdates } from "../src/writeSnapshot.js"
 
 export const runThenGetContents = async (
-    testFileCopyPath: string,
+    actualPath: string,
     templatePath: string
 ) => {
-    copyFileSync(templatePath, testFileCopyPath)
+    copyFileSync(templatePath, actualPath)
     let testFileContents
     try {
-        await import(testFileCopyPath)
+        await import(actualPath)
         writeCachedInlineSnapshotUpdates()
     } finally {
-        testFileContents = readFile(testFileCopyPath)
-        writeFile(testFileCopyPath, readFile(templatePath))
+        testFileContents = readFile(actualPath)
+        copyFileSync(templatePath, actualPath)
     }
     return testFileContents
 }

@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
-import { ensureDir, fromCwd, walkPaths } from "./fs.js"
+import { ensureDir, fromCwd } from "./fs.js"
 import { getParamValue, hasFlag } from "./shell.js"
 
 export type AttestConfig = {
@@ -14,7 +14,6 @@ export type AttestConfig = {
     assertionCacheFile: string
     snapCacheDir: string
     filter: string | undefined
-    files: string[]
 }
 
 export type AttestOptions = Partial<AttestConfig>
@@ -35,11 +34,7 @@ const getDefaultConfig = (): AttestConfig => {
         cacheDir,
         snapCacheDir,
         assertionCacheFile,
-        filter: undefined,
-        files: walkPaths(process.cwd(), {
-            include: (path) => path.includes(".test."),
-            ignoreDirsMatching: /node_modules|dist/
-        })
+        filter: undefined
     }
 }
 

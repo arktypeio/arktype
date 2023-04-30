@@ -10,16 +10,12 @@ import { getAssertionsByFile } from "./analysis.js"
 export const forceCreateTsMorphProject = () => {
     const config = getConfig()
     const tsMorphOptions: ProjectOptions = {
-        compilerOptions: { diagnostics: true },
-        skipAddingFilesFromTsConfig: true
+        compilerOptions: { diagnostics: true }
     }
     if (config.tsconfig) {
         tsMorphOptions.tsConfigFilePath = config.tsconfig
     }
     const project = new Project(tsMorphOptions)
-    for (const path of config.files) {
-        project.addSourceFileAtPath(path)
-    }
     return project
 }
 
