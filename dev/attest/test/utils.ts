@@ -1,14 +1,14 @@
 import { copyFileSync } from "node:fs"
-import { readFile, shell } from "../../attest/src/main.js"
+import { readFile, runTs } from "../../attest/src/main.js"
 
-export const runThenGetContents = async (
+export const runThenGetContents = (
     actualPath: string,
     templatePath: string
 ) => {
     copyFileSync(templatePath, actualPath)
     let testFileContents
     try {
-        shell(`pnpm -w ts ${actualPath}`)
+        runTs(actualPath)
     } finally {
         testFileContents = readFile(actualPath)
         copyFileSync(templatePath, actualPath)

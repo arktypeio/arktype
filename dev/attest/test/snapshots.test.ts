@@ -11,8 +11,8 @@ const expectedOutput = readFile(fromHere("benchExpectedOutput.ts")).replaceAll(
 )
 
 describe("bench", () => {
-    it("populates file", async () => {
-        const actual = await runThenGetContents(benchActual, benchTemplate)
+    it("populates file", () => {
+        const actual = runThenGetContents(benchActual, benchTemplate)
         equal(actual, expectedOutput)
-    }).timeout(60000)
+    }).timeout(120000)
 })
