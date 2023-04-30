@@ -2,7 +2,7 @@ import { rmSync } from "node:fs"
 import type { ProjectOptions } from "ts-morph"
 import { Project } from "ts-morph"
 import type { AttestOptions } from "../config.js"
-import { configure, getConfig } from "../config.js"
+import { getConfig } from "../config.js"
 import { ensureDir, writeJson } from "../main.js"
 import { writeCachedInlineSnapshotUpdates } from "../writeSnapshot.js"
 import { getAssertionsByFile } from "./analysis.js"
@@ -28,7 +28,7 @@ export const getTsMorphProject = () => {
 }
 
 export const setup = (options?: AttestOptions) => {
-    const config = configure(options)
+    const config = getConfig(options)
     if (config.skipTypes) {
         return
     }

@@ -8,7 +8,7 @@ export const runThenGetContents = async (
     copyFileSync(templatePath, actualPath)
     let testFileContents
     try {
-        shell(`node --loader ts-node/esm ${actualPath}`)
+        shell(`pnpm -w ts ${actualPath}`)
     } finally {
         testFileContents = readFile(actualPath)
         copyFileSync(templatePath, actualPath)

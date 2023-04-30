@@ -38,7 +38,10 @@ const getDefaultConfig = (): AttestConfig => {
     }
 }
 
-const addCliConfig = (config: AttestConfig) => {
+const addEnvConfig = (config: AttestConfig) => {
+    if (process.env.ATTEST_CONFIG) {
+        Object.assign(config, JSON.parse(process.env.ATTEST_CONFIG))
+    }
     let k: keyof AttestConfig
     for (k in config) {
         if (config[k] === false) {
@@ -53,18 +56,13 @@ const addCliConfig = (config: AttestConfig) => {
     return config
 }
 
-let cachedConfig: AttestConfig = process.env.ATTEST_CONFIG
-    ? JSON.parse(process.env.ATTEST_CONFIG)
-    : addCliConfig(getDefaultConfig())
+let cachedConfig: AttestConfig = addEnvConfig(getDefaultConfig())
 
-export const configure = (options?: Partial<AttestConfig>): AttestConfig => {
+export const getConfig = (options?: Partial<AttestConfig>): AttestConfig => {
     if (options) {
         cachedConfig = { ...cachedConfig, ...options }
     }
     ensureDir(cachedConfig.cacheDir)
     ensureDir(cachedConfig.snapCacheDir)
-    process.env.ATTEST_CONFIG = JSON.stringify(cachedConfig)
     return cachedConfig
 }
-
-export const getConfig = (): AttestConfig => cachedConfig

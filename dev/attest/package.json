@@ -38,7 +38,8 @@
         ]
     },
     "scripts": {
-        "build": "node --loader ts-node/esm ../scripts/build.ts",
-        "test": "node --loader ts-node/esm ../scripts/test.ts"
+        "build": "pnpm ts ../scripts/build.ts",
+        "test": "pnpm ts ../scripts/test.ts",
+        "ts": "node --loader=ts-node/esm --no-warnings=ExperimentalWarning"
     }
 }

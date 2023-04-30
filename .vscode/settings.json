@@ -23,7 +23,7 @@
         "--no-warnings=ExperimentalWarning"
     ],
     "mochaExplorer.env": {
-        "ATTEST_CONFIG": "--skipTypes"
+        "ATTEST_CONFIG": "{ \"skipTypes\": true }"
     },
     "testExplorer.useNativeTesting": true
 }
