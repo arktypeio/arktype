@@ -1,11 +1,13 @@
+import { randomUUID } from "node:crypto"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import type { CallExpression, Project, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { readJson } from "./main.js"
-import { getTsMorphProject } from "./type/cacheAssertions.js"
+import { getConfig } from "./config.js"
+import { readJson, writeJson } from "./main.js"
 import { getTsNodeAtPosition } from "./type/getTsNodeAtPos.js"
 import type { SourcePosition } from "./utils.js"
 import { positionToString } from "./utils.js"
+import { writeCachedInlineSnapshotUpdates } from "./writeSnapshot.js"
 
 export type SnapshotArgs = {
     position: SourcePosition
@@ -28,7 +30,7 @@ export const findCallExpressionAncestor = (
             const name =
                 // If the call is made directly, e.g. snap(...), the expression will be an identifier, so can use its whole text
                 expression.asKind(SyntaxKind.Identifier)?.getText() ??
-                // If the call is made from a prop, e.g. snap in assert(...).snap(), check the name of the prop accessed
+                // If the call is made from a prop, e.g. snap in attest(...).snap(), check the name of the prop accessed
                 expression
                     .asKind(SyntaxKind.PropertyAccessExpression)
                     ?.getName()
@@ -64,24 +66,22 @@ export const getSnapshotByName = (
     return readJson(snapshotPath)?.[basename(file)]?.[name]
 }
 
-export const createQueuedSnapshotUpdate = ({
-    position,
-    serializedValue,
-    snapFunctionName = "snap",
-    baselinePath
-}: SnapshotArgs): QueuedUpdate => {
-    const snapCall = findCallExpressionAncestor(
-        getTsMorphProject(),
-        position,
-        snapFunctionName
-    )
-    const newArgText = JSON.stringify(serializedValue)
-    return {
-        position,
-        snapCall,
-        snapFunctionName,
-        newArgText,
-        baselinePath
+let writeCachedUpdatesOnExit = false
+process.addListener("exit", () => {
+    if (writeCachedUpdatesOnExit) {
+        writeCachedInlineSnapshotUpdates()
+    }
+})
+
+/**
+ * Writes the update and position to cacheDir, which will eventually be read and copied to the source
+ * file by a cleanup process after all tests have completed.
+ */
+export const queueSnapshotUpdate = (args: SnapshotArgs) => {
+    const config = getConfig()
+    writeJson(join(config.snapCacheDir, `snap-${randomUUID()}.json`), args)
+    if (args.baselinePath || config.skipTypes) {
+        writeCachedUpdatesOnExit = true
     }
 }
 

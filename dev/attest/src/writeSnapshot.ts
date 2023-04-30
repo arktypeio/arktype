@@ -1,11 +1,11 @@
-import { randomUUID } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
 import { basename, join } from "node:path"
 import type { Node, ts } from "ts-morph"
 import { getConfig } from "./config.js"
 import { readJson, shell, writeJson } from "./main.js"
 import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
-import { createQueuedSnapshotUpdate, resolveSnapshotPath } from "./snapshot.js"
+import { findCallExpressionAncestor, resolveSnapshotPath } from "./snapshot.js"
+import { getTsMorphProject } from "./type/cacheAssertions.js"
 import { getFileKey } from "./utils.js"
 
 export type ExternalSnapshotArgs = SnapshotArgs & {
@@ -50,7 +50,7 @@ export const writeCachedInlineSnapshotUpdates = () => {
             }
             if (snapshotData) {
                 try {
-                    queuedUpdates.push(createQueuedSnapshotUpdate(snapshotData))
+                    queuedUpdates.push(snapshotArgsToQueuedUpdate(snapshotData))
                 } catch (error) {
                     // If writeInlineSnapshotToFile throws an error, log it and move on to the next update
                     console.error(String(error))
@@ -61,12 +61,25 @@ export const writeCachedInlineSnapshotUpdates = () => {
     writeUpdates(queuedUpdates)
 }
 
-/**
- * Writes the update and position to cacheDir, which will eventually be read and copied to the source
- * file by a cleanup process after all tests have completed.
- */
-export const writeInlineSnapshotUpdateToCacheDir = (args: SnapshotArgs) => {
-    writeJson(join(getConfig().snapCacheDir, `snap-${randomUUID()}.json`), args)
+const snapshotArgsToQueuedUpdate = ({
+    position,
+    serializedValue,
+    snapFunctionName = "snap",
+    baselinePath
+}: SnapshotArgs): QueuedUpdate => {
+    const snapCall = findCallExpressionAncestor(
+        getTsMorphProject(),
+        position,
+        snapFunctionName
+    )
+    const newArgText = JSON.stringify(serializedValue)
+    return {
+        position,
+        snapCall,
+        snapFunctionName,
+        newArgText,
+        baselinePath
+    }
 }
 
 // Waiting until process exit to write snapshots avoids invalidating existing source positions

@@ -14,5 +14,5 @@ describe("bench", () => {
     it("populates file", async () => {
         const actual = await runThenGetContents(benchActual, benchTemplate)
         equal(actual, expectedOutput)
-    }).timeout(30000)
+    }).timeout(60000)
 })

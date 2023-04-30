@@ -6,12 +6,9 @@ import { assertEquals } from "../assertions.js"
 import type { AssertionContext } from "../attest.js"
 import { caller } from "../main.js"
 import type { SnapshotArgs } from "../snapshot.js"
-import { getSnapshotByName } from "../snapshot.js"
+import { getSnapshotByName, queueSnapshotUpdate } from "../snapshot.js"
 import { getTypeDataAtPos } from "../type/getAssertionAtPos.js"
-import {
-    updateExternalSnapshot,
-    writeInlineSnapshotUpdateToCacheDir
-} from "../writeSnapshot.js"
+import { updateExternalSnapshot } from "../writeSnapshot.js"
 import type { ExternalSnapshotArgs, RootAssertions } from "./types.js"
 import {
     assertEqualOrMatching,
@@ -87,7 +84,7 @@ export class Assertions implements AssertionRecord {
                     position: caller(),
                     serializedValue: this.serializedActual
                 }
-                writeInlineSnapshotUpdateToCacheDir(snapshotArgs)
+                queueSnapshotUpdate(snapshotArgs)
             }
         } else {
             // compare as strings, but if match fails, compare again as objects
