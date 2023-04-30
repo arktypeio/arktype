@@ -2,12 +2,10 @@ import { basename, dirname, isAbsolute, join } from "node:path"
 import type { CallExpression, Project, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
 import { readJson } from "./main.js"
-import { addListener } from "./shell.js"
 import { getTsMorphProject } from "./type/cacheAssertions.js"
 import { getTsNodeAtPosition } from "./type/getTsNodeAtPos.js"
 import type { SourcePosition } from "./utils.js"
 import { positionToString } from "./utils.js"
-import { writeUpdates } from "./writeSnapshot.js"
 
 export type SnapshotArgs = {
     position: SourcePosition
@@ -66,25 +64,25 @@ export const getSnapshotByName = (
     return readJson(snapshotPath)?.[basename(file)]?.[name]
 }
 
-export const queueInlineSnapshotWriteOnProcessExit = ({
+export const createQueuedSnapshotUpdate = ({
     position,
     serializedValue,
     snapFunctionName = "snap",
     baselinePath
-}: SnapshotArgs) => {
+}: SnapshotArgs): QueuedUpdate => {
     const snapCall = findCallExpressionAncestor(
         getTsMorphProject(),
         position,
         snapFunctionName
     )
     const newArgText = JSON.stringify(serializedValue)
-    queuedUpdates.push({
+    return {
         position,
         snapCall,
         snapFunctionName,
         newArgText,
         baselinePath
-    })
+    }
 }
 
 export type QueuedUpdate = {
@@ -94,25 +92,3 @@ export type QueuedUpdate = {
     newArgText: string
     baselinePath: string[] | undefined
 }
-
-/**
- * Each time we encounter a snapshot that needs to be initialized
- * or updated, we push its context to the global queuedUpdates variable.
- * Then, on process exit, we call writeUpdates which handles updating all
- * of the affected source (for inline snaps) or JSON (for external snaps or
- * bench history) files.
- *
- * NOTE: In precache mode, instead of pushing updates here directly, we
- * serialize the queued updates to snap files. Then, after all tests have
- * completed, all updates are written as part of cleanup.
- **/
-const queuedUpdates: QueuedUpdate[] = []
-
-addListener("exit", () => {
-    try {
-        writeUpdates(queuedUpdates)
-    } catch (e) {
-        console.error(e)
-        throw e
-    }
-})

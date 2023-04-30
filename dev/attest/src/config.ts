@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
-import { ensureDir, fromCwd } from "./main.js"
+import { ensureDir, fromCwd, walkPaths } from "./fs.js"
+import { getParamValue, hasFlag } from "./shell.js"
 
 export type AttestConfig = {
     tsconfig: string | undefined
@@ -13,25 +14,16 @@ export type AttestConfig = {
     assertionCacheFile: string
     snapCacheDir: string
     filter: string | undefined
+    files: string[]
 }
 
-export const getParamValue = (param: string) => {
-    const paramIndex = process.argv.findIndex((arg) => arg.includes(param))
-    if (paramIndex === -1) {
-        return undefined
-    }
-    return process.argv[paramIndex + 1]
-}
+export type AttestOptions = Partial<AttestConfig>
 
-export const hasFlag = (args: string[], flag: string) =>
-    process.argv.some((arg) => arg.includes(flag))
-
-let cachedConfig: undefined | AttestConfig
-export const configure = (options: Partial<AttestConfig>): AttestConfig => {
+const getDefaultConfig = (): AttestConfig => {
     const cacheDir = resolve(".attest")
     const snapCacheDir = join(cacheDir, "snaps")
     const assertionCacheFile = join(cacheDir, "assertions.json")
-    cachedConfig = {
+    return {
         tsconfig: existsSync(fromCwd("tsconfig.json"))
             ? fromCwd("tsconfig.json")
             : undefined,
@@ -43,17 +35,41 @@ export const configure = (options: Partial<AttestConfig>): AttestConfig => {
         cacheDir,
         snapCacheDir,
         assertionCacheFile,
-        filter: getParamValue("filter"),
-        ...options
+        filter: undefined,
+        files: walkPaths(process.cwd(), {
+            include: (path) => path.includes(".test."),
+            ignoreDirsMatching: /node_modules|dist/
+        })
+    }
+}
+
+const addCliConfig = (config: AttestConfig) => {
+    let k: keyof AttestConfig
+    for (k in config) {
+        if (config[k] === false) {
+            config[k] = hasFlag(k) as never
+        } else {
+            const value = getParamValue(k)
+            if (value !== undefined) {
+                config[k] = value as never
+            }
+        }
+    }
+    return config
+}
+
+let cachedConfig: AttestConfig = process.env.ATTEST_CONFIG
+    ? JSON.parse(process.env.ATTEST_CONFIG)
+    : addCliConfig(getDefaultConfig())
+
+export const configure = (options?: Partial<AttestConfig>): AttestConfig => {
+    if (options) {
+        cachedConfig = { ...cachedConfig, ...options }
     }
     ensureDir(cachedConfig.cacheDir)
     ensureDir(cachedConfig.snapCacheDir)
+    process.env.ATTEST_CONFIG = JSON.stringify(cachedConfig)
     return cachedConfig
 }
 
-export const getConfig = (): AttestConfig => {
-    if (cachedConfig) {
-        return cachedConfig
-    }
-    return configure({})
-}
+export const getConfig = (): AttestConfig => cachedConfig

@@ -5,10 +5,7 @@ import type { Node, ts } from "ts-morph"
 import { getConfig } from "./config.js"
 import { readJson, shell, writeJson } from "./main.js"
 import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
-import {
-    queueInlineSnapshotWriteOnProcessExit,
-    resolveSnapshotPath
-} from "./snapshot.js"
+import { createQueuedSnapshotUpdate, resolveSnapshotPath } from "./snapshot.js"
 import { getFileKey } from "./utils.js"
 
 export type ExternalSnapshotArgs = SnapshotArgs & {
@@ -39,6 +36,7 @@ export const writeCachedInlineSnapshotUpdates = () => {
             `Unable to update snapshots as expected cache directory ${config.snapCacheDir} does not exist.`
         )
     }
+    const queuedUpdates: QueuedUpdate[] = []
     for (const updateFile of readdirSync(config.snapCacheDir)) {
         if (/snap.*\.json$/.test(updateFile)) {
             let snapshotData: SnapshotArgs | undefined
@@ -52,7 +50,7 @@ export const writeCachedInlineSnapshotUpdates = () => {
             }
             if (snapshotData) {
                 try {
-                    queueInlineSnapshotWriteOnProcessExit(snapshotData)
+                    queuedUpdates.push(createQueuedSnapshotUpdate(snapshotData))
                 } catch (error) {
                     // If writeInlineSnapshotToFile throws an error, log it and move on to the next update
                     console.error(String(error))
@@ -60,6 +58,7 @@ export const writeCachedInlineSnapshotUpdates = () => {
             }
         }
     }
+    writeUpdates(queuedUpdates)
 }
 
 /**
