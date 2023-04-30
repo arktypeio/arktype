@@ -1,5 +1,5 @@
 {
-    "name": "arktype-attest",
+    "name": "@arktype/attest",
     "version": "0.0.0",
     "author": {
         "name": "David Blass",
@@ -9,9 +9,6 @@
     "type": "module",
     "main": "./dist/cjs/main.js",
     "types": "./dist/types/main.d.ts",
-    "bin": {
-        "attest": "./dist/cjs/cli.js"
-    },
     "exports": {
         ".": {
             "types": "./dist/types/main.d.ts",
@@ -25,8 +22,7 @@
     ],
     "dependencies": {
         "arktype": "1.0.13-alpha",
-        "ts-morph": "18.0.0",
-        "commander": "10.0.0"
+        "ts-morph": "18.0.0"
     },
     "devDependencies": {
         "mocha": "10.2.0",

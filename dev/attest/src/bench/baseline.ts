@@ -28,8 +28,7 @@ export const queueBaselineUpdateIfNeeded = (
         position: ctx.lastSnapCallPosition,
         serializedValue,
         snapFunctionName: ctx.kind,
-        baselinePath: ctx.qualifiedPath,
-        benchFormat: ctx.cfg.benchFormat
+        baselinePath: ctx.qualifiedPath
     })
 }
 

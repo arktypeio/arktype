@@ -1,6 +1,5 @@
 import type { Node, Project, SourceFile, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { getAttestConfig } from "../config.js"
 import { caller } from "../main.js"
 import { findCallExpressionAncestor } from "../snapshot.js"
 import {
@@ -49,13 +48,6 @@ const emptyBenchFn = (statement: Node<ts.ExpressionStatement>) => {
 
 const getInstantiationsWithFile = (fileText: string, fakePath: string) => {
     const isolatedProject = forceCreateTsMorphProject()
-    const config = getAttestConfig()
-    for (const [path, contents] of config.typeSources) {
-        if (!path.startsWith("src") && path !== "main.ts") {
-            continue
-        }
-        isolatedProject.createSourceFile(path, contents, { overwrite: true })
-    }
     isolatedProject.createSourceFile(fakePath, fileText)
     return getUpdatedInstantiationCount(isolatedProject)
 }

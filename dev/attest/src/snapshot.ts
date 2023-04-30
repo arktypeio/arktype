@@ -7,13 +7,11 @@ import { getTsMorphProject } from "./type/cacheAssertions.js"
 import { getTsNodeAtPosition } from "./type/getTsNodeAtPos.js"
 import type { SourcePosition } from "./utils.js"
 import { positionToString } from "./utils.js"
-import type { BenchFormat } from "./writeSnapshot.js"
 import { writeUpdates } from "./writeSnapshot.js"
 
 export type SnapshotArgs = {
     position: SourcePosition
     serializedValue: unknown
-    benchFormat: Required<BenchFormat>
     snapFunctionName?: string
     baselinePath?: string[]
 }
@@ -72,8 +70,7 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
     position,
     serializedValue,
     snapFunctionName = "snap",
-    baselinePath,
-    benchFormat
+    baselinePath
 }: SnapshotArgs) => {
     const snapCall = findCallExpressionAncestor(
         getTsMorphProject(),
@@ -86,8 +83,7 @@ export const queueInlineSnapshotWriteOnProcessExit = ({
         snapCall,
         snapFunctionName,
         newArgText,
-        baselinePath,
-        benchFormat
+        baselinePath
     })
 }
 
@@ -97,7 +93,6 @@ export type QueuedUpdate = {
     snapFunctionName: string
     newArgText: string
     baselinePath: string[] | undefined
-    benchFormat: Required<BenchFormat>
 }
 
 /**

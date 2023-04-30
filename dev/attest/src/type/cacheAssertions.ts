@@ -1,7 +1,7 @@
-import { mkdirSync, rmSync } from "node:fs"
+import { rmSync } from "node:fs"
 import { Project } from "ts-morph"
-import { getAttestConfig } from "../config.js"
-import { writeJson } from "../main.js"
+import { getConfig } from "../config.js"
+import { ensureDir, writeJson } from "../main.js"
 import { writeCachedInlineSnapshotUpdates } from "../writeSnapshot.js"
 import { getAssertionsByFile } from "./analysis.js"
 
@@ -17,10 +17,10 @@ export const getTsMorphProject = () => {
 }
 
 export const cacheAssertions = () => {
-    const config = getAttestConfig()
+    const config = getConfig()
     rmSync(config.cacheDir, { recursive: true, force: true })
-    mkdirSync(config.cacheDir)
-    mkdirSync(config.snapCacheDir)
+    ensureDir(config.cacheDir)
+    ensureDir(config.snapCacheDir)
     writeJson(
         config.assertionCacheFile,
         getAssertionsByFile({ isInitialCache: true })
@@ -28,7 +28,7 @@ export const cacheAssertions = () => {
 }
 
 export const cleanupAssertions = () => {
-    const config = getAttestConfig()
+    const config = getConfig()
     try {
         writeCachedInlineSnapshotUpdates()
     } finally {
