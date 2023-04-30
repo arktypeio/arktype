@@ -10,39 +10,16 @@ defaults:
 
 jobs:
     core:
-        runs-on: ubuntu-latest
-        timeout-minutes: 20
-        steps:
-            - name: Checkout repo
-              uses: actions/checkout@v3
-              with:
-                  fetch-depth: 0
-
-            - name: Setup repo
-              uses: ./.github/actions/setup
-
-            - name: Lint
-              run: pnpm lint
-
-            - name: Format
-              run: pnpm checkFormat
-
-            - name: Test
-              run: pnpm testRepo
-
-            - name: Docgen
-              run: pnpm docgen
-
-            - name: Site
-              run: pnpm buildSite
-
-    compatibility:
-        needs: core
         timeout-minutes: 20
         strategy:
             matrix:
-                node: [lts/-1, lts/*, latest]
-                os: [ubuntu-latest, windows-latest, macos-latest]
+                node: [lts/*]
+                os: [windows-latest, macos-latest]
+                include:
+                    - os: ubuntu-latest
+                      node: lts/-1
+                    - os: ubuntu-latest
+                      node: latest
 
         runs-on: ${{ matrix.os }}
         steps:
@@ -56,14 +33,11 @@ jobs:
               with:
                   node: ${{ matrix.node }}
 
-            - name: Test
-              run: pnpm testRepo
-
-            - name: Site
-              run: pnpm buildSite
+            - name: prChecks
+              run: pnpm prChecks
 
     prChecks:
-        needs: compatibility
+        needs: core
         timeout-minutes: 1
         runs-on: ubuntu-latest
         steps:
