@@ -4,10 +4,9 @@
     "private": true,
     "scripts": {
         "dev": "docusaurus start",
-        "build": "tsx ../scripts/buildArktypeIo.ts",
+        "build": "node --loader ts-node/esm ../scripts/docgen.ts && pnpm docusaurus build --out-dir dist && cp CNAME dist",
         "typecheck": "tsc",
-        "serve": "docusaurus serve --dir dist",
-        "docgen": "cd .. && pnpm docgen"
+        "serve": "docusaurus serve --dir dist"
     },
     "dependencies": {
         "@docusaurus/core": "2.4.0",
