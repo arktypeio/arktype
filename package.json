@@ -35,10 +35,10 @@
     ],
     "packageManager": "pnpm@8.3.1",
     "scripts": {
-        "prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm buildRepo && pnpm testRepo",
+        "prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
         "typecheck": "tsc --noEmit",
         "build": "node --loader ts-node/esm ./dev/scripts/build.ts",
-        "buildRepo": "pnpm build && pnpm build -r",
+        "buildRepo": "pnpm build -r",
         "test": "node --loader ts-node/esm ./dev/scripts/test.ts",
         "tnt": "node --loader ts-node/esm ./dev/scripts/test.ts --skipTypes",
         "testRepo": "pnpm -r test && pnpm testBuild && pnpm testTsVersions",
