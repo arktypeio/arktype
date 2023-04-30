@@ -1,11 +1,15 @@
-import { fromPackageRoot, shell } from "../attest/src/main.js"
+import { fromHere, shell } from "../attest/src/main.js"
 import { repoDirs } from "./common.js"
 
-export const testBuild = (outDir: string) => {
-    const cli = fromPackageRoot("dev", "attest", outDir, "cli.js")
-    shell(`node ${cli} --skipTypes --runner mocha`, { cwd: outDir })
+const testBuild = (outDir: string) => {
+    shell(`node --loader ts-node/esm ${fromHere("test.ts")} --skipTypes`, {
+        cwd: outDir
+    })
 }
-shell("pnpm buildAttest")
+
+shell("pnpm build", {
+    cwd: fromHere("..", "attest")
+})
 shell("pnpm build --test")
 testBuild(repoDirs.mjsOut)
 testBuild(repoDirs.cjsOut)

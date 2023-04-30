@@ -39,6 +39,6 @@
     },
     "scripts": {
         "build": "node --loader ts-node/esm ../scripts/build.ts",
-        "test": "node --loader ts-node/esm src/cli.ts --runner mocha"
+        "test": "node --loader ts-node/esm ../scripts/test.ts"
     }
 }
