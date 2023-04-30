@@ -1,6 +1,8 @@
 import process from "node:process"
 import { snapshot } from "arktype/internal/utils/serialize.js"
+import type { QueuedUpdate } from "../snapshot.js"
 import { createQueuedSnapshotUpdate } from "../snapshot.js"
+import { writeUpdates } from "../writeSnapshot.js"
 import type { BenchAssertionContext, BenchContext } from "./bench.js"
 import type {
     MarkMeasure,
@@ -8,6 +10,8 @@ import type {
     MeasureComparison
 } from "./measure/measure.js"
 import { stringifyMeasure } from "./measure/measure.js"
+
+const queuedUpdates: QueuedUpdate[] = []
 
 export const queueBaselineUpdateIfNeeded = (
     updated: Measure | MarkMeasure,
@@ -24,12 +28,19 @@ export const queueBaselineUpdateIfNeeded = (
             `Unable to update baseline for ${ctx.qualifiedName} ('lastSnapCallPosition' was unset).`
         )
     }
-    createQueuedSnapshotUpdate({
-        position: ctx.lastSnapCallPosition,
-        serializedValue,
-        snapFunctionName: ctx.kind,
-        baselinePath: ctx.qualifiedPath
-    })
+    if (queuedUpdates.length === 0) {
+        process.addListener("exit", () => {
+            writeUpdates(queuedUpdates)
+        })
+    }
+    queuedUpdates.push(
+        createQueuedSnapshotUpdate({
+            position: ctx.lastSnapCallPosition,
+            serializedValue,
+            snapFunctionName: ctx.kind,
+            baselinePath: ctx.qualifiedPath
+        })
+    )
 }
 
 /** Pretty print comparison and set the process.exitCode to 1 if delta threshold is exceeded */

@@ -1,6 +1,5 @@
 import { copyFileSync } from "node:fs"
-import { readFile } from "../../attest/src/main.js"
-import { writeCachedInlineSnapshotUpdates } from "../src/writeSnapshot.js"
+import { readFile, shell } from "../../attest/src/main.js"
 
 export const runThenGetContents = async (
     actualPath: string,
@@ -9,8 +8,7 @@ export const runThenGetContents = async (
     copyFileSync(templatePath, actualPath)
     let testFileContents
     try {
-        await import(actualPath)
-        writeCachedInlineSnapshotUpdates()
+        shell(`node --loader ts-node/esm ${actualPath}`)
     } finally {
         testFileContents = readFile(actualPath)
         copyFileSync(templatePath, actualPath)

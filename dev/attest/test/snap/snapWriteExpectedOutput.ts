@@ -1,6 +1,6 @@
-import { attest, cacheAssertions, cleanupAssertions } from "../../src/main.js"
+import { attest, cleanup, setup } from "../../src/main.js"
 
-cacheAssertions()
+setup()
 
 attest({ re: "do" }).equals({ re: "do" }).types.toString.snap(`{ re: string; }`)
 
@@ -23,4 +23,4 @@ multiline`)
 
 attest("with `quotes`").snap(`with \`quotes\``)
 
-cleanupAssertions()
+cleanup()

@@ -27,8 +27,11 @@ export const getTsMorphProject = () => {
     return __projectCache
 }
 
-export const cacheAssertions = (options?: AttestOptions) => {
+export const setup = (options?: AttestOptions) => {
     const config = configure(options)
+    if (config.skipTypes) {
+        return
+    }
     rmSync(config.cacheDir, { recursive: true, force: true })
     ensureDir(config.cacheDir)
     ensureDir(config.snapCacheDir)
@@ -38,7 +41,7 @@ export const cacheAssertions = (options?: AttestOptions) => {
     )
 }
 
-export const cleanupAssertions = () => {
+export const cleanup = () => {
     const config = getConfig()
     try {
         writeCachedInlineSnapshotUpdates()

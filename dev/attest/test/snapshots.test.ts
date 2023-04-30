@@ -1,4 +1,4 @@
-import * as assert from "node:assert/strict"
+import { equal } from "node:assert/strict"
 import { describe, it } from "mocha"
 import { fromHere, readFile } from "../src/main.js"
 import { runThenGetContents } from "./utils.js"
@@ -13,7 +13,6 @@ const expectedOutput = readFile(fromHere("benchExpectedOutput.ts")).replaceAll(
 describe("bench", () => {
     it("populates file", async () => {
         const actual = await runThenGetContents(benchActual, benchTemplate)
-
-        assert.equal(actual, expectedOutput)
+        equal(actual, expectedOutput)
     }).timeout(30000)
 })
