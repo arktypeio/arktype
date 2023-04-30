@@ -1,21 +1,19 @@
-import { copyFileSync, rmSync } from "node:fs"
-import { fromHere, readFile } from "../../attest/src/main.js"
-import { configure, getConfig } from "../src/config.js"
+import { copyFileSync } from "node:fs"
+import { readFile, writeFile } from "../../attest/src/main.js"
+import { writeCachedInlineSnapshotUpdates } from "../src/writeSnapshot.js"
 
-const PATH_TO_TEST_ASSERTIONS_DIR = fromHere(".attest")
-
-export const runThenGetContents = async (templatePath: string) => {
-    const testFileCopyPath = templatePath + ".temp.ts"
+export const runThenGetContents = async (
+    testFileCopyPath: string,
+    templatePath: string
+) => {
     copyFileSync(templatePath, testFileCopyPath)
     let testFileContents
     try {
-        const lastConfig = getConfig()
-        configure({ cacheDir: PATH_TO_TEST_ASSERTIONS_DIR })
         await import(testFileCopyPath)
-        configure(lastConfig)
+        writeCachedInlineSnapshotUpdates()
     } finally {
         testFileContents = readFile(testFileCopyPath)
-        rmSync(testFileCopyPath)
+        writeFile(testFileCopyPath, readFile(templatePath))
     }
     return testFileContents
 }

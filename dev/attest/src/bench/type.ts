@@ -115,6 +115,8 @@ export const createBenchTypeAssertion = (
 ): BenchTypeAssertions => ({
     types: (...args: [instantiations?: Measure<TypeUnit> | undefined]) => {
         ctx.lastSnapCallPosition = caller()
+        const project = getTsMorphProject()
+        project.addSourceFileAtPath(ctx.benchCallPosition.file)
         const benchFnCall = findCallExpressionAncestor(
             getTsMorphProject(),
             ctx.benchCallPosition,
