@@ -8,7 +8,6 @@ import type {
     SourceFile
 } from "ts-morph"
 import { readPackageJson } from "../../../attest/src/fs.js"
-import { getEntryPointsToRelativeDtsPaths } from "./utils.js"
 
 export type ApiEntryPoint = {
     subpath: string
@@ -41,35 +40,19 @@ export const extractApi = (project: Project, packageRoot: string) => {
         rootDir: packageRoot,
         packageJsonData
     }
-    const api = extractEntryPoints({
-        project,
-        packageJson: packageJsonData,
-        rootDir: packageRoot
-    })
-
     return {
         metadata,
-        api
-    }
-}
-
-export const extractEntryPoints = ({
-    project,
-    packageJson,
-    rootDir
-}: ExtractPackageApiContext): ApiEntryPoint[] => {
-    const entryPoints = getEntryPointsToRelativeDtsPaths(packageJson)
-    return entryPoints
-        .filter(([subpath]) => !subpath.includes("internal"))
-        .map(([subpath, relativeDtsPath]) => {
-            const entryPointDts = project.addSourceFileAtPath(
-                join(rootDir, relativeDtsPath)
-            )
-            return {
-                subpath,
-                exports: extractExportsFromDts(entryPointDts)
+        api: [
+            {
+                subpath: ".",
+                exports: extractExportsFromDts(
+                    project.addSourceFileAtPath(
+                        join(packageRoot, "dist", "main.d.ts")
+                    )
+                )
             }
-        })
+        ]
+    }
 }
 
 export type ExportData = {
