@@ -1,6 +1,6 @@
 // @ts-ignore
 import { format } from "prettier"
-import { scope } from "../../src/main.js"
+import { scope, type } from "../../src/main.js"
 
 // const benchData = {
 //     number: 1,
@@ -74,6 +74,8 @@ const places = scope({
 
 const t = places.type("rainForest|desert|sky|ocean")
 
+console.log(t.toString())
+
 console.log(format(t.allows.toString()))
 
-console.log(t.allows({ climate: "'wet'" }))
+console.log(t.allows({ climate: "wet", color: "blue", isOcean: true }))

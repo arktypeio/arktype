@@ -119,7 +119,10 @@ export class PropsNode extends Node<typeof PropsNode> {
                 }
             }
             if (propResult instanceof DisjointNode) {
-                Object.assign(disjointsByPath, propResult.withPrefixKey(k))
+                Object.assign(
+                    disjointsByPath,
+                    propResult.withPrefixKey(k).paths
+                )
             } else {
                 named[k] = propResult
             }

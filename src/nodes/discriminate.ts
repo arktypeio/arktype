@@ -39,6 +39,8 @@ export const discriminate = (branches: PredicateNode[]) => {
     }
     const discriminants = calculateDiscriminants(branches)
     const indices = branches.map((_, i) => i)
+    // TODO: remove:
+    console.log(discriminants)
     return discriminateRecurse(branches, indices, discriminants)
 }
 
