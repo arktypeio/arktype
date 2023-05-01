@@ -1,5 +1,12 @@
-import { arrayOf, intersection, morph, narrow, type, union } from "#arktype"
-import { bench } from "#attest"
+import {
+    arrayOf,
+    intersection,
+    morph,
+    narrow,
+    type,
+    union
+} from "../../src/main.js"
+import { bench } from "../attest/main.js"
 
 bench("string", () => {
     const _ = type("number[]")

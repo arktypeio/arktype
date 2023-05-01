@@ -12,52 +12,36 @@
         "url": "https://github.com/arktypeio/arktype.git"
     },
     "type": "module",
-    "main": "./dist/cjs/main.js",
-    "types": "./dist/types/main.d.ts",
-    "imports": {
-        "#arktype": "./src/main.ts",
-        "#attest": "./dev/attest/src/main.ts"
-    },
+    "main": "./dist/main.js",
+    "types": "./dist/main.d.ts",
     "exports": {
-        ".": {
-            "types": "./dist/types/main.d.ts",
-            "import": "./dist/mjs/main.js",
-            "require": "./dist/cjs/main.js"
-        },
-        "./internal/*": {
-            "types": "./dist/types/*",
-            "import": "./dist/mjs/*",
-            "require": "./dist/cjs/*"
-        }
+        ".": "./dist/main.js",
+        "./internal/*": "./dist/*"
     },
     "files": [
-        "dist"
+        "dist",
+        "!*.tsbuildinfo"
     ],
-    "packageManager": "pnpm@7.27.0",
+    "packageManager": "pnpm@8.3.1",
     "scripts": {
-        "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm testRepo && pnpm docgen && pnpm buildSite",
+        "prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
+        "build": "pnpm ts ./dev/scripts/build.ts",
+        "buildRepo": "pnpm build -r",
+        "test": "pnpm ts ./dev/scripts/test.ts",
+        "tnt": "pnpm ts ./dev/scripts/test.ts --skipTypes",
+        "testRepo": "pnpm -r test && pnpm testTsVersions",
+        "testTsVersions": "pnpm ts ./dev/scripts/testTsVersions.ts",
         "typecheck": "tsc --noEmit",
-        "build": "ts-node ./dev/scripts/build.ts",
-        "buildRepo": "pnpm build && pnpm docgen && pnpm buildSite",
-        "buildSite": "cd dev/arktype.io && pnpm install && pnpm build",
-        "buildAttest": "cd dev/attest && pnpm build",
-        "docgen": "ts-node ./dev/scripts/docgen.ts",
-        "test": "ts-node ./dev/scripts/testArktype.ts",
-        "tnt": "ts-node ./dev/scripts/testArktype.ts --skipTypes",
-        "testRepo": "pnpm testBuild && pnpm testTsVersions && pnpm testAttest",
-        "testBuild": "ts-node ./dev/scripts/testBuild.ts",
-        "testAttest": "ts-node ./dev/scripts/testAttest.ts",
-        "testTsVersions": "ts-node ./dev/scripts/testTsVersions.ts",
-        "testDeno": "deno test -c ./dev/configs/deno.jsonc --no-check --allow-all --no-npm -- --skipTypes",
-        "bench": "ts-node ./dev/attest/src/cli.ts --bench",
+        "ts": "node --loader=ts-node/esm --no-warnings=ExperimentalWarning",
         "lint": "eslint --max-warnings=0 .",
         "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
-        "findUnused": "ts-node ./dev/scripts/findUnusedExports.ts",
+        "checkFormat": "prettier --check --ignore-path ./dev/configs/.prettierignore .",
+        "findUnused": "pnpm ts ./dev/scripts/findUnusedExports.ts",
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install dev/configs/.husky",
-        "changeset": "ts-node ./dev/scripts/changeset.ts",
-        "ci:version": "ts-node ./dev/scripts/updateVersions.ts",
-        "ci:publish": "ts-node ./dev/scripts/changeset.ts publish"
+        "changeset": "pnpm ts ./dev/scripts/changeset.ts",
+        "ci:version": "pnpm ts ./dev/scripts/updateVersions.ts",
+        "ci:publish": "pnpm ts ./dev/scripts/changeset.ts publish"
     },
     "devDependencies": {
         "@changesets/changelog-github": "0.4.8",
@@ -72,18 +56,19 @@
         "eslint": "8.36.0",
         "eslint-config-prettier": "8.8.0",
         "eslint-define-config": "1.17.0",
+        "eslint-plugin-only-warn": "1.1.0",
         "eslint-import-resolver-typescript": "3.5.3",
         "eslint-plugin-import": "2.27.5",
-        "eslint-plugin-only-warn": "1.1.0",
         "eslint-plugin-prefer-arrow": "1.2.3",
         "eslint-plugin-unicorn": "46.0.0",
-        "get-current-line": "6.6.0",
         "husky": "8.0.3",
         "mocha": "10.2.0",
         "prettier": "2.8.6",
         "prettier-plugin-jsdoc": "0.4.2",
         "pretty-quick": "3.1.3",
+        "ts-morph": "18.0.0",
         "ts-node": "10.9.1",
+        "tsup": "6.7.0",
         "typescript": "5.0.3"
     },
     "c8": {

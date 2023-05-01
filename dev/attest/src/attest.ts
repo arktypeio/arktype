@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url"
 import { Assertions } from "./assertions/assertions.js"
 import type { RootAssertions } from "./assertions/types.js"
 import type { AttestConfig } from "./config.js"
-import { getAttestConfig } from "./config.js"
+import { getConfig } from "./config.js"
 import { caller, getCallStack } from "./main.js"
 import type { SourcePosition } from "./utils.js"
 
@@ -33,7 +33,7 @@ export const attest = ((
         allowRegex: false,
         originalAssertedValue: value,
         position,
-        cfg: { ...getAttestConfig(), ...internalConfigHooks },
+        cfg: { ...getConfig(), ...internalConfigHooks },
         assertionStack: getCallStack({ offset: 1 }).join("\n")
     }
     return new Assertions(ctx)

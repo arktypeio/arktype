@@ -21,3 +21,8 @@ coverage
 # @blockEnd 
 
 pnpm-lock.yaml
+
+# this file triggers a bug that always formats it
+# https://github.com/prettier/prettier/issues/14764
+../arktype.io/docs/api/narrow.md
+../arktype.io/versioned_docs/**/api/narrow.md

@@ -21,17 +21,8 @@ jobs:
             - name: Setup repo
               uses: ./.github/actions/setup
 
-            - name: Lint
-              run: pnpm lint
-
-            - name: Test
-              run: pnpm testRepo
-
-            - name: Docgen
-              run: pnpm docgen
-
-            - name: Site
-              run: pnpm buildSite
+            - name: prChecks
+              run: pnpm prChecks
 
     compatibility:
         needs: core
@@ -43,8 +34,10 @@ jobs:
                 include:
                     - os: ubuntu-latest
                       node: lts/-1
-                    - os: ubuntu-latest
-                      node: latest
+                    # https://github.com/arktypeio/arktype/issues/738
+                    # - os: ubuntu-latest
+                    #   node: latest
+            fail-fast: false
 
         runs-on: ${{ matrix.os }}
         steps:
@@ -60,9 +53,6 @@ jobs:
 
             - name: Test
               run: pnpm testRepo
-
-            - name: Site
-              run: pnpm buildSite
 
     prChecks:
         needs: compatibility
