@@ -197,7 +197,7 @@ const parseQualifiedDisjoint = (qualifiedDisjoint: QualifiedDisjoint) => {
     const splitIndex = qualifiedDisjoint.lastIndexOf(":")
     return [
         qualifiedDisjoint.slice(0, splitIndex),
-        qualifiedDisjoint.slice(splitIndex)
+        qualifiedDisjoint.slice(splitIndex + 1)
     ] as [path: CompiledPath, kind: DiscriminantKind]
 }
 

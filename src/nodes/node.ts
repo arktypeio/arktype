@@ -136,14 +136,15 @@ export type Disjoint = {
         l: unknown
         r: unknown
     }
-    leftAssignability?: {
-        l: unknown
-        r: PredicateNode
-    }
-    rightAssignability?: {
-        l: PredicateNode
-        r: unknown
-    }
+    assignability?:
+        | {
+              l: unknown
+              r: PredicateNode
+          }
+        | {
+              l: PredicateNode
+              r: unknown
+          }
     union?: {
         l: TypeNode
         r: TypeNode
@@ -167,12 +168,15 @@ export class DisjointNode {
         let path: CompiledPath
         for (path in this.paths) {
             const disjoint = this.paths[path]
+            const invertedKinds: Disjoint = {}
             let kind: DisjointKind
             for (kind in disjoint) {
-                const swap = disjoint[kind]!.l
-                disjoint[kind]!.l = disjoint[kind]!.r
-                disjoint[kind]!.r = swap
+                invertedKinds[kind] = {
+                    l: disjoint[kind]!.r as never,
+                    r: disjoint[kind]!.l as never
+                }
             }
+            inverted[path] = invertedKinds
         }
         return new DisjointNode(inverted)
     }
