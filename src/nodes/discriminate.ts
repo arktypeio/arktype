@@ -33,7 +33,10 @@ export type DiscriminatedCases<
 
 export type QualifiedDisjoint = `${CompiledPath}:${DiscriminantKind}`
 
-export const discriminate = (branches: readonly PredicateNode[]) => {
+export const discriminate = (branches: PredicateNode[]) => {
+    if (branches.length === 0 || branches.length === 1) {
+        return branches
+    }
     const discriminants = calculateDiscriminants(branches)
     const indices = branches.map((_, i) => i)
     return discriminateRecurse(branches, indices, discriminants)
@@ -117,8 +120,8 @@ const calculateDiscriminants = (
     for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
         for (let rIndex = lIndex + 1; rIndex < branches.length; rIndex++) {
             const pairKey = `${lIndex},${rIndex}` as const
-            const pairDisjoints: QualifiedDisjoint[] = []
-            discriminants.disjointsByPair[pairKey] = pairDisjoints
+            discriminants.disjointsByPair[pairKey] = []
+            const pairDisjoints = discriminants.disjointsByPair[pairKey]
             const result = branches[lIndex].intersect(branches[rIndex])
             if (!(result instanceof DisjointNode)) {
                 continue
@@ -173,13 +176,13 @@ const calculateDiscriminants = (
             }
         }
     }
-    // TODO: sort wasn't necesssary before?
-    let k: QualifiedDisjoint
-    for (k in discriminants.casesByDisjoint) {
-        for (const caseKey in discriminants.casesByDisjoint[k]) {
-            discriminants.casesByDisjoint[k]![caseKey]!.sort()
-        }
-    }
+    // // TODO: sort wasn't necesssary before?
+    // let k: QualifiedDisjoint
+    // for (k in discriminants.casesByDisjoint) {
+    //     for (const caseKey in discriminants.casesByDisjoint[k]) {
+    //         discriminants.casesByDisjoint[k]![caseKey]!.sort()
+    //     }
+    // }
     return discriminants
 }
 
