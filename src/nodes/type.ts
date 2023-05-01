@@ -5,6 +5,7 @@ import type { List } from "../utils/generics.js"
 import { isArray } from "../utils/objectKinds.js"
 import { serializePrimitive } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
+import type { CompilationState } from "./compilation.js"
 import type {
     CaseKey,
     DiscriminatedBranches,
@@ -12,7 +13,7 @@ import type {
 } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
-import type { CompilationState, CompiledAssertion } from "./node.js"
+import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 import type {
     ConstraintKind,

@@ -1,4 +1,5 @@
-import type { CompilationState, CompiledAssertion } from "./node.js"
+import type { CompilationState } from "./compilation.js"
+import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 import { In } from "./utils.js"
 

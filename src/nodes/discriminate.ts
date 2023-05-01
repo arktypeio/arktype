@@ -1,6 +1,6 @@
 import type { Domain } from "../utils/domains.js"
 import type { evaluate, keySet } from "../utils/generics.js"
-import { isKeyOf, keysOf } from "../utils/generics.js"
+import { hasKey, isKeyOf, keysOf } from "../utils/generics.js"
 import type { DefaultObjectKind } from "../utils/objectKinds.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import type { QualifiedDisjoint } from "./disjoint.js"
@@ -41,8 +41,6 @@ export const discriminate = (branches: PredicateNode[]) => {
     }
     const discriminants = calculateDiscriminants(branches)
     const indices = branches.map((_, i) => i)
-    // TODO: remove:
-    console.log(discriminants)
     return discriminateRecurse(branches, indices, discriminants)
 }
 
@@ -66,7 +64,7 @@ const discriminateRecurse = (
         // : compileBranch(originalBranches[i], ctx)
         return remainingIndices.map((i) => originalBranches[i])
     }
-    const cases = { default: [] } as DiscriminatedCases
+    const cases = {} as DiscriminatedCases
     for (const caseKey in bestDiscriminant.indexCases) {
         const nextIndices = bestDiscriminant.indexCases[caseKey]!
         cases[caseKey] = discriminateRecurse(
@@ -81,6 +79,10 @@ const discriminateRecurse = (
         //         bestDiscriminant
         //     )
         // }
+    }
+    if (!hasKey(cases, "default")) {
+        // TODO: Create error from union
+        cases.default = []
     }
     return {
         path: bestDiscriminant.path,
