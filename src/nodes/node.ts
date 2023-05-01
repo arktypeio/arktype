@@ -88,14 +88,19 @@ export abstract class Node<
     #intersections: Record<string, instanceOf<subclass> | DisjointNode> = {}
     intersect(other: instanceOf<subclass>) {
         if (this.key === other.key) {
-            return this
+            return this as instanceOf<subclass>
         }
-        this.#intersections[other.key] ??= this.subclass.intersect(
+        if (this.#intersections[other.key]) {
+            return this.#intersections[other.key]
+        }
+        const result = this.subclass.intersect(
             this as instanceOf<subclass>,
             other
         )
-        other.#intersections[this.key] = this.#intersections[other.key]
-        return this.#intersections[other.key]
+        this.#intersections[other.key] = result
+        other.#intersections[this.key] =
+            result instanceof DisjointNode ? result.invert() : result
+        return result
     }
 
     abstract compileTraverse(s: CompilationState): string
@@ -149,11 +154,27 @@ export type DisjointsByPath = Record<CompiledPath, Disjoint>
 
 export type DisjointKind = keyof Disjoint
 
+// TODO: qualified disjoint here?
 export class DisjointNode {
     constructor(public paths: DisjointsByPath) {}
 
     static from(disjoint: Disjoint) {
         return new DisjointNode({ $arkIn: disjoint })
+    }
+
+    invert() {
+        const inverted: DisjointsByPath = {}
+        let path: CompiledPath
+        for (path in this.paths) {
+            const disjoint = this.paths[path]
+            let kind: DisjointKind
+            for (kind in disjoint) {
+                const swap = disjoint[kind]!.l
+                disjoint[kind]!.l = disjoint[kind]!.r
+                disjoint[kind]!.r = swap
+            }
+        }
+        return new DisjointNode(inverted)
     }
 
     withPrefixKey(key: string) {

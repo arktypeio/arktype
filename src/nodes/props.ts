@@ -1,6 +1,10 @@
 import type { Dict, List, mutable } from "../utils/generics.js"
-import { listFrom } from "../utils/generics.js"
-import type { CompilationState, CompiledAssertion } from "./node.js"
+import { hasKeys, listFrom } from "../utils/generics.js"
+import type {
+    CompilationState,
+    CompiledAssertion,
+    DisjointsByPath
+} from "./node.js"
 import { DisjointNode, Node } from "./node.js"
 import type { TypeNodeInput } from "./type.js"
 import { getNever, TypeNode } from "./type.js"
@@ -77,8 +81,9 @@ export class PropsNode extends Node<typeof PropsNode> {
             }
         }
         const named = { ...l.named, ...r.named }
+        const disjointsByPath: DisjointsByPath = {}
         for (const k in named) {
-            let propResult = named[k]
+            let propResult: NamedPropNode | DisjointNode = named[k]
             if (k in l.named) {
                 if (k in r.named) {
                     // We assume l and r were properly created and the named
@@ -86,14 +91,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                     // with any matching index props. Therefore, the
                     // intersection result will already include index values
                     // from both sides whose key types allow k.
-                    const result = l.named[k].intersect(r.named[k])
-                    if (result instanceof DisjointNode) {
-                        // TODO: fix partially optional disjoints (either key is
-                        // optional (type is still unsatisfiable but can't be
-                        // used to discriminate))
-                        return result.withPrefixKey(k)
-                    }
-                    propResult = result
+                    propResult = l.named[k].intersect(r.named[k])
                 } else {
                     // If a named key from l matches any index keys of r, intersect
                     // the value associated with the name with the index value.
@@ -103,12 +101,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                                 kind: "optional",
                                 value: rValue
                             })
-                            const result = propResult.intersect(rValueAsProp)
-                            if (result instanceof DisjointNode) {
-                                // TODO: fix these partially optional disjoints
-                                return result.withPrefixKey(k)
-                            }
-                            propResult = result
+                            propResult = l.named[k].intersect(rValueAsProp)
                         }
                     }
                 }
@@ -121,18 +114,19 @@ export class PropsNode extends Node<typeof PropsNode> {
                             kind: "optional",
                             value: lValue
                         })
-                        const result = propResult.intersect(lValueAsProp)
-                        if (result instanceof DisjointNode) {
-                            // TODO: fix these partially optional disjoints
-                            return result.withPrefixKey(k)
-                        }
-                        propResult = result
+                        propResult = r.named[k].intersect(lValueAsProp)
                     }
                 }
             }
-            named[k] = propResult
+            if (propResult instanceof DisjointNode) {
+                Object.assign(disjointsByPath, propResult.withPrefixKey(k))
+            } else {
+                named[k] = propResult
+            }
         }
-        return new PropsNode({ named, indexed })
+        return hasKeys(disjointsByPath)
+            ? new DisjointNode(disjointsByPath)
+            : new PropsNode({ named, indexed })
     }
 }
 

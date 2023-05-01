@@ -1,6 +1,6 @@
 // @ts-ignore
 import { format } from "prettier"
-import { scope, type } from "../../src/main.js"
+import { scope } from "../../src/main.js"
 
 // const benchData = {
 //     number: 1,
