@@ -1,3 +1,4 @@
+// @ts-ignore
 import { z } from "zod"
 import { scope, type } from "../../src/main.js"
 import { bench } from "../attest/main.js"

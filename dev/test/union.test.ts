@@ -30,7 +30,7 @@ describe("union/parse", () => {
         // })
     })
     it("subtype pruning", () => {
-        const t = type([{ a: "string" }, "|", { a: "'foo'" }])
+        type([{ a: "string" }, "|", { a: "'foo'" }])
         // attest(t.node).snap({ object: { props: { a: "string" } } })
     })
     it("union of true and false reduces to boolean", () => {

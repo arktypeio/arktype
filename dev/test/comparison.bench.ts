@@ -1,3 +1,4 @@
+// @ts-ignore
 import z from "zod"
 import { type } from "../../src/main.js"
 import { bench } from "../attest/main.js"
@@ -31,7 +32,7 @@ bench("ark instantiations", () => {
             bool: "boolean"
         }
     })
-}).type([6016, "instantiations"])
+}).types([6016, "instantiations"])
 
 bench("zod instantiations", () => {
     const zodType = z.object({
@@ -47,7 +48,7 @@ bench("zod instantiations", () => {
             bool: z.boolean()
         })
     })
-}).type([19688, "instantiations"])
+}).types([19688, "instantiations"])
 
 // const arkCheck = (data: any) => {
 //     const state = new (globalThis as any).$ark.state()
