@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
-import { ark, type } from "#arktype"
-import { attest } from "#attest"
+import { ark, type } from "../../src/main.js"
+import { attest } from "../attest/main.js"
 
 describe("keywords", () => {
     describe("js", () => {

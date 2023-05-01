@@ -1,4 +1,5 @@
 import { describe, it } from "mocha"
+import { type } from "../../src/main.js"
 import type { ResolvedNode } from "../../src/nodes/node.js"
 import { writeDoubleRightBoundMessage } from "../../src/parse/ast/bound.js"
 import {
@@ -7,8 +8,7 @@ import {
     writeUnpairableComparatorMessage
 } from "../../src/parse/string/reduce/shared.js"
 import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.js"
-import { type } from "#arktype"
-import { attest } from "#attest"
+import { attest } from "../attest/main.js"
 
 describe("range", () => {
     describe("parse", () => {

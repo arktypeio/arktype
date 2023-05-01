@@ -1,8 +1,8 @@
 import { describe, it } from "mocha"
+import { scope, type } from "../../src/main.js"
 import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
-import { scope, type } from "#arktype"
-import { attest } from "#attest"
+import { attest } from "../attest/main.js"
 
 describe("scope", () => {
     it("base definition", () => {

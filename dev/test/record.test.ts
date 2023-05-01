@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
-import { type } from "#arktype"
-import { attest } from "#attest"
+import { type } from "../../src/main.js"
+import { attest } from "../attest/main.js"
 
 describe("record", () => {
     it("required", () => {

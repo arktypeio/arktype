@@ -1,17 +1,15 @@
-import { copyFileSync } from "node:fs"
+import { copyFileSync, rmSync } from "node:fs"
 import { readFile, runTs } from "../../attest/src/main.js"
 
-export const runThenGetContents = (
-    actualPath: string,
-    templatePath: string
-) => {
-    copyFileSync(templatePath, actualPath)
-    let testFileContents
+export const runThenGetContents = (templatePath: string) => {
+    const tempPath = templatePath + ".temp.ts"
+    copyFileSync(templatePath, tempPath)
     try {
-        runTs(actualPath)
-    } finally {
-        testFileContents = readFile(actualPath)
-        copyFileSync(templatePath, actualPath)
+        runTs(tempPath)
+    } catch (e) {
+        console.error(e)
     }
-    return testFileContents
+    const resultContents = readFile(tempPath)
+    rmSync(tempPath)
+    return resultContents
 }

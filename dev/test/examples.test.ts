@@ -1,5 +1,5 @@
 import { describe, it } from "mocha"
-import { attest } from "#attest"
+import { attest } from "../attest/main.js"
 
 describe("snippets", () => {
     it("demo", async () => {

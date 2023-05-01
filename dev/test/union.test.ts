@@ -1,10 +1,10 @@
 import { describe, it } from "mocha"
+import { type, union } from "../../src/main.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
 } from "../../src/parse/string/shift/operand/unenclosed.js"
-import { type, union } from "#arktype"
-import { attest } from "#attest"
+import { attest } from "../attest/main.js"
 
 describe("union/parse", () => {
     it("binary", () => {
