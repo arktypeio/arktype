@@ -13,6 +13,7 @@
         "@typescript-eslint/consistent-type-imports",
         "object-shorthand"
     ],
+    "typescript.preferences.autoImportFileExcludePatterns": ["dist"],
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "typescript.tsdk": "./node_modules/typescript/lib",
     "typescript.tsserver.experimental.enableProjectDiagnostics": true,
