@@ -4,11 +4,12 @@ import type { Domain } from "../utils/domains.js"
 import type { constructor, instanceOf } from "../utils/generics.js"
 import type { Basis, inferBasis } from "./basis.js"
 import { BasisNode } from "./basis.js"
+import { Disjoint } from "./disjoint.js"
 import { DivisibilityNode } from "./divisibility.js"
 import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
-import { Disjoint, Node } from "./node.js"
+import { Node } from "./node.js"
 import type { PropsInput } from "./props.js"
 import { PropsNode } from "./props.js"
 import type { Bounds } from "./range.js"
@@ -97,16 +98,12 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         if (l.valueNode) {
             return r.allows(l.valueNode.literalValue)
                 ? l
-                : Disjoint.from({
-                      assignability: { l: l.valueNode.literalValue, r }
-                  })
+                : Disjoint.from("assignability", l.valueNode.literalValue, r)
         }
         if (r.valueNode) {
             return l.allows(r.valueNode.literalValue)
                 ? r
-                : Disjoint.from({
-                      assignability: { l, r: r.valueNode.literalValue }
-                  })
+                : Disjoint.from("assignability", l, r.valueNode.literalValue)
         }
         const resultInput: RuleNodes = [basisResult, ...l.constraints]
         for (let i = 0; i < r.constraints.length; i++) {

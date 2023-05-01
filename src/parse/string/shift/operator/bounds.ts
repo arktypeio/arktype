@@ -1,4 +1,4 @@
-import { Disjoint } from "../../../../nodes/node.js"
+import { Disjoint } from "../../../../nodes/disjoint.js"
 import type { Comparator, MaxComparator } from "../../../../nodes/range.js"
 import { maxComparators, RangeNode } from "../../../../nodes/range.js"
 import type { error, keySet } from "../../../../utils/generics.js"

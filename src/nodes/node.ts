@@ -1,15 +1,12 @@
 import type { TypeConfig } from "../type.js"
 import type { Domain } from "../utils/domains.js"
-import type { constructor, evaluate, instanceOf } from "../utils/generics.js"
+import type { evaluate, instanceOf } from "../utils/generics.js"
 import { CompiledFunction } from "../utils/generics.js"
 import { Path } from "../utils/paths.js"
-import { stringify } from "../utils/serialize.js"
-import type { PredicateNode } from "./predicate.js"
+import { Disjoint } from "./disjoint.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
-import type { RangeNode } from "./range.js"
-import type { TypeNode } from "./type.js"
 import type { CompiledPath } from "./utils.js"
-import { compilePathAccess, In, insertInitialPropAccess } from "./utils.js"
+import { compilePathAccess, In } from "./utils.js"
 
 type BaseAssertion =
     | `${CompiledPath}${string}`
@@ -104,82 +101,6 @@ export abstract class Node<
     }
 
     abstract compileTraverse(s: CompilationState): string
-}
-
-export type DisjointKinds = {
-    domain?: {
-        l: Domain
-        r: Domain
-    }
-    value?: {
-        l: unknown
-        r: unknown
-    }
-    range?: {
-        l: RangeNode
-        r: RangeNode
-    }
-    class?: {
-        l: constructor
-        r: constructor
-    }
-    assignability?:
-        | {
-              l: unknown
-              r: PredicateNode
-          }
-        | {
-              l: PredicateNode
-              r: unknown
-          }
-    union?: {
-        l: TypeNode
-        r: TypeNode
-    }
-}
-
-export type DisjointsByPath = Record<CompiledPath, DisjointKinds>
-
-export type DisjointKind = keyof DisjointKinds
-
-// TODO: qualified disjoint here?
-export class Disjoint {
-    constructor(public paths: DisjointsByPath) {}
-
-    static from(disjoint: DisjointKinds) {
-        return new Disjoint({ $arkIn: disjoint })
-    }
-
-    invert() {
-        const inverted: DisjointsByPath = {}
-        let path: CompiledPath
-        for (path in this.paths) {
-            const disjoint = this.paths[path]
-            const invertedKinds: DisjointKinds = {}
-            let kind: DisjointKind
-            for (kind in disjoint) {
-                invertedKinds[kind] = {
-                    l: disjoint[kind]!.r as never,
-                    r: disjoint[kind]!.l as never
-                }
-            }
-            inverted[path] = invertedKinds
-        }
-        return new Disjoint(inverted)
-    }
-
-    withPrefixKey(key: string) {
-        const disjoints: DisjointsByPath = {}
-        let path: CompiledPath
-        for (path in this.paths) {
-            disjoints[insertInitialPropAccess(path, key)] = this.paths[path]
-        }
-        return new Disjoint(disjoints)
-    }
-
-    toString() {
-        return stringify(this.paths)
-    }
 }
 
 export type TraversalConfig = {

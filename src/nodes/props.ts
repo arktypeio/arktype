@@ -1,11 +1,9 @@
 import type { Dict, List, mutable } from "../utils/generics.js"
 import { hasKeys, listFrom } from "../utils/generics.js"
-import type {
-    CompilationState,
-    CompiledAssertion,
-    DisjointsByPath
-} from "./node.js"
-import { Disjoint, Node } from "./node.js"
+import type { DisjointsByPath } from "./disjoint.js"
+import { Disjoint } from "./disjoint.js"
+import type { CompilationState, CompiledAssertion } from "./node.js"
+import { Node } from "./node.js"
 import type { TypeNodeInput } from "./type.js"
 import { getNever, TypeNode } from "./type.js"
 import { insertUniversalPropAccess } from "./utils.js"

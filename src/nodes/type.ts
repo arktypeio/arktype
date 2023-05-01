@@ -11,8 +11,9 @@ import type {
     DiscriminatedSwitch
 } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
+import { Disjoint } from "./disjoint.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
-import { Disjoint, Node } from "./node.js"
+import { Node } from "./node.js"
 import type {
     ConstraintKind,
     inferPredicateDefinition,
@@ -225,7 +226,7 @@ export class TypeNode<t = unknown> extends Node<
         }
         return finalBranches.length
             ? new TypeNode(finalBranches)
-            : Disjoint.from({ union: { l, r } })
+            : Disjoint.from("union", l, r)
     }
 
     constrain<kind extends ConstraintKind>(

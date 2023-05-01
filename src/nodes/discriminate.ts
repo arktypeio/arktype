@@ -3,8 +3,8 @@ import type { evaluate, keySet } from "../utils/generics.js"
 import { isKeyOf, keysOf } from "../utils/generics.js"
 import type { DefaultObjectKind } from "../utils/objectKinds.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
-import type { DisjointKind } from "./node.js"
-import { Disjoint } from "./node.js"
+import type { QualifiedDisjoint } from "./disjoint.js"
+import { Disjoint, parseQualifiedDisjoint } from "./disjoint.js"
 import type { PredicateNode } from "./predicate.js"
 import { type CompiledPath } from "./utils.js"
 
@@ -31,7 +31,9 @@ export type DiscriminatedCases<
     [caseKey in CaseKey<kind>]: PredicateNode[] | DiscriminatedSwitch
 }
 
-export type QualifiedDisjoint = `${CompiledPath}:${DiscriminantKind}`
+export type QualifiedDiscriminant<
+    kind extends DiscriminantKind = DiscriminantKind
+> = `${CompiledPath}:${kind}`
 
 export const discriminate = (branches: PredicateNode[]) => {
     if (branches.length === 0 || branches.length === 1) {
@@ -89,13 +91,13 @@ const discriminateRecurse = (
 
 type Discriminants = {
     disjointsByPair: DisjointsByPair
-    casesByDisjoint: CasesByDisjoint
+    casesByDisjoint: CasesByDiscriminant
 }
 
-type DisjointsByPair = Record<`${number},${number}`, QualifiedDisjoint[]>
+type DisjointsByPair = Record<`${number},${number}`, QualifiedDiscriminant[]>
 
-type CasesByDisjoint = {
-    [k in QualifiedDisjoint]?: IndexCases
+type CasesByDiscriminant = {
+    [k in QualifiedDiscriminant]?: IndexCases
 }
 
 export type DiscriminantKinds = {
@@ -106,6 +108,7 @@ export type DiscriminantKinds = {
 
 const discriminantKinds: keySet<DiscriminantKind> = {
     domain: true,
+    // TODO: does this work here?
     class: true,
     value: true
 }
@@ -128,63 +131,45 @@ const calculateDiscriminants = (
             if (!(result instanceof Disjoint)) {
                 continue
             }
-            let path: CompiledPath
+            let path: QualifiedDisjoint
             for (path in result.paths) {
-                if (path.includes("mapped")) {
-                    // containers could be empty and therefore their elements cannot be used to discriminate
-                    // allowing this via a special case where both are length >0 tracked here:
-                    // https://github.com/arktypeio/arktype/issues/593
+                const kind = parseQualifiedDisjoint(path)[1]
+                const disjointAtPath = result.paths[path]!
+                if (!isKeyOf(kind, discriminantKinds)) {
                     continue
                 }
-                let kind: DisjointKind
-                const disjointAtPath = result.paths[path]
-                for (kind in disjointAtPath) {
-                    if (!isKeyOf(kind, discriminantKinds)) {
-                        continue
+                const qualifiedDiscriminant = path as QualifiedDiscriminant
+                // TODO: fix
+                const lSerialized = String(disjointAtPath.l)
+                const rSerialized = String(disjointAtPath.r)
+                if (lSerialized === undefined || rSerialized === undefined) {
+                    continue
+                }
+                pairDisjoints.push(qualifiedDiscriminant)
+                if (!discriminants.casesByDisjoint[qualifiedDiscriminant]) {
+                    discriminants.casesByDisjoint[qualifiedDiscriminant] = {
+                        [lSerialized]: [lIndex],
+                        [rSerialized]: [rIndex]
                     }
-                    // TODO: fix
-                    const lSerialized = String(disjointAtPath[kind]!.l)
-                    const rSerialized = String(disjointAtPath[kind]!.r)
-                    if (
-                        lSerialized === undefined ||
-                        rSerialized === undefined
-                    ) {
-                        continue
-                    }
-                    const qualifiedDisjoint: QualifiedDisjoint = `${path}:${kind}`
-                    pairDisjoints.push(qualifiedDisjoint)
-                    if (!discriminants.casesByDisjoint[qualifiedDisjoint]) {
-                        discriminants.casesByDisjoint[qualifiedDisjoint] = {
-                            [lSerialized]: [lIndex],
-                            [rSerialized]: [rIndex]
-                        }
-                        continue
-                    }
-                    const cases =
-                        discriminants.casesByDisjoint[qualifiedDisjoint]!
-                    const existingLBranch = cases[lSerialized]
-                    if (!existingLBranch) {
-                        cases[lSerialized] = [lIndex]
-                    } else if (!existingLBranch.includes(lIndex)) {
-                        existingLBranch.push(lIndex)
-                    }
-                    const existingRBranch = cases[rSerialized]
-                    if (!existingRBranch) {
-                        cases[rSerialized] = [rIndex]
-                    } else if (!existingRBranch.includes(rIndex)) {
-                        existingRBranch.push(rIndex)
-                    }
+                    continue
+                }
+                const cases =
+                    discriminants.casesByDisjoint[qualifiedDiscriminant]!
+                const existingLBranch = cases[lSerialized]
+                if (!existingLBranch) {
+                    cases[lSerialized] = [lIndex]
+                } else if (!existingLBranch.includes(lIndex)) {
+                    existingLBranch.push(lIndex)
+                }
+                const existingRBranch = cases[rSerialized]
+                if (!existingRBranch) {
+                    cases[rSerialized] = [rIndex]
+                } else if (!existingRBranch.includes(rIndex)) {
+                    existingRBranch.push(rIndex)
                 }
             }
         }
     }
-    // // TODO: sort wasn't necesssary before?
-    // let k: QualifiedDisjoint
-    // for (k in discriminants.casesByDisjoint) {
-    //     for (const caseKey in discriminants.casesByDisjoint[k]) {
-    //         discriminants.casesByDisjoint[k]![caseKey]!.sort()
-    //     }
-    // }
     return discriminants
 }
 
@@ -193,14 +178,6 @@ type Discriminant = {
     kind: DiscriminantKind
     indexCases: IndexCases
     score: number
-}
-
-const parseQualifiedDisjoint = (qualifiedDisjoint: QualifiedDisjoint) => {
-    const splitIndex = qualifiedDisjoint.lastIndexOf(":")
-    return [
-        qualifiedDisjoint.slice(0, splitIndex),
-        qualifiedDisjoint.slice(splitIndex + 1)
-    ] as [path: CompiledPath, kind: DiscriminantKind]
 }
 
 const findBestDiscriminant = (

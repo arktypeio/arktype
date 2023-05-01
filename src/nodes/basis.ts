@@ -2,16 +2,14 @@ import type { Domain, inferDomain } from "../utils/domains.js"
 import { domainOf, hasKind } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { constructor, evaluate } from "../utils/generics.js"
-import { constructorExtends, hasKeys } from "../utils/generics.js"
+import { constructorExtends } from "../utils/generics.js"
 import { registry } from "../utils/registry.js"
 import type { SerializablePrimitive } from "../utils/serialize.js"
 import { serializePrimitive, stringify } from "../utils/serialize.js"
-import type {
-    CompilationState,
-    CompiledAssertion,
-    DisjointKinds
-} from "./node.js"
-import { Disjoint, Node } from "./node.js"
+import type { DisjointKindEntries } from "./disjoint.js"
+import { Disjoint } from "./disjoint.js"
+import type { CompilationState, CompiledAssertion } from "./node.js"
+import { Node } from "./node.js"
 import type { ProblemRules } from "./problems.js"
 import { In } from "./utils.js"
 
@@ -88,25 +86,22 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
                 ? l
                 : constructorExtends(r.rule, l.rule)
                 ? r
-                : Disjoint.from({ class: { l: l.rule, r: r.rule } })
+                : Disjoint.from("class", l.rule, r.rule)
         }
-        const disjointKinds: DisjointKinds = {}
+        const disjointEntries: DisjointKindEntries = []
         if (l.domain !== r.domain) {
-            disjointKinds.domain = {
-                l: l.domain,
-                r: r.domain
-            }
+            disjointEntries.push(["domain", { l: l.domain, r: r.domain }])
         }
         if (l.hasLevel("value") && r.hasLevel("value")) {
             if (l.literalValue !== r.literalValue) {
-                disjointKinds.value = {
-                    l: l.literalValue,
-                    r: r.literalValue
-                }
+                disjointEntries.push([
+                    "value",
+                    { l: l.literalValue, r: r.literalValue }
+                ])
             }
         }
-        return hasKeys(disjointKinds)
-            ? Disjoint.from(disjointKinds)
+        return disjointEntries.length
+            ? Disjoint.fromEntries(disjointEntries)
             : l.levelPrecedence < r.levelPrecedence
             ? l
             : r.levelPrecedence < l.levelPrecedence

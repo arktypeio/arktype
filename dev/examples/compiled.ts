@@ -61,6 +61,10 @@ import { scope, type } from "../../src/main.js"
 
 // console.log(sn.allows.toString())
 
+const ts = type("unknown")
+
+console.log(ts.allows.toString())
+
 const places = scope({
     rainForest: {
         climate: "'wet'",
