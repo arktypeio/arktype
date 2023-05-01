@@ -1,10 +1,5 @@
 import { join } from "node:path"
-import {
-    fromPackageRoot,
-    readFile,
-    readJson,
-    writeFile
-} from "../../../attest/src/fs.js"
+import { readFile, readJson, writeFile } from "../../../attest/src/fs.js"
 import { shell } from "../../../attest/src/shell.js"
 import { repoDirs } from "../../common.js"
 import type { SnippetsByPath } from "./extractSnippets.js"
