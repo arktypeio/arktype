@@ -1,3 +1,4 @@
+import { join } from "node:path"
 import {
     fromPackageRoot,
     readFile,
@@ -5,6 +6,7 @@ import {
     writeFile
 } from "../../../attest/src/fs.js"
 import { shell } from "../../../attest/src/shell.js"
+import { repoDirs } from "../../common.js"
 import type { SnippetsByPath } from "./extractSnippets.js"
 import { referenceTokens } from "./snipTokens.js"
 
@@ -129,7 +131,7 @@ const getLinesFromJsonFile = (
     token: string
 ) => {
     const dataSegments = pathToData?.split("/") ?? []
-    let result = readJson(fromPackageRoot(pathToFile))
+    let result = readJson(join(repoDirs.root, pathToFile))
     for (const segment of dataSegments) {
         try {
             result = result[segment]

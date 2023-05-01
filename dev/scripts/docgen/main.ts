@@ -84,6 +84,7 @@ export const defaultConfig = createConfig({
 })
 
 export const docgen = () => {
+    process.chdir(repoDirs.root)
     console.group(`Generating docs...✍️`)
     const project = getProject()
     updateApiDocs(project)
