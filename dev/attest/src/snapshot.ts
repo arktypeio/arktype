@@ -1,19 +1,17 @@
+import { randomUUID } from "node:crypto"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import type { CallExpression, Project, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { readJson } from "./main.js"
-import { addListener } from "./shell.js"
-import { getTsMorphProject } from "./type/getTsMorphProject.js"
+import { getConfig } from "./config.js"
+import { readJson, writeJson } from "./main.js"
 import { getTsNodeAtPosition } from "./type/getTsNodeAtPos.js"
 import type { SourcePosition } from "./utils.js"
 import { positionToString } from "./utils.js"
-import type { BenchFormat } from "./writeSnapshot.js"
-import { writeUpdates } from "./writeSnapshot.js"
+import { writeCachedInlineSnapshotUpdates } from "./writeSnapshot.js"
 
 export type SnapshotArgs = {
     position: SourcePosition
     serializedValue: unknown
-    benchFormat: Required<BenchFormat>
     snapFunctionName?: string
     baselinePath?: string[]
 }
@@ -32,7 +30,7 @@ export const findCallExpressionAncestor = (
             const name =
                 // If the call is made directly, e.g. snap(...), the expression will be an identifier, so can use its whole text
                 expression.asKind(SyntaxKind.Identifier)?.getText() ??
-                // If the call is made from a prop, e.g. snap in assert(...).snap(), check the name of the prop accessed
+                // If the call is made from a prop, e.g. snap in attest(...).snap(), check the name of the prop accessed
                 expression
                     .asKind(SyntaxKind.PropertyAccessExpression)
                     ?.getName()
@@ -68,27 +66,23 @@ export const getSnapshotByName = (
     return readJson(snapshotPath)?.[basename(file)]?.[name]
 }
 
-export const queueInlineSnapshotWriteOnProcessExit = ({
-    position,
-    serializedValue,
-    snapFunctionName = "snap",
-    baselinePath,
-    benchFormat
-}: SnapshotArgs) => {
-    const snapCall = findCallExpressionAncestor(
-        getTsMorphProject(),
-        position,
-        snapFunctionName
-    )
-    const newArgText = JSON.stringify(serializedValue)
-    queuedUpdates.push({
-        position,
-        snapCall,
-        snapFunctionName,
-        newArgText,
-        baselinePath,
-        benchFormat
-    })
+let writeCachedUpdatesOnExit = false
+process.addListener("exit", () => {
+    if (writeCachedUpdatesOnExit) {
+        writeCachedInlineSnapshotUpdates()
+    }
+})
+
+/**
+ * Writes the update and position to cacheDir, which will eventually be read and copied to the source
+ * file by a cleanup process after all tests have completed.
+ */
+export const queueSnapshotUpdate = (args: SnapshotArgs) => {
+    const config = getConfig()
+    writeJson(join(config.snapCacheDir, `snap-${randomUUID()}.json`), args)
+    if (args.baselinePath || config.skipTypes) {
+        writeCachedUpdatesOnExit = true
+    }
 }
 
 export type QueuedUpdate = {
@@ -97,27 +91,4 @@ export type QueuedUpdate = {
     snapFunctionName: string
     newArgText: string
     baselinePath: string[] | undefined
-    benchFormat: Required<BenchFormat>
 }
-
-/**
- * Each time we encounter a snapshot that needs to be initialized
- * or updated, we push its context to the global queuedUpdates variable.
- * Then, on process exit, we call writeUpdates which handles updating all
- * of the affected source (for inline snaps) or JSON (for external snaps or
- * bench history) files.
- *
- * NOTE: In precache mode, instead of pushing updates here directly, we
- * serialize the queued updates to snap files. Then, after all tests have
- * completed, all updates are written as part of cleanup.
- **/
-const queuedUpdates: QueuedUpdate[] = []
-
-addListener("exit", () => {
-    try {
-        writeUpdates(queuedUpdates)
-    } catch (e) {
-        console.error(e)
-        throw e
-    }
-})

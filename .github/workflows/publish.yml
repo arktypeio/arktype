@@ -21,11 +21,8 @@ jobs:
             - name: Setup repo
               uses: ./.github/actions/setup
 
-            - name: Docgen
-              run: pnpm docgen
-
-            - name: Site
-              run: pnpm buildSite
+            - name: Build docs
+              run: pnpm buildDocs
 
             - name: Deploy to GitHub Pages
               uses: peaceiris/actions-gh-pages@v3

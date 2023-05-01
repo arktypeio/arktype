@@ -23,7 +23,7 @@
         "--no-warnings=ExperimentalWarning"
     ],
     "mochaExplorer.env": {
-        "ARKTYPE_CHECK_CMD": "--skipTypes"
+        "ATTEST_CONFIG": "{ \"skipTypes\": true }"
     },
     "testExplorer.useNativeTesting": true
 }

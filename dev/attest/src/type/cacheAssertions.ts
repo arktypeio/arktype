@@ -1,32 +1,48 @@
-import { mkdirSync, rmSync } from "node:fs"
-import { getAttestConfig } from "../config.js"
-import { writeJson } from "../main.js"
+import { rmSync } from "node:fs"
+import type { ProjectOptions } from "ts-morph"
+import { Project } from "ts-morph"
+import type { AttestOptions } from "../config.js"
+import { getConfig } from "../config.js"
+import { ensureDir, writeJson } from "../main.js"
 import { writeCachedInlineSnapshotUpdates } from "../writeSnapshot.js"
 import { getAssertionsByFile } from "./analysis.js"
 
-export type SetupCacheOptions = {
-    forcePrecache?: boolean
+export const forceCreateTsMorphProject = () => {
+    const config = getConfig()
+    const tsMorphOptions: ProjectOptions = {
+        compilerOptions: { diagnostics: true }
+    }
+    if (config.tsconfig) {
+        tsMorphOptions.tsConfigFilePath = config.tsconfig
+    }
+    const project = new Project(tsMorphOptions)
+    return project
 }
 
-export const cacheAssertions = ({ forcePrecache }: SetupCacheOptions = {}) => {
-    const config = getAttestConfig()
-    if (!forcePrecache) {
-        throw new Error(
-            `You must set 'precached' to true in the 'assert' section ` +
-                ` of your re.json config to enable precaching.`
-        )
+let __projectCache: undefined | Project
+export const getTsMorphProject = () => {
+    if (!__projectCache) {
+        __projectCache = forceCreateTsMorphProject()
+    }
+    return __projectCache
+}
+
+export const setup = (options?: AttestOptions) => {
+    const config = getConfig(options)
+    if (config.skipTypes) {
+        return
     }
     rmSync(config.cacheDir, { recursive: true, force: true })
-    mkdirSync(config.cacheDir)
-    mkdirSync(config.snapCacheDir)
+    ensureDir(config.cacheDir)
+    ensureDir(config.snapCacheDir)
     writeJson(
         config.assertionCacheFile,
         getAssertionsByFile({ isInitialCache: true })
     )
 }
 
-export const cleanupAssertions = () => {
-    const config = getAttestConfig()
+export const cleanup = () => {
+    const config = getConfig()
     try {
         writeCachedInlineSnapshotUpdates()
     } finally {

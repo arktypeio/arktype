@@ -1,4 +1,4 @@
-import { type, union } from "#arktype"
+import { type, union } from "../../../src/main.js"
 
 // @snipStatement:union
 export const deepLeftOrRight = union(

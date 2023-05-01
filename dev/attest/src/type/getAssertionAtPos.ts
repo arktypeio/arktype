@@ -31,7 +31,7 @@ export const getTypeDataAtPos = (position: SourcePosition) => {
     const matchingAssertion = assertionsByFile[fileKey].find((assertion) => {
         /**
          * Depending on the environment, a trace can refer to any of these points
-         * assert(...)
+         * attest(...)
          * ^     ^   ^
          * Because of this, it's safest to check if the call came from anywhere in the expected range.
          *

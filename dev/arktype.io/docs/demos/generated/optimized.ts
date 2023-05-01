@@ -1,4 +1,4 @@
-export default `import { type, union } from "#arktype"
+export default `import { type, union } from "../../src/main.js"
 
 export const deepLeftOrRight = union(
     {

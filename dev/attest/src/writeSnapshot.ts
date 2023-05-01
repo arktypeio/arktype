@@ -1,23 +1,12 @@
-import { randomUUID } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
 import { basename, join } from "node:path"
 import type { Node, ts } from "ts-morph"
-import type { BenchData } from "./bench/history.js"
-import { updateIsBench, upsertBenchResult } from "./bench/history.js"
-import { getAttestConfig } from "./config.js"
+import { getConfig } from "./config.js"
 import { readJson, shell, writeJson } from "./main.js"
 import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
-import {
-    queueInlineSnapshotWriteOnProcessExit,
-    resolveSnapshotPath
-} from "./snapshot.js"
+import { findCallExpressionAncestor, resolveSnapshotPath } from "./snapshot.js"
+import { getTsMorphProject } from "./type/cacheAssertions.js"
 import { getFileKey } from "./utils.js"
-
-export type BenchFormat = {
-    noInline?: boolean
-    noExternal?: boolean
-    path?: string | undefined
-}
 
 export type ExternalSnapshotArgs = SnapshotArgs & {
     name: string
@@ -41,12 +30,13 @@ export const updateExternalSnapshot = ({
 }
 
 export const writeCachedInlineSnapshotUpdates = () => {
-    const config = getAttestConfig()
+    const config = getConfig()
     if (!existsSync(config.snapCacheDir)) {
         throw new Error(
             `Unable to update snapshots as expected cache directory ${config.snapCacheDir} does not exist.`
         )
     }
+    const queuedUpdates: QueuedUpdate[] = []
     for (const updateFile of readdirSync(config.snapCacheDir)) {
         if (/snap.*\.json$/.test(updateFile)) {
             let snapshotData: SnapshotArgs | undefined
@@ -60,7 +50,7 @@ export const writeCachedInlineSnapshotUpdates = () => {
             }
             if (snapshotData) {
                 try {
-                    queueInlineSnapshotWriteOnProcessExit(snapshotData)
+                    queuedUpdates.push(snapshotArgsToQueuedUpdate(snapshotData))
                 } catch (error) {
                     // If writeInlineSnapshotToFile throws an error, log it and move on to the next update
                     console.error(String(error))
@@ -68,17 +58,28 @@ export const writeCachedInlineSnapshotUpdates = () => {
             }
         }
     }
+    writeUpdates(queuedUpdates)
 }
 
-/**
- * Writes the update and position to cacheDir, which will eventually be read and copied to the source
- * file by a cleanup process after all tests have completed.
- */
-export const writeInlineSnapshotUpdateToCacheDir = (args: SnapshotArgs) => {
-    writeJson(
-        join(getAttestConfig().snapCacheDir, `snap-${randomUUID()}.json`),
-        args
+const snapshotArgsToQueuedUpdate = ({
+    position,
+    serializedValue,
+    snapFunctionName = "snap",
+    baselinePath
+}: SnapshotArgs): QueuedUpdate => {
+    const snapCall = findCallExpressionAncestor(
+        getTsMorphProject(),
+        position,
+        snapFunctionName
     )
+    const newArgText = JSON.stringify(serializedValue)
+    return {
+        position,
+        snapCall,
+        snapFunctionName,
+        newArgText,
+        baselinePath
+    }
 }
 
 // Waiting until process exit to write snapshots avoids invalidating existing source positions
@@ -86,27 +87,12 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
     if (!queuedUpdates.length) {
         return
     }
-    const benchmarksPath = queuedUpdates[0].benchFormat.path
-    const benchData: BenchData =
-        benchmarksPath && existsSync(benchmarksPath)
-            ? readJson(benchmarksPath)
-            : {}
     for (const update of queuedUpdates) {
         const originalArgs = update.snapCall.getArguments()
         const previousValue = originalArgs.length
             ? originalArgs[0].getText()
             : undefined
-        if (updateIsBench(update)) {
-            upsertBenchResult(update, benchData)
-            if (!update.benchFormat.noInline) {
-                writeUpdateToFile(originalArgs, update)
-            }
-            if (!update.benchFormat.noExternal && benchmarksPath) {
-                writeJson(benchmarksPath, benchData)
-            }
-        } else {
-            writeUpdateToFile(originalArgs, update)
-        }
+        writeUpdateToFile(originalArgs, update)
         summarizeSnapUpdate(originalArgs, update, previousValue)
     }
     runPrettierIfAvailable(queuedUpdates)
@@ -121,7 +107,7 @@ const runPrettierIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
                 )
             )
         ]
-        shell(`pnpm prettier --write ${updatedPaths.join(" ")}`)
+        shell(`npm exec --no -- prettier --write ${updatedPaths.join(" ")}`)
     } catch {
         // If prettier is unavailable, do nothing.
     }

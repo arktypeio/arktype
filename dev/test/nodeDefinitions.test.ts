@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
-import type { Type } from "#arktype"
-import { scope, type } from "#arktype"
-import { attest } from "#attest"
+import type { Type } from "../../src/main.js"
+import { scope, type } from "../../src/main.js"
+import { attest } from "../attest/main.js"
 
 describe("node definitions", () => {
     it("base", () => {

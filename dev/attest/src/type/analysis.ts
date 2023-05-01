@@ -1,6 +1,6 @@
-import { getAttestConfig } from "../config.js"
+import { getConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
-import { getTsMorphProject } from "./getTsMorphProject.js"
+import { getTsMorphProject } from "./cacheAssertions.js"
 import type { AssertionData } from "./internal/main.js"
 import {
     getAssertionsInFile,
@@ -20,7 +20,7 @@ export const getAssertionsByFile = ({
     if (__assertionCache) {
         return __assertionCache
     }
-    const config = getAttestConfig()
+    const config = getConfig()
     if (!isInitialCache) {
         return getCachedAssertionData(config)
     }

@@ -1,11 +1,10 @@
 import * as process from "node:process"
 import { chainableNoOpProxy } from "arktype/internal/utils/chainableNoOpProxy.js"
 import type { AttestConfig } from "../config.js"
-import { getAttestConfig } from "../config.js"
+import { getConfig } from "../config.js"
 import { caller } from "../main.js"
 import { addListener } from "../shell.js"
 import type { SourcePosition } from "../utils.js"
-import type { BenchFormat } from "../writeSnapshot.js"
 import type { TimeAssertionName } from "./call.js"
 import { BenchAssertions } from "./call.js"
 import type { BenchTypeAssertions } from "./type.js"
@@ -25,7 +24,6 @@ export type BenchOptions = BaseBenchOptions & {
         beforeCall?: () => void
         afterCall?: () => void
     }
-    benchFormat?: BenchFormat
 }
 
 export type InternalBenchOptions = BenchOptions & {
@@ -73,7 +71,7 @@ export const bench = <Fn extends BenchableFunction>(
         qualifiedPath,
         qualifiedName: qualifiedPath.join("/"),
         options,
-        cfg: getAttestConfig(),
+        cfg: getConfig(),
         benchCallPosition: caller(),
         lastSnapCallPosition: undefined,
         isAsync: fn.constructor.name === "AsyncFunction"
