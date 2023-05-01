@@ -30,7 +30,7 @@ export type NodeSubclass<subclass extends NodeSubclass<any>> = {
     intersect(
         l: instanceOf<subclass>,
         r: instanceOf<subclass>
-    ): instanceOf<subclass> | DisjointNode
+    ): instanceOf<subclass> | Disjoint
 }
 
 type NodeKind =
@@ -85,7 +85,7 @@ export abstract class Node<
         Node.#cache[kind][key] = this
     }
 
-    #intersections: Record<string, instanceOf<subclass> | DisjointNode> = {}
+    #intersections: Record<string, instanceOf<subclass> | Disjoint> = {}
     intersect(other: instanceOf<subclass>) {
         if (this.key === other.key) {
             return this as instanceOf<subclass>
@@ -99,30 +99,21 @@ export abstract class Node<
         )
         this.#intersections[other.key] = result
         other.#intersections[this.key] =
-            result instanceof DisjointNode ? result.invert() : result
+            result instanceof Disjoint ? result.invert() : result
         return result
     }
 
     abstract compileTraverse(s: CompilationState): string
 }
 
-// TODO: multiple disjoints
-// intersect ["===", 5], ["===", "foo"]
-// const disjoints = {
-//     domain: {
-//         l: "number",
-//         r: "string"
-//     },
-//     value: {
-//         l: 5,
-//         r: "foo"
-//     }
-// }
-
-export type Disjoint = {
+export type DisjointKinds = {
     domain?: {
         l: Domain
         r: Domain
+    }
+    value?: {
+        l: unknown
+        r: unknown
     }
     range?: {
         l: RangeNode
@@ -131,10 +122,6 @@ export type Disjoint = {
     class?: {
         l: constructor
         r: constructor
-    }
-    value?: {
-        l: unknown
-        r: unknown
     }
     assignability?:
         | {
@@ -151,16 +138,16 @@ export type Disjoint = {
     }
 }
 
-export type DisjointsByPath = Record<CompiledPath, Disjoint>
+export type DisjointsByPath = Record<CompiledPath, DisjointKinds>
 
-export type DisjointKind = keyof Disjoint
+export type DisjointKind = keyof DisjointKinds
 
 // TODO: qualified disjoint here?
-export class DisjointNode {
+export class Disjoint {
     constructor(public paths: DisjointsByPath) {}
 
-    static from(disjoint: Disjoint) {
-        return new DisjointNode({ $arkIn: disjoint })
+    static from(disjoint: DisjointKinds) {
+        return new Disjoint({ $arkIn: disjoint })
     }
 
     invert() {
@@ -168,7 +155,7 @@ export class DisjointNode {
         let path: CompiledPath
         for (path in this.paths) {
             const disjoint = this.paths[path]
-            const invertedKinds: Disjoint = {}
+            const invertedKinds: DisjointKinds = {}
             let kind: DisjointKind
             for (kind in disjoint) {
                 invertedKinds[kind] = {
@@ -178,7 +165,7 @@ export class DisjointNode {
             }
             inverted[path] = invertedKinds
         }
-        return new DisjointNode(inverted)
+        return new Disjoint(inverted)
     }
 
     withPrefixKey(key: string) {
@@ -187,7 +174,7 @@ export class DisjointNode {
         for (path in this.paths) {
             disjoints[insertInitialPropAccess(path, key)] = this.paths[path]
         }
-        return new DisjointNode(disjoints)
+        return new Disjoint(disjoints)
     }
 
     toString() {

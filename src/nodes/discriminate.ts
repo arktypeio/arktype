@@ -4,7 +4,7 @@ import { isKeyOf, keysOf } from "../utils/generics.js"
 import type { DefaultObjectKind } from "../utils/objectKinds.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import type { DisjointKind } from "./node.js"
-import { DisjointNode } from "./node.js"
+import { Disjoint } from "./node.js"
 import type { PredicateNode } from "./predicate.js"
 import { type CompiledPath } from "./utils.js"
 
@@ -125,7 +125,7 @@ const calculateDiscriminants = (
             discriminants.disjointsByPair[pairKey] = []
             const pairDisjoints = discriminants.disjointsByPair[pairKey]
             const result = branches[lIndex].intersect(branches[rIndex])
-            if (!(result instanceof DisjointNode)) {
+            if (!(result instanceof Disjoint)) {
                 continue
             }
             let path: CompiledPath

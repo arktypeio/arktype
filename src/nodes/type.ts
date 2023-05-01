@@ -12,7 +12,7 @@ import type {
 } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
-import { DisjointNode, Node } from "./node.js"
+import { Disjoint, Node } from "./node.js"
 import type {
     ConstraintKind,
     inferPredicateDefinition,
@@ -39,10 +39,12 @@ export class TypeNode<t = unknown> extends Node<
     declare [as]: t
 
     static readonly kind = "type"
+    discriminated: DiscriminatedBranches
 
     constructor(public branches: PredicateNode[]) {
         const discriminated = discriminate(branches)
         super(TypeNode, discriminated)
+        this.discriminated = discriminated
     }
 
     static from<branches extends TypeNodeInput>(...branches: branches) {
@@ -145,15 +147,13 @@ export class TypeNode<t = unknown> extends Node<
         }
     }
 
-    static intersect(l: TypeNode, r: TypeNode): TypeNode | DisjointNode {
+    static intersect(l: TypeNode, r: TypeNode): TypeNode | Disjoint {
         if (l === r) {
             return l
         }
         if (l.branches.length === 1 && r.branches.length === 1) {
             const result = l.branches[0].intersect(r.branches[0])
-            return result instanceof DisjointNode
-                ? result
-                : new TypeNode([result])
+            return result instanceof Disjoint ? result : new TypeNode([result])
         }
         // Branches that are determined to be a subtype of an opposite branch are
         // guaranteed to be a member of the final reduced intersection, so long as
@@ -186,7 +186,7 @@ export class TypeNode<t = unknown> extends Node<
                     break
                 }
                 const branchIntersection = lBranch.intersect(rBranch)
-                if (branchIntersection instanceof DisjointNode) {
+                if (branchIntersection instanceof Disjoint) {
                     // doesn't tell us about any redundancies or add a distinct intersection
                     continue
                 }
@@ -225,7 +225,7 @@ export class TypeNode<t = unknown> extends Node<
         }
         return finalBranches.length
             ? new TypeNode(finalBranches)
-            : DisjointNode.from({ union: { l, r } })
+            : Disjoint.from({ union: { l, r } })
     }
 
     constrain<kind extends ConstraintKind>(
@@ -252,9 +252,9 @@ export class TypeNode<t = unknown> extends Node<
         return new TypeNode([...this.branches, ...other.branches])
     }
 
-    get literalValue(): BasisNode<"value"> | undefined {
+    get valueNode(): BasisNode<"value"> | undefined {
         return this.branches.length === 1
-            ? this.branches[0].literalValue
+            ? this.branches[0].valueNode
             : undefined
     }
 

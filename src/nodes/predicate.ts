@@ -8,7 +8,7 @@ import { DivisibilityNode } from "./divisibility.js"
 import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
 import type { CompilationState, CompiledAssertion } from "./node.js"
-import { DisjointNode, Node } from "./node.js"
+import { Disjoint, Node } from "./node.js"
 import type { PropsInput } from "./props.js"
 import { PropsNode } from "./props.js"
 import type { Bounds } from "./range.js"
@@ -74,7 +74,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         return this.rules.map((rule) => rule.compileTraverse(s)).join("\n")
     }
 
-    get literalValue(): BasisNode<"value"> | undefined {
+    get valueNode(): BasisNode<"value"> | undefined {
         return this.basis.hasLevel("value") ? this.basis : undefined
     }
 
@@ -89,39 +89,24 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
         //     )
         // }
-        if (l.literalValue) {
-            if (r.literalValue) {
-                return l.literalValue === r.literalValue
-                    ? l
-                    : DisjointNode.from({
-                          value: {
-                              l: l.literalValue.rule[1],
-                              r: r.literalValue.rule[1]
-                          }
-                      })
-            }
-            return r.allows(l.literalValue.rule[1])
-                ? l
-                : DisjointNode.from({
-                      assignability: {
-                          l: l.literalValue.rule[1],
-                          r
-                      }
-                  })
-        }
-        if (r.literalValue) {
-            return l.allows(r.literalValue.rule[1])
-                ? l
-                : DisjointNode.from({
-                      assignability: {
-                          l,
-                          r: r.literalValue.rule[1]
-                      }
-                  })
-        }
+
         const basisResult = l.basis.intersect(r.basis)
-        if (basisResult instanceof DisjointNode) {
+        if (basisResult instanceof Disjoint) {
             return basisResult
+        }
+        if (l.valueNode) {
+            return r.allows(l.valueNode.literalValue)
+                ? l
+                : Disjoint.from({
+                      assignability: { l: l.valueNode.literalValue, r }
+                  })
+        }
+        if (r.valueNode) {
+            return l.allows(r.valueNode.literalValue)
+                ? r
+                : Disjoint.from({
+                      assignability: { l, r: r.valueNode.literalValue }
+                  })
         }
         const resultInput: RuleNodes = [basisResult, ...l.constraints]
         for (let i = 0; i < r.constraints.length; i++) {
@@ -134,7 +119,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
                 const constraintResult = l.constraints[matchingIndex].intersect(
                     r.constraints[i] as never
                 )
-                if (constraintResult instanceof DisjointNode) {
+                if (constraintResult instanceof Disjoint) {
                     return constraintResult
                 }
                 resultInput[matchingIndex + 1] = constraintResult

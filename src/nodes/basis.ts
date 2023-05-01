@@ -1,13 +1,17 @@
 import type { Domain, inferDomain } from "../utils/domains.js"
-import { hasKind } from "../utils/domains.js"
+import { domainOf, hasKind } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { constructor, evaluate } from "../utils/generics.js"
-import { constructorExtends } from "../utils/generics.js"
+import { constructorExtends, hasKeys } from "../utils/generics.js"
 import { registry } from "../utils/registry.js"
 import type { SerializablePrimitive } from "../utils/serialize.js"
-import { serializePrimitive } from "../utils/serialize.js"
-import type { CompilationState, CompiledAssertion } from "./node.js"
-import { DisjointNode, Node } from "./node.js"
+import { serializePrimitive, stringify } from "../utils/serialize.js"
+import type {
+    CompilationState,
+    CompiledAssertion,
+    DisjointKinds
+} from "./node.js"
+import { Disjoint, Node } from "./node.js"
 import type { ProblemRules } from "./problems.js"
 import { In } from "./utils.js"
 
@@ -46,10 +50,24 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
 > {
     static readonly kind = "basis"
     readonly level: level
+    readonly domain: Domain
+    readonly literalValue?: level extends "value" ? unknown : never
+    readonly levelPrecedence: 0 | 1 | 2
 
     constructor(public rule: Basis<level>) {
         super(BasisNode, rule)
         this.level = levelOf(rule) as level
+        if (this.hasLevel("value")) {
+            this.literalValue = this.rule[1] as never
+            this.domain = domainOf(this.literalValue)
+            this.levelPrecedence = 0
+        } else if (this.hasLevel("domain")) {
+            this.domain = this.rule
+            this.levelPrecedence = 2
+        } else {
+            this.domain = "object"
+            this.levelPrecedence = 1
+        }
     }
 
     hasLevel<level extends BasisLevel>(
@@ -61,36 +79,43 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
         return hasLevel(this.rule, level)
     }
 
-    static intersect(l: BasisNode, r: BasisNode): BasisNode | DisjointNode {
-        if (l.hasLevel("domain")) {
-            if (r.hasLevel("domain")) {
-                return l === r
-                    ? l
-                    : DisjointNode.from({ domain: { l: l.rule, r: r.rule } })
-            }
-            if (r.hasLevel("class")) {
-                return l.rule === "object"
-                    ? r
-                    : DisjointNode.from({ domain: { l: l.rule, r: "object" } })
+    static intersect(l: BasisNode, r: BasisNode): BasisNode | Disjoint {
+        if (l === r) {
+            return l
+        }
+        if (l.hasLevel("class") && r.hasLevel("class")) {
+            return constructorExtends(l.rule, r.rule)
+                ? l
+                : constructorExtends(r.rule, l.rule)
+                ? r
+                : Disjoint.from({ class: { l: l.rule, r: r.rule } })
+        }
+        const disjointKinds: DisjointKinds = {}
+        if (l.domain !== r.domain) {
+            disjointKinds.domain = {
+                l: l.domain,
+                r: r.domain
             }
         }
-        if (l.hasLevel("class")) {
-            if (r.hasLevel("domain")) {
-                return r.rule === "object"
-                    ? l
-                    : DisjointNode.from({ domain: { l: "object", r: r.rule } })
-            }
-            if (r.hasLevel("class")) {
-                return constructorExtends(l.rule, r.rule)
-                    ? l
-                    : constructorExtends(r.rule, l.rule)
-                    ? r
-                    : DisjointNode.from({ class: { l: l.rule, r: r.rule } })
+        if (l.hasLevel("value") && r.hasLevel("value")) {
+            if (l.literalValue !== r.literalValue) {
+                disjointKinds.value = {
+                    l: l.literalValue,
+                    r: r.literalValue
+                }
             }
         }
-        return throwInternalError(
-            `Unexpected attempt to directly intersect base kinds ${l.kind} and ${r.kind}`
-        )
+        return hasKeys(disjointKinds)
+            ? Disjoint.from(disjointKinds)
+            : l.levelPrecedence < r.levelPrecedence
+            ? l
+            : r.levelPrecedence < l.levelPrecedence
+            ? r
+            : throwInternalError(
+                  `Unexpected non-disjoint intersection from basis nodes with equal precedence ${stringify(
+                      l.rule
+                  )} and ${stringify(r.rule)}`
+              )
     }
 
     static compile(rule: Basis): CompiledAssertion {
