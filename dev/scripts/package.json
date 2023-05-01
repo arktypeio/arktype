@@ -1,4 +1,5 @@
 {
+    "name": "@arktype/scripts",
     "private": true,
     "type": "module",
     "devDependencies": {
