@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { describe, it } from "mocha"
 import { type } from "../../src/main.js"
-import type { Node } from "../../src/nodes/node.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
@@ -188,7 +187,7 @@ describe("intersection", () => {
                 // @ts-expect-error
                 attest(() => type("boolean&tru"))
                     .throws(writeUnresolvableMessage("tru"))
-                    .type.errors("boolean&true")
+                    .types.errors("boolean&true")
             })
             it("double and", () => {
                 // @ts-expect-error

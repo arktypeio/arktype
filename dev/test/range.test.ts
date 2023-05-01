@@ -216,7 +216,7 @@ describe("range", () => {
             })
             it("double right bound", () => {
                 // @ts-expect-error
-                attest(() => type("number>0<=200")).type.errors(
+                attest(() => type("number>0<=200")).types.errors(
                     writeDoubleRightBoundMessage("'number'")
                 )
             })

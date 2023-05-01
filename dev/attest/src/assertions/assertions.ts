@@ -1,20 +1,14 @@
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
-import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.js"
-import { snapshot, stringify } from "../../../../src/utils/serialize.js"
-import { caller } from "../../../runtime/main.js"
+import { chainableNoOpProxy } from "arktype/internal/utils/chainableNoOpProxy.js"
+import { snapshot, stringify } from "arktype/internal/utils/serialize.js"
 import { assertEquals } from "../assertions.js"
 import type { AssertionContext } from "../attest.js"
+import { caller } from "../main.js"
 import type { SnapshotArgs } from "../snapshot.js"
-import {
-    getSnapshotByName,
-    queueInlineSnapshotWriteOnProcessExit
-} from "../snapshot.js"
+import { getSnapshotByName, queueSnapshotUpdate } from "../snapshot.js"
 import { getTypeDataAtPos } from "../type/getAssertionAtPos.js"
-import {
-    updateExternalSnapshot,
-    writeInlineSnapshotUpdateToCacheDir
-} from "../writeSnapshot.js"
+import { updateExternalSnapshot } from "../writeSnapshot.js"
 import type { ExternalSnapshotArgs, RootAssertions } from "./types.js"
 import {
     assertEqualOrMatching,
@@ -88,14 +82,9 @@ export class Assertions implements AssertionRecord {
             if (this.snapRequiresUpdate(expectedSerialized)) {
                 const snapshotArgs: SnapshotArgs = {
                     position: caller(),
-                    serializedValue: this.serializedActual,
-                    benchFormat: this.ctx.cfg.benchFormat
+                    serializedValue: this.serializedActual
                 }
-                if (this.ctx.cfg.precached) {
-                    writeInlineSnapshotUpdateToCacheDir(snapshotArgs)
-                } else {
-                    queueInlineSnapshotWriteOnProcessExit(snapshotArgs)
-                }
+                queueSnapshotUpdate(snapshotArgs)
             }
         } else {
             // compare as strings, but if match fails, compare again as objects
@@ -125,8 +114,7 @@ export class Assertions implements AssertionRecord {
                     serializedValue: this.serializedActual,
                     position: caller(),
                     name: args.id,
-                    customPath: args.path,
-                    benchFormat: this.ctx.cfg.benchFormat
+                    customPath: args.path
                 })
             }
         } else {
@@ -187,7 +175,7 @@ export class Assertions implements AssertionRecord {
         }
     }
 
-    get type() {
+    get types() {
         if (this.ctx.cfg.skipTypes) {
             return chainableNoOpProxy
         }

@@ -1,4 +1,4 @@
-import { type } from "../../src/main.js"
+import { type } from "../../../src/main.js"
 
 // @snipStatement:union
 export const deepLeftOrRight = type({

@@ -1,11 +1,10 @@
 import * as process from "node:process"
-import { chainableNoOpProxy } from "../../../../src/utils/chainableNoOpProxy.js"
-import { caller } from "../../../runtime/main.js"
-import { addListener } from "../../../runtime/shell.js"
+import { chainableNoOpProxy } from "arktype/internal/utils/chainableNoOpProxy.js"
 import type { AttestConfig } from "../config.js"
-import { getAttestConfig } from "../config.js"
+import { getConfig } from "../config.js"
+import { caller } from "../main.js"
+import { addListener } from "../shell.js"
 import type { SourcePosition } from "../utils.js"
-import type { BenchFormat } from "../writeSnapshot.js"
 import type { TimeAssertionName } from "./call.js"
 import { BenchAssertions } from "./call.js"
 import type { BenchTypeAssertions } from "./type.js"
@@ -25,7 +24,6 @@ export type BenchOptions = BaseBenchOptions & {
         beforeCall?: () => void
         afterCall?: () => void
     }
-    benchFormat?: BenchFormat
 }
 
 export type InternalBenchOptions = BenchOptions & {
@@ -43,7 +41,7 @@ export type BenchContext = {
 }
 
 export type BenchAssertionContext = BenchContext & {
-    kind: TimeAssertionName | "type"
+    kind: TimeAssertionName | "types"
 }
 
 export type BenchableFunction = () => unknown | Promise<unknown>
@@ -63,41 +61,6 @@ addListener("beforeExit", () => {
     }
 })
 
-const addUnhandledSuiteException = (originalMessage: string) => {
-    console.error(
-        `Suite ${currentSuitePath.join(
-            "/"
-        )} failed due to the following error:\n${originalMessage}`
-    )
-    unhandledExceptionMessages.push(originalMessage)
-}
-
-export const suite = <Fn extends BenchableFunction>(name: string, body: Fn) => {
-    currentSuitePath.push(...name.split("/"))
-    try {
-        const result = body()
-        if (result instanceof Promise) {
-            return new Promise((resolve) => {
-                result.then(
-                    () => {
-                        currentSuitePath.pop()
-                        resolve(undefined)
-                    },
-                    (e) => {
-                        addUnhandledSuiteException(String(e))
-                        currentSuitePath.pop()
-                        resolve(undefined)
-                    }
-                )
-            })
-        } else {
-            currentSuitePath.pop()
-        }
-    } catch (e) {
-        addUnhandledSuiteException(String(e))
-    }
-}
-
 export const bench = <Fn extends BenchableFunction>(
     name: string,
     fn: Fn,
@@ -108,12 +71,11 @@ export const bench = <Fn extends BenchableFunction>(
         qualifiedPath,
         qualifiedName: qualifiedPath.join("/"),
         options,
-        cfg: getAttestConfig(),
+        cfg: getConfig(),
         benchCallPosition: caller(),
         lastSnapCallPosition: undefined,
         isAsync: fn.constructor.name === "AsyncFunction"
     }
-
     if (
         typeof ctx.cfg.filter === "string" &&
         !qualifiedPath.includes(ctx.cfg.filter)

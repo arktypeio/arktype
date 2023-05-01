@@ -1,10 +1,8 @@
-import * as process from "node:process"
-import { attest, cacheAssertions, cleanupAssertions } from "../../main.js"
+import { attest, cleanup, setup } from "../../src/main.js"
 
-const isPrecached = process.argv.includes("--attestTestPreCached")
-isPrecached && cacheAssertions()
+setup()
 
-attest({ re: "do" }).equals({ re: "do" }).type.toString.snap()
+attest({ re: "do" }).equals({ re: "do" }).types.toString.snap()
 
 attest(5).snap()
 
@@ -24,4 +22,4 @@ attest("multiline\nmultiline").snap()
 
 attest("with `quotes`").snap()
 
-isPrecached && cleanupAssertions()
+cleanup()

@@ -1,5 +1,4 @@
 import { describe, it } from "mocha"
-
 import { type } from "../../src/main.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"
@@ -76,7 +75,7 @@ describe("filter", () => {
                 // @ts-expect-error
                 (data: number | string[]) => !!data
             ])
-        }).type.errors("Type 'boolean' is not assignable to type 'string'.")
+        }).types.errors("Type 'boolean' is not assignable to type 'string'.")
     })
     it("narrow problem", () => {
         const palindrome = type([

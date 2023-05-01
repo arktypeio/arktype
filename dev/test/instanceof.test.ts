@@ -1,5 +1,4 @@
 import { describe, it } from "mocha"
-
 import { type } from "../../src/main.js"
 import type { Type } from "../../src/type.js"
 import { attest } from "../attest/main.js"
@@ -26,11 +25,11 @@ describe("instanceof", () => {
     })
     it("builtins not evaluated", () => {
         const t = type(["instanceof", Date])
-        attest(t.infer).type.toString("Date")
+        attest(t.infer).types.toString("Date")
     })
     it("non-constructor", () => {
         // @ts-expect-error
-        attest(() => type(["instanceof", () => {}])).type.errors(
+        attest(() => type(["instanceof", () => {}])).types.errors(
             "Type '() => void' is not assignable to type"
         )
     })

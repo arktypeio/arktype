@@ -111,11 +111,11 @@ describe("parse unenclosed", () => {
                     .throws(
                         writeMalformedNumericLiteralMessage("007n", "bigint")
                     )
-                    .type.errors(writeUnresolvableMessage("007n"))
+                    .types.errors(writeUnresolvableMessage("007n"))
             })
             it("negative zero", () => {
                 // @ts-expect-error
-                attest(() => type("-0n")).throws(
+                attest(() => type("-0n")).throwsAndHasTypeError(
                     writeMalformedNumericLiteralMessage("-0n", "bigint")
                 )
             })

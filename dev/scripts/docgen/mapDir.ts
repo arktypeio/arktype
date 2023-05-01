@@ -1,13 +1,14 @@
 import { rmSync, writeFileSync } from "node:fs"
 import { dirname, join, relative } from "node:path"
 import * as process from "node:process"
+
 import {
     ensureDir,
     fileName,
-    shell,
     walkPaths,
     writeJson
-} from "../../runtime/main.js"
+} from "../../attest/src/fs.js"
+import { shell } from "../../attest/src/shell.js"
 import { repoDirs } from "../common.js"
 import type { DocGenMappedDirsConfig } from "./main.js"
 import type { SnippetsByPath } from "./snippets/extractSnippets.js"
@@ -20,7 +21,8 @@ export const mapDir = (
         (sourceDir) =>
             walkPaths(sourceDir, {
                 ...options.sourceOptions,
-                excludeDirs: true
+                excludeDirs: true,
+                ignoreDirsMatching: /(node_modules)/
             }).map((sourceFilePath) => {
                 const sourceRelativePath = relative(sourceDir, sourceFilePath)
                 const repoRelativePath = relative(repoDirs.root, sourceFilePath)

@@ -47,7 +47,7 @@ bench("arktype", () => {
         },
         type: "'public-key'"
     })
-}).type([16167, "instantiations"])
+}).types([16167, "instantiations"])
 
 bench("arktype scope", () => {
     return scope({
@@ -92,7 +92,7 @@ bench("arktype scope", () => {
             type: "'public-key'"
         }
     }).compile()
-}).type([26173, "instantiations"])
+}).types([26173, "instantiations"])
 
 bench("zod", () => {
     const authenticatorTransportFutureSchema = z.array(
@@ -151,4 +151,4 @@ bench("zod", () => {
         }),
         type: z.literal("public-key")
     })
-}).type([27703, "instantiations"])
+}).types([27703, "instantiations"])

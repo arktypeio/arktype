@@ -1,98 +1,36 @@
-import { renameSync, rmSync } from "node:fs"
+import { cpSync, rmSync } from "node:fs"
 import { join } from "node:path"
-import * as process from "node:process"
-import {
-    getSourceFilePaths,
-    readJson,
-    shell,
-    writeJson
-} from "../runtime/main.js"
+import { readJson, shell, writeJson } from "../attest/src/main.js"
 import { repoDirs } from "./common.js"
 
-const isTestBuild = process.argv.includes("--test")
+const packageRoot = process.cwd()
+const outRoot = join(packageRoot, "dist")
+const packageJson = readJson(join(packageRoot, "package.json"))
 
-const isProd = () => process.argv.includes("--prod") || !!process.env.CI
-
-const inFiles = getSourceFilePaths(
-    isTestBuild ? repoDirs.root : repoDirs.srcRoot
-)
-
-const successMessage = `📦 Successfully built arktype!`
-
-const arktypeTsc = () => {
-    console.log(`🔨 Building arktype...`)
-    rmSync(repoDirs.outRoot, { recursive: true, force: true })
-    if (!isTestBuild) {
-        buildTypes()
+console.log(`🔨 Building ${packageJson.name}...`)
+rmSync(outRoot, { recursive: true, force: true })
+const tsConfigData = readJson(join(repoDirs.configs, "tsconfig.json"))
+const tempTsConfig = join(packageRoot, "tsconfig.temp.json")
+writeJson(tempTsConfig, {
+    ...tsConfigData,
+    include: ["src"],
+    compilerOptions: {
+        ...tsConfigData.compilerOptions,
+        noEmit: false,
+        module: "commonjs",
+        outDir: "dist"
     }
-    transpile()
-    console.log(successMessage)
-}
-
-const buildTypes = () => {
-    process.stdout.write("⏳ Building types...".padEnd(successMessage.length))
-    const tsConfigData = readJson(join(repoDirs.root, "tsconfig.json"))
-    const tempTsConfig = join(repoDirs.root, "tsconfig.temp.json")
-    try {
-        writeJson(tempTsConfig, { ...tsConfigData, include: ["src"] })
-        shell(
-            `pnpm tsc --project ${tempTsConfig} --outDir ${repoDirs.outRoot} --noEmit false --emitDeclarationOnly`
-        )
-        renameSync(join(repoDirs.outRoot, "src"), repoDirs.typesOut)
-    } finally {
-        rmSync(tempTsConfig, { force: true })
-    }
-    process.stdout.write(`✅\n`)
-}
-
-const transpile = () => {
-    process.stdout.write(`⌛ Transpiling...`.padEnd(successMessage.length))
-    swc("mjs")
-    swc("cjs")
-    process.stdout.write("✅\n")
-}
-
-const swc = (kind: "mjs" | "cjs") => {
-    const kindOutDir = join(repoDirs.outRoot, kind)
-    let cmd = `pnpm swc -d ${kindOutDir} -C jsc.target=es2022 -q `
-    if (kind === "cjs") {
-        cmd += `-C module.type=commonjs `
-    }
-    if (!isProd()) {
-        cmd += `--source-maps inline `
-    }
-    if (!isTestBuild) {
-        cmd += inFiles.join(" ")
-        shell(cmd)
-    } else {
-        buildWithTests(kind, kindOutDir)
-    }
-    writeJson(join(kindOutDir, "package.json"), {
-        type: kind === "cjs" ? "commonjs" : "module"
+})
+try {
+    shell(`pnpm tsc --project ${tempTsConfig}`)
+    const outSrc = join(outRoot, "src")
+    // not sure which setting to change to get it to compile here in the first place
+    cpSync(outSrc, outRoot, {
+        recursive: true,
+        force: true
     })
+    rmSync(outSrc, { recursive: true, force: true })
+} finally {
+    rmSync(tempTsConfig, { force: true })
 }
-
-const buildWithTests = (kind: string, kindOutDir: string) => {
-    const cjsAddon = kind === "cjs" ? "-C module.type=commonjs" : ""
-    const paths = {
-        src: ["src"],
-        dev: [
-            "dev/attest/main.ts",
-            "dev/attest/cli.ts",
-            "dev/attest/src",
-            "dev/runtime",
-            "dev/scripts",
-            "dev/examples",
-            "dev/test"
-        ]
-    }
-    for (const [baseDir, dirsToInclude] of Object.entries(paths)) {
-        shell(
-            `pnpm swc ${cjsAddon} ${dirsToInclude.join(
-                " "
-            )} -d ${kindOutDir}/${baseDir} -C jsc.target=es2022 -q`
-        )
-    }
-}
-
-arktypeTsc()
+console.log(`📦 Successfully built ${packageJson.name}!`)

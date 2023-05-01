@@ -1,6 +1,6 @@
 import type { ts } from "ts-morph"
 import { getFileKey } from "../../utils.js"
-import { getVirtualTsMorphProject } from "../getTsMorphProject.js"
+import { getTsMorphProject } from "../cacheAssertions.js"
 
 export type DiagnosticData = {
     start: number
@@ -11,7 +11,7 @@ export type DiagnosticData = {
 export type DiagnosticsByFile = Record<string, DiagnosticData[]>
 
 export const getDiagnosticsByFile = (): DiagnosticsByFile => {
-    const project = getVirtualTsMorphProject()
+    const project = getTsMorphProject()
     const diagnosticsByFile: DiagnosticsByFile = {}
     // We have to use this internal checker to access errors ignore by @ts-ignore or @ts-expect-error
     const diagnostics: ts.Diagnostic[] = (

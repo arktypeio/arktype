@@ -2,8 +2,7 @@ import { TypeNode } from "../../../../nodes/type.js"
 import type { error } from "../../../../utils/generics.js"
 import type {
     BigintLiteral,
-    NumberLiteral,
-    writeMalformedNumericLiteralMessage
+    NumberLiteral
 } from "../../../../utils/numericLiterals.js"
 import {
     tryParseWellFormedBigint,

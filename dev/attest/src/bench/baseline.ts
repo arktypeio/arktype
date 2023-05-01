@@ -1,6 +1,6 @@
 import process from "node:process"
-import { snapshot } from "../../../../src/utils/serialize.js"
-import { queueInlineSnapshotWriteOnProcessExit } from "../snapshot.js"
+import { snapshot } from "arktype/internal/utils/serialize.js"
+import { queueSnapshotUpdate } from "../snapshot.js"
 import type { BenchAssertionContext, BenchContext } from "./bench.js"
 import type {
     MarkMeasure,
@@ -24,12 +24,11 @@ export const queueBaselineUpdateIfNeeded = (
             `Unable to update baseline for ${ctx.qualifiedName} ('lastSnapCallPosition' was unset).`
         )
     }
-    queueInlineSnapshotWriteOnProcessExit({
+    queueSnapshotUpdate({
         position: ctx.lastSnapCallPosition,
         serializedValue,
         snapFunctionName: ctx.kind,
-        baselinePath: ctx.qualifiedPath,
-        benchFormat: ctx.cfg.benchFormat
+        baselinePath: ctx.qualifiedPath
     })
 }
 

@@ -1,6 +1,7 @@
+//@ts-nocheck
+import { type } from "arktype"
+import type { Infer } from "arktype"
 import z from "zod"
-import { type } from "../../src/main.js"
-import type { Infer } from "../../src/main.js"
 
 {
     // @snipStatement:arkUserExpression

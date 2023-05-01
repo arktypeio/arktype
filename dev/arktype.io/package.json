@@ -4,10 +4,9 @@
     "private": true,
     "scripts": {
         "dev": "docusaurus start",
-        "build": "ts-node ../scripts/buildArktypeIo.ts",
+        "build": "node --loader ts-node/esm ../scripts/docgen.ts && pnpm docusaurus build --out-dir dist && cp CNAME dist",
         "typecheck": "tsc",
-        "serve": "docusaurus serve --dir dist",
-        "docgen": "cd .. && pnpm docgen"
+        "serve": "docusaurus serve --dir dist"
     },
     "dependencies": {
         "@docusaurus/core": "2.4.0",
@@ -19,8 +18,8 @@
         "@emotion/styled": "11.10.6",
         "@mdx-js/react": "1.6.22",
         "@mui/icons-material": "5.11.9",
-        "@mui/material": "5.11.10",
         "@mui/lab": "5.0.0-alpha.121",
+        "@mui/material": "5.11.10",
         "@stackblitz/sdk": "1.8.2",
         "framer-motion": "6.5.1",
         "prism-react-renderer": "1.3.5",
@@ -28,14 +27,13 @@
         "react-dom": "17.0.2"
     },
     "devDependencies": {
-        "@types/node": "18.15.11",
         "@docusaurus/module-type-aliases": "2.4.0",
         "@docusaurus/types": "2.4.0",
         "@tsconfig/docusaurus": "1.0.7",
+        "@types/node": "18.15.11",
         "@types/react": "17.0.2",
         "@types/react-dom": "17.0.2",
-        "arktype": "link:../..",
-        "ts-node": "10.9.1",
+        "arktype": "workspace:*",
         "typescript": "5.0.3"
     },
     "pnpm": {

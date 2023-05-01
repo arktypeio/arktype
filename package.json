@@ -12,48 +12,37 @@
         "url": "https://github.com/arktypeio/arktype.git"
     },
     "type": "module",
-    "main": "./dist/cjs/main.js",
-    "types": "./dist/types/main.d.ts",
+    "main": "./dist/main.js",
+    "types": "./dist/main.d.ts",
     "exports": {
-        ".": {
-            "types": "./dist/types/main.d.ts",
-            "import": "./dist/mjs/main.js",
-            "require": "./dist/cjs/main.js"
-        },
-        "./internal/*": {
-            "types": "./dist/types/*",
-            "import": "./dist/mjs/*",
-            "require": "./dist/cjs/*"
-        }
+        ".": "./dist/main.js",
+        "./internal/*": "./dist/*"
     },
     "files": [
         "dist",
         "!*.tsbuildinfo"
     ],
-    "packageManager": "pnpm@8.3.0",
+    "packageManager": "pnpm@8.3.1",
     "scripts": {
         "compile": "ts-node ./dev/examples/compiled.ts",
-        "compare": "ts-node ./dev/test/comparison.bench.ts --noWrite",
-        "prChecks": "pnpm install && pnpm build && pnpm typecheck && pnpm lint && pnpm testRepo && pnpm docgen && pnpm buildSite",
+        "prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
+        "build": "pnpm ts ./dev/scripts/build.ts",
+        "buildRepo": "pnpm build && pnpm run -r build",
+        "test": "pnpm ts ./dev/scripts/test.ts",
+        "tnt": "pnpm ts ./dev/scripts/test.ts --skipTypes",
+        "testRepo": "pnpm -r test && pnpm testTsVersions",
+        "testTsVersions": "pnpm ts ./dev/scripts/testTsVersions.ts",
         "typecheck": "tsc --noEmit",
-        "build": "ts-node ./dev/scripts/build.ts",
-        "buildRepo": "pnpm build && pnpm docgen && pnpm buildSite",
-        "buildSite": "cd dev/arktype.io && pnpm install && pnpm build",
-        "docgen": "ts-node ./dev/scripts/docgen.ts",
-        "test": "ts-node ./dev/attest/cli.ts --coverage --cmd mocha",
-        "tnt": "ts-node ./dev/attest/cli.ts --coverage --skipTypes --cmd mocha",
-        "testRepo": " pnpm testBuild && pnpm testTsVersions && pnpm testAttest",
-        "testBuild": "ts-node ./dev/scripts/testBuild.ts",
-        "testAttest": "ts-node ./dev/scripts/testAttest.ts",
-        "testTsVersions": "ts-node ./dev/scripts/testTsVersions.ts",
+        "ts": "node --loader=ts-node/esm --no-warnings=ExperimentalWarning",
         "lint": "eslint --max-warnings=0 .",
         "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
-        "findUnused": "ts-node ./dev/scripts/findUnusedExports.ts",
+        "checkFormat": "prettier --check --ignore-path ./dev/configs/.prettierignore .",
+        "findUnused": "pnpm ts ./dev/scripts/findUnusedExports.ts",
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install dev/configs/.husky",
-        "changeset": "ts-node ./dev/scripts/changeset.ts",
-        "ci:version": "ts-node ./dev/scripts/updateVersions.ts",
-        "ci:publish": "ts-node ./dev/scripts/changeset.ts publish"
+        "changeset": "pnpm ts ./dev/scripts/changeset.ts",
+        "ci:version": "pnpm ts ./dev/scripts/updateVersions.ts",
+        "ci:publish": "pnpm ts ./dev/scripts/changeset.ts publish"
     },
     "devDependencies": {
         "@changesets/changelog-github": "0.4.8",
@@ -68,13 +57,11 @@
         "eslint": "8.36.0",
         "eslint-config-prettier": "8.8.0",
         "eslint-define-config": "1.17.0",
+        "eslint-plugin-only-warn": "1.1.0",
         "eslint-import-resolver-typescript": "3.5.3",
         "eslint-plugin-import": "2.27.5",
-        "eslint-plugin-only-warn": "1.1.0",
         "eslint-plugin-prefer-arrow": "1.2.3",
         "eslint-plugin-unicorn": "46.0.0",
-        "fast-check": "3.7.1",
-        "get-current-line": "6.6.0",
         "husky": "8.0.3",
         "mocha": "10.2.0",
         "prettier": "2.8.6",
@@ -82,12 +69,11 @@
         "pretty-quick": "3.1.3",
         "ts-morph": "18.0.0",
         "ts-node": "10.9.1",
-        "typescript": "4.9",
-        "zod": "3.21.4"
+        "typescript": "4.9"
     },
     "c8": {
         "checkCoverage": true,
-        "lines": 95,
+        "lines": 96,
         "src": "./src",
         "exclude": [
             "test/**",
@@ -103,8 +89,7 @@
     },
     "mocha": {
         "spec": [
-            "dev/test/*.test.ts",
-            "test/*.test.ts"
+            "./dev/test/*.test.*"
         ],
         "ignore": "**/node_modules/*",
         "node-option": [
@@ -114,5 +99,15 @@
     },
     "eslintConfig": {
         "extends": "./dev/configs/.eslintrc.cjs"
+    },
+    "pnpm": {
+        "peerDependencyRules": {
+            "//": "Docusaurus/webpack nonsense",
+            "ignoreMissing": [
+                "@algolia/client-search",
+                "@babel/core",
+                "typescript"
+            ]
+        }
     }
 }
