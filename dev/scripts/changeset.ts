@@ -1,9 +1,11 @@
-import { fromPackageRoot } from "../attest/src/fs.js"
+import { fromHere } from "../attest/main.js"
 import { shell } from "../attest/src/shell.js"
 import { repoDirs } from "./common.js"
 
 shell(
-    `node ${fromPackageRoot(
+    `node ${fromHere(
+        "..",
+        "..",
         "node_modules",
         "@changesets",
         "cli",
