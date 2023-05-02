@@ -1,15 +1,14 @@
 import type { Dict, List, mutable } from "../utils/generics.js"
 import { hasKeys, listFrom } from "../utils/generics.js"
 import type { CompilationState } from "./compilation.js"
-import type { DisjointsByPath } from "./disjoint.js"
+import type { DisjointsSources } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
-import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 import type { TypeNodeInput } from "./type.js"
 import { getNever, TypeNode } from "./type.js"
 import { insertUniversalPropAccess } from "./utils.js"
 
-export class PropsNode extends Node<typeof PropsNode> {
+export class PropsNode extends Node<"props"> {
     static readonly kind = "props"
 
     readonly named: PropsChild["named"]
@@ -54,7 +53,7 @@ export class PropsNode extends Node<typeof PropsNode> {
             checks.push(insertUniversalPropAccess(props.named[k].key, k))
         }
         // TODO: empty? (same for others)
-        return checks.join(" && ") as CompiledAssertion
+        return checks.join(" && ")
     }
 
     compileTraverse(s: CompilationState) {
@@ -80,7 +79,7 @@ export class PropsNode extends Node<typeof PropsNode> {
             }
         }
         const named = { ...l.named, ...r.named }
-        const disjointsByPath: DisjointsByPath = {}
+        const disjointsByPath: DisjointsSources = {}
         for (const k in named) {
             let propResult: NamedPropNode | Disjoint = named[k]
             if (k in l.named) {
@@ -120,7 +119,7 @@ export class PropsNode extends Node<typeof PropsNode> {
             if (propResult instanceof Disjoint) {
                 Object.assign(
                     disjointsByPath,
-                    propResult.withPrefixKey(k).paths
+                    propResult.withPrefixKey(k).sources
                 )
             } else {
                 named[k] = propResult
@@ -156,7 +155,7 @@ export type NamedPropChild = {
     value: TypeNode
 }
 
-export class NamedPropNode extends Node<typeof NamedPropNode> {
+export class NamedPropNode extends Node<"namedProp"> {
     static readonly kind = "namedProp"
 
     constructor(public prop: NamedPropChild) {

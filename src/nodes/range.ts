@@ -2,7 +2,6 @@ import { throwInternalError } from "../utils/errors.js"
 import type { xor } from "../utils/generics.js"
 import type { CompilationState } from "./compilation.js"
 import { Disjoint } from "./disjoint.js"
-import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 import { In } from "./utils.js"
 
@@ -61,7 +60,7 @@ export type Range =
     | [RangeConstraint]
     | [min: RangeConstraint, max: RangeConstraint]
 
-export class RangeNode extends Node<typeof RangeNode> {
+export class RangeNode extends Node<"range"> {
     static readonly kind = "range"
 
     range: Range
@@ -96,12 +95,12 @@ export class RangeNode extends Node<typeof RangeNode> {
     static compile(range: Range) {
         return range
             .map((constraint) => RangeNode.#compileAssertion(constraint))
-            .join(" && ") as CompiledAssertion
+            .join(" && ")
     }
 
     static SIZE = `(${In}.length ?? ${In})` as const
 
-    static #compileAssertion(constraint: RangeConstraint): CompiledAssertion {
+    static #compileAssertion(constraint: RangeConstraint) {
         return `${RangeNode.SIZE} ${
             constraint.comparator === "==" ? "===" : constraint.comparator
         } ${constraint.limit}`

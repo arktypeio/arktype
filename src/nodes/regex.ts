@@ -1,11 +1,10 @@
 import { throwInternalError } from "../utils/errors.js"
 import { intersectUniqueLists, listFrom } from "./../utils/generics.js"
 import type { CompilationState } from "./compilation.js"
-import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 import { In } from "./utils.js"
 
-export class RegexNode extends Node<typeof RegexNode> {
+export class RegexNode extends Node<"regex"> {
     static readonly kind = "regex"
     sources: string[]
 
@@ -19,13 +18,10 @@ export class RegexNode extends Node<typeof RegexNode> {
     }
 
     static compile(sources: string[]) {
-        return sources
-            .sort()
-            .map(RegexNode.#compileExpression)
-            .join(" && ") as CompiledAssertion
+        return sources.sort().map(RegexNode.#compileExpression).join(" && ")
     }
 
-    static #compileExpression(source: string): CompiledAssertion {
+    static #compileExpression(source: string) {
         return `${In}.match(/${source}/)`
     }
 

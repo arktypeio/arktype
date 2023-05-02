@@ -1,8 +1,9 @@
 import type { Domain } from "../utils/domains.js"
+import { throwInternalError } from "../utils/errors.js"
 import type { evaluate, keySet } from "../utils/generics.js"
 import { hasKey, isKeyOf, keysOf } from "../utils/generics.js"
-import type { DefaultObjectKind } from "../utils/objectKinds.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
+import type { BasisNode } from "./basis.js"
 import type { QualifiedDisjoint } from "./disjoint.js"
 import { Disjoint, parseQualifiedDisjoint } from "./disjoint.js"
 import type { PredicateNode } from "./predicate.js"
@@ -104,14 +105,11 @@ type CasesByDiscriminant = {
 
 export type DiscriminantKinds = {
     domain: Domain
-    class: DefaultObjectKind
     value: SerializedPrimitive
 }
 
 const discriminantKinds: keySet<DiscriminantKind> = {
     domain: true,
-    // TODO: does this work here?
-    class: true,
     value: true
 }
 
@@ -134,18 +132,27 @@ const calculateDiscriminants = (
                 continue
             }
             let path: QualifiedDisjoint
-            for (path in result.paths) {
+            for (path in result.sources) {
                 const kind = parseQualifiedDisjoint(path)[1]
-                const disjointAtPath = result.paths[path]!
+                const disjointAtPath = result.sources[path]!
                 if (!isKeyOf(kind, discriminantKinds)) {
                     continue
                 }
                 const qualifiedDiscriminant = path as QualifiedDiscriminant
-                // TODO: fix
-                const lSerialized = String(disjointAtPath.l)
-                const rSerialized = String(disjointAtPath.r)
-                if (lSerialized === undefined || rSerialized === undefined) {
-                    continue
+                let lSerialized: string
+                let rSerialized: string
+                if (kind === "domain") {
+                    lSerialized = (disjointAtPath.l as BasisNode).domain
+                    rSerialized = (disjointAtPath.r as BasisNode).domain
+                } else if (kind === "value") {
+                    lSerialized = (disjointAtPath.l as BasisNode<"value">)
+                        .serializedValue
+                    rSerialized = (disjointAtPath.r as BasisNode<"value">)
+                        .serializedValue
+                } else {
+                    return throwInternalError(
+                        `Unexpected attempt to discriminate disjoint kind '${kind}'`
+                    )
                 }
                 pairDisjoints.push(qualifiedDiscriminant)
                 if (!discriminants.casesByDisjoint[qualifiedDiscriminant]) {
@@ -157,17 +164,15 @@ const calculateDiscriminants = (
                 }
                 const cases =
                     discriminants.casesByDisjoint[qualifiedDiscriminant]!
-                const existingLBranch = cases[lSerialized]
-                if (!existingLBranch) {
+                if (!hasKey(cases, lSerialized)) {
                     cases[lSerialized] = [lIndex]
-                } else if (!existingLBranch.includes(lIndex)) {
-                    existingLBranch.push(lIndex)
+                } else if (!cases[lSerialized].includes(lIndex)) {
+                    cases[lSerialized].push(lIndex)
                 }
-                const existingRBranch = cases[rSerialized]
-                if (!existingRBranch) {
+                if (!hasKey(cases, rSerialized)) {
                     cases[rSerialized] = [rIndex]
-                } else if (!existingRBranch.includes(rIndex)) {
-                    existingRBranch.push(rIndex)
+                } else if (!cases[rSerialized].includes(rIndex)) {
+                    cases[rSerialized].push(rIndex)
                 }
             }
         }

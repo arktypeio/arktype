@@ -1,9 +1,8 @@
 import type { CompilationState } from "./compilation.js"
-import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 import { In } from "./utils.js"
 
-export class DivisibilityNode extends Node<typeof DivisibilityNode> {
+export class DivisibilityNode extends Node<"divisor"> {
     // TODO: align kind with node names
     static readonly kind = "divisor"
 
@@ -11,7 +10,7 @@ export class DivisibilityNode extends Node<typeof DivisibilityNode> {
         super(DivisibilityNode, divisor)
     }
 
-    static compile(divisor: number): CompiledAssertion {
+    static compile(divisor: number) {
         return `${In} % ${divisor} === 0`
     }
 

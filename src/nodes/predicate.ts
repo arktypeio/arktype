@@ -9,7 +9,6 @@ import { Disjoint } from "./disjoint.js"
 import { DivisibilityNode } from "./divisibility.js"
 import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
-import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 import type { PropsInput } from "./props.js"
 import { PropsNode } from "./props.js"
@@ -17,7 +16,7 @@ import type { Bounds } from "./range.js"
 import { RangeNode } from "./range.js"
 import { RegexNode } from "./regex.js"
 
-export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
+export class PredicateNode<t = unknown> extends Node<"predicate"> {
     declare [as]: t
 
     static readonly kind = "predicate"
@@ -47,6 +46,9 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
     }
 
     static from<def extends PredicateDefinition>(def: def) {
+        if (!def.basis) {
+            return new PredicateNode([])
+        }
         const rules: RuleNodes = [new BasisNode(def.basis)]
         if (def.divisor) {
             rules.push(new DivisibilityNode(def.divisor))
@@ -64,11 +66,13 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
     }
 
     static compile(rules: RuleNodes) {
-        // TODO: figure out better way to deal with empty
-        return rules
-            .map((rule) => rule.key)
-            .filter((rule) => rule !== ("" as any))
-            .join(" && ") as CompiledAssertion
+        let result = ""
+        for (const rule of rules) {
+            if (rule.key !== "true") {
+                result += `${result && " && "}${rule.key}`
+            }
+        }
+        return result || "true"
     }
 
     compileTraverse(s: CompilationState) {
@@ -104,12 +108,12 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         if (l.valueNode) {
             return r.allows(l.valueNode.literalValue)
                 ? l
-                : Disjoint.from("assignability", l.valueNode.literalValue, r)
+                : Disjoint.from("assignability", l.valueNode, r)
         }
         if (r.valueNode) {
             return l.allows(r.valueNode.literalValue)
                 ? r
-                : Disjoint.from("assignability", l, r.valueNode.literalValue)
+                : Disjoint.from("assignability", l, r.valueNode)
         }
         const resultInput: RuleNodes = [basisResult, ...l.constraints]
         for (let i = 0; i < r.constraints.length; i++) {

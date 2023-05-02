@@ -1,11 +1,9 @@
 import type { Morph } from "../parse/ast/morph.js"
 import { intersectUniqueLists, listFrom } from "../utils/generics.js"
 import type { CompilationState } from "./compilation.js"
-import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
-import { In } from "./utils.js"
 
-export class MorphNode extends Node<typeof MorphNode> {
+export class MorphNode extends Node<"morph"> {
     static readonly kind = "morph"
 
     transformations: readonly Morph[]
@@ -16,8 +14,8 @@ export class MorphNode extends Node<typeof MorphNode> {
         this.transformations = transformationList
     }
 
-    static compile(transformations: readonly Morph[]): CompiledAssertion {
-        return `${In} !== ${In}`
+    static compile(transformations: readonly Morph[]) {
+        return "false"
     }
 
     compileTraverse(s: CompilationState) {

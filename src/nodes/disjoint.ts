@@ -2,6 +2,7 @@ import type { Domain } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { constructor, entryOf } from "../utils/generics.js"
 import { stringify } from "../utils/serialize.js"
+import type { BasisNode } from "./basis.js"
 import type { PredicateNode } from "./predicate.js"
 import type { RangeNode } from "./range.js"
 import type { TypeNode } from "./type.js"
@@ -10,29 +11,29 @@ import { insertInitialPropAccess } from "./utils.js"
 
 type DisjointKinds = {
     domain?: {
-        l: Domain
-        r: Domain
+        l: BasisNode
+        r: BasisNode
     }
     value?: {
-        l: unknown
-        r: unknown
+        l: BasisNode<"value">
+        r: BasisNode<"value">
     }
     range?: {
         l: RangeNode
         r: RangeNode
     }
     class?: {
-        l: constructor
-        r: constructor
+        l: BasisNode<"class">
+        r: BasisNode<"class">
     }
     assignability?:
         | {
-              l: unknown
+              l: BasisNode<"value">
               r: PredicateNode
           }
         | {
               l: PredicateNode
-              r: unknown
+              r: BasisNode<"value">
           }
     union?: {
         l: TypeNode
@@ -57,7 +58,7 @@ export type DisjointKindEntries = entryOf<DisjointKinds>[]
 export type QualifiedDisjoint<kind extends DisjointKind = DisjointKind> =
     `${CompiledPath}:${kind}`
 
-export type DisjointsByPath = {
+export type DisjointsSources = {
     [k in QualifiedDisjoint]: k extends QualifiedDisjoint<infer kind>
         ? DisjointKinds[kind]
         : never
@@ -66,7 +67,7 @@ export type DisjointsByPath = {
 export type DisjointKind = keyof DisjointKinds
 
 export class Disjoint {
-    constructor(public paths: DisjointsByPath) {}
+    constructor(public sources: DisjointsSources) {}
 
     static from<kind extends DisjointKind>(
         kind: kind,
@@ -87,7 +88,7 @@ export class Disjoint {
                 `Unexpected attempt to create a disjoint from no entries`
             )
         }
-        const byPath: DisjointsByPath = {}
+        const byPath: DisjointsSources = {}
         for (const [kind, operands] of entries) {
             byPath[`$arkIn:${kind}`] = operands as never
         }
@@ -95,29 +96,31 @@ export class Disjoint {
     }
 
     invert() {
-        const inverted: DisjointsByPath = {}
+        const inverted: DisjointsSources = {}
         let path: QualifiedDisjoint
-        for (path in this.paths) {
+        for (path in this.sources) {
             inverted[path] = {
-                l: this.paths[path]!.r as never,
-                r: this.paths[path]!.l as never
+                l: this.sources[path]!.r as never,
+                r: this.sources[path]!.l as never
             }
         }
         return new Disjoint(inverted)
     }
 
     withPrefixKey(key: string) {
-        const disjoints: DisjointsByPath = {}
+        const disjoints: DisjointsSources = {}
         let path: QualifiedDisjoint
-        for (path in this.paths) {
+        for (path in this.sources) {
             const [location, kind] = parseQualifiedDisjoint(path)
             const locationWithKey = insertInitialPropAccess(location, key)
-            disjoints[`${locationWithKey}:${kind}`] = this.paths[path] as never
+            disjoints[`${locationWithKey}:${kind}`] = this.sources[
+                path
+            ] as never
         }
         return new Disjoint(disjoints)
     }
 
     toString() {
-        return stringify(this.paths)
+        return stringify(this.sources)
     }
 }

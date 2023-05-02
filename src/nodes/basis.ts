@@ -9,7 +9,6 @@ import { serializePrimitive, stringify } from "../utils/serialize.js"
 import type { CompilationState } from "./compilation.js"
 import type { DisjointKindEntries } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
-import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 import type { ProblemRules } from "./problems.js"
 import { In } from "./utils.js"
@@ -44,13 +43,14 @@ const hasLevel = <level extends BasisLevel>(
     level: level
 ): basis is Basis<level> => levelOf(basis) === level
 
-export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
-    typeof BasisNode
-> {
+export class BasisNode<
+    level extends BasisLevel = BasisLevel
+> extends Node<"basis"> {
     static readonly kind = "basis"
     readonly level: level
     readonly domain: Domain
-    readonly literalValue?: level extends "value" ? unknown : never
+    readonly literalValue: level extends "value" ? unknown : undefined
+    readonly serializedValue: level extends "value" ? string : undefined
     readonly levelPrecedence: 0 | 1 | 2
 
     constructor(public rule: Basis<level>) {
@@ -58,14 +58,21 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
         this.level = levelOf(rule) as level
         if (this.hasLevel("value")) {
             this.literalValue = this.rule[1] as never
+            this.serializedValue = BasisNode.compileSerializedValue(
+                this.literalValue
+            ) as never
             this.domain = domainOf(this.literalValue)
             this.levelPrecedence = 0
-        } else if (this.hasLevel("domain")) {
-            this.domain = this.rule
-            this.levelPrecedence = 2
         } else {
-            this.domain = "object"
-            this.levelPrecedence = 1
+            this.literalValue = undefined as never
+            this.serializedValue = undefined as never
+            if (this.hasLevel("domain")) {
+                this.domain = this.rule
+                this.levelPrecedence = 2
+            } else {
+                this.domain = "object"
+                this.levelPrecedence = 1
+            }
         }
     }
 
@@ -74,6 +81,8 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
     ): this is {
         level: level
         rule: Basis<level>
+        literalValue: level extends "value" ? unknown : never
+        serializedValue: level extends "value" ? string : never
     } {
         return hasLevel(this.rule, level)
     }
@@ -87,18 +96,15 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
                 ? l
                 : constructorExtends(r.rule, l.rule)
                 ? r
-                : Disjoint.from("class", l.rule, r.rule)
+                : Disjoint.from("class", l, r)
         }
         const disjointEntries: DisjointKindEntries = []
         if (l.domain !== r.domain) {
-            disjointEntries.push(["domain", { l: l.domain, r: r.domain }])
+            disjointEntries.push(["domain", { l, r }])
         }
         if (l.hasLevel("value") && r.hasLevel("value")) {
             if (l.literalValue !== r.literalValue) {
-                disjointEntries.push([
-                    "value",
-                    { l: l.literalValue, r: r.literalValue }
-                ])
+                disjointEntries.push(["value", { l, r }])
             }
         }
         return disjointEntries.length
@@ -114,18 +120,19 @@ export class BasisNode<level extends BasisLevel = BasisLevel> extends Node<
               )
     }
 
-    static compile(rule: Basis): CompiledAssertion {
+    static compileSerializedValue(value: unknown) {
+        return hasKind(value, "object") || typeof value === "symbol"
+            ? registry().register(typeof value, value)
+            : serializePrimitive(value as SerializablePrimitive)
+    }
+
+    static compile(rule: Basis) {
         if (hasLevel(rule, "domain")) {
             return rule === "object"
                 ? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
                 : `typeof ${In} === "${rule}"`
         } else if (hasLevel(rule, "value")) {
-            const value = rule[1]
-            return `${In} === ${
-                hasKind(value, "object") || typeof value === "symbol"
-                    ? registry().register(typeof value, value)
-                    : serializePrimitive(value as SerializablePrimitive)
-            }`
+            return `${In} === ${BasisNode.compileSerializedValue(rule[1])}`
         } else {
             return `${In} instanceof ${
                 rule === Array ? "Array" : registry().register(rule.name, rule)

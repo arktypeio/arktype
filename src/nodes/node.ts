@@ -1,54 +1,57 @@
-import type { evaluate, instanceOf } from "../utils/generics.js"
+import type { instanceOf } from "../utils/generics.js"
 import { CompiledFunction } from "../utils/generics.js"
+import type { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
 import { Disjoint } from "./disjoint.js"
-import type { CompiledPath } from "./utils.js"
+import type { DivisibilityNode } from "./divisibility.js"
+import type { FilterNode } from "./filter.js"
+import type { MorphNode } from "./morph.js"
+import type { PredicateNode } from "./predicate.js"
+import type { NamedPropNode, PropsNode } from "./props.js"
+import type { RangeNode } from "./range.js"
+import type { RegexNode } from "./regex.js"
+import type { TypeNode } from "./type.js"
 import { In } from "./utils.js"
 
-type BaseAssertion =
-    | `${CompiledPath}${string}`
-    | `typeof ${CompiledPath}${string}`
-
-type parenthesizable<s extends string> = s | `(${s}`
-
-type negatable<s extends string> = s | `!${s}`
-
-export type CompiledAssertion = evaluate<
-    negatable<parenthesizable<parenthesizable<BaseAssertion>>>
->
-
-export type NodeSubclass<subclass extends NodeSubclass<any>> = {
-    readonly kind: NodeKind
-    new (...args: any[]): Node<subclass>
-    compile(definition: any): CompiledAssertion
+export type NodeSubclass<kind extends NodeKind> = {
+    readonly kind: kind
+    new (...args: any[]): NodeInstance<kind>
+    compile(definition: any): string
     intersect(
-        l: instanceOf<subclass>,
-        r: instanceOf<subclass>
-    ): instanceOf<subclass> | Disjoint
+        l: NodeInstance<kind>,
+        r: NodeInstance<kind>
+    ): NodeInstance<kind> | Disjoint
 }
 
-type NodeKind =
-    | "type"
-    | "predicate"
-    | "basis"
-    | "divisor"
-    | "range"
-    | "regex"
-    | "props"
-    | "namedProp"
-    | "filter"
-    | "morph"
+export type NodeInstance<kind extends NodeKind = NodeKind> = instanceOf<
+    NodeKinds[kind]
+>
+
+export type NodeKinds = {
+    type: typeof TypeNode
+    predicate: typeof PredicateNode
+    basis: typeof BasisNode
+    divisor: typeof DivisibilityNode
+    range: typeof RangeNode
+    regex: typeof RegexNode
+    props: typeof PropsNode
+    namedProp: typeof NamedPropNode
+    filter: typeof FilterNode
+    morph: typeof MorphNode
+}
+
+type NodeKind = keyof NodeKinds
 
 export abstract class Node<
-    subclass extends NodeSubclass<subclass> = NodeSubclass<any>,
+    kind extends NodeKind = NodeKind,
     input = any,
     narrowed extends input = input
 > {
-    declare kind: subclass["kind"]
-    declare key: CompiledAssertion
+    declare kind: kind
+    declare key: string
     declare allows: (data: input) => data is narrowed
 
-    static #cache: { [kind in NodeKind]: Record<CompiledAssertion, Node> } = {
+    static #cache: { [kind in NodeKind]: Record<string, Node> } = {
         type: {},
         predicate: {},
         basis: {},
@@ -62,38 +65,42 @@ export abstract class Node<
     }
 
     constructor(
-        protected subclass: subclass,
-        definition: Parameters<subclass["compile"]>[0]
+        protected subclass: NodeSubclass<kind>,
+        definition: Parameters<NodeKinds[kind]["compile"]>[0]
     ) {
         const kind = subclass.kind
         const key = subclass.compile(definition)
         if (Node.#cache[kind][key]) {
-            return Node.#cache[kind][key] as instanceOf<subclass>
+            return Node.#cache[kind][key] as any
         }
         this.key = key
-        this.kind = kind
+        this.kind = kind as kind
         this.allows = new CompiledFunction<(data: input) => data is narrowed>(
             In,
             `return ${key}`
         )
-        Node.#cache[kind][key] = this
+        ;(Node.#cache[kind] as any)[key] = this
     }
 
-    #intersections: Record<string, instanceOf<subclass> | Disjoint> = {}
-    intersect(other: instanceOf<subclass>) {
+    hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
+        return this.kind === (kind as any)
+    }
+
+    #intersections: Record<string, NodeInstance<kind> | Disjoint> = {}
+    intersect(other: NodeInstance<kind>): NodeInstance<kind> | Disjoint {
         if (this.key === other.key) {
-            return this as instanceOf<subclass>
+            return this as NodeInstance<kind>
         }
         if (this.#intersections[other.key]) {
             return this.#intersections[other.key]
         }
         const result = this.subclass.intersect(
-            this as instanceOf<subclass>,
+            this as NodeInstance<kind>,
             other
         )
         this.#intersections[other.key] = result
         other.#intersections[this.key] =
-            result instanceof Disjoint ? result.invert() : result
+            result instanceof Disjoint ? result.invert() : (result as any)
         return result
     }
 

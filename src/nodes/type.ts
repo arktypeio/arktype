@@ -13,7 +13,6 @@ import type {
 } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
-import type { CompiledAssertion } from "./node.js"
 import { Node } from "./node.js"
 import type {
     ConstraintKind,
@@ -21,7 +20,6 @@ import type {
     PredicateDefinition
 } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
-import { In } from "./utils.js"
 
 type inferBranches<branches extends TypeNodeInput> = {
     [i in keyof branches]: branches[i] extends PredicateDefinition
@@ -33,11 +31,7 @@ type inferBranches<branches extends TypeNodeInput> = {
 
 export type TypeNodeInput = List<PredicateDefinition | PredicateNode>
 
-export class TypeNode<t = unknown> extends Node<
-    typeof TypeNode,
-    unknown,
-    inferIn<t>
-> {
+export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     declare [as]: t
 
     static readonly kind = "type"
@@ -87,21 +81,21 @@ export class TypeNode<t = unknown> extends Node<
         )
     }
 
-    static compile(branches: DiscriminatedBranches): CompiledAssertion {
+    static compile(branches: DiscriminatedBranches) {
         return isArray(branches)
             ? TypeNode.#compileIndiscriminable(branches)
-            : (TypeNode.#compileSwitch(branches) as CompiledAssertion)
+            : TypeNode.#compileSwitch(branches)
     }
 
     static #compileIndiscriminable(branches: readonly PredicateNode[]) {
         return branches.length === 0
-            ? (`${In} !== ${In}` as const)
+            ? "false"
             : branches.length === 1
             ? branches[0].key
-            : (`(${branches
+            : `(${branches
                   .map((branch) => branch.key)
                   .sort()
-                  .join(" || ")})` as CompiledAssertion)
+                  .join(" || ")})`
     }
 
     static #compileSwitch(discriminated: DiscriminatedSwitch): string {
@@ -114,7 +108,8 @@ export class TypeNode<t = unknown> extends Node<
         let compiledCases = ""
         let k: CaseKey
         for (k in discriminated.cases) {
-            compiledCases += `case ${serializePrimitive(k)}: {
+            const caseCondition = k === "default" ? "default" : `case ${k}`
+            compiledCases += `${caseCondition}: {
                 return ${TypeNode.compile(discriminated.cases[k])};
             }`
         }
