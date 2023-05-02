@@ -81,6 +81,7 @@ export class PropsNode extends Node<"props"> {
         const named = { ...l.named, ...r.named }
         const disjointsByPath: DisjointsSources = {}
         for (const k in named) {
+            // TODO: not all discriminatable- if one optional and one required, even if disjoint
             let propResult: NamedPropNode | Disjoint = named[k]
             if (k in l.named) {
                 if (k in r.named) {

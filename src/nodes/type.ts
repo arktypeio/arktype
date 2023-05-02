@@ -3,18 +3,15 @@ import type { inferIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
 import type { List } from "../utils/generics.js"
 import { isArray } from "../utils/objectKinds.js"
-import { serializePrimitive } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
 import type {
     CaseKey,
-    DiscriminantKind,
     DiscriminatedBranches,
-    DiscriminatedSwitch,
-    QualifiedDiscriminant
+    DiscriminatedSwitch
 } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
-import { Disjoint, parseQualifiedDisjoint } from "./disjoint.js"
+import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
 import type {
     ConstraintKind,
@@ -22,7 +19,6 @@ import type {
     PredicateDefinition
 } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
-import type { CompiledPath } from "./utils.js"
 
 type inferBranches<branches extends TypeNodeInput> = {
     [i in keyof branches]: branches[i] extends PredicateDefinition
@@ -111,8 +107,9 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         let k: CaseKey
         for (k in discriminated.cases) {
             const caseCondition = k === "default" ? "default" : `case ${k}`
+            const branchCondition = TypeNode.compile(discriminated.cases[k])
             compiledCases += `${caseCondition}: {
-                return ${TypeNode.compile(discriminated.cases[k])};
+                return ${branchCondition};
             }`
         }
         return `(() => {
@@ -144,6 +141,25 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
                 s.unionDepth--
                 return result
         }
+    }
+
+    getBranchesToPath(path: string[]) {
+        let current: PredicateNode[] = this.branches
+        let next: PredicateNode[] = []
+        while (path.length) {
+            const key = path.shift()!
+            for (const branch of current) {
+                const childrenAtKey =
+                    branch.getConstraint("props")?.named?.[key]?.prop.value
+                        .branches
+                if (childrenAtKey) {
+                    next.push(...childrenAtKey)
+                }
+            }
+            current = next
+            next = []
+        }
+        return current
     }
 
     static intersect(l: TypeNode, r: TypeNode): TypeNode | Disjoint {

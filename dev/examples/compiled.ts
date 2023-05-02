@@ -76,6 +76,18 @@ const places = scope({
     ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" }
 })
 
+const o = type({
+    a: [
+        {
+            b: "number|string"
+        },
+        "|",
+        { b: "null" }
+    ]
+})
+
+console.log(o.root.getBranchesToPath(["a", "b"]).length)
+
 const t = places.type("rainForest|desert|sky|ocean")
 
 console.log(t.toString())
@@ -83,3 +95,60 @@ console.log(t.toString())
 console.log(format(t.allows.toString()))
 
 console.log(t.allows({ climate: "wet", color: "blue", isOcean: true }))
+
+const anonymous = ($arkIn: any) => {
+    return (() => {
+        switch ($arkIn.color) {
+            case "green": {
+                return (
+                    ((typeof $arkIn === "object" && $arkIn !== null) ||
+                        typeof $arkIn === "function") &&
+                    $arkIn.climate === "wet" &&
+                    $arkIn.color === "green" &&
+                    $arkIn.isRainForest === true
+                )
+            }
+            case "brown": {
+                return (
+                    ((typeof $arkIn === "object" && $arkIn !== null) ||
+                        typeof $arkIn === "function") &&
+                    $arkIn.climate === "dry" &&
+                    $arkIn.color === "brown" &&
+                    $arkIn.isDesert === true
+                )
+            }
+            case "blue": {
+                return (() => {
+                    switch ($arkIn.climate) {
+                        case "wet": {
+                            return (
+                                ((typeof $arkIn === "object" &&
+                                    $arkIn !== null) ||
+                                    typeof $arkIn === "function") &&
+                                $arkIn.climate === "wet" &&
+                                $arkIn.color === "blue" &&
+                                $arkIn.isOcean === true
+                            )
+                        }
+                        case "dry": {
+                            return (
+                                ((typeof $arkIn === "object" &&
+                                    $arkIn !== null) ||
+                                    typeof $arkIn === "function") &&
+                                $arkIn.climate === "dry" &&
+                                $arkIn.color === "blue" &&
+                                $arkIn.isSky === true
+                            )
+                        }
+                        default: {
+                            return false
+                        }
+                    }
+                })()
+            }
+            default: {
+                return false
+            }
+        }
+    })()
+}

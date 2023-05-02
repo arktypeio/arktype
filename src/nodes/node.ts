@@ -51,7 +51,7 @@ export abstract class Node<
     declare key: string
     declare allows: (data: input) => data is narrowed
 
-    static #cache: { [kind in NodeKind]: Record<string, Node> } = {
+    static #cache: { [kind in NodeKind]: Record<string, Node<kind>> } = {
         type: {},
         predicate: {},
         basis: {},
@@ -66,10 +66,10 @@ export abstract class Node<
 
     constructor(
         protected subclass: NodeSubclass<kind>,
-        definition: Parameters<NodeKinds[kind]["compile"]>[0]
+        input: Parameters<NodeKinds[kind]["compile"]>[0]
     ) {
         const kind = subclass.kind
-        const key = subclass.compile(definition)
+        const key = subclass.compile(input)
         if (Node.#cache[kind][key]) {
             return Node.#cache[kind][key] as any
         }
