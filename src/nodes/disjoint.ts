@@ -1,6 +1,5 @@
-import type { Domain } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
-import type { constructor, entryOf } from "../utils/generics.js"
+import type { entryOf } from "../utils/generics.js"
 import { stringify } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
 import type { PredicateNode } from "./predicate.js"

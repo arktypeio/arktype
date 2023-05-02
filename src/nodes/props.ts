@@ -4,6 +4,7 @@ import type { CompilationState } from "./compilation.js"
 import type { DisjointsSources } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
+import type { PredicateNodeInput } from "./predicate.js"
 import type { TypeNodeInput } from "./type.js"
 import { getNever, TypeNode } from "./type.js"
 import { insertUniversalPropAccess } from "./utils.js"
@@ -144,7 +145,7 @@ export type PropsChild = {
     indexed: List<[keyType: TypeNode, valueType: TypeNode]>
 }
 
-export type PropKind = "required" | "optional" | "prerequisite"
+export type PropKind = "required" | "optional" | "prerequisite" | "indexed"
 
 export type NamedPropInput = {
     kind: PropKind
@@ -155,6 +156,14 @@ export type NamedPropChild = {
     kind: PropKind
     value: TypeNode
 }
+
+export type PropInput<kind extends PropKind = PropKind> = {
+    kind: kind
+    key: kind extends "indexed" ? PropTypeInput : string
+    value: PropTypeInput
+}
+
+export type PropTypeInput = TypeNode | TypeNodeInput | PredicateNodeInput
 
 export class NamedPropNode extends Node<"namedProp"> {
     static readonly kind = "namedProp"

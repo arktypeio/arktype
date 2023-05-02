@@ -23,10 +23,10 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
     basis: BasisNode | undefined
     constraints: ConstraintNode[]
 
-    constructor(public rules: RuleNodes) {
-        super(PredicateNode, rules)
-        this.basis = rules[0]
-        this.constraints = rules.slice(1) as ConstraintNode[]
+    constructor(public children: PredicateChildren) {
+        super(PredicateNode, children)
+        this.basis = children[0]
+        this.constraints = children.slice(1) as ConstraintNode[]
     }
 
     getConstraintKeys() {
@@ -45,11 +45,11 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
             | undefined
     }
 
-    static from<def extends PredicateDefinition>(def: def) {
+    static from<def extends PredicateNodeInput>(def: def) {
         if (!def.basis) {
             return new PredicateNode([])
         }
-        const rules: RuleNodes = [new BasisNode(def.basis)]
+        const rules: PredicateChildren = [new BasisNode(def.basis)]
         if (def.divisor) {
             rules.push(new DivisibilityNode(def.divisor))
         }
@@ -65,7 +65,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         return new PredicateNode<inferPredicateDefinition<def>>(rules)
     }
 
-    static compile(rules: RuleNodes) {
+    static compile(rules: PredicateChildren) {
         let result = ""
         for (const rule of rules) {
             if (rule.key !== "true") {
@@ -76,7 +76,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
     }
 
     compileTraverse(s: CompilationState) {
-        return this.rules.map((rule) => rule.compileTraverse(s)).join("\n")
+        return this.children.map((rule) => rule.compileTraverse(s)).join("\n")
     }
 
     get valueNode(): BasisNode<"value"> | undefined {
@@ -115,7 +115,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
                 ? r
                 : Disjoint.from("assignability", l, r.valueNode)
         }
-        const resultInput: RuleNodes = [basisResult, ...l.constraints]
+        const resultInput: PredicateChildren = [basisResult, ...l.constraints]
         for (let i = 0; i < r.constraints.length; i++) {
             const matchingIndex = l.constraints.findIndex(
                 (constraint) => constraint.kind === r.constraints[i].kind
@@ -137,17 +137,17 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
 
     constrain<kind extends ConstraintKind>(
         kind: kind,
-        definition: PredicateDefinition[kind]
+        definition: PredicateNodeInput[kind]
     ) {
         const constraintNode = new constraintKinds[kind](definition as any)
         let includedKind = false
-        const constrainedRules = this.rules.map((rule) => {
+        const constrainedRules = this.children.map((rule) => {
             if (rule.kind === kind) {
                 includedKind = true
                 return constraintNode
             }
             return rule
-        }) as RuleNodes
+        }) as PredicateChildren
         if (!includedKind) {
             // TODO: add precedence
             constrainedRules.push(constraintNode as never)
@@ -156,7 +156,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
     }
 }
 
-export type RuleNodes =
+export type PredicateChildren =
     | []
     | [basis: BasisNode, ...constraints: ConstraintNode[]]
 
@@ -169,10 +169,7 @@ export const constraintKinds = {
     morph: MorphNode
 } as const
 
-export type ConstraintsDefinition = Omit<
-    PredicateDefinition,
-    "basis" | "morphs"
->
+export type ConstraintsDefinition = Omit<PredicateNodeInput, "basis" | "morphs">
 
 export type ConstraintNode = instanceOf<ConstraintKinds[ConstraintKind]>
 
@@ -184,7 +181,7 @@ type ConstraintEntry = {
 
 export type ConstraintKind = keyof ConstraintKinds
 
-export type PredicateDefinition<basis extends Basis = Basis> =
+export type PredicateNodeInput<basis extends Basis = Basis> =
     | Record<string, never>
     | ({
           basis: basis
@@ -197,7 +194,7 @@ export type PredicateDefinition<basis extends Basis = Basis> =
           : constraintsOf<basis>))
 
 // TODO: migrate remaining inference
-export type inferPredicateDefinition<def extends PredicateDefinition> =
+export type inferPredicateDefinition<def extends PredicateNodeInput> =
     def extends Record<string, never>
         ? unknown
         : def["morph"] extends Morph<any, infer out>

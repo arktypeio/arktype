@@ -7,7 +7,7 @@ import type { DivisibilityNode } from "./divisibility.js"
 import type { FilterNode } from "./filter.js"
 import type { MorphNode } from "./morph.js"
 import type { PredicateNode } from "./predicate.js"
-import type { NamedPropNode, PropsNode } from "./props.js"
+import type { PropNode, PropsNode } from "./props.js"
 import type { RangeNode } from "./range.js"
 import type { RegexNode } from "./regex.js"
 import type { TypeNode } from "./type.js"
@@ -16,7 +16,7 @@ import { In } from "./utils.js"
 export type NodeSubclass<kind extends NodeKind> = {
     readonly kind: kind
     new (...args: any[]): NodeInstance<kind>
-    compile(definition: any): string
+    compile(children: any): string
     intersect(
         l: NodeInstance<kind>,
         r: NodeInstance<kind>
@@ -35,7 +35,6 @@ export type NodeKinds = {
     range: typeof RangeNode
     regex: typeof RegexNode
     props: typeof PropsNode
-    namedProp: typeof NamedPropNode
     filter: typeof FilterNode
     morph: typeof MorphNode
 }
@@ -51,6 +50,8 @@ export abstract class Node<
     declare key: string
     declare allows: (data: input) => data is narrowed
 
+    children?: Node[]
+
     static #cache: { [kind in NodeKind]: Record<string, Node<kind>> } = {
         type: {},
         predicate: {},
@@ -59,7 +60,6 @@ export abstract class Node<
         range: {},
         regex: {},
         props: {},
-        namedProp: {},
         filter: {},
         morph: {}
     }
