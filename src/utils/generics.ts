@@ -27,8 +27,7 @@ export type exact<t, u> = {
     [k in keyof t]: k extends keyof u ? t[k] : never
 }
 
-// TODO: Try replacing defer
-export type noInfer<t> = [t][t extends any ? 0 : never]
+export type defer<t> = [t][t extends any ? 0 : never]
 
 export type merge<base, merged> = evaluate<Omit<base, keyof merged> & merged>
 

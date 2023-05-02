@@ -1,4 +1,4 @@
-import type { PropsInput } from "../../nodes/props.js"
+import type { NamedPropsInput, PropsInput } from "../../nodes/props.js"
 import { TypeNode } from "../../nodes/type.js"
 import type { inferIn, inferOut, TypeConfig } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
@@ -30,7 +30,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     if (isIndexZeroExpression(def)) {
         return prefixParsers[def[0]](def as never, ctx)
     }
-    const named: mutable<PropsInput["named"]> = {
+    const named: mutable<NamedPropsInput> = {
         length: {
             kind: "prerequisite",
             value: { basis: ["===", def.length] }
@@ -48,10 +48,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     }
     return TypeNode.from({
         basis: Array,
-        props: {
-            named,
-            indexed: []
-        }
+        props: named
     })
 }
 

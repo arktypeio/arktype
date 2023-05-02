@@ -1,4 +1,4 @@
-import { CompilationState } from "./nodes/node.js"
+import { CompilationState } from "./nodes/compilation.js"
 import type { CheckResult } from "./nodes/traverse.js"
 import { TraversalState } from "./nodes/traverse.js"
 import type { TypeNode } from "./nodes/type.js"
