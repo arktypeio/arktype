@@ -1,12 +1,15 @@
 import type { Dict, List, mutable } from "../utils/generics.js"
-import { listFrom } from "../utils/generics.js"
-import type { CompilationState, CompiledAssertion } from "./node.js"
-import { DisjointNode, Node } from "./node.js"
+import { hasKeys, listFrom } from "../utils/generics.js"
+import type { CompilationState } from "./compilation.js"
+import type { DisjointsSources } from "./disjoint.js"
+import { Disjoint } from "./disjoint.js"
+import { Node } from "./node.js"
+import type { PredicateNodeInput } from "./predicate.js"
 import type { TypeNodeInput } from "./type.js"
 import { getNever, TypeNode } from "./type.js"
 import { insertUniversalPropAccess } from "./utils.js"
 
-export class PropsNode extends Node<typeof PropsNode> {
+export class PropsNode extends Node<"props"> {
     static readonly kind = "props"
 
     readonly named: PropsChild["named"]
@@ -51,7 +54,7 @@ export class PropsNode extends Node<typeof PropsNode> {
             checks.push(insertUniversalPropAccess(props.named[k].key, k))
         }
         // TODO: empty? (same for others)
-        return checks.join(" && ") as CompiledAssertion
+        return checks.join(" && ")
     }
 
     compileTraverse(s: CompilationState) {
@@ -73,12 +76,14 @@ export class PropsNode extends Node<typeof PropsNode> {
                 // TODO: path updates here
                 const result = indexed[matchingIndex][1].intersect(rValue)
                 indexed[matchingIndex][1] =
-                    result instanceof DisjointNode ? getNever() : result
+                    result instanceof Disjoint ? getNever() : result
             }
         }
         const named = { ...l.named, ...r.named }
+        const disjointsByPath: DisjointsSources = {}
         for (const k in named) {
-            let propResult = named[k]
+            // TODO: not all discriminatable- if one optional and one required, even if disjoint
+            let propResult: NamedPropNode | Disjoint = named[k]
             if (k in l.named) {
                 if (k in r.named) {
                     // We assume l and r were properly created and the named
@@ -86,14 +91,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                     // with any matching index props. Therefore, the
                     // intersection result will already include index values
                     // from both sides whose key types allow k.
-                    const result = l.named[k].intersect(r.named[k])
-                    if (result instanceof DisjointNode) {
-                        // TODO: fix partially optional disjoints (either key is
-                        // optional (type is still unsatisfiable but can't be
-                        // used to discriminate))
-                        return result.withPrefixKey(k)
-                    }
-                    propResult = result
+                    propResult = l.named[k].intersect(r.named[k])
                 } else {
                     // If a named key from l matches any index keys of r, intersect
                     // the value associated with the name with the index value.
@@ -103,12 +101,7 @@ export class PropsNode extends Node<typeof PropsNode> {
                                 kind: "optional",
                                 value: rValue
                             })
-                            const result = propResult.intersect(rValueAsProp)
-                            if (result instanceof DisjointNode) {
-                                // TODO: fix these partially optional disjoints
-                                return result.withPrefixKey(k)
-                            }
-                            propResult = result
+                            propResult = l.named[k].intersect(rValueAsProp)
                         }
                     }
                 }
@@ -121,18 +114,22 @@ export class PropsNode extends Node<typeof PropsNode> {
                             kind: "optional",
                             value: lValue
                         })
-                        const result = propResult.intersect(lValueAsProp)
-                        if (result instanceof DisjointNode) {
-                            // TODO: fix these partially optional disjoints
-                            return result.withPrefixKey(k)
-                        }
-                        propResult = result
+                        propResult = r.named[k].intersect(lValueAsProp)
                     }
                 }
             }
-            named[k] = propResult
+            if (propResult instanceof Disjoint) {
+                Object.assign(
+                    disjointsByPath,
+                    propResult.withPrefixKey(k).sources
+                )
+            } else {
+                named[k] = propResult
+            }
         }
-        return new PropsNode({ named, indexed })
+        return hasKeys(disjointsByPath)
+            ? new Disjoint(disjointsByPath)
+            : new PropsNode({ named, indexed })
     }
 }
 
@@ -148,7 +145,7 @@ export type PropsChild = {
     indexed: List<[keyType: TypeNode, valueType: TypeNode]>
 }
 
-export type PropKind = "required" | "optional" | "prerequisite"
+export type PropKind = "required" | "optional" | "prerequisite" | "indexed"
 
 export type NamedPropInput = {
     kind: PropKind
@@ -160,7 +157,15 @@ export type NamedPropChild = {
     value: TypeNode
 }
 
-export class NamedPropNode extends Node<typeof NamedPropNode> {
+export type PropInput<kind extends PropKind = PropKind> = {
+    kind: kind
+    key: kind extends "indexed" ? PropTypeInput : string
+    value: PropTypeInput
+}
+
+export type PropTypeInput = TypeNode | TypeNodeInput | PredicateNodeInput
+
+export class NamedPropNode extends Node<"namedProp"> {
     static readonly kind = "namedProp"
 
     constructor(public prop: NamedPropChild) {
@@ -190,7 +195,7 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
     static intersect(
         l: NamedPropNode,
         r: NamedPropNode
-    ): NamedPropNode | DisjointNode {
+    ): NamedPropNode | Disjoint {
         const kind =
             l.prop.kind === "prerequisite" || r.prop.kind === "prerequisite"
                 ? "prerequisite"
@@ -198,7 +203,7 @@ export class NamedPropNode extends Node<typeof NamedPropNode> {
                 ? "required"
                 : "optional"
         const result = l.prop.value.intersect(r.prop.value)
-        if (result instanceof DisjointNode) {
+        if (result instanceof Disjoint) {
             if (kind === "optional") {
                 return new NamedPropNode({
                     kind,

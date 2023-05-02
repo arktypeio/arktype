@@ -1,5 +1,5 @@
 import type { PropKind, PropsInput } from "../nodes/props.js"
-import { NamedPropNode } from "../nodes/props.js"
+import { PropNode } from "../nodes/props.js"
 import { TypeNode } from "../nodes/type.js"
 import type { Dict, evaluate, mutable } from "../utils/generics.js"
 import type { inferDefinition, ParseContext } from "./definition.js"
@@ -22,7 +22,7 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
             }
         }
         ctx.path.push(keyName)
-        named[keyName] = new NamedPropNode({
+        named[keyName] = new PropNode({
             kind,
             value: parseDefinition(def[definitionKey], ctx)
         })

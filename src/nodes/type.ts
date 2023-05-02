@@ -3,46 +3,43 @@ import type { inferIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
 import type { List } from "../utils/generics.js"
 import { isArray } from "../utils/objectKinds.js"
-import { serializePrimitive } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
+import type { CompilationState } from "./compilation.js"
 import type {
     CaseKey,
     DiscriminatedBranches,
     DiscriminatedSwitch
 } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
-import type { CompilationState, CompiledAssertion } from "./node.js"
-import { DisjointNode, Node } from "./node.js"
+import { Disjoint } from "./disjoint.js"
+import { Node } from "./node.js"
 import type {
     ConstraintKind,
     inferPredicateDefinition,
-    PredicateDefinition
+    PredicateNodeInput
 } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
-import { In } from "./utils.js"
 
 type inferBranches<branches extends TypeNodeInput> = {
-    [i in keyof branches]: branches[i] extends PredicateDefinition
+    [i in keyof branches]: branches[i] extends PredicateNodeInput
         ? inferPredicateDefinition<branches[i]>
         : branches[i] extends PredicateNode<infer t>
         ? t
         : never
 }[number]
 
-export type TypeNodeInput = List<PredicateDefinition | PredicateNode>
+export type TypeNodeInput = List<PredicateNodeInput | PredicateNode>
 
-export class TypeNode<t = unknown> extends Node<
-    typeof TypeNode,
-    unknown,
-    inferIn<t>
-> {
+export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     declare [as]: t
 
     static readonly kind = "type"
+    discriminated: DiscriminatedBranches
 
-    constructor(public branches: PredicateNode[]) {
-        const discriminated = discriminate(branches)
+    constructor(public children: PredicateNode[]) {
+        const discriminated = discriminate(children)
         super(TypeNode, discriminated)
+        this.discriminated = discriminated
     }
 
     static from<branches extends TypeNodeInput>(...branches: branches) {
@@ -83,33 +80,36 @@ export class TypeNode<t = unknown> extends Node<
         )
     }
 
-    static compile(branches: DiscriminatedBranches): CompiledAssertion {
+    static compile(branches: DiscriminatedBranches) {
         return isArray(branches)
             ? TypeNode.#compileIndiscriminable(branches)
-            : (TypeNode.#compileSwitch(branches) as CompiledAssertion)
+            : TypeNode.#compileSwitch(branches)
     }
 
     static #compileIndiscriminable(branches: readonly PredicateNode[]) {
         return branches.length === 0
-            ? (`${In} !== ${In}` as const)
+            ? "false"
             : branches.length === 1
             ? branches[0].key
-            : (`(${branches
+            : `(${branches
                   .map((branch) => branch.key)
                   .sort()
-                  .join(" || ")})` as CompiledAssertion)
+                  .join(" || ")})`
     }
 
-    static #compileSwitch(swtch: DiscriminatedSwitch): string {
-        // TODO: fix class
+    static #compileSwitch(discriminated: DiscriminatedSwitch): string {
         // TODO: optional access
         const condition =
-            swtch.kind === "domain" ? `typeof ${swtch.path}` : `${swtch.path}`
+            discriminated.kind === "domain"
+                ? `typeof ${discriminated.path}`
+                : `${discriminated.path}`
         let compiledCases = ""
         let k: CaseKey
-        for (k in swtch.cases) {
-            compiledCases += `case ${serializePrimitive(k)}: {
-                return ${TypeNode.compile(swtch.cases[k])};
+        for (k in discriminated.cases) {
+            const caseCondition = k === "default" ? "default" : `case ${k}`
+            const branchCondition = TypeNode.compile(discriminated.cases[k])
+            compiledCases += `${caseCondition}: {
+                return ${branchCondition};
             }`
         }
         return `(() => {
@@ -120,22 +120,22 @@ export class TypeNode<t = unknown> extends Node<
     }
 
     compileTraverse(s: CompilationState): string {
-        switch (this.branches.length) {
+        switch (this.children.length) {
             case 0:
                 return "throw new Error();"
             case 1:
-                return this.branches[0].compileTraverse(s)
+                return this.children[0].compileTraverse(s)
             default:
                 s.unionDepth++
                 const result = `state.pushUnion();
-                        ${this.branches
+                        ${this.children
                             .map(
                                 (rules) => `(() => {
                             ${rules.compileTraverse(s)}
                             })()`
                             )
                             .join(" && ")};
-                        state.popUnion(${this.branches.length}, ${s.data}, ${
+                        state.popUnion(${this.children.length}, ${s.data}, ${
                     s.path.json
                 });`
                 s.unionDepth--
@@ -143,15 +143,32 @@ export class TypeNode<t = unknown> extends Node<
         }
     }
 
-    static intersect(l: TypeNode, r: TypeNode): TypeNode | DisjointNode {
+    getBranchesToPath(path: string[]) {
+        let current: PredicateNode[] = this.children
+        let next: PredicateNode[] = []
+        while (path.length) {
+            const key = path.shift()!
+            for (const branch of current) {
+                const childrenAtKey =
+                    branch.getConstraint("props")?.named?.[key]?.prop.value
+                        .children
+                if (childrenAtKey) {
+                    next.push(...childrenAtKey)
+                }
+            }
+            current = next
+            next = []
+        }
+        return current
+    }
+
+    static intersect(l: TypeNode, r: TypeNode): TypeNode | Disjoint {
         if (l === r) {
             return l
         }
-        if (l.branches.length === 1 && r.branches.length === 1) {
-            const result = l.branches[0].intersect(r.branches[0])
-            return result instanceof DisjointNode
-                ? result
-                : new TypeNode([result])
+        if (l.children.length === 1 && r.children.length === 1) {
+            const result = l.children[0].intersect(r.children[0])
+            return result instanceof Disjoint ? result : new TypeNode([result])
         }
         // Branches that are determined to be a subtype of an opposite branch are
         // guaranteed to be a member of the final reduced intersection, so long as
@@ -163,14 +180,14 @@ export class TypeNode<t = unknown> extends Node<
         // subtype or equal of any lBranch, the corresponding value should be
         // set to null so we can avoid including previous/future intersections
         // in the final result.
-        const candidatesByR: (PredicateNode[] | null)[] = r.branches.map(
+        const candidatesByR: (PredicateNode[] | null)[] = r.children.map(
             () => []
         )
-        for (let lIndex = 0; lIndex < l.branches.length; lIndex++) {
-            const lBranch = l.branches[lIndex]
+        for (let lIndex = 0; lIndex < l.children.length; lIndex++) {
+            const lBranch = l.children[lIndex]
             let currentCandidateByR: { [rIndex in number]: PredicateNode } = {}
-            for (let rIndex = 0; rIndex < r.branches.length; rIndex++) {
-                const rBranch = r.branches[rIndex]
+            for (let rIndex = 0; rIndex < r.children.length; rIndex++) {
+                const rBranch = r.children[rIndex]
                 if (!candidatesByR[rIndex]) {
                     // we've identified this rBranch as a subtype of
                     // an lBranch and will not yield any distinct intersections.
@@ -184,7 +201,7 @@ export class TypeNode<t = unknown> extends Node<
                     break
                 }
                 const branchIntersection = lBranch.intersect(rBranch)
-                if (branchIntersection instanceof DisjointNode) {
+                if (branchIntersection instanceof Disjoint) {
                     // doesn't tell us about any redundancies or add a distinct intersection
                     continue
                 }
@@ -223,16 +240,16 @@ export class TypeNode<t = unknown> extends Node<
         }
         return finalBranches.length
             ? new TypeNode(finalBranches)
-            : DisjointNode.from({ union: { l, r } })
+            : Disjoint.from("union", l, r)
     }
 
     constrain<kind extends ConstraintKind>(
         kind: kind,
-        definition: PredicateDefinition[kind]
+        definition: PredicateNodeInput[kind]
     ) {
         return new TypeNode(
             // TODO: nevers?
-            this.branches.map((branch) => branch.constrain(kind, definition))
+            this.children.map((branch) => branch.constrain(kind, definition))
         )
     }
 
@@ -247,12 +264,12 @@ export class TypeNode<t = unknown> extends Node<
         if (this === other) {
             return this
         }
-        return new TypeNode([...this.branches, ...other.branches])
+        return new TypeNode([...this.children, ...other.children])
     }
 
-    get literalValue(): BasisNode<"value"> | undefined {
-        return this.branches.length === 1
-            ? this.branches[0].literalValue
+    get valueNode(): BasisNode<"value"> | undefined {
+        return this.children.length === 1
+            ? this.children[0].valueNode
             : undefined
     }
 

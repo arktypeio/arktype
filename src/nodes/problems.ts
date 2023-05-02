@@ -210,8 +210,6 @@ export const defineProblemsCode = <problems>(problems: {
     >
 }) => problems
 
-// TODO: split up
-
 export type KeyProblemKind = "missing" | "extraneous"
 
 export class KeyProblem extends Problem<KeyProblemKind> {

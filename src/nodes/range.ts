@@ -1,7 +1,8 @@
 import { throwInternalError } from "../utils/errors.js"
 import type { xor } from "../utils/generics.js"
-import type { CompilationState, CompiledAssertion } from "./node.js"
-import { DisjointNode, Node } from "./node.js"
+import type { CompilationState } from "./compilation.js"
+import { Disjoint } from "./disjoint.js"
+import { Node } from "./node.js"
 import { In } from "./utils.js"
 
 export const minComparators = {
@@ -59,7 +60,7 @@ export type Range =
     | [RangeConstraint]
     | [min: RangeConstraint, max: RangeConstraint]
 
-export class RangeNode extends Node<typeof RangeNode> {
+export class RangeNode extends Node<"range"> {
     static readonly kind = "range"
 
     range: Range
@@ -94,12 +95,12 @@ export class RangeNode extends Node<typeof RangeNode> {
     static compile(range: Range) {
         return range
             .map((constraint) => RangeNode.#compileAssertion(constraint))
-            .join(" && ") as CompiledAssertion
+            .join(" && ")
     }
 
     static SIZE = `(${In}.length ?? ${number(In)})` as const
 
-    static #compileAssertion(constraint: RangeConstraint): CompiledAssertion {
+    static #compileAssertion(constraint: RangeConstraint) {
         return `${RangeNode.SIZE} ${
             constraint.comparator === "==" ? "===" : constraint.comparator
         } ${constraint.limit}`
@@ -116,19 +117,15 @@ export class RangeNode extends Node<typeof RangeNode> {
             .join("\n")
     }
 
-    static intersect(l: RangeNode, r: RangeNode): RangeNode | DisjointNode {
+    static intersect(l: RangeNode, r: RangeNode): RangeNode | Disjoint {
         if (l.isEqualityRange()) {
             if (r.isEqualityRange()) {
-                return l === r ? l : DisjointNode.from({ range: { l, r } })
+                return l === r ? l : Disjoint.from("range", l, r)
             }
-            return r.allows(l.bounds["=="])
-                ? l
-                : DisjointNode.from({ range: { l, r } })
+            return r.allows(l.bounds["=="]) ? l : Disjoint.from("range", l, r)
         }
         if (r.isEqualityRange()) {
-            return l.allows(r.bounds["=="])
-                ? r
-                : DisjointNode.from({ range: { l, r } })
+            return l.allows(r.bounds["=="]) ? r : Disjoint.from("range", l, r)
         }
         const stricterMin = compareStrictness("min", l.lowerBound, r.lowerBound)
         const stricterMax = compareStrictness("max", l.upperBound, r.upperBound)
@@ -136,7 +133,7 @@ export class RangeNode extends Node<typeof RangeNode> {
             if (stricterMax === "r") {
                 return compareStrictness("min", l.lowerBound, r.upperBound) ===
                     "l"
-                    ? DisjointNode.from({ range: { l, r } })
+                    ? Disjoint.from("range", l, r)
                     : new RangeNode({
                           ...l.extractComparators(">"),
                           ...r.extractComparators("<")
@@ -148,7 +145,7 @@ export class RangeNode extends Node<typeof RangeNode> {
             if (stricterMax === "l") {
                 return compareStrictness("max", l.upperBound, r.lowerBound) ===
                     "l"
-                    ? DisjointNode.from({ range: { l, r } })
+                    ? Disjoint.from("range", l, r)
                     : new RangeNode({
                           ...l.extractComparators(">"),
                           ...r.extractComparators("<")

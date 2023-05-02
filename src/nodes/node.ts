@@ -1,60 +1,58 @@
-import type { TypeConfig } from "../type.js"
-import type { Domain } from "../utils/domains.js"
-import type { constructor, evaluate, instanceOf } from "../utils/generics.js"
+import type { instanceOf } from "../utils/generics.js"
 import { CompiledFunction } from "../utils/generics.js"
-import { Path } from "../utils/paths.js"
-import { stringify } from "../utils/serialize.js"
+import type { BasisNode } from "./basis.js"
+import type { CompilationState } from "./compilation.js"
+import { Disjoint } from "./disjoint.js"
+import type { DivisibilityNode } from "./divisibility.js"
+import type { FilterNode } from "./filter.js"
+import type { MorphNode } from "./morph.js"
 import type { PredicateNode } from "./predicate.js"
-import type { ProblemCode, ProblemRules } from "./problems.js"
+import type { PropNode, PropsNode } from "./props.js"
 import type { RangeNode } from "./range.js"
+import type { RegexNode } from "./regex.js"
 import type { TypeNode } from "./type.js"
-import type { CompiledPath } from "./utils.js"
-import { compilePathAccess, In, insertInitialPropAccess } from "./utils.js"
+import { In } from "./utils.js"
 
-type BaseAssertion =
-    | `${CompiledPath}${string}`
-    | `typeof ${CompiledPath}${string}`
-
-type parenthesizable<s extends string> = s | `(${s}`
-
-type negatable<s extends string> = s | `!${s}`
-
-export type CompiledAssertion = evaluate<
-    negatable<parenthesizable<parenthesizable<BaseAssertion>>>
->
-
-export type NodeSubclass<subclass extends NodeSubclass<any>> = {
-    readonly kind: NodeKind
-    new (...args: any[]): Node<subclass>
-    compile(definition: any): CompiledAssertion
+export type NodeSubclass<kind extends NodeKind> = {
+    readonly kind: kind
+    new (...args: any[]): NodeInstance<kind>
+    compile(children: any): string
     intersect(
-        l: instanceOf<subclass>,
-        r: instanceOf<subclass>
-    ): instanceOf<subclass> | DisjointNode
+        l: NodeInstance<kind>,
+        r: NodeInstance<kind>
+    ): NodeInstance<kind> | Disjoint
 }
 
-type NodeKind =
-    | "type"
-    | "predicate"
-    | "basis"
-    | "divisor"
-    | "range"
-    | "regex"
-    | "props"
-    | "namedProp"
-    | "filter"
-    | "morph"
+export type NodeInstance<kind extends NodeKind = NodeKind> = instanceOf<
+    NodeKinds[kind]
+>
+
+export type NodeKinds = {
+    type: typeof TypeNode
+    predicate: typeof PredicateNode
+    basis: typeof BasisNode
+    divisor: typeof DivisibilityNode
+    range: typeof RangeNode
+    regex: typeof RegexNode
+    props: typeof PropsNode
+    filter: typeof FilterNode
+    morph: typeof MorphNode
+}
+
+type NodeKind = keyof NodeKinds
 
 export abstract class Node<
-    subclass extends NodeSubclass<subclass> = NodeSubclass<any>,
+    kind extends NodeKind = NodeKind,
     input = any,
     narrowed extends input = input
 > {
-    declare kind: subclass["kind"]
-    declare key: CompiledAssertion
+    declare kind: kind
+    declare key: string
     declare allows: (data: input) => data is narrowed
 
-    static #cache: { [kind in NodeKind]: Record<CompiledAssertion, Node> } = {
+    children?: Node[]
+
+    static #cache: { [kind in NodeKind]: Record<string, Node<kind>> } = {
         type: {},
         predicate: {},
         basis: {},
@@ -62,172 +60,49 @@ export abstract class Node<
         range: {},
         regex: {},
         props: {},
-        namedProp: {},
         filter: {},
         morph: {}
     }
 
     constructor(
-        protected subclass: subclass,
-        definition: Parameters<subclass["compile"]>[0]
+        protected subclass: NodeSubclass<kind>,
+        input: Parameters<NodeKinds[kind]["compile"]>[0]
     ) {
         const kind = subclass.kind
-        const key = subclass.compile(definition)
+        const key = subclass.compile(input)
         if (Node.#cache[kind][key]) {
-            return Node.#cache[kind][key] as instanceOf<subclass>
+            return Node.#cache[kind][key] as any
         }
         this.key = key
-        this.kind = kind
+        this.kind = kind as kind
         this.allows = new CompiledFunction<(data: input) => data is narrowed>(
             In,
             `return ${key}`
         )
-        Node.#cache[kind][key] = this
+        ;(Node.#cache[kind] as any)[key] = this
     }
 
-    #intersections: Record<string, instanceOf<subclass> | DisjointNode> = {}
-    intersect(other: instanceOf<subclass>) {
+    hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
+        return this.kind === (kind as any)
+    }
+
+    #intersections: Record<string, NodeInstance<kind> | Disjoint> = {}
+    intersect(other: NodeInstance<kind>): NodeInstance<kind> | Disjoint {
         if (this.key === other.key) {
-            return this
+            return this as NodeInstance<kind>
         }
-        this.#intersections[other.key] ??= this.subclass.intersect(
-            this as instanceOf<subclass>,
+        if (this.#intersections[other.key]) {
+            return this.#intersections[other.key]
+        }
+        const result = this.subclass.intersect(
+            this as NodeInstance<kind>,
             other
         )
-        other.#intersections[this.key] = this.#intersections[other.key]
-        return this.#intersections[other.key]
+        this.#intersections[other.key] = result
+        other.#intersections[this.key] =
+            result instanceof Disjoint ? result.invert() : (result as any)
+        return result
     }
 
     abstract compileTraverse(s: CompilationState): string
-}
-
-// TODO: multiple disjoints
-// intersect ["===", 5], ["===", "foo"]
-// const disjoints = {
-//     domain: {
-//         l: "number",
-//         r: "string"
-//     },
-//     value: {
-//         l: 5,
-//         r: "foo"
-//     }
-// }
-
-export type Disjoint = {
-    domain?: {
-        l: Domain
-        r: Domain
-    }
-    range?: {
-        l: RangeNode
-        r: RangeNode
-    }
-    class?: {
-        l: constructor
-        r: constructor
-    }
-    value?: {
-        l: unknown
-        r: unknown
-    }
-    leftAssignability?: {
-        l: unknown
-        r: PredicateNode
-    }
-    rightAssignability?: {
-        l: PredicateNode
-        r: unknown
-    }
-    union?: {
-        l: TypeNode
-        r: TypeNode
-    }
-}
-
-export type DisjointsByPath = Record<CompiledPath, Disjoint>
-
-export type DisjointKind = keyof Disjoint
-
-export class DisjointNode {
-    constructor(public paths: DisjointsByPath) {}
-
-    static from(disjoint: Disjoint) {
-        return new DisjointNode({ $arkIn: disjoint })
-    }
-
-    withPrefixKey(key: string) {
-        const disjoints: DisjointsByPath = {}
-        let path: CompiledPath
-        for (path in this.paths) {
-            disjoints[insertInitialPropAccess(path, key)] = this.paths[path]
-        }
-        return new DisjointNode(disjoints)
-    }
-
-    toString() {
-        return stringify(this.paths)
-    }
-}
-
-export type TraversalConfig = {
-    [k in keyof TypeConfig]-?: TypeConfig[k][]
-}
-
-const initializeCompilationConfig = (): TraversalConfig => ({
-    mustBe: [],
-    keys: []
-})
-
-export class CompilationState {
-    path = new Path()
-    lastkind: Domain = "undefined"
-    unionDepth = 0
-    traversalConfig = initializeCompilationConfig()
-
-    constructor() {}
-
-    get data() {
-        return compilePathAccess(this.path)
-    }
-
-    problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
-        return `${
-            this.unionDepth ? "return " : ""
-        }state.addProblem("${code}", ${
-            typeof rule === "function" ? rule.name : JSON.stringify(rule)
-        }, ${this.data}, ${this.path.json})` as const
-    }
-
-    ifThen<condition extends string, onTrue extends string>(
-        condition: condition,
-        onTrue: onTrue
-    ) {
-        return `if (${condition}) {
-            ${onTrue}
-        }`
-    }
-
-    ifNotThen<condition extends string, onFalse extends string>(
-        condition: condition,
-        onFalse: onFalse
-    ) {
-        return `if (!(${condition})) {
-            ${onFalse}
-        }`
-    }
-
-    //     arrayOf(node: Node<any>) {
-    //         // TODO: increment. does this work for logging?
-    //         this.path.push("${i}")
-    //         const result = `(() => {
-    //     let valid = true;
-    //     for(let i = 0; i < ${this.data}.length; i++) {
-    //         valid = ${node.compile(this)} && isValid;
-    //     }
-    //     return valid
-    // })()`
-    //         this.path.pop()
-    //         return result
-    //     }
 }
