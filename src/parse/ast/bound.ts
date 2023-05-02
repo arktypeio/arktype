@@ -38,7 +38,7 @@ type isBoundable<data> = isAny<data> extends true
 export const writeUnboundableMessage = <root extends string>(
     root: root
 ): writeUnboundableMessage<root> =>
-    `Bounded expression ${root} must be a number, string or array`
+    `Bounded expression ${root} must be a date (in epocs), number, string or array`
 
 type writeUnboundableMessage<root extends string> =
-    `Bounded expression ${root} must be a number, string or array`
+    `Bounded expression ${root} must be a date (in epocs), number, string or array`

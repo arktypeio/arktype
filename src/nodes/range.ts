@@ -97,7 +97,7 @@ export class RangeNode extends Node<typeof RangeNode> {
             .join(" && ") as CompiledAssertion
     }
 
-    static SIZE = `(${In}.length ?? ${In})` as const
+    static SIZE = `(${In}.length ?? ${number(In)})` as const
 
     static #compileAssertion(constraint: RangeConstraint): CompiledAssertion {
         return `${RangeNode.SIZE} ${

@@ -1,7 +1,7 @@
 import { domainOf } from "./domains.js"
 import { stringify } from "./serialize.js"
 
-export type SizedData = string | number | readonly unknown[]
+export type SizedData = string | number | readonly unknown[] | Date
 
 export const sizeOf = (data: unknown) =>
     typeof data === "string" || Array.isArray(data)
