@@ -21,7 +21,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
     declare [as]: t
 
     static readonly kind = "predicate"
-    basis: BasisNode
+    basis: BasisNode | undefined
     constraints: ConstraintNode[]
 
     constructor(public rules: RuleNodes) {
@@ -48,7 +48,6 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
 
     static from<def extends PredicateDefinition>(def: def) {
         const rules: RuleNodes = [new BasisNode(def.basis)]
-        // TODO: validate input
         if (def.divisor) {
             rules.push(new DivisibilityNode(def.divisor))
         }
@@ -77,7 +76,7 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
     }
 
     get valueNode(): BasisNode<"value"> | undefined {
-        return this.basis.hasLevel("value") ? this.basis : undefined
+        return this.basis?.hasLevel("value") ? this.basis : undefined
     }
 
     static intersect(l: PredicateNode, r: PredicateNode) {
@@ -91,7 +90,13 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
         //     )
         // }
-
+        // If either predicate is unknown, return opposite operand
+        if (!l.basis) {
+            return r
+        }
+        if (!r.basis) {
+            return l
+        }
         const basisResult = l.basis.intersect(r.basis)
         if (basisResult instanceof Disjoint) {
             return basisResult
@@ -141,13 +146,15 @@ export class PredicateNode<t = unknown> extends Node<typeof PredicateNode> {
         }) as RuleNodes
         if (!includedKind) {
             // TODO: add precedence
-            constrainedRules.push(constraintNode)
+            constrainedRules.push(constraintNode as never)
         }
         return new PredicateNode(constrainedRules)
     }
 }
 
-export type RuleNodes = [basis: BasisNode, ...constraints: ConstraintNode[]]
+export type RuleNodes =
+    | []
+    | [basis: BasisNode, ...constraints: ConstraintNode[]]
 
 export const constraintKinds = {
     range: RangeNode,
@@ -173,19 +180,23 @@ type ConstraintEntry = {
 
 export type ConstraintKind = keyof ConstraintKinds
 
-export type PredicateDefinition<basis extends Basis = Basis> = {
-    basis: basis
-} & (Basis extends basis
-    ? {
-          [k in ConstraintKind]?: k extends "props"
-              ? PropsInput
-              : ConstructorParameters<ConstraintKinds[k]>[0]
-      }
-    : constraintsOf<basis>)
+export type PredicateDefinition<basis extends Basis = Basis> =
+    | Record<string, never>
+    | ({
+          basis: basis
+      } & (Basis extends basis
+          ? {
+                [k in ConstraintKind]?: k extends "props"
+                    ? PropsInput
+                    : ConstructorParameters<ConstraintKinds[k]>[0]
+            }
+          : constraintsOf<basis>))
 
 // TODO: migrate remaining inference
 export type inferPredicateDefinition<def extends PredicateDefinition> =
-    def["morph"] extends Morph<any, infer out>
+    def extends Record<string, never>
+        ? unknown
+        : def["morph"] extends Morph<any, infer out>
         ? (In: inferBasis<def["basis"]>) => inferMorphOut<out>
         : def["morph"] extends [...any[], Morph<any, infer out>]
         ? (In: inferBasis<def["basis"]>) => inferMorphOut<out>

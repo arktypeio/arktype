@@ -29,8 +29,7 @@ export const tsKeywordsScope = scope(
         string: TypeNode.from({ basis: "string" }),
         symbol: TypeNode.from({ basis: "symbol" }),
         true: TypeNode.from({ basis: ["===", true as const] }),
-        unknown:
-            "bigint|boolean|null|number|object|string|symbol|undefined" as Infer<unknown>,
+        unknown: TypeNode.from({}),
         void: "undefined" as Infer<void>,
         undefined: TypeNode.from({ basis: ["===", undefined] })
     },

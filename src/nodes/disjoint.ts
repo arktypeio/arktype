@@ -65,7 +65,6 @@ export type DisjointsByPath = {
 
 export type DisjointKind = keyof DisjointKinds
 
-// TODO: qualified disjoint here?
 export class Disjoint {
     constructor(public paths: DisjointsByPath) {}
 
@@ -99,8 +98,10 @@ export class Disjoint {
         const inverted: DisjointsByPath = {}
         let path: QualifiedDisjoint
         for (path in this.paths) {
-            const { l, r } = this.paths[path]!
-            inverted[path] = { l: r as never, r: l as never }
+            inverted[path] = {
+                l: this.paths[path]!.r as never,
+                r: this.paths[path]!.l as never
+            }
         }
         return new Disjoint(inverted)
     }
