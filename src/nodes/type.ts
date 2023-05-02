@@ -8,11 +8,13 @@ import type { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
 import type {
     CaseKey,
+    DiscriminantKind,
     DiscriminatedBranches,
-    DiscriminatedSwitch
+    DiscriminatedSwitch,
+    QualifiedDiscriminant
 } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
-import { Disjoint } from "./disjoint.js"
+import { Disjoint, parseQualifiedDisjoint } from "./disjoint.js"
 import { Node } from "./node.js"
 import type {
     ConstraintKind,
@@ -20,6 +22,7 @@ import type {
     PredicateDefinition
 } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
+import type { CompiledPath } from "./utils.js"
 
 type inferBranches<branches extends TypeNodeInput> = {
     [i in keyof branches]: branches[i] extends PredicateDefinition
@@ -99,7 +102,6 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     }
 
     static #compileSwitch(discriminated: DiscriminatedSwitch): string {
-        // TODO: fix class
         // TODO: optional access
         const condition =
             discriminated.kind === "domain"
