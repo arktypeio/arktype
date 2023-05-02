@@ -1,5 +1,4 @@
-import type { PropKind, PropsInput } from "../nodes/props.js"
-import { PropNode } from "../nodes/props.js"
+import type { NamedPropsInput, PropKind } from "../nodes/props.js"
 import { TypeNode } from "../nodes/type.js"
 import type { Dict, evaluate, mutable } from "../utils/generics.js"
 import type { inferDefinition, ParseContext } from "./definition.js"
@@ -7,7 +6,7 @@ import { parseDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseRecord = (def: Dict, ctx: ParseContext) => {
-    const named: mutable<PropsInput["named"]> = {}
+    const props: mutable<NamedPropsInput> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
         let kind: PropKind = "required"
@@ -22,18 +21,15 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
             }
         }
         ctx.path.push(keyName)
-        named[keyName] = new PropNode({
+        props[keyName] = {
             kind,
             value: parseDefinition(def[definitionKey], ctx)
-        })
+        }
         ctx.path.pop()
     }
     return TypeNode.from({
         basis: "object",
-        props: {
-            named,
-            indexed: []
-        }
+        props
     })
 }
 

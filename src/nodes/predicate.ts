@@ -2,6 +2,7 @@ import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
 import { as } from "../parse/definition.js"
 import type { Domain } from "../utils/domains.js"
 import type { constructor, instanceOf } from "../utils/generics.js"
+import { isArray } from "../utils/objectKinds.js"
 import type { Basis, inferBasis } from "./basis.js"
 import { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
@@ -60,7 +61,11 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
             rules.push(new RegexNode(def.regex))
         }
         if (def.props) {
-            rules.push(PropsNode.from(def.props))
+            rules.push(
+                isArray(def.props)
+                    ? PropsNode.from(...def.props)
+                    : PropsNode.from(def.props)
+            )
         }
         return new PredicateNode<inferPredicateDefinition<def>>(rules)
     }
@@ -137,9 +142,9 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
 
     constrain<kind extends ConstraintKind>(
         kind: kind,
-        definition: PredicateNodeInput[kind]
+        input: PredicateNodeInput[kind]
     ) {
-        const constraintNode = new constraintKinds[kind](definition as any)
+        const constraintNode = new constraintKinds[kind](input as any)
         let includedKind = false
         const constrainedRules = this.children.map((rule) => {
             if (rule.kind === kind) {
