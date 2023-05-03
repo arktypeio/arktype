@@ -1,25 +1,13 @@
 import { hasKind } from "./domains.js"
 import { throwInternalError } from "./errors.js"
 
-export const asConst = <t>(t: asConstRecurse<t>) => t
-
-export type asConst<t> = castWithExclusion<t, asConstRecurse<t>, []>
+export type asConst<t> = t extends [] ? t : asConstRecurse<t>
 
 type asConstRecurse<t> = {
     [k in keyof t]: t[k] extends Literalable | [] ? t[k] : asConstRecurse<t[k]>
-} & unknown
-
-export type castWithExclusion<t, castTo, excluded> = t extends excluded
-    ? t
-    : castTo
+}
 
 export type Literalable = string | boolean | number | bigint
-
-export type evaluateObjectOrFunction<t> = unknown extends t
-    ? t
-    : t extends (...args: infer args) => infer ret
-    ? (...args: args) => ret
-    : evaluate<t>
 
 export type evaluate<t> = { [k in keyof t]: t[k] } & unknown
 
@@ -31,14 +19,6 @@ export type defer<t> = [t][t extends any ? 0 : never]
 
 export type merge<base, merged> = evaluate<Omit<base, keyof merged> & merged>
 
-/** Replace existing keys of o without altering readonly or optional modifiers  */
-export type replaceProps<
-    o,
-    replacements extends { -readonly [k in keyof o]?: unknown }
-> = evaluate<{
-    [k in keyof o]: k extends keyof replacements ? replacements[k] : o[k]
-}>
-
 export type isAny<t> = [unknown, t] extends [t, {}] ? true : false
 
 export type isUnknown<t> = unknown extends t
@@ -46,18 +26,6 @@ export type isUnknown<t> = unknown extends t
         ? false
         : true
     : false
-
-export type extractKeysWithValue<o, filter> = {
-    [k in keyof o]: isAny<o[k]> extends true
-        ? never
-        : o[k] extends never
-        ? never
-        : o[k] extends filter
-        ? k
-        : never
-}[keyof o]
-
-export type extractValues<o, filter> = o[extractKeysWithValue<o, filter>]
 
 export type conform<t, base> = t extends base ? t : base
 
@@ -67,10 +35,6 @@ export const isKeyOf = <k extends string | number, obj extends object>(
 ): k is Extract<keyof obj, k> => k in obj
 
 export type constructor<instance = unknown> = new (...args: any[]) => instance
-
-export type FunctionLike =
-    | ((...args: any[]) => unknown)
-    | (new (...args: any[]) => unknown)
 
 export type instanceOf<classType extends constructor<any>> =
     classType extends constructor<infer Instance> ? Instance : never
@@ -86,7 +50,22 @@ export type entriesOf<o extends object> = evaluate<entryOf<o>[]>
 export const entriesOf = <o extends object>(o: o) =>
     Object.entries(o) as entriesOf<o>
 
-export type valueOf<o extends object> = evaluate<o[keyof o]>
+export type Key = string | number | symbol
+
+type Entry<key extends Key = Key, value = unknown> = readonly [
+    key: key,
+    value: value
+]
+
+export type fromEntries<entries, result = {}> = entries extends readonly [
+    Entry<infer k, infer v>,
+    ...infer tail
+]
+    ? fromEntries<tail, { [_ in k]: v } & result>
+    : evaluate<result>
+
+export const fromEntries = <entries>(entries: asConst<entries>) =>
+    Object.fromEntries(entries as Entry[]) as fromEntries<entries>
 
 /** Mimics the result of Object.keys(...) */
 export type keysOf<o> = [o] extends [object]
@@ -100,8 +79,6 @@ export type keysOf<o> = [o] extends [object]
     : never
 
 export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>[]
-
-export type stringKeyOf<o> = keyof o & string
 
 /** Mimics output of TS's keyof operator at runtime */
 export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
@@ -147,8 +124,6 @@ export const hasKey = <o extends object, k extends keyof o>(
     k: k
 ): o is requireKeys<o, k> => k in o
 
-export const keyCount = (o: object) => Object.keys(o).length
-
 export type keySet<key extends string = string> = { readonly [_ in key]?: true }
 
 export const hasKeys = (value: unknown) =>
@@ -157,18 +132,6 @@ export const hasKeys = (value: unknown) =>
 export type mutable<o> = {
     -readonly [k in keyof o]: o[k]
 }
-
-export const mutable = <t>(t: t) => t as mutable<t>
-
-export type immutable<o> = {
-    readonly [k in keyof o]: o[k]
-}
-
-export type deepImmutable<o> = [o] extends [object]
-    ? {
-          readonly [k in keyof o]: deepImmutable<o[k]>
-      }
-    : o
 
 /** Check for type equality without breaking TS for this repo. Fails on some types like Dict/{} */
 export type equals<t, u> = identity<t> extends identity<u> ? true : false

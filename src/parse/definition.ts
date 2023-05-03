@@ -9,8 +9,7 @@ import type {
     evaluate,
     isAny,
     isUnknown,
-    List,
-    stringKeyOf
+    List
 } from "../utils/generics.js"
 import { objectKindOf } from "../utils/objectKinds.js"
 import type { Path } from "../utils/paths.js"
@@ -97,7 +96,7 @@ export type validateDefinition<def, $> = def extends (...args: any[]) => any
           objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
       >
     : isUnknown<def> extends true
-    ? stringKeyOf<$>
+    ? keyof $ & string
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], $>
       }>

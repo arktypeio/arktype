@@ -1,4 +1,4 @@
-import type { error, stringKeyOf } from "../../../../utils/generics.js"
+import type { error } from "../../../../utils/generics.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
@@ -28,4 +28,4 @@ export type parseOperand<
         : lookahead extends " "
         ? parseOperand<state.scanTo<s, unscanned>, $>
         : parseUnenclosed<s, $>
-    : error<`${s["scanned"]}${stringKeyOf<$>}`>
+    : error<`${s["scanned"]}${keyof $ & string}`>
