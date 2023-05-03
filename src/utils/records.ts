@@ -1,4 +1,4 @@
-import { hasKind } from "./domains.js"
+import { hasDomain } from "./domains.js"
 import type { asConst, defined, evaluate } from "./generics.js"
 import type { List } from "./lists.js"
 
@@ -27,7 +27,7 @@ export const hasKey = <o extends object, k extends keyof o>(
 export type keySet<key extends string = string> = { readonly [_ in key]?: true }
 
 export const hasKeys = (value: unknown) =>
-    hasKind(value, "object") ? Object.keys(value).length !== 0 : false
+    hasDomain(value, "object") ? Object.keys(value).length !== 0 : false
 
 export type mutable<o> = {
     -readonly [k in keyof o]: o[k]

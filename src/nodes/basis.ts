@@ -1,5 +1,5 @@
 import type { Domain, inferDomain } from "../utils/domains.js"
-import { domainOf, hasKind } from "../utils/domains.js"
+import { domainOf, hasDomain } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { evaluate } from "../utils/generics.js"
 import type { constructor } from "../utils/objectKinds.js"
@@ -122,7 +122,7 @@ export class BasisNode<
     }
 
     static compileSerializedValue(value: unknown) {
-        return hasKind(value, "object") || typeof value === "symbol"
+        return hasDomain(value, "object") || typeof value === "symbol"
             ? registry().register(typeof value, value)
             : serializePrimitive(value as SerializablePrimitive)
     }

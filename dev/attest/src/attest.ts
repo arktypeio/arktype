@@ -1,9 +1,10 @@
 import { fileURLToPath } from "node:url"
 import { Assertions } from "./assertions/assertions.js"
 import type { RootAssertions } from "./assertions/types.js"
+import { caller, getCallStack } from "./caller.js"
 import type { AttestConfig } from "./config.js"
 import { getConfig } from "./config.js"
-import { caller, getCallStack } from "./main.js"
+
 import type { SourcePosition } from "./utils.js"
 
 export type AssertFn = <T>(value: T) => RootAssertions<T, true>

@@ -1,6 +1,5 @@
 import { execSync } from "node:child_process"
 import * as process from "node:process"
-import { tryParseWellFormedNumber } from "arktype/internal/utils/numericLiterals.js"
 
 /** Add a listener that works with Deno or Node */
 export const addListener = (signal: string, handler: () => void) => {
@@ -20,7 +19,7 @@ export const getParamValue = (param: string) => {
         ? true
         : value === "false"
         ? false
-        : tryParseWellFormedNumber(value) ?? value
+        : parseFloat(value) ?? value
 }
 
 export const hasFlag = (flag: string) =>

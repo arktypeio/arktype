@@ -1,6 +1,7 @@
 import { cpSync, rmSync } from "node:fs"
 import { join } from "node:path"
-import { readJson, shell, writeJson } from "../attest/src/main.js"
+import { readJson, writeJson } from "../attest/src/fs.js"
+import { shell } from "../attest/src/shell.js"
 import { repoDirs } from "./common.js"
 
 const packageRoot = process.cwd()

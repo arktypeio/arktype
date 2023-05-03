@@ -1,5 +1,5 @@
 import { join } from "node:path"
-import { fromHere } from "../attest/main.js"
+import { fromHere } from "../attest/src/fs.js"
 
 const root = fromHere("..", "..")
 const dev = join(root, "dev")
