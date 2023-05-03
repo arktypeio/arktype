@@ -1,8 +1,7 @@
 {
     "extends": "../configs/tsconfig.base.json",
     "compilerOptions": {
-        "moduleResolution": "bundler",
-        "allowImportingTsExtensions": true,
+        "moduleResolution": "nodenext",
         "target": "ES2017",
         "jsx": "react",
         "types": [

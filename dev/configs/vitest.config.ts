@@ -3,7 +3,10 @@ import { fromHere } from "../attest/main.js"
 
 export default defineConfig({
     test: {
-        globalSetup: fromHere("vitestSetup.ts"),
+        watch: false,
+        globalSetup: process.argv.includes("--skipTypes")
+            ? []
+            : [fromHere("vitestSetup.ts")],
         exclude: [...configDefaults.exclude, "**/attest/**"]
     }
 })
