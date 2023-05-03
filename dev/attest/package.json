@@ -21,10 +21,6 @@
         "arktype": "workspace:*",
         "ts-morph": "18.0.0"
     },
-    "devDependencies": {
-        "typescript": "5.0.4",
-        "@types/node": "18.15.11"
-    },
     "scripts": {
         "build": "tsx ../scripts/build.ts",
         "test": "tsx ../scripts/test.ts"
