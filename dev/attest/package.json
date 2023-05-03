@@ -18,7 +18,6 @@
         "!*.tsbuildinfo"
     ],
     "dependencies": {
-        "arktype": "workspace:*",
         "ts-morph": "18.0.0"
     },
     "scripts": {

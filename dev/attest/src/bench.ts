@@ -1,19 +1,39 @@
 import type { Node, Project, SourceFile, ts } from "ts-morph"
 import { SyntaxKind } from "ts-morph"
-import { caller } from "../main.js"
-import { findCallExpressionAncestor } from "../snapshot.js"
+import type { AttestConfig } from "./config.js"
+import { getConfig } from "./config.js"
+import { caller } from "./main.js"
+import { findCallExpressionAncestor } from "./snapshot.js"
 import {
     forceCreateTsMorphProject,
     getTsMorphProject
-} from "../type/cacheAssertions.js"
-import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
-import type { BenchContext } from "./bench.js"
-import type { Measure, MeasureComparison } from "./measure/measure.js"
-import type { TypeUnit } from "./measure/types.js"
-import { createTypeComparison } from "./measure/types.js"
+} from "./type/cacheAssertions.js"
+import type { SourcePosition } from "./utils.js"
+import { chainableNoOpProxy } from "./utils.js"
 
-export type BenchTypeAssertions = {
-    types: (instantiations?: Measure<TypeUnit>) => void
+export type BenchContext = {
+    name: string
+    cfg: AttestConfig
+    benchCallPosition: SourcePosition
+}
+
+export const bench = (name: string, expression: unknown) => {
+    const ctx: BenchContext = {
+        name,
+        cfg: getConfig(),
+        benchCallPosition: caller()
+    }
+    if (typeof ctx.cfg.filter === "string" && !name.includes(ctx.cfg.filter)) {
+        return chainableNoOpProxy
+    }
+    const project = getTsMorphProject()
+    project.addSourceFileAtPath(ctx.benchCallPosition.file)
+    const benchFnCall = findCallExpressionAncestor(
+        getTsMorphProject(),
+        ctx.benchCallPosition,
+        "bench"
+    )
+    return getInstantiationsContributedByNode(benchFnCall)
 }
 
 export const getInternalTypeChecker = (project: Project) =>
@@ -109,29 +129,3 @@ const getInstantiationsContributedByNode = (
     )
     return instantiationsByPath[fakePath] - instantiationsWithoutNode
 }
-
-export const createBenchTypeAssertion = (
-    ctx: BenchContext
-): BenchTypeAssertions => ({
-    types: (...args: [instantiations?: Measure<TypeUnit> | undefined]) => {
-        ctx.lastSnapCallPosition = caller()
-        const project = getTsMorphProject()
-        project.addSourceFileAtPath(ctx.benchCallPosition.file)
-        const benchFnCall = findCallExpressionAncestor(
-            getTsMorphProject(),
-            ctx.benchCallPosition,
-            "bench"
-        )
-        const instantiationsContributed =
-            getInstantiationsContributedByNode(benchFnCall)
-        const comparison: MeasureComparison<TypeUnit> = createTypeComparison(
-            instantiationsContributed,
-            args[0]
-        )
-        compareToBaseline(comparison, ctx)
-        queueBaselineUpdateIfNeeded(comparison.updated, args[0], {
-            ...ctx,
-            kind: "types"
-        })
-    }
-})
