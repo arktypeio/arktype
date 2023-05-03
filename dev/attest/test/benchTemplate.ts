@@ -12,7 +12,7 @@ bench(
         return "boofoozoo".includes("foo")
     },
     fakeCallOptions
-).median([2, "ms"])
+).median()
 
 bench(
     "bench call single stat",
@@ -20,7 +20,7 @@ bench(
         return "boofoozoo".includes("foo")
     },
     fakeCallOptions
-).mean([2, "ms"])
+).mean()
 
 bench(
     "bench call mark",
@@ -28,7 +28,7 @@ bench(
         return /.*foo.*/.test("boofoozoo")
     },
     fakeCallOptions
-).mark({ mean: [2, "ms"], median: [2, "ms"] })
+).mark()
 
 type MakeComplexType<S extends string> = S extends `${infer head}${infer tail}`
     ? head | tail | MakeComplexType<tail>
@@ -36,7 +36,7 @@ type MakeComplexType<S extends string> = S extends `${infer head}${infer tail}`
 
 bench("bench type", () => {
     return [] as any as MakeComplexType<"defenestration">
-}).types([169, "instantiations"])
+}).types()
 
 bench(
     "bench call and type",
@@ -47,5 +47,5 @@ bench(
     },
     fakeCallOptions
 )
-    .mean([2, "ms"])
-    .types([349, "instantiations"])
+    .mean()
+    .types()

@@ -1,7 +1,8 @@
 import * as assert from "node:assert/strict"
 import { basename } from "node:path"
 import { describe, it } from "vitest"
-import { attest, fileName } from "../src/main.js"
+import { fileName } from "../../attest/src/main.js"
+import { attest } from "../src/main.js"
 
 const n = 5
 const o = { re: "do" }

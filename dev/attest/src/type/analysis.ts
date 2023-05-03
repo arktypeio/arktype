@@ -1,10 +1,12 @@
 import { getConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
 import { getTsMorphProject } from "./cacheAssertions.js"
-import type { AssertionData } from "./getAssertionsInFile.js"
-import { getAssertionsInFile } from "./getAssertionsInFile.js"
-import { getCachedAssertionData } from "./getCachedAssertionData.js"
-import { getDiagnosticsByFile } from "./getDiagnosticsByFile.js"
+import type { AssertionData } from "./internal/main.js"
+import {
+    getAssertionsInFile,
+    getCachedAssertionData,
+    getDiagnosticsByFile
+} from "./internal/main.js"
 
 type AnalyzeTypeAssertionsOptions = {
     isInitialCache?: boolean
