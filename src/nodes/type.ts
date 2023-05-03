@@ -8,9 +8,9 @@ import type { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
 import type {
     CaseKey,
+    Discriminant,
     DiscriminantKind,
-    DiscriminatedBranches,
-    DiscriminatedSwitch
+    DiscriminatedBranches
 } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
@@ -85,7 +85,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
 
     static compile(
         branches: DiscriminatedBranches,
-        switches: DiscriminatedSwitch[] = []
+        switches: Discriminant[] = []
     ) {
         return isArray(branches)
             ? TypeNode.#compileIndiscriminable(branches, switches)
@@ -94,7 +94,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
 
     static #compileIndiscriminable(
         branches: PredicateNode[],
-        switches: DiscriminatedSwitch[]
+        switches: Discriminant[]
     ) {
         if (branches.length === 0) {
             return "false"
@@ -126,8 +126,8 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     }
 
     static #compileSwitch(
-        discriminated: DiscriminatedSwitch,
-        switches: DiscriminatedSwitch[]
+        discriminated: Discriminant,
+        switches: Discriminant[]
     ): string {
         // TODO: optional access
         const condition =

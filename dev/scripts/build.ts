@@ -30,6 +30,7 @@ try {
         recursive: true,
         force: true
     })
+    writeJson(join(outRoot, "package.json"), { type: "commonjs" })
     rmSync(outSrc, { recursive: true, force: true })
 } finally {
     rmSync(tempTsConfig, { force: true })
