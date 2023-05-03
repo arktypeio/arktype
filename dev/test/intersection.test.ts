@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { describe, it } from "mocha"
+import { describe, it } from "vitest"
 import { type } from "../../src/main.js"
 import {
     writeMissingRightOperandMessage,

@@ -4,7 +4,7 @@
     "private": true,
     "scripts": {
         "dev": "docusaurus start",
-        "build": "node --loader ts-node/esm ../scripts/docgen.ts && pnpm docusaurus build --out-dir dist && cp CNAME dist",
+        "build": "tsx ../scripts/docgen.ts && pnpm docusaurus build --out-dir dist && cp CNAME dist",
         "typecheck": "tsc",
         "serve": "docusaurus serve --dir dist"
     },
@@ -34,7 +34,7 @@
         "@types/react": "17.0.2",
         "@types/react-dom": "17.0.2",
         "arktype": "workspace:*",
-        "typescript": "5.0.3"
+        "typescript": "5.0.4"
     },
     "pnpm": {
         "peerDependencyRules": {

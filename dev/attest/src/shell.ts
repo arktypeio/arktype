@@ -26,12 +26,6 @@ export const getParamValue = (param: string) => {
 export const hasFlag = (flag: string) =>
     process.argv.some((arg) => arg.includes(flag))
 
-export const runTs = (path: string, opts?: ShellOptions) =>
-    shell(
-        `node --loader ts-node/esm --no-warnings=ExperimentalWarning ${path}`,
-        opts
-    )
-
 // @snipStart:shell
 export type ShellOptions = Parameters<typeof execSync>[1] & {
     env?: Record<string, unknown>

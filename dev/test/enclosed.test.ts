@@ -1,4 +1,4 @@
-import { describe, it } from "mocha"
+import { describe, it } from "vitest"
 import { type } from "../../src/main.js"
 import { writeUnterminatedEnclosedMessage } from "../../src/parse/string/shift/operand/enclosed.js"
 import { attest } from "../attest/main.js"

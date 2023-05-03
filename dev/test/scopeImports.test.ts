@@ -1,4 +1,4 @@
-import { describe, it } from "mocha"
+import { describe, it } from "vitest"
 import { scope } from "../../src/main.js"
 import { writeDuplicateAliasesMessage } from "../../src/scope.js"
 import { attest } from "../attest/main.js"

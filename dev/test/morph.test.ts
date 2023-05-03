@@ -1,4 +1,4 @@
-import { describe, it } from "mocha"
+import { describe, it } from "vitest"
 import type { Problem } from "../../src/main.js"
 import { ark, scope, type } from "../../src/main.js"
 import { writeUndiscriminatableMorphUnionMessage } from "../../src/nodes/discriminate.js"

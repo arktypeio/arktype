@@ -1,4 +1,4 @@
-import { describe, it } from "mocha"
+import { describe, it } from "vitest"
 import { type } from "../../src/main.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"

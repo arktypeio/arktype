@@ -19,12 +19,14 @@
     "typescript.tsserver.experimental.enableProjectDiagnostics": true,
     "typescript.preferences.importModuleSpecifierEnding": "js",
     "prettier.ignorePath": "dev/configs/.prettierignore",
-    "mochaExplorer.nodeArgv": [
-        "--loader=ts-node/esm",
-        "--no-warnings=ExperimentalWarning"
+    "vitest.exclude": [
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/cypress/**",
+        "**/.{idea,git,cache,output,temp}/**",
+        "**/attest/**"
     ],
-    "mochaExplorer.env": {
+    "vitest.nodeEnv": {
         "ATTEST_CONFIG": "{ \"skipTypes\": true }"
-    },
-    "testExplorer.useNativeTesting": true
+    }
 }

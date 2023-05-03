@@ -26,30 +26,26 @@
     "scripts": {
         "compile": "tsx watch ./dev/examples/compiled.ts",
         "prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
-        "build": "pnpm ts ./dev/scripts/build.ts",
+        "build": "tsx ./dev/scripts/build.ts",
         "buildRepo": "pnpm build && pnpm run -r build",
-        "test": "pnpm ts ./dev/scripts/test.ts",
-        "tnt": "pnpm ts ./dev/scripts/test.ts --skipTypes",
+        "test": "tsx ./dev/scripts/test.ts",
+        "tnt": "tsx ./dev/scripts/test.ts --skipTypes",
         "testRepo": "pnpm -r test && pnpm testTsVersions",
-        "testTsVersions": "pnpm ts ./dev/scripts/testTsVersions.ts",
+        "testTsVersions": "tsx ./dev/scripts/testTsVersions.ts",
         "typecheck": "tsc --noEmit",
-        "ts": "node --loader=ts-node/esm --no-warnings=ExperimentalWarning",
         "lint": "eslint --max-warnings=0 .",
         "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
         "checkFormat": "prettier --check --ignore-path ./dev/configs/.prettierignore .",
-        "findUnused": "pnpm ts ./dev/scripts/findUnusedExports.ts",
+        "findUnused": "tsx ./dev/scripts/findUnusedExports.ts",
         "preinstall": "npx only-allow pnpm",
         "prepare": "husky install dev/configs/.husky",
-        "changeset": "pnpm ts ./dev/scripts/changeset.ts",
-        "ci:version": "pnpm ts ./dev/scripts/updateVersions.ts",
-        "ci:publish": "pnpm ts ./dev/scripts/changeset.ts publish"
+        "changes": "cd ./dev/configs && node ../../node_modules/@changesets/cli/bin.js",
+        "ci:publish": "pnpm changes publish",
+        "ci:version": "tsx ./dev/scripts/updateVersions.ts"
     },
     "devDependencies": {
         "@changesets/changelog-github": "0.4.8",
         "@changesets/cli": "2.26.1",
-        "@swc/cli": "0.1.62",
-        "@swc/core": "1.3.42",
-        "@types/mocha": "10.0.1",
         "@types/node": "18.15.5",
         "@typescript-eslint/eslint-plugin": "5.56.0",
         "@typescript-eslint/parser": "5.56.0",
@@ -63,14 +59,13 @@
         "eslint-plugin-prefer-arrow": "1.2.3",
         "eslint-plugin-unicorn": "46.0.0",
         "husky": "8.0.3",
-        "mocha": "10.2.0",
         "prettier": "2.8.6",
         "prettier-plugin-jsdoc": "0.4.2",
         "pretty-quick": "3.1.3",
         "ts-morph": "18.0.0",
-        "ts-node": "10.9.1",
         "tsx": "3.12.7",
-        "typescript": "4.9.5"
+        "typescript": "4.9.5",
+        "vitest": "0.30.1"
     },
     "c8": {
         "checkCoverage": true,
@@ -87,16 +82,6 @@
         "tabWidth": 4,
         "semi": false,
         "trailingComma": "none"
-    },
-    "mocha": {
-        "spec": [
-            "./dev/test/*.test.*"
-        ],
-        "ignore": "**/node_modules/*",
-        "node-option": [
-            "loader=ts-node/esm",
-            "no-warnings=ExperimentalWarning"
-        ]
     },
     "eslintConfig": {
         "extends": "./dev/configs/.eslintrc.cjs"

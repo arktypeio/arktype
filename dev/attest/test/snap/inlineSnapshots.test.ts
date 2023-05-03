@@ -1,5 +1,5 @@
 import * as assert from "node:assert/strict"
-import { describe, it } from "mocha"
+import { describe, it } from "vitest"
 import { attest } from "../../src/main.js"
 
 const o = { re: "do" }

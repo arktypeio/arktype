@@ -1,4 +1,4 @@
-import { describe, it } from "mocha"
+import { describe, it } from "vitest"
 import { type } from "../../src/main.js"
 import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
 import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
