@@ -7,7 +7,7 @@ import type { DivisibilityNode } from "./divisibility.js"
 import type { FilterNode } from "./filter.js"
 import type { MorphNode } from "./morph.js"
 import type { PredicateNode } from "./predicate.js"
-import type { PropNode, PropsNode } from "./props.js"
+import type { PropsNode } from "./props.js"
 import type { RangeNode } from "./range.js"
 import type { RegexNode } from "./regex.js"
 import type { TypeNode } from "./type.js"
@@ -16,7 +16,7 @@ import { In } from "./utils.js"
 export type NodeSubclass<kind extends NodeKind> = {
     readonly kind: kind
     new (...args: any[]): NodeInstance<kind>
-    compile(children: any): string
+    compile(...args: any[]): string
     intersect(
         l: NodeInstance<kind>,
         r: NodeInstance<kind>
@@ -66,10 +66,10 @@ export abstract class Node<
 
     constructor(
         protected subclass: NodeSubclass<kind>,
-        input: Parameters<NodeKinds[kind]["compile"]>[0]
+        ...input: Parameters<NodeKinds[kind]["compile"]>
     ) {
         const kind = subclass.kind
-        const key = subclass.compile(input)
+        const key = subclass.compile(...input)
         if (Node.#cache[kind][key]) {
             return Node.#cache[kind][key] as any
         }

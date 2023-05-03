@@ -2,6 +2,7 @@ import { as } from "../parse/definition.js"
 import type { inferIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
 import type { List } from "../utils/generics.js"
+import { wellFormedNonNegativeIntegerMatcher } from "../utils/numericLiterals.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
@@ -150,8 +151,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
             const key = path.shift()!
             for (const branch of current) {
                 const childrenAtKey =
-                    branch.getConstraint("props")?.named?.[key]?.prop.value
-                        .children
+                    branch.getConstraint("props")?.named?.[key]?.value.children
                 if (childrenAtKey) {
                     next.push(...childrenAtKey)
                 }
@@ -308,13 +308,20 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     toArray(): TypeNode<t[]> {
         return TypeNode.from({
             basis: Array,
-            props: {
-                named: {},
-                // TODO: string keys etc.?
-                indexed: [[{ basis: "number" }, this]]
-            }
+            props: [{}, [getArrayIndexKey(), this]]
         }) as any
     }
+}
+
+let arrayIndex: TypeNode<string>
+const getArrayIndexKey = () => {
+    if (!arrayIndex) {
+        arrayIndex = TypeNode.from({
+            basis: "string",
+            regex: wellFormedNonNegativeIntegerMatcher.source
+        })
+    }
+    return arrayIndex
 }
 
 let never: TypeNode<never>
