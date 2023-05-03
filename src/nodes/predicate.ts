@@ -1,6 +1,9 @@
+import { writeUnboundableMessage } from "../parse/ast/bound.js"
+import { writeIndivisibleMessage } from "../parse/ast/divisor.js"
 import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
 import { as } from "../parse/definition.js"
 import type { Domain } from "../utils/domains.js"
+import { throwParseError } from "../utils/errors.js"
 import type { constructor, instanceOf } from "../utils/generics.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { Basis, inferBasis } from "./basis.js"
@@ -51,21 +54,37 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
             return new PredicateNode([])
         }
         const rules: PredicateChildren = [new BasisNode(def.basis)]
+        const basisNode = rules[0]
         if (def.divisor) {
-            rules.push(new DivisibilityNode(def.divisor))
+            basisNode.domain === "number"
+                ? rules.push(new DivisibilityNode(def.divisor))
+                : throwParseError(writeIndivisibleMessage(basisNode.domain))
         }
         if (def.range) {
-            rules.push(new RangeNode(def.range))
+            basisNode.domain === "number" ||
+            (basisNode.hasLevel("class") &&
+                (basisNode.rule instanceof Date ||
+                    basisNode.rule instanceof Array))
+                ? rules.push(new RangeNode(def.range))
+                : throwParseError(writeUnboundableMessage(basisNode.domain))
         }
         if (def.regex) {
-            rules.push(new RegexNode(def.regex))
+            basisNode.domain === "string"
+                ? rules.push(new RegexNode(def.regex))
+                : throwParseError(
+                      "todo message saying regex should be a string"
+                  )
         }
         if (def.props) {
-            rules.push(
-                isArray(def.props)
-                    ? PropsNode.from(...def.props)
-                    : PropsNode.from(def.props)
-            )
+            basisNode.domain === "object"
+                ? rules.push(
+                      isArray(def.props)
+                          ? PropsNode.from(...def.props)
+                          : PropsNode.from(def.props)
+                  )
+                : throwParseError(
+                      `todo this should be an object message ${basisNode.domain}`
+                  )
         }
         return new PredicateNode<inferPredicateDefinition<def>>(rules)
     }
