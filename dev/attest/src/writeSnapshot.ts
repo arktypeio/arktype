@@ -73,7 +73,10 @@ const snapshotArgsToQueuedUpdate = ({
         position,
         snapFunctionName
     )
-    const newArgText = JSON.stringify(serializedValue)
+    const newArgText =
+        typeof serializedValue === "string" && serializedValue.includes("\n")
+            ? "`" + serializedValue.replaceAll("`", "\\`") + "`"
+            : JSON.stringify(serializedValue)
     return {
         position,
         snapCall,
