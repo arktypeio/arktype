@@ -1,4 +1,4 @@
-import { describe, it } from "vitest"
+import { describe, it } from "mocha"
 import { attest } from "../attest/main.js"
 
 describe("snippets", () => {

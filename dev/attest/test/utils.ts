@@ -5,7 +5,7 @@ export const runThenGetContents = (templatePath: string) => {
     const tempPath = templatePath + ".temp.ts"
     copyFileSync(templatePath, tempPath)
     try {
-        shell(`pnpm tsx ${tempPath}`)
+        shell(`pnpm ts-node ${tempPath}`)
     } catch (e) {
         console.error(e)
     }

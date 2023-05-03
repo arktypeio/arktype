@@ -22,7 +22,7 @@
         "ts-morph": "18.0.0"
     },
     "scripts": {
-        "build": "tsx ../scripts/build.ts",
-        "test": "tsx ../scripts/test.ts"
+        "build": "ts-node ../scripts/build.ts",
+        "test": "ts-node ../scripts/test.ts"
     }
 }

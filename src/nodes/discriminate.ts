@@ -104,9 +104,7 @@ export const discriminate = (
         }
     }
     const bestDiscriminantEntry = entriesOf(casesBySpecifier)
-        .sort(
-            (a, b) => Object.keys(a[1]).length - Object.keys(b[1].length).length
-        )
+        .sort((a, b) => Object.keys(a[1]).length - Object.keys(b[1]).length)
         .at(-1)
     if (!bestDiscriminantEntry) {
         return branches

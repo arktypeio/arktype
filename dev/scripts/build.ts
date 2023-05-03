@@ -10,7 +10,7 @@ const packageJson = readJson(join(packageRoot, "package.json"))
 
 console.log(`🔨 Building ${packageJson.name}...`)
 rmSync(outRoot, { recursive: true, force: true })
-const tsConfigData = readJson(join(repoDirs.configs, "tsconfig.json"))
+const tsConfigData = readJson(join(repoDirs.configs, "tsconfig.base.json"))
 const tempTsConfig = join(packageRoot, "tsconfig.temp.json")
 writeJson(tempTsConfig, {
     ...tsConfigData,

@@ -1,4 +1,4 @@
-import { describe, it } from "vitest"
+import { describe, it } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
@@ -30,8 +30,9 @@ describe("discriminate", () => {
             ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" }
         })
     it("nestedd", () => {
-        const t = getPlaces().type("ocean|sky|rainForest|desert")
-        attest(t.root.key).snap()
+        // const t = getPlaces().type("ocean|sky|rainForest|desert")
+        throw new Error()
+        // attest(t.root.key).snap()
         // attest(t.flat).snap([
         //     ["domain", "object"],
         //     [

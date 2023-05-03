@@ -1,6 +1,6 @@
 import * as assert from "node:assert/strict"
 import { basename } from "node:path"
-import { describe, it } from "vitest"
+import { describe, it } from "mocha"
 import { fileName } from "../../attest/src/main.js"
 import { attest } from "../src/main.js"
 
