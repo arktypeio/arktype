@@ -8,9 +8,8 @@ import {
 } from "../type/cacheAssertions.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchContext } from "./bench.js"
-import type { Measure, MeasureComparison } from "./measure/measure.js"
-import type { TypeUnit } from "./measure/types.js"
-import { createTypeComparison } from "./measure/types.js"
+import type { Measure, MeasureComparison, TypeUnit } from "./measure.js"
+import { createTypeComparison } from "./measure.js"
 
 export type BenchTypeAssertions = {
     types: (instantiations?: Measure<TypeUnit>) => void

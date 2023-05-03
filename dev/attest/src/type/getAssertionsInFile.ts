@@ -7,8 +7,8 @@ import type {
     Type
 } from "ts-morph"
 import { SyntaxKind, ts } from "ts-morph"
-import type { LinePositionRange } from "../../utils.js"
-import { getFileKey } from "../../utils.js"
+import type { LinePositionRange } from "../utils.js"
+import { getFileKey } from "../utils.js"
 import type { DiagnosticsByFile } from "./getDiagnosticsByFile.js"
 
 export type AssertionData = {
