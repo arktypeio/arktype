@@ -18,11 +18,11 @@
         "!*.tsbuildinfo"
     ],
     "dependencies": {
-        "arktype": "1.0.13-alpha",
+        "arktype": "workspace:*",
         "ts-morph": "18.0.0"
     },
     "devDependencies": {
-        "typescript": "5.0.3",
+        "typescript": "5.0.4",
         "@types/node": "18.15.11"
     },
     "scripts": {
