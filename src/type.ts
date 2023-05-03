@@ -68,6 +68,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return state.finalize(${In});`
         )
         this.root = root
+        // TODO: remove first root-level IIFE
         this.allows = root.allows
     }
 

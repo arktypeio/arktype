@@ -21,6 +21,7 @@ import type {
     PredicateNodeInput
 } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
+import { In } from "./utils.js"
 
 type inferBranches<branches extends TypeNodeInput> = {
     [i in keyof branches]: branches[i] extends PredicateNodeInput
@@ -82,13 +83,38 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         )
     }
 
-    static compile(branches: DiscriminatedBranches) {
+    static compile(
+        branches: DiscriminatedBranches,
+        switches: DiscriminatedSwitch[] = []
+    ) {
         return isArray(branches)
-            ? TypeNode.#compileIndiscriminable(branches)
-            : TypeNode.#compileSwitch(branches)
+            ? TypeNode.#compileIndiscriminable(branches, switches)
+            : TypeNode.#compileSwitch(branches, switches)
     }
 
-    static #compileIndiscriminable(branches: readonly PredicateNode[]) {
+    static #compileIndiscriminable(
+        branches: PredicateNode[],
+        switches: DiscriminatedSwitch[]
+    ) {
+        if (branches.length === 0) {
+            return "false"
+        }
+        if (switches.length) {
+            let node = new TypeNode(branches)
+            for (const swtch of switches) {
+                // TODO: fix split
+                const path =
+                    swtch.path === In
+                        ? []
+                        : swtch.path.replace(`${In}.`, "").split(".")
+                const pruned = node.pruneDiscriminant(path, swtch.kind)
+                if (pruned === null) {
+                    return "true"
+                }
+                node = pruned
+            }
+            branches = node.branches
+        }
         return branches.length === 0
             ? "false"
             : branches.length === 1
@@ -99,7 +125,10 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
                   .join(" || ")})`
     }
 
-    static #compileSwitch(discriminated: DiscriminatedSwitch): string {
+    static #compileSwitch(
+        discriminated: DiscriminatedSwitch,
+        switches: DiscriminatedSwitch[]
+    ): string {
         // TODO: optional access
         const condition =
             discriminated.kind === "domain"
@@ -107,9 +136,13 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
                 : `${discriminated.path}`
         let compiledCases = ""
         let k: CaseKey
+        const nextSwitches = [...switches, discriminated]
         for (k in discriminated.cases) {
             const caseCondition = k === "default" ? "default" : `case ${k}`
-            const branchCondition = TypeNode.compile(discriminated.cases[k])
+            const branchCondition = TypeNode.compile(
+                discriminated.cases[k],
+                nextSwitches
+            )
             compiledCases += `${caseCondition}: {
                 return ${branchCondition};
             }`
@@ -145,7 +178,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         }
     }
 
-    getBranchesToPath(path: string[]) {
+    getNodesAtPath(...path: string[]) {
         let current: PredicateNode[] = this.branches
         let next: PredicateNode[] = []
         while (path.length) {
