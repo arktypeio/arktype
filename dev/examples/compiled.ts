@@ -94,6 +94,10 @@ console.log(t.toString())
 
 console.log(format(t.allows.toString()))
 
+const d = t.root.pruneDiscriminant(["color"], "value")!
+
+console.log(format(d.key))
+
 console.log(t.allows({ climate: "wet", color: "blue", isOcean: true }))
 
 const anonymous = ($arkIn: any) => {

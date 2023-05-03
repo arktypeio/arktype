@@ -50,8 +50,6 @@ export abstract class Node<
     declare key: string
     declare allows: (data: input) => data is narrowed
 
-    children?: Node[]
-
     static #cache: { [kind in NodeKind]: Record<string, Node<kind>> } = {
         type: {},
         predicate: {},

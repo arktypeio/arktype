@@ -1,4 +1,3 @@
-import { type } from "../main.js"
 import { TypeNode } from "../nodes/type.js"
 import type { Scope } from "../scope.js"
 import { Type } from "../type.js"

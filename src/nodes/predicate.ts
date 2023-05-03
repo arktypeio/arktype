@@ -9,6 +9,7 @@ import { isArray } from "../utils/objectKinds.js"
 import type { Basis, inferBasis } from "./basis.js"
 import { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
+import type { DiscriminantKind } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import { DivisibilityNode } from "./divisibility.js"
 import { FilterNode } from "./filter.js"
@@ -177,6 +178,43 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
             constrainedRules.push(constraintNode as never)
         }
         return new PredicateNode(constrainedRules)
+    }
+
+    pruneDiscriminant(
+        path: string[],
+        kind: DiscriminantKind
+    ): PredicateNode | null {
+        if (path.length === 0) {
+            if (kind === "domain" && this.basis!.hasLevel("value")) {
+                // if the basis specifies an exact value but was used to
+                // discriminate based on a domain, we can't prune it
+                return this
+            }
+            return this.constraints.length
+                ? // TODO: improve type here?
+                  new PredicateNode([undefined, ...this.constraints] as never)
+                : null
+        }
+        const prunedProps = this.getConstraint("props")!.pruneDiscriminant(
+            path,
+            kind
+        )
+        if (prunedProps === null) {
+            const prunedConstraints = this.constraints.filter(
+                (constraint) => !constraint.hasKind("props")
+            ) as Node[]
+            if (prunedConstraints.length === 0) {
+                return null
+            }
+            // TODO: Could basis already have been pruned here?
+            prunedConstraints.unshift(this.basis!)
+            return new PredicateNode(prunedConstraints as PredicateChildren)
+        }
+        return new PredicateNode(
+            this.children.map((child) =>
+                child.hasKind("props") ? prunedProps : child
+            ) as PredicateChildren
+        )
     }
 }
 

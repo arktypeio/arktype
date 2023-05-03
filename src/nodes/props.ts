@@ -1,7 +1,9 @@
+import { throwInternalError } from "../utils/errors.js"
 import type { mutable } from "../utils/generics.js"
 import { hasKeys } from "../utils/generics.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { CompilationState } from "./compilation.js"
+import type { DiscriminantKind } from "./discriminate.js"
 import type { DisjointsSources } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
@@ -29,7 +31,7 @@ export class PropsNode extends Node<"props"> {
         const named = {} as mutable<NamedProps>
         for (const k in namedInput) {
             named[k] = {
-                kind: named[k].kind,
+                kind: namedInput[k].kind,
                 value: typeNodeFromPropInput(namedInput[k].value)
             }
         }
@@ -162,6 +164,32 @@ export class PropsNode extends Node<"props"> {
             kind,
             value: result
         }
+    }
+
+    pruneDiscriminant(
+        path: string[],
+        kind: DiscriminantKind
+    ): PropsNode | null {
+        const [key, ...nextPath] = path
+        const propAtKey = this.named[key]
+        if (!propAtKey) {
+            return throwInternalError(
+                `Unexpectedly failed to prune discriminant of kind ${kind} at key ${key}`
+            )
+        }
+        const prunedValue = propAtKey.value.pruneDiscriminant(nextPath, kind)
+        const { [key]: _, ...preserved } = this.named
+        if (!prunedValue) {
+            if (!hasKeys(preserved)) {
+                return null
+            }
+        } else {
+            preserved[key] = {
+                kind: propAtKey.kind,
+                value: prunedValue
+            }
+        }
+        return new PropsNode([preserved, this.indexed])
     }
 }
 
