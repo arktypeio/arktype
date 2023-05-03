@@ -1,11 +1,12 @@
 import { domainOf, type inferDomain, type Primitive } from "./domains.js"
-import type { Dict, List } from "./generics.js"
-import { isKeyOf } from "./generics.js"
+import type { List } from "./lists.js"
 import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
 import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "./numericLiterals.js"
+import type { Dict } from "./records.js"
+import { isKeyOf } from "./records.js"
 
 export type SerializationOptions = {
     onCycle?: (value: object) => string

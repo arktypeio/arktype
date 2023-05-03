@@ -2,8 +2,8 @@ import { describe, it } from "mocha"
 import { type } from "../../src/main.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"
-import type { assertEqual } from "../../src/utils/generics.js"
-import { Path } from "../../src/utils/paths.js"
+import type { equals } from "../../src/utils/generics.js"
+import { Path } from "../../src/utils/lists.js"
 import { attest } from "../attest/main.js"
 
 describe("filter", () => {
@@ -59,8 +59,9 @@ describe("filter", () => {
     })
     it("functional parameter inference", () => {
         type Expected = number | boolean[]
-        const validateNumberOrBooleanList = <t>(t: assertEqual<t, Expected>) =>
-            true
+        const validateNumberOrBooleanList = <t>(
+            t: equals<t, Expected> extends true ? t : Expected
+        ) => true
         attest(
             type([
                 "number|boolean[]",

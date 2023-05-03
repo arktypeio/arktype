@@ -1,5 +1,5 @@
 import { throwInternalError } from "../utils/errors.js"
-import type { entryOf } from "../utils/generics.js"
+import type { entryOf } from "../utils/records.js"
 import { stringify } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
 import type { PredicateNode } from "./predicate.js"

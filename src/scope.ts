@@ -1,18 +1,14 @@
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
+import { registry } from "./nodes/registry.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import type { Ark } from "./scopes/ark.js"
 import type { KeyCheckKind, TypeConfig, TypeParser } from "./type.js"
 import { Type } from "./type.js"
+import type { error } from "./utils/errors.js"
 import { throwParseError } from "./utils/errors.js"
-import type {
-    Dict,
-    error,
-    evaluate,
-    isAny,
-    List,
-    nominal
-} from "./utils/generics.js"
-import { registry } from "./utils/registry.js"
+import type { evaluate, isAny, nominal } from "./utils/generics.js"
+import type { List } from "./utils/lists.js"
+import type { Dict } from "./utils/records.js"
 import type { stringifyUnion } from "./utils/unionToTuple.js"
 
 type ScopeParser = {

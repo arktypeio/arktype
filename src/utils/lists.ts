@@ -1,5 +1,3 @@
-import type { arraySubclassToReadonly } from "./generics.js"
-
 export class Path extends Array<string | number> {
     static fromString(s: string, delimiter = "/") {
         return s === delimiter ? new Path() : new Path(...s.split(delimiter))
@@ -45,3 +43,34 @@ export const getPath = (root: unknown, path: string[]): unknown => {
     }
     return result
 }
+
+export const intersectUniqueLists = <item>(
+    l: readonly item[],
+    r: readonly item[]
+) => {
+    const intersection = [...l]
+    for (const item of r) {
+        if (!l.includes(item)) {
+            intersection.push(item)
+        }
+    }
+    return intersection
+}
+
+export type List<t = unknown> = readonly t[]
+
+export type arraySubclassToReadonly<t extends unknown[]> =
+    readonly t[number][] & {
+        [k in Exclude<keyof t, keyof unknown[]>]: t[k]
+    }
+
+export type HomogenousTuple<
+    item,
+    length extends number,
+    result extends item[] = []
+> = result["length"] extends length
+    ? result
+    : HomogenousTuple<item, length, [...result, item]>
+
+export const listFrom = <t>(data: t) =>
+    (Array.isArray(data) ? data : [data]) as t extends List ? t : t[]

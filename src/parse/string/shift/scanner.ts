@@ -1,5 +1,5 @@
 import type { Comparator } from "../../../nodes/range.js"
-import type { Dict } from "../../../utils/generics.js"
+import type { Dict } from "../../../utils/records.js"
 
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]

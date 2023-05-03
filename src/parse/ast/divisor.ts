@@ -1,4 +1,5 @@
-import type { error, isAny } from "../../utils/generics.js"
+import type { error } from "../../utils/errors.js"
+import type { isAny } from "../../utils/generics.js"
 import type { inferAst, validateAst } from "./ast.js"
 import type { astToString } from "./utils.js"
 

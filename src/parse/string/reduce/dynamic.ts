@@ -6,8 +6,8 @@ import {
 } from "../../../nodes/range.js"
 import type { TypeNode } from "../../../nodes/type.js"
 import { throwInternalError, throwParseError } from "../../../utils/errors.js"
-import type { requireKeys } from "../../../utils/generics.js"
-import { isKeyOf } from "../../../utils/generics.js"
+import type { requireKeys } from "../../../utils/records.js"
+import { isKeyOf } from "../../../utils/records.js"
 import type { ParseContext } from "../../definition.js"
 import { Scanner } from "../shift/scanner.js"
 import {

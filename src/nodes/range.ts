@@ -1,5 +1,5 @@
 import { throwInternalError } from "../utils/errors.js"
-import type { xor } from "../utils/generics.js"
+import type { xor } from "../utils/records.js"
 import type { CompilationState } from "./compilation.js"
 import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
@@ -50,6 +50,8 @@ export type Bounds = xor<{ "==": number }, MinBounds & MaxBounds>
 export type MinBounds = xor<{ ">"?: number }, { ">="?: number }>
 
 export type MaxBounds = xor<{ "<"?: number }, { "<="?: number }>
+
+export type SizedData = string | number | readonly unknown[]
 
 export type RangeConstraint<comparator extends Comparator = Comparator> = {
     limit: number

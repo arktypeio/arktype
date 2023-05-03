@@ -1,4 +1,4 @@
-import type { error } from "../../../../utils/generics.js"
+import type { error } from "../../../../utils/errors.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"

@@ -1,12 +1,8 @@
 import type { Comparator } from "../../nodes/range.js"
 import type { resolve } from "../../scope.js"
-import type {
-    error,
-    evaluate,
-    ifNonError,
-    List,
-    RegexLiteral
-} from "../../utils/generics.js"
+import type { error } from "../../utils/errors.js"
+import type { evaluate } from "../../utils/generics.js"
+import type { List } from "../../utils/lists.js"
 import type {
     BigintLiteral,
     NumberLiteral,
@@ -98,10 +94,16 @@ export type InfixExpression<
     r = unknown
 > = [l, operator, r]
 
-type validateInfix<ast extends InfixExpression, $> = ifNonError<
-    validateAst<ast[0], $>,
-    ifNonError<validateAst<ast[2], $>, ast>
->
+type validateInfix<ast extends InfixExpression, $> = validateAst<
+    ast[0],
+    $
+> extends error<infer message>
+    ? message
+    : validateAst<ast[2], $> extends error<infer message>
+    ? message
+    : ast
+
+export type RegexLiteral<expression extends string = string> = `/${expression}/`
 
 export type inferTerminal<token, $> = token extends keyof $
     ? resolve<token, $>

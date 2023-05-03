@@ -1,6 +1,6 @@
 import type { TypeConfig } from "../type.js"
 import type { Domain } from "../utils/domains.js"
-import { Path } from "../utils/paths.js"
+import { Path } from "../utils/lists.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { compilePathAccess } from "./utils.js"
 

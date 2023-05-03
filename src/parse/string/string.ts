@@ -1,5 +1,5 @@
 import type { TypeNode } from "../../nodes/type.js"
-import type { error } from "../../utils/generics.js"
+import type { error } from "../../utils/errors.js"
 import type { inferAst } from "../ast/ast.js"
 import type { ParseContext } from "../definition.js"
 import { DynamicState } from "./reduce/dynamic.js"

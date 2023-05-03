@@ -1,7 +1,7 @@
 import { as } from "../parse/definition.js"
 import type { inferIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
-import type { List } from "../utils/generics.js"
+import type { List } from "../utils/lists.js"
 import { wellFormedNonNegativeIntegerMatcher } from "../utils/numericLiterals.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { BasisNode } from "./basis.js"

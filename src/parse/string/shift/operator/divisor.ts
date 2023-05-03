@@ -1,4 +1,4 @@
-import type { error } from "../../../../utils/generics.js"
+import type { error } from "../../../../utils/errors.js"
 import {
     IntegerLiteral,
     NumberLiteral,

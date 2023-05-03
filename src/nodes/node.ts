@@ -1,5 +1,5 @@
-import type { instanceOf } from "../utils/generics.js"
-import { CompiledFunction } from "../utils/generics.js"
+import { CompiledFunction } from "../utils/compiledFunction.js"
+import type { instanceOf } from "../utils/objectKinds.js"
 import type { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
 import { Disjoint } from "./disjoint.js"

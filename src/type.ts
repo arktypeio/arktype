@@ -1,4 +1,5 @@
 import { CompilationState } from "./nodes/compilation.js"
+import { registry } from "./nodes/registry.js"
 import type { CheckResult } from "./nodes/traverse.js"
 import { TraversalState } from "./nodes/traverse.js"
 import type { TypeNode } from "./nodes/type.js"
@@ -13,11 +14,10 @@ import {
 } from "./parse/definition.js"
 import type { bind, Scope } from "./scope.js"
 import type { Ark } from "./scopes/ark.js"
+import { CompiledFunction } from "./utils/compiledFunction.js"
 import type { evaluate } from "./utils/generics.js"
-import { CompiledFunction } from "./utils/generics.js"
+import { Path } from "./utils/lists.js"
 import type { BuiltinClass } from "./utils/objectKinds.js"
-import { Path } from "./utils/paths.js"
-import { registry } from "./utils/registry.js"
 
 export type TypeParser<$> = {
     // Parse and check the definition, returning either the original input for a

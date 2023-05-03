@@ -4,15 +4,10 @@ import { Type } from "../type.js"
 import type { Primitive } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
-import type {
-    Dict,
-    evaluate,
-    isAny,
-    isUnknown,
-    List
-} from "../utils/generics.js"
+import type { evaluate, isAny, isUnknown } from "../utils/generics.js"
+import type { List, Path } from "../utils/lists.js"
 import { objectKindOf } from "../utils/objectKinds.js"
-import type { Path } from "../utils/paths.js"
+import type { Dict } from "../utils/records.js"
 import { stringify } from "../utils/serialize.js"
 import type { validateString } from "./ast/ast.js"
 import type { inferTuple, validateTuple } from "./ast/tuple.js"
