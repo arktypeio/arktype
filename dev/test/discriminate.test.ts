@@ -19,7 +19,7 @@ describe("discriminate", () => {
             sky: { climate: "'dry'", color: "'blue'", isSky: "true" },
             ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" }
         })
-    it("nested", () => {
+    it("nestedd", () => {
         const t = getPlaces().type("ocean|sky|rainForest|desert")
         attest(t.root.key).snap(`(() => {
         switch($arkIn.color) {

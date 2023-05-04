@@ -113,6 +113,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         //     )
         // }
         // If either predicate is unknown, return opposite operand
+        // TODO: Fix pruned.
         if (!l.basis) {
             return r
         }
