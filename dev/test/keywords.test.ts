@@ -157,7 +157,10 @@ describe("keywords", () => {
                 "Must be a well-formed integer string (was '5.5')"
             )
             attest(parsedInteger(5).problems?.summary).snap(
-                "Must be a well-formed integer string (was number)"
+                "Must be a string (was number)"
+            )
+            attest(parsedInteger("9007199254740992").problems?.summary).snap(
+                "Must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER (was '9007199254740992')"
             )
         })
         it("parsedDate", () => {
