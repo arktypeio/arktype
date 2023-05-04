@@ -7,23 +7,17 @@ hide_table_of_contents: true
 ## text
 
 ```ts
-export declare class Problem<code extends ProblemCode = ProblemCode> {
-    code: code
+export declare abstract class Problem<requirement = unknown, data = unknown> {
+    rule: requirement
+    data: DataWrapper<data>
     path: Path
-    private data
-    private source
-    private writers
-    parts?: Problem[]
-    constructor(
-        code: code,
-        path: Path,
-        data: ProblemData<code>,
-        source: ProblemSource<code>,
-        writers: ProblemWriters<code>
-    )
-    toString(): string
+    abstract readonly code: ProblemCode
+    abstract mustBe: string
+    constructor(rule: requirement, data: data, segments: Segments)
+    hasCode<code extends ProblemCode>(code: code): this is ProblemFrom<code>
     get message(): string
     get reason(): string
-    get mustBe(): string
+    get was(): string
+    toString(): string
 }
 ```

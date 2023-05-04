@@ -35,7 +35,7 @@ describe("discriminate", () => {
         attest(t.root.key).snap(`(() => {
         switch($arkIn.color) {
             case 'blue': {
-                return ($arkIn.climate === 'dry' && $arkIn.isSky === true || $arkIn.climate === 'wet' && $arkIn.isOcean === false || $arkIn.climate === 'wet' && $arkIn.isOcean === true);
+                return ($arkIn.climate === 'dry' && $arkIn.isSky === true || $arkIn.climate === 'wet' && $arkIn.isOcean === true);
             }case 'green': {
                 return $arkIn.climate === 'wet' && $arkIn.isRainForest === true;
             }case 'brown': {

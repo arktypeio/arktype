@@ -2,9 +2,7 @@ import { describe, it } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { writeBadDefinitionTypeMessage } from "../../src/parse/definition.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
-import { rootType } from "../../src/scope.js"
-import { tsKeywords } from "../../src/scopes/tsKeywords.js"
-import { attest, getTsVersionUnderTest } from "../attest/main.js"
+import { attest } from "../attest/main.js"
 
 describe("terminal objects", () => {
     it("regex", () => {

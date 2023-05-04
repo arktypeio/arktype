@@ -7,5 +7,5 @@ hide_table_of_contents: true
 ## text
 
 ```ts
-ark: Space<PrecompiledDefaults>
+ark: Space<Ark>
 ```

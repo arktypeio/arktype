@@ -20,6 +20,7 @@
         "--loader=ts-node/esm",
         "--no-warnings=ExperimentalWarning"
     ],
+    "mochaExplorer.require": "dev/configs/mocha.fixtures.ts",
     "mochaExplorer.env": {
         "ATTEST_CONFIG": "{ \"skipTypes\": true }"
     },

@@ -6,14 +6,22 @@ hide_table_of_contents: true
 
 ## text
 
-| Name     | Type                           | Description |
-| -------- | ------------------------------ | ----------- |
-| Function | ` (...args: any[]) => unknown` |             |
-| Date     | ` Date`                        |             |
-| Error    | ` Error`                       |             |
-| Map      | ` Map<unknown, unknown>`       |             |
-| RegExp   | ` RegExp`                      |             |
-| Set      | ` Set<unknown>`                |             |
-| WeakMap  | ` WeakMap<object, unknown>`    |             |
-| WeakSet  | ` WeakSet<object>`             |             |
-| Promise  | ` Promise<unknown>`            |             |
+```ts
+jsObjectsScope: import("../scope.js").Scope<
+    [
+        {
+            Function: Function
+            Date: Date
+            Error: Error
+            Map: Map<unknown, unknown>
+            RegExp: RegExp
+            Set: Set<unknown>
+            WeakMap: WeakMap<object, unknown>
+            WeakSet: WeakSet<object>
+            Promise: Promise<unknown>
+        },
+        {},
+        false
+    ]
+>
+```
