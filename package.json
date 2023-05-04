@@ -29,7 +29,7 @@
         "buildRepo": "pnpm build && cd ./dev/attest && pnpm build && cd ../arktype.io && pnpm build",
         "docgen": "ts-node ./dev/scripts/docgen.ts",
         "test": "mocha",
-        "tnt": "ts-node ./dev/scripts/test.ts --skipTypes",
+        "tnt": "mocha --skipTypes",
         "testRepo": "pnpm test && cd ./dev/attest && pnpm test && pnpm testTsVersions",
         "testTsVersions": "ts-node ./dev/scripts/testTsVersions.ts",
         "typecheck": "tsc --noEmit",

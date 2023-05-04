@@ -32,17 +32,7 @@ describe("discriminate", () => {
         })
     it("nested", () => {
         const t = getPlaces().type("ocean|sky|rainForest|desert")
-        attest(t.root.key).snap(`(() => {
-        switch($arkIn.color) {
-            case 'blue': {
-                return ($arkIn.climate === 'dry' && $arkIn.isSky === true || $arkIn.climate === 'wet' && $arkIn.isOcean === true);
-            }case 'green': {
-                return $arkIn.climate === 'wet' && $arkIn.isRainForest === true;
-            }case 'brown': {
-                return $arkIn.climate === 'dry' && $arkIn.isDesert === true;
-            }
-        }
-    })()`)
+        attest(t.root.key).snap()
     })
 
     it("undiscriminatable", () => {

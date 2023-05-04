@@ -21,6 +21,7 @@
         "--no-warnings=ExperimentalWarning"
     ],
     "mochaExplorer.require": "dev/configs/mocha.fixtures.ts",
+    "mochaExplorer.timeout": 0,
     "mochaExplorer.env": {
         "ATTEST_CONFIG": "{ \"skipTypes\": true }"
     },

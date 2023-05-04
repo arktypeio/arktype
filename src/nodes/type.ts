@@ -84,8 +84,8 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     }
 
     static compile(branches: DiscriminatedBranches) {
-        return isArray(branches)
-            ? TypeNode.#compileIndiscriminable(branches)
+        return branches instanceof TypeNode
+            ? TypeNode.#compileIndiscriminable(branches.branches)
             : TypeNode.#compileSwitch(branches)
     }
 
@@ -106,26 +106,14 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
             discriminant.kind === "domain"
                 ? `typeof ${discriminant.path}`
                 : `${discriminant.path}`
-        // TODO: fix split
-        const path =
-            discriminant.path === In
-                ? []
-                : discriminant.path.replace(`${In}.`, "").split(".")
+
         let compiledCases = ""
         let k: CaseKey
         for (k in discriminant.cases) {
             const caseCondition = k === "default" ? "default" : `case ${k}`
-            const prunedBranches = []
-            for (const branch of discriminant.cases[k]) {
-                const pruned = branch.pruneDiscriminant(path, discriminant.kind)
-                if (pruned === null) {
-                    return "true"
-                }
-                prunedBranches.push(pruned)
-            }
-            const branchCondition = new TypeNode(prunedBranches).key
+            const caseNode = discriminant.cases[k]
             compiledCases += `${caseCondition}: {
-                return ${branchCondition};
+                return ${caseNode.key};
             }`
         }
         return `(() => {
@@ -356,4 +344,12 @@ export const getNever = () => {
         never = new TypeNode([])
     }
     return never
+}
+
+let unknown: TypeNode<unknown>
+export const getUnknown = () => {
+    if (!unknown) {
+        unknown = TypeNode.from({})
+    }
+    return unknown
 }
