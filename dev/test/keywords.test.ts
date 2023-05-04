@@ -156,6 +156,9 @@ describe("keywords", () => {
             attest(parsedInteger("5.5").problems?.summary).snap(
                 "Must be a well-formed integer string (was '5.5')"
             )
+            attest(parsedInteger("five").problems?.summary).snap(
+                "Must be a well-formed integer string (was 'five')"
+            )
             attest(parsedInteger(5).problems?.summary).snap(
                 "Must be a string (was number)"
             )
