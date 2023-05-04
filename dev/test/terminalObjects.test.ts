@@ -2,6 +2,8 @@ import { describe, it } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { writeBadDefinitionTypeMessage } from "../../src/parse/definition.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
+import { rootType } from "../../src/scope.js"
+import { tsKeywords } from "../../src/scopes/tsKeywords.js"
 import { attest, getTsVersionUnderTest } from "../attest/main.js"
 
 describe("terminal objects", () => {
@@ -75,10 +77,6 @@ describe("terminal objects", () => {
             // })
         })
         it("cyclic thunks in scope", () => {
-            if (getTsVersionUnderTest() === "4.8") {
-                // cyclic thunk inference is unsupported for TS versions <4.9
-                return
-            }
             const $ = scope({
                 a: () => $.type({ b: "b" }),
                 b: () => $.type({ a: "a" })

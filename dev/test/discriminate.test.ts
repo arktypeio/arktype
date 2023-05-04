@@ -6,6 +6,7 @@ import { attest } from "../attest/main.js"
 describe("discriminate", () => {
     it("shallow", () => {
         const t = type("'a'|'b'|'c'")
+        attest(t.allows.toString()).snap("[object Object]")
         // attest(t.flat).snap([
         //     ["domain", "string"],
         //     [
@@ -27,58 +28,21 @@ describe("discriminate", () => {
             },
             desert: { climate: "'dry'", color: "'brown'", isDesert: "true" },
             sky: { climate: "'dry'", color: "'blue'", isSky: "true" },
-            ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" },
-            nocean: { climate: "'wet'", color: "'blue'", isOcean: "false" }
+            ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" }
         })
     it("nested", () => {
-        const t = getPlaces().type("ocean|sky|rainForest|desert|nocean")
-        attest(t.root.key).snap()
-        // attest(t.flat).snap([
-        //     ["domain", "object"],
-        //     [
-        //         "switch",
-        //         {
-        //             path: ["color"],
-        //             kind: "value",
-        //             cases: {
-        //                 "'blue'": [
-        //                     [
-        //                         "switch",
-        //                         {
-        //                             path: ["climate"],
-        //                             kind: "value",
-        //                             cases: {
-        //                                 "'wet'": [
-        //                                     [
-        //                                         "requiredProp",
-        //                                         ["isOcean", [["value", true]]]
-        //                                     ]
-        //                                 ],
-        //                                 "'dry'": [
-        //                                     [
-        //                                         "requiredProp",
-        //                                         ["isSky", [["value", true]]]
-        //                                     ]
-        //                                 ]
-        //                             }
-        //                         }
-        //                     ]
-        //                 ],
-        //                 "'green'": [
-        //                     ["requiredProp", ["climate", [["value", "wet"]]]],
-        //                     [
-        //                         "requiredProp",
-        //                         ["isRainForest", [["value", true]]]
-        //                     ]
-        //                 ],
-        //                 "'brown'": [
-        //                     ["requiredProp", ["climate", [["value", "dry"]]]],
-        //                     ["requiredProp", ["isDesert", [["value", true]]]]
-        //                 ]
-        //             }
-        //         }
-        //     ]
-        // ])
+        const t = getPlaces().type("ocean|sky|rainForest|desert")
+        attest(t.root.key).snap(`(() => {
+        switch($arkIn.color) {
+            case 'blue': {
+                return ($arkIn.climate === 'dry' && $arkIn.isSky === true || $arkIn.climate === 'wet' && $arkIn.isOcean === false || $arkIn.climate === 'wet' && $arkIn.isOcean === true);
+            }case 'green': {
+                return $arkIn.climate === 'wet' && $arkIn.isRainForest === true;
+            }case 'brown': {
+                return $arkIn.climate === 'dry' && $arkIn.isDesert === true;
+            }
+        }
+    })()`)
     })
 
     it("undiscriminatable", () => {
@@ -91,44 +55,6 @@ describe("discriminate", () => {
                 indistinguishableFrom: "ocean"
             }
         ])
-        // attest(t.flat).snap([
-        //     ["domain", "object"],
-        //     [
-        //         "branches",
-        //         [
-        //             [
-        //                 ["requiredProp", ["climate", [["value", "wet"]]]],
-        //                 ["requiredProp", ["color", [["value", "blue"]]]],
-        //                 ["requiredProp", ["isOcean", [["value", true]]]]
-        //             ],
-        //             [
-        //                 ["requiredProp", ["climate", [["value", "wet"]]]],
-        //                 ["requiredProp", ["color", [["value", "blue"]]]],
-        //                 [
-        //                     "requiredProp",
-        //                     [
-        //                         "indistinguishableFrom",
-        //                         [
-        //                             ["domain", "object"],
-        //                             [
-        //                                 "requiredProp",
-        //                                 ["climate", [["value", "wet"]]]
-        //                             ],
-        //                             [
-        //                                 "requiredProp",
-        //                                 ["color", [["value", "blue"]]]
-        //                             ],
-        //                             [
-        //                                 "requiredProp",
-        //                                 ["isOcean", [["value", true]]]
-        //                             ]
-        //                         ]
-        //                     ]
-        //                 ]
-        //             ]
-        //         ]
-        //     ]
-        // ])
     })
     it("default case", () => {
         const t = getPlaces().type([
@@ -136,35 +62,6 @@ describe("discriminate", () => {
             "|",
             { temperature: "'hot'" }
         ])
-        // attest(t.flat).snap([
-        //     ["domain", "object"],
-        //     [
-        //         "switch",
-        //         {
-        //             path: ["color"],
-        //             kind: "value",
-        //             cases: {
-        //                 "'blue'": [
-        //                     ["requiredProp", ["climate", [["value", "wet"]]]],
-        //                     ["requiredProp", ["isOcean", [["value", true]]]]
-        //                 ],
-        //                 "'green'": [
-        //                     ["requiredProp", ["climate", [["value", "wet"]]]],
-        //                     [
-        //                         "requiredProp",
-        //                         ["isRainForest", [["value", true]]]
-        //                     ]
-        //                 ],
-        //                 default: [
-        //                     [
-        //                         "requiredProp",
-        //                         ["temperature", [["value", "hot"]]]
-        //                     ]
-        //                 ]
-        //             }
-        //         }
-        //     ]
-        // ])
     })
     it("discriminatable default", () => {
         const t = getPlaces().type([
@@ -172,54 +69,6 @@ describe("discriminate", () => {
             "|",
             ["ocean|rainForest", "|", { temperature: "'hot'" }]
         ])
-        // attest(t.flat).snap([
-        //     ["domain", "object"],
-        //     [
-        //         "switch",
-        //         {
-        //             path: ["temperature"],
-        //             kind: "value",
-        //             cases: {
-        //                 "'cold'": [],
-        //                 "'hot'": [],
-        //                 default: [
-        //                     [
-        //                         "switch",
-        //                         {
-        //                             path: ["color"],
-        //                             kind: "value",
-        //                             cases: {
-        //                                 "'blue'": [
-        //                                     [
-        //                                         "requiredProp",
-        //                                         ["climate", [["value", "wet"]]]
-        //                                     ],
-        //                                     [
-        //                                         "requiredProp",
-        //                                         ["isOcean", [["value", true]]]
-        //                                     ]
-        //                                 ],
-        //                                 "'green'": [
-        //                                     [
-        //                                         "requiredProp",
-        //                                         ["climate", [["value", "wet"]]]
-        //                                     ],
-        //                                     [
-        //                                         "requiredProp",
-        //                                         [
-        //                                             "isRainForest",
-        //                                             [["value", true]]
-        //                                         ]
-        //                                     ]
-        //                                 ]
-        //                             }
-        //                         }
-        //                     ]
-        //                 ]
-        //             }
-        //         }
-        //     ]
-        // ])
     })
     it("discriminate class", () => {
         const t = type([["instanceof", Array], "|", ["instanceof", Date]])
@@ -237,21 +86,5 @@ describe("discriminate", () => {
     })
     it("won't discriminate between possibly empty arrays", () => {
         const t = type("string[]|boolean[]")
-        // attest(t.flat).snap([
-        //     ["domain", "object"],
-        //     [
-        //         "branches",
-        //         [
-        //             [
-        //                 ["class", "(function Array)"],
-        //                 ["indexProp", "string"]
-        //             ],
-        //             [
-        //                 ["class", "(function Array)"],
-        //                 ["indexProp", "boolean"]
-        //             ]
-        //         ]
-        //     ]
-        // ])
     })
 })
