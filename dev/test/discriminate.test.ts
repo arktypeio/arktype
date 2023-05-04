@@ -7,17 +7,6 @@ describe("discriminate", () => {
     it("shallow", () => {
         const t = type("'a'|'b'|'c'")
         attest(t.allows.toString()).snap("[object Object]")
-        // attest(t.flat).snap([
-        //     ["domain", "string"],
-        //     [
-        //         "switch",
-        //         {
-        //             path: [],
-        //             kind: "value",
-        //             cases: { "'a'": [], "'b'": [], "'c'": [] }
-        //         }
-        //     ]
-        // ])
     })
     const getPlaces = () =>
         scope({
@@ -32,7 +21,17 @@ describe("discriminate", () => {
         })
     it("nested", () => {
         const t = getPlaces().type("ocean|sky|rainForest|desert")
-        attest(t.root.key).snap()
+        attest(t.root.key).snap(`(() => {
+        switch($arkIn.color) {
+            case 'blue': {
+                return ($arkIn.climate === 'dry' && $arkIn.isSky === true || $arkIn.climate === 'wet' && $arkIn.isOcean === true);
+            }case 'green': {
+                return $arkIn.climate === 'wet' && $arkIn.isRainForest === true;
+            }case 'brown': {
+                return $arkIn.climate === 'dry' && $arkIn.isDesert === true;
+            }
+        }
+    })()`)
     })
 
     it("undiscriminatable", () => {

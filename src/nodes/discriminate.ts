@@ -8,13 +8,11 @@ import type { BasisNode } from "./basis.js"
 import type { QualifiedDisjoint } from "./disjoint.js"
 import { Disjoint, parseQualifiedDisjoint } from "./disjoint.js"
 import type { PredicateNode } from "./predicate.js"
-import { getUnknown, TypeNode } from "./type.js"
+import { getUnknown, getUnknownPredicate, TypeNode } from "./type.js"
 import { type CompiledPath, In } from "./utils.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
-
-export type DiscriminatedBranches = TypeNode | Discriminant
 
 export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
     readonly path: CompiledPath
@@ -44,10 +42,11 @@ const discriminantKinds: keySet<DiscriminantKind> = {
 
 export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
-export const discriminate = (node: TypeNode): DiscriminatedBranches => {
-    const branches = node.branches
+export const discriminate = (
+    branches: PredicateNode[]
+): Discriminant | null => {
     if (branches.length === 0 || branches.length === 1) {
-        return node
+        return null
     }
     const casesBySpecifier: CasesBySpecifier = {}
     for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
@@ -107,7 +106,7 @@ export const discriminate = (node: TypeNode): DiscriminatedBranches => {
         .sort((a, b) => Object.keys(a[1]).length - Object.keys(b[1]).length)
         .at(-1)
     if (!bestDiscriminantEntry) {
-        return node
+        return null
     }
     const [specifier, predicateCases] = bestDiscriminantEntry
     const [path, kind] = parseQualifiedDisjoint(specifier)
@@ -115,17 +114,18 @@ export const discriminate = (node: TypeNode): DiscriminatedBranches => {
     const pathList = path === In ? [] : path.replace(`${In}.`, "").split(".")
     const discriminatedCases: DiscriminatedCases = {}
     for (const k in predicateCases) {
-        const caseBranches = []
+        let caseBranches: PredicateNode[] = []
         for (const branch of predicateCases[k]) {
             const pruned = branch.pruneDiscriminant(pathList, kind)
             if (pruned === null) {
-                return getUnknown()
+                // TODO: improve
+                caseBranches = [getUnknownPredicate()]
+                break
             }
             caseBranches.push(pruned)
         }
         discriminatedCases[k] = new TypeNode(caseBranches)
     }
-
     return {
         kind,
         path,
