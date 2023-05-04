@@ -16,16 +16,29 @@ const parsedNumber = TypeNode.from({
     morph: (s) => parseFloat(s)
 })
 
-// TODO:  { mustBe: "a well-formed integer string" }
 const parsedInteger = TypeNode.from({
     basis: "string",
     regex: wellFormedIntegerMatcher.source,
     morph: (s) => parseInt(s)
+    // TODO:
+    // morph: (s, problems) => {
+    //     if (!isWellFormedInteger(s)) {
+    //         return problems.mustBe("a well-formed integer string")
+    //     }
+
+    //     const parsed = parseInt(s)
+
+    //     return Number.isSafeInteger(parsed)
+    //         ? parsed
+    //         : problems.mustBe(
+    //               "an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
+    //           )
+    // }
 })
 
+// https://www.regular-expressions.info/email.html
 const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 
-// https://www.regular-expressions.info/email.html
 //  "a valid email"
 const email = TypeNode.from({
     basis: "string",
