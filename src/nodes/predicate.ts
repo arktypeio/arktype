@@ -21,6 +21,9 @@ import type { Bounds } from "./range.js"
 import { RangeNode } from "./range.js"
 import { RegexNode } from "./regex.js"
 
+const domainMessage = () => {
+    return `Domain must be X to apply a Y constraint (was Z)`
+}
 export class PredicateNode<t = unknown> extends Node<"predicate"> {
     declare [as]: t
 
@@ -63,6 +66,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         }
         if (def.range) {
             basisNode.domain === "number" ||
+            basisNode.domain === "string" ||
             (basisNode.hasLevel("class") &&
                 (basisNode.rule instanceof Date ||
                     basisNode.rule instanceof Array))
