@@ -1,5 +1,5 @@
 import {
-    wellFormedIntegerMatcher,
+    isWellFormedInteger,
     wellFormedNumberMatcher
 } from "../../utils/numericLiterals.js"
 import { rootType, scope } from "../scope.js"
@@ -14,10 +14,23 @@ const parsedNumber = rootType(
     { mustBe: "a well-formed numeric string" }
 )
 
-const parsedInteger = rootType(
-    [wellFormedIntegerMatcher, "|>", (s) => parseInt(s)],
-    { mustBe: "a well-formed integer string" }
-)
+const parsedInteger = rootType([
+    tsKeywords.string,
+    "|>",
+    (s, problems) => {
+        if (!isWellFormedInteger(s)) {
+            return problems.mustBe("a well-formed integer string")
+        }
+
+        const parsed = parseInt(s)
+
+        return Number.isSafeInteger(parsed)
+            ? parsed
+            : problems.mustBe(
+                  "an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
+              )
+    }
+])
 
 // https://www.regular-expressions.info/email.html
 const email = rootType(/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/, {
