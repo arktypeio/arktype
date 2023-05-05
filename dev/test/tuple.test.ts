@@ -24,6 +24,9 @@ describe("tuple", () => {
             const wellRested = type(["string", "...number[]"])
             attest(wellRested.infer).typed as [string, ...number[]]
         })
+        it("tuple expression", () => {
+            // const wellRestedTuple = type(["number", ["...", "string[]"]])
+        })
         it("spreads array expressions", () => {
             const greatSpread = type([{ a: "boolean" }, "...(Date|RegExp)[]"])
             attest(greatSpread.infer).typed as [

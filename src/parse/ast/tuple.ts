@@ -5,7 +5,7 @@ import type { error } from "../../utils/errors.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"
-import type { constructor } from "../../utils/objectKinds.js"
+import { type constructor, isArray } from "../../utils/objectKinds.js"
 import type { mutable } from "../../utils/records.js"
 import type {
     inferDefinition,
@@ -35,10 +35,26 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     }
     if (def.length > 0) {
         for (let i = 0; i < def.length; i++) {
+            let elementDef = def[i]
+            let isVariadic = false
             ctx.path.push(i)
+            if (
+                typeof elementDef === "string" &&
+                elementDef.startsWith("...")
+            ) {
+                elementDef = elementDef.slice(3)
+                isVariadic = true
+            } else if (
+                isArray(elementDef) &&
+                elementDef.length === 2 &&
+                elementDef[0] === "..."
+            ) {
+                elementDef = elementDef[1]
+                isVariadic = true
+            }
             named[i] = {
                 kind: "required",
-                value: parseDefinition(def[i], ctx)
+                value: parseDefinition(elementDef, ctx)
             }
             ctx.path.pop()
         }
@@ -70,7 +86,7 @@ type validateTupleLiteral<
           $,
           [
               ...result,
-              head extends variadicExpression<infer operand>
+              head extends variadicStringExpression<infer operand>
                   ? validateDefinition<operand, $> extends infer syntacticResult
                       ? syntacticResult extends operand
                           ? semanticallyValidateRestElement<
@@ -115,10 +131,10 @@ type inferTupleLiteral<
     result extends unknown[] = []
 > = def extends [infer head, ...infer tail]
     ? inferDefinition<
-          head extends variadicExpression<infer operand> ? operand : head,
+          head extends variadicStringExpression<infer operand> ? operand : head,
           $
       > extends infer element
-        ? head extends variadicExpression
+        ? head extends variadicStringExpression
             ? element extends readonly unknown[]
                 ? inferTupleLiteral<tail, $, [...result, ...element]>
                 : never
@@ -126,7 +142,10 @@ type inferTupleLiteral<
         : never
     : result
 
-type variadicExpression<operandDef extends string = string> = `...${operandDef}`
+type variadicStringExpression<operandDef extends string = string> =
+    `...${operandDef}`
+
+type variadicTupleExpression<operandDef = unknown> = ["...", operandDef]
 
 type validatePrefixExpression<
     def extends IndexZeroExpression,
