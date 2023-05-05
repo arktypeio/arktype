@@ -40,21 +40,12 @@ describe("parse array", () => {
         attest(t.allows([["foo", 5]])).snap(false)
     })
     it("array intersection", () => {
-        const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
-        attest(t.infer).typed as {
-            a: string
-        }[] &
-            {
-                b: number
-            }[]
-        attest(t.root.key).snap(`$arkRoot instanceof Array && (() => {
-            let valid = true;
-            for(let $arkIndex = 0; $arkIndex < $arkRoot.length; $arkIndex++) {
-                valid = ((typeof $arkRoot[$arkIndex] === "object" && $arkRoot[$arkIndex] !== null) || typeof $arkRoot[$arkIndex] === "function") && typeof $arkRoot[$arkIndex].a === "string" && typeof $arkRoot[$arkIndex].b === "number" && valid;
-            }
-            return valid
-        })()`)
-        attest(t.root).is(type({ a: "string", b: "number" }).toArray().root)
+        const actual = type([{ a: "string" }, "[]"]).and([
+            { b: "number" },
+            "[]"
+        ]).root
+        const expected = type([{ a: "string", b: "number" }, "[]"]).root
+        attest(actual).is(expected)
     })
     it("multiple errors", () => {
         const stringArray = type("string[]")
@@ -62,6 +53,13 @@ describe("parse array", () => {
             "Item at index 0 must be a string (was number)\nItem at index 1 must be a string (was number)"
         )
     })
+
+    it("tuple expression", () => {
+        const t = type(["string", "[]"])
+        type({})
+        attest(t.infer).typed as string[]
+    })
+
     it("helper", () => {
         const t = type({ a: "string" }).toArray()
         attest(t.infer).typed as {

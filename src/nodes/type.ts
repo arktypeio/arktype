@@ -1,4 +1,4 @@
-import { as } from "../parse/definition.js"
+import { inferred } from "../parse/definition.js"
 import type { inferIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
 import type { List } from "../utils/lists.js"
@@ -27,7 +27,7 @@ type inferBranches<branches extends TypeNodeInput> = {
 export type TypeNodeInput = List<PredicateNodeInput | PredicateNode>
 
 export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
-    declare [as]: t
+    declare [inferred]: t
 
     static readonly kind = "type"
     discriminant: Discriminant | null

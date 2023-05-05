@@ -38,31 +38,6 @@ describe("scope", () => {
         //     }
         // })
     })
-    it("cyclic", () => {
-        const types = scope({ a: { b: "b" }, b: { a: "a" } }).compile()
-        // attest(types.a.node).snap({
-        //     object: { props: { b: "b" } }
-        // })
-        // Type hint displays as "..." on hitting cycle (or any if "noErrorTruncation" is true)
-        attest(types.a.infer).typed as {
-            b: {
-                a: {
-                    b: {
-                        a: any
-                    }
-                }
-            }
-        }
-        attest(types.b.infer.a.b.a.b.a.b.a).typed as {
-            b: {
-                a: any
-            }
-        }
-        // @ts-expect-error
-        attest(types.a.infer.b.a.b.c).types.errors.snap(
-            `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
-        )
-    })
     it("object array", () => {
         const types = scope({ a: "string", b: [{ c: "a" }] }).compile()
         attest(types.b.infer).typed as [

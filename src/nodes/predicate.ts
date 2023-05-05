@@ -1,5 +1,5 @@
 import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
-import { as } from "../parse/definition.js"
+import { inferred } from "../parse/definition.js"
 import type { Domain } from "../utils/domains.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
@@ -19,7 +19,7 @@ import { RangeNode } from "./range.js"
 import { RegexNode } from "./regex.js"
 
 export class PredicateNode<t = unknown> extends Node<"predicate"> {
-    declare [as]: t
+    declare [inferred]: t
 
     static readonly kind = "predicate"
     basis: BasisNode | undefined

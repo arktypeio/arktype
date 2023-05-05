@@ -2,7 +2,7 @@ import { describe, it } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
-describe("discriminate", () => {
+describe("discrimination", () => {
     it("shallow", () => {
         const t = type("'a'|'b'|'c'")
         attest(t.allows.toString()).snap(`function anonymous($arkIn

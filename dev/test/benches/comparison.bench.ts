@@ -1,7 +1,7 @@
 // @ts-ignore
 import z from "zod"
-import { type } from "../../src/main.js"
-import { bench } from "../attest/main.js"
+import { type } from "../../../src/main.js"
+import { bench } from "../../attest/main.js"
 
 const validInput = {
     number: 1,

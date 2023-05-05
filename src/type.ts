@@ -6,8 +6,8 @@ import type { TypeNode } from "./nodes/type.js"
 import type { Filter, inferPredicate } from "./parse/ast/filter.js"
 import type { Morph, ParsedMorph } from "./parse/ast/morph.js"
 import {
-    as,
     type inferDefinition,
+    inferred,
     parseDefinition,
     type validateDefinition
 } from "./parse/definition.js"
@@ -48,7 +48,7 @@ registry().register("state", TraversalState)
 export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     (data: unknown) => CheckResult<inferOut<t>>
 > {
-    declare [as]: t
+    declare [inferred]: t
     declare infer: inferOut<t>
     declare inferIn: inferIn<t>
 

@@ -1,5 +1,5 @@
 import { TypeNode } from "../nodes/type.js"
-import type { Infer } from "../parse/definition.js"
+import type { Inferred } from "../parse/definition.js"
 import { scope } from "../scope.js"
 
 // "bigint": "a bigint",
@@ -18,7 +18,7 @@ import { scope } from "../scope.js"
 
 export const tsKeywordsScope = scope(
     {
-        any: "unknown" as Infer<any>,
+        any: "unknown" as Inferred<any>,
         bigint: TypeNode.from({ basis: "bigint" }),
         boolean: "true|false",
         false: TypeNode.from({ basis: ["===", false as const] }),
@@ -30,7 +30,7 @@ export const tsKeywordsScope = scope(
         symbol: TypeNode.from({ basis: "symbol" }),
         true: TypeNode.from({ basis: ["===", true as const] }),
         unknown: TypeNode.from({}),
-        void: "undefined" as Infer<void>,
+        void: "undefined" as Inferred<void>,
         undefined: TypeNode.from({ basis: ["===", undefined] })
     },
     { name: "ts", standard: false }

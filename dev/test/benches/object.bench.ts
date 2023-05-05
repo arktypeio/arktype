@@ -1,5 +1,5 @@
-import { type } from "../../src/main.js"
-import { bench } from "../attest/main.js"
+import { type } from "../../../src/main.js"
+import { bench } from "../../attest/main.js"
 
 bench("dictionary", () => {
     const dict = type({
