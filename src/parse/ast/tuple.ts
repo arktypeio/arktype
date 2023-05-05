@@ -5,7 +5,7 @@ import type { error } from "../../utils/errors.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"
-import { isArray, type constructor } from "../../utils/objectKinds.js"
+import { type constructor, isArray } from "../../utils/objectKinds.js"
 import type { mutable } from "../../utils/records.js"
 import type {
     inferDefinition,
@@ -52,9 +52,18 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
                 elementDef = elementDef[1]
                 isVariadic = true
             }
+            const value = parseDefinition(elementDef, ctx)
+            if (isVariadic) {
+                if (!value.extends(unknownArray)) {
+                    return throwParseError(writeNonArrayRestMessage(elementDef))
+                }
+                if (i !== def.length - 1) {
+                    return throwParseError(prematureRestMessage)
+                }
+            }
             named[i] = {
                 kind: "required",
-                value: parseDefinition(elementDef, ctx)
+                value
             }
             ctx.path.pop()
         }
@@ -64,6 +73,10 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
         props: named
     })
 }
+
+const unknownArray = TypeNode.from({
+    basis: Array
+})
 
 // TODO: unify
 type InfixExpression = [unknown, InfixOperator, ...unknown[]]

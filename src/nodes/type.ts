@@ -278,6 +278,14 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
             : undefined
     }
 
+    equals<other>(other: TypeNode<other>): this is TypeNode<other> {
+        return this === (other as unknown)
+    }
+
+    extends<other>(other: TypeNode<other>): this is TypeNode<other> {
+        return this.intersect(other) === this
+    }
+
     keyOf() {
         // const predicateKeys = keysOf(node).map((domain) =>
         //     keysOfPredicate(domain, node[domain]!)
