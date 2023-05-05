@@ -126,7 +126,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         const constraints = [...l.constraints]
         for (let i = 0; i < r.constraints.length; i++) {
             const matchingIndex = l.constraints.findIndex(
-                (constraint) => constraint.kind === r.constraints[i].kind
+                (lConstraint) => lConstraint.kind === r.constraints[i].kind
             )
             if (matchingIndex === -1) {
                 constraints.push(r.constraints[i])
@@ -137,7 +137,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
                 if (constraintResult instanceof Disjoint) {
                     return constraintResult
                 }
-                constraints[matchingIndex + 1] = constraintResult
+                constraints[matchingIndex] = constraintResult
             }
         }
         return new PredicateNode({

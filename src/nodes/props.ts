@@ -2,7 +2,12 @@ import { throwInternalError } from "../utils/errors.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { mutable } from "../utils/records.js"
 import { hasKeys } from "../utils/records.js"
-import { type CompilationState, compilePropAccess, In } from "./compilation.js"
+import {
+    type CompilationState,
+    compilePropAccess,
+    In,
+    IndexIn
+} from "./compilation.js"
 import type { DiscriminantKind } from "./discriminate.js"
 import type { DisjointsSources } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
@@ -75,17 +80,16 @@ export class PropsNode extends Node<"props"> {
     }
 
     static #compileArray(elementType: TypeNode) {
-        // TODO: increment. does this work for logging?
-        // this.path.push("${i}")
-        const elementCondition = elementType.key.replaceAll(In, `${In}[i]`)
+        const elementCondition = elementType.key
+            .replaceAll(IndexIn, `${IndexIn}Inner`)
+            .replaceAll(In, `${In}[${IndexIn}]`)
         const result = `(() => {
             let valid = true;
-            for(let i = 0; i < ${In}.length; i++) {
+            for(let ${IndexIn} = 0; ${IndexIn} < ${In}.length; ${IndexIn}++) {
                 valid = ${elementCondition} && valid;
             }
             return valid
         })()`
-        // this.path.pop()
         return result
     }
 
@@ -107,7 +111,6 @@ export class PropsNode extends Node<"props"> {
             if (matchingIndex === -1) {
                 indexed.push([rKey, rValue])
             } else {
-                // TODO: path updates here
                 const result = indexed[matchingIndex][1].intersect(rValue)
                 indexed[matchingIndex][1] =
                     result instanceof Disjoint ? neverTypeNode : result

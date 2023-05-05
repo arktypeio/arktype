@@ -2,7 +2,7 @@ import { throwInternalError } from "../utils/errors.js"
 import type { entryOf } from "../utils/records.js"
 import { stringify } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
-import { insertInitialPropAccess } from "./compilation.js"
+import { In, prependKey } from "./compilation.js"
 import type { PredicateNode } from "./predicate.js"
 import type { RangeNode } from "./range.js"
 import type { TypeNode } from "./type.js"
@@ -73,7 +73,7 @@ export class Disjoint {
         r: Required<DisjointKinds>[kind]["r"]
     ) {
         return new Disjoint({
-            [`$arkIn:${kind}`]: {
+            [`${In}:${kind}`]: {
                 l,
                 r
             } as never
@@ -88,7 +88,7 @@ export class Disjoint {
         }
         const byPath: DisjointsSources = {}
         for (const [kind, operands] of entries) {
-            byPath[`$arkIn:${kind}`] = operands as never
+            byPath[`${In}:${kind}`] = operands as never
         }
         return new Disjoint(byPath)
     }
@@ -110,7 +110,7 @@ export class Disjoint {
         let path: QualifiedDisjoint
         for (path in this.sources) {
             const [location, kind] = parseQualifiedDisjoint(path)
-            const locationWithKey = insertInitialPropAccess(location, key)
+            const locationWithKey = prependKey(location, key)
             disjoints[`${locationWithKey}:${kind}`] = this.sources[
                 path
             ] as never

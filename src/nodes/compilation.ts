@@ -13,10 +13,15 @@ const initializeCompilationConfig = (): TraversalConfig => ({
     keys: []
 })
 
-export const In = "$arkIn"
+export const In = "$arkRoot"
 
-export const insertInitialPropAccess = (path: string, key: string) =>
+export const IndexIn = "$arkIndex"
+
+export const prependKey = (path: string, key: string) =>
     `${In}${compilePropAccess(key)}${path.slice(In.length)}`
+
+export const prependIndex = (path: string) =>
+    `${In}[${IndexIn}]${path.slice(In.length)}`
 
 export const compilePathAccess = (segments: Segments, root = In) => {
     for (const segment of segments) {
@@ -31,7 +36,7 @@ export const compilePropAccess = (key: string | number) => {
     }
     return /^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(key)
         ? `.${key}`
-        : `[${/^\$\{.*\}$/.test(key) ? key.slice(2, -1) : JSON.stringify(key)}]`
+        : `[${JSON.stringify(key)}]`
 }
 
 export class CompilationState {

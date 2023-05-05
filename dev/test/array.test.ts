@@ -18,8 +18,43 @@ describe("parse array", () => {
         attest(t.allows(["foo", "bar"])).snap(true)
         attest(t.allows(["foo", 5, "bar"])).snap(false)
     })
+    it("nested", () => {
+        const t = type("string[][]")
+        attest(t.infer).typed as string[][]
+        attest(t.root.key).snap(`$arkRoot instanceof Array && (() => {
+            let valid = true;
+            for(let $arkIndex = 0; $arkIndex < $arkRoot.length; $arkIndex++) {
+                valid = $arkRoot[$arkIndex] instanceof Array && (() => {
+            let valid = true;
+            for(let $arkIndexInner = 0; $arkIndexInner < $arkRoot[$arkIndex].length; $arkIndexInner++) {
+                valid = typeof $arkRoot[$arkIndex][$arkIndexInner] === "string" && valid;
+            }
+            return valid
+        })() && valid;
+            }
+            return valid
+        })()`)
+        attest(t.allows([])).snap(true)
+        attest(t.allows([["foo"]])).snap(true)
+        attest(t.allows(["foo"])).snap(false)
+        attest(t.allows([["foo", 5]])).snap(false)
+    })
     it("array intersection", () => {
-        type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
+        const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
+        attest(t.infer).typed as {
+            a: string
+        }[] &
+            {
+                b: number
+            }[]
+        attest(t.root.key).snap(`$arkRoot instanceof Array && (() => {
+            let valid = true;
+            for(let $arkIndex = 0; $arkIndex < $arkRoot.length; $arkIndex++) {
+                valid = ((typeof $arkRoot[$arkIndex] === "object" && $arkRoot[$arkIndex] !== null) || typeof $arkRoot[$arkIndex] === "function") && typeof $arkRoot[$arkIndex].a === "string" && typeof $arkRoot[$arkIndex].b === "number" && valid;
+            }
+            return valid
+        })()`)
+        attest(t.root).is(type({ a: "string", b: "number" }).toArray().root)
     })
     it("multiple errors", () => {
         const stringArray = type("string[]")
