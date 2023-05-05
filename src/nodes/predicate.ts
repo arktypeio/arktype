@@ -106,7 +106,6 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
         //     )
         // }
-        // If either predicate is unknown, return opposite operand
         const basisResult = l.basis
             ? r.basis
                 ? l.basis.intersect(r.basis)
