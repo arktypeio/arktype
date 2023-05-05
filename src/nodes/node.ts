@@ -1,7 +1,7 @@
 import { CompiledFunction } from "../utils/compiledFunction.js"
 import type { instanceOf } from "../utils/objectKinds.js"
 import type { BasisNode } from "./basis.js"
-import type { CompilationState } from "./compilation.js"
+import { type CompilationState, In } from "./compilation.js"
 import { Disjoint } from "./disjoint.js"
 import type { DivisibilityNode } from "./divisibility.js"
 import type { FilterNode } from "./filter.js"
@@ -11,7 +11,6 @@ import type { PropsNode } from "./props.js"
 import type { RangeNode } from "./range.js"
 import type { RegexNode } from "./regex.js"
 import type { TypeNode } from "./type.js"
-import { In } from "./utils.js"
 
 export type NodeSubclass<kind extends NodeKind> = {
     readonly kind: kind

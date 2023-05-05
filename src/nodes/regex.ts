@@ -1,8 +1,7 @@
 import { throwInternalError } from "../utils/errors.js"
 import { intersectUniqueLists, listFrom } from "../utils/lists.js"
-import type { CompilationState } from "./compilation.js"
+import { type CompilationState, In } from "./compilation.js"
 import { Node } from "./node.js"
-import { In } from "./utils.js"
 
 export class RegexNode extends Node<"regex"> {
     static readonly kind = "regex"

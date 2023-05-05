@@ -1,9 +1,8 @@
-import { CompilationState } from "./nodes/compilation.js"
+import { CompilationState, In } from "./nodes/compilation.js"
 import { registry } from "./nodes/registry.js"
 import type { CheckResult } from "./nodes/traverse.js"
 import { TraversalState } from "./nodes/traverse.js"
 import type { TypeNode } from "./nodes/type.js"
-import { In } from "./nodes/utils.js"
 import type { Filter, inferPredicate } from "./parse/ast/filter.js"
 import type { Morph, ParsedMorph } from "./parse/ast/morph.js"
 import {
@@ -68,7 +67,6 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return state.finalize(${In});`
         )
         this.root = root
-        // TODO: remove first root-level IIFE
         this.allows = root.allows
     }
 

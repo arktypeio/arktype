@@ -1,8 +1,8 @@
-import { throwInternalError, throwParseError } from "../utils/errors.js"
+import { throwInternalError } from "../utils/errors.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { mutable } from "../utils/records.js"
 import { hasKeys } from "../utils/records.js"
-import type { CompilationState } from "./compilation.js"
+import { type CompilationState, compilePropAccess, In } from "./compilation.js"
 import type { DiscriminantKind } from "./discriminate.js"
 import type { DisjointsSources } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
@@ -15,7 +15,6 @@ import {
     TypeNode,
     unknownTypeNode
 } from "./type.js"
-import { compilePropAccess, In } from "./utils.js"
 
 export class PropsNode extends Node<"props"> {
     static readonly kind = "props"
@@ -78,7 +77,6 @@ export class PropsNode extends Node<"props"> {
     static #compileArray(elementType: TypeNode) {
         // TODO: increment. does this work for logging?
         // this.path.push("${i}")
-        // TODO: optimize IIFEs
         const elementCondition = elementType.key.replaceAll(In, `${In}[i]`)
         const result = `(() => {
             let valid = true;

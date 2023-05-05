@@ -1,6 +1,5 @@
-import type { CompilationState } from "./compilation.js"
+import { type CompilationState, In } from "./compilation.js"
 import { Node } from "./node.js"
-import { In } from "./utils.js"
 
 export class DivisibilityNode extends Node<"divisor"> {
     // TODO: align kind with node names

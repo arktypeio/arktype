@@ -2,11 +2,10 @@ import { throwInternalError } from "../utils/errors.js"
 import type { entryOf } from "../utils/records.js"
 import { stringify } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
+import { insertInitialPropAccess } from "./compilation.js"
 import type { PredicateNode } from "./predicate.js"
 import type { RangeNode } from "./range.js"
 import type { TypeNode } from "./type.js"
-import type { CompiledPath } from "./utils.js"
-import { insertInitialPropAccess } from "./utils.js"
 
 type DisjointKinds = {
     domain?: {
@@ -49,13 +48,13 @@ export const parseQualifiedDisjoint = <
     return [
         qualifiedDisjoint.slice(0, splitIndex),
         qualifiedDisjoint.slice(splitIndex + 1)
-    ] as [path: CompiledPath, kind: kind]
+    ] as [path: string, kind: kind]
 }
 
 export type DisjointKindEntries = entryOf<DisjointKinds>[]
 
 export type QualifiedDisjoint<kind extends DisjointKind = DisjointKind> =
-    `${CompiledPath}:${kind}`
+    `${string}:${kind}`
 
 export type DisjointsSources = {
     [k in QualifiedDisjoint]: k extends QualifiedDisjoint<infer kind>
