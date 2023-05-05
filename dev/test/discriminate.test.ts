@@ -2,11 +2,23 @@ import { describe, it } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
-// TODO: fix
 describe("discriminate", () => {
     it("shallow", () => {
         const t = type("'a'|'b'|'c'")
-        attest(t.allows.toString()).snap("[object Object]")
+        attest(t.allows.toString()).snap(`function anonymous($arkIn
+) {
+return (() => {
+        switch($arkIn) {
+            case 'a': {
+                return true;
+            }case 'b': {
+                return true;
+            }case 'c': {
+                return true;
+            }
+        }
+    })()
+}`)
     })
     const getPlaces = () =>
         scope({

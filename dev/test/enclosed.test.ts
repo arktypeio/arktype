@@ -48,13 +48,12 @@ describe("parse enclosed", () => {
     })
     it("mixed quote types", () => {
         attest(type(`"'single-quoted'"`).infer).typed as "'single-quoted'"
-
         attest(type(`'"double-quoted"'`).infer).typed as '"double-quoted"'
     })
-    it("ignores enclosed tokens", () => {
+    it("ignores enclosed operators", () => {
         attest(type("'yes|no|maybe'").infer).typed as "yes|no|maybe"
     })
-    it("mix of enclosed and unenclosed tokens", () => {
+    it("mix of enclosed and unenclosed operators", () => {
         attest(type("'yes|no'|'true|false'").infer).typed as
             | "yes|no"
             | "true|false"
@@ -62,8 +61,5 @@ describe("parse enclosed", () => {
     it("escaped enclosing", () => {
         const t = type("'don\\'t'")
         attest(t.infer).typed as "don't"
-        // attest(t.node).equals({
-        //     string: { value: "don't" }
-        // })
     })
 })

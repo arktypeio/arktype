@@ -34,10 +34,6 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
 
     constructor(public branches: PredicateNode[]) {
         const discriminant = discriminate(branches)
-        if (branches.length > 1) {
-            console.log(branches.map((_) => _.key).join(" | "))
-            console.log(discriminant)
-        }
         super(TypeNode, discriminant ?? branches)
         this.discriminant = discriminant
     }

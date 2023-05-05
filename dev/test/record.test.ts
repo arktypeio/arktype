@@ -3,41 +3,22 @@ import { type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
 describe("record", () => {
+    it("empty", () => {
+        const o = type({})
+        attest(o.root).equals(type("object").root)
+    })
     it("required", () => {
         const o = type({ a: "string", b: "boolean[]" })
         attest(o.infer).typed as { a: string; b: boolean[] }
-        // attest(o.node).snap({
-        //     object: {
-        //         props: {
-        //             a: "string",
-        //             b: {
-        //                 object: {
-        //                     instance: "(function Array)",
-        //                     props: { "[index]": "boolean" }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // })
     })
     it("optional keys", () => {
         const o = type({ "a?": "string", b: "boolean[]" })
         attest(o.infer).typed as { a?: string; b: boolean[] }
-        // attest(o.node).snap({
-        //     object: {
-        //         props: {
-        //             a: ["?", "string"],
-        //             b: {
-        //                 object: {
-        //                     instance: "(function Array)",
-        //                     props: { "[index]": "boolean" }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // })
+        attest(o.root.key).snap(
+            '((typeof $arkIn === "object" && $arkIn !== null) || typeof $arkIn === "function") && !(\'a\' in $arkIn) || typeof $arkIn.a === "string" && $arkIn.b instanceof Array'
+        )
     })
-    it("data traversed optional", () => {
+    it("traverse optional", () => {
         const o = type({ "a?": "string" }, { keys: "strict" })
         attest(o({ a: "a" }).data).snap({ a: "a" })
         attest(o({}).data).snap({})
@@ -56,11 +37,6 @@ describe("record", () => {
     it("escaped optional token", () => {
         const t = type({ "a\\?": "string" })
         attest(t.infer).typed as { "a?": string }
-        // attest(t.node).equals({
-        //     object: {
-        //         props: { "a?": "string" }
-        //     }
-        // })
     })
     it("multiple bad strict", () => {
         const t = type({ a: "string", b: "boolean" }, { keys: "strict" })

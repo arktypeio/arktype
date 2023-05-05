@@ -8,25 +8,18 @@ describe("parse array", () => {
     it("parse", () => {
         const t = type("string[]")
         attest(t.infer).typed as string[]
-        // attest(t.node).equals({
-        //     object: {
-        //         instance: Array,
-        //         props: { "[index]": "string" }
-        //     }
-        // })
+        attest(t.root.key).snap(`$arkIn instanceof Array && (() => {
+            let valid = true;
+            for(let i = 0; i < $arkIn.length; i++) {
+                valid = typeof $arkIn[i] === "string" && valid;
+            }
+            return valid
+        })()`)
+        attest(t.allows(["foo", "bar"])).snap(true)
+        attest(t.allows(["foo", 5, "bar"])).snap(false)
     })
     it("array intersection", () => {
         type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
-        // attest(t.node).equals({
-        //     object: {
-        //         instance: Array,
-        //         props: {
-        //             "[index]": {
-        //                 object: { props: { a: "string", b: "number" } }
-        //             }
-        //         }
-        //     }
-        // })
     })
     it("multiple errors", () => {
         const stringArray = type("string[]")
@@ -39,12 +32,6 @@ describe("parse array", () => {
         attest(t.infer).typed as {
             a: string
         }[]
-        // attest(t.node).equals({
-        //     object: {
-        //         instance: Array,
-        //         props: { "[index]": { object: { props: { a: "string" } } } }
-        //     }
-        // })
     })
 
     describe("errors", () => {

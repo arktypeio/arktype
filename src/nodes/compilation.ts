@@ -2,6 +2,7 @@ import type { TypeConfig } from "../type.js"
 import type { Domain } from "../utils/domains.js"
 import { Path } from "../utils/lists.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
+import type { TypeNode } from "./type.js"
 import { compilePathAccess } from "./utils.js"
 
 export type TraversalConfig = {
@@ -50,18 +51,4 @@ export class CompilationState {
             ${onFalse}
         }`
     }
-
-    //     arrayOf(node: Node<any>) {
-    //         // TODO: increment. does this work for logging?
-    //         this.path.push("${i}")
-    //         const result = `(() => {
-    //     let valid = true;
-    //     for(let i = 0; i < ${this.data}.length; i++) {
-    //         valid = ${node.compile(this)} && isValid;
-    //     }
-    //     return valid
-    // })()`
-    //         this.path.pop()
-    //         return result
-    //     }
 }

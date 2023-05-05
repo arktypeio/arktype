@@ -1,4 +1,4 @@
-import { throwInternalError } from "../utils/errors.js"
+import { throwInternalError, throwParseError } from "../utils/errors.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { mutable } from "../utils/records.js"
 import { hasKeys } from "../utils/records.js"
@@ -9,8 +9,13 @@ import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
 import type { PredicateNodeInput } from "./predicate.js"
 import type { TypeNodeInput } from "./type.js"
-import { neverTypeNode, TypeNode, unknownTypeNode } from "./type.js"
-import { insertUniversalPropAccess } from "./utils.js"
+import {
+    arrayIndexTypeNode,
+    neverTypeNode,
+    TypeNode,
+    unknownTypeNode
+} from "./type.js"
+import { compilePropAccess, In } from "./utils.js"
 
 export class PropsNode extends Node<"props"> {
     static readonly kind = "props"
@@ -48,19 +53,51 @@ export class PropsNode extends Node<"props"> {
         const checks: string[] = []
         const names = Object.keys(named).sort()
         for (const k of names) {
-            checks.push(insertUniversalPropAccess(named[k].value.key, k))
+            checks.push(this.#compileNamedProp(k, named[k]))
+        }
+        if (indexed.length) {
+            if (indexed.length === 1 && indexed[0][0] === arrayIndexTypeNode) {
+                checks.push(PropsNode.#compileArray(indexed[0][1]))
+            } else {
+                return throwInternalError(`Unexpected index types`)
+            }
         }
         return checks.join(" && ") || "true"
+    }
+
+    static #compileNamedProp(k: string, prop: NamedProp) {
+        const valueCheck = prop.value.key.replaceAll(
+            In,
+            `${In}${compilePropAccess(k)}`
+        )
+        return prop.kind === "optional"
+            ? `!('${k}' in ${In}) || ${valueCheck}`
+            : valueCheck
+    }
+
+    static #compileArray(elementType: TypeNode) {
+        // TODO: increment. does this work for logging?
+        // this.path.push("${i}")
+        // TODO: optimize IIFEs
+        const elementCondition = elementType.key.replaceAll(In, `${In}[i]`)
+        const result = `(() => {
+            let valid = true;
+            for(let i = 0; i < ${In}.length; i++) {
+                valid = ${elementCondition} && valid;
+            }
+            return valid
+        })()`
+        // this.path.pop()
+        return result
     }
 
     compileTraverse(s: CompilationState) {
         return Object.keys(this.named)
             .sort()
             .map((k) =>
-                insertUniversalPropAccess(
-                    this.named[k].value.compileTraverse(s),
-                    k
-                )
+                this.named[k].value
+                    .compileTraverse(s)
+                    .replaceAll(In, `${In}${compilePropAccess(k)}`)
             )
             .join("\n")
     }
@@ -167,11 +204,6 @@ export class PropsNode extends Node<"props"> {
     pruneDiscriminant(path: string[], kind: DiscriminantKind): PropsNode {
         const [key, ...nextPath] = path
         const propAtKey = this.named[key]
-        if (!propAtKey) {
-            return throwInternalError(
-                `Unexpectedly failed to prune discriminant of kind ${kind} at key ${key}`
-            )
-        }
         const prunedValue = propAtKey.value.pruneDiscriminant(nextPath, kind)
         const { [key]: _, ...preserved } = this.named
         if (prunedValue !== unknownTypeNode) {
