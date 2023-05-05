@@ -35,7 +35,9 @@ describe("cyclic data", () => {
             a: { b: "b|false" },
             b: { a: "a|true" }
         })
-        attest($.infer).types.toString.snap()
+        attest($.infer).types.toString.snap(
+            "{ a: { b: false | { a: true | any; }; }; b: { a: true | { b: false | any; }; }; }"
+        )
     })
     // it("cyclic", () => {
     //     const types = scope({ a: { b: "b" }, b: { a: "a" } }).compile()

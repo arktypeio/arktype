@@ -34,6 +34,11 @@ describe("record", () => {
         //     'a must be a string or removed (was {"a":2})'
         // )
     })
+    it("intersection", () => {
+        const t = type({ a: "number" }).and({ b: "boolean" })
+        // Should be simplified from {a: number} & {b: boolean} to {a: number, b: boolean}
+        attest(t.infer).types.toString.snap("{ a: number; b: boolean; }")
+    })
     it("escaped optional token", () => {
         const t = type({ "a\\?": "string" })
         attest(t.infer).typed as { "a?": string }
