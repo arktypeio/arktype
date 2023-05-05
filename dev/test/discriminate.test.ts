@@ -24,11 +24,19 @@ describe("discriminate", () => {
         attest(t.root.key).snap(`(() => {
         switch($arkIn.color) {
             case 'blue': {
-                return ($arkIn.climate === 'dry' && $arkIn.isSky === true || $arkIn.climate === 'wet' && $arkIn.isOcean === true);
+                return (() => {
+        switch($arkIn.climate) {
+            case 'wet': {
+                return false && false && $arkIn.isOcean === true;
+            }case 'dry': {
+                return false && false && $arkIn.isSky === true;
+            }
+        }
+    })();
             }case 'green': {
-                return $arkIn.climate === 'wet' && $arkIn.isRainForest === true;
+                return $arkIn.climate === 'wet' && false && $arkIn.isRainForest === true;
             }case 'brown': {
-                return $arkIn.climate === 'dry' && $arkIn.isDesert === true;
+                return $arkIn.climate === 'dry' && false && $arkIn.isDesert === true;
             }
         }
     })()`)

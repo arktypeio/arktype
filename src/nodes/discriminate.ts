@@ -7,8 +7,8 @@ import type { SerializedPrimitive } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
 import type { QualifiedDisjoint } from "./disjoint.js"
 import { Disjoint, parseQualifiedDisjoint } from "./disjoint.js"
-import type { PredicateNode } from "./predicate.js"
-import { getUnknown, getUnknownPredicate, TypeNode } from "./type.js"
+import { type PredicateNode, unknownPredicateNode } from "./predicate.js"
+import { TypeNode } from "./type.js"
 import { type CompiledPath, In } from "./utils.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
@@ -45,7 +45,7 @@ export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 export const discriminate = (
     branches: PredicateNode[]
 ): Discriminant | null => {
-    if (branches.length === 0 || branches.length === 1) {
+    if (branches.length < 2) {
         return null
     }
     const casesBySpecifier: CasesBySpecifier = {}
@@ -69,8 +69,8 @@ export const discriminate = (
                 let lSerialized: string
                 let rSerialized: string
                 if (kind === "domain") {
-                    lSerialized = (disjointAtPath.l as BasisNode).domain
-                    rSerialized = (disjointAtPath.r as BasisNode).domain
+                    lSerialized = (disjointAtPath.l as BasisNode).domain!
+                    rSerialized = (disjointAtPath.r as BasisNode).domain!
                 } else if (kind === "value") {
                     lSerialized = (disjointAtPath.l as BasisNode<"value">)
                         .serializedValue
@@ -118,8 +118,7 @@ export const discriminate = (
         for (const branch of predicateCases[k]) {
             const pruned = branch.pruneDiscriminant(pathList, kind)
             if (pruned === null) {
-                // TODO: improve
-                caseBranches = [getUnknownPredicate()]
+                caseBranches = [unknownPredicateNode]
                 break
             }
             caseBranches.push(pruned)

@@ -49,12 +49,6 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
     }
 
     static from<def extends PredicateNodeInput>(def: def) {
-        if (!hasKeys(def)) {
-            return new PredicateNode({
-                basis: undefined,
-                constraints: []
-            })
-        }
         const constraints: ConstraintNode[] = []
         if (def.divisor) {
             constraints.push(new DivisibilityNode(def.divisor))
@@ -73,7 +67,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
             )
         }
         return new PredicateNode<inferPredicateDefinition<def>>({
-            basis: new BasisNode(def.basis),
+            basis: def.basis && new BasisNode(def.basis),
             constraints
         })
     }
@@ -113,14 +107,11 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         //     )
         // }
         // If either predicate is unknown, return opposite operand
-        // TODO: Fix pruned.
-        if (!l.basis) {
-            return r
-        }
-        if (!r.basis) {
-            return l
-        }
-        const basisResult = l.basis.intersect(r.basis)
+        const basisResult = l.basis
+            ? r.basis
+                ? l.basis.intersect(r.basis)
+                : l.basis
+            : r.basis
         if (basisResult instanceof Disjoint) {
             return basisResult
         }
@@ -180,22 +171,17 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         })
     }
 
-    pruneDiscriminant(
-        path: string[],
-        kind: DiscriminantKind
-    ): PredicateNode | null {
+    pruneDiscriminant(path: string[], kind: DiscriminantKind): PredicateNode {
         if (path.length === 0) {
             if (kind === "domain" && this.basis?.hasLevel("value")) {
                 // if the basis specifies an exact value but was used to
                 // discriminate based on a domain, we can't prune it
                 return this
             }
-            return this.constraints.length
-                ? new PredicateNode({
-                      basis: undefined,
-                      constraints: this.constraints
-                  })
-                : null
+            return new PredicateNode({
+                basis: undefined,
+                constraints: this.constraints
+            })
         }
         const prunedProps = this.getConstraint("props")!.pruneDiscriminant(
             path,
@@ -212,15 +198,17 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
                 constraints.push(constraint)
             }
         }
-        if (basis === undefined && constraints.length === 0) {
-            return null
-        }
         return new PredicateNode({
             basis,
             constraints
         })
     }
 }
+
+export const unknownPredicateNode = new PredicateNode({
+    basis: undefined,
+    constraints: []
+})
 
 export type PredicateRules = {
     basis: BasisNode | undefined

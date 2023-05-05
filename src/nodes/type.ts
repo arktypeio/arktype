@@ -14,7 +14,7 @@ import type {
     inferPredicateDefinition,
     PredicateNodeInput
 } from "./predicate.js"
-import { PredicateNode } from "./predicate.js"
+import { PredicateNode, unknownPredicateNode } from "./predicate.js"
 
 type inferBranches<branches extends TypeNodeInput> = {
     [i in keyof branches]: branches[i] extends PredicateNodeInput
@@ -162,15 +162,15 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         return current
     }
 
-    pruneDiscriminant(path: string[], kind: DiscriminantKind): TypeNode | null {
+    pruneDiscriminant(path: string[], kind: DiscriminantKind): TypeNode {
         const prunedBranches: PredicateNode[] = []
         for (const branch of this.branches) {
             const pruned = branch.pruneDiscriminant(path, kind)
-            if (pruned) {
+            if (pruned !== unknownPredicateNode) {
                 prunedBranches.push(pruned)
             }
         }
-        return prunedBranches.length ? new TypeNode(prunedBranches) : null
+        return new TypeNode(prunedBranches)
     }
 
     static intersect(l: TypeNode, r: TypeNode): TypeNode | Disjoint {
@@ -319,43 +319,16 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     toArray(): TypeNode<t[]> {
         return TypeNode.from({
             basis: Array,
-            props: [{}, [getArrayIndexKey(), this]]
+            props: [{}, [arrayIndexTypeNode, this]]
         }) as any
     }
 }
 
-let arrayIndex: TypeNode<string>
-const getArrayIndexKey = () => {
-    if (!arrayIndex) {
-        arrayIndex = TypeNode.from({
-            basis: "string",
-            regex: wellFormedNonNegativeIntegerMatcher.source
-        })
-    }
-    return arrayIndex
-}
+export const arrayIndexTypeNode = TypeNode.from({
+    basis: "string",
+    regex: wellFormedNonNegativeIntegerMatcher.source
+})
 
-// TODO: better system for this
-let never: TypeNode<never>
-export const getNever = () => {
-    if (!never) {
-        never = new TypeNode([])
-    }
-    return never
-}
+export const neverTypeNode = new TypeNode([])
 
-let unknown: TypeNode<unknown>
-export const getUnknown = () => {
-    if (!unknown) {
-        unknown = TypeNode.from({})
-    }
-    return unknown
-}
-
-let unknownPredicate: PredicateNode<unknown>
-export const getUnknownPredicate = () => {
-    if (!unknownPredicate) {
-        unknownPredicate = PredicateNode.from({})
-    }
-    return unknownPredicate
-}
+export const unknownTypeNode = new TypeNode([unknownPredicateNode])

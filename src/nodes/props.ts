@@ -9,7 +9,7 @@ import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
 import type { PredicateNodeInput } from "./predicate.js"
 import type { TypeNodeInput } from "./type.js"
-import { getNever, TypeNode } from "./type.js"
+import { neverTypeNode, TypeNode, unknownTypeNode } from "./type.js"
 import { insertUniversalPropAccess } from "./utils.js"
 
 export class PropsNode extends Node<"props"> {
@@ -77,7 +77,7 @@ export class PropsNode extends Node<"props"> {
                 // TODO: path updates here
                 const result = indexed[matchingIndex][1].intersect(rValue)
                 indexed[matchingIndex][1] =
-                    result instanceof Disjoint ? getNever() : result
+                    result instanceof Disjoint ? neverTypeNode : result
             }
         }
         const named = { ...l.named, ...r.named }
@@ -155,7 +155,7 @@ export class PropsNode extends Node<"props"> {
             if (kind === "optional") {
                 return {
                     kind: "optional",
-                    value: getNever()
+                    value: neverTypeNode
                 }
             }
             return result
@@ -166,10 +166,7 @@ export class PropsNode extends Node<"props"> {
         }
     }
 
-    pruneDiscriminant(
-        path: string[],
-        kind: DiscriminantKind
-    ): PropsNode | null {
+    pruneDiscriminant(path: string[], kind: DiscriminantKind): PropsNode {
         const [key, ...nextPath] = path
         const propAtKey = this.named[key]
         if (!propAtKey) {
@@ -179,11 +176,7 @@ export class PropsNode extends Node<"props"> {
         }
         const prunedValue = propAtKey.value.pruneDiscriminant(nextPath, kind)
         const { [key]: _, ...preserved } = this.named
-        if (!prunedValue) {
-            if (!hasKeys(preserved)) {
-                return null
-            }
-        } else {
+        if (prunedValue !== unknownTypeNode) {
             preserved[key] = {
                 kind: propAtKey.kind,
                 value: prunedValue
@@ -192,6 +185,8 @@ export class PropsNode extends Node<"props"> {
         return new PropsNode([preserved, this.indexed])
     }
 }
+
+export const emptyPropsNode = new PropsNode([{}, []])
 
 export type PropsInput =
     | NamedPropsInput
