@@ -18,7 +18,7 @@
         "!*.tsbuildinfo"
     ],
     "dependencies": {
-        "arktype": "1.0.14-alpha",
+        "arktype": "Link: ../../../..",
         "ts-morph": "18.0.0"
     },
     "scripts": {

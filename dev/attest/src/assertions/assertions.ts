@@ -82,10 +82,7 @@ export class Assertions implements AssertionRecord {
             if (this.snapRequiresUpdate(expectedSerialized)) {
                 const snapshotArgs: SnapshotArgs = {
                     position: caller(),
-                    serializedValue: ensureProperActualResult(
-                        this.serializedActual,
-                        this.actual
-                    )
+                    serializedValue: this.serializedActual
                 }
                 queueSnapshotUpdate(snapshotArgs)
             }
@@ -97,10 +94,7 @@ export class Assertions implements AssertionRecord {
             if (stringify(args[0]) !== stringify(this.actual)) {
                 assertEquals(
                     expectedSerialized,
-                    ensureProperActualResult(
-                        this.serializedActual,
-                        this.actual
-                    ),
+                    this.serializedActual,
                     this.ctx
                 )
             }
@@ -222,17 +216,4 @@ export class Assertions implements AssertionRecord {
         }
         return undefined
     }
-}
-const ensureProperActualResult = (
-    serializedActual: unknown,
-    actual: unknown
-) => {
-    if (!(serializedActual instanceof Object)) {
-        return serializedActual
-    }
-    return Object.keys(serializedActual).length === 0 &&
-        actual instanceof Object &&
-        (Object.keys(actual) || actual).length !== 0
-        ? serializedActual
-        : `${actual}`
 }

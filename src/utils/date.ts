@@ -1,4 +1,4 @@
-export const dateHelper = (arg: ConstructorParameters<typeof Date>[0]) => {
+export const getEpochs = (arg: ConstructorParameters<typeof Date>[0]) => {
     if (arg instanceof Date) {
         return arg.valueOf()
     }

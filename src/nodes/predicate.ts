@@ -22,7 +22,11 @@ import type { Bounds } from "./range.js"
 import { RangeNode } from "./range.js"
 import { RegexNode } from "./regex.js"
 
-const domainMessage = (expected, actual, constraint) => {
+const domainMessage = (
+    expected: string,
+    actual: string,
+    constraint: string
+) => {
     return `Domain must be ${expected} to apply a ${constraint} constraint (was ${actual})`
 }
 export class PredicateNode<t = unknown> extends Node<"predicate"> {

@@ -149,8 +149,8 @@ export class RangeNode extends Node<"range"> {
                     "l"
                     ? Disjoint.from("range", l, r)
                     : new RangeNode({
-                          ...l.extractComparators(">"),
-                          ...r.extractComparators("<")
+                          ...l.extractComparators("<"),
+                          ...r.extractComparators(">")
                       })
             }
             return r
@@ -172,7 +172,7 @@ export class RangeNode extends Node<"range"> {
 
     private extractComparators(prefix: ">" | "<") {
         return this.bounds[prefix] !== undefined
-            ? { [prefix]: this.bounds[">"] }
+            ? { [prefix]: this.bounds[prefix] }
             : this.bounds[`${prefix}=`] !== undefined
             ? { [`${prefix}=`]: this.bounds[`${prefix}=`] }
             : {}
