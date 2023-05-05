@@ -51,7 +51,7 @@ export type MinBounds = xor<{ ">"?: number }, { ">="?: number }>
 
 export type MaxBounds = xor<{ "<"?: number }, { "<="?: number }>
 
-export type SizedData = string | number | readonly unknown[]
+export type SizedData = string | number | readonly unknown[] | Date
 
 export type RangeConstraint<comparator extends Comparator = Comparator> = {
     limit: number
