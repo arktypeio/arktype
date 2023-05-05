@@ -30,6 +30,13 @@ const getCyclicData = () => {
 }
 
 describe("cyclic data", () => {
+    it("cyclic expression", () => {
+        const $ = scope({
+            a: { b: "b|false" },
+            b: { a: "a|true" }
+        })
+        attest($.infer).types.toString.snap()
+    })
     // it("cyclic", () => {
     //     const types = scope({ a: { b: "b" }, b: { a: "a" } }).compile()
     //     // attest(types.a.node).snap({

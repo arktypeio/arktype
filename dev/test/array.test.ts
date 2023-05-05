@@ -39,7 +39,12 @@ describe("parse array", () => {
         attest(t.allows(["foo"])).snap(false)
         attest(t.allows([["foo", 5]])).snap(false)
     })
-    it("array intersection", () => {
+    it("shallow array intersection", () => {
+        const actual = type("string[]&'foo'[]").root
+        const expected = type("'foo'[]").root
+        attest(actual).is(expected)
+    })
+    it("deep array intersection", () => {
         const actual = type([{ a: "string" }, "[]"]).and([
             { b: "number" },
             "[]"

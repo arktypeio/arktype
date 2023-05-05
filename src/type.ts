@@ -3,6 +3,7 @@ import { registry } from "./nodes/registry.js"
 import type { CheckResult } from "./nodes/traverse.js"
 import { TraversalState } from "./nodes/traverse.js"
 import type { TypeNode } from "./nodes/type.js"
+import type { inferIntersection } from "./parse/ast/ast.js"
 import type { Filter, inferPredicate } from "./parse/ast/filter.js"
 import type { Morph, ParsedMorph } from "./parse/ast/morph.js"
 import {
@@ -80,7 +81,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
 
     and<def>(
         def: validateDefinition<def, $>
-    ): Type<t & inferDefinition<def, $>, $> {
+    ): Type<inferIntersection<t, inferDefinition<def, $>>> {
         return this.#unary(def, "and")
     }
 
