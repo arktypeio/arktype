@@ -96,7 +96,11 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return this as any
     }
 
-    extends(other: Type) {
+    equals<other>(other: Type<other>): this is Type<other> {
+        return this.root === (other.root as unknown)
+    }
+
+    extends<other>(other: Type<other>): this is Type<other> {
         return this.root.intersect(other.root) === this.root
     }
 
@@ -107,7 +111,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return new Type(this.root.constrain("filter", predicate), this.scope)
     }
 
-    toArray(): Type<t[], $> {
+    array(): Type<t[], $> {
         return new Type(this.root.toArray(), this.scope)
     }
 

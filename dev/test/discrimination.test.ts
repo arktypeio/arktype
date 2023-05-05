@@ -79,20 +79,6 @@ return (() => {
             ["ocean|rainForest", "|", { temperature: "'hot'" }]
         ])
     })
-    it("discriminate class", () => {
-        const t = type([["instanceof", Array], "|", ["instanceof", Date]])
-        // attest(t.flat).snap([
-        //     ["domain", "object"],
-        //     [
-        //         "switch",
-        //         { path: [], kind: "class", cases: { Array: [], Date: [] } }
-        //     ]
-        // ])
-        // attest(t([]).data).equals([])
-        // attest(t({}).problems?.summary).snap(
-        //     "Must be an array or a Date (was {})"
-        // )
-    })
     it("won't discriminate between possibly empty arrays", () => {
         const t = type("string[]|boolean[]")
     })

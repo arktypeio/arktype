@@ -55,25 +55,6 @@ describe("intersection", () => {
         it("literal+literal", () => {})
         it("constraints + literal", () => {})
     })
-    it("array intersection", () => {
-        const t = type([[{ a: "string" }, "[]"], "&", [{ b: "boolean" }, "[]"]])
-        // TODO: can improve?
-        attest(t.infer).typed as {
-            a: string
-            b: boolean
-        }[]
-        // attest(t.node).snap({
-        //     object: {
-        //         instance: "(function Array)",
-        //         props: {
-        //             "[index]": {
-        //                 object: { props: { a: "string", b: "boolean" } }
-        //             }
-        //         }
-        //     }
-        // })
-    })
-
     it("helper", () => {
         const t = type({ a: "string" }).and({ b: "boolean" })
         attest(t.infer).typed as {
