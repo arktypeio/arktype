@@ -1,4 +1,4 @@
 {
-    "extends": "./dev/configs/tsconfig.json",
+    "extends": "./dev/configs/tsconfig.base.json",
     "exclude": ["dev/arktype.io", "node_modules", "dist"]
 }

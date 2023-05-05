@@ -1,10 +1,11 @@
 import { Disjoint } from "../../../../nodes/disjoint.js"
 import type { Comparator, MaxComparator } from "../../../../nodes/range.js"
 import { maxComparators, RangeNode } from "../../../../nodes/range.js"
-import type { error, keySet } from "../../../../utils/generics.js"
-import { isKeyOf } from "../../../../utils/generics.js"
+import type { error } from "../../../../utils/errors.js"
 import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
+import type { keySet } from "../../../../utils/records.js"
+import { isKeyOf } from "../../../../utils/records.js"
 import type {
     DynamicState,
     DynamicStateWithRoot

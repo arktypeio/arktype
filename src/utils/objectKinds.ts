@@ -1,6 +1,6 @@
 import { domainOf } from "./domains.js"
-import type { constructor, instanceOf } from "./generics.js"
-import { isKeyOf } from "./generics.js"
+import type { evaluate } from "./generics.js"
+import { isKeyOf } from "./records.js"
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
@@ -132,4 +132,48 @@ export const getExactConstructorObjectKind = (
         defaultObjectKinds[constructorName] === constructor
         ? constructorName
         : undefined
+}
+
+export type constructor<instance = unknown> = new (...args: any[]) => instance
+
+export type instanceOf<classType extends constructor<any>> =
+    classType extends constructor<infer Instance> ? Instance : never
+
+/** Mimics output of TS's keyof operator at runtime */
+export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
+    const result: (string | number | symbol)[] = []
+    while (
+        value !== Object.prototype &&
+        value !== null &&
+        value !== undefined
+    ) {
+        for (const k of Object.getOwnPropertyNames(value)) {
+            if (!result.includes(k)) {
+                result.push(k)
+            }
+        }
+        for (const symbol of Object.getOwnPropertySymbols(value)) {
+            if (!result.includes(symbol)) {
+                result.push(symbol)
+            }
+        }
+        value = Object.getPrototypeOf(value)
+    }
+    return result as evaluate<keyof t>[]
+}
+
+export const constructorExtends = (
+    constructor: constructor,
+    base: constructor
+) => {
+    let current = constructor.prototype
+
+    while (current !== null) {
+        if (current === base.prototype) {
+            return true
+        }
+
+        current = Object.getPrototypeOf(current)
+    }
+    return false
 }

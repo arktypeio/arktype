@@ -1,5 +1,4 @@
 import * as assert from "node:assert/strict"
-import { hasDomain } from "arktype/internal/utils/domains.js"
 import type { AssertionContext } from "./attest.js"
 
 export type ThrowAsertionErrorContext = {
@@ -26,7 +25,7 @@ export const assertEquals = (
     if (expected === actual) {
         return
     }
-    if (hasDomain(expected, "object") && hasDomain(actual, "object")) {
+    if (typeof expected === "object" && typeof actual === "object") {
         try {
             assert.deepStrictEqual(actual, expected)
         } catch (e: any) {

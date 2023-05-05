@@ -1,6 +1,6 @@
 import { describe, it } from "mocha"
 import { type } from "../../src/main.js"
-import { Path } from "../../src/utils/paths.js"
+import { Path } from "../../src/utils/lists.js"
 import { stringify } from "../../src/utils/serialize.js"
 import { attest } from "../attest/main.js"
 

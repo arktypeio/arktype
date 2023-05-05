@@ -10,6 +10,6 @@ shell(
         "@changesets",
         "cli",
         "bin.js"
-    )} ${process.argv.slice(2).join(" ")}`,
+    )} publish`,
     { cwd: repoDirs.configs }
 )

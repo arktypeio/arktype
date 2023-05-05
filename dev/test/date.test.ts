@@ -1,27 +1,21 @@
 import { type } from "../../src/main.js"
-import type { parametersOf } from "../../src/utils/generics.js"
+import { dateHelper } from "../../src/utils/date.js"
 import { attest } from "../attest/main.js"
-
-// const date = (args: parametersOf<typeof Date>) => new Date(args).valueOf()
-const d = (input: Date | string | number) => {
-    if (input instanceof Date) {
-        return input
-    }
-    return new Date(input)
-}
-type a = parametersOf<typeof Date>
-//   ^?
-type ab = parametersOf<Date>
-//   ^?
 
 describe("test", () => {
     it("tests", () => {
-        const t = type(`Date>2`)
-        const date = d("10/25/1996")
-        attest(t(date).data).snap({})
-        attest(t(date.toString()).data).snap()
-        attest(date.toString()).snap(
-            "Fri Oct 25 1996 00:00:00 GMT-0700 (Pacific Daylight Time)"
+        const t = type(`Date>${dateHelper("10/25/1996")}`)
+        const tt = t(new Date("10/24/1996").valueOf())
+        attest(tt.problems?.summary).snap(`{"value":846140400000} must be...
+• a Date
+• more than 846226800000`)
+
+        const ttt = t(new Date("10/26/1996"))
+        attest(ttt.data).snap(
+            "Sat Oct 26 1996 00:00:00 GMT-0700 (Pacific Daylight Time)"
         )
+
+        const tttt = t(new Date("10/26/1996").valueOf())
+        attest(tttt.problems?.summary).snap("Must be a Date (was Number)")
     })
 })

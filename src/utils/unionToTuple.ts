@@ -1,5 +1,5 @@
 import type { conform } from "./generics.js"
-import type { join } from "./paths.js"
+import type { join } from "./lists.js"
 
 export type stringifyUnion<t extends string> = join<unionToTuple<t>, ", ">
 
@@ -11,10 +11,9 @@ type unionToTupleRecurse<
     t,
     result extends unknown[]
 > = getLastBranch<t> extends infer current
-    ? {
-          0: unionToTupleRecurse<Exclude<t, current>, [current, ...result]>
-          1: result
-      }[[t] extends [never] ? 1 : 0]
+    ? [t] extends [never]
+        ? result
+        : unionToTupleRecurse<Exclude<t, current>, [current, ...result]>
     : never
 
 type getLastBranch<t> = intersectUnion<
@@ -23,8 +22,8 @@ type getLastBranch<t> = intersectUnion<
     ? branch
     : never
 
-type intersectUnion<t> = (t extends unknown ? (k: t) => void : never) extends (
-    k: infer intersection
+type intersectUnion<t> = (t extends unknown ? (_: t) => void : never) extends (
+    _: infer intersection
 ) => void
     ? intersection
     : never

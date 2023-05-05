@@ -1,6 +1,6 @@
 import type { evaluate } from "./generics.js"
 
-export const hasKind = <data, domain extends Domain>(
+export const hasDomain = <data, domain extends Domain>(
     data: data,
     kind: domain
 ): data is data & inferDomain<domain> => domainOf(data as any) === kind

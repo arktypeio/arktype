@@ -1,6 +1,7 @@
 import { cpSync, rmSync } from "node:fs"
 import { join } from "node:path"
-import { readJson, shell, writeJson } from "../attest/src/main.js"
+import { readJson, writeJson } from "../attest/src/fs.js"
+import { shell } from "../attest/src/shell.js"
 import { repoDirs } from "./common.js"
 
 const packageRoot = process.cwd()
@@ -9,7 +10,7 @@ const packageJson = readJson(join(packageRoot, "package.json"))
 
 console.log(`🔨 Building ${packageJson.name}...`)
 rmSync(outRoot, { recursive: true, force: true })
-const tsConfigData = readJson(join(repoDirs.configs, "tsconfig.json"))
+const tsConfigData = readJson(join(repoDirs.configs, "tsconfig.base.json"))
 const tempTsConfig = join(packageRoot, "tsconfig.temp.json")
 writeJson(tempTsConfig, {
     ...tsConfigData,
@@ -29,6 +30,7 @@ try {
         recursive: true,
         force: true
     })
+    writeJson(join(outRoot, "package.json"), { type: "commonjs" })
     rmSync(outSrc, { recursive: true, force: true })
 } finally {
     rmSync(tempTsConfig, { force: true })

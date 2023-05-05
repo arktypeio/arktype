@@ -1,5 +1,5 @@
 import { TypeNode } from "../../../../nodes/type.js"
-import type { error, tailOfString } from "../../../../utils/generics.js"
+import type { error } from "../../../../utils/errors.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
@@ -40,7 +40,9 @@ export type parseEnclosed<
         : state.setRoot<
               s,
               `${enclosing}${scanned}${enclosing}`,
-              tailOfString<nextUnscanned>
+              nextUnscanned extends Scanner.shift<string, infer unscanned>
+                  ? unscanned
+                  : ""
           >
     : never
 

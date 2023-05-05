@@ -1,9 +1,6 @@
-import type { error } from "../../../../utils/generics.js"
-import {
-    IntegerLiteral,
-    NumberLiteral,
-    tryParseWellFormedInteger
-} from "../../../../utils/numericLiterals.js"
+import type { error } from "../../../../utils/errors.js"
+import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
+import { tryParseWellFormedInteger } from "../../../../utils/numericLiterals.js"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"

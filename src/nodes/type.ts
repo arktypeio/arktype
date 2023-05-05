@@ -1,16 +1,16 @@
 import { as } from "../parse/definition.js"
 import type { inferIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
-import type { List } from "../utils/generics.js"
+import type { List } from "../utils/lists.js"
 import { wellFormedNonNegativeIntegerMatcher } from "../utils/numericLiterals.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
 import type {
     CaseKey,
+    Discriminant,
     DiscriminantKind,
-    DiscriminatedBranches,
-    DiscriminatedSwitch
+    DiscriminatedBranches
 } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
@@ -21,6 +21,7 @@ import type {
     PredicateNodeInput
 } from "./predicate.js"
 import { PredicateNode } from "./predicate.js"
+import { In } from "./utils.js"
 
 type inferBranches<branches extends TypeNodeInput> = {
     [i in keyof branches]: branches[i] extends PredicateNodeInput
@@ -88,7 +89,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
             : TypeNode.#compileSwitch(branches)
     }
 
-    static #compileIndiscriminable(branches: readonly PredicateNode[]) {
+    static #compileIndiscriminable(branches: PredicateNode[]) {
         return branches.length === 0
             ? "false"
             : branches.length === 1
@@ -99,17 +100,30 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
                   .join(" || ")})`
     }
 
-    static #compileSwitch(discriminated: DiscriminatedSwitch): string {
+    static #compileSwitch(discriminant: Discriminant): string {
         // TODO: optional access
         const condition =
-            discriminated.kind === "domain"
-                ? `typeof ${discriminated.path}`
-                : `${discriminated.path}`
+            discriminant.kind === "domain"
+                ? `typeof ${discriminant.path}`
+                : `${discriminant.path}`
+        // TODO: fix split
+        const path =
+            discriminant.path === In
+                ? []
+                : discriminant.path.replace(`${In}.`, "").split(".")
         let compiledCases = ""
         let k: CaseKey
-        for (k in discriminated.cases) {
+        for (k in discriminant.cases) {
             const caseCondition = k === "default" ? "default" : `case ${k}`
-            const branchCondition = TypeNode.compile(discriminated.cases[k])
+            const prunedBranches = []
+            for (const branch of discriminant.cases[k]) {
+                const pruned = branch.pruneDiscriminant(path, discriminant.kind)
+                if (pruned === null) {
+                    return "true"
+                }
+                prunedBranches.push(pruned)
+            }
+            const branchCondition = new TypeNode(prunedBranches).key
             compiledCases += `${caseCondition}: {
                 return ${branchCondition};
             }`
@@ -145,7 +159,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         }
     }
 
-    getBranchesToPath(path: string[]) {
+    getNodesAtPath(...path: string[]) {
         let current: PredicateNode[] = this.branches
         let next: PredicateNode[] = []
         while (path.length) {

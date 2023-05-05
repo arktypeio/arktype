@@ -1,6 +1,7 @@
 import type { NamedPropsInput, PropKind } from "../nodes/props.js"
 import { TypeNode } from "../nodes/type.js"
-import type { Dict, evaluate, mutable } from "../utils/generics.js"
+import type { evaluate } from "../utils/generics.js"
+import type { Dict, mutable } from "../utils/records.js"
 import type { inferDefinition, ParseContext } from "./definition.js"
 import { parseDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"

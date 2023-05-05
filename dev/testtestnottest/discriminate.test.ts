@@ -27,10 +27,12 @@ describe("discriminate", () => {
             },
             desert: { climate: "'dry'", color: "'brown'", isDesert: "true" },
             sky: { climate: "'dry'", color: "'blue'", isSky: "true" },
-            ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" }
+            ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" },
+            nocean: { climate: "'wet'", color: "'blue'", isOcean: "false" }
         })
     it("nested", () => {
-        const t = getPlaces().type("ocean|sky|rainForest|desert")
+        const t = getPlaces().type("ocean|sky|rainForest|desert|nocean")
+        attest(t.root.key).snap()
         // attest(t.flat).snap([
         //     ["domain", "object"],
         //     [

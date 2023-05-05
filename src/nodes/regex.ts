@@ -1,5 +1,5 @@
 import { throwInternalError } from "../utils/errors.js"
-import { intersectUniqueLists, listFrom } from "./../utils/generics.js"
+import { intersectUniqueLists, listFrom } from "../utils/lists.js"
 import type { CompilationState } from "./compilation.js"
 import { Node } from "./node.js"
 import { In } from "./utils.js"

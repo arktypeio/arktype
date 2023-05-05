@@ -1,5 +1,5 @@
 import type { TypeConfig } from "../type.js"
-import { Path } from "../utils/paths.js"
+import { Path } from "../utils/lists.js"
 import type { Problem, ProblemCode, ProblemParameters } from "./problems.js"
 import { Problems, problemsByCode } from "./problems.js"
 

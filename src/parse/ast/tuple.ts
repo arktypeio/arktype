@@ -1,15 +1,12 @@
-import type { NamedPropsInput, PropsInput } from "../../nodes/props.js"
+import type { NamedPropsInput } from "../../nodes/props.js"
 import { TypeNode } from "../../nodes/type.js"
 import type { inferIn, inferOut, TypeConfig } from "../../type.js"
+import type { error } from "../../utils/errors.js"
 import { throwParseError } from "../../utils/errors.js"
-import type {
-    constructor,
-    error,
-    evaluate,
-    isAny,
-    List,
-    mutable
-} from "../../utils/generics.js"
+import type { evaluate, isAny } from "../../utils/generics.js"
+import type { List } from "../../utils/lists.js"
+import type { constructor } from "../../utils/objectKinds.js"
+import type { mutable } from "../../utils/records.js"
 import type {
     inferDefinition,
     ParseContext,

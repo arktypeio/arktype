@@ -2,12 +2,8 @@ import process from "node:process"
 import { snapshot } from "arktype/internal/utils/serialize.js"
 import { queueSnapshotUpdate } from "../snapshot.js"
 import type { BenchAssertionContext, BenchContext } from "./bench.js"
-import type {
-    MarkMeasure,
-    Measure,
-    MeasureComparison
-} from "./measure/measure.js"
-import { stringifyMeasure } from "./measure/measure.js"
+import type { MarkMeasure, Measure, MeasureComparison } from "./measure.js"
+import { stringifyMeasure } from "./measure.js"
 
 export const queueBaselineUpdateIfNeeded = (
     updated: Measure | MarkMeasure,

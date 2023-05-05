@@ -2,7 +2,8 @@ import { existsSync, readdirSync } from "node:fs"
 import { basename, join } from "node:path"
 import type { Node, ts } from "ts-morph"
 import { getConfig } from "./config.js"
-import { readJson, shell, writeJson } from "./main.js"
+import { readJson, writeJson } from "./fs.js"
+import { shell } from "./shell.js"
 import type { QueuedUpdate, SnapshotArgs } from "./snapshot.js"
 import { findCallExpressionAncestor, resolveSnapshotPath } from "./snapshot.js"
 import { getTsMorphProject } from "./type/cacheAssertions.js"
@@ -72,7 +73,10 @@ const snapshotArgsToQueuedUpdate = ({
         position,
         snapFunctionName
     )
-    const newArgText = JSON.stringify(serializedValue)
+    const newArgText =
+        typeof serializedValue === "string" && serializedValue.includes("\n")
+            ? "`" + serializedValue.replaceAll("`", "\\`") + "`"
+            : JSON.stringify(serializedValue)
     return {
         position,
         snapCall,

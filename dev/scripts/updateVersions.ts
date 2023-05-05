@@ -23,15 +23,7 @@ packageJson.version = packageJson.version.slice(0, -currentSuffix.length - 1)
 
 writeJson(packageJsonPath, packageJson)
 
-shell(
-    `node ${fromPackageRoot(
-        "node_modules",
-        "@changesets",
-        "cli",
-        "bin.js"
-    )} version`,
-    { cwd: repoDirs.configs }
-)
+shell(`pnpm changes version`, { cwd: repoDirs.configs })
 
 shell(`rm -f ${join(repoDirs.configs, ".changeset", "*.md")}`)
 

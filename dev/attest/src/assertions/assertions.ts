@@ -1,6 +1,5 @@
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
-import { chainableNoOpProxy } from "arktype/internal/utils/chainableNoOpProxy.js"
 import { snapshot, stringify } from "arktype/internal/utils/serialize.js"
 import { assertEquals } from "../assertions.js"
 import type { AssertionContext } from "../attest.js"
@@ -8,6 +7,7 @@ import { caller } from "../main.js"
 import type { SnapshotArgs } from "../snapshot.js"
 import { getSnapshotByName, queueSnapshotUpdate } from "../snapshot.js"
 import { getTypeDataAtPos } from "../type/getAssertionAtPos.js"
+import { chainableNoOpProxy } from "../utils.js"
 import { updateExternalSnapshot } from "../writeSnapshot.js"
 import type { ExternalSnapshotArgs, RootAssertions } from "./types.js"
 import {
@@ -82,7 +82,10 @@ export class Assertions implements AssertionRecord {
             if (this.snapRequiresUpdate(expectedSerialized)) {
                 const snapshotArgs: SnapshotArgs = {
                     position: caller(),
-                    serializedValue: this.serializedActual
+                    serializedValue: ensureProperActualResult(
+                        this.serializedActual,
+                        this.actual
+                    )
                 }
                 queueSnapshotUpdate(snapshotArgs)
             }
@@ -94,7 +97,10 @@ export class Assertions implements AssertionRecord {
             if (stringify(args[0]) !== stringify(this.actual)) {
                 assertEquals(
                     expectedSerialized,
-                    this.serializedActual,
+                    ensureProperActualResult(
+                        this.serializedActual,
+                        this.actual
+                    ),
                     this.ctx
                 )
             }
@@ -216,4 +222,17 @@ export class Assertions implements AssertionRecord {
         }
         return undefined
     }
+}
+const ensureProperActualResult = (
+    serializedActual: unknown,
+    actual: unknown
+) => {
+    if (!(serializedActual instanceof Object)) {
+        return serializedActual
+    }
+    return Object.keys(serializedActual).length === 0 &&
+        actual instanceof Object &&
+        (Object.keys(actual) || actual).length !== 0
+        ? serializedActual
+        : `${actual}`
 }

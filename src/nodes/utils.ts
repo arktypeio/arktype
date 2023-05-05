@@ -1,4 +1,4 @@
-import type { Segments } from "../utils/paths.js"
+import type { Segments } from "../utils/lists.js"
 
 export const In = "$arkIn" as const
 

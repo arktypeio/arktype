@@ -4,7 +4,7 @@
     "private": true,
     "scripts": {
         "dev": "docusaurus start",
-        "build": "node --loader ts-node/esm ../scripts/docgen.ts && pnpm docusaurus build --out-dir dist && cp CNAME dist",
+        "build": "ts-node ../scripts/docgen.ts && pnpm docusaurus build --out-dir dist && cp CNAME dist",
         "typecheck": "tsc",
         "serve": "docusaurus serve --dir dist"
     },
@@ -20,7 +20,7 @@
         "@mui/icons-material": "5.11.9",
         "@mui/lab": "5.0.0-alpha.121",
         "@mui/material": "5.11.10",
-        "@stackblitz/sdk": "1.8.2",
+        "@stackblitz/sdk": "1.9.0",
         "framer-motion": "6.5.1",
         "prism-react-renderer": "1.3.5",
         "react": "17.0.2",
@@ -34,7 +34,7 @@
         "@types/react": "17.0.2",
         "@types/react-dom": "17.0.2",
         "arktype": "workspace:*",
-        "typescript": "5.0.3"
+        "typescript": "5.0.4"
     },
     "pnpm": {
         "peerDependencyRules": {

@@ -16,7 +16,7 @@ describe("parse array", () => {
         // })
     })
     it("array intersection", () => {
-        const t = type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
+        type([[{ a: "string" }, "[]"], "&", [{ b: "number" }, "[]"]])
         // attest(t.node).equals({
         //     object: {
         //         instance: Array,

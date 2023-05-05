@@ -1,4 +1,37 @@
-import type { Measure, MeasureComparison } from "./measure.js"
+import type { StatName } from "./call.js"
+
+type MeasureUnit = TimeUnit | TypeUnit
+
+export type Measure<Unit extends MeasureUnit = MeasureUnit> = [
+    value: number,
+    unit: Unit
+]
+
+export type MeasureComparison<Unit extends MeasureUnit = MeasureUnit> = {
+    updated: Measure<Unit>
+    baseline: Measure<Unit> | undefined
+}
+
+export type MarkMeasure = Partial<Record<StatName, Measure>>
+
+export const stringifyMeasure = ([value, units]: Measure) =>
+    units in TIME_UNIT_RATIOS
+        ? stringifyTimeMeasure([value, units as TimeUnit])
+        : `${value}${units}`
+
+export const TYPE_UNITS = ["instantiations"] as const
+
+export type TypeUnit = (typeof TYPE_UNITS)[number]
+
+export const createTypeComparison = (
+    value: number,
+    baseline: Measure<TypeUnit> | undefined
+): MeasureComparison<TypeUnit> => {
+    return {
+        updated: [value, "instantiations"],
+        baseline
+    }
+}
 
 export const TIME_UNIT_RATIOS = Object.freeze({
     ns: 0.000_001,

@@ -1,6 +1,6 @@
 import { throwInternalError } from "../../../../utils/errors.js"
-import type { error } from "../../../../utils/generics.js"
-import { isKeyOf } from "../../../../utils/generics.js"
+import type { error } from "../../../../utils/errors.js"
+import { isKeyOf } from "../../../../utils/records.js"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"

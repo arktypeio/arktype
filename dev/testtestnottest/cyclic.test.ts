@@ -67,7 +67,9 @@ describe("cyclic data", () => {
                 a: "a|3"
             }
         })
-        attest(types.infer).types.toString.snap()
+        attest(types.infer).types.toString.snap(
+            "{ a: { b: { a: 3 | any; }; }; b: { a: 3 | { b: any; }; }; }"
+        )
     })
     it("intersect cyclic reference", () => {
         const types = scope({
@@ -78,6 +80,8 @@ describe("cyclic data", () => {
                 c: "a&b"
             }
         })
-        attest(types.infer).types.toString.snap()
+        attest(types.infer).types.toString.snap(
+            "{ a: { b: { c: { b: any; c: any; }; }; }; b: { c: { b: any; c: any; }; }; }"
+        )
     })
 })

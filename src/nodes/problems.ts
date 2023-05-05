@@ -1,22 +1,19 @@
-import type { SizedData } from "../utils/data.js"
-import { DataWrapper } from "../utils/data.js"
 import type { Domain } from "../utils/domains.js"
-import { domainDescriptions } from "../utils/domains.js"
+import { domainDescriptions, domainOf } from "../utils/domains.js"
+import type { conform } from "../utils/generics.js"
+import type { arraySubclassToReadonly, Segments } from "../utils/lists.js"
+import { Path } from "../utils/lists.js"
 import type {
-    arraySubclassToReadonly,
-    conform,
     constructor,
+    DefaultObjectKind,
     instanceOf
-} from "../utils/generics.js"
-import type { DefaultObjectKind } from "../utils/objectKinds.js"
+} from "../utils/objectKinds.js"
 import {
     getExactConstructorObjectKind,
     objectKindDescriptions
 } from "../utils/objectKinds.js"
-import type { Segments } from "../utils/paths.js"
-import { Path } from "../utils/paths.js"
 import { stringify } from "../utils/serialize.js"
-import type { RangeConstraint } from "./range.js"
+import type { RangeConstraint, SizedData } from "./range.js"
 import { comparatorDescriptions } from "./range.js"
 
 export class ArkTypeError extends TypeError {
@@ -308,3 +305,41 @@ export type ProblemParameters<code extends ProblemCode> = ConstructorParameters<
 export type ProblemOptions = { mustBe?: string }
 
 export type ProblemOptionsByCode = { [code in ProblemCode]?: ProblemOptions }
+
+export const sizeOf = (data: unknown) =>
+    typeof data === "string" || Array.isArray(data)
+        ? data.length
+        : typeof data === "number"
+        ? data
+        : 0
+
+export const unitsOf = (data: unknown) =>
+    typeof data === "string"
+        ? "characters"
+        : Array.isArray(data)
+        ? "items long"
+        : ""
+
+export class DataWrapper<value = unknown> {
+    constructor(public value: value) {}
+
+    toString() {
+        return stringify(this.value)
+    }
+
+    get domain() {
+        return domainOf(this.value)
+    }
+
+    get size() {
+        return sizeOf(this.value)
+    }
+
+    get units() {
+        return unitsOf(this.value)
+    }
+
+    get className() {
+        return Object(this.value).constructor.name
+    }
+}
