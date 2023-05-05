@@ -5,7 +5,7 @@ import type { error } from "../../utils/errors.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"
-import { type constructor, isArray } from "../../utils/objectKinds.js"
+import { isArray, type constructor } from "../../utils/objectKinds.js"
 import type { mutable } from "../../utils/records.js"
 import type {
     inferDefinition,
@@ -86,7 +86,7 @@ type validateTupleLiteral<
           $,
           [
               ...result,
-              head extends variadicStringExpression<infer operand>
+              head extends variadicExpression<infer operand>
                   ? validateDefinition<operand, $> extends infer syntacticResult
                       ? syntacticResult extends operand
                           ? semanticallyValidateRestElement<
@@ -106,10 +106,10 @@ type validateTupleLiteral<
       >
     : result
 
-type semanticallyValidateRestElement<
-    operand extends string,
+type semanticallyValidateRestElement<operand, $> = inferDefinition<
+    operand,
     $
-> = inferDefinition<operand, $> extends infer result
+> extends infer result
     ? result extends never
         ? writeNonArrayRestMessage<operand>
         : isAny<result> extends true
@@ -119,11 +119,18 @@ type semanticallyValidateRestElement<
         : writeNonArrayRestMessage<operand>
     : never
 
-type writeNonArrayRestMessage<operand extends string> =
-    `Rest element '${operand}' must be an array.`
+export const writeNonArrayRestMessage = <operand>(operand: operand) =>
+    `Rest element ${
+        typeof operand === "string" ? `'${operand}'` : ""
+    } must be an array` as writeNonArrayRestMessage<operand>
 
-type prematureRestMessage =
-    `Rest elements are only allowed at the end of a tuple`
+type writeNonArrayRestMessage<operand> = `Rest element ${operand extends string
+    ? `'${operand}'`
+    : ""} must be an array`
+
+export const prematureRestMessage = `Rest elements are only allowed at the end of a tuple`
+
+type prematureRestMessage = typeof prematureRestMessage
 
 type inferTupleLiteral<
     def extends List,
@@ -131,16 +138,20 @@ type inferTupleLiteral<
     result extends unknown[] = []
 > = def extends [infer head, ...infer tail]
     ? inferDefinition<
-          head extends variadicStringExpression<infer operand> ? operand : head,
+          head extends variadicExpression<infer operand> ? operand : head,
           $
       > extends infer element
-        ? head extends variadicStringExpression
+        ? head extends variadicExpression
             ? element extends readonly unknown[]
                 ? inferTupleLiteral<tail, $, [...result, ...element]>
                 : never
             : inferTupleLiteral<tail, $, [...result, element]>
         : never
     : result
+
+type variadicExpression<operandDef = unknown> =
+    | variadicStringExpression<operandDef & string>
+    | variadicTupleExpression<operandDef>
 
 type variadicStringExpression<operandDef extends string = string> =
     `...${operandDef}`

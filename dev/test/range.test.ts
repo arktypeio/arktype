@@ -58,6 +58,7 @@ describe("range", () => {
             it("<,<=", () => {
                 const t = type("-5<number<=5")
                 attest(t.infer).typed as number
+                attest(t.root.key).snap()
                 // attest(t.node).snap({
                 //     number: {
                 //         range: {
