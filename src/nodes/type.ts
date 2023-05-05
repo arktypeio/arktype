@@ -162,13 +162,11 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         return current
     }
 
-    pruneDiscriminant(path: string[], kind: DiscriminantKind): TypeNode {
+    pruneDiscriminant(path: string[], kind: DiscriminantKind) {
         const prunedBranches: PredicateNode[] = []
         for (const branch of this.branches) {
             const pruned = branch.pruneDiscriminant(path, kind)
-            if (pruned !== unknownPredicateNode) {
-                prunedBranches.push(pruned)
-            }
+            prunedBranches.push(pruned)
         }
         return new TypeNode(prunedBranches)
     }

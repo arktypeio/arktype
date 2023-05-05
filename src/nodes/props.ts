@@ -48,11 +48,9 @@ export class PropsNode extends Node<"props"> {
         const checks: string[] = []
         const names = Object.keys(named).sort()
         for (const k of names) {
-            // TODO: integrate kind
             checks.push(insertUniversalPropAccess(named[k].value.key, k))
         }
-        // TODO: empty? (same for others)
-        return checks.join(" && ")
+        return checks.join(" && ") || "true"
     }
 
     compileTraverse(s: CompilationState) {

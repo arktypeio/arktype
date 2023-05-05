@@ -3,9 +3,8 @@ import { as } from "../parse/definition.js"
 import type { Domain } from "../utils/domains.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
-import { hasKeys } from "../utils/records.js"
-import { BasisNode } from "./basis.js"
 import type { Basis, inferBasis } from "./basis.js"
+import { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
 import type { DiscriminantKind } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
@@ -14,7 +13,7 @@ import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
 import { Node } from "./node.js"
 import type { PropsInput } from "./props.js"
-import { PropsNode } from "./props.js"
+import { emptyPropsNode, PropsNode } from "./props.js"
 import type { Bounds } from "./range.js"
 import { RangeNode } from "./range.js"
 import { RegexNode } from "./regex.js"
@@ -190,7 +189,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         const constraints: ConstraintNode[] = []
         for (const constraint of this.constraints) {
             if (constraint.kind === "props") {
-                if (prunedProps) {
+                if (prunedProps !== emptyPropsNode) {
                     constraints.push(prunedProps)
                 }
             } else {
