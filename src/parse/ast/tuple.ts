@@ -1,5 +1,9 @@
-import type { NamedPropsInput } from "../../nodes/props.js"
-import { TypeNode } from "../../nodes/type.js"
+import type {
+    IndexedPropInput,
+    IndexedPropsInput,
+    NamedPropsInput
+} from "../../nodes/props.js"
+import { arrayIndexTypeNode, TypeNode } from "../../nodes/type.js"
 import type { inferIn, inferOut, TypeConfig } from "../../type.js"
 import type { error } from "../../utils/errors.js"
 import { throwParseError } from "../../utils/errors.js"
@@ -33,40 +37,38 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
             value: { basis: ["===", def.length] }
         }
     }
-    if (def.length > 0) {
-        for (let i = 0; i < def.length; i++) {
-            let elementDef = def[i]
-            let isVariadic = false
-            ctx.path.push(i)
-            if (
-                typeof elementDef === "string" &&
-                elementDef.startsWith("...")
-            ) {
-                elementDef = elementDef.slice(3)
-                isVariadic = true
-            } else if (
-                isArray(elementDef) &&
-                elementDef.length === 2 &&
-                elementDef[0] === "..."
-            ) {
-                elementDef = elementDef[1]
-                isVariadic = true
+    const indexed: mutable<IndexedPropsInput> = []
+    for (let i = 0; i < def.length; i++) {
+        let elementDef = def[i]
+        let isVariadic = false
+        ctx.path.push(i)
+        if (typeof elementDef === "string" && elementDef.startsWith("...")) {
+            elementDef = elementDef.slice(3)
+            isVariadic = true
+        } else if (
+            isArray(elementDef) &&
+            elementDef.length === 2 &&
+            elementDef[0] === "..."
+        ) {
+            elementDef = elementDef[1]
+            isVariadic = true
+        }
+        const value = parseDefinition(elementDef, ctx)
+        if (isVariadic) {
+            if (!value.extends(unknownArray)) {
+                return throwParseError(writeNonArrayRestMessage(elementDef))
             }
-            const value = parseDefinition(elementDef, ctx)
-            if (isVariadic) {
-                if (!value.extends(unknownArray)) {
-                    return throwParseError(writeNonArrayRestMessage(elementDef))
-                }
-                if (i !== def.length - 1) {
-                    return throwParseError(prematureRestMessage)
-                }
+            if (i !== def.length - 1) {
+                return throwParseError(prematureRestMessage)
             }
+            indexed.push([arrayIndexTypeNode, value])
+        } else {
             named[i] = {
                 kind: "required",
                 value
             }
-            ctx.path.pop()
         }
+        ctx.path.pop()
     }
     return TypeNode.from({
         basis: Array,

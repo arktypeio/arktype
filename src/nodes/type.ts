@@ -331,6 +331,15 @@ export const arrayIndexTypeNode = TypeNode.from({
     regex: wellFormedNonNegativeIntegerMatcher.source
 })
 
+// TODO: fix TypeNode autocomplete
+export const numericArrayIndexTypeNode = TypeNode.from({
+    basis: "number",
+    divisor: 1,
+    range: {
+        ">=": 0
+    }
+})
+
 export const neverTypeNode = new TypeNode([])
 
 export const unknownTypeNode = new TypeNode([unknownPredicateNode])
