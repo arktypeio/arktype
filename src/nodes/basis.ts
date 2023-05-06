@@ -39,7 +39,11 @@ const levelOf = (basis: Basis): BasisLevel =>
         ? "domain"
         : typeof basis === "object"
         ? "value"
-        : "class"
+        : typeof basis === "function"
+        ? "class"
+        : throwInternalError(
+              `Unexpectedly got a basis of type ${domainOf(basis)}`
+          )
 
 const hasLevel = <level extends BasisLevel>(
     basis: Basis,

@@ -1,4 +1,4 @@
-import { test } from "mocha"
+import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"

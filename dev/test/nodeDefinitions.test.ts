@@ -118,7 +118,9 @@ suite("node definitions", () => {
                 // @ts-expect-error
                 regex: "/.*/"
             })
-        ).throws.snap()
+        ).throws.snap(
+            "Error: Domain must be string to apply a regex constraint (was number)"
+        )
     })
     test("errors on filter literal", () => {
         if (getTsVersionUnderTest() === "4.9") {

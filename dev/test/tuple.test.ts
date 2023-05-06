@@ -1,4 +1,4 @@
-import { test } from "mocha"
+import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
 import {
     prematureRestMessage,

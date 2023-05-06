@@ -1,4 +1,5 @@
 import { writeUnboundableMessage } from "../parse/ast/bound.js"
+import { writeIndivisibleMessage } from "../parse/ast/divisor.js"
 import type { Filter } from "../parse/ast/filter.js"
 import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
 import { inferred } from "../parse/definition.js"
@@ -6,6 +7,7 @@ import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
+import { hasKeys } from "../utils/records.js"
 import type { Basis, inferBasis } from "./basis.js"
 import { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
@@ -51,18 +53,24 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
     }
 
     static from<def extends PredicateNodeInput>(def: def) {
+        if (def.basis === undefined) {
+            const keys = Object.keys(def)
+            return keys.length === 0
+                ? unknownPredicateNode
+                : throwParseError(
+                      `Predicate must specify a basis key to specify others (got ${keys})`
+                  )
+        }
         const constraints: ConstraintNode[] = []
         const basisNode = new BasisNode(def.basis)
         if (def.divisor) {
-            basisNode.domain === "number"
-                ? constraints.push(new DivisibilityNode(def.divisor))
-                : throwParseError(
-                      mismatchDomainMessage(
-                          "number",
-                          basisNode.domain,
-                          "divisor"
-                      )
-                  )
+            if (basisNode.domain === "number") {
+                constraints.push(new DivisibilityNode(def.divisor))
+            } else {
+                return throwParseError(
+                    writeIndivisibleMessage(basisNode.domain)
+                )
+            }
         }
         if (def.range) {
             if (
