@@ -1,4 +1,8 @@
 import { throwInternalError } from "../utils/errors.js"
+import {
+    wellFormedNonNegativeIntegerMatcher,
+    wellFormedNonNegativeIntegerMatcherSource
+} from "../utils/numericLiterals.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { mutable } from "../utils/records.js"
 import { hasKeys } from "../utils/records.js"
@@ -255,6 +259,11 @@ export type IndexedProps = IndexedProp[]
 export type PropKind = "required" | "optional" | "prerequisite"
 
 export type PropTypeInput = TypeNodeInput | PredicateNodeInput
+
+export const arrayIndexInput = {
+    basis: "string",
+    regex: wellFormedNonNegativeIntegerMatcherSource
+} as const
 
 const typeNodeFromPropInput = (input: PropTypeInput) =>
     input instanceof TypeNode
