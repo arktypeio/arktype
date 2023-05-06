@@ -50,10 +50,15 @@ export class BasisNode<
     static readonly kind = "basis"
     readonly level: level
     readonly domain: Domain
+    // readonly range:
     readonly literalValue: level extends "value" ? unknown : undefined
     readonly serializedValue: level extends "value" ? string : undefined
     readonly levelPrecedence: 0 | 1 | 2
 
+    //no value or basis rule
+    //otherwise contructor extends
+    //value -> constructor of that value
+    //undefined if not an object
     constructor(public rule: Basis<level>) {
         super(BasisNode, rule)
         this.level = levelOf(rule) as level
