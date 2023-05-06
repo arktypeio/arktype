@@ -1,31 +1,31 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
-describe("traverse", () => {
-    it("divisible", () => {
+suite("traverse", () => {
+    test("divisible", () => {
         const t = type("number%2")
         attest(t(4).data).snap(4)
         attest(t(5).problems?.summary).snap("Must be a multiple of 2 (was 5)")
     })
-    it("range", () => {
+    test("range", () => {
         const t = type("number>2")
         attest(t(3).data).snap(3)
         attest(t(2).problems?.summary).snap("Must be more than 2 (was 2)")
     })
-    it("domain", () => {
+    test("domain", () => {
         const t = type("number")
         attest(t(5).data).snap(5)
         attest(t("foo").problems?.summary).snap("Must be a number (was string)")
     })
-    it("regex", () => {
+    test("regex", () => {
         const t = type("/.*@arktype.io/")
         attest(t("shawn@arktype.io").data).snap("shawn@arktype.io")
         attest(t("shawn@hotmail.com").problems?.summary).snap(
             "Must be a string matching /.*@arktype.io/ (was 'shawn@hotmail.com')"
         )
     })
-    it("required keys", () => {
+    test("required keys", () => {
         const t = type({
             name: "string",
             age: "number",
@@ -39,7 +39,7 @@ describe("traverse", () => {
             "age must be defined"
         )
     })
-    it("customized builtin problem", () => {
+    test("customized builtin problem", () => {
         const types = scope(
             { isEven: "number%2" },
             {
@@ -56,7 +56,7 @@ describe("traverse", () => {
             "3 is not a multiple of 2!"
         )
     })
-    it("domains", () => {
+    test("domains", () => {
         const t = type("string|number[]")
         attest(t([1]).data).snap([1])
         attest(t("hello").data).snap("hello")
@@ -64,13 +64,13 @@ describe("traverse", () => {
             "Must be a string or an object (was 2)"
         )
     })
-    it("tuple length", () => {
+    test("tuple length", () => {
         const t = type(["string", "number", "string", "string[]"])
         const data: typeof t.infer = ["foo", 5, "boo", []]
         attest(t(data).data).equals(data)
         attest(t(["hello"]).problems?.summary).snap("length must be 4 (was 1)")
     })
-    it("branches", () => {
+    test("branches", () => {
         const t = type([{ a: "string" }, "|", { b: "boolean" }])
         attest(t({ a: "ok" }).data).snap({ a: "ok" })
         attest(t({ b: true }).data).snap({ b: true })
@@ -78,7 +78,7 @@ describe("traverse", () => {
             "a must be defined or b must be defined (was {})"
         )
     })
-    it("branches at path", () => {
+    test("branches at path", () => {
         const t = type({ key: [{ a: "string" }, "|", { b: "boolean" }] })
         attest(t({ key: { a: "ok" } }).data).snap({ key: { a: "ok" } })
         attest(t({ key: { b: true } }).data).snap({ key: { b: true } })
@@ -86,7 +86,7 @@ describe("traverse", () => {
             "At key, a must be defined or b must be defined (was {})"
         )
     })
-    it("switch", () => {
+    test("switch", () => {
         const t = type([{ a: "string" }, "|", { a: "boolean" }])
         attest(t({ a: "ok" }).data).snap({ a: "ok" })
         attest(t({ a: true }).data).snap({ a: true })
@@ -111,7 +111,7 @@ describe("traverse", () => {
         //     ]
         // ])
     })
-    it("multiple switch", () => {
+    test("multiple switch", () => {
         const types = scope({
             a: { a: "string" },
             b: { a: "number" },
@@ -123,7 +123,7 @@ describe("traverse", () => {
         )
     })
 
-    it("multi", () => {
+    test("multi", () => {
         const naturalNumber = type("integer>0")
         attest(naturalNumber(-1.2).problems?.summary).snap(
             "-1.2 must be...\n• an integer\n• more than 0"

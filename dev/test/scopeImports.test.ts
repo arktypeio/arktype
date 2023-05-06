@@ -1,10 +1,10 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { scope } from "../../src/main.js"
 import { writeDuplicateAliasesMessage } from "../../src/scope.js"
 import { attest } from "../attest/main.js"
 
-describe("scope imports", () => {
-    it("imports/includes", () => {
+suite("scope imports", () => {
+    test("imports/includes", () => {
         const parent = scope({ definedInParent: "boolean" }).compile()
         const aliases = {
             reference: "definedInParent"
@@ -25,7 +25,7 @@ describe("scope imports", () => {
         // attest(importedTypes.reference.node).equals({ boolean: true })
         // attest(includedTypes.definedInParent.node).snap({ boolean: true })
     })
-    it("duplicate alias", () => {
+    test("duplicate alias", () => {
         attest(() =>
             scope(
                 // @ts-expect-error
@@ -34,7 +34,7 @@ describe("scope imports", () => {
             ).compile()
         ).throwsAndHasTypeError(writeDuplicateAliasesMessage("a"))
     })
-    it("duplicate imported alias", () => {
+    test("duplicate imported alias", () => {
         attest(() =>
             scope(
                 {},
@@ -48,7 +48,7 @@ describe("scope imports", () => {
             ).compile()
         ).throwsAndHasTypeError(writeDuplicateAliasesMessage("a"))
     })
-    it("duplicate included alias", () => {
+    test("duplicate included alias", () => {
         attest(() =>
             scope(
                 {},
@@ -62,7 +62,7 @@ describe("scope imports", () => {
             ).compile()
         ).throwsAndHasTypeError(writeDuplicateAliasesMessage("a"))
     })
-    it("duplicate between includes and imports", () => {
+    test("duplicate between includes and imports", () => {
         attest(() =>
             scope(
                 {},

@@ -1,30 +1,30 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import { writeUnterminatedEnclosedMessage } from "../../src/parse/string/shift/operand/enclosed.js"
 import { attest } from "../attest/main.js"
 
-describe("parse enclosed", () => {
-    it("with spaces", () => {
+suite("parse enclosed", () => {
+    test("with spaces", () => {
         attest(type("'this has spaces'").infer).typed as "this has spaces"
     })
-    it("with neighbors", () => {
+    test("with neighbors", () => {
         attest(type("'foo'|/.*/[]").infer).typed as "foo" | string[]
     })
-    describe("errors", () => {
-        describe("unterminated", () => {
-            it("regex", () => {
+    suite("errors", () => {
+        suite("unterminated", () => {
+            test("regex", () => {
                 // @ts-expect-error
                 attest(() => type("/.*")).throwsAndHasTypeError(
                     writeUnterminatedEnclosedMessage(".*", "/")
                 )
             })
-            it("single-quote", () => {
+            test("single-quote", () => {
                 // @ts-expect-error
                 attest(() => type("'.*")).throwsAndHasTypeError(
                     writeUnterminatedEnclosedMessage(".*", "'")
                 )
             })
-            it("double-quote", () => {
+            test("double-quote", () => {
                 // @ts-expect-error
                 attest(() => type('".*')).throwsAndHasTypeError(
                     writeUnterminatedEnclosedMessage(".*", '"')
@@ -32,33 +32,33 @@ describe("parse enclosed", () => {
             })
         })
     })
-    it("single-quoted", () => {
+    test("single-quoted", () => {
         attest(type("'hello'").infer).typed as "hello"
     })
-    it("double-quoted", () => {
+    test("double-quoted", () => {
         attest(type('"goodbye"').infer).typed as "goodbye"
     })
-    it("regex literal", () => {
+    test("regex literal", () => {
         attest(type("/.*/").infer).typed as string
     })
-    it("invalid regex", () => {
+    test("invalid regex", () => {
         attest(() => type("/[/")).throws.snap(
             `SyntaxError: Invalid regular expression: /[/: Unterminated character class`
         )
     })
-    it("mixed quote types", () => {
+    test("mixed quote types", () => {
         attest(type(`"'single-quoted'"`).infer).typed as "'single-quoted'"
         attest(type(`'"double-quoted"'`).infer).typed as '"double-quoted"'
     })
-    it("ignores enclosed operators", () => {
+    test("ignores enclosed operators", () => {
         attest(type("'yes|no|maybe'").infer).typed as "yes|no|maybe"
     })
-    it("mix of enclosed and unenclosed operators", () => {
+    test("mix of enclosed and unenclosed operators", () => {
         attest(type("'yes|no'|'true|false'").infer).typed as
             | "yes|no"
             | "true|false"
     })
-    it("escaped enclosing", () => {
+    test("escaped enclosing", () => {
         const t = type("'don\\'t'")
         attest(t.infer).typed as "don't"
     })

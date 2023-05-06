@@ -1,11 +1,11 @@
 import { AssertionError } from "node:assert"
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import { ArkTypeError } from "../../src/nodes/problems.js"
 import { attest } from "../attest/main.js"
 
-describe("type utilities", () => {
-    it("allows", () => {
+suite("type utilities", () => {
+    test("allows", () => {
         const t = type("number%2")
         const data: unknown = 4
         if (t.allows(data)) {
@@ -16,7 +16,7 @@ describe("type utilities", () => {
         }
         attest(t.allows(5)).equals(false)
     })
-    it("problems can be thrown", () => {
+    test("problems can be thrown", () => {
         const t = type("number")
         try {
             attest(t("invalid").problems?.throw())

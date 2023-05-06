@@ -1,4 +1,4 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"
@@ -6,8 +6,8 @@ import type { equals } from "../../src/utils/generics.js"
 import { Path } from "../../src/utils/lists.js"
 import { attest } from "../attest/main.js"
 
-describe("filter", () => {
-    it("implicit problem", () => {
+suite("filter", () => {
+    test("implicit problem", () => {
         const isOdd = (n: number) => n % 2 === 1
         const odd = type(["number", "=>", isOdd])
         attest(odd.infer).typed as number
@@ -17,11 +17,11 @@ describe("filter", () => {
             "Must be valid according to isOdd (was 2)"
         )
     })
-    it("implicit problem anonymous", () => {
+    test("implicit problem anonymous", () => {
         const even = type(["number", "=>", (n) => n % 2 === 0])
         attest(even(1).problems?.summary).snap("Must be valid (was 1)")
     })
-    it("explicit problem", () => {
+    test("explicit problem", () => {
         const even = type([
             "number",
             "=>",
@@ -31,7 +31,7 @@ describe("filter", () => {
         ])
         attest(even(1).problems?.summary).snap("Must be divisible by 3 (was 1)")
     })
-    it("problem at path", () => {
+    test("problem at path", () => {
         type([{ s: "string" }])
         const abEqual = type([
             {
@@ -53,11 +53,11 @@ describe("filter", () => {
             'a must be equal to b (was {"a":1,"b":2})\nb must be equal to a (was {"a":1,"b":2})'
         )
     })
-    it("functional predicate", () => {
+    test("functional predicate", () => {
         const one = type(["number", "=>", (n): n is 1 => n === 1])
         attest(one).typed as Type<1>
     })
-    it("functional parameter inference", () => {
+    test("functional parameter inference", () => {
         type Expected = number | boolean[]
         const validateNumberOrBooleanList = <t>(
             t: equals<t, Expected> extends true ? t : Expected
@@ -78,7 +78,7 @@ describe("filter", () => {
             ])
         }).types.errors("Type 'boolean' is not assignable to type 'string'.")
     })
-    it("narrow problem", () => {
+    test("narrow problem", () => {
         const palindrome = type([
             "string",
             "=>",
@@ -94,7 +94,7 @@ describe("filter", () => {
             "Must be a palindrome (was 'david')"
         )
     })
-    it("filters the output type of a morph", () => {
+    test("filters the output type of a morph", () => {
         // TODO: should preserve morph
         const t = type("string")
             .morph((s) => s.length)

@@ -1,9 +1,9 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
-describe("config traversal", () => {
-    // it("tuple expression", () => {
+suite("config traversal", () => {
+    // test("tuple expression", () => {
     //     const mustBe = "a series of characters"
     //     const types = scope({
     //         a: ["string", ":", { mustBe }],
@@ -47,7 +47,7 @@ describe("config traversal", () => {
     //         "a must be a series of characters (was boolean)"
     //     )
     // })
-    // it("tuple expression at path", () => {
+    // test("tuple expression at path", () => {
     //     const t = type({
     //         monster: [
     //             "196883",
@@ -97,7 +97,7 @@ describe("config traversal", () => {
     //         "monster must be the number of dimensions in the monster group (was 196882)"
     //     )
     // })
-    // it("anonymous type config", () => {
+    // test("anonymous type config", () => {
     //     const t = type(type("true", { mustBe: "unfalse" }))
     //     attest(t.infer).typed as true
     //     // attest(t.flat).snap([
@@ -108,7 +108,7 @@ describe("config traversal", () => {
     //     // ])
     //     attest(t(false).problems?.summary).snap("Must be unfalse (was false)")
     // })
-    // it("anonymous type config at path", () => {
+    // test("anonymous type config at path", () => {
     //     const unfalse = type("true", { mustBe: "unfalse" })
     //     const t = type({ myKey: unfalse })
     //     // attest(t.flat).snap([
@@ -137,7 +137,7 @@ describe("config traversal", () => {
     //         "myKey must be defined"
     //     )
     // })
-    // it("anonymous type thunk", () => {
+    // test("anonymous type thunk", () => {
     //     const t = type(() => type("false", { mustBe: "untrue" }))
     //     attest(t.infer).typed as false
     //     // attest(t.flat).snap([
@@ -147,7 +147,7 @@ describe("config traversal", () => {
     //     //     ]
     //     // ])
     // })
-    // it("anonymous type thunk at path", () => {
+    // test("anonymous type thunk at path", () => {
     //     const t = type({ myKey: () => type("false", { mustBe: "untrue" }) })
     //     attest(t.infer).typed as { myKey: false }
     //     // attest(t.flat).snap([

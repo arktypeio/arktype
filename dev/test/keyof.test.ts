@@ -1,16 +1,16 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import { Path } from "../../src/utils/lists.js"
 import { stringify } from "../../src/utils/serialize.js"
 import { attest } from "../attest/main.js"
 
-describe("keyof", () => {
-    // it("object literal", () => {
+suite("keyof", () => {
+    // test("object literal", () => {
     //     const t = type(["keyof", { a: "123", b: "123" }])
     //     attest(t.infer).typed as "a" | "b"
     //     // attest(t.node).snap({ string: [{ value: "a" }, { value: "b" }] })
     // })
-    // it("overlapping union", () => {
+    // test("overlapping union", () => {
     //     const t = type([
     //         "keyof",
     //         [{ a: "number", b: "boolean" }, "|", { b: "number", c: "string" }]
@@ -22,13 +22,13 @@ describe("keyof", () => {
     //     new Path() as unknown as [],
     //     "keyof"
     // )
-    // it("non-overlapping union", () => {
+    // test("non-overlapping union", () => {
     //     attest(() =>
     //         // @ts-expect-error
     //         type(["keyof", [{ a: "number" }, "|", { b: "number" }]])
     //     ).throwsAndHasTypeError(expectedNeverKeyOfMessage)
     // })
-    // it("non-object", () => {
+    // test("non-object", () => {
     //     const t = type(["keyof", "bigint"])
     //     attest(t.infer).typed as keyof bigint
     //     attest(t.node).snap({
@@ -41,7 +41,7 @@ describe("keyof", () => {
     //         symbol: { value: "(symbol Symbol.toStringTag)" }
     //     })
     // })
-    // it("union including non-object", () => {
+    // test("union including non-object", () => {
     //     attest(() =>
     //         // @ts-expect-error
     //         type(["keyof", [{ a: "number" }, "|", "string"]])
@@ -58,7 +58,7 @@ describe("keyof", () => {
     //         ).equals(true)
     //     }
     // }
-    // it("array", () => {
+    // test("array", () => {
     //     const t = type(["keyof", ["string", "number"]])
     //     attest(t.infer).typed as keyof [string, number]
     //     const node = t.node as DomainsJson
@@ -76,7 +76,7 @@ describe("keyof", () => {
     //         { value: "(symbol Symbol.unscopables)" }
     //     ])
     // })
-    // it("wellFormedNonNegativeInteger intersection", () => {
+    // test("wellFormedNonNegativeInteger intersection", () => {
     //     const t = type(["keyof", [{ "1": "1" }, "&", "string[]"]])
     //     const node = t.node as DomainsJson
     //     attestHasStringBranches(node.string as RuleNodes<"string">[], [
@@ -88,7 +88,7 @@ describe("keyof", () => {
     //         { range: { min: { comparator: ">=", limit: 0 } }, divisor: 1 }
     //     ])
     // })
-    // it("nullish", () => {
+    // test("nullish", () => {
     //     // @ts-expect-error
     //     attest(() => type(["keyof", "null"])).throwsAndHasTypeError(
     //         expectedNeverKeyOfMessage
@@ -98,12 +98,12 @@ describe("keyof", () => {
     //         expectedNeverKeyOfMessage
     //     )
     // })
-    // it("helper", () => {
+    // test("helper", () => {
     //     const t = keyOf({ a: "string" })
     //     attest(t.infer).typed as "a"
     //     attest(t.node).snap({ string: { value: "a" } })
     // })
-    // it("helper errors", () => {
+    // test("helper errors", () => {
     //     attest(() => keyOf("object")).throws(expectedNeverKeyOfMessage)
     // })
 })

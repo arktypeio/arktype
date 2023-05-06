@@ -1,4 +1,4 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { scope } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
@@ -29,8 +29,8 @@ const getCyclicData = () => {
     return packageData
 }
 
-describe("cyclic data", () => {
-    it("cyclic expression", () => {
+suite("cyclic data", () => {
+    test("cyclic expression", () => {
         const $ = scope({
             a: { b: "b|false" },
             b: { a: "a|true" }
@@ -39,7 +39,7 @@ describe("cyclic data", () => {
             "{ a: { b: false | { a: true | any; }; }; b: { a: true | { b: false | any; }; }; }"
         )
     })
-    // it("cyclic", () => {
+    // test("cyclic", () => {
     //     const types = scope({ a: { b: "b" }, b: { a: "a" } }).compile()
     //     // attest(types.a.node).snap({
     //     //     object: { props: { b: "b" } }
@@ -64,7 +64,7 @@ describe("cyclic data", () => {
     //         `Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
     //     )
     // })
-    // it("allows valid", () => {
+    // test("allows valid", () => {
     //     const types = getCyclicScope().compile()
     //     const data = getCyclicData()
     //     attest(types.package(data).data).snap({
@@ -73,7 +73,7 @@ describe("cyclic data", () => {
     //         contributors: [{ email: "david@arktype.io" }]
     //     })
     // })
-    // it("adds problems on invalid", () => {
+    // test("adds problems on invalid", () => {
     //     const types = getCyclicScope().compile()
     //     const data = getCyclicData()
     //     data.contributors[0].email = "ssalbdivad"
@@ -81,7 +81,7 @@ describe("cyclic data", () => {
     //         "dependencies/1/contributors/0/email must be a valid email (was 'ssalbdivad')\ncontributors/0/email must be a valid email (was 'ssalbdivad')"
     //     )
     // })
-    // it("can include cyclic data in message", () => {
+    // test("can include cyclic data in message", () => {
     //     const data = getCyclicData()
     //     const nonSelfDependent = getCyclicScope().type([
     //         "package",
@@ -92,7 +92,7 @@ describe("cyclic data", () => {
     //         'Must be valid (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
     //     )
     // })
-    // it("union cyclic reference", () => {
+    // test("union cyclic reference", () => {
     //     const types = scope({
     //         a: {
     //             b: "b"
@@ -105,7 +105,7 @@ describe("cyclic data", () => {
     //         "{ a: { b: { a: 3 | any; }; }; b: { a: 3 | { b: any; }; }; }"
     //     )
     // })
-    // it("intersect cyclic reference", () => {
+    // test("intersect cyclic reference", () => {
     //     const types = scope({
     //         a: {
     //             b: "b"

@@ -1,17 +1,17 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
-describe("record", () => {
-    it("empty", () => {
+suite("record", () => {
+    test("empty", () => {
         const o = type({})
         attest(o.root).equals(type("object").root)
     })
-    it("required", () => {
+    test("required", () => {
         const o = type({ a: "string", b: "boolean" })
         attest(o.infer).typed as { a: string; b: boolean }
     })
-    it("optional keys", () => {
+    test("optional keys", () => {
         const o = type({ "a?": "string", b: "boolean" })
         attest(o.infer).typed as { a?: string; b: boolean }
         attest(o.root.key)
@@ -25,7 +25,7 @@ describe("record", () => {
         }
     })()`)
     })
-    it("traverse optional", () => {
+    test("traverse optional", () => {
         const o = type({ "a?": "string" }, { keys: "strict" })
         attest(o({ a: "a" }).data).snap({ a: "a" })
         attest(o({}).data).snap({})
@@ -33,16 +33,16 @@ describe("record", () => {
             "a must be a string (was number)"
         )
     })
-    it("intersection", () => {
+    test("intersection", () => {
         const t = type({ a: "number" }).and({ b: "boolean" })
         // Should be simplified from {a: number} & {b: boolean} to {a: number, b: boolean}
         attest(t.infer).types.toString.snap("{ a: number; b: boolean; }")
     })
-    it("escaped optional token", () => {
+    test("escaped optional token", () => {
         const t = type({ "a\\?": "string" })
         attest(t.infer).typed as { "a?": string }
     })
-    it("multiple bad strict", () => {
+    test("multiple bad strict", () => {
         const t = type({ a: "string", b: "boolean" }, { keys: "strict" })
         attest(t({ a: 1, b: 2 }).problems?.summary).snap(
             "a must be a string (was number)\nb must be boolean (was number)"

@@ -1,4 +1,4 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import {
     writeMissingRightOperandMessage,
@@ -6,13 +6,13 @@ import {
 } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
-describe("union", () => {
-    it("binary", () => {
+suite("union", () => {
+    test("binary", () => {
         const binary = type("number|string")
         attest(binary.infer).typed as number | string
         // attest(binary.node).snap({ number: true, string: true })
     })
-    it("nary", () => {
+    test("nary", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
         // attest(nary.node).snap({
@@ -29,15 +29,15 @@ describe("union", () => {
         //     }
         // })
     })
-    it("subtype pruning", () => {
+    test("subtype pruning", () => {
         type([{ a: "string" }, "|", { a: "'foo'" }])
     })
-    it("union of true and false reduces to boolean", () => {})
-    it("tuple expression", () => {
+    test("union of true and false reduces to boolean", () => {})
+    test("tuple expression", () => {
         const t = type([{ a: "string" }, "|", { b: "boolean" }])
         attest(t.infer).typed as { a: string } | { b: boolean }
     })
-    it("helper", () => {
+    test("helper", () => {
         const t = type({ a: "string" }).or({ b: "boolean" })
         attest(t.infer).typed as
             | {
@@ -50,32 +50,32 @@ describe("union", () => {
         //     object: [{ props: { a: "string" } }, { props: { b: "boolean" } }]
         // })
     })
-    describe("errors", () => {
-        it("bad reference", () => {
+    suite("errors", () => {
+        test("bad reference", () => {
             // @ts-expect-error
             attest(() => type("number|strng")).throwsAndHasTypeError(
                 writeUnresolvableMessage("strng")
             )
         })
-        it("consecutive tokens", () => {
+        test("consecutive tokens", () => {
             // @ts-expect-error
             attest(() => type("boolean||null")).throws(
                 writeMissingRightOperandMessage("|", "|null")
             )
         })
-        it("ends with |", () => {
+        test("ends with |", () => {
             // @ts-expect-error
             attest(() => type("boolean|")).throws(
                 writeMissingRightOperandMessage("|", "")
             )
         })
-        it("long missing union member", () => {
+        test("long missing union member", () => {
             attest(() =>
                 // @ts-expect-error
                 type("boolean[]|(string|number|)|object")
             ).throws(writeMissingRightOperandMessage("|", ")|object"))
         })
-        it("nested union", () => {
+        test("nested union", () => {
             const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
             attest(t.infer).typed as string | number | bigint | boolean
             // attest(t.node).snap({
@@ -85,7 +85,7 @@ describe("union", () => {
             //     bigint: true
             // })
         })
-        it("helper bad reference", () => {
+        test("helper bad reference", () => {
             // @ts-expect-error
             attest(() => type("string").or("nummer")).throwsAndHasTypeError(
                 writeUnresolvableMessage("nummer")

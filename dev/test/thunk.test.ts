@@ -1,11 +1,11 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { writeBadDefinitionTypeMessage } from "../../src/parse/definition.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
-describe("thunk", () => {
-    // it("thunk", () => {
+suite("thunk", () => {
+    // test("thunk", () => {
     //     const t = type(() => type("boolean"))
     //     attest(t.infer).typed as boolean
     //     attest(() => {
@@ -13,7 +13,7 @@ describe("thunk", () => {
     //         type(() => type("moolean"))
     //     }).throwsAndHasTypeError(writeUnresolvableMessage("moolean"))
     // })
-    // it("thunks in scope", () => {
+    // test("thunks in scope", () => {
     //     const $ = scope({
     //         a: () => $.type({ b: "b" }),
     //         b: { a: () => $.type({ a: "string" }) }
@@ -50,7 +50,7 @@ describe("thunk", () => {
     //     //     object: { props: { a: { object: { props: { a: "string" } } } } }
     //     // })
     // })
-    // it("cyclic thunks in scope", () => {
+    // test("cyclic thunks in scope", () => {
     //     const $ = scope({
     //         a: () => $.type({ b: "b" }),
     //         b: () => $.type({ a: "a" })
@@ -69,7 +69,7 @@ describe("thunk", () => {
     //     }
     //     // attest(types.b.node).snap({ object: { props: { a: "a" } } })
     // })
-    // it("expression from thunk", () => {
+    // test("expression from thunk", () => {
     //     const $ = scope({
     //         a: () => $.type({ a: "string" }),
     //         b: { b: "boolean" },
@@ -84,7 +84,7 @@ describe("thunk", () => {
     //     //     object: { props: { a: "string", b: "boolean" } }
     //     // })
     // })
-    // it("function requiring args in scope", () => {
+    // test("function requiring args in scope", () => {
     //     // @ts-expect-error it would be better if the error were in the def (instead we get a cyclic reference issue)
     //     const $ = scope({
     //         a: (t: true) => t && $.type("string")
@@ -93,7 +93,7 @@ describe("thunk", () => {
     //         writeBadDefinitionTypeMessage("Function")
     //     )
     // })
-    // it("non-type thunk in scope", () => {
+    // test("non-type thunk in scope", () => {
     //     const $ = scope({
     //         a: () => 42
     //     })
@@ -101,7 +101,7 @@ describe("thunk", () => {
     //         writeBadDefinitionTypeMessage("Function")
     //     )
     // })
-    // it("parse error in thunk in scope", () => {
+    // test("parse error in thunk in scope", () => {
     //     const $ = scope({
     //         // @ts-expect-error
     //         a: () => $.type("bad")

@@ -1,10 +1,10 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { ark, type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
-describe("keywords", () => {
-    // describe("js", () => {
-    //     it(" Function", () => {
+suite("keywords", () => {
+    // suite("js", () => {
+    //     test(" Function", () => {
     //         const t = type("Function")
     //         attest(t.node).snap("Function")
     //         attest(t((str: string) => [str]).data).snap("(function)")
@@ -12,77 +12,77 @@ describe("keywords", () => {
     //             "Must be a function (was Number)"
     //         )
     //     })
-    //     it("Date", () => {
+    //     test("Date", () => {
     //         attest(type("Date").node).snap("Date")
     //     })
-    //     it("Error", () => {
+    //     test("Error", () => {
     //         attest(type("Error").node).snap("Error")
     //     })
-    //     it("Map", () => {
+    //     test("Map", () => {
     //         attest(type("Map").node).snap("Map")
     //     })
-    //     it("RegExp", () => {
+    //     test("RegExp", () => {
     //         attest(type("RegExp").node).snap("RegExp")
     //     })
-    //     it("Set", () => {
+    //     test("Set", () => {
     //         attest(type("Set").node).snap("Set")
     //     })
-    //     it("WeakMap", () => {
+    //     test("WeakMap", () => {
     //         attest(type("WeakMap").node).snap("WeakMap")
     //     })
-    //     it("WeakSet", () => {
+    //     test("WeakSet", () => {
     //         attest(type("WeakSet").node).snap("WeakSet")
     //     })
-    //     it("Promise", () => {
+    //     test("Promise", () => {
     //         attest(type("Promise").node).snap("Promise")
     //     })
     // })
-    // describe("ts", () => {
-    //     it("any", () => {
+    // suite("ts", () => {
+    //     test("any", () => {
     //         attest(type("any").node).equals("any")
     //     })
-    //     it("bigint", () => {
+    //     test("bigint", () => {
     //         attest(type("bigint").node).equals("bigint")
     //     })
-    //     it("boolean", () => {
+    //     test("boolean", () => {
     //         attest(type("boolean").node).equals("boolean")
     //     })
-    //     it("false", () => {
+    //     test("false", () => {
     //         attest(type("false").node).equals("false")
     //     })
-    //     it("never", () => {
+    //     test("never", () => {
     //         attest(type("never").node).equals("never")
     //     })
-    //     it("null", () => {
+    //     test("null", () => {
     //         attest(type("null").node).equals("null")
     //     })
-    //     it("number", () => {
+    //     test("number", () => {
     //         attest(type("number").node).equals("number")
     //     })
-    //     it("object", () => {
+    //     test("object", () => {
     //         attest(type("object").node).equals("object")
     //     })
-    //     it("string", () => {
+    //     test("string", () => {
     //         attest(type("string").node).equals("string")
     //     })
-    //     it("symbol", () => {
+    //     test("symbol", () => {
     //         attest(type("symbol").node).equals("symbol")
     //     })
-    //     it("true", () => {
+    //     test("true", () => {
     //         attest(type("true").node).equals("true")
     //     })
-    //     it("unknown", () => {
+    //     test("unknown", () => {
     //         attest(type("unknown").node).equals("unknown")
     //     })
-    //     it("void", () => {
+    //     test("void", () => {
     //         attest(type("void").node).equals("void")
     //     })
-    //     it("undefined", () => {
+    //     test("undefined", () => {
     //         attest(type("undefined").node).snap()
     //     })
     // })
-    describe("validation", () => {
-        it("integer", () => {
+    suite("validation", () => {
+        test("integer", () => {
             const integer = type("integer")
             attest(integer(123).data).snap(123)
             attest(integer("123").problems?.summary).snap(
@@ -92,14 +92,14 @@ describe("keywords", () => {
                 "Must be an integer (was 12.12)"
             )
         })
-        it("alpha", () => {
+        test("alpha", () => {
             const alpha = type("alpha")
             attest(alpha("user").data).snap("user")
             attest(alpha("user123").problems?.summary).snap(
                 "Must be only letters (was 'user123')"
             )
         })
-        it("alphanumeric", () => {
+        test("alphanumeric", () => {
             const alphanumeric = type("alphanumeric")
             attest(alphanumeric("user123").data).snap("user123")
             attest(alphanumeric("user").data).snap("user")
@@ -108,14 +108,14 @@ describe("keywords", () => {
                 "Must be only letters and digits (was 'abc@123')"
             )
         })
-        it("lowercase", () => {
+        test("lowercase", () => {
             const lowercase = type("lowercase")
             attest(lowercase("var").data).snap("var")
             attest(lowercase("newVar").problems?.summary).snap(
                 "Must be only lowercase letters (was 'newVar')"
             )
         })
-        it("uppercase", () => {
+        test("uppercase", () => {
             const uppercase = type("uppercase")
             attest(uppercase("VAR").data).snap("VAR")
             attest(uppercase("CONST_VAR").problems?.summary).snap(
@@ -126,14 +126,14 @@ describe("keywords", () => {
             )
         })
 
-        it("email", () => {
+        test("email", () => {
             const email = type("email")
             attest(email("shawn@mail.com").data).snap("shawn@mail.com")
             attest(email("shawn@email").problems?.summary).snap(
                 "Must be a valid email (was 'shawn@email')"
             )
         })
-        it("uuid", () => {
+        test("uuid", () => {
             const uuid = type("uuid")
             attest(uuid("f70b8242-dd57-4e6b-b0b7-649d997140a0").data).snap(
                 "f70b8242-dd57-4e6b-b0b7-649d997140a0"
@@ -142,7 +142,7 @@ describe("keywords", () => {
                 "Must be a valid UUID (was '1234')"
             )
         })
-        it("parsedNumber", () => {
+        test("parsedNumber", () => {
             const parsedNumber = type("parsedNumber")
             attest(parsedNumber("5").data).snap(5)
             attest(parsedNumber("5.5").data).snap(5.5)
@@ -150,7 +150,7 @@ describe("keywords", () => {
                 "Must be a well-formed numeric string (was 'five')"
             )
         })
-        it("parsedInteger", () => {
+        test("parsedInteger", () => {
             const parsedInteger = type("parsedInteger")
             attest(parsedInteger("5").data).snap(5)
             attest(parsedInteger("5.5").problems?.summary).snap(
@@ -166,7 +166,7 @@ describe("keywords", () => {
                 "Must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER (was '9007199254740992')"
             )
         })
-        it("parsedDate", () => {
+        test("parsedDate", () => {
             const parsedDate = type("parsedDate")
             attest(parsedDate("5/21/1993").data?.toDateString()).snap(
                 "Fri May 21 1993"
@@ -178,14 +178,14 @@ describe("keywords", () => {
                 "Must be a string (was number)"
             )
         })
-        it("json", () => {
+        test("json", () => {
             const json = type("json")
             attest(json('{"a": "hello"}').data).snap({ a: "hello" })
             attest(json(123).problems?.summary).snap(
                 "Must be a JSON-parsable string (was number)"
             )
         })
-        it("credit card", () => {
+        test("credit card", () => {
             const validCC = "5489582921773376"
 
             attest(ark.creditCard(validCC).data).equals(validCC)
@@ -202,7 +202,7 @@ describe("keywords", () => {
             )
         })
 
-        it("semver", () => {
+        test("semver", () => {
             attest(ark.semver("1.0.0").data).equals("1.0.0")
             attest(ark.semver("-1.0.0").problems?.summary).snap(
                 "Must be a valid semantic version (see https://semver.org/) (was '-1.0.0')"

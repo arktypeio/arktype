@@ -1,11 +1,11 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
 // TODO: update tests
-describe("key traversal", () => {
+suite("key traversal", () => {
     const getExtraneousB = () => ({ a: "ok", b: "why?" })
-    it("loose by default", () => {
+    test("loose by default", () => {
         const t = type({
             a: "string"
         })
@@ -16,7 +16,7 @@ describe("key traversal", () => {
         const dataWithExtraneousB = getExtraneousB()
         attest(t(dataWithExtraneousB).data).equals(dataWithExtraneousB)
     })
-    it("invalid union", () => {
+    test("invalid union", () => {
         const o = type([{ a: "string" }, "|", { b: "boolean" }], {
             keys: "strict"
         })
@@ -24,7 +24,7 @@ describe("key traversal", () => {
         //     'a must be a string or removed (was {"a":2})'
         // )
     })
-    it("distilled type", () => {
+    test("distilled type", () => {
         const t = type(
             {
                 a: "string"
@@ -49,7 +49,7 @@ describe("key traversal", () => {
         attest(t({ a: "ok" }).data).equals({ a: "ok" })
         attest(t(getExtraneousB()).data).snap({ a: "ok" })
     })
-    it("distilled array", () => {
+    test("distilled array", () => {
         const o = type(
             { a: "email[]" },
             {
@@ -65,7 +65,7 @@ describe("key traversal", () => {
         // can handle missing keys
         attest(o({ b: ["shawn"] }).problems?.summary).snap("a must be defined")
     })
-    it("distilled union", () => {
+    test("distilled union", () => {
         const o = type([{ a: "string" }, "|", { b: "boolean" }], {
             keys: "distilled"
         })
@@ -78,7 +78,7 @@ describe("key traversal", () => {
             'a must be a string or b must be defined (was {"a":2})'
         )
     })
-    it("strict type", () => {
+    test("strict type", () => {
         const t = type(
             {
                 a: "string"
@@ -103,7 +103,7 @@ describe("key traversal", () => {
         attest(t({ a: "ok" }).data).equals({ a: "ok" })
         attest(t(getExtraneousB()).problems?.summary).snap("b must be removed")
     })
-    it("strict array", () => {
+    test("strict array", () => {
         const o = type(
             { a: "string[]" },
             {

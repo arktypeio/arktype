@@ -1,4 +1,4 @@
-import { it } from "mocha"
+import { test } from "mocha"
 import { scope, type } from "../../src/main.js"
 import {
     prematureRestMessage,
@@ -6,12 +6,12 @@ import {
 } from "../../src/parse/ast/tuple.js"
 import { attest } from "../attest/main.js"
 
-describe("tuple", () => {
-    it("shallow", () => {
+suite("tuple", () => {
+    test("shallow", () => {
         const t = type(["string", "number"])
         attest(t.infer).typed as [string, number]
     })
-    it("nested", () => {
+    test("nested", () => {
         const t = type([["string", "number"], [{ a: "boolean", b: ["null"] }]])
         attest(t.infer).typed as [
             [string, number],
@@ -23,19 +23,19 @@ describe("tuple", () => {
             ]
         ]
     })
-    describe("variadic", () => {
-        it("spreads simple arrays", () => {
+    suite("variadic", () => {
+        test("spreads simple arrays", () => {
             const wellRested = type(["string", "...number[]"])
             attest(wellRested.infer).typed as [string, ...number[]]
         })
-        it("tuple expression", () => {
+        test("tuple expression", () => {
             const wellRestedTuple = type([
                 "number",
                 ["...", [{ a: "string" }, "[]"]]
             ])
             attest(wellRestedTuple.infer).typed as [number, ...{ a: string }[]]
         })
-        it("spreads array expressions", () => {
+        test("spreads array expressions", () => {
             const greatSpread = type([{ a: "boolean" }, "...(Date|RegExp)[]"])
             attest(greatSpread.infer).typed as [
                 {
@@ -44,7 +44,7 @@ describe("tuple", () => {
                 ...(RegExp | Date)[]
             ]
         })
-        it("allows array keyword", () => {
+        test("allows array keyword", () => {
             const types = scope({
                 myArrayKeyword: "boolean[]",
                 myVariadicKeyword: ["string", "...myArrayKeyword"]
@@ -54,7 +54,7 @@ describe("tuple", () => {
                 ...boolean[]
             ]
         })
-        it("errors on non-array", () => {
+        test("errors on non-array", () => {
             // @ts-expect-error
             attest(() => type(["email", "...symbol"])).throwsAndHasTypeError(
                 writeNonArrayRestMessage("symbol")
@@ -64,7 +64,7 @@ describe("tuple", () => {
                 type(["number", ["...", "string"]])
             ).throwsAndHasTypeError(writeNonArrayRestMessage("string"))
         })
-        it("errors on non-last element", () => {
+        test("errors on non-last element", () => {
             // @ts-expect-error
             attest(() => type(["...number[]", "string"])).throwsAndHasTypeError(
                 prematureRestMessage
@@ -75,8 +75,8 @@ describe("tuple", () => {
             ).throwsAndHasTypeError(prematureRestMessage)
         })
     })
-    describe("intersections", () => {
-        it("tuple", () => {
+    suite("intersections", () => {
+        test("tuple", () => {
             // TODO: can improve?
             const t = type([[{ a: "string" }], "&", [{ b: "boolean" }]])
             attest(t.infer).typed as [
@@ -86,7 +86,7 @@ describe("tuple", () => {
                 }
             ]
         })
-        it("array", () => {
+        test("array", () => {
             const tupleAndArray = type([
                 [{ a: "string" }],
                 "&",
@@ -110,6 +110,6 @@ describe("tuple", () => {
                 }
             ]
         })
-        it("variadic", () => {})
+        test("variadic", () => {})
     })
 })

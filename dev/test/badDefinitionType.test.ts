@@ -1,40 +1,40 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import { writeBadDefinitionTypeMessage } from "../../src/parse/definition.js"
 import { attest } from "../attest/main.js"
 
-describe("definitions", () => {
-    it("undefined", () => {
+suite("definitions", () => {
+    test("undefined", () => {
         // @ts-expect-error
         attest(() => type({ bad: undefined })).throwsAndHasTypeError(
             writeBadDefinitionTypeMessage("undefined")
         )
     })
-    it("null", () => {
+    test("null", () => {
         // @ts-expect-error
         attest(() => type({ bad: null })).throwsAndHasTypeError(
             writeBadDefinitionTypeMessage("null")
         )
     })
-    it("boolean", () => {
+    test("boolean", () => {
         // @ts-expect-error
         attest(() => type({ bad: true })).throwsAndHasTypeError(
             writeBadDefinitionTypeMessage("boolean")
         )
     })
-    it("number", () => {
+    test("number", () => {
         // @ts-expect-error
         attest(() => type({ bad: 5 })).throwsAndHasTypeError(
             writeBadDefinitionTypeMessage("number")
         )
     })
-    it("bigint", () => {
+    test("bigint", () => {
         // @ts-expect-error
         attest(() => type({ bad: 99999n })).throwsAndHasTypeError(
             writeBadDefinitionTypeMessage("bigint")
         )
     })
-    it("symbol", () => {
+    test("symbol", () => {
         // @ts-expect-error
         attest(() => type({ bad: Symbol() })).throwsAndHasTypeError(
             writeBadDefinitionTypeMessage("symbol")

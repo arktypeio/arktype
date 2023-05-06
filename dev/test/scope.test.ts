@@ -1,15 +1,11 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
-const t = scope({
-    iGiveUp: ["iGiveUp"]
-}).compile()
-
-describe("scope", () => {
-    it("base definition", () => {
+suite("scope", () => {
+    test("base definition", () => {
         const types = scope({ a: "string" }).compile()
         attest(types.a.infer).typed as string
         attest(() =>
@@ -17,7 +13,7 @@ describe("scope", () => {
             scope({ a: "strong" }).compile()
         ).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
     })
-    it("type definition", () => {
+    test("type definition", () => {
         const types = scope({ a: type("string") }).compile()
         attest(types.a.infer).typed as string
         attest(() =>
@@ -25,7 +21,7 @@ describe("scope", () => {
             scope({ a: type("strong") })
         ).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
     })
-    it("interdependent", () => {
+    test("interdependent", () => {
         const types = scope({
             a: "string>5",
             b: "email<=10",
@@ -33,7 +29,7 @@ describe("scope", () => {
         }).compile()
         attest(types.c.infer).typed as string
     })
-    it("object array", () => {
+    test("object array", () => {
         const types = scope({ a: "string", b: [{ c: "a" }] }).compile()
         attest(types.b.infer).typed as [
             {
@@ -41,12 +37,12 @@ describe("scope", () => {
             }
         ]
     })
-    it("doesn't try to validate any in scope", () => {
+    test("doesn't try to validate any in scope", () => {
         // const $ = scope({ a: {} as any })
         // attest($.infer).typed as { a: never }
         // attest($.type(["number", "a"]).infer).typed as [number, never]
     })
-    it("infers its own helpers", () => {
+    test("infers its own helpers", () => {
         const $ = scope({
             a: () => $.type("string"),
             b: () => $.type("number")
@@ -55,7 +51,7 @@ describe("scope", () => {
         attest(types.a.infer).typed as string
         attest(types.b.infer).typed as number
     })
-    it("allows semantically valid helpers", () => {
+    test("allows semantically valid helpers", () => {
         const $ = scope({
             n: () => $.type("number"),
             lessThan10: () => $.type("n<10")
@@ -64,7 +60,7 @@ describe("scope", () => {
         attest(types.n.infer).typed as number
         attest(types.lessThan10.infer).typed as number
     })
-    it("errors on helper parse error", () => {
+    test("errors on helper parse error", () => {
         attest(() => {
             const $ = scope({
                 // @ts-expect-error
@@ -73,7 +69,7 @@ describe("scope", () => {
             $.compile()
         }).throwsAndHasTypeError(writeUnresolvableMessage("kung"))
     })
-    it("errors on semantically invalid helper", () => {
+    test("errors on semantically invalid helper", () => {
         attest(() => {
             const $ = scope({
                 b: () => $.type("boolean"),

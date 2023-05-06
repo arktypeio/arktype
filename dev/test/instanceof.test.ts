@@ -1,10 +1,10 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import type { Type } from "../../src/type.js"
 import { attest } from "../attest/main.js"
 
-describe("instanceof", () => {
-    it("base", () => {
+suite("instanceof", () => {
+    test("base", () => {
         const t = type(["instanceof", Error])
         attest(t.infer).typed as Error
         // attest(t.node).equals({ object: { instance: Error } })
@@ -12,7 +12,7 @@ describe("instanceof", () => {
         attest(t(e).data).equals(e)
         attest(t({}).problems?.summary).snap("Must be an Error (was Object)")
     })
-    it("inherited", () => {
+    test("inherited", () => {
         const t = type(["instanceof", TypeError])
         const e = new TypeError()
         // for some reason the return of TypeError's constructor is actually
@@ -23,17 +23,17 @@ describe("instanceof", () => {
             "Must be an instance of TypeError (was Error)"
         )
     })
-    it("builtins not evaluated", () => {
+    test("builtins not evaluated", () => {
         const t = type(["instanceof", Date])
         attest(t.infer).types.toString("Date")
     })
-    it("non-constructor", () => {
+    test("non-constructor", () => {
         // @ts-expect-error
         attest(() => type(["instanceof", () => {}])).types.errors(
             "Type '() => void' is not assignable to type"
         )
     })
-    it("user-defined class", () => {
+    test("user-defined class", () => {
         class Ark {}
         const ark = type(["instanceof", Ark])
         attest(ark).typed as Type<Ark>
@@ -43,12 +43,12 @@ describe("instanceof", () => {
             "Must be an instance of Ark (was Object)"
         )
     })
-    // it("helper", () => {
+    // test("helper", () => {
     //     const regex = instanceOf(RegExp)
     //     attest(regex.infer).type.toString("RegExp")
     //     attest(regex.node).snap({ object: { instance: "(function RegExp)" } })
     // })
-    // it("helper error", () => {
+    // test("helper error", () => {
     //     // @ts-expect-error
     //     attest(() => instanceOf(5))
     //         .throws(

@@ -1,10 +1,10 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
-describe("this reference", () => {
-    it("resolves from type", () => {
+suite("this reference", () => {
+    test("resolves from type", () => {
         const disappointingGift = type({ label: "string", "box?": "this" })
         type ExpectedDisappointingGift = {
             label: string
@@ -14,7 +14,7 @@ describe("this reference", () => {
         attest(disappointingGift.infer).typed as ExpectedDisappointingGift
         attest(disappointingGift.toString()).snap()
     })
-    it("unresolvable in scope", () => {
+    test("unresolvable in scope", () => {
         attest(() =>
             scope({
                 disappointingGift: {

@@ -1,9 +1,9 @@
-import { describe, it } from "mocha"
+import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
-describe("===", () => {
-    it("base", () => {
+suite("===", () => {
+    test("base", () => {
         const s = Symbol("test")
         const t = type(["===", s])
         attest(t.infer).typed as symbol
@@ -13,7 +13,7 @@ describe("===", () => {
             "Must be (symbol test) (was 'test')"
         )
     })
-    it("helper", () => {
+    test("helper", () => {
         const myRef = { a: "bc" as const }
         const myObj = type.equalTo(myRef)
         attest(myObj.infer).typed as { a: "bc" }
