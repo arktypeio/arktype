@@ -1,10 +1,13 @@
 {
     "//": "This directory was generated from the following files (see dev/scripts/docgen/mapDir.ts for details)",
-    "concision.ts": "dev/test/examples/concision.ts",
-    "demo.ts": "dev/test/examples/demo.ts",
-    "optimized.ts": "dev/test/examples/optimized.ts",
-    "scope.ts": "dev/test/examples/scope.ts",
-    "type.ts": "dev/test/examples/type.ts",
+    "concision.ts": "dev/examples/concision.ts",
+    "demo.ts": "dev/examples/demo.ts",
+    "extends.ts": "dev/examples/extends.ts",
+    "generics.ts": "dev/examples/generics.ts",
+    "numberLiterals.ts": "dev/examples/numberLiterals.ts",
+    "optimized.ts": "dev/examples/optimized.ts",
+    "scope.ts": "dev/examples/scope.ts",
+    "type.ts": "dev/examples/type.ts",
     "demo.css.ts": "dev/arktype.io/docs/demos/layout/demo.css",
     "index.html.ts": "dev/arktype.io/docs/demos/layout/index.html",
     "populateDemo.ts": "dev/arktype.io/docs/demos/layout/populateDemo.ts"

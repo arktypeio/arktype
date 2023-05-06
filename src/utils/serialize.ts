@@ -24,8 +24,7 @@ export type snapshot<t, depth extends 1[] = []> = unknown extends t
     : t extends Function
     ? `(function${string})`
     : t extends Date
-    ? //todo leaving this here incase this is wrong
-      string
+    ? string
     : depth["length"] extends 10
     ? unknown
     : t extends List<infer item>
@@ -35,7 +34,7 @@ export type snapshot<t, depth extends 1[] = []> = unknown extends t
       }
 
 type snapshotPrimitive<t> = t extends undefined
-    ? "(undefined)"
+    ? "undefined"
     : t extends bigint
     ? `${t}n`
     : t extends symbol
@@ -108,7 +107,7 @@ const serializeRecurse = (
     }
 }
 
-type SerializedString = `"${string}"`
+type SerializedString<value extends string = string> = `"${value}"`
 
 export type SerializedPrimitives = {
     string: SerializedString
@@ -156,11 +155,13 @@ export const deserializePrimitive = <serialized extends SerializedPrimitive>(
 export type deserializePrimitive<serialized extends SerializedPrimitive> =
     serialized extends keyof SerializedKeywords
         ? SerializedKeywords[serialized]
-        : serialized extends SerializedString
-        ? string
-        : serialized extends BigintLiteral
-        ? bigint
-        : number
+        : serialized extends SerializedString<infer value>
+        ? value
+        : serialized extends NumberLiteral<infer value>
+        ? value
+        : serialized extends BigintLiteral<infer value>
+        ? value
+        : never
 
 const serializedKeywords = {
     true: true,

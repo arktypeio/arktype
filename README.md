@@ -22,7 +22,7 @@ All powered by ArkType's lightning-fast type-level parser- no plugins or depende
 
 <!-- @snipEnd -->
 
-```ts @blockFrom:dev/test/examples/type.ts
+```ts @blockFrom:dev/examples/type.ts
 import { type } from "arktype"
 
 // Definitions are statically parsed and inferred as TS.
@@ -84,7 +84,7 @@ _Our primary APIs have stabilized, but details may still shift during the beta s
 
 [Try this example in-browser.](https://arktype.io/docs/scopes)
 
-```ts @blockFrom:dev/test/examples/scope.ts
+```ts @blockFrom:dev/examples/scope.ts
 import { scope } from "arktype"
 
 // Scopes are collections of types that can reference each other.

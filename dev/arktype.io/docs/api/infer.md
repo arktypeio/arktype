@@ -7,7 +7,7 @@ hide_table_of_contents: true
 ## text
 
 ```ts
-export type Infer<t> = {
-    [as]?: t
+export type Inferred<as> = {
+    [inferred]?: as
 }
 ```

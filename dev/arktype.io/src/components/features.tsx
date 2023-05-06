@@ -28,10 +28,10 @@ const ArkTypeConcision = (
         <Code language="typescript">
             {"// Hover to infer...\n"}
             {
-                // @blockFrom:dev/test/examples/concision.ts:arkUserHelper |> replace(`,\`) |> replace(${,\${) |> embed(`,`)
+                // @blockFrom:dev/examples/concision.ts:arkUserHelper |> replace(`,\`) |> replace(${,\${) |> embed(`,`)
                 `const arkUser = type({
     name: /^ark.*$/ as Infer<\`ark\${string}\`>,
-    birthday: morph("string", (s) => new Date(s)),
+    birthday: type("string").morph((s) => new Date(s)),
     "powerLevel?": "1<=number<9000"
 })`
                 // @blockEnd
@@ -46,7 +46,7 @@ const ZodConcision = (
         <Code language="typescript">
             {"// Hover to infer...\n"}
             {
-                // @blockFrom:dev/test/examples/concision.ts:zodUser |> replace(`,\`) |> replace(${,\${) |> embed(`,`)
+                // @blockFrom:dev/examples/concision.ts:zodUser |> replace(`,\`) |> replace(${,\${) |> embed(`,`)
                 `const zodUser = z.object({
     name: z.custom<\`zod\${string}\`>(
         (val) => typeof val === "string" && /^zod.*$/.test(val)
@@ -76,19 +76,16 @@ const OptimizedUnion = (
         <Code language="typescript">
             {"// Hover to see internal representation...\n"}
             {
-                // @blockFrom:dev/test/examples/optimized.ts:union |> embed(`,`)
-                `export const deepLeftOrRight = union(
-    {
-        auto: {
-            discriminated: "'left'"
-        }
-    },
-    {
-        auto: {
-            discriminated: "'right'"
-        }
+                // @blockFrom:dev/examples/optimized.ts:union |> embed(`,`)
+                `export const deepLeftOrRight = type({
+    auto: {
+        discriminated: "'left'"
     }
-)`
+}).or({
+    auto: {
+        discriminated: "'right'"
+    }
+})`
                 // @blockEnd
             }
         </Code>
@@ -101,7 +98,7 @@ const OptimizedNumber = (
         <Code language="typescript">
             {"// Hover to see internal representation...\n"}
             {
-                // @blockFrom:dev/test/examples/optimized.ts:number |> embed(`,`)
+                // @blockFrom:dev/examples/optimized.ts:number |> embed(`,`)
                 `export const numericIntersection = type(
     "(1 <= number%2 < 100) & (0 < number%3 <= 99)"
 )`

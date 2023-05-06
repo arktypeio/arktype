@@ -37,22 +37,14 @@ export const Contents = () => {
                     {/* @blockFrom:README.md:intro */}
 
                     <p>
-                        ArkType is a runtime validation library that can infer{" "}
-                        <b>TypeScript definitions 1:1</b> and reuse them as{" "}
-                        <b>highly-optimized validators</b> for your data.
-                    </p>
-
-                    <p>
-                        With each character you type, you'll get{" "}
-                        <b>immediate feedback from your editor</b> in the form
-                        of either a fully-inferred <code>Type</code> or a
-                        specific and helpful <code>ParseError</code>.
-                    </p>
-
-                    <p>
-                        This result exactly mirrors what you can expect to
-                        happen at runtime down to the punctuation of the error
-                        message- <b>no plugins required</b>.
+                        ArkType is a validation library that can infer
+                        TypeScript definitions 1:1 and reuse them as
+                        highly-optimized validators for your data at runtime.
+                        With each character your type, your editor will show you
+                        either: - a list of completions - a detailed ParseError
+                        - a type-safe validator All powered by ArkType's
+                        lightning-fast type-level parser- no plugins or
+                        dependencies required.
                     </p>
 
                     {/* @blockEnd (these extra spaces are here so it stays on its own line) */}

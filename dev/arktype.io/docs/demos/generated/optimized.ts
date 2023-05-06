@@ -1,17 +1,14 @@
-export default `import { type, union } from "arktype"
+export default `import { type } from "arktype"
 
-export const deepLeftOrRight = union(
-    {
-        auto: {
-            discriminated: "'left'"
-        }
-    },
-    {
-        auto: {
-            discriminated: "'right'"
-        }
+export const deepLeftOrRight = type({
+    auto: {
+        discriminated: "'left'"
     }
-)
+}).or({
+    auto: {
+        discriminated: "'right'"
+    }
+})
 
 export const unionInternalRepresentation = [
     ["domain", "object"],

@@ -9,11 +9,6 @@ module.exports = {
                 { type: "doc", label: "Keywords", id: "api/keywords" },
                 { type: "doc", label: "Operators", id: "api/operators" }
             ]
-        },
-        {
-            type: "doc",
-            label: "API",
-            id: "api"
         }
     ]
 }

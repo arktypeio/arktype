@@ -11,7 +11,7 @@ import {
 } from "../../src/parse/string/reduce/shared.js"
 import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.js"
 import {
-    getEpochs,
+    d,
     writeMalformedNumericLiteralMessage
 } from "../../src/utils/numericLiterals.js"
 import { attest } from "../attest/main.js"
@@ -272,9 +272,9 @@ describe("range", () => {
                 })
             })
         })
-        describe("Bounded Date", () => {
-            it("Date", () => {
-                const t = type(`Date>${getEpochs("1/1/2019")}`)
+        describe("date", () => {
+            it("single bound", () => {
+                const t = type(`Date>${d("1/1/2019")}`)
                 attest(t(new Date("1/1/2020")).data).snap("Wed Jan 01 2020")
 
                 attest(t(new Date("1/1/2018")).problems?.summary).snap(
@@ -287,7 +287,7 @@ describe("range", () => {
 • more than 1546329600000`)
             })
             it("equality", () => {
-                const t = type(`Date == ${getEpochs("1/1/1")}`)
+                const t = type(`Date == ${d("1/1/1")}`)
                 attest(t(new Date("1/1/1")).data).snap("Mon Jan 01 2001")
 
                 attest(t(new Date("1/1/2")).problems?.summary).snap(
@@ -296,9 +296,7 @@ describe("range", () => {
             })
 
             it("double bounded", () => {
-                const t = type(
-                    `${getEpochs("1/1/2018")}<Date<${getEpochs("1/1/2019")}`
-                )
+                const t = type(`${d("1/1/2018")}<Date<${d("1/1/2019")}`)
 
                 attest(t(new Date("1/2/2018")).data).snap("Tue Jan 02 2018")
                 attest(t(new Date("1/1/2020")).problems?.summary).snap(
