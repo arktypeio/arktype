@@ -64,7 +64,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
                   )
         }
         if (def.range) {
-            //todo
+            // TODO: Add range constraints
             constraints.push(new RangeNode(def.range))
         }
         if (def.regex) {
@@ -284,7 +284,10 @@ type constraintsOf<basis extends Basis> = basis extends Domain
     ? functionalConstraints<inferDomain<basis>> & domainConstraints<basis>
     : basis extends constructor
     ? functionalConstraints<instanceOf<constructor>> & classConstraints<basis>
-    : {}
+    : basis extends ["===", infer value]
+    ? // Exact values cannot be filtered, but can be morphed
+      Pick<functionalConstraints<value>, "morph">
+    : never
 
 type domainConstraints<basis extends Domain> = basis extends "object"
     ? {

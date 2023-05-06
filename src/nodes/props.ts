@@ -1,8 +1,5 @@
 import { throwInternalError } from "../utils/errors.js"
-import {
-    wellFormedNonNegativeIntegerMatcher,
-    wellFormedNonNegativeIntegerMatcherSource
-} from "../utils/numericLiterals.js"
+import { wellFormedNonNegativeIntegerMatcherSource } from "../utils/numericLiterals.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { mutable } from "../utils/records.js"
 import { hasKeys } from "../utils/records.js"
@@ -19,7 +16,6 @@ import { Node } from "./node.js"
 import type { PredicateNodeInput } from "./predicate.js"
 import type { TypeNodeInput } from "./type.js"
 import {
-    arrayIndexTypeNode,
     neverTypeNode,
     numericArrayIndexTypeNode,
     TypeNode,

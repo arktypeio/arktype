@@ -117,4 +117,13 @@ describe("node definitions", () => {
             })
         ).throws.snap()
     })
+    it("errors on filter literal", () => {
+        attest(() =>
+            TypeNode.from({
+                basis: ["===", true as const],
+                // @ts-expect-error
+                filter: (b: boolean) => b === true
+            })
+        ).throws.snap()
+    })
 })
