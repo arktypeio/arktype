@@ -64,7 +64,10 @@ export class CompilationState {
         return `${
             this.unionDepth ? "return " : ""
         }state.addProblem("${code}", ${
-            typeof rule === "function" ? rule.name : JSON.stringify(rule)
+            typeof rule === "function"
+                ? rule.name
+                : // TODO: Fix
+                  compileSerializedValue(rule)
         }, ${this.data}, ${this.path.json})` as const
     }
 
