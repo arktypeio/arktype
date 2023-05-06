@@ -254,7 +254,7 @@ export type IndexedProps = IndexedProp[]
 
 export type PropKind = "required" | "optional" | "prerequisite"
 
-export type PropTypeInput = TypeNode | TypeNodeInput | PredicateNodeInput
+export type PropTypeInput = TypeNodeInput | PredicateNodeInput
 
 const typeNodeFromPropInput = (input: PropTypeInput) =>
     input instanceof TypeNode

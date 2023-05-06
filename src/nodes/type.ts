@@ -1,9 +1,11 @@
 import { inferred } from "../parse/definition.js"
 import type { inferIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
+import type { conform, exact } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
 import { wellFormedNonNegativeIntegerMatcher } from "../utils/numericLiterals.js"
-import type { BasisNode } from "./basis.js"
+import type { Basis } from "./basis.js"
+import { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
 import type { CaseKey, Discriminant, DiscriminantKind } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
@@ -15,6 +17,7 @@ import type {
     PredicateNodeInput
 } from "./predicate.js"
 import { PredicateNode, unknownPredicateNode } from "./predicate.js"
+import { PropsNode } from "./props.js"
 
 type inferBranches<branches extends TypeNodeInput> = {
     [i in keyof branches]: branches[i] extends PredicateNodeInput
@@ -24,7 +27,34 @@ type inferBranches<branches extends TypeNodeInput> = {
         : never
 }[number]
 
-export type TypeNodeInput = List<PredicateNodeInput | PredicateNode>
+export type TypeNodeInput = List<PredicateNodeInput>
+
+type validateTypeNodeInput<
+    branches extends TypeNodeInput,
+    bases extends Basis[]
+> = {
+    [i in keyof branches]: exact<
+        branches[i],
+        PredicateNodeInput<bases[i & keyof bases]>
+    >
+}
+
+type extractBases<branches, result extends Basis[] = []> = branches extends [
+    infer head,
+    ...infer tail
+]
+    ? extractBases<
+          tail,
+          [
+              ...result,
+              head extends {
+                  basis: infer basis extends Basis
+              }
+                  ? basis
+                  : Basis
+          ]
+      >
+    : result
 
 export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     declare [inferred]: t
@@ -38,7 +68,14 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         this.discriminant = discriminant
     }
 
-    static from<branches extends TypeNodeInput>(...branches: branches) {
+    static from<branches extends TypeNodeInput>(
+        ...branches: {
+            [i in keyof branches]: conform<
+                branches[i],
+                validateTypeNodeInput<branches, extractBases<branches>>[i]
+            >
+        }
+    ) {
         const branchNodes = branches.map((branch) =>
             branch instanceof PredicateNode
                 ? branch
@@ -155,7 +192,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
             current = next
             next = []
         }
-        return current
+        return TypeNode.from(...(current as any))
     }
 
     pruneDiscriminant(path: string[], kind: DiscriminantKind) {
@@ -319,12 +356,16 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     }
 
     toArray(): TypeNode<t[]> {
-        return TypeNode.from({
-            basis: Array,
-            props: [{}, [arrayIndexTypeNode, this]]
-        }) as any
+        const props = new PropsNode([{}, [[arrayIndexTypeNode, this]]])
+        const predicate = new PredicateNode({
+            basis: arrayBasisNode,
+            constraints: [props]
+        })
+        return new TypeNode([predicate])
     }
 }
+
+export const arrayBasisNode = new BasisNode(Array)
 
 export const arrayIndexTypeNode = TypeNode.from({
     basis: "string",

@@ -1,4 +1,6 @@
-import type { NamedPropsInput, PropKind } from "../nodes/props.js"
+import { BasisNode } from "../nodes/basis.js"
+import { PredicateNode } from "../nodes/predicate.js"
+import { type NamedProps, type PropKind, PropsNode } from "../nodes/props.js"
 import { TypeNode } from "../nodes/type.js"
 import type { evaluate } from "../utils/generics.js"
 import type { Dict, mutable } from "../utils/records.js"
@@ -7,7 +9,7 @@ import { parseDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseRecord = (def: Dict, ctx: ParseContext) => {
-    const props: mutable<NamedPropsInput> = {}
+    const named: mutable<NamedProps> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
         let kind: PropKind = "required"
@@ -22,17 +24,21 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
             }
         }
         ctx.path.push(keyName)
-        props[keyName] = {
+        named[keyName] = {
             kind,
             value: parseDefinition(def[definitionKey], ctx)
         }
         ctx.path.pop()
     }
-    return TypeNode.from({
-        basis: "object",
-        props
+    const props = new PropsNode([named, []])
+    const predicate = new PredicateNode({
+        basis: objectBasisNode,
+        constraints: [props]
     })
+    return new TypeNode([predicate])
 }
+
+const objectBasisNode = new BasisNode("object")
 
 type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`
     ? `${name}${Scanner.EscapeToken}?`

@@ -1,9 +1,17 @@
-import type {
-    IndexedPropInput,
-    IndexedPropsInput,
-    NamedPropsInput
+import { PredicateNode } from "../../nodes/predicate.js"
+import {
+    type IndexedPropInput,
+    type IndexedProps,
+    type IndexedPropsInput,
+    type NamedProps,
+    type NamedPropsInput,
+    PropsNode
 } from "../../nodes/props.js"
-import { arrayIndexTypeNode, TypeNode } from "../../nodes/type.js"
+import {
+    arrayBasisNode,
+    arrayIndexTypeNode,
+    TypeNode
+} from "../../nodes/type.js"
 import type { inferIn, inferOut, TypeConfig } from "../../type.js"
 import type { error } from "../../utils/errors.js"
 import { throwParseError } from "../../utils/errors.js"
@@ -31,13 +39,13 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     if (isIndexZeroExpression(def)) {
         return prefixParsers[def[0]](def as never, ctx)
     }
-    const named: mutable<NamedPropsInput> = {
+    const named: mutable<NamedProps> = {
         length: {
             kind: "prerequisite",
-            value: { basis: ["===", def.length] }
+            value: TypeNode.from({ basis: ["===", def.length] })
         }
     }
-    const indexed: mutable<IndexedPropsInput> = []
+    const indexed: mutable<IndexedProps> = []
     for (let i = 0; i < def.length; i++) {
         let elementDef = def[i]
         let isVariadic = false
@@ -70,10 +78,12 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
         }
         ctx.path.pop()
     }
-    return TypeNode.from({
-        basis: Array,
-        props: named
+    const props = new PropsNode([named, indexed])
+    const predicate = new PredicateNode({
+        basis: arrayBasisNode,
+        constraints: [props]
     })
+    return new TypeNode([predicate])
 }
 
 const unknownArray = TypeNode.from({
