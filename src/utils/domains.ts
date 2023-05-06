@@ -16,19 +16,11 @@ type TypesByDomain = {
     null: null
 }
 
-type TypesByRangeDomain = {
-    string: string
-    object: object
-    number: number
-}
-
 export type inferDomain<kind extends Domain> = Domain extends kind
     ? unknown
     : TypesByDomain[kind]
 
 export type Domain = evaluate<keyof TypesByDomain>
-
-export type RangeDomains = evaluate<keyof TypesByRangeDomain>
 
 export type NullishDomain = "undefined" | "null"
 

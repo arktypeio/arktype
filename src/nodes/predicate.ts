@@ -58,16 +58,6 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
                 constraints: []
             })
         }
-        // if (def.range) {
-        //     basisNode.domain === "number" ||
-        //     basisNode.domain === "string" ||
-        //     (basisNode.hasLevel("class") &&
-        //         (basisNode.rule instanceof Date ||
-        //             basisNode.rule instanceof Array))
-        //         ? rules.push(new RangeNode(def.range))
-        //         : throwParseError(writeUnboundableMessage(basisNode.domain))
-        // }
-        //todoshawn extends contructor
         //no value or basis rule
         //otherwise contructor extends
         //value -> constructor of that value
@@ -82,19 +72,8 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
                   )
         }
         if (def.range) {
-            if (basisNode.domain === "number") {
-                constraints.push(new RangeNode(def.range))
-            } else if (basisNode.domain === "string") {
-                constraints.push(new RangeNode(def.range))
-            } else if (
-                basisNode.hasLevel("class") &&
-                (constructorExtends(Date, basisNode.rule) ||
-                    constructorExtends(Object, basisNode.rule))
-            ) {
-                constraints.push(new RangeNode(def.range))
-            } else {
-                throwParseError(writeUnboundableMessage(basisNode.domain))
-            }
+            //todo
+            constraints.push(new RangeNode(def.range))
         }
         if (def.regex) {
             basisNode.domain === "string"
