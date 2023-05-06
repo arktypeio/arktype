@@ -1,8 +1,11 @@
 import type { TypeConfig } from "../type.js"
-import type { Domain } from "../utils/domains.js"
+import { type Domain, hasDomain } from "../utils/domains.js"
 import type { Segments } from "../utils/lists.js"
 import { Path } from "../utils/lists.js"
+import type { SerializablePrimitive } from "../utils/serialize.js"
+import { serializePrimitive } from "../utils/serialize.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
+import { registry } from "./registry.js"
 
 export type TraversalConfig = {
     [k in keyof TypeConfig]-?: TypeConfig[k][]
@@ -37,6 +40,12 @@ export const compilePropAccess = (key: string | number) => {
     return /^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(key)
         ? `.${key}`
         : `[${JSON.stringify(key)}]`
+}
+
+export const compileSerializedValue = (value: unknown) => {
+    return hasDomain(value, "object") || typeof value === "symbol"
+        ? registry().register(typeof value, value)
+        : serializePrimitive(value as SerializablePrimitive)
 }
 
 export class CompilationState {

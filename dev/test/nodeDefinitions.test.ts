@@ -1,7 +1,7 @@
 import { describe, it } from "mocha"
 import { TypeNode } from "../../src/main.js"
 import { arrayIndexInput } from "../../src/nodes/props.js"
-import { attest } from "../attest/main.js"
+import { attest, getTsVersionUnderTest } from "../attest/main.js"
 
 describe("node definitions", () => {
     describe("basis", () => {
@@ -108,6 +108,9 @@ describe("node definitions", () => {
         attest(t).typed as TypeNode<never>
     })
     it("errors on rule in wrong domain", () => {
+        if (getTsVersionUnderTest() === "4.9") {
+            return
+        }
         attest(() =>
             TypeNode.from({
                 basis: "number",
@@ -118,6 +121,9 @@ describe("node definitions", () => {
         ).throws.snap()
     })
     it("errors on filter literal", () => {
+        if (getTsVersionUnderTest() === "4.9") {
+            return
+        }
         attest(() =>
             TypeNode.from({
                 basis: ["===", true as const],

@@ -112,7 +112,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     }
 
     array(): Type<t[], $> {
-        return new Type(this.root.toArray(), this.scope)
+        return new Type(this.root.array(), this.scope)
     }
 
     assert(data: unknown): inferOut<t> {

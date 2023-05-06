@@ -4,6 +4,10 @@ import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
+const t = scope({
+    iGiveUp: ["iGiveUp"]
+}).compile()
+
 describe("scope", () => {
     it("base definition", () => {
         const types = scope({ a: "string" }).compile()
@@ -28,15 +32,6 @@ describe("scope", () => {
             c: "a&b"
         }).compile()
         attest(types.c.infer).typed as string
-        // attest(types.c.node).snap({
-        //     string: {
-        //         range: {
-        //             min: { comparator: ">", limit: 5 },
-        //             max: { comparator: "<=", limit: 10 }
-        //         },
-        //         regex: "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
-        //     }
-        // })
     })
     it("object array", () => {
         const types = scope({ a: "string", b: [{ c: "a" }] }).compile()
@@ -68,9 +63,6 @@ describe("scope", () => {
         const types = $.compile()
         attest(types.n.infer).typed as number
         attest(types.lessThan10.infer).typed as number
-        // attest(types.lessThan10.node).snap({
-        //     number: { range: { max: { comparator: "<", limit: 10 } } }
-        // })
     })
     it("errors on helper parse error", () => {
         attest(() => {

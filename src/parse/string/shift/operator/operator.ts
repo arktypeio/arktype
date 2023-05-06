@@ -15,7 +15,7 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
         ? s.finalize()
         : lookahead === "["
         ? s.scanner.shift() === "]"
-            ? s.setRoot(s.root.toArray())
+            ? s.setRoot(s.root.array())
             : s.error(incompleteArrayTokenMessage)
         : lookahead === "|" || lookahead === "&"
         ? s.pushRootToBranch(lookahead)

@@ -21,7 +21,8 @@ export const positionToString = (position: SourcePosition) =>
 
 export const getFileKey = (path: string) => relative(".", path)
 
-export const getTsVersionUnderTest = () => ts.versionMajorMinor
+export const getTsVersionUnderTest = (): "4.8" | "4.9" | "5.0" | "5.1" =>
+    ts.versionMajorMinor
 
 /**
  *  Can be used to allow arbitrarily chained property access and function calls.

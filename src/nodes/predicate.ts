@@ -1,3 +1,4 @@
+import { writeUnboundableMessage } from "../parse/ast/bound.js"
 import type { Filter } from "../parse/ast/filter.js"
 import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
 import { inferred } from "../parse/definition.js"
@@ -64,22 +65,39 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
                   )
         }
         if (def.range) {
-            // TODO: Add range constraints
-            constraints.push(new RangeNode(def.range))
+            if (
+                basisNode.domain === "string" ||
+                basisNode.domain === "number" ||
+                basisNode.hasConstructorExtending(Array, Date)
+            ) {
+                constraints.push(new RangeNode(def.range))
+            } else {
+                return throwParseError(
+                    writeUnboundableMessage(basisNode.domain)
+                )
+            }
         }
         if (def.regex) {
-            basisNode.domain === "string"
-                ? constraints.push(new RegexNode(def.regex))
-                : mismatchDomainMessage("string", basisNode.domain, "regex")
+            if (basisNode.domain === "string") {
+                constraints.push(new RegexNode(def.regex))
+            } else {
+                return throwParseError(
+                    mismatchDomainMessage("string", basisNode.domain, "regex")
+                )
+            }
         }
         if (def.props) {
-            basisNode.domain === "object"
-                ? constraints.push(
-                      isArray(def.props)
-                          ? PropsNode.from(...def.props)
-                          : PropsNode.from(def.props)
-                  )
-                : mismatchDomainMessage("object", basisNode.domain, "props")
+            if (basisNode.domain === "object") {
+                constraints.push(
+                    isArray(def.props)
+                        ? PropsNode.from(...def.props)
+                        : PropsNode.from(def.props)
+                )
+            } else {
+                return throwParseError(
+                    mismatchDomainMessage("object", basisNode.domain, "props")
+                )
+            }
         }
         return new PredicateNode<inferPredicateDefinition<def>>({
             basis: def.basis && new BasisNode(def.basis),
@@ -130,12 +148,12 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
             return basisResult
         }
         if (l.valueNode) {
-            return r.allows(l.valueNode.literalValue)
+            return r.allows(l.valueNode.getLiteralValue())
                 ? l
                 : Disjoint.from("assignability", l.valueNode, r)
         }
         if (r.valueNode) {
-            return l.allows(r.valueNode.literalValue)
+            return l.allows(r.valueNode.getLiteralValue())
                 ? r
                 : Disjoint.from("assignability", l, r.valueNode)
         }

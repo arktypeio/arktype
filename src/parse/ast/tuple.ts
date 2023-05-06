@@ -283,7 +283,7 @@ const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
 }
 
 const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
-    parseDefinition(def[0], scope).toArray()
+    parseDefinition(def[0], scope).array()
 
 export type PostfixParser<token extends IndexOneOperator> = (
     def: IndexOneExpression<token>,

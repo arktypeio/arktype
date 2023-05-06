@@ -219,16 +219,17 @@ export class RangeProblem extends Problem<RangeConstraint, SizedData> {
     readonly code = "range"
 
     get mustBe() {
-        //todo might not want Date done this way
         return `${comparatorDescriptions[this.rule.comparator]} ${
-            this.data.className === "Date"
+            this.data.value instanceof Date
                 ? new Date(this.rule.limit).toDateString()
                 : this.rule.limit
         }${this.data.units ? ` ${this.data.units}` : ""}`
     }
 
     get was() {
-        return `${this.data.size}`
+        return this.data.value instanceof Date
+            ? this.data.value.toDateString()
+            : `${this.data.size}`
     }
 }
 
@@ -293,7 +294,6 @@ export type ProblemFrom<code extends ProblemCode> = instanceOf<
 >
 
 export type ProblemRules = {
-    // we shouldn't have to intersect keyof ProblemFrom<code> here, seems like a TS bug
     [code in ProblemCode]: ProblemFrom<code>["rule" & keyof ProblemFrom<code>]
 }
 
@@ -315,7 +315,7 @@ export const sizeOf = (data: unknown) =>
         : typeof data === "number"
         ? data
         : data instanceof Date
-        ? `${data.toDateString()}`
+        ? data.valueOf()
         : 0
 
 export const unitsOf = (data: unknown) =>

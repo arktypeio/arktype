@@ -5,7 +5,7 @@ import type { keySet } from "../utils/records.js"
 import { entriesOf, isKeyOf } from "../utils/records.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
-import { In } from "./compilation.js"
+import { compileSerializedValue, In } from "./compilation.js"
 import type { QualifiedDisjoint } from "./disjoint.js"
 import { Disjoint, parseQualifiedDisjoint } from "./disjoint.js"
 import { type PredicateNode, unknownPredicateNode } from "./predicate.js"
@@ -72,10 +72,16 @@ export const discriminate = (
                     lSerialized = (disjointAtPath.l as BasisNode).domain!
                     rSerialized = (disjointAtPath.r as BasisNode).domain!
                 } else if (kind === "value") {
-                    lSerialized = (disjointAtPath.l as BasisNode<"value">)
-                        .serializedValue
-                    rSerialized = (disjointAtPath.r as BasisNode<"value">)
-                        .serializedValue
+                    lSerialized = compileSerializedValue(
+                        (
+                            disjointAtPath.l as BasisNode<"value">
+                        ).getLiteralValue()
+                    )
+                    rSerialized = compileSerializedValue(
+                        (
+                            disjointAtPath.r as BasisNode<"value">
+                        ).getLiteralValue()
+                    )
                 } else {
                     return throwInternalError(
                         `Unexpected attempt to discriminate disjoint kind '${kind}'`

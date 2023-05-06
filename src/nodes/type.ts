@@ -355,7 +355,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         return this
     }
 
-    toArray(): TypeNode<t[]> {
+    array(): TypeNode<t[]> {
         const props = new PropsNode([{}, [[arrayIndexTypeNode, this]]])
         const predicate = new PredicateNode({
             basis: arrayBasisNode,

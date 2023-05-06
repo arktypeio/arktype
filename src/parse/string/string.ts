@@ -34,7 +34,7 @@ type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
 export const maybeNaiveParse = (def: string, ctx: ParseContext): TypeNode =>
     ctx.scope.maybeResolve(def)?.root ??
     ((def.endsWith("[]") &&
-        ctx.scope.maybeResolve(def.slice(0, -2))?.root.toArray()) ||
+        ctx.scope.maybeResolve(def.slice(0, -2))?.root.array()) ||
         fullStringParse(def, ctx))
 
 export const fullStringParse = (def: string, ctx: ParseContext) => {
