@@ -91,7 +91,7 @@ export const parseRightBound = (
         writeInvalidLimitMessage(comparator, limitToken + s.scanner.unscanned)
     )
     if (!s.branches.range) {
-        s.root.constrain("range", { [comparator]: limit })
+        s.root = s.root.constrain("range", { [comparator]: limit })
         return
     }
     if (!isKeyOf(comparator, maxComparators)) {
@@ -104,7 +104,7 @@ export const parseRightBound = (
         return s.error(`${intersectionResult} is empty`)
     }
     delete s.branches.range
-    s.root.constrain("range", intersectionResult.bounds)
+    s.root = s.root.constrain("range", intersectionResult.bounds)
 }
 
 export type parseRightBound<

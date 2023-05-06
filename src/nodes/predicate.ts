@@ -1,6 +1,7 @@
 import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
 import { inferred } from "../parse/definition.js"
 import type { Domain } from "../utils/domains.js"
+import { throwParseError } from "../utils/errors.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { Basis, inferBasis } from "./basis.js"
@@ -49,21 +50,35 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
 
     static from<def extends PredicateNodeInput>(def: def) {
         const constraints: ConstraintNode[] = []
+        const basisNode = new BasisNode(def.basis)
         if (def.divisor) {
-            constraints.push(new DivisibilityNode(def.divisor))
+            basisNode.domain === "number"
+                ? constraints.push(new DivisibilityNode(def.divisor))
+                : throwParseError(
+                      mismatchDomainMessage(
+                          "number",
+                          basisNode.domain,
+                          "divisor"
+                      )
+                  )
         }
         if (def.range) {
+            //todo
             constraints.push(new RangeNode(def.range))
         }
         if (def.regex) {
-            constraints.push(new RegexNode(def.regex))
+            basisNode.domain === "string"
+                ? constraints.push(new RegexNode(def.regex))
+                : mismatchDomainMessage("string", basisNode.domain, "regex")
         }
         if (def.props) {
-            constraints.push(
-                isArray(def.props)
-                    ? PropsNode.from(...def.props)
-                    : PropsNode.from(def.props)
-            )
+            basisNode.domain === "object"
+                ? constraints.push(
+                      isArray(def.props)
+                          ? PropsNode.from(...def.props)
+                          : PropsNode.from(def.props)
+                  )
+                : mismatchDomainMessage("object", basisNode.domain, "props")
         }
         return new PredicateNode<inferPredicateDefinition<def>>({
             basis: def.basis && new BasisNode(def.basis),
@@ -201,6 +216,14 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
             constraints
         })
     }
+}
+
+const mismatchDomainMessage = (
+    expected: string,
+    actual: string,
+    constraint: string
+) => {
+    return `Domain must be ${expected} to apply a ${constraint} constraint (was ${actual})`
 }
 
 export const unknownPredicateNode = new PredicateNode({

@@ -219,8 +219,11 @@ export class RangeProblem extends Problem<RangeConstraint, SizedData> {
     readonly code = "range"
 
     get mustBe() {
+        //todo might not want Date done this way
         return `${comparatorDescriptions[this.rule.comparator]} ${
-            this.rule.limit
+            this.data.className === "Date"
+                ? new Date(this.rule.limit).toDateString()
+                : this.rule.limit
         }${this.data.units ? ` ${this.data.units}` : ""}`
     }
 
@@ -311,6 +314,8 @@ export const sizeOf = (data: unknown) =>
         ? data.length
         : typeof data === "number"
         ? data
+        : data instanceof Date
+        ? `${data.toDateString()}`
         : 0
 
 export const unitsOf = (data: unknown) =>

@@ -23,6 +23,9 @@ export type snapshot<t, depth extends 1[] = []> = unknown extends t
     ? snapshotPrimitive<t>
     : t extends Function
     ? `(function${string})`
+    : t extends Date
+    ? //todo leaving this here incase this is wrong
+      string
     : depth["length"] extends 10
     ? unknown
     : t extends List<infer item>
@@ -81,6 +84,9 @@ const serializeRecurse = (
                 return data.map((item) =>
                     serializeRecurse(item, context, nextSeen)
                 )
+            }
+            if (data instanceof Date) {
+                return data.toDateString()
             }
             const result: Record<string, unknown> = {}
             for (const k in data as Dict) {
