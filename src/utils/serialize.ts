@@ -25,7 +25,7 @@ export type snapshot<t, depth extends 1[] = []> = unknown extends t
     ? `(function${string})`
     : t extends Date
     ? //todo leaving this here incase this is wrong
-      "string"
+      string
     : depth["length"] extends 10
     ? unknown
     : t extends List<infer item>
