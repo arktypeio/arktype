@@ -29,7 +29,7 @@ type inferBranches<branches extends TypeNodeInput> = {
 
 export type TypeNodeInput = List<PredicateNodeInput>
 
-type validateTypeNodeInput<
+type validatedTypeNodeInput<
     branches extends TypeNodeInput,
     bases extends Basis[]
 > = {
@@ -72,7 +72,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         ...branches: {
             [i in keyof branches]: conform<
                 branches[i],
-                validateTypeNodeInput<branches, extractBases<branches>>[i]
+                validatedTypeNodeInput<branches, extractBases<branches>>[i]
             >
         }
     ) {

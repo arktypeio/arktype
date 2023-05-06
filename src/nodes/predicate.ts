@@ -1,6 +1,7 @@
+import type { Filter } from "../parse/ast/filter.js"
 import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
 import { inferred } from "../parse/definition.js"
-import type { Domain } from "../utils/domains.js"
+import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
@@ -279,27 +280,32 @@ export type inferPredicateDefinition<def extends PredicateNodeInput> =
         ? (In: inferBasis<def["basis"]>) => inferMorphOut<out>
         : inferBasis<def["basis"]>
 
-type constraintsOf<base extends Basis> = base extends Domain
-    ? domainConstraints<base>
-    : base extends constructor
-    ? classConstraints<base>
+type constraintsOf<basis extends Basis> = basis extends Domain
+    ? functionalConstraints<inferDomain<basis>> & domainConstraints<basis>
+    : basis extends constructor
+    ? functionalConstraints<instanceOf<constructor>> & classConstraints<basis>
     : {}
 
-type domainConstraints<base extends Domain> = base extends "object"
+type domainConstraints<basis extends Domain> = basis extends "object"
     ? {
           props?: PropsInput
       }
-    : base extends "string"
+    : basis extends "string"
     ? {
           regex?: string | string[]
           range?: Bounds
       }
-    : base extends "number"
+    : basis extends "number"
     ? {
           divisor?: number
           range?: Bounds
       }
     : {}
+
+type functionalConstraints<input> = {
+    filter?: Filter<input>
+    morph?: Morph<input>
+}
 
 type classConstraints<base extends constructor> = base extends typeof Array
     ? {
