@@ -17,6 +17,7 @@ import type { TypeNodeInput } from "./type.js"
 import {
     arrayIndexTypeNode,
     neverTypeNode,
+    numericArrayIndexTypeNode,
     TypeNode,
     unknownTypeNode
 } from "./type.js"
@@ -60,7 +61,10 @@ export class PropsNode extends Node<"props"> {
             checks.push(this.#compileNamedProp(k, named[k]))
         }
         if (indexed.length) {
-            if (indexed.length === 1 && indexed[0][0] === arrayIndexTypeNode) {
+            if (
+                indexed.length === 1 &&
+                indexed[0][0] === numericArrayIndexTypeNode
+            ) {
                 checks.push(PropsNode.#compileArray(indexed[0][1]))
             } else {
                 return throwInternalError(`Unexpected index types`)

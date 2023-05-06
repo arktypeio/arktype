@@ -14,7 +14,7 @@ bench("array-tuple", () => {
     .types([212, "instantiations"])
 
 bench("array-chain", () => {
-    const _ = type("number").toArray()
+    const _ = type("number").array()
 })
     .median([5.15, "us"])
     .types([5, "instantiations"])

@@ -5,15 +5,15 @@ import { attest } from "../attest/main.js"
 describe("discrimination", () => {
     it("shallow", () => {
         const t = type("'a'|'b'|'c'")
-        attest(t.allows.toString()).snap(`function anonymous($arkIn
+        attest(t.allows.toString()).snap(`function anonymous($arkRoot
 ) {
 return (() => {
-        switch($arkIn) {
-            case 'a': {
+        switch($arkRoot) {
+            case "a": {
                 return true;
-            }case 'b': {
+            }case "b": {
                 return true;
-            }case 'c': {
+            }case "c": {
                 return true;
             }
         }
@@ -34,21 +34,21 @@ return (() => {
     it("nestedd", () => {
         const t = getPlaces().type("ocean|sky|rainForest|desert")
         attest(t.root.key).snap(`(() => {
-        switch($arkIn.color) {
-            case 'blue': {
+        switch($arkRoot.color) {
+            case "blue": {
                 return (() => {
-        switch($arkIn.climate) {
-            case 'wet': {
-                return $arkIn.isOcean === true;
-            }case 'dry': {
-                return $arkIn.isSky === true;
+        switch($arkRoot.climate) {
+            case "wet": {
+                return $arkRoot.isOcean === true;
+            }case "dry": {
+                return $arkRoot.isSky === true;
             }
         }
     })();
-            }case 'green': {
-                return $arkIn.climate === 'wet' && $arkIn.isRainForest === true;
-            }case 'brown': {
-                return $arkIn.climate === 'dry' && $arkIn.isDesert === true;
+            }case "green": {
+                return $arkRoot.climate === "wet" && $arkRoot.isRainForest === true;
+            }case "brown": {
+                return $arkRoot.climate === "dry" && $arkRoot.isDesert === true;
             }
         }
     })()`)
@@ -78,20 +78,6 @@ return (() => {
             "|",
             ["ocean|rainForest", "|", { temperature: "'hot'" }]
         ])
-    })
-    it("discriminate class", () => {
-        const t = type([["instanceof", Array], "|", ["instanceof", Date]])
-        // attest(t.flat).snap([
-        //     ["domain", "object"],
-        //     [
-        //         "switch",
-        //         { path: [], kind: "class", cases: { Array: [], Date: [] } }
-        //     ]
-        // ])
-        // attest(t([]).data).equals([])
-        // attest(t({}).problems?.summary).snap(
-        //     "Must be an array or a Date (was {})"
-        // )
     })
     it("won't discriminate between possibly empty arrays", () => {
         const t = type("string[]|boolean[]")

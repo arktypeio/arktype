@@ -22,7 +22,7 @@ export type inferExpression<ast extends List, $> = ast[1] extends "[]"
     : ast[1] extends "|"
     ? inferAst<ast[0], $> | inferAst<ast[2], $>
     : ast[1] extends "&"
-    ? evaluate<inferIntersection<inferAst<ast[0], $>, inferAst<ast[2], $>>>
+    ? evaluate<inferAst<ast[0], $> & inferAst<ast[2], $>>
     : ast[1] extends Comparator
     ? ast[0] extends NumberLiteral
         ? inferAst<ast[2], $>
@@ -30,27 +30,6 @@ export type inferExpression<ast extends List, $> = ast[1] extends "[]"
     : ast[1] extends "%"
     ? inferAst<ast[0], $>
     : never
-
-export type inferIntersection<l, r> = l extends List
-    ? r extends List
-        ? inferArrayIntersection<l, r>
-        : l & r
-    : l & r
-
-type inferArrayIntersection<
-    l extends List,
-    r extends List
-> = isTuple<l> extends true
-    ? {
-          [i in keyof l]: l[i] & r[i & keyof r]
-      }
-    : isTuple<r> extends true
-    ? {
-          [i in keyof r]: l[i & keyof l] & r[i]
-      }
-    : evaluate<l[number] & r[number]>[]
-
-type isTuple<list extends List> = number extends list["length"] ? false : true
 
 export type validateAst<ast, $> = ast extends string
     ? validateStringAst<ast>

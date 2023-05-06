@@ -66,7 +66,7 @@ describe("parse array", () => {
     })
 
     it("helper", () => {
-        const t = type({ a: "string" }).toArray()
+        const t = type({ a: "string" }).array()
         attest(t.infer).typed as {
             a: string
         }[]

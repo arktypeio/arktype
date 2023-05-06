@@ -18,11 +18,26 @@
         "!*.tsbuildinfo"
     ],
     "dependencies": {
-        "arktype": "Link: ../../../..",
         "ts-morph": "18.0.0"
+    },
+    "devDependencies": {
+        "ts-node": "10.9.1",
+        "mocha": "10.2.0",
+        "typescript": "4.9.5"
+    },
+    "mocha": {
+        "spec": [
+            "./test/*.test.*"
+        ],
+        "ignore": "**/node_modules/*",
+        "node-option": [
+            "loader=ts-node/esm",
+            "no-warnings=ExperimentalWarning"
+        ],
+        "require": "../configs/mocha.fixtures.ts"
     },
     "scripts": {
         "build": "ts-node ../scripts/build.ts",
-        "test": "ts-node ../scripts/test.ts"
+        "test": "pnpm mocha"
     }
 }

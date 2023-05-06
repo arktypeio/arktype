@@ -99,9 +99,8 @@ export const hasObjectKind = <
     kinds?: kinds
 ): data is inferObjectKind<kind, kinds> => objectKindOf(data, kinds) === kind
 
-export const isArray = <data>(
-    data: data
-): data is Extract<data, readonly unknown[]> => Array.isArray(data)
+export const isArray = (data: unknown): data is readonly unknown[] =>
+    Array.isArray(data)
 
 /** Each defaultObjectKind's completion for the phrase "Must be _____" */
 export const objectKindDescriptions = {

@@ -16,6 +16,14 @@ describe("key traversal", () => {
         const dataWithExtraneousB = getExtraneousB()
         attest(t(dataWithExtraneousB).data).equals(dataWithExtraneousB)
     })
+    it("invalid union", () => {
+        const o = type([{ a: "string" }, "|", { b: "boolean" }], {
+            keys: "strict"
+        })
+        // attest(o({ a: 2 }).problems?.summary).snap(
+        //     'a must be a string or removed (was {"a":2})'
+        // )
+    })
     it("distilled type", () => {
         const t = type(
             {

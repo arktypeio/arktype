@@ -8,15 +8,22 @@ describe("record", () => {
         attest(o.root).equals(type("object").root)
     })
     it("required", () => {
-        const o = type({ a: "string", b: "boolean[]" })
-        attest(o.infer).typed as { a: string; b: boolean[] }
+        const o = type({ a: "string", b: "boolean" })
+        attest(o.infer).typed as { a: string; b: boolean }
     })
     it("optional keys", () => {
-        const o = type({ "a?": "string", b: "boolean[]" })
-        attest(o.infer).typed as { a?: string; b: boolean[] }
-        attest(o.root.key).snap(
-            '((typeof $arkIn === "object" && $arkIn !== null) || typeof $arkIn === "function") && !(\'a\' in $arkIn) || typeof $arkIn.a === "string" && $arkIn.b instanceof Array'
-        )
+        const o = type({ "a?": "string", b: "boolean" })
+        attest(o.infer).typed as { a?: string; b: boolean }
+        attest(o.root.key)
+            .snap(`((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && !('a' in $arkRoot) || typeof $arkRoot.a === "string" && (() => {
+        switch($arkRoot.b) {
+            case true: {
+                return true;
+            }case false: {
+                return true;
+            }
+        }
+    })()`)
     })
     it("traverse optional", () => {
         const o = type({ "a?": "string" }, { keys: "strict" })
@@ -26,13 +33,10 @@ describe("record", () => {
             "a must be a string (was number)"
         )
     })
-    it("invalid union", () => {
-        const o = type([{ a: "string" }, "|", { b: "boolean" }], {
-            keys: "strict"
-        })
-        // attest(o({ a: 2 }).problems?.summary).snap(
-        //     'a must be a string or removed (was {"a":2})'
-        // )
+    it("intersection", () => {
+        const t = type({ a: "number" }).and({ b: "boolean" })
+        // Should be simplified from {a: number} & {b: boolean} to {a: number, b: boolean}
+        attest(t.infer).types.toString.snap("{ a: number; b: boolean; }")
     })
     it("escaped optional token", () => {
         const t = type({ "a\\?": "string" })

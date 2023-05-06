@@ -3,7 +3,6 @@ import { registry } from "./nodes/registry.js"
 import type { CheckResult } from "./nodes/traverse.js"
 import { TraversalState } from "./nodes/traverse.js"
 import type { TypeNode } from "./nodes/type.js"
-import type { inferIntersection } from "./parse/ast/ast.js"
 import type { Filter, inferPredicate } from "./parse/ast/filter.js"
 import type { Morph, ParsedMorph } from "./parse/ast/morph.js"
 import {
@@ -81,7 +80,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
 
     and<def>(
         def: validateDefinition<def, $>
-    ): Type<inferIntersection<t, inferDefinition<def, $>>> {
+    ): Type<evaluate<t & inferDefinition<def, $>>> {
         return this.#unary(def, "and")
     }
 
@@ -97,7 +96,11 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return this as any
     }
 
-    extends(other: Type) {
+    equals<other>(other: Type<other>): this is Type<other> {
+        return this.root === (other.root as unknown)
+    }
+
+    extends<other>(other: Type<other>): this is Type<other> {
         return this.root.intersect(other.root) === this.root
     }
 
@@ -108,7 +111,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return new Type(this.root.constrain("filter", predicate), this.scope)
     }
 
-    toArray(): Type<t[], $> {
+    array(): Type<t[], $> {
         return new Type(this.root.toArray(), this.scope)
     }
 

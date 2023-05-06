@@ -1,11 +1,15 @@
-import type { NamedPropsInput } from "../../nodes/props.js"
-import { TypeNode } from "../../nodes/type.js"
+import type {
+    IndexedPropInput,
+    IndexedPropsInput,
+    NamedPropsInput
+} from "../../nodes/props.js"
+import { arrayIndexTypeNode, TypeNode } from "../../nodes/type.js"
 import type { inferIn, inferOut, TypeConfig } from "../../type.js"
 import type { error } from "../../utils/errors.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"
-import type { constructor } from "../../utils/objectKinds.js"
+import { type constructor, isArray } from "../../utils/objectKinds.js"
 import type { mutable } from "../../utils/records.js"
 import type {
     inferDefinition,
@@ -33,21 +37,48 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
             value: { basis: ["===", def.length] }
         }
     }
-    if (def.length > 0) {
-        for (let i = 0; i < def.length; i++) {
-            ctx.path.push(i)
+    const indexed: mutable<IndexedPropsInput> = []
+    for (let i = 0; i < def.length; i++) {
+        let elementDef = def[i]
+        let isVariadic = false
+        ctx.path.push(i)
+        if (typeof elementDef === "string" && elementDef.startsWith("...")) {
+            elementDef = elementDef.slice(3)
+            isVariadic = true
+        } else if (
+            isArray(elementDef) &&
+            elementDef.length === 2 &&
+            elementDef[0] === "..."
+        ) {
+            elementDef = elementDef[1]
+            isVariadic = true
+        }
+        const value = parseDefinition(elementDef, ctx)
+        if (isVariadic) {
+            if (!value.extends(unknownArray)) {
+                return throwParseError(writeNonArrayRestMessage(elementDef))
+            }
+            if (i !== def.length - 1) {
+                return throwParseError(prematureRestMessage)
+            }
+            indexed.push([arrayIndexTypeNode, value])
+        } else {
             named[i] = {
                 kind: "required",
-                value: parseDefinition(def[i], ctx)
+                value
             }
-            ctx.path.pop()
         }
+        ctx.path.pop()
     }
     return TypeNode.from({
         basis: Array,
         props: named
     })
 }
+
+const unknownArray = TypeNode.from({
+    basis: Array
+})
 
 // TODO: unify
 type InfixExpression = [unknown, InfixOperator, ...unknown[]]
@@ -90,10 +121,10 @@ type validateTupleLiteral<
       >
     : result
 
-type semanticallyValidateRestElement<
-    operand extends string,
+type semanticallyValidateRestElement<operand, $> = inferDefinition<
+    operand,
     $
-> = inferDefinition<operand, $> extends infer result
+> extends infer result
     ? result extends never
         ? writeNonArrayRestMessage<operand>
         : isAny<result> extends true
@@ -103,11 +134,18 @@ type semanticallyValidateRestElement<
         : writeNonArrayRestMessage<operand>
     : never
 
-type writeNonArrayRestMessage<operand extends string> =
-    `Rest element '${operand}' must be an array.`
+export const writeNonArrayRestMessage = <operand>(operand: operand) =>
+    `Rest element ${
+        typeof operand === "string" ? `'${operand}'` : ""
+    } must be an array` as writeNonArrayRestMessage<operand>
 
-type prematureRestMessage =
-    `Rest elements are only allowed at the end of a tuple`
+type writeNonArrayRestMessage<operand> = `Rest element ${operand extends string
+    ? `'${operand}'`
+    : ""} must be an array`
+
+export const prematureRestMessage = `Rest elements are only allowed at the end of a tuple`
+
+type prematureRestMessage = typeof prematureRestMessage
 
 type inferTupleLiteral<
     def extends List,
@@ -126,7 +164,14 @@ type inferTupleLiteral<
         : never
     : result
 
-type variadicExpression<operandDef extends string = string> = `...${operandDef}`
+type variadicExpression<operandDef = unknown> =
+    | variadicStringExpression<operandDef & string>
+    | variadicTupleExpression<operandDef>
+
+type variadicStringExpression<operandDef extends string = string> =
+    `...${operandDef}`
+
+type variadicTupleExpression<operandDef = unknown> = ["...", operandDef]
 
 type validatePrefixExpression<
     def extends IndexZeroExpression,
