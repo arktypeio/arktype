@@ -1,17 +1,11 @@
-import { as } from "../parse/definition.js"
+import { inferred } from "../parse/definition.js"
 import type { inferIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
 import type { List } from "../utils/lists.js"
 import { wellFormedNonNegativeIntegerMatcher } from "../utils/numericLiterals.js"
-import { isArray } from "../utils/objectKinds.js"
 import type { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
-import type {
-    CaseKey,
-    Discriminant,
-    DiscriminantKind,
-    DiscriminatedBranches
-} from "./discriminate.js"
+import type { CaseKey, Discriminant, DiscriminantKind } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
@@ -20,8 +14,7 @@ import type {
     inferPredicateDefinition,
     PredicateNodeInput
 } from "./predicate.js"
-import { PredicateNode } from "./predicate.js"
-import { In } from "./utils.js"
+import { PredicateNode, unknownPredicateNode } from "./predicate.js"
 
 type inferBranches<branches extends TypeNodeInput> = {
     [i in keyof branches]: branches[i] extends PredicateNodeInput
@@ -34,15 +27,15 @@ type inferBranches<branches extends TypeNodeInput> = {
 export type TypeNodeInput = List<PredicateNodeInput | PredicateNode>
 
 export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
-    declare [as]: t
+    declare [inferred]: t
 
     static readonly kind = "type"
-    discriminated: DiscriminatedBranches
+    discriminant: Discriminant | null
 
     constructor(public branches: PredicateNode[]) {
-        const discriminated = discriminate(branches)
-        super(TypeNode, discriminated)
-        this.discriminated = discriminated
+        const discriminant = discriminate(branches)
+        super(TypeNode, discriminant ?? branches)
+        this.discriminant = discriminant
     }
 
     static from<branches extends TypeNodeInput>(...branches: branches) {
@@ -83,8 +76,8 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         )
     }
 
-    static compile(branches: DiscriminatedBranches) {
-        return isArray(branches)
+    static compile(branches: Discriminant | PredicateNode[]) {
+        return Array.isArray(branches)
             ? TypeNode.#compileIndiscriminable(branches)
             : TypeNode.#compileSwitch(branches)
     }
@@ -106,26 +99,14 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
             discriminant.kind === "domain"
                 ? `typeof ${discriminant.path}`
                 : `${discriminant.path}`
-        // TODO: fix split
-        const path =
-            discriminant.path === In
-                ? []
-                : discriminant.path.replace(`${In}.`, "").split(".")
+
         let compiledCases = ""
         let k: CaseKey
         for (k in discriminant.cases) {
             const caseCondition = k === "default" ? "default" : `case ${k}`
-            const prunedBranches = []
-            for (const branch of discriminant.cases[k]) {
-                const pruned = branch.pruneDiscriminant(path, discriminant.kind)
-                if (pruned === null) {
-                    return "true"
-                }
-                prunedBranches.push(pruned)
-            }
-            const branchCondition = new TypeNode(prunedBranches).key
+            const caseNode = discriminant.cases[k]
             compiledCases += `${caseCondition}: {
-                return ${branchCondition};
+                return ${caseNode.key};
             }`
         }
         return `(() => {
@@ -159,7 +140,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         }
     }
 
-    getNodesAtPath(...path: string[]) {
+    getPath(...path: string[]) {
         let current: PredicateNode[] = this.branches
         let next: PredicateNode[] = []
         while (path.length) {
@@ -177,15 +158,13 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         return current
     }
 
-    pruneDiscriminant(path: string[], kind: DiscriminantKind): TypeNode | null {
+    pruneDiscriminant(path: string[], kind: DiscriminantKind) {
         const prunedBranches: PredicateNode[] = []
         for (const branch of this.branches) {
             const pruned = branch.pruneDiscriminant(path, kind)
-            if (pruned) {
-                prunedBranches.push(pruned)
-            }
+            prunedBranches.push(pruned)
         }
-        return prunedBranches.length ? new TypeNode(prunedBranches) : null
+        return new TypeNode(prunedBranches)
     }
 
     static intersect(l: TypeNode, r: TypeNode): TypeNode | Disjoint {
@@ -334,26 +313,16 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     toArray(): TypeNode<t[]> {
         return TypeNode.from({
             basis: Array,
-            props: [{}, [getArrayIndexKey(), this]]
+            props: [{}, [arrayIndexTypeNode, this]]
         }) as any
     }
 }
 
-let arrayIndex: TypeNode<string>
-const getArrayIndexKey = () => {
-    if (!arrayIndex) {
-        arrayIndex = TypeNode.from({
-            basis: "string",
-            regex: wellFormedNonNegativeIntegerMatcher.source
-        })
-    }
-    return arrayIndex
-}
+export const arrayIndexTypeNode = TypeNode.from({
+    basis: "string",
+    regex: wellFormedNonNegativeIntegerMatcher.source
+})
 
-let never: TypeNode<never>
-export const getNever = () => {
-    if (!never) {
-        never = new TypeNode([])
-    }
-    return never
-}
+export const neverTypeNode = new TypeNode([])
+
+export const unknownTypeNode = new TypeNode([unknownPredicateNode])

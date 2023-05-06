@@ -1,5 +1,5 @@
-import { scope } from "../../src/main.js"
-import { bench } from "../attest/main.js"
+import { scope } from "../../../src/main.js"
+import { bench } from "../../attest/main.js"
 import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
 
 // const recursive = scope({ dejaVu: { "dejaVu?": "dejaVu" } }).compile()

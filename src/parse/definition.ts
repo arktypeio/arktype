@@ -65,7 +65,7 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
 
 export type inferDefinition<def, $> = isAny<def> extends true
     ? never
-    : def extends Infer<infer t> | InferredThunk<infer t>
+    : def extends Inferred<infer t> | InferredThunk<infer t>
     ? t
     : def extends string
     ? inferString<def, $>
@@ -96,18 +96,18 @@ export type validateDefinition<def, $> = def extends (...args: any[]) => any
           [k in keyof def]: validateDefinition<def[k], $>
       }>
 
-export const as = Symbol("as")
+export const inferred = Symbol("inferred")
 
-export type Infer<t> = {
-    [as]?: t
+export type Inferred<as> = {
+    [inferred]?: as
 }
 
 const isThunk = (def: unknown): def is () => unknown =>
     typeof def === "function" && def.length === 0
 
-export type InferredThunk<t = unknown> = () => Infer<t>
+export type InferredThunk<t = unknown> = () => Inferred<t>
 
-type Terminal = RegExp | Infer<unknown> | InferredThunk
+type Terminal = RegExp | Inferred<unknown> | InferredThunk
 
 type BadDefinitionType = Exclude<Primitive, string>
 

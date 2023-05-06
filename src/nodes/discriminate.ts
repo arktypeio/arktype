@@ -5,18 +5,17 @@ import type { keySet } from "../utils/records.js"
 import { entriesOf, isKeyOf } from "../utils/records.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
+import { In } from "./compilation.js"
 import type { QualifiedDisjoint } from "./disjoint.js"
 import { Disjoint, parseQualifiedDisjoint } from "./disjoint.js"
-import type { PredicateNode } from "./predicate.js"
-import { type CompiledPath } from "./utils.js"
+import { type PredicateNode, unknownPredicateNode } from "./predicate.js"
+import { TypeNode } from "./type.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-export type DiscriminatedBranches = PredicateNode[] | Discriminant
-
 export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
-    readonly path: CompiledPath
+    readonly path: string
     readonly kind: kind
     readonly cases: DiscriminatedCases<kind>
 }
@@ -24,7 +23,7 @@ export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
 export type DiscriminatedCases<
     kind extends DiscriminantKind = DiscriminantKind
 > = {
-    [caseKey in CaseKey<kind>]: PredicateNode[]
+    [caseKey in CaseKey<kind>]: TypeNode
 }
 
 type CasesBySpecifier = {
@@ -45,9 +44,9 @@ export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 export const discriminate = (
     branches: PredicateNode[]
-): DiscriminatedBranches => {
-    if (branches.length === 0 || branches.length === 1) {
-        return branches
+): Discriminant | null => {
+    if (branches.length < 2) {
+        return null
     }
     const casesBySpecifier: CasesBySpecifier = {}
     for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
@@ -70,8 +69,8 @@ export const discriminate = (
                 let lSerialized: string
                 let rSerialized: string
                 if (kind === "domain") {
-                    lSerialized = (disjointAtPath.l as BasisNode).domain
-                    rSerialized = (disjointAtPath.r as BasisNode).domain
+                    lSerialized = (disjointAtPath.l as BasisNode).domain!
+                    rSerialized = (disjointAtPath.r as BasisNode).domain!
                 } else if (kind === "value") {
                     lSerialized = (disjointAtPath.l as BasisNode<"value">)
                         .serializedValue
@@ -107,13 +106,29 @@ export const discriminate = (
         .sort((a, b) => Object.keys(a[1]).length - Object.keys(b[1]).length)
         .at(-1)
     if (!bestDiscriminantEntry) {
-        return branches
+        return null
     }
-    const [path, kind] = parseQualifiedDisjoint(bestDiscriminantEntry[0])
+    const [specifier, predicateCases] = bestDiscriminantEntry
+    const [path, kind] = parseQualifiedDisjoint(specifier)
+    // TODO: fix s
+    const pathList = path === In ? [] : path.replace(`${In}.`, "").split(".")
+    const discriminatedCases: DiscriminatedCases = {}
+    for (const k in predicateCases) {
+        let caseBranches: PredicateNode[] = []
+        for (const branch of predicateCases[k]) {
+            const pruned = branch.pruneDiscriminant(pathList, kind)
+            if (pruned === null) {
+                caseBranches = [unknownPredicateNode]
+                break
+            }
+            caseBranches.push(pruned)
+        }
+        discriminatedCases[k] = new TypeNode(caseBranches)
+    }
     return {
         kind,
         path,
-        cases: bestDiscriminantEntry[1]
+        cases: discriminatedCases
     }
 }
 

@@ -108,7 +108,7 @@ const serializeRecurse = (
     }
 }
 
-type SerializedString = `'${string}'`
+type SerializedString = `"${string}"`
 
 export type SerializedPrimitives = {
     string: SerializedString
@@ -128,14 +128,14 @@ export const serializePrimitive = <value extends SerializablePrimitive>(
     value: value
 ) =>
     (typeof value === "string"
-        ? `'${value}'`
+        ? JSON.stringify(value)
         : typeof value === "bigint"
         ? `${value}n`
         : `${value}`) as serializePrimitive<value>
 
 export type serializePrimitive<value extends SerializablePrimitive> =
     value extends string
-        ? `'${value}'`
+        ? `"${value}"`
         : value extends bigint
         ? `${value}n`
         : `${value}`
@@ -145,7 +145,7 @@ export const deserializePrimitive = <serialized extends SerializedPrimitive>(
 ) =>
     (isKeyOf(serialized, serializedKeywords)
         ? serializedKeywords[serialized]
-        : serialized[0] === "'"
+        : serialized[0] === `"`
         ? serialized.slice(1, -1)
         : tryParseWellFormedBigint(serialized) ??
           tryParseWellFormedNumber(

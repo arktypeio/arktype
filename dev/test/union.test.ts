@@ -6,7 +6,7 @@ import {
 } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
-describe("union/parse", () => {
+describe("union", () => {
     it("binary", () => {
         const binary = type("number|string")
         attest(binary.infer).typed as number | string
@@ -31,11 +31,11 @@ describe("union/parse", () => {
     })
     it("subtype pruning", () => {
         type([{ a: "string" }, "|", { a: "'foo'" }])
-        // attest(t.node).snap({ object: { props: { a: "string" } } })
     })
-    it("union of true and false reduces to boolean", () => {
-        // attest(type("true|false").node).equals({})
-        // attest(type("true|false|number")).equals({})
+    it("union of true and false reduces to boolean", () => {})
+    it("tuple expression", () => {
+        const t = type([{ a: "string" }, "|", { b: "boolean" }])
+        attest(t.infer).typed as { a: string } | { b: boolean }
     })
     it("helper", () => {
         const t = type({ a: "string" }).or({ b: "boolean" })

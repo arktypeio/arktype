@@ -144,19 +144,19 @@ ArkType's mirrored static and dynamic parsers means the feedback you get in your
 If you're curious, below is an example of what that looks like under the hood. If not, just close that hood back up, `npm install arktype` and enjoy top-notch developer experience🔥
 
 ```ts @blockFrom:src/parse/string/shift/operator/operator.ts:parseOperator
-export const parseOperator = (s: DynamicState): void => {
+export const parseOperator = (s: DynamicStateWithRoot): void => {
     const lookahead = s.scanner.shift()
     return lookahead === ""
         ? s.finalize()
         : lookahead === "["
         ? s.scanner.shift() === "]"
-            ? s.rootToArray()
+            ? s.setRoot(s.root.toArray())
             : s.error(incompleteArrayTokenMessage)
-        : isKeyOf(lookahead, Scanner.branchTokens)
+        : lookahead === "|" || lookahead === "&"
         ? s.pushRootToBranch(lookahead)
         : lookahead === ")"
         ? s.finalizeGroup()
-        : isKeyOf(lookahead, Scanner.comparatorStartChars)
+        : isKeyOf(lookahead, comparatorStartChars)
         ? parseBound(s, lookahead)
         : lookahead === "%"
         ? parseDivisor(s)
@@ -171,11 +171,11 @@ export type parseOperator<s extends StaticState> =
             ? unscanned extends Scanner.shift<"]", infer nextUnscanned>
                 ? state.setRoot<s, [s["root"], "[]"], nextUnscanned>
                 : error<incompleteArrayTokenMessage>
-            : lookahead extends Scanner.BranchToken
+            : lookahead extends "|" | "&"
             ? state.reduceBranch<s, lookahead, unscanned>
             : lookahead extends ")"
             ? state.finalizeGroup<s, unscanned>
-            : lookahead extends Scanner.ComparatorStartChar
+            : lookahead extends ComparatorStartChar
             ? parseBound<s, lookahead, unscanned>
             : lookahead extends "%"
             ? parseDivisor<s, unscanned>

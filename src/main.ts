@@ -1,6 +1,6 @@
 export { scope } from "./scope.js"
 export { type, ark, arkScope } from "./scopes/ark.js"
-export type { Infer } from "./parse/definition.js"
+export type { Inferred as Infer } from "./parse/definition.js"
 export type { Scope, Space } from "./scope.js"
 export { jsObjectsScope } from "./scopes/jsObjects.js"
 export { tsKeywordsScope } from "./scopes/tsKeywords.js"

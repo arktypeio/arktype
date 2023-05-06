@@ -6,13 +6,12 @@ import type { constructor } from "../utils/objectKinds.js"
 import { constructorExtends } from "../utils/objectKinds.js"
 import type { SerializablePrimitive } from "../utils/serialize.js"
 import { serializePrimitive, stringify } from "../utils/serialize.js"
-import type { CompilationState } from "./compilation.js"
+import { type CompilationState, In } from "./compilation.js"
 import type { DisjointKindEntries } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
 import type { ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
-import { In } from "./utils.js"
 
 type BasesByLevel = {
     domain: Exclude<Domain, "undefined" | "null" | "boolean">

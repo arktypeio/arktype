@@ -13,13 +13,14 @@
     "typescript.preferences.autoImportFileExcludePatterns": ["dist"],
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "typescript.tsdk": "./node_modules/typescript/lib",
-    "typescript.tsserver.experimental.enableProjectDiagnostics": true,
     "typescript.preferences.importModuleSpecifierEnding": "js",
     "prettier.ignorePath": "dev/configs/.prettierignore",
     "mochaExplorer.nodeArgv": [
         "--loader=ts-node/esm",
         "--no-warnings=ExperimentalWarning"
     ],
+    "mochaExplorer.require": "dev/configs/mocha.fixtures.ts",
+    "mochaExplorer.timeout": 0,
     "mochaExplorer.env": {
         "ATTEST_CONFIG": "{ \"skipTypes\": true }"
     },

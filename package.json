@@ -28,8 +28,8 @@
         "build": "ts-node ./dev/scripts/build.ts",
         "buildRepo": "pnpm build && cd ./dev/attest && pnpm build && cd ../arktype.io && pnpm build",
         "docgen": "ts-node ./dev/scripts/docgen.ts",
-        "test": "ts-node ./dev/scripts/test.ts",
-        "tnt": "ts-node ./dev/scripts/test.ts --skipTypes",
+        "test": "mocha",
+        "tnt": "mocha --skipTypes",
         "testRepo": "pnpm test && cd ./dev/attest && pnpm test && pnpm testTsVersions",
         "testTsVersions": "ts-node ./dev/scripts/testTsVersions.ts",
         "typecheck": "tsc --noEmit",
@@ -76,7 +76,8 @@
         "node-option": [
             "loader=ts-node/esm",
             "no-warnings=ExperimentalWarning"
-        ]
+        ],
+        "require": "./dev/configs/mocha.fixtures.ts"
     },
     "c8": {
         "checkCoverage": true,

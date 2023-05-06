@@ -1,8 +1,8 @@
 import type { TypeConfig } from "../type.js"
 import type { Domain } from "../utils/domains.js"
+import type { Segments } from "../utils/lists.js"
 import { Path } from "../utils/lists.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
-import { compilePathAccess } from "./utils.js"
 
 export type TraversalConfig = {
     [k in keyof TypeConfig]-?: TypeConfig[k][]
@@ -12,6 +12,32 @@ const initializeCompilationConfig = (): TraversalConfig => ({
     mustBe: [],
     keys: []
 })
+
+export const In = "$arkRoot"
+
+export const IndexIn = "$arkIndex"
+
+export const prependKey = (path: string, key: string) =>
+    `${In}${compilePropAccess(key)}${path.slice(In.length)}`
+
+export const prependIndex = (path: string) =>
+    `${In}[${IndexIn}]${path.slice(In.length)}`
+
+export const compilePathAccess = (segments: Segments, root = In) => {
+    for (const segment of segments) {
+        root += compilePropAccess(segment)
+    }
+    return root
+}
+
+export const compilePropAccess = (key: string | number) => {
+    if (typeof key === "number") {
+        return `[${key}]`
+    }
+    return /^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(key)
+        ? `.${key}`
+        : `[${JSON.stringify(key)}]`
+}
 
 export class CompilationState {
     path = new Path()
@@ -50,18 +76,4 @@ export class CompilationState {
             ${onFalse}
         }`
     }
-
-    //     arrayOf(node: Node<any>) {
-    //         // TODO: increment. does this work for logging?
-    //         this.path.push("${i}")
-    //         const result = `(() => {
-    //     let valid = true;
-    //     for(let i = 0; i < ${this.data}.length; i++) {
-    //         valid = ${node.compile(this)} && isValid;
-    //     }
-    //     return valid
-    // })()`
-    //         this.path.pop()
-    //         return result
-    //     }
 }

@@ -2,15 +2,24 @@ import { throwInternalError } from "../utils/errors.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { mutable } from "../utils/records.js"
 import { hasKeys } from "../utils/records.js"
-import type { CompilationState } from "./compilation.js"
+import {
+    type CompilationState,
+    compilePropAccess,
+    In,
+    IndexIn
+} from "./compilation.js"
 import type { DiscriminantKind } from "./discriminate.js"
 import type { DisjointsSources } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
 import type { PredicateNodeInput } from "./predicate.js"
 import type { TypeNodeInput } from "./type.js"
-import { getNever, TypeNode } from "./type.js"
-import { insertUniversalPropAccess } from "./utils.js"
+import {
+    arrayIndexTypeNode,
+    neverTypeNode,
+    TypeNode,
+    unknownTypeNode
+} from "./type.js"
 
 export class PropsNode extends Node<"props"> {
     static readonly kind = "props"
@@ -48,21 +57,49 @@ export class PropsNode extends Node<"props"> {
         const checks: string[] = []
         const names = Object.keys(named).sort()
         for (const k of names) {
-            // TODO: integrate kind
-            checks.push(insertUniversalPropAccess(named[k].value.key, k))
+            checks.push(this.#compileNamedProp(k, named[k]))
         }
-        // TODO: empty? (same for others)
-        return checks.join(" && ")
+        if (indexed.length) {
+            if (indexed.length === 1 && indexed[0][0] === arrayIndexTypeNode) {
+                checks.push(PropsNode.#compileArray(indexed[0][1]))
+            } else {
+                return throwInternalError(`Unexpected index types`)
+            }
+        }
+        return checks.join(" && ") || "true"
+    }
+
+    static #compileNamedProp(k: string, prop: NamedProp) {
+        const valueCheck = prop.value.key.replaceAll(
+            In,
+            `${In}${compilePropAccess(k)}`
+        )
+        return prop.kind === "optional"
+            ? `!('${k}' in ${In}) || ${valueCheck}`
+            : valueCheck
+    }
+
+    static #compileArray(elementType: TypeNode) {
+        const elementCondition = elementType.key
+            .replaceAll(IndexIn, `${IndexIn}Inner`)
+            .replaceAll(In, `${In}[${IndexIn}]`)
+        const result = `(() => {
+            let valid = true;
+            for(let ${IndexIn} = 0; ${IndexIn} < ${In}.length; ${IndexIn}++) {
+                valid = ${elementCondition} && valid;
+            }
+            return valid
+        })()`
+        return result
     }
 
     compileTraverse(s: CompilationState) {
         return Object.keys(this.named)
             .sort()
             .map((k) =>
-                insertUniversalPropAccess(
-                    this.named[k].value.compileTraverse(s),
-                    k
-                )
+                this.named[k].value
+                    .compileTraverse(s)
+                    .replaceAll(In, `${In}${compilePropAccess(k)}`)
             )
             .join("\n")
     }
@@ -74,10 +111,9 @@ export class PropsNode extends Node<"props"> {
             if (matchingIndex === -1) {
                 indexed.push([rKey, rValue])
             } else {
-                // TODO: path updates here
                 const result = indexed[matchingIndex][1].intersect(rValue)
                 indexed[matchingIndex][1] =
-                    result instanceof Disjoint ? getNever() : result
+                    result instanceof Disjoint ? neverTypeNode : result
             }
         }
         const named = { ...l.named, ...r.named }
@@ -155,7 +191,7 @@ export class PropsNode extends Node<"props"> {
             if (kind === "optional") {
                 return {
                     kind: "optional",
-                    value: getNever()
+                    value: neverTypeNode
                 }
             }
             return result
@@ -166,24 +202,12 @@ export class PropsNode extends Node<"props"> {
         }
     }
 
-    pruneDiscriminant(
-        path: string[],
-        kind: DiscriminantKind
-    ): PropsNode | null {
+    pruneDiscriminant(path: string[], kind: DiscriminantKind): PropsNode {
         const [key, ...nextPath] = path
         const propAtKey = this.named[key]
-        if (!propAtKey) {
-            return throwInternalError(
-                `Unexpectedly failed to prune discriminant of kind ${kind} at key ${key}`
-            )
-        }
         const prunedValue = propAtKey.value.pruneDiscriminant(nextPath, kind)
         const { [key]: _, ...preserved } = this.named
-        if (!prunedValue) {
-            if (!hasKeys(preserved)) {
-                return null
-            }
-        } else {
+        if (prunedValue !== unknownTypeNode) {
             preserved[key] = {
                 kind: propAtKey.kind,
                 value: prunedValue
@@ -192,6 +216,8 @@ export class PropsNode extends Node<"props"> {
         return new PropsNode([preserved, this.indexed])
     }
 }
+
+export const emptyPropsNode = new PropsNode([{}, []])
 
 export type PropsInput =
     | NamedPropsInput

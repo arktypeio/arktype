@@ -4,10 +4,10 @@ hide_table_of_contents: true
 
 # validateDivisor
 
-## operator
+## text
 
--   [%](./validatedivisor.md)
-
-## string
-
--   "N%D", where "N" is a number and "D" is a non-zero integer
+```ts
+export type validateDivisor<l, $> = isDivisible<inferAst<l, $>> extends true
+    ? validateAst<l, $>
+    : error<writeIndivisibleMessage<astToString<l>>>
+```

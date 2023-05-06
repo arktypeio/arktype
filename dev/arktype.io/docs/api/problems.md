@@ -7,6 +7,6 @@ hide_table_of_contents: true
 ## text
 
 ```ts
-Problems: new (state: TraversalState) => Problems
+Problems: new () => Problems
 export type Problems = arraySubclassToReadonly<ProblemArray>;
 ```

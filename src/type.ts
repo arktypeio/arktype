@@ -1,14 +1,14 @@
-import { CompilationState } from "./nodes/compilation.js"
+import { CompilationState, In } from "./nodes/compilation.js"
 import { registry } from "./nodes/registry.js"
 import type { CheckResult } from "./nodes/traverse.js"
 import { TraversalState } from "./nodes/traverse.js"
 import type { TypeNode } from "./nodes/type.js"
-import { In } from "./nodes/utils.js"
+import type { inferIntersection } from "./parse/ast/ast.js"
 import type { Filter, inferPredicate } from "./parse/ast/filter.js"
 import type { Morph, ParsedMorph } from "./parse/ast/morph.js"
 import {
-    as,
     type inferDefinition,
+    inferred,
     parseDefinition,
     type validateDefinition
 } from "./parse/definition.js"
@@ -49,7 +49,7 @@ registry().register("state", TraversalState)
 export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     (data: unknown) => CheckResult<inferOut<t>>
 > {
-    declare [as]: t
+    declare [inferred]: t
     declare infer: inferOut<t>
     declare inferIn: inferIn<t>
 
@@ -68,7 +68,6 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return state.finalize(${In});`
         )
         this.root = root
-        // TODO: remove first root-level IIFE
         this.allows = root.allows
     }
 
@@ -82,7 +81,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
 
     and<def>(
         def: validateDefinition<def, $>
-    ): Type<t & inferDefinition<def, $>, $> {
+    ): Type<inferIntersection<t, inferDefinition<def, $>>> {
         return this.#unary(def, "and")
     }
 

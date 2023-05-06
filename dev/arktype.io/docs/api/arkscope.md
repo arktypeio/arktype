@@ -7,7 +7,7 @@ hide_table_of_contents: true
 ## text
 
 ```ts
-arkScope: import("./scope.js").Scope<
+arkScope: import("../scope.js").Scope<
     [
         {
             any: any
@@ -24,7 +24,7 @@ arkScope: import("./scope.js").Scope<
             unknown: unknown
             void: void
             undefined: undefined
-            Function: (...args: any[]) => unknown
+            Function: Function
             Date: Date
             Error: Error
             Map: Map<unknown, unknown>
