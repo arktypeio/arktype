@@ -1,10 +1,7 @@
 import { PredicateNode } from "../../nodes/predicate.js"
 import {
-    type IndexedPropInput,
     type IndexedProps,
-    type IndexedPropsInput,
     type NamedProps,
-    type NamedPropsInput,
     PropsNode
 } from "../../nodes/props.js"
 import {
@@ -79,10 +76,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
         ctx.path.pop()
     }
     const props = new PropsNode([named, indexed])
-    const predicate = new PredicateNode({
-        basis: arrayBasisNode,
-        constraints: [props]
-    })
+    const predicate = new PredicateNode([arrayBasisNode, props])
     return new TypeNode([predicate])
 }
 

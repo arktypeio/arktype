@@ -1,6 +1,8 @@
+import { writeUnboundableMessage } from "../parse/ast/bound.js"
+import { writeIndivisibleMessage } from "../parse/ast/divisor.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
-import { throwInternalError } from "../utils/errors.js"
+import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type { evaluate } from "../utils/generics.js"
 import type { constructor } from "../utils/objectKinds.js"
 import { constructorExtends } from "../utils/objectKinds.js"
@@ -13,6 +15,7 @@ import {
 import type { DisjointKindEntries } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
+import type { ConstraintKind } from "./predicate.js"
 import type { ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 
@@ -153,6 +156,59 @@ export class BasisNode<
         }
     }
 
+    assertAllowsConstraint(kind: ConstraintKind) {
+        if (this.hasLevel("value")) {
+            if (kind !== "morph") {
+                throwInvalidConstraintError(
+                    kind,
+                    "a non-literal type",
+                    stringify(this.getLiteralValue())
+                )
+            }
+            return
+        }
+        switch (kind) {
+            case "divisor":
+                if (this.domain !== "number") {
+                    throwParseError(writeIndivisibleMessage(this.domain))
+                }
+                return
+            case "range":
+                if (
+                    this.domain !== "string" &&
+                    this.domain !== "number" &&
+                    !this.hasConstructorExtending(Array, Date)
+                ) {
+                    throwParseError(writeUnboundableMessage(this.domain))
+                }
+                return
+            case "regex":
+                if (this.domain !== "string") {
+                    throwInvalidConstraintError(
+                        "regex",
+                        "a string",
+                        this.domain
+                    )
+                }
+                return
+            case "props":
+                if (this.domain !== "object") {
+                    throwInvalidConstraintError(
+                        "props",
+                        "an object",
+                        this.domain
+                    )
+                }
+                return
+            case "filter":
+                return
+            case "morph":
+                return
+            default:
+                throwInternalError(`Unexpxected rule kind '${kind}'`)
+        }
+    }
+
     compileTraverse(s: CompilationState) {
         return s.ifNotThen(
             this.key,
@@ -163,3 +219,15 @@ export class BasisNode<
         )
     }
 }
+
+export const writeInvalidConstraintMessage = (
+    kind: ConstraintKind,
+    typeMustBe: string,
+    typeWas: string
+) => {
+    return `${kind} constraint may only be applied to ${typeMustBe} (was ${typeWas})`
+}
+
+export const throwInvalidConstraintError = (
+    ...args: Parameters<typeof writeInvalidConstraintMessage>
+) => throwParseError(writeInvalidConstraintMessage(...args))

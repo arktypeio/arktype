@@ -172,6 +172,7 @@ export class Scope<context extends ScopeInferenceContext = any> {
         def: unknown,
         config: TypeConfig = {}
     ) => {
+        config
         return new Type(def, this)
     }) as unknown as TypeParser<resolutions<context>>
 

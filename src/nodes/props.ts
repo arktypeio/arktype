@@ -223,9 +223,12 @@ export class PropsNode extends Node<"props"> {
 
 export const emptyPropsNode = new PropsNode([{}, []])
 
-export type PropsInput =
-    | NamedPropsInput
-    | [named: NamedPropsInput, ...indexed: IndexedPropInput[]]
+export type PropsInput = NamedPropsInput | PropsInputTuple
+
+export type PropsInputTuple = [
+    named: NamedPropsInput,
+    ...indexed: IndexedPropInput[]
+]
 
 export type NamedPropInput = {
     kind: PropKind

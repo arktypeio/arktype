@@ -1,13 +1,12 @@
-import { writeUnboundableMessage } from "../parse/ast/bound.js"
-import { writeIndivisibleMessage } from "../parse/ast/divisor.js"
 import type { Filter } from "../parse/ast/filter.js"
 import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
 import { inferred } from "../parse/definition.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
+import type { evaluate } from "../utils/generics.js"
+import type { List } from "../utils/lists.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
-import { hasKeys } from "../utils/records.js"
 import type { Basis, inferBasis } from "./basis.js"
 import { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
@@ -17,7 +16,7 @@ import { DivisibilityNode } from "./divisibility.js"
 import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
 import { Node } from "./node.js"
-import type { PropsInput } from "./props.js"
+import type { NamedPropsInput, PropsInput, PropsInputTuple } from "./props.js"
 import { emptyPropsNode, PropsNode } from "./props.js"
 import type { Bounds } from "./range.js"
 import { RangeNode } from "./range.js"
@@ -54,48 +53,14 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
                   )
         }
         const basis = new BasisNode(def.basis)
-        const constraints: PredicateRules = [basis]
-        if (def.divisor) {
-            if (basis.domain === "number") {
-                constraints.push(new DivisibilityNode(def.divisor))
-            } else {
-                return throwParseError(writeIndivisibleMessage(basis.domain))
+        const rules: PredicateRules = [basis]
+        for (const kind of constraintsByPrecedence) {
+            if (def[kind]) {
+                basis.assertAllowsConstraint(kind)
+                rules.push(createConstraint(kind, def[kind]))
             }
         }
-        if (def.range) {
-            if (
-                basis.domain === "string" ||
-                basis.domain === "number" ||
-                basis.hasConstructorExtending(Array, Date)
-            ) {
-                constraints.push(new RangeNode(def.range))
-            } else {
-                return throwParseError(writeUnboundableMessage(basis.domain))
-            }
-        }
-        if (def.regex) {
-            if (basis.domain === "string") {
-                constraints.push(new RegexNode(def.regex))
-            } else {
-                return throwParseError(
-                    mismatchDomainMessage("string", basis.domain, "regex")
-                )
-            }
-        }
-        if (def.props) {
-            if (basis.domain === "object") {
-                constraints.push(
-                    isArray(def.props)
-                        ? PropsNode.from(...def.props)
-                        : PropsNode.from(def.props)
-                )
-            } else {
-                return throwParseError(
-                    mismatchDomainMessage("object", basis.domain, "props")
-                )
-            }
-        }
-        return new PredicateNode<inferPredicateDefinition<def>>(constraints)
+        return new PredicateNode<inferPredicateDefinition<def>>(rules)
     }
 
     static compile(rules: PredicateRules) {
@@ -120,6 +85,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         return this.basis?.hasLevel("value") ? this.basis : undefined
     }
 
+    // TODO: fix to use same approach as others
     static intersect(l: PredicateNode, r: PredicateNode) {
         // if (
         //     // s.lastOperator === "&" &&
@@ -131,13 +97,13 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
         //     )
         // }
-        const basisResult = l.basis
+        const basis = l.basis
             ? r.basis
                 ? l.basis.intersect(r.basis)
                 : l.basis
             : r.basis
-        if (basisResult instanceof Disjoint) {
-            return basisResult
+        if (basis instanceof Disjoint) {
+            return basis
         }
         if (l.valueNode) {
             return r.allows(l.valueNode.getLiteralValue())
@@ -149,14 +115,14 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
                 ? r
                 : Disjoint.from("assignability", l, r.valueNode)
         }
-        const constraints = [...l.constraints]
+        const rules = [...l.constraints]
         for (let i = 0; i < r.constraints.length; i++) {
             const matchingIndex = l.constraints.findIndex(
                 (lConstraint) => lConstraint.kind === r.constraints[i].kind
             )
             if (matchingIndex === -1) {
                 // TODO: precedence
-                constraints.push(r.constraints[i])
+                rules.push(r.constraints[i])
             } else {
                 const constraintResult = l.constraints[matchingIndex].intersect(
                     r.constraints[i] as never
@@ -164,33 +130,49 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
                 if (constraintResult instanceof Disjoint) {
                     return constraintResult
                 }
-                constraints[matchingIndex] = constraintResult
+                rules[matchingIndex] = constraintResult
             }
         }
-        return new PredicateNode({
-            basis: basisResult,
-            constraints
-        })
+        if (basis) {
+            rules.unshift(basis as never)
+        }
+        return new PredicateNode(rules)
     }
 
-    constrain(input: PredicateNodeInput) {
-        const newConstraints = new constraintKinds[kind](input as any)
-        let includedKind = false
-        const constraints = this.rules.map((rule) => {
-            if (rule.kind === kind) {
-                includedKind = true
-                return newConstraints
+    assertAllowsConstraint(kind: ConstraintKind) {
+        if (!this.basis) {
+            if (kind !== "filter" && kind !== "morph") {
+                throwParseError(`Constraint`)
             }
-            return rule
-        }) as ConstraintNode[]
-        if (!includedKind) {
-            // TODO: add precedence
-            constraints.push(newConstraints as never)
+            return
         }
-        return new PredicateNode({
-            basis: this.basis,
-            constraints
-        })
+        return this.basis.assertAllowsConstraint(kind)
+    }
+
+    constrain<kind extends ConstraintKind>(
+        kind: kind,
+        input: ConstraintsInput[kind]
+    ) {
+        const newConstraintNode = new constraintKinds[kind](input as never)
+        const rules: PredicateRules = this.basis ? [this.basis] : []
+        for (const currentKind of constraintsByPrecedence) {
+            if (kind === currentKind) {
+                const existing = this.getConstraint(currentKind)
+                if (existing) {
+                    const result = existing.intersect(
+                        newConstraintNode as never
+                    )
+                    if (result instanceof Disjoint) {
+                        return throwParseError("Unsatisfiable")
+                    }
+                    rules.push(result)
+                } else {
+                    this.assertAllowsConstraint(currentKind)
+                    rules.push(newConstraintNode)
+                }
+            }
+        }
+        return new PredicateNode(rules)
     }
 
     pruneDiscriminant(path: string[], kind: DiscriminantKind): PredicateNode {
@@ -200,44 +182,53 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
                 // discriminate based on a domain, we can't prune it
                 return this
             }
-            return new PredicateNode({
-                basis: undefined,
-                constraints: this.rules
-            })
+            // create a new PredicateNode with the basis removed
+            return new PredicateNode(this.constraints)
         }
         const prunedProps = this.getConstraint("props")!.pruneDiscriminant(
             path,
             kind
         )
-        const basis = this.basis?.rule === "object" ? undefined : this.basis
-        const constraints: ConstraintNode[] = []
-        for (const constraint of this.rules) {
-            if (constraint.kind === "props") {
+        const rules: PredicateRules = []
+        for (const rule of this.rules) {
+            if (rule.kind === "basis") {
+                if (rule.rule !== "object") {
+                    rules.push(this.basis as never)
+                }
+            } else if (rule.kind === "props") {
                 if (prunedProps !== emptyPropsNode) {
-                    constraints.push(prunedProps)
+                    rules.push(prunedProps)
                 }
             } else {
-                constraints.push(constraint)
+                rules.push(rule)
             }
         }
-        return new PredicateNode({
-            basis,
-            constraints
-        })
+        return new PredicateNode(rules)
     }
 }
 
-const mismatchDomainMessage = (
-    expected: string,
-    actual: string,
-    constraint: string
-) => {
-    return `Domain must be ${expected} to apply a ${constraint} constraint (was ${actual})`
-}
+const constraintsByPrecedence = [
+    "divisor",
+    "range",
+    "regex",
+    "props",
+    "filter",
+    "morph"
+] as const satisfies List<ConstraintKind>
 
 export const unknownPredicateNode = new PredicateNode([])
 
 export type PredicateRules = [BasisNode, ...ConstraintNode[]] | ConstraintNode[]
+
+export const createConstraint = <kind extends ConstraintKind>(
+    kind: kind,
+    input: ConstraintsInput[kind]
+) =>
+    (kind === "props"
+        ? isArray(input)
+            ? PropsNode.from(...(input as PropsInputTuple))
+            : PropsNode.from(input as NamedPropsInput)
+        : new constraintKinds[kind](input as never)) as ConstraintNode<kind>
 
 export const constraintKinds = {
     range: RangeNode,
@@ -250,27 +241,30 @@ export const constraintKinds = {
 
 export type ConstraintsDefinition = Omit<PredicateNodeInput, "basis" | "morphs">
 
-export type ConstraintNode = instanceOf<ConstraintKinds[ConstraintKind]>
+export type ConstraintNode<kind extends ConstraintKind = ConstraintKind> =
+    instanceOf<ConstraintKinds[kind]>
 
 type ConstraintKinds = typeof constraintKinds
 
-type ConstraintEntry = {
-    [k in ConstraintKind]: [k, instanceOf<ConstraintKinds[k]>]
-}[ConstraintKind]
+export type RuleKind = "basis" | ConstraintKind
 
 export type ConstraintKind = keyof ConstraintKinds
 
 export type PredicateNodeInput<basis extends Basis = Basis> =
     | Record<string, never>
-    | ({
-          basis: basis
-      } & (Basis extends basis
-          ? {
-                [k in ConstraintKind]?: k extends "props"
-                    ? PropsInput
-                    : ConstructorParameters<ConstraintKinds[k]>[0]
-            }
-          : constraintsOf<basis>))
+    | evaluate<
+          {
+              basis: basis
+          } & ConstraintsInput<basis>
+      >
+
+export type ConstraintsInput<basis extends Basis = Basis> = Basis extends basis
+    ? {
+          [k in ConstraintKind]?: k extends "props"
+              ? PropsInput
+              : ConstructorParameters<ConstraintKinds[k]>[0]
+      }
+    : constraintsOf<basis>
 
 // TODO: migrate remaining inference
 export type inferPredicateDefinition<def extends PredicateNodeInput> =

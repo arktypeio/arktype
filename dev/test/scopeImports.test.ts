@@ -6,19 +6,26 @@ import { attest } from "../attest/main.js"
 suite("scope imports", () => {
     test("imports/includes", () => {
         const parent = scope({ definedInParent: "boolean" }).compile()
-        const aliases = {
-            reference: "definedInParent"
-        } as const
-        const imported = scope(aliases, { imports: [parent] })
+        const imported = scope(
+            {
+                reference: "definedInParent"
+            },
+            { imports: [parent] }
+        )
         attest(imported.infer).typed as {
             reference: boolean
         }
-        const included = scope(aliases, { includes: [parent] })
+        const included = scope(
+            {
+                reference: "definedInParent"
+            },
+            { includes: [parent] }
+        )
         attest(included.infer).typed as {
             reference: boolean
             definedInParent: boolean
         }
-        const importedTypes = imported.compile()
+        // const importedTypes = imported.compile()
         // attest(importedTypes.reference.node).equals({ boolean: true })
         // attest((importedTypes as any).definedInParent).equals(undefined)
         // const includedTypes = included.compile()
