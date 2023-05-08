@@ -16,7 +16,13 @@ import { DivisibilityNode } from "./divisibility.js"
 import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
 import { Node } from "./node.js"
-import type { NamedPropsInput, PropsInput, PropsInputTuple } from "./props.js"
+import type {
+    IndexedPropInput,
+    NamedPropsInput,
+    PropsInput,
+    PropsInputTuple,
+    PropTypeInput
+} from "./props.js"
 import { emptyPropsNode, PropsNode } from "./props.js"
 import type { Bounds } from "./range.js"
 import { RangeNode } from "./range.js"
@@ -288,7 +294,37 @@ type inferFilterArray<
     : evaluate<result>
 
 type inferNonFunctionalConstraints<input extends PredicateInput> =
-    input["basis"] extends Basis ? inferBasis<input["basis"]> : unknown
+    input["basis"] extends Basis
+        ? input["props"] extends [
+              infer named extends NamedPropsInput,
+              ...infer indexed extends IndexedPropInput[]
+          ]
+            ? inferNamedProps<named>
+            : input["props"] extends infer named extends NamedPropsInput
+            ? named
+            : inferBasis<input["basis"]>
+        : unknown
+
+type inferNamedProps<input extends NamedPropsInput> = evaluate<
+    {
+        [k in requiredKeyOf<input>]: inferPropValue<input[k]["value"]>
+    } & {
+        [k in optionalKeyOf<input>]?: inferPropValue<input[k]["value"]>
+    }
+>
+
+type inferPropValue<input extends PropTypeInput> = inferPredicateDefinition<
+    input extends readonly PredicateInput[] ? input[number] : input
+>
+
+type requiredKeyOf<input extends NamedPropsInput> = Exclude<
+    keyof input,
+    optionalKeyOf<input>
+>
+
+type optionalKeyOf<input extends NamedPropsInput> = {
+    [k in keyof input]: input[k]["kind"] extends "optional" ? k : never
+}[keyof input]
 
 type constraintsOf<basis extends Basis> = basis extends Domain
     ? functionalConstraints<inferDomain<basis>> & domainConstraints<basis>
