@@ -132,6 +132,8 @@ suite("node definitions", () => {
                 // @ts-expect-error
                 filter: (b: boolean) => b === true
             })
-        ).throws.snap()
+        ).throws.snap(
+            "Error: filter constraint may only be applied to a non-literal type (was true)"
+        )
     })
 })

@@ -31,7 +31,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
 
     constructor(public rules: PredicateRules) {
         super(PredicateNode, rules)
-        this.basis = rules[0].kind === "basis" ? rules[0] : undefined
+        this.basis = rules[0]?.kind === "basis" ? rules[0] : undefined
         this.constraints = (
             this.basis ? rules.slice(1) : rules
         ) as ConstraintNode[]
