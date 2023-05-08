@@ -7,6 +7,7 @@ import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
+import type { Key } from "../utils/records.js"
 import type { Basis, inferBasis } from "./basis.js"
 import { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
@@ -18,6 +19,7 @@ import { MorphNode } from "./morph.js"
 import { Node } from "./node.js"
 import type {
     IndexedPropInput,
+    IndexedPropsInput,
     NamedPropsInput,
     PropsInput,
     PropsInputTuple,
@@ -290,25 +292,35 @@ type inferNonFunctionalConstraints<input extends PredicateInput> =
     input["basis"] extends Basis
         ? input["props"] extends [
               infer named extends NamedPropsInput,
-              ...infer indexed extends IndexedPropInput[]
+              ...infer indexed extends IndexedPropsInput
           ]
-            ? inferNamedProps<named>
+            ? evaluate<inferNamedProps<named> & inferIndexedProps<indexed>>
             : input["props"] extends infer named extends NamedPropsInput
-            ? named
+            ? inferNamedProps<named>
             : inferBasis<input["basis"]>
         : unknown
 
 type inferNamedProps<input extends NamedPropsInput> = evaluate<
     {
-        [k in requiredKeyOf<input>]: inferPropValue<input[k]["value"]>
+        [k in requiredKeyOf<input>]: inferTypeInput<input[k]["value"]>
     } & {
-        [k in optionalKeyOf<input>]?: inferPropValue<input[k]["value"]>
+        [k in optionalKeyOf<input>]?: inferTypeInput<input[k]["value"]>
     }
 >
 
-type inferPropValue<input extends PropTypeInput> = inferPredicateDefinition<
+type inferTypeInput<input extends PropTypeInput> = inferPredicateDefinition<
     input extends readonly PredicateInput[] ? input[number] : input
 >
+
+type inferIndexedProps<
+    entries extends unknown[],
+    result = unknown
+> = entries extends [IndexedPropInput<infer k, infer v>, ...infer tail]
+    ? inferIndexedProps<
+          tail,
+          Record<Extract<inferTypeInput<k>, Key>, inferTypeInput<v>> & result
+      >
+    : result
 
 type requiredKeyOf<input extends NamedPropsInput> = Exclude<
     keyof input,

@@ -244,10 +244,10 @@ export type NamedProp = {
 
 export type NamedProps = Record<string, NamedProp>
 
-export type IndexedPropInput = [
-    keyType: PropTypeInput,
-    valueType: PropTypeInput
-]
+export type IndexedPropInput<
+    k extends PropTypeInput = PropTypeInput,
+    v extends PropTypeInput = PropTypeInput
+> = [keyType: k, valueType: v]
 
 export type IndexedPropsInput = IndexedPropInput[]
 
