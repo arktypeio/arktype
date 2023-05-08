@@ -1,4 +1,5 @@
 import type { Filter } from "../parse/ast/filter.js"
+import type { List } from "../utils/lists.js"
 import { intersectUniqueLists, listFrom } from "../utils/lists.js"
 import type { CompilationState } from "./compilation.js"
 import { Node } from "./node.js"
@@ -7,7 +8,7 @@ export class FilterNode extends Node<"filter"> {
     static readonly kind = "filter"
     predicates: readonly Filter[]
 
-    constructor(predicates: Filter | Filter[]) {
+    constructor(predicates: Filter | List<Filter>) {
         const predicateList = listFrom(predicates)
         super(FilterNode, predicateList)
         this.predicates = predicateList

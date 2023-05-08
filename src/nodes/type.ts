@@ -290,7 +290,6 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         definition: PredicateNodeInput[kind]
     ) {
         return new TypeNode(
-            // TODO: nevers?
             this.branches.map((branch) => branch.constrain(kind, definition))
         )
     }

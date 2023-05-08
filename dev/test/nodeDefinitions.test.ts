@@ -96,12 +96,39 @@ suite("node definitions", () => {
         )
         attest(t).typed as TypeNode<number | object | "foo" | "bar">
     })
+    test("filter predicate", () => {
+        const t = TypeNode.from({
+            basis: "string",
+            filter: (s): s is "foo" => s === "foo"
+        })
+        attest(t).typed as TypeNode<"foo">
+    })
+    test("filter predicate array", () => {
+        const t = TypeNode.from({
+            basis: "object",
+            filter: [
+                (o): o is { a: string } => typeof o.a === "string",
+                (o): o is { b: boolean } => typeof o.b === "boolean"
+            ] as const
+        })
+        attest(t).typed as TypeNode<{
+            a: string
+            b: boolean
+        }>
+    })
     test("morph", () => {
         const t = TypeNode.from({
             basis: "string",
             morph: (s: string) => s.length
         })
         attest(t).typed as TypeNode<(In: string) => number>
+    })
+    test("morph list", () => {
+        const t = TypeNode.from({
+            basis: "string",
+            morph: [(s: string) => s.length, (n: number) => ({ n })] as const
+        })
+        attest(t).typed as TypeNode<(In: string) => { n: number }>
     })
     test("never", () => {
         const t = TypeNode.from()
@@ -119,7 +146,7 @@ suite("node definitions", () => {
                 regex: "/.*/"
             })
         ).throws.snap(
-            "Error: Domain must be string to apply a regex constraint (was number)"
+            "Error: regex constraint may only be applied to a string (was number)"
         )
     })
     test("errors on filter literal", () => {

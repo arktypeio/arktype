@@ -1,9 +1,9 @@
-import type { Filter } from "../parse/ast/filter.js"
+import type { Filter, FilterPredicate } from "../parse/ast/filter.js"
 import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
 import { inferred } from "../parse/definition.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
-import type { evaluate } from "../utils/generics.js"
+import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
@@ -237,11 +237,13 @@ export type ConstraintKind = keyof ConstraintKinds
 
 export type PredicateNodeInput<basis extends Basis = Basis> =
     | Record<string, never>
-    | evaluate<
-          {
-              basis: basis
-          } & ConstraintsInput<basis>
-      >
+    | PredicateInputWithBasis<basis>
+
+type PredicateInputWithBasis<basis extends Basis = Basis> = evaluate<
+    {
+        basis: basis
+    } & ConstraintsInput<basis>
+>
 
 export type ConstraintsInput<basis extends Basis = Basis> = Basis extends basis
     ? {
@@ -251,15 +253,40 @@ export type ConstraintsInput<basis extends Basis = Basis> = Basis extends basis
       }
     : constraintsOf<basis>
 
-// TODO: migrate remaining inference
-export type inferPredicateDefinition<def extends PredicateNodeInput> =
-    def extends Record<string, never>
+export type inferPredicateDefinition<input extends PredicateNodeInput> =
+    input extends Record<string, never>
         ? unknown
-        : def["morph"] extends Morph<any, infer out>
-        ? (In: inferBasis<def["basis"]>) => inferMorphOut<out>
-        : def["morph"] extends [...any[], Morph<any, infer out>]
-        ? (In: inferBasis<def["basis"]>) => inferMorphOut<out>
-        : inferBasis<def["basis"]>
+        : input extends PredicateInputWithBasis
+        ? input["morph"] extends Morph<any, infer out>
+            ? (In: inferPredicateInput<input>) => inferMorphOut<out>
+            : input["morph"] extends readonly [...any[], Morph<any, infer out>]
+            ? (In: inferPredicateInput<input>) => inferMorphOut<out>
+            : inferPredicateInput<input>
+        : never
+
+type inferFilterArray<
+    filters extends List,
+    result = unknown
+> = filters extends readonly [infer head, ...infer tail]
+    ? inferFilterArray<
+          tail,
+          result &
+              (head extends FilterPredicate<any, infer narrowed>
+                  ? narrowed
+                  : unknown)
+      >
+    : evaluate<result>
+
+type inferPredicateInput<input extends PredicateInputWithBasis> =
+    input["filter"] extends FilterPredicate<any, infer narrowed>
+        ? narrowed
+        : input["filter"] extends List<Filter>
+        ? inferFilterArray<input["filter"]> extends infer result
+            ? isUnknown<result> extends true
+                ? inferBasis<input["basis"]>
+                : result
+            : never
+        : inferBasis<input["basis"]>
 
 type constraintsOf<basis extends Basis> = basis extends Domain
     ? functionalConstraints<inferDomain<basis>> & domainConstraints<basis>
@@ -287,8 +314,8 @@ type domainConstraints<basis extends Domain> = basis extends "object"
     : {}
 
 type functionalConstraints<input> = {
-    filter?: Filter<input>
-    morph?: Morph<input>
+    filter?: Filter<input> | List<Filter<input>>
+    morph?: Morph<input> | List<Morph<input>>
 }
 
 type classConstraints<base extends constructor> = base extends typeof Array
