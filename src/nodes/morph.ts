@@ -1,5 +1,5 @@
 import type { Morph } from "../parse/ast/morph.js"
-import type { List, listable } from "../utils/lists.js"
+import type { listable } from "../utils/lists.js"
 import { intersectUniqueLists, listFrom } from "../utils/lists.js"
 import type { CompilationState } from "./compilation.js"
 import { Node } from "./node.js"

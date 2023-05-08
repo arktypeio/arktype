@@ -19,18 +19,20 @@ import type {
 import { PredicateNode, unknownPredicateNode } from "./predicate.js"
 import { PropsNode } from "./props.js"
 
-type inferBranches<branches extends TypeNodeInput> = {
-    [i in keyof branches]: branches[i] extends PredicateInput
-        ? inferPredicateDefinition<branches[i]>
-        : branches[i] extends PredicateNode<infer t>
-        ? t
-        : never
+type inferBranches<branches extends BranchesInput> = {
+    [i in keyof branches]: inferPredicateDefinition<branches[i]>
 }[number]
 
-export type TypeNodeInput = List<PredicateInput>
+export type inferTypeInput<input extends TypeInput> = inferPredicateDefinition<
+    input extends BranchesInput ? input[number] : input
+>
+
+export type BranchesInput = List<PredicateInput>
+
+export type TypeInput = PredicateInput | BranchesInput
 
 type validatedTypeNodeInput<
-    branches extends TypeNodeInput,
+    branches extends BranchesInput,
     bases extends Basis[]
 > = {
     [i in keyof branches]: exact<
@@ -68,7 +70,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         this.discriminant = discriminant
     }
 
-    static from<branches extends TypeNodeInput>(
+    static from<branches extends BranchesInput>(
         ...branches: {
             [i in keyof branches]: conform<
                 branches[i],
