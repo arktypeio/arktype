@@ -13,7 +13,7 @@ import type { DiscriminantKind } from "./discriminate.js"
 import type { DisjointsSources } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
-import type { PredicateNodeInput } from "./predicate.js"
+import type { PredicateInput } from "./predicate.js"
 import type { TypeNodeInput } from "./type.js"
 import {
     neverTypeNode,
@@ -257,7 +257,7 @@ export type IndexedProps = IndexedProp[]
 
 export type PropKind = "required" | "optional" | "prerequisite"
 
-export type PropTypeInput = TypeNodeInput | PredicateNodeInput
+export type PropTypeInput = TypeNodeInput | PredicateInput
 
 export const arrayIndexInput = {
     basis: "string",

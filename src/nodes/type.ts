@@ -14,20 +14,20 @@ import { Node } from "./node.js"
 import type {
     ConstraintKind,
     inferPredicateDefinition,
-    PredicateNodeInput
+    PredicateInput
 } from "./predicate.js"
 import { PredicateNode, unknownPredicateNode } from "./predicate.js"
 import { PropsNode } from "./props.js"
 
 type inferBranches<branches extends TypeNodeInput> = {
-    [i in keyof branches]: branches[i] extends PredicateNodeInput
+    [i in keyof branches]: branches[i] extends PredicateInput
         ? inferPredicateDefinition<branches[i]>
         : branches[i] extends PredicateNode<infer t>
         ? t
         : never
 }[number]
 
-export type TypeNodeInput = List<PredicateNodeInput>
+export type TypeNodeInput = List<PredicateInput>
 
 type validatedTypeNodeInput<
     branches extends TypeNodeInput,
@@ -35,7 +35,7 @@ type validatedTypeNodeInput<
 > = {
     [i in keyof branches]: exact<
         branches[i],
-        PredicateNodeInput<bases[i & keyof bases]>
+        PredicateInput<bases[i & keyof bases]>
     >
 }
 
@@ -287,7 +287,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
 
     constrain<kind extends ConstraintKind>(
         kind: kind,
-        definition: PredicateNodeInput[kind]
+        definition: PredicateInput[kind]
     ) {
         return new TypeNode(
             this.branches.map((branch) => branch.constrain(kind, definition))
