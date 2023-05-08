@@ -38,11 +38,6 @@ export const wellFormedIntegerMatcher = /^(?:0|(?:-?[1-9]\d*))$/
 export const isWellFormedInteger = (s: string) =>
     wellFormedIntegerMatcher.test(s)
 
-export const wellFormedNonNegativeIntegerMatcherSource = `^(?:0|(?:[1-9]\\d*))$`
-export const wellFormedNonNegativeIntegerMatcher = new RegExp(
-    wellFormedNonNegativeIntegerMatcherSource
-)
-
 const integerLikeMatcher = /^-?\d+$/
 const isIntegerLike = (s: string) => integerLikeMatcher.test(s)
 

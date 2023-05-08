@@ -1,7 +1,6 @@
 import { throwInternalError } from "../utils/errors.js"
 import type { evaluate } from "../utils/generics.js"
 import type { HomogenousTuple } from "../utils/lists.js"
-import { wellFormedNonNegativeIntegerMatcherSource } from "../utils/numericLiterals.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { Key, mutable } from "../utils/records.js"
 import { hasKeys } from "../utils/records.js"
@@ -17,8 +16,8 @@ import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
 import type { inferTypeInput, TypeInput } from "./type.js"
 import {
+    arrayIndexTypeNode,
     neverTypeNode,
-    numericArrayIndexTypeNode,
     TypeNode,
     unknownTypeNode
 } from "./type.js"
@@ -62,10 +61,7 @@ export class PropsNode extends Node<"props"> {
             checks.push(this.#compileNamedProp(k, named[k]))
         }
         if (indexed.length) {
-            if (
-                indexed.length === 1 &&
-                indexed[0][0] === numericArrayIndexTypeNode
-            ) {
+            if (indexed.length === 1 && indexed[0][0] === arrayIndexTypeNode) {
                 checks.push(PropsNode.#compileArray(indexed[0][1]))
             } else {
                 return throwInternalError(`Unexpected index types`)
@@ -251,9 +247,25 @@ export type IndexedNodeEntry = [keyType: TypeNode, valueType: TypeNode]
 
 export type PropKind = "required" | "optional" | "prerequisite"
 
+const arrayIndexMatcherSource = `(?:0|(?:[1-9]\\d*))`
+const nonVariadicIndexMatcherSource = `^${arrayIndexMatcherSource}$` as const
+
+export const arrayIndexMatcher = (firstVariadic = 0) => {
+    if (firstVariadic === 0) {
+        // If the variadic pattern starts at index 0, return the base array index matcher
+        return nonVariadicIndexMatcherSource
+    }
+    // Otherwise, build a pattern to exclude all indices from 0 to firstVariadic - 1
+    let excludedIndices = "^0$"
+    for (let i = 1; i < firstVariadic; i++) {
+        excludedIndices += `|^${i}$`
+    }
+    return `^(?!(${excludedIndices}))(?:0|(?:[1-9]\\d*))$`
+}
+
 export const arrayIndexInput = {
     basis: "string",
-    regex: wellFormedNonNegativeIntegerMatcherSource
+    regex: nonVariadicIndexMatcherSource
 } as const
 
 type ArrayIndexInput = typeof arrayIndexInput
@@ -320,11 +332,7 @@ type optionalKeyOf<input extends NamedInput> = {
 }[keyof input]
 
 const typeNodeFromPropInput = (input: TypeInput) =>
-    input instanceof TypeNode
-        ? input
-        : isArray(input)
-        ? TypeNode.from(...input)
-        : TypeNode.from(input)
+    isArray(input) ? TypeNode.from(...input) : TypeNode.from(input)
 
 // const keysOfPredicate = (kind: Domain, predicate: Predicate) =>
 //     domain !== "object" || predicate === true

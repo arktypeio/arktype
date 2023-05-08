@@ -3,7 +3,6 @@ import type { inferIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
 import type { conform, exact } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
-import { wellFormedNonNegativeIntegerMatcher } from "../utils/numericLiterals.js"
 import type { Basis } from "./basis.js"
 import { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
@@ -17,7 +16,7 @@ import type {
     PredicateInput
 } from "./predicate.js"
 import { PredicateNode, unknownPredicateNode } from "./predicate.js"
-import { PropsNode } from "./props.js"
+import { arrayIndexMatcher, PropsNode } from "./props.js"
 
 type inferBranches<branches extends BranchesInput> = {
     [i in keyof branches]: inferPredicateDefinition<branches[i]>
@@ -367,16 +366,7 @@ export const arrayBasisNode = new BasisNode(Array)
 
 export const arrayIndexTypeNode = TypeNode.from({
     basis: "string",
-    regex: wellFormedNonNegativeIntegerMatcher.source
-})
-
-// TODO: fix TypeNode autocomplete
-export const numericArrayIndexTypeNode = TypeNode.from({
-    basis: "number",
-    divisor: 1,
-    range: {
-        ">=": 0
-    }
+    regex: arrayIndexMatcher()
 })
 
 export const neverTypeNode = new TypeNode([])
