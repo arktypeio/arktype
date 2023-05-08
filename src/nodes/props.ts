@@ -268,7 +268,7 @@ const excludedIndicesSource = (firstVariadic: number) => {
             `Unexpectedly tried to create a variadic index < 1 (was ${firstVariadic})`
         )
     }
-    let excludedIndices = `^${firstVariadic - 1}`
+    let excludedIndices = `${firstVariadic - 1}`
     for (let i = firstVariadic - 2; i >= 0; i--) {
         excludedIndices += `|${i}`
     }
@@ -276,8 +276,6 @@ const excludedIndicesSource = (firstVariadic: number) => {
 }
 
 const nonVariadicIndexMatcherSource = `^${arrayIndexMatcherSuffix}` as const
-
-type NonVariadicIndexMatcherSource = typeof nonVariadicIndexMatcherSource
 
 export const createArrayIndexMatcher = (firstVariadic = 0) => {
     if (firstVariadic === 0) {
@@ -306,9 +304,16 @@ const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
     if (!source.startsWith(excludedIndexMatcherStart)) {
         return 0
     }
-    return tryParseWellFormedInteger(
-        source.slice(excludedIndexMatcherStart.length),
-        `Unexpectedly failed to parse a variadic index from ${source}`
+    const excludedIndices = source.slice(
+        excludedIndexMatcherStart.length,
+        source.indexOf(excludedIndexMatcherEnd)
+    )
+    const firstExcludedIndex = excludedIndices.split("|")[0]
+    return (
+        tryParseWellFormedInteger(
+            firstExcludedIndex,
+            `Unexpectedly failed to parse a variadic index from ${source}`
+        ) + 1
     )
 }
 
@@ -348,7 +353,7 @@ type inferNamedAndIndexed<
           named,
           tail,
           result &
-              (entry[0] extends { regex: NonVariadicIndexMatcherSource }
+              (entry[0] extends { regex: ArrayIndexMatcherSource }
                   ? inferArray<named, entry[1]>
                   : Record<
                         Extract<inferTypeInput<entry[0]>, Key>,

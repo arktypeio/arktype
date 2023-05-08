@@ -27,6 +27,7 @@ suite("tuple", () => {
         test("spreads simple arrays", () => {
             const wellRested = type(["string", "...number[]"])
             attest(wellRested.infer).typed as [string, ...number[]]
+            attest(wellRested.root.key).snap()
         })
         test("tuple expression", () => {
             const wellRestedTuple = type([

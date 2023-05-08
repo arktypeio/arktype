@@ -357,7 +357,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     }
 
     array(): TypeNode<t[]> {
-        const props = new PropsNode([{}, [[arrayIndexTypeNode, this]]])
+        const props = new PropsNode([{}, [[nonVariadicArrayTypeNode, this]]])
         const predicate = new PredicateNode([arrayBasisNode, props])
         return new TypeNode([predicate])
     }
@@ -374,10 +374,10 @@ export const arrayIndexInput = (firstVariadicIndex = 0) =>
         regex: createArrayIndexMatcher(firstVariadicIndex)
     } as const satisfies PredicateInput<"string">)
 
-export const arrayIndexTypeNode = TypeNode.from({
-    basis: "string",
-    regex: createArrayIndexMatcher()
-})
+export const arrayIndexTypeNode = (firstVariadicIndex = 0) =>
+    TypeNode.from(arrayIndexInput(firstVariadicIndex))
+
+const nonVariadicArrayTypeNode = arrayIndexTypeNode()
 
 export const neverTypeNode = new TypeNode([])
 
