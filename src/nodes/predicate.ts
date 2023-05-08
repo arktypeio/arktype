@@ -85,7 +85,6 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         return this.basis?.hasLevel("value") ? this.basis : undefined
     }
 
-    // TODO: fix to use same approach as others
     static intersect(l: PredicateNode, r: PredicateNode) {
         // if (
         //     // s.lastOperator === "&" &&
@@ -97,6 +96,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
         //     )
         // }
+
         const basis = l.basis
             ? r.basis
                 ? l.basis.intersect(r.basis)
@@ -115,26 +115,23 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
                 ? r
                 : Disjoint.from("assignability", l, r.valueNode)
         }
-        const rules = [...l.constraints]
-        for (let i = 0; i < r.constraints.length; i++) {
-            const matchingIndex = l.constraints.findIndex(
-                (lConstraint) => lConstraint.kind === r.constraints[i].kind
-            )
-            if (matchingIndex === -1) {
-                // TODO: precedence
-                rules.push(r.constraints[i])
-            } else {
-                const constraintResult = l.constraints[matchingIndex].intersect(
-                    r.constraints[i] as never
-                )
-                if (constraintResult instanceof Disjoint) {
-                    return constraintResult
+        const rules: PredicateRules = basis ? [basis] : []
+        for (const kind of constraintsByPrecedence) {
+            const lNode = l.getConstraint(kind)
+            const rNode = r.getConstraint(kind)
+            if (lNode) {
+                if (rNode) {
+                    const result = lNode.intersect(rNode as never)
+                    if (result instanceof Disjoint) {
+                        return result
+                    }
+                    rules.push(result)
+                } else {
+                    rules.push(lNode)
                 }
-                rules[matchingIndex] = constraintResult
+            } else if (rNode) {
+                rules.push(rNode)
             }
-        }
-        if (basis) {
-            rules.unshift(basis as never)
         }
         return new PredicateNode(rules)
     }
@@ -142,7 +139,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
     assertAllowsConstraint(kind: ConstraintKind) {
         if (!this.basis) {
             if (kind !== "filter" && kind !== "morph") {
-                throwParseError(`Constraint`)
+                throwParseError(`${kind} constraint requires a basis`)
             }
             return
         }
@@ -153,26 +150,14 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         kind: kind,
         input: ConstraintsInput[kind]
     ) {
-        const newConstraintNode = new constraintKinds[kind](input as never)
-        const rules: PredicateRules = this.basis ? [this.basis] : []
-        for (const currentKind of constraintsByPrecedence) {
-            if (kind === currentKind) {
-                const existing = this.getConstraint(currentKind)
-                if (existing) {
-                    const result = existing.intersect(
-                        newConstraintNode as never
-                    )
-                    if (result instanceof Disjoint) {
-                        return throwParseError("Unsatisfiable")
-                    }
-                    rules.push(result)
-                } else {
-                    this.assertAllowsConstraint(currentKind)
-                    rules.push(newConstraintNode)
-                }
-            }
+        this.assertAllowsConstraint(kind)
+        const result = this.intersect(
+            new PredicateNode([createConstraint(kind, input)])
+        )
+        if (result instanceof Disjoint) {
+            return throwParseError("Unsatisfiable")
         }
-        return new PredicateNode(rules)
+        return result
     }
 
     pruneDiscriminant(path: string[], kind: DiscriminantKind): PredicateNode {
