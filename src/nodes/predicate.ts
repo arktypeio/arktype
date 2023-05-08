@@ -4,7 +4,7 @@ import { inferred } from "../parse/definition.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type { evaluate, isUnknown } from "../utils/generics.js"
-import type { List, listable } from "../utils/lists.js"
+import type { HomogenousTuple, List, listable } from "../utils/lists.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { Key } from "../utils/records.js"
@@ -18,6 +18,7 @@ import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
 import { Node } from "./node.js"
 import type {
+    arrayIndexInput,
     IndexedPropInput,
     IndexedPropsInput,
     NamedPropsInput,
@@ -294,33 +295,61 @@ type inferNonFunctionalConstraints<input extends PredicateInput> =
               infer named extends NamedPropsInput,
               ...infer indexed extends IndexedPropsInput
           ]
-            ? evaluate<inferNamedProps<named> & inferIndexedProps<indexed>>
+            ? evaluate<
+                  inferNamedProps<named> & inferNamedAndIndexed<named, indexed>
+              >
             : input["props"] extends infer named extends NamedPropsInput
             ? inferNamedProps<named>
             : inferBasis<input["basis"]>
         : unknown
 
-type inferNamedProps<input extends NamedPropsInput> = evaluate<
-    {
-        [k in requiredKeyOf<input>]: inferTypeInput<input[k]["value"]>
-    } & {
-        [k in optionalKeyOf<input>]?: inferTypeInput<input[k]["value"]>
-    }
->
+type inferNamedProps<input extends NamedPropsInput> = {} extends input
+    ? unknown
+    : // Avoid iterating over prototype keys of tuple
+    [keyof input, input] extends ["length", TupleLengthProps]
+    ? unknown
+    : evaluate<
+          {
+              [k in requiredKeyOf<input>]: inferTypeInput<input[k]["value"]>
+          } & {
+              [k in optionalKeyOf<input>]?: inferTypeInput<input[k]["value"]>
+          }
+      >
 
 type inferTypeInput<input extends PropTypeInput> = inferPredicateDefinition<
     input extends readonly PredicateInput[] ? input[number] : input
 >
 
-type inferIndexedProps<
+type ArrayIndexInput = typeof arrayIndexInput
+
+type TupleLengthProps<length extends number = number> = {
+    length: {
+        kind: "prerequisite"
+        value: { basis: ["===", length] }
+    }
+}
+
+type inferNamedAndIndexed<
+    named extends NamedPropsInput,
     entries extends unknown[],
-    result = unknown
+    result = inferNamedProps<named>
 > = entries extends [IndexedPropInput<infer k, infer v>, ...infer tail]
-    ? inferIndexedProps<
+    ? inferNamedAndIndexed<
+          named,
           tail,
-          Record<Extract<inferTypeInput<k>, Key>, inferTypeInput<v>> & result
+          result &
+              (k extends ArrayIndexInput
+                  ? inferArray<named, v>
+                  : Record<Extract<inferTypeInput<k>, Key>, inferTypeInput<v>>)
       >
     : result
+
+type inferArray<
+    named extends NamedPropsInput,
+    elementDef extends PropTypeInput
+> = named extends TupleLengthProps<infer length>
+    ? HomogenousTuple<inferTypeInput<elementDef>, length>
+    : inferTypeInput<elementDef>[]
 
 type requiredKeyOf<input extends NamedPropsInput> = Exclude<
     keyof input,
