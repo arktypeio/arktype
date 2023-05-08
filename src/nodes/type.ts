@@ -3,6 +3,7 @@ import type { inferIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
 import type { conform, exact } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
+import { isArray } from "../utils/objectKinds.js"
 import type { Basis } from "./basis.js"
 import { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
@@ -16,7 +17,7 @@ import type {
     PredicateInput
 } from "./predicate.js"
 import { PredicateNode, unknownPredicateNode } from "./predicate.js"
-import { arrayIndexMatcher, PropsNode } from "./props.js"
+import { createArrayIndexMatcher, PropsNode } from "./props.js"
 
 type inferBranches<branches extends BranchesInput> = {
     [i in keyof branches]: inferPredicateDefinition<branches[i]>
@@ -362,11 +363,20 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     }
 }
 
+export const typeNodeFromInput = (input: TypeInput) =>
+    isArray(input) ? TypeNode.from(...input) : TypeNode.from(input)
+
 export const arrayBasisNode = new BasisNode(Array)
+
+export const arrayIndexInput = (firstVariadicIndex = 0) =>
+    ({
+        basis: "string",
+        regex: createArrayIndexMatcher(firstVariadicIndex)
+    } as const satisfies PredicateInput<"string">)
 
 export const arrayIndexTypeNode = TypeNode.from({
     basis: "string",
-    regex: arrayIndexMatcher()
+    regex: createArrayIndexMatcher()
 })
 
 export const neverTypeNode = new TypeNode([])

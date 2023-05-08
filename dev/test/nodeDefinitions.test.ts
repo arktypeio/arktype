@@ -1,6 +1,6 @@
 import { suite, test } from "mocha"
 import { TypeNode } from "../../src/main.js"
-import { arrayIndexInput } from "../../src/nodes/props.js"
+import { arrayIndexInput } from "../../src/nodes/type.js"
 import { attest, getTsVersionUnderTest } from "../attest/main.js"
 
 suite("node definitions", () => {
@@ -49,7 +49,7 @@ suite("node definitions", () => {
             props: [
                 {},
                 [
-                    arrayIndexInput,
+                    arrayIndexInput(),
                     {
                         basis: "object",
                         props: {
@@ -75,7 +75,7 @@ suite("node definitions", () => {
                     }
                 },
                 [
-                    arrayIndexInput,
+                    arrayIndexInput(),
                     {
                         basis: "string"
                     }

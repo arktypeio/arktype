@@ -1,7 +1,7 @@
 import { throwInternalError } from "../utils/errors.js"
 import type { evaluate } from "../utils/generics.js"
 import type { HomogenousTuple } from "../utils/lists.js"
-import { isArray } from "../utils/objectKinds.js"
+import { tryParseWellFormedInteger } from "../utils/numericLiterals.js"
 import type { Key, mutable } from "../utils/records.js"
 import { hasKeys } from "../utils/records.js"
 import {
@@ -14,11 +14,12 @@ import type { DiscriminantKind } from "./discriminate.js"
 import type { DisjointsSources } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
+import type { PredicateInput } from "./predicate.js"
 import type { inferTypeInput, TypeInput } from "./type.js"
 import {
-    arrayIndexTypeNode,
     neverTypeNode,
     TypeNode,
+    typeNodeFromInput,
     unknownTypeNode
 } from "./type.js"
 
@@ -42,13 +43,13 @@ export class PropsNode extends Node<"props"> {
         for (const k in namedInput) {
             named[k] = {
                 kind: namedInput[k].kind,
-                value: typeNodeFromPropInput(namedInput[k].value)
+                value: typeNodeFromInput(namedInput[k].value)
             }
         }
         const indexed: IndexedNodeEntry[] = indexedInput.map(
             ([keyInput, valueInput]) => [
-                typeNodeFromPropInput(keyInput),
-                typeNodeFromPropInput(valueInput)
+                TypeNode.from(keyInput),
+                typeNodeFromInput(valueInput)
             ]
         )
         return new PropsNode([named, indexed])
@@ -60,12 +61,9 @@ export class PropsNode extends Node<"props"> {
         for (const k of names) {
             checks.push(this.#compileNamedProp(k, named[k]))
         }
-        if (indexed.length) {
-            if (indexed.length === 1 && indexed[0][0] === arrayIndexTypeNode) {
-                checks.push(PropsNode.#compileArray(indexed[0][1]))
-            } else {
-                return throwInternalError(`Unexpected index types`)
-            }
+        // TODO: sort indices
+        for (const entry of indexed) {
+            checks.push(PropsNode.#compileIndexedEntry(entry))
         }
         return checks.join(" && ") || "true"
     }
@@ -80,13 +78,18 @@ export class PropsNode extends Node<"props"> {
             : valueCheck
     }
 
-    static #compileArray(elementType: TypeNode) {
-        const elementCondition = elementType.key
+    static #compileIndexedEntry(entry: IndexedNodeEntry) {
+        const keySource = extractIndexKeyRegex(entry[0])
+        if (!keySource) {
+            return throwInternalError(`Unexpected index type ${entry[0].key}`)
+        }
+        const firstVariadicIndex = extractFirstVariadicIndex(keySource)
+        const elementCondition = entry[1].key
             .replaceAll(IndexIn, `${IndexIn}Inner`)
             .replaceAll(In, `${In}[${IndexIn}]`)
         const result = `(() => {
             let valid = true;
-            for(let ${IndexIn} = 0; ${IndexIn} < ${In}.length; ${IndexIn}++) {
+            for(let ${IndexIn} = ${firstVariadicIndex}; ${IndexIn} < ${In}.length; ${IndexIn}++) {
                 valid = ${elementCondition} && valid;
             }
             return valid
@@ -106,6 +109,7 @@ export class PropsNode extends Node<"props"> {
     }
 
     static intersect(l: PropsNode, r: PropsNode) {
+        // TODO: improve variadic intersections
         const indexed = [...l.indexed]
         for (const [rKey, rValue] of r.indexed) {
             const matchingIndex = indexed.findIndex(([lKey]) => lKey === rKey)
@@ -241,34 +245,72 @@ export type NamedNode = {
 
 export type NamedNodes = Record<string, NamedNode>
 
-export type IndexedInputEntry = [keyType: TypeInput, valueType: TypeInput]
+export type IndexedInputEntry = [
+    keyType: PredicateInput<"string">,
+    valueType: TypeInput
+]
 
-export type IndexedNodeEntry = [keyType: TypeNode, valueType: TypeNode]
+export type IndexedNodeEntry = [keyType: TypeNode<string>, valueType: TypeNode]
 
 export type PropKind = "required" | "optional" | "prerequisite"
 
-const arrayIndexMatcherSource = `(?:0|(?:[1-9]\\d*))`
-const nonVariadicIndexMatcherSource = `^${arrayIndexMatcherSource}$` as const
+const arrayIndexMatcherSuffix = `(?:0|(?:[1-9]\\d*))$`
 
-export const arrayIndexMatcher = (firstVariadic = 0) => {
+type ArrayIndexMatcherSource = `${string}${typeof arrayIndexMatcherSuffix}`
+
+const excludedIndexMatcherStart = "^(?!("
+const excludedIndexMatcherEnd = ")$)"
+
+// Build a pattern to exclude all indices from firstVariadic - 1 down to 0
+const excludedIndicesSource = (firstVariadic: number) => {
+    if (firstVariadic < 1) {
+        return throwInternalError(
+            `Unexpectedly tried to create a variadic index < 1 (was ${firstVariadic})`
+        )
+    }
+    let excludedIndices = `^${firstVariadic - 1}`
+    for (let i = firstVariadic - 2; i >= 0; i--) {
+        excludedIndices += `|${i}`
+    }
+    return `${excludedIndexMatcherStart}${excludedIndices}${excludedIndexMatcherEnd}${arrayIndexMatcherSuffix}` as const
+}
+
+const nonVariadicIndexMatcherSource = `^${arrayIndexMatcherSuffix}` as const
+
+type NonVariadicIndexMatcherSource = typeof nonVariadicIndexMatcherSource
+
+export const createArrayIndexMatcher = (firstVariadic = 0) => {
     if (firstVariadic === 0) {
         // If the variadic pattern starts at index 0, return the base array index matcher
         return nonVariadicIndexMatcherSource
     }
-    // Otherwise, build a pattern to exclude all indices from 0 to firstVariadic - 1
-    let excludedIndices = "^0$"
-    for (let i = 1; i < firstVariadic; i++) {
-        excludedIndices += `|^${i}$`
-    }
-    return `^(?!(${excludedIndices}))(?:0|(?:[1-9]\\d*))$`
+    return excludedIndicesSource(firstVariadic)
 }
 
-export const arrayIndexInput = {
-    basis: "string",
-    regex: nonVariadicIndexMatcherSource
-} as const
+const extractIndexKeyRegex = (keyNode: TypeNode<string>) => {
+    if (keyNode.branches.length !== 1) {
+        return
+    }
+    const regexNode = keyNode.branches[0].getConstraint("regex")
+    if (!regexNode || regexNode.sources.length !== 1) {
+        return
+    }
+    const source = regexNode.sources[0]
+    if (!source.endsWith(arrayIndexMatcherSuffix)) {
+        return
+    }
+    return source as ArrayIndexMatcherSource
+}
 
-type ArrayIndexInput = typeof arrayIndexInput
+const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
+    if (!source.startsWith(excludedIndexMatcherStart)) {
+        return 0
+    }
+    return tryParseWellFormedInteger(
+        source.slice(excludedIndexMatcherStart.length),
+        `Unexpectedly failed to parse a variadic index from ${source}`
+    )
+}
 
 type inferNamedProps<input extends NamedInput> = {} extends input
     ? unknown
@@ -306,7 +348,7 @@ type inferNamedAndIndexed<
           named,
           tail,
           result &
-              (entry[0] extends ArrayIndexInput
+              (entry[0] extends { regex: NonVariadicIndexMatcherSource }
                   ? inferArray<named, entry[1]>
                   : Record<
                         Extract<inferTypeInput<entry[0]>, Key>,
@@ -330,9 +372,6 @@ type requiredKeyOf<input extends NamedInput> = Exclude<
 type optionalKeyOf<input extends NamedInput> = {
     [k in keyof input]: input[k]["kind"] extends "optional" ? k : never
 }[keyof input]
-
-const typeNodeFromPropInput = (input: TypeInput) =>
-    isArray(input) ? TypeNode.from(...input) : TypeNode.from(input)
 
 // const keysOfPredicate = (kind: Domain, predicate: Predicate) =>
 //     domain !== "object" || predicate === true
