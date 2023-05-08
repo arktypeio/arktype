@@ -52,20 +52,11 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
     static from<input extends PredicateInput>(
         input: input
     ): PredicateNode<inferPredicateDefinition<input>> {
-        if (input.basis === undefined) {
-            const keys = Object.keys(input)
-            // TODO: filter/morph
-            return keys.length === 0
-                ? (unknownPredicateNode as never)
-                : throwParseError(
-                      `Predicate must specify a basis key to specify others (got ${keys})`
-                  )
-        }
-        const basis = new BasisNode(input.basis)
-        const rules: PredicateRules = [basis]
+        const basis = input.basis && new BasisNode(input.basis)
+        const rules: PredicateRules = basis ? [basis] : []
         for (const kind of constraintsByPrecedence) {
             if (input[kind]) {
-                basis.assertAllowsConstraint(kind)
+                assertAllowsConstraint(basis, kind)
                 rules.push(createConstraint(kind, input[kind]))
             }
         }
@@ -105,7 +96,6 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
         //     )
         // }
-
         const basis = l.basis
             ? r.basis
                 ? l.basis.intersect(r.basis)
@@ -145,21 +135,11 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         return new PredicateNode(rules)
     }
 
-    assertAllowsConstraint(kind: ConstraintKind) {
-        if (!this.basis) {
-            if (kind !== "filter" && kind !== "morph") {
-                throwParseError(`${kind} constraint requires a basis`)
-            }
-            return
-        }
-        return this.basis.assertAllowsConstraint(kind)
-    }
-
     constrain<kind extends ConstraintKind>(
         kind: kind,
         input: ConstraintsInput[kind]
     ) {
-        this.assertAllowsConstraint(kind)
+        assertAllowsConstraint(this.basis, kind)
         const result = this.intersect(
             new PredicateNode([createConstraint(kind, input)])
         )
@@ -199,6 +179,19 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         }
         return new PredicateNode(rules)
     }
+}
+
+const assertAllowsConstraint = (
+    basis: BasisNode | undefined,
+    kind: ConstraintKind
+) => {
+    if (basis === undefined) {
+        if (kind !== "filter" && kind !== "morph") {
+            throwParseError(`${kind} constraint requires a basis`)
+        }
+        return
+    }
+    return basis.assertAllowsConstraint(kind)
 }
 
 const constraintsByPrecedence = [
