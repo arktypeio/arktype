@@ -4,7 +4,7 @@ import { inferred } from "../parse/definition.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type { evaluate, isUnknown } from "../utils/generics.js"
-import type { List } from "../utils/lists.js"
+import type { List, listable } from "../utils/lists.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { Basis, inferBasis } from "./basis.js"
@@ -303,7 +303,7 @@ type domainConstraints<basis extends Domain> = basis extends "object"
       }
     : basis extends "string"
     ? {
-          regex?: string | string[]
+          regex?: listable<string>
           range?: Bounds
       }
     : basis extends "number"
@@ -314,8 +314,8 @@ type domainConstraints<basis extends Domain> = basis extends "object"
     : {}
 
 type functionalConstraints<input> = {
-    filter?: Filter<input> | List<Filter<input>>
-    morph?: Morph<input> | List<Morph<input>>
+    filter?: listable<Filter<input>>
+    morph?: listable<Morph<input>>
 }
 
 type classConstraints<base extends constructor> = base extends typeof Array

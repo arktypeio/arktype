@@ -1,13 +1,14 @@
 import { throwInternalError } from "../utils/errors.js"
+import type { listable } from "../utils/lists.js"
 import { intersectUniqueLists, listFrom } from "../utils/lists.js"
 import { type CompilationState, In } from "./compilation.js"
 import { Node } from "./node.js"
 
 export class RegexNode extends Node<"regex"> {
     static readonly kind = "regex"
-    sources: string[]
+    sources: readonly string[]
 
-    constructor(sources: string | string[]) {
+    constructor(sources: listable<string>) {
         const sourceList = listFrom(sources)
         if (sourceList.length === 0) {
             throwInternalError(`Unexpectedly received empty regex list`)
@@ -16,8 +17,11 @@ export class RegexNode extends Node<"regex"> {
         this.sources = sourceList
     }
 
-    static compile(sources: string[]) {
-        return sources.sort().map(RegexNode.#compileExpression).join(" && ")
+    static compile(sources: readonly string[]) {
+        return [...sources]
+            .sort()
+            .map(RegexNode.#compileExpression)
+            .join(" && ")
     }
 
     static #compileExpression(source: string) {

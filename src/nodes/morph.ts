@@ -1,5 +1,5 @@
 import type { Morph } from "../parse/ast/morph.js"
-import type { List } from "../utils/lists.js"
+import type { List, listable } from "../utils/lists.js"
 import { intersectUniqueLists, listFrom } from "../utils/lists.js"
 import type { CompilationState } from "./compilation.js"
 import { Node } from "./node.js"
@@ -9,7 +9,7 @@ export class MorphNode extends Node<"morph"> {
 
     transformations: readonly Morph[]
 
-    constructor(transformations: Morph | List<Morph>) {
+    constructor(transformations: listable<Morph>) {
         const transformationList = listFrom(transformations)
         super(MorphNode, transformationList)
         this.transformations = transformationList

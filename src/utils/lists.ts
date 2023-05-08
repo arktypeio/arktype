@@ -59,6 +59,8 @@ export const intersectUniqueLists = <item>(
 
 export type List<t = unknown> = readonly t[]
 
+export type listable<t> = t | readonly t[]
+
 export type arraySubclassToReadonly<t extends unknown[]> =
     readonly t[number][] & {
         [k in Exclude<keyof t, keyof unknown[]>]: t[k]
