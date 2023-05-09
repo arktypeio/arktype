@@ -30,6 +30,7 @@ export class PropsNode extends Node<"props"> {
     named: NamedNodes
     indexed: IndexedNodeEntry[]
 
+    // TODO: Switch to namedNodeEntries so can preserve sorted order
     constructor([named, indexed]: [
         named: NamedNodes,
         indexed: IndexedNodeEntry[]
@@ -47,6 +48,7 @@ export class PropsNode extends Node<"props"> {
                 ? 1
                 : -1
         })
+        // TODO: this is a lie because of numeric keys
         // JS objects preserve insertion order, so we can count on iterating
         // over the keys in the same order.
         const sortedNamed: mutable<NamedNodes> = {}
@@ -82,7 +84,7 @@ export class PropsNode extends Node<"props"> {
     static compile(named: NamedNodes, indexed: IndexedNodeEntry[]) {
         const checks: string[] = []
         for (const k in named) {
-            checks.push(this.#compileNamedProp(k, named[k]))
+            checks.push(PropsNode.#compileNamedProp(k, named[k]))
         }
         for (const entry of indexed) {
             checks.push(PropsNode.#compileIndexedEntry(entry))

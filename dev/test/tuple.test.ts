@@ -10,6 +10,9 @@ suite("tuple", () => {
     test("shallow", () => {
         const t = type(["string", "number"])
         attest(t.infer).typed as [string, number]
+        attest(t.root.key).snap(
+            '$arkRoot instanceof Array && typeof $arkRoot["0"] === "string" && typeof $arkRoot["1"] === "number" && $arkRoot.length === 2'
+        )
     })
     test("nested", () => {
         const t = type([["string", "number"], [{ a: "boolean", b: ["null"] }]])
