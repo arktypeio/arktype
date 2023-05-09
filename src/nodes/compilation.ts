@@ -2,6 +2,7 @@ import type { TypeConfig } from "../type.js"
 import { type Domain, hasDomain } from "../utils/domains.js"
 import type { Segments } from "../utils/lists.js"
 import { Path } from "../utils/lists.js"
+import type { Key } from "../utils/records.js"
 import type { SerializablePrimitive } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
@@ -20,7 +21,7 @@ export const In = "$arkRoot"
 
 export const IndexIn = "$arkIndex"
 
-export const prependKey = (path: string, key: string) =>
+export const prependKey = (path: string, key: Key) =>
     `${In}${compilePropAccess(key)}${path.slice(In.length)}`
 
 export const prependIndex = (path: string) =>
@@ -33,9 +34,12 @@ export const compilePathAccess = (segments: Segments, root = In) => {
     return root
 }
 
-export const compilePropAccess = (key: string | number) => {
+export const compilePropAccess = (key: Key) => {
     if (typeof key === "number") {
         return `[${key}]`
+    }
+    if (typeof key === "symbol") {
+        return `[${compileSerializedValue(key)}]`
     }
     return /^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(key)
         ? `.${key}`

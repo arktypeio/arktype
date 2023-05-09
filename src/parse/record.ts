@@ -1,6 +1,10 @@
 import { BasisNode } from "../nodes/basis.js"
 import { PredicateNode } from "../nodes/predicate.js"
-import { type NamedNodes, type PropKind, PropsNode } from "../nodes/props.js"
+import {
+    type NamedNodes,
+    type NamedPropKind,
+    PropsNode
+} from "../nodes/props.js"
 import { TypeNode } from "../nodes/type.js"
 import type { evaluate } from "../utils/generics.js"
 import type { Dict, mutable } from "../utils/records.js"
@@ -12,7 +16,7 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
     const named: mutable<NamedNodes> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
-        let kind: PropKind = "required"
+        let kind: NamedPropKind = "required"
         if (definitionKey[definitionKey.length - 1] === "?") {
             if (
                 definitionKey[definitionKey.length - 2] === Scanner.escapeToken

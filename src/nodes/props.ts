@@ -1,12 +1,14 @@
-import { throwInternalError } from "../utils/errors.js"
+import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type { evaluate } from "../utils/generics.js"
-import type { HomogenousTuple } from "../utils/lists.js"
+import { type HomogenousTuple, type listable } from "../utils/lists.js"
 import { tryParseWellFormedInteger } from "../utils/numericLiterals.js"
-import type { Key, mutable } from "../utils/records.js"
+import { isArray } from "../utils/objectKinds.js"
+import type { Key } from "../utils/records.js"
 import { hasKeys } from "../utils/records.js"
 import {
     type CompilationState,
     compilePropAccess,
+    compileSerializedValue,
     In,
     IndexIn
 } from "./compilation.js"
@@ -14,32 +16,23 @@ import type { DiscriminantKind } from "./discriminate.js"
 import type { DisjointsSources } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
-import type { PredicateInput } from "./predicate.js"
+import { type PredicateInput } from "./predicate.js"
 import type { inferTypeInput, TypeInput } from "./type.js"
-import {
-    neverTypeNode,
-    TypeNode,
-    typeNodeFromInput,
-    unknownTypeNode
-} from "./type.js"
+import { neverTypeNode, TypeNode, unknownTypeNode } from "./type.js"
 
 export class PropsNode extends Node<"props"> {
     static readonly kind = "props"
 
-    keyNames: string[]
-    named: NamedNodes
+    entries: NodeEntry[]
+    named: Record<string | symbol, NamedNodeEntry>
     indexed: IndexedNodeEntry[]
 
-    // TODO: Switch to namedNodeEntries so can preserve sorted order
-    constructor([named, indexed]: [
-        named: NamedNodes,
-        indexed: IndexedNodeEntry[]
-    ]) {
+    constructor(entries: NodeEntry[]) {
         // Sort keys first by precedence (prerequisite,required,optional),
         // then alphebetically by name (bar, baz, foo)
-        const sortedKeyNames = Object.keys(named).sort((l, r) => {
-            const lPrecedence = precedenceByPropKind[named[l].kind]
-            const rPrecedence = precedenceByPropKind[named[r].kind]
+        const sortedEntries = [...entries].sort((l, r) => {
+            const lPrecedence = precedenceByPropKind[l.kind]
+            const rPrecedence = precedenceByPropKind[r.kind]
             return lPrecedence > rPrecedence
                 ? 1
                 : lPrecedence < rPrecedence
@@ -48,61 +41,72 @@ export class PropsNode extends Node<"props"> {
                 ? 1
                 : -1
         })
-        // TODO: this is a lie because of numeric keys
-        // JS objects preserve insertion order, so we can count on iterating
-        // over the keys in the same order.
-        const sortedNamed: mutable<NamedNodes> = {}
-        for (const k of sortedKeyNames) {
-            sortedNamed[k] = named[k]
-        }
-        const sortedIndexed = [...indexed].sort((l, r) =>
-            l[0].key >= r[0].key ? 1 : -1
-        )
-        super(PropsNode, sortedNamed, sortedIndexed)
-        this.keyNames = sortedKeyNames
-        this.named = sortedNamed
-        this.indexed = sortedIndexed
-    }
-
-    static from(namedInput: NamedInput, ...indexedInput: IndexedInputEntry[]) {
-        const named = {} as mutable<NamedNodes>
-        for (const k in namedInput) {
-            named[k] = {
-                kind: namedInput[k].kind,
-                value: typeNodeFromInput(namedInput[k].value)
+        super(PropsNode, sortedEntries)
+        this.entries = sortedEntries
+        this.named = {}
+        this.indexed = []
+        for (const entry of sortedEntries) {
+            if (entry.kind === "indexed") {
+                this.indexed.push(entry)
+            } else {
+                const name = entry.key.literalValue as string | symbol
+                this.named[name] = entry
             }
         }
-        const indexed: IndexedNodeEntry[] = indexedInput.map(
-            ([keyInput, valueInput]) => [
-                TypeNode.from(keyInput),
-                typeNodeFromInput(valueInput)
-            ]
+    }
+
+    static from(...entries: InputEntry[]) {
+        return new PropsNode(
+            entries.map((entry) => {
+                const keyInput: TypeInput = isArray(entry.key)
+                    ? entry.key
+                    : [
+                          typeof entry.key === "object"
+                              ? entry.key
+                              : { basis: ["===", entry.key] }
+                      ]
+                const valueInput: TypeInput = isArray(entry.value)
+                    ? entry.value
+                    : [entry.value]
+                return {
+                    key: TypeNode.from(...keyInput) as TypeNode<Key>,
+                    value: TypeNode.from(...valueInput),
+                    kind: entry.kind
+                }
+            })
         )
-        return new PropsNode([named, indexed])
     }
 
-    static compile(named: NamedNodes, indexed: IndexedNodeEntry[]) {
-        const checks: string[] = []
-        for (const k in named) {
-            checks.push(PropsNode.#compileNamedProp(k, named[k]))
+    static compile(entries: NodeEntry[]) {
+        if (entries.length === 0) {
+            return "true"
         }
-        for (const entry of indexed) {
-            checks.push(PropsNode.#compileIndexedEntry(entry))
-        }
-        return checks.join(" && ") || "true"
+        const hasIndexed = entries.at(-1)!.kind === "indexed"
+        return hasIndexed ? throwParseError("no") : this.#compileNamed(entries)
     }
 
-    static #compileNamedProp(k: string, prop: NamedNode) {
-        const valueCheck = prop.value.key.replaceAll(
-            In,
-            `${In}${compilePropAccess(k)}`
-        )
-        return prop.kind === "optional"
-            ? `!('${k}' in ${In}) || ${valueCheck}`
-            : valueCheck
+    static #compileNamed(entries: NodeEntry[]) {
+        return entries
+            .map((entry) => {
+                const key = entry.key.literalValueNode!.getLiteralValue() as Key
+                const serializedKey =
+                    typeof key === "symbol" ? compileSerializedValue(key) : key
+                const valueCheck = entry.value.key.replaceAll(
+                    In,
+                    `${In}${compilePropAccess(serializedKey)}`
+                )
+                return entry.kind === "optional"
+                    ? `!(${
+                          typeof key === "symbol"
+                              ? serializedKey
+                              : `'${serializedKey}'`
+                      } in ${In}) || ${valueCheck}`
+                    : valueCheck
+            })
+            .join(" && ")
     }
 
-    static #compileIndexedEntry(entry: IndexedNodeEntry) {
+    static #compileIndexedEntry(entry: NodeEntry) {
         const keySource = extractIndexKeyRegex(entry[0])
         if (!keySource) {
             // we only handle array indices for now
@@ -133,22 +137,28 @@ export class PropsNode extends Node<"props"> {
     }
 
     static intersect(l: PropsNode, r: PropsNode) {
-        let indexed = [...l.indexed]
-        for (const [rKey, rValue] of r.indexed) {
-            const matchingIndex = indexed.findIndex(([lKey]) => lKey === rKey)
-            if (matchingIndex === -1) {
-                indexed.push([rKey, rValue])
+        const result: NodeEntry[] = [...l.indexed]
+        for (const rEntry of r.indexed) {
+            const matchingLIndex = l.indexed.findIndex(
+                (lEntry) => lEntry.key === rEntry.key
+            )
+            if (matchingLIndex === -1) {
+                result.push(rEntry)
             } else {
-                const result = indexed[matchingIndex][1].intersect(rValue)
-                indexed[matchingIndex][1] =
-                    result instanceof Disjoint ? neverTypeNode : result
+                const signatureResult = result[matchingLIndex].value.intersect(
+                    rEntry.value
+                )
+                result[matchingLIndex].value =
+                    signatureResult instanceof Disjoint
+                        ? neverTypeNode
+                        : signatureResult
             }
         }
         const named = { ...l.named, ...r.named }
         const disjointsByPath: DisjointsSources = {}
         for (const k in named) {
             // TODO: not all discriminatable- if one optional and one required, even if disjoint
-            let intersectedValue: NamedNode | Disjoint = named[k]
+            let nameResult: NamedNodeEntry | Disjoint = named[k]
             if (k in l.named) {
                 if (k in r.named) {
                     // We assume l and r were properly created and the named
@@ -156,21 +166,20 @@ export class PropsNode extends Node<"props"> {
                     // with any matching index props. Therefore, the
                     // intersection result will already include index values
                     // from both sides whose key types allow k.
-                    intersectedValue = PropsNode.#intersectNamedProp(
+                    nameResult = PropsNode.#intersectNamed(
+                        l.named[k].key,
                         l.named[k],
                         r.named[k]
                     )
                 } else {
                     // If a named key from l matches any index keys of r, intersect
                     // the value associated with the name with the index value.
-                    for (const [rKey, rValue] of r.indexed) {
-                        if (rKey.allows(k)) {
-                            intersectedValue = PropsNode.#intersectNamedProp(
+                    for (const rEntry of r.indexed) {
+                        if (rEntry.key.allows(k)) {
+                            nameResult = PropsNode.#intersectNamed(
+                                l.named[k].key,
                                 l.named[k],
-                                {
-                                    kind: "optional",
-                                    value: rValue
-                                }
+                                rEntry
                             )
                         }
                     }
@@ -178,61 +187,66 @@ export class PropsNode extends Node<"props"> {
             } else {
                 // If a named key from r matches any index keys of l, intersect
                 // the value associated with the name with the index value.
-                for (const [lKey, lValue] of l.indexed) {
-                    if (lKey.allows(k)) {
-                        intersectedValue = PropsNode.#intersectNamedProp(
+                for (const lEntry of l.indexed) {
+                    if (lEntry.key.allows(k)) {
+                        nameResult = PropsNode.#intersectNamed(
+                            r.named[k].key,
                             r.named[k],
-                            {
-                                kind: "optional",
-                                value: lValue
-                            }
+                            lEntry
                         )
                     }
                 }
             }
-            if (intersectedValue instanceof Disjoint) {
+            if (nameResult instanceof Disjoint) {
                 Object.assign(
                     disjointsByPath,
-                    intersectedValue.withPrefixKey(k).sources
+                    nameResult.withPrefixKey(k).sources
                 )
             } else {
-                named[k] = intersectedValue
+                result.push(nameResult)
             }
         }
         if (hasKeys(disjointsByPath)) {
             return new Disjoint(disjointsByPath)
         }
-        if (named.length?.kind === "prerequisite") {
-            // if the index key is from and unbounded array and we have a tuple length,
-            // it has already been intersected and should be removed
-            indexed = indexed.filter((entry) => !extractIndexKeyRegex(entry[0]))
-        }
-        return new PropsNode([named, indexed])
+        // if (named.length?.kind === "prerequisite") {
+        //     // if the index key is from and unbounded array and we have a tuple length,
+        //     // it has already been intersected and should be removed
+        //     indexed = indexed.filter((entry) => !extractIndexKeyRegex(entry[0]))
+        // }
+        return new PropsNode(result)
     }
 
-    static #intersectNamedProp(
-        l: NamedNode,
-        r: NamedNode
-    ): NamedNode | Disjoint {
-        const kind =
+    static #intersectNamed<l extends NodeEntry, r extends NodeEntry>(
+        key: TypeNode<Key>,
+        l: l,
+        r: r
+    ): NamedNodeEntry | Disjoint {
+        const kind: PropKind =
             l.kind === "prerequisite" || r.kind === "prerequisite"
                 ? "prerequisite"
                 : l.kind === "required" || r.kind === "required"
                 ? "required"
-                : "optional"
-        const result = l.value.intersect(r.value)
-        if (result instanceof Disjoint) {
+                : l.kind === "optional" || r.kind === "optional"
+                ? "optional"
+                : throwInternalError(
+                      `Unexpected intersection of two index entries`
+                  )
+        const value = l.value.intersect(r.value)
+        if (value instanceof Disjoint) {
             if (kind === "optional") {
                 return {
-                    kind: "optional",
-                    value: neverTypeNode
+                    key,
+                    value: neverTypeNode,
+                    kind
                 }
             }
-            return result
+            return value.withPrefixKey(key.literalValue as Key)
         }
         return {
-            kind,
-            value: result
+            key,
+            value,
+            kind
         }
     }
 
@@ -259,10 +273,13 @@ export class PropsNode extends Node<"props"> {
 const precedenceByPropKind = {
     prerequisite: 0,
     required: 1,
-    optional: 2
+    optional: 2,
+    indexed: 3
 } satisfies Record<PropKind, number>
 
-export const emptyPropsNode = new PropsNode([{}, []])
+type DisjointEntry = [key: Key, disjoint: Disjoint]
+
+export const emptyPropsNode = new PropsNode([])
 
 export type PropsInput = NamedInput | PropsInputTuple
 
@@ -270,11 +287,6 @@ export type PropsInputTuple<
     named extends NamedInput = NamedInput,
     indexed extends IndexedInputEntry[] = IndexedInputEntry[]
 > = [named: named, ...indexed: indexed]
-
-export type NamedPropInput = {
-    kind: PropKind
-    value: TypeInput
-}
 
 export type NamedInput = Record<string, NamedPropInput>
 
@@ -290,9 +302,41 @@ export type IndexedInputEntry = [
     valueType: TypeInput
 ]
 
-export type IndexedNodeEntry = [keyType: TypeNode<string>, valueType: TypeNode]
+export type KeyInput = string | number | symbol | TypeInput
 
-export type PropKind = "required" | "optional" | "prerequisite"
+export type InputEntry = NamedPropInput | IndexedPropInput
+
+export type NamedPropInput = {
+    key: string | number | symbol
+    value: TypeInput
+    kind: NamedPropKind
+}
+
+export type IndexedPropInput = {
+    key: listable<PredicateInput<"string" | "number" | "symbol">>
+    value: TypeInput
+    kind: "indexed"
+}
+
+export type KeyNode = TypeNode<string | number | symbol>
+
+export type NamedNodeEntry = {
+    key: KeyNode
+    value: TypeNode
+    kind: NamedPropKind
+}
+
+export type IndexedNodeEntry = {
+    key: KeyNode
+    value: TypeNode
+    kind: "indexed"
+}
+
+export type NodeEntry = NamedNodeEntry | IndexedNodeEntry
+
+type NamedPropKind = "prerequisite" | "required" | "optional"
+
+export type PropKind = NamedPropKind | "indexed"
 
 const arrayIndexMatcherSuffix = `(?:0|(?:[1-9]\\d*))$`
 

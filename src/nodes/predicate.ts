@@ -80,7 +80,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         return result
     }
 
-    get valueNode(): BasisNode<"value"> | undefined {
+    get literalValueNode(): BasisNode<"value"> | undefined {
         return this.basis?.hasLevel("value") ? this.basis : undefined
     }
 
@@ -103,15 +103,15 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         if (basis instanceof Disjoint) {
             return basis
         }
-        if (l.valueNode) {
-            return r.allows(l.valueNode.getLiteralValue())
+        if (l.literalValueNode) {
+            return r.allows(l.literalValueNode.getLiteralValue())
                 ? l
-                : Disjoint.from("assignability", l.valueNode, r)
+                : Disjoint.from("assignability", l.literalValueNode, r)
         }
-        if (r.valueNode) {
-            return l.allows(r.valueNode.getLiteralValue())
+        if (r.literalValueNode) {
+            return l.allows(r.literalValueNode.getLiteralValue())
                 ? r
-                : Disjoint.from("assignability", l, r.valueNode)
+                : Disjoint.from("assignability", l, r.literalValueNode)
         }
         const rules: PredicateRules = basis ? [basis] : []
         for (const kind of constraintsByPrecedence) {
