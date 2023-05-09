@@ -9,7 +9,8 @@ import {
     type CompilationState,
     compilePropAccess,
     compileSerializedValue,
-    In
+    In,
+    IndexIn
 } from "./compilation.js"
 import type { DiscriminantKind } from "./discriminate.js"
 import type { DisjointsSources } from "./disjoint.js"
@@ -105,34 +106,32 @@ export class PropsNode extends Node<"props"> {
             .join(" && ")
     }
 
-    // static #compileIndexedEntry(entry: NodeEntry) {
-    //     const keySource = extractIndexKeyRegex(entry[0])
-    //     if (!keySource) {
-    //         // we only handle array indices for now
-    //         return throwInternalError(`Unexpected index type ${entry[0].key}`)
-    //     }
-    //     const firstVariadicIndex = extractFirstVariadicIndex(keySource)
-    //     const elementCondition = entry[1].key
-    //         .replaceAll(IndexIn, `${IndexIn}Inner`)
-    //         .replaceAll(In, `${In}[${IndexIn}]`)
-    //     const result = `(() => {
-    //         let valid = true;
-    //         for(let ${IndexIn} = ${firstVariadicIndex}; ${IndexIn} < ${In}.length; ${IndexIn}++) {
-    //             valid = ${elementCondition} && valid;
-    //         }
-    //         return valid
-    //     })()`
-    //     return result
-    // }
+    static #compileIndexedEntry(entry: NodeEntry) {
+        const keySource = extractIndexKeyRegex(entry[0])
+        if (!keySource) {
+            // we only handle array indices for now
+            return throwInternalError(`Unexpected index type ${entry[0].key}`)
+        }
+        const firstVariadicIndex = extractFirstVariadicIndex(keySource)
+        const elementCondition = entry[1].key
+            .replaceAll(IndexIn, `${IndexIn}Inner`)
+            .replaceAll(In, `${In}[${IndexIn}]`)
+        const result = `(() => {
+            let valid = true;
+            for(let ${IndexIn} = ${firstVariadicIndex}; ${IndexIn} < ${In}.length; ${IndexIn}++) {
+                valid = ${elementCondition} && valid;
+            }
+            return valid
+        })()`
+        return result
+    }
 
     compileTraverse(s: CompilationState) {
-        return this.entries
-            .map((entry) =>
-                entry.value.compileTraverse(s).replaceAll(
-                    In,
-                    // TODO: fix
-                    `${In}${compilePropAccess(entry.key.literalValue as Key)}`
-                )
+        return this.keyNames
+            .map((k) =>
+                this.named[k].value
+                    .compileTraverse(s)
+                    .replaceAll(In, `${In}${compilePropAccess(k)}`)
             )
             .join("\n")
     }
@@ -253,28 +252,21 @@ export class PropsNode extends Node<"props"> {
 
     pruneDiscriminant(path: string[], kind: DiscriminantKind): PropsNode {
         const [key, ...nextPath] = path
-        const entryAtKey = this.named[key]
-        const prunedValue = entryAtKey.value.pruneDiscriminant(nextPath, kind)
-        const prunedEntries: NodeEntry[] = []
-        for (const entry of this.entries) {
-            if (entry === entryAtKey) {
-                if (prunedValue !== unknownTypeNode) {
-                    prunedEntries.push({
-                        key: entryAtKey.key,
-                        value: prunedValue,
-                        kind: entryAtKey.kind
-                    })
-                }
-            } else {
-                prunedEntries.push(entry)
+        const propAtKey = this.named[key]
+        const prunedValue = propAtKey.value.pruneDiscriminant(nextPath, kind)
+        const { [key]: _, ...preserved } = this.named
+        if (prunedValue !== unknownTypeNode) {
+            preserved[key] = {
+                kind: propAtKey.kind,
+                value: prunedValue
             }
         }
-        return new PropsNode(prunedEntries)
+        return new PropsNode([preserved, this.indexed])
     }
 
     keyOf() {
         // TODO: numeric?
-        return [] //[...this.keyNames, ...this.indexed.map((entry) => entry[0])]
+        return [...this.keyNames, ...this.indexed.map((entry) => entry[0])]
     }
 }
 
