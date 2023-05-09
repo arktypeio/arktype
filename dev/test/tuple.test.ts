@@ -51,6 +51,7 @@ suite("tuple", () => {
                 },
                 ...(RegExp | Date)[]
             ]
+            attest(greatSpread.root.key).snap()
         })
         test("allows array keyword", () => {
             const types = scope({
@@ -85,14 +86,8 @@ suite("tuple", () => {
     })
     suite("intersections", () => {
         test("tuple", () => {
-            // TODO: can improve?
             const t = type([[{ a: "string" }], "&", [{ b: "boolean" }]])
-            attest(t.infer).typed as [
-                {
-                    a: string
-                    b: boolean
-                }
-            ]
+            attest(t.root).is(type([{ a: "string", b: "boolean" }]).root)
         })
         test("array", () => {
             const tupleAndArray = type([
@@ -105,18 +100,9 @@ suite("tuple", () => {
                 "&",
                 [{ a: "string" }]
             ])
-            attest(tupleAndArray.infer).typed as [
-                {
-                    a: string
-                    b: boolean
-                }
-            ]
-            attest(arrayAndTuple.infer).typed as [
-                {
-                    a: string
-                    b: boolean
-                }
-            ]
+            const expected = type([{ a: "string", b: "boolean" }]).root
+            attest(tupleAndArray.root).is(expected)
+            attest(arrayAndTuple.root).is(expected)
         })
         test("variadic", () => {})
     })

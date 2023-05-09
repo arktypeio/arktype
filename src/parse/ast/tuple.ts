@@ -36,16 +36,11 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     if (isIndexZeroExpression(def)) {
         return prefixParsers[def[0]](def as never, ctx)
     }
-    const named: mutable<NamedNodes> = {
-        length: {
-            kind: "prerequisite",
-            value: TypeNode.from({ basis: ["===", def.length] })
-        }
-    }
+    const named: mutable<NamedNodes> = {}
     const indexed: IndexedNodeEntry[] = []
+    let isVariadic = false
     for (let i = 0; i < def.length; i++) {
         let elementDef = def[i]
-        let isVariadic = false
         ctx.path.push(i)
         if (typeof elementDef === "string" && elementDef.startsWith("...")) {
             elementDef = elementDef.slice(3)
@@ -75,6 +70,12 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
             }
         }
         ctx.path.pop()
+    }
+    if (!isVariadic) {
+        named.length = {
+            kind: "prerequisite",
+            value: TypeNode.from({ basis: ["===", def.length] })
+        }
     }
     const props = new PropsNode([named, indexed])
     const predicate = new PredicateNode([arrayBasisNode, props])

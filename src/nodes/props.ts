@@ -26,6 +26,7 @@ import {
 export class PropsNode extends Node<"props"> {
     static readonly kind = "props"
 
+    keyNames: string[]
     named: NamedNodes
     indexed: IndexedNodeEntry[]
 
@@ -33,9 +34,32 @@ export class PropsNode extends Node<"props"> {
         named: NamedNodes,
         indexed: IndexedNodeEntry[]
     ]) {
-        super(PropsNode, named, indexed)
-        this.named = named
-        this.indexed = indexed
+        // Sort keys first by precedence (prerequisite,required,optional),
+        // then alphebetically by name (bar, baz, foo)
+        const sortedKeyNames = Object.keys(named).sort((l, r) => {
+            const lPrecedence = precedenceByPropKind[named[l].kind]
+            const rPrecedence = precedenceByPropKind[named[r].kind]
+            return lPrecedence > rPrecedence
+                ? 1
+                : lPrecedence < rPrecedence
+                ? -1
+                : l > r
+                ? 1
+                : -1
+        })
+        // JS objects preserve insertion order, so we can count on iterating
+        // over the keys in the same order.
+        const sortedNamed: mutable<NamedNodes> = {}
+        for (const k of sortedKeyNames) {
+            sortedNamed[k] = named[k]
+        }
+        const sortedIndexed = [...indexed].sort((l, r) =>
+            l[0].key >= r[0].key ? 1 : -1
+        )
+        super(PropsNode, sortedNamed, sortedIndexed)
+        this.keyNames = sortedKeyNames
+        this.named = sortedNamed
+        this.indexed = sortedIndexed
     }
 
     static from(namedInput: NamedInput, ...indexedInput: IndexedInputEntry[]) {
@@ -57,11 +81,9 @@ export class PropsNode extends Node<"props"> {
 
     static compile(named: NamedNodes, indexed: IndexedNodeEntry[]) {
         const checks: string[] = []
-        const names = Object.keys(named).sort()
-        for (const k of names) {
+        for (const k in named) {
             checks.push(this.#compileNamedProp(k, named[k]))
         }
-        // TODO: sort indices
         for (const entry of indexed) {
             checks.push(PropsNode.#compileIndexedEntry(entry))
         }
@@ -81,6 +103,7 @@ export class PropsNode extends Node<"props"> {
     static #compileIndexedEntry(entry: IndexedNodeEntry) {
         const keySource = extractIndexKeyRegex(entry[0])
         if (!keySource) {
+            // we only handle array indices for now
             return throwInternalError(`Unexpected index type ${entry[0].key}`)
         }
         const firstVariadicIndex = extractFirstVariadicIndex(keySource)
@@ -98,8 +121,7 @@ export class PropsNode extends Node<"props"> {
     }
 
     compileTraverse(s: CompilationState) {
-        return Object.keys(this.named)
-            .sort()
+        return this.keyNames
             .map((k) =>
                 this.named[k].value
                     .compileTraverse(s)
@@ -109,8 +131,7 @@ export class PropsNode extends Node<"props"> {
     }
 
     static intersect(l: PropsNode, r: PropsNode) {
-        // TODO: improve variadic intersections
-        const indexed = [...l.indexed]
+        let indexed = [...l.indexed]
         for (const [rKey, rValue] of r.indexed) {
             const matchingIndex = indexed.findIndex(([lKey]) => lKey === rKey)
             if (matchingIndex === -1) {
@@ -176,9 +197,15 @@ export class PropsNode extends Node<"props"> {
                 named[k] = intersectedValue
             }
         }
-        return hasKeys(disjointsByPath)
-            ? new Disjoint(disjointsByPath)
-            : new PropsNode([named, indexed])
+        if (hasKeys(disjointsByPath)) {
+            return new Disjoint(disjointsByPath)
+        }
+        if (named.length?.kind === "prerequisite") {
+            // if the index key is from and unbounded array and we have a tuple length,
+            // it has already been intersected and should be removed
+            indexed = indexed.filter((entry) => !extractIndexKeyRegex(entry[0]))
+        }
+        return new PropsNode([named, indexed])
     }
 
     static #intersectNamedProp(
@@ -221,6 +248,12 @@ export class PropsNode extends Node<"props"> {
         return new PropsNode([preserved, this.indexed])
     }
 }
+
+const precedenceByPropKind = {
+    prerequisite: 0,
+    required: 1,
+    optional: 2
+} satisfies Record<PropKind, number>
 
 export const emptyPropsNode = new PropsNode([{}, []])
 
