@@ -317,14 +317,10 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         return new TypeNode([...this.branches, ...other.branches])
     }
 
-    get literalValueNode(): BasisNode<"value"> | undefined {
+    get valueNode(): BasisNode<"value"> | undefined {
         return this.branches.length === 1
-            ? this.branches[0].literalValueNode
+            ? this.branches[0].valueNode
             : undefined
-    }
-
-    get literalValue(): unknown {
-        return this.literalValueNode?.getLiteralValue()
     }
 
     equals<other>(other: TypeNode<other>): this is TypeNode<other> {

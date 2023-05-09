@@ -1,6 +1,6 @@
 import { PredicateNode } from "../../nodes/predicate.js"
 import {
-    type NodeEntry,
+    type IndexedNodeEntry,
     type NamedNodes,
     PropsNode
 } from "../../nodes/props.js"
@@ -37,7 +37,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
         return prefixParsers[def[0]](def as never, ctx)
     }
     const named: mutable<NamedNodes> = {}
-    const indexed: NodeEntry[] = []
+    const indexed: IndexedNodeEntry[] = []
     let isVariadic = false
     for (let i = 0; i < def.length; i++) {
         let elementDef = def[i]

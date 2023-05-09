@@ -1,5 +1,5 @@
 import { throwInternalError } from "../utils/errors.js"
-import type { entryOf, Key } from "../utils/records.js"
+import type { entryOf } from "../utils/records.js"
 import { stringify } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
 import { In, prependKey } from "./compilation.js"
@@ -105,7 +105,7 @@ export class Disjoint {
         return new Disjoint(inverted)
     }
 
-    withPrefixKey(key: Key) {
+    withPrefixKey(key: string) {
         const disjoints: DisjointsSources = {}
         let path: QualifiedDisjoint
         for (path in this.sources) {
