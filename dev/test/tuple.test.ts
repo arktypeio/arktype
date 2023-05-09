@@ -27,7 +27,14 @@ suite("tuple", () => {
         test("spreads simple arrays", () => {
             const wellRested = type(["string", "...number[]"])
             attest(wellRested.infer).typed as [string, ...number[]]
-            attest(wellRested.root.key).snap()
+            attest(wellRested.root.key)
+                .snap(`$arkRoot instanceof Array && typeof $arkRoot["0"] === "string" && $arkRoot.length === 2 && (() => {
+            let valid = true;
+            for(let $arkIndex = 1; $arkIndex < $arkRoot.length; $arkIndex++) {
+                valid = typeof $arkRoot[$arkIndex] === "number" && valid;
+            }
+            return valid
+        })()`)
         })
         test("tuple expression", () => {
             const wellRestedTuple = type([

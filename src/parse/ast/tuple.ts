@@ -66,8 +66,8 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
             if (i !== def.length - 1) {
                 return throwParseError(prematureRestMessage)
             }
-            // TODO: extract item type
-            indexed.push([arrayIndexTypeNode(i), value])
+            const elementType = value.getPath(arrayIndexTypeNode())
+            indexed.push([arrayIndexTypeNode(i), elementType])
         } else {
             named[i] = {
                 kind: "required",

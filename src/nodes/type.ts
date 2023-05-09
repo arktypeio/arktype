@@ -179,16 +179,23 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         }
     }
 
-    getPath(...path: string[]) {
+    getPath(...path: (string | TypeNode<string>)[]) {
         let current: PredicateNode[] = this.branches
         let next: PredicateNode[] = []
         while (path.length) {
             const key = path.shift()!
             for (const branch of current) {
-                const childrenAtKey =
-                    branch.getConstraint("props")?.named?.[key]?.value.branches
-                if (childrenAtKey) {
-                    next.push(...childrenAtKey)
+                const propsAtKey = branch.getConstraint("props")
+                if (propsAtKey) {
+                    const branchesAtKey =
+                        typeof key === "string"
+                            ? propsAtKey.named?.[key]?.value.branches
+                            : propsAtKey.indexed.find(
+                                  (entry) => entry[0] === key
+                              )?.[1].branches
+                    if (branchesAtKey) {
+                        next.push(...branchesAtKey)
+                    }
                 }
             }
             current = next
@@ -357,7 +364,10 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     }
 
     array(): TypeNode<t[]> {
-        const props = new PropsNode([{}, [[nonVariadicArrayTypeNode, this]]])
+        const props = new PropsNode([
+            {},
+            [[nonVariadicArrayIndexTypeNode, this]]
+        ])
         const predicate = new PredicateNode([arrayBasisNode, props])
         return new TypeNode([predicate])
     }
@@ -374,10 +384,12 @@ export const arrayIndexInput = (firstVariadicIndex = 0) =>
         regex: createArrayIndexMatcher(firstVariadicIndex)
     } as const satisfies PredicateInput<"string">)
 
-export const arrayIndexTypeNode = (firstVariadicIndex = 0) =>
-    TypeNode.from(arrayIndexInput(firstVariadicIndex))
+const nonVariadicArrayIndexTypeNode = TypeNode.from(arrayIndexInput())
 
-const nonVariadicArrayTypeNode = arrayIndexTypeNode()
+export const arrayIndexTypeNode = (firstVariadicIndex = 0) =>
+    firstVariadicIndex === 0
+        ? nonVariadicArrayIndexTypeNode
+        : TypeNode.from(arrayIndexInput(firstVariadicIndex))
 
 export const neverTypeNode = new TypeNode([])
 
