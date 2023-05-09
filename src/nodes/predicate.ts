@@ -18,7 +18,7 @@ import { MorphNode } from "./morph.js"
 import { Node } from "./node.js"
 import type {
     inferPropsInput,
-    NamedInput,
+    NamedPropsInput,
     PropsInput,
     PropsInputTuple
 } from "./props.js"
@@ -223,8 +223,10 @@ export const createConstraint = <kind extends ConstraintKind>(
     (kind === "props"
         ? isArray(input)
             ? PropsNode.from(...(input as PropsInputTuple))
-            : PropsNode.from(input as NamedInput)
-        : new constraintKinds[kind](input as never)) as ConstraintNode<kind>
+            : PropsNode.from(input as NamedPropsInput)
+        : new constraintKinds[kind as Exclude<ConstraintKind, "props">](
+              input as never
+          )) as ConstraintNode<kind>
 
 export const constraintKinds = {
     range: RangeNode,

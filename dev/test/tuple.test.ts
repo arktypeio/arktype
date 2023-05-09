@@ -11,7 +11,7 @@ suite("tuple", () => {
         const t = type(["string", "number"])
         attest(t.infer).typed as [string, number]
         attest(t.root.key).snap(
-            '$arkRoot instanceof Array && typeof $arkRoot["0"] === "string" && typeof $arkRoot["1"] === "number" && $arkRoot.length === 2'
+            '$arkRoot instanceof Array && $arkRoot.length === 2 && typeof $arkRoot["0"] === "string" && typeof $arkRoot["1"] === "number"'
         )
     })
     test("nested", () => {

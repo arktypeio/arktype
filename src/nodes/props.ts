@@ -27,44 +27,30 @@ export class PropsNode extends Node<"props"> {
     static readonly kind = "props"
 
     keyNames: string[]
-    named: NamedNodes
-    indexed: IndexedNodeEntry[]
 
-    // TODO: Switch to namedNodeEntries so can preserve sorted order
-    constructor([named, indexed]: [
-        named: NamedNodes,
-        indexed: IndexedNodeEntry[]
-    ]) {
+    constructor(public named: NamedNodes, public indexed: IndexedNodeEntry[]) {
         // Sort keys first by precedence (prerequisite,required,optional),
         // then alphebetically by name (bar, baz, foo)
-        const sortedKeyNames = Object.keys(named).sort((l, r) => {
-            const lPrecedence = precedenceByPropKind[named[l].kind]
-            const rPrecedence = precedenceByPropKind[named[r].kind]
+        const sortedNamedEntries = Object.entries(named).sort((l, r) => {
+            const lPrecedence = precedenceByPropKind[l[1].kind]
+            const rPrecedence = precedenceByPropKind[r[1].kind]
             return lPrecedence > rPrecedence
                 ? 1
                 : lPrecedence < rPrecedence
                 ? -1
-                : l > r
+                : l[0] > r[0]
                 ? 1
                 : -1
         })
-        // TODO: this is a lie because of numeric keys
-        // JS objects preserve insertion order, so we can count on iterating
-        // over the keys in the same order.
-        const sortedNamed: mutable<NamedNodes> = {}
-        for (const k of sortedKeyNames) {
-            sortedNamed[k] = named[k]
-        }
-        const sortedIndexed = [...indexed].sort((l, r) =>
-            l[0].key >= r[0].key ? 1 : -1
-        )
-        super(PropsNode, sortedNamed, sortedIndexed)
-        this.keyNames = sortedKeyNames
-        this.named = sortedNamed
-        this.indexed = sortedIndexed
+        indexed.sort((l, r) => (l[0].key >= r[0].key ? 1 : -1))
+        super(PropsNode, sortedNamedEntries, indexed)
+        this.keyNames = sortedNamedEntries.map((entry) => entry[0])
     }
 
-    static from(namedInput: NamedInput, ...indexedInput: IndexedInputEntry[]) {
+    static from(
+        namedInput: NamedPropsInput,
+        ...indexedInput: IndexedInputEntry[]
+    ) {
         const named = {} as mutable<NamedNodes>
         for (const k in namedInput) {
             named[k] = {
@@ -78,13 +64,13 @@ export class PropsNode extends Node<"props"> {
                 typeNodeFromInput(valueInput)
             ]
         )
-        return new PropsNode([named, indexed])
+        return new PropsNode(named, indexed)
     }
 
-    static compile(named: NamedNodes, indexed: IndexedNodeEntry[]) {
+    static compile(named: NamedNodeEntry[], indexed: IndexedNodeEntry[]) {
         const checks: string[] = []
-        for (const k in named) {
-            checks.push(PropsNode.#compileNamedProp(k, named[k]))
+        for (const entry of named) {
+            checks.push(PropsNode.#compileNamedEntry(entry))
         }
         for (const entry of indexed) {
             checks.push(PropsNode.#compileIndexedEntry(entry))
@@ -92,13 +78,13 @@ export class PropsNode extends Node<"props"> {
         return checks.join(" && ") || "true"
     }
 
-    static #compileNamedProp(k: string, prop: NamedNode) {
-        const valueCheck = prop.value.key.replaceAll(
+    static #compileNamedEntry(entry: NamedNodeEntry) {
+        const valueCheck = entry[1].value.key.replaceAll(
             In,
-            `${In}${compilePropAccess(k)}`
+            `${In}${compilePropAccess(entry[0])}`
         )
-        return prop.kind === "optional"
-            ? `!('${k}' in ${In}) || ${valueCheck}`
+        return entry[1].kind === "optional"
+            ? `!('${entry[0]}' in ${In}) || ${valueCheck}`
             : valueCheck
     }
 
@@ -207,7 +193,7 @@ export class PropsNode extends Node<"props"> {
             // it has already been intersected and should be removed
             indexed = indexed.filter((entry) => !extractIndexKeyRegex(entry[0]))
         }
-        return new PropsNode([named, indexed])
+        return new PropsNode(named, indexed)
     }
 
     static #intersectNamedProp(
@@ -247,7 +233,7 @@ export class PropsNode extends Node<"props"> {
                 value: prunedValue
             }
         }
-        return new PropsNode([preserved, this.indexed])
+        return new PropsNode(preserved, this.indexed)
     }
 
     keyOf() {
@@ -262,26 +248,29 @@ const precedenceByPropKind = {
     optional: 2
 } satisfies Record<PropKind, number>
 
-export const emptyPropsNode = new PropsNode([{}, []])
+export const emptyPropsNode = new PropsNode({}, [])
 
-export type PropsInput = NamedInput | PropsInputTuple
+export type PropsInput = NamedPropsInput | PropsInputTuple
 
 export type PropsInputTuple<
-    named extends NamedInput = NamedInput,
+    named extends NamedPropsInput = NamedPropsInput,
     indexed extends IndexedInputEntry[] = IndexedInputEntry[]
 > = [named: named, ...indexed: indexed]
 
-export type NamedPropInput = {
+// TODO: standardize entry
+export type NamedValueInput = {
     kind: PropKind
     value: TypeInput
 }
 
-export type NamedInput = Record<string, NamedPropInput>
+export type NamedPropsInput = Record<string, NamedValueInput>
 
 export type NamedNode = {
     kind: PropKind
     value: TypeNode
 }
+
+export type NamedNodeEntry = [key: string, value: NamedNode]
 
 export type NamedNodes = Record<string, NamedNode>
 
@@ -357,7 +346,7 @@ const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
     )
 }
 
-type inferNamedProps<input extends NamedInput> = {} extends input
+type inferNamedProps<input extends NamedPropsInput> = {} extends input
     ? unknown
     : // Avoid iterating over prototype keys of tuple
     [keyof input, input] extends ["length", TupleLengthProps]
@@ -380,12 +369,12 @@ type TupleLengthProps<length extends number = number> = {
 export type inferPropsInput<input extends PropsInput> =
     input extends PropsInputTuple<infer named, infer indexed>
         ? inferNamedAndIndexed<named, indexed>
-        : input extends NamedInput
+        : input extends NamedPropsInput
         ? inferNamedProps<input>
         : never
 
 type inferNamedAndIndexed<
-    named extends NamedInput,
+    named extends NamedPropsInput,
     entries extends unknown[],
     result = inferNamedProps<named>
 > = entries extends [infer entry extends IndexedInputEntry, ...infer tail]
@@ -403,17 +392,17 @@ type inferNamedAndIndexed<
     : result
 
 type inferArray<
-    named extends NamedInput,
+    named extends NamedPropsInput,
     elementDef extends TypeInput
 > = named extends TupleLengthProps<infer length>
     ? HomogenousTuple<inferTypeInput<elementDef>, length>
     : inferTypeInput<elementDef>[]
 
-type requiredKeyOf<input extends NamedInput> = Exclude<
+type requiredKeyOf<input extends NamedPropsInput> = Exclude<
     keyof input,
     optionalKeyOf<input>
 >
 
-type optionalKeyOf<input extends NamedInput> = {
+type optionalKeyOf<input extends NamedPropsInput> = {
     [k in keyof input]: input[k]["kind"] extends "optional" ? k : never
 }[keyof input]
