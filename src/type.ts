@@ -42,7 +42,6 @@ export type parseType<def, $ extends { this: unknown }> = [def] extends [
     ? Type<$["this"]>
     : never
 
-// TODO: needed?
 registry().register("state", TraversalState)
 
 export class Type<t = unknown, $ = Ark> extends CompiledFunction<
@@ -70,24 +69,20 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         this.allows = root.allows
     }
 
-    #unary(def: unknown, operation: "and" | "or"): Type<any> {
-        const other = parseDefinition(def, {
-            path: new Path(),
-            scope: this.scope
-        })
-        return new Type(this.root[operation](other), this.scope)
+    #binary(def: unknown, operator: "|" | "&"): Type<any> {
+        return new Type([this.definition, operator, def], this.scope)
     }
 
     and<def>(
         def: validateDefinition<def, $>
     ): Type<evaluate<t & inferDefinition<def, $>>> {
-        return this.#unary(def, "and")
+        return this.#binary(def, "&")
     }
 
     or<def>(
         def: validateDefinition<def, $>
     ): Type<t | inferDefinition<def, $>, $> {
-        return this.#unary(def, "or")
+        return this.#binary(def, "|")
     }
 
     morph<transform extends Morph<inferOut<t>>>(

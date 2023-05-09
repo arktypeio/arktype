@@ -249,6 +249,11 @@ export class PropsNode extends Node<"props"> {
         }
         return new PropsNode([preserved, this.indexed])
     }
+
+    keyOf() {
+        // TODO: numeric?
+        return [...this.keyNames, ...this.indexed.map((entry) => entry[0])]
+    }
 }
 
 const precedenceByPropKind = {
@@ -412,55 +417,3 @@ type requiredKeyOf<input extends NamedInput> = Exclude<
 type optionalKeyOf<input extends NamedInput> = {
     [k in keyof input]: input[k]["kind"] extends "optional" ? k : never
 }[keyof input]
-
-// const keysOfPredicate = (kind: Domain, predicate: Predicate) =>
-//     domain !== "object" || predicate === true
-//         ? baseKeysByDomain[domain]
-//         : sharedKeysOf(
-//               listFrom(predicate).map((branch) => keysOfObjectBranch(branch))
-//           )
-
-// const sharedKeysOf = (keyBranches: List<KeyValue>[]): List<KeyValue> => {
-//     if (!keyBranches.length) {
-//         return []
-//     }
-//     let sharedKeys = keyBranches[0]
-//     for (let i = 1; i < keyBranches.length; i++) {
-//         // we can filter directly by equality here because the RegExp we're
-//         // using will always be reference equal to
-//         // wellFormedNonNegativeIntegerMatcher
-//         sharedKeys = sharedKeys.filter((k) => keyBranches[i].includes(k))
-//     }
-//     return sharedKeys
-// }
-
-// const keysOfObjectBranch = (branch: BranchDefinition<"object">): KeyValue[] => {
-//     const result: KeyValue[] = []
-//     if ("props" in branch) {
-//         for (const key of Object.keys(branch.props)) {
-//             if (key === mappedKeys.index) {
-//                 // if any number is a valid key push this RegExp
-//                 result.push(wellFormedNonNegativeIntegerMatcher)
-//             } else if (!result.includes(key)) {
-//                 result.push(key)
-//                 if (wellFormedNonNegativeIntegerMatcher.test(key)) {
-//                     // allow numeric access to keys
-//                     result.push(
-//                         tryParseWellFormedInteger(
-//                             key,
-//                             `Unexpectedly failed to parse an integer from key '${key}'`
-//                         )
-//                     )
-//                 }
-//             }
-//         }
-//     }
-//     if ("instance" in branch) {
-//         for (const key of prototypeKeysOf(branch.instance.prototype)) {
-//             if (!result.includes(key)) {
-//                 result.push(key)
-//             }
-//         }
-//     }
-//     return result
-// }

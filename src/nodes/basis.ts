@@ -5,7 +5,7 @@ import { domainOf } from "../utils/domains.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type { evaluate } from "../utils/generics.js"
 import type { constructor } from "../utils/objectKinds.js"
-import { constructorExtends } from "../utils/objectKinds.js"
+import { constructorExtends, prototypeKeysOf } from "../utils/objectKinds.js"
 import { stringify } from "../utils/serialize.js"
 import {
     type CompilationState,
@@ -218,6 +218,34 @@ export class BasisNode<
             )
         )
     }
+
+    keyOf() {
+        if (this.hasLevel("value")) {
+            const value = this.getLiteralValue()
+            if (value === null || value === undefined) {
+                return []
+            }
+            return [...prototypeKeysOf(value), ...Object.keys(value)]
+        }
+        if (this.hasLevel("class")) {
+            return prototypeKeysOf(this.rule)
+        }
+        return baseKeysByDomain[this.domain]
+    }
+}
+
+type KeyValue = string | number | symbol
+
+const baseKeysByDomain: Record<Domain, readonly KeyValue[]> = {
+    bigint: prototypeKeysOf(0n),
+    boolean: prototypeKeysOf(false),
+    null: [],
+    number: prototypeKeysOf(0),
+    // TS doesn't include the Object prototype in keyof, so keyof object is never
+    object: [],
+    string: prototypeKeysOf(""),
+    symbol: prototypeKeysOf(Symbol()),
+    undefined: []
 }
 
 export const writeInvalidConstraintMessage = (

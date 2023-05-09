@@ -332,34 +332,14 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     }
 
     keyOf() {
-        // const predicateKeys = keysOf(node).map((domain) =>
-        //     keysOfPredicate(domain, node[domain]!)
-        // )
-        // const sharedKeys = sharedKeysOf(predicateKeys)
-
-        // if (!sharedKeys.length) {
-        //     return writeImplicitNeverMessage(ctx.path, "keyof")
+        if (this.branches.length === 0) {
+            // keyof never?
+            return this
+        }
+        // let result: TypeNode = new TypeNode(this.branches[0].keyOf())
+        // for (let i = 1; i < this.branches.length; i++) {
+        //     result = result
         // }
-
-        // const keyBranches: ConstraintsNode[] = []
-
-        // for (const key of sharedKeys) {
-        //     const keyType = typeof key
-        //     if (
-        //         keyType === "string" ||
-        //         keyType === "number" ||
-        //         keyType === "symbol"
-        //     ) {
-        //         keyBranches.push(ConstraintsNode.from({ value: key }))
-        //     } else if (key === wellFormedNonNegativeIntegerMatcher) {
-        //         keyBranches.push(arrayIndexStringBranch, arrayIndexNumberBranch)
-        //     } else {
-        //         return throwInternalError(
-        //             `Unexpected keyof key '${stringify(key)}'`
-        //         )
-        //     }
-        // }
-
         return this
     }
 

@@ -178,6 +178,16 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         }
         return new PredicateNode(rules)
     }
+
+    keyOf() {
+        if (!this.basis) {
+            // keyof unknown => never
+            return []
+        }
+        const basisKeys = this.basis.keyOf()
+        const propKeys = this.getConstraint("props")?.keyOf() ?? []
+        return [...basisKeys, ...propKeys]
+    }
 }
 
 const assertAllowsConstraint = (
@@ -330,30 +340,3 @@ type classConstraints<base extends constructor> = base extends typeof Array
     : {
           props?: PropsInput
       }
-
-// type KeyValue = string | number | symbol | RegExp
-
-// const baseKeysBykind: Record<Domain, readonly KeyValue[]> = {
-//     bigint: prototypeKeysOf(0n),
-//     boolean: prototypeKeysOf(false),
-//     null: [],
-//     number: prototypeKeysOf(0),
-//     // TS doesn't include the Object prototype in keyof, so keyof object is never
-//     object: [],
-//     string: prototypeKeysOf(""),
-//     symbol: prototypeKeysOf(Symbol()),
-//     undefined: []
-// }
-
-// const arrayIndexStringBranch = RulesNode.from({
-//     kind: "string",
-//     regex: wellFormedNonNegativeIntegerMatcher.source
-// })
-
-// const arrayIndexNumberBranch = RulesNode.from({
-//     kind: "number",
-//     range: {
-//         ">=": 0
-//     },
-//     divisor: 1
-// })
