@@ -98,7 +98,7 @@ suite("filter", () => {
         // TODO: should preserve morph
         const t = type("string")
             .morph((s) => s.length)
-            .filter((n): n is 5 => n === 5)
+            .narrow((n): n is 5 => n === 5)
         attest(t).typed as Type<(In: "foo") => 5, Ark>
         attest(t.root.key).snap(
             'typeof $arkIn === "string" && $arkIn !== $arkIn'

@@ -1,5 +1,5 @@
-import type { Filter, FilterPredicate } from "../parse/ast/filter.js"
 import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
+import type { InferredNarrow, Narrow } from "../parse/ast/narrow.js"
 import { inferred } from "../parse/definition.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
@@ -13,8 +13,8 @@ import type { CompilationState } from "./compilation.js"
 import type { DiscriminantKind } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import { DivisorNode } from "./divisor.js"
-import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
+import { NarrowNode } from "./narrow.js"
 import { Node } from "./node.js"
 import type {
     inferPropsInput,
@@ -196,7 +196,7 @@ const assertAllowsConstraint = (
     kind: ConstraintKind
 ) => {
     if (basis === undefined) {
-        return kind === "filter" || kind === "morph"
+        return kind === "narrow" || kind === "morph"
             ? undefined
             : throwParseError(`${kind} constraint requires a basis`)
     }
@@ -208,7 +208,7 @@ const constraintsByPrecedence = [
     "range",
     "regex",
     "props",
-    "filter",
+    "narrow",
     "morph"
 ] as const satisfies List<ConstraintKind>
 
@@ -233,7 +233,7 @@ export const constraintKinds = {
     divisor: DivisorNode,
     regex: RegexNode,
     props: PropsNode,
-    filter: FilterNode,
+    narrow: NarrowNode,
     morph: MorphNode
 } as const
 
@@ -274,24 +274,24 @@ export type inferPredicateDefinition<input extends PredicateInput> =
         : inferPredicateInput<input>
 
 type inferPredicateInput<input extends PredicateInput> =
-    input["filter"] extends FilterPredicate<any, infer narrowed>
+    input["narrow"] extends InferredNarrow<any, infer narrowed>
         ? narrowed
-        : input["filter"] extends List<Filter>
-        ? inferFilterArray<input["filter"]> extends infer result
+        : input["narrow"] extends List<Narrow>
+        ? inferNarrowArray<input["narrow"]> extends infer result
             ? isUnknown<result> extends true
                 ? inferNonFunctionalConstraints<input>
                 : result
             : never
         : inferNonFunctionalConstraints<input>
 
-type inferFilterArray<
+type inferNarrowArray<
     filters extends List,
     result = unknown
 > = filters extends readonly [infer head, ...infer tail]
-    ? inferFilterArray<
+    ? inferNarrowArray<
           tail,
           result &
-              (head extends FilterPredicate<any, infer narrowed>
+              (head extends InferredNarrow<any, infer narrowed>
                   ? narrowed
                   : unknown)
       >
@@ -330,7 +330,7 @@ type domainConstraints<basis extends Domain> = basis extends "object"
     : {}
 
 type functionalConstraints<input> = {
-    filter?: listable<Filter<input>>
+    narrow?: listable<Narrow<input>>
     morph?: listable<Morph<input>>
 }
 

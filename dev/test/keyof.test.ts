@@ -1,6 +1,5 @@
 import { suite, test } from "mocha"
 import { type, TypeNode } from "../../src/main.js"
-import { prototypeKeysOf } from "../../src/utils/objectKinds.js"
 import { attest } from "../attest/main.js"
 
 suite("keyof", () => {
@@ -29,7 +28,7 @@ suite("keyof", () => {
     test("non-object", () => {
         const t = type(["keyof", "bigint"])
         attest(t.infer).typed as keyof bigint
-        const expected = TypeNode.fromLiteral(
+        const expected = TypeNode.fromValue(
             "toLocaleString" as const,
             "toString" as const,
             "valueOf" as const,

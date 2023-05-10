@@ -11,6 +11,7 @@ suite("tuple", () => {
         const t = type(["string", "number"])
         attest(t.infer).typed as [string, number]
         attest(t.root.key).snap(
+            // TODO: array index accesses should be numeric
             '$arkRoot instanceof Array && $arkRoot.length === 2 && typeof $arkRoot["0"] === "string" && typeof $arkRoot["1"] === "number"'
         )
     })

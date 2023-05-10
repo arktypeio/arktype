@@ -112,7 +112,7 @@ bench("filter-tuple", () => {
     .types([583, "instantiations"])
 
 bench("filter-chain", () => {
-    const _ = type("boolean").filter((b) => b)
+    const _ = type("boolean").narrow((b) => b)
 })
     .median([12.19, "us"])
     .types([42, "instantiations"])

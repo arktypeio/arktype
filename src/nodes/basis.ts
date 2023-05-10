@@ -202,7 +202,7 @@ export class BasisNode<
                     )
                 }
                 return
-            case "filter":
+            case "narrow":
                 return
             case "morph":
                 return

@@ -1,20 +1,20 @@
-import type { Filter } from "../parse/ast/filter.js"
+import type { Narrow } from "../parse/ast/narrow.js"
 import type { listable } from "../utils/lists.js"
 import { intersectUniqueLists, listFrom } from "../utils/lists.js"
 import type { CompilationState } from "./compilation.js"
 import { Node } from "./node.js"
 
-export class FilterNode extends Node<"filter"> {
-    static readonly kind = "filter"
-    predicates: readonly Filter[]
+export class NarrowNode extends Node<"narrow"> {
+    static readonly kind = "narrow"
+    predicates: readonly Narrow[]
 
-    constructor(predicates: listable<Filter>) {
+    constructor(predicates: listable<Narrow>) {
         const predicateList = listFrom(predicates)
-        super(FilterNode, predicateList)
+        super(NarrowNode, predicateList)
         this.predicates = predicateList
     }
 
-    static compile(predicates: readonly Filter[]) {
+    static compile(predicates: readonly Narrow[]) {
         return "false"
     }
 
@@ -22,7 +22,7 @@ export class FilterNode extends Node<"filter"> {
         return s.ifNotThen(this.key, s.problem("custom", "filters"))
     }
 
-    static intersect(l: FilterNode, r: FilterNode) {
-        return new FilterNode(intersectUniqueLists(l.predicates, r.predicates))
+    static intersect(l: NarrowNode, r: NarrowNode) {
+        return new NarrowNode(intersectUniqueLists(l.predicates, r.predicates))
     }
 }

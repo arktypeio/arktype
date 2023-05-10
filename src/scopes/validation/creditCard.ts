@@ -33,7 +33,7 @@ const creditCardMatcher =
 export const creditCard = TypeNode.from({
     basis: "string",
     regex: creditCardMatcher.source,
-    filter: (s, state) =>
+    narrow: (s, state) =>
         isLuhnValid(s) ||
         // TODO: Fix
         !state.mustBe("a valid credit card number", s, state.basePath)

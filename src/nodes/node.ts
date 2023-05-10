@@ -4,8 +4,8 @@ import type { BasisNode } from "./basis.js"
 import { type CompilationState, In } from "./compilation.js"
 import { Disjoint } from "./disjoint.js"
 import type { DivisorNode } from "./divisor.js"
-import type { FilterNode } from "./filter.js"
 import type { MorphNode } from "./morph.js"
+import type { NarrowNode } from "./narrow.js"
 import type { PredicateNode } from "./predicate.js"
 import type { PropsNode } from "./props.js"
 import type { RangeNode } from "./range.js"
@@ -34,7 +34,7 @@ export type NodeKinds = {
     range: typeof RangeNode
     regex: typeof RegexNode
     props: typeof PropsNode
-    filter: typeof FilterNode
+    narrow: typeof NarrowNode
     morph: typeof MorphNode
 }
 
@@ -57,7 +57,7 @@ export abstract class Node<
         range: {},
         regex: {},
         props: {},
-        filter: {},
+        narrow: {},
         morph: {}
     }
 

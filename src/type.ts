@@ -3,8 +3,8 @@ import { registry } from "./nodes/registry.js"
 import type { CheckResult } from "./nodes/traverse.js"
 import { TraversalState } from "./nodes/traverse.js"
 import type { TypeNode } from "./nodes/type.js"
-import type { Filter, inferPredicate } from "./parse/ast/filter.js"
 import type { Morph, ParsedMorph } from "./parse/ast/morph.js"
+import type { inferPredicate, Narrow } from "./parse/ast/narrow.js"
 import {
     type inferDefinition,
     inferred,
@@ -12,7 +12,7 @@ import {
     type validateDefinition
 } from "./parse/definition.js"
 import type { bind, Scope } from "./scope.js"
-import type { Ark } from "./scopes/ark.js"
+import { type Ark } from "./scopes/ark.js"
 import { CompiledFunction } from "./utils/compiledFunction.js"
 import type { evaluate } from "./utils/generics.js"
 import { Path } from "./utils/lists.js"
@@ -31,7 +31,9 @@ export type TypeParser<$> = {
         opts: TypeConfig
     ): parseType<def, bind<$, def>>
 
-    fromLiteral: <value>(value: value) => Type<value, $>
+    fromValue: <branches extends readonly unknown[]>(
+        ...branches: branches
+    ) => Type<branches[number], $>
 }
 
 // Reuse the validation result to determine if the type will be successfully created.
@@ -69,26 +71,26 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         this.allows = root.allows
     }
 
-    #binary(def: unknown, operator: "|" | "&"): Type<any> {
+    #binary(def: unknown, operator: "|" | "&") {
         return new Type([this.definition, operator, def], this.scope)
     }
 
     and<def>(
-        def: validateDefinition<def, $>
-    ): Type<evaluate<t & inferDefinition<def, $>>> {
-        return this.#binary(def, "&")
+        def: validateDefinition<def, bind<$, def>>
+    ): Type<evaluate<t & inferDefinition<def, bind<$, def>>>> {
+        return this.#binary(def, "&") as never
     }
 
     or<def>(
-        def: validateDefinition<def, $>
-    ): Type<t | inferDefinition<def, $>, $> {
-        return this.#binary(def, "|")
+        def: validateDefinition<def, bind<$, def>>
+    ): Type<t | inferDefinition<def, bind<$, def>>, $> {
+        return this.#binary(def, "|") as never
     }
 
     morph<transform extends Morph<inferOut<t>>>(
         transform: transform
     ): Type<(In: inferOut<t>) => ReturnType<transform>, $> {
-        return this as any
+        return this as never
     }
 
     equals<other>(other: Type<other>): this is Type<other> {
@@ -99,19 +101,19 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return this.root.intersect(other.root) === this.root
     }
 
-    // TODO: based on below, should maybe filter morph output if used after
-    filter<predicate extends Filter<inferOut<t>>>(
+    // TODO: based on below, should maybe narrow morph output if used after
+    narrow<predicate extends Narrow<inferOut<t>>>(
         predicate: predicate
     ): Type<inferPredicate<inferOut<t>, predicate>, $> {
-        return new Type(this.root.constrain("filter", predicate), this.scope)
+        return new Type([this.definition, "=>", predicate], this.scope) as never
     }
 
     array(): Type<t[], $> {
-        return new Type([this.definition, "[]"], this.scope)
+        return new Type([this.definition, "[]"], this.scope) as never
     }
 
     keyof(): Type<keyof t, $> {
-        return new Type(["keyof", this.definition], this.scope)
+        return new Type(["keyof", this.definition], this.scope) as never
     }
 
     assert(data: unknown): inferOut<t> {

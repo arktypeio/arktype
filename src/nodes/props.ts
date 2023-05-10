@@ -250,7 +250,7 @@ export class PropsNode extends Node<"props"> {
     }
 
     namedKeyOf() {
-        return TypeNode.fromLiteral(...this.namedKeyLiterals()) as TypeNode<Key>
+        return TypeNode.fromValue(...this.namedKeyLiterals()) as TypeNode<Key>
     }
 
     namedKeyLiterals() {

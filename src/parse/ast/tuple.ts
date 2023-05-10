@@ -24,10 +24,10 @@ import type {
 import { parseDefinition } from "../definition.js"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
 import type { InfixOperator, PostfixExpression } from "./ast.js"
-import type { Filter, inferFilter } from "./filter.js"
-import { parseNarrowTuple } from "./filter.js"
 import type { inferMorph, Morph } from "./morph.js"
 import { parseMorphTuple } from "./morph.js"
+import type { inferPredicate, Narrow } from "./narrow.js"
+import { parseNarrowTuple } from "./narrow.js"
 
 export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     if (isIndexOneExpression(def)) {
@@ -209,7 +209,7 @@ export type inferTupleExpression<
     : def[1] extends "|"
     ? inferDefinition<def[0], $> | inferDefinition<def[2], $>
     : def[1] extends "=>"
-    ? inferFilter<def[0], def[2], $>
+    ? inferPredicate<inferDefinition<def[0], $>, def[2]>
     : def[1] extends "|>"
     ? inferMorph<def[0], def[2], $>
     : def[1] extends ":"
@@ -241,7 +241,7 @@ type validateInfixExpression<
               ? validateDefinition<def[2], $>
               : // TODO: move?
               def[1] extends "=>"
-              ? Filter<inferIn<inferDefinition<def[0], $>>>
+              ? Narrow<inferIn<inferDefinition<def[0], $>>>
               : def[1] extends "|>"
               ? Morph<inferOut<inferDefinition<def[0], $>>, unknown>
               : validateDefinition<def[2], $>
