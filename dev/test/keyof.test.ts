@@ -1,5 +1,6 @@
 import { suite, test } from "mocha"
 import { type, TypeNode } from "../../src/main.js"
+import { prototypeKeysOf } from "../../src/utils/objectKinds.js"
 import { attest } from "../attest/main.js"
 
 suite("keyof", () => {
