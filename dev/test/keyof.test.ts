@@ -15,15 +15,12 @@ suite("keyof", () => {
         attest(t.infer).typed as "b"
         attest(t.root).is(type("'b'").root)
     })
-    const expectedNeverKeyOfMessage = ""
-    //     writeImplicitNeverMessage(
-    //     new Path() as unknown as [],
-    //     "keyof"
-    // )
     test("non-overlapping union", () => {
         attest(() =>
             type({ a: "number" }).or({ b: "number" }).keyof()
-        ).throwsAndHasTypeError(expectedNeverKeyOfMessage)
+        ).throws.snap(
+            'The intersection at $arkRoot of "a" and "b" results in an unsatisfiable type'
+        )
     })
     test("non-object", () => {
         const t = type(["keyof", "bigint"])
@@ -37,9 +34,9 @@ suite("keyof", () => {
         attest(t.root).is(expected)
     })
     test("union including non-object", () => {
-        attest(() =>
-            type({ a: "number" }).or("string").keyof()
-        ).throwsAndHasTypeError(expectedNeverKeyOfMessage)
+        attest(() => type({ a: "number" }).or("string").keyof()).throws.snap(
+            "Error: Unsatisfiable"
+        )
     })
     // const attestHasStringBranches = (
     //     branches: RuleNodes<"string">[],

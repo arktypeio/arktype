@@ -102,4 +102,5 @@ export abstract class Node<
     }
 
     abstract compileTraverse(s: CompilationState): string
+    abstract toString(): string
 }

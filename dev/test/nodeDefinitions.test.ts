@@ -96,17 +96,17 @@ suite("node definitions", () => {
         )
         attest(t).typed as TypeNode<number | object | "foo" | "bar">
     })
-    test("filter predicate", () => {
+    test("narrow predicate", () => {
         const t = TypeNode.from({
             basis: "string",
-            filter: (s): s is "foo" => s === "foo"
+            narrow: (s): s is "foo" => s === "foo"
         })
         attest(t).typed as TypeNode<"foo">
     })
-    test("filter predicate array", () => {
+    test("narrow predicate array", () => {
         const t = TypeNode.from({
             basis: "object",
-            filter: [
+            narrow: [
                 (o): o is { a: string } => typeof o.a === "string",
                 (o): o is { b: boolean } => typeof o.b === "boolean"
             ] as const

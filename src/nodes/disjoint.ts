@@ -1,5 +1,5 @@
-import { throwInternalError } from "../utils/errors.js"
-import type { entryOf } from "../utils/records.js"
+import { throwInternalError, throwParseError } from "../utils/errors.js"
+import { entriesOf, type entryOf } from "../utils/records.js"
 import { stringify } from "../utils/serialize.js"
 import type { BasisNode } from "./basis.js"
 import { In, prependKey } from "./compilation.js"
@@ -58,9 +58,11 @@ export type QualifiedDisjoint<kind extends DisjointKind = DisjointKind> =
 
 export type DisjointsSources = {
     [k in QualifiedDisjoint]: k extends QualifiedDisjoint<infer kind>
-        ? DisjointKinds[kind]
+        ? Required<DisjointKinds>[kind]
         : never
 }
+
+export type DisjointSourceEntry = entryOf<DisjointsSources>
 
 export type DisjointKind = keyof DisjointKinds
 
@@ -91,6 +93,28 @@ export class Disjoint {
             byPath[`${In}:${kind}`] = operands as never
         }
         return new Disjoint(byPath)
+    }
+
+    describeReasons() {
+        const entries = entriesOf(this.sources)
+        if (entries.length === 1) {
+            const entry = entries[0]
+            const path = parseQualifiedDisjoint(entry[0])[0]
+            return `Intersection${path && ` at ${path}`} of ${entry[1].l} and ${
+                entry[1].r
+            } results in an unsatisfiable type`
+        }
+        const reasons = entriesOf(this.sources).map((entry) => {
+            const [path] = parseQualifiedDisjoint(entry[0])
+            return `${path && `${path}: `} ${entry[1].l} and ${entry[1].r}`
+        })
+        return `The following intersections result in unsatisfiable types:\n• ${reasons.join(
+            "\n• "
+        )}`
+    }
+
+    throw() {
+        return throwParseError(this.describeReasons())
     }
 
     invert() {

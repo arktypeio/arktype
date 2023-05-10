@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
+import { type, TypeNode } from "../../src/main.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
@@ -11,7 +11,7 @@ suite("intersection", () => {
     test("two types", () => {
         const t = type("boolean&true")
         attest(t.infer).typed as true
-        // attest(t.node).snap("true")
+        attest(t.root).is(TypeNode.fromValue(true as const))
     })
     test("intersection parsed before union", () => {
         // Should be parsed as:
@@ -109,19 +109,21 @@ suite("intersection", () => {
         })
         test("implicit never", () => {
             // // @ts-expect-error
-            // attest(() => type("string&number")).throwsAndHasTypeError(
-            //     "results in an unsatisfiable type"
-            // )
+            attest(() => type("string&number")).throws.snap(
+                "The intersection of number and string results in an unsatisfiable type"
+            )
         })
         test("helper parse", () => {
             attest(() =>
                 // @ts-expect-error
-                intersection({ a: "what" }, { b: "boolean" })
+                type({ a: "what" }).and({ b: "boolean" })
             ).throwsAndHasTypeError(writeUnresolvableMessage("what"))
         })
-        test("helper implicit never", () => {
-            attest(() => type("string").and("number")).throws(
-                "results in an unsatisfiable type"
+        test("at path", () => {
+            attest(() =>
+                type({ a: "string" }).and({ a: "number" })
+            ).throws.snap(
+                "Error: The intersection at $arkRoot.a of string and number results in an unsatisfiable type"
             )
         })
     })

@@ -16,6 +16,10 @@ export class DivisorNode extends Node<"divisor"> {
         return s.ifNotThen(this.key, s.problem("divisor", this.divisor))
     }
 
+    toString() {
+        return `divisor ${this.divisor}`
+    }
+
     static intersect(l: DivisorNode, r: DivisorNode) {
         const leastCommonMultiple = Math.abs(
             (l.divisor * r.divisor) /

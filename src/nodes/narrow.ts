@@ -18,6 +18,13 @@ export class NarrowNode extends Node<"narrow"> {
         return "false"
     }
 
+    toString() {
+        const names = this.predicates.map((f) => f.name)
+        return names.length === 1
+            ? `narrow ${names[0]}`
+            : `narrows ${names.join(", ")}`
+    }
+
     compileTraverse(s: CompilationState) {
         return s.ifNotThen(this.key, s.problem("custom", "filters"))
     }

@@ -169,6 +169,12 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     })()`
     }
 
+    toString() {
+        return this.branches.length === 0
+            ? "never"
+            : this.branches.map((branch) => branch.toString()).join(" or ")
+    }
+
     compileTraverse(s: CompilationState): string {
         switch (this.branches.length) {
             case 0:
@@ -319,9 +325,9 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
 
     and<other>(other: TypeNode<other>): TypeNode<t & other> {
         const result = this.intersect(other)
-        return result instanceof TypeNode
-            ? (result as TypeNode<t & other>)
-            : throwParseError(`Unsatisfiable`)
+        return result instanceof Disjoint
+            ? result.throw()
+            : (result as TypeNode<t & other>)
     }
 
     or<other>(other: TypeNode<other>): TypeNode<t | other> {
@@ -350,7 +356,9 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         if (this.branches.length === 0) {
             return throwParseError(`never is not a valid keyof operand`)
         }
-        if (this._keyof) return this._keyof
+        if (this._keyof) {
+            return this._keyof
+        }
         this._keyof = this.branches[0].keyof()
         for (let i = 1; i < this.branches.length; i++) {
             this._keyof = this._keyof.and(this.branches[i].keyof())

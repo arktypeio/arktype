@@ -28,6 +28,13 @@ export class RegexNode extends Node<"regex"> {
         return `${In}.match(/${source}/)`
     }
 
+    toString() {
+        const literals = this.sources.map((_) => `/${_}/`)
+        return literals.length === 1
+            ? literals[0]
+            : `expressions ${literals.join(", ")}`
+    }
+
     compileTraverse(s: CompilationState) {
         return this.sources
             .map((source) =>

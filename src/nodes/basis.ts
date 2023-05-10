@@ -78,6 +78,14 @@ export class BasisNode<
         }
     }
 
+    toString() {
+        return this.hasLevel("domain")
+            ? this.rule
+            : this.hasLevel("value")
+            ? stringify(this.rule[1])
+            : (this.rule as constructor).name
+    }
+
     getLiteralValue(): level extends "value" ? unknown : undefined {
         return (this.hasLevel("value") ? this.rule[1] : undefined) as never
     }

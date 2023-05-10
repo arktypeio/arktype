@@ -3,7 +3,7 @@ import type { evaluate } from "../utils/generics.js"
 import type { HomogenousTuple } from "../utils/lists.js"
 import { tryParseWellFormedInteger } from "../utils/numericLiterals.js"
 import type { Key, mutable } from "../utils/records.js"
-import { hasKeys } from "../utils/records.js"
+import { fromEntries, hasKeys } from "../utils/records.js"
 import {
     type CompilationState,
     compilePropAccess,
@@ -65,6 +65,18 @@ export class PropsNode extends Node<"props"> {
             ]
         )
         return new PropsNode(named, indexed)
+    }
+
+    toString() {
+        const entries = this.namedEntries.map((entry): [string, string] => {
+            const key = entry[0] + entry[1].kind === "optional" ? "?" : ""
+            const value = entry[1].value.toString()
+            return [key, value]
+        })
+        for (const entry of this.indexed) {
+            entries.push([`[${entry[0].toString()}]`, entry[1].toString()])
+        }
+        return JSON.stringify(fromEntries(entries))
     }
 
     static compile(named: NamedNodeEntry[], indexed: IndexedNodeEntry[]) {
@@ -238,7 +250,9 @@ export class PropsNode extends Node<"props"> {
 
     _keyof?: TypeNode<Key>
     keyof() {
-        if (this._keyof) return this._keyof
+        if (this._keyof) {
+            return this._keyof
+        }
         this._keyof = this.namedKeyOf().or(this.indexedKeyOf())
         return this._keyof
     }

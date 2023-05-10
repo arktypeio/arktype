@@ -73,6 +73,12 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         return result || "true"
     }
 
+    toString() {
+        return this.rules.length === 0
+            ? "unknown"
+            : this.rules.map((rule) => rule.toString()).join(" and ")
+    }
+
     compileTraverse(s: CompilationState) {
         let result = this.basis?.compileTraverse(s) ?? ""
         for (const constraint of this.rules) {
@@ -144,7 +150,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
             new PredicateNode([createConstraint(kind, input)])
         )
         if (result instanceof Disjoint) {
-            return throwParseError("Unsatisfiable")
+            return result.throw()
         }
         return result
     }
@@ -182,8 +188,12 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
 
     private _keyof?: TypeNode
     keyof() {
-        if (this._keyof) return this._keyof
-        if (!this.basis) return neverTypeNode
+        if (this._keyof) {
+            return this._keyof
+        }
+        if (!this.basis) {
+            return neverTypeNode
+        }
         this._keyof =
             this.getConstraint("props")?.keyof().or(this.basis.keyof()) ??
             this.basis.keyof()

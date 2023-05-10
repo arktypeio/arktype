@@ -19,6 +19,13 @@ export class MorphNode extends Node<"morph"> {
         return "false"
     }
 
+    toString() {
+        const names = this.transformations.map((morph) => morph.name)
+        return names.length === 1
+            ? `morph ${names[0]}`
+            : `morphs ${names.join("=>")}`
+    }
+
     compileTraverse(s: CompilationState) {
         return s.ifNotThen(this.key, s.problem("custom", "morphs"))
     }
