@@ -1,7 +1,7 @@
 import { inferred } from "../parse/definition.js"
 import type { inferIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
-import type { conform, exact } from "../utils/generics.js"
+import type { conform, exact, Literalable } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { Basis } from "./basis.js"
@@ -115,7 +115,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         )
     }
 
-    static fromLiteral(...values: unknown[]) {
+    static fromLiteral<values extends readonly unknown[]>(...values: values) {
         const seen: unknown[] = []
         const branches: PredicateNode[] = []
         for (const v of values) {
@@ -124,7 +124,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
                 seen.push(v)
             }
         }
-        return new TypeNode(branches)
+        return new TypeNode<values[number]>(branches)
     }
 
     static compile(branches: Discriminant | PredicateNode[]) {

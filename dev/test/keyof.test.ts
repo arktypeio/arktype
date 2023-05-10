@@ -1,5 +1,5 @@
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
+import { type, TypeNode } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
 suite("keyof", () => {
@@ -15,36 +15,32 @@ suite("keyof", () => {
         attest(t.infer).typed as "b"
         attest(t.root).is(type("'b'").root)
     })
-    // const expectedNeverKeyOfMessage = ""
-    // //     writeImplicitNeverMessage(
-    // //     new Path() as unknown as [],
-    // //     "keyof"
-    // // )
-    // test("non-overlapping union", () => {
-    //     attest(() =>
-    //         // @ts-expect-error
-    //         type(["keyof", [{ a: "number" }, "|", { b: "number" }]])
-    //     ).throwsAndHasTypeError(expectedNeverKeyOfMessage)
-    // })
-    // test("non-object", () => {
-    //     const t = type(["keyof", "bigint"])
-    //     attest(t.infer).typed as keyof bigint
-    //     attest(t.node).snap({
-    //         string: [
-    //             { value: "constructor" },
-    //             { value: "toLocaleString" },
-    //             { value: "toString" },
-    //             { value: "valueOf" }
-    //         ],
-    //         symbol: { value: "(symbol Symbol.toStringTag)" }
-    //     })
-    // })
-    // test("union including non-object", () => {
-    //     attest(() =>
-    //         // @ts-expect-error
-    //         type(["keyof", [{ a: "number" }, "|", "string"]])
-    //     ).throwsAndHasTypeError(expectedNeverKeyOfMessage)
-    // })
+    const expectedNeverKeyOfMessage = ""
+    //     writeImplicitNeverMessage(
+    //     new Path() as unknown as [],
+    //     "keyof"
+    // )
+    test("non-overlapping union", () => {
+        attest(() =>
+            type({ a: "number" }).or({ b: "number" }).keyof()
+        ).throwsAndHasTypeError(expectedNeverKeyOfMessage)
+    })
+    test("non-object", () => {
+        const t = type(["keyof", "bigint"])
+        attest(t.infer).typed as keyof bigint
+        const expected = TypeNode.fromLiteral(
+            "toLocaleString" as const,
+            "toString" as const,
+            "valueOf" as const,
+            Symbol.toStringTag
+        )
+        attest(t.root).is(expected)
+    })
+    test("union including non-object", () => {
+        attest(() =>
+            type({ a: "number" }).or("string").keyof()
+        ).throwsAndHasTypeError(expectedNeverKeyOfMessage)
+    })
     // const attestHasStringBranches = (
     //     branches: RuleNodes<"string">[],
     //     expectedBranches: RuleNodes<"string">[]
