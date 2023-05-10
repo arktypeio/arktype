@@ -3,84 +3,117 @@ import { ark, type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
 suite("keywords", () => {
-    // suite("js", () => {
-    //     test(" Function", () => {
-    //         const t = type("Function")
-    //         attest(t.node).snap("Function")
-    //         attest(t((str: string) => [str]).data).snap("(function)")
-    //         attest(t(1).problems?.summary).snap(
-    //             "Must be a function (was Number)"
-    //         )
-    //     })
-    //     test("Date", () => {
-    //         attest(type("Date").node).snap("Date")
-    //     })
-    //     test("Error", () => {
-    //         attest(type("Error").node).snap("Error")
-    //     })
-    //     test("Map", () => {
-    //         attest(type("Map").node).snap("Map")
-    //     })
-    //     test("RegExp", () => {
-    //         attest(type("RegExp").node).snap("RegExp")
-    //     })
-    //     test("Set", () => {
-    //         attest(type("Set").node).snap("Set")
-    //     })
-    //     test("WeakMap", () => {
-    //         attest(type("WeakMap").node).snap("WeakMap")
-    //     })
-    //     test("WeakSet", () => {
-    //         attest(type("WeakSet").node).snap("WeakSet")
-    //     })
-    //     test("Promise", () => {
-    //         attest(type("Promise").node).snap("Promise")
-    //     })
-    // })
-    // suite("ts", () => {
-    //     test("any", () => {
-    //         attest(type("any").node).equals("any")
-    //     })
-    //     test("bigint", () => {
-    //         attest(type("bigint").node).equals("bigint")
-    //     })
-    //     test("boolean", () => {
-    //         attest(type("boolean").node).equals("boolean")
-    //     })
-    //     test("false", () => {
-    //         attest(type("false").node).equals("false")
-    //     })
-    //     test("never", () => {
-    //         attest(type("never").node).equals("never")
-    //     })
-    //     test("null", () => {
-    //         attest(type("null").node).equals("null")
-    //     })
-    //     test("number", () => {
-    //         attest(type("number").node).equals("number")
-    //     })
-    //     test("object", () => {
-    //         attest(type("object").node).equals("object")
-    //     })
-    //     test("string", () => {
-    //         attest(type("string").node).equals("string")
-    //     })
-    //     test("symbol", () => {
-    //         attest(type("symbol").node).equals("symbol")
-    //     })
-    //     test("true", () => {
-    //         attest(type("true").node).equals("true")
-    //     })
-    //     test("unknown", () => {
-    //         attest(type("unknown").node).equals("unknown")
-    //     })
-    //     test("void", () => {
-    //         attest(type("void").node).equals("void")
-    //     })
-    //     test("undefined", () => {
-    //         attest(type("undefined").node).snap()
-    //     })
-    // })
+    suite("jsObjects", () => {
+        test(" Function", () => {
+            attest(type("Function").root.condition).snap(
+                "$arkRoot instanceof globalThis.$ark.Function"
+            )
+        })
+        test("Date", () => {
+            attest(type("Date").root.condition).snap(
+                "$arkRoot instanceof globalThis.$ark.Date"
+            )
+        })
+        test("Error", () => {
+            attest(type("Error").root.condition).snap(
+                "$arkRoot instanceof globalThis.$ark.Error"
+            )
+        })
+        test("Map", () => {
+            attest(type("Map").root.condition).snap(
+                "$arkRoot instanceof globalThis.$ark.Map"
+            )
+        })
+        test("RegExp", () => {
+            attest(type("RegExp").root.condition).snap(
+                "$arkRoot instanceof globalThis.$ark.RegExp"
+            )
+        })
+        test("Set", () => {
+            attest(type("Set").root.condition).snap(
+                "$arkRoot instanceof globalThis.$ark.Set"
+            )
+        })
+        test("WeakMap", () => {
+            attest(type("WeakMap").root.condition).snap(
+                "$arkRoot instanceof globalThis.$ark.WeakMap"
+            )
+        })
+        test("WeakSet", () => {
+            attest(type("WeakSet").root.condition).snap(
+                "$arkRoot instanceof globalThis.$ark.WeakSet"
+            )
+        })
+        test("Promise", () => {
+            attest(type("Promise").root.condition).snap(
+                "$arkRoot instanceof globalThis.$ark.Promise"
+            )
+        })
+    })
+    suite("tsKeywords", () => {
+        test("any", () => {
+            attest(type("any").root).is(type("unknown").root)
+        })
+        test("bigint", () => {
+            attest(type("bigint").root.condition).snap(
+                'typeof $arkRoot === "bigint"'
+            )
+        })
+        test("boolean", () => {
+            attest(type("boolean").root.condition).snap(`(() => {
+        switch($arkRoot) {
+            case true: {
+                return true;
+            }case false: {
+                return true;
+            }
+        }
+    })()`)
+        })
+        test("false", () => {
+            attest(type("false").root.condition).snap("$arkRoot === false")
+        })
+        test("never", () => {
+            attest(type("never").root.condition).snap("false")
+        })
+        test("null", () => {
+            attest(type("null").root.condition).snap("$arkRoot === null")
+        })
+        test("number", () => {
+            attest(type("number").root.condition).snap(
+                'typeof $arkRoot === "number"'
+            )
+        })
+        test("object", () => {
+            attest(type("object").root.condition).snap(
+                '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function")'
+            )
+        })
+        test("string", () => {
+            attest(type("string").root.condition).snap(
+                'typeof $arkRoot === "string"'
+            )
+        })
+        test("symbol", () => {
+            attest(type("symbol").root.condition).snap(
+                'typeof $arkRoot === "symbol"'
+            )
+        })
+        test("true", () => {
+            attest(type("true").root.condition).snap("$arkRoot === true")
+        })
+        test("unknown", () => {
+            attest(type("unknown").root.condition).snap("true")
+        })
+        test("void", () => {
+            attest(type("void").root).is(type("undefined").root)
+        })
+        test("undefined", () => {
+            attest(type("undefined").root.condition).snap(
+                "$arkRoot === undefined"
+            )
+        })
+    })
     suite("validation", () => {
         test("integer", () => {
             const integer = type("integer")

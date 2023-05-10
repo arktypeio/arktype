@@ -42,7 +42,7 @@ export class PropsNode extends Node<"props"> {
                 ? 1
                 : -1
         })
-        indexed.sort((l, r) => (l[0].key >= r[0].key ? 1 : -1))
+        indexed.sort((l, r) => (l[0].condition >= r[0].condition ? 1 : -1))
         super(PropsNode, sortedNamedEntries, indexed)
         this.namedEntries = sortedNamedEntries
     }
@@ -91,7 +91,7 @@ export class PropsNode extends Node<"props"> {
     }
 
     static #compileNamedEntry(entry: NamedNodeEntry) {
-        const valueCheck = entry[1].value.key.replaceAll(
+        const valueCheck = entry[1].value.condition.replaceAll(
             In,
             `${In}${compilePropAccess(entry[0])}`
         )
@@ -104,10 +104,12 @@ export class PropsNode extends Node<"props"> {
         const keySource = extractIndexKeyRegex(entry[0])
         if (!keySource) {
             // we only handle array indices for now
-            return throwInternalError(`Unexpected index type ${entry[0].key}`)
+            return throwInternalError(
+                `Unexpected index type ${entry[0].condition}`
+            )
         }
         const firstVariadicIndex = extractFirstVariadicIndex(keySource)
-        const elementCondition = entry[1].key
+        const elementCondition = entry[1].condition
             .replaceAll(IndexIn, `${IndexIn}Inner`)
             .replaceAll(In, `${In}[${IndexIn}]`)
         const result = `(() => {

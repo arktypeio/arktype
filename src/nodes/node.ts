@@ -46,7 +46,7 @@ export abstract class Node<
     narrowed extends input = input
 > {
     declare kind: kind
-    declare key: string
+    declare condition: string
     declare allows: (data: input) => data is narrowed
 
     static #cache: { [kind in NodeKind]: Record<string, Node<kind>> } = {
@@ -66,17 +66,17 @@ export abstract class Node<
         ...input: Parameters<NodeKinds[kind]["compile"]>
     ) {
         const kind = subclass.kind
-        const key = subclass.compile(...input)
-        if (Node.#cache[kind][key]) {
-            return Node.#cache[kind][key] as any
+        const condition = subclass.compile(...input)
+        if (Node.#cache[kind][condition]) {
+            return Node.#cache[kind][condition] as any
         }
-        this.key = key
+        this.condition = condition
         this.kind = kind as kind
         this.allows = new CompiledFunction<(data: input) => data is narrowed>(
             In,
-            `return ${key}`
+            `return ${condition}`
         )
-        ;(Node.#cache[kind] as any)[key] = this
+        ;(Node.#cache[kind] as any)[condition] = this
     }
 
     hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
@@ -85,18 +85,18 @@ export abstract class Node<
 
     #intersections: Record<string, NodeInstance<kind> | Disjoint> = {}
     intersect(other: NodeInstance<kind>): NodeInstance<kind> | Disjoint {
-        if (this.key === other.key) {
+        if (this.condition === other.condition) {
             return this as NodeInstance<kind>
         }
-        if (this.#intersections[other.key]) {
-            return this.#intersections[other.key]
+        if (this.#intersections[other.condition]) {
+            return this.#intersections[other.condition]
         }
         const result = this.subclass.intersect(
             this as NodeInstance<kind>,
             other
         )
-        this.#intersections[other.key] = result
-        other.#intersections[this.key] =
+        this.#intersections[other.condition] = result
+        other.#intersections[this.condition] =
             result instanceof Disjoint ? result.invert() : (result as any)
         return result
     }

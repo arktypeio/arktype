@@ -26,7 +26,7 @@ export class NarrowNode extends Node<"narrow"> {
     }
 
     compileTraverse(s: CompilationState) {
-        return s.ifNotThen(this.key, s.problem("custom", "filters"))
+        return s.ifNotThen(this.condition, s.problem("custom", "filters"))
     }
 
     static intersect(l: NarrowNode, r: NarrowNode) {

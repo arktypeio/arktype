@@ -27,7 +27,7 @@ export class MorphNode extends Node<"morph"> {
     }
 
     compileTraverse(s: CompilationState) {
-        return s.ifNotThen(this.key, s.problem("custom", "morphs"))
+        return s.ifNotThen(this.condition, s.problem("custom", "morphs"))
     }
 
     static intersect(l: MorphNode, r: MorphNode) {

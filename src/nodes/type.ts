@@ -139,9 +139,9 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         return branches.length === 0
             ? "false"
             : branches.length === 1
-            ? branches[0].key
+            ? branches[0].condition
             : `(${branches
-                  .map((branch) => branch.key)
+                  .map((branch) => branch.condition)
                   .sort()
                   .join(" || ")})`
     }
@@ -152,14 +152,13 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
             discriminant.kind === "domain"
                 ? `typeof ${discriminant.path}`
                 : `${discriminant.path}`
-
         let compiledCases = ""
         let k: CaseKey
         for (k in discriminant.cases) {
             const caseCondition = k === "default" ? "default" : `case ${k}`
             const caseNode = discriminant.cases[k]
             compiledCases += `${caseCondition}: {
-                return ${caseNode.key};
+                return ${caseNode.condition};
             }`
         }
         return `(() => {

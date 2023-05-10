@@ -221,7 +221,7 @@ export class BasisNode<
 
     compileTraverse(s: CompilationState) {
         return s.ifNotThen(
-            this.key,
+            this.condition,
             s.problem(
                 this.level,
                 this.rule as ProblemRules[(typeof this)["level"]]

@@ -66,8 +66,8 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
     static compile(rules: PredicateRules) {
         let result = ""
         for (const rule of rules) {
-            if (rule.key !== "true") {
-                result += `${result && " && "}${rule.key}`
+            if (rule.condition !== "true") {
+                result += `${result && " && "}${rule.condition}`
             }
         }
         return result || "true"

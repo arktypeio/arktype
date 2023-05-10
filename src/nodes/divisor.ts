@@ -13,7 +13,7 @@ export class DivisorNode extends Node<"divisor"> {
     }
 
     compileTraverse(s: CompilationState) {
-        return s.ifNotThen(this.key, s.problem("divisor", this.divisor))
+        return s.ifNotThen(this.condition, s.problem("divisor", this.divisor))
     }
 
     toString() {

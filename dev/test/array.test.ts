@@ -8,7 +8,7 @@ suite("parse array", () => {
     test("parse", () => {
         const t = type("string[]")
         attest(t.infer).typed as string[]
-        attest(t.root.key).snap(`$arkIn instanceof Array && (() => {
+        attest(t.root.condition).snap(`$arkIn instanceof Array && (() => {
             let valid = true;
             for(let i = 0; i < $arkIn.length; i++) {
                 valid = typeof $arkIn[i] === "string" && valid;
@@ -21,7 +21,7 @@ suite("parse array", () => {
     test("nested", () => {
         const t = type("string[][]")
         attest(t.infer).typed as string[][]
-        attest(t.root.key).snap(`$arkRoot instanceof Array && (() => {
+        attest(t.root.condition).snap(`$arkRoot instanceof Array && (() => {
             let valid = true;
             for(let $arkIndex = 0; $arkIndex < $arkRoot.length; $arkIndex++) {
                 valid = $arkRoot[$arkIndex] instanceof Array && (() => {

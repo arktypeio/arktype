@@ -10,7 +10,7 @@ suite("tuple", () => {
     test("shallow", () => {
         const t = type(["string", "number"])
         attest(t.infer).typed as [string, number]
-        attest(t.root.key).snap(
+        attest(t.root.condition).snap(
             // TODO: array index accesses should be numeric
             '$arkRoot instanceof Array && $arkRoot.length === 2 && typeof $arkRoot["0"] === "string" && typeof $arkRoot["1"] === "number"'
         )
@@ -31,7 +31,7 @@ suite("tuple", () => {
         test("spreads simple arrays", () => {
             const wellRested = type(["string", "...number[]"])
             attest(wellRested.infer).typed as [string, ...number[]]
-            attest(wellRested.root.key)
+            attest(wellRested.root.condition)
                 .snap(`$arkRoot instanceof Array && typeof $arkRoot["0"] === "string" && (() => {
             let valid = true;
             for(let $arkIndex = 1; $arkIndex < $arkRoot.length; $arkIndex++) {
@@ -55,7 +55,7 @@ suite("tuple", () => {
                 },
                 ...(RegExp | Date)[]
             ]
-            attest(greatSpread.root.key).snap()
+            attest(greatSpread.root.condition).snap()
         })
         test("allows array keyword", () => {
             const types = scope({
