@@ -31,7 +31,7 @@ export type TypeParser<$> = {
         opts: TypeConfig
     ): parseType<def, bind<$, def>>
 
-    equalTo: <value>(value: value) => Type<value, $>
+    fromLiteral: <value>(value: value) => Type<value, $>
 }
 
 // Reuse the validation result to determine if the type will be successfully created.
