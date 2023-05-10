@@ -1,7 +1,7 @@
 import { inferred } from "../parse/definition.js"
 import type { inferIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
-import type { conform, exact } from "../utils/generics.js"
+import type { conform, evaluate, exact } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { Basis } from "./basis.js"

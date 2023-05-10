@@ -31,7 +31,7 @@ suite("tuple", () => {
             const wellRested = type(["string", "...number[]"])
             attest(wellRested.infer).typed as [string, ...number[]]
             attest(wellRested.root.key)
-                .snap(`$arkRoot instanceof Array && typeof $arkRoot["0"] === "string" && $arkRoot.length === 2 && (() => {
+                .snap(`$arkRoot instanceof Array && typeof $arkRoot["0"] === "string" && (() => {
             let valid = true;
             for(let $arkIndex = 1; $arkIndex < $arkRoot.length; $arkIndex++) {
                 valid = typeof $arkRoot[$arkIndex] === "number" && valid;
