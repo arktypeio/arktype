@@ -107,7 +107,11 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     }
 
     array(): Type<t[], $> {
-        return new Type(this.root.array(), this.scope)
+        return new Type([this.definition, "[]"], this.scope)
+    }
+
+    keyof(): Type<keyof t, $> {
+        return new Type(["keyof", this.definition], this.scope)
     }
 
     assert(data: unknown): inferOut<t> {

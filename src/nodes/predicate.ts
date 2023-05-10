@@ -180,14 +180,14 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         return new PredicateNode(rules)
     }
 
-    private _keyOf?: TypeNode
-    keyOf() {
-        if (this._keyOf) return this._keyOf
+    private _keyof?: TypeNode
+    keyof() {
+        if (this._keyof) return this._keyof
         if (!this.basis) return neverTypeNode
-        this._keyOf =
-            this.getConstraint("props")?.keyOf().or(this.basis.keyOf()) ??
-            this.basis.keyOf()
-        return this._keyOf
+        this._keyof =
+            this.getConstraint("props")?.keyof().or(this.basis.keyof()) ??
+            this.basis.keyof()
+        return this._keyof
     }
 }
 

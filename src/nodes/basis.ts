@@ -221,17 +221,17 @@ export class BasisNode<
         )
     }
 
-    private _keyOf?: TypeNode
-    keyOf(): TypeNode {
-        if (this._keyOf) {
-            return this._keyOf
+    private _keyof?: TypeNode
+    keyof(): TypeNode {
+        if (this._keyof) {
+            return this._keyof
         }
-        this._keyOf = new TypeNode(
+        this._keyof = new TypeNode(
             this.literalKeysOf().map(
                 (k) => new PredicateNode([new BasisNode(["===", k])])
             )
         )
-        return this._keyOf
+        return this._keyof
     }
 
     literalKeysOf(): Key[] {

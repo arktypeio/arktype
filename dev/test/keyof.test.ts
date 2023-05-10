@@ -4,15 +4,14 @@ import { attest } from "../attest/main.js"
 
 suite("keyof", () => {
     test("object literal", () => {
-        const t = type(["keyof", { a: "123", b: "123" }])
+        const t = type({ a: "123", b: "123" }).keyof()
         attest(t.infer).typed as "a" | "b"
         attest(t.root).is(type("'a'|'b'").root)
     })
     test("overlapping union", () => {
-        const t = type([
-            "keyof",
-            [{ a: "number", b: "boolean" }, "|", { b: "number", c: "string" }]
-        ])
+        const t = type({ a: "number", b: "boolean" })
+            .or({ b: "number", c: "string" })
+            .keyof()
         attest(t.infer).typed as "b"
         attest(t.root).is(type("'b'").root)
     })

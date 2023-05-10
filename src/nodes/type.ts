@@ -343,17 +343,17 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         return this.intersect(other) === this
     }
 
-    private _keyOf?: TypeNode
-    keyOf(): TypeNode {
+    private _keyof?: TypeNode
+    keyof(): TypeNode {
         if (this.branches.length === 0) {
             return throwParseError(`never is not a valid keyof operand`)
         }
-        if (this._keyOf) return this._keyOf
-        this._keyOf = this.branches[0].keyOf()
+        if (this._keyof) return this._keyof
+        this._keyof = this.branches[0].keyof()
         for (let i = 1; i < this.branches.length; i++) {
-            this._keyOf = this._keyOf.and(this.branches[i].keyOf())
+            this._keyof = this._keyof.and(this.branches[i].keyof())
         }
-        return this._keyOf
+        return this._keyof
     }
 
     array(): TypeNode<t[]> {

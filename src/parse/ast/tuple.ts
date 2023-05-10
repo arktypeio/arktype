@@ -255,7 +255,7 @@ export type UnparsedTupleExpressionInput = {
 export type UnparsedTupleOperator = evaluate<keyof UnparsedTupleExpressionInput>
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) =>
-    parseDefinition(def[1], ctx).keyOf()
+    parseDefinition(def[1], ctx).keyof()
 
 export type inferKeyOfExpression<operandDef, $> = evaluate<
     keyof inferDefinition<operandDef, $>
