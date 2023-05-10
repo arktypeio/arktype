@@ -26,7 +26,7 @@ import {
 export class PropsNode extends Node<"props"> {
     static readonly kind = "props"
 
-    keyNames: string[]
+    namedEntries: NamedNodeEntry[]
 
     constructor(public named: NamedNodes, public indexed: IndexedNodeEntry[]) {
         // Sort keys first by precedence (prerequisite,required,optional),
@@ -44,7 +44,7 @@ export class PropsNode extends Node<"props"> {
         })
         indexed.sort((l, r) => (l[0].key >= r[0].key ? 1 : -1))
         super(PropsNode, sortedNamedEntries, indexed)
-        this.keyNames = sortedNamedEntries.map((entry) => entry[0])
+        this.namedEntries = sortedNamedEntries
     }
 
     static from(
@@ -109,11 +109,11 @@ export class PropsNode extends Node<"props"> {
     }
 
     compileTraverse(s: CompilationState) {
-        return this.keyNames
-            .map((k) =>
-                this.named[k].value
+        return this.namedEntries
+            .map((entry) =>
+                this.named[entry[0]].value
                     .compileTraverse(s)
-                    .replaceAll(In, `${In}${compilePropAccess(k)}`)
+                    .replaceAll(In, `${In}${compilePropAccess(entry[0])}`)
             )
             .join("\n")
     }
@@ -236,9 +236,25 @@ export class PropsNode extends Node<"props"> {
         return new PropsNode(preserved, this.indexed)
     }
 
+    _keyOf?: TypeNode<Key>
     keyOf() {
-        // TODO: numeric?
-        return [...this.keyNames, ...this.indexed.map((entry) => entry[0])]
+        if (this._keyOf) return this._keyOf
+        this._keyOf = this.namedKeyOf().or(this.indexedKeyOf())
+        return this._keyOf
+    }
+
+    indexedKeyOf() {
+        return new TypeNode(
+            this.indexed.flatMap((entry) => entry[0].branches)
+        ) as TypeNode<Key>
+    }
+
+    namedKeyOf() {
+        return TypeNode.fromLiteral(...this.namedKeyLiterals()) as TypeNode<Key>
+    }
+
+    namedKeyLiterals() {
+        return this.namedEntries.map((entry) => entry[0])
     }
 }
 

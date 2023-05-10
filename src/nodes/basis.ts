@@ -6,6 +6,7 @@ import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type { evaluate } from "../utils/generics.js"
 import type { constructor } from "../utils/objectKinds.js"
 import { constructorExtends, prototypeKeysOf } from "../utils/objectKinds.js"
+import type { Key } from "../utils/records.js"
 import { stringify } from "../utils/serialize.js"
 import {
     type CompilationState,
@@ -15,9 +16,10 @@ import {
 import type { DisjointKindEntries } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
-import type { ConstraintKind } from "./predicate.js"
+import { type ConstraintKind, PredicateNode } from "./predicate.js"
 import type { ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
+import { TypeNode } from "./type.js"
 
 type BasesByLevel = {
     domain: Exclude<Domain, "undefined" | "null" | "boolean">
@@ -219,7 +221,20 @@ export class BasisNode<
         )
     }
 
-    keyOf() {
+    private _keyOf?: TypeNode
+    keyOf(): TypeNode {
+        if (this._keyOf) {
+            return this._keyOf
+        }
+        this._keyOf = new TypeNode(
+            this.literalKeysOf().map(
+                (k) => new PredicateNode([new BasisNode(["===", k])])
+            )
+        )
+        return this._keyOf
+    }
+
+    literalKeysOf(): Key[] {
         if (this.hasLevel("value")) {
             const value = this.getLiteralValue()
             if (value === null || value === undefined) {
@@ -230,13 +245,11 @@ export class BasisNode<
         if (this.hasLevel("class")) {
             return prototypeKeysOf(this.rule)
         }
-        return baseKeysByDomain[this.domain]
+        return [...baseKeysByDomain[this.domain]]
     }
 }
 
-type KeyValue = string | number | symbol
-
-const baseKeysByDomain: Record<Domain, readonly KeyValue[]> = {
+const baseKeysByDomain: Record<Domain, readonly Key[]> = {
     bigint: prototypeKeysOf(0n),
     boolean: prototypeKeysOf(false),
     null: [],

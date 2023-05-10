@@ -1,7 +1,7 @@
 import { inferred } from "../parse/definition.js"
 import type { inferIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
-import type { conform, evaluate, exact } from "../utils/generics.js"
+import type { conform, exact } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { Basis } from "./basis.js"
@@ -113,6 +113,18 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         return new TypeNode<inferBranches<branches>>(
             branchNodes.filter((_, i) => uniquenessByIndex[i])
         )
+    }
+
+    static fromLiteral(...values: unknown[]) {
+        const seen: unknown[] = []
+        const branches: PredicateNode[] = []
+        for (const v of values) {
+            if (!seen.includes(v)) {
+                branches.push(new PredicateNode([new BasisNode(["===", v])]))
+                seen.push(v)
+            }
+        }
+        return new TypeNode(branches)
     }
 
     static compile(branches: Discriminant | PredicateNode[]) {
@@ -303,15 +315,15 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         )
     }
 
-    and(other: TypeNode): TypeNode {
+    and<other>(other: TypeNode<other>): TypeNode<t & other> {
         const result = this.intersect(other)
         return result instanceof TypeNode
-            ? result
+            ? (result as TypeNode<t & other>)
             : throwParseError(`Unsatisfiable`)
     }
 
-    or(other: TypeNode): TypeNode {
-        if (this === other) {
+    or<other>(other: TypeNode<other>): TypeNode<t | other> {
+        if (this === (other as unknown)) {
             return this
         }
         return new TypeNode([...this.branches, ...other.branches])
@@ -331,16 +343,17 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         return this.intersect(other) === this
     }
 
-    keyOf() {
+    private _keyOf?: TypeNode
+    keyOf(): TypeNode {
         if (this.branches.length === 0) {
-            // keyof never?
-            return this
+            return throwParseError(`never is not a valid keyof operand`)
         }
-        // let result: TypeNode = new TypeNode(this.branches[0].keyOf())
-        // for (let i = 1; i < this.branches.length; i++) {
-        //     result = result
-        // }
-        return this
+        if (this._keyOf) return this._keyOf
+        this._keyOf = this.branches[0].keyOf()
+        for (let i = 1; i < this.branches.length; i++) {
+            this._keyOf = this._keyOf.and(this.branches[i].keyOf())
+        }
+        return this._keyOf
     }
 
     array(): TypeNode<t[]> {

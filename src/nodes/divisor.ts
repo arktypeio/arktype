@@ -1,12 +1,11 @@
 import { type CompilationState, In } from "./compilation.js"
 import { Node } from "./node.js"
 
-export class DivisibilityNode extends Node<"divisor"> {
-    // TODO: align kind with node names
+export class DivisorNode extends Node<"divisor"> {
     static readonly kind = "divisor"
 
     constructor(public divisor: number) {
-        super(DivisibilityNode, divisor)
+        super(DivisorNode, divisor)
     }
 
     static compile(divisor: number) {
@@ -17,12 +16,12 @@ export class DivisibilityNode extends Node<"divisor"> {
         return s.ifNotThen(this.key, s.problem("divisor", this.divisor))
     }
 
-    static intersect(l: DivisibilityNode, r: DivisibilityNode) {
+    static intersect(l: DivisorNode, r: DivisorNode) {
         const leastCommonMultiple = Math.abs(
             (l.divisor * r.divisor) /
                 greatestCommonDivisor(l.divisor, r.divisor)
         )
-        return new DivisibilityNode(leastCommonMultiple)
+        return new DivisorNode(leastCommonMultiple)
     }
 }
 

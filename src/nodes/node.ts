@@ -3,7 +3,7 @@ import type { instanceOf } from "../utils/objectKinds.js"
 import type { BasisNode } from "./basis.js"
 import { type CompilationState, In } from "./compilation.js"
 import { Disjoint } from "./disjoint.js"
-import type { DivisibilityNode } from "./divisibility.js"
+import type { DivisorNode } from "./divisor.js"
 import type { FilterNode } from "./filter.js"
 import type { MorphNode } from "./morph.js"
 import type { PredicateNode } from "./predicate.js"
@@ -30,7 +30,7 @@ export type NodeKinds = {
     type: typeof TypeNode
     predicate: typeof PredicateNode
     basis: typeof BasisNode
-    divisor: typeof DivisibilityNode
+    divisor: typeof DivisorNode
     range: typeof RangeNode
     regex: typeof RegexNode
     props: typeof PropsNode

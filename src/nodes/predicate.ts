@@ -12,7 +12,7 @@ import { BasisNode } from "./basis.js"
 import type { CompilationState } from "./compilation.js"
 import type { DiscriminantKind } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
-import { DivisibilityNode } from "./divisibility.js"
+import { DivisorNode } from "./divisor.js"
 import { FilterNode } from "./filter.js"
 import { MorphNode } from "./morph.js"
 import { Node } from "./node.js"
@@ -26,6 +26,7 @@ import { emptyPropsNode, PropsNode } from "./props.js"
 import type { Bounds } from "./range.js"
 import { RangeNode } from "./range.js"
 import { RegexNode } from "./regex.js"
+import { neverTypeNode, type TypeNode } from "./type.js"
 
 export class PredicateNode<t = unknown> extends Node<"predicate"> {
     declare [inferred]: t
@@ -179,14 +180,14 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         return new PredicateNode(rules)
     }
 
+    private _keyOf?: TypeNode
     keyOf() {
-        if (!this.basis) {
-            // keyof unknown => never
-            return []
-        }
-        const basisKeys = this.basis.keyOf()
-        const propKeys = this.getConstraint("props")?.keyOf() ?? []
-        return [...basisKeys, ...propKeys]
+        if (this._keyOf) return this._keyOf
+        if (!this.basis) return neverTypeNode
+        this._keyOf =
+            this.getConstraint("props")?.keyOf().or(this.basis.keyOf()) ??
+            this.basis.keyOf()
+        return this._keyOf
     }
 }
 
@@ -195,10 +196,9 @@ const assertAllowsConstraint = (
     kind: ConstraintKind
 ) => {
     if (basis === undefined) {
-        if (kind !== "filter" && kind !== "morph") {
-            throwParseError(`${kind} constraint requires a basis`)
-        }
-        return
+        return kind === "filter" || kind === "morph"
+            ? undefined
+            : throwParseError(`${kind} constraint requires a basis`)
     }
     return basis.assertAllowsConstraint(kind)
 }
@@ -230,7 +230,7 @@ export const createConstraint = <kind extends ConstraintKind>(
 
 export const constraintKinds = {
     range: RangeNode,
-    divisor: DivisibilityNode,
+    divisor: DivisorNode,
     regex: RegexNode,
     props: PropsNode,
     filter: FilterNode,

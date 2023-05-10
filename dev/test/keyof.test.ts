@@ -1,27 +1,26 @@
 import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
-import { Path } from "../../src/utils/lists.js"
-import { stringify } from "../../src/utils/serialize.js"
 import { attest } from "../attest/main.js"
 
 suite("keyof", () => {
-    // test("object literal", () => {
-    //     const t = type(["keyof", { a: "123", b: "123" }])
-    //     attest(t.infer).typed as "a" | "b"
-    //     // attest(t.node).snap({ string: [{ value: "a" }, { value: "b" }] })
-    // })
-    // test("overlapping union", () => {
-    //     const t = type([
-    //         "keyof",
-    //         [{ a: "number", b: "boolean" }, "|", { b: "number", c: "string" }]
-    //     ])
-    //     attest(t.infer).typed as "b"
-    //     // attest(t.node).snap({ string: { value: "b" } })
-    // })
-    // const expectedNeverKeyOfMessage = writeImplicitNeverMessage(
-    //     new Path() as unknown as [],
-    //     "keyof"
-    // )
+    test("object literal", () => {
+        const t = type(["keyof", { a: "123", b: "123" }])
+        attest(t.infer).typed as "a" | "b"
+        attest(t.root).is(type("'a'|'b'").root)
+    })
+    test("overlapping union", () => {
+        const t = type([
+            "keyof",
+            [{ a: "number", b: "boolean" }, "|", { b: "number", c: "string" }]
+        ])
+        attest(t.infer).typed as "b"
+        attest(t.root).is(type("'b'").root)
+    })
+    // const expectedNeverKeyOfMessage = ""
+    // //     writeImplicitNeverMessage(
+    // //     new Path() as unknown as [],
+    // //     "keyof"
+    // // )
     // test("non-overlapping union", () => {
     //     attest(() =>
     //         // @ts-expect-error
@@ -99,7 +98,7 @@ suite("keyof", () => {
     //     )
     // })
     // test("helper", () => {
-    //     const t = keyOf({ a: "string" })
+    //     const t = keysOf({ a: "string" })
     //     attest(t.infer).typed as "a"
     //     attest(t.node).snap({ string: { value: "a" } })
     // })
