@@ -21,3 +21,21 @@ This extension provides syntax highlighting for strings that are part of an ArkT
 It also includes an editor theme based on ArkType and optimized for type syntax:
 
 ![theme](https://github.com/arktypeio/arkdark/raw/HEAD/Theme.png)
+
+## Extending This Theme
+
+-   Open up ./arkdark on its own in VS code
+-   **F5** or **Run > Debugger**, will launch the extension in another window, allowing you to see the changes on any repo you open up
+
+Looking to edit the theme? **(Changes are immediately reflected)**
+
+-   **themes** > **arkdark.json**
+
+Looking to change the textmate scopes? **(Must restart the debugger to view changes)**
+
+-   arktype.tmLanguage.json
+
+Current textmate scopes can be viewed:
+
+-   Open: Command Palette **(Ctrl + Shift + P)**
+-   Search: **Developer: Inspect Editor Tokens and Scopes**

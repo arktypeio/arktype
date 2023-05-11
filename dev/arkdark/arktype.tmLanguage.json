@@ -4,6 +4,9 @@
     "patterns": [
         {
             "include": "#definition"
+        },
+        {
+            "include": "#snap"
         }
     ],
     "repository": {
@@ -102,7 +105,19 @@
         },
         "operator": {
             "name": "keyword.operator",
-            "match": "[<>=%^_-]|\""
+            "match": "[<>=%]|\""
+        },
+        "snap": {
+            "begin": "snapCompiled\\(",
+            "end": "\\)",
+            "patterns": [
+                {
+                    "include": "#quoted"
+                },
+                {
+                    "include": "source.ts#type"
+                }
+            ]
         }
     }
 }
