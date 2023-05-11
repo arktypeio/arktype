@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { suite, test } from "mocha"
 import { type, TypeNode } from "../../src/main.js"
+import { writeUnsatisfiableExpressionError } from "../../src/parse/ast/ast.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
@@ -108,10 +109,14 @@ suite("intersection", () => {
             )
         })
         test("implicit never", () => {
-            // // @ts-expect-error
-            attest(() => type("string&number")).throws.snap(
-                "The intersection of number and string results in an unsatisfiable type"
-            )
+            // @ts-expect-error
+            attest(() => type("string&number"))
+                .throws(
+                    'Intersection at $arkRoot of "number" and "string" results in an unsatisfiable type'
+                )
+                .types.errors(
+                    writeUnsatisfiableExpressionError("string & number")
+                )
         })
         test("helper parse", () => {
             attest(() =>

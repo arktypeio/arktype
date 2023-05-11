@@ -371,6 +371,14 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         const predicate = new PredicateNode([arrayBasisNode, props])
         return new TypeNode([predicate])
     }
+
+    isNever(): this is TypeNode<never> {
+        return this === neverTypeNode
+    }
+
+    isUnknown(): this is TypeNode<unknown> {
+        return this === unknownTypeNode
+    }
 }
 
 export const typeNodeFromInput = (input: TypeInput) =>

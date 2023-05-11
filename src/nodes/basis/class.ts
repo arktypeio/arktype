@@ -13,6 +13,7 @@ export class ClassNode extends BasisNode<"class"> {
     }
 
     static compile(instanceOf: abstractableConstructor) {
+        // TODO: others
         return `${In} instanceof ${
             instanceOf === Array
                 ? "Array"
@@ -22,10 +23,6 @@ export class ClassNode extends BasisNode<"class"> {
 
     toString() {
         return this.instanceOf.name
-    }
-
-    getConstructor() {
-        return this.instanceOf
     }
 
     literalKeysOf() {

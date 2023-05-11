@@ -2,9 +2,11 @@ import { CompilationState, In } from "./nodes/compilation.js"
 import { registry } from "./nodes/registry.js"
 import type { CheckResult } from "./nodes/traverse.js"
 import { TraversalState } from "./nodes/traverse.js"
-import type { TypeNode } from "./nodes/type.js"
+import { type TypeNode } from "./nodes/type.js"
+import type { writeUnsatisfiableExpressionError } from "./parse/ast/ast.js"
 import type { Morph, ParsedMorph } from "./parse/ast/morph.js"
 import type { inferPredicate, Narrow } from "./parse/ast/narrow.js"
+import type { astToString } from "./parse/ast/utils.js"
 import {
     type inferDefinition,
     inferred,
@@ -12,9 +14,10 @@ import {
     type validateDefinition
 } from "./parse/definition.js"
 import type { bind, Scope } from "./scope.js"
-import { type Ark } from "./scopes/ark.js"
+import { type Ark, type } from "./scopes/ark.js"
 import { CompiledFunction } from "./utils/compiledFunction.js"
 import type { evaluate } from "./utils/generics.js"
+import type { List } from "./utils/lists.js"
 import { Path } from "./utils/lists.js"
 import type { BuiltinClass } from "./utils/objectKinds.js"
 
@@ -76,7 +79,12 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     }
 
     and<def>(
-        def: validateDefinition<def, bind<$, def>>
+        def: validateChainedExpression<
+            def,
+            bind<$, def>,
+            t & inferDefinition<def, bind<$, def>>,
+            "intersection"
+        >
     ): Type<evaluate<t & inferDefinition<def, bind<$, def>>>> {
         return this.binary(def, "&") as never
     }
@@ -91,14 +99,6 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         transform: transform
     ): Type<(In: inferOut<t>) => ReturnType<transform>, $> {
         return this as never
-    }
-
-    equals<other>(other: Type<other>): this is Type<other> {
-        return this.root === (other.root as unknown)
-    }
-
-    extends<other>(other: Type<other>): this is Type<other> {
-        return this.root.intersect(other.root) === this.root
     }
 
     // TODO: based on below, should maybe narrow morph output if used after
@@ -120,7 +120,26 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         const result = this.call(null, data)
         return result.problems ? result.problems.throw() : result.data
     }
+
+    equals<other>(other: Type<other>): this is Type<other> {
+        return this.root === (other.root as unknown)
+    }
+
+    extends<other>(other: Type<other>): this is Type<other> {
+        return this.root.intersect(other.root) === this.root
+    }
 }
+
+type validateChainedExpression<
+    def,
+    $,
+    inferred,
+    operation extends string
+> = def extends validateDefinition<def, $>
+    ? [inferred] extends [never]
+        ? writeUnsatisfiableExpressionError<operation>
+        : def
+    : validateDefinition<def, $>
 
 export type KeyCheckKind = "loose" | "strict" | "distilled"
 

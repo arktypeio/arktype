@@ -1,5 +1,6 @@
 import type { Comparator } from "../../nodes/constraints/range.js"
 import type { resolve } from "../../scope.js"
+import { type Ark, type } from "../../scopes/ark.js"
 import type { error } from "../../utils/errors.js"
 import type { evaluate } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"
@@ -12,6 +13,7 @@ import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { parseString } from "../string/string.js"
 import type { validateBound } from "./bound.js"
 import type { validateDivisor } from "./divisor.js"
+import type { astToString } from "./utils.js"
 
 export type inferAst<ast, $> = ast extends List
     ? inferExpression<ast, $>
@@ -39,7 +41,9 @@ export type validateAst<ast, $> = ast extends string
         : never
     : ast extends InfixExpression<infer operator, infer l, infer r>
     ? operator extends "&"
-        ? validateInfix<ast, $>
+        ? [inferAst<l, $> & inferAst<r, $>] extends [never]
+            ? error<writeUnsatisfiableExpressionError<astToString<ast>>>
+            : validateInfix<ast, $>
         : operator extends "|"
         ? validateInfix<ast, $>
         : operator extends Comparator
@@ -47,7 +51,20 @@ export type validateAst<ast, $> = ast extends string
         : operator extends "%"
         ? validateDivisor<l, $>
         : undefined
+    : // TODO: ===?
+    ast extends readonly ["keyof", infer operand]
+    ? [keyof inferAst<operand, $>] extends [never]
+        ? error<writeUnsatisfiableExpressionError<astToString<ast>>>
+        : validateAst<operand, $>
     : never
+
+export const writeUnsatisfiableExpressionError = <expression extends string>(
+    expression: expression
+): writeUnsatisfiableExpressionError<expression> =>
+    `${expression} results in an unsatisfiable type`
+
+export type writeUnsatisfiableExpressionError<expression extends string> =
+    `${expression} results in an unsatisfiable type`
 
 type validateStringAst<def extends string> = def extends NumberLiteral<
     infer value

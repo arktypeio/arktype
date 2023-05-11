@@ -1,12 +1,13 @@
 import type { Literalable } from "../../utils/generics.js"
 
-export type astToString<ast> = `'${astToStringRecurse<ast, "">}'`
-
-type astToStringRecurse<ast, result extends string> = ast extends [
-    infer head,
-    ...infer tail
-]
-    ? astToStringRecurse<tail, `${result}${astToStringRecurse<head, "">}`>
+export type astToString<
+    ast,
+    result extends string = ""
+> = ast extends readonly [infer head, ...infer tail]
+    ? astToString<
+          tail,
+          `${result extends "" ? "" : `${result} `}${astToString<head, "">}`
+      >
     : ast extends Literalable
     ? `${result}${ast extends bigint ? `${ast}n` : ast}`
-    : "..."
+    : result

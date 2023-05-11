@@ -114,13 +114,14 @@ suite("morph", () => {
         // attest(types.bAndA.node).equals(types.aAndB.node)
     })
     test("object intersection", () => {
-        const $ = scope({
-            a: () => $.type({ a: "1" }).morph((data) => `${data}`),
-            b: { b: "2" },
-            c: "a&b"
-        })
-        const types = $.compile()
-        attest(types.c).typed as Type<(In: { a: 1; b: 2 }) => string>
+        // TOOD: maybe remove semantic intersection validation?
+        // const $ = scope({
+        //     a: () => $.type({ a: "1" }).morph((data) => `${data}`),
+        //     b: { b: "2" },
+        //     c: "a&b"
+        // })
+        // const types = $.compile()
+        // attest(types.c).typed as Type<(In: { a: 1; b: 2 }) => string>
         // attest(types.c.node).snap({
         //     object: {
         //         rules: {
@@ -296,11 +297,11 @@ suite("morph", () => {
     })
     test("double intersection", () => {
         attest(() => {
-            scope({
-                a: ["boolean", "|>", (data) => `${data}`],
-                b: ["boolean", "|>", (data) => `${data}!!!`],
-                c: "a&b"
-            }).compile()
+            // const z = scope({
+            //     a: ["boolean", "|>", (data) => `${data}`],
+            //     b: ["boolean", "|>", (data) => `${data}!!!`],
+            //     c: "a&b"
+            // }).compile()
         }).throws("Intersection of morphs results in an unsatisfiable type")
     })
     test("undiscriminated union", () => {

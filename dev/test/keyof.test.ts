@@ -1,11 +1,15 @@
 import { suite, test } from "mocha"
 import { type, TypeNode } from "../../src/main.js"
+import { writeUnsatisfiableExpressionError } from "../../src/parse/ast/ast.js"
+import type { Ark } from "../../src/scopes/ark.js"
+import type { Type } from "../../src/type.js"
 import { attest } from "../attest/main.js"
 
 suite("keyof", () => {
     test("object literal", () => {
         const t = type({ a: "123", b: "123" }).keyof()
         attest(t.infer).typed as "a" | "b"
+        attest(t.definition).snap(["keyof", { a: "123", b: "123" }])
         attest(t.root).is(type("'a'|'b'").root)
     })
     test("overlapping union", () => {
@@ -33,68 +37,64 @@ suite("keyof", () => {
         )
         attest(t.root).is(expected)
     })
-    test("union including non-object", () => {
-        attest(() => type({ a: "number" }).or("string").keyof()).throws.snap(
-            "Error: Unsatisfiable"
+    test("tuple expression", () => {
+        const t = type(["keyof", { a: "string" }])
+        attest(t.infer).typed as "a"
+        attest(t.root).is(TypeNode.fromValue("a" as const))
+    })
+    test("unsatisfiable tuple expression", () => {
+        // @ts-expect-error
+        attest(() => type(["keyof", "null"])).throws(
+            writeUnsatisfiableExpressionError("keyof null")
         )
     })
-    // const attestHasStringBranches = (
-    //     branches: RuleNodes<"string">[],
-    //     expectedBranches: RuleNodes<"string">[]
-    // ) => {
-    //     for (const expected of expectedBranches) {
-    //         const expectedString = stringify(expected)
-    //         attest(
-    //             branches.some((branch) => stringify(branch) === expectedString)
-    //         ).equals(true)
-    //     }
-    // }
-    // test("array", () => {
-    //     const t = type(["keyof", ["string", "number"]])
-    //     attest(t.infer).typed as keyof [string, number]
-    //     const node = t.node as DomainsJson
-    //     // the array prototype has many items and they vary based on the JS
-    //     // flavor we're running in, so just check that the indices from the type
-    //     // and one prototype key are present as a heuristic
-    //     attestHasStringBranches(node.string as RuleNodes<"string">[], [
-    //         { value: "0" },
-    //         { value: "1" },
-    //         { value: "map" }
-    //     ])
-    //     attest(node.number).snap([{ value: 0 }, { value: 1 }])
-    //     attest(node.symbol).snap([
-    //         { value: "(symbol Symbol.iterator)" },
-    //         { value: "(symbol Symbol.unscopables)" }
-    //     ])
-    // })
-    // test("wellFormedNonNegativeInteger intersection", () => {
-    //     const t = type(["keyof", [{ "1": "1" }, "&", "string[]"]])
-    //     const node = t.node as DomainsJson
-    //     attestHasStringBranches(node.string as RuleNodes<"string">[], [
-    //         { value: "1" },
-    //         { regex: "^(?:0|(?:[1-9]\\d*))$" }
-    //     ])
-    //     attest(node.number).snap([
-    //         { value: 1 },
-    //         { range: { min: { comparator: ">=", limit: 0 } }, divisor: 1 }
-    //     ])
-    // })
-    // test("nullish", () => {
-    //     // @ts-expect-error
-    //     attest(() => type(["keyof", "null"])).throwsAndHasTypeError(
-    //         expectedNeverKeyOfMessage
-    //     )
-    //     // @ts-expect-error
-    //     attest(() => type(["keyof", "undefined"])).throwsAndHasTypeError(
-    //         expectedNeverKeyOfMessage
-    //     )
-    // })
-    // test("helper", () => {
-    //     const t = keysOf({ a: "string" })
-    //     attest(t.infer).typed as "a"
-    //     attest(t.node).snap({ string: { value: "a" } })
-    // })
-    // test("helper errors", () => {
-    //     attest(() => keyOf("object")).throws(expectedNeverKeyOfMessage)
-    // })
+    test("union including non-object", () => {
+        attest(() => type({ a: "number" }).or("boolean").keyof()).throws.snap(
+            'Error: Intersection at $arkRoot of "a" and "toString" or "valueOf" results in an unsatisfiable type'
+        )
+    })
+    test("null", () => {
+        const getKeyOfNull = () => type("null").keyof()
+        attest({} as ReturnType<typeof getKeyOfNull>).typed as Type<never, Ark>
+        attest(getKeyOfNull).throws(
+            writeUnsatisfiableExpressionError("keyof null")
+        )
+    })
+    test("undefined", () => {
+        const getKeyOfUndefined = () => type("undefined").keyof()
+        attest({} as ReturnType<typeof getKeyOfUndefined>).typed as Type<
+            never,
+            Ark
+        >
+        attest(getKeyOfUndefined).throws(
+            writeUnsatisfiableExpressionError("keyof undefined")
+        )
+    })
+    // TODO: numeric
+    test("array", () => {
+        const t = type("string[]").keyof()
+        attest(t.infer).typed as keyof string[]
+        // the array prototype has many items and they vary based on the JS
+        // flavor we're running in, so just check that the indices from the type
+        // and one prototype key are present as a heuristic\
+        t.assert("0")
+        t.assert("354")
+        t.assert("map")
+        t.assert(Symbol.iterator)
+        attest(() => t.assert("0.1")).throws.snap()
+        attest(() => t.assert("-1")).throws.snap()
+    })
+    test("tuple", () => {
+        const t = type(["keyof", ["string", "number"]])
+        attest(t.infer).typed as keyof [string, number]
+        t.assert("1")
+        t.assert("map")
+        attest(() => t.assert("2")).throws.snap()
+    })
+    test("wellFormedNonNegativeInteger intersection", () => {
+        const t = type(["keyof", [{ "1": "'foo'" }, "&", "string[]"]])
+        attest(t.root.toString()).snap(
+            '"1" or "string" and /^(?:0|(?:[1-9]\\d*))$/ or "length" or "name" or "prototype" or "isArray" or "from" or "of" or (symbol Symbol.species) or "arguments" or "caller" or "apply" or "bind" or "call" or "toString" or (symbol Symbol.hasInstance)'
+        )
+    })
 })
