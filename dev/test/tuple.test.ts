@@ -55,7 +55,22 @@ suite("tuple", () => {
                 },
                 ...(RegExp | Date)[]
             ]
-            attest(greatSpread.root.condition).snap()
+            attest(greatSpread.root.condition)
+                .snap(`$arkRoot instanceof Array && ((typeof $arkRoot["0"] === "object" && $arkRoot["0"] !== null) || typeof $arkRoot["0"] === "function") && (() => {
+        switch($arkRoot["0"].a) {
+            case true: {
+                return true;
+            }case false: {
+                return true;
+            }
+        }
+    })() && (() => {
+            let valid = true;
+            for(let $arkIndex = 1; $arkIndex < $arkRoot.length; $arkIndex++) {
+                valid = ($arkRoot[$arkIndex] instanceof globalThis.$ark.Date || $arkRoot[$arkIndex] instanceof globalThis.$ark.RegExp) && valid;
+            }
+            return valid
+        })()`)
         })
         test("allows array keyword", () => {
             const types = scope({
