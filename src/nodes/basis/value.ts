@@ -7,7 +7,7 @@ import type { CompilationState } from "../compilation.js"
 import { compileSerializedValue, In } from "../compilation.js"
 import { BasisNode } from "./basis.js"
 
-export class ValueNode extends BasisNode {
+export class ValueNode extends BasisNode<"value"> {
     domain: Domain
 
     constructor(public value: unknown) {

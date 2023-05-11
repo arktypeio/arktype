@@ -4,8 +4,8 @@ import { throwParseError } from "../utils/errors.js"
 import type { conform, exact } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
 import { isArray } from "../utils/objectKinds.js"
-import type { Basis } from "./basis/basis.js"
-import { BasisNode } from "./basis/basis.js"
+import type { BasisInput } from "./basis/basis.js"
+import { ClassNode } from "./basis/class.js"
 import { ValueNode } from "./basis/value.js"
 import type { CompilationState } from "./compilation.js"
 import { createArrayIndexMatcher, PropsNode } from "./constraints/props.js"
@@ -34,7 +34,7 @@ export type TypeInput = PredicateInput | BranchesInput
 
 type validatedTypeNodeInput<
     branches extends BranchesInput,
-    bases extends Basis[]
+    bases extends BasisInput[]
 > = {
     [i in keyof branches]: exact<
         branches[i],
@@ -42,19 +42,19 @@ type validatedTypeNodeInput<
     >
 }
 
-type extractBases<branches, result extends Basis[] = []> = branches extends [
-    infer head,
-    ...infer tail
-]
+type extractBases<
+    branches,
+    result extends BasisInput[] = []
+> = branches extends [infer head, ...infer tail]
     ? extractBases<
           tail,
           [
               ...result,
               head extends {
-                  basis: infer basis extends Basis
+                  basis: infer basis extends BasisInput
               }
                   ? basis
-                  : Basis
+                  : BasisInput
           ]
       >
     : result
@@ -337,7 +337,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         return new TypeNode([...this.branches, ...other.branches])
     }
 
-    get valueNode(): BasisNode<"value"> | undefined {
+    get valueNode(): ValueNode | undefined {
         return this.branches.length === 1
             ? this.branches[0].valueNode
             : undefined
@@ -351,19 +351,19 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         return this.intersect(other) === this
     }
 
-    private _keyof?: TypeNode
+    #keyof: TypeNode | undefined
     keyof(): TypeNode {
         if (this.branches.length === 0) {
             return throwParseError(`never is not a valid keyof operand`)
         }
-        if (this._keyof) {
-            return this._keyof
+        if (this.#keyof) {
+            return this.#keyof
         }
-        this._keyof = this.branches[0].keyof()
+        this.#keyof = this.branches[0].keyof()
         for (let i = 1; i < this.branches.length; i++) {
-            this._keyof = this._keyof.and(this.branches[i].keyof())
+            this.#keyof = this.#keyof.and(this.branches[i].keyof())
         }
-        return this._keyof
+        return this.#keyof
     }
 
     array(): TypeNode<t[]> {
@@ -376,7 +376,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
 export const typeNodeFromInput = (input: TypeInput) =>
     isArray(input) ? TypeNode.from(...input) : TypeNode.from(input)
 
-export const arrayBasisNode = new BasisNode(Array)
+export const arrayBasisNode = new ClassNode(Array)
 
 export const arrayIndexInput = (firstVariadicIndex = 0) =>
     ({

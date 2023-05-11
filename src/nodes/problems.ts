@@ -4,6 +4,7 @@ import type { conform } from "../utils/generics.js"
 import type { arraySubclassToReadonly, Segments } from "../utils/lists.js"
 import { Path } from "../utils/lists.js"
 import type {
+    abstractableConstructor,
     constructor,
     DefaultObjectKind,
     instanceOf
@@ -241,7 +242,7 @@ export class RegexProblem extends Problem<string> {
     }
 }
 
-export class ClassProblem extends Problem<constructor, object> {
+export class ClassProblem extends Problem<abstractableConstructor, object> {
     readonly code = "class"
 
     get mustBe() {

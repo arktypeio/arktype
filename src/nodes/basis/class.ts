@@ -1,17 +1,18 @@
-import { type constructor, prototypeKeysOf } from "../../utils/objectKinds.js"
+import type { abstractableConstructor } from "../../utils/objectKinds.js"
+import { prototypeKeysOf } from "../../utils/objectKinds.js"
 import type { CompilationState } from "../compilation.js"
 import { In } from "../compilation.js"
 import { registry } from "../registry.js"
 import { BasisNode } from "./basis.js"
 
-export class ClassNode extends BasisNode {
+export class ClassNode extends BasisNode<"class"> {
     readonly domain = "object"
 
-    constructor(public instanceOf: constructor) {
+    constructor(public instanceOf: abstractableConstructor) {
         super("class", ClassNode.compile(instanceOf))
     }
 
-    static compile(instanceOf: constructor) {
+    static compile(instanceOf: abstractableConstructor) {
         return `${In} instanceof ${
             instanceOf === Array
                 ? "Array"

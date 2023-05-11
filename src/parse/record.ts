@@ -1,10 +1,10 @@
-import { BasisNode } from "../nodes/basis/basis.js"
-import { PredicateNode } from "../nodes/predicate.js"
+import { DomainNode } from "../nodes/basis/domain.js"
 import {
     type NamedNodes,
     type PropKind,
     PropsNode
 } from "../nodes/constraints/props.js"
+import { PredicateNode } from "../nodes/predicate.js"
 import { TypeNode } from "../nodes/type.js"
 import type { evaluate } from "../utils/generics.js"
 import type { Dict, mutable } from "../utils/records.js"
@@ -39,7 +39,7 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
     return new TypeNode([predicate])
 }
 
-const objectBasisNode = new BasisNode("object")
+const objectBasisNode = new DomainNode("object")
 
 type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`
     ? `${name}${Scanner.EscapeToken}?`

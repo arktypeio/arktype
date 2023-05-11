@@ -180,8 +180,8 @@ export const baseKeysByDomain: Record<Domain, readonly Key[]> = {
 }
 
 export const constructorExtends = (
-    constructor: constructor,
-    base: constructor
+    constructor: abstractableConstructor,
+    base: abstractableConstructor
 ) => {
     let current = constructor.prototype
 

@@ -7,7 +7,7 @@ import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
-import type { Basis, inferBasis } from "./basis/basis.js"
+import type { BasisInput, inferBasis } from "./basis/basis.js"
 import { BasisNode } from "./basis/basis.js"
 import type { ValueNode } from "./basis/value.js"
 import type { CompilationState } from "./compilation.js"
@@ -27,7 +27,8 @@ import { RegexNode } from "./constraints/regex.js"
 import type { DiscriminantKind } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
-import { neverTypeNode, type TypeNode } from "./type.js"
+import type { TypeNode } from "./type.js"
+import { neverTypeNode } from "./type.js"
 
 export class PredicateNode<t = unknown> extends Node<"predicate"> {
     declare [inferred]: t
@@ -53,7 +54,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
     static from<input extends PredicateInput>(
         input: input
     ): PredicateNode<inferPredicateDefinition<input>> {
-        const basis = input.basis && new BasisNode(input.basis)
+        const basis = input.basis && BasisNode.from(input.basis)
         const rules: PredicateRules = basis ? [basis] : []
         for (const kind of constraintsByPrecedence) {
             if (input[kind]) {
@@ -173,7 +174,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         const rules: PredicateRules = []
         for (const rule of this.rules) {
             if (rule.kind === "basis") {
-                if (rule.rule !== "object") {
+                if (!rule.hasLevel("domain") || rule.domain !== "object") {
                     rules.push(this.basis as never)
                 }
             } else if (rule.kind === "props") {
@@ -187,32 +188,19 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         return new PredicateNode(rules)
     }
 
-    private _keyof?: TypeNode
+    #keyof?: TypeNode
     keyof() {
-        if (this._keyof) {
-            return this._keyof
+        if (this.#keyof) {
+            return this.#keyof
         }
         if (!this.basis) {
             return neverTypeNode
         }
-        this._keyof =
+        this.#keyof =
             this.getConstraint("props")?.keyof().or(this.basis.keyof()) ??
             this.basis.keyof()
-        return this._keyof
+        return this.#keyof
     }
-
-    // private _keyof?: TypeNode
-    // keyof(): TypeNode {
-    //     if (this._keyof) {
-    //         return this._keyof
-    //     }
-    //     this._keyof = new TypeNode(
-    //         this.literalKeysOf().map(
-    //             (k) => new PredicateNode([new ValueNode(k)])
-    //         )
-    //     )
-    //     return this._keyof
-    // }
 }
 
 const assertAllowsConstraint = (
@@ -271,7 +259,7 @@ export type RuleKind = "basis" | ConstraintKind
 export type ConstraintKind = keyof ConstraintKinds
 
 export type PredicateInput<
-    basis extends Basis | undefined = Basis | undefined
+    basis extends BasisInput | undefined = BasisInput | undefined
 > = evaluate<
     {
         basis: basis
@@ -279,14 +267,14 @@ export type PredicateInput<
 >
 
 export type ConstraintsInput<
-    basis extends Basis | undefined = Basis | undefined
-> = Basis extends basis
+    basis extends BasisInput | undefined = BasisInput | undefined
+> = BasisInput extends basis
     ? {
           [k in ConstraintKind]?: k extends "props"
               ? PropsInput
               : ConstructorParameters<ConstraintKinds[k]>[0]
       }
-    : basis extends Basis
+    : basis extends BasisInput
     ? constraintsOf<basis>
     : functionalConstraints<unknown>
 
@@ -322,13 +310,13 @@ type inferNarrowArray<
     : evaluate<result>
 
 type inferNonFunctionalConstraints<input extends PredicateInput> =
-    input["basis"] extends Basis
+    input["basis"] extends BasisInput
         ? input["props"] extends PropsInput
             ? inferPropsInput<input["props"]>
             : inferBasis<input["basis"]>
         : unknown
 
-type constraintsOf<basis extends Basis> = basis extends Domain
+type constraintsOf<basis extends BasisInput> = basis extends Domain
     ? functionalConstraints<inferDomain<basis>> & domainConstraints<basis>
     : basis extends constructor
     ? functionalConstraints<instanceOf<constructor>> & classConstraints<basis>

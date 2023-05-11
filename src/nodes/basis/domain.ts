@@ -6,7 +6,7 @@ import type { CompilationState } from "../compilation.js"
 import { In } from "../compilation.js"
 import { BasisNode } from "./basis.js"
 
-export class DomainNode extends BasisNode {
+export class DomainNode extends BasisNode<"domain"> {
     constructor(public domain: Domain) {
         super("domain", DomainNode.compile(domain))
     }

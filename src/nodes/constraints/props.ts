@@ -48,38 +48,6 @@ export class PropsNode extends Node<"props"> {
         this.namedEntries = sortedNamedEntries
     }
 
-    static from(
-        namedInput: NamedPropsInput,
-        ...indexedInput: IndexedInputEntry[]
-    ) {
-        const named = {} as mutable<NamedNodes>
-        for (const k in namedInput) {
-            named[k] = {
-                kind: namedInput[k].kind,
-                value: typeNodeFromInput(namedInput[k].value)
-            }
-        }
-        const indexed: IndexedNodeEntry[] = indexedInput.map(
-            ([keyInput, valueInput]) => [
-                TypeNode.from(keyInput),
-                typeNodeFromInput(valueInput)
-            ]
-        )
-        return new PropsNode(named, indexed)
-    }
-
-    toString() {
-        const entries = this.namedEntries.map((entry): [string, string] => {
-            const key = entry[0] + entry[1].kind === "optional" ? "?" : ""
-            const value = entry[1].value.toString()
-            return [key, value]
-        })
-        for (const entry of this.indexed) {
-            entries.push([`[${entry[0].toString()}]`, entry[1].toString()])
-        }
-        return JSON.stringify(fromEntries(entries))
-    }
-
     static compile(named: NamedNodeEntry[], indexed: IndexedNodeEntry[]) {
         const checks: string[] = []
         for (const entry of named) {
@@ -121,6 +89,38 @@ export class PropsNode extends Node<"props"> {
             return valid
         })()`
         return result
+    }
+
+    static from(
+        namedInput: NamedPropsInput,
+        ...indexedInput: IndexedInputEntry[]
+    ) {
+        const named = {} as mutable<NamedNodes>
+        for (const k in namedInput) {
+            named[k] = {
+                kind: namedInput[k].kind,
+                value: typeNodeFromInput(namedInput[k].value)
+            }
+        }
+        const indexed: IndexedNodeEntry[] = indexedInput.map(
+            ([keyInput, valueInput]) => [
+                TypeNode.from(keyInput),
+                typeNodeFromInput(valueInput)
+            ]
+        )
+        return new PropsNode(named, indexed)
+    }
+
+    toString() {
+        const entries = this.namedEntries.map((entry): [string, string] => {
+            const key = entry[0] + entry[1].kind === "optional" ? "?" : ""
+            const value = entry[1].value.toString()
+            return [key, value]
+        })
+        for (const entry of this.indexed) {
+            entries.push([`[${entry[0].toString()}]`, entry[1].toString()])
+        }
+        return JSON.stringify(fromEntries(entries))
     }
 
     compileTraverse(s: CompilationState) {

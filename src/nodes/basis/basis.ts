@@ -4,17 +4,22 @@ import type { Domain, inferDomain } from "../../utils/domains.js"
 import { domainOf } from "../../utils/domains.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import type { evaluate } from "../../utils/generics.js"
-import type { constructor, instanceOf } from "../../utils/objectKinds.js"
+import type {
+    abstractableConstructor,
+    constructor,
+    instanceOf
+} from "../../utils/objectKinds.js"
 import { constructorExtends } from "../../utils/objectKinds.js"
-import type { entryOf, Key } from "../../utils/records.js"
+import type { Key } from "../../utils/records.js"
 import { stringify } from "../../utils/serialize.js"
 import type { DisjointKindEntries } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
 import { Node } from "../node.js"
 import { type ConstraintKind } from "../predicate.js"
-import type { ClassNode } from "./class.js"
-import type { DomainNode } from "./domain.js"
-import type { ValueNode } from "./value.js"
+import { TypeNode } from "../type.js"
+import { ClassNode } from "./class.js"
+import { DomainNode } from "./domain.js"
+import { ValueNode } from "./value.js"
 
 type BasisNodesByLevel = {
     domain: typeof DomainNode
@@ -22,14 +27,16 @@ type BasisNodesByLevel = {
     value: typeof ValueNode
 }
 
-type BasisRulesByLevel = {
-    [level in BasisLevel]: ConstructorParameters<BasisNodesByLevel[level]>[0]
+type BasisInputs = {
+    domain: Domain
+    value: ["===", unknown]
+    class: abstractableConstructor
 }
 
-export type Basis<level extends BasisLevel = BasisLevel> =
-    BasisNodesByLevel[level]
+export type BasisInput<level extends BasisLevel = BasisLevel> =
+    BasisInputs[level]
 
-export type inferBasis<basis extends Basis> = basis extends Domain
+export type inferBasis<basis extends BasisInput> = basis extends Domain
     ? inferDomain<basis>
     : basis extends constructor<infer instance>
     ? instance
@@ -39,17 +46,6 @@ export type inferBasis<basis extends Basis> = basis extends Domain
 
 export type BasisLevel = evaluate<keyof BasisNodesByLevel>
 
-const levelOf = (basis: Basis): BasisLevel =>
-    typeof basis === "string"
-        ? "domain"
-        : typeof basis === "object"
-        ? "value"
-        : typeof basis === "function"
-        ? "class"
-        : throwInternalError(
-              `Unexpectedly got a basis of type ${domainOf(basis)}`
-          )
-
 export const precedenceByLevel: Record<BasisLevel, number> = {
     value: 0,
     class: 1,
@@ -57,8 +53,6 @@ export const precedenceByLevel: Record<BasisLevel, number> = {
 }
 
 export type BasisNodeSubclass = BasisNodesByLevel[BasisLevel]
-
-export type BasisEntry = entryOf<BasisRulesByLevel>
 
 export abstract class BasisNode<
     level extends BasisLevel = BasisLevel
@@ -69,6 +63,30 @@ export abstract class BasisNode<
 
     constructor(public level: level, condition: string) {
         super("basis", condition)
+    }
+
+    static from<input extends BasisInput>(input: input) {
+        switch (typeof input) {
+            case "string":
+                return new DomainNode(input)
+            case "object":
+                return new ValueNode(input[1])
+            case "function":
+                return new ClassNode(input)
+            default:
+                throwInternalError(
+                    `Unexpectedly got a basis input of type ${domainOf(input)}`
+                )
+        }
+    }
+
+    #keyof?: TypeNode
+    keyof(): TypeNode {
+        if (this.#keyof) {
+            return this.#keyof
+        }
+        this.#keyof = TypeNode.fromValue(...this.literalKeysOf())
+        return this.#keyof
     }
 
     hasLevel<level extends BasisLevel>(
