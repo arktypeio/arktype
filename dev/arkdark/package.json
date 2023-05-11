@@ -1,0 +1,67 @@
+{
+    "name": "arkdark",
+    "displayName": "ArkDark",
+    "description": "ArkType syntax highlighting and theme⛵",
+    "version": "2.0.5",
+    "private": true,
+    "publisher": "arktypeio",
+    "type": "module",
+    "scripts": {
+        "build": "ts-node --esm ./src/writeTheme.ts",
+        "try": "pnpm build && ts-node --esm ./installLocal.ts",
+        "vspublish": "pnpm build && npx vsce publish"
+    },
+    "devDependencies": {
+        "@types/node": "18.15.13",
+        "ts-node": "10.9.1",
+        "vsce": "2.15.0",
+        "typescript": "5.1.0-beta",
+        "arktype": "latest"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/arktypeio/arkdark"
+    },
+    "engines": {
+        "vscode": "^1.0.0"
+    },
+    "icon": "icon.png",
+    "categories": [
+        "Themes",
+        "Programming Languages"
+    ],
+    "contributes": {
+        "themes": [
+            {
+                "label": "ArkDark",
+                "uiTheme": "vs-dark",
+                "path": "./themes/arkDark.json"
+            }
+        ],
+        "grammars": [
+            {
+                "injectTo": [
+                    "source.ts",
+                    "source.ts.tsx",
+                    "source.js",
+                    "source.js.jsx"
+                ],
+                "scopeName": "arktype.injection.ts",
+                "path": "arktype.tmLanguage.json",
+                "embeddedLanguages": {
+                    "meta.embedded.arktype.definition": "typescript"
+                }
+            }
+        ]
+    },
+    "__metadata": {
+        "id": "db665674-bf3f-4390-887e-1c934b03e6b9",
+        "publisherId": "31dbab30-ca36-408e-98bd-8f5a85c82ca8",
+        "publisherDisplayName": "arktypeio",
+        "targetPlatform": "undefined",
+        "updated": false,
+        "isPreReleaseVersion": false,
+        "installedTimestamp": 1683567017222,
+        "preRelease": false
+    }
+}

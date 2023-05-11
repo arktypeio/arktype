@@ -1,0 +1,94 @@
+{
+    "scopeName": "arktype.injection.ts",
+    "injectionSelector": "L:source.ts - comment",
+    "patterns": [
+        {
+            "include": "#definition"
+        }
+    ],
+    "repository": {
+        "definition": {
+            "name": "meta.embedded.arktype.definition",
+            "begin": "(\\S*\\.)?(type|scope)\\s*\\(",
+            "beginCaptures": {
+                "1": {
+                    "name": "entity.name.function.ts"
+                }
+            },
+            "end": "(?<=([^\"'`]*([\"'`])[^\"'`]*\\2)*[^\"'`]*)\\)",
+            "patterns": [
+                {
+                    "include": "#quoted"
+                },
+                {
+                    "include": "#object"
+                },
+                {
+                    "include": "source.ts#type"
+                }
+            ]
+        },
+        "object": {
+            "name": "object",
+            "begin": "{",
+            "end": "}",
+            "patterns": [
+                {
+                    "include": "#quoted"
+                },
+                {
+                    "include": "#regex"
+                }
+            ]
+        },
+        "quoted": {
+            "match": "((?<!<)[\"'`])(.*?)?((?<!\\\\)(\\1))",
+            "captures": {
+                "1": {
+                    "name": "keyword.operator"
+                },
+                "2": {
+                    "patterns": [
+                        {
+                            "include": "#operator"
+                        },
+                        {
+                            "include": "#object"
+                        },
+                        {
+                            "include": "#regex"
+                        },
+                        {
+                            "include": "source.ts#type"
+                        }
+                    ]
+                },
+                "3": {
+                    "name": "keyword.operator"
+                }
+            }
+        },
+        "regex": {
+            "match": "(\\/)(.*)((?<!\\\\)(\\1))",
+            "captures": {
+                "1": { "name": "keyword.operator" },
+                "2": {
+                    "patterns": [
+                        { "name": "entity.name.type.ts", "match": "[A-Za-z]" },
+                        {
+                            "name": "constant.numeric.decimal.ts",
+                            "match": "[0-9]"
+                        },
+                        { "include": "#operator" },
+                        { "include": "#quoted" }
+                    ]
+                },
+                "3": { "name": "keyword.operator" }
+            }
+        },
+        "operator": {
+            "name": "keyword.operator",
+            "match": "[<>=%^_-]|\""
+        }
+    }
+}

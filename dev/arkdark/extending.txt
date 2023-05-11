@@ -1,0 +1,5 @@
+Open up this folder in it's own VS Code.
+F5 or Run > Debugger; Allows you to see the theme and see the changes you make
+(changes to themes=>arkdark.json happens in real time.)
+(changes to .tmLanguage.json => restart debugger)
+Open Pallette => Developer: Inspect Editor Tokens and Scopes

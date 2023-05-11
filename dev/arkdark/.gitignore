@@ -1,0 +1,3 @@
+themes/**
+*.vsix
+node_modules
