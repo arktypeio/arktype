@@ -45,10 +45,4 @@ scope({
             }
         })
     }).type()
-    const tt = type("Date")
-    const abc = type(`Date`)
-    const t = type(`${2}<Date<${4}`)
-    console.log()
-    console.log("abc")
 }
-attest(type({ a: "string" } as Infer<"foo">)).typed as Type<"foo">
