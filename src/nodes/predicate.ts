@@ -7,8 +7,8 @@ import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
-import type { BasisInput, inferBasis } from "./basis/basis.js"
 import { BasisNode } from "./basis/basis.js"
+import type { BasisInput, inferBasis } from "./basis/basis.js"
 import type { ValueNode } from "./basis/value.js"
 import type { CompilationState } from "./compilation.js"
 import { DivisorNode } from "./constraints/divisor.js"
@@ -45,10 +45,14 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         ) as ConstraintNode[]
     }
 
-    getConstraint<k extends ConstraintKind>(k: k) {
-        return this.rules.find((constraint) => constraint.kind === k) as
-            | instanceOf<ConstraintKinds[k]>
-            | undefined
+    static compile(rules: PredicateRules) {
+        let result = ""
+        for (const rule of rules) {
+            if (rule.condition !== "true") {
+                result += `${result && " && "}${rule.condition}`
+            }
+        }
+        return result || "true"
     }
 
     static from<input extends PredicateInput>(
@@ -65,14 +69,10 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         return new PredicateNode<inferPredicateDefinition<input>>(rules)
     }
 
-    static compile(rules: PredicateRules) {
-        let result = ""
-        for (const rule of rules) {
-            if (rule.condition !== "true") {
-                result += `${result && " && "}${rule.condition}`
-            }
-        }
-        return result || "true"
+    getConstraint<k extends ConstraintKind>(k: k) {
+        return this.rules.find((constraint) => constraint.kind === k) as
+            | instanceOf<ConstraintKinds[k]>
+            | undefined
     }
 
     toString() {

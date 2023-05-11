@@ -71,6 +71,45 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         this.discriminant = discriminant
     }
 
+    static compile(branches: Discriminant | PredicateNode[]) {
+        return Array.isArray(branches)
+            ? TypeNode.#compileIndiscriminable(branches)
+            : TypeNode.#compileSwitch(branches)
+    }
+
+    static #compileIndiscriminable(branches: PredicateNode[]) {
+        return branches.length === 0
+            ? "false"
+            : branches.length === 1
+            ? branches[0].condition
+            : `(${branches
+                  .map((branch) => branch.condition)
+                  .sort()
+                  .join(" || ")})`
+    }
+
+    static #compileSwitch(discriminant: Discriminant): string {
+        // TODO: optional access
+        const condition =
+            discriminant.kind === "domain"
+                ? `typeof ${discriminant.path}`
+                : `${discriminant.path}`
+        let compiledCases = ""
+        let k: CaseKey
+        for (k in discriminant.cases) {
+            const caseCondition = k === "default" ? "default" : `case ${k}`
+            const caseNode = discriminant.cases[k]
+            compiledCases += `${caseCondition}: {
+                return ${caseNode.condition};
+            }`
+        }
+        return `(() => {
+        switch(${condition}) {
+            ${compiledCases}
+        }
+    })()`
+    }
+
     static from<branches extends BranchesInput>(
         ...branches: {
             [i in keyof branches]: conform<
@@ -128,45 +167,6 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
             }
         }
         return new TypeNode<branches[number]>(nodes)
-    }
-
-    static compile(branches: Discriminant | PredicateNode[]) {
-        return Array.isArray(branches)
-            ? TypeNode.#compileIndiscriminable(branches)
-            : TypeNode.#compileSwitch(branches)
-    }
-
-    static #compileIndiscriminable(branches: PredicateNode[]) {
-        return branches.length === 0
-            ? "false"
-            : branches.length === 1
-            ? branches[0].condition
-            : `(${branches
-                  .map((branch) => branch.condition)
-                  .sort()
-                  .join(" || ")})`
-    }
-
-    static #compileSwitch(discriminant: Discriminant): string {
-        // TODO: optional access
-        const condition =
-            discriminant.kind === "domain"
-                ? `typeof ${discriminant.path}`
-                : `${discriminant.path}`
-        let compiledCases = ""
-        let k: CaseKey
-        for (k in discriminant.cases) {
-            const caseCondition = k === "default" ? "default" : `case ${k}`
-            const caseNode = discriminant.cases[k]
-            compiledCases += `${caseCondition}: {
-                return ${caseNode.condition};
-            }`
-        }
-        return `(() => {
-        switch(${condition}) {
-            ${compiledCases}
-        }
-    })()`
     }
 
     toString() {
