@@ -11,7 +11,7 @@ export class MorphNode extends Node<"morph"> {
 
     constructor(transformations: listable<Morph>) {
         const transformationList = listFrom(transformations)
-        super(MorphNode, transformationList)
+        super("morph", MorphNode.compile(transformationList))
         this.transformations = transformationList
     }
 
@@ -30,9 +30,9 @@ export class MorphNode extends Node<"morph"> {
         return s.ifNotThen(this.condition, s.problem("custom", "morphs"))
     }
 
-    static intersect(l: MorphNode, r: MorphNode) {
+    intersectNode(r: MorphNode) {
         return new MorphNode(
-            intersectUniqueLists(l.transformations, r.transformations)
+            intersectUniqueLists(this.transformations, r.transformations)
         )
     }
 }

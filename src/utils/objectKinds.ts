@@ -137,8 +137,12 @@ export const getExactConstructorObjectKind = (
 
 export type constructor<instance = unknown> = new (...args: any[]) => instance
 
-export type instanceOf<classType extends constructor<any>> =
-    classType extends constructor<infer Instance> ? Instance : never
+export type abstractableConstructor<instance = unknown> = abstract new (
+    ...args: any[]
+) => instance
+
+export type instanceOf<classType extends abstractableConstructor> =
+    classType extends abstractableConstructor<infer Instance> ? Instance : never
 
 /** Mimics output of TS's keyof operator at runtime */
 export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {

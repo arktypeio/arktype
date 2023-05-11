@@ -8,7 +8,7 @@ import { BasisNode } from "./basis.js"
 
 export class DomainNode extends BasisNode {
     constructor(public domain: Domain) {
-        super("domain", domain)
+        super("domain", DomainNode.compile(domain))
     }
 
     static compile(domain: Domain) {

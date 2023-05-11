@@ -10,7 +10,7 @@ export class NarrowNode extends Node<"narrow"> {
 
     constructor(predicates: listable<Narrow>) {
         const predicateList = listFrom(predicates)
-        super(NarrowNode, predicateList)
+        super("narrow", NarrowNode.compile(predicateList))
         this.predicates = predicateList
     }
 
@@ -29,7 +29,9 @@ export class NarrowNode extends Node<"narrow"> {
         return s.ifNotThen(this.condition, s.problem("custom", "filters"))
     }
 
-    static intersect(l: NarrowNode, r: NarrowNode) {
-        return new NarrowNode(intersectUniqueLists(l.predicates, r.predicates))
+    intersectNode(other: NarrowNode) {
+        return new NarrowNode(
+            intersectUniqueLists(this.predicates, other.predicates)
+        )
     }
 }

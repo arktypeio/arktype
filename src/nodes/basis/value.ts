@@ -11,7 +11,7 @@ export class ValueNode extends BasisNode {
     domain: Domain
 
     constructor(public value: unknown) {
-        super("value", value)
+        super("value", ValueNode.compile(value))
         this.domain = domainOf(value)
     }
 

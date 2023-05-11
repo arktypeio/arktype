@@ -8,7 +8,7 @@ export class ClassNode extends BasisNode {
     readonly domain = "object"
 
     constructor(public instanceOf: constructor) {
-        super("class", instanceOf)
+        super("class", ClassNode.compile(instanceOf))
     }
 
     static compile(instanceOf: constructor) {

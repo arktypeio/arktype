@@ -5,7 +5,7 @@ export class DivisorNode extends Node<"divisor"> {
     static readonly kind = "divisor"
 
     constructor(public divisor: number) {
-        super(DivisorNode, divisor)
+        super("divisor", DivisorNode.compile(divisor))
     }
 
     static compile(divisor: number) {
@@ -20,10 +20,10 @@ export class DivisorNode extends Node<"divisor"> {
         return `divisor ${this.divisor}`
     }
 
-    static intersect(l: DivisorNode, r: DivisorNode) {
+    intersectNode(r: DivisorNode) {
         const leastCommonMultiple = Math.abs(
-            (l.divisor * r.divisor) /
-                greatestCommonDivisor(l.divisor, r.divisor)
+            (this.divisor * r.divisor) /
+                greatestCommonDivisor(this.divisor, r.divisor)
         )
         return new DivisorNode(leastCommonMultiple)
     }

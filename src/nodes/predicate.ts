@@ -37,7 +37,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
     constraints: ConstraintNode[]
 
     constructor(public rules: PredicateRules) {
-        super(PredicateNode, rules)
+        super("predicate", PredicateNode.compile(rules))
         this.basis = rules[0]?.kind === "basis" ? rules[0] : undefined
         this.constraints = (
             this.basis ? rules.slice(1) : rules
@@ -89,10 +89,10 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
     }
 
     get valueNode(): ValueNode | undefined {
-        return this.basis?.hasKind("value") ? this.basis : undefined
+        return this.basis?.hasLevel("value") ? this.basis : undefined
     }
 
-    static intersect(l: PredicateNode, r: PredicateNode) {
+    intersectNode(r: PredicateNode) {
         // if (
         //     // s.lastOperator === "&" &&
         //     rules.morphs?.some(
@@ -103,27 +103,27 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
         //     )
         // }
-        const basis = l.basis
+        const basis = this.basis
             ? r.basis
-                ? l.basis.intersect(r.basis)
-                : l.basis
+                ? this.basis.intersect(r.basis)
+                : this.basis
             : r.basis
         if (basis instanceof Disjoint) {
             return basis
         }
-        if (l.valueNode) {
-            return r.allows(l.valueNode.value)
-                ? l
-                : Disjoint.from("assignability", l.valueNode, r)
+        if (this.valueNode) {
+            return r.allows(this.valueNode.value)
+                ? this
+                : Disjoint.from("assignability", this.valueNode, r)
         }
         if (r.valueNode) {
-            return l.allows(r.valueNode.value)
+            return this.allows(r.valueNode.value)
                 ? r
-                : Disjoint.from("assignability", l, r.valueNode)
+                : Disjoint.from("assignability", this, r.valueNode)
         }
         const rules: PredicateRules = basis ? [basis] : []
         for (const kind of constraintsByPrecedence) {
-            const lNode = l.getConstraint(kind)
+            const lNode = this.getConstraint(kind)
             const rNode = r.getConstraint(kind)
             if (lNode) {
                 if (rNode) {

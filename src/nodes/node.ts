@@ -1,6 +1,9 @@
 import { CompiledFunction } from "../utils/compiledFunction.js"
 import type { instanceOf } from "../utils/objectKinds.js"
 import type { BasisNode } from "./basis/basis.js"
+import type { ClassNode } from "./basis/class.js"
+import type { DomainNode } from "./basis/domain.js"
+import type { ValueNode } from "./basis/value.js"
 import { type CompilationState, In } from "./compilation.js"
 import type { DivisorNode } from "./constraints/divisor.js"
 import type { MorphNode } from "./constraints/morph.js"
@@ -11,16 +14,6 @@ import type { RegexNode } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
 import type { PredicateNode } from "./predicate.js"
 import type { TypeNode } from "./type.js"
-
-export type NodeSubclass<kind extends NodeKind> = {
-    readonly kind: kind
-    new (...args: any[]): NodeInstance<kind>
-    compile(...args: any[]): string
-    intersect(
-        l: NodeInstance<kind>,
-        r: NodeInstance<kind>
-    ): NodeInstance<kind> | Disjoint
-}
 
 export type NodeInstance<kind extends NodeKind = NodeKind> = instanceOf<
     NodeKinds[kind]
@@ -45,8 +38,6 @@ export abstract class Node<
     input = any,
     narrowed extends input = input
 > {
-    declare kind: kind
-    declare condition: string
     declare allows: (data: input) => data is narrowed
 
     static #cache: { [kind in NodeKind]: Record<string, Node<kind>> } = {
@@ -61,14 +52,13 @@ export abstract class Node<
         morph: {}
     }
 
-    // TODO: accept compiled output as input?
-    // TODO: widen the intersection result type somehow to allow basis/value/ nodes etc. to define it directly? no abstract class required?
-    constructor(
-        protected subclass: NodeSubclass<kind>,
-        ...input: Parameters<NodeKinds[kind]["compile"]>
-    ) {
-        const kind = subclass.kind
-        const condition = subclass.compile(...input)
+    abstract intersectNode(
+        other: NodeInstance<kind>
+    ): NodeInstance<kind> | Disjoint
+    abstract compileTraverse(s: CompilationState): string
+    abstract toString(): string
+
+    constructor(public kind: kind, public condition: string) {
         if (Node.#cache[kind][condition]) {
             return Node.#cache[kind][condition] as any
         }
@@ -93,16 +83,10 @@ export abstract class Node<
         if (this.#intersections[other.condition]) {
             return this.#intersections[other.condition]
         }
-        const result = this.subclass.intersect(
-            this as NodeInstance<kind>,
-            other
-        )
+        const result = this.intersectNode(other)
         this.#intersections[other.condition] = result
         other.#intersections[this.condition] =
             result instanceof Disjoint ? result.invert() : (result as any)
         return result
     }
-
-    abstract compileTraverse(s: CompilationState): string
-    abstract toString(): string
 }

@@ -13,7 +13,7 @@ export class RegexNode extends Node<"regex"> {
         if (sourceList.length === 0) {
             throwInternalError(`Unexpectedly received empty regex list`)
         }
-        super(RegexNode, sourceList)
+        super("regex", RegexNode.compile(sourceList))
         this.sources = sourceList
     }
 
@@ -46,7 +46,7 @@ export class RegexNode extends Node<"regex"> {
             .join("\n")
     }
 
-    static intersect(l: RegexNode, r: RegexNode) {
-        return new RegexNode(intersectUniqueLists(l.sources, r.sources))
+    intersectNode(r: RegexNode) {
+        return new RegexNode(intersectUniqueLists(this.sources, r.sources))
     }
 }

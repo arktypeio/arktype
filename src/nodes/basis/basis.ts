@@ -12,9 +12,9 @@ import type { DisjointKindEntries } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
 import { Node } from "../node.js"
 import { type ConstraintKind } from "../predicate.js"
-import { ClassNode } from "./class.js"
-import { DomainNode } from "./domain.js"
-import { ValueNode } from "./value.js"
+import type { ClassNode } from "./class.js"
+import type { DomainNode } from "./domain.js"
+import type { ValueNode } from "./value.js"
 
 type BasisNodesByLevel = {
     domain: typeof DomainNode
@@ -67,8 +67,8 @@ export abstract class BasisNode<
     abstract literalKeysOf(): Key[]
     abstract domain: Domain
 
-    constructor(public level: level, input: BasisRulesByLevel[level]) {
-        super(BasisNode, [level, input])
+    constructor(public level: level, condition: string) {
+        super("basis", condition)
     }
 
     hasLevel<level extends BasisLevel>(
@@ -77,42 +77,34 @@ export abstract class BasisNode<
         return this.level === (level as unknown)
     }
 
-    static compile(basisEntry: BasisEntry) {
-        return basisEntry[0] === "domain"
-            ? DomainNode.compile(basisEntry[1])
-            : basisEntry[0] === "value"
-            ? ValueNode.compile(basisEntry[1])
-            : ClassNode.compile(basisEntry[1])
-    }
-
-    static intersect(l: BasisNode, r: BasisNode): BasisNode | Disjoint {
-        if (l === r) {
-            return l
+    intersectNode(other: BasisNode): BasisNode | Disjoint {
+        if (this === other) {
+            return this
         }
-        if (l.hasLevel("class") && r.hasLevel("class")) {
-            return constructorExtends(l.instanceOf, r.instanceOf)
-                ? l
-                : constructorExtends(r.instanceOf, l.instanceOf)
-                ? r
-                : Disjoint.from("class", l, r)
+        if (this.hasLevel("class") && other.hasLevel("class")) {
+            return constructorExtends(this.instanceOf, other.instanceOf)
+                ? this
+                : constructorExtends(other.instanceOf, this.instanceOf)
+                ? other
+                : Disjoint.from("class", this, other)
         }
         const disjointEntries: DisjointKindEntries = []
-        if (l.domain !== r.domain) {
-            disjointEntries.push(["domain", { l, r }])
+        if (this.domain !== other.domain) {
+            disjointEntries.push(["domain", { l: this, r: other }])
         }
-        if (l.hasLevel("value") && r.hasLevel("value")) {
-            if (l !== r) {
-                disjointEntries.push(["value", { l, r }])
+        if (this.hasLevel("value") && other.hasLevel("value")) {
+            if (this !== other) {
+                disjointEntries.push(["value", { l: this, r: other }])
             }
         }
         return disjointEntries.length
             ? Disjoint.fromEntries(disjointEntries)
-            : precedenceByLevel[l.level] < precedenceByLevel[r.level]
-            ? l
-            : precedenceByLevel[r.level] < precedenceByLevel[l.level]
-            ? r
+            : precedenceByLevel[this.level] < precedenceByLevel[other.level]
+            ? this
+            : precedenceByLevel[other.level] < precedenceByLevel[this.level]
+            ? other
             : throwInternalError(
-                  `Unexpected non-disjoint intersection from basis nodes with equal precedence ${l} and ${r}`
+                  `Unexpected non-disjoint intersection from basis nodes with equal precedence ${this} and ${other}`
               )
     }
 

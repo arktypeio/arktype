@@ -67,7 +67,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
 
     constructor(public branches: PredicateNode[]) {
         const discriminant = discriminate(branches)
-        super(TypeNode, discriminant ?? branches)
+        super("type", TypeNode.compile(discriminant ?? branches))
         this.discriminant = discriminant
     }
 
@@ -233,12 +233,12 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         return new TypeNode(prunedBranches)
     }
 
-    static intersect(l: TypeNode, r: TypeNode): TypeNode | Disjoint {
-        if (l === r) {
-            return l
+    intersectNode(r: TypeNode): TypeNode | Disjoint {
+        if (this === r) {
+            return this
         }
-        if (l.branches.length === 1 && r.branches.length === 1) {
-            const result = l.branches[0].intersect(r.branches[0])
+        if (this.branches.length === 1 && r.branches.length === 1) {
+            const result = this.branches[0].intersect(r.branches[0])
             return result instanceof Disjoint ? result : new TypeNode([result])
         }
         // Branches that are determined to be a subtype of an opposite branch are
@@ -254,8 +254,8 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         const candidatesByR: (PredicateNode[] | null)[] = r.branches.map(
             () => []
         )
-        for (let lIndex = 0; lIndex < l.branches.length; lIndex++) {
-            const lBranch = l.branches[lIndex]
+        for (let lIndex = 0; lIndex < this.branches.length; lIndex++) {
+            const lBranch = this.branches[lIndex]
             let currentCandidateByR: { [rIndex in number]: PredicateNode } = {}
             for (let rIndex = 0; rIndex < r.branches.length; rIndex++) {
                 const rBranch = r.branches[rIndex]
@@ -311,7 +311,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         }
         return finalBranches.length
             ? new TypeNode(finalBranches)
-            : Disjoint.from("union", l, r)
+            : Disjoint.from("union", this, r)
     }
 
     constrain<kind extends ConstraintKind>(
