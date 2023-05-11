@@ -61,7 +61,8 @@ export abstract class Node<
         morph: {}
     }
 
-    // TODO: accept compiled output as input
+    // TODO: accept compiled output as input?
+    // TODO: widen the intersection result type somehow to allow basis/value/ nodes etc. to define it directly? no abstract class required?
     constructor(
         protected subclass: NodeSubclass<kind>,
         ...input: Parameters<NodeKinds[kind]["compile"]>
