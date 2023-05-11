@@ -110,8 +110,8 @@ export class Assertions implements AssertionRecord {
     }
 
     //used for arkdark highlighting
-    public snapJs(source?: string) {
-        const args = [source, "snapJs"] as unknown as [string]
+    public snapCompiled(source?: string) {
+        const args = [source, "snapCompiled"] as unknown as [string]
         this["snap"](...args)
     }
 
