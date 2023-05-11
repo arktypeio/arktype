@@ -7,25 +7,26 @@ import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
-import type { Basis, inferBasis } from "./basis.js"
-import { BasisNode } from "./basis.js"
+import type { Basis, inferBasis } from "./basis/basis.js"
+import { BasisNode } from "./basis/basis.js"
+import type { ValueNode } from "./basis/value.js"
 import type { CompilationState } from "./compilation.js"
-import type { DiscriminantKind } from "./discriminate.js"
-import { Disjoint } from "./disjoint.js"
-import { DivisorNode } from "./divisor.js"
-import { MorphNode } from "./morph.js"
-import { NarrowNode } from "./narrow.js"
-import { Node } from "./node.js"
+import { DivisorNode } from "./constraints/divisor.js"
+import { MorphNode } from "./constraints/morph.js"
+import { NarrowNode } from "./constraints/narrow.js"
 import type {
     inferPropsInput,
     NamedPropsInput,
     PropsInput,
     PropsInputTuple
-} from "./props.js"
-import { emptyPropsNode, PropsNode } from "./props.js"
-import type { Bounds } from "./range.js"
-import { RangeNode } from "./range.js"
-import { RegexNode } from "./regex.js"
+} from "./constraints/props.js"
+import { emptyPropsNode, PropsNode } from "./constraints/props.js"
+import type { Bounds } from "./constraints/range.js"
+import { RangeNode } from "./constraints/range.js"
+import { RegexNode } from "./constraints/regex.js"
+import type { DiscriminantKind } from "./discriminate.js"
+import { Disjoint } from "./disjoint.js"
+import { Node } from "./node.js"
 import { neverTypeNode, type TypeNode } from "./type.js"
 
 export class PredicateNode<t = unknown> extends Node<"predicate"> {
@@ -87,8 +88,8 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         return result
     }
 
-    get valueNode(): BasisNode<"value"> | undefined {
-        return this.basis?.hasLevel("value") ? this.basis : undefined
+    get valueNode(): ValueNode | undefined {
+        return this.basis?.hasKind("value") ? this.basis : undefined
     }
 
     static intersect(l: PredicateNode, r: PredicateNode) {
@@ -111,12 +112,12 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
             return basis
         }
         if (l.valueNode) {
-            return r.allows(l.valueNode.getLiteralValue())
+            return r.allows(l.valueNode.value)
                 ? l
                 : Disjoint.from("assignability", l.valueNode, r)
         }
         if (r.valueNode) {
-            return l.allows(r.valueNode.getLiteralValue())
+            return l.allows(r.valueNode.value)
                 ? r
                 : Disjoint.from("assignability", l, r.valueNode)
         }
@@ -199,6 +200,19 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
             this.basis.keyof()
         return this._keyof
     }
+
+    // private _keyof?: TypeNode
+    // keyof(): TypeNode {
+    //     if (this._keyof) {
+    //         return this._keyof
+    //     }
+    //     this._keyof = new TypeNode(
+    //         this.literalKeysOf().map(
+    //             (k) => new PredicateNode([new ValueNode(k)])
+    //         )
+    //     )
+    //     return this._keyof
+    // }
 }
 
 const assertAllowsConstraint = (

@@ -3,7 +3,7 @@ import {
     type IndexedNodeEntry,
     type NamedNodes,
     PropsNode
-} from "../../nodes/props.js"
+} from "../../nodes/constraints/props.js"
 import {
     arrayBasisNode,
     arrayIndexTypeNode,

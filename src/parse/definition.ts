@@ -78,7 +78,9 @@ export type inferDefinition<def, $> = isAny<def> extends true
     : never
 
 // we ignore functions in validation so that cyclic thunk definitions can be inferred in scopes
-export type validateDefinition<def, $> = def extends (...args: any[]) => any
+export type validateDefinition<def, $> = def extends (
+    ...args: never[]
+) => unknown
     ? def
     : def extends Terminal
     ? def

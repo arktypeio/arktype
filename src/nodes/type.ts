@@ -4,9 +4,11 @@ import { throwParseError } from "../utils/errors.js"
 import type { conform, exact } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
 import { isArray } from "../utils/objectKinds.js"
-import type { Basis } from "./basis.js"
-import { BasisNode } from "./basis.js"
+import type { Basis } from "./basis/basis.js"
+import { BasisNode } from "./basis/basis.js"
+import { ValueNode } from "./basis/value.js"
 import type { CompilationState } from "./compilation.js"
+import { createArrayIndexMatcher, PropsNode } from "./constraints/props.js"
 import type { CaseKey, Discriminant, DiscriminantKind } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
@@ -17,7 +19,6 @@ import type {
     PredicateInput
 } from "./predicate.js"
 import { PredicateNode, unknownPredicateNode } from "./predicate.js"
-import { createArrayIndexMatcher, PropsNode } from "./props.js"
 
 type inferBranches<branches extends BranchesInput> = {
     [i in keyof branches]: inferPredicateDefinition<branches[i]>
@@ -122,7 +123,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         const nodes: PredicateNode[] = []
         for (const v of branches) {
             if (!seen.includes(v)) {
-                nodes.push(new PredicateNode([new BasisNode(["===", v])]))
+                nodes.push(new PredicateNode([new ValueNode(v)]))
                 seen.push(v)
             }
         }

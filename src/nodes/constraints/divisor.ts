@@ -1,5 +1,5 @@
-import { type CompilationState, In } from "./compilation.js"
-import { Node } from "./node.js"
+import { type CompilationState, In } from "../compilation.js"
+import { Node } from "../node.js"
 
 export class DivisorNode extends Node<"divisor"> {
     static readonly kind = "divisor"

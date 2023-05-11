@@ -1,4 +1,4 @@
-import type { Comparator } from "../../../nodes/range.js"
+import type { Comparator } from "../../../nodes/constraints/range.js"
 import type { Dict } from "../../../utils/records.js"
 
 export class Scanner<Lookahead extends string = string> {

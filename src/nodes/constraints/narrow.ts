@@ -1,8 +1,8 @@
-import type { Narrow } from "../parse/ast/narrow.js"
-import type { listable } from "../utils/lists.js"
-import { intersectUniqueLists, listFrom } from "../utils/lists.js"
-import type { CompilationState } from "./compilation.js"
-import { Node } from "./node.js"
+import type { Narrow } from "../../parse/ast/narrow.js"
+import type { listable } from "../../utils/lists.js"
+import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
+import type { CompilationState } from "../compilation.js"
+import { Node } from "../node.js"
 
 export class NarrowNode extends Node<"narrow"> {
     static readonly kind = "narrow"

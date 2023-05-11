@@ -1,27 +1,27 @@
-import { throwInternalError } from "../utils/errors.js"
-import type { evaluate } from "../utils/generics.js"
-import type { HomogenousTuple } from "../utils/lists.js"
-import { tryParseWellFormedInteger } from "../utils/numericLiterals.js"
-import type { Key, mutable } from "../utils/records.js"
-import { fromEntries, hasKeys } from "../utils/records.js"
+import { throwInternalError } from "../../utils/errors.js"
+import type { evaluate } from "../../utils/generics.js"
+import type { HomogenousTuple } from "../../utils/lists.js"
+import { tryParseWellFormedInteger } from "../../utils/numericLiterals.js"
+import type { Key, mutable } from "../../utils/records.js"
+import { fromEntries, hasKeys } from "../../utils/records.js"
 import {
     type CompilationState,
     compilePropAccess,
     In,
     IndexIn
-} from "./compilation.js"
-import type { DiscriminantKind } from "./discriminate.js"
-import type { DisjointsSources } from "./disjoint.js"
-import { Disjoint } from "./disjoint.js"
-import { Node } from "./node.js"
-import type { PredicateInput } from "./predicate.js"
-import type { inferTypeInput, TypeInput } from "./type.js"
+} from "../compilation.js"
+import type { DiscriminantKind } from "../discriminate.js"
+import type { DisjointsSources } from "../disjoint.js"
+import { Disjoint } from "../disjoint.js"
+import { Node } from "../node.js"
+import type { PredicateInput } from "../predicate.js"
+import type { inferTypeInput, TypeInput } from "../type.js"
 import {
     neverTypeNode,
     TypeNode,
     typeNodeFromInput,
     unknownTypeNode
-} from "./type.js"
+} from "../type.js"
 
 export class PropsNode extends Node<"props"> {
     static readonly kind = "props"

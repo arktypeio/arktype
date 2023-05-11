@@ -1,8 +1,8 @@
-import type { Morph } from "../parse/ast/morph.js"
-import type { listable } from "../utils/lists.js"
-import { intersectUniqueLists, listFrom } from "../utils/lists.js"
-import type { CompilationState } from "./compilation.js"
-import { Node } from "./node.js"
+import type { Morph } from "../../parse/ast/morph.js"
+import type { listable } from "../../utils/lists.js"
+import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
+import type { CompilationState } from "../compilation.js"
+import { Node } from "../node.js"
 
 export class MorphNode extends Node<"morph"> {
     static readonly kind = "morph"

@@ -13,8 +13,8 @@ import {
     objectKindDescriptions
 } from "../utils/objectKinds.js"
 import { stringify } from "../utils/serialize.js"
-import type { RangeConstraint, SizedData } from "./range.js"
-import { comparatorDescriptions } from "./range.js"
+import type { RangeConstraint, SizedData } from "./constraints/range.js"
+import { comparatorDescriptions } from "./constraints/range.js"
 
 export class ArkTypeError extends TypeError {
     cause: Problems

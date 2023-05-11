@@ -1,9 +1,9 @@
-import type { Comparator } from "../../../nodes/range.js"
+import type { Comparator } from "../../../nodes/constraints/range.js"
 import {
     invertedComparators,
     minComparators,
     RangeNode
-} from "../../../nodes/range.js"
+} from "../../../nodes/constraints/range.js"
 import type { TypeNode } from "../../../nodes/type.js"
 import { throwInternalError, throwParseError } from "../../../utils/errors.js"
 import type { requireKeys } from "../../../utils/records.js"

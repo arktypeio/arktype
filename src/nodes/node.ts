@@ -1,15 +1,15 @@
 import { CompiledFunction } from "../utils/compiledFunction.js"
 import type { instanceOf } from "../utils/objectKinds.js"
-import type { BasisNode } from "./basis.js"
+import type { BasisNode } from "./basis/basis.js"
 import { type CompilationState, In } from "./compilation.js"
+import type { DivisorNode } from "./constraints/divisor.js"
+import type { MorphNode } from "./constraints/morph.js"
+import type { NarrowNode } from "./constraints/narrow.js"
+import type { PropsNode } from "./constraints/props.js"
+import type { RangeNode } from "./constraints/range.js"
+import type { RegexNode } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
-import type { DivisorNode } from "./divisor.js"
-import type { MorphNode } from "./morph.js"
-import type { NarrowNode } from "./narrow.js"
 import type { PredicateNode } from "./predicate.js"
-import type { PropsNode } from "./props.js"
-import type { RangeNode } from "./range.js"
-import type { RegexNode } from "./regex.js"
 import type { TypeNode } from "./type.js"
 
 export type NodeSubclass<kind extends NodeKind> = {
@@ -61,6 +61,7 @@ export abstract class Node<
         morph: {}
     }
 
+    // TODO: accept compiled output as input
     constructor(
         protected subclass: NodeSubclass<kind>,
         ...input: Parameters<NodeKinds[kind]["compile"]>

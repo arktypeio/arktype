@@ -3,7 +3,7 @@ import type {
     InvertedComparators,
     MaxComparator,
     MinComparator
-} from "../../../nodes/range.js"
+} from "../../../nodes/constraints/range.js"
 import type { error } from "../../../utils/errors.js"
 import type { defined } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"

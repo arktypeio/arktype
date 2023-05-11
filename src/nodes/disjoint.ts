@@ -1,10 +1,12 @@
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import { entriesOf, type entryOf } from "../utils/records.js"
 import { stringify } from "../utils/serialize.js"
-import type { BasisNode } from "./basis.js"
+import type { BasisNode } from "./basis/basis.js"
+import type { ClassNode } from "./basis/class.js"
+import type { ValueNode } from "./basis/value.js"
 import { In, prependKey } from "./compilation.js"
+import type { RangeNode } from "./constraints/range.js"
 import type { PredicateNode } from "./predicate.js"
-import type { RangeNode } from "./range.js"
 import type { TypeNode } from "./type.js"
 
 type DisjointKinds = {
@@ -13,25 +15,25 @@ type DisjointKinds = {
         r: BasisNode
     }
     value?: {
-        l: BasisNode<"value">
-        r: BasisNode<"value">
+        l: ValueNode
+        r: ValueNode
     }
     range?: {
         l: RangeNode
         r: RangeNode
     }
     class?: {
-        l: BasisNode<"class">
-        r: BasisNode<"class">
+        l: ClassNode
+        r: ClassNode
     }
     assignability?:
         | {
-              l: BasisNode<"value">
+              l: ValueNode
               r: PredicateNode
           }
         | {
               l: PredicateNode
-              r: BasisNode<"value">
+              r: ValueNode
           }
     union?: {
         l: TypeNode

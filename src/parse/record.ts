@@ -1,6 +1,10 @@
-import { BasisNode } from "../nodes/basis.js"
+import { BasisNode } from "../nodes/basis/basis.js"
 import { PredicateNode } from "../nodes/predicate.js"
-import { type NamedNodes, type PropKind, PropsNode } from "../nodes/props.js"
+import {
+    type NamedNodes,
+    type PropKind,
+    PropsNode
+} from "../nodes/constraints/props.js"
 import { TypeNode } from "../nodes/type.js"
 import type { evaluate } from "../utils/generics.js"
 import type { Dict, mutable } from "../utils/records.js"

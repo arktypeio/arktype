@@ -1,4 +1,4 @@
-import type { Comparator, SizedData } from "../../nodes/range.js"
+import type { Comparator, SizedData } from "../../nodes/constraints/range.js"
 import type { error } from "../../utils/errors.js"
 import type { isAny } from "../../utils/generics.js"
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
