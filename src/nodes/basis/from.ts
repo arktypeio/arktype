@@ -1,0 +1,29 @@
+import type { Domain } from "../../utils/domains.js"
+import { domainOf } from "../../utils/domains.js"
+import { throwInternalError } from "../../utils/errors.js"
+import type { abstractableConstructor } from "../../utils/objectKinds.js"
+import type { BasisInput } from "./basis.js"
+import { ClassNode } from "./class.js"
+import { DomainNode } from "./domain.js"
+import { ValueNode } from "./value.js"
+
+export type basisNodeFrom<input extends BasisInput> = input extends Domain
+    ? DomainNode
+    : input extends abstractableConstructor
+    ? ClassNode
+    : ValueNode
+
+export const basisNodeFrom = ((input) => {
+    switch (typeof input) {
+        case "string":
+            return new DomainNode(input)
+        case "object":
+            return new ValueNode(input[1])
+        case "function":
+            return new ClassNode(input)
+        default:
+            throwInternalError(
+                `Unexpectedly got a basis input of type ${domainOf(input)}`
+            )
+    }
+}) as <input extends BasisInput>(input: input) => basisNodeFrom<input>

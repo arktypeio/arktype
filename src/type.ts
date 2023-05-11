@@ -71,20 +71,20 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         this.allows = root.allows
     }
 
-    #binary(def: unknown, operator: "|" | "&") {
+    private binary(def: unknown, operator: "|" | "&") {
         return new Type([this.definition, operator, def], this.scope)
     }
 
     and<def>(
         def: validateDefinition<def, bind<$, def>>
     ): Type<evaluate<t & inferDefinition<def, bind<$, def>>>> {
-        return this.#binary(def, "&") as never
+        return this.binary(def, "&") as never
     }
 
     or<def>(
         def: validateDefinition<def, bind<$, def>>
     ): Type<t | inferDefinition<def, bind<$, def>>, $> {
-        return this.#binary(def, "|") as never
+        return this.binary(def, "|") as never
     }
 
     morph<transform extends Morph<inferOut<t>>>(

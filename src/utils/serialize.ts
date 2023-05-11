@@ -12,10 +12,13 @@ export type SerializationOptions = {
     onCycle?: (value: object) => string
     onSymbol?: (value: symbol) => string
     onFunction?: (value: Function) => string
+    onUndefined?: string
 }
 
-export const snapshot = <t>(data: t, opts: SerializationOptions = {}) =>
-    serializeRecurse(data, opts, []) as snapshot<t>
+export const snapshot = <t>(
+    data: t,
+    opts: SerializationOptions = { onUndefined: "(undefined)" }
+) => serializeRecurse(data, opts, []) as snapshot<t>
 
 export type snapshot<t, depth extends 1[] = []> = unknown extends t
     ? unknown
@@ -34,7 +37,7 @@ export type snapshot<t, depth extends 1[] = []> = unknown extends t
       }
 
 type snapshotPrimitive<t> = t extends undefined
-    ? "undefined"
+    ? "(undefined)"
     : t extends bigint
     ? `${t}n`
     : t extends symbol
@@ -67,7 +70,7 @@ const stringifyOpts = {
 
 const serializeRecurse = (
     data: unknown,
-    context: SerializationOptions,
+    opts: SerializationOptions,
     seen: unknown[]
 ): unknown => {
     switch (domainOf(data)) {
@@ -81,7 +84,7 @@ const serializeRecurse = (
             const nextSeen = [...seen, data]
             if (Array.isArray(data)) {
                 return data.map((item) =>
-                    serializeRecurse(item, context, nextSeen)
+                    serializeRecurse(item, opts, nextSeen)
                 )
             }
             if (data instanceof Date) {
@@ -89,11 +92,7 @@ const serializeRecurse = (
             }
             const result: Record<string, unknown> = {}
             for (const k in data as Dict) {
-                result[k] = serializeRecurse(
-                    (data as any)[k],
-                    context,
-                    nextSeen
-                )
+                result[k] = serializeRecurse((data as any)[k], opts, nextSeen)
             }
             return result
         case "symbol":
@@ -101,7 +100,7 @@ const serializeRecurse = (
         case "bigint":
             return `${data}n`
         case "undefined":
-            return "undefined"
+            return opts.onUndefined ?? "undefined"
         default:
             return data
     }

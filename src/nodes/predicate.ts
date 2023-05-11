@@ -7,8 +7,8 @@ import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
-import { BasisNode } from "./basis/basis.js"
-import type { BasisInput, inferBasis } from "./basis/basis.js"
+import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
+import { basisNodeFrom } from "./basis/from.js"
 import type { ValueNode } from "./basis/value.js"
 import type { CompilationState } from "./compilation.js"
 import { DivisorNode } from "./constraints/divisor.js"
@@ -58,7 +58,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
     static from<input extends PredicateInput>(
         input: input
     ): PredicateNode<inferPredicateDefinition<input>> {
-        const basis = input.basis && BasisNode.from(input.basis)
+        const basis = input.basis && basisNodeFrom(input.basis)
         const rules: PredicateRules = basis ? [basis] : []
         for (const kind of constraintsByPrecedence) {
             if (input[kind]) {
@@ -188,18 +188,18 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         return new PredicateNode(rules)
     }
 
-    #keyof?: TypeNode
+    private _keyof?: TypeNode
     keyof() {
-        if (this.#keyof) {
-            return this.#keyof
+        if (this._keyof) {
+            return this._keyof
         }
         if (!this.basis) {
             return neverTypeNode
         }
-        this.#keyof =
+        this._keyof =
             this.getConstraint("props")?.keyof().or(this.basis.keyof()) ??
             this.basis.keyof()
-        return this.#keyof
+        return this._keyof
     }
 }
 

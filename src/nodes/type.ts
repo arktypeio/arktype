@@ -4,7 +4,7 @@ import { throwParseError } from "../utils/errors.js"
 import type { conform, exact } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
 import { isArray } from "../utils/objectKinds.js"
-import type { BasisInput } from "./basis/basis.js"
+import { type BasisInput } from "./basis/basis.js"
 import { ClassNode } from "./basis/class.js"
 import { ValueNode } from "./basis/value.js"
 import type { CompilationState } from "./compilation.js"
@@ -73,11 +73,11 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
 
     static compile(branches: Discriminant | PredicateNode[]) {
         return Array.isArray(branches)
-            ? TypeNode.#compileIndiscriminable(branches)
-            : TypeNode.#compileSwitch(branches)
+            ? TypeNode.compileIndiscriminable(branches)
+            : TypeNode.compileSwitch(branches)
     }
 
-    static #compileIndiscriminable(branches: PredicateNode[]) {
+    private static compileIndiscriminable(branches: PredicateNode[]) {
         return branches.length === 0
             ? "false"
             : branches.length === 1
@@ -88,7 +88,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
                   .join(" || ")})`
     }
 
-    static #compileSwitch(discriminant: Discriminant): string {
+    private static compileSwitch(discriminant: Discriminant): string {
         // TODO: optional access
         const condition =
             discriminant.kind === "domain"
@@ -351,19 +351,19 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         return this.intersect(other) === this
     }
 
-    #keyof: TypeNode | undefined
+    private _keyof: TypeNode | undefined
     keyof(): TypeNode {
         if (this.branches.length === 0) {
             return throwParseError(`never is not a valid keyof operand`)
         }
-        if (this.#keyof) {
-            return this.#keyof
+        if (this._keyof) {
+            return this._keyof
         }
-        this.#keyof = this.branches[0].keyof()
+        this._keyof = this.branches[0].keyof()
         for (let i = 1; i < this.branches.length; i++) {
-            this.#keyof = this.#keyof.and(this.branches[i].keyof())
+            this._keyof = this._keyof.and(this.branches[i].keyof())
         }
-        return this.#keyof
+        return this._keyof
     }
 
     array(): TypeNode<t[]> {

@@ -152,19 +152,19 @@ export class Scope<context extends ScopeInferenceContext = any> {
     declare infer: exportsOf<context>
 
     readonly config: ScopeConfig
-    #resolutions: Record<string, Type> = {}
-    #exports: Record<string, Type> = {}
+    private resolutions: Record<string, Type> = {}
+    private exports: Record<string, Type> = {}
 
     constructor(public aliases: Dict, opts: ScopeOptions = {}) {
         this.config = compileScopeOptions(opts)
         if (opts.standard !== false) {
-            this.#cacheSpaces([registry().ark], "imports")
+            this.cacheSpaces([registry().ark], "imports")
         }
         if (opts.imports) {
-            this.#cacheSpaces(opts.imports, "imports")
+            this.cacheSpaces(opts.imports, "imports")
         }
         if (opts.includes) {
-            this.#cacheSpaces(opts.includes, "includes")
+            this.cacheSpaces(opts.includes, "includes")
         }
     }
 
@@ -176,56 +176,44 @@ export class Scope<context extends ScopeInferenceContext = any> {
         return new Type(def, this)
     }) as unknown as TypeParser<resolutions<context>>
 
-    #cacheSpaces(spaces: Space[], kind: "imports" | "includes") {
+    private cacheSpaces(spaces: Space[], kind: "imports" | "includes") {
         for (const space of spaces) {
             for (const name in space) {
-                if (name in this.#resolutions || name in this.aliases) {
+                if (name in this.resolutions || name in this.aliases) {
                     throwParseError(writeDuplicateAliasesMessage(name))
                 }
-                this.#resolutions[name] = space[name]
+                this.resolutions[name] = space[name]
                 if (kind === "includes") {
-                    this.#exports[name] = space[name]
+                    this.exports[name] = space[name]
                 }
             }
         }
     }
 
     maybeResolve(name: name<context>): Type | undefined {
-        if (this.#resolutions[name]) {
-            return this.#resolutions[name]
+        if (this.resolutions[name]) {
+            return this.resolutions[name]
         }
         const aliasDef = this.aliases[name]
         if (!aliasDef) {
             return
         }
         const resolution = new Type(aliasDef, this)
-        this.#resolutions[name] = resolution
-        this.#exports[name] = resolution
+        this.resolutions[name] = resolution
+        this.exports[name] = resolution
         return resolution
     }
 
-    #compiled = false
+    private _compiled = false
     compile() {
-        if (!this.#compiled) {
+        if (!this._compiled) {
             for (const name in this.aliases) {
-                this.#exports[name] ??= this.maybeResolve(name) as Type
+                this.exports[name] ??= this.maybeResolve(name) as Type
             }
-            this.#compiled = true
+            this._compiled = true
         }
-        return this.#exports as Space<this["infer"]>
+        return this.exports as Space<this["infer"]>
     }
-
-    // TODO: shallow cycle?
-    // let node = parseDefinition(aliasDef, ctx)
-    // if (typeof node === "string") {
-    //     if (seen.includes(node)) {
-    //         return throwParseError(
-    //             writeShallowCycleErrorMessage(name, seen)
-    //         )
-    //     }
-    //     seen.push(node)
-    //     node = this.#resolveRecurse(node, "throw", seen).root
-    // }
 }
 
 export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>

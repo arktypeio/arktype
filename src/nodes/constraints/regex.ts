@@ -18,13 +18,10 @@ export class RegexNode extends Node<"regex"> {
     }
 
     static compile(sources: readonly string[]) {
-        return [...sources]
-            .sort()
-            .map(RegexNode.#compileExpression)
-            .join(" && ")
+        return [...sources].sort().map(RegexNode.compileExpression).join(" && ")
     }
 
-    static #compileExpression(source: string) {
+    static compileExpression(source: string) {
         return `${In}.match(/${source}/)`
     }
 
@@ -39,7 +36,7 @@ export class RegexNode extends Node<"regex"> {
         return this.sources
             .map((source) =>
                 s.ifNotThen(
-                    RegexNode.#compileExpression(source),
+                    RegexNode.compileExpression(source),
                     s.problem("regex", source)
                 )
             )

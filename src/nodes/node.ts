@@ -37,7 +37,7 @@ export abstract class Node<
 > {
     declare allows: (data: input) => data is narrowed
 
-    static #cache: { [kind in NodeKind]: Record<string, Node<kind>> } = {
+    private static cache: { [kind in NodeKind]: Record<string, Node<kind>> } = {
         type: {},
         predicate: {},
         basis: {},
@@ -56,8 +56,8 @@ export abstract class Node<
     abstract toString(): string
 
     constructor(public kind: kind, public condition: string) {
-        if (Node.#cache[kind][condition]) {
-            return Node.#cache[kind][condition] as any
+        if (Node.cache[kind][condition]) {
+            return Node.cache[kind][condition] as any
         }
         this.condition = condition
         this.kind = kind as kind
@@ -65,24 +65,24 @@ export abstract class Node<
             In,
             `return ${condition}`
         )
-        ;(Node.#cache[kind] as any)[condition] = this
+        ;(Node.cache[kind] as any)[condition] = this
     }
 
     hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
         return this.kind === (kind as any)
     }
 
-    #intersections: Record<string, NodeInstance<kind> | Disjoint> = {}
+    private intersections: Record<string, NodeInstance<kind> | Disjoint> = {}
     intersect(other: NodeInstance<kind>): NodeInstance<kind> | Disjoint {
         if (this.condition === other.condition) {
             return this as NodeInstance<kind>
         }
-        if (this.#intersections[other.condition]) {
-            return this.#intersections[other.condition]
+        if (this.intersections[other.condition]) {
+            return this.intersections[other.condition]
         }
         const result = this.intersectNode(other)
-        this.#intersections[other.condition] = result
-        other.#intersections[this.condition] =
+        this.intersections[other.condition] = result
+        other.intersections[this.condition] =
             result instanceof Disjoint ? result.invert() : (result as any)
         return result
     }

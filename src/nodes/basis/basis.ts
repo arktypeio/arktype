@@ -1,7 +1,6 @@
 import { writeUnboundableMessage } from "../../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
 import type { Domain, inferDomain } from "../../utils/domains.js"
-import { domainOf } from "../../utils/domains.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import type { evaluate } from "../../utils/generics.js"
 import type {
@@ -17,9 +16,9 @@ import { Disjoint } from "../disjoint.js"
 import { Node } from "../node.js"
 import { type ConstraintKind } from "../predicate.js"
 import { TypeNode } from "../type.js"
-import { ClassNode } from "./class.js"
-import { DomainNode } from "./domain.js"
-import { ValueNode } from "./value.js"
+import type { ClassNode } from "./class.js"
+import type { DomainNode } from "./domain.js"
+import type { ValueNode } from "./value.js"
 
 type BasisNodesByLevel = {
     domain: typeof DomainNode
@@ -65,28 +64,13 @@ export abstract class BasisNode<
         super("basis", condition)
     }
 
-    static from<input extends BasisInput>(input: input) {
-        switch (typeof input) {
-            case "string":
-                return new DomainNode(input)
-            case "object":
-                return new ValueNode(input[1])
-            case "function":
-                return new ClassNode(input)
-            default:
-                throwInternalError(
-                    `Unexpectedly got a basis input of type ${domainOf(input)}`
-                )
-        }
-    }
-
-    #keyof?: TypeNode
+    private _keyof?: TypeNode
     keyof(): TypeNode {
-        if (this.#keyof) {
-            return this.#keyof
+        if (this._keyof) {
+            return this._keyof
         }
-        this.#keyof = TypeNode.fromValue(...this.literalKeysOf())
-        return this.#keyof
+        this._keyof = TypeNode.fromValue(...this.literalKeysOf())
+        return this._keyof
     }
 
     hasLevel<level extends BasisLevel>(

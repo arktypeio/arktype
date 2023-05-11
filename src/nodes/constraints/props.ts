@@ -51,15 +51,15 @@ export class PropsNode extends Node<"props"> {
     static compile(named: NamedNodeEntry[], indexed: IndexedNodeEntry[]) {
         const checks: string[] = []
         for (const entry of named) {
-            checks.push(PropsNode.#compileNamedEntry(entry))
+            checks.push(PropsNode.compileNamedEntry(entry))
         }
         for (const entry of indexed) {
-            checks.push(PropsNode.#compileIndexedEntry(entry))
+            checks.push(PropsNode.compileIndexedEntry(entry))
         }
         return checks.join(" && ") || "true"
     }
 
-    static #compileNamedEntry(entry: NamedNodeEntry) {
+    private static compileNamedEntry(entry: NamedNodeEntry) {
         const valueCheck = entry[1].value.condition.replaceAll(
             In,
             `${In}${compilePropAccess(entry[0])}`
@@ -69,7 +69,7 @@ export class PropsNode extends Node<"props"> {
             : valueCheck
     }
 
-    static #compileIndexedEntry(entry: IndexedNodeEntry) {
+    private static compileIndexedEntry(entry: IndexedNodeEntry) {
         const keySource = extractIndexKeyRegex(entry[0])
         if (!keySource) {
             // we only handle array indices for now
@@ -157,13 +157,13 @@ export class PropsNode extends Node<"props"> {
                     // with any matching index props. Therefore, the
                     // intersection result will already include index values
                     // from both sides whose key types allow k.
-                    intersectedValue = this.#intersectNamedProp(k, r.named[k])
+                    intersectedValue = this.intersectNamedProp(k, r.named[k])
                 } else {
                     // If a named key from l matches any index keys of r, intersect
                     // the value associated with the name with the index value.
                     for (const [rKey, rValue] of r.indexed) {
                         if (rKey.allows(k)) {
-                            intersectedValue = this.#intersectNamedProp(k, {
+                            intersectedValue = this.intersectNamedProp(k, {
                                 kind: "optional",
                                 value: rValue
                             })
@@ -175,7 +175,7 @@ export class PropsNode extends Node<"props"> {
                 // the value associated with the name with the index value.
                 for (const [lKey, lValue] of this.indexed) {
                     if (lKey.allows(k)) {
-                        intersectedValue = this.#intersectNamedProp(k, {
+                        intersectedValue = this.intersectNamedProp(k, {
                             kind: "optional",
                             value: lValue
                         })
@@ -202,7 +202,10 @@ export class PropsNode extends Node<"props"> {
         return new PropsNode(named, indexed)
     }
 
-    #intersectNamedProp(name: string, r: NamedNode): NamedNode | Disjoint {
+    private intersectNamedProp(
+        name: string,
+        r: NamedNode
+    ): NamedNode | Disjoint {
         const l = this.named[name]
         const kind =
             l.kind === "prerequisite" || r.kind === "prerequisite"
@@ -240,7 +243,7 @@ export class PropsNode extends Node<"props"> {
         return new PropsNode(preserved, this.indexed)
     }
 
-    _keyof?: TypeNode<Key>
+    private _keyof?: TypeNode<Key>
     keyof() {
         if (this._keyof) {
             return this._keyof

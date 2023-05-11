@@ -95,11 +95,11 @@ export class RangeNode extends Node<"range"> {
 
     static compile(range: Range) {
         return range
-            .map((constraint) => RangeNode.#compileAssertion(constraint))
+            .map((constraint) => RangeNode.compileAssertion(constraint))
             .join(" && ")
     }
 
-    static #compileAssertion(constraint: RangeConstraint) {
+    private static compileAssertion(constraint: RangeConstraint) {
         return `(${In}.length ?? Number(${In})) ${
             constraint.comparator === "==" ? "===" : constraint.comparator
         } ${constraint.limit}`
@@ -109,7 +109,7 @@ export class RangeNode extends Node<"range"> {
         return this.range
             .map((constraint) =>
                 s.ifNotThen(
-                    RangeNode.#compileAssertion(constraint),
+                    RangeNode.compileAssertion(constraint),
                     s.problem("range", constraint)
                 )
             )

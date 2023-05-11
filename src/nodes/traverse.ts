@@ -22,7 +22,7 @@ export class TraversalState {
     entriesToPrune: [data: Record<string, unknown>, key: string][] = []
 
     // Qualified
-    #seen: { [name in string]?: object[] } = {}
+    private seen: { [name in string]?: object[] } = {}
 
     constructor() {}
 
