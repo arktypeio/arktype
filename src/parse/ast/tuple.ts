@@ -1,4 +1,3 @@
-import { type } from "../../main.js"
 import {
     type IndexedNodeEntry,
     type NamedNodes,
@@ -11,7 +10,6 @@ import {
     TypeNode
 } from "../../nodes/type.js"
 import type { inferIn, inferOut, TypeConfig } from "../../type.js"
-import type { error } from "../../utils/errors.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"

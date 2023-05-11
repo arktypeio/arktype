@@ -1,6 +1,5 @@
 import type { Comparator } from "../../nodes/constraints/range.js"
 import type { resolve } from "../../scope.js"
-import { type Ark, type } from "../../scopes/ark.js"
 import type { error } from "../../utils/errors.js"
 import type { evaluate } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"
