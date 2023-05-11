@@ -38,8 +38,19 @@
                 },
                 {
                     "include": "#regex"
+                },
+                {
+                    "include": "#keys"
                 }
             ]
+        },
+        "keys": {
+            "match": "(\\w+)(\\?[\"'`])?(?=\\:)",
+            "captures": {
+                "1": {
+                    "name": "meta.object-literal.key"
+                }
+            }
         },
         "quoted": {
             "match": "((?<!<)[\"'`])(.*?)?((?<!\\\\)(\\1))",
@@ -74,7 +85,10 @@
                 "1": { "name": "keyword.operator" },
                 "2": {
                     "patterns": [
-                        { "name": "entity.name.type.ts", "match": "[A-Za-z]" },
+                        {
+                            "name": "support.type.primitive.ts",
+                            "match": "[A-Za-z]"
+                        },
                         {
                             "name": "constant.numeric.decimal.ts",
                             "match": "[0-9]"

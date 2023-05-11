@@ -77,12 +77,19 @@ export class Assertions implements AssertionRecord {
 
     // Use variadic args to distinguish undefined being passed explicitly from no args
     snap(...args: [expected: unknown]) {
+        const snapName = (args.at(1) ?? "snap") as string
         const expectedSerialized = this.serialize(args[0])
-        if (!args.length || this.ctx.cfg.updateSnapshots) {
+        if (
+            (args[0] === undefined && args.at(1) !== undefined) ||
+            this.ctx.cfg.updateSnapshots
+        ) {
             if (this.snapRequiresUpdate(expectedSerialized)) {
                 const snapshotArgs: SnapshotArgs = {
-                    position: caller(),
-                    serializedValue: this.serializedActual
+                    position: caller({
+                        upStackBy: snapName === "snap" ? 3 : 4
+                    }),
+                    serializedValue: this.serializedActual,
+                    snapFunctionName: snapName
                 }
                 queueSnapshotUpdate(snapshotArgs)
             }
@@ -100,6 +107,12 @@ export class Assertions implements AssertionRecord {
             }
         }
         return this
+    }
+
+    //used for arkdark highlighting
+    public snapJs(source?: string) {
+        const args = [source, "snapJs"] as unknown as [string]
+        this["snap"](...args)
     }
 
     snapToFile(args: ExternalSnapshotArgs) {
