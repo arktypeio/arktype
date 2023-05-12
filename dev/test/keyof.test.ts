@@ -105,7 +105,7 @@ suite("keyof", () => {
     test("missing operand", () => {
         // @ts-expect-error
         attest(() => type("keyof "))
-            .throws.snap("Token '&' requires a right operand")
+            .throws("Token '&' requires a right operand")
             // it tries to autocomplete, so this is just a possible completion that would be included
             .types.errors("keyof bigint")
     })
