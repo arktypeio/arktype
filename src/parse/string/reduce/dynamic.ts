@@ -17,8 +17,10 @@ import {
     writeUnmatchedGroupCloseMessage,
     writeUnpairableComparatorMessage
 } from "./shared.js"
+import type { Prefix } from "./shared.js"
 
 type BranchState = {
+    prefixes: Prefix[]
     range?: RangeNode
     intersection?: TypeNode
     union?: TypeNode
@@ -29,7 +31,9 @@ export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 export class DynamicState {
     readonly scanner: Scanner
     root: TypeNode | undefined
-    branches: BranchState = {}
+    branches: BranchState = {
+        prefixes: []
+    }
     groups: BranchState[] = []
 
     constructor(def: string, public readonly ctx: ParseContext) {
@@ -92,7 +96,10 @@ export class DynamicState {
             this.pushRootToBranch("|")
             this.root = this.branches.union
         } else if (this.branches.intersection) {
-            this.root = this.ejectRoot().and(this.branches.intersection)
+            this.pushRootToBranch("&")
+            this.root = this.branches.intersection
+        } else {
+            this.applyPrefixes()
         }
     }
 
@@ -107,11 +114,26 @@ export class DynamicState {
         this.branches = topBranchState
     }
 
+    addPrefix(prefix: Prefix) {
+        this.branches.prefixes.push(prefix)
+    }
+
+    applyPrefixes() {
+        while (this.branches.prefixes.length) {
+            const lastPrefix = this.branches.prefixes.pop()!
+            this.root =
+                lastPrefix === "keyof"
+                    ? this.root!.keyof()
+                    : throwInternalError(`Unexpected prefix '${lastPrefix}'`)
+        }
+    }
+
     pushRootToBranch(token: "|" | "&") {
         this.assertRangeUnset()
+        this.applyPrefixes()
+        const root = this.ejectRoot()
         this.branches.intersection =
-            this.branches.intersection?.and(this.ejectRoot()) ??
-            this.ejectRoot()
+            this.branches.intersection?.and(root) ?? root
         if (token === "|") {
             this.branches.union =
                 this.branches.union?.or(this.branches.intersection) ??
@@ -129,11 +151,14 @@ export class DynamicState {
 
     reduceGroupOpen() {
         this.groups.push(this.branches)
-        this.branches = {}
+        this.branches = {
+            prefixes: []
+        }
     }
 
     previousOperator() {
         return this.branches.range?.lowerBound?.comparator ??
+            this.branches.prefixes.at(-1) ??
             this.branches.intersection
             ? "&"
             : this.branches.union

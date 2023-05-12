@@ -9,12 +9,20 @@ import {
     tryParseWellFormedNumber
 } from "../../../../utils/numericLiterals.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
-import type { state, StaticState } from "../../reduce/static.js"
+import type {
+    AutocompletePrefix,
+    state,
+    StaticState
+} from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
     const token = s.scanner.shiftUntilNextTerminator()
-    s.root = unenclosedToNode(s, token)
+    if (token === "keyof") {
+        s.addPrefix("keyof")
+    } else {
+        s.root = unenclosedToNode(s, token)
+    }
 }
 
 export type parseUnenclosed<
@@ -23,7 +31,9 @@ export type parseUnenclosed<
 > = Scanner.shiftUntilNextTerminator<
     s["unscanned"]
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
-    ? tryResolve<s, scanned, $> extends infer result
+    ? scanned extends "keyof"
+        ? state.addPrefix<s, "keyof", nextUnscanned>
+        : tryResolve<s, scanned, $> extends infer result
         ? result extends error<infer message>
             ? error<message>
             : state.setRoot<s, result, nextUnscanned>
@@ -67,9 +77,12 @@ export type unresolvableError<
     s extends StaticState,
     token extends string,
     $
-> = Extract<keyof $, `${token}${string}`> extends never
+> = Extract<keyof $ | AutocompletePrefix, `${token}${string}`> extends never
     ? error<writeUnresolvableMessage<token>>
-    : error<`${s["scanned"]}${Extract<keyof $, `${token}${string}`>}`>
+    : error<`${s["scanned"]}${Extract<
+          keyof $ | AutocompletePrefix,
+          `${token}${string}`
+      >}`>
 
 export const writeUnresolvableMessage = <token extends string>(
     token: token
@@ -87,8 +100,8 @@ export const writeMissingOperandMessage = <s extends DynamicState>(s: s) => {
 
 export type writeMissingOperandMessage<
     s extends StaticState,
-    operator extends Scanner.InfixToken | undefined = state.previousOperator<s>
-> = operator extends {}
+    operator extends string | undefined = state.previousOperator<s>
+> = operator extends string
     ? writeMissingRightOperandMessage<operator, s["unscanned"]>
     : writeExpressionExpectedMessage<s["unscanned"]>
 

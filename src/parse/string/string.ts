@@ -1,6 +1,6 @@
 import type { TypeNode } from "../../nodes/type.js"
-import type { error } from "../../utils/errors.js"
-import type { inferAst } from "../ast/ast.js"
+import { type error, throwParseError } from "../../utils/errors.js"
+import { type inferAst, writeUnsatisfiableExpressionError } from "../ast/ast.js"
 import type { ParseContext } from "../definition.js"
 import { DynamicState } from "./reduce/dynamic.js"
 import type { state, StaticState } from "./reduce/static.js"
@@ -40,7 +40,10 @@ export const maybeNaiveParse = (def: string, ctx: ParseContext): TypeNode =>
 export const fullStringParse = (def: string, ctx: ParseContext) => {
     const s = new DynamicState(def, ctx)
     parseOperand(s)
-    return loop(s)
+    const result = loop(s)
+    return result.isNever()
+        ? throwParseError(writeUnsatisfiableExpressionError(def))
+        : result
 }
 
 type fullStringParse<def extends string, $> = loop<state.initialize<def>, $>

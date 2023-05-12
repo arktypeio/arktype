@@ -14,6 +14,7 @@ import type { inferTuple, validateTuple } from "./ast/tuple.js"
 import { parseTuple } from "./ast/tuple.js"
 import type { inferRecord } from "./record.js"
 import { parseRecord } from "./record.js"
+import type { AutocompletePrefix } from "./string/reduce/static.js"
 import type { inferString } from "./string/string.js"
 import { parseString } from "./string/string.js"
 
@@ -93,7 +94,7 @@ export type validateDefinition<def, $> = def extends (
           objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
       >
     : isUnknown<def> extends true
-    ? keyof $ & string
+    ? (keyof $ & string) | AutocompletePrefix
     : evaluate<{
           [k in keyof def]: validateDefinition<def[k], $>
       }>

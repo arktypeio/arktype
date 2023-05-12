@@ -30,6 +30,8 @@ export type inferExpression<ast extends List, $> = ast[1] extends "[]"
         : inferAst<ast[0], $>
     : ast[1] extends "%"
     ? inferAst<ast[0], $>
+    : ast[0] extends "keyof"
+    ? keyof inferAst<ast[1], $>
     : never
 
 export type validateAst<ast, $> = ast extends string
@@ -50,8 +52,7 @@ export type validateAst<ast, $> = ast extends string
         : operator extends "%"
         ? validateDivisor<l, $>
         : undefined
-    : // TODO: ===?
-    ast extends readonly ["keyof", infer operand]
+    : ast extends readonly ["keyof", infer operand]
     ? [keyof inferAst<operand, $>] extends [never]
         ? error<writeUnsatisfiableExpressionError<astToString<ast>>>
         : validateAst<operand, $>

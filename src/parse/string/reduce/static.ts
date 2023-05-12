@@ -9,6 +9,7 @@ import type { defined } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
+    Prefix,
     unclosedGroupMessage,
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
@@ -26,7 +27,10 @@ export type StaticState = {
 
 type StaticOpenLeftBound = { limit: NumberLiteral; comparator: MinComparator }
 
+export type AutocompletePrefix = `${Prefix} `
+
 type BranchState = {
+    prefixes: Prefix[]
     range: StaticOpenLeftBound | undefined
     "&": unknown
     "|": unknown
@@ -42,6 +46,7 @@ export namespace state {
     }>
 
     type initialBranches = branchesFrom<{
+        prefixes: []
         range: undefined
         "&": undefined
         "|": undefined
@@ -67,6 +72,23 @@ export namespace state {
         unscanned: unscanned
     }>
 
+    export type addPrefix<
+        s extends StaticState,
+        prefix extends Prefix,
+        unscanned extends string
+    > = from<{
+        root: s["root"]
+        branches: {
+            prefixes: [...s["branches"]["prefixes"], prefix]
+            range: s["branches"]["range"]
+            "&": s["branches"]["&"]
+            "|": s["branches"]["|"]
+        }
+        groups: s["groups"]
+        scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
+        unscanned: unscanned
+    }>
+
     export type reduceBranch<
         s extends StaticState,
         token extends "|" | "&",
@@ -76,6 +98,7 @@ export namespace state {
         : from<{
               root: undefined
               branches: {
+                  prefixes: []
                   range: undefined
                   "&": token extends "&" ? mergeToIntersection<s> : undefined
                   "|": token extends "|" ? mergeToUnion<s> : s["branches"]["|"]
@@ -103,6 +126,7 @@ export namespace state {
             : from<{
                   root: undefined
                   branches: {
+                      prefixes: s["branches"]["prefixes"]
                       range: {
                           limit: limit
                           comparator: InvertedComparators[comparator]
@@ -130,6 +154,7 @@ export namespace state {
     > = state.from<{
         root: [minLimit, minComparator, [s["root"], maxComparator, maxLimit]]
         branches: {
+            prefixes: s["branches"]["prefixes"]
             range: undefined
             "&": s["branches"]["&"]
             "|": s["branches"]["|"]
@@ -147,6 +172,7 @@ export namespace state {
     > = state.from<{
         root: [s["root"], comparator, limit]
         branches: {
+            prefixes: s["branches"]["prefixes"]
             range: undefined
             "&": s["branches"]["&"]
             "|": s["branches"]["|"]
@@ -163,8 +189,15 @@ export namespace state {
 
     type mergeToIntersection<s extends StaticState> =
         s["branches"]["&"] extends undefined
-            ? s["root"]
-            : [s["branches"]["&"], "&", s["root"]]
+            ? mergePrefixes<s>
+            : [s["branches"]["&"], "&", mergePrefixes<s>]
+
+    type mergePrefixes<
+        s extends StaticState,
+        remaining extends unknown[] = s["branches"]["prefixes"]
+    > = remaining extends [infer head, ...infer tail]
+        ? [head, mergePrefixes<s, tail>]
+        : s["root"]
 
     type popGroup<stack extends BranchState[], top extends BranchState> = [
         ...stack,
@@ -216,6 +249,11 @@ export namespace state {
     export type previousOperator<s extends StaticState> =
         s["branches"]["range"] extends {}
             ? s["branches"]["range"]["comparator"]
+            : s["branches"]["prefixes"] extends [
+                  ...unknown[],
+                  infer tail extends string
+              ]
+            ? tail
             : s["branches"]["&"] extends {}
             ? "&"
             : s["branches"]["|"] extends {}
