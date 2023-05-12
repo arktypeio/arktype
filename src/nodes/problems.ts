@@ -10,7 +10,7 @@ import type {
     instanceOf
 } from "../utils/objectKinds.js"
 import {
-    getExactConstructorObjectKind,
+    getExactBuiltinConstructorName,
     objectKindDescriptions
 } from "../utils/objectKinds.js"
 import { stringify } from "../utils/serialize.js"
@@ -246,7 +246,7 @@ export class ClassProblem extends Problem<abstractableConstructor, object> {
     readonly code = "class"
 
     get mustBe() {
-        const possibleObjectKind = getExactConstructorObjectKind(this.rule)
+        const possibleObjectKind = getExactBuiltinConstructorName(this.rule)
         return possibleObjectKind
             ? objectKindDescriptions[possibleObjectKind]
             : `an instance of ${this.rule.name}`

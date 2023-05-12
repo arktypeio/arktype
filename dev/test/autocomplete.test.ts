@@ -26,4 +26,8 @@ suite("autocomplete", () => {
             }).compile()
         }).types.errors(`Type '"fo"' is not assignable to type '"foobar"'`)
     })
+    test("prefix", () => {
+        // @ts-expect-error
+        attest(type("k")).types.errors("keyof ")
+    })
 })

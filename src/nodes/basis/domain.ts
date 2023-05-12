@@ -1,5 +1,5 @@
 import type { Domain } from "../../utils/domains.js"
-import { baseKeysByDomain, type constructor } from "../../utils/objectKinds.js"
+import { type constructor, getBaseDomainKeys } from "../../utils/objectKinds.js"
 import type { Key } from "../../utils/records.js"
 import type { CompilationState } from "../compilation.js"
 import { In } from "../compilation.js"
@@ -27,7 +27,7 @@ export class DomainNode extends BasisNode<"domain"> {
     }
 
     literalKeysOf(): Key[] {
-        return [...baseKeysByDomain[this.domain]]
+        return getBaseDomainKeys(this.domain)
     }
 
     compileTraverse(s: CompilationState) {

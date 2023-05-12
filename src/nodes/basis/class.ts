@@ -1,5 +1,8 @@
 import type { abstractableConstructor } from "../../utils/objectKinds.js"
-import { prototypeKeysOf } from "../../utils/objectKinds.js"
+import {
+    getExactBuiltinConstructorName,
+    prototypeKeysOf
+} from "../../utils/objectKinds.js"
 import type { CompilationState } from "../compilation.js"
 import { In } from "../compilation.js"
 import { registry } from "../registry.js"
@@ -13,11 +16,9 @@ export class ClassNode extends BasisNode<"class"> {
     }
 
     static compile(instanceOf: abstractableConstructor) {
-        // TODO: others
         return `${In} instanceof ${
-            instanceOf === Array
-                ? "Array"
-                : registry().register(instanceOf.name, instanceOf)
+            getExactBuiltinConstructorName(instanceOf) ??
+            registry().register(instanceOf.name, instanceOf)
         }`
     }
 

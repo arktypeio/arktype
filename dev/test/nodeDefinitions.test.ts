@@ -157,10 +157,10 @@ suite("node definitions", () => {
             TypeNode.from({
                 basis: ["===", true as const],
                 // @ts-expect-error
-                filter: (b: boolean) => b === true
+                narrow: (b: boolean) => b === true
             })
-        ).throws.snap(
-            "Error: filter constraint may only be applied to a non-literal type (was true)"
+        ).throws(
+            "narrow constraint may only be applied to a non-literal type (was true)"
         )
     })
 })

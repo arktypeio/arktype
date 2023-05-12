@@ -124,7 +124,7 @@ export const objectKindDescriptions = {
 
 // this will only return an object kind if it's the root constructor
 // example TypeError would return undefined not 'Error'
-export const getExactConstructorObjectKind = (
+export const getExactBuiltinConstructorName = (
     constructor: unknown
 ): DefaultObjectKind | undefined => {
     const constructorName: string | undefined = Object(constructor).name
@@ -167,7 +167,7 @@ export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
     return result as evaluate<keyof t>[]
 }
 
-export const baseKeysByDomain: Record<Domain, readonly Key[]> = {
+const baseKeysByDomain: Record<Domain, readonly Key[]> = {
     bigint: prototypeKeysOf(0n),
     boolean: prototypeKeysOf(false),
     null: [],
@@ -178,6 +178,10 @@ export const baseKeysByDomain: Record<Domain, readonly Key[]> = {
     symbol: prototypeKeysOf(Symbol()),
     undefined: []
 }
+
+export const getBaseDomainKeys = <domain extends Domain>(domain: domain) => [
+    ...baseKeysByDomain[domain]
+]
 
 export const constructorExtends = (
     constructor: abstractableConstructor,
