@@ -72,17 +72,18 @@ export abstract class Node<
         return this.kind === (kind as any)
     }
 
-    private intersections: Record<string, NodeInstance<kind> | Disjoint> = {}
+    private intersectionCache: Record<string, NodeInstance<kind> | Disjoint> =
+        {}
     intersect(other: NodeInstance<kind>): NodeInstance<kind> | Disjoint {
         if (this.condition === other.condition) {
             return this as NodeInstance<kind>
         }
-        if (this.intersections[other.condition]) {
-            return this.intersections[other.condition]
+        if (this.intersectionCache[other.condition]) {
+            return this.intersectionCache[other.condition]
         }
         const result = this.intersectNode(other)
-        this.intersections[other.condition] = result
-        other.intersections[this.condition] =
+        this.intersectionCache[other.condition] = result
+        other.intersectionCache[this.condition] =
             result instanceof Disjoint ? result.invert() : (result as any)
         return result
     }

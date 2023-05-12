@@ -45,9 +45,9 @@ export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 
 export const discriminate = (
     branches: PredicateNode[]
-): Discriminant | null => {
+): Discriminant | undefined => {
     if (branches.length < 2) {
-        return null
+        return
     }
     const casesBySpecifier: CasesBySpecifier = {}
     for (let lIndex = 0; lIndex < branches.length - 1; lIndex++) {
@@ -105,11 +105,12 @@ export const discriminate = (
             }
         }
     }
+    // TODO: determinstic? Update cache key?
     const bestDiscriminantEntry = entriesOf(casesBySpecifier)
         .sort((a, b) => Object.keys(a[1]).length - Object.keys(b[1]).length)
         .at(-1)
     if (!bestDiscriminantEntry) {
-        return null
+        return
     }
     const [specifier, predicateCases] = bestDiscriminantEntry
     const [path, kind] = parseQualifiedDisjoint(specifier)

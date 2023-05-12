@@ -1,7 +1,6 @@
 import type { Domain } from "../../utils/domains.js"
 import { baseKeysByDomain, type constructor } from "../../utils/objectKinds.js"
 import type { Key } from "../../utils/records.js"
-import { stringify } from "../../utils/serialize.js"
 import type { CompilationState } from "../compilation.js"
 import { In } from "../compilation.js"
 import { BasisNode } from "./basis.js"
@@ -18,7 +17,7 @@ export class DomainNode extends BasisNode<"domain"> {
     }
 
     toString() {
-        return stringify(this.domain)
+        return this.domain
     }
 
     getConstructor(): constructor | undefined {

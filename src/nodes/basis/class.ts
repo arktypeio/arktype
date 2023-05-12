@@ -26,7 +26,7 @@ export class ClassNode extends BasisNode<"class"> {
     }
 
     literalKeysOf() {
-        return prototypeKeysOf(this.instanceOf)
+        return prototypeKeysOf(this.instanceOf.prototype)
     }
 
     compileTraverse(s: CompilationState) {

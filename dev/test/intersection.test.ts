@@ -118,17 +118,23 @@ suite("intersection", () => {
                     writeUnsatisfiableExpressionError("string & number")
                 )
         })
-        test("helper parse", () => {
+        test("chained semantic validation", () => {
+            // @ts-expect-error
+            attest(() => type("string").and("number"))
+                .throws(
+                    'Intersection at $arkRoot of "string" and "number" results in an unsatisfiable type'
+                )
+                .types.errors(writeUnsatisfiableExpressionError("intersection"))
+        })
+        test("chained validation", () => {
             attest(() =>
                 // @ts-expect-error
-                type({ a: "what" }).and({ b: "boolean" })
+                type({ a: "string" }).and({ b: "what" })
             ).throwsAndHasTypeError(writeUnresolvableMessage("what"))
         })
         test("at path", () => {
-            attest(() =>
-                type({ a: "string" }).and({ a: "number" })
-            ).throws.snap(
-                "Error: The intersection at $arkRoot.a of string and number results in an unsatisfiable type"
+            attest(() => type({ a: "string" }).and({ a: "number" })).throws(
+                "Intersection at $arkRoot.a of string and number results in an unsatisfiable type"
             )
         })
     })

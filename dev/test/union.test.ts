@@ -1,5 +1,5 @@
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
+import { type, TypeNode } from "../../src/main.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
@@ -15,29 +15,30 @@ suite("union", () => {
     test("nary", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
-        // attest(nary.node).snap({
-        //     boolean: {
-        //         value: false
-        //     },
-        //     null: true,
-        //     undefined: true,
-        //     number: {
-        //         value: 0
-        //     },
-        //     string: {
-        //         value: ""
-        //     }
-        // })
+        attest(nary.root).is(
+            TypeNode.fromValue(
+                false as const,
+                null,
+                undefined,
+                0 as const,
+                "" as const
+            )
+        )
     })
     test("subtype pruning", () => {
         type([{ a: "string" }, "|", { a: "'foo'" }])
+    })
+    test("multiple subtypes pruned", () => {
+        const t = type("'foo'|'bar'|string|'baz'|/.*/")
+        attest(t.infer).typed as string
+        attest(t.root).is(type("string").root)
     })
     test("union of true and false reduces to boolean", () => {})
     test("tuple expression", () => {
         const t = type([{ a: "string" }, "|", { b: "boolean" }])
         attest(t.infer).typed as { a: string } | { b: boolean }
     })
-    test("helper", () => {
+    test("chained", () => {
         const t = type({ a: "string" }).or({ b: "boolean" })
         attest(t.infer).typed as
             | {
@@ -75,7 +76,7 @@ suite("union", () => {
                 type("boolean[]|(string|number|)|object")
             ).throws(writeMissingRightOperandMessage("|", ")|object"))
         })
-        test("nested union", () => {
+        test("nested tuple union", () => {
             const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
             attest(t.infer).typed as string | number | bigint | boolean
             // attest(t.node).snap({
@@ -85,7 +86,7 @@ suite("union", () => {
             //     bigint: true
             // })
         })
-        test("helper bad reference", () => {
+        test("chained bad reference", () => {
             // @ts-expect-error
             attest(() => type("string").or("nummer")).throwsAndHasTypeError(
                 writeUnresolvableMessage("nummer")

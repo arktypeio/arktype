@@ -63,12 +63,16 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     declare [inferred]: t
 
     static readonly kind = "type"
-    discriminant: Discriminant | null
+    discriminant: Discriminant | undefined
 
     constructor(public branches: PredicateNode[]) {
-        const discriminant = discriminate(branches)
-        super("type", TypeNode.compile(discriminant ?? branches))
-        this.discriminant = discriminant
+        const condition = TypeNode.compile(branches)
+        super("type", condition)
+        if (!this.branches) {
+            const discriminant = discriminate(branches)
+            this.branches = branches
+            this.discriminant = discriminant
+        }
     }
 
     static compile(branches: Discriminant | PredicateNode[]) {
@@ -118,23 +122,25 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
             >
         }
     ) {
-        const branchNodes = branches.map((branch) =>
-            branch instanceof PredicateNode
-                ? branch
-                : PredicateNode.from(branch as any)
+        return new TypeNode<inferBranches<branches>>(
+            this.reduceBranches(
+                branches.map((branch) => PredicateNode.from(branch as any))
+            )
         )
+    }
+
+    private static reduceBranches(branchNodes: PredicateNode[]) {
         const uniquenessByIndex: Record<number, boolean> = branchNodes.map(
             () => true
         )
         for (let i = 0; i < branchNodes.length; i++) {
             for (
                 let j = i + 1;
-                j < branchNodes.length && uniquenessByIndex[i];
+                j < branchNodes.length &&
+                uniquenessByIndex[i] &&
+                uniquenessByIndex[j];
                 j++
             ) {
-                if (!uniquenessByIndex[j]) {
-                    continue
-                }
                 if (branchNodes[i] === branchNodes[j]) {
                     // if the two branches are equal, only "j" is marked as
                     // redundant so at least one copy could still be included in
@@ -150,9 +156,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
                 }
             }
         }
-        return new TypeNode<inferBranches<branches>>(
-            branchNodes.filter((_, i) => uniquenessByIndex[i])
-        )
+        return branchNodes.filter((_, i) => uniquenessByIndex[i])
     }
 
     static fromValue<branches extends readonly unknown[]>(
@@ -334,7 +338,9 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         if (this === (other as unknown)) {
             return this
         }
-        return new TypeNode([...this.branches, ...other.branches])
+        return new TypeNode(
+            TypeNode.reduceBranches([...this.branches, ...other.branches])
+        )
     }
 
     get valueNode(): ValueNode | undefined {
@@ -351,7 +357,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         return this.intersect(other) === this
     }
 
-    private _keyof: TypeNode | undefined
+    private declare _keyof: TypeNode | undefined
     keyof(): TypeNode {
         if (this.branches.length === 0) {
             return throwParseError(`never is not a valid keyof operand`)
@@ -359,15 +365,16 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         if (this._keyof) {
             return this._keyof
         }
-        this._keyof = this.branches[0].keyof()
+        let result = this.branches[0].keyof()
         for (let i = 1; i < this.branches.length; i++) {
-            this._keyof = this._keyof.and(this.branches[i].keyof())
+            result = result.and(this.branches[i].keyof())
         }
-        return this._keyof
+        this._keyof = result
+        return result
     }
 
     array(): TypeNode<t[]> {
-        const props = new PropsNode({}, [[nonVariadicArrayIndexTypeNode, this]])
+        const props = new PropsNode({}, [[arrayIndexTypeNode(), this]])
         const predicate = new PredicateNode([arrayBasisNode, props])
         return new TypeNode([predicate])
     }

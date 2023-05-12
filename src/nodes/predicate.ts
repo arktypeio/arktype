@@ -129,6 +129,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
             if (lNode) {
                 if (rNode) {
                     const result = lNode.intersect(rNode as never)
+                    // TODO: don't return here?
                     if (result instanceof Disjoint) {
                         return result
                     }
@@ -196,9 +197,9 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
         if (!this.basis) {
             return neverTypeNode
         }
-        this._keyof =
-            this.getConstraint("props")?.keyof().or(this.basis.keyof()) ??
-            this.basis.keyof()
+        const basisKey = this.basis.keyof()
+        const propsKey = this.getConstraint("props")?.keyof()
+        this._keyof = propsKey?.or(basisKey) ?? basisKey
         return this._keyof
     }
 }
