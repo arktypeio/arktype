@@ -70,15 +70,19 @@ export class PropsNode extends Node<"props"> {
     }
 
     private static compileIndexedEntry(entry: IndexedNodeEntry) {
-        const keySource = extractIndexKeyRegex(entry[0])
-        if (!keySource) {
-            // we only handle array indices for now
-            return throwInternalError(
-                `Unexpected index type ${entry[0].condition}`
-            )
+        const indexMatcher = extractArrayIndexRegex(entry[0])
+        if (indexMatcher) {
+            return PropsNode.compileArrayElementsEntry(indexMatcher, entry[1])
         }
-        const firstVariadicIndex = extractFirstVariadicIndex(keySource)
-        const elementCondition = entry[1].condition
+        return throwInternalError(`Unexpected index type ${entry[0].condition}`)
+    }
+
+    private static compileArrayElementsEntry(
+        indexMatcher: ArrayIndexMatcherSource,
+        valueNode: TypeNode
+    ) {
+        const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
+        const elementCondition = valueNode.condition
             .replaceAll(IndexIn, `${IndexIn}Inner`)
             .replaceAll(In, `${In}[${IndexIn}]`)
         const result = `(() => {
@@ -197,7 +201,9 @@ export class PropsNode extends Node<"props"> {
         if (named.length?.kind === "prerequisite") {
             // if the index key is from and unbounded array and we have a tuple length,
             // it has already been intersected and should be removed
-            indexed = indexed.filter((entry) => !extractIndexKeyRegex(entry[0]))
+            indexed = indexed.filter(
+                (entry) => !extractArrayIndexRegex(entry[0])
+            )
         }
         return new PropsNode(named, indexed)
     }
@@ -339,7 +345,7 @@ export const createArrayIndexMatcher = (firstVariadic = 0) => {
     return excludedIndicesSource(firstVariadic)
 }
 
-const extractIndexKeyRegex = (keyNode: TypeNode<string>) => {
+const extractArrayIndexRegex = (keyNode: TypeNode<string>) => {
     if (keyNode.branches.length !== 1) {
         return
     }
