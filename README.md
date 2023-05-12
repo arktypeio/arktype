@@ -117,6 +117,77 @@ export const { data, problems } = types.package(packageData)
 
 <!-- TODO: Examples mapped to here, and on website. On website, most examples would be a code block by deafult but would have a button like the one on the homepage to turn it into a StackBlitz demo. -->
 
+## Syntax
+
+This is an informal, non-exhaustive list of current and upcoming ArkType syntax.
+
+There are some subjects it doesn't cover, primarily tuple expressions and scopes. As mentioned below, keep an eye out for comprehensive docs coming with the upcoming beta release. In the meantime, join [our Discord](https://discord.gg/xEzdc3fJQC) or head to our [GitHub Discussions](https://github.com/arktypeio/arktype/discussions) to ask a question and there's a good chance you'll see a response within the hour 😊
+
+```ts
+export const currentTsSyntax = type({
+    keyword: "null",
+    stringLiteral: "'TS'",
+    numberLiteral: "5",
+    bigintLiteral: "5n",
+    union: "string|number",
+    intersection: "boolean&true",
+    array: "Date[]",
+    grouping: "(0|1)[]",
+    objectLiteral: {
+        nested: "string",
+        "optional?": "number"
+    },
+    tuple: ["number", "number"]
+})
+
+// these features will be available in the upcoming release
+
+export const upcomingTsSyntax = type({
+    keyof: "keyof bigint",
+    thisKeyword: "this", // recurses to the root of the current type
+    variadicTuples: ["true", "...false[]"]
+})
+
+export const validationSyntax = type({
+    keywords: "email|uuid|creditCard|integer", // and many more
+    builtinParsers: "parsedDate", // parses a Date from a string
+    nativeRegexLiteral: /@arktype\.io/,
+    embeddedRegexLiteral: "email&/@arktype\\.io/",
+    divisibility: "number%10", // a multiple of 10
+    bound: "alpha>10", // an alpha-only string with more than 10 characters
+    range: "1<=email[]<99", // a list of 1 to 99 emails
+    narrows: ["number", "=>", (n) => n % 2 === 1], // an odd integer
+    morphs: ["string", "|>", parseFloat] // validates a string input then parses it to a number
+})
+
+// in the upcoming release, you can use chaining to define expressions directly
+// that use objects or functions that can't be embedded in strings
+
+export const parseBigintLiteral = type({ value: "string" })
+    .and({
+        format: "'bigint'"
+    })
+    .narrow((data): data is { value: `${string}n`; format: "bigint" } =>
+        data.value.endsWith("n")
+    )
+    .morph((data) => BigInt(data.value.slice(-1)))
+
+export const { data, problems } = parseBigintLiteral("999n")
+//             ^ bigint | undefined
+```
+
+## API
+
+<!--@snipStart:api -->
+
+ArkType supports many of TypeScript's built-in types and operators, as well as some new ones dedicated exclusively to runtime validation. In fact, we got a little ahead of ourselves and built a ton of cool features, but we're still working on getting caught up syntax and API docs. Keep an eye out for more in the next couple weeks ⛵
+
+In the meantime, check out the examples here and use the type hints you get to learn how you can customize your types and scopes. If you want to explore some of the more advanced features, take a look at [our unit tests](./dev/test) or ask us [on Discord](https://discord.gg/xEzdc3fJQC) if your functionality is supported. If not, [create a GitHub issue](https://github.com/arktypeio/arktype/issues/new) so we can prioritize it!
+
+<!--@snipEnd -->
+
+> > > > > > > main
+
 ## Integrations
 
 ### react-hook-form
@@ -213,7 +284,7 @@ We've been working full-time on this project for over a year and it means a lot 
 
 If the project has been useful to you and you are in a financial position to do so, please chip in via [GitHub Sponsors](https://github.com/sponsors/arktypeio).
 
-Otherwise, consider sending me an email (david@arktype.io) or [message me on Discord](https://discord.gg/WSNF3Kc4xh) to let me know you're a fan of ArkType. Either would make my day!
+Otherwise, consider sending me an email (david@arktype.io) or [message me on Discord](https://discord.gg/xEzdc3fJQC) to let me know you're a fan of ArkType. Either would make my day!
 
 ### Community
 
