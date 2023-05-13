@@ -6,7 +6,7 @@ import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
-import type { keySet } from "../utils/records.js"
+import { isKeyOf, type keySet } from "../utils/records.js"
 import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
 import { basisNodeFrom } from "./basis/from.js"
 import type { ValueNode } from "./basis/value.js"
@@ -244,7 +244,9 @@ export const createConstraint = <kind extends ConstraintKind>(
             ? PropsNode.from(...(input as PropsInputTuple))
             : PropsNode.from(input as NamedPropsInput)
         : new constraintKinds[kind as Exclude<ConstraintKind, "props">](
-              input as never
+              (isKeyOf(kind, listableInputKinds) && !isArray(input)
+                  ? [input]
+                  : input) as never
           )) as ConstraintNode<kind>
 
 export const constraintKinds = {
