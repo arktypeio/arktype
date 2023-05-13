@@ -1,37 +1,31 @@
 import type { Narrow } from "../../parse/ast/narrow.js"
-import type { listable } from "../../utils/lists.js"
-import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
+import { intersectUniqueLists } from "../../utils/lists.js"
 import type { CompilationState } from "../compilation.js"
 import { Node } from "../node.js"
+import { registry } from "../registry.js"
 
 export class NarrowNode extends Node<"narrow"> {
-    static readonly kind = "narrow"
-    predicates: readonly Narrow[]
-
-    constructor(predicates: listable<Narrow>) {
-        const predicateList = listFrom(predicates)
-        super("narrow", NarrowNode.compile(predicateList))
-        this.predicates = predicateList
-    }
-
-    static compile(predicates: readonly Narrow[]) {
-        return "false"
+    constructor(public children: Narrow[]) {
+        // Depending on type-guards, altering the order in whic narrows run could
+        // lead to a non-typsafe access, so they are preserved.h
+        const registeredNames = children.map((narrow) =>
+            registry().register(narrow.name, narrow)
+        )
+        super("narrow", "false")
     }
 
     toString() {
-        const names = this.predicates.map((f) => f.name)
-        return names.length === 1
-            ? `narrow ${names[0]}`
-            : `narrows ${names.join(", ")}`
+        // TODO: Names
+        return `narrow ${this.condition}`
     }
 
     compileTraverse(s: CompilationState) {
-        return s.ifNotThen(this.condition, s.problem("custom", "filters"))
+        return s.ifNotThen("false", s.problem("custom", "filters"))
     }
 
     intersectNode(other: NarrowNode) {
         return new NarrowNode(
-            intersectUniqueLists(this.predicates, other.predicates)
+            intersectUniqueLists(this.children, other.children)
         )
     }
 }

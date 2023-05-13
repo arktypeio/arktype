@@ -10,27 +10,32 @@ import { BasisNode } from "./basis.js"
 
 export class ClassNode extends BasisNode<"class"> {
     readonly domain = "object"
+    declare children: [abstractableConstructor]
 
-    constructor(public instanceOf: abstractableConstructor) {
-        super("class", ClassNode.compile(instanceOf))
+    constructor(public child: abstractableConstructor) {
+        super("class", ClassNode.compile(child))
+        if (!this.child) {
+            // TODO: clean?
+            this.children = [child]
+        }
     }
 
-    static compile(instanceOf: abstractableConstructor) {
+    static compile(child: abstractableConstructor) {
         return `${In} instanceof ${
-            getExactBuiltinConstructorName(instanceOf) ??
-            registry().register(instanceOf.name, instanceOf)
+            getExactBuiltinConstructorName(child) ??
+            registry().register(child.name, child)
         }`
     }
 
     toString() {
-        return this.instanceOf.name
+        return this.child.name
     }
 
     literalKeysOf() {
-        return prototypeKeysOf(this.instanceOf.prototype)
+        return prototypeKeysOf(this.child.prototype)
     }
 
     compileTraverse(s: CompilationState) {
-        return s.ifNotThen(this.condition, s.problem("class", this.instanceOf))
+        return s.ifNotThen(this.condition, s.problem("class", this.child))
     }
 }

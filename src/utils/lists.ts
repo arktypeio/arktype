@@ -75,4 +75,4 @@ export type HomogenousTuple<
     : HomogenousTuple<item, length, [...result, item]>
 
 export const listFrom = <t>(data: t) =>
-    (Array.isArray(data) ? data : [data]) as t extends List ? t : t[]
+    (Array.isArray(data) ? data : [data]) as t extends unknown[] ? t : t[]

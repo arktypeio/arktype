@@ -62,17 +62,16 @@ export type Range =
     | [min: RangeConstraint, max: RangeConstraint]
 
 export class RangeNode extends Node<"range"> {
-    static readonly kind = "range"
-
+    declare children: [Bounds]
     range: Range
 
-    constructor(public bounds: Bounds) {
+    constructor(public child: Bounds) {
         let range: Range
-        if (bounds["=="]) {
-            range = [{ comparator: "==", limit: bounds["=="] }]
+        if (child["=="]) {
+            range = [{ comparator: "==", limit: child["=="] }]
         } else {
-            const lower = extractLower(bounds)
-            const upper = extractUpper(bounds)
+            const lower = extractLower(child)
+            const upper = extractUpper(child)
             range = lower
                 ? upper
                     ? [lower, upper]
@@ -84,6 +83,7 @@ export class RangeNode extends Node<"range"> {
         // TODO: variadic here, could pass min/max
         super("range", RangeNode.compile(range))
         this.range = range
+        this.children = [child]
     }
 
     // const units =
@@ -121,12 +121,12 @@ export class RangeNode extends Node<"range"> {
             if (r.isEqualityRange()) {
                 return this === r ? this : Disjoint.from("range", this, r)
             }
-            return r.allows(this.bounds["=="])
+            return r.allows(this.child["=="])
                 ? this
                 : Disjoint.from("range", this, r)
         }
         if (r.isEqualityRange()) {
-            return this.allows(r.bounds["=="])
+            return this.allows(r.child["=="])
                 ? r
                 : Disjoint.from("range", this, r)
         }
@@ -174,28 +174,28 @@ export class RangeNode extends Node<"range"> {
     }
 
     isEqualityRange(): this is { rule: { "==": number } } {
-        return this.bounds["=="] !== undefined
+        return this.child["=="] !== undefined
     }
 
     get lowerBound() {
-        return extractLower(this.bounds)
+        return extractLower(this.child)
     }
 
     get upperBound() {
-        return extractUpper(this.bounds)
+        return extractUpper(this.child)
     }
 
     private extractComparators(prefix: ">" | "<") {
-        return this.bounds[prefix] !== undefined
-            ? { [prefix]: this.bounds[prefix] }
-            : this.bounds[`${prefix}=`] !== undefined
-            ? { [`${prefix}=`]: this.bounds[`${prefix}=`] }
+        return this.child[prefix] !== undefined
+            ? { [prefix]: this.child[prefix] }
+            : this.child[`${prefix}=`] !== undefined
+            ? { [`${prefix}=`]: this.child[`${prefix}=`] }
             : {}
     }
 
     toString(): string {
         if (this.isEqualityRange()) {
-            return `the range of exactly ${this.bounds["=="]}`
+            return `the range of exactly ${this.child["=="]}`
         }
         const lower = this.lowerBound
         const upper = this.upperBound

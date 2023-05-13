@@ -70,14 +70,14 @@ export const discriminate = (
                 let lSerialized: string
                 let rSerialized: string
                 if (kind === "domain") {
-                    lSerialized = (disjointAtPath.l as BasisNode).domain!
-                    rSerialized = (disjointAtPath.r as BasisNode).domain!
+                    lSerialized = (disjointAtPath.l as BasisNode).domain
+                    rSerialized = (disjointAtPath.r as BasisNode).domain
                 } else if (kind === "value") {
                     lSerialized = compileSerializedValue(
-                        (disjointAtPath.l as ValueNode).value
+                        (disjointAtPath.l as ValueNode).child
                     )
                     rSerialized = compileSerializedValue(
-                        (disjointAtPath.r as ValueNode).value
+                        (disjointAtPath.r as ValueNode).child
                     )
                 } else {
                     return throwInternalError(

@@ -1,6 +1,5 @@
 import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
 import type { InferredNarrow, Narrow } from "../parse/ast/narrow.js"
-import { inferred } from "../parse/definition.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type { evaluate, isUnknown } from "../utils/generics.js"
@@ -30,18 +29,16 @@ import { Node } from "./node.js"
 import type { TypeNode } from "./type.js"
 import { neverTypeNode } from "./type.js"
 
-export class PredicateNode<t = unknown> extends Node<"predicate"> {
-    declare [inferred]: t
-
+export class PredicateNode<t = unknown> extends Node<"predicate", t> {
     static readonly kind = "predicate"
     basis: BasisNode | undefined
     constraints: ConstraintNode[]
 
-    constructor(public rules: PredicateRules) {
-        super("predicate", PredicateNode.compile(rules))
-        this.basis = rules[0]?.kind === "basis" ? rules[0] : undefined
+    constructor(public children: PredicateRules) {
+        super("predicate", PredicateNode.compile(children))
+        this.basis = children[0]?.kind === "basis" ? children[0] : undefined
         this.constraints = (
-            this.basis ? rules.slice(1) : rules
+            this.basis ? children.slice(1) : children
         ) as ConstraintNode[]
     }
 
@@ -70,20 +67,20 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
     }
 
     getConstraint<k extends ConstraintKind>(k: k) {
-        return this.rules.find((constraint) => constraint.kind === k) as
+        return this.children.find((constraint) => constraint.kind === k) as
             | instanceOf<ConstraintKinds[k]>
             | undefined
     }
 
     toString() {
-        return this.rules.length === 0
+        return this.children.length === 0
             ? "unknown"
-            : this.rules.map((rule) => rule.toString()).join(" and ")
+            : this.children.map((rule) => rule.toString()).join(" and ")
     }
 
     compileTraverse(s: CompilationState) {
         let result = this.basis?.compileTraverse(s) ?? ""
-        for (const constraint of this.rules) {
+        for (const constraint of this.children) {
             result += "\n" + constraint.compileTraverse(s)
         }
         return result
@@ -113,12 +110,12 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
             return basis
         }
         if (this.valueNode) {
-            return r.allows(this.valueNode.value)
+            return r.allows(this.valueNode.child)
                 ? this
                 : Disjoint.from("assignability", this.valueNode, r)
         }
         if (r.valueNode) {
-            return this.allows(r.valueNode.value)
+            return this.allows(r.valueNode.child)
                 ? r
                 : Disjoint.from("assignability", this, r.valueNode)
         }
@@ -129,7 +126,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
             if (lNode) {
                 if (rNode) {
                     const result = lNode.intersect(rNode as never)
-                    // TODO: don't return here?
+                    // TODO: don't return here
                     if (result instanceof Disjoint) {
                         return result
                     }
@@ -173,7 +170,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate"> {
             kind
         )
         const rules: PredicateRules = []
-        for (const rule of this.rules) {
+        for (const rule of this.children) {
             if (rule.kind === "basis") {
                 if (!rule.hasLevel("domain") || rule.domain !== "object") {
                     rules.push(this.basis as never)

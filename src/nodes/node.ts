@@ -30,12 +30,20 @@ export type NodeKinds = {
 
 type NodeKind = keyof NodeKinds
 
+// compileId(children: children) {
+//     return children
+//         .map((child) =>
+//             typeof child === "string" ? child : child.condition
+//         )
+//         .sort()
+//         .join()
+// }
+
 export abstract class Node<
     kind extends NodeKind = NodeKind,
-    input = any,
-    narrowed extends input = input
+    narrowed = unknown
 > {
-    declare allows: (data: input) => data is narrowed
+    declare allows: (data: unknown) => data is narrowed
 
     private static cache: { [kind in NodeKind]: Record<string, Node<kind>> } = {
         type: {},
@@ -54,12 +62,13 @@ export abstract class Node<
     ): NodeInstance<kind> | Disjoint
     abstract compileTraverse(s: CompilationState): string
     abstract toString(): string
+    abstract children: unknown[]
 
     constructor(public kind: kind, public condition: string) {
         if (Node.cache[kind][condition]) {
             return Node.cache[kind][condition] as any
         }
-        this.allows = new CompiledFunction<(data: input) => data is narrowed>(
+        this.allows = new CompiledFunction<(data: unknown) => data is narrowed>(
             In,
             `return ${condition}`
         )
@@ -73,7 +82,7 @@ export abstract class Node<
     private intersectionCache: Record<string, NodeInstance<kind> | Disjoint> =
         {}
     intersect(other: NodeInstance<kind>): NodeInstance<kind> | Disjoint {
-        if (this.condition === other.condition) {
+        if (this === other) {
             return this as NodeInstance<kind>
         }
         if (this.intersectionCache[other.condition]) {

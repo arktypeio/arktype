@@ -24,8 +24,6 @@ import {
 } from "../type.js"
 
 export class PropsNode extends Node<"props"> {
-    static readonly kind = "props"
-
     namedEntries: NamedNodeEntry[]
 
     constructor(public named: NamedNodes, public indexed: IndexedNodeEntry[]) {
@@ -260,7 +258,7 @@ export class PropsNode extends Node<"props"> {
 
     indexedKeyOf() {
         return new TypeNode(
-            this.indexed.flatMap((entry) => entry[0].branches)
+            this.indexed.flatMap((entry) => entry[0].children)
         ) as TypeNode<Key>
     }
 
@@ -346,14 +344,14 @@ export const createArrayIndexMatcher = (firstVariadic = 0) => {
 }
 
 const extractArrayIndexRegex = (keyNode: TypeNode<string>) => {
-    if (keyNode.branches.length !== 1) {
+    if (keyNode.children.length !== 1) {
         return
     }
-    const regexNode = keyNode.branches[0].getConstraint("regex")
-    if (!regexNode || regexNode.sources.length !== 1) {
+    const regexNode = keyNode.children[0].getConstraint("regex")
+    if (!regexNode || regexNode.children.length !== 1) {
         return
     }
-    const source = regexNode.sources[0]
+    const source = regexNode.children[0]
     if (!source.endsWith(arrayIndexMatcherSuffix)) {
         return
     }

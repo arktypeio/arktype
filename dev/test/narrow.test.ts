@@ -100,7 +100,7 @@ suite("filter", () => {
             .morph((s) => s.length)
             .narrow((n): n is 5 => n === 5)
         attest(t).typed as Type<(In: "foo") => 5, Ark>
-        attest(t.root.condition).snap(
+        attest(t.root.children).snap(
             'typeof $arkIn === "string" && $arkIn !== $arkIn'
         )
     })

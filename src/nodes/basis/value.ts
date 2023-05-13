@@ -9,10 +9,12 @@ import { BasisNode } from "./basis.js"
 
 export class ValueNode extends BasisNode<"value"> {
     domain: Domain
+    declare children: [unknown]
 
-    constructor(public value: unknown) {
-        super("value", ValueNode.compile(value))
-        this.domain = domainOf(value)
+    constructor(public child: unknown) {
+        super("value", ValueNode.compile(child))
+        this.domain = domainOf(child)
+        this.children = [child]
     }
 
     static compile(value: unknown) {
@@ -20,23 +22,23 @@ export class ValueNode extends BasisNode<"value"> {
     }
 
     toString() {
-        return stringify(this.value)
+        return stringify(this.child)
     }
 
     getConstructor(): constructor | undefined {
         return this.domain === "object"
-            ? Object(this.value).constructor
+            ? Object(this.child).constructor
             : undefined
     }
 
     literalKeysOf(): Key[] {
-        if (this.value === null || this.value === undefined) {
+        if (this.child === null || this.child === undefined) {
             return []
         }
-        return [...prototypeKeysOf(this.value), ...Object.keys(this.value)]
+        return [...prototypeKeysOf(this.child), ...Object.keys(this.child)]
     }
 
     compileTraverse(s: CompilationState) {
-        return s.ifNotThen(this.condition, s.problem("value", this.value))
+        return s.ifNotThen(this.condition, s.problem("value", this.child))
     }
 }

@@ -1,38 +1,26 @@
 import type { Morph } from "../../parse/ast/morph.js"
-import type { listable } from "../../utils/lists.js"
-import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
+import { intersectUniqueLists } from "../../utils/lists.js"
 import type { CompilationState } from "../compilation.js"
 import { Node } from "../node.js"
 
 export class MorphNode extends Node<"morph"> {
-    static readonly kind = "morph"
-
-    transformations: readonly Morph[]
-
-    constructor(transformations: listable<Morph>) {
-        const transformationList = listFrom(transformations)
-        super("morph", MorphNode.compile(transformationList))
-        this.transformations = transformationList
-    }
-
-    static compile(transformations: readonly Morph[]) {
-        return "false"
+    constructor(public children: Morph[]) {
+        // Avoid alphabetical sorting since morphs are non-commutative,
+        // i.e. a|>b and b|>a are distinct and valid
+        // const registeredNames morphs.map((morph) => registry().register(morph.name, morph))
+        super("morph", "false")
     }
 
     toString() {
-        const names = this.transformations.map((morph) => morph.name)
-        return names.length === 1
-            ? `morph ${names[0]}`
-            : `morphs ${names.join("=>")}`
+        // TODO: Names
+        return `morph ${this.condition}`
     }
 
     compileTraverse(s: CompilationState) {
-        return s.ifNotThen(this.condition, s.problem("custom", "morphs"))
+        return s.ifNotThen("false", s.problem("custom", "morphs"))
     }
 
     intersectNode(r: MorphNode) {
-        return new MorphNode(
-            intersectUniqueLists(this.transformations, r.transformations)
-        )
+        return new MorphNode(intersectUniqueLists(this.children, r.children))
     }
 }

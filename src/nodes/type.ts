@@ -59,19 +59,17 @@ type extractBases<
       >
     : result
 
-export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
+export class TypeNode<t = unknown> extends Node<"type", inferIn<t>> {
     declare [inferred]: t
 
-    static readonly kind = "type"
     discriminant: Discriminant | undefined
 
-    constructor(public branches: PredicateNode[]) {
-        const condition = TypeNode.compile(branches)
+    constructor(public children: PredicateNode[]) {
+        const condition = TypeNode.compile(children)
         super("type", condition)
-        if (!this.branches) {
-            const discriminant = discriminate(branches)
-            this.branches = branches
-            this.discriminant = discriminant
+        if (!this.children) {
+            // TODO: Fix
+            this.discriminant = discriminate(children)
         }
     }
 
@@ -174,28 +172,28 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     }
 
     toString() {
-        return this.branches.length === 0
+        return this.children.length === 0
             ? "never"
-            : this.branches.map((branch) => branch.toString()).join(" or ")
+            : this.children.map((branch) => branch.toString()).join(" or ")
     }
 
     compileTraverse(s: CompilationState): string {
-        switch (this.branches.length) {
+        switch (this.children.length) {
             case 0:
                 return "throw new Error();"
             case 1:
-                return this.branches[0].compileTraverse(s)
+                return this.children[0].compileTraverse(s)
             default:
                 s.unionDepth++
                 const result = `state.pushUnion();
-                        ${this.branches
+                        ${this.children
                             .map(
                                 (rules) => `(() => {
                             ${rules.compileTraverse(s)}
                             })()`
                             )
                             .join(" && ")};
-                        state.popUnion(${this.branches.length}, ${s.data}, ${
+                        state.popUnion(${this.children.length}, ${s.data}, ${
                     s.path.json
                 });`
                 s.unionDepth--
@@ -204,7 +202,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
     }
 
     getPath(...path: (string | TypeNode<string>)[]) {
-        let current: PredicateNode[] = this.branches
+        let current: PredicateNode[] = this.children
         let next: PredicateNode[] = []
         while (path.length) {
             const key = path.shift()!
@@ -213,10 +211,10 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
                 if (propsAtKey) {
                     const branchesAtKey =
                         typeof key === "string"
-                            ? propsAtKey.named?.[key]?.value.branches
+                            ? propsAtKey.named?.[key]?.value.children
                             : propsAtKey.indexed.find(
                                   (entry) => entry[0] === key
-                              )?.[1].branches
+                              )?.[1].children
                     if (branchesAtKey) {
                         next.push(...branchesAtKey)
                     }
@@ -230,7 +228,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
 
     pruneDiscriminant(path: string[], kind: DiscriminantKind) {
         const prunedBranches: PredicateNode[] = []
-        for (const branch of this.branches) {
+        for (const branch of this.children) {
             const pruned = branch.pruneDiscriminant(path, kind)
             prunedBranches.push(pruned)
         }
@@ -241,8 +239,8 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         if (this === r) {
             return this
         }
-        if (this.branches.length === 1 && r.branches.length === 1) {
-            const result = this.branches[0].intersect(r.branches[0])
+        if (this.children.length === 1 && r.children.length === 1) {
+            const result = this.children[0].intersect(r.children[0])
             return result instanceof Disjoint ? result : new TypeNode([result])
         }
         // Branches that are determined to be a subtype of an opposite branch are
@@ -255,14 +253,14 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         // subtype or equal of any lBranch, the corresponding value should be
         // set to null so we can avoid including previous/future intersections
         // in the final result.
-        const candidatesByR: (PredicateNode[] | null)[] = r.branches.map(
+        const candidatesByR: (PredicateNode[] | null)[] = r.children.map(
             () => []
         )
-        for (let lIndex = 0; lIndex < this.branches.length; lIndex++) {
-            const lBranch = this.branches[lIndex]
+        for (let lIndex = 0; lIndex < this.children.length; lIndex++) {
+            const lBranch = this.children[lIndex]
             let currentCandidateByR: { [rIndex in number]: PredicateNode } = {}
-            for (let rIndex = 0; rIndex < r.branches.length; rIndex++) {
-                const rBranch = r.branches[rIndex]
+            for (let rIndex = 0; rIndex < r.children.length; rIndex++) {
+                const rBranch = r.children[rIndex]
                 if (!candidatesByR[rIndex]) {
                     // we've identified this rBranch as a subtype of
                     // an lBranch and will not yield any distinct intersections.
@@ -323,7 +321,7 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
         definition: PredicateInput[kind]
     ) {
         return new TypeNode(
-            this.branches.map((branch) => branch.constrain(kind, definition))
+            this.children.map((branch) => branch.constrain(kind, definition))
         )
     }
 
@@ -339,13 +337,13 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
             return this
         }
         return new TypeNode(
-            TypeNode.reduceBranches([...this.branches, ...other.branches])
+            TypeNode.reduceBranches([...this.children, ...other.children])
         )
     }
 
     get valueNode(): ValueNode | undefined {
-        return this.branches.length === 1
-            ? this.branches[0].valueNode
+        return this.children.length === 1
+            ? this.children[0].valueNode
             : undefined
     }
 
@@ -359,15 +357,15 @@ export class TypeNode<t = unknown> extends Node<"type", unknown, inferIn<t>> {
 
     private declare _keyof: TypeNode | undefined
     keyof(): TypeNode {
-        if (this.branches.length === 0) {
+        if (this.children.length === 0) {
             return throwParseError(`never is not a valid keyof operand`)
         }
         if (this._keyof) {
             return this._keyof
         }
-        let result = this.branches[0].keyof()
-        for (let i = 1; i < this.branches.length; i++) {
-            result = result.and(this.branches[i].keyof())
+        let result = this.children[0].keyof()
+        for (let i = 1; i < this.children.length; i++) {
+            result = result.and(this.children[i].keyof())
         }
         this._keyof = result
         return result

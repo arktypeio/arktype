@@ -6,8 +6,13 @@ import { In } from "../compilation.js"
 import { BasisNode } from "./basis.js"
 
 export class DomainNode extends BasisNode<"domain"> {
-    constructor(public domain: Domain) {
-        super("domain", DomainNode.compile(domain))
+    declare children: [Domain]
+    domain: Domain
+
+    constructor(public child: Domain) {
+        super("domain", DomainNode.compile(child))
+        this.children = [child]
+        this.domain = child
     }
 
     static compile(domain: Domain) {
@@ -17,20 +22,20 @@ export class DomainNode extends BasisNode<"domain"> {
     }
 
     toString() {
-        return this.domain
+        return this.child
     }
 
     getConstructor(): constructor | undefined {
-        return this.domain === "object"
-            ? Object(this.domain).constructor
+        return this.child === "object"
+            ? Object(this.child).constructor
             : undefined
     }
 
     literalKeysOf(): Key[] {
-        return getBaseDomainKeys(this.domain)
+        return getBaseDomainKeys(this.child)
     }
 
     compileTraverse(s: CompilationState) {
-        return s.ifNotThen(this.condition, s.problem("domain", this.domain))
+        return s.ifNotThen(this.condition, s.problem("domain", this.child))
     }
 }

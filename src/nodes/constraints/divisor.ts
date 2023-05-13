@@ -2,28 +2,24 @@ import { type CompilationState, In } from "../compilation.js"
 import { Node } from "../node.js"
 
 export class DivisorNode extends Node<"divisor"> {
-    static readonly kind = "divisor"
+    declare children: [number]
 
-    constructor(public divisor: number) {
-        super("divisor", DivisorNode.compile(divisor))
-    }
-
-    static compile(divisor: number) {
-        return `${In} % ${divisor} === 0`
+    constructor(public child: number) {
+        super("divisor", `${In} % ${child} === 0`)
+        this.children = [child]
     }
 
     compileTraverse(s: CompilationState) {
-        return s.ifNotThen(this.condition, s.problem("divisor", this.divisor))
+        return s.ifNotThen(this.condition, s.problem("divisor", this.child))
     }
 
     toString() {
-        return `divisor ${this.divisor}`
+        return `a multiple of ${this.child}`
     }
 
     intersectNode(r: DivisorNode) {
         const leastCommonMultiple = Math.abs(
-            (this.divisor * r.divisor) /
-                greatestCommonDivisor(this.divisor, r.divisor)
+            (this.child * r.child) / greatestCommonDivisor(this.child, r.child)
         )
         return new DivisorNode(leastCommonMultiple)
     }
