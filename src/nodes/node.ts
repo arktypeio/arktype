@@ -62,7 +62,7 @@ export abstract class Node<
     ): NodeInstance<kind> | Disjoint
     abstract compileTraverse(s: CompilationState): string
     abstract toString(): string
-    abstract children: unknown[]
+    abstract children: readonly unknown[]
 
     constructor(public kind: kind, public condition: string) {
         if (Node.cache[kind][condition]) {

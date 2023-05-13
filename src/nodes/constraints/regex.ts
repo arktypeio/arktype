@@ -3,14 +3,14 @@ import { type CompilationState, In } from "../compilation.js"
 import { Node } from "../node.js"
 
 export class RegexNode extends Node<"regex"> {
-    constructor(public children: string[]) {
+    constructor(public children: readonly string[]) {
         // TODO: true case?
         // if (sources.length === 0) {
         //     throwInternalError(`Unexpectedly received empty regex list`)
         // }
         super(
             "regex",
-            children.sort().map(RegexNode.compileExpression).join(" && ")
+            children.map(RegexNode.compileExpression).sort().join(" && ")
         )
     }
 

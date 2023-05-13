@@ -6,6 +6,7 @@ import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
 import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
+import type { keySet } from "../utils/records.js"
 import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
 import { basisNodeFrom } from "./basis/from.js"
 import type { ValueNode } from "./basis/value.js"
@@ -222,6 +223,14 @@ const constraintsByPrecedence = [
     "morph"
 ] as const satisfies List<ConstraintKind>
 
+const listableInputKinds = {
+    regex: true,
+    narrow: true,
+    morph: true
+} satisfies keySet<ConstraintKind>
+
+type ListableInputKind = keyof typeof listableInputKinds
+
 export const unknownPredicateNode = new PredicateNode([])
 
 export type PredicateRules = [BasisNode, ...ConstraintNode[]] | ConstraintNode[]
@@ -268,13 +277,20 @@ export type ConstraintsInput<
     basis extends BasisInput | undefined = BasisInput | undefined
 > = BasisInput extends basis
     ? {
-          [k in ConstraintKind]?: k extends "props"
-              ? PropsInput
-              : ConstructorParameters<ConstraintKinds[k]>[0]
+          [k in ConstraintKind]?: unknownConstraintInput<k>
       }
     : basis extends BasisInput
     ? constraintsOf<basis>
     : functionalConstraints<unknown>
+
+type unknownConstraintInput<kind extends ConstraintKind> = kind extends "props"
+    ? PropsInput
+    :
+          | ConstructorParameters<ConstraintKinds[kind]>[0]
+          // Add the unlisted version as a valid input for these kinds
+          | (kind extends ListableInputKind
+                ? ConstructorParameters<ConstraintKinds[kind]>[0][number]
+                : never)
 
 export type inferPredicateDefinition<input extends PredicateInput> =
     input["morph"] extends Morph<any, infer out>

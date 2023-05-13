@@ -5,9 +5,10 @@ import { Node } from "../node.js"
 import { registry } from "../registry.js"
 
 export class NarrowNode extends Node<"narrow"> {
-    constructor(public children: Narrow[]) {
-        // Depending on type-guards, altering the order in whic narrows run could
-        // lead to a non-typsafe access, so they are preserved.h
+    constructor(public children: readonly Narrow[]) {
+        // Depending on type-guards, altering the order in which narrows run could
+        // lead to a non-typsafe access, so they are preserved.
+        // TODO:  Figure out how this needs to work with intersections
         const registeredNames = children.map((narrow) =>
             registry().register(narrow.name, narrow)
         )

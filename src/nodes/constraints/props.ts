@@ -26,6 +26,9 @@ import {
 export class PropsNode extends Node<"props"> {
     namedEntries: NamedNodeEntry[]
 
+    // TODO: standarize entry to a node
+    children: [NamedNodeEntry[], IndexedNodeEntry[]]
+
     constructor(public named: NamedNodes, public indexed: IndexedNodeEntry[]) {
         // Sort keys first by precedence (prerequisite,required,optional),
         // then alphebetically by name (bar, baz, foo)
@@ -44,6 +47,7 @@ export class PropsNode extends Node<"props"> {
         const condition = PropsNode.compile(sortedNamedEntries, indexed)
         super("props", condition)
         this.namedEntries = sortedNamedEntries
+        this.children = [this.namedEntries, this.indexed]
     }
 
     static compile(named: NamedNodeEntry[], indexed: IndexedNodeEntry[]) {

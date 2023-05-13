@@ -84,14 +84,14 @@ export abstract class BasisNode<
             return this
         }
         if (this.hasLevel("class") && other.hasLevel("class")) {
-            return constructorExtends(this.children, other.children)
+            return constructorExtends(this.child, other.child)
                 ? this
-                : constructorExtends(other.children, this.children)
+                : constructorExtends(other.child, this.child)
                 ? other
                 : Disjoint.from("class", this, other)
         }
         const disjointEntries: DisjointKindEntries = []
-        if (this.children !== other.children) {
+        if (this.domain !== other.domain) {
             disjointEntries.push(["domain", { l: this, r: other }])
         }
         if (this.hasLevel("value") && other.hasLevel("value")) {
@@ -123,34 +123,34 @@ export abstract class BasisNode<
         }
         switch (kind) {
             case "divisor":
-                if (this.children !== "number") {
-                    throwParseError(writeIndivisibleMessage(this.children))
+                if (this.domain !== "number") {
+                    throwParseError(writeIndivisibleMessage(this.domain))
                 }
                 return
             case "range":
                 if (
-                    this.children !== "string" &&
-                    this.children !== "number"
+                    this.domain !== "string" &&
+                    this.domain !== "number"
                     // !this.hasConstructorExtending(Array, Date)
                 ) {
-                    throwParseError(writeUnboundableMessage(this.children))
+                    throwParseError(writeUnboundableMessage(this.domain))
                 }
                 return
             case "regex":
-                if (this.children !== "string") {
+                if (this.domain !== "string") {
                     throwInvalidConstraintError(
                         "regex",
                         "a string",
-                        this.children
+                        this.domain
                     )
                 }
                 return
             case "props":
-                if (this.children !== "object") {
+                if (this.domain !== "object") {
                     throwInvalidConstraintError(
                         "props",
                         "an object",
-                        this.children
+                        this.domain
                     )
                 }
                 return

@@ -61,7 +61,7 @@ suite("range", () => {
             test("<,<=", () => {
                 const t = type("-5<number<=5")
                 attest(t.infer).typed as number
-                attest(t.root.children).snap(
+                attest(t.root.condition).snap(
                     'typeof $arkRoot === "number" && ($arkRoot.length ?? Number($arkRoot)) > -5 && ($arkRoot.length ?? Number($arkRoot)) <= 5'
                 )
                 // attest(t.node).snap({
