@@ -59,8 +59,6 @@ export abstract class Node<
         if (Node.cache[kind][condition]) {
             return Node.cache[kind][condition] as any
         }
-        this.condition = condition
-        this.kind = kind as kind
         this.allows = new CompiledFunction<(data: input) => data is narrowed>(
             In,
             `return ${condition}`

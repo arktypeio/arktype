@@ -146,7 +146,7 @@ export type instanceOf<classType extends abstractableConstructor> =
 
 /** Mimics output of TS's keyof operator at runtime */
 export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
-    const result: (string | number | symbol)[] = []
+    const result: (string | symbol)[] = []
     while (
         value !== Object.prototype &&
         value !== null &&
