@@ -92,14 +92,12 @@ suite("filter", () => {
             "Must be a palindrome (was 'david')"
         )
     })
-    test("filters the output type of a morph", () => {
+    test("narrows the output type of a morph", () => {
         // TODO: should preserve morph
         const t = type("string")
             .morph((s) => s.length)
             .narrow((n): n is 5 => n === 5)
-        attest(t).typed as Type<(In: "foo") => 5, Ark>
-        attest(t.root.condition).snap(
-            'typeof $arkIn === "string" && $arkIn !== $arkIn'
-        )
+        attest(t).typed as Type<(In: string) => 5, Ark>
+        attest(t.root.condition).snap()
     })
 })

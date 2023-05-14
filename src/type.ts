@@ -98,8 +98,8 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     morph<def extends Morph<inferOut<t>>>(
         def: def
     ): Type<(In: inferOut<t>) => ReturnType<def>, $>
-    morph(def: Morph): Type {
-        return this
+    morph(def: Morph) {
+        return new Type([this.definition, "|>", def], this.scope)
     }
 
     // TODO: based on below, should maybe narrow morph output if used after
