@@ -4,7 +4,12 @@ import type { CheckResult } from "./nodes/traverse.js"
 import { TraversalState } from "./nodes/traverse.js"
 import { type TypeNode } from "./nodes/type.js"
 import type { writeUnsatisfiableExpressionError } from "./parse/ast/ast.js"
-import type { Morph, ParsedMorph } from "./parse/ast/morph.js"
+import type {
+    inferMorphOut,
+    InferredMorph,
+    Morph,
+    Out
+} from "./parse/ast/morph.js"
 import type { inferPredicate, Narrow } from "./parse/ast/narrow.js"
 import {
     type inferDefinition,
@@ -48,11 +53,11 @@ export type parseType<def, $ extends { this: unknown }> = [def] extends [
 registry().register("state", TraversalState)
 
 export class Type<t = unknown, $ = Ark> extends CompiledFunction<
-    (data: unknown) => CheckResult<inferOut<t>>
+    (data: unknown) => CheckResult<extractOut<t>>
 > {
     declare [inferred]: t
-    declare infer: inferOut<t>
-    declare inferIn: inferIn<t>
+    declare infer: extractOut<t>
+    declare inferIn: extractIn<t>
 
     root: TypeNode<t>
     allows: this["root"]["allows"]
@@ -76,6 +81,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return new Type([this.definition, operator, def], this.scope)
     }
 
+    // TODO: Morph intersections, ordering
     and<def>(
         def: validateChainedExpression<
             def,
@@ -95,17 +101,17 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return this.binary(def, "|")
     }
 
-    morph<def extends Morph<inferOut<t>>>(
+    morph<def extends Morph<extractOut<t>>>(
         def: def
-    ): Type<(In: inferOut<t>) => ReturnType<def>, $>
+    ): Type<(In: extractIn<t>) => Out<inferMorphOut<ReturnType<def>>>, $>
     morph(def: Morph) {
         return new Type([this.definition, "|>", def], this.scope)
     }
 
     // TODO: based on below, should maybe narrow morph output if used after
-    narrow<def extends Narrow<inferOut<t>>>(
+    narrow<def extends Narrow<extractOut<t>>>(
         def: def
-    ): Type<inferPredicate<inferOut<t>, def>, $>
+    ): Type<inferPredicate<extractOut<t>, def>, $>
     narrow(def: Narrow) {
         return new Type([this.definition, "=>", def], this.scope)
     }
@@ -120,7 +126,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return new Type(["keyof", this.definition], this.scope)
     }
 
-    assert(data: unknown): inferOut<t>
+    assert(data: unknown): extractOut<t>
     assert(data: unknown) {
         const result = this.call(null, data)
         return result.problems ? result.problems.throw() : result.data
@@ -155,11 +161,11 @@ export type TypeConfig = evaluate<{
     mustBe?: string
 }>
 
-export type inferIn<t> = inferMorphs<t, "in">
+export type extractIn<t> = extractMorphs<t, "in">
 
-export type inferOut<t> = inferMorphs<t, "out">
+export type extractOut<t> = extractMorphs<t, "out">
 
-type inferMorphs<t, io extends "in" | "out"> = t extends ParsedMorph<
+type extractMorphs<t, io extends "in" | "out"> = t extends InferredMorph<
     infer i,
     infer o
 >
@@ -167,7 +173,10 @@ type inferMorphs<t, io extends "in" | "out"> = t extends ParsedMorph<
         ? i
         : o
     : t extends object
-    ? t extends BuiltinClass | ((...args: any[]) => any)
+    ? t extends
+          | BuiltinClass
+          | ((...args: any[]) => any)
+          | (abstract new (...args: any[]) => any)
         ? t
-        : { [k in keyof t]: inferMorphs<t[k], io> }
+        : { [k in keyof t]: extractMorphs<t[k], io> }
     : t

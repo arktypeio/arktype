@@ -1,4 +1,4 @@
-import type { inferMorphOut, Morph } from "../parse/ast/morph.js"
+import type { inferMorphOut, Morph, Out } from "../parse/ast/morph.js"
 import type { InferredNarrow, Narrow } from "../parse/ast/narrow.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
@@ -296,9 +296,9 @@ type unknownConstraintInput<kind extends ConstraintKind> = kind extends "props"
 
 export type inferPredicateDefinition<input extends PredicateInput> =
     input["morph"] extends Morph<any, infer out>
-        ? (In: inferPredicateInput<input>) => inferMorphOut<out>
+        ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
         : input["morph"] extends readonly [...any[], Morph<any, infer out>]
-        ? (In: inferPredicateInput<input>) => inferMorphOut<out>
+        ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
         : inferPredicateInput<input>
 
 type inferPredicateInput<input extends PredicateInput> =

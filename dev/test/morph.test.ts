@@ -2,6 +2,7 @@ import { suite, test } from "mocha"
 import type { Problem } from "../../src/main.js"
 import { ark, scope, type } from "../../src/main.js"
 import { writeUndiscriminatableMorphUnionMessage } from "../../src/nodes/discriminate.js"
+import type { Out } from "../../src/parse/ast/morph.js"
 import type { Type } from "../../src/type.js"
 import { Path } from "../../src/utils/lists.js"
 import { attest } from "../attest/main.js"
@@ -11,7 +12,6 @@ suite("morph", () => {
         const t = type(["boolean", "|>", (data) => `${data}`])
         attest(t).typed as Type<(In: boolean) => string>
         attest(t.infer).typed as string
-        // attest(t.node).snap({ boolean: { rules: {}, morph: "(function)" } })
         const result = t(true)
         if (result.problems) {
             return result.problems.throw()
@@ -28,9 +28,9 @@ suite("morph", () => {
         }
         attest(result.data).equals(false).typed as boolean
     })
-    test("from type", () => {
+    test("chained to type", () => {
         const t = type(["string>5", "|>", ark.parsedDate])
-        attest(t).typed as Type<(In: string) => Date>
+        attest(t).typed as Type<(In: string) => Out<Date>>
         attest(t("5/21/1993").data?.getDate()).equals(21)
         attest(t("foobar").problems?.summary).snap(
             "Must be a valid date (was 'foobar')"
@@ -112,7 +112,6 @@ suite("morph", () => {
         // attest(types.bAndA.node).equals(types.aAndB.node)
     })
     test("object intersection", () => {
-        // TOOD: maybe remove semantic intersection validation?
         // const $ = scope({
         //     a: () => $.type({ a: "1" }).morph((data) => `${data}`),
         //     b: { b: "2" },

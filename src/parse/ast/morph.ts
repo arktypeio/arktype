@@ -1,6 +1,6 @@
-import type { Problem } from "../../nodes/problems.js"
+import type { Problem } from "../../main.js"
 import type { CheckResult, TraversalState } from "../../nodes/traverse.js"
-import type { inferIn } from "../../type.js"
+import type { extractIn } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { inferDefinition } from "../definition.js"
 import { parseDefinition } from "../definition.js"
@@ -15,15 +15,16 @@ export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
-export type ParsedMorph<i = any, o = unknown> = (In: i) => o
+export type Out<o = unknown> = ["|>", o]
+
+export type InferredMorph<i = any, o = unknown> = (In: i) => Out<o>
 
 export type inferMorph<inDef, morph, $> = morph extends Morph
     ? (
-          In: inferIn<inferDefinition<inDef, $>>
-      ) => inferMorphOut<ReturnType<morph>>
+          In: extractIn<inferDefinition<inDef, $>>
+      ) => Out<inferMorphOut<ReturnType<morph>>>
     : never
 
-// TODO: finalize this type
 export type inferMorphOut<out> = [out] extends [CheckResult<infer t>]
     ? t
     : Exclude<out, Problem>

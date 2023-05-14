@@ -1,4 +1,5 @@
 import { registry } from "../nodes/registry.js"
+import type { Out } from "../parse/ast/morph.js"
 import type { Space } from "../scope.js"
 import { scope } from "../scope.js"
 import type { TypeParser } from "../type.js"
@@ -65,10 +66,10 @@ export type Ark = {
     email: string
     uuid: string
     semver: string
-    json: (In: string) => unknown
-    parsedNumber: (In: string) => number
-    parsedInteger: (In: string) => number
-    parsedDate: (In: string) => Date
+    json: (In: string) => Out<unknown>
+    parsedNumber: (In: string) => Out<number>
+    parsedInteger: (In: string) => Out<number>
+    parsedDate: (In: string) => Out<Date>
     // jsObjects
     Function: Function
     Date: Date

@@ -1,5 +1,5 @@
 import { inferred } from "../parse/definition.js"
-import type { inferIn } from "../type.js"
+import type { extractIn } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
 import type { conform, exact } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
@@ -59,7 +59,7 @@ type extractBases<
       >
     : result
 
-export class TypeNode<t = unknown> extends Node<"type", inferIn<t>> {
+export class TypeNode<t = unknown> extends Node<"type", extractIn<t>> {
     declare [inferred]: t
 
     discriminant: Discriminant | undefined

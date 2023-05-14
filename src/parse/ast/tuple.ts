@@ -9,7 +9,7 @@ import {
     arrayIndexTypeNode,
     TypeNode
 } from "../../nodes/type.js"
-import type { inferIn, inferOut, TypeConfig } from "../../type.js"
+import type { extractIn, extractOut, TypeConfig } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"
@@ -266,9 +266,9 @@ type validateInfixExpression<
               : def[1] extends "&"
               ? validateDefinition<def[2], $>
               : def[1] extends "=>"
-              ? Narrow<inferIn<inferDefinition<def[0], $>>>
+              ? Narrow<extractIn<inferDefinition<def[0], $>>>
               : def[1] extends "|>"
-              ? Morph<inferOut<inferDefinition<def[0], $>>, unknown>
+              ? Morph<extractOut<inferDefinition<def[0], $>>, unknown>
               : validateDefinition<def[2], $>
       ]
 
