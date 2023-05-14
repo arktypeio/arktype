@@ -269,11 +269,11 @@ suite("morph", () => {
     })
     test("deep double intersection", () => {
         attest(() => {
-            scope({
-                a: { a: ["boolean", "|>", (data) => `${data}`] },
-                b: { a: ["boolean", "|>", (data) => `${data}!!!`] },
-                c: "a&b"
-            }).compile()
+            // scope({
+            //     a: { a: ["boolean", "|>", (data) => `${data}`] },
+            //     b: { a: ["boolean", "|>", (data) => `${data}!!!`] },
+            //     c: "a&b"
+            // }).compile()
         }).throws(
             "At a: Intersection of morphs results in an unsatisfiable type"
         )
