@@ -35,7 +35,9 @@ suite("object literal", () => {
             b: string
             c?: string
         }
-        attest(abc.root.condition).snap()
+        attest(abc.root.condition).snap(
+            '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && typeof $arkRoot.b === "string" && !(\'a\' in $arkRoot) || typeof $arkRoot.a === "string" && !(\'c\' in $arkRoot) || typeof $arkRoot.c === "string"'
+        )
         attest(abc.root).is(type([[a, "&", b], "&", c]).root)
     })
     test("traverse optional", () => {

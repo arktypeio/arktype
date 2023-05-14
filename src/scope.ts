@@ -34,7 +34,6 @@ export type ScopeOptions = {
     includes?: Space[] | []
     standard?: boolean
     name?: string
-    // TODO: Fix
     codes?: Record<ProblemCode, { mustBe?: string }>
     keys?: KeyCheckKind
 }

@@ -6,7 +6,6 @@ import type { Type } from "../../src/type.js"
 import { Path } from "../../src/utils/lists.js"
 import { attest } from "../attest/main.js"
 
-// TODO: update tests
 suite("morph", () => {
     test("base", () => {
         const t = type(["boolean", "|>", (data) => `${data}`])
@@ -42,7 +41,6 @@ suite("morph", () => {
             "number",
             "|>",
             (n, problems) =>
-                // TODO: fix input
                 n === 0 ? problems.mustBe("non-zero", n, new Path()) : 100 / n
         ])
         attest(divide100By).typed as Type<(In: number) => number>
@@ -251,49 +249,6 @@ suite("morph", () => {
         })
         const types = $.compile()
         attest(types.c).typed as Type<[boolean] | ((In: [string]) => string[])>
-        // attest(types.c.node).snap({
-        //     object: [
-        //         {
-        //             rules: {
-        //                 instance: `(function Array)`,
-        //                 props: {
-        //                     "0": "string",
-        //                     length: ["!", { number: { value: 1 } }]
-        //                 }
-        //             },
-        //             morph: "(function)"
-        //         },
-        //         {
-        //             instance: `(function Array)`,
-        //             props: {
-        //                 "0": "boolean",
-        //                 length: ["!", { number: { value: 1 } }]
-        //             }
-        //         }
-        //     ]
-        // })
-        // TODO: fix
-        // attest(types.c.flat).snap([
-        //     ["domain", "object"],
-        //     [
-        //         "switch",
-        //         {
-        //             path: ["0"],
-        //             kind: "domain",
-        //             cases: {
-        //                 string: [
-        //                     ["class", "(function Array)"],
-        //                     ["prerequisiteProp", ["length", [["value", 1]]]],
-        //                     ["morph", "(function)"]
-        //                 ],
-        //                 boolean: [
-        //                     ["class", "(function Array)"],
-        //                     ["prerequisiteProp", ["length", [["value", 1]]]]
-        //                 ]
-        //             }
-        //         }
-        //     ]
-        // ])
     })
     test("double intersection", () => {
         attest(() => {
@@ -397,7 +352,6 @@ suite("morph", () => {
             (s, problems) => {
                 const result = parseInt(s)
                 if (Number.isNaN(result)) {
-                    // TODO: fix input
                     return problems.mustBe("an integer string", s, new Path())
                 }
                 return result

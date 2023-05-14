@@ -26,7 +26,6 @@ suite("filter", () => {
             "number",
             "=>",
             (n, problems) =>
-                // TODO: fix input
                 n % 3 === 0 || !problems.mustBe("divisible by 3", n, new Path())
         ])
         attest(even(1).problems?.summary).snap("Must be divisible by 3 (was 1)")
@@ -85,8 +84,7 @@ suite("filter", () => {
             (s, problems) =>
                 s === [...s].reverse().join("")
                     ? true
-                    : // TODO: fix input
-                      !problems.mustBe("a palindrome", s, new Path())
+                    : !problems.mustBe("a palindrome", s, new Path())
         ])
         attest(palindrome).typed as Type<string>
         attest(palindrome("dad").data).snap("dad")

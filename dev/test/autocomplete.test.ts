@@ -28,6 +28,6 @@ suite("autocomplete", () => {
     })
     test("prefix", () => {
         // @ts-expect-error
-        attest(type("k")).types.errors("keyof ")
+        attest(() => type("k")).types.errors("keyof ")
     })
 })

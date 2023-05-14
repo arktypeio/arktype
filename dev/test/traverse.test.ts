@@ -98,18 +98,6 @@ suite("traverse", () => {
         attest(t({ a: 5 }).problems?.summary).snap(
             "a must be a string or boolean (was 5)"
         )
-        // TODO: Fix
-        // attest(t.flat).snap([
-        //     ["domain", "object"],
-        //     [
-        //         "switch",
-        //         {
-        //             path: ["a"],
-        //             kind: "domain",
-        //             cases: { string: [], boolean: [] }
-        //         }
-        //     ]
-        // ])
     })
     test("multiple switch", () => {
         const types = scope({

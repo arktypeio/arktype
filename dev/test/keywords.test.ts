@@ -54,7 +54,7 @@ suite("keywords", () => {
             )
         })
         test("boolean", () => {
-            // TODO: discriminated
+            // TODO: discriminated?
             attest(type("boolean").root.condition).snap(
                 "($arkRoot === false || $arkRoot === true)"
             )
