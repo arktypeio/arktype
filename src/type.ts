@@ -83,47 +83,56 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
             t & inferDefinition<def, bind<$, def>>,
             "intersection"
         >
-    ): Type<evaluate<t & inferDefinition<def, bind<$, def>>>> {
-        return this.binary(def, "&") as never
+    ): Type<evaluate<t & inferDefinition<def, bind<$, def>>>>
+    and(def: unknown) {
+        return this.binary(def, "&")
     }
 
     or<def>(
         def: validateDefinition<def, bind<$, def>>
-    ): Type<t | inferDefinition<def, bind<$, def>>, $> {
-        return this.binary(def, "|") as never
+    ): Type<t | inferDefinition<def, bind<$, def>>, $>
+    or(def: unknown) {
+        return this.binary(def, "|")
     }
 
-    morph<transform extends Morph<inferOut<t>>>(
-        transform: transform
-    ): Type<(In: inferOut<t>) => ReturnType<transform>, $> {
-        return this as never
+    morph<def extends Morph<inferOut<t>>>(
+        def: def
+    ): Type<(In: inferOut<t>) => ReturnType<def>, $>
+    morph(def: Morph): Type {
+        return this
     }
 
     // TODO: based on below, should maybe narrow morph output if used after
-    narrow<predicate extends Narrow<inferOut<t>>>(
-        predicate: predicate
-    ): Type<inferPredicate<inferOut<t>, predicate>, $> {
-        return new Type([this.definition, "=>", predicate], this.scope) as never
+    narrow<def extends Narrow<inferOut<t>>>(
+        def: def
+    ): Type<inferPredicate<inferOut<t>, def>, $>
+    narrow(def: Narrow) {
+        return new Type([this.definition, "=>", def], this.scope)
     }
 
-    array(): Type<t[], $> {
-        return new Type([this.definition, "[]"], this.scope) as never
+    array(): Type<t[], $>
+    array() {
+        return new Type([this.definition, "[]"], this.scope)
     }
 
-    keyof(): Type<keyof t, $> {
-        return new Type(["keyof", this.definition], this.scope) as never
+    keyof(): Type<keyof this["inferIn"], $>
+    keyof() {
+        return new Type(["keyof", this.definition], this.scope)
     }
 
-    assert(data: unknown): inferOut<t> {
+    assert(data: unknown): inferOut<t>
+    assert(data: unknown) {
         const result = this.call(null, data)
         return result.problems ? result.problems.throw() : result.data
     }
 
-    equals<other>(other: Type<other>): this is Type<other> {
-        return this.root === (other.root as unknown)
+    equals<other>(other: Type<other>): this is Type<other>
+    equals(other: Type) {
+        return this.root === other.root
     }
 
-    extends<other>(other: Type<other>): this is Type<other> {
+    extends<other>(other: Type<other>): this is Type<other>
+    extends(other: Type) {
         return this.root.intersect(other.root) === this.root
     }
 }
