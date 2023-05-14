@@ -205,7 +205,7 @@ export type inferTupleExpression<
 > = def[1] extends "[]"
     ? inferDefinition<def[0], $>[]
     : def[1] extends "&"
-    ? inferDefinition<def[0], $> & inferDefinition<def[2], $>
+    ? evaluate<inferDefinition<def[0], $> & inferDefinition<def[2], $>>
     : def[1] extends "|"
     ? inferDefinition<def[0], $> | inferDefinition<def[2], $>
     : def[1] extends "=>"

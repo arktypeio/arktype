@@ -2,7 +2,7 @@ import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
-suite("record", () => {
+suite("object literal", () => {
     test("empty", () => {
         const o = type({})
         attest(o.root).equals(type("object").root)
@@ -24,6 +24,19 @@ suite("record", () => {
             }
         }
     })()`)
+    })
+    test("intersections", () => {
+        const a = { "a?": "string" } as const
+        const b = { b: "string" } as const
+        const c = { "c?": "string" } as const
+        const abc = type(a).and(b).and(c)
+        attest(abc.infer).typed as {
+            a?: string
+            b: string
+            c?: string
+        }
+        attest(abc.root.condition).snap()
+        attest(abc.root).is(type([[a, "&", b], "&", c]).root)
     })
     test("traverse optional", () => {
         const o = type({ "a?": "string" }, { keys: "strict" })
