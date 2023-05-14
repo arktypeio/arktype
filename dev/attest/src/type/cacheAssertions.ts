@@ -7,10 +7,13 @@ import { ensureDir, writeJson } from "../main.js"
 import { writeCachedInlineSnapshotUpdates } from "../writeSnapshot.js"
 import { getAssertionsByFile } from "./analysis.js"
 
-export const forceCreateTsMorphProject = () => {
+export const forceCreateTsMorphProject = (opts?: ProjectOptions) => {
     const config = getConfig()
     const tsMorphOptions: ProjectOptions = {
-        compilerOptions: { diagnostics: true }
+        ...opts,
+        compilerOptions: {
+            diagnostics: true
+        }
     }
     if (config.tsconfig) {
         tsMorphOptions.tsConfigFilePath = config.tsconfig

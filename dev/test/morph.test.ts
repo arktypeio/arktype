@@ -269,7 +269,7 @@ suite("morph", () => {
     })
     test("deep double intersection", () => {
         attest(() => {
-            // scope({
+            // const s = scope({
             //     a: { a: ["boolean", "|>", (data) => `${data}`] },
             //     b: { a: ["boolean", "|>", (data) => `${data}!!!`] },
             //     c: "a&b"

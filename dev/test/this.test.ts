@@ -5,7 +5,11 @@ import { attest } from "../attest/main.js"
 
 suite("this reference", () => {
     test("resolves from type", () => {
-        const disappointingGift = type({ label: "string", "box?": "this" })
+        const disappointingGift = type({
+            label: "string",
+            "box?": "this"
+        })
+
         type ExpectedDisappointingGift = {
             label: string
             box?: ExpectedDisappointingGift

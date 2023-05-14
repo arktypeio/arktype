@@ -46,7 +46,9 @@ const emptyBenchFn = (statement: Node<ts.ExpressionStatement>) => {
 }
 
 const getInstantiationsWithFile = (fileText: string, fakePath: string) => {
-    const isolatedProject = forceCreateTsMorphProject()
+    const isolatedProject = forceCreateTsMorphProject({
+        skipAddingFilesFromTsConfig: true
+    })
     isolatedProject.createSourceFile(fakePath, fileText)
     return getUpdatedInstantiationCount(isolatedProject)
 }
