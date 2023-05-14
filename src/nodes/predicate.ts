@@ -145,7 +145,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate", t> {
     constrain<kind extends ConstraintKind>(
         kind: kind,
         input: ConstraintsInput[kind]
-    ) {
+    ): PredicateNode {
         assertAllowsConstraint(this.basis, kind)
         const result = this.intersect(
             new PredicateNode([createConstraint(kind, input)])

@@ -27,15 +27,15 @@ import type { BuiltinClass } from "./utils/objectKinds.js"
 export type TypeParser<$> = {
     // Parse and check the definition, returning either the original input for a
     // valid definition or a string representing an error message.
-    <def>(def: validateDefinition<def, bind<$, def>>): parseType<
-        def,
-        bind<$, def>
+    <def>(def: validateDefinition<def, bind<$, def>>): Type<
+        inferDefinition<def, bind<$, def>>,
+        $
     >
 
-    <def>(
-        def: validateDefinition<def, bind<$, def>>,
-        opts: TypeConfig
-    ): parseType<def, bind<$, def>>
+    <def>(def: validateDefinition<def, bind<$, def>>, opts: TypeConfig): Type<
+        inferDefinition<def, bind<$, def>>,
+        $
+    >
 
     fromValue: <branches extends readonly unknown[]>(
         ...branches: branches
@@ -44,11 +44,12 @@ export type TypeParser<$> = {
 
 // Reuse the validation result to determine if the type will be successfully created.
 // If it will, infer it and create a validator. Otherwise, return never.
-export type parseType<def, $ extends { this: unknown }> = [def] extends [
-    validateDefinition<def, $>
-]
-    ? Type<$["this"]>
-    : never
+// type parseType<def, $ extends {this: $}> =
+//     [def] extends [
+//     validateDefinition<def, $>
+// ]
+//     ? Type<$["this"], $>
+//     : never
 
 registry().register("state", TraversalState)
 

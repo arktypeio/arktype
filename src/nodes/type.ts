@@ -119,8 +119,8 @@ export class TypeNode<t = unknown> extends Node<"type", extractIn<t>> {
                 validatedTypeNodeInput<branches, extractBases<branches>>[i]
             >
         }
-    ) {
-        return new TypeNode<inferBranches<branches>>(
+    ): TypeNode<inferBranches<branches>> {
+        return new TypeNode(
             this.reduceBranches(
                 branches.map((branch) => PredicateNode.from(branch as any))
             )
