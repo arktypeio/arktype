@@ -1,6 +1,7 @@
 import { suite, test } from "mocha"
 import { TypeNode } from "../../src/main.js"
 import { arrayIndexInput } from "../../src/nodes/type.js"
+import type { Out } from "../../src/parse/ast/morph.js"
 import { attest, getTsVersionUnderTest } from "../attest/main.js"
 
 suite("node definitions", () => {
@@ -19,7 +20,7 @@ suite("node definitions", () => {
         })
         test("value", () => {
             const t = TypeNode.from({
-                basis: ["===", 3.14159 as const]
+                basis: ["===", 3.14159]
             })
             attest(t).typed as TypeNode<3.14159>
         })
@@ -64,6 +65,30 @@ suite("node definitions", () => {
         })
         attest(t).typed as TypeNode<{ name: string }[]>
     })
+    test("variadic tuple", () => {
+        const t = TypeNode.from({
+            basis: Array,
+            props: [
+                {
+                    0: {
+                        kind: "required",
+                        value: { basis: "string" }
+                    },
+                    "1": {
+                        kind: "required",
+                        value: { basis: "number" }
+                    }
+                },
+                [
+                    arrayIndexInput(2),
+                    {
+                        basis: "boolean"
+                    }
+                ]
+            ]
+        })
+        attest(t).typed as TypeNode<[string, number, ...boolean[]]>
+    })
     test("non-variadic tuple", () => {
         const t = TypeNode.from({
             basis: Array,
@@ -81,12 +106,12 @@ suite("node definitions", () => {
                 "1": {
                     kind: "required",
                     value: {
-                        basis: ["===", "arktype" as const]
+                        basis: ["===", "arktype"]
                     }
                 },
                 length: {
                     kind: "prerequisite",
-                    value: { basis: ["===", 2 as const] }
+                    value: { basis: ["===", 2] }
                 }
             }
         })
@@ -102,24 +127,24 @@ suite("node definitions", () => {
     })
     test("branches", () => {
         const t = TypeNode.from(
-            { basis: ["===", "foo" as const] },
-            { basis: ["===", "bar" as const] },
+            { basis: ["===", "foo"] },
+            { basis: ["===", "bar"] },
             { basis: "number" },
             {
                 basis: "object",
-                props: { a: { kind: "required", value: { basis: "string" } } }
+                props: { a: { kind: "required", value: { basis: "bigint" } } }
             }
         )
-        attest(t).typed as TypeNode<number | object | "foo" | "bar">
+        attest(t).typed as TypeNode<number | "foo" | "bar" | { a: bigint }>
     })
-    test("narrow predicate", () => {
+    test("narrow", () => {
         const t = TypeNode.from({
             basis: "string",
             narrow: (s): s is "foo" => s === "foo"
         })
         attest(t).typed as TypeNode<"foo">
     })
-    test("narrow predicate array", () => {
+    test("narrow array", () => {
         const t = TypeNode.from({
             basis: "object",
             narrow: [
@@ -137,23 +162,20 @@ suite("node definitions", () => {
             basis: "string",
             morph: (s: string) => s.length
         })
-        attest(t).typed as TypeNode<(In: string) => number>
+        attest(t).typed as TypeNode<(In: string) => Out<number>>
     })
     test("morph list", () => {
         const t = TypeNode.from({
             basis: "string",
             morph: [(s: string) => s.length, (n: number) => ({ n })] as const
         })
-        attest(t).typed as TypeNode<(In: string) => { n: number }>
+        attest(t).typed as TypeNode<(In: string) => Out<{ n: number }>>
     })
     test("never", () => {
         const t = TypeNode.from()
         attest(t).typed as TypeNode<never>
     })
     test("errors on rule in wrong domain", () => {
-        if (getTsVersionUnderTest() === "4.9") {
-            return
-        }
         attest(() =>
             TypeNode.from({
                 basis: "number",
@@ -166,12 +188,9 @@ suite("node definitions", () => {
         )
     })
     test("errors on filter literal", () => {
-        if (getTsVersionUnderTest() === "4.9") {
-            return
-        }
         attest(() =>
             TypeNode.from({
-                basis: ["===", true as const],
+                basis: ["===", true],
                 // @ts-expect-error
                 narrow: (b: boolean) => b === true
             })

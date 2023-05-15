@@ -112,7 +112,7 @@ export class TypeNode<t = unknown> extends Node<"type", extractIn<t>> {
     })()`
     }
 
-    static from<branches extends BranchesInput>(
+    static from<const branches extends BranchesInput>(
         ...branches: {
             [i in keyof branches]: conform<
                 branches[i],
@@ -391,7 +391,9 @@ export const typeNodeFromInput = (input: TypeInput) =>
 
 export const arrayBasisNode = new ClassNode(Array)
 
-export const arrayIndexInput = (firstVariadicIndex = 0) =>
+export const arrayIndexInput = <index extends number = 0>(
+    firstVariadicIndex: index = 0 as index
+) =>
     ({
         basis: "string",
         regex: createArrayIndexMatcher(firstVariadicIndex)

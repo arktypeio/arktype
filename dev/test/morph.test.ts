@@ -263,9 +263,10 @@ suite("morph", () => {
             scope({
                 a: ["/.*/", "|>", (s) => s.trim()],
                 b: "string",
+                // @ts-expect-error
                 c: "a|b"
             }).compile()
-        }).throws(writeUndiscriminatableMorphUnionMessage("/"))
+        }).throwsAndHasTypeError(writeUndiscriminatableMorphUnionMessage("/"))
     })
     test("deep double intersection", () => {
         attest(() => {
@@ -283,9 +284,10 @@ suite("morph", () => {
             scope({
                 a: { a: ["string", "|>", (s) => s.trim()] },
                 b: { a: "'foo'" },
+                // @ts-expect-error
                 c: "a|b"
             }).compile()
-        }).throws(writeUndiscriminatableMorphUnionMessage("/"))
+        }).throwsAndHasTypeError(writeUndiscriminatableMorphUnionMessage("/"))
     })
     test("deep undiscriminated reference", () => {
         const $ = scope({
@@ -306,9 +308,10 @@ suite("morph", () => {
             scope({
                 a: { a: ["string", "|>", (s) => s.trim()] },
                 b: { b: "boolean" },
+                // @ts-expect-error
                 c: "a|b"
             }).compile()
-        }).throws(writeUndiscriminatableMorphUnionMessage("/"))
+        }).throwsAndHasTypeError(writeUndiscriminatableMorphUnionMessage("/"))
     })
     test("array double intersection", () => {
         attest(() => {
@@ -326,9 +329,10 @@ suite("morph", () => {
             scope({
                 a: { a: ["string", "|>", (s) => s.trim()] },
                 b: { b: "boolean" },
+                // @ts-expect-error
                 c: { key: "a|b" }
             }).compile()
-        }).throws(writeUndiscriminatableMorphUnionMessage("key"))
+        }).throwsAndHasTypeError(writeUndiscriminatableMorphUnionMessage("key"))
     })
     test("helper morph intersection", () => {
         attest(() =>

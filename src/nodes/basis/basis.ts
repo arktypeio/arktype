@@ -28,7 +28,7 @@ type BasisNodesByLevel = {
 
 type BasisInputs = {
     domain: Domain
-    value: ["===", unknown]
+    value: readonly ["===", unknown]
     class: abstractableConstructor
 }
 
@@ -39,7 +39,7 @@ export type inferBasis<basis extends BasisInput> = basis extends Domain
     ? inferDomain<basis>
     : basis extends constructor<infer instance>
     ? instance
-    : basis extends ["===", infer value]
+    : basis extends readonly ["===", infer value]
     ? value
     : never
 

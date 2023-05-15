@@ -53,7 +53,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate", t> {
         return result || "true"
     }
 
-    static from<input extends PredicateInput>(
+    static from<const input extends PredicateInput>(
         input: input
     ): PredicateNode<inferPredicateDefinition<input>> {
         const basis = input.basis && basisNodeFrom(input.basis)
