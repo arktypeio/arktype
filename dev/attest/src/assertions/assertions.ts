@@ -109,12 +109,6 @@ export class Assertions implements AssertionRecord {
         return this
     }
 
-    //used for arkdark highlighting
-    public snapCompiled(source?: string) {
-        const args = [source, "snapCompiled"] as unknown as [string]
-        this["snap"](...args)
-    }
-
     snapToFile(args: ExternalSnapshotArgs) {
         const expectedSnapshot = getSnapshotByName(
             this.ctx.position.file,

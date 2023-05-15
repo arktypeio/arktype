@@ -58,7 +58,6 @@ export type TypeAssertionProps = {
 export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
     is: (value: T) => NextAssertions<AllowTypeAssertions>
     snap: (value?: snapshot<T>) => NextAssertions<AllowTypeAssertions>
-    snapCompiled: (value?: snapshot<T>) => NextAssertions<AllowTypeAssertions>
     snapToFile: (
         args: ExternalSnapshotArgs
     ) => NextAssertions<AllowTypeAssertions>
