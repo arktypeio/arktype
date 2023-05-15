@@ -16,21 +16,10 @@ const validInput = {
     }
 }
 
-// bench("ark instantiations", () => {
-//     const arkType = type({
-//         number: "number",
-//         negNumber: "number",
-//         maxNumber: "number",
-//         string: "string",
-//         longString: "string",
-//         boolean: "boolean",
-//         deeplyNested: {
-//             foo: "string",
-//             num: "number",
-//             bool: "boolean"
-//         }
-//     })
-// }).types([6016, "instantiations"])
+const dataArray = [...new Array(1000)].map((_, i) => ({
+    ...validInput,
+    number: i
+}))
 
 const arkType = type({
     number: "number",
@@ -46,15 +35,59 @@ const arkType = type({
     }
 })
 
-// bench("arktype", () => {
-//     arkType.root.allows(validInput)
-// }).median([8, "ns"])
-
 bench("arktype", () => {
     arkType.root.allows(validInput)
 }).median([2.42, "ns"])
 
+bench("arktype mutated", () => {
+    for (let i = 0; i < 1000; i++) {
+        arkType.root.allows(dataArray[i])
+    }
+}).median([11.4, "us"])
+
+// =================== ZOD ========================= //
+
 // import z from "zod"
+
+// const zodType = z.object({
+//     number: z.number(),
+//     negNumber: z.number(),
+//     maxNumber: z.number(),
+//     string: z.string(),
+//     longString: z.string(),
+//     boolean: z.boolean(),
+//     deeplyNested: z.object({
+//         foo: z.string(),
+//         num: z.number(),
+//         bool: z.boolean()
+//     })
+// })
+
+// bench("zod", () => {
+//     zodType.parse(validInput)
+// }).median([1.13, "us"])
+
+// bench("zod mutated", () => {
+//     for (let i = 0; i < 1000; i++) {
+//         zodType.parse(dataArray[i])
+//     }
+// }).median([1.25, "ms"])
+
+// bench("arktype instantiations", () => {
+//     const arkType = type({
+//         number: "number",
+//         negNumber: "number",
+//         maxNumber: "number",
+//         string: "string",
+//         longString: "string",
+//         boolean: "boolean",
+//         deeplyNested: {
+//             foo: "string",
+//             num: "number",
+//             bool: "boolean"
+//         }
+//     })
+// }).types([3464, "instantiations"])
 
 // bench("zod instantiations", () => {
 //     const zodType = z.object({
@@ -70,10 +103,91 @@ bench("arktype", () => {
 //             bool: z.boolean()
 //         })
 //     })
-// }).types([19688, "instantiations"])
+// }).types([19654, "instantiations"])
 
-// bench("zod", () => {
-//     for (let i = 0; i < 1000; i++) {
-//         zodType.parse(dataArray[i])
+// =================== Conditions vs. Ifs ========================= //
+
+// const chained = ($arkRoot: any) =>
+//     ((typeof $arkRoot === "object" && $arkRoot !== null) ||
+//         typeof $arkRoot === "function") &&
+//     ($arkRoot.boolean === false || $arkRoot.boolean === true) &&
+//     ((typeof $arkRoot.deeplyNested === "object" &&
+//         $arkRoot.deeplyNested !== null) ||
+//         typeof $arkRoot.deeplyNested === "function") &&
+//     ($arkRoot.deeplyNested.bool === false ||
+//         $arkRoot.deeplyNested.bool === true) &&
+//     typeof $arkRoot.deeplyNested.foo === "string" &&
+//     typeof $arkRoot.deeplyNested.num === "number" &&
+//     typeof $arkRoot.longString === "string" &&
+//     typeof $arkRoot.maxNumber === "number" &&
+//     typeof $arkRoot.negNumber === "number" &&
+//     typeof $arkRoot.number === "number" &&
+//     typeof $arkRoot.string === "string"
+
+// const ifs = ($arkRoot: any) => {
+//     if (
+//         (typeof $arkRoot !== "object" || $arkRoot === null) &&
+//         typeof $arkRoot !== "function"
+//     ) {
+//         return false
 //     }
-// }).median([1.12, "ms"])
+//     if ($arkRoot.boolean !== false && $arkRoot.boolean !== true) {
+//         return false
+//     }
+//     if (
+//         (typeof $arkRoot.deeplyNested !== "object" ||
+//             $arkRoot.deeplyNested === null) &&
+//         typeof $arkRoot.deeplyNested !== "function"
+//     ) {
+//         return false
+//     }
+//     if (
+//         $arkRoot.deeplyNested.bool !== false &&
+//         $arkRoot.deeplyNested.bool !== true
+//     ) {
+//         return false
+//     }
+//     if (typeof $arkRoot.deeplyNested.foo !== "string") {
+//         return false
+//     }
+//     if (typeof $arkRoot.deeplyNested.num !== "number") {
+//         return false
+//     }
+
+//     if (typeof $arkRoot.longString !== "string") {
+//         return false
+//     }
+//     if (typeof $arkRoot.maxNumber !== "number") {
+//         return false
+//     }
+//     if (typeof $arkRoot.negNumber !== "number") {
+//         return false
+//     }
+//     if (typeof $arkRoot.number !== "number") {
+//         return false
+//     }
+//     if (typeof $arkRoot.string !== "string") {
+//         return false
+//     }
+//     return true
+// }
+
+// bench("chained", () => {
+//     chained(validInput)
+// }).median([2.18, "ns"])
+
+// bench("ifs", () => {
+//     ifs(validInput)
+// }).median([3.88, "ns"])
+
+// bench("chained mutated", () => {
+//     for (let i = 0; i < 1000; i++) {
+//         chained(dataArray[i])
+//     }
+// }).median([10.3, "us"])
+
+// bench("ifs mutated", () => {
+//     for (let i = 0; i < 1000; i++) {
+//         ifs(dataArray[i])
+//     }
+// }).median([10.28, "us"])
