@@ -112,6 +112,30 @@ export class TypeNode<t = unknown> extends Node<"type", extractIn<t>> {
     })()`
     }
 
+    compileTraverse(s: CompilationState): string {
+        switch (this.children.length) {
+            case 0:
+                return "throw new Error();"
+            case 1:
+                return this.children[0].compileTraverse(s)
+            default:
+                s.unionDepth++
+                const result = `state.pushUnion();
+                        ${this.children
+                            .map(
+                                (rules) => `(() => {
+                            ${rules.compileTraverse(s)}
+                            })()`
+                            )
+                            .join(" && ")};
+                        state.popUnion(${this.children.length}, ${s.data}, ${
+                    s.path.json
+                });`
+                s.unionDepth--
+                return result
+        }
+    }
+
     static from<const branches extends BranchesInput>(
         ...branches: {
             [i in keyof branches]: conform<
@@ -175,30 +199,6 @@ export class TypeNode<t = unknown> extends Node<"type", extractIn<t>> {
         return this.children.length === 0
             ? "never"
             : this.children.map((branch) => branch.toString()).join(" or ")
-    }
-
-    compileTraverse(s: CompilationState): string {
-        switch (this.children.length) {
-            case 0:
-                return "throw new Error();"
-            case 1:
-                return this.children[0].compileTraverse(s)
-            default:
-                s.unionDepth++
-                const result = `state.pushUnion();
-                        ${this.children
-                            .map(
-                                (rules) => `(() => {
-                            ${rules.compileTraverse(s)}
-                            })()`
-                            )
-                            .join(" && ")};
-                        state.popUnion(${this.children.length}, ${s.data}, ${
-                    s.path.json
-                });`
-                s.unionDepth--
-                return result
-        }
     }
 
     getPath(...path: (string | TypeNode<string>)[]) {

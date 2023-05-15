@@ -4,6 +4,8 @@ import { chainableNoOpProxy } from "../utils.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchableFunction, BenchContext, UntilOptions } from "./bench.js"
 import { unhandledExceptionMessages } from "./bench.js"
+import { await1K } from "./generated/await1k.js"
+import { call1K } from "./generated/call1k.js"
 import type { MarkMeasure, Measure, TimeUnit } from "./measure.js"
 import { createTimeComparison, createTimeMeasure } from "./measure.js"
 import type { BenchTypeAssertions } from "./type.js"
@@ -38,22 +40,22 @@ class ResultCollector {
     private lastInvocationStart: number
 
     constructor(private ctx: BenchContext) {
-        // By default, will run for either 5 seconds or 1M calls, whichever comes first
+        // By default, will run for either 5 seconds or 100_000 call sets (of 1000 calls), whichever comes first
         this.bounds = {
             ms: 5000,
-            count: 1_000_000,
+            count: 100_000,
             ...ctx.options.until
         }
-        this.lastInvocationStart = Number.NaN
+        this.lastInvocationStart = -1
     }
 
-    startCall() {
+    start() {
         this.ctx.options.hooks?.beforeCall?.()
         this.lastInvocationStart = performance.now()
     }
 
-    stopCall() {
-        this.results.push(performance.now() - this.lastInvocationStart)
+    stop() {
+        this.results.push((performance.now() - this.lastInvocationStart) / 1000)
         this.ctx.options.hooks?.afterCall?.()
     }
 
@@ -68,9 +70,11 @@ class ResultCollector {
 const loopCalls = (fn: () => void, ctx: BenchContext) => {
     const collector = new ResultCollector(ctx)
     while (!collector.done()) {
-        collector.startCall()
-        fn()
-        collector.stopCall()
+        collector.start()
+        // we use a function like this to make 1k explicit calls to the function
+        // to avoid certain optimizations V8 makes when looping
+        call1K(fn)
+        collector.stop()
     }
     return collector.results
 }
@@ -78,9 +82,9 @@ const loopCalls = (fn: () => void, ctx: BenchContext) => {
 const loopAsyncCalls = async (fn: () => Promise<void>, ctx: BenchContext) => {
     const collector = new ResultCollector(ctx)
     while (!collector.done()) {
-        collector.startCall()
-        await fn()
-        collector.stopCall()
+        collector.start()
+        await await1K(fn)
+        collector.stop()
     }
     return collector.results
 }

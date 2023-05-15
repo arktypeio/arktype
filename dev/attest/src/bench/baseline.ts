@@ -1,9 +1,13 @@
+import { rmSync } from "node:fs"
 import process from "node:process"
 import { snapshot } from "arktype/internal/utils/serialize.js"
+import { getConfig } from "../config.js"
 import { queueSnapshotUpdate } from "../snapshot.js"
 import type { BenchAssertionContext, BenchContext } from "./bench.js"
 import type { MarkMeasure, Measure, MeasureComparison } from "./measure.js"
 import { stringifyMeasure } from "./measure.js"
+
+let isFirstQueuedUpdate = true
 
 export const queueBaselineUpdateIfNeeded = (
     updated: Measure | MarkMeasure,
@@ -19,6 +23,11 @@ export const queueBaselineUpdateIfNeeded = (
         throw new Error(
             `Unable to update baseline for ${ctx.qualifiedName} ('lastSnapCallPosition' was unset).`
         )
+    }
+    if (isFirstQueuedUpdate) {
+        // remove any leftover cached snaps before the first is written
+        rmSync(getConfig().snapCacheDir, { recursive: true, force: true })
+        isFirstQueuedUpdate = false
     }
     queueSnapshotUpdate({
         position: ctx.lastSnapCallPosition,

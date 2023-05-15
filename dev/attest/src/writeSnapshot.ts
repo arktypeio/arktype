@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from "node:fs"
+import { existsSync, readdirSync, rmSync } from "node:fs"
 import { basename, join } from "node:path"
 import type { Node, ts } from "ts-morph"
 import { getConfig } from "./config.js"
@@ -60,6 +60,7 @@ export const writeCachedInlineSnapshotUpdates = () => {
         }
     }
     writeUpdates(queuedUpdates)
+    rmSync(config.snapCacheDir, { recursive: true, force: true })
 }
 
 const snapshotArgsToQueuedUpdate = ({

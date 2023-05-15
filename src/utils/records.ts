@@ -55,7 +55,7 @@ export type fromEntries<entries, result = {}> = entries extends readonly [
     Entry<infer k, infer v>,
     ...infer tail
 ]
-    ? fromEntries<tail, { [_ in k]: v } & result>
+    ? fromEntries<tail, result & { [_ in k]: v }>
     : evaluate<result>
 
 export const fromEntries = <entries>(entries: asConst<entries>) =>
