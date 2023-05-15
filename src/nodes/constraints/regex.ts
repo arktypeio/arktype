@@ -4,13 +4,10 @@ import { Node } from "../node.js"
 
 export class RegexNode extends Node<"regex"> {
     constructor(public children: readonly string[]) {
-        // TODO: true case?
-        // if (sources.length === 0) {
-        //     throwInternalError(`Unexpectedly received empty regex list`)
-        // }
         super(
             "regex",
-            children.map(RegexNode.compileExpression).sort().join(" && ")
+            children.map(RegexNode.compileExpression).sort().join(" && ") ??
+                "true"
         )
     }
 
