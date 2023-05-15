@@ -1,7 +1,6 @@
 import type { Comparator } from "../../nodes/constraints/range.js"
 import type { resolve } from "../../scope.js"
 import type { error } from "../../utils/errors.js"
-import type { evaluate } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"
 import type {
     BigintLiteral,
@@ -12,6 +11,7 @@ import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { parseString } from "../string/string.js"
 import type { validateBound } from "./bound.js"
 import type { validateDivisor } from "./divisor.js"
+import type { inferIntersection } from "./intersections.js"
 import type { astToString } from "./utils.js"
 
 export type inferAst<ast, $> = ast extends List
@@ -23,7 +23,7 @@ export type inferExpression<ast extends List, $> = ast[1] extends "[]"
     : ast[1] extends "|"
     ? inferAst<ast[0], $> | inferAst<ast[2], $>
     : ast[1] extends "&"
-    ? evaluate<inferAst<ast[0], $> & inferAst<ast[2], $>>
+    ? inferIntersection<inferAst<ast[0], $>, inferAst<ast[2], $>>
     : ast[1] extends Comparator
     ? ast[0] extends NumberLiteral
         ? inferAst<ast[2], $>

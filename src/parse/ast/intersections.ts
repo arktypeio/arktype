@@ -2,7 +2,7 @@ import type { inferTypeInput } from "../../nodes/type.js"
 import type { domainOf } from "../../utils/domains.js"
 import type { error } from "../../utils/errors.js"
 import type { equals, evaluate, isAny } from "../../utils/generics.js"
-import type { pathToString, Segments } from "../../utils/lists.js"
+import type { List, pathToString, Segments } from "../../utils/lists.js"
 import type { objectKindOf } from "../../utils/objectKinds.js"
 import type { InferredMorph } from "./morph.js"
 
@@ -89,6 +89,47 @@ type inferIntersectionRecurse<
               : r[k & keyof r]
       }>
     : l & r
+
+// type z = l extends List
+//     ? r extends List
+//         ? inferArrayIntersection<l, r>
+//         : l & r
+//     : r extends List
+//     ? l & r
+//     : {}
+
+type inferArrayIntersection<
+    l extends List,
+    r extends List
+> = isTuple<l> extends true
+    ? isTuple<r> extends true
+        ? l["length"] extends r["length"]
+            ? inferTupleIntersection<l, r>
+            : never //"Unsatisfaiable"
+        : {
+              [i in keyof l]: evaluate<l[i] & r[i & keyof r]>
+          }
+    : isTuple<r> extends true
+    ? {
+          [i in keyof r]: evaluate<l[i & keyof l] & r[i]>
+      }
+    : evaluate<l[number] & r[number]>[]
+
+type inferTupleIntersection<
+    l extends List,
+    r extends List,
+    result extends List = []
+> = l extends [infer lHead, ...infer lTail]
+    ? r extends [infer rHead, ...infer rTail]
+        ? inferTupleIntersection<
+              lTail,
+              rTail,
+              [...result, evaluate<lHead & rHead>]
+          >
+        : result
+    : result
+
+type isTuple<list extends List> = number extends list["length"] ? false : true
 
 type bubblePropErrors<o> = extractValues<o, error> extends never
     ? o

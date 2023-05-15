@@ -42,15 +42,6 @@ export type TypeParser<$> = {
     ) => Type<branches[number], $>
 }
 
-// Reuse the validation result to determine if the type will be successfully created.
-// If it will, infer it and create a validator. Otherwise, return never.
-// type parseType<def, $ extends {this: $}> =
-//     [def] extends [
-//     validateDefinition<def, $>
-// ]
-//     ? Type<$["this"], $>
-//     : never
-
 registry().register("state", TraversalState)
 
 export class Type<t = unknown, $ = Ark> extends CompiledFunction<
