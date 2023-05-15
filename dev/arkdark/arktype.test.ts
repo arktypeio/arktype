@@ -46,3 +46,4 @@ scope({
         })
     }).type()
 }
+console.log("abc")

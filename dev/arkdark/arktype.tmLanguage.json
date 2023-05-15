@@ -14,7 +14,7 @@
             "name": "meta.embedded.arktype.definition",
             "begin": "(\\S*\\.)?(type|scope)\\s*\\(",
             "beginCaptures": {
-                "1": {
+                "2": {
                     "name": "entity.name.function.ts"
                 }
             },
@@ -27,40 +27,21 @@
                     "include": "#object"
                 },
                 {
-                    "include": "source.ts#type"
+                    "include": "source.ts"
                 }
             ]
-        },
-        "object": {
-            "name": "object",
-            "begin": "{",
-            "end": "}",
-            "patterns": [
-                {
-                    "include": "#quoted"
-                },
-                {
-                    "include": "#regex"
-                },
-                {
-                    "include": "#keys"
-                }
-            ]
-        },
-        "keys": {
-            "match": "(\\w+)(\\?[\"'`])?(?=\\:)",
-            "captures": {
-                "1": {
-                    "name": "meta.object-literal.key"
-                }
-            }
         },
         "quoted": {
+            "patterns": [
+                {
+                    "include": "#singleLineQuote"
+                }
+            ]
+        },
+        "singleLineQuote": {
+            "name": "quoted",
             "match": "((?<!<)[\"'`])(.*?)?((?<!\\\\)(\\1))",
             "captures": {
-                "1": {
-                    "name": "keyword.operator"
-                },
                 "2": {
                     "patterns": [
                         {
@@ -73,14 +54,17 @@
                             "include": "#regex"
                         },
                         {
-                            "include": "source.ts#type"
+                            "include": "source.ts#type",
+                            "begin": "(?!quoted)",
+                            "end": "(?=(quoted))"
                         }
                     ]
-                },
-                "3": {
-                    "name": "keyword.operator"
                 }
             }
+        },
+        "templateLiteralMultiLine": {
+            "name": "tempLiteral",
+            "match": "(`)([\\s\\S]*?\\n[\\s\\S]*?)((?<!\\\\)(\\1))"
         },
         "regex": {
             "match": "(\\/)(.*)((?<!\\\\)(\\1))",
@@ -89,7 +73,7 @@
                 "2": {
                     "patterns": [
                         {
-                            "name": "support.type.primitive.ts",
+                            "name": "entity.name.type.ts",
                             "match": "[A-Za-z]"
                         },
                         {
@@ -105,17 +89,25 @@
         },
         "operator": {
             "name": "keyword.operator",
-            "match": "[<>=%]|\""
+            "match": "[<>=%:]|\""
         },
-        "snap": {
-            "begin": "snapCompiled\\(",
-            "end": "\\)",
+        "object": {
+            "name": "object",
+            "begin": "{",
+            "end": "}",
             "patterns": [
                 {
                     "include": "#quoted"
                 },
                 {
-                    "include": "source.ts#type"
+                    "name": "comment.line.double-slash.ts",
+                    "match": "//.*"
+                },
+                {
+                    "include": "#operator"
+                },
+                {
+                    "include": "#object"
                 }
             ]
         }
