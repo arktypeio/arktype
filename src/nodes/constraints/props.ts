@@ -182,7 +182,7 @@ export class PropsNode extends Node<"props"> {
                 // the value associated with the name with the index value.
                 for (const [lKey, lValue] of this.indexed) {
                     if (lKey.allows(k)) {
-                        intersectedValue = this.intersectNamedProp(k, {
+                        intersectedValue = r.intersectNamedProp(k, {
                             kind: "optional",
                             value: lValue
                         })

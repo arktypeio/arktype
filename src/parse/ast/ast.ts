@@ -13,9 +13,9 @@ import type { validateBound } from "./bound.js"
 import type { validateDivisor } from "./divisor.js"
 import type {
     inferIntersection,
-    validateIntersection,
-    validateUnion
+    validateIntersection
 } from "./intersections.js"
+import type { validateUnion } from "./union.js"
 import type { astToString } from "./utils.js"
 
 export type inferAst<ast, $> = ast extends List

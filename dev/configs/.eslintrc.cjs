@@ -162,7 +162,7 @@ module.exports = defineConfig({
             }
         },
         {
-            files: ["./dev/test/examples/*.ts"],
+            files: ["./dev/examples/*.ts"],
             rules: {
                 "@typescript-eslint/no-unused-vars": "off"
             }

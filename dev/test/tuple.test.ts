@@ -109,20 +109,32 @@ suite("tuple", () => {
             attest(t.root).is(type([{ a: "string", b: "boolean" }]).root)
         })
         test("array", () => {
-            const tupleAndArray = type([
-                [{ a: "string" }],
-                "&",
-                [{ b: "boolean" }, "[]"]
+            const tupleAndArray = type([{ a: "string" }]).and([
+                { b: "boolean" }
             ])
+            // Check to make sure the intersection is evaluated
+            attest(tupleAndArray).types.toString.snap()
             const arrayAndTuple = type([
                 [{ b: "boolean" }, "[]"],
                 "&",
                 [{ a: "string" }]
             ])
-            const expected = type([{ a: "string", b: "boolean" }]).root
-            attest(tupleAndArray.root).is(expected)
-            attest(arrayAndTuple.root).is(expected)
+            const expected = type([{ a: "string", b: "boolean" }])
+            attest(tupleAndArray.root).typedValue(expected.root)
+            attest(arrayAndTuple.root).typedValue(expected.root)
         })
-        test("variadic", () => {})
+        test("variadic", () => {
+            const b = type([{ b: "boolean" }, "[]"])
+
+            const t = type([{ a: "string" }, ["...", b]]).and([
+                { c: "number" },
+                { d: "Date" }
+            ])
+            const expected = type([
+                { a: "string", c: "number" },
+                { b: "boolean", d: "Date" }
+            ])
+            attest(t.root).typedValue(expected.root)
+        })
     })
 })
