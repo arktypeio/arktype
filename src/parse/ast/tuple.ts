@@ -28,6 +28,7 @@ import {
     type PostfixExpression,
     writeUnsatisfiableExpressionError
 } from "./ast.js"
+import type { inferIntersection } from "./intersections.js"
 import type { inferMorph, Morph } from "./morph.js"
 import { parseMorphTuple } from "./morph.js"
 import type { inferPredicate, Narrow } from "./narrow.js"
@@ -205,7 +206,7 @@ export type inferTupleExpression<
 > = def[1] extends "[]"
     ? inferDefinition<def[0], $>[]
     : def[1] extends "&"
-    ? evaluate<inferDefinition<def[0], $> & inferDefinition<def[2], $>>
+    ? inferIntersection<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
     : def[1] extends "|"
     ? inferDefinition<def[0], $> | inferDefinition<def[2], $>
     : def[1] extends "=>"

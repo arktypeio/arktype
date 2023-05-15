@@ -4,6 +4,7 @@ import type { CheckResult } from "./nodes/traverse.js"
 import { TraversalState } from "./nodes/traverse.js"
 import { type TypeNode } from "./nodes/type.js"
 import type { writeUnsatisfiableExpressionError } from "./parse/ast/ast.js"
+import type { inferIntersection } from "./parse/ast/intersections.js"
 import type {
     inferMorphOut,
     InferredMorph,
@@ -81,7 +82,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
             t & inferDefinition<def, bind<$, def>>,
             "intersection"
         >
-    ): Type<evaluate<t & inferDefinition<def, bind<$, def>>>>
+    ): Type<inferIntersection<t, inferDefinition<def, bind<$, def>>>>
     and(def: unknown) {
         return this.binary(def, "&")
     }

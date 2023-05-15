@@ -1,5 +1,5 @@
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
+import { type, TypeNode } from "../../src/main.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { incompleteArrayTokenMessage } from "../../src/parse/string/shift/operator/operator.js"
 import { attest } from "../attest/main.js"
@@ -41,16 +41,59 @@ suite("parse array", () => {
     })
     test("shallow array intersection", () => {
         const actual = type("string[]&'foo'[]").root
+        //     ^?
         const expected = type("'foo'[]").root
         attest(actual).is(expected)
     })
     test("deep array intersection", () => {
+        const zzz = type([
+            [{ a: "string" }, "[]"],
+            "&",
+            [{ b: "boolean" }, "[]"]
+        ])
         const actual = type([{ a: "string" }, "[]"]).and([
+            //    ^?
             { b: "number" },
             "[]"
         ]).root
         const expected = type([{ a: "string", b: "number" }, "[]"]).root
         attest(actual).is(expected)
+    })
+    it("tuple intersection", () => {
+        const t = type([[{ a: "string" }], "&", [{ b: "boolean" }]])
+        attest(t.infer).typed as [
+            {
+                a: string
+                b: boolean
+            }
+        ]
+    })
+    it("mixed tuple intersection", () => {
+        const tupleAndArray = type([
+            [{ a: "string" }],
+            "&",
+            [{ b: "boolean" }, "[]"]
+        ])
+        const arrayAndTuple = type([
+            [{ b: "boolean" }, "[]"],
+            "&",
+            [{ a: "string" }]
+        ])
+        attest(tupleAndArray.infer).typed as [
+            {
+                a: string
+                b: boolean
+            }
+        ]
+        attest(arrayAndTuple.infer).typed as [
+            {
+                a: string
+                b: boolean
+            }
+        ]
+        const expected = type([{ a: "string", b: "boolean" }])
+        attest(tupleAndArray.root).is(expected.root)
+        attest(arrayAndTuple.root).is(expected.root)
     })
     test("multiple errors", () => {
         const stringArray = type("string[]")
@@ -61,7 +104,6 @@ suite("parse array", () => {
 
     test("tuple expression", () => {
         const t = type(["string", "[]"])
-        type({})
         attest(t.infer).typed as string[]
     })
 

@@ -64,25 +64,41 @@ suite("node definitions", () => {
         })
         attest(t).typed as TypeNode<{ name: string }[]>
     })
-    test("tuples", () => {
+    test("non-variadic tuple", () => {
         const t = TypeNode.from({
             basis: Array,
-            props: [
-                {
-                    length: {
-                        kind: "prerequisite",
-                        value: { basis: ["===", 5 as const] }
+            props: {
+                0: {
+                    kind: "required",
+                    value: {
+                        basis: "object",
+                        props: {
+                            a: { kind: "required", value: { basis: "string" } },
+                            b: { kind: "required", value: { basis: "boolean" } }
+                        }
                     }
                 },
-                [
-                    arrayIndexInput(),
-                    {
-                        basis: "string"
+                "1": {
+                    kind: "required",
+                    value: {
+                        basis: ["===", "arktype" as const]
                     }
-                ]
-            ]
+                },
+                length: {
+                    kind: "prerequisite",
+                    value: { basis: ["===", 2 as const] }
+                }
+            }
         })
-        attest(t).typed as TypeNode<[string, string, string, string, string]>
+        attest(t).typed as TypeNode<
+            [
+                {
+                    a: string
+                    b: boolean
+                },
+                "arktype"
+            ]
+        >
     })
     test("branches", () => {
         const t = TypeNode.from(

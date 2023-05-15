@@ -2,9 +2,9 @@ import type { inferTypeInput } from "../../nodes/type.js"
 import type { domainOf } from "../../utils/domains.js"
 import type { error } from "../../utils/errors.js"
 import type { equals, evaluate, isAny } from "../../utils/generics.js"
-import type { List, pathToString, Segments } from "../../utils/lists.js"
+import type { List, Path, pathToString, Segments } from "../../utils/lists.js"
 import type { objectKindOf } from "../../utils/objectKinds.js"
-import type { InferredMorph } from "./morph.js"
+import type { InferredMorph, Out } from "./morph.js"
 
 // type validateUnion<l, r> = isAny<l | r> extends true
 //     ? undefined
@@ -77,35 +77,36 @@ type inferIntersectionRecurse<
     : l extends InferredMorph<infer lIn, infer lOut>
     ? r extends InferredMorph
         ? error<writeImplicitNeverMessage<path, "Intersection", "of morphs">>
-        : (In: evaluate<lIn & r>) => lOut
+        : (In: evaluate<lIn & r>) => Out<lOut>
     : r extends InferredMorph<infer rIn, infer rOut>
-    ? (In: evaluate<rIn & l>) => rOut
+    ? (In: evaluate<rIn & l>) => Out<rOut>
+    : [l, r] extends [infer lList extends List, infer rList extends List]
+    ? inferArrayIntersection<lList, rList, path>
     : [l, r] extends [object, object]
-    ? evaluate<{
-          [k in keyof l | keyof r]: k extends keyof l
-              ? k extends keyof r
+    ? evaluate<
+          {
+              [k in keyof l]: k extends keyof r
                   ? inferIntersectionRecurse<l[k], r[k], [...path, k & string]>
                   : l[k]
-              : r[k & keyof r]
-      }>
+          } & r
+      >
     : l & r
-
-// type z = l extends List
-//     ? r extends List
-//         ? inferArrayIntersection<l, r>
-//         : l & r
-//     : r extends List
-//     ? l & r
-//     : {}
 
 type inferArrayIntersection<
     l extends List,
-    r extends List
+    r extends List,
+    path extends string[]
 > = isTuple<l> extends true
     ? isTuple<r> extends true
         ? l["length"] extends r["length"]
             ? inferTupleIntersection<l, r>
-            : never //"Unsatisfaiable"
+            : error<
+                  writeImplicitNeverMessage<
+                      path,
+                      "Intersection",
+                      `between tuples of length ${l["length"]} and ${r["length"]}`
+                  >
+              >
         : {
               [i in keyof l]: evaluate<l[i] & r[i & keyof r]>
           }

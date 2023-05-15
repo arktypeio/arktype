@@ -1,6 +1,7 @@
 import { throwInternalError } from "../../utils/errors.js"
 import type { evaluate } from "../../utils/generics.js"
-import type { HomogenousTuple } from "../../utils/lists.js"
+import type { HomogenousTuple, List } from "../../utils/lists.js"
+import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import { tryParseWellFormedInteger } from "../../utils/numericLiterals.js"
 import type { Key, mutable } from "../../utils/records.js"
 import { fromEntries, hasKeys } from "../../utils/records.js"
@@ -337,15 +338,17 @@ const excludedIndicesSource = (firstVariadic: number) => {
     return `${excludedIndexMatcherStart}${excludedIndices}${excludedIndexMatcherEnd}${arrayIndexMatcherSuffix}` as const
 }
 
+type VariadicIndexMatcherSource = ReturnType<typeof excludedIndicesSource>
+
 const nonVariadicIndexMatcherSource = `^${arrayIndexMatcherSuffix}` as const
 
-export const createArrayIndexMatcher = (firstVariadic = 0) => {
-    if (firstVariadic === 0) {
-        // If the variadic pattern starts at index 0, return the base array index matcher
-        return nonVariadicIndexMatcherSource
-    }
-    return excludedIndicesSource(firstVariadic)
-}
+type NonVariadicIndexMatcherSource = typeof nonVariadicIndexMatcherSource
+
+export const createArrayIndexMatcher = (firstVariadic: number) =>
+    firstVariadic === 0
+        ? // If the variadic pattern starts at index 0, return the base array index matcher
+          nonVariadicIndexMatcherSource
+        : excludedIndicesSource(firstVariadic)
 
 const extractArrayIndexRegex = (keyNode: TypeNode<string>) => {
     if (keyNode.children.length !== 1) {
@@ -379,10 +382,15 @@ const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
     )
 }
 
-type inferNamedProps<input extends NamedPropsInput> = {} extends input
-    ? unknown
-    : // Avoid iterating over prototype keys of tuple
-    [keyof input, input] extends ["length", TupleLengthProps]
+type inferNamedProps<input extends NamedPropsInput> =
+    input extends TupleLengthProps
+        ? [...inferNonVariadicTupleProps<input>] &
+              inferObjectLiteralProps<
+                  Omit<input, "length" | NumberLiteral | number>
+              >
+        : inferObjectLiteralProps<input>
+
+type inferObjectLiteralProps<input extends NamedPropsInput> = {} extends input
     ? unknown
     : evaluate<
           {
@@ -391,6 +399,28 @@ type inferNamedProps<input extends NamedPropsInput> = {} extends input
               [k in optionalKeyOf<input>]?: inferTypeInput<input[k]["value"]>
           }
       >
+
+type stringifiedNumericKeyOf<t> = `${Extract<keyof t, number | NumberLiteral>}`
+
+type inferNonVariadicTupleProps<
+    input extends NamedPropsInput,
+    result extends unknown[] = []
+> = `${result["length"]}` extends stringifiedNumericKeyOf<input>
+    ? inferNonVariadicTupleProps<
+          input,
+          [...result, inferTypeInput<input[`${result["length"]}`]["value"]>]
+      >
+    : result
+
+type inferVariadicTupleProps<
+    input extends NamedPropsInput,
+    result extends unknown[] = []
+> = `${result["length"]}` extends stringifiedNumericKeyOf<input>
+    ? inferNonVariadicTupleProps<
+          input,
+          [...result, inferTypeInput<input[`${result["length"]}`]["value"]>]
+      >
+    : result
 
 type TupleLengthProps<length extends number = number> = {
     length: {
@@ -409,27 +439,25 @@ export type inferPropsInput<input extends PropsInput> =
 type inferNamedAndIndexed<
     named extends NamedPropsInput,
     entries extends unknown[],
-    result = inferNamedProps<named>
+    namedResult = inferNamedProps<named>,
+    indexedResult = unknown
 > = entries extends [infer entry extends IndexedInputEntry, ...infer tail]
     ? inferNamedAndIndexed<
           named,
           tail,
-          result &
-              (entry[0] extends { regex: ArrayIndexMatcherSource }
-                  ? inferArray<named, entry[1]>
-                  : Record<
-                        Extract<inferTypeInput<entry[0]>, Key>,
-                        inferTypeInput<entry[1]>
-                    >)
+          entry[0] extends { regex: VariadicIndexMatcherSource }
+              ? namedResult extends List
+                  ? [...namedResult, ...inferTypeInput<entry[1]>[]]
+                  : never
+              : namedResult,
+          entry[0] extends { regex: NonVariadicIndexMatcherSource }
+              ? inferTypeInput<entry[1]>[]
+              : Record<
+                    Extract<inferTypeInput<entry[0]>, Key>,
+                    inferTypeInput<entry[1]>
+                >
       >
-    : result
-
-type inferArray<
-    named extends NamedPropsInput,
-    elementDef extends TypeInput
-> = named extends TupleLengthProps<infer length>
-    ? HomogenousTuple<inferTypeInput<elementDef>, length>
-    : inferTypeInput<elementDef>[]
+    : namedResult & indexedResult
 
 type requiredKeyOf<input extends NamedPropsInput> = Exclude<
     keyof input,
