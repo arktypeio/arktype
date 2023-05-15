@@ -1,7 +1,6 @@
-import { writeFileSync, rmSync, mkdirSync } from "fs"
+import { mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { getColors } from "./getColors.js"
 import { getTokenColors } from "./getTokenColors.js"
-import { type } from "arktype"
 
 rmSync("./themes", { recursive: true, force: true })
 mkdirSync("./themes")

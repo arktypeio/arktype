@@ -1,4 +1,5 @@
-import { Palette, pallete } from "./sharedPalette.js"
+import type { Palette } from "./sharedPalette.js"
+import { pallete } from "./sharedPalette.js"
 
 const { background, foreground, comment, red, orange } = pallete
 
@@ -9,8 +10,8 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
         {
             name: "Global settings",
             settings: {
-                background: background,
-                foreground: foreground
+                background,
+                foreground
             }
         },
         {
@@ -56,7 +57,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
                 "variable.other.constant"
             ],
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -84,7 +85,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
             name: "Comma in functions",
             scope: "meta.function punctuation.separator.comma",
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -144,14 +145,14 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
             name: "Function Parameters",
             scope: "variable.parameter",
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
             name: "Meta Tag",
             scope: ["punctuation.definition.tag", "meta.tag"],
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -226,14 +227,14 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
             scope: "invalid",
             settings: {
                 background: red,
-                foreground: foreground
+                foreground
             }
         },
         {
             name: "Invalid deprecated",
             scope: "invalid.deprecated",
             settings: {
-                foreground: foreground,
+                foreground,
                 background: red
             }
         },
@@ -276,7 +277,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
             name: "Meta Brace",
             scope: "meta.brace",
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -297,7 +298,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
             name: "Object Comma",
             scope: "object.comma",
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -379,7 +380,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
             name: "Punctuation Definition Parameters",
             scope: "punctuation.definition.parameters",
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -463,14 +464,14 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
             scope: "invalid.unimplemented",
             settings: {
                 background: orange,
-                foreground: foreground
+                foreground
             }
         },
         {
             name: "Invalid Illegal",
             scope: "invalid.illegal",
             settings: {
-                foreground: foreground,
+                foreground,
                 background: red
             }
         },
@@ -558,7 +559,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
             name: "C# Readwrite Variables",
             scope: "variable.other.readwrite.cs",
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -710,14 +711,14 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
             name: "JavaScript Terminator",
             scope: "terminator.js",
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
             name: "JavaScript Meta Punctuation Definition",
             scope: "meta.js punctuation.definition.js",
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -727,7 +728,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
                 "entity.name.type.instance.phpdoc"
             ],
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -744,7 +745,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
                 "meta.import.js variable.other"
             ],
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -758,7 +759,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
             name: "JavaScript Variable Other ReadWrite",
             scope: "variable.other.readwrite.js",
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -770,14 +771,14 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
                 "variable.object.property.jsx"
             ],
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
             name: "JavaScript Variables",
             scope: ["variable.js", "variable.other.js"],
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -791,7 +792,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
             name: "JavaScript Support Classes",
             scope: "support.class.js",
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -836,7 +837,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
             name: "Ruby Variables",
             scope: "variable.other.ruby",
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -922,7 +923,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
                 "string.other.link.description.markdown"
             ],
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -962,7 +963,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
             name: "Punctuations in PHP function calls",
             scope: "meta.function-call.php punctuation",
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -1000,7 +1001,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
             name: "Punctuations in Python",
             scope: "punctuation.python",
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -1061,7 +1062,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
                 "variable.ts"
             ],
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -1085,7 +1086,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
                 "meta.type.parameters.tsx entity.name.type"
             ],
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -1095,7 +1096,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
                 "meta.import.tsx punctuation.definition.block"
             ],
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {
@@ -1115,7 +1116,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
                 "meta.tag.js meta.jsx.children.tsx"
             ],
             settings: {
-                foreground: foreground
+                foreground
             }
         },
         {

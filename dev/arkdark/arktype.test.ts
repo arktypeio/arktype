@@ -1,4 +1,5 @@
-import { scope, type } from "arktype"
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { scope, type } from "../../src/main.js"
 
 type("string|number[]")
 
@@ -17,7 +18,9 @@ scope({
 })
 
 {
-    const type = (arg?: any) => {}
+    const type = (arg?: any) => {
+        arg
+    }
     type({
         foo: "string|number"
     })
@@ -26,7 +29,6 @@ scope({
     }
     obj.type({})
     // syntax should still be correctly highlighted
-    const foo = {}
 
     const outer = (...args: any[]) => obj
 
