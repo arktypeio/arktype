@@ -5,6 +5,15 @@ import { ArkTypeError } from "../../src/nodes/problems.js"
 import { attest } from "../attest/main.js"
 
 suite("type utilities", () => {
+    test("root discriminates", () => {
+        const t = type("string")
+        const { data, problems } = t("")
+        if (problems) {
+            problems.throw()
+        } else {
+            attest(data).typed as string
+        }
+    })
     test("allows", () => {
         const t = type("number%2")
         const data: unknown = 4

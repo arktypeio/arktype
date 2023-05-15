@@ -5,6 +5,10 @@ import type { CheckResult, TraversalState } from "./traverse.js"
 
 type PrepopulatedKey = "ark" | "state"
 
+export type InternalId = "problems" | "result"
+
+export type PossiblyInternalObject = { kind?: InternalId } | undefined | null
+
 class Registry {
     [k: string]: unknown
     declare ark: typeof ark

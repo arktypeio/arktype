@@ -3,7 +3,6 @@ import { registry } from "./nodes/registry.js"
 import type { CheckResult } from "./nodes/traverse.js"
 import { TraversalState } from "./nodes/traverse.js"
 import { type TypeNode } from "./nodes/type.js"
-import type { writeUnsatisfiableExpressionError } from "./parse/ast/ast.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
 import type {
     inferMorphOut,
@@ -80,74 +79,60 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         def: validateChainedExpression<
             def,
             bind<$, def>,
-            inferIntersection<t, inferDefinition<def, bind<$, def>>>,
-            "intersection"
+            inferIntersection<t, inferDefinition<def, bind<$, def>>>
         >
-    ): Type<inferIntersection<t, inferDefinition<def, bind<$, def>>>>
-    and(def: unknown) {
-        return this.binary(def, "&")
+    ): Type<inferIntersection<t, inferDefinition<def, bind<$, def>>>> {
+        return this.binary(def, "&") as never
     }
 
     or<def>(
         def: validateDefinition<def, bind<$, def>>
-    ): Type<t | inferDefinition<def, bind<$, def>>, $>
-    or(def: unknown) {
-        return this.binary(def, "|")
+    ): Type<t | inferDefinition<def, bind<$, def>>, $> {
+        return this.binary(def, "|") as never
     }
 
     morph<def extends Morph<extractOut<t>>>(
-        def: def
-    ): Type<(In: extractIn<t>) => Out<inferMorphOut<ReturnType<def>>>, $>
-    morph(def: Morph) {
-        return new Type([this.definition, "|>", def], this.scope)
+        def: Morph
+    ): Type<(In: extractIn<t>) => Out<inferMorphOut<ReturnType<def>>>, $> {
+        return new Type([this.definition, "|>", def], this.scope) as never
     }
 
     // TODO: based on below, should maybe narrow morph output if used after
     narrow<def extends Narrow<extractOut<t>>>(
         def: def
-    ): Type<inferPredicate<extractOut<t>, def>, $>
-    narrow(def: Narrow) {
-        return new Type([this.definition, "=>", def], this.scope)
+    ): Type<inferPredicate<extractOut<t>, def>, $> {
+        return new Type([this.definition, "=>", def], this.scope) as never
     }
 
-    array(): Type<t[], $>
-    array() {
-        return new Type([this.definition, "[]"], this.scope)
+    array(): Type<t[], $> {
+        return new Type([this.definition, "[]"], this.scope) as never
     }
 
-    keyof(): Type<keyof this["inferIn"], $>
-    keyof() {
-        return new Type(["keyof", this.definition], this.scope)
+    keyof(): Type<keyof this["inferIn"], $> {
+        return new Type(["keyof", this.definition], this.scope) as never
     }
 
-    assert(data: unknown): extractOut<t>
-    assert(data: unknown) {
+    assert(data: unknown): extractOut<t> {
         const result = this.call(null, data)
         return result.problems ? result.problems.throw() : result.data
     }
 
-    equals<other>(other: Type<other>): this is Type<other>
-    equals(other: Type) {
-        return this.root === other.root
+    equals<other>(other: Type<other>): this is Type<other> {
+        return this.root === (other.root as unknown)
     }
 
-    extends<other>(other: Type<other>): this is Type<other>
-    extends(other: Type) {
+    extends<other>(other: Type<other>): this is Type<other> {
         return this.root.intersect(other.root) === this.root
     }
 }
 
-type validateChainedExpression<
-    def,
-    $,
-    inferred,
-    operation extends string
-> = def extends validateDefinition<def, $>
-    ? // TODO: keep error?
-      [inferred] extends [never | error]
-        ? writeUnsatisfiableExpressionError<operation>
-        : def
-    : validateDefinition<def, $>
+type validateChainedExpression<def, $, inferred> =
+    def extends validateDefinition<def, $>
+        ? // As of TS 5.1, trying to infer the message here directly breaks everything
+          inferred extends error
+            ? inferred
+            : def
+        : validateDefinition<def, $>
 
 export type KeyCheckKind = "loose" | "strict" | "distilled"
 

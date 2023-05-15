@@ -6,7 +6,7 @@ import type { equals } from "../../src/utils/generics.js"
 import { Path } from "../../src/utils/lists.js"
 import { attest } from "../attest/main.js"
 
-suite("filter", () => {
+suite("narrow", () => {
     test("implicit problem", () => {
         const isOdd = (n: number) => n % 2 === 1
         const odd = type(["number", "=>", isOdd])
@@ -98,6 +98,8 @@ suite("filter", () => {
             .morph((s) => s.length)
             .narrow((n): n is 5 => n === 5)
         attest(t).typed as Type<(In: string) => 5, Ark>
-        attest(t.root.condition).snap()
+        attest(t.root.condition).snap(
+            'typeof $arkRoot === "string" && false && false'
+        )
     })
 })

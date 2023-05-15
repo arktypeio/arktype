@@ -16,6 +16,7 @@ import {
 import { stringify } from "../utils/serialize.js"
 import type { RangeConstraint, SizedData } from "./constraints/range.js"
 import { comparatorDescriptions } from "./constraints/range.js"
+import type { InternalId } from "./registry.js"
 
 export class ArkTypeError extends TypeError {
     cause: Problems
@@ -63,7 +64,8 @@ export abstract class Problem<requirement = unknown, data = unknown> {
     }
 }
 
-class ProblemArray extends Array<Problem> {
+class ProblemsArray extends Array<Problem> {
+    private readonly $arkId: InternalId = "problems"
     byPath: Record<string, Problem> = {}
     count = 0
 
@@ -108,9 +110,9 @@ class ProblemArray extends Array<Problem> {
     }
 }
 
-export const Problems: new () => Problems = ProblemArray
+export const Problems: new () => Problems = ProblemsArray
 
-export type Problems = arraySubclassToReadonly<ProblemArray>
+export type Problems = arraySubclassToReadonly<ProblemsArray>
 
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1)
 
