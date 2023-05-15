@@ -30,7 +30,7 @@ const getCyclicData = () => {
 }
 
 suite("cyclic data", () => {
-    test("cyclic expression", () => {
+    test("cyclic union", () => {
         const $ = scope({
             a: { b: "b|false" },
             b: { a: "a|true" }
@@ -38,6 +38,13 @@ suite("cyclic data", () => {
         attest($.infer).types.toString.snap(
             "{ a: { b: false | { a: true | any; }; }; b: { a: true | { b: false | any; }; }; }"
         )
+    })
+    test("cyclic intersection", () => {
+        const $ = scope({
+            a: { b: "b&a" },
+            b: { a: "a&b" }
+        })
+        attest($.infer).types.toString.snap()
     })
     // test("cyclic", () => {
     //     const types = scope({ a: { b: "b" }, b: { a: "a" } }).compile()

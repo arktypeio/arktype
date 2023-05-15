@@ -250,13 +250,13 @@ suite("morph", () => {
         attest(types.c).typed as Type<[boolean] | ((In: [string]) => string[])>
     })
     test("double intersection", () => {
-        attest(() => {
-            // const z = scope({
-            //     a: ["boolean", "|>", (data) => `${data}`],
-            //     b: ["boolean", "|>", (data) => `${data}!!!`],
-            //     c: "a&b"
-            // }).compile()
-        }).throws("Intersection of morphs results in an unsatisfiable type")
+        // attest(() => {
+        //     const z = scope({
+        //         a: ["boolean", "|>", (data) => `${data}`],
+        //         b: ["boolean", "|>", (data) => `${data}!!!`],
+        //         c: "a&b"
+        //     }).compile()
+        // }).throws("Intersection of morphs results in an unsatisfiable type")
     })
     test("undiscriminated union", () => {
         attest(() => {
@@ -334,8 +334,11 @@ suite("morph", () => {
         attest(() =>
             type("string")
                 .morph((s) => s.length)
+                // @ts-expect-error
                 .and(type("string").morph((s) => s.length))
-        ).throws("Intersection of morphs results in an unsatisfiable type")
+        ).throwsAndHasTypeError(
+            "Intersection of morphs results in an unsatisfiable type"
+        )
     })
     test("union helper undiscriminated", () => {
         attest(() =>

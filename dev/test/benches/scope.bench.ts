@@ -16,11 +16,11 @@ import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
 //     recursive.dejaVu(dejaVu)
 // }).median([11.21, "us"])
 
-bench("cyclic(10)", () => {
+bench("cyclic 10 intersection", () => {
     const s = scope(cyclic10).type("user&user2").infer
 })
     // .median([47.02, "us"])
-    .types([6580, "instantiations"])
+    .types([19581, "instantiations"])
 
 // bench("cyclic(10)", () => {
 //     const types = scope(cyclic10).compile()
@@ -30,6 +30,7 @@ bench("cyclic(10)", () => {
 
 // bench("cyclic(100)", () => {
 //     const types = scope(cyclic100).compile()
+
 // })
 //     // .median([417.71, "us"])
 //     .types([15378, "instantiations"])
