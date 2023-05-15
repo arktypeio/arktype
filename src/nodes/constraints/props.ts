@@ -1,6 +1,6 @@
 import { throwInternalError } from "../../utils/errors.js"
 import type { evaluate } from "../../utils/generics.js"
-import type { HomogenousTuple, List } from "../../utils/lists.js"
+import type { List } from "../../utils/lists.js"
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import { tryParseWellFormedInteger } from "../../utils/numericLiterals.js"
 import type { Key, mutable } from "../../utils/records.js"
@@ -403,16 +403,6 @@ type inferObjectLiteralProps<input extends NamedPropsInput> = {} extends input
 type stringifiedNumericKeyOf<t> = `${Extract<keyof t, number | NumberLiteral>}`
 
 type inferNonVariadicTupleProps<
-    input extends NamedPropsInput,
-    result extends unknown[] = []
-> = `${result["length"]}` extends stringifiedNumericKeyOf<input>
-    ? inferNonVariadicTupleProps<
-          input,
-          [...result, inferTypeInput<input[`${result["length"]}`]["value"]>]
-      >
-    : result
-
-type inferVariadicTupleProps<
     input extends NamedPropsInput,
     result extends unknown[] = []
 > = `${result["length"]}` extends stringifiedNumericKeyOf<input>

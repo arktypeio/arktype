@@ -1,8 +1,7 @@
-import type { inferTypeInput } from "../../nodes/type.js"
 import type { domainOf } from "../../utils/domains.js"
 import type { error } from "../../utils/errors.js"
-import type { equals, evaluate, isAny } from "../../utils/generics.js"
-import type { List, Path, pathToString, Segments } from "../../utils/lists.js"
+import type { evaluate, isAny } from "../../utils/generics.js"
+import type { List, pathToString, Segments } from "../../utils/lists.js"
 import type { objectKindOf } from "../../utils/objectKinds.js"
 import type { InferredMorph, Out } from "./morph.js"
 

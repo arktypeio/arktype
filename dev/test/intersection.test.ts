@@ -133,9 +133,14 @@ suite("intersection", () => {
             ).throwsAndHasTypeError(writeUnresolvableMessage("what"))
         })
         test("at path", () => {
-            attest(() => type({ a: "string" }).and({ a: "number" })).throws(
-                "Intersection at $arkRoot.a of string and number results in an unsatisfiable type"
+            attest(() =>
+                // @ts-expect-error
+                type({ a: "string" }).and({ a: "number" })
             )
+                .throws(
+                    "Intersection at $arkRoot.a of string and number results in an unsatisfiable type"
+                )
+                .types.errors(writeUnsatisfiableExpressionError("intersection"))
         })
     })
 })

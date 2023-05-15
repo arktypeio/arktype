@@ -21,6 +21,7 @@ import {
 import type { bind, Scope } from "./scope.js"
 import { type Ark } from "./scopes/ark.js"
 import { CompiledFunction } from "./utils/compiledFunction.js"
+import type { error } from "./utils/errors.js"
 import type { evaluate } from "./utils/generics.js"
 import { Path } from "./utils/lists.js"
 import type { BuiltinClass } from "./utils/objectKinds.js"
@@ -79,7 +80,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         def: validateChainedExpression<
             def,
             bind<$, def>,
-            t & inferDefinition<def, bind<$, def>>,
+            inferIntersection<t, inferDefinition<def, bind<$, def>>>,
             "intersection"
         >
     ): Type<inferIntersection<t, inferDefinition<def, bind<$, def>>>>
@@ -142,7 +143,8 @@ type validateChainedExpression<
     inferred,
     operation extends string
 > = def extends validateDefinition<def, $>
-    ? [inferred] extends [never]
+    ? // TODO: keep error?
+      [inferred] extends [never | error]
         ? writeUnsatisfiableExpressionError<operation>
         : def
     : validateDefinition<def, $>
