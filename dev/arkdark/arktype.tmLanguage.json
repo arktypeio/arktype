@@ -1,0 +1,118 @@
+{
+    "scopeName": "arktype.injection.ts",
+    "injectionSelector": "L:source.ts - comment",
+    "patterns": [
+        {
+            "include": "#definition"
+        }
+    ],
+    "repository": {
+        "definition": {
+            "name": "meta.embedded.arktype.definition",
+            "begin": "(([^\\)]*\\.)?(type|scope)\\s*\\()",
+            "beginCaptures": {
+                "1": {
+                    "name": "entity.name.function.ts"
+                }
+            },
+            "end": "(?<=([^\"'`]*([\"'`])[^\"'`]*\\2)*[^\"'`]*)\\)",
+            "patterns": [
+                {
+                    "include": "#quoted"
+                },
+                {
+                    "include": "#object"
+                },
+                {
+                    "include": "source.ts"
+                }
+            ]
+        },
+        "quoted": {
+            "patterns": [
+                {
+                    "include": "#singleLineQuote"
+                }
+            ]
+        },
+        "singleLineQuote": {
+            "name": "quoted",
+            "match": "((?<!<)[\"'`])(.*?)?((?<!\\\\)(\\1))",
+            "captures": {
+                "1": {
+                    "name": "keyword.operator"
+                },
+                "2": {
+                    "patterns": [
+                        {
+                            "include": "#operator"
+                        },
+                        {
+                            "include": "#object"
+                        },
+                        {
+                            "include": "#regex"
+                        },
+                        {
+                            "include": "source.ts#type",
+                            "begin": "(?!quoted)",
+                            "end": "(?=(quoted))"
+                        }
+                    ]
+                },
+                "3": {
+                    "name": "keyword.operator"
+                }
+            }
+        },
+        "templateLiteralMultiLine": {
+            "name": "tempLiteral",
+            "match": "(`)([\\s\\S]*?\\n[\\s\\S]*?)((?<!\\\\)(\\1))"
+        },
+        "regex": {
+            "match": "(\\/)(.*)((?<!\\\\)(\\1))",
+            "captures": {
+                "1": { "name": "keyword.operator" },
+                "2": {
+                    "patterns": [
+                        {
+                            "name": "entity.name.type.ts",
+                            "match": "[A-Za-z]"
+                        },
+                        {
+                            "name": "constant.numeric.decimal.ts",
+                            "match": "[0-9]"
+                        },
+                        { "include": "#operator" },
+                        { "include": "#quoted" }
+                    ]
+                },
+                "3": { "name": "keyword.operator" }
+            }
+        },
+        "operator": {
+            "name": "keyword.operator",
+            "match": "[<>=%]|\""
+        },
+        "object": {
+            "name": "meta.object-literal.key.ts",
+            "begin": "{",
+            "end": "}",
+            "patterns": [
+                {
+                    "include": "#quoted"
+                },
+                {
+                    "name": "comment.line.double-slash.ts",
+                    "match": "//.*"
+                },
+                {
+                    "include": "#operator"
+                },
+                {
+                    "include": "#object"
+                }
+            ]
+        }
+    }
+}
