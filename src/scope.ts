@@ -181,7 +181,7 @@ export class Scope<context extends ScopeInferenceContext = any> {
     ) => {
         config
         return new Type(def, this)
-    }) as unknown as TypeParser<resolutions<context>>
+    }) as never
 
     scope<aliases>(
         aliases: validateAliases<
@@ -191,6 +191,7 @@ export class Scope<context extends ScopeInferenceContext = any> {
     ): Scope<parseScope<aliases, { imports: [Space<exportsOf<context>>] }>> {
         return new Scope(aliases, { imports: [this.compile()] })
     }
+
     private cacheSpaces(spaces: Space[], kind: "imports" | "extends") {
         for (const space of spaces) {
             for (const name in space) {
@@ -233,13 +234,6 @@ export class Scope<context extends ScopeInferenceContext = any> {
 
 export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>
     new Scope(aliases, opts)) as any
-
-export const rootScope: Scope<[{}, {}, false]> = scope(
-    {},
-    { name: "root", standard: false }
-) as any
-
-export const rootType: TypeParser<{}> = rootScope.type
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
