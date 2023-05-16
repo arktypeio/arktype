@@ -14,9 +14,9 @@ suite("subscopes", () => {
         attest(types).typed as Space<{
             a: string
             b: number
-            sub: Space<{
+            sub: {
                 alias: number
-            }>
+            }
         }>
     })
 })

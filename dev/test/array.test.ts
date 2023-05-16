@@ -1,5 +1,5 @@
 import { suite, test } from "mocha"
-import { type, TypeNode } from "../../src/main.js"
+import { type } from "../../src/main.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { incompleteArrayTokenMessage } from "../../src/parse/string/shift/operator/operator.js"
 import { attest } from "../attest/main.js"
@@ -41,18 +41,11 @@ suite("parse array", () => {
     })
     test("shallow array intersection", () => {
         const actual = type("string[]&'foo'[]").root
-        //     ^?
         const expected = type("'foo'[]").root
         attest(actual).is(expected)
     })
     test("deep array intersection", () => {
-        const zzz = type([
-            [{ a: "string" }, "[]"],
-            "&",
-            [{ b: "boolean" }, "[]"]
-        ])
         const actual = type([{ a: "string" }, "[]"]).and([
-            //    ^?
             { b: "number" },
             "[]"
         ]).root

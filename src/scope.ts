@@ -1,7 +1,7 @@
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
 import { registry } from "./nodes/registry.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
-import type { Ark } from "./scopes/ark.js"
+import { type Ark } from "./scopes/ark.js"
 import type {
     extractIn,
     extractOut,
@@ -65,10 +65,6 @@ type validateOptions<opts extends ScopeOptions> = {
 export type ScopeInferenceContext = Dict | ScopeContextTuple
 
 type ScopeContextTuple = [exports: Dict, locals: Dict, standard?: false]
-
-type Z = importsOf<{
-    imports: [Space<{ foo: string }>]
-}>
 
 type parseScope<
     aliases,
@@ -146,9 +142,10 @@ type bootstrapScope<aliases, opts extends ScopeOptions> = {
 } & preresolved<opts>
 
 type inferExports<aliases, opts extends ScopeOptions> = evaluate<{
-    [k in keyof aliases]: aliases[k] extends Space
-        ? aliases[k]
-        : inferDefinition<aliases[k], bootstrapScope<aliases, opts>>
+    [k in keyof aliases]: inferDefinition<
+        aliases[k],
+        bootstrapScope<aliases, opts>
+    >
 }>
 
 export type Space<exports = Dict> = {
@@ -194,16 +191,6 @@ export class Scope<context extends ScopeInferenceContext = any> {
     ): Scope<parseScope<aliases, { imports: [Space<exportsOf<context>>] }>> {
         return new Scope(aliases, { imports: [this.compile()] })
     }
-
-    // extend<aliases>(
-    //     aliases: validateAliases<
-    //         aliases,
-    //         { extends: [Space<exportsOf<context>>] }
-    //     >
-    // ): Scope<parseScope<aliases, { extends: [Space<exportsOf<context>>] }>> {
-    //     return new Scope(aliases, { extends: [this.compile()] })
-    // }
-
     private cacheSpaces(spaces: Space[], kind: "imports" | "extends") {
         for (const space of spaces) {
             for (const name in space) {
