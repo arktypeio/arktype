@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { scope, type } from "../../src/main.js"
+import { scope, type } from "arktype"
 
 type("string|number[]")
 
@@ -18,9 +18,7 @@ scope({
 })
 
 {
-    const type = (arg?: any) => {
-        arg
-    }
+    const type = (arg?: any) => {}
     type({
         foo: "string|number"
     })
@@ -29,11 +27,10 @@ scope({
     }
     obj.type({})
     // syntax should still be correctly highlighted
+    const foo = {}
 
     const outer = (...args: any[]) => obj
-    const ob = {
-        a: "string"
-    }
+
     outer("ark", () => {
         const arkType = type({
             number: "number",
@@ -49,4 +46,9 @@ scope({
             }
         })
     }).type()
+    const tt = type("Date")
+    const abc = type(`Date`)
+    const t = type(`${2}<Date<${4}`)
+    console.log()
+    console.log("abc")
 }

@@ -4,20 +4,14 @@
     "patterns": [
         {
             "include": "#definition"
-        },
-        {
-            "include": "#snap"
         }
     ],
     "repository": {
         "definition": {
             "name": "meta.embedded.arktype.definition",
-            "begin": "(\\S*\\.)?(type|scope)\\s*\\(",
+            "begin": "(([^\\)]*\\.)?(type|scope)\\s*\\()",
             "beginCaptures": {
                 "1": {
-                    "name": "entity.name.function.ts"
-                },
-                "2": {
                     "name": "entity.name.function.ts"
                 }
             },
