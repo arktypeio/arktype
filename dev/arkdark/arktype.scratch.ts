@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { scope, type } from "arktype"
+import { scope, type } from "../../src/main.js"
 
 type("string|number[]")
 
