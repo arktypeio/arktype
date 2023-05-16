@@ -55,14 +55,13 @@ export type BasisNodeSubclass = BasisNodesByLevel[BasisLevel]
 
 export abstract class BasisNode<
     level extends BasisLevel = BasisLevel
-> extends Node<"basis"> {
-    static readonly kind = "basis"
-    abstract literalKeysOf(): Key[]
-    abstract domain: Domain
+> extends Node<"basis", [BasisInputs[level]]> {
+    // abstract literalKeysOf(): Key[]
+    // abstract domain: Domain
 
-    constructor(public level: level, condition: string) {
-        super("basis", condition)
-    }
+    // constructor(public level: level, condition: string) {
+    //     super("basis", condition)
+    // }
 
     private _keyof?: TypeNode
     keyof(): TypeNode {

@@ -32,11 +32,11 @@ import { neverTypeNode } from "./type.js"
 
 export class PredicateNode<t = unknown> extends Node<
     "predicate",
-    typeof PredicateNode,
     PredicateRules,
     t
 > {
     static readonly kind = "predicate"
+    readonly subclass = PredicateNode
 
     get basis() {
         return this.children[0]?.kind === "basis" ? this.children[0] : undefined

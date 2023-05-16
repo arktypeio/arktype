@@ -8,13 +8,22 @@ import { compileSerializedValue, In } from "../compilation.js"
 import { BasisNode } from "./basis.js"
 
 export class ValueNode extends BasisNode<"value"> {
-    domain: Domain
-    declare children: [unknown]
+    // constructor(public child: unknown) {
+    //     super("value", ValueNode.compile(child))
+    //     this.domain = domainOf(child)
+    //     this.children = [child]
+    // }
 
-    constructor(public child: unknown) {
-        super("value", ValueNode.compile(child))
-        this.domain = domainOf(child)
-        this.children = [child]
+    readonly subclass = ValueNode
+
+    static readonly kind = "basis"
+
+    get child() {
+        return this.children[0][1]
+    }
+
+    get domain() {
+        return domainOf(this.child)
     }
 
     static compile(value: unknown) {

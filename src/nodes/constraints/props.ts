@@ -24,10 +24,13 @@ import {
     unknownTypeNode
 } from "../type.js"
 
-export class PropsNode extends Node<
-    "props",
-    [NamedNodes, ...IndexedNodeEntry[]]
-> {
+export type PropsChildren = [NamedNodes, ...IndexedNodeEntry[]]
+
+export class PropsNode extends Node<"props", PropsChildren> {
+    readonly subclass = PropsNode
+
+    static readonly kind = "props"
+
     get namedEntries() {
         return Object.entries(this.named)
     }
@@ -64,10 +67,10 @@ export class PropsNode extends Node<
     //     this.children = [this.namedEntries, this.indexed]
     // }
 
-    static compile(named: NamedNodeEntry[], indexed: IndexedNodeEntry[]) {
+    static compile([named, ...indexed]: PropsChildren) {
         const checks: string[] = []
-        for (const entry of named) {
-            checks.push(PropsNode.compileNamedEntry(entry))
+        for (const k in named) {
+            checks.push(PropsNode.compileNamedEntry([k, named[k]]))
         }
         for (const entry of indexed) {
             checks.push(PropsNode.compileIndexedEntry(entry))

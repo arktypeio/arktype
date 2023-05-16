@@ -3,13 +3,15 @@ import { type CompilationState, In } from "../compilation.js"
 import { Node } from "../node.js"
 
 export class RegexNode extends Node<"regex", readonly string[]> {
-    // constructor(public children: readonly string[]) {
-    //     super(
-    //         "regex",
-    //         children.map(RegexNode.compileExpression).sort().join(" && ") ??
-    //             "true"
-    //     )
-    // }
+    readonly subclass = RegexNode
+    static readonly kind = "regex"
+
+    static compile(children: readonly string[]) {
+        return (
+            children.map(RegexNode.compileExpression).sort().join(" && ") ??
+            "true"
+        )
+    }
 
     static compileExpression(source: string) {
         return `${In}.match(/${source}/)`

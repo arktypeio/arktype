@@ -1,4 +1,5 @@
 import { CompiledFunction } from "../utils/compiledFunction.js"
+import type { conform } from "../utils/generics.js"
 import type { BasisNode } from "./basis/basis.js"
 import { type CompilationState, In } from "./compilation.js"
 import type { DivisorNode } from "./constraints/divisor.js"
@@ -23,6 +24,15 @@ export type NodeKinds = {
     morph: typeof MorphNode
 }
 
+type NodeSubclass<
+    kind extends NodeKind,
+    children extends readonly unknown[]
+> = {
+    kind: kind
+    new (...children: children): Node<any, any>
+    compile(children: children): string
+}
+
 // export type NodeKinds = {
 //     TypeNode: typeof TypeNode
 //     PredicateNode: typeof PredicateNode
@@ -37,7 +47,7 @@ export type NodeKinds = {
 
 export type NodeKind = keyof NodeKinds
 
-// export type Nodes = { [k in NodeKind]: InstanceType<NodeKinds[k]> }
+export type Nodes = { [k in NodeKind]: InstanceType<NodeKinds[k]> }
 
 // compileId(children: children) {
 //     return children
@@ -48,28 +58,19 @@ export type NodeKind = keyof NodeKinds
 //         .join()
 // }
 
-interface NodeSubclass<
-    kind extends NodeKind,
-    children extends readonly unknown[]
-> {
-    kind: kind
-    new (children: children): Node<any, any>
-    compile(children: children): string
-}
-
 //subclass extends NodeSubclass<children> = NodeSubclass<any>,
 export abstract class Node<
-    kind extends NodeKind,
-    subclass extends NodeSubclass<kind, children>,
+    kind extends NodeKind = NodeKind,
     children extends readonly unknown[] = readonly unknown[],
     narrowed = unknown
 > {
     declare allows: (data: unknown) => data is narrowed
-    declare subclass: NodeKinds[kind]
+    // declare subclass: NodeKinds[kind]
     declare kind: kind
     declare condition: string
     declare children: children
 
+    abstract subclass: NodeSubclass<kind, children>
     abstract intersectNode(other: Nodes[kind]): Nodes[kind] | Disjoint
     abstract compileTraverse(s: CompilationState): string
     abstract toString(): string
@@ -77,7 +78,7 @@ export abstract class Node<
     constructor(...children: children) {
         const subclass = this.constructor.prototype as NodeKinds[kind]
         const kind = subclass.kind as kind
-        // const condition = subclass
+        const condition = subclass
         if (Node.cache[kind][condition]) {
             return Node.cache[kind][condition] as any
         }

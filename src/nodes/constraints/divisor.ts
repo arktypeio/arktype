@@ -2,10 +2,9 @@ import { type CompilationState, In } from "../compilation.js"
 import { Node } from "../node.js"
 
 export class DivisorNode extends Node<"divisor", [number]> {
-    // constructor(public child: number) {
-    //     super("divisor")
-    //     this.children = [child]
-    // }
+    readonly subclass = DivisorNode
+
+    static readonly kind = "divisor"
 
     static compile(children: number[]) {
         return `${In} % ${children[0]} === 0`

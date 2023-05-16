@@ -86,6 +86,10 @@ export class RangeNode extends Node<"range", [Bounds]> {
     //     this.children = [child]
     // }
 
+    readonly subclass = RangeNode
+
+    static readonly kind = "range"
+
     get child() {
         return this.children[0]
     }

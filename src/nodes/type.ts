@@ -61,12 +61,12 @@ type extractBases<
 
 export class TypeNode<t = unknown> extends Node<
     "type",
-    typeof TypeNode,
     PredicateNode[],
     extractIn<t>
 > {
     declare [inferred]: t
     static readonly kind = "type"
+    readonly subclass = TypeNode
 
     discriminant: Discriminant | undefined
 
@@ -79,7 +79,7 @@ export class TypeNode<t = unknown> extends Node<
     //     }
     // }
 
-    static compile(branches: Discriminant | PredicateNode[]) {
+    static compile(branches: PredicateNode[]) {
         return Array.isArray(branches)
             ? TypeNode.compileIndiscriminable(branches)
             : TypeNode.compileSwitch(branches)
