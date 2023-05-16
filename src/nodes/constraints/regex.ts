@@ -3,13 +3,13 @@ import { type CompilationState, In } from "../compilation.js"
 import { Node } from "../node.js"
 
 export class RegexNode extends Node<"regex"> {
-    constructor(public children: readonly string[]) {
-        super(
-            "regex",
-            children.map(RegexNode.compileExpression).sort().join(" && ") ??
-                "true"
-        )
-    }
+    // constructor(public children: readonly string[]) {
+    //     super(
+    //         "regex",
+    //         children.map(RegexNode.compileExpression).sort().join(" && ") ??
+    //             "true"
+    //     )
+    // }
 
     static compileExpression(source: string) {
         return `${In}.match(/${source}/)`

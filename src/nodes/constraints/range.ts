@@ -65,26 +65,26 @@ export class RangeNode extends Node<"range"> {
     declare children: [Bounds]
     range: Range
 
-    constructor(public child: Bounds) {
-        let range: Range
-        if (child["=="]) {
-            range = [{ comparator: "==", limit: child["=="] }]
-        } else {
-            const lower = extractLower(child)
-            const upper = extractUpper(child)
-            range = lower
-                ? upper
-                    ? [lower, upper]
-                    : [lower]
-                : upper
-                ? [upper]
-                : throwInternalError(`Unexpected unbounded range`)
-        }
-        // TODO: variadic here, could pass min/max
-        super("range", RangeNode.compile(range))
-        this.range = range
-        this.children = [child]
-    }
+    // constructor(public child: Bounds) {
+    //     let range: Range
+    //     if (child["=="]) {
+    //         range = [{ comparator: "==", limit: child["=="] }]
+    //     } else {
+    //         const lower = extractLower(child)
+    //         const upper = extractUpper(child)
+    //         range = lower
+    //             ? upper
+    //                 ? [lower, upper]
+    //                 : [lower]
+    //             : upper
+    //             ? [upper]
+    //             : throwInternalError(`Unexpected unbounded range`)
+    //     }
+    //     // TODO: variadic here, could pass min/max
+    //     super("range", RangeNode.compile(range))
+    //     this.range = range
+    //     this.children = [child]
+    // }
 
     // const units =
     // s.lastDomain === "string"

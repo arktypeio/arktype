@@ -4,8 +4,8 @@ import type { Domain, inferDomain } from "../../utils/domains.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import type { evaluate } from "../../utils/generics.js"
 import type {
-    abstractableConstructor,
-    constructor,
+    AbstractableConstructor,
+    Constructor,
     instanceOf
 } from "../../utils/objectKinds.js"
 import { constructorExtends } from "../../utils/objectKinds.js"
@@ -29,7 +29,7 @@ type BasisNodesByLevel = {
 type BasisInputs = {
     domain: Domain
     value: readonly ["===", unknown]
-    class: abstractableConstructor
+    class: AbstractableConstructor
 }
 
 export type BasisInput<level extends BasisLevel = BasisLevel> =
@@ -37,7 +37,7 @@ export type BasisInput<level extends BasisLevel = BasisLevel> =
 
 export type inferBasis<basis extends BasisInput> = basis extends Domain
     ? inferDomain<basis>
-    : basis extends constructor<infer instance>
+    : basis extends Constructor<infer instance>
     ? instance
     : basis extends readonly ["===", infer value]
     ? value

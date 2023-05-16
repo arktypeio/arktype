@@ -1,5 +1,5 @@
 import type { Domain } from "../../utils/domains.js"
-import { type constructor, getBaseDomainKeys } from "../../utils/objectKinds.js"
+import { type Constructor, getBaseDomainKeys } from "../../utils/objectKinds.js"
 import type { Key } from "../../utils/records.js"
 import type { CompilationState } from "../compilation.js"
 import { In } from "../compilation.js"
@@ -25,7 +25,7 @@ export class DomainNode extends BasisNode<"domain"> {
         return this.child
     }
 
-    getConstructor(): constructor | undefined {
+    getConstructor(): Constructor | undefined {
         return this.child === "object"
             ? Object(this.child).constructor
             : undefined

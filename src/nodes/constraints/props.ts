@@ -24,32 +24,45 @@ import {
     unknownTypeNode
 } from "../type.js"
 
-export class PropsNode extends Node<"props"> {
-    namedEntries: NamedNodeEntry[]
-
-    // TODO: standarize entry to a node
-    children: [NamedNodeEntry[], IndexedNodeEntry[]]
-
-    constructor(public named: NamedNodes, public indexed: IndexedNodeEntry[]) {
-        // Sort keys first by precedence (prerequisite,required,optional),
-        // then alphebetically by name (bar, baz, foo)
-        const sortedNamedEntries = Object.entries(named).sort((l, r) => {
-            const lPrecedence = precedenceByPropKind[l[1].kind]
-            const rPrecedence = precedenceByPropKind[r[1].kind]
-            return lPrecedence > rPrecedence
-                ? 1
-                : lPrecedence < rPrecedence
-                ? -1
-                : l[0] > r[0]
-                ? 1
-                : -1
-        })
-        indexed.sort((l, r) => (l[0].condition >= r[0].condition ? 1 : -1))
-        const condition = PropsNode.compile(sortedNamedEntries, indexed)
-        super("props", condition)
-        this.namedEntries = sortedNamedEntries
-        this.children = [this.namedEntries, this.indexed]
+export class PropsNode extends Node<
+    "props",
+    [NamedNodeEntry[], IndexedNodeEntry[]]
+> {
+    get namedEntries() {
+        return this.children[0]
     }
+
+    get indexed() {
+        return this.children[1]
+    }
+
+    get named() {
+        return Object.fromEntries(this.namedEntries)
+    }
+
+    // // TODO: standarize entry to a node
+    // children: [NamedNodeEntry[], IndexedNodeEntry[]]
+
+    // constructor(public named: NamedNodes, public indexed: IndexedNodeEntry[]) {
+    //     // Sort keys first by precedence (prerequisite,required,optional),
+    //     // then alphebetically by name (bar, baz, foo)
+    //     const sortedNamedEntries = Object.entries(named).sort((l, r) => {
+    //         const lPrecedence = precedenceByPropKind[l[1].kind]
+    //         const rPrecedence = precedenceByPropKind[r[1].kind]
+    //         return lPrecedence > rPrecedence
+    //             ? 1
+    //             : lPrecedence < rPrecedence
+    //             ? -1
+    //             : l[0] > r[0]
+    //             ? 1
+    //             : -1
+    //     })
+    //     indexed.sort((l, r) => (l[0].condition >= r[0].condition ? 1 : -1))
+    //     const condition = PropsNode.compile(sortedNamedEntries, indexed)
+    //     super("props", condition)
+    //     this.namedEntries = sortedNamedEntries
+    //     this.children = [this.namedEntries, this.indexed]
+    // }
 
     static compile(named: NamedNodeEntry[], indexed: IndexedNodeEntry[]) {
         const checks: string[] = []

@@ -1,12 +1,18 @@
 import { type CompilationState, In } from "../compilation.js"
 import { Node } from "../node.js"
 
-export class DivisorNode extends Node<"divisor"> {
-    declare children: [number]
+export class DivisorNode extends Node<"divisor", [number]> {
+    // constructor(public child: number) {
+    //     super("divisor")
+    //     this.children = [child]
+    // }
 
-    constructor(public child: number) {
-        super("divisor", `${In} % ${child} === 0`)
-        this.children = [child]
+    static compile(children: number[]) {
+        return `${In} % ${children[0]} === 0`
+    }
+
+    get child() {
+        return this.children[0]
     }
 
     compileTraverse(s: CompilationState) {
@@ -21,7 +27,7 @@ export class DivisorNode extends Node<"divisor"> {
         const leastCommonMultiple = Math.abs(
             (this.child * r.child) / greatestCommonDivisor(this.child, r.child)
         )
-        return new DivisorNode(leastCommonMultiple)
+        return new DivisorNode([leastCommonMultiple])
     }
 }
 

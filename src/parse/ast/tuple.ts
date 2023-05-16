@@ -13,7 +13,7 @@ import type { extractIn, extractOut, TypeConfig } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"
-import { type constructor, isArray } from "../../utils/objectKinds.js"
+import { type Constructor, isArray } from "../../utils/objectKinds.js"
 import type { mutable } from "../../utils/records.js"
 import { stringify } from "../../utils/serialize.js"
 import type {
@@ -218,7 +218,7 @@ export type inferTupleExpression<
     : def[0] extends "==="
     ? def[1]
     : def[0] extends "instanceof"
-    ? def[1] extends constructor<infer t>
+    ? def[1] extends Constructor<infer t>
         ? t
         : never
     : def[0] extends "keyof"
@@ -239,7 +239,7 @@ type validatePrefixExpression<
           def[0] extends "==="
               ? def[1]
               : def[0] extends "instanceof"
-              ? constructor
+              ? Constructor
               : def[0] extends "keyof"
               ? validateDefinition<def[1], $>
               : never
@@ -274,7 +274,7 @@ type validateInfixExpression<
       ]
 
 export type UnparsedTupleExpressionInput = {
-    instanceof: constructor
+    instanceof: Constructor
     "===": unknown
 }
 
@@ -370,7 +370,7 @@ const prefixParsers: {
             )
         }
         return TypeNode.from({
-            basis: def[1] as constructor
+            basis: def[1] as Constructor
         })
     },
     "===": (def) => TypeNode.from({ basis: ["===", def[1]] })

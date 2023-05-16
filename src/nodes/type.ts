@@ -59,19 +59,24 @@ type extractBases<
       >
     : result
 
-export class TypeNode<t = unknown> extends Node<"type", extractIn<t>> {
+export class TypeNode<t = unknown> extends Node<
+    "type",
+    PredicateNode[],
+    extractIn<t>
+> {
     declare [inferred]: t
+    static readonly kind = "type"
 
     discriminant: Discriminant | undefined
 
-    constructor(public children: PredicateNode[]) {
-        const condition = TypeNode.compile(children)
-        super("type", condition)
-        if (!this.children) {
-            // TODO: Fix
-            this.discriminant = discriminate(children)
-        }
-    }
+    // constructor(public children: PredicateNode[]) {
+    //     const condition = TypeNode.compile(children)
+    //     super("type", condition)
+    //     if (!this.children) {
+    //         // TODO: Fix
+    //         this.discriminant = discriminate(children)
+    //     }
+    // }
 
     static compile(branches: Discriminant | PredicateNode[]) {
         return Array.isArray(branches)

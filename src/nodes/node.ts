@@ -1,5 +1,4 @@
 import { CompiledFunction } from "../utils/compiledFunction.js"
-import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import type { BasisNode } from "./basis/basis.js"
 import { type CompilationState, In } from "./compilation.js"
 import type { DivisorNode } from "./constraints/divisor.js"
@@ -11,10 +10,6 @@ import type { RegexNode } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
 import type { PredicateNode } from "./predicate.js"
 import type { TypeNode } from "./type.js"
-
-export type NodeInstance<kind extends NodeKind = NodeKind> = instanceOf<
-    NodeKinds[kind]
->
 
 export type NodeKinds = {
     type: typeof TypeNode
@@ -28,7 +23,21 @@ export type NodeKinds = {
     morph: typeof MorphNode
 }
 
-type NodeKind = keyof NodeKinds
+// export type NodeKinds = {
+//     TypeNode: typeof TypeNode
+//     PredicateNode: typeof PredicateNode
+//     BasisNode: typeof BasisNode
+//     DivisorNode: typeof DivisorNode
+//     RangeNode: typeof RangeNode
+//     RegexNode: typeof RegexNode
+//     PropsNode: typeof PropsNode
+//     NarrowNode: typeof NarrowNode
+//     MorphNode: typeof MorphNode
+// }
+
+export type NodeKind = keyof NodeKinds
+
+export type Nodes = { [k in NodeKind]: InstanceType<NodeKinds[k]> }
 
 // compileId(children: children) {
 //     return children
@@ -39,30 +48,36 @@ type NodeKind = keyof NodeKinds
 //         .join()
 // }
 
-// export type Node2<kind extends NodeKind = NodeKind, narrowed = unknown> = {
-//     allows: (data: unknown) => data is narrowed
-//     intersectNode: (other: NodeInstance<kind>) => NodeInstance<kind> | Disjoint
-//     compileTraverse: (s: CompilationState) => string
-//     toString(): string
-// }
+interface NodeSubclass<kind extends NodeKind = NodeKind> {
+    kind: kind
+    new (children: Nodes[kind]["children"]): Node<kind>
+    compile(children: Nodes[kind]["children"]): string
+}
 
+//subclass extends NodeSubclass<children> = NodeSubclass<any>,
 export abstract class Node<
     kind extends NodeKind = NodeKind,
+    children extends readonly unknown[] = readonly unknown[],
     narrowed = unknown
 > {
     declare allows: (data: unknown) => data is narrowed
+    declare subclass: NodeKinds[kind]
+    declare kind: kind
+    declare condition: string
 
-    abstract intersectNode(
-        other: NodeInstance<kind>
-    ): NodeInstance<kind> | Disjoint
+    abstract intersectNode(other: Nodes[kind]): Nodes[kind] | Disjoint
     abstract compileTraverse(s: CompilationState): string
     abstract toString(): string
-    abstract children: readonly unknown[]
 
-    constructor(public kind: kind, public condition: string) {
+    constructor(public children: children) {
+        const subclass = this.constructor.prototype as NodeKinds[kind]
+        const kind = subclass.kind as kind
+        const condition = ""
         if (Node.cache[kind][condition]) {
             return Node.cache[kind][condition] as any
         }
+        this.kind = kind
+        this.condition = condition
         this.allows = new CompiledFunction(In, `return ${condition}`)
         ;(Node.cache[kind] as any)[condition] = this
     }
@@ -79,15 +94,14 @@ export abstract class Node<
         morph: {}
     }
 
-    hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
+    hasKind<kind extends NodeKind>(kind: kind): this is Nodes[kind] {
         return this.kind === (kind as any)
     }
 
-    private intersectionCache: Record<string, NodeInstance<kind> | Disjoint> =
-        {}
-    intersect(other: NodeInstance<kind>): NodeInstance<kind> | Disjoint {
+    private intersectionCache: Record<string, Nodes[kind] | Disjoint> = {}
+    intersect(other: Nodes[kind]): Nodes[kind] | Disjoint {
         if (this === other) {
-            return this as NodeInstance<kind>
+            return this as Nodes[kind]
         }
         if (this.intersectionCache[other.condition]) {
             return this.intersectionCache[other.condition]

@@ -4,8 +4,8 @@ import type { conform } from "../utils/generics.js"
 import type { arraySubclassToReadonly, Segments } from "../utils/lists.js"
 import { Path } from "../utils/lists.js"
 import type {
-    abstractableConstructor,
-    constructor,
+    AbstractableConstructor,
+    Constructor,
     DefaultObjectKind,
     instanceOf
 } from "../utils/objectKinds.js"
@@ -206,7 +206,7 @@ export class CustomProblem extends Problem<string> {
 export const defineProblemsCode = <problems>(problems: {
     [code in keyof problems]: conform<
         problems[code],
-        constructor<{ readonly code: code }>
+        Constructor<{ readonly code: code }>
     >
 }) => problems
 
@@ -244,7 +244,7 @@ export class RegexProblem extends Problem<string> {
     }
 }
 
-export class ClassProblem extends Problem<abstractableConstructor, object> {
+export class ClassProblem extends Problem<AbstractableConstructor, object> {
     readonly code = "class"
 
     get mustBe() {

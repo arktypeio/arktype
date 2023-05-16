@@ -4,7 +4,7 @@ import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
-import type { constructor, instanceOf } from "../utils/objectKinds.js"
+import type { Constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
 import { isKeyOf, type keySet } from "../utils/records.js"
 import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
@@ -30,16 +30,20 @@ import { Node } from "./node.js"
 import type { TypeNode } from "./type.js"
 import { neverTypeNode } from "./type.js"
 
-export class PredicateNode<t = unknown> extends Node<"predicate", t> {
+export class PredicateNode<t = unknown> extends Node<
+    "predicate",
+    PredicateRules,
+    t
+> {
     static readonly kind = "predicate"
-    basis: BasisNode | undefined
-    constraints: ConstraintNode[]
 
-    constructor(public children: PredicateRules) {
-        super("predicate", PredicateNode.compile(children))
-        this.basis = children[0]?.kind === "basis" ? children[0] : undefined
-        this.constraints = (
-            this.basis ? children.slice(1) : children
+    get basis() {
+        return this.children[0]?.kind === "basis" ? this.children[0] : undefined
+    }
+
+    get constraints() {
+        return (
+            this.basis ? this.children.slice(1) : this.children
         ) as ConstraintNode[]
     }
 
@@ -91,7 +95,7 @@ export class PredicateNode<t = unknown> extends Node<"predicate", t> {
         return this.basis?.hasLevel("value") ? this.basis : undefined
     }
 
-    intersectNode(r: PredicateNode) {
+    intersectNode(r: PredicateNode): PredicateNode | Disjoint {
         // if (
         //     // s.lastOperator === "&" &&
         //     rules.morphs?.some(
@@ -334,8 +338,8 @@ type inferNonFunctionalConstraints<input extends PredicateInput> =
 
 type constraintsOf<basis extends BasisInput> = basis extends Domain
     ? functionalConstraints<inferDomain<basis>> & domainConstraints<basis>
-    : basis extends constructor
-    ? functionalConstraints<instanceOf<constructor>> & classConstraints<basis>
+    : basis extends Constructor
+    ? functionalConstraints<instanceOf<Constructor>> & classConstraints<basis>
     : basis extends readonly ["===", infer value]
     ? // Exact values cannot be filtered, but can be morphed
       Pick<functionalConstraints<value>, "morph">
@@ -362,7 +366,7 @@ type functionalConstraints<input> = {
     morph?: listable<Morph<input>>
 }
 
-type classConstraints<base extends constructor> = base extends typeof Array
+type classConstraints<base extends Constructor> = base extends typeof Array
     ? {
           props?: PropsInput
           range?: Bounds
