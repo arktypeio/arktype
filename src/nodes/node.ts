@@ -1,5 +1,5 @@
 import { CompiledFunction } from "../utils/compiledFunction.js"
-import type { instanceOf } from "../utils/objectKinds.js"
+import type { constructor, instanceOf } from "../utils/objectKinds.js"
 import type { BasisNode } from "./basis/basis.js"
 import { type CompilationState, In } from "./compilation.js"
 import type { DivisorNode } from "./constraints/divisor.js"
@@ -39,23 +39,18 @@ type NodeKind = keyof NodeKinds
 //         .join()
 // }
 
+// export type Node2<kind extends NodeKind = NodeKind, narrowed = unknown> = {
+//     allows: (data: unknown) => data is narrowed
+//     intersectNode: (other: NodeInstance<kind>) => NodeInstance<kind> | Disjoint
+//     compileTraverse: (s: CompilationState) => string
+//     toString(): string
+// }
+
 export abstract class Node<
     kind extends NodeKind = NodeKind,
     narrowed = unknown
 > {
     declare allows: (data: unknown) => data is narrowed
-
-    private static cache: { [kind in NodeKind]: Record<string, Node<kind>> } = {
-        type: {},
-        predicate: {},
-        basis: {},
-        divisor: {},
-        range: {},
-        regex: {},
-        props: {},
-        narrow: {},
-        morph: {}
-    }
 
     abstract intersectNode(
         other: NodeInstance<kind>
@@ -68,11 +63,20 @@ export abstract class Node<
         if (Node.cache[kind][condition]) {
             return Node.cache[kind][condition] as any
         }
-        this.allows = new CompiledFunction<(data: unknown) => data is narrowed>(
-            In,
-            `return ${condition}`
-        )
+        this.allows = new CompiledFunction(In, `return ${condition}`)
         ;(Node.cache[kind] as any)[condition] = this
+    }
+
+    private static cache: { [kind in NodeKind]: Record<string, Node<kind>> } = {
+        type: {},
+        predicate: {},
+        basis: {},
+        divisor: {},
+        range: {},
+        regex: {},
+        props: {},
+        narrow: {},
+        morph: {}
     }
 
     hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
