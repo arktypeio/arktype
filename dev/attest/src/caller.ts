@@ -68,7 +68,7 @@ export const formatFilePath = (
 
 export const caller = (options: CallerOfOptions = {}): SourcePosition => {
     let upStackBy = options.upStackBy ?? 0
-    if (!options.methodName) {
+    if (!options.methodName && !options.upStackBy) {
         upStackBy = 3
     }
     let match: SourcePosition | undefined

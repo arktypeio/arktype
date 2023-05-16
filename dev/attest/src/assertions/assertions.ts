@@ -77,12 +77,14 @@ export class Assertions implements AssertionRecord {
 
     // Use variadic args to distinguish undefined being passed explicitly from no args
     snap(...args: [expected: unknown]) {
+        const snapName = (args.at(1) ?? "snap") as string
         const expectedSerialized = this.serialize(args[0])
         if (!args.length || this.ctx.cfg.updateSnapshots) {
             if (this.snapRequiresUpdate(expectedSerialized)) {
                 const snapshotArgs: SnapshotArgs = {
                     position: caller(),
-                    serializedValue: this.serializedActual
+                    serializedValue: this.serializedActual,
+                    snapFunctionName: snapName
                 }
                 queueSnapshotUpdate(snapshotArgs)
             }
