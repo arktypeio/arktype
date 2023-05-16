@@ -24,7 +24,7 @@ It also includes an editor theme based on ArkType and optimized for type syntax:
 
 ## Extending This Theme
 
--   Open up ./arkdark on its own in VS code
+-   **pnpm build** to generate the arkdark.json theme
 -   **F5** or **Run > Debugger**, will launch the extension in another window, allowing you to see the changes on any repo you open up
 
 Looking to edit the theme? **(Changes are immediately reflected)**

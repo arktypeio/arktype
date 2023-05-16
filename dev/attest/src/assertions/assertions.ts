@@ -79,15 +79,10 @@ export class Assertions implements AssertionRecord {
     snap(...args: [expected: unknown]) {
         const snapName = (args.at(1) ?? "snap") as string
         const expectedSerialized = this.serialize(args[0])
-        if (
-            (args[0] === undefined && args.at(1) !== undefined) ||
-            this.ctx.cfg.updateSnapshots
-        ) {
+        if (!args.length || this.ctx.cfg.updateSnapshots) {
             if (this.snapRequiresUpdate(expectedSerialized)) {
                 const snapshotArgs: SnapshotArgs = {
-                    position: caller({
-                        upStackBy: snapName === "snap" ? 3 : 4
-                    }),
+                    position: caller(),
                     serializedValue: this.serializedActual,
                     snapFunctionName: snapName
                 }

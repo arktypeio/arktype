@@ -14,7 +14,6 @@
     "devDependencies": {
         "@types/node": "18.15.13",
         "ts-node": "10.9.1",
-        "vsce": "2.15.0",
         "typescript": "5.1.0-beta",
         "arktype": "latest"
     },
@@ -53,15 +52,5 @@
                 }
             }
         ]
-    },
-    "__metadata": {
-        "id": "db665674-bf3f-4390-887e-1c934b03e6b9",
-        "publisherId": "31dbab30-ca36-408e-98bd-8f5a85c82ca8",
-        "publisherDisplayName": "arktypeio",
-        "targetPlatform": "undefined",
-        "updated": false,
-        "isPreReleaseVersion": false,
-        "installedTimestamp": 1683567017222,
-        "preRelease": false
     }
 }

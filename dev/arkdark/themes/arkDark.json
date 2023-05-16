@@ -249,7 +249,10 @@
         },
         {
             "name": "Number",
-            "scope": ["constant.numeric", "constant.character.numeric"],
+            "scope": [
+                "constant.numeric",
+                "constant.character.numeric"
+            ],
             "settings": {
                 "foreground": "#f5cf8f"
             }
@@ -267,7 +270,10 @@
         },
         {
             "name": "User-defined constant",
-            "scope": ["constant.character", "constant.other"],
+            "scope": [
+                "constant.character",
+                "constant.other"
+            ],
             "settings": {
                 "foreground": "#80cff8"
             }
@@ -281,7 +287,10 @@
         },
         {
             "name": "RegExp String",
-            "scope": ["string.regexp", "string.regexp keyword.other"],
+            "scope": [
+                "string.regexp",
+                "string.regexp keyword.other"
+            ],
             "settings": {
                 "foreground": "#f5cf8f"
             }
@@ -302,7 +311,10 @@
         },
         {
             "name": "Keyword",
-            "scope": ["punctuation.accessor", "keyword"],
+            "scope": [
+                "punctuation.accessor",
+                "keyword"
+            ],
             "settings": {
                 "foreground": "#eb9f2e"
             }
@@ -327,7 +339,10 @@
         },
         {
             "name": "Class name",
-            "scope": ["entity.name.class", "meta.class entity.name.type.class"],
+            "scope": [
+                "entity.name.class",
+                "meta.class entity.name.type.class"
+            ],
             "settings": {
                 "foreground": "#80cff8"
             }
@@ -355,7 +370,10 @@
         },
         {
             "name": "Meta Tag",
-            "scope": ["punctuation.definition.tag", "meta.tag"],
+            "scope": [
+                "punctuation.definition.tag",
+                "meta.tag"
+            ],
             "settings": {
                 "foreground": "#FFFFF0"
             }
@@ -401,7 +419,10 @@
         },
         {
             "name": "Library (function & constant)",
-            "scope": ["support.function", "support.constant"],
+            "scope": [
+                "support.function",
+                "support.constant"
+            ],
             "settings": {
                 "foreground": "#80cff8"
             }
@@ -415,7 +436,10 @@
         },
         {
             "name": "Library class/type",
-            "scope": ["support.type", "support.class"],
+            "scope": [
+                "support.type",
+                "support.class"
+            ],
             "settings": {
                 "foreground": "#f5cf8f"
             }
@@ -576,7 +600,10 @@
         },
         {
             "name": "Doctypes",
-            "scope": ["entity.name.tag.doctype", "meta.tag.sgml.doctype"],
+            "scope": [
+                "entity.name.tag.doctype",
+                "meta.tag.sgml.doctype"
+            ],
             "settings": {
                 "foreground": "#eb9f2e"
             }
@@ -769,7 +796,10 @@
         },
         {
             "name": "C# Classes & Storage types",
-            "scope": ["entity.name.type.class.cs", "storage.type.cs"],
+            "scope": [
+                "entity.name.type.class.cs",
+                "storage.type.cs"
+            ],
             "settings": {
                 "foreground": "#80cff8"
             }
@@ -938,7 +968,10 @@
         },
         {
             "name": "Other Variables in Code Documentations",
-            "scope": ["variable.other.jsdoc", "variable.other.phpdoc"],
+            "scope": [
+                "variable.other.jsdoc",
+                "variable.other.phpdoc"
+            ],
             "settings": {
                 "foreground": "#80cff8"
             }
@@ -981,14 +1014,20 @@
         },
         {
             "name": "JavaScript Variables",
-            "scope": ["variable.js", "variable.other.js"],
+            "scope": [
+                "variable.js",
+                "variable.other.js"
+            ],
             "settings": {
                 "foreground": "#FFFFF0"
             }
         },
         {
             "name": "JavaScript Entity Name Type",
-            "scope": ["entity.name.type.js", "entity.name.type.module.js"],
+            "scope": [
+                "entity.name.type.js",
+                "entity.name.type.module.js"
+            ],
             "settings": {
                 "foreground": "#80cff8"
             }
@@ -1145,14 +1184,18 @@
         },
         {
             "name": "Markdown MetaData Punctuation",
-            "scope": ["punctuation.definition.metadata.markdown"],
+            "scope": [
+                "punctuation.definition.metadata.markdown"
+            ],
             "settings": {
                 "foreground": "#eb9f2e"
             }
         },
         {
             "name": "Markdown List Punctuation",
-            "scope": ["beginning.punctuation.definition.list.markdown"],
+            "scope": [
+                "beginning.punctuation.definition.list.markdown"
+            ],
             "settings": {
                 "foreground": "#80cff8"
             }
@@ -1238,14 +1281,20 @@
         },
         {
             "name": "Tag names in SASS",
-            "scope": ["entity.name.tag.scss", "entity.name.tag.sass"],
+            "scope": [
+                "entity.name.tag.scss",
+                "entity.name.tag.sass"
+            ],
             "settings": {
                 "foreground": "#eb9f2e"
             }
         },
         {
             "name": "SASS Keyword Other Unit",
-            "scope": ["keyword.other.unit.scss", "keyword.other.unit.sass"],
+            "scope": [
+                "keyword.other.unit.scss",
+                "keyword.other.unit.sass"
+            ],
             "settings": {
                 "foreground": "#eb9f2e"
             }
@@ -1272,14 +1321,20 @@
         },
         {
             "name": "TypeScript[React] Entity Name Types",
-            "scope": ["entity.name.type.ts", "entity.name.type.tsx"],
+            "scope": [
+                "entity.name.type.ts",
+                "entity.name.type.tsx"
+            ],
             "settings": {
                 "foreground": "#009eff"
             }
         },
         {
             "name": "TypeScript[React] Node Classes",
-            "scope": ["support.class.node.ts", "support.class.node.tsx"],
+            "scope": [
+                "support.class.node.ts",
+                "support.class.node.tsx"
+            ],
             "settings": {
                 "foreground": "#009eff"
             }
@@ -1333,30 +1388,22 @@
         },
         {
             "name": "Normalize font style of certain Components",
-            "scope": ["keyword", "punctuation"],
+            "scope": [
+                "keyword",
+                "punctuation"
+            ],
             "settings": {
                 "fontStyle": "normal"
             }
         },
         {
             "name": "Italicsify certain tokens",
-            "scope": ["entity.name.function.ts", "entity.name.function.tsx"],
+            "scope": [
+                "entity.name.function.ts",
+                "entity.name.function.tsx"
+            ],
             "settings": {
                 "fontStyle": "normal"
-            }
-        },
-        {
-            "name": "Object keys",
-            "scope": "object",
-            "settings": {
-                "foreground": "#80cff8"
-            }
-        },
-        {
-            "name": "arktype quotes",
-            "scope": "quoted",
-            "settings": {
-                "foreground": "#FFFFFF"
             }
         }
     ]

@@ -31,7 +31,9 @@ scope({
     // syntax should still be correctly highlighted
 
     const outer = (...args: any[]) => obj
-
+    const ob = {
+        a: "string"
+    }
     outer("ark", () => {
         const arkType = type({
             number: "number",
@@ -48,4 +50,3 @@ scope({
         })
     }).type()
 }
-console.log("abc")

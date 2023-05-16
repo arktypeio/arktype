@@ -14,6 +14,9 @@
             "name": "meta.embedded.arktype.definition",
             "begin": "(\\S*\\.)?(type|scope)\\s*\\(",
             "beginCaptures": {
+                "1": {
+                    "name": "entity.name.function.ts"
+                },
                 "2": {
                     "name": "entity.name.function.ts"
                 }
@@ -42,6 +45,9 @@
             "name": "quoted",
             "match": "((?<!<)[\"'`])(.*?)?((?<!\\\\)(\\1))",
             "captures": {
+                "1": {
+                    "name": "keyword.operator"
+                },
                 "2": {
                     "patterns": [
                         {
@@ -59,6 +65,9 @@
                             "end": "(?=(quoted))"
                         }
                     ]
+                },
+                "3": {
+                    "name": "keyword.operator"
                 }
             }
         },
@@ -89,10 +98,10 @@
         },
         "operator": {
             "name": "keyword.operator",
-            "match": "[<>=%:]|\""
+            "match": "[<>=%]|\""
         },
         "object": {
-            "name": "object",
+            "name": "meta.object-literal.key.ts",
             "begin": "{",
             "end": "}",
             "patterns": [
