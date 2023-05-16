@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/arktypeio/arkdark/raw/HEAD/icon.png" height="64px" />
+  <img src="https://github.com/arktypeio/arktype/raw/HEAD/dev/arkdark/icon.png" height="64px" />
   <h1>ArkDark</h1>
 </div>
 <div align="center">
@@ -14,13 +14,13 @@ We're building a 1:1 validator for TypeScript! Check out our core project [on Gi
 
 This extension provides syntax highlighting for strings that are part of an ArkType definition:
 
-![syntax highlighting](https://github.com/arktypeio/arkdark/raw/HEAD/Highlighting.png)
+![syntax highlighting](https://github.com/arktypeio/arktype/raw/HEAD/dev/arkdark/highlighting.png)
 
 ## ArkDark Theme
 
 It also includes an editor theme based on ArkType and optimized for type syntax:
 
-![theme](https://github.com/arktypeio/arkdark/raw/HEAD/Theme.png)
+![theme](https://github.com/arktypeio/arktype/raw/HEAD/dev/arkdark/theme.png)
 
 ## Extending This Theme
 
