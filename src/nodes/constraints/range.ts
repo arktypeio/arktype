@@ -61,9 +61,9 @@ export type Range =
     | [RangeConstraint]
     | [min: RangeConstraint, max: RangeConstraint]
 
-export class RangeNode extends Node<"range"> {
-    declare children: [Bounds]
-    range: Range
+export class RangeNode extends Node<"range", [Bounds]> {
+    // declare children: [Bounds]
+    // range: Range
 
     // constructor(public child: Bounds) {
     //     let range: Range
@@ -85,6 +85,28 @@ export class RangeNode extends Node<"range"> {
     //     this.range = range
     //     this.children = [child]
     // }
+
+    get child() {
+        return this.children[0]
+    }
+
+    get range() {
+        let range: Range
+        if (this.child["=="]) {
+            range = [{ comparator: "==", limit: this.child["=="] }]
+        } else {
+            const lower = extractLower(this.child)
+            const upper = extractUpper(this.child)
+            range = lower
+                ? upper
+                    ? [lower, upper]
+                    : [lower]
+                : upper
+                ? [upper]
+                : throwInternalError(`Unexpected unbounded range`)
+        }
+        return range
+    }
 
     // const units =
     // s.lastDomain === "string"

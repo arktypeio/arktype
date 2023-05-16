@@ -2,7 +2,7 @@ import { intersectUniqueLists } from "../../utils/lists.js"
 import { type CompilationState, In } from "../compilation.js"
 import { Node } from "../node.js"
 
-export class RegexNode extends Node<"regex"> {
+export class RegexNode extends Node<"regex", readonly string[]> {
     // constructor(public children: readonly string[]) {
     //     super(
     //         "regex",
@@ -34,6 +34,6 @@ export class RegexNode extends Node<"regex"> {
     }
 
     intersectNode(r: RegexNode) {
-        return new RegexNode(intersectUniqueLists(this.children, r.children))
+        return new RegexNode(...intersectUniqueLists(this.children, r.children))
     }
 }

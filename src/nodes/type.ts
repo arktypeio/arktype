@@ -61,6 +61,7 @@ type extractBases<
 
 export class TypeNode<t = unknown> extends Node<
     "type",
+    typeof TypeNode,
     PredicateNode[],
     extractIn<t>
 > {
@@ -150,7 +151,7 @@ export class TypeNode<t = unknown> extends Node<
         }
     ): TypeNode<inferBranches<branches>> {
         return new TypeNode(
-            this.reduceBranches(
+            ...this.reduceBranches(
                 branches.map((branch) => PredicateNode.from(branch as never))
             )
         )
@@ -193,11 +194,11 @@ export class TypeNode<t = unknown> extends Node<
         const nodes: PredicateNode[] = []
         for (const v of branches) {
             if (!seen.includes(v)) {
-                nodes.push(new PredicateNode([new ValueNode(v)]))
+                nodes.push(new PredicateNode(new ValueNode(v)))
                 seen.push(v)
             }
         }
-        return new TypeNode<branches[number]>(nodes)
+        return new TypeNode<branches[number]>(...nodes)
     }
 
     toString() {
@@ -237,7 +238,7 @@ export class TypeNode<t = unknown> extends Node<
             const pruned = branch.pruneDiscriminant(path, kind)
             prunedBranches.push(pruned)
         }
-        return new TypeNode(prunedBranches)
+        return new TypeNode(...prunedBranches)
     }
 
     intersectNode(r: TypeNode): TypeNode | Disjoint {
@@ -246,7 +247,7 @@ export class TypeNode<t = unknown> extends Node<
         }
         if (this.children.length === 1 && r.children.length === 1) {
             const result = this.children[0].intersect(r.children[0])
-            return result instanceof Disjoint ? result : new TypeNode([result])
+            return result instanceof Disjoint ? result : new TypeNode(result)
         }
         // Branches that are determined to be a subtype of an opposite branch are
         // guaranteed to be a member of the final reduced intersection, so long as
@@ -317,7 +318,7 @@ export class TypeNode<t = unknown> extends Node<
             candidates?.forEach((candidate) => finalBranches.push(candidate))
         }
         return finalBranches.length
-            ? new TypeNode(finalBranches)
+            ? new TypeNode(...finalBranches)
             : Disjoint.from("union", this, r)
     }
 
@@ -326,7 +327,7 @@ export class TypeNode<t = unknown> extends Node<
         definition: PredicateInput[kind]
     ) {
         return new TypeNode(
-            this.children.map((branch) => branch.constrain(kind, definition))
+            ...this.children.map((branch) => branch.constrain(kind, definition))
         )
     }
 
@@ -342,7 +343,7 @@ export class TypeNode<t = unknown> extends Node<
             return this
         }
         return new TypeNode(
-            TypeNode.reduceBranches([...this.children, ...other.children])
+            ...TypeNode.reduceBranches([...this.children, ...other.children])
         )
     }
 
@@ -377,9 +378,9 @@ export class TypeNode<t = unknown> extends Node<
     }
 
     array(): TypeNode<t[]> {
-        const props = new PropsNode({}, [[arrayIndexTypeNode(), this]])
-        const predicate = new PredicateNode([arrayBasisNode, props])
-        return new TypeNode([predicate])
+        const props = new PropsNode({}, [arrayIndexTypeNode(), this])
+        const predicate = new PredicateNode(arrayBasisNode, props)
+        return new TypeNode(predicate)
     }
 
     isNever(): this is TypeNode<never> {
@@ -411,6 +412,6 @@ export const arrayIndexTypeNode = (firstVariadicIndex = 0) =>
         ? nonVariadicArrayIndexTypeNode
         : TypeNode.from(arrayIndexInput(firstVariadicIndex))
 
-export const neverTypeNode = new TypeNode([])
+export const neverTypeNode = new TypeNode()
 
-export const unknownTypeNode = new TypeNode([unknownPredicateNode])
+export const unknownTypeNode = new TypeNode(unknownPredicateNode)

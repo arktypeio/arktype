@@ -32,6 +32,7 @@ import { neverTypeNode } from "./type.js"
 
 export class PredicateNode<t = unknown> extends Node<
     "predicate",
+    typeof PredicateNode,
     PredicateRules,
     t
 > {
@@ -68,7 +69,7 @@ export class PredicateNode<t = unknown> extends Node<
                 rules.push(createConstraint(kind, input[kind]))
             }
         }
-        return new PredicateNode<inferPredicateDefinition<input>>(rules)
+        return new PredicateNode<inferPredicateDefinition<input>>(...rules)
     }
 
     getConstraint<k extends ConstraintKind>(k: k) {
@@ -143,7 +144,7 @@ export class PredicateNode<t = unknown> extends Node<
                 rules.push(rNode)
             }
         }
-        return new PredicateNode(rules)
+        return new PredicateNode(...rules)
     }
 
     constrain<kind extends ConstraintKind>(
@@ -152,7 +153,7 @@ export class PredicateNode<t = unknown> extends Node<
     ): PredicateNode {
         assertAllowsConstraint(this.basis, kind)
         const result = this.intersect(
-            new PredicateNode([createConstraint(kind, input)])
+            new PredicateNode(createConstraint(kind, input))
         )
         if (result instanceof Disjoint) {
             return result.throw()
@@ -168,7 +169,7 @@ export class PredicateNode<t = unknown> extends Node<
                 return this
             }
             // create a new PredicateNode with the basis removed
-            return new PredicateNode(this.constraints)
+            return new PredicateNode(...this.constraints)
         }
         const prunedProps = this.getConstraint("props")!.pruneDiscriminant(
             path,
@@ -188,7 +189,7 @@ export class PredicateNode<t = unknown> extends Node<
                 rules.push(rule)
             }
         }
-        return new PredicateNode(rules)
+        return new PredicateNode(...rules)
     }
 
     private _keyof?: TypeNode
@@ -230,12 +231,14 @@ const constraintsByPrecedence = [
 const listableInputKinds = {
     regex: true,
     narrow: true,
-    morph: true
+    morph: true,
+    range: true,
+    divisor: true
 } satisfies keySet<ConstraintKind>
 
 type ListableInputKind = keyof typeof listableInputKinds
 
-export const unknownPredicateNode = new PredicateNode([])
+export const unknownPredicateNode = new PredicateNode()
 
 export type PredicateRules = [BasisNode, ...ConstraintNode[]] | ConstraintNode[]
 
@@ -292,10 +295,10 @@ export type ConstraintsInput<
 type unknownConstraintInput<kind extends ConstraintKind> = kind extends "props"
     ? PropsInput
     :
-          | ConstructorParameters<ConstraintKinds[kind]>[0]
+          | ConstraintNode<kind>["children"]
           // Add the unlisted version as a valid input for these kinds
           | (kind extends ListableInputKind
-                ? ConstructorParameters<ConstraintKinds[kind]>[0][number]
+                ? ConstraintNode<kind>["children"][number]
                 : never)
 
 export type inferPredicateDefinition<input extends PredicateInput> =

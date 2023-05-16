@@ -26,18 +26,18 @@ import {
 
 export class PropsNode extends Node<
     "props",
-    [NamedNodeEntry[], IndexedNodeEntry[]]
+    [NamedNodes, ...IndexedNodeEntry[]]
 > {
     get namedEntries() {
+        return Object.entries(this.named)
+    }
+
+    get named() {
         return this.children[0]
     }
 
     get indexed() {
-        return this.children[1]
-    }
-
-    get named() {
-        return Object.fromEntries(this.namedEntries)
+        return this.children.slice(1) as IndexedNodeEntry[]
     }
 
     // // TODO: standarize entry to a node
@@ -128,7 +128,7 @@ export class PropsNode extends Node<
                 typeNodeFromInput(valueInput)
             ]
         )
-        return new PropsNode(named, indexed)
+        return new PropsNode(named, ...indexed)
     }
 
     toString() {
@@ -221,7 +221,7 @@ export class PropsNode extends Node<
                 (entry) => !extractArrayIndexRegex(entry[0])
             )
         }
-        return new PropsNode(named, indexed)
+        return new PropsNode(named, ...indexed)
     }
 
     private intersectNamedProp(
@@ -262,7 +262,7 @@ export class PropsNode extends Node<
                 value: prunedValue
             }
         }
-        return new PropsNode(preserved, this.indexed)
+        return new PropsNode(preserved, ...this.indexed)
     }
 
     private _keyof?: TypeNode<Key>
@@ -276,7 +276,7 @@ export class PropsNode extends Node<
 
     indexedKeyOf() {
         return new TypeNode(
-            this.indexed.flatMap((entry) => entry[0].children)
+            ...this.indexed.flatMap((entry) => entry[0].children)
         ) as TypeNode<Key>
     }
 
@@ -295,7 +295,7 @@ const precedenceByPropKind = {
     optional: 2
 } satisfies Record<PropKind, number>
 
-export const emptyPropsNode = new PropsNode({}, [])
+export const emptyPropsNode = new PropsNode({})
 
 export type PropsInput = NamedPropsInput | PropsInputTuple
 

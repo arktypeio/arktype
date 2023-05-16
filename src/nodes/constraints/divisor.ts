@@ -27,7 +27,7 @@ export class DivisorNode extends Node<"divisor", [number]> {
         const leastCommonMultiple = Math.abs(
             (this.child * r.child) / greatestCommonDivisor(this.child, r.child)
         )
-        return new DivisorNode([leastCommonMultiple])
+        return new DivisorNode(leastCommonMultiple)
     }
 }
 
