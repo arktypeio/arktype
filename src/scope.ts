@@ -34,10 +34,12 @@ type validateAliases<aliases, opts extends ScopeOptions> = evaluate<{
         : validateDefinition<aliases[name], bootstrapScope<aliases, opts>>
 }>
 
+export type SpaceReferences = (Space | Record<string, Space>)[] | []
+
 export type ScopeOptions = {
     // [] allows narrowed tuple inference
-    imports?: Space[] | []
-    includes?: Space[] | []
+    imports?: SpaceReferences
+    extends?: SpaceReferences
     standard?: boolean
     codes?: Record<ProblemCode, { mustBe?: string }>
     keys?: KeyCheckKind
@@ -54,14 +56,14 @@ export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
 })
 
 type validateOptions<opts extends ScopeOptions> = {
-    [k in keyof opts]: k extends "imports" | "includes"
+    [k in keyof opts]: k extends "imports" | "extends"
         ? mergeSpaces<
               opts[k],
-              // if includes and imports are both defined, ensure no spaces from
-              // includes duplicate aliases from imports by using merged imports
+              // if extends and imports are both defined, ensure no spaces from
+              // extends duplicate aliases from imports by using merged imports
               // as a base
-              [k, "imports"] extends ["includes", keyof opts]
-                  ? mergeSpaces<opts["includes"]>
+              [k, "imports"] extends ["extends", keyof opts]
+                  ? mergeSpaces<opts["extends"]>
                   : {}
           > extends error<infer e>
             ? e
@@ -86,9 +88,9 @@ type importsOf<opts extends ScopeOptions> = unknown extends opts["imports"]
     ? {}
     : mergeSpaces<opts["imports"]>
 
-type includesOf<opts extends ScopeOptions> = unknown extends opts["includes"]
+type extendsOf<opts extends ScopeOptions> = unknown extends opts["extends"]
     ? {}
-    : mergeSpaces<opts["includes"]>
+    : mergeSpaces<opts["extends"]>
 
 export type resolve<name extends keyof $, $> = isAny<$[name]> extends true
     ? any
@@ -112,19 +114,21 @@ type localsOf<ctx extends ScopeInferenceContext> = ctx extends List
     : Ark
 
 type mergeSpaces<scopes, base extends Dict = {}> = scopes extends readonly [
-    Space<infer head>,
+    infer head,
     ...infer tail
 ]
-    ? keyof base & keyof head extends never
-        ? mergeSpaces<tail, base & head>
-        : error<
-              writeDuplicateAliasesMessage<
-                  stringifyUnion<keyof base & keyof head & string>
+    ? head extends Space
+        ? keyof base & keyof head extends never
+            ? mergeSpaces<tail, base & head>
+            : error<
+                  writeDuplicateAliasesMessage<
+                      stringifyUnion<keyof base & keyof head & string>
+                  >
               >
-          >
+        : { [k in keyof head]: head[k] }
     : base
 
-type preresolved<opts extends ScopeOptions> = includesOf<opts> &
+type preresolved<opts extends ScopeOptions> = extendsOf<opts> &
     importsOf<opts> &
     (opts["standard"] extends false ? {} : Ark)
 
@@ -140,7 +144,7 @@ type inferExports<aliases, opts extends ScopeOptions> = evaluate<
             aliases[k],
             bootstrapScope<aliases, opts>
         >
-    } & includesOf<opts>
+    } & extendsOf<opts>
 >
 
 export type Space<exports = Dict> = {
@@ -168,8 +172,8 @@ export class Scope<context extends ScopeInferenceContext = any> {
         if (opts.imports) {
             this.cacheSpaces(opts.imports, "imports")
         }
-        if (opts.includes) {
-            this.cacheSpaces(opts.includes, "includes")
+        if (opts.extends) {
+            this.cacheSpaces(opts.extends, "extends")
         }
     }
 
@@ -193,20 +197,20 @@ export class Scope<context extends ScopeInferenceContext = any> {
     extend<aliases>(
         aliases: validateAliases<
             aliases,
-            { includes: [Space<exportsOf<context>>] }
+            { extends: [Space<exportsOf<context>>] }
         >
-    ): Scope<parseScope<aliases, { includes: [Space<exportsOf<context>>] }>> {
-        return new Scope(aliases, { includes: [this.compile()] })
+    ): Scope<parseScope<aliases, { extends: [Space<exportsOf<context>>] }>> {
+        return new Scope(aliases, { extends: [this.compile()] })
     }
 
-    private cacheSpaces(spaces: Space[], kind: "imports" | "includes") {
+    private cacheSpaces(spaces: Space[], kind: "imports" | "extends") {
         for (const space of spaces) {
             for (const name in space) {
                 if (name in this.resolutions || name in this.aliases) {
                     throwParseError(writeDuplicateAliasesMessage(name))
                 }
                 this.resolutions[name] = space[name]
-                if (kind === "includes") {
+                if (kind === "extends") {
                     this.exports[name] = space[name]
                 }
             }

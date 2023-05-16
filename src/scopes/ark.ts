@@ -11,7 +11,7 @@ export const arkScope = scope(
     {},
     {
         name: "standard",
-        includes: [tsKeywords, jsObjects, validation],
+        extends: [tsKeywords, jsObjects, validation],
         standard: false
     }
 )

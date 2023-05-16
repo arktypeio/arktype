@@ -15,29 +15,23 @@ suite("scope imports", () => {
         attest(imported.infer).typed as {
             reference: boolean
         }
-        const included = scope(
+        const extended = scope(
             {
                 reference: "definedInParent"
             },
-            { includes: [parent] }
+            { extends: [parent] }
         )
-        attest(included.infer).typed as {
+        attest(extended.infer).typed as {
             reference: boolean
             definedInParent: boolean
         }
-        // const importedTypes = imported.compile()
-        // attest(importedTypes.reference.node).equals({ boolean: true })
-        // attest((importedTypes as any).definedInParent).equals(undefined)
-        // const includedTypes = included.compile()
-        // attest(importedTypes.reference.node).equals({ boolean: true })
-        // attest(includedTypes.definedInParent.node).snap({ boolean: true })
     })
     test("duplicate alias", () => {
         attest(() =>
             scope(
                 // @ts-expect-error
                 { a: "string" },
-                { includes: [scope({ a: "string" }).compile()] }
+                { extends: [scope({ a: "string" }).compile()] }
             ).compile()
         ).throwsAndHasTypeError(writeDuplicateAliasesMessage("a"))
     })
@@ -55,13 +49,13 @@ suite("scope imports", () => {
             ).compile()
         ).throwsAndHasTypeError(writeDuplicateAliasesMessage("a"))
     })
-    test("duplicate included alias", () => {
+    test("duplicate extended alias", () => {
         attest(() =>
             scope(
                 {},
                 {
                     // @ts-expect-error
-                    includes: [
+                    extends: [
                         scope({ a: "string" }).compile(),
                         scope({ a: "string" }).compile()
                     ]
@@ -69,14 +63,14 @@ suite("scope imports", () => {
             ).compile()
         ).throwsAndHasTypeError(writeDuplicateAliasesMessage("a"))
     })
-    test("duplicate between includes and imports", () => {
+    test("duplicate between extends and imports", () => {
         attest(() =>
             scope(
                 {},
                 {
                     imports: [scope({ a: "string" }).compile()],
                     // @ts-expect-error
-                    includes: [scope({ a: "string" }).compile()]
+                    extends: [scope({ a: "string" }).compile()]
                 }
             ).compile()
         ).throwsAndHasTypeError(writeDuplicateAliasesMessage("a"))
