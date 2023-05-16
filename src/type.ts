@@ -70,8 +70,13 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         this.allows = root.allows
     }
 
-    private binary(def: unknown, operator: "|" | "&") {
-        return new Type([this.definition, operator, def], this.scope)
+    from(literal: this["infer"]) {
+        return literal
+    }
+
+    // TODO: should return out
+    fromIn(literal: this["inferIn"]) {
+        return literal
     }
 
     // TODO: Morph intersections, ordering
@@ -123,6 +128,10 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
 
     extends<other>(other: Type<other>): this is Type<other> {
         return this.root.intersect(other.root) === this.root
+    }
+
+    private binary(def: unknown, operator: "|" | "&") {
+        return new Type([this.definition, operator, def], this.scope)
     }
 }
 

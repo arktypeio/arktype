@@ -1,4 +1,3 @@
-import { throwInternalError } from "../../../../utils/errors.js"
 import type { error } from "../../../../utils/errors.js"
 import { isKeyOf } from "../../../../utils/records.js"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
@@ -27,7 +26,7 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
         ? parseDivisor(s)
         : lookahead === " "
         ? parseOperator(s)
-        : throwInternalError(writeUnexpectedCharacterMessage(lookahead))
+        : s.error(writeUnexpectedCharacterMessage(lookahead))
 }
 
 export type parseOperator<s extends StaticState> =
@@ -52,10 +51,10 @@ export type parseOperator<s extends StaticState> =
 
 export const writeUnexpectedCharacterMessage = <char extends string>(
     char: char
-): writeUnexpectedCharacterMessage<char> => `Unexpected character '${char}'`
+): writeUnexpectedCharacterMessage<char> => `'${char}' is not a valid operator`
 
 type writeUnexpectedCharacterMessage<char extends string> =
-    `Unexpected character '${char}'`
+    `'${char}' is not a valid operator`
 
 export const incompleteArrayTokenMessage = `Missing expected ']'`
 

@@ -2,7 +2,13 @@ import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
 import { registry } from "./nodes/registry.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import type { Ark } from "./scopes/ark.js"
-import type { KeyCheckKind, TypeConfig, TypeParser } from "./type.js"
+import type {
+    extractIn,
+    extractOut,
+    KeyCheckKind,
+    TypeConfig,
+    TypeParser
+} from "./type.js"
 import { Type } from "./type.js"
 import type { error } from "./utils/errors.js"
 import { throwParseError } from "./utils/errors.js"
@@ -33,7 +39,6 @@ export type ScopeOptions = {
     imports?: Space[] | []
     includes?: Space[] | []
     standard?: boolean
-    name?: string
     codes?: Record<ProblemCode, { mustBe?: string }>
     keys?: KeyCheckKind
 }
@@ -148,7 +153,8 @@ type resolutions<ctx extends ScopeInferenceContext> = localsOf<ctx> &
 type name<ctx extends ScopeInferenceContext> = keyof resolutions<ctx> & string
 
 export class Scope<context extends ScopeInferenceContext = any> {
-    declare infer: exportsOf<context>
+    declare infer: extractOut<exportsOf<context>>
+    declare inferIn: extractIn<exportsOf<context>>
 
     readonly config: ScopeConfig
     private resolutions: Record<string, Type> = {}
@@ -174,6 +180,24 @@ export class Scope<context extends ScopeInferenceContext = any> {
         config
         return new Type(def, this)
     }) as unknown as TypeParser<resolutions<context>>
+
+    scope<aliases>(
+        aliases: validateAliases<
+            aliases,
+            { imports: [Space<exportsOf<context>>] }
+        >
+    ): Scope<parseScope<aliases, { imports: [Space<exportsOf<context>>] }>> {
+        return new Scope(aliases, { imports: [this.compile()] })
+    }
+
+    extend<aliases>(
+        aliases: validateAliases<
+            aliases,
+            { includes: [Space<exportsOf<context>>] }
+        >
+    ): Scope<parseScope<aliases, { includes: [Space<exportsOf<context>>] }>> {
+        return new Scope(aliases, { includes: [this.compile()] })
+    }
 
     private cacheSpaces(spaces: Space[], kind: "imports" | "includes") {
         for (const space of spaces) {
@@ -211,7 +235,7 @@ export class Scope<context extends ScopeInferenceContext = any> {
             }
             this._compiled = true
         }
-        return this.exports as Space<this["infer"]>
+        return this.exports as Space<exportsOf<context>>
     }
 }
 

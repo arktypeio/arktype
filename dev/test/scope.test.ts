@@ -2,6 +2,7 @@ import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
+import { writeUnexpectedCharacterMessage } from "../../src/parse/string/shift/operator/operator.js"
 import { attest } from "../attest/main.js"
 
 suite("scope", () => {
@@ -42,6 +43,33 @@ suite("scope", () => {
         // attest($.infer).typed as { a: never }
         // attest($.type(["number", "a"]).infer).typed as [number, never]
     })
+    test("infers input and output", () => {
+        const $ = scope({
+            a: ["string", "|>", (s) => s.length]
+        })
+        attest($.infer).typed as { a: number }
+        attest($.inferIn).typed as { a: string }
+    })
+    test("scope.scope", () => {
+        const $ = scope({
+            a: "string"
+        })
+        const importer = $.scope({ b: "a[]" })
+        attest(importer.infer).typed as { b: string[] }
+        const t = importer.type("b")
+        attest(t.root).is(type("string[]").root)
+    })
+    test("extend", () => {
+        const $ = scope({
+            a: "string"
+        }).extend({ b: "a[]" })
+        attest($.infer).typed as {
+            b: string[]
+            a: string
+        }
+        const types = $.compile()
+        attest(types.b.root).is(type("string[]").root)
+    })
     test("infers its own helpers", () => {
         const $ = scope({
             a: () => $.type("string"),
@@ -78,5 +106,18 @@ suite("scope", () => {
             })
             $.compile()
         }).throwsAndHasTypeError(writeUnboundableMessage("'b'"))
+    })
+    test("errors on ridiculous unexpected alias scenario", () => {
+        attest(() =>
+            scope({
+                Unexpected: {},
+                User: {
+                    // Previously, using the alias `Unexpected` allowed creating
+                    // this type string which matched its own error message.
+                    // @ts-expect-error
+                    name: "Unexpected character 'c'"
+                }
+            }).compile()
+        ).throwsAndHasTypeError(writeUnexpectedCharacterMessage("c"))
     })
 })
