@@ -1,4 +1,5 @@
 import { TypeNode } from "../../../../nodes/type.js"
+import type { subaliasOf } from "../../../../scope.js"
 import type { error } from "../../../../utils/errors.js"
 import type {
     BigintLiteral,
@@ -66,6 +67,8 @@ type tryResolve<
     token extends string,
     $
 > = token extends keyof $
+    ? token
+    : token extends subaliasOf<$>
     ? token
     : token extends NumberLiteral
     ? token

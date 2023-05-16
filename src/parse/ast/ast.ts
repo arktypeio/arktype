@@ -1,5 +1,5 @@
 import type { Comparator } from "../../nodes/constraints/range.js"
-import type { resolve } from "../../scope.js"
+import type { resolve, Space, subaliasOf } from "../../scope.js"
 import type { error } from "../../utils/errors.js"
 import type { List } from "../../utils/lists.js"
 import type {
@@ -129,6 +129,8 @@ type validateInfix<ast extends InfixExpression, $> = validateAst<
 export type RegexLiteral<expression extends string = string> = `/${expression}/`
 
 export type inferTerminal<token, $> = token extends keyof $
+    ? resolve<token, $>
+    : token extends subaliasOf<$>
     ? resolve<token, $>
     : token extends StringLiteral<infer Text>
     ? Text

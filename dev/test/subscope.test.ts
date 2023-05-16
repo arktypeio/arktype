@@ -5,18 +5,18 @@ import { attest } from "../attest/main.js"
 
 suite("subscopes", () => {
     test("base", () => {
-        const $ = scope({
+        const sub = scope({ alias: "number" }).compile()
+        const types = scope({
             a: "string",
-            b: scope({ nested: "boolean" }).compile(),
-            c: "b.nested"
-        })
-        const types = $.compile()
+            b: "sub.alias",
+            sub
+        }).compile()
         attest(types).typed as Space<{
             a: string
-            b: Space<{
-                nested: boolean
+            b: number
+            sub: Space<{
+                alias: number
             }>
-            c: boolean
         }>
     })
 })

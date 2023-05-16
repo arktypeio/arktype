@@ -8,17 +8,17 @@ import { tsKeywords, tsKeywordsScope } from "./tsKeywords.js"
 import { validation, validationScope } from "./validation/validation.js"
 
 export const arkScope = scope(
-    {},
+    {
+        ...tsKeywords,
+        ...jsObjects,
+        ...validation
+    },
     {
         name: "standard",
-        extends: [tsKeywords, jsObjects, validation],
         standard: false
     }
 )
 
-// this assignment doesn't work on 4.9 because it is unable to narrow TypeNodes.
-// externally, this has no impact, so this can be safely ignored if you're
-// developing on 4.9 (although you may want to upgrade for a better experience).
 export const ark: Space<Ark> = arkScope.compile()
 
 registry().register("ark", ark)

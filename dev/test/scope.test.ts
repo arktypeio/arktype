@@ -59,17 +59,17 @@ suite("scope", () => {
         const t = importer.type("b")
         attest(t.root).is(type("string[]").root)
     })
-    test("extend", () => {
-        const $ = scope({
-            a: "string"
-        }).extend({ b: "a[]" })
-        attest($.infer).typed as {
-            b: string[]
-            a: string
-        }
-        const types = $.compile()
-        attest(types.b.root).is(type("string[]").root)
-    })
+    // test("extend", () => {
+    //     const $ = scope({
+    //         a: "string"
+    //     }).extend({ b: "a[]" })
+    //     attest($.infer).typed as {
+    //         b: string[]
+    //         a: string
+    //     }
+    //     const types = $.compile()
+    //     attest(types.b.root).is(type("string[]").root)
+    // })
     test("infers its own helpers", () => {
         const $ = scope({
             a: () => $.type("string"),

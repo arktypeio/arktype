@@ -22,8 +22,8 @@ type getLastBranch<t> = intersectUnion<
     ? branch
     : never
 
-type intersectUnion<t> = (t extends unknown ? (_: t) => void : never) extends (
-    _: infer intersection
-) => void
+export type intersectUnion<t> = (
+    t extends unknown ? (_: t) => void : never
+) extends (_: infer intersection) => void
     ? intersection
     : never
