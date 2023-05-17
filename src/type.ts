@@ -4,13 +4,8 @@ import type { CheckResult } from "./nodes/traverse.js"
 import { TraversalState } from "./nodes/traverse.js"
 import { type TypeNode } from "./nodes/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
-import type {
-    inferMorphOut,
-    MorphAst,
-    MorphImplementation,
-    Out
-} from "./parse/ast/morph.js"
-import type { inferPredicate, DynamicNarrow } from "./parse/ast/narrow.js"
+import type { inferMorphOut, MorphAst, Morph, Out } from "./parse/ast/morph.js"
+import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
 import {
     type inferDefinition,
     inferred,
@@ -96,16 +91,16 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return this.binary(def, "|") as never
     }
 
-    morph<def extends MorphImplementation<extractOut<t>>>(
-        def: MorphImplementation
+    morph<def extends Morph<extractOut<t>>>(
+        def: Morph
     ): Type<(In: extractIn<t>) => Out<inferMorphOut<ReturnType<def>>>, $> {
         return new Type([this.definition, "|>", def], this.scope) as never
     }
 
     // TODO: based on below, should maybe narrow morph output if used after
-    narrow<def extends DynamicNarrow<extractOut<t>>>(
+    narrow<def extends Narrow<extractOut<t>>>(
         def: def
-    ): Type<inferPredicate<extractOut<t>, def>, $> {
+    ): Type<inferNarrow<extractOut<t>, def>, $> {
         return new Type([this.definition, "=>", def], this.scope) as never
     }
 

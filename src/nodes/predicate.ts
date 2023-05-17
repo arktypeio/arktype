@@ -1,9 +1,5 @@
-import type {
-    inferMorphOut,
-    MorphImplementation,
-    Out
-} from "../parse/ast/morph.js"
-import type { InferredNarrow, DynamicNarrow } from "../parse/ast/narrow.js"
+import type { inferMorphOut, Morph, Out } from "../parse/ast/morph.js"
+import type { GuardedNarrow, Narrow } from "../parse/ast/narrow.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type { evaluate, isUnknown } from "../utils/generics.js"
@@ -306,19 +302,16 @@ type unknownConstraintInput<kind extends ConstraintKind> = kind extends "props"
                 : never)
 
 export type inferPredicateDefinition<input extends PredicateInput> =
-    input["morph"] extends MorphImplementation<any, infer out>
+    input["morph"] extends Morph<any, infer out>
         ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
-        : input["morph"] extends readonly [
-              ...any[],
-              MorphImplementation<any, infer out>
-          ]
+        : input["morph"] extends readonly [...any[], Morph<any, infer out>]
         ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
         : inferPredicateInput<input>
 
 type inferPredicateInput<input extends PredicateInput> =
-    input["narrow"] extends InferredNarrow<any, infer narrowed>
+    input["narrow"] extends GuardedNarrow<any, infer narrowed>
         ? narrowed
-        : input["narrow"] extends List<DynamicNarrow>
+        : input["narrow"] extends List<Narrow>
         ? inferNarrowArray<input["narrow"]> extends infer result
             ? isUnknown<result> extends true
                 ? inferNonFunctionalConstraints<input>
@@ -333,7 +326,7 @@ type inferNarrowArray<
     ? inferNarrowArray<
           tail,
           result &
-              (head extends InferredNarrow<any, infer narrowed>
+              (head extends GuardedNarrow<any, infer narrowed>
                   ? narrowed
                   : unknown)
       >
@@ -372,8 +365,8 @@ type domainConstraints<basis extends Domain> = basis extends "object"
     : {}
 
 type functionalConstraints<input> = {
-    narrow?: listable<DynamicNarrow<input>>
-    morph?: listable<MorphImplementation<input>>
+    narrow?: listable<Narrow<input>>
+    morph?: listable<Morph<input>>
 }
 
 type classConstraints<base extends Constructor> = base extends typeof Array
