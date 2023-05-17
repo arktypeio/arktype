@@ -45,8 +45,9 @@ type NodeDefinition<rule, input> = {
     // compile(rule: rule, condition: string, s: CompilationState): string
 }
 
-export const defineNode = <rule, input>(node: NodeDefinition<rule, input>) =>
-    node
+export const defineNode = <rule, input = rule>(
+    node: NodeDefinition<rule, input>
+) => node
 
 // compileId(children: children) {
 //     return children

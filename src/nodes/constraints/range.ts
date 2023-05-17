@@ -67,7 +67,7 @@ export type Range =
 //     ? "items long"
 //     : ""
 
-export const RangeNode = defineNode({
+export const RangeNode = defineNode<Range, Bounds>({
     kind: "range",
     condition: (rule) =>
         rule
@@ -143,7 +143,7 @@ export const RangeNode = defineNode({
         }
         return stricterMax === "l" ? this : r
     },
-    create: (input: Bounds) => {
+    create: (input) => {
         let range: Range
         if (input["=="]) {
             range = [{ comparator: "==", limit: input["=="] }]
