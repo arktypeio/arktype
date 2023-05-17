@@ -17,7 +17,7 @@ import {
     parseDefinition,
     type validateDefinition
 } from "./parse/definition.js"
-import type { bind, Scope } from "./scope.js"
+import type { alias, bind, Scope } from "./scope.js"
 import { type Ark } from "./scopes/ark.js"
 import { CompiledFunction } from "./utils/compiledFunction.js"
 import type { error } from "./utils/errors.js"
@@ -28,15 +28,15 @@ import type { BuiltinClass } from "./utils/objectKinds.js"
 export type TypeParser<$> = {
     // Parse and check the definition, returning either the original input for a
     // valid definition or a string representing an error message.
-    <def>(def: validateDefinition<def, bind<$, def>>): Type<
-        inferDefinition<def, bind<$, def>>,
+    <def>(def: validateDefinition<def, bindThis<$, def>>): Type<
+        inferDefinition<def, bindThis<$, def>>,
         $
     >
 
-    <def>(def: validateDefinition<def, bind<$, def>>, opts: TypeConfig): Type<
-        inferDefinition<def, bind<$, def>>,
-        $
-    >
+    <def>(
+        def: validateDefinition<def, bindThis<$, def>>,
+        opts: TypeConfig
+    ): Type<inferDefinition<def, bindThis<$, def>>, $>
 
     fromValue: <branches extends readonly unknown[]>(
         ...branches: branches
@@ -83,16 +83,16 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     and<def>(
         def: validateChainedExpression<
             def,
-            bind<$, def>,
-            inferIntersection<t, inferDefinition<def, bind<$, def>>>
+            bindThis<$, def>,
+            inferIntersection<t, inferDefinition<def, bindThis<$, def>>>
         >
-    ): Type<inferIntersection<t, inferDefinition<def, bind<$, def>>>> {
+    ): Type<inferIntersection<t, inferDefinition<def, bindThis<$, def>>>> {
         return this.binary(def, "&") as never
     }
 
     or<def>(
-        def: validateDefinition<def, bind<$, def>>
-    ): Type<t | inferDefinition<def, bind<$, def>>, $> {
+        def: validateDefinition<def, bindThis<$, def>>
+    ): Type<t | inferDefinition<def, bindThis<$, def>>, $> {
         return this.binary(def, "|") as never
     }
 
@@ -134,6 +134,8 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return new Type([this.definition, operator, def], this.scope)
     }
 }
+
+type bindThis<$, def> = bind<$, { this: alias<def> }>
 
 type validateChainedExpression<def, $, inferred> =
     def extends validateDefinition<def, $>

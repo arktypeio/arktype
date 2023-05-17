@@ -33,6 +33,14 @@ export type join<
       >
     : result
 
+export type split<
+    s extends string,
+    delimiter extends string,
+    result extends string[] = []
+> = s extends `${infer head}${delimiter}${infer tail}`
+    ? split<tail, delimiter, [...result, head]>
+    : [...result, s]
+
 export const getPath = (root: unknown, path: string[]): unknown => {
     let result: any = root
     for (const segment of path) {
@@ -65,14 +73,6 @@ export type arraySubclassToReadonly<t extends unknown[]> =
     readonly t[number][] & {
         [k in Exclude<keyof t, keyof unknown[]>]: t[k]
     }
-
-export type HomogenousTuple<
-    item,
-    length extends number,
-    result extends item[] = []
-> = result["length"] extends length
-    ? result
-    : HomogenousTuple<item, length, [...result, item]>
 
 export const listFrom = <t>(data: t) =>
     (Array.isArray(data) ? data : [data]) as t extends unknown[] ? t : t[]
