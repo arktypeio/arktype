@@ -6,12 +6,8 @@ export class DivisorNode extends Node<"divisor", [number]> {
 
     static readonly kind = "divisor"
 
-    static compile(children: number[]) {
-        return `${In} % ${children[0]} === 0`
-    }
-
-    get child() {
-        return this.children[0]
+    static compile(child: number) {
+        return `${In} % ${child} === 0`
     }
 
     compileTraverse(s: CompilationState) {

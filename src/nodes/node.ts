@@ -1,5 +1,4 @@
 import { CompiledFunction } from "../utils/compiledFunction.js"
-import type { conform } from "../utils/generics.js"
 import type { BasisNode } from "./basis/basis.js"
 import { type CompilationState, In } from "./compilation.js"
 import type { DivisorNode } from "./constraints/divisor.js"
@@ -30,20 +29,8 @@ type NodeSubclass<
 > = {
     kind: kind
     new (...children: children): Node<any, any>
-    compile(children: children): string
+    compile(...children: children): string
 }
-
-// export type NodeKinds = {
-//     TypeNode: typeof TypeNode
-//     PredicateNode: typeof PredicateNode
-//     BasisNode: typeof BasisNode
-//     DivisorNode: typeof DivisorNode
-//     RangeNode: typeof RangeNode
-//     RegexNode: typeof RegexNode
-//     PropsNode: typeof PropsNode
-//     NarrowNode: typeof NarrowNode
-//     MorphNode: typeof MorphNode
-// }
 
 export type NodeKind = keyof NodeKinds
 
@@ -76,9 +63,10 @@ export abstract class Node<
     abstract toString(): string
 
     constructor(...children: children) {
+        // TODO: freeze?
         const subclass = this.constructor.prototype as NodeKinds[kind]
         const kind = subclass.kind as kind
-        const condition = subclass
+        const condition = subclass.compile
         if (Node.cache[kind][condition]) {
             return Node.cache[kind][condition] as any
         }
@@ -99,6 +87,15 @@ export abstract class Node<
         props: {},
         narrow: {},
         morph: {}
+    }
+
+    get child() {
+        return this.children[0] as children extends readonly [
+            unknown,
+            ...unknown[]
+        ]
+            ? children[0]
+            : children[0] | undefined
     }
 
     hasKind<kind extends NodeKind>(kind: kind): this is Nodes[kind] {

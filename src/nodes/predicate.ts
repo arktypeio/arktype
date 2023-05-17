@@ -48,9 +48,9 @@ export class PredicateNode<t = unknown> extends Node<
         ) as ConstraintNode[]
     }
 
-    static compile(rules: PredicateRules) {
+    static compile(...children: PredicateRules) {
         let result = ""
-        for (const rule of rules) {
+        for (const rule of children) {
             if (rule.condition !== "true") {
                 result += `${result && " && "}${rule.condition}`
             }

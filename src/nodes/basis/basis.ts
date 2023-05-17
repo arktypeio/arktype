@@ -54,14 +54,12 @@ export const precedenceByLevel: Record<BasisLevel, number> = {
 export type BasisNodeSubclass = BasisNodesByLevel[BasisLevel]
 
 export abstract class BasisNode<
-    level extends BasisLevel = BasisLevel
-> extends Node<"basis", [BasisInputs[level]]> {
-    // abstract literalKeysOf(): Key[]
-    // abstract domain: Domain
-
-    // constructor(public level: level, condition: string) {
-    //     super("basis", condition)
-    // }
+    level extends BasisLevel = BasisLevel,
+    child = unknown
+> extends Node<"basis", [child]> {
+    abstract literalKeysOf(): Key[]
+    abstract domain: Domain
+    abstract level: level
 
     private _keyof?: TypeNode
     keyof(): TypeNode {
@@ -78,7 +76,7 @@ export abstract class BasisNode<
         return this.level === (level as unknown)
     }
 
-    intersectNode(other: BasisNode): BasisNode | Disjoint {
+    intersectNode(this: BasisNode, other: BasisNode): BasisNode | Disjoint {
         if (this === other) {
             return this
         }

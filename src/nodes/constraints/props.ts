@@ -67,7 +67,7 @@ export class PropsNode extends Node<"props", PropsChildren> {
     //     this.children = [this.namedEntries, this.indexed]
     // }
 
-    static compile([named, ...indexed]: PropsChildren) {
+    static compile(named: NamedNodes, ...indexed: IndexedNodeEntry[]) {
         const checks: string[] = []
         for (const k in named) {
             checks.push(PropsNode.compileNamedEntry([k, named[k]]))

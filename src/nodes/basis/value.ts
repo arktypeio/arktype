@@ -1,4 +1,3 @@
-import type { Domain } from "../../utils/domains.js"
 import { domainOf } from "../../utils/domains.js"
 import { type Constructor, prototypeKeysOf } from "../../utils/objectKinds.js"
 import type { Key } from "../../utils/records.js"
@@ -7,20 +6,11 @@ import type { CompilationState } from "../compilation.js"
 import { compileSerializedValue, In } from "../compilation.js"
 import { BasisNode } from "./basis.js"
 
-export class ValueNode extends BasisNode<"value"> {
-    // constructor(public child: unknown) {
-    //     super("value", ValueNode.compile(child))
-    //     this.domain = domainOf(child)
-    //     this.children = [child]
-    // }
-
+export class ValueNode extends BasisNode<"value", unknown> {
     readonly subclass = ValueNode
 
+    readonly level = "value"
     static readonly kind = "basis"
-
-    get child() {
-        return this.children[0][1]
-    }
 
     get domain() {
         return domainOf(this.child)

@@ -10,7 +10,6 @@ import { ValueNode } from "./basis/value.js"
 import type { CompilationState } from "./compilation.js"
 import { createArrayIndexMatcher, PropsNode } from "./constraints/props.js"
 import type { CaseKey, Discriminant, DiscriminantKind } from "./discriminate.js"
-import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import { Node } from "./node.js"
 import type {
@@ -79,10 +78,10 @@ export class TypeNode<t = unknown> extends Node<
     //     }
     // }
 
-    static compile(branches: PredicateNode[]) {
-        return Array.isArray(branches)
-            ? TypeNode.compileIndiscriminable(branches)
-            : TypeNode.compileSwitch(branches)
+    static compile(...children: PredicateNode[]) {
+        return Array.isArray(children)
+            ? TypeNode.compileIndiscriminable(children)
+            : TypeNode.compileSwitch(children)
     }
 
     private static compileIndiscriminable(branches: PredicateNode[]) {

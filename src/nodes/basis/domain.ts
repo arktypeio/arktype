@@ -3,16 +3,17 @@ import { type Constructor, getBaseDomainKeys } from "../../utils/objectKinds.js"
 import type { Key } from "../../utils/records.js"
 import type { CompilationState } from "../compilation.js"
 import { In } from "../compilation.js"
-import { BasisNode } from "./basis.js"
+import { Disjoint } from "../disjoint.js"
+import { BasisLevel, BasisNode } from "./basis.js"
 
-export class DomainNode extends BasisNode<"domain"> {
-    declare children: [Domain]
-    domain: Domain
+export class DomainNode extends BasisNode<"domain", Domain> {
+    readonly subclass = BasisNode
 
-    constructor(public child: Domain) {
-        super("domain", DomainNode.compile(child))
-        this.children = [child]
-        this.domain = child
+    readonly level = "domain"
+    static readonly kind = "basis"
+
+    get domain() {
+        return this.child
     }
 
     static compile(domain: Domain) {

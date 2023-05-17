@@ -6,7 +6,7 @@ export class RegexNode extends Node<"regex", readonly string[]> {
     readonly subclass = RegexNode
     static readonly kind = "regex"
 
-    static compile(children: readonly string[]) {
+    static compile(...children: readonly string[]) {
         return (
             children.map(RegexNode.compileExpression).sort().join(" && ") ??
             "true"

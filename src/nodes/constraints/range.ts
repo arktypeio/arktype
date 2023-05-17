@@ -90,10 +90,6 @@ export class RangeNode extends Node<"range", [Bounds]> {
 
     static readonly kind = "range"
 
-    get child() {
-        return this.children[0]
-    }
-
     get range() {
         let range: Range
         if (this.child["=="]) {
