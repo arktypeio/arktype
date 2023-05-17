@@ -12,7 +12,8 @@ import type { Scanner } from "./shift/scanner.js"
 export const parseString = (def: string, ctx: ParseContext) =>
     maybeNaiveParse(def, ctx) ?? fullStringParse(def, ctx)
 
-export type parseString<def extends string, $> = maybeNaiveParse<def, $>
+// TODO: investigate naive parse
+export type parseString<def extends string, $> = fullStringParse<def, $>
 
 export type inferString<def extends string, $> = inferAst<
     parseString<def, $>,

@@ -18,22 +18,20 @@ import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
 
 bench("cyclic 10 intersection", () => {
     const s = scope(cyclic10).type("user&user2").infer
+    // TODO: double check this, seems high
+}).types([19581, "instantiations"])
+
+bench("cyclic(10)", () => {
+    const types = scope(cyclic10).compile()
 })
     // .median([47.02, "us"])
-    .types([19581, "instantiations"])
+    .types([3369, "instantiations"])
 
-// bench("cyclic(10)", () => {
-//     const types = scope(cyclic10).compile()
-// })
-//     // .median([47.02, "us"])
-//     .types([3369, "instantiations"])
-
-// bench("cyclic(100)", () => {
-//     const types = scope(cyclic100).compile()
-
-// })
-//     // .median([417.71, "us"])
-//     .types([15378, "instantiations"])
+bench("cyclic(100)", () => {
+    const types = scope(cyclic100).compile()
+})
+    // .median([417.71, "us"])
+    .types([15378, "instantiations"])
 
 // bench("cyclic(500)", () => {
 //     const types = scope(cyclic500).compile()

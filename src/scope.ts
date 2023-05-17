@@ -28,21 +28,29 @@ type ScopeParser = {
     ): Scope<parseScope<aliases, opts>>
 }
 
-type nameFrom<scopeKey> = scopeKey extends `${infer name}<${string}>`
+export type GenericDeclaration<
+    name extends string = string,
+    params extends string = string
+> = `${name}<${params}>`
+
+type nameFrom<scopeKey> = scopeKey extends GenericDeclaration<infer name>
     ? name
     : scopeKey
 
-type paramsFrom<scopeKey> = scopeKey extends `${string}<${infer params}>`
+type paramsFrom<scopeKey> = scopeKey extends GenericDeclaration<
+    string,
+    infer params
+>
     ? split<params, ",">
     : []
 
-export type generic<def, params extends string[]> = nominal<
-    [def, params],
-    "generic"
->
+export type generic<
+    params extends string[] = string[],
+    def = unknown
+> = nominal<[params, def], "generic">
 
 type validateAliases<aliases, opts extends ScopeOptions> = evaluate<{
-    [k in keyof aliases]: nameFrom<aliases[k]> extends keyof preresolved<opts>
+    [k in keyof aliases]: nameFrom<k> extends keyof preresolved<opts>
         ? writeDuplicateAliasesMessage<k & string>
         : aliases[k] extends Space
         ? aliases[k]
@@ -117,17 +125,7 @@ export type resolve<
       // ? inferDefinition<def, >
       $[name]
 
-const s = scope({
-    //^?
-    a: "string|number",
-    b: "a[]",
-    "box<t>": {
-        box: "t"
-    },
-    d: "box"
-}).compile()
-
-export type bind<$, names> = $ & names
+export type bind<$, names> = $ & { [k in keyof names]: alias<names[k]> }
 
 type exportsOf<ctx extends ScopeInferenceContext> = ctx extends [
     infer exports,
@@ -171,7 +169,7 @@ type bootstrapScope<aliases, opts extends ScopeOptions> = {
         ? aliases[k] extends Space
             ? aliases[k]
             : alias<aliases[k]>
-        : generic<nameFrom<k>, paramsFrom<k>>
+        : generic<paramsFrom<k>, aliases[k]>
 } & preresolved<opts>
 
 type inferExports<aliases, opts extends ScopeOptions> = evaluate<{
@@ -280,3 +278,12 @@ export const writeDuplicateAliasesMessage = <name extends string>(
 
 type writeDuplicateAliasesMessage<name extends string> =
     `Alias '${name}' is already defined`
+
+const types = scope({
+    "tupleBox<t,u>": {
+        box: ["t", "u"]
+    },
+    bitBox: "tupleBox<0, 1>"
+}).compile()
+
+types.bitBox

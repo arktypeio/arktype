@@ -135,7 +135,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     }
 }
 
-type bindThis<$, def> = bind<$, { this: alias<def> }>
+type bindThis<$, def> = bind<$, { this: def }>
 
 type validateChainedExpression<def, $, inferred> =
     def extends validateDefinition<def, $>

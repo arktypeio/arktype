@@ -1,5 +1,5 @@
 import type { Comparator } from "../../nodes/constraints/range.js"
-import type { resolve, subaliasOf } from "../../scope.js"
+import type { alias, bind, generic, resolve, subaliasOf } from "../../scope.js"
 import type { error } from "../../utils/errors.js"
 import type { List } from "../../utils/lists.js"
 import type {
@@ -7,6 +7,7 @@ import type {
     NumberLiteral,
     writeMalformedNumericLiteralMessage
 } from "../../utils/numericLiterals.js"
+import type { inferDefinition } from "../definition.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { parseString } from "../string/string.js"
 import type { validateBound } from "./bound.js"
@@ -22,7 +23,28 @@ export type inferAst<ast, $> = ast extends List
     ? inferExpression<ast, $>
     : inferTerminal<ast, $>
 
-export type inferExpression<ast extends List, $> = ast[1] extends "[]"
+type genericScopeNames<
+    params extends string[],
+    args extends string[],
+    result = {}
+> = [params, args] extends [
+    [infer pHead extends string, ...infer pTail extends string[]],
+    [infer aHead extends string, ...infer aTail extends string[]]
+]
+    ? genericScopeNames<pTail, aTail, result & { [_ in pHead]: aHead }>
+    : result
+
+export type genericAstFrom<
+    params extends string[],
+    args extends string[],
+    def
+> = GenericAst<def, genericScopeNames<params, args>>
+
+export type GenericAst<def = unknown, names = unknown> = [def, "<>", names]
+
+export type inferExpression<ast extends List, $> = ast[1] extends "<>"
+    ? inferDefinition<ast[0], bind<$, ast[2]>>
+    : ast[1] extends "[]"
     ? inferAst<ast[0], $>[]
     : ast[1] extends "|"
     ? inferAst<ast[0], $> | inferAst<ast[2], $>
@@ -38,7 +60,10 @@ export type inferExpression<ast extends List, $> = ast[1] extends "[]"
     ? keyof inferAst<ast[1], $>
     : never
 
-export type validateAst<ast, $> = ast extends string
+// TODO: standarize AST handling for generics
+export type validateAst<ast, $> = ast extends GenericAst
+    ? ast
+    : ast extends string
     ? validateStringAst<ast>
     : ast extends PostfixExpression<infer operator, infer operand>
     ? operator extends "[]"
