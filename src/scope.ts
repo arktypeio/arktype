@@ -278,12 +278,3 @@ export const writeDuplicateAliasesMessage = <name extends string>(
 
 type writeDuplicateAliasesMessage<name extends string> =
     `Alias '${name}' is already defined`
-
-const types = scope({
-    "tupleBox<t,u>": {
-        box: ["t", "u"]
-    },
-    bitBox: "tupleBox<0, 1>"
-}).compile()
-
-types.bitBox
