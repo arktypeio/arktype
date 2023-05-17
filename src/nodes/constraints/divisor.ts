@@ -1,30 +1,14 @@
-import { type CompilationState, In } from "../compilation.js"
-import { Node } from "../node.js"
+import { In } from "../compilation.js"
+import { defineNode } from "../node.js"
 
-export class DivisorNode extends Node<"divisor", [number]> {
-    readonly subclass = DivisorNode
+export const divisor = defineNode<number>({
+    kind: "divisor",
+    condition: (n) => `${In} % ${n} === 0`,
+    describe: (n) => `a multiple of ${n}`,
+    intersect: (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r))
+})
 
-    static readonly kind = "divisor"
-
-    static compile(child: number) {
-        return `${In} % ${child} === 0`
-    }
-
-    compileTraverse(s: CompilationState) {
-        return s.ifNotThen(this.condition, s.problem("divisor", this.child))
-    }
-
-    toString() {
-        return `a multiple of ${this.child}`
-    }
-
-    intersectNode(r: DivisorNode) {
-        const leastCommonMultiple = Math.abs(
-            (this.child * r.child) / greatestCommonDivisor(this.child, r.child)
-        )
-        return new DivisorNode(leastCommonMultiple)
-    }
-}
+// compile: (n, condition, s) => s.ifNotThen(condition, s.problem("divisor", n))
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

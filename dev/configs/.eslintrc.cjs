@@ -5,7 +5,7 @@ module.exports = defineConfig({
     parser: "@typescript-eslint/parser",
     plugins: [
         "@typescript-eslint",
-        "prefer-arrow",
+        "prefer-arrow-functions",
         "import",
         "unicorn",
         "only-warn"
@@ -39,16 +39,12 @@ module.exports = defineConfig({
         /**
          * Require the use of arrow functions where possible
          */
-        "func-style": ["warn", "expression"],
-        "prefer-arrow/prefer-arrow-functions": [
+        "prefer-arrow-functions/prefer-arrow-functions": [
             "warn",
             {
-                disallowPrototype: true,
-                singleReturnOnly: false,
-                classPropertiesAllowed: false
+                disallowPrototype: true
             }
         ],
-        "prefer-arrow-callback": ["warn", { allowNamedFunctions: true }],
         /**
          * Imports
          */

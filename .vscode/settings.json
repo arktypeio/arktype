@@ -8,7 +8,8 @@
         "import/no-duplicates",
         "unicorn/prefer-node-protocol",
         "@typescript-eslint/consistent-type-imports",
-        "object-shorthand"
+        "object-shorthand",
+        "prefer-arrow-functions/prefer-arrow-functions"
     ],
     "typescript.preferences.autoImportFileExcludePatterns": ["dist"],
     "typescript.enablePromptUseWorkspaceTsdk": true,

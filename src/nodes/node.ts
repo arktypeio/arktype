@@ -36,6 +36,18 @@ export type NodeKind = keyof NodeKinds
 
 export type Nodes = { [k in NodeKind]: InstanceType<NodeKinds[k]> }
 
+type NodeDefinition<rule> = {
+    readonly kind: string
+    condition(rule: rule): string
+    describe(rule: rule): string
+    intersect(l: rule, r: rule): rule | Disjoint
+    // TODO: add toType representation that would allow any arbitrary nodes to be intersected
+    // TODO: Visit somehow? Could compose from multiple parts, would give more flexibility
+    // compile(rule: rule, condition: string, s: CompilationState): string
+}
+
+export const defineNode = <rule>(node: NodeDefinition<rule>) => node
+
 // compileId(children: children) {
 //     return children
 //         .map((child) =>

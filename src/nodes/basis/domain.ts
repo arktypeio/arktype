@@ -7,8 +7,7 @@ import { Disjoint } from "../disjoint.js"
 import { BasisLevel, BasisNode } from "./basis.js"
 
 export class DomainNode extends BasisNode<"domain", Domain> {
-    readonly subclass = BasisNode
-
+    readonly subclass = DomainNode
     readonly level = "domain"
     static readonly kind = "basis"
 
