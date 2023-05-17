@@ -1,7 +1,7 @@
 import { In } from "../compilation.js"
 import { defineNode } from "../node.js"
 
-export const divisor = defineNode<number>({
+export const Divisor = defineNode<number>({
     kind: "divisor",
     condition: (n) => `${In} % ${n} === 0`,
     describe: (n) => `a multiple of ${n}`,

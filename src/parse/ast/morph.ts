@@ -10,16 +10,22 @@ export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {
         return throwParseError(writeMalformedMorphExpressionMessage(def[2]))
     }
-    return parseDefinition(def[0], ctx).constrain("morph", def[2] as Morph)
+    return parseDefinition(def[0], ctx).constrain(
+        "morph",
+        def[2] as MorphImplementation
+    )
 }
 
-export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
+export type MorphImplementation<i = any, o = unknown> = (
+    In: i,
+    state: TraversalState
+) => o
 
 export type Out<o = unknown> = ["|>", o]
 
-export type InferredMorph<i = any, o = unknown> = (In: i) => Out<o>
+export type MorphAst<i = any, o = unknown> = (In: i) => Out<o>
 
-export type inferMorph<inDef, morph, $> = morph extends Morph
+export type inferMorph<inDef, morph, $> = morph extends MorphImplementation
     ? (
           In: extractIn<inferDefinition<inDef, $>>
       ) => Out<inferMorphOut<ReturnType<morph>>>

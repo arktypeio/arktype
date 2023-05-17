@@ -6,11 +6,11 @@ import { type TypeNode } from "./nodes/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
 import type {
     inferMorphOut,
-    InferredMorph,
-    Morph,
+    MorphAst,
+    MorphImplementation,
     Out
 } from "./parse/ast/morph.js"
-import type { inferPredicate, Narrow } from "./parse/ast/narrow.js"
+import type { inferPredicate, DynamicNarrow } from "./parse/ast/narrow.js"
 import {
     type inferDefinition,
     inferred,
@@ -96,14 +96,14 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return this.binary(def, "|") as never
     }
 
-    morph<def extends Morph<extractOut<t>>>(
-        def: Morph
+    morph<def extends MorphImplementation<extractOut<t>>>(
+        def: MorphImplementation
     ): Type<(In: extractIn<t>) => Out<inferMorphOut<ReturnType<def>>>, $> {
         return new Type([this.definition, "|>", def], this.scope) as never
     }
 
     // TODO: based on below, should maybe narrow morph output if used after
-    narrow<def extends Narrow<extractOut<t>>>(
+    narrow<def extends DynamicNarrow<extractOut<t>>>(
         def: def
     ): Type<inferPredicate<extractOut<t>, def>, $> {
         return new Type([this.definition, "=>", def], this.scope) as never
@@ -156,7 +156,7 @@ export type extractIn<t> = extractMorphs<t, "in">
 
 export type extractOut<t> = extractMorphs<t, "out">
 
-type extractMorphs<t, io extends "in" | "out"> = t extends InferredMorph<
+type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
     infer i,
     infer o
 >

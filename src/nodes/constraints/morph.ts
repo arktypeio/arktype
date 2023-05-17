@@ -1,4 +1,4 @@
-import type { Morph } from "../../parse/ast/morph.js"
+import type { MorphImplementation } from "../../parse/ast/morph.js"
 import { intersectUniqueLists } from "../../utils/lists.js"
 import type { CompilationState } from "../compilation.js"
 import { Node } from "../node.js"
@@ -14,7 +14,7 @@ export class MorphNode extends Node<"morph"> {
 
     static readonly kind = "morph"
 
-    static compile(children: readonly Morph[]) {
+    static compile(children: readonly MorphImplementation[]) {
         // Avoid alphabetical sorting since morphs are non-commutative,
         // i.e. a|>b and b|>a are distinct and valid
         return children

@@ -7,13 +7,19 @@ export const parseNarrowTuple: PostfixParser<"=>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {
         return throwParseError(writeMalformedNarrowExpressionMessage(def[2]))
     }
-    return parseDefinition(def[0], ctx).constrain("narrow", def[2] as Narrow)
+    return parseDefinition(def[0], ctx).constrain(
+        "narrow",
+        def[2] as DynamicNarrow
+    )
 }
 
 export const writeMalformedNarrowExpressionMessage = (value: unknown) =>
     `Narrow expression requires a function following '=>' (was ${typeof value})`
 
-export type Narrow<data = any> = (data: data, state: TraversalState) => boolean
+export type DynamicNarrow<data = any> = (
+    data: data,
+    state: TraversalState
+) => boolean
 
 export type InferredNarrow<data = any, narrowed extends data = data> = (
     data: data,

@@ -1,8 +1,21 @@
-import type { Narrow } from "../../parse/ast/narrow.js"
+import type { DynamicNarrow } from "../../parse/ast/narrow.js"
 import { intersectUniqueLists } from "../../utils/lists.js"
 import type { CompilationState } from "../compilation.js"
-import { Node } from "../node.js"
+import { defineNode, Node } from "../node.js"
 import { registry } from "../registry.js"
+
+export const Regex = defineNode<DynamicNarrow[]>({
+    kind: "regex",
+    condition: (sources) =>
+        sources.map(compileExpression).sort().join(" && ") ?? "true",
+    describe: (sources) => {
+        const literals = sources.map((_) => `/${_}/`)
+        return literals.length === 1
+            ? literals[0]
+            : `expressions ${literals.join(", ")}`
+    },
+    intersect: intersectUniqueLists
+})
 
 export class NarrowNode extends Node<"narrow"> {
     //     // Depending on type-guards, altering the order in which narrows run could
@@ -20,7 +33,7 @@ export class NarrowNode extends Node<"narrow"> {
 
     static readonly kind = "narrow"
 
-    static compile(children: readonly Narrow[]) {
+    static compile(children: readonly DynamicNarrow[]) {
         return children
             .map((narrow) => registry().register(narrow.name, narrow))
             .join(" && ")

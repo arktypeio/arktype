@@ -29,9 +29,9 @@ import {
     writeUnsatisfiableExpressionError
 } from "./ast.js"
 import type { inferIntersection } from "./intersections.js"
-import type { inferMorph, Morph } from "./morph.js"
+import type { inferMorph, MorphImplementation } from "./morph.js"
 import { parseMorphTuple } from "./morph.js"
-import type { inferPredicate, Narrow } from "./narrow.js"
+import type { DynamicNarrow, inferPredicate } from "./narrow.js"
 import { parseNarrowTuple } from "./narrow.js"
 import type { astToString } from "./utils.js"
 
@@ -267,9 +267,12 @@ type validateInfixExpression<
               : def[1] extends "&"
               ? validateDefinition<def[2], $>
               : def[1] extends "=>"
-              ? Narrow<extractIn<inferDefinition<def[0], $>>>
+              ? DynamicNarrow<extractIn<inferDefinition<def[0], $>>>
               : def[1] extends "|>"
-              ? Morph<extractOut<inferDefinition<def[0], $>>, unknown>
+              ? MorphImplementation<
+                    extractOut<inferDefinition<def[0], $>>,
+                    unknown
+                >
               : validateDefinition<def[2], $>
       ]
 

@@ -1,5 +1,9 @@
-import type { inferMorphOut, Morph, Out } from "../parse/ast/morph.js"
-import type { InferredNarrow, Narrow } from "../parse/ast/narrow.js"
+import type {
+    inferMorphOut,
+    MorphImplementation,
+    Out
+} from "../parse/ast/morph.js"
+import type { InferredNarrow, DynamicNarrow } from "../parse/ast/narrow.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
 import type { evaluate, isUnknown } from "../utils/generics.js"
@@ -302,16 +306,19 @@ type unknownConstraintInput<kind extends ConstraintKind> = kind extends "props"
                 : never)
 
 export type inferPredicateDefinition<input extends PredicateInput> =
-    input["morph"] extends Morph<any, infer out>
+    input["morph"] extends MorphImplementation<any, infer out>
         ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
-        : input["morph"] extends readonly [...any[], Morph<any, infer out>]
+        : input["morph"] extends readonly [
+              ...any[],
+              MorphImplementation<any, infer out>
+          ]
         ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
         : inferPredicateInput<input>
 
 type inferPredicateInput<input extends PredicateInput> =
     input["narrow"] extends InferredNarrow<any, infer narrowed>
         ? narrowed
-        : input["narrow"] extends List<Narrow>
+        : input["narrow"] extends List<DynamicNarrow>
         ? inferNarrowArray<input["narrow"]> extends infer result
             ? isUnknown<result> extends true
                 ? inferNonFunctionalConstraints<input>
@@ -365,8 +372,8 @@ type domainConstraints<basis extends Domain> = basis extends "object"
     : {}
 
 type functionalConstraints<input> = {
-    narrow?: listable<Narrow<input>>
-    morph?: listable<Morph<input>>
+    narrow?: listable<DynamicNarrow<input>>
+    morph?: listable<MorphImplementation<input>>
 }
 
 type classConstraints<base extends Constructor> = base extends typeof Array
