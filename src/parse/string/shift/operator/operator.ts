@@ -10,9 +10,7 @@ import { parseDivisor } from "./divisor.js"
 // @snipStart:parseOperator
 export const parseOperator = (s: DynamicStateWithRoot): void => {
     const lookahead = s.scanner.shift()
-    return lookahead === ""
-        ? s.finalize()
-        : lookahead === "["
+    return lookahead === "["
         ? s.scanner.shift() === "]"
             ? s.setRoot(s.root.array())
             : s.error(incompleteArrayTokenMessage)
@@ -46,7 +44,7 @@ export type parseOperator<s extends StaticState> =
             : lookahead extends " "
             ? parseOperator<state.scanTo<s, unscanned>>
             : error<writeUnexpectedCharacterMessage<lookahead>>
-        : state.finalize<s>
+        : error<writeUnexpectedCharacterMessage<"">>
 // @snipEnd
 
 export const writeUnexpectedCharacterMessage = <char extends string>(

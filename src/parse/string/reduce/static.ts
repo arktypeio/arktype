@@ -7,7 +7,6 @@ import type {
 import type { error } from "../../../utils/errors.js"
 import type { defined } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
-import type { Scanner } from "../shift/scanner.js"
 import type {
     Prefix,
     unclosedGroupMessage,
@@ -230,7 +229,9 @@ export namespace state {
         unscanned: unscanned
     }>
 
-    export type finalize<s extends StaticState> = s["groups"] extends []
+    export type finalize<s extends StaticState, $> = s["root"] extends undefined
+        ? error<`${s["scanned"]}${(keyof $ & string) | AutocompletePrefix}`>
+        : s["groups"] extends []
         ? s["branches"]["range"] extends {}
             ? openRangeError<s["branches"]["range"]>
             : from<{
@@ -238,7 +239,7 @@ export namespace state {
                   groups: s["groups"]
                   branches: initialBranches
                   scanned: s["scanned"]
-                  unscanned: Scanner.finalized
+                  unscanned: s["unscanned"]
               }>
         : error<unclosedGroupMessage>
 

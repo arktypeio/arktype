@@ -1,10 +1,5 @@
 import { TypeNode } from "../../../../nodes/type.js"
-import type {
-    generic,
-    GenericDeclaration,
-    Space,
-    subaliasOf
-} from "../../../../scope.js"
+import type { generic, subaliasOf } from "../../../../scope.js"
 import type { error } from "../../../../utils/errors.js"
 import type { join, split } from "../../../../utils/lists.js"
 import type {

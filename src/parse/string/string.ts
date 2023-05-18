@@ -41,7 +41,7 @@ export const maybeNaiveParse = (def: string, ctx: ParseContext): TypeNode =>
 export const fullStringParse = (def: string, ctx: ParseContext) => {
     const s = new DynamicState(def, ctx)
     parseOperand(s)
-    const result = loop(s)
+    const result = loop(s).root
     return result.isNever()
         ? throwParseError(writeUnsatisfiableExpressionError(def))
         : result
@@ -53,18 +53,20 @@ const loop = (s: DynamicState) => {
     while (!s.scanner.finalized) {
         next(s)
     }
-    s.finalize()
-    return s.ejectRoot()
+    return s.finalize()
 }
 
 type loop<s extends StaticState | error, $> = s extends StaticState
-    ? loopValid<s, $>
-    : s
-
-type loopValid<
-    s extends StaticState,
-    $
-> = s["unscanned"] extends Scanner.finalized ? s["root"] : loop<next<s, $>, $>
+    ? s["unscanned"] extends ""
+        ? state.finalize<s, $>
+        : s["unscanned"] extends `${Scanner.FinalizingLookahead}${string}`
+        ? // ensure the initial > is not treated as a finalizer in an expression like Set<number>5>
+          s["unscanned"] extends `>${"=" | ""}${number}${string}`
+            ? loop<next<s, $>, $>
+            : state.finalize<s, $>
+        : loop<next<s, $>, $>
+    : // s is an error here
+      s
 
 const next = (s: DynamicState) =>
     s.hasRoot() ? parseOperator(s) : parseOperand(s)
