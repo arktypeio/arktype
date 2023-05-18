@@ -24,37 +24,53 @@ import {
     unknownTypeNode
 } from "../type.js"
 
-export class PropsNode extends Node<"props"> {
-    namedEntries: NamedNodeEntry[]
+export type PropsChildren = [NamedNodes, ...IndexedNodeEntry[]]
 
-    // TODO: standarize entry to a node
-    children: [NamedNodeEntry[], IndexedNodeEntry[]]
+export class PropsNode extends Node<"props", PropsChildren> {
+    readonly subclass = PropsNode
 
-    constructor(public named: NamedNodes, public indexed: IndexedNodeEntry[]) {
-        // Sort keys first by precedence (prerequisite,required,optional),
-        // then alphebetically by name (bar, baz, foo)
-        const sortedNamedEntries = Object.entries(named).sort((l, r) => {
-            const lPrecedence = precedenceByPropKind[l[1].kind]
-            const rPrecedence = precedenceByPropKind[r[1].kind]
-            return lPrecedence > rPrecedence
-                ? 1
-                : lPrecedence < rPrecedence
-                ? -1
-                : l[0] > r[0]
-                ? 1
-                : -1
-        })
-        indexed.sort((l, r) => (l[0].condition >= r[0].condition ? 1 : -1))
-        const condition = PropsNode.compile(sortedNamedEntries, indexed)
-        super("props", condition)
-        this.namedEntries = sortedNamedEntries
-        this.children = [this.namedEntries, this.indexed]
+    static readonly kind = "props"
+
+    get namedEntries() {
+        return Object.entries(this.named)
     }
 
-    static compile(named: NamedNodeEntry[], indexed: IndexedNodeEntry[]) {
+    get named() {
+        return this.children[0]
+    }
+
+    get indexed() {
+        return this.children.slice(1) as IndexedNodeEntry[]
+    }
+
+    // // TODO: standarize entry to a node
+    // children: [NamedNodeEntry[], IndexedNodeEntry[]]
+
+    // constructor(public named: NamedNodes, public indexed: IndexedNodeEntry[]) {
+    //     // Sort keys first by precedence (prerequisite,required,optional),
+    //     // then alphebetically by name (bar, baz, foo)
+    //     const sortedNamedEntries = Object.entries(named).sort((l, r) => {
+    //         const lPrecedence = precedenceByPropKind[l[1].kind]
+    //         const rPrecedence = precedenceByPropKind[r[1].kind]
+    //         return lPrecedence > rPrecedence
+    //             ? 1
+    //             : lPrecedence < rPrecedence
+    //             ? -1
+    //             : l[0] > r[0]
+    //             ? 1
+    //             : -1
+    //     })
+    //     indexed.sort((l, r) => (l[0].condition >= r[0].condition ? 1 : -1))
+    //     const condition = PropsNode.compile(sortedNamedEntries, indexed)
+    //     super("props", condition)
+    //     this.namedEntries = sortedNamedEntries
+    //     this.children = [this.namedEntries, this.indexed]
+    // }
+
+    static compile(named: NamedNodes, ...indexed: IndexedNodeEntry[]) {
         const checks: string[] = []
-        for (const entry of named) {
-            checks.push(PropsNode.compileNamedEntry(entry))
+        for (const k in named) {
+            checks.push(PropsNode.compileNamedEntry([k, named[k]]))
         }
         for (const entry of indexed) {
             checks.push(PropsNode.compileIndexedEntry(entry))
@@ -115,7 +131,7 @@ export class PropsNode extends Node<"props"> {
                 typeNodeFromInput(valueInput)
             ]
         )
-        return new PropsNode(named, indexed)
+        return new PropsNode(named, ...indexed)
     }
 
     toString() {
@@ -208,7 +224,7 @@ export class PropsNode extends Node<"props"> {
                 (entry) => !extractArrayIndexRegex(entry[0])
             )
         }
-        return new PropsNode(named, indexed)
+        return new PropsNode(named, ...indexed)
     }
 
     private intersectNamedProp(
@@ -249,7 +265,7 @@ export class PropsNode extends Node<"props"> {
                 value: prunedValue
             }
         }
-        return new PropsNode(preserved, this.indexed)
+        return new PropsNode(preserved, ...this.indexed)
     }
 
     private _keyof?: TypeNode<Key>
@@ -263,7 +279,7 @@ export class PropsNode extends Node<"props"> {
 
     indexedKeyOf() {
         return new TypeNode(
-            this.indexed.flatMap((entry) => entry[0].children)
+            ...this.indexed.flatMap((entry) => entry[0].children)
         ) as TypeNode<Key>
     }
 
@@ -282,7 +298,7 @@ const precedenceByPropKind = {
     optional: 2
 } satisfies Record<PropKind, number>
 
-export const emptyPropsNode = new PropsNode({}, [])
+export const emptyPropsNode = new PropsNode({})
 
 export type PropsInput = NamedPropsInput | PropsInputTuple
 

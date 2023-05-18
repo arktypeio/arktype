@@ -2,7 +2,7 @@ import { suite, test } from "mocha"
 import { TypeNode } from "../../src/main.js"
 import { arrayIndexInput } from "../../src/nodes/type.js"
 import type { Out } from "../../src/parse/ast/morph.js"
-import { attest, getTsVersionUnderTest } from "../attest/main.js"
+import { attest } from "../attest/main.js"
 
 suite("node definitions", () => {
     suite("basis", () => {

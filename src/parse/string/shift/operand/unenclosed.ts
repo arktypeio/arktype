@@ -1,6 +1,7 @@
 import { TypeNode } from "../../../../nodes/type.js"
-import type { subaliasOf } from "../../../../scope.js"
+import type { generic, subaliasOf } from "../../../../scope.js"
 import type { error } from "../../../../utils/errors.js"
+import type { join, split } from "../../../../utils/lists.js"
 import type {
     BigintLiteral,
     NumberLiteral
@@ -9,12 +10,14 @@ import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "../../../../utils/numericLiterals.js"
+import type { genericAstFrom } from "../../../ast/ast.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type {
     AutocompletePrefix,
     state,
     StaticState
 } from "../../reduce/static.js"
+import type { parseUntilFinalizer } from "../../string.js"
 import type { Scanner } from "../scanner.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
@@ -31,14 +34,58 @@ export type parseUnenclosed<
     $
 > = Scanner.shiftUntilNextTerminator<
     s["unscanned"]
+    // TODO: next unscanned here
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
     ? scanned extends "keyof"
         ? state.addPrefix<s, "keyof", nextUnscanned>
         : tryResolve<s, scanned, $> extends infer result
         ? result extends error<infer message>
             ? error<message>
+            : $ extends { [_ in scanned]: generic<infer params, infer def> }
+            ? parseGeneric<
+                  scanned,
+                  params,
+                  def,
+                  state.scanTo<s, nextUnscanned>,
+                  $
+              >
             : state.setRoot<s, result, nextUnscanned>
         : never
+    : never
+
+// TODO: maybe configure state to look for a different finalizer
+type parseGeneric<
+    name extends string,
+    params extends string[],
+    def,
+    s extends StaticState,
+    $
+> = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer nextUnscanned}`
+    ? parseArgs<name, params, def, state.scanTo<s, nextUnscanned>, $>
+    : error<`${name} requires ${params["length"] extends 1
+          ? `parameter ${params[0]}`
+          : `parameters ${join<params>}`}`>
+
+type parseArgs<
+    name extends string,
+    params extends string[],
+    def,
+    s extends StaticState,
+    $,
+    args extends unknown[] = []
+> = parseUntilFinalizer<s, $> extends infer nextState
+    ? nextState extends StaticState
+        ? nextState["unscanned"] extends ">"
+            ? args["length"] extends params["length"]
+                ? state.setRoot<
+                      s,
+                      genericAstFrom<params, nextState, def>,
+                      s["unscanned"]
+                  >
+                : {}
+            : {}
+        : // propagate error
+          nextState
     : never
 
 // TODO: configs attached to type?
@@ -62,6 +109,12 @@ const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
     }
 }
 
+// TODO: initially parse scope into types/subscopes/generics
+
+// TODO: These checks seem to break cyclic thunk inference
+// $[token] extends generic<infer params>
+// ?
+// : token
 type tryResolve<
     s extends StaticState,
     token extends string,

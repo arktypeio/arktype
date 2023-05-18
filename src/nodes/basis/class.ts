@@ -1,4 +1,4 @@
-import type { abstractableConstructor } from "../../utils/objectKinds.js"
+import type { AbstractableConstructor } from "../../utils/objectKinds.js"
 import {
     getExactBuiltinConstructorName,
     prototypeKeysOf
@@ -8,19 +8,14 @@ import { In } from "../compilation.js"
 import { registry } from "../registry.js"
 import { BasisNode } from "./basis.js"
 
-export class ClassNode extends BasisNode<"class"> {
+export class ClassNode extends BasisNode<"class", AbstractableConstructor> {
     readonly domain = "object"
-    declare children: [abstractableConstructor]
 
-    constructor(public child: abstractableConstructor) {
-        super("class", ClassNode.compile(child))
-        if (!this.child) {
-            // TODO: clean?
-            this.children = [child]
-        }
-    }
+    readonly subclass = ClassNode
+    readonly level = "class"
+    static readonly kind = "basis"
 
-    static compile(child: abstractableConstructor) {
+    static compile(child: AbstractableConstructor) {
         return `${In} instanceof ${
             getExactBuiltinConstructorName(child) ??
             registry().register(child.name, child)

@@ -15,15 +15,15 @@ export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
-export type Out<o = unknown> = ["|>", o]
-
-export type InferredMorph<i = any, o = unknown> = (In: i) => Out<o>
-
-export type inferMorph<inDef, morph, $> = morph extends Morph
+export type parseMorph<inDef, morph, $> = morph extends Morph
     ? (
           In: extractIn<inferDefinition<inDef, $>>
       ) => Out<inferMorphOut<ReturnType<morph>>>
     : never
+
+export type MorphAst<i = any, o = unknown> = (In: i) => Out<o>
+
+export type Out<o = unknown> = ["|>", o]
 
 export type inferMorphOut<out> = [out] extends [CheckResult<infer t>]
     ? t

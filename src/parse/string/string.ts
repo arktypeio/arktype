@@ -12,7 +12,8 @@ import type { Scanner } from "./shift/scanner.js"
 export const parseString = (def: string, ctx: ParseContext) =>
     maybeNaiveParse(def, ctx) ?? fullStringParse(def, ctx)
 
-export type parseString<def extends string, $> = maybeNaiveParse<def, $>
+// TODO: investigate naive parse
+export type parseString<def extends string, $> = fullStringParse<def, $>
 
 export type inferString<def extends string, $> = inferAst<
     parseString<def, $>,
@@ -40,30 +41,41 @@ export const maybeNaiveParse = (def: string, ctx: ParseContext): TypeNode =>
 export const fullStringParse = (def: string, ctx: ParseContext) => {
     const s = new DynamicState(def, ctx)
     parseOperand(s)
-    const result = loop(s)
+    const result = parseUntilFinalizer(s).root
     return result.isNever()
         ? throwParseError(writeUnsatisfiableExpressionError(def))
         : result
 }
 
-type fullStringParse<def extends string, $> = loop<state.initialize<def>, $>
+type fullStringParse<def extends string, $> = extractFinalizedResult<
+    parseUntilFinalizer<state.initialize<def>, $>
+>
 
-const loop = (s: DynamicState) => {
+export const parseUntilFinalizer = (s: DynamicState) => {
     while (!s.scanner.finalized) {
         next(s)
     }
-    s.finalize()
-    return s.ejectRoot()
+    return s.finalize()
 }
 
-type loop<s extends StaticState | error, $> = s extends StaticState
-    ? loopValid<s, $>
-    : s
-
-type loopValid<
-    s extends StaticState,
+export type parseUntilFinalizer<
+    s extends StaticState | error,
     $
-> = s["unscanned"] extends Scanner.finalized ? s["root"] : loop<next<s, $>, $>
+    // TODO: whitespace here?
+> = s extends StaticState
+    ? s["unscanned"] extends ""
+        ? state.finalize<s, $>
+        : s["unscanned"] extends `${Scanner.FinalizingLookahead}${string}`
+        ? // ensure the initial > is not treated as a finalizer in an expression like Set<number>5>
+          s["unscanned"] extends `>${"=" | ""}${number}${string}`
+            ? parseUntilFinalizer<next<s, $>, $>
+            : state.finalize<s, $>
+        : parseUntilFinalizer<next<s, $>, $>
+    : // s is an error here
+      s
+
+export type extractFinalizedResult<s extends StaticState | error> =
+    s extends StaticState ? s["root"] : s
 
 const next = (s: DynamicState) =>
     s.hasRoot() ? parseOperator(s) : parseOperand(s)

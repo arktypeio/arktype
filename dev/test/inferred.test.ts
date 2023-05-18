@@ -2,7 +2,7 @@ import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import type { Inferred } from "../../src/parse/definition.js"
 import type { Type } from "../../src/type.js"
-import type { constructor } from "../../src/utils/objectKinds.js"
+import type { Constructor } from "../../src/utils/objectKinds.js"
 import { attest } from "../attest/main.js"
 
 suite("inferred", () => {
@@ -31,9 +31,9 @@ suite("inferred", () => {
         attest(constructable.inferIn).typed as F
     })
     test("infer constructable", () => {
-        const constructable = type({} as Inferred<constructor>)
-        attest(constructable).typed as Type<constructor>
-        attest(constructable.infer).typed as constructor
-        attest(constructable.inferIn).typed as constructor
+        const constructable = type({} as Inferred<Constructor>)
+        attest(constructable).typed as Type<Constructor>
+        attest(constructable.infer).typed as Constructor
+        attest(constructable.inferIn).typed as Constructor
     })
 })

@@ -80,10 +80,18 @@ export namespace Scanner {
         ")": true,
         "[": true,
         "%": true,
-        " ": true
+        " ": true,
+        ",": true
     } as const
 
-    export type TerminatingChar = keyof typeof Scanner.terminatingChars
+    export type TerminatingChar = keyof typeof terminatingChars
+
+    export const finalizingLookaheads = {
+        ">": true,
+        ",": true
+    } as const
+
+    export type FinalizingLookahead = keyof typeof finalizingLookaheads
 
     export type InfixToken = Comparator | "|" | "&" | "%" | ":" | "=>" | "|>"
 
@@ -101,8 +109,6 @@ export namespace Scanner {
     } as const
 
     export type WhiteSpaceToken = keyof typeof whiteSpaceTokens
-
-    export type finalized = "{done}"
 
     export type shift<
         Lookahead extends string,

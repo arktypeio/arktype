@@ -1,7 +1,7 @@
 import type { Domain } from "../../utils/domains.js"
 import { domainOf } from "../../utils/domains.js"
 import { throwInternalError } from "../../utils/errors.js"
-import type { abstractableConstructor } from "../../utils/objectKinds.js"
+import type { AbstractableConstructor } from "../../utils/objectKinds.js"
 import type { BasisInput } from "./basis.js"
 import { ClassNode } from "./class.js"
 import { DomainNode } from "./domain.js"
@@ -9,7 +9,7 @@ import { ValueNode } from "./value.js"
 
 export type basisNodeFrom<input extends BasisInput> = input extends Domain
     ? DomainNode
-    : input extends abstractableConstructor
+    : input extends AbstractableConstructor
     ? ClassNode
     : ValueNode
 

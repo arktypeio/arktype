@@ -69,6 +69,7 @@ export class DynamicState {
         }
         this.finalizeBranches()
         this.scanner.finalized = true
+        return this as DynamicStateWithRoot
     }
 
     reduceLeftBound(limit: number, comparator: Comparator) {

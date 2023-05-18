@@ -13,7 +13,7 @@ import type { extractIn, extractOut, TypeConfig } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"
-import { type constructor, isArray } from "../../utils/objectKinds.js"
+import { type Constructor, isArray } from "../../utils/objectKinds.js"
 import type { mutable } from "../../utils/records.js"
 import { stringify } from "../../utils/serialize.js"
 import type {
@@ -30,9 +30,9 @@ import {
     writeUnsatisfiableExpressionError
 } from "./ast.js"
 import type { inferIntersection } from "./intersections.js"
-import type { inferMorph, Morph } from "./morph.js"
+import type { Morph, parseMorph } from "./morph.js"
 import { parseMorphTuple } from "./morph.js"
-import type { inferPredicate, Narrow } from "./narrow.js"
+import type { inferNarrow, Narrow } from "./narrow.js"
 import { parseNarrowTuple } from "./narrow.js"
 import type { astToString } from "./utils.js"
 
@@ -96,9 +96,9 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
             value: TypeNode.from({ basis: ["===", def.length] })
         }
     }
-    const props = new PropsNode(named, indexed)
-    const predicate = new PredicateNode([arrayBasisNode, props])
-    return new TypeNode([predicate])
+    const props = new PropsNode(named, ...indexed)
+    const predicate = new PredicateNode(arrayBasisNode, props)
+    return new TypeNode(predicate)
 }
 
 const unknownArray = TypeNode.from({
@@ -218,15 +218,15 @@ export type inferTupleExpression<
     : def[1] extends "|"
     ? inferDefinition<def[0], $> | inferDefinition<def[2], $>
     : def[1] extends "=>"
-    ? inferPredicate<inferDefinition<def[0], $>, def[2]>
+    ? inferNarrow<inferDefinition<def[0], $>, def[2]>
     : def[1] extends "|>"
-    ? inferMorph<def[0], def[2], $>
+    ? parseMorph<def[0], def[2], $>
     : def[1] extends ":"
     ? inferDefinition<def[0], $>
     : def[0] extends "==="
     ? def[1]
     : def[0] extends "instanceof"
-    ? def[1] extends constructor<infer t>
+    ? def[1] extends Constructor<infer t>
         ? t
         : never
     : def[0] extends "keyof"
@@ -247,7 +247,7 @@ type validatePrefixExpression<
           def[0] extends "==="
               ? def[1]
               : def[0] extends "instanceof"
-              ? constructor
+              ? Constructor
               : def[0] extends "keyof"
               ? validateDefinition<def[1], $>
               : never
@@ -282,7 +282,7 @@ type validateInfixExpression<
       ]
 
 export type UnparsedTupleExpressionInput = {
-    instanceof: constructor
+    instanceof: Constructor
     "===": unknown
 }
 
@@ -378,7 +378,7 @@ const prefixParsers: {
             )
         }
         return TypeNode.from({
-            basis: def[1] as constructor
+            basis: def[1] as Constructor
         })
     },
     "===": (def) => TypeNode.from({ basis: ["===", def[1]] })

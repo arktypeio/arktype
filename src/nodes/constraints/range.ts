@@ -1,8 +1,7 @@
 import { throwInternalError } from "../../utils/errors.js"
 import type { xor } from "../../utils/records.js"
-import { type CompilationState, In } from "../compilation.js"
 import { Disjoint } from "../disjoint.js"
-import { Node } from "../node.js"
+import { defineNode } from "../node.js"
 
 export const minComparators = {
     ">": true,
@@ -61,62 +60,34 @@ export type Range =
     | [RangeConstraint]
     | [min: RangeConstraint, max: RangeConstraint]
 
-export class RangeNode extends Node<"range"> {
-    declare children: [Bounds]
-    range: Range
+// const units =
+// s.lastDomain === "string"
+//     ? "characters"
+//     : s.lastDomain === "object"
+//     ? "items long"
+//     : ""
 
-    constructor(public child: Bounds) {
-        let range: Range
-        if (child["=="]) {
-            range = [{ comparator: "==", limit: child["=="] }]
-        } else {
-            const lower = extractLower(child)
-            const upper = extractUpper(child)
-            range = lower
-                ? upper
-                    ? [lower, upper]
-                    : [lower]
-                : upper
-                ? [upper]
-                : throwInternalError(`Unexpected unbounded range`)
-        }
-        // TODO: variadic here, could pass min/max
-        super("range", RangeNode.compile(range))
-        this.range = range
-        this.children = [child]
-    }
-
-    // const units =
-    // s.lastDomain === "string"
-    //     ? "characters"
-    //     : s.lastDomain === "object"
-    //     ? "items long"
-    //     : ""
-
-    static compile(range: Range) {
-        return range
+export const RangeNode = defineNode<Range, Bounds>({
+    kind: "range",
+    condition: (rule) =>
+        rule
             .map((constraint) => RangeNode.compileAssertion(constraint))
-            .join(" && ")
-    }
-
-    private static compileAssertion(constraint: RangeConstraint) {
-        return `(${In}.length ?? Number(${In})) ${
-            constraint.comparator === "==" ? "===" : constraint.comparator
-        } ${constraint.limit}`
-    }
-
-    compileTraverse(s: CompilationState) {
-        return this.range
-            .map((constraint) =>
-                s.ifNotThen(
-                    RangeNode.compileAssertion(constraint),
-                    s.problem("range", constraint)
-                )
-            )
-            .join("\n")
-    }
-
-    intersectNode(r: RangeNode): RangeNode | Disjoint {
+            .join(" && "),
+    describe: (rule) => {
+        if (this.isEqualityRange()) {
+            return `the range of exactly ${this.child["=="]}`
+        }
+        const lower = this.lowerBound
+        const upper = this.upperBound
+        return lower
+            ? upper
+                ? `the range bounded by ${lower.comparator}${lower.limit} and ${upper.comparator}${upper.limit}`
+                : `${lower.comparator}${lower.limit}`
+            : upper
+            ? `${upper.comparator}${upper.limit}`
+            : throwInternalError("Unexpected empty range")
+    },
+    intersect: (l, r) => {
         if (this.isEqualityRange()) {
             if (r.isEqualityRange()) {
                 return this === r ? this : Disjoint.from("range", this, r)
@@ -171,43 +142,50 @@ export class RangeNode extends Node<"range"> {
             return r
         }
         return stricterMax === "l" ? this : r
-    }
-
-    isEqualityRange(): this is { rule: { "==": number } } {
-        return this.child["=="] !== undefined
-    }
-
-    get lowerBound() {
-        return extractLower(this.child)
-    }
-
-    get upperBound() {
-        return extractUpper(this.child)
-    }
-
-    private extractComparators(prefix: ">" | "<") {
-        return this.child[prefix] !== undefined
-            ? { [prefix]: this.child[prefix] }
-            : this.child[`${prefix}=`] !== undefined
-            ? { [`${prefix}=`]: this.child[`${prefix}=`] }
-            : {}
-    }
-
-    toString(): string {
-        if (this.isEqualityRange()) {
-            return `the range of exactly ${this.child["=="]}`
+    },
+    create: (input) => {
+        let range: Range
+        if (input["=="]) {
+            range = [{ comparator: "==", limit: input["=="] }]
+        } else {
+            const lower = extractLower(input)
+            const upper = extractUpper(input)
+            range = lower
+                ? upper
+                    ? [lower, upper]
+                    : [lower]
+                : upper
+                ? [upper]
+                : throwInternalError(`Unexpected unbounded range`)
         }
-        const lower = this.lowerBound
-        const upper = this.upperBound
-        return lower
-            ? upper
-                ? `the range bounded by ${lower.comparator}${lower.limit} and ${upper.comparator}${upper.limit}`
-                : `${lower.comparator}${lower.limit}`
-            : upper
-            ? `${upper.comparator}${upper.limit}`
-            : throwInternalError("Unexpected empty range")
+        return range
     }
-}
+})
+
+// private extractComparators(prefix: ">" | "<") {
+//     return this.child[prefix] !== undefined
+//         ? { [prefix]: this.child[prefix] }
+//         : this.child[`${prefix}=`] !== undefined
+//         ? { [`${prefix}=`]: this.child[`${prefix}=`] }
+//         : {}
+// }
+
+// compileTraverse(s: CompilationState) {
+//     return this.range
+//         .map((constraint) =>
+//             s.ifNotThen(
+//                 RangeNode.compileAssertion(constraint),
+//                 s.problem("range", constraint)
+//             )
+//         )
+//         .join("\n")
+// }
+
+// private static compileAssertion(constraint: RangeConstraint) {
+//     return `(${In}.length ?? Number(${In})) ${
+//         constraint.comparator === "==" ? "===" : constraint.comparator
+//     } ${constraint.limit}`
+// }
 
 const isExclusive = (bound: RangeConstraint) => bound.comparator[1] === "="
 

@@ -47,7 +47,7 @@ type BuiltinClassesByName = {
 
 export type BuiltinClass = BuiltinClassesByName[BuiltinClassName]
 
-export type ObjectKindSet = Record<string, constructor>
+export type ObjectKindSet = Record<string, Constructor>
 
 export type DefaultObjectKindSet = typeof defaultObjectKinds
 
@@ -62,7 +62,7 @@ export type objectKindOf<
     ? object extends data
         ? keyof kinds
         : {
-              [kind in keyof kinds]: kinds[kind] extends constructor<data>
+              [kind in keyof kinds]: kinds[kind] extends Constructor<data>
                   ? kind
                   : data extends (...args: any[]) => unknown
                   ? "Function"
@@ -135,14 +135,14 @@ export const getExactBuiltinConstructorName = (
         : undefined
 }
 
-export type constructor<instance = unknown> = new (...args: any[]) => instance
+export type Constructor<instance = {}> = new (...args: any[]) => instance
 
-export type abstractableConstructor<instance = unknown> = abstract new (
+export type AbstractableConstructor<instance = {}> = abstract new (
     ...args: any[]
 ) => instance
 
-export type instanceOf<classType extends abstractableConstructor> =
-    classType extends abstractableConstructor<infer Instance> ? Instance : never
+export type instanceOf<classType extends AbstractableConstructor> =
+    classType extends AbstractableConstructor<infer Instance> ? Instance : never
 
 /** Mimics output of TS's keyof operator at runtime */
 export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
@@ -184,8 +184,8 @@ export const getBaseDomainKeys = <domain extends Domain>(domain: domain) => [
 ]
 
 export const constructorExtends = (
-    constructor: abstractableConstructor,
-    base: abstractableConstructor
+    constructor: AbstractableConstructor,
+    base: AbstractableConstructor
 ) => {
     let current = constructor.prototype
 

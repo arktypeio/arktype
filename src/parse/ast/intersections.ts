@@ -1,7 +1,7 @@
 import type { error } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"
 import type { List, pathToString, Segments } from "../../utils/lists.js"
-import type { InferredMorph, Out } from "./morph.js"
+import type { MorphAst, Out } from "./morph.js"
 
 export type validateIntersection<l, r> = inferIntersectionRecurse<
     l,
@@ -27,11 +27,11 @@ type inferIntersectionRecurse<
     ? error<writeImplicitNeverMessage<path, "Intersection">>
     : isAny<l | r> extends true
     ? any
-    : l extends InferredMorph<infer lIn, infer lOut>
-    ? r extends InferredMorph
+    : l extends MorphAst<infer lIn, infer lOut>
+    ? r extends MorphAst
         ? error<writeImplicitNeverMessage<path, "Intersection", "of morphs">>
         : (In: evaluate<lIn & r>) => Out<lOut>
-    : r extends InferredMorph<infer rIn, infer rOut>
+    : r extends MorphAst<infer rIn, infer rOut>
     ? (In: evaluate<rIn & l>) => Out<rOut>
     : intersectObjects<l, r, propagateErrors, path> extends infer result
     ? propagateErrors extends true

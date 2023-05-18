@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type } from "arktype"
 import type { Infer } from "arktype"
+import { type } from "arktype"
 import z from "zod"
 
 {

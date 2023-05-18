@@ -4,8 +4,8 @@ import type { Domain, inferDomain } from "../../utils/domains.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import type { evaluate } from "../../utils/generics.js"
 import type {
-    abstractableConstructor,
-    constructor,
+    AbstractableConstructor,
+    Constructor,
     instanceOf
 } from "../../utils/objectKinds.js"
 import { constructorExtends } from "../../utils/objectKinds.js"
@@ -29,7 +29,7 @@ type BasisNodesByLevel = {
 type BasisInputs = {
     domain: Domain
     value: readonly ["===", unknown]
-    class: abstractableConstructor
+    class: AbstractableConstructor
 }
 
 export type BasisInput<level extends BasisLevel = BasisLevel> =
@@ -37,7 +37,7 @@ export type BasisInput<level extends BasisLevel = BasisLevel> =
 
 export type inferBasis<basis extends BasisInput> = basis extends Domain
     ? inferDomain<basis>
-    : basis extends constructor<infer instance>
+    : basis extends Constructor<infer instance>
     ? instance
     : basis extends readonly ["===", infer value]
     ? value
@@ -54,15 +54,12 @@ export const precedenceByLevel: Record<BasisLevel, number> = {
 export type BasisNodeSubclass = BasisNodesByLevel[BasisLevel]
 
 export abstract class BasisNode<
-    level extends BasisLevel = BasisLevel
-> extends Node<"basis"> {
-    static readonly kind = "basis"
+    level extends BasisLevel = BasisLevel,
+    child = unknown
+> extends Node<"basis", [child]> {
     abstract literalKeysOf(): Key[]
     abstract domain: Domain
-
-    constructor(public level: level, condition: string) {
-        super("basis", condition)
-    }
+    abstract level: level
 
     private _keyof?: TypeNode
     keyof(): TypeNode {
@@ -79,7 +76,7 @@ export abstract class BasisNode<
         return this.level === (level as unknown)
     }
 
-    intersectNode(other: BasisNode): BasisNode | Disjoint {
+    intersectNode(this: BasisNode, other: BasisNode): BasisNode | Disjoint {
         if (this === other) {
             return this
         }

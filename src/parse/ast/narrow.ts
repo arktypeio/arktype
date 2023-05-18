@@ -15,12 +15,12 @@ export const writeMalformedNarrowExpressionMessage = (value: unknown) =>
 
 export type Narrow<data = any> = (data: data, state: TraversalState) => boolean
 
-export type InferredNarrow<data = any, narrowed extends data = data> = (
+export type GuardedNarrow<data = any, narrowed extends data = data> = (
     data: data,
     state: TraversalState
 ) => data is narrowed
 
-export type inferPredicate<In, predicate> = predicate extends (
+export type inferNarrow<In, predicate> = predicate extends (
     data: any,
     ...args: any[]
 ) => data is infer narrowed
