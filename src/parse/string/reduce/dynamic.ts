@@ -10,14 +10,14 @@ import type { requireKeys } from "../../../utils/records.js"
 import { isKeyOf } from "../../../utils/records.js"
 import type { ParseContext } from "../../definition.js"
 import { Scanner } from "../shift/scanner.js"
+import type { Prefix } from "./shared.js"
 import {
-    unclosedGroupMessage,
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
+    writeUnclosedGroupMessage,
     writeUnmatchedGroupCloseMessage,
     writeUnpairableComparatorMessage
 } from "./shared.js"
-import type { Prefix } from "./shared.js"
 
 type BranchState = {
     prefixes: Prefix[]
@@ -65,7 +65,7 @@ export class DynamicState {
 
     finalize() {
         if (this.groups.length) {
-            return this.error(unclosedGroupMessage)
+            return this.error(writeUnclosedGroupMessage(")"))
         }
         this.finalizeBranches()
         this.scanner.finalized = true

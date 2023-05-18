@@ -16,9 +16,12 @@ export const writeUnmatchedGroupCloseMessage = <unscanned extends string>(
 export type writeUnmatchedGroupCloseMessage<unscanned extends string> =
     `Unmatched )${unscanned extends "" ? "" : ` before ${unscanned}`}`
 
-export const unclosedGroupMessage = "Missing )"
+export const writeUnclosedGroupMessage = <missingChar extends string>(
+    missingChar: missingChar
+): writeUnclosedGroupMessage<missingChar> => `Missing ${missingChar}`
 
-export type unclosedGroupMessage = typeof unclosedGroupMessage
+export type writeUnclosedGroupMessage<missingChar extends string> =
+    `Missing ${missingChar}`
 
 export const writeOpenRangeMessage = <
     min extends NumberLiteral,

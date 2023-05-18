@@ -1,5 +1,7 @@
 import type { error } from "../../../../utils/errors.js"
+import type { join } from "../../../../utils/lists.js"
 import { isKeyOf } from "../../../../utils/records.js"
+import type { stringifyUnion } from "../../../../utils/unionToTuple.js"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
@@ -47,12 +49,23 @@ export type parseOperator<s extends StaticState> =
         : error<writeUnexpectedCharacterMessage<"">>
 // @snipEnd
 
-export const writeUnexpectedCharacterMessage = <char extends string>(
-    char: char
-): writeUnexpectedCharacterMessage<char> => `'${char}' is not a valid operator`
+export const writeUnexpectedCharacterMessage = <
+    char extends string,
+    shouldBe extends string
+>(
+    char: char,
+    shouldBe?: shouldBe
+): writeUnexpectedCharacterMessage<char, shouldBe> =>
+    `'${char}' is not allowed here${
+        shouldBe && (` (should be ${shouldBe})` as any)
+    }`
 
-type writeUnexpectedCharacterMessage<char extends string> =
-    `'${char}' is not a valid operator`
+export type writeUnexpectedCharacterMessage<
+    char extends string,
+    shouldBe extends string = ""
+> = `'${char}' is not allowed here${shouldBe extends ""
+    ? ""
+    : ` (should be ${shouldBe})`}`
 
 export const incompleteArrayTokenMessage = `Missing expected ']'`
 

@@ -9,9 +9,9 @@ import type { defined } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import type {
     Prefix,
-    unclosedGroupMessage,
     writeMultipleLeftBoundsMessage,
     writeOpenRangeMessage,
+    writeUnclosedGroupMessage,
     writeUnmatchedGroupCloseMessage,
     writeUnpairableComparatorMessage
 } from "./shared.js"
@@ -241,7 +241,7 @@ export namespace state {
                   scanned: s["scanned"]
                   unscanned: s["unscanned"]
               }>
-        : error<unclosedGroupMessage>
+        : error<writeUnclosedGroupMessage<")">>
 
     type openRangeError<range extends defined<BranchState["range"]>> = error<
         writeOpenRangeMessage<range["limit"], range["comparator"]>

@@ -1,7 +1,7 @@
 import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import {
-    unclosedGroupMessage,
+    writeUnclosedGroupMessage,
     writeUnmatchedGroupCloseMessage
 } from "../../src/parse/string/reduce/shared.js"
 import { writeExpressionExpectedMessage } from "../../src/parse/string/shift/operand/unenclosed.js"

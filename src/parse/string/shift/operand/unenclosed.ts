@@ -12,12 +12,14 @@ import {
 } from "../../../../utils/numericLiterals.js"
 import type { GenericAst, genericAstFrom } from "../../../ast/ast.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
+import type { writeUnclosedGroupMessage } from "../../reduce/shared.js"
 import type {
     AutocompletePrefix,
     state,
     StaticState
 } from "../../reduce/static.js"
 import type { parseUntilFinalizer } from "../../string.js"
+import type { writeUnexpectedCharacterMessage } from "../operator/operator.js"
 import type { Scanner } from "../scanner.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
@@ -101,19 +103,14 @@ type parseArgs<
                 : lookahead extends ","
                 ? parseArgs<name, params, nextUnscanned, $, nextDefs, nextAsts>
                 : error<
-                      writeInvalidGenericParametersMessage<
-                          name,
-                          params,
-                          nextDefs
+                      writeUnexpectedCharacterMessage<
+                          lookahead,
+                          nextAsts["length"] extends params["length"]
+                              ? ">"
+                              : ","
                       >
                   >
-            : error<
-                  writeInvalidGenericParametersMessage<
-                      name,
-                      params,
-                      [...argDefs, finalArgState["scanned"]]
-                  >
-              >
+            : error<writeUnclosedGroupMessage<">">>
         : // propagate error
           finalArgState
     : never
