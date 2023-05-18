@@ -74,7 +74,7 @@ export type keysOf<o> = [o] extends [object]
 
 export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>[]
 
-export const isKeyOf = <k extends string | number, obj extends object>(
+export const isKeyOf = <k extends string | number | symbol, obj extends object>(
     k: k,
     obj: obj
 ): k is Extract<keyof obj, k> => k in obj

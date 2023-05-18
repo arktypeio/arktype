@@ -37,8 +37,7 @@
         "lint": "eslint --max-warnings=0 .",
         "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
         "checkFormat": "prettier --check --ignore-path ./dev/configs/.prettierignore .",
-        "preinstall": "npx only-allow pnpm",
-        "prepare": "husky install dev/configs/.husky",
+        "prepare": "husky install dev/configs/.husky && npx only-allow pnpm",
         "changes": "cd ./dev/configs && node ../../node_modules/@changesets/cli/bin.js",
         "ci:publish": "pnpm changes publish",
         "ci:version": "ts-node ./dev/scripts/updateVersions.ts"

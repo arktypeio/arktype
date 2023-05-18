@@ -23,7 +23,7 @@ export type pathToString<
 
 export type join<
     segments extends Segments,
-    delimiter extends string = "/",
+    delimiter extends string,
     result extends string = ""
 > = segments extends [infer head extends string, ...infer tail extends string[]]
     ? join<

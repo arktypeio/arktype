@@ -29,7 +29,7 @@ type genericScopeNames<
     result = {}
 > = [params, args] extends [
     [infer pHead extends string, ...infer pTail extends string[]],
-    [infer aHead extends string, ...infer aTail extends string[]]
+    [infer aHead, ...infer aTail]
 ]
     ? genericScopeNames<pTail, aTail, result & { [_ in pHead]: aHead }>
     : result
@@ -43,7 +43,10 @@ export type genericAstFrom<
 export type GenericAst<def = unknown, names = unknown> = [def, "<>", names]
 
 export type inferExpression<ast extends List, $> = ast[1] extends "<>"
-    ? inferDefinition<ast[0], bind<$, ast[2]>>
+    ? inferDefinition<
+          ast[0],
+          $ & { [k in keyof ast[2]]: inferAst<ast[2][k], $> }
+      >
     : ast[1] extends "[]"
     ? inferAst<ast[0], $>[]
     : ast[1] extends "|"
