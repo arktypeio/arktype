@@ -49,16 +49,16 @@ export const fullStringParse = (def: string, ctx: ParseContext) => {
 
 type fullStringParse<def extends string, $> = loop<state.initialize<def>, $>
 
-const loop = (s: DynamicState) => {
+export const loop = (s: DynamicState) => {
     while (!s.scanner.finalized) {
         next(s)
     }
     return s.finalize()
 }
 
-type loop<s extends StaticState | error, $> = s extends StaticState
+export type loop<s extends StaticState | error, $> = s extends StaticState
     ? s["unscanned"] extends ""
-        ? state.finalize<s, $>
+        ? extractFinalizedResult<state.finalize<s, $>>
         : s["unscanned"] extends `${Scanner.FinalizingLookahead}${string}`
         ? // ensure the initial > is not treated as a finalizer in an expression like Set<number>5>
           s["unscanned"] extends `>${"=" | ""}${number}${string}`
@@ -67,6 +67,9 @@ type loop<s extends StaticState | error, $> = s extends StaticState
         : loop<next<s, $>, $>
     : // s is an error here
       s
+
+export type extractFinalizedResult<s extends StaticState | error> =
+    s extends StaticState ? s["root"] : s
 
 const next = (s: DynamicState) =>
     s.hasRoot() ? parseOperator(s) : parseOperand(s)
