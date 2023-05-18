@@ -25,7 +25,7 @@ export type inferAst<ast, $> = ast extends List
 
 type genericScopeNames<
     params extends string[],
-    args extends string[],
+    args extends unknown[],
     result = {}
 > = [params, args] extends [
     [infer pHead extends string, ...infer pTail extends string[]],
@@ -36,7 +36,7 @@ type genericScopeNames<
 
 export type genericAstFrom<
     params extends string[],
-    args extends string[],
+    args extends unknown[],
     def
 > = GenericAst<def, genericScopeNames<params, args>>
 

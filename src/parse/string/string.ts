@@ -41,30 +41,36 @@ export const maybeNaiveParse = (def: string, ctx: ParseContext): TypeNode =>
 export const fullStringParse = (def: string, ctx: ParseContext) => {
     const s = new DynamicState(def, ctx)
     parseOperand(s)
-    const result = loop(s).root
+    const result = parseUntilFinalizer(s).root
     return result.isNever()
         ? throwParseError(writeUnsatisfiableExpressionError(def))
         : result
 }
 
-type fullStringParse<def extends string, $> = loop<state.initialize<def>, $>
+type fullStringParse<def extends string, $> = extractFinalizedResult<
+    parseUntilFinalizer<state.initialize<def>, $>
+>
 
-export const loop = (s: DynamicState) => {
+export const parseUntilFinalizer = (s: DynamicState) => {
     while (!s.scanner.finalized) {
         next(s)
     }
     return s.finalize()
 }
 
-export type loop<s extends StaticState | error, $> = s extends StaticState
+export type parseUntilFinalizer<
+    s extends StaticState | error,
+    $
+    // TODO: whitespace here?
+> = s extends StaticState
     ? s["unscanned"] extends ""
-        ? extractFinalizedResult<state.finalize<s, $>>
+        ? state.finalize<s, $>
         : s["unscanned"] extends `${Scanner.FinalizingLookahead}${string}`
         ? // ensure the initial > is not treated as a finalizer in an expression like Set<number>5>
           s["unscanned"] extends `>${"=" | ""}${number}${string}`
-            ? loop<next<s, $>, $>
+            ? parseUntilFinalizer<next<s, $>, $>
             : state.finalize<s, $>
-        : loop<next<s, $>, $>
+        : parseUntilFinalizer<next<s, $>, $>
     : // s is an error here
       s
 

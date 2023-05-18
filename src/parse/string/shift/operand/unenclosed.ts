@@ -17,6 +17,7 @@ import type {
     state,
     StaticState
 } from "../../reduce/static.js"
+import type { parseUntilFinalizer } from "../../string.js"
 import type { Scanner } from "../scanner.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
@@ -41,7 +42,13 @@ export type parseUnenclosed<
         ? result extends error<infer message>
             ? error<message>
             : $ extends { [_ in scanned]: generic<infer params, infer def> }
-            ? parseGeneric<scanned, params, def, state.scanTo<s, nextUnscanned>>
+            ? parseGeneric<
+                  scanned,
+                  params,
+                  def,
+                  state.scanTo<s, nextUnscanned>,
+                  $
+              >
             : state.setRoot<s, result, nextUnscanned>
         : never
     : never
@@ -51,71 +58,35 @@ type parseGeneric<
     name extends string,
     params extends string[],
     def,
-    s extends StaticState
-> = Scanner.shiftUntil<s["unscanned"], ">"> extends Scanner.shiftResult<
-    infer scanned,
-    `>${infer nextUnscanned}`
->
-    ? scanned extends `<${infer args}`
-        ? state.setRoot<
-              s,
-              genericAstFrom<params, split<args, ",">, def>,
-              nextUnscanned
-          >
-        : error<`${name} requires ${params["length"] extends 1
-              ? `parameter ${params[0]}`
-              : `parameters ${join<params>}`}`>
+    s extends StaticState,
+    $
+> = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer nextUnscanned}`
+    ? parseArgs<name, params, def, state.scanTo<s, nextUnscanned>, $>
     : error<`${name} requires ${params["length"] extends 1
           ? `parameter ${params[0]}`
           : `parameters ${join<params>}`}`>
 
-// type parseArgs<
-//     name extends string,
-//     params extends string[],
-//     def,
-//     s extends StaticState,
-//     $,
-//     args extends unknown[] = []
-// > = args["length"] extends params["length"]
-//     ? state.setRoot<s, genericAstFrom<params, args, def>, s["unscanned"]>
-//     : parseArg<state.initialize<s["unscanned"]>, $> extends infer result
-//     ? result extends StaticState
-//         ? result["unscanned"] extends Scanner.shift<
-//               infer lookahead,
-//               infer unscanned
-//           >
-//             ? lookahead extends ","
-//                 ? parseArgs<
-//                       name,
-//                       params,
-//                       def,
-//                       state.scanTo<s, unscanned>,
-//                       $,
-//                       [...args, {}]
-//                   >
-//                 : []
-//             : {}
-//         : // propagate error
-//           result
-//     : never
-
-// type parseArg<s extends StaticState, $> = next<s, $> extends infer result
-//     ? result extends StaticState
-//         ? // Store the shifted root in args,  then parse the next operand if needed, overwriting it
-//           Scanner.skipWhitespace<
-//               result["unscanned"]
-//           > extends `${infer lookahead}${infer nextUnscanned}`
-//             ? lookahead extends "," | ">"
-//                 ? state.finalize<result> extends infer finalizeResult extends StaticState
-//                     ? // if it finalizes successfully, replace {done} with actual unscanned
-//                       state.scanTo<finalizeResult, nextUnscanned>
-//                     : // propagate error
-//                       state.finalize<result>
-//                 : parseArg<result, $>
-//             : error<writeUnterminatedEnclosedMessage<s["unscanned"], ">">>
-//         : // if it's an error, propagate it
-//           result
-//     : never
+type parseArgs<
+    name extends string,
+    params extends string[],
+    def,
+    s extends StaticState,
+    $,
+    args extends unknown[] = []
+> = parseUntilFinalizer<s, $> extends infer nextState
+    ? nextState extends StaticState
+        ? nextState["unscanned"] extends ">"
+            ? args["length"] extends params["length"]
+                ? state.setRoot<
+                      s,
+                      genericAstFrom<params, nextState, def>,
+                      s["unscanned"]
+                  >
+                : {}
+            : {}
+        : // propagate error
+          nextState
+    : never
 
 // TODO: configs attached to type?
 const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
