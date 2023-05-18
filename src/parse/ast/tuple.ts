@@ -22,6 +22,7 @@ import type {
     validateDefinition
 } from "../definition.js"
 import { parseDefinition } from "../definition.js"
+import type { Prefix } from "../string/reduce/shared.js"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
 import {
     type InfixOperator,
@@ -112,6 +113,13 @@ export type validateTuple<def extends List, $> = def extends IndexZeroExpression
     ? validatePostfixExpression<def, $>
     : def extends InfixExpression
     ? validateInfixExpression<def, $>
+    : def extends
+          | readonly ["", ...unknown[]]
+          | readonly [unknown, "", ...unknown[]]
+    ? [
+          def[0] extends "" ? keyof $ | IndexZeroOperator | Prefix : def[0],
+          def[1] extends "" ? keyof $ | IndexOneOperator | Prefix : def[1]
+      ]
     : validateTupleLiteral<def, $>
 
 type validateTupleLiteral<
