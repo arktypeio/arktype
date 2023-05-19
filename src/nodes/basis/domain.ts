@@ -4,38 +4,30 @@ import type { Key } from "../../utils/records.js"
 import type { CompilationState } from "../compilation.js"
 import { In } from "../compilation.js"
 import { Disjoint } from "../disjoint.js"
+import { defineNode } from "../node.js"
 import { BasisLevel, BasisNode } from "./basis.js"
 
-export class DomainNode extends BasisNode<"domain", Domain> {
-    readonly subclass = DomainNode
-    readonly level = "domain"
-    static readonly kind = "basis"
-
-    get domain() {
-        return this.child
-    }
-
-    static compile(domain: Domain) {
-        return domain === "object"
+export const DomainNode = defineNode<Domain>({
+    kind: "basis",
+    condition: (domain) =>
+        domain === "object"
             ? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
-            : `typeof ${In} === "${domain}"`
-    }
+            : `typeof ${In} === "${domain}"`,
+    describe: (domain) => domain,
+    // TODO: don't
+    intersect: (l, r) => l
+})
 
-    toString() {
-        return this.child
-    }
+// getConstructor(): Constructor | undefined {
+//     return this.child === "object"
+//         ? Object(this.child).constructor
+//         : undefined
+// }
 
-    getConstructor(): Constructor | undefined {
-        return this.child === "object"
-            ? Object(this.child).constructor
-            : undefined
-    }
+// literalKeysOf(): Key[] {
+//     return getBaseDomainKeys(this.child)
+// }
 
-    literalKeysOf(): Key[] {
-        return getBaseDomainKeys(this.child)
-    }
-
-    compileTraverse(s: CompilationState) {
-        return s.ifNotThen(this.condition, s.problem("domain", this.child))
-    }
-}
+// compileTraverse(s: CompilationState) {
+//     return s.ifNotThen(this.condition, s.problem("domain", this.child))
+// }

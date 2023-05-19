@@ -1,7 +1,6 @@
 import type { Morph } from "../../parse/ast/morph.js"
 import { intersectUniqueLists } from "../../utils/lists.js"
-import type { CompilationState } from "../compilation.js"
-import { defineNode, Node } from "../node.js"
+import { defineNode } from "../node.js"
 import { registry } from "../registry.js"
 
 export const MorphNode = defineNode<Morph[]>({

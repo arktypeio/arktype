@@ -1,10 +1,6 @@
-import { domainOf } from "../../utils/domains.js"
-import { type Constructor, prototypeKeysOf } from "../../utils/objectKinds.js"
-import type { Key } from "../../utils/records.js"
 import { stringify } from "../../utils/serialize.js"
-import { compileSerializedValue, In } from "../compilation.js"
+import { In, compileSerializedValue } from "../compilation.js"
 import { defineNode } from "../node.js"
-import { BasisNode } from "./basis.js"
 
 export const ValueNode = defineNode<unknown>({
     kind: "divisor",
@@ -18,34 +14,27 @@ export const ValueNode = defineNode<unknown>({
 //     return s.ifNotThen(this.condition, s.problem("value", this.child))
 // }
 
-export class ValueNode extends BasisNode<"value", unknown> {
-    readonly subclass = ValueNode
+// get domain() {
+//     return domainOf(this.child)
+// }
 
-    readonly level = "value"
-    static readonly kind = "basis"
+// static compile(value: unknown) {
+//     return `${In} === ${compileSerializedValue(value)}`
+// }
 
-    get domain() {
-        return domainOf(this.child)
-    }
+// toString() {
+//     return stringify(this.child)
+// }
 
-    static compile(value: unknown) {
-        return `${In} === ${compileSerializedValue(value)}`
-    }
+// getConstructor(): Constructor | undefined {
+//     return this.domain === "object"
+//         ? Object(this.child).constructor
+//         : undefined
+// }
 
-    toString() {
-        return stringify(this.child)
-    }
-
-    getConstructor(): Constructor | undefined {
-        return this.domain === "object"
-            ? Object(this.child).constructor
-            : undefined
-    }
-
-    literalKeysOf(): Key[] {
-        if (this.child === null || this.child === undefined) {
-            return []
-        }
-        return [...prototypeKeysOf(this.child), ...Object.keys(this.child)]
-    }
-}
+// literalKeysOf(): Key[] {
+//     if (this.child === null || this.child === undefined) {
+//         return []
+//     }
+//     return [...prototypeKeysOf(this.child), ...Object.keys(this.child)]
+// }

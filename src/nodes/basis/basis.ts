@@ -13,7 +13,7 @@ import type { Key } from "../../utils/records.js"
 import { stringify } from "../../utils/serialize.js"
 import type { DisjointKindEntries } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
-import { Node } from "../node.js"
+import { defineNode, Node } from "../node.js"
 import { type ConstraintKind } from "../predicate.js"
 import { TypeNode } from "../type.js"
 import type { ClassNode } from "./class.js"
@@ -52,6 +52,10 @@ export const precedenceByLevel: Record<BasisLevel, number> = {
 }
 
 export type BasisNodeSubclass = BasisNodesByLevel[BasisLevel]
+
+// export const BasisNode = defineNode({
+
+// })
 
 export abstract class BasisNode<
     level extends BasisLevel = BasisLevel,
