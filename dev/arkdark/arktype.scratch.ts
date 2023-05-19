@@ -50,4 +50,7 @@ scope({
 
     const $ = scope({ a: "string" })
     const importer = $.scope({ b: "a" })
+
+    const func = (f: any) => f
+    const abc = func($.type("string"))
 }
