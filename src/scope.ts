@@ -10,9 +10,7 @@ import type { split } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
 
 type ScopeParser = {
-    <aliases>(aliases: validateAliases<aliases, Ark>): Scope<
-        parseScope<aliases, Ark>
-    >
+    <aliases>(aliases: validateAliases<aliases>): Scope<parseScope<aliases>>
 
     // <aliases, opts extends ScopeOptions>(
     //     aliases: validateAliases<aliases, opts>,
@@ -24,21 +22,22 @@ type ScopeParser = {
 // ? writeDuplicateAliasesMessage<k & string>
 // :
 
-type validateAliases<aliases, $> = evaluate<{
-    [k in keyof aliases]: validateDefinition<
-        aliases[k],
-        bind<
-            bootstrapScope<aliases>,
-            {
-                [param in paramsFrom<k>[number]]: unknown
-            }
-        > &
-            $
-    >
+type validateAliases<aliases> = evaluate<{
+    [k in keyof aliases]: k extends GenericDeclaration
+        ? validateDefinition<
+              aliases[k],
+              bind<
+                  bootstrapScope<aliases>,
+                  {
+                      [param in paramsFrom<k>[number]]: unknown
+                  }
+              >
+          >
+        : validateDefinition<aliases[k], bootstrapScope<aliases>>
 }>
 
 type bootstrapScope<aliases> = {
-    [k in keyof aliases as localNameOf<k>]: k extends GenericDeclaration<
+    [k in keyof aliases]: k extends GenericDeclaration<
         string,
         infer paramString
     >
@@ -46,13 +45,10 @@ type bootstrapScope<aliases> = {
         : aliases[k] extends Space
         ? aliases[k]
         : alias<aliases[k]>
-}
+} & Ark
 
-type parseScope<aliases, $> = evaluate<{
-    [k in keyof aliases as exportedNameOf<k>]: inferDefinition<
-        aliases[k],
-        bootstrapScope<aliases> & $
-    >
+type parseScope<aliases> = evaluate<{
+    [k in keyof aliases]: inferDefinition<aliases[k], bootstrapScope<aliases>>
 }>
 
 // type parseScope<aliases, $> = opts["standard"] extends false
