@@ -2,38 +2,83 @@ import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
 import { registry } from "./nodes/registry.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { type Ark } from "./scopes/ark.js"
-import type {
-    extractIn,
-    extractOut,
-    KeyCheckKind,
-    TypeConfig,
-    TypeParser
-} from "./type.js"
+import type { KeyCheckKind, TypeConfig, TypeParser } from "./type.js"
 import { Type } from "./type.js"
-import type { error } from "./utils/errors.js"
 import { throwParseError } from "./utils/errors.js"
 import type { evaluate, isAny, nominal } from "./utils/generics.js"
-import type { List, split } from "./utils/lists.js"
+import type { split } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
-import type { stringifyUnion } from "./utils/unionToTuple.js"
 
 type ScopeParser = {
-    <aliases>(aliases: validateAliases<aliases, {}>): Scope<
-        parseScope<aliases, {}>
+    <aliases>(aliases: validateAliases<aliases, Ark>): Scope<
+        parseScope<aliases, Ark>
     >
 
-    <aliases, opts extends ScopeOptions>(
-        aliases: validateAliases<aliases, opts>,
-        opts: validateOptions<opts>
-    ): Scope<parseScope<aliases, opts>>
+    // <aliases, opts extends ScopeOptions>(
+    //     aliases: validateAliases<aliases, opts>,
+    //     opts: validateOptions<opts>
+    // ): Scope<parseScope<aliases, opts>>
 }
+
+// nameFrom<k> extends keyof preresolved<opts>
+// ? writeDuplicateAliasesMessage<k & string>
+// :
+
+type validateAliases<aliases, $> = evaluate<{
+    [k in keyof aliases]: validateDefinition<
+        aliases[k],
+        bind<
+            bootstrapScope<aliases>,
+            {
+                [param in paramsFrom<k>[number]]: unknown
+            }
+        > &
+            $
+    >
+}>
+
+type bootstrapScope<aliases> = {
+    [k in keyof aliases as localNameOf<k>]: k extends GenericDeclaration<
+        string,
+        infer paramString
+    >
+        ? generic<split<paramString, ",">, aliases[k]>
+        : aliases[k] extends Space
+        ? aliases[k]
+        : alias<aliases[k]>
+}
+
+type parseScope<aliases, $> = evaluate<{
+    [k in keyof aliases as exportedNameOf<k>]: inferDefinition<
+        aliases[k],
+        bootstrapScope<aliases> & $
+    >
+}>
+
+// type parseScope<aliases, $> = opts["standard"] extends false
+//     ? [inferExports<aliases, opts>, importsOf<opts>, false]
+//     : opts["imports"] extends Space[]
+//     ? [inferExports<aliases, opts>, importsOf<opts>]
+//     : inferExports<aliases, opts>
+
+export type PrivateAlias<name extends string = string> = `#${name}`
 
 export type GenericDeclaration<
     name extends string = string,
     params extends string = string
 > = `${name}<${params}>`
 
-type nameFrom<scopeKey> = scopeKey extends GenericDeclaration<infer name>
+type localNameOf<scopeKey> = scopeKey extends PrivateAlias<infer name>
+    ? name extends GenericDeclaration<infer genericName>
+        ? genericName
+        : name
+    : scopeKey extends GenericDeclaration<infer name>
+    ? name
+    : scopeKey
+
+type exportedNameOf<scopeKey> = scopeKey extends PrivateAlias
+    ? never
+    : scopeKey extends GenericDeclaration<infer name>
     ? name
     : scopeKey
 
@@ -48,22 +93,6 @@ export type generic<
     params extends string[] = string[],
     def = unknown
 > = nominal<[params, def], "generic">
-
-type validateAliases<aliases, opts extends ScopeOptions> = evaluate<{
-    [k in keyof aliases]: nameFrom<k> extends keyof preresolved<opts>
-        ? writeDuplicateAliasesMessage<k & string>
-        : aliases[k] extends Space
-        ? aliases[k]
-        : validateDefinition<
-              aliases[k],
-              bind<
-                  bootstrapScope<aliases, opts>,
-                  {
-                      [param in paramsFrom<k>[number]]: unknown
-                  }
-              >
-          >
-}>
 
 export type ScopeOptions = {
     // [] allows narrowed tuple inference
@@ -83,30 +112,26 @@ export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
     keys: opts.keys ?? "loose"
 })
 
-type validateOptions<opts extends ScopeOptions> = {
-    [k in keyof opts]: k extends "imports"
-        ? mergeSpaces<opts["imports"]> extends error<infer e>
-            ? e
-            : opts[k]
-        : opts[k]
-}
+// type validateOptions<opts extends ScopeOptions> = {
+//     [k in keyof opts]: k extends "imports"
+//         ? mergeSpaces<opts["imports"]> extends error<infer e>
+//             ? e
+//             : opts[k]
+//         : opts[k]
+// }
 
-export type ScopeInferenceContext = Dict | ScopeContextTuple
-
-type ScopeContextTuple = [exports: Dict, locals: Dict, standard?: false]
-
-type parseScope<
-    aliases,
-    opts extends ScopeOptions
-> = opts["standard"] extends false
-    ? [inferExports<aliases, opts>, importsOf<opts>, false]
-    : opts["imports"] extends Space[]
-    ? [inferExports<aliases, opts>, importsOf<opts>]
-    : inferExports<aliases, opts>
-
-type importsOf<opts extends ScopeOptions> = opts["imports"] extends Space[]
-    ? mergeSpaces<opts["imports"]>
-    : {}
+// type mergeSpaces<spaces, base extends Dict = {}> = spaces extends readonly [
+//     Space<infer head>,
+//     ...infer tail
+// ]
+//     ? keyof base & keyof head extends never
+//         ? mergeSpaces<tail, base & head>
+//         : error<
+//               writeDuplicateAliasesMessage<
+//                   stringifyUnion<keyof base & keyof head & string>
+//               >
+//           >
+//     : base
 
 export type resolve<
     name extends keyof $ | subaliasOf<$>,
@@ -127,17 +152,6 @@ export type resolve<
 
 export type bind<$, names> = $ & { [k in keyof names]: alias<names[k]> }
 
-type exportsOf<ctx extends ScopeInferenceContext> = ctx extends [
-    infer exports,
-    ...unknown[]
-]
-    ? exports
-    : ctx
-
-type localsOf<ctx extends ScopeInferenceContext> = ctx extends List
-    ? ctx["1"] & (ctx["2"] extends false ? {} : Ark)
-    : Ark
-
 export type subaliasOf<$> = {
     [k in keyof $]: $[k] extends Space<infer exports>
         ? {
@@ -146,37 +160,7 @@ export type subaliasOf<$> = {
         : never
 }[keyof $]
 
-type mergeSpaces<spaces, base extends Dict = {}> = spaces extends readonly [
-    Space<infer head>,
-    ...infer tail
-]
-    ? keyof base & keyof head extends never
-        ? mergeSpaces<tail, base & head>
-        : error<
-              writeDuplicateAliasesMessage<
-                  stringifyUnion<keyof base & keyof head & string>
-              >
-          >
-    : base
-
-type preresolved<opts extends ScopeOptions> = importsOf<opts> &
-    (opts["standard"] extends false ? {} : Ark)
-
 export type alias<def = {}> = nominal<def, "alias">
-
-type bootstrapScope<aliases, opts extends ScopeOptions> = {
-    [k in keyof aliases as nameFrom<k>]: k extends nameFrom<k>
-        ? aliases[k] extends Space
-            ? aliases[k]
-            : alias<aliases[k]>
-        : generic<paramsFrom<k>, aliases[k]>
-} & preresolved<opts>
-
-type inferExports<aliases, opts extends ScopeOptions> = evaluate<{
-    [k in keyof aliases]: aliases[k] extends Space
-        ? aliases[k]
-        : inferDefinition<aliases[k], bootstrapScope<aliases, opts>>
-}>
 
 export type Space<exports = Dict> = {
     [k in keyof exports]: exports[k] extends Space
@@ -184,14 +168,14 @@ export type Space<exports = Dict> = {
         : Type<exports[k]>
 }
 
-type resolutions<ctx extends ScopeInferenceContext> = localsOf<ctx> &
-    exportsOf<ctx>
+// type resolutions<ctx extends ScopeInferenceContext> = localsOf<ctx> &
+//     exportsOf<ctx>
 
-type name<ctx extends ScopeInferenceContext> = keyof resolutions<ctx> & string
+// type name<ctx extends ScopeInferenceContext> = keyof resolutions<ctx> & string
 
-export class Scope<context extends ScopeInferenceContext = any> {
-    declare infer: extractOut<exportsOf<context>>
-    declare inferIn: extractIn<exportsOf<context>>
+export class Scope<$ = any> {
+    declare infer: $
+    // declare inferIn: extractIn<exportsOf<$>>
 
     readonly config: ScopeConfig
     private resolutions: Record<string, Type> = {}
@@ -207,22 +191,16 @@ export class Scope<context extends ScopeInferenceContext = any> {
         }
     }
 
-    type: TypeParser<resolutions<context>> = ((
-        def: unknown,
-        config: TypeConfig = {}
-    ) => {
+    type: TypeParser<$> = ((def: unknown, config: TypeConfig = {}) => {
         config
         return new Type(def, this)
     }) as never
 
-    scope<aliases>(
-        aliases: validateAliases<
-            aliases,
-            { imports: [Space<exportsOf<context>>] }
-        >
-    ): Scope<parseScope<aliases, { imports: [Space<exportsOf<context>>] }>> {
-        return new Scope(aliases, { imports: [this.compile()] })
-    }
+    // scope<aliases>(
+    //     aliases: validateAliases<aliases, { imports: [Space<exportsOf<$>>] }>
+    // ): Scope<parseScope<aliases, { imports: [Space<exportsOf<$>>] }>> {
+    //     return new Scope(aliases, { imports: [this.compile()] })
+    // }
 
     private cacheSpaces(spaces: Space[], kind: "imports" | "extends") {
         for (const space of spaces) {
@@ -238,7 +216,7 @@ export class Scope<context extends ScopeInferenceContext = any> {
         }
     }
 
-    maybeResolve(name: name<context>): Type | undefined {
+    maybeResolve(name: string): Type | undefined {
         if (this.resolutions[name]) {
             return this.resolutions[name]
         }
@@ -260,7 +238,7 @@ export class Scope<context extends ScopeInferenceContext = any> {
             }
             this._compiled = true
         }
-        return this.exports as Space<exportsOf<context>>
+        return this.exports as Space<$>
     }
 }
 

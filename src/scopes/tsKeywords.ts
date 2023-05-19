@@ -16,24 +16,21 @@ import { scope } from "../scope.js"
 // "void": "void",
 // "undefined": "undefined"
 
-export const tsKeywordsScope = scope(
-    {
-        any: "unknown" as Inferred<any>,
-        bigint: TypeNode.from({ basis: "bigint" }),
-        boolean: "true|false",
-        false: TypeNode.from({ basis: ["===", false as const] }),
-        never: TypeNode.from(),
-        null: TypeNode.from({ basis: ["===", null] }),
-        number: TypeNode.from({ basis: "number" }),
-        object: TypeNode.from({ basis: "object" }),
-        string: TypeNode.from({ basis: "string" }),
-        symbol: TypeNode.from({ basis: "symbol" }),
-        true: TypeNode.from({ basis: ["===", true as const] }),
-        unknown: TypeNode.from({ basis: undefined }),
-        void: "undefined" as Inferred<void>,
-        undefined: TypeNode.from({ basis: ["===", undefined] })
-    },
-    { name: "ts", standard: false }
-)
+export const tsKeywordsScope = scope({
+    any: "unknown" as Inferred<any>,
+    bigint: TypeNode.from({ basis: "bigint" }),
+    boolean: "true|false",
+    false: TypeNode.from({ basis: ["===", false as const] }),
+    never: TypeNode.from(),
+    null: TypeNode.from({ basis: ["===", null] }),
+    number: TypeNode.from({ basis: "number" }),
+    object: TypeNode.from({ basis: "object" }),
+    string: TypeNode.from({ basis: "string" }),
+    symbol: TypeNode.from({ basis: "symbol" }),
+    true: TypeNode.from({ basis: ["===", true as const] }),
+    unknown: TypeNode.from({ basis: undefined }),
+    void: "undefined" as Inferred<void>,
+    undefined: TypeNode.from({ basis: ["===", undefined] })
+})
 
 export const tsKeywords = tsKeywordsScope.compile()

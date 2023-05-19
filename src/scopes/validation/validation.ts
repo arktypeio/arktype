@@ -84,24 +84,21 @@ const json = TypeNode.from({
 // "semver": "a valid semantic version",
 // "json": "a JSON-parsable string",
 // "integer": "an integer"
-export const validationScope = scope(
-    {
-        // Character sets
-        alpha: /^[A-Za-z]*$/,
-        alphanumeric: /^[A-Za-z\d]*$/,
-        lowercase: /^[a-z]*$/,
-        uppercase: /^[A-Z]*$/,
-        creditCard,
-        email,
-        uuid,
-        parsedNumber,
-        parsedInteger,
-        parsedDate,
-        semver,
-        json,
-        integer: TypeNode.from({ basis: "number", divisor: 1 })
-    },
-    { name: "validation", standard: false }
-)
+export const validationScope = scope({
+    // Character sets
+    alpha: /^[A-Za-z]*$/,
+    alphanumeric: /^[A-Za-z\d]*$/,
+    lowercase: /^[a-z]*$/,
+    uppercase: /^[A-Z]*$/,
+    creditCard,
+    email,
+    uuid,
+    parsedNumber,
+    parsedInteger,
+    parsedDate,
+    semver,
+    json,
+    integer: TypeNode.from({ basis: "number", divisor: 1 })
+})
 
 export const validation = validationScope.compile()

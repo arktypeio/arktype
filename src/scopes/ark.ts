@@ -7,17 +7,11 @@ import { jsObjects, jsObjectsScope } from "./jsObjects.js"
 import { tsKeywords, tsKeywordsScope } from "./tsKeywords.js"
 import { validation, validationScope } from "./validation/validation.js"
 
-export const arkScope = scope(
-    {
-        ...tsKeywords,
-        ...jsObjects,
-        ...validation
-    },
-    {
-        name: "standard",
-        standard: false
-    }
-)
+export const arkScope = scope({
+    ...tsKeywords,
+    ...jsObjects,
+    ...validation
+})
 
 export const ark: Space<Ark> = arkScope.compile()
 

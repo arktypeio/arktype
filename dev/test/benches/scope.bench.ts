@@ -33,8 +33,8 @@ bench("cyclic(100)", () => {
     // .median([417.71, "us"])
     .types([15378, "instantiations"])
 
-// bench("cyclic(500)", () => {
-//     const types = scope(cyclic500).compile()
-// })
-//     // .median([2.62, "ms"])
-//     .types([67195, "instantiations"])
+bench("cyclic(500)", () => {
+    const types = scope(cyclic500).compile()
+})
+    // .median([2.62, "ms"])
+    .types([67195, "instantiations"])
