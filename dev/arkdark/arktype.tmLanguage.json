@@ -9,7 +9,7 @@
     "repository": {
         "definition": {
             "name": "meta.embedded.arktype.definition",
-            "begin": "(([^\\)]*\\.)?(type|scope)\\s*\\()",
+            "begin": "(([^\\)\\(\\s]*\\.)?(type|scope)\\()",
             "beginCaptures": {
                 "1": {
                     "name": "entity.name.function.ts"
