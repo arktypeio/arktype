@@ -30,7 +30,7 @@ suite("group", () => {
             attest(() => {
                 // @ts-expect-error
                 type("string|(boolean|number[]")
-            }).throwsAndHasTypeError(unclosedGroupMessage)
+            }).throwsAndHasTypeError(writeUnclosedGroupMessage(")"))
         })
         test("unmatched )", () => {
             attest(() => {
@@ -54,7 +54,7 @@ suite("group", () => {
             attest(() => {
                 // @ts-expect-error
                 type("(null|(undefined|(1))|2")
-            }).throwsAndHasTypeError(unclosedGroupMessage)
+            }).throwsAndHasTypeError(writeUnclosedGroupMessage(")"))
         })
         test("deep unmatched )", () => {
             attest(() => {

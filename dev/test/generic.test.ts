@@ -21,14 +21,19 @@ const lazily = <t extends object>(thunk: () => t): t => {
 }
 
 suite("generic", () => {
-    const types = lazily(() =>
+    const $ = lazily(() =>
         scope({
-            "box<t,u>": {
-                box: "t|u"
+            "box<t>": {
+                box: "t"
             },
-            bitBox: "box<0|1,box<2|3,true>>"
-        }).compile()
+            "pair<t,u>": ["t", "u"]
+        })
     )
+    const types = lazily(() => $.compile())
+
+    test("unary", () => {
+        $.type("box<t>")
+    })
 
     test("cyclic", () => {
         attest(types.bitBox).types.toString()
