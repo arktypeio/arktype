@@ -46,9 +46,11 @@ scope({
             }
         })
     }).type()
-    const tt = type("Date")
-    const abc = type(`Date`)
     const t = type(`${2}<Date<${4}`)
-    console.log()
-    console.log("abc")
+
+    const $ = scope({ a: "string" })
+    const importer = $.scope({ b: "a" })
+
+    const func = (f: any) => f
+    const abc = func($.type("string"))
 }
