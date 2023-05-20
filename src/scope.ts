@@ -4,20 +4,21 @@ import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import { type Ark } from "./scopes/ark.js"
 import type { KeyCheckKind, TypeConfig, TypeParser } from "./type.js"
 import { Type } from "./type.js"
+import type { error } from "./utils/errors.js"
 import { throwParseError } from "./utils/errors.js"
 import type { evaluate, isAny, nominal } from "./utils/generics.js"
 import type { split } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
+import type { stringifyUnion } from "./utils/unionToTuple.js"
 
 type ScopeParser<$> = {
     <aliases>(aliases: validateAliases<aliases, $>): Scope<
         parseScope<aliases, $>
     >
 
-    // <aliases, opts extends ScopeOptions>(
-    //     aliases: validateAliases<aliases, opts>,
-    //     opts: validateOptions<opts>
-    // ): Scope<parseScope<aliases, opts>>
+    imports: <imports extends Space[] | []>(
+        ...imports: validateImports<imports>
+    ) => ScopeParser<mergeSpaces<imports>>
 }
 
 // nameFrom<k> extends keyof preresolved<opts>
@@ -86,8 +87,6 @@ export type generic<
 > = nominal<[params, def], "generic">
 
 export type ScopeOptions = {
-    // [] allows narrowed tuple inference
-    imports?: Space[] | []
     standard?: boolean
     codes?: Record<ProblemCode, { mustBe?: string }>
     keys?: KeyCheckKind
@@ -111,18 +110,21 @@ export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
 //         : opts[k]
 // }
 
-// type mergeSpaces<spaces, base extends Dict = {}> = spaces extends readonly [
-//     Space<infer head>,
-//     ...infer tail
-// ]
-//     ? keyof base & keyof head extends never
-//         ? mergeSpaces<tail, base & head>
-//         : error<
-//               writeDuplicateAliasesMessage<
-//                   stringifyUnion<keyof base & keyof head & string>
-//               >
-//           >
-//     : base
+type validateImports<imports extends Space[]> =
+    mergeSpaces<imports> extends error<infer e> ? [e] : imports
+
+type mergeSpaces<spaces, base extends Dict = {}> = spaces extends readonly [
+    Space<infer head>,
+    ...infer tail
+]
+    ? keyof base & keyof head extends never
+        ? mergeSpaces<tail, base & head>
+        : error<
+              writeDuplicateAliasesMessage<
+                  stringifyUnion<keyof base & keyof head & string>
+              >
+          >
+    : base
 
 export type resolve<
     name extends keyof $ | subaliasOf<$>,
