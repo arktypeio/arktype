@@ -4,7 +4,7 @@ import type { CheckResult } from "./nodes/traverse.js"
 import { TraversalState } from "./nodes/traverse.js"
 import { type TypeNode } from "./nodes/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
-import type { inferMorphOut, MorphAst, Morph, Out } from "./parse/ast/morph.js"
+import type { inferMorphOut, Morph, MorphAst, Out } from "./parse/ast/morph.js"
 import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
 import {
     type inferDefinition,
@@ -12,7 +12,7 @@ import {
     parseDefinition,
     type validateDefinition
 } from "./parse/definition.js"
-import type { alias, bind, Scope } from "./scope.js"
+import type { bind, Scope } from "./scope.js"
 import { type Ark } from "./scopes/ark.js"
 import { CompiledFunction } from "./utils/compiledFunction.js"
 import type { error } from "./utils/errors.js"

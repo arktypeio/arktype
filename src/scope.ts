@@ -26,16 +26,20 @@ type ScopeParser<$> = {
 // :
 
 type validateAliases<aliases, $> = evaluate<{
-    [k in keyof aliases]: k extends GenericDeclaration
-        ? validateDefinition<
-              aliases[k],
-              bind<
-                  bootstrapScope<aliases, $>,
-                  {
-                      [param in paramsFrom<k>[number]]: unknown
-                  }
+    [k in keyof aliases]: k extends GenericDeclaration<infer name>
+        ? name extends keyof $
+            ? writeDuplicateAliasesMessage<name>
+            : validateDefinition<
+                  aliases[k],
+                  bind<
+                      bootstrapScope<aliases, $>,
+                      {
+                          [param in paramsFrom<k>[number]]: unknown
+                      }
+                  >
               >
-          >
+        : k extends keyof $
+        ? writeDuplicateAliasesMessage<k & string>
         : validateDefinition<aliases[k], bootstrapScope<aliases, $>>
 }>
 
@@ -101,14 +105,6 @@ export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
     codes: {},
     keys: opts.keys ?? "loose"
 })
-
-// type validateOptions<opts extends ScopeOptions> = {
-//     [k in keyof opts]: k extends "imports"
-//         ? mergeSpaces<opts["imports"]> extends error<infer e>
-//             ? e
-//             : opts[k]
-//         : opts[k]
-// }
 
 type validateImports<imports extends Space[]> =
     mergeSpaces<imports> extends error<infer e> ? [e] : imports
