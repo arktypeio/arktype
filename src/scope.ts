@@ -1,6 +1,9 @@
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
-import { inferred } from "./parse/definition.js"
-import type { inferDefinition, validateDefinition } from "./parse/definition.js"
+import type {
+    inferDefinition,
+    inferred,
+    validateDefinition
+} from "./parse/definition.js"
 import type {
     extractIn,
     extractOut,
@@ -9,7 +12,6 @@ import type {
     TypeParser
 } from "./type.js"
 import { Type } from "./type.js"
-import { throwParseError } from "./utils/errors.js"
 import type { evaluate, isAny, nominal } from "./utils/generics.js"
 import type { split } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
@@ -50,9 +52,10 @@ type bootstrapScope<aliases, $> = {
 } & $
 
 type parseScope<aliases, $> = evaluate<{
-    [k in keyof aliases as nameFrom<k>]: aliases[k] extends Space
-        ? aliases[k]
-        : inferDefinition<aliases[k], bootstrapScope<aliases, $>>
+    [k in keyof aliases as nameFrom<k>]: inferDefinition<
+        aliases[k],
+        bootstrapScope<aliases, $>
+    >
 }>
 
 export type PrivateAlias<name extends string = string> = `#${name}`
@@ -129,7 +132,15 @@ export type Space<exports = Dict> = {
     [k in keyof exports]: exports[k] extends Space
         ? exports[k]
         : Type<exports[k]>
+} & {
+    [inferred]: Space<exports>
 }
+
+export const Space = class {
+    constructor(exports: Space) {
+        Object.assign(this, exports)
+    }
+} as new <exports>(exports: exports) => Space<exports>
 
 export class Scope<exports = any, locals = any, root = any> {
     declare infer: extractOut<exports>
@@ -137,8 +148,8 @@ export class Scope<exports = any, locals = any, root = any> {
     declare $: exports & locals & root
 
     readonly config: ScopeConfig
-    private resolutions: Record<string, Type> = {}
-    private exports: Record<string, Type> = {}
+    private resolutions: Record<string, Type | Space> = {}
+    private exports: Record<string, Type | Space> = {}
 
     constructor(public aliases: Dict, opts: ScopeOptions = {}) {
         this.config = compileScopeOptions(opts)
@@ -160,23 +171,10 @@ export class Scope<exports = any, locals = any, root = any> {
         return new Scope(aliases, config)
     }) as never
 
-    private cacheSpaces(spaces: Space[], kind: "imports" | "extends") {
-        for (const space of spaces) {
-            for (const name in space) {
-                if (name in this.resolutions || name in this.aliases) {
-                    throwParseError(writeDuplicateAliasesMessage(name))
-                }
-                this.resolutions[name] = space[name]
-                if (kind === "extends") {
-                    this.exports[name] = space[name]
-                }
-            }
-        }
-    }
-
     maybeResolve(name: string): Type | undefined {
         if (this.resolutions[name]) {
-            return this.resolutions[name]
+            // TODO: Space resolution
+            return this.resolutions[name] as Type
         }
         const aliasDef = this.aliases[name]
         if (!aliasDef) {
@@ -196,7 +194,7 @@ export class Scope<exports = any, locals = any, root = any> {
             }
             this._compiled = true
         }
-        return this.exports as Space<exports>
+        return new Space(this.exports as exports)
     }
 }
 
