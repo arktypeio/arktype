@@ -26,13 +26,15 @@ suite("generic", () => {
             "box<t>": {
                 box: "t"
             },
-            "pair<t,u>": ["t", "u"]
+            "pair<t,u>": ["t", "u"],
+            foo: "box<string>",
+            bar: "boolean"
         })
     )
     const types = lazily(() => $.compile())
 
     test("unary", () => {
-        $.type("box<t>")
+        $.type("box<string>")
     })
 
     test("cyclic", () => {

@@ -9,8 +9,10 @@ import type { evaluate, isAny, nominal } from "./utils/generics.js"
 import type { split } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
 
-type ScopeParser = {
-    <aliases>(aliases: validateAliases<aliases>): Scope<parseScope<aliases>>
+type ScopeParser<$> = {
+    <aliases>(aliases: validateAliases<aliases, $>): Scope<
+        parseScope<aliases, $>
+    >
 
     // <aliases, opts extends ScopeOptions>(
     //     aliases: validateAliases<aliases, opts>,
@@ -22,61 +24,54 @@ type ScopeParser = {
 // ? writeDuplicateAliasesMessage<k & string>
 // :
 
-type validateAliases<aliases> = evaluate<{
+type validateAliases<aliases, $> = evaluate<{
     [k in keyof aliases]: k extends GenericDeclaration
         ? validateDefinition<
               aliases[k],
               bind<
-                  bootstrapScope<aliases>,
+                  bootstrapScope<aliases, $>,
                   {
                       [param in paramsFrom<k>[number]]: unknown
                   }
               >
           >
-        : validateDefinition<aliases[k], bootstrapScope<aliases>>
+        : validateDefinition<aliases[k], bootstrapScope<aliases, $>>
 }>
 
-type bootstrapScope<aliases> = {
-    [k in keyof aliases]: k extends GenericDeclaration<
-        string,
-        infer paramString
-    >
-        ? generic<split<paramString, ",">, aliases[k]>
-        : aliases[k] extends Space
+type bootstrapScope<aliases, $> = {
+    [k in nonGenericNameFrom<keyof aliases>]: aliases[k] extends Space
         ? aliases[k]
         : alias<aliases[k]>
-} & Ark
+} & {
+    [k in genericKey<keyof aliases> as genericNameFrom<k>]: generic<
+        paramsFrom<k>,
+        aliases[k]
+    >
+} & $
 
-type parseScope<aliases> = evaluate<{
-    [k in keyof aliases]: inferDefinition<aliases[k], bootstrapScope<aliases>>
+type parseScope<aliases, $> = evaluate<{
+    [k in keyof aliases as nameFrom<k>]: inferDefinition<
+        aliases[k],
+        bootstrapScope<aliases, $>
+    >
 }>
 
-// type parseScope<aliases, $> = opts["standard"] extends false
-//     ? [inferExports<aliases, opts>, importsOf<opts>, false]
-//     : opts["imports"] extends Space[]
-//     ? [inferExports<aliases, opts>, importsOf<opts>]
-//     : inferExports<aliases, opts>
-
 export type PrivateAlias<name extends string = string> = `#${name}`
+
+type genericKey<k> = k & GenericDeclaration
+
+type genericNameFrom<k> = k extends GenericDeclaration<infer name>
+    ? name
+    : never
+
+type nonGenericNameFrom<k> = Exclude<k, GenericDeclaration>
+
+type nameFrom<k> = nonGenericNameFrom<k> | genericNameFrom<k>
 
 export type GenericDeclaration<
     name extends string = string,
     params extends string = string
 > = `${name}<${params}>`
-
-type localNameOf<scopeKey> = scopeKey extends PrivateAlias<infer name>
-    ? name extends GenericDeclaration<infer genericName>
-        ? genericName
-        : name
-    : scopeKey extends GenericDeclaration<infer name>
-    ? name
-    : scopeKey
-
-type exportedNameOf<scopeKey> = scopeKey extends PrivateAlias
-    ? never
-    : scopeKey extends GenericDeclaration<infer name>
-    ? name
-    : scopeKey
 
 type paramsFrom<scopeKey> = scopeKey extends GenericDeclaration<
     string,
@@ -238,8 +233,10 @@ export class Scope<$ = any> {
     }
 }
 
-export const scope: ScopeParser = ((aliases: Dict, opts: ScopeOptions = {}) =>
-    new Scope(aliases, opts)) as any
+export const scope: ScopeParser<Ark> = ((
+    aliases: Dict,
+    opts: ScopeOptions = {}
+) => new Scope(aliases, opts)) as any
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
