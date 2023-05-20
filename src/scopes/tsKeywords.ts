@@ -1,6 +1,6 @@
 import { TypeNode } from "../nodes/type.js"
 import type { Inferred } from "../parse/definition.js"
-import { scope } from "../scope.js"
+import { RootScope } from "../scope.js"
 
 // "bigint": "a bigint",
 // "boolean": "a boolean",
@@ -16,7 +16,7 @@ import { scope } from "../scope.js"
 // "void": "void",
 // "undefined": "undefined"
 
-export const tsKeywordsScope = scope({
+export const tsKeywordsScope = RootScope.scope({
     any: "unknown" as Inferred<any>,
     bigint: TypeNode.from({ basis: "bigint" }),
     boolean: "true|false",

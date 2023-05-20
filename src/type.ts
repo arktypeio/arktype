@@ -12,7 +12,7 @@ import {
     parseDefinition,
     type validateDefinition
 } from "./parse/definition.js"
-import type { bind, Scope } from "./scope.js"
+import type { alias, Scope } from "./scope.js"
 import { type Ark } from "./scopes/ark.js"
 import { CompiledFunction } from "./utils/compiledFunction.js"
 import type { error } from "./utils/errors.js"
@@ -65,11 +65,11 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         this.allows = root.allows
     }
 
+    // TODO: should return out
     from(literal: this["infer"]) {
         return literal
     }
 
-    // TODO: should return out
     fromIn(literal: this["inferIn"]) {
         return literal
     }
@@ -92,7 +92,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     }
 
     morph<def extends Morph<extractOut<t>>>(
-        def: Morph
+        def: def
     ): Type<(In: extractIn<t>) => Out<inferMorphOut<ReturnType<def>>>, $> {
         return new Type([this.definition, "|>", def], this.scope) as never
     }
@@ -130,7 +130,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     }
 }
 
-type bindThis<$, def> = bind<$, { this: def }>
+type bindThis<$, def> = $ & { this: alias<def> }
 
 type validateChainedExpression<def, $, inferred> =
     def extends validateDefinition<def, $>

@@ -1,17 +1,20 @@
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
-import { registry } from "./nodes/registry.js"
+import { inferred } from "./parse/definition.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
-import { type Ark } from "./scopes/ark.js"
-import type { KeyCheckKind, TypeConfig, TypeParser } from "./type.js"
+import type {
+    extractIn,
+    extractOut,
+    KeyCheckKind,
+    TypeConfig,
+    TypeParser
+} from "./type.js"
 import { Type } from "./type.js"
-import type { error } from "./utils/errors.js"
 import { throwParseError } from "./utils/errors.js"
 import type { evaluate, isAny, nominal } from "./utils/generics.js"
 import type { split } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
-import type { stringifyUnion } from "./utils/unionToTuple.js"
 
-type ScopeParser<parent, root> = {
+export type ScopeParser<parent, root> = {
     <aliases>(aliases: validateAliases<aliases, parent & root>): Scope<
         parseScope<aliases, parent & root>,
         parent,
@@ -19,22 +22,16 @@ type ScopeParser<parent, root> = {
     >
 }
 
-// nameFrom<k> extends keyof preresolved<opts>
-// ? writeDuplicateAliasesMessage<k & string>
-// :
-
 type validateAliases<aliases, $> = evaluate<{
     [k in keyof aliases]: k extends GenericDeclaration<infer name>
         ? name extends keyof $
             ? writeDuplicateAliasesMessage<name>
             : validateDefinition<
                   aliases[k],
-                  bind<
-                      bootstrapScope<aliases, $>,
-                      {
-                          [param in paramsFrom<k>[number]]: unknown
-                      }
-                  >
+                  bootstrapScope<aliases, $> & {
+                      // TODO: allow whitespace here
+                      [param in paramsFrom<k>[number]]: unknown
+                  }
               >
         : k extends keyof $
         ? writeDuplicateAliasesMessage<k & string>
@@ -53,10 +50,9 @@ type bootstrapScope<aliases, $> = {
 } & $
 
 type parseScope<aliases, $> = evaluate<{
-    [k in keyof aliases as nameFrom<k>]: inferDefinition<
-        aliases[k],
-        bootstrapScope<aliases, $>
-    >
+    [k in keyof aliases as nameFrom<k>]: aliases[k] extends Space
+        ? aliases[k]
+        : inferDefinition<aliases[k], bootstrapScope<aliases, $>>
 }>
 
 export type PrivateAlias<name extends string = string> = `#${name}`
@@ -89,7 +85,7 @@ export type generic<
 > = nominal<[params, def], "generic">
 
 export type ScopeOptions = {
-    standard?: boolean
+    root?: Space
     codes?: Record<ProblemCode, { mustBe?: string }>
     keys?: KeyCheckKind
 }
@@ -117,11 +113,7 @@ export type resolve<
     ? any
     : $[name] extends alias<infer def>
     ? inferDefinition<def, $>
-    : // : $[name] extends generic<infer def, infer params>
-      // ? inferDefinition<def, >
-      $[name]
-
-export type bind<$, names> = $ & { [k in keyof names]: alias<names[k]> }
+    : $[name]
 
 export type subaliasOf<$> = {
     [k in keyof $]: $[k] extends Space<infer exports>
@@ -139,14 +131,9 @@ export type Space<exports = Dict> = {
         : Type<exports[k]>
 }
 
-// type resolutions<ctx extends ScopeInferenceContext> = localsOf<ctx> &
-//     exportsOf<ctx>
-
-// type name<ctx extends ScopeInferenceContext> = keyof resolutions<ctx> & string
-
 export class Scope<exports = any, locals = any, root = any> {
-    declare infer: exports
-    // declare inferIn: extractIn<exportsOf<$>>
+    declare infer: extractOut<exports>
+    declare inferIn: extractIn<exports>
     declare $: exports & locals & root
 
     readonly config: ScopeConfig
@@ -155,16 +142,14 @@ export class Scope<exports = any, locals = any, root = any> {
 
     constructor(public aliases: Dict, opts: ScopeOptions = {}) {
         this.config = compileScopeOptions(opts)
-        if (opts.standard !== false) {
-            this.cacheSpaces([registry().ark], "imports")
-        }
-        if (opts.imports) {
-            this.cacheSpaces(opts.imports, "imports")
-        }
+
+        // this.cacheSpaces(opts.root ?? registry().ark, "imports")
+        // if (opts.imports) {
+        //     this.cacheSpaces(opts.imports, "imports")
+        // }
     }
 
     type: TypeParser<this["$"]> = ((def: unknown, config: TypeConfig = {}) => {
-        config
         return new Type(def, this)
     }) as never
 
@@ -172,7 +157,6 @@ export class Scope<exports = any, locals = any, root = any> {
         aliases: Dict,
         config: TypeConfig = {}
     ) => {
-        config
         return new Scope(aliases, config)
     }) as never
 
@@ -216,10 +200,7 @@ export class Scope<exports = any, locals = any, root = any> {
     }
 }
 
-export const scope: ScopeParser<{}, Ark> = ((
-    aliases: Dict,
-    opts: ScopeOptions = {}
-) => new Scope(aliases, opts)) as any
+export const RootScope = new Scope<{}, {}, {}>({}, {})
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(

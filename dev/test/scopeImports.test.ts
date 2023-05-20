@@ -18,37 +18,30 @@ suite("scope imports", () => {
     })
 
     test("multiple", () => {
-        const imported = scope.imports(
-            parent0,
-            parent1
-        )({
+        const imported = scope({ ...parent0, ...parent1 }).scope({
             a: "zero|one|false"
         })
         attest(imported.infer).typed as {
             a: 0 | 1 | false
         }
     })
-    // test("duplicate alias", () => {
-    //     attest(() =>
-    //         scope(
-    //             // @ts-expect-error
-    //             { a: "string" },
-    //             { imports: [scope({ a: "string" }).compile()] }
-    //         ).compile()
-    //     ).throwsAndHasTypeError(writeDuplicateAliasesMessage("a"))
-    // })
-    // test("duplicate imported alias", () => {
-    //     attest(() =>
-    //         scope(
-    //             {},
-    //             {
-    //                 // @ts-expect-error
-    //                 imports: [
-    //                     scope({ a: "string" }).compile(),
-    //                     scope({ a: "string" }).compile()
-    //                 ]
-    //             }
-    //         ).compile()
-    //     ).throwsAndHasTypeError(writeDuplicateAliasesMessage("a"))
-    // })
+
+    test("named", () => {
+        const imported = scope({ parent0, ...parent1 }).scope({
+            a: "parent0.zero|one|false"
+        })
+        attest(imported.infer).typed as {
+            a: 0 | 1 | false
+        }
+    })
+    test("duplicate alias", () => {
+        attest(() =>
+            scope({ a: "boolean" })
+                .scope(
+                    // @ts-expect-error
+                    { a: "string" }
+                )
+                .compile()
+        ).throwsAndHasTypeError(writeDuplicateAliasesMessage("a"))
+    })
 })

@@ -1,13 +1,13 @@
 import { registry } from "../nodes/registry.js"
 import type { Out } from "../parse/ast/morph.js"
-import type { Space } from "../scope.js"
-import { scope } from "../scope.js"
+import type { ScopeParser, Space } from "../scope.js"
+import { RootScope } from "../scope.js"
 import type { TypeParser } from "../type.js"
 import { jsObjects, jsObjectsScope } from "./jsObjects.js"
 import { tsKeywords, tsKeywordsScope } from "./tsKeywords.js"
 import { validation, validationScope } from "./validation/validation.js"
 
-export const arkScope = scope({
+export const arkScope = RootScope.scope({
     ...tsKeywords,
     ...jsObjects,
     ...validation
@@ -75,5 +75,7 @@ export type Ark = {
     WeakSet: WeakSet<object>
     Promise: Promise<unknown>
 }
+
+export const scope: ScopeParser<{}, Ark> = arkScope.scope as never
 
 export const type: TypeParser<Ark> = arkScope.type
