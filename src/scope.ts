@@ -11,14 +11,12 @@ import type { split } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
 import type { stringifyUnion } from "./utils/unionToTuple.js"
 
-type ScopeParser<$> = {
-    <aliases>(aliases: validateAliases<aliases, $>): Scope<
-        parseScope<aliases, $>
+type ScopeParser<parent, root> = {
+    <aliases>(aliases: validateAliases<aliases, parent & root>): Scope<
+        parseScope<aliases, parent & root>,
+        parent,
+        root
     >
-
-    imports: <imports extends Space[] | []>(
-        ...imports: validateImports<imports>
-    ) => ScopeParser<mergeSpaces<imports>>
 }
 
 // nameFrom<k> extends keyof preresolved<opts>
@@ -106,22 +104,6 @@ export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
     keys: opts.keys ?? "loose"
 })
 
-type validateImports<imports extends Space[]> =
-    mergeSpaces<imports> extends error<infer e> ? [e] : imports
-
-type mergeSpaces<spaces, base extends Dict = {}> = spaces extends readonly [
-    Space<infer head>,
-    ...infer tail
-]
-    ? keyof base & keyof head extends never
-        ? mergeSpaces<tail, base & head>
-        : error<
-              writeDuplicateAliasesMessage<
-                  stringifyUnion<keyof base & keyof head & string>
-              >
-          >
-    : base
-
 export type resolve<
     name extends keyof $ | subaliasOf<$>,
     $
@@ -162,9 +144,10 @@ export type Space<exports = Dict> = {
 
 // type name<ctx extends ScopeInferenceContext> = keyof resolutions<ctx> & string
 
-export class Scope<$ = any> {
-    declare infer: $
+export class Scope<exports = any, locals = any, root = any> {
+    declare infer: exports
     // declare inferIn: extractIn<exportsOf<$>>
+    declare $: exports & locals & root
 
     readonly config: ScopeConfig
     private resolutions: Record<string, Type> = {}
@@ -180,16 +163,18 @@ export class Scope<$ = any> {
         }
     }
 
-    type: TypeParser<$> = ((def: unknown, config: TypeConfig = {}) => {
+    type: TypeParser<this["$"]> = ((def: unknown, config: TypeConfig = {}) => {
         config
         return new Type(def, this)
     }) as never
 
-    // scope<aliases>(
-    //     aliases: validateAliases<aliases, { imports: [Space<exportsOf<$>>] }>
-    // ): Scope<parseScope<aliases, { imports: [Space<exportsOf<$>>] }>> {
-    //     return new Scope(aliases, { imports: [this.compile()] })
-    // }
+    scope: ScopeParser<exports, root> = ((
+        aliases: Dict,
+        config: TypeConfig = {}
+    ) => {
+        config
+        return new Scope(aliases, config)
+    }) as never
 
     private cacheSpaces(spaces: Space[], kind: "imports" | "extends") {
         for (const space of spaces) {
@@ -227,11 +212,11 @@ export class Scope<$ = any> {
             }
             this._compiled = true
         }
-        return this.exports as Space<$>
+        return this.exports as Space<exports>
     }
 }
 
-export const scope: ScopeParser<Ark> = ((
+export const scope: ScopeParser<{}, Ark> = ((
     aliases: Dict,
     opts: ScopeOptions = {}
 ) => new Scope(aliases, opts)) as any

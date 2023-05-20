@@ -9,7 +9,7 @@ suite("scope imports", () => {
     const parent1 = lazily(() => scope({ one: "1" }).compile())
 
     test("single", () => {
-        const imported = scope.imports(parent0)({
+        const imported = scope({ ...parent0 }).scope({
             a: "zero[]|true"
         })
         attest(imported.infer).typed as {
