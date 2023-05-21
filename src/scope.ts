@@ -18,7 +18,7 @@ import type { Dict } from "./utils/records.js"
 
 export type ScopeParser<parent, root> = {
     <aliases>(aliases: validateAliases<aliases, parent & root>): Scope<
-        parseScope<aliases, parent & root>,
+        inferScope<bootstrap<aliases>, parent & root>,
         parent,
         root
     >
@@ -30,17 +30,18 @@ type validateAliases<aliases, $> = evaluate<{
             ? writeDuplicateAliasesMessage<name>
             : validateDefinition<
                   aliases[k],
-                  bootstrapScope<aliases, $> & {
-                      // TODO: allow whitespace here
-                      [param in paramsFrom<k>[number]]: unknown
-                  }
+                  $ &
+                      bootstrap<aliases> & {
+                          // TODO: allow whitespace here
+                          [param in paramsFrom<k>[number]]: unknown
+                      }
               >
         : k extends keyof $
         ? writeDuplicateAliasesMessage<k & string>
-        : validateDefinition<aliases[k], bootstrapScope<aliases, $>>
+        : validateDefinition<aliases[k], $ & bootstrap<aliases>>
 }>
 
-type bootstrapScope<aliases, $> = {
+type bootstrap<aliases> = {
     [k in nonGenericNameFrom<keyof aliases>]: aliases[k] extends Space
         ? aliases[k]
         : alias<aliases[k]>
@@ -49,13 +50,12 @@ type bootstrapScope<aliases, $> = {
         paramsFrom<k>,
         aliases[k]
     >
-} & $
+}
 
-type parseScope<aliases, $> = evaluate<{
-    [k in keyof aliases as nameFrom<k>]: inferDefinition<
-        aliases[k],
-        bootstrapScope<aliases, $>
-    >
+type inferScope<bootstrapped, $> = evaluate<{
+    [name in keyof bootstrapped]: bootstrapped[name] extends generic
+        ? bootstrapped[name]
+        : inferDefinition<bootstrapped[name], $ & bootstrapped>
 }>
 
 export type PrivateAlias<name extends string = string> = `#${name}`

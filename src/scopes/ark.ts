@@ -79,3 +79,32 @@ export type Ark = {
 export const scope: ScopeParser<{}, Ark> = arkScope.scope as never
 
 export const type: TypeParser<Ark> = arkScope.type
+
+// import { scope } from "arktype"
+
+// export const tt = scope({
+//     a: {
+//         type: "a",
+//         data: {
+//             id: "number"
+//         }
+//     },
+//     b: {
+//         type: "b",
+//         data: {
+//             id: "string"
+//         }
+//     },
+//     type: "a|b"
+// }).compile()
+
+// // Get validated data or clear, customizable error messages.
+// export const { data, problems } = tt.type({
+//     type: "a",
+//     data: {
+//         id: 2
+//     }
+// })
+
+// // "contributors must be more than 1 items long (was 1)"
+// console.log(problems, data)

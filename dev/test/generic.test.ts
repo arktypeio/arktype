@@ -1,4 +1,4 @@
-import { scope } from "../../src/scope.js"
+import { scope } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 
 const lazily = <t extends object>(thunk: () => t): t => {
@@ -34,7 +34,7 @@ suite("generic", () => {
     const types = lazily(() => $.compile())
 
     test("unary", () => {
-        $.type("box<string>")
+        const t = $.type("box<string>")
     })
 
     test("cyclic", () => {
@@ -58,8 +58,3 @@ suite("generic", () => {
 // }).compile()
 
 // types.nestedBox
-
-const $ = scope({
-    a: "string",
-    b: "a[]"
-})
