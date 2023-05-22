@@ -11,7 +11,7 @@ import type { CompilationState } from "./compilation.js"
 import { createArrayIndexMatcher, PropsNode } from "./constraints/props.js"
 import type { CaseKey, Discriminant, DiscriminantKind } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
-import { Node } from "./node.js"
+import { defineNode, Node } from "./node.js"
 import type {
     ConstraintKind,
     inferPredicateDefinition,
@@ -57,6 +57,10 @@ type extractBases<
           ]
       >
     : result
+
+export const TypeNode = defineNode({
+    kind: "type"
+})
 
 export class TypeNode<t = unknown> extends Node<
     "type",
