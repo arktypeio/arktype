@@ -65,7 +65,7 @@ export type Range = {
 //     ? "items long"
 //     : ""
 
-export const RangeNode = defineNode<Range>({
+export const RangeNode = defineNode<Range>()({
     kind: "range",
     condition: (rule) => `${rule}`,
     describe: (rule) => {

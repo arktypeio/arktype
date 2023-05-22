@@ -60,15 +60,16 @@ export const defineNode =
         def: def,
         methods?: methods
     ) => {
+        type self = Node<rule> & methods
         const instances: {
-            [condition: string]: Node<rule> & methods
+            [condition: string]: self
         } = {}
         const intersections: {
             [lCondition: string]: {
-                [otherCondition: string]: (Node<rule> & methods) | Disjoint
+                [otherCondition: string]: self | Disjoint
             }
         } = {}
-        const createNode = (rule: rule): Node<rule> & methods => {
+        const createNode = (rule: rule): self => {
             const condition = def.condition(rule)
             if (instances[condition]) {
                 return instances[condition]

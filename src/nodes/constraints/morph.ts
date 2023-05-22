@@ -3,7 +3,7 @@ import { intersectUniqueLists } from "../../utils/lists.js"
 import { defineNode } from "../node.js"
 import { registry } from "../registry.js"
 
-export const MorphNode = defineNode<Morph[]>({
+export const MorphNode = defineNode<Morph[]>()({
     kind: "morph",
     condition: (rules) => {
         // Avoid alphabetical sorting since morphs are non-commutative,

@@ -3,7 +3,7 @@ import { intersectUniqueLists } from "../../utils/lists.js"
 import { defineNode } from "../node.js"
 import { registry } from "../registry.js"
 
-export const NarrowNode = defineNode<Narrow[]>({
+export const NarrowNode = defineNode<Narrow[]>()({
     kind: "narrow",
     condition: (rules) => {
         // Depending on type-guards, altering the order in which narrows run could
