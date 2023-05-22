@@ -273,11 +273,13 @@ const excludedIndicesSource = (firstVariadic: number) => {
     return `${excludedIndexMatcherStart}${excludedIndices}${excludedIndexMatcherEnd}${arrayIndexMatcherSuffix}` as const
 }
 
-type VariadicIndexMatcherSource = ReturnType<typeof excludedIndicesSource>
+export type VariadicIndexMatcherSource = ReturnType<
+    typeof excludedIndicesSource
+>
 
 const nonVariadicIndexMatcherSource = `^${arrayIndexMatcherSuffix}` as const
 
-type NonVariadicIndexMatcherSource = typeof nonVariadicIndexMatcherSource
+export type NonVariadicIndexMatcherSource = typeof nonVariadicIndexMatcherSource
 
 export const createArrayIndexMatcher = <index extends number>(
     firstVariadic: index

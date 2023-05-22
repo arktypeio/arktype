@@ -9,7 +9,7 @@ import { neverTypeNode } from "../../type.js"
 
 export type PropsChildren = [NamedNodes, ...IndexedNodeEntry[]]
 
-export class PropsNode extends defineNode<PropsChildren>()({
+export class EntryNode extends defineNode<PropsChildren>()({
     kind: "entry",
     condition: (n) => {
         indexed.sort((l, r) => (l[0].condition >= r[0].condition ? 1 : -1))
@@ -18,7 +18,7 @@ export class PropsNode extends defineNode<PropsChildren>()({
         this.namedEntries = sortedNamedEntries
     },
     describe: (n) => `props`,
-    intersect: (l, r) => l
+    intersect: (l, r) => {}
 }) {
     private static compileNamedEntry(entry: NamedNodeEntry) {
         const valueCheck = entry[1].value.condition.replaceAll(
@@ -154,10 +154,10 @@ export const createArrayIndexMatcher = <index extends number>(
         : VariadicIndexMatcherSource
 
 const extractArrayIndexRegex = (keyNode: TypeNode<string>) => {
-    if (keyNode.children.length !== 1) {
+    if (keyNode.rule.length !== 1) {
         return
     }
-    const regexNode = keyNode.children[0].getConstraint("regex")
+    const regexNode = keyNode.rule[0].getConstraint("regex")
     if (!regexNode || regexNode.children.length !== 1) {
         return
     }
