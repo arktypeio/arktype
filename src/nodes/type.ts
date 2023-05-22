@@ -58,7 +58,7 @@ type extractBases<
       >
     : result
 
-export const TypeNode = defineNode({
+export const TypeNode = defineNode<PredicateNode[]>({
     kind: "type"
 })
 

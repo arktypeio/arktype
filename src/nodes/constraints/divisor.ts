@@ -8,8 +8,6 @@ export const DivisorNode = defineNode<number>({
     intersect: (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r))
 })
 
-const z = DivisorNode(5)
-
 // compile: (n, condition, s) => s.ifNotThen(condition, s.problem("divisor", n))
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
