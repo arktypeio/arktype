@@ -20,8 +20,8 @@ import type {
     NamedPropsInput,
     PropsInput,
     PropsInputTuple
-} from "./constraints/props.js"
-import { emptyPropsNode, PropsNode } from "./constraints/props.js"
+} from "./constraints/props/props.js"
+import { emptyPropsNode, PropsNode } from "./constraints/props/props.js"
 import { RangeNode } from "./constraints/range.js"
 import { RegexNode } from "./constraints/regex.js"
 // import { RegexNode } from "./constraints/regex.js"

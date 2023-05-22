@@ -24,6 +24,12 @@ jobs:
             - name: prChecks
               run: pnpm prChecks
 
+            - name: TSC Diagnostics Diff
+              uses: beerose/tsc-diff-action@v0.0.1
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  leave-comment: true
+
     compatibility:
         needs: core
         timeout-minutes: 20

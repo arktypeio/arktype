@@ -8,7 +8,10 @@ import { type BasisInput } from "./basis/basis.js"
 import { ClassNode } from "./basis/class.js"
 import type { ValueNode } from "./basis/value.js"
 import type { CompilationState } from "./compilation.js"
-import { createArrayIndexMatcher, PropsNode } from "./constraints/props.js"
+import {
+    createArrayIndexMatcher,
+    PropsNode
+} from "./constraints/props/props.js"
 import { Discriminant } from "./discriminate.js"
 import type { CaseKey, DiscriminantKind } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"

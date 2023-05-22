@@ -3,7 +3,7 @@ import {
     type NamedNodes,
     type PropKind,
     PropsNode
-} from "../nodes/constraints/props.js"
+} from "../nodes/constraints/props/props.js"
 import { PredicateNode } from "../nodes/predicate.js"
 import { TypeNode } from "../nodes/type.js"
 import type { evaluate } from "../utils/generics.js"
