@@ -30,7 +30,7 @@ import { defineNode, Node } from "./node.js"
 import type { TypeNode } from "./type.js"
 import { neverTypeNode } from "./type.js"
 
-export class Predicate extends defineNode<PredicateRules>() {}
+export type PredicateNode = typeof PredicateNode
 
 export const PredicateNode = defineNode<PredicateRules, PredicateInput>()({
     kind: "predicate",
@@ -95,7 +95,7 @@ export const PredicateNode = defineNode<PredicateRules, PredicateInput>()({
                 rules.push(rNode)
             }
         }
-        return new PredicateNode(...rules)
+        return rules
     }
 })
 

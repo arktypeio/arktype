@@ -36,77 +36,89 @@ type NodeDefinition<rule, input> = {
     // compile(rule: rule, condition: string, s: CompilationState): string
 }
 
-type NodeMethods<rule> = Record<
-    string,
-    (this: Node<rule>, ...args: never[]) => unknown
->
-
-// We have to use an interface to reference `this`
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-export interface Node<rule = unknown> {
-    kind: string
-    condition: string
-    rule: rule
-    allows: (data: unknown) => boolean
-    intersect: (other: this) => this | Disjoint
-}
-
 export const defineNode =
     <rule, input = rule>() =>
-    <
-        def extends NodeDefinition<rule, input>,
-        methods extends NodeMethods<rule>
-    >(
-        def: def,
-        methods?: methods
-    ) => {
-        type self = Node<rule> & methods
+    <def extends NodeDefinition<rule, input>>(def: def) => {
         const instances: {
-            [condition: string]: self
+            [condition: string]: Node
         } = {}
         const intersections: {
             [lCondition: string]: {
-                [otherCondition: string]: self | Disjoint
+                [otherCondition: string]: Node | Disjoint
             }
         } = {}
-        const createNode = (rule: rule): self => {
-            const condition = def.condition(rule)
-            if (instances[condition]) {
-                return instances[condition]
+        class Node {
+            declare kind: string
+            declare condition: string
+            declare allows: (data: unknown) => boolean
+
+            constructor(public rule: rule) {
+                const condition = def.condition(rule)
+                if (instances[condition]) {
+                    return instances[condition]
+                }
+                this.kind = def.kind
+                this.condition = condition
+                this.allows = new CompiledFunction(In, `return ${condition}`)
             }
-            const node = Object.assign(
-                {
-                    kind: def.kind,
-                    condition,
-                    rule,
-                    allows: new CompiledFunction(In, `return ${condition}`),
-                    intersect(other) {
-                        if (this === other) {
-                            return this
-                        }
-                        if (intersections[condition][other.condition]) {
-                            return intersections[condition][other.condition]
-                        }
-                        const result = def.intersect(this.rule, other.rule)
-                        if (result instanceof Disjoint) {
-                            intersections[this.condition][other.condition] =
-                                result
-                            intersections[other.condition][this.condition] =
-                                result.invert()
-                            return result
-                        }
-                        const resultNode = createNode(result)
-                        intersections[this.condition][other.condition] =
-                            resultNode
-                        intersections[other.condition][this.condition] =
-                            resultNode
-                        return resultNode
-                    }
-                } as Node<rule>,
-                methods
-            )
-            instances[condition] = node
-            return node
+
+            intersect(other: this) {
+                if (this === other) {
+                    return this
+                }
+                if (intersections[this.condition][other.condition]) {
+                    return intersections[this.condition][other.condition]
+                }
+                const result = def.intersect(this.rule, other.rule)
+                if (result instanceof Disjoint) {
+                    intersections[this.condition][other.condition] = result
+                    intersections[other.condition][this.condition] =
+                        result.invert()
+                    return result
+                }
+                const resultNode = new Node(result)
+                intersections[this.condition][other.condition] = resultNode
+                intersections[other.condition][this.condition] = resultNode
+                return resultNode
+            }
         }
-        return createNode
+        return Node
     }
+
+// const createNode = (rule: rule): self => {
+//     const condition = def.condition(rule)
+//     if (instances[condition]) {
+//         return instances[condition]
+//     }
+//     const node = Object.assign(
+//         {
+//             kind: def.kind,
+//             condition,
+//             rule,
+//             allows: new CompiledFunction(In, `return ${condition}`),
+//             intersect(other) {
+//                 if (this === other) {
+//                     return this
+//                 }
+//                 if (intersections[condition][other.condition]) {
+//                     return intersections[condition][other.condition]
+//                 }
+//                 const result = def.intersect(this.rule, other.rule)
+//                 if (result instanceof Disjoint) {
+//                     intersections[this.condition][other.condition] = result
+//                     intersections[other.condition][this.condition] =
+//                         result.invert()
+//                     return result
+//                 }
+//                 const resultNode = createNode(result)
+//                 intersections[this.condition][other.condition] = resultNode
+//                 intersections[other.condition][this.condition] = resultNode
+//                 return resultNode
+//             }
+//         } as Node<rule>,
+//         methods
+//     )
+//     instances[condition] = node
+//     return node
+// }
+// return createNode
