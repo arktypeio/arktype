@@ -3,7 +3,7 @@ import { intersectUniqueLists } from "../../utils/lists.js"
 import { defineNode } from "../node.js"
 import { registry } from "../registry.js"
 
-export const NarrowNode = defineNode<Narrow[]>()({
+export class NarrowNode extends defineNode<Narrow[]>()({
     kind: "narrow",
     condition: (rules) => {
         // Depending on type-guards, altering the order in which narrows run could
@@ -17,7 +17,7 @@ export const NarrowNode = defineNode<Narrow[]>()({
         return `narrowed by ${rules.map((rule) => rule.name)}`
     },
     intersect: intersectUniqueLists
-})
+}) {}
 
 //     compileTraverse(s: CompilationState) {
 //         return s.ifNotThen("false", s.problem("custom", "filters"))

@@ -1,14 +1,14 @@
 import { stringify } from "../../utils/serialize.js"
-import { In, compileSerializedValue } from "../compilation.js"
+import { compileSerializedValue, In } from "../compilation.js"
 import { defineNode } from "../node.js"
 
-export const ValueNode = defineNode<unknown>({
+export class ValueNode extends defineNode<unknown>()({
     kind: "divisor",
     condition: (v) => `${In} === ${compileSerializedValue(v)}`,
     describe: (v) => `${stringify(v)}`,
     // TODO: don't
     intersect: (l, r) => l
-})
+}) {}
 
 // compileTraverse(s: CompilationState) {
 //     return s.ifNotThen(this.condition, s.problem("value", this.child))

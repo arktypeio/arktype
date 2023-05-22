@@ -7,7 +7,7 @@ import { Disjoint } from "../disjoint.js"
 import { defineNode } from "../node.js"
 import { BasisLevel, BasisNode } from "./basis.js"
 
-export const DomainNode = defineNode<Domain>({
+export class DomainNode extends defineNode<Domain>()({
     kind: "basis",
     condition: (domain) =>
         domain === "object"
@@ -16,7 +16,7 @@ export const DomainNode = defineNode<Domain>({
     describe: (domain) => domain,
     // TODO: don't
     intersect: (l, r) => l
-})
+}) {}
 
 // getConstructor(): Constructor | undefined {
 //     return this.child === "object"

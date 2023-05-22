@@ -11,22 +11,8 @@ import { Disjoint } from "./disjoint.js"
 import type { PredicateNode } from "./predicate.js"
 import type { TypeNode } from "./type.js"
 
-export type NodeKinds = {
-    type: typeof TypeNode
-    predicate: typeof PredicateNode
-    basis: typeof BasisNode
-    divisor: typeof DivisorNode
-    range: typeof RangeNode
-    regex: typeof RegexNode
-    props: typeof PropsNode
-    narrow: typeof NarrowNode
-    morph: typeof MorphNode
-}
-
-export type NodeKind = keyof NodeKinds
-
 type NodeDefinition<rule, input> = {
-    readonly kind: NodeKind
+    readonly kind: string
     condition(rule: rule): string
     describe(rule: rule): string
     intersect(l: rule, r: rule): rule | Disjoint

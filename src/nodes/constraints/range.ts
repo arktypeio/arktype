@@ -65,7 +65,7 @@ export type Range = {
 //     ? "items long"
 //     : ""
 
-export const RangeNode = defineNode<Range>()({
+export class RangeNode extends defineNode<Range>()({
     kind: "range",
     condition: (rule) => `${rule}`,
     describe: (rule) => {
@@ -107,7 +107,7 @@ export const RangeNode = defineNode<Range>()({
         }
         return stricterMax === "l" ? l : r
     }
-})
+}) {}
 
 const boundToExpression = (
     kind: keyof Range,

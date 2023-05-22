@@ -4,7 +4,7 @@ import { In } from "../compilation.js"
 import { defineNode } from "../node.js"
 import { registry } from "../registry.js"
 
-export const ClassNode = defineNode<AbstractableConstructor>({
+export class ClassNode extends defineNode<AbstractableConstructor>()({
     kind: "divisor",
     condition: (rule) =>
         `${In} instanceof ${
@@ -13,7 +13,7 @@ export const ClassNode = defineNode<AbstractableConstructor>({
         }`,
     describe: (rule) => rule.name,
     intersect: (l, r) => l
-})
+}) {}
 
 // readonly domain = "object"
 

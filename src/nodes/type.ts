@@ -76,9 +76,10 @@ const BaseTypeNode = defineNode<PredicateNode[]>()({
             ? "never"
             : branches.map((branch) => branch.toString()).join(" or ")
     },
-    intersect: (l, r) => {
-        if (l.rule.length === 1 && r.children.length === 1) {
-            return l.children[0].intersect(r.children[0])
+    intersect: (l, r): PredicateNode[] | Disjoint => {
+        if (l.length === 1 && r.length === 1) {
+            const result = l[0].intersect(r[0])
+            return result instanceof Disjoint ? result : [result]
         }
         // Branches that are determined to be a subtype of an opposite branch are
         // guaranteed to be a member of the final reduced intersection, so long as
@@ -90,14 +91,12 @@ const BaseTypeNode = defineNode<PredicateNode[]>()({
         // subtype or equal of any lBranch, the corresponding value should be
         // set to null so we can avoid including previous/future intersections
         // in the final result.
-        const candidatesByR: (PredicateNode[] | null)[] = r.children.map(
-            () => []
-        )
-        for (let lIndex = 0; lIndex < l.children.length; lIndex++) {
-            const lBranch = l.children[lIndex]
+        const candidatesByR: (PredicateNode[] | null)[] = r.map(() => [])
+        for (let lIndex = 0; lIndex < l.length; lIndex++) {
+            const lBranch = l[lIndex]
             let currentCandidateByR: { [rIndex in number]: PredicateNode } = {}
-            for (let rIndex = 0; rIndex < r.children.length; rIndex++) {
-                const rBranch = r.children[rIndex]
+            for (let rIndex = 0; rIndex < r.length; rIndex++) {
+                const rBranch = r[rIndex]
                 if (!candidatesByR[rIndex]) {
                     // we've identified this rBranch as a subtype of
                     // an lBranch and will not yield any distinct intersections.
@@ -228,7 +227,7 @@ export class TypeNode<t = unknown> extends BaseTypeNode {
         if (this._keyof) {
             return this._keyof
         }
-        let result = this.children[0].keyof()
+        let result = this.rule[0].keyof()
         for (let i = 1; i < this.children.length; i++) {
             result = result.and(this.children[i].keyof())
         }

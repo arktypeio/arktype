@@ -2,7 +2,7 @@ import { intersectUniqueLists } from "../../utils/lists.js"
 import { In } from "../compilation.js"
 import { defineNode } from "../node.js"
 
-export const RegexNode = defineNode<string[]>()({
+export class RegexNode extends defineNode<string[]>()({
     kind: "regex",
     condition: (sources) =>
         sources.map(compileExpression).sort().join(" && ") ?? "true",
@@ -13,7 +13,7 @@ export const RegexNode = defineNode<string[]>()({
             : `expressions ${literals.join(", ")}`
     },
     intersect: intersectUniqueLists
-})
+}) {}
 
 // return this.children
 // .map((source) =>
