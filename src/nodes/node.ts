@@ -6,6 +6,7 @@ import type { MorphNode } from "./constraints/morph.js"
 import type { NarrowNode } from "./constraints/narrow.js"
 import type { PropsNode } from "./constraints/props.js"
 import type { RangeNode } from "./constraints/range.js"
+import type { RegexNode } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
 import type { PredicateNode } from "./predicate.js"
 import type { TypeNode } from "./type.js"
@@ -35,6 +36,11 @@ type NodeDefinition<rule, input> = {
     // compile(rule: rule, condition: string, s: CompilationState): string
 }
 
+type NodeMethods<rule> = Record<
+    string,
+    (this: Node<rule>, ...args: never[]) => unknown
+>
+
 // We have to use an interface to reference `this`
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export interface Node<rule = unknown> {
@@ -45,49 +51,61 @@ export interface Node<rule = unknown> {
     intersect: (other: this) => this | Disjoint
 }
 
-export const defineNode = <rule, input = rule>(
-    def: NodeDefinition<rule, input>
-) => {
-    const instances: {
-        [condition: string]: Node<rule>
-    } = {}
-    const intersections: {
-        [lCondition: string]: {
-            [otherCondition: string]: Node<rule> | Disjoint
-        }
-    } = {}
-    const createNode = (rule: rule): Node<rule> => {
-        const condition = def.condition(rule)
-        if (instances[condition]) {
-            return instances[condition]
-        }
-        const node: Node<rule> = {
-            kind: def.kind,
-            condition,
-            rule,
-            allows: new CompiledFunction(In, `return ${condition}`),
-            intersect(other) {
-                if (this === other) {
-                    return this
-                }
-                if (intersections[condition][other.condition]) {
-                    return intersections[condition][other.condition]
-                }
-                const result = def.intersect(this.rule, other.rule)
-                if (result instanceof Disjoint) {
-                    intersections[this.condition][other.condition] = result
-                    intersections[other.condition][this.condition] =
-                        result.invert()
-                    return result
-                }
-                const resultNode = createNode(result)
-                intersections[this.condition][other.condition] = resultNode
-                intersections[other.condition][this.condition] = resultNode
-                return resultNode
+export const defineNode =
+    <rule, input = rule>() =>
+    <
+        def extends NodeDefinition<rule, input>,
+        methods extends NodeMethods<rule>
+    >(
+        def: def,
+        methods?: methods
+    ) => {
+        const instances: {
+            [condition: string]: Node<rule> & methods
+        } = {}
+        const intersections: {
+            [lCondition: string]: {
+                [otherCondition: string]: (Node<rule> & methods) | Disjoint
             }
+        } = {}
+        const createNode = (rule: rule): Node<rule> & methods => {
+            const condition = def.condition(rule)
+            if (instances[condition]) {
+                return instances[condition]
+            }
+            const node = Object.assign(
+                {
+                    kind: def.kind,
+                    condition,
+                    rule,
+                    allows: new CompiledFunction(In, `return ${condition}`),
+                    intersect(other) {
+                        if (this === other) {
+                            return this
+                        }
+                        if (intersections[condition][other.condition]) {
+                            return intersections[condition][other.condition]
+                        }
+                        const result = def.intersect(this.rule, other.rule)
+                        if (result instanceof Disjoint) {
+                            intersections[this.condition][other.condition] =
+                                result
+                            intersections[other.condition][this.condition] =
+                                result.invert()
+                            return result
+                        }
+                        const resultNode = createNode(result)
+                        intersections[this.condition][other.condition] =
+                            resultNode
+                        intersections[other.condition][this.condition] =
+                            resultNode
+                        return resultNode
+                    }
+                } as Node<rule>,
+                methods
+            )
+            instances[condition] = node
+            return node
         }
-        instances[condition] = node
-        return node
+        return createNode
     }
-    return createNode
-}
