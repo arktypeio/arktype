@@ -1,36 +1,34 @@
-import { throwInternalError } from "../../utils/errors.js"
-import type { evaluate } from "../../utils/generics.js"
-import type { List } from "../../utils/lists.js"
-import type { NumberLiteral } from "../../utils/numericLiterals.js"
-import { tryParseWellFormedInteger } from "../../utils/numericLiterals.js"
-import type { Key, mutable } from "../../utils/records.js"
-import { fromEntries, hasKeys } from "../../utils/records.js"
+import { throwInternalError } from "../../../utils/errors.js"
+import type { evaluate } from "../../../utils/generics.js"
+import type { List } from "../../../utils/lists.js"
+import type { NumberLiteral } from "../../../utils/numericLiterals.js"
+import { tryParseWellFormedInteger } from "../../../utils/numericLiterals.js"
+import type { Key, mutable } from "../../../utils/records.js"
+import { fromEntries, hasKeys } from "../../../utils/records.js"
 import {
     type CompilationState,
     compilePropAccess,
     In,
     IndexIn
-} from "../compilation.js"
-import type { DiscriminantKind } from "../discriminate.js"
-import type { DisjointsSources } from "../disjoint.js"
-import { Disjoint } from "../disjoint.js"
-import { Node } from "../node.js"
-import type { PredicateInput } from "../predicate.js"
-import type { inferTypeInput, TypeInput } from "../type.js"
+} from "../../compilation.js"
+import type { DiscriminantKind } from "../../discriminate.js"
+import type { DisjointsSources } from "../../disjoint.js"
+import { Disjoint } from "../../disjoint.js"
+import { defineNode } from "../../node.js"
+import type { PredicateInput } from "../../predicate.js"
+import type { inferTypeInput, TypeInput } from "../../type.js"
 import {
     neverTypeNode,
     TypeNode,
     typeNodeFromInput,
     unknownTypeNode
-} from "../type.js"
+} from "../../type.js"
 
-export class PropsNode extends Node<"props"> {
-    namedEntries: NamedNodeEntry[]
+export type PropsChildren = [NamedNodes, ...IndexedNodeEntry[]]
 
-    // TODO: standarize entry to a node
-    children: [NamedNodeEntry[], IndexedNodeEntry[]]
-
-    constructor(public named: NamedNodes, public indexed: IndexedNodeEntry[]) {
+export class PropsNode extends defineNode<PropsChildren>()({
+    kind: "props",
+    condition: (n) => {
         // Sort keys first by precedence (prerequisite,required,optional),
         // then alphebetically by name (bar, baz, foo)
         const sortedNamedEntries = Object.entries(named).sort((l, r) => {
@@ -48,55 +46,32 @@ export class PropsNode extends Node<"props"> {
         const condition = PropsNode.compile(sortedNamedEntries, indexed)
         super("props", condition)
         this.namedEntries = sortedNamedEntries
-        this.children = [this.namedEntries, this.indexed]
+    },
+    describe: (n) => `props`,
+    intersect: (l, r) => l
+}) {
+    get namedEntries() {
+        return Object.entries(this.named)
     }
 
-    static compile(named: NamedNodeEntry[], indexed: IndexedNodeEntry[]) {
+    get named() {
+        return this.children[0]
+    }
+
+    get indexed() {
         const checks: string[] = []
-        for (const entry of named) {
-            checks.push(PropsNode.compileNamedEntry(entry))
+        for (const k in named) {
+            checks.push(PropsNode.compileNamedEntry([k, named[k]]))
         }
         for (const entry of indexed) {
             checks.push(PropsNode.compileIndexedEntry(entry))
         }
         return checks.join(" && ") || "true"
+        return this.children.slice(1) as IndexedNodeEntry[]
     }
 
-    private static compileNamedEntry(entry: NamedNodeEntry) {
-        const valueCheck = entry[1].value.condition.replaceAll(
-            In,
-            `${In}${compilePropAccess(entry[0])}`
-        )
-        return entry[1].kind === "optional"
-            ? `!('${entry[0]}' in ${In}) || ${valueCheck}`
-            : valueCheck
-    }
-
-    private static compileIndexedEntry(entry: IndexedNodeEntry) {
-        const indexMatcher = extractArrayIndexRegex(entry[0])
-        if (indexMatcher) {
-            return PropsNode.compileArrayElementsEntry(indexMatcher, entry[1])
-        }
-        return throwInternalError(`Unexpected index type ${entry[0].condition}`)
-    }
-
-    private static compileArrayElementsEntry(
-        indexMatcher: ArrayIndexMatcherSource,
-        valueNode: TypeNode
-    ) {
-        const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
-        const elementCondition = valueNode.condition
-            .replaceAll(IndexIn, `${IndexIn}Inner`)
-            .replaceAll(In, `${In}[${IndexIn}]`)
-        const result = `(() => {
-            let valid = true;
-            for(let ${IndexIn} = ${firstVariadicIndex}; ${IndexIn} < ${In}.length; ${IndexIn}++) {
-                valid = ${elementCondition} && valid;
-            }
-            return valid
-        })()`
-        return result
-    }
+    // // TODO: standarize entry to a node
+    // children: [NamedNodeEntry[], IndexedNodeEntry[]]
 
     static from(
         namedInput: NamedPropsInput,
@@ -115,7 +90,7 @@ export class PropsNode extends Node<"props"> {
                 typeNodeFromInput(valueInput)
             ]
         )
-        return new PropsNode(named, indexed)
+        return new PropsNode(named, ...indexed)
     }
 
     toString() {
@@ -208,34 +183,7 @@ export class PropsNode extends Node<"props"> {
                 (entry) => !extractArrayIndexRegex(entry[0])
             )
         }
-        return new PropsNode(named, indexed)
-    }
-
-    private intersectNamedProp(
-        name: string,
-        r: NamedNode
-    ): NamedNode | Disjoint {
-        const l = this.named[name]
-        const kind =
-            l.kind === "prerequisite" || r.kind === "prerequisite"
-                ? "prerequisite"
-                : l.kind === "required" || r.kind === "required"
-                ? "required"
-                : "optional"
-        const result = l.value.intersect(r.value)
-        if (result instanceof Disjoint) {
-            if (kind === "optional") {
-                return {
-                    kind: "optional",
-                    value: neverTypeNode
-                }
-            }
-            return result
-        }
-        return {
-            kind,
-            value: result
-        }
+        return new PropsNode(named, ...indexed)
     }
 
     pruneDiscriminant(path: string[], kind: DiscriminantKind): PropsNode {
@@ -249,7 +197,7 @@ export class PropsNode extends Node<"props"> {
                 value: prunedValue
             }
         }
-        return new PropsNode(preserved, this.indexed)
+        return new PropsNode(preserved, ...this.indexed)
     }
 
     private _keyof?: TypeNode<Key>
@@ -263,7 +211,7 @@ export class PropsNode extends Node<"props"> {
 
     indexedKeyOf() {
         return new TypeNode(
-            this.indexed.flatMap((entry) => entry[0].children)
+            ...this.indexed.flatMap((entry) => entry[0].children)
         ) as TypeNode<Key>
     }
 
@@ -282,7 +230,7 @@ const precedenceByPropKind = {
     optional: 2
 } satisfies Record<PropKind, number>
 
-export const emptyPropsNode = new PropsNode({}, [])
+export const emptyPropsNode = new PropsNode({})
 
 export type PropsInput = NamedPropsInput | PropsInputTuple
 
@@ -291,20 +239,7 @@ export type PropsInputTuple<
     indexed extends IndexedInputEntry[] = IndexedInputEntry[]
 > = readonly [named: named, ...indexed: indexed]
 
-// TODO: standardize entry
-export type NamedValueInput = {
-    kind: PropKind
-    value: TypeInput
-}
-
 export type NamedPropsInput = Record<string, NamedValueInput>
-
-export type NamedNode = {
-    kind: PropKind
-    value: TypeNode
-}
-
-export type NamedNodeEntry = [key: string, value: NamedNode]
 
 export type NamedNodes = Record<string, NamedNode>
 
@@ -338,11 +273,13 @@ const excludedIndicesSource = (firstVariadic: number) => {
     return `${excludedIndexMatcherStart}${excludedIndices}${excludedIndexMatcherEnd}${arrayIndexMatcherSuffix}` as const
 }
 
-type VariadicIndexMatcherSource = ReturnType<typeof excludedIndicesSource>
+export type VariadicIndexMatcherSource = ReturnType<
+    typeof excludedIndicesSource
+>
 
 const nonVariadicIndexMatcherSource = `^${arrayIndexMatcherSuffix}` as const
 
-type NonVariadicIndexMatcherSource = typeof nonVariadicIndexMatcherSource
+export type NonVariadicIndexMatcherSource = typeof nonVariadicIndexMatcherSource
 
 export const createArrayIndexMatcher = <index extends number>(
     firstVariadic: index
@@ -385,84 +322,3 @@ const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
         ) + 1
     )
 }
-
-export type inferPropsInput<input extends PropsInput> =
-    input extends PropsInputTuple<infer named, infer indexed>
-        ? inferIndexed<indexed, inferNamedProps<named, indexed>>
-        : input extends NamedPropsInput
-        ? inferNamedProps<input, []>
-        : never
-
-type inferIndexed<
-    indexed extends IndexedInputEntry[],
-    result = unknown
-> = indexed extends [
-    infer entry extends IndexedInputEntry,
-    ...infer tail extends IndexedInputEntry[]
-]
-    ? inferIndexed<
-          tail,
-          entry[0] extends { readonly regex: VariadicIndexMatcherSource }
-              ? result extends List
-                  ? [...result, ...inferTypeInput<entry[1]>[]]
-                  : never
-              : entry[0] extends {
-                    readonly regex: NonVariadicIndexMatcherSource
-                }
-              ? inferTypeInput<entry[1]>[]
-              : Record<
-                    Extract<inferTypeInput<entry[0]>, Key>,
-                    inferTypeInput<entry[1]>
-                >
-      >
-    : result
-
-type inferNamedProps<
-    named extends NamedPropsInput,
-    indexed extends IndexedInputEntry[]
-> = [named, indexed[0][0]] extends
-    | [TupleLengthProps, unknown]
-    | [unknown, { readonly regex: VariadicIndexMatcherSource }]
-    ? inferNonVariadicTupleProps<named> &
-          inferObjectLiteralProps<
-              Omit<named, "length" | NumberLiteral | number>
-          >
-    : inferObjectLiteralProps<named>
-
-type inferObjectLiteralProps<named extends NamedPropsInput> = {} extends named
-    ? unknown
-    : evaluate<
-          {
-              [k in requiredKeyOf<named>]: inferTypeInput<named[k]["value"]>
-          } & {
-              [k in optionalKeyOf<named>]?: inferTypeInput<named[k]["value"]>
-          }
-      >
-
-type stringifiedNumericKeyOf<t> = `${Extract<keyof t, number | NumberLiteral>}`
-
-type inferNonVariadicTupleProps<
-    named extends NamedPropsInput,
-    result extends unknown[] = []
-> = `${result["length"]}` extends stringifiedNumericKeyOf<named>
-    ? inferNonVariadicTupleProps<
-          named,
-          [...result, inferTypeInput<named[`${result["length"]}`]["value"]>]
-      >
-    : result
-
-type TupleLengthProps<length extends number = number> = {
-    readonly length: {
-        readonly kind: "prerequisite"
-        readonly value: { readonly basis: readonly ["===", length] }
-    }
-}
-
-type requiredKeyOf<input extends NamedPropsInput> = Exclude<
-    keyof input,
-    optionalKeyOf<input>
->
-
-type optionalKeyOf<input extends NamedPropsInput> = {
-    [k in keyof input]: input[k]["kind"] extends "optional" ? k : never
-}[keyof input]

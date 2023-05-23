@@ -1,7 +1,5 @@
-import { throwInternalError } from "../../utils/errors.js"
-import { type CompilationState, In } from "../compilation.js"
 import { Disjoint } from "../disjoint.js"
-import { Node } from "../node.js"
+import { defineNode } from "../node.js"
 
 export const minComparators = {
     ">": true,
@@ -60,78 +58,56 @@ export type Range = {
     max?: Bound
 }
 
-export class RangeNode extends Node<"range", Range> {
-    // const units =
-    // s.lastDomain === "string"
-    //     ? "characters"
-    //     : s.lastDomain === "object"
-    //     ? "items long"
-    //     : ""
+// const units =
+// s.lastDomain === "string"
+//     ? "characters"
+//     : s.lastDomain === "object"
+//     ? "items long"
+//     : ""
 
-    static compile(range: Range) {
-        return range
-            .map((constraint) => RangeNode.compileAssertion(constraint))
-            .join(" && ")
-    }
-
-    private static compileAssertion(constraint: RangeConstraint) {
-        return `(${In}.length ?? Number(${In})) ${
-            constraint.comparator === "==" ? "===" : constraint.comparator
-        } ${constraint.limit}`
-    }
-
-    compileTraverse(s: CompilationState) {
-        return this.rule
-            .map((constraint) =>
-                s.ifNotThen(
-                    RangeNode.compileAssertion(constraint),
-                    s.problem("range", constraint)
-                )
-            )
-            .join("\n")
-    }
-
-    intersectNode(other: RangeNode): RangeNode | Disjoint {
-        const stricterMin = compareStrictness("min", this.min, other.min)
-        const stricterMax = compareStrictness("max", this.max, other.max)
+export class RangeNode extends defineNode<Range>()({
+    kind: "range",
+    condition: (rule) => `${rule}`,
+    describe: (rule) => {
+        return rule.min
+            ? rule.max
+                ? `the range bounded by ${boundToExpression(
+                      "min",
+                      rule.min
+                  )} and ${boundToExpression("max", rule.max)}`
+                : boundToExpression("min", rule.min)
+            : rule.max
+            ? boundToExpression("max", rule.max)
+            : "the unbounded range"
+    },
+    intersect: (l, r): Range | Disjoint => {
+        const stricterMin = compareStrictness("min", l.min, r.min)
+        const stricterMax = compareStrictness("max", l.max, r.max)
         if (stricterMin === "l") {
             if (stricterMax === "r") {
-                return compareStrictness("min", this.min, other.max) === "l"
-                    ? Disjoint.from("range", this, other)
+                return compareStrictness("min", l.min, r.max) === "l"
+                    ? Disjoint.from("range", l, r)
                     : {
-                          min: this.min!,
-                          max: other.max!
+                          min: l.min!,
+                          max: r.max!
                       }
             }
-            return this
+            return l
         }
         if (stricterMin === "r") {
             if (stricterMax === "l") {
-                return compareStrictness("max", this.max, other.min) === "l"
-                    ? Disjoint.from("range", this, other)
+                return compareStrictness("max", l.max, r.min) === "l"
+                    ? Disjoint.from("range", l, r)
                     : {
-                          min: other.min!,
-                          max: this.max!
+                          min: r.min!,
+                          max: l.max!
                       }
             }
-            return other
+            return r
         }
-        return stricterMax === "l" ? this : other
+        return stricterMax === "l" ? l : r
     }
-
-    toString(): string {
-        return this.min
-            ? this.max
-                ? `the range bounded by ${boundToExpression(
-                      "min",
-                      this.min
-                  )} and ${boundToExpression("max", this.max)}`
-                : boundToExpression("min", this.min)
-            : this.max
-            ? boundToExpression("max", this.max)
-            : "the unbounded range"
-    }
-}
+}) {}
 
 const boundToExpression = (
     kind: keyof Range,

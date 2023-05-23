@@ -1,5 +1,5 @@
 import type { Comparator } from "../../nodes/constraints/range.js"
-import type { resolve, subaliasOf } from "../../scope.js"
+import type { alias, bind, generic, resolve, subaliasOf } from "../../scope.js"
 import type { error } from "../../utils/errors.js"
 import type { List } from "../../utils/lists.js"
 import type {

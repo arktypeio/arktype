@@ -13,7 +13,7 @@ import type { Key } from "../../utils/records.js"
 import { stringify } from "../../utils/serialize.js"
 import type { DisjointKindEntries } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
-import { Node } from "../node.js"
+import { defineNode, Node } from "../node.js"
 import { type ConstraintKind } from "../predicate.js"
 import { TypeNode } from "../type.js"
 import type { ClassNode } from "./class.js"
@@ -53,16 +53,17 @@ export const precedenceByLevel: Record<BasisLevel, number> = {
 
 export type BasisNodeSubclass = BasisNodesByLevel[BasisLevel]
 
+// export const BasisNode = defineNode({
+
+// })
+
 export abstract class BasisNode<
-    level extends BasisLevel = BasisLevel
-> extends Node<"basis"> {
-    static readonly kind = "basis"
+    level extends BasisLevel = BasisLevel,
+    child = unknown
+> extends Node<"basis", [child]> {
     abstract literalKeysOf(): Key[]
     abstract domain: Domain
-
-    constructor(public level: level, condition: string) {
-        super("basis", condition)
-    }
+    abstract level: level
 
     private _keyof?: TypeNode
     keyof(): TypeNode {
@@ -79,7 +80,7 @@ export abstract class BasisNode<
         return this.level === (level as unknown)
     }
 
-    intersectNode(other: BasisNode): BasisNode | Disjoint {
+    intersectNode(this: BasisNode, other: BasisNode): BasisNode | Disjoint {
         if (this === other) {
             return this
         }
