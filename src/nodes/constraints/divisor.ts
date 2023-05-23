@@ -3,10 +3,13 @@ import { defineNode } from "../node.js"
 
 export const DivisorNode = defineNode(
     (n: number) => `${In} % ${n} === 0`,
+    (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r)),
     (base) =>
-        class DivisorNode extends base {
+        class Node extends base {
+            readonly kind = "divisor"
+
             describe() {
-                return ""
+                return `a multiple of ${this.rule}`
             }
 
             foo() {
@@ -15,12 +18,7 @@ export const DivisorNode = defineNode(
         }
 )
 
-// {
-//     kind: "divisor",
-//     condition: (n) => `${In} % ${n} === 0`,
-//     describe: (n) => `a multiple of ${n}`,
-//     intersect: (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r))
-// },
+const z = DivisorNode(5)
 
 // compile: (n, condition, s) => s.ifNotThen(condition, s.problem("divisor", n))
 

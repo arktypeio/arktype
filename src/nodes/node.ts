@@ -1,82 +1,73 @@
 import { CompiledFunction } from "../utils/compiledFunction.js"
-import { In } from "./compilation.js"
 import { Disjoint } from "./disjoint.js"
 
-type NodeDefinition<rule, input> = {
-    readonly kind: string
-    condition(rule: rule): string
-    describe(rule: rule): string
-    intersect(l: rule, r: rule): rule | Disjoint
-    create?(input: input): rule
-    // TODO: add toType representation that would allow any arbitrary nodes to be intersected
-    // TODO: Visit somehow? Could compose from multiple parts, would give more flexibility
-    // compile(rule: rule, condition: string, s: CompilationState): string
-}
+type Intersection<rule> = (l: rule, r: rule) => rule | Disjoint
 
-// Need an interface to reference this
-/* eslint-disable @typescript-eslint/consistent-type-definitions */
-export interface BaseNode<rule> {
-    rule: rule
-    condition: string
-    intersect(other: any): any | Disjoint
-    allows(data: unknown): boolean
-}
+type Base<rule> = ReturnType<typeof defineBase<rule>>
 
-type NodeConstructor<rule, node> = new (rule: rule, condition: string) => node
+type Instance<rule> = InstanceType<Base<rule>>
 
-/* eslint-disable @typescript-eslint/consistent-type-definitions */
-export interface Node<rule> extends BaseNode<rule> {
-    describe(): string
-}
-
-export const defineNode = <rule, node extends Node<rule>>(
-    compile: (rule: rule) => string,
-    node: (
-        base: abstract new (rule: rule, condition: string) => BaseNode<rule>
-    ) => new (rule: rule, condition: string) => node
+const defineBase = <rule>(
+    intersectRules: Intersection<rule>,
+    create: (rule: rule) => any
 ) => {
-    const instances: {
-        [condition: string]: node
-    } = {}
     const intersections: {
         [lCondition: string]: {
-            [otherCondition: string]: node | Disjoint
+            [rCondition: string]: Base<unknown> | Disjoint
         }
     } = {}
-    abstract class Base implements BaseNode<rule> {
+
+    abstract class BaseNode {
+        abstract kind: string
         allows: (data: unknown) => boolean
+
         constructor(public rule: rule, public condition: string) {
             this.allows = new CompiledFunction(`return ${condition}`)
         }
 
-        abstract computeIntersetion(other: node): node | Disjoint
-
-        intersect(other: node) {
+        intersect(other: this): this | Disjoint {
             if (this === (other as unknown)) {
                 return this
             }
             if (intersections[this.condition][other.condition]) {
-                return intersections[this.condition][other.condition]
+                return intersections[this.condition][other.condition] as never
             }
-            const result = this.computeIntersetion(other) // def.intersect(this.rule, other.rule)
+            const result = intersectRules(this.rule, other.rule)
             if (result instanceof Disjoint) {
                 intersections[this.condition][other.condition] = result
                 intersections[other.condition][this.condition] = result.invert()
                 return result
             }
-            intersections[this.condition][other.condition] = result
-            intersections[other.condition][this.condition] = result
-            return result
+            const nodeResult = create(result)
+            intersections[this.condition][other.condition] = nodeResult
+            intersections[other.condition][this.condition] = nodeResult
+            return nodeResult
         }
     }
-    const Node = node(Base)
-    return (rule: rule): node => {
+    return BaseNode
+}
+
+export const defineNode = <rule, instance extends Instance<rule>>(
+    compile: (rule: rule) => string,
+    intersect: Intersection<rule>,
+    extend: (
+        base: Base<rule>
+    ) => new (...args: ConstructorParameters<Base<rule>>) => instance
+) => {
+    const instances: {
+        [condition: string]: instance
+    } = {}
+
+    const create = (rule: rule): instance => {
         const condition = compile(rule)
         if (instances[condition]) {
             return instances[condition]
         }
-        const instance = new Node(rule, condition)
+        const instance = extend(
+            defineBase(intersect, create)
+        ) as unknown as instance
         instances[condition] = instance
         return instance
     }
+    return create
 }
