@@ -1,40 +1,44 @@
+import type { Domain } from "../../utils/domains.js"
+import { domainOf } from "../../utils/domains.js"
+import { type Constructor, prototypeKeysOf } from "../../utils/objectKinds.js"
+import type { Key } from "../../utils/records.js"
 import { stringify } from "../../utils/serialize.js"
+import type { CompilationState } from "../compilation.js"
 import { compileSerializedValue, In } from "../compilation.js"
-import { defineNode } from "../node.js"
+import { BasisNode } from "./basis.js"
 
-export class ValueNode extends defineNode<unknown>()({
-    kind: "divisor",
-    condition: (v) => `${In} === ${compileSerializedValue(v)}`,
-    describe: (v) => `${stringify(v)}`,
-    // TODO: don't
-    intersect: (l, r) => l
-}) {}
+export class ValueNode extends BasisNode<"value"> {
+    domain: Domain
+    declare children: [unknown]
 
-// compileTraverse(s: CompilationState) {
-//     return s.ifNotThen(this.condition, s.problem("value", this.child))
-// }
+    constructor(public child: unknown) {
+        super("value", ValueNode.compile(child))
+        this.domain = domainOf(child)
+        this.children = [child]
+    }
 
-// get domain() {
-//     return domainOf(this.child)
-// }
+    static compile(value: unknown) {
+        return `${In} === ${compileSerializedValue(value)}`
+    }
 
-// static compile(value: unknown) {
-//     return `${In} === ${compileSerializedValue(value)}`
-// }
+    toString() {
+        return stringify(this.child)
+    }
 
-// toString() {
-//     return stringify(this.child)
-// }
+    getConstructor(): Constructor | undefined {
+        return this.domain === "object"
+            ? Object(this.child).constructor
+            : undefined
+    }
 
-// getConstructor(): Constructor | undefined {
-//     return this.domain === "object"
-//         ? Object(this.child).constructor
-//         : undefined
-// }
+    literalKeysOf(): Key[] {
+        if (this.child === null || this.child === undefined) {
+            return []
+        }
+        return [...prototypeKeysOf(this.child), ...Object.keys(this.child)]
+    }
 
-// literalKeysOf(): Key[] {
-//     if (this.child === null || this.child === undefined) {
-//         return []
-//     }
-//     return [...prototypeKeysOf(this.child), ...Object.keys(this.child)]
-// }
+    compileTraverse(s: CompilationState) {
+        return s.ifNotThen(this.condition, s.problem("value", this.child))
+    }
+}

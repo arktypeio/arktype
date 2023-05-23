@@ -1,111 +1,101 @@
 import { CompiledFunction } from "../utils/compiledFunction.js"
-import { In } from "./compilation.js"
+import type { instanceOf } from "../utils/objectKinds.js"
+import type { BasisNode } from "./basis/basis.js"
+import { type CompilationState, In } from "./compilation.js"
+import type { DivisorNode } from "./constraints/divisor.js"
+import type { MorphNode } from "./constraints/morph.js"
+import type { NarrowNode } from "./constraints/narrow.js"
+import type { PropsNode } from "./constraints/props.js"
+import type { RangeNode } from "./constraints/range.js"
+import type { RegexNode } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
+import type { PredicateNode } from "./predicate.js"
+import type { TypeNode } from "./type.js"
 
-type NodeDefinition<rule, input> = {
-    readonly kind: string
-    condition(rule: rule): string
-    describe(rule: rule): string
-    intersect(l: rule, r: rule): rule | Disjoint
-    create?(input: input): rule
-    // TODO: add toType representation that would allow any arbitrary nodes to be intersected
-    // TODO: Visit somehow? Could compose from multiple parts, would give more flexibility
-    // compile(rule: rule, condition: string, s: CompilationState): string
+export type NodeInstance<kind extends NodeKind = NodeKind> = instanceOf<
+    NodeKinds[kind]
+>
+
+export type NodeKinds = {
+    type: typeof TypeNode
+    predicate: typeof PredicateNode
+    basis: typeof BasisNode
+    divisor: typeof DivisorNode
+    range: typeof RangeNode
+    regex: typeof RegexNode
+    props: typeof PropsNode
+    narrow: typeof NarrowNode
+    morph: typeof MorphNode
 }
 
-export interface BaseNode<rule> {
-    rule: rule
-    condition: string
-    intersect(other: this): this | Disjoint
-    allows(data: unknown): boolean
-}
+type NodeKind = keyof NodeKinds
 
-export interface Node<rule> extends BaseNode<rule> {
-    describe(): string
-}
+// compileId(children: children) {
+//     return children
+//         .map((child) =>
+//             typeof child === "string" ? child : child.condition
+//         )
+//         .sort()
+//         .join()
+// }
 
-export const defineNode =
-    <rule, input = rule>() =>
-    <node extends Node<rule>>(
-        def: NodeDefinition<rule, input>,
-        finalize: (node: BaseNode<rule>) => node
-    ) => {
-        const instances: {
-            [condition: string]: node
-        } = {}
-        const intersections: {
-            [lCondition: string]: {
-                [otherCondition: string]: node | Disjoint
-            }
-        } = {}
-        const create = (rule: rule): node => {
-            const condition = def.condition(rule)
-            if (instances[condition]) {
-                return instances[condition]
-            }
-            const node = finalize({
-                rule,
-                condition,
-                intersect(other) {
-                    if (this === other) {
-                        return this
-                    }
-                    if (intersections[this.condition][other.condition]) {
-                        return intersections[this.condition][other.condition]
-                    }
-                    const result = def.intersect(this.rule, other.rule)
-                    if (result instanceof Disjoint) {
-                        intersections[this.condition][other.condition] = result
-                        intersections[other.condition][this.condition] =
-                            result.invert()
-                        return result
-                    }
-                    const resultNode = create(result)
-                    intersections[this.condition][other.condition] = resultNode
-                    intersections[other.condition][this.condition] = resultNode
-                    return resultNode
-                },
-                allows: new CompiledFunction(In, `return ${condition}`)
-            })
-            instances[condition] = node
-            return node
+// export type Node2<kind extends NodeKind = NodeKind, narrowed = unknown> = {
+//     allows: (data: unknown) => data is narrowed
+//     intersectNode: (other: NodeInstance<kind>) => NodeInstance<kind> | Disjoint
+//     compileTraverse: (s: CompilationState) => string
+//     toString(): string
+// }
+
+export abstract class Node<
+    kind extends NodeKind = NodeKind,
+    narrowed = unknown
+> {
+    declare allows: (data: unknown) => data is narrowed
+
+    abstract intersectNode(
+        other: NodeInstance<kind>
+    ): NodeInstance<kind> | Disjoint
+    abstract compileTraverse(s: CompilationState): string
+    abstract toString(): string
+    abstract children: readonly unknown[]
+
+    constructor(public kind: kind, public condition: string) {
+        if (Node.cache[kind][condition]) {
+            return Node.cache[kind][condition] as any
         }
-        return create
+        this.allows = new CompiledFunction(In, `return ${condition}`)
+        ;(Node.cache[kind] as any)[condition] = this
     }
 
-// class Node {
-//     kind!: string
-//     condition!: string
-//     allows!: (data: unknown) => boolean
+    private static cache: { [kind in NodeKind]: Record<string, Node<kind>> } = {
+        type: {},
+        predicate: {},
+        basis: {},
+        divisor: {},
+        range: {},
+        regex: {},
+        props: {},
+        narrow: {},
+        morph: {}
+    }
 
-//     constructor(public rule: rule) {
-//         const condition = def.condition(rule)
-//         if (instances[condition]) {
-//             return instances[condition]
-//         }
-//         this.kind = def.kind
-//         this.condition = condition
-//         this.allows = new CompiledFunction(In, `return ${condition}`)
-//         instances[condition] = this
-//     }
+    hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
+        return this.kind === (kind as any)
+    }
 
-//     intersect(other: this) {
-//         if (this === other) {
-//             return this
-//         }
-//         if (intersections[this.condition][other.condition]) {
-//             return intersections[this.condition][other.condition]
-//         }
-//         const result = def.intersect(this.rule, other.rule)
-//         if (result instanceof Disjoint) {
-//             intersections[this.condition][other.condition] = result
-//             intersections[other.condition][this.condition] = result.invert()
-//             return result
-//         }
-//         const resultNode = new Node(result)
-//         intersections[this.condition][other.condition] = resultNode
-//         intersections[other.condition][this.condition] = resultNode
-//         return resultNode
-//     }
-// }
-// return Node
+    private intersectionCache: Record<string, NodeInstance<kind> | Disjoint> =
+        {}
+    intersect(other: NodeInstance<kind>): NodeInstance<kind> | Disjoint {
+        if (this === other) {
+            return this as NodeInstance<kind>
+        }
+        if (this.intersectionCache[other.condition]) {
+            return this.intersectionCache[other.condition]
+        }
+        const result = this.intersectNode(other)
+        this.intersectionCache[other.condition] = result
+        other.intersectionCache[this.condition] =
+            result instanceof Disjoint ? result.invert() : (result as any)
+        return result
+    }
+}

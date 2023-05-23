@@ -158,7 +158,7 @@ export class DynamicState {
     }
 
     previousOperator() {
-        return this.branches.range?.lowerBound?.comparator ??
+        return this.branches.range?.min?.comparator ??
             this.branches.prefixes.at(-1) ??
             this.branches.intersection
             ? "&"

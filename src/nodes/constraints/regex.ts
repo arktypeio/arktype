@@ -1,29 +1,39 @@
 import { intersectUniqueLists } from "../../utils/lists.js"
-import { In } from "../compilation.js"
-import { defineNode } from "../node.js"
+import { type CompilationState, In } from "../compilation.js"
+import { Node } from "../node.js"
 
-export class RegexNode extends defineNode<string[]>()({
-    kind: "regex",
-    condition: (sources) =>
-        sources.map(compileExpression).sort().join(" && ") ?? "true",
-    describe: (sources) => {
-        const literals = sources.map((_) => `/${_}/`)
+export class RegexNode extends Node<"regex"> {
+    constructor(public children: readonly string[]) {
+        super(
+            "regex",
+            children.map(RegexNode.compileExpression).sort().join(" && ") ??
+                "true"
+        )
+    }
+
+    static compileExpression(source: string) {
+        return `${In}.match(/${source}/)`
+    }
+
+    toString() {
+        const literals = this.children.map((_) => `/${_}/`)
         return literals.length === 1
             ? literals[0]
             : `expressions ${literals.join(", ")}`
-    },
-    intersect: intersectUniqueLists
-}) {}
+    }
 
-// return this.children
-// .map((source) =>
-//     s.ifNotThen(
-//         RegexNode.compileExpression(source),
-//         s.problem("regex", source)
-//     )
-// )
-// .join("\n")
+    compileTraverse(s: CompilationState) {
+        return this.children
+            .map((source) =>
+                s.ifNotThen(
+                    RegexNode.compileExpression(source),
+                    s.problem("regex", source)
+                )
+            )
+            .join("\n")
+    }
 
-const compileExpression = (source: string) => {
-    return `${In}.match(/${source}/)`
+    intersectNode(r: RegexNode) {
+        return new RegexNode(intersectUniqueLists(this.children, r.children))
+    }
 }

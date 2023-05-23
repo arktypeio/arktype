@@ -127,7 +127,7 @@ export const discriminate = (
             }
             caseBranches.push(pruned)
         }
-        discriminatedCases[k] = new TypeNode(...caseBranches)
+        discriminatedCases[k] = new TypeNode(caseBranches)
     }
     return {
         kind,

@@ -2,7 +2,7 @@ import {
     type IndexedNodeEntry,
     type NamedNodes,
     PropsNode
-} from "../../nodes/constraints/props/props.js"
+} from "../../nodes/constraints/props.js"
 import { PredicateNode } from "../../nodes/predicate.js"
 import {
     arrayBasisNode,
@@ -96,9 +96,9 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
             value: TypeNode.from({ basis: ["===", def.length] })
         }
     }
-    const props = new PropsNode(named, ...indexed)
-    const predicate = new PredicateNode(arrayBasisNode, props)
-    return new TypeNode(predicate)
+    const props = new PropsNode(named, indexed)
+    const predicate = new PredicateNode([arrayBasisNode, props])
+    return new TypeNode([predicate])
 }
 
 const unknownArray = TypeNode.from({
