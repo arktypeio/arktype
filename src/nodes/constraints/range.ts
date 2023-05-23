@@ -65,22 +65,9 @@ export type Range = {
 //     ? "items long"
 //     : ""
 
-export class RangeNode extends defineNode<Range>()({
-    kind: "range",
-    condition: (rule) => `${rule}`,
-    describe: (rule) => {
-        return rule.min
-            ? rule.max
-                ? `the range bounded by ${boundToExpression(
-                      "min",
-                      rule.min
-                  )} and ${boundToExpression("max", rule.max)}`
-                : boundToExpression("min", rule.min)
-            : rule.max
-            ? boundToExpression("max", rule.max)
-            : "the unbounded range"
-    },
-    intersect: (l, r): Range | Disjoint => {
+export const RangeNode = defineNode(
+    (rule: Range) => [`${rule}`],
+    (l, r) => {
         const stricterMin = compareStrictness("min", l.min, r.min)
         const stricterMax = compareStrictness("max", l.max, r.max)
         if (stricterMin === "l") {
@@ -106,8 +93,25 @@ export class RangeNode extends defineNode<Range>()({
             return r
         }
         return stricterMax === "l" ? l : r
-    }
-}) {}
+    },
+    (base) =>
+        class RangeNode extends base {
+            readonly kind = "range"
+
+            describe() {
+                return this.rule.min
+                    ? this.rule.max
+                        ? `the range bounded by ${boundToExpression(
+                              "min",
+                              this.rule.min
+                          )} and ${boundToExpression("max", this.rule.max)}`
+                        : boundToExpression("min", this.rule.min)
+                    : this.rule.max
+                    ? boundToExpression("max", this.rule.max)
+                    : "the unbounded range"
+            }
+        }
+)
 
 const boundToExpression = (
     kind: keyof Range,
