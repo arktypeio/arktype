@@ -43,11 +43,8 @@
                     "source.js",
                     "source.js.jsx"
                 ],
-                "scopeName": "arktype.injection.ts",
-                "path": "arktype.tmLanguage.json",
-                "embeddedLanguages": {
-                    "meta.embedded.arktype.definition": "typescript"
-                }
+                "scopeName": "source.arktype.injection.ts",
+                "path": "arktype.tmLanguage.json"
             }
         ]
     }
