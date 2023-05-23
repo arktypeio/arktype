@@ -13,99 +13,70 @@ type NodeDefinition<rule, input> = {
     // compile(rule: rule, condition: string, s: CompilationState): string
 }
 
+// Need an interface to reference this
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
 export interface BaseNode<rule> {
     rule: rule
     condition: string
-    intersect(other: this): this | Disjoint
+    intersect(other: any): any | Disjoint
     allows(data: unknown): boolean
 }
 
+type NodeConstructor<rule, node> = new (rule: rule, condition: string) => node
+
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
 export interface Node<rule> extends BaseNode<rule> {
     describe(): string
 }
 
-export const defineNode =
-    <rule, input = rule>() =>
-    <node extends Node<rule>>(
-        def: NodeDefinition<rule, input>,
-        finalize: (node: BaseNode<rule>) => node
-    ) => {
-        const instances: {
-            [condition: string]: node
-        } = {}
-        const intersections: {
-            [lCondition: string]: {
-                [otherCondition: string]: node | Disjoint
-            }
-        } = {}
-        const create = (rule: rule): node => {
-            const condition = def.condition(rule)
-            if (instances[condition]) {
-                return instances[condition]
-            }
-            const node = finalize({
-                rule,
-                condition,
-                intersect(other) {
-                    if (this === other) {
-                        return this
-                    }
-                    if (intersections[this.condition][other.condition]) {
-                        return intersections[this.condition][other.condition]
-                    }
-                    const result = def.intersect(this.rule, other.rule)
-                    if (result instanceof Disjoint) {
-                        intersections[this.condition][other.condition] = result
-                        intersections[other.condition][this.condition] =
-                            result.invert()
-                        return result
-                    }
-                    const resultNode = create(result)
-                    intersections[this.condition][other.condition] = resultNode
-                    intersections[other.condition][this.condition] = resultNode
-                    return resultNode
-                },
-                allows: new CompiledFunction(In, `return ${condition}`)
-            })
-            instances[condition] = node
-            return node
+export const defineNode = <rule, node extends Node<rule>>(
+    compile: (rule: rule) => string,
+    node: (
+        base: abstract new (rule: rule, condition: string) => BaseNode<rule>
+    ) => new (rule: rule, condition: string) => node
+) => {
+    const instances: {
+        [condition: string]: node
+    } = {}
+    const intersections: {
+        [lCondition: string]: {
+            [otherCondition: string]: node | Disjoint
         }
-        return create
+    } = {}
+    abstract class Base implements BaseNode<rule> {
+        allows: (data: unknown) => boolean
+        constructor(public rule: rule, public condition: string) {
+            this.allows = new CompiledFunction(`return ${condition}`)
+        }
+
+        abstract computeIntersetion(other: node): node | Disjoint
+
+        intersect(other: node) {
+            if (this === (other as unknown)) {
+                return this
+            }
+            if (intersections[this.condition][other.condition]) {
+                return intersections[this.condition][other.condition]
+            }
+            const result = this.computeIntersetion(other) // def.intersect(this.rule, other.rule)
+            if (result instanceof Disjoint) {
+                intersections[this.condition][other.condition] = result
+                intersections[other.condition][this.condition] = result.invert()
+                return result
+            }
+            intersections[this.condition][other.condition] = result
+            intersections[other.condition][this.condition] = result
+            return result
+        }
     }
-
-// class Node {
-//     kind!: string
-//     condition!: string
-//     allows!: (data: unknown) => boolean
-
-//     constructor(public rule: rule) {
-//         const condition = def.condition(rule)
-//         if (instances[condition]) {
-//             return instances[condition]
-//         }
-//         this.kind = def.kind
-//         this.condition = condition
-//         this.allows = new CompiledFunction(In, `return ${condition}`)
-//         instances[condition] = this
-//     }
-
-//     intersect(other: this) {
-//         if (this === other) {
-//             return this
-//         }
-//         if (intersections[this.condition][other.condition]) {
-//             return intersections[this.condition][other.condition]
-//         }
-//         const result = def.intersect(this.rule, other.rule)
-//         if (result instanceof Disjoint) {
-//             intersections[this.condition][other.condition] = result
-//             intersections[other.condition][this.condition] = result.invert()
-//             return result
-//         }
-//         const resultNode = new Node(result)
-//         intersections[this.condition][other.condition] = resultNode
-//         intersections[other.condition][this.condition] = resultNode
-//         return resultNode
-//     }
-// }
-// return Node
+    const Node = node(Base)
+    return (rule: rule): node => {
+        const condition = compile(rule)
+        if (instances[condition]) {
+            return instances[condition]
+        }
+        const instance = new Node(rule, condition)
+        instances[condition] = instance
+        return instance
+    }
+}
