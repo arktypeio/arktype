@@ -36,15 +36,17 @@ import { neverTypeNode } from "./type.js"
 //     ? "unknown"
 //     : rules.map((rule) => rule.toString()).join(" and "),
 
+export type PredicateNode = ReturnType<typeof PredicateNode>
+
 export const PredicateNode = defineNode(
     (rules: PredicateRules) => {
-        let result = ""
+        const subconditions: string[] = []
         for (const rule of rules) {
             if (rule.condition !== "true") {
-                result += `${result && " && "}${rule.condition}`
+                subconditions.push(rule.condition)
             }
         }
-        return result || "true"
+        return subconditions
     },
 
     (l, r) => {
@@ -99,7 +101,7 @@ export const PredicateNode = defineNode(
         // return rules
     },
     (base) =>
-        class PredicateNode extends base {
+        class extends base {
             readonly kind = "predicate"
 
             get basis() {
@@ -193,7 +195,7 @@ export const PredicateNode = defineNode(
                         rules.push(rule)
                     }
                 }
-                return new PredicateNode(...rules)
+                return PredicateNode(rules)
             }
 
             private _keyof?: TypeNode

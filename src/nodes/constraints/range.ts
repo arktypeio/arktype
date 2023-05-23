@@ -65,29 +65,36 @@ export type Range = {
 //     ? "items long"
 //     : ""
 
+export type RangeNode = ReturnType<typeof RangeNode>
+
 export const RangeNode = defineNode(
     (rule: Range) => [`${rule}`],
+    // TODO: look into circularity with disjoints
     (l, r) => {
-        const stricterMin = compareStrictness("min", l.min, r.min)
-        const stricterMax = compareStrictness("max", l.max, r.max)
+        const lMin = l.rule.min
+        const lMax = l.rule.max
+        const rMin = r.rule.min
+        const rMax = r.rule.max
+        const stricterMin = compareStrictness("min", lMin, rMin)
+        const stricterMax = compareStrictness("max", lMax, rMax)
         if (stricterMin === "l") {
             if (stricterMax === "r") {
-                return compareStrictness("min", l.min, r.max) === "l"
+                return compareStrictness("min", lMin, rMax) === "l"
                     ? Disjoint.from("range", l, r)
                     : {
-                          min: l.min!,
-                          max: r.max!
+                          min: lMin!,
+                          max: rMax!
                       }
             }
             return l
         }
         if (stricterMin === "r") {
             if (stricterMax === "l") {
-                return compareStrictness("max", l.max, r.min) === "l"
+                return compareStrictness("max", lMax, rMin) === "l"
                     ? Disjoint.from("range", l, r)
                     : {
-                          min: r.min!,
-                          max: l.max!
+                          min: rMin,
+                          max: lMax
                       }
             }
             return r
@@ -95,7 +102,7 @@ export const RangeNode = defineNode(
         return stricterMax === "l" ? l : r
     },
     (base) =>
-        class RangeNode extends base {
+        class extends base {
             readonly kind = "range"
 
             describe() {

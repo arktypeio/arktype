@@ -1,3 +1,4 @@
+import { type } from "../main.js"
 import { CompiledFunction } from "../utils/compiledFunction.js"
 import { Disjoint } from "./disjoint.js"
 
@@ -53,7 +54,7 @@ const defineBase = <rule>(
 
 export const defineNode = <rule, instance extends Instance<rule>>(
     compile: (rule: rule) => string[],
-    intersect: Intersection<rule>,
+    intersect: Intersection<instance>,
     extend: (
         base: Base<rule>
     ) => new (...args: ConstructorParameters<Base<rule>>) => instance

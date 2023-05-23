@@ -5,7 +5,7 @@ import type { BasisNode } from "./basis/basis.js"
 import type { ClassNode } from "./basis/class.js"
 import type { ValueNode } from "./basis/value.js"
 import { In, prependKey } from "./compilation.js"
-import type { RangeNode } from "./constraints/range.js"
+import type { Range, RangeNode } from "./constraints/range.js"
 import type { PredicateNode } from "./predicate.js"
 import type { TypeNode } from "./type.js"
 
@@ -19,26 +19,26 @@ type DisjointKinds = {
         r: ValueNode
     }
     range?: {
-        l: RangeNode
-        r: RangeNode
+        l: Range
+        r: Range
     }
     class?: {
         l: ClassNode
         r: ClassNode
     }
-    assignability?:
-        | {
-              l: ValueNode
-              r: PredicateNode
-          }
-        | {
-              l: PredicateNode
-              r: ValueNode
-          }
-    union?: {
-        l: TypeNode
-        r: TypeNode
-    }
+    // assignability?:
+    //     | {
+    //           l: ValueNode
+    //           r: PredicateNode
+    //       }
+    //     | {
+    //           l: PredicateNode
+    //           r: ValueNode
+    //       }
+    // union?: {
+    //     l: TypeNode
+    //     r: TypeNode
+    // }
 }
 
 export const parseQualifiedDisjoint = <
