@@ -1,12 +1,8 @@
 import { In } from "../compilation.js"
-import { BaseNode, defineNode } from "../node.js"
+import { BaseNode } from "../node.js"
 
 export class DivisorNode extends BaseNode<typeof DivisorNode> {
-    readonly kind = "divisor"
-
-    // constructor(public rule: number) {
-    //     super(rule)
-    // }
+    static readonly kind = "divisor"
 
     static compile(rule: number) {
         return [`${In} % ${rule} === 0`]
