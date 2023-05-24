@@ -9,20 +9,25 @@ const intersections: {
     }
 } = {}
 
-export abstract class BaseNode<rule> {
+export type SubclassNode = {
+    compile(rule: never): string[]
+}
+
+export abstract class BaseNode<subclass extends SubclassNode> {
     abstract kind: string
     allows: (data: unknown) => boolean
 
+    static getCached(kind: string) {}
+
     constructor(
-        public rule: rule,
+        public rule: Parameters<subclass["compile"]>[0],
         public condition: string,
-        public subconditions: string[],
-        public create: (rule: rule) => any
+        public subconditions: string[]
     ) {
         this.allows = new CompiledFunction(`return ${condition}`)
     }
 
-    abstract computeIntersection(other: this): rule | Disjoint
+    abstract computeIntersection(other: this): this["rule"] | Disjoint
 
     intersect(other: this): this | Disjoint {
         if (this === (other as unknown)) {

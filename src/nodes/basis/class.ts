@@ -1,25 +1,40 @@
 import type { AbstractableConstructor } from "../../utils/objectKinds.js"
-import { getExactBuiltinConstructorName } from "../../utils/objectKinds.js"
+import {
+    getExactBuiltinConstructorName,
+    prototypeKeysOf
+} from "../../utils/objectKinds.js"
 import { In } from "../compilation.js"
+import { Disjoint } from "../disjoint.js"
 import { defineNode } from "../node.js"
 import { registry } from "../registry.js"
+import { BasisNode } from "./basis.js"
 
-export class ClassNode extends defineNode<AbstractableConstructor>()({
-    kind: "divisor",
-    condition: (rule) =>
-        `${In} instanceof ${
-            getExactBuiltinConstructorName(rule) ??
-            registry().register(rule.name, rule)
-        }`,
-    describe: (rule) => rule.name,
-    intersect: (l, r) => l
-}) {}
+// export type ClassNode = ReturnType<typeof ClassNode>
 
-// readonly domain = "object"
+export class ClassNode extends BasisNode<"class", AbstractableConstructor> {
+    readonly kind = "basis"
+    readonly domain = "object"
+    readonly level = "class"
 
-// literalKeysOf() {
-//     return prototypeKeysOf(this.child.prototype)
-// }
+    static compile(rule: AbstractableConstructor) {
+        return [
+            `${In} instanceof ${
+                getExactBuiltinConstructorName(rule) ??
+                registry().register(rule.name, rule)
+            }`
+        ]
+    }
+
+    literalKeysOf() {
+        return prototypeKeysOf(this.rule.prototype)
+    }
+
+    describe() {
+        return this.rule.name
+    }
+}
+
+export const classNode = defineNode(ClassNode)
 
 // compileTraverse(s: CompilationState) {
 //     return s.ifNotThen(this.condition, s.problem("class", this.child))

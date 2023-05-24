@@ -5,25 +5,23 @@ import { throwInternalError, throwParseError } from "../../utils/errors.js"
 import type { evaluate } from "../../utils/generics.js"
 import type {
     AbstractableConstructor,
-    Constructor,
-    instanceOf
+    Constructor
 } from "../../utils/objectKinds.js"
 import { constructorExtends } from "../../utils/objectKinds.js"
 import type { Key } from "../../utils/records.js"
 import { stringify } from "../../utils/serialize.js"
 import type { DisjointKindEntries } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
-import { defineNode, Node } from "../node.js"
+import { BaseNode } from "../node.js"
 import { type ConstraintKind } from "../predicate.js"
-import { TypeNode } from "../type.js"
 import type { ClassNode } from "./class.js"
 import type { DomainNode } from "./domain.js"
 import type { ValueNode } from "./value.js"
 
 type BasisNodesByLevel = {
-    domain: typeof DomainNode
-    class: typeof ClassNode
-    value: typeof ValueNode
+    domain: DomainNode
+    class: ClassNode
+    value: ValueNode
 }
 
 type BasisInputs = {
@@ -53,42 +51,36 @@ export const precedenceByLevel: Record<BasisLevel, number> = {
 
 export type BasisNodeSubclass = BasisNodesByLevel[BasisLevel]
 
-// export const BasisNode = defineNode({
-
-// })
-
 export abstract class BasisNode<
     level extends BasisLevel = BasisLevel,
-    child = unknown
-> extends Node<"basis", [child]> {
+    rule = unknown
+> extends BaseNode<rule> {
     abstract literalKeysOf(): Key[]
     abstract domain: Domain
     abstract level: level
 
-    private _keyof?: TypeNode
-    keyof(): TypeNode {
-        if (this._keyof) {
-            return this._keyof
-        }
-        this._keyof = TypeNode.fromValue(...this.literalKeysOf())
-        return this._keyof
+    keyof() {
+        // TODO: caching
+        // TypeNode.fromValue(...this.literalKeysOf())
+        return {} as never
     }
 
     hasLevel<level extends BasisLevel>(
         level: level
-    ): this is instanceOf<BasisNodesByLevel[level]> {
+    ): this is BasisNodesByLevel[level] {
         return this.level === (level as unknown)
     }
 
-    intersectNode(this: BasisNode, other: BasisNode): BasisNode | Disjoint {
+    computeIntersection(other: this): rule | Disjoint
+    computeIntersection(this: BasisNode & this, other: BasisNode & this) {
         if (this === other) {
-            return this
+            return this.rule
         }
         if (this.hasLevel("class") && other.hasLevel("class")) {
-            return constructorExtends(this.child, other.child)
-                ? this
-                : constructorExtends(other.child, this.child)
-                ? other
+            return constructorExtends(this.rule, other.rule)
+                ? this.rule
+                : constructorExtends(other.rule, this.rule)
+                ? other.rule
                 : Disjoint.from("class", this, other)
         }
         const disjointEntries: DisjointKindEntries = []
@@ -103,9 +95,9 @@ export abstract class BasisNode<
         return disjointEntries.length
             ? Disjoint.fromEntries(disjointEntries)
             : precedenceByLevel[this.level] < precedenceByLevel[other.level]
-            ? this
+            ? this.rule
             : precedenceByLevel[other.level] < precedenceByLevel[this.level]
-            ? other
+            ? other.rule
             : throwInternalError(
                   `Unexpected non-disjoint intersection from basis nodes with equal precedence ${this} and ${other}`
               )
@@ -117,7 +109,7 @@ export abstract class BasisNode<
                 throwInvalidConstraintError(
                     kind,
                     "a non-literal type",
-                    stringify(this.child)
+                    stringify(this.rule)
                 )
             }
             return
