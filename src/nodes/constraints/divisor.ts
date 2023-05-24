@@ -8,10 +8,12 @@ export class DivisorNode extends BaseNode<typeof DivisorNode> {
         return [`${In} % ${rule} === 0`]
     }
 
-    computeIntersection(other: this) {
-        return Math.abs(
-            (this.rule * other.rule) /
-                greatestCommonDivisor(this.rule, other.rule)
+    computeIntersection(other: DivisorNode) {
+        return new DivisorNode(
+            Math.abs(
+                (this.rule * other.rule) /
+                    greatestCommonDivisor(this.rule, other.rule)
+            )
         )
     }
 

@@ -9,14 +9,12 @@ import type {
 } from "../../utils/objectKinds.js"
 import { constructorExtends } from "../../utils/objectKinds.js"
 import type { Key } from "../../utils/records.js"
-import { stringify } from "../../utils/serialize.js"
 import type { DisjointKindEntries } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
-import { BaseNode } from "../node.js"
 import { type ConstraintKind } from "../predicate.js"
-import type { ClassNode } from "./class.js"
+import { ClassNode } from "./class.js"
 import type { DomainNode } from "./domain.js"
-import type { ValueNode } from "./value.js"
+import { ValueNode } from "./value.js"
 
 type BasisNodesByLevel = {
     domain: DomainNode
@@ -51,109 +49,86 @@ export const precedenceByLevel: Record<BasisLevel, number> = {
 
 export type BasisNodeSubclass = BasisNodesByLevel[BasisLevel]
 
-export abstract class BasisNode<
-    level extends BasisLevel = BasisLevel,
-    rule = unknown
-> extends BaseNode<rule> {
-    abstract literalKeysOf(): Key[]
-    abstract domain: Domain
-    abstract level: level
+export type BasisDefinition = {
+    literalKeysOf(): Key[]
+    domain: Domain
+    level: BasisLevel
+    assertAllowsConstraint(kind: ConstraintKind): void
+}
 
-    keyof() {
-        // TODO: caching
-        // TypeNode.fromValue(...this.literalKeysOf())
-        return {} as never
+export type BasisNode = typeof DomainNode | typeof ValueNode | typeof ClassNode
+
+export type BasisInstance = InstanceType<BasisNode>
+
+export const intersectBases = (
+    l: BasisInstance,
+    r: BasisInstance
+): BasisInstance | Disjoint => {
+    if (l === r) {
+        return l
     }
-
-    hasLevel<level extends BasisLevel>(
-        level: level
-    ): this is BasisNodesByLevel[level] {
-        return this.level === (level as unknown)
+    if (l instanceof ClassNode && r instanceof ClassNode) {
+        return constructorExtends(l.rule, r.rule)
+            ? l
+            : constructorExtends(r.rule, l.rule)
+            ? r
+            : Disjoint.from("class", l, r)
     }
-
-    computeIntersection(other: this): rule | Disjoint
-    computeIntersection(this: BasisNode & this, other: BasisNode & this) {
-        if (this === other) {
-            return this.rule
-        }
-        if (this.hasLevel("class") && other.hasLevel("class")) {
-            return constructorExtends(this.rule, other.rule)
-                ? this.rule
-                : constructorExtends(other.rule, this.rule)
-                ? other.rule
-                : Disjoint.from("class", this, other)
-        }
-        const disjointEntries: DisjointKindEntries = []
-        if (this.domain !== other.domain) {
-            disjointEntries.push(["domain", { l: this, r: other }])
-        }
-        if (this.hasLevel("value") && other.hasLevel("value")) {
-            if (this !== other) {
-                disjointEntries.push(["value", { l: this, r: other }])
-            }
-        }
-        return disjointEntries.length
-            ? Disjoint.fromEntries(disjointEntries)
-            : precedenceByLevel[this.level] < precedenceByLevel[other.level]
-            ? this.rule
-            : precedenceByLevel[other.level] < precedenceByLevel[this.level]
-            ? other.rule
-            : throwInternalError(
-                  `Unexpected non-disjoint intersection from basis nodes with equal precedence ${this} and ${other}`
-              )
+    const disjointEntries: DisjointKindEntries = []
+    if (l.domain !== r.domain) {
+        disjointEntries.push(["domain", { l, r }])
     }
+    if (l instanceof ValueNode && r instanceof ValueNode) {
+        if (l !== r) {
+            disjointEntries.push(["value", { l, r }])
+        }
+    }
+    return disjointEntries.length
+        ? Disjoint.fromEntries(disjointEntries)
+        : precedenceByLevel[l.level] < precedenceByLevel[r.level]
+        ? l
+        : precedenceByLevel[r.level] < precedenceByLevel[l.level]
+        ? r
+        : throwInternalError(
+              `Unexpected non-disjoint intersection from basis nodes with equal precedence ${l} and ${r}`
+          )
+}
 
-    assertAllowsConstraint(kind: ConstraintKind) {
-        if (this.hasLevel("value")) {
-            if (kind !== "morph") {
-                throwInvalidConstraintError(
-                    kind,
-                    "a non-literal type",
-                    stringify(this.rule)
-                )
+export const assertAllowsConstraint = (
+    basis: BasisDefinition,
+    kind: ConstraintKind
+) => {
+    switch (kind) {
+        case "divisor":
+            if (basis.domain !== "number") {
+                throwParseError(writeIndivisibleMessage(basis.domain))
             }
             return
-        }
-        switch (kind) {
-            case "divisor":
-                if (this.domain !== "number") {
-                    throwParseError(writeIndivisibleMessage(this.domain))
-                }
-                return
-            case "range":
-                if (
-                    this.domain !== "string" &&
-                    this.domain !== "number"
-                    // !this.hasConstructorExtending(Array, Date)
-                ) {
-                    throwParseError(writeUnboundableMessage(this.domain))
-                }
-                return
-            case "regex":
-                if (this.domain !== "string") {
-                    throwInvalidConstraintError(
-                        "regex",
-                        "a string",
-                        this.domain
-                    )
-                }
-                return
-            case "props":
-                if (this.domain !== "object") {
-                    throwInvalidConstraintError(
-                        "props",
-                        "an object",
-                        this.domain
-                    )
-                }
-                return
-            case "narrow":
-                return
-            case "morph":
-                return
-            default:
-                throwInternalError(`Unexpxected rule kind '${kind}'`)
-        }
+        case "range":
+            if (
+                basis.domain !== "string" &&
+                basis.domain !== "number"
+                // !this.hasConstructorExtending(Array, Date)
+            ) {
+                throwParseError(writeUnboundableMessage(basis.domain))
+            }
+            return
+        case "regex":
+            if (basis.domain !== "string") {
+                throwInvalidConstraintError("regex", "a string", basis.domain)
+            }
+            return
+        case "props":
+            if (basis.domain !== "object") {
+                throwInvalidConstraintError("props", "an object", basis.domain)
+            }
+            return
+        case "narrow":
+            return
+        case "morph":
+            return
+        default:
+            throwInternalError(`Unexpxected rule kind '${kind}'`)
     }
 }
 

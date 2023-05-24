@@ -292,10 +292,10 @@ export const createArrayIndexMatcher = <index extends number>(
         : VariadicIndexMatcherSource
 
 const extractArrayIndexRegex = (keyNode: TypeNode<string>) => {
-    if (keyNode.children.length !== 1) {
+    if (keyNode.rule.length !== 1) {
         return
     }
-    const regexNode = keyNode.children[0].getConstraint("regex")
+    const regexNode = keyNode.rule[0].getConstraint("regex")
     if (!regexNode || regexNode.children.length !== 1) {
         return
     }

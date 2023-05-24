@@ -4,15 +4,18 @@ import {
     prototypeKeysOf
 } from "../../utils/objectKinds.js"
 import { In } from "../compilation.js"
-import { Disjoint } from "../disjoint.js"
-import { defineNode } from "../node.js"
+import { BaseNode } from "../node.js"
+import type { ConstraintKind } from "../predicate.js"
+
 import { registry } from "../registry.js"
-import { BasisNode } from "./basis.js"
+import type { BasisDefinition, BasisInstance } from "./basis.js"
+import { assertAllowsConstraint, intersectBases } from "./basis.js"
 
-// export type ClassNode = ReturnType<typeof ClassNode>
-
-export class ClassNode extends BasisNode<"class", AbstractableConstructor> {
-    readonly kind = "basis"
+export class ClassNode
+    extends BaseNode<typeof ClassNode>
+    implements BasisDefinition
+{
+    static readonly kind = "basis"
     readonly domain = "object"
     readonly level = "class"
 
@@ -25,6 +28,14 @@ export class ClassNode extends BasisNode<"class", AbstractableConstructor> {
         ]
     }
 
+    assertAllowsConstraint(kind: ConstraintKind) {
+        assertAllowsConstraint(this, kind)
+    }
+
+    computeIntersection(other: BasisInstance) {
+        return intersectBases(this, other)
+    }
+
     literalKeysOf() {
         return prototypeKeysOf(this.rule.prototype)
     }
@@ -33,8 +44,6 @@ export class ClassNode extends BasisNode<"class", AbstractableConstructor> {
         return this.rule.name
     }
 }
-
-export const classNode = defineNode(ClassNode)
 
 // compileTraverse(s: CompilationState) {
 //     return s.ifNotThen(this.condition, s.problem("class", this.child))

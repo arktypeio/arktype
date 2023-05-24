@@ -1,16 +1,17 @@
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import { entriesOf, type entryOf } from "../utils/records.js"
 import { stringify } from "../utils/serialize.js"
-import type { BasisNode } from "./basis/basis.js"
+import type { BasisDefinition } from "./basis/basis.js"
 import type { ClassNode } from "./basis/class.js"
 import type { ValueNode } from "./basis/value.js"
 import { In, prependKey } from "./compilation.js"
 import type { RangeNode } from "./constraints/range.js"
+import type { PredicateNode } from "./predicate.js"
 
 type DisjointKinds = {
     domain?: {
-        l: BasisNode
-        r: BasisNode
+        l: BasisDefinition
+        r: BasisDefinition
     }
     value?: {
         l: ValueNode
@@ -24,19 +25,19 @@ type DisjointKinds = {
         l: ClassNode
         r: ClassNode
     }
-    // assignability?:
-    //     | {
-    //           l: ValueNode
-    //           r: PredicateNode
-    //       }
-    //     | {
-    //           l: PredicateNode
-    //           r: ValueNode
-    //       }
-    // union?: {
-    //     l: TypeNode
-    //     r: TypeNode
-    // }
+    assignability?:
+        | {
+              l: ValueNode
+              r: PredicateNode
+          }
+        | {
+              l: PredicateNode
+              r: ValueNode
+          }
+    union?: {
+        l: TypeNode
+        r: TypeNode
+    }
 }
 
 export const parseQualifiedDisjoint = <
