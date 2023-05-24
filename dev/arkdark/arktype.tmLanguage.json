@@ -9,7 +9,7 @@
     ],
     "repository": {
         "definition": {
-            "name": "meta.embedded.arktype.definition",
+            "contentName": "meta.embedded.arktype.definition",
             "begin": "(([^\\)\\(\\s]*\\.)?(type|scope)\\()",
             "beginCaptures": {
                 "1": {
@@ -25,20 +25,28 @@
                     "include": "#object"
                 },
                 {
+                    "include": "#tuple"
+                },
+                {
                     "include": "source.ts"
                 }
             ]
         },
-        "quoted": {
+        "tuple": {
+            "begin": "\\[",
+            "end": "\\]",
             "patterns": [
                 {
-                    "include": "#singleLineQuote"
+                    "include": "#quoted"
+                },
+                {
+                    "include": "#object"
                 }
             ]
         },
-        "singleLineQuote": {
+        "quoted": {
             "name": "quoted",
-            "match": "((?<!<)[\"'`])(.*?)?((?<!\\\\)(\\1))",
+            "match": "([\"'`])(.*?)?((?<!\\\\)(\\1))",
             "captures": {
                 "1": {
                     "name": "keyword.operator"
@@ -87,7 +95,7 @@
         },
         "operator": {
             "name": "keyword.operator",
-            "match": "[<>=%]|\""
+            "match": "[<>=%`']|\""
         },
         "object": {
             "begin": "{",
