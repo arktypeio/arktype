@@ -1,17 +1,25 @@
 import { In } from "../compilation.js"
-import { defineNode } from "../node.js"
+import { BaseNode, defineNode } from "../node.js"
 
 export const DivisorNode = defineNode(
-    (n: number) => [`${In} % ${n} === 0`],
-    (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r)),
-    (base) =>
-        class DivisorNode extends base {
-            readonly kind = "divisor"
+    class DivisorNode extends BaseNode<number> {
+        readonly kind = "divisor"
 
-            describe() {
-                return `a multiple of ${this.rule}`
-            }
+        static compile(rule: number) {
+            return [`${In} % ${rule} === 0`]
         }
+
+        computeIntersection(other: this) {
+            return Math.abs(
+                (this.rule * other.rule) /
+                    greatestCommonDivisor(this.rule, other.rule)
+            )
+        }
+
+        describe() {
+            return `a multiple of ${this.rule}`
+        }
+    }
 )
 
 export type DivisorNode = ReturnType<typeof DivisorNode>

@@ -1,5 +1,5 @@
 import { Disjoint } from "../disjoint.js"
-import { defineNode } from "../node.js"
+import { BaseNode, defineNode } from "../node.js"
 
 export const minComparators = {
     ">": true,
@@ -68,56 +68,57 @@ export type Range = {
 export type RangeNode = ReturnType<typeof RangeNode>
 
 export const RangeNode = defineNode(
-    (rule: Range) => [`${rule}`],
-    // TODO: look into circularity with disjoints
-    (l, r) => {
-        const lMin = l.rule.min
-        const lMax = l.rule.max
-        const rMin = r.rule.min
-        const rMax = r.rule.max
-        const stricterMin = compareStrictness("min", lMin, rMin)
-        const stricterMax = compareStrictness("max", lMax, rMax)
-        if (stricterMin === "l") {
-            if (stricterMax === "r") {
-                return compareStrictness("min", lMin, rMax) === "l"
-                    ? Disjoint.from("range", l, r)
-                    : {
-                          min: lMin!,
-                          max: rMax!
-                      }
-            }
-            return l
-        }
-        if (stricterMin === "r") {
-            if (stricterMax === "l") {
-                return compareStrictness("max", lMax, rMin) === "l"
-                    ? Disjoint.from("range", l, r)
-                    : {
-                          min: rMin,
-                          max: lMax
-                      }
-            }
-            return r
-        }
-        return stricterMax === "l" ? l : r
-    },
-    (base) =>
-        class extends base {
-            readonly kind = "range"
+    class RangeNode extends BaseNode<Range> {
+        readonly kind = "range"
 
-            describe() {
-                return this.rule.min
-                    ? this.rule.max
-                        ? `the range bounded by ${boundToExpression(
-                              "min",
-                              this.rule.min
-                          )} and ${boundToExpression("max", this.rule.max)}`
-                        : boundToExpression("min", this.rule.min)
-                    : this.rule.max
-                    ? boundToExpression("max", this.rule.max)
-                    : "the unbounded range"
-            }
+        static compile(rule: Range) {
+            return [`${rule}`]
         }
+
+        min = this.rule.min
+        max = this.rule.max
+
+        computeIntersection(other: this): Range | Disjoint {
+            const stricterMin = compareStrictness("min", this.min, other.min)
+            const stricterMax = compareStrictness("max", this.max, other.max)
+            if (stricterMin === "l") {
+                if (stricterMax === "r") {
+                    return compareStrictness("min", this.min, other.max) === "l"
+                        ? Disjoint.from("range", this, other)
+                        : {
+                              min: this.min!,
+                              max: other.max!
+                          }
+                }
+                return this.rule
+            }
+            if (stricterMin === "r") {
+                if (stricterMax === "l") {
+                    return compareStrictness("max", this.max, other.min) === "l"
+                        ? Disjoint.from("range", this, other)
+                        : {
+                              min: this.min!,
+                              max: other.max!
+                          }
+                }
+                return other.rule
+            }
+            return stricterMax === "l" ? this.rule : other.rule
+        }
+
+        describe() {
+            return this.rule.min
+                ? this.rule.max
+                    ? `the range bounded by ${boundToExpression(
+                          "min",
+                          this.rule.min
+                      )} and ${boundToExpression("max", this.rule.max)}`
+                    : boundToExpression("min", this.rule.min)
+                : this.rule.max
+                ? boundToExpression("max", this.rule.max)
+                : "the unbounded range"
+        }
+    }
 )
 
 const boundToExpression = (
