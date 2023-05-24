@@ -21,7 +21,11 @@ const defineBase = <rule>(
         abstract kind: string
         allows: (data: unknown) => boolean
 
-        constructor(public rule: rule, public condition: string) {
+        constructor(
+            public rule: rule,
+            public condition: string,
+            public subconditions: string[]
+        ) {
             this.allows = new CompiledFunction(`return ${condition}`)
         }
 
@@ -48,7 +52,7 @@ const defineBase = <rule>(
 }
 
 export const defineNode = <rule, instance extends Instance<rule>>(
-    compile: (rule: rule) => string,
+    compile: (rule: rule) => string[],
     intersect: Intersection<rule>,
     extend: (
         base: Base<rule>
@@ -59,7 +63,8 @@ export const defineNode = <rule, instance extends Instance<rule>>(
     } = {}
 
     const create = (rule: rule): instance => {
-        const condition = compile(rule)
+        const subconditions = compile(rule)
+        const condition = subconditions.join(" && ") ?? "true"
         if (instances[condition]) {
             return instances[condition]
         }

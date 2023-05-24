@@ -2,23 +2,19 @@ import { In } from "../compilation.js"
 import { defineNode } from "../node.js"
 
 export const DivisorNode = defineNode(
-    (n: number) => `${In} % ${n} === 0`,
+    (n: number) => [`${In} % ${n} === 0`],
     (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r)),
     (base) =>
-        class Node extends base {
+        class DivisorNode extends base {
             readonly kind = "divisor"
 
             describe() {
                 return `a multiple of ${this.rule}`
             }
-
-            foo() {
-                return "bar"
-            }
         }
 )
 
-const z = DivisorNode(5)
+export type DivisorNode = ReturnType<typeof DivisorNode>
 
 // compile: (n, condition, s) => s.ifNotThen(condition, s.problem("divisor", n))
 

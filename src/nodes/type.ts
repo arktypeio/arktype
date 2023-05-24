@@ -62,9 +62,8 @@ type extractBases<
       >
     : result
 
-const BaseTypeNode = defineNode<PredicateNode[]>()({
-    kind: "type",
-    condition: (branches) => {
+export const TypeNode = defineNode(
+    (branches: PredicateNode[]) => {
         return branches.length === 0
             ? "false"
             : branches.length === 1
@@ -74,12 +73,7 @@ const BaseTypeNode = defineNode<PredicateNode[]>()({
                   .sort()
                   .join(" || ")})`
     },
-    describe: (branches) => {
-        return branches.length === 0
-            ? "never"
-            : branches.map((branch) => branch.toString()).join(" or ")
-    },
-    intersect: (l, r): PredicateNode[] | Disjoint => {
+    (l, r): PredicateNode[] | Disjoint => {
         if (l.length === 1 && r.length === 1) {
             const result = l[0].intersect(r[0])
             return result instanceof Disjoint ? result : [result]
@@ -153,102 +147,126 @@ const BaseTypeNode = defineNode<PredicateNode[]>()({
         return finalBranches.length
             ? finalBranches
             : Disjoint.from("union", l, r)
-    }
-})
+    },
+    (base) =>
+        class TypeNode extends base {
+            readonly kind = "type"
 
-export class TypeNode<t = unknown> extends BaseTypeNode {
-    getPath(...path: (string | TypeNode<string>)[]) {
-        let current: PredicateNode[] = this.children
-        let next: PredicateNode[] = []
-        while (path.length) {
-            const key = path.shift()!
-            for (const branch of current) {
-                const propsAtKey = branch.getConstraint("props")
-                if (propsAtKey) {
-                    const branchesAtKey =
-                        typeof key === "string"
-                            ? propsAtKey.named?.[key]?.value.children
-                            : propsAtKey.indexed.find(
-                                  (entry) => entry[0] === key
-                              )?.[1].children
-                    if (branchesAtKey) {
-                        next.push(...branchesAtKey)
-                    }
-                }
+            describe() {
+                return this.rule.length === 0
+                    ? "never"
+                    : this.rule.map((branch) => branch.toString()).join(" or ")
             }
-            current = next
-            next = []
+
+            getPath(...path: (string | TypeNode<string>)[]) {
+                let current: PredicateNode[] = this.children
+                let next: PredicateNode[] = []
+                while (path.length) {
+                    const key = path.shift()!
+                    for (const branch of current) {
+                        const propsAtKey = branch.getConstraint("props")
+                        if (propsAtKey) {
+                            const branchesAtKey =
+                                typeof key === "string"
+                                    ? propsAtKey.named?.[key]?.value.children
+                                    : propsAtKey.indexed.find(
+                                          (entry) => entry[0] === key
+                                      )?.[1].children
+                            if (branchesAtKey) {
+                                next.push(...branchesAtKey)
+                            }
+                        }
+                    }
+                    current = next
+                    next = []
+                }
+                return TypeNode.from(...(current as any))
+            }
+
+            pruneDiscriminant(path: string[], kind: DiscriminantKind) {
+                const prunedBranches: PredicateNode[] = []
+                for (const branch of this.children) {
+                    const pruned = branch.pruneDiscriminant(path, kind)
+                    prunedBranches.push(pruned)
+                }
+                return new TypeNode(prunedBranches)
+            }
+
+            constrain<kind extends ConstraintKind>(
+                kind: kind,
+                definition: PredicateInput[kind]
+            ) {
+                return new TypeNode(
+                    this.children.map((branch) =>
+                        branch.constrain(kind, definition)
+                    )
+                )
+            }
+
+            and<other>(other: TypeNode<other>): TypeNode<t & other> {
+                const result = this.intersect(other)
+                return result instanceof Disjoint
+                    ? result.throw()
+                    : (result as TypeNode<t & other>)
+            }
+
+            or<other>(other: TypeNode<other>): TypeNode<t | other> {
+                if (this === (other as unknown)) {
+                    return this
+                }
+                return new TypeNode(
+                    ...TypeNode.reduceBranches([
+                        ...this.children,
+                        ...other.children
+                    ])
+                )
+            }
+
+            get valueNode(): ValueNode | undefined {
+                return this.children.length === 1
+                    ? this.children[0].valueNode
+                    : undefined
+            }
+
+            equals<other>(other: TypeNode<other>): this is TypeNode<other> {
+                return this === (other as unknown)
+            }
+
+            extends<other>(other: TypeNode<other>): this is TypeNode<other> {
+                return this.intersect(other) === this
+            }
+
+            private declare _keyof: TypeNode | undefined
+            keyof(): TypeNode {
+                if (this.children.length === 0) {
+                    return throwParseError(`never is not a valid keyof operand`)
+                }
+                if (this._keyof) {
+                    return this._keyof
+                }
+                let result = this.rule[0].keyof()
+                for (let i = 1; i < this.children.length; i++) {
+                    result = result.and(this.children[i].keyof())
+                }
+                this._keyof = result
+                return result
+            }
+
+            array(): TypeNode<t[]> {
+                const props = new PropsNode({}, [arrayIndexTypeNode(), this])
+                const predicate = new PredicateNode(arrayBasisNode, props)
+                return new TypeNode(predicate)
+            }
+
+            isNever(): this is TypeNode<never> {
+                return this === neverTypeNode
+            }
+
+            isUnknown(): this is TypeNode<unknown> {
+                return this === unknownTypeNode
+            }
         }
-        return TypeNode.from(...(current as any))
-    }
-    pruneDiscriminant(path: string[], kind: DiscriminantKind) {
-        const prunedBranches: PredicateNode[] = []
-        for (const branch of this.children) {
-            const pruned = branch.pruneDiscriminant(path, kind)
-            prunedBranches.push(pruned)
-        }
-        return new TypeNode(prunedBranches)
-    }
-    constrain<kind extends ConstraintKind>(
-        kind: kind,
-        definition: PredicateInput[kind]
-    ) {
-        return new TypeNode(
-            this.children.map((branch) => branch.constrain(kind, definition))
-        )
-    }
-    and<other>(other: TypeNode<other>): TypeNode<t & other> {
-        const result = this.intersect(other)
-        return result instanceof Disjoint
-            ? result.throw()
-            : (result as TypeNode<t & other>)
-    }
-    or<other>(other: TypeNode<other>): TypeNode<t | other> {
-        if (this === (other as unknown)) {
-            return this
-        }
-        return new TypeNode(
-            ...TypeNode.reduceBranches([...this.children, ...other.children])
-        )
-    }
-    get valueNode(): ValueNode | undefined {
-        return this.children.length === 1
-            ? this.children[0].valueNode
-            : undefined
-    }
-    equals<other>(other: TypeNode<other>): this is TypeNode<other> {
-        return this === (other as unknown)
-    }
-    extends<other>(other: TypeNode<other>): this is TypeNode<other> {
-        return this.intersect(other) === this
-    }
-    private declare _keyof: TypeNode | undefined
-    keyof(): TypeNode {
-        if (this.children.length === 0) {
-            return throwParseError(`never is not a valid keyof operand`)
-        }
-        if (this._keyof) {
-            return this._keyof
-        }
-        let result = this.rule[0].keyof()
-        for (let i = 1; i < this.children.length; i++) {
-            result = result.and(this.children[i].keyof())
-        }
-        this._keyof = result
-        return result
-    }
-    array(): TypeNode<t[]> {
-        const props = new PropsNode({}, [arrayIndexTypeNode(), this])
-        const predicate = new PredicateNode(arrayBasisNode, props)
-        return new TypeNode(predicate)
-    }
-    isNever(): this is TypeNode<never> {
-        return this === neverTypeNode
-    }
-    isUnknown(): this is TypeNode<unknown> {
-        return this === unknownTypeNode
-    }
-}
+)
 
 // discriminant: Discriminant | undefined
 
