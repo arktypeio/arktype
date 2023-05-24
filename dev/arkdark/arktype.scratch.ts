@@ -7,6 +7,8 @@ type({
     a: "string|number"
 })
 
+type(["string|number", "[]"])
+
 scope({
     // nested highlighting
     a: "string|number",
