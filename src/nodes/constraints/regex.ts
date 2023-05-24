@@ -1,21 +1,26 @@
 import { intersectUniqueLists } from "../../utils/lists.js"
 import { In } from "../compilation.js"
-import { defineNode } from "../node.js"
+import { BaseNode, defineNode } from "../node.js"
 
 export const RegexNode = defineNode(
-    (sources: string[]) => sources.map(compileExpression).sort(),
-    intersectUniqueLists,
-    (base) =>
-        class RegexNode extends base {
-            readonly kind = "regex"
+    class RegexNode extends BaseNode<string[]> {
+        readonly kind = "regex"
 
-            describe() {
-                const literals = this.rule.map((_) => `/${_}/`)
-                return literals.length === 1
-                    ? literals[0]
-                    : `expressions ${literals.join(", ")}`
-            }
+        static compile(sources: string[]) {
+            return sources.map(compileExpression).sort()
         }
+
+        computeIntersection(other: this) {
+            return intersectUniqueLists(this.rule, other.rule)
+        }
+
+        describe() {
+            const literals = this.rule.map((_) => `/${_}/`)
+            return literals.length === 1
+                ? literals[0]
+                : `expressions ${literals.join(", ")}`
+        }
+    }
 )
 
 // return this.children
