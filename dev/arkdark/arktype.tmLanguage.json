@@ -1,5 +1,6 @@
 {
-    "scopeName": "arktype.injection.ts",
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "scopeName": "source.arktype.injection.ts",
     "injectionSelector": "L:source.ts - comment",
     "patterns": [
         {
@@ -54,9 +55,7 @@
                             "include": "#regex"
                         },
                         {
-                            "include": "source.ts#type",
-                            "begin": "(?!quoted)",
-                            "end": "(?=(quoted))"
+                            "include": "source.ts#type"
                         }
                     ]
                 },
@@ -64,10 +63,6 @@
                     "name": "keyword.operator"
                 }
             }
-        },
-        "templateLiteralMultiLine": {
-            "name": "tempLiteral",
-            "match": "(`)([\\s\\S]*?\\n[\\s\\S]*?)((?<!\\\\)(\\1))"
         },
         "regex": {
             "match": "(\\/)(.*)((?<!\\\\)(\\1))",
@@ -95,22 +90,52 @@
             "match": "[<>=%]|\""
         },
         "object": {
-            "name": "meta.object-literal.key.ts",
             "begin": "{",
             "end": "}",
+            "beginCaptures": {
+                "0": {
+                    "name": "punctuation.definition.block.ts"
+                }
+            },
+            "endCaptures": {
+                "0": {
+                    "name": "punctuation.definition.block.ts"
+                }
+            },
             "patterns": [
                 {
                     "include": "#quoted"
                 },
                 {
-                    "name": "comment.line.double-slash.ts",
-                    "match": "//.*"
+                    "include": "source.ts#comment"
                 },
                 {
                     "include": "#operator"
                 },
                 {
                     "include": "#object"
+                },
+                {
+                    "match": "(([\"'`])?(\\w+)(\\2)?\\: ?)((([\"'`]?)(.*)(\\7))|\\{)([^}]*)",
+                    "captures": {
+                        "1": {
+                            "name": "meta.object-literal.key.ts"
+                        },
+                        "5": {
+                            "patterns": [
+                                {
+                                    "include": "#quoted"
+                                }
+                            ]
+                        },
+                        "10": {
+                            "patterns": [
+                                {
+                                    "include": "source.ts"
+                                }
+                            ]
+                        }
+                    }
                 }
             ]
         }
