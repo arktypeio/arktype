@@ -9,7 +9,7 @@ import {
     writeOpenRangeMessage,
     writeUnpairableComparatorMessage
 } from "../../src/parse/string/reduce/shared.js"
-import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.js"
+import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bound.js"
 import {
     d,
     writeMalformedNumericLiteralMessage
@@ -190,6 +190,10 @@ suite("range", () => {
                 // @ts-expect-error
                 attest(() => type("3>number<5")).throwsAndHasTypeError(
                     writeUnpairableComparatorMessage(">")
+                )
+                // @ts-expect-error
+                attest(() => type("3>=number<5")).throwsAndHasTypeError(
+                    writeUnpairableComparatorMessage(">=")
                 )
             })
             test("invalid right double-bound comparator", () => {

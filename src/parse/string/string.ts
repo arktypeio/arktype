@@ -61,16 +61,24 @@ export const parseUntilFinalizer = (s: DynamicState) => {
 export type parseUntilFinalizer<
     s extends StaticState | error,
     $
-    // TODO: whitespace here?
 > = s extends StaticState
-    ? s["unscanned"] extends ""
-        ? state.finalize<s, $>
-        : s["unscanned"] extends `${Scanner.FinalizingLookahead}${string}`
-        ? // ensure the initial > is not treated as a finalizer in an expression like Set<number>5>
-          s["unscanned"] extends `>${"=" | ""}${number}${string}`
-            ? parseUntilFinalizer<next<s, $>, $>
-            : state.finalize<s, $>
-        : parseUntilFinalizer<next<s, $>, $>
+    ? Scanner.skipWhitespace<
+          s["unscanned"]
+      > extends infer unscanned extends string
+        ? unscanned extends ""
+            ? state.finalize<s, $>
+            : unscanned extends `${infer finalizer extends Scanner.FinalizingLookahead}${infer nextUnscanned}`
+            ? // ensure the initial > is not treated as a finalizer in an expression like Set<number>5> or Set<number>=5>
+              // also ensures we still give correct error messages for invalid expressions like 3>number<5
+              [finalizer, Scanner.skipWhitespace<nextUnscanned>] extends [
+                  ">",
+                  // if the > is actually part of a bound, the next token should be an operand, not an operator
+                  "" | `${"=" | ""}${Scanner.OperatorToken}${string}`
+              ]
+                ? state.finalize<s, $>
+                : parseUntilFinalizer<next<state.scanTo<s, unscanned>, $>, $>
+            : parseUntilFinalizer<next<state.scanTo<s, unscanned>, $>, $>
+        : never
     : // s is an error here
       s
 

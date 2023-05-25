@@ -17,8 +17,6 @@ export const parseOperand = (s: DynamicState): void =>
         ? s.shiftedByOne().reduceGroupOpen()
         : s.scanner.lookaheadIsIn(enclosingChar)
         ? parseEnclosed(s, s.scanner.shift())
-        : s.scanner.lookahead === " " || s.scanner.lookahead === "\n"
-        ? parseOperand(s.shiftedByOne())
         : parseUnenclosed(s)
 
 export type parseOperand<
@@ -29,7 +27,5 @@ export type parseOperand<
         ? state.reduceGroupOpen<s, unscanned>
         : lookahead extends EnclosingChar
         ? parseEnclosed<s, lookahead, unscanned>
-        : lookahead extends " "
-        ? parseOperand<state.scanTo<s, unscanned>, $>
         : parseUnenclosed<s, $>
     : error<`${s["scanned"]}${(keyof $ & string) | AutocompletePrefix}`>

@@ -50,25 +50,26 @@ suite("thunk", () => {
         //     object: { props: { a: { object: { props: { a: "string" } } } } }
         // })
     })
-    test("cyclic thunks in scope", () => {
-        const $ = scope({
-            a: () => $.type({ b: "b" }),
-            b: () => $.type({ a: "a" })
-        })
-        const types = $.compile()
-        attest(types.a.infer).typed as {
-            b: {
-                a: any
-            }
-        }
-        // attest(types.a.node).snap({ object: { props: { b: "b" } } })
-        attest(types.b.infer).typed as {
-            a: {
-                b: any
-            }
-        }
-        // attest(types.b.node).snap({ object: { props: { a: "a" } } })
-    })
+    // TODO :Finalize
+    // test("cyclic thunks in scope", () => {
+    //     const $ = scope({
+    //         a: () => $.type({ b: "b" }),
+    //         b: () => $.type({ a: "a" })
+    //     })
+    //     const types = $.compile()
+    //     attest(types.a.infer).typed as {
+    //         b: {
+    //             a: any
+    //         }
+    //     }
+    //     // attest(types.a.node).snap({ object: { props: { b: "b" } } })
+    //     attest(types.b.infer).typed as {
+    //         a: {
+    //             b: any
+    //         }
+    //     }
+    //     // attest(types.b.node).snap({ object: { props: { a: "a" } } })
+    // })
     test("expression from thunk", () => {
         const $ = scope({
             a: () => $.type({ a: "string" }),

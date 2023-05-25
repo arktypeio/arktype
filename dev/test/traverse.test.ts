@@ -41,16 +41,16 @@ suite("traverse", () => {
     })
     test("customized builtin problem", () => {
         const types = scope(
-            { isEven: "number%2" },
-            {
-                // TODO: Fix
-                // codes: {
-                //     divisor: {
-                //         mustBe: (divisor) => `a multiple of ${divisor}`,
-                //         writeReason: (mustBe, was) => `${was} is not ${mustBe}!`
-                //     }
-                // }
-            }
+            { isEven: "number%2" }
+            //{
+            // TODO: Fix
+            // codes: {
+            //     divisor: {
+            //         mustBe: (divisor) => `a multiple of ${divisor}`,
+            //         writeReason: (mustBe, was) => `${was} is not ${mustBe}!`
+            //     }
+            // }
+            //}
         ).compile()
         attest(types.isEven(3).problems?.summary).snap(
             "3 is not a multiple of 2!"

@@ -142,7 +142,7 @@ export namespace Scanner {
         : [scanned, ""]
 
     export type shiftUntilNextTerminator<unscanned extends string> = shiftUntil<
-        skipWhitespace<unscanned>,
+        unscanned,
         TerminatingChar
     >
 

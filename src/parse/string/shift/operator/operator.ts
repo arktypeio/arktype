@@ -1,12 +1,10 @@
 import type { error } from "../../../../utils/errors.js"
-import type { join } from "../../../../utils/lists.js"
 import { isKeyOf } from "../../../../utils/records.js"
-import type { stringifyUnion } from "../../../../utils/unionToTuple.js"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
-import type { ComparatorStartChar } from "./bounds.js"
-import { comparatorStartChars, parseBound } from "./bounds.js"
+import type { ComparatorStartChar } from "./bound.js"
+import { comparatorStartChars, parseBound } from "./bound.js"
 import { parseDivisor } from "./divisor.js"
 
 // @snipStart:parseOperator
@@ -24,8 +22,6 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
         ? parseBound(s, lookahead)
         : lookahead === "%"
         ? parseDivisor(s)
-        : lookahead === " "
-        ? parseOperator(s)
         : s.error(writeUnexpectedCharacterMessage(lookahead))
 }
 
@@ -43,8 +39,6 @@ export type parseOperator<s extends StaticState> =
             ? parseBound<s, lookahead, unscanned>
             : lookahead extends "%"
             ? parseDivisor<s, unscanned>
-            : lookahead extends " "
-            ? parseOperator<state.scanTo<s, unscanned>>
             : error<writeUnexpectedCharacterMessage<lookahead>>
         : error<writeUnexpectedCharacterMessage<"">>
 // @snipEnd

@@ -10,7 +10,7 @@ import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "../../../../utils/numericLiterals.js"
-import type { GenericAst, genericAstFrom } from "../../../ast/ast.js"
+import type { genericAstFrom } from "../../../ast/ast.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { writeUnclosedGroupMessage } from "../../reduce/shared.js"
 import type {
@@ -62,7 +62,7 @@ type parseGeneric<
     def,
     s extends StaticState,
     $
-    // TODO: handle whitespace centrally here?
+    // have to skip whitespace here since TS allows instantiations like `Partial    <T>`
 > = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}`
     ? parseArgs<name, params, unscanned, $, [], []> extends infer result
         ? result extends ParsedArgs<infer asts, infer nextUnscanned>
