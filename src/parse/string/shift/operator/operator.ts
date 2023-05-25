@@ -1,9 +1,7 @@
 import type { error } from "../../../../utils/errors.js"
-import type { join } from "../../../../utils/lists.js"
 import { isKeyOf } from "../../../../utils/records.js"
-import type { stringifyUnion } from "../../../../utils/unionToTuple.js"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
-import type { state, StaticState } from "../../reduce/static.js"
+import type { state, StateFinalizer, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
 import type { ComparatorStartChar } from "./bounds.js"
 import { comparatorStartChars, parseBound } from "./bounds.js"
@@ -39,14 +37,27 @@ export type parseOperator<s extends StaticState> =
             ? state.reduceBranch<s, lookahead, unscanned>
             : lookahead extends ")"
             ? state.finalizeGroup<s, unscanned>
+            : // ensure the initial > is not treated as a finalizer in an expression like Set<number>5> or Set<number>=5>
+            // also ensures we still give correct error messages for invalid expressions like 3>number<5
+            [lookahead, Scanner.skipWhitespace<unscanned>] extends
+                  | [
+                        ">",
+                        // if the > is actually part of a bound, the next token should be an operand, not an operator
+                        "" | `${"=" | ""}${Scanner.OperatorToken}${string}`
+                    ]
+                  | [",", unknown]
+            ? state.finalize<
+                  state.scanTo<s, unscanned>,
+                  lookahead & StateFinalizer
+              >
             : lookahead extends ComparatorStartChar
             ? parseBound<s, lookahead, unscanned>
             : lookahead extends "%"
             ? parseDivisor<s, unscanned>
-            : lookahead extends " "
+            : lookahead extends Scanner.WhiteSpaceToken
             ? parseOperator<state.scanTo<s, unscanned>>
             : error<writeUnexpectedCharacterMessage<lookahead>>
-        : error<writeUnexpectedCharacterMessage<"">>
+        : state.finalize<s, "">
 // @snipEnd
 
 export const writeUnexpectedCharacterMessage = <

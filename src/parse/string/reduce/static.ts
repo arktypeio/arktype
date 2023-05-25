@@ -7,6 +7,7 @@ import type {
 import type { error } from "../../../utils/errors.js"
 import type { defined } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
+import type { Scanner } from "../shift/scanner.js"
 import type {
     Prefix,
     writeMultipleLeftBoundsMessage,
@@ -16,10 +17,13 @@ import type {
     writeUnpairableComparatorMessage
 } from "./shared.js"
 
+export type StateFinalizer = Scanner.FinalizingLookahead | ""
+
 export type StaticState = {
     root: unknown
     branches: BranchState
     groups: BranchState[]
+    finalizer: StateFinalizer | undefined
     scanned: string
     unscanned: string
 }
@@ -40,6 +44,7 @@ export namespace state {
         root: undefined
         branches: initialBranches
         groups: []
+        finalizer: undefined
         scanned: ""
         unscanned: def
     }>
@@ -67,6 +72,7 @@ export namespace state {
         root: root
         branches: s["branches"]
         groups: s["groups"]
+        finalizer: s["finalizer"]
         scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>
@@ -84,6 +90,7 @@ export namespace state {
             "|": s["branches"]["|"]
         }
         groups: s["groups"]
+        finalizer: s["finalizer"]
         scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>
@@ -103,6 +110,7 @@ export namespace state {
                   "|": token extends "|" ? mergeToUnion<s> : s["branches"]["|"]
               }
               groups: s["groups"]
+              finalizer: s["finalizer"]
               scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
               unscanned: unscanned
           }>
@@ -134,6 +142,7 @@ export namespace state {
                       "|": s["branches"]["|"]
                   }
                   groups: s["groups"]
+                  finalizer: s["finalizer"]
                   scanned: updateScanned<
                       s["scanned"],
                       s["unscanned"],
@@ -159,6 +168,7 @@ export namespace state {
             "|": s["branches"]["|"]
         }
         groups: s["groups"]
+        finalizer: s["finalizer"]
         scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>
@@ -177,6 +187,7 @@ export namespace state {
             "|": s["branches"]["|"]
         }
         groups: s["groups"]
+        finalizer: s["finalizer"]
         scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>
@@ -213,6 +224,7 @@ export namespace state {
               groups: stack
               branches: top
               root: mergeToUnion<s>
+              finalizer: s["finalizer"]
               scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
               unscanned: unscanned
           }>
@@ -225,19 +237,22 @@ export namespace state {
         groups: [...s["groups"], s["branches"]]
         branches: initialBranches
         root: undefined
+        finalizer: s["finalizer"]
         scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>
 
-    export type finalize<s extends StaticState, $> = s["root"] extends undefined
-        ? error<`${s["scanned"]}${(keyof $ & string) | AutocompletePrefix}`>
-        : s["groups"] extends []
+    export type finalize<
+        s extends StaticState,
+        finalizer extends StateFinalizer
+    > = s["groups"] extends []
         ? s["branches"]["range"] extends {}
             ? openRangeError<s["branches"]["range"]>
             : from<{
                   root: mergeToUnion<s>
                   groups: s["groups"]
                   branches: initialBranches
+                  finalizer: finalizer
                   scanned: s["scanned"]
                   unscanned: s["unscanned"]
               }>
@@ -265,6 +280,7 @@ export namespace state {
         root: s["root"]
         branches: s["branches"]
         groups: s["groups"]
+        finalizer: s["finalizer"]
         scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>

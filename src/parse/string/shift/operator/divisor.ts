@@ -15,16 +15,14 @@ export const parseDivisor = (s: DynamicStateWithRoot) => {
         s.error(writeInvalidDivisorMessage(0))
     }
     s.root = s.root.constrain("divisor", divisor)
-    //  s.error(writeIndivisibleMessage(stringify(s.root)))
 }
 
 export type parseDivisor<
     s extends StaticState,
     unscanned extends string
-> = Scanner.shiftUntilNextTerminator<unscanned> extends Scanner.shiftResult<
-    infer scanned,
-    infer nextUnscanned
->
+> = Scanner.shiftUntilNextTerminator<
+    Scanner.skipWhitespace<unscanned>
+> extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
     ? scanned extends NumberLiteral<infer divisor>
         ? divisor extends 0
             ? error<writeInvalidDivisorMessage<0>>

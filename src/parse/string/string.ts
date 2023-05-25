@@ -6,7 +6,6 @@ import { DynamicState } from "./reduce/dynamic.js"
 import type { state, StaticState } from "./reduce/static.js"
 import { parseOperand } from "./shift/operand/operand.js"
 import { parseOperator } from "./shift/operator/operator.js"
-import type { Scanner } from "./shift/scanner.js"
 
 // TODO: cache
 export const parseString = (def: string, ctx: ParseContext) =>
@@ -61,16 +60,10 @@ export const parseUntilFinalizer = (s: DynamicState) => {
 export type parseUntilFinalizer<
     s extends StaticState | error,
     $
-    // TODO: whitespace here?
 > = s extends StaticState
-    ? s["unscanned"] extends ""
-        ? state.finalize<s, $>
-        : s["unscanned"] extends `${Scanner.FinalizingLookahead}${string}`
-        ? // ensure the initial > is not treated as a finalizer in an expression like Set<number>5>
-          s["unscanned"] extends `>${"=" | ""}${number}${string}`
-            ? parseUntilFinalizer<next<s, $>, $>
-            : state.finalize<s, $>
-        : parseUntilFinalizer<next<s, $>, $>
+    ? s["finalizer"] extends undefined
+        ? parseUntilFinalizer<next<s, $>, $>
+        : s
     : // s is an error here
       s
 

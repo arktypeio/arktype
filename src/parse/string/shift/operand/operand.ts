@@ -29,7 +29,7 @@ export type parseOperand<
         ? state.reduceGroupOpen<s, unscanned>
         : lookahead extends EnclosingChar
         ? parseEnclosed<s, lookahead, unscanned>
-        : lookahead extends " "
+        : lookahead extends Scanner.WhiteSpaceToken
         ? parseOperand<state.scanTo<s, unscanned>, $>
         : parseUnenclosed<s, $>
     : error<`${s["scanned"]}${(keyof $ & string) | AutocompletePrefix}`>
