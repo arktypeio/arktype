@@ -3,13 +3,14 @@ import type { Problem } from "../../src/main.js"
 import { ark, scope, type } from "../../src/main.js"
 import { writeUndiscriminatableMorphUnionMessage } from "../../src/nodes/discriminate.js"
 import type { Out } from "../../src/parse/ast/morph.js"
+import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"
 import { Path } from "../../src/utils/lists.js"
 import { attest } from "../attest/main.js"
 
 suite("morph", () => {
     test("base", () => {
-        const t = type(["boolean", "|>", (data) => `${data}`])
+        const t = type("boolean").morph((data) => `${data}`)
         attest(t).typed as Type<(In: boolean) => string>
         attest(t.infer).typed as string
         const result = t(true)
@@ -18,6 +19,7 @@ suite("morph", () => {
         }
         attest(result.data).equals("true").typed as string
         attest(t("foo").problems?.summary).snap("Must be boolean (was string)")
+        attest(t.root).equals(type(["boolean", "|>", (data) => `${data}`]).root)
     })
     test("endomorph", () => {
         const t = type(["boolean", "|>", (data) => !data])
@@ -35,6 +37,19 @@ suite("morph", () => {
         attest(t("foobar").problems?.summary).snap(
             "Must be a valid date (was 'foobar')"
         )
+    })
+    test("validated output", () => {
+        const parsedUser = type("string").morph((s) => JSON.parse(s), {
+            name: "string",
+            age: "number"
+        })
+        attest(parsedUser).typed as Type<
+            (In: string) => Out<{
+                name: string
+                age: number
+            }>,
+            Ark
+        >
     })
     test("return problem", () => {
         const divide100By = type([
@@ -197,15 +212,13 @@ suite("morph", () => {
         //     ]
         // })
     })
-    test("chained", () => {
-        // TODO: Fix
-        // const $ = scope({
-        //     a: type("string").morph((s) => s.length),
-        //     b: type("a").morph((n) => n === 0) //() => $.morph("a", (n) => n === 0)
-        //     // ["a", "|>", (n) => n === 0]
-        // })
-        // const types = $.compile()
-        // attest(types.b).typed as Type<(In: string) => boolean>
+    test("chained reference", () => {
+        const $ = scope({
+            a: type("string").morph((s) => s.length),
+            b: () => $.type("a").morph((n) => n === 0)
+        })
+        const types = $.compile()
+        attest(types.b).typed as Type<(In: string) => boolean>
         // attest(types.b.node).snap({
         //     string: { rules: {}, morph: ["(function)", "(function)"] }
         // })

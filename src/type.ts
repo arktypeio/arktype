@@ -91,10 +91,22 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return this.binary(def, "|") as never
     }
 
-    morph<def extends Morph<extractOut<t>>>(
-        def: def
-    ): Type<(In: extractIn<t>) => Out<inferMorphOut<ReturnType<def>>>, $> {
-        return new Type([this.definition, "|>", def], this.scope) as never
+    morph<morph extends Morph<extractOut<t>>>(
+        morph: morph
+    ): Type<(In: extractIn<t>) => Out<inferMorphOut<ReturnType<morph>>>>
+    morph<morph extends Morph<extractOut<t>>, def>(
+        morph: morph,
+        outValidator: validateDefinition<def, bindThis<$, def>>
+    ): Type<
+        (In: extractIn<t>) => Out<
+            // TODO: validate overlapping
+            // inferMorphOut<ReturnType<morph>> &
+            extractOut<inferDefinition<def, bindThis<$, def>>>
+        >
+    >
+    morph(morph: Morph, outValidator?: unknown) {
+        // TODO: tuple expression
+        return new Type([this.definition, "|>", morph], this.scope) as never
     }
 
     // TODO: based on below, should maybe narrow morph output if used after
