@@ -42,8 +42,16 @@ export type parseUnenclosed<
         : tryResolve<s, token, $> extends infer result
         ? result extends error<infer message>
             ? error<message>
-            : $ extends { [_ in token]: generic<infer params, infer def> }
-            ? parseGeneric<token, params, def, state.scanTo<s, unscanned>, $>
+            : result extends keyof $
+            ? $[result] extends generic<infer params, infer def>
+                ? parseGeneric<
+                      token,
+                      params,
+                      def,
+                      state.scanTo<s, unscanned>,
+                      $
+                  >
+                : state.setRoot<s, result, unscanned>
             : state.setRoot<s, result, unscanned>
         : never
     : never
