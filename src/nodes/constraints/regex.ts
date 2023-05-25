@@ -5,7 +5,7 @@ import { BaseNode } from "../node.js"
 export class RegexNode extends BaseNode<typeof RegexNode> {
     static readonly kind = "regex"
 
-    static compile(sources: string[]) {
+    static compile(sources: readonly string[]) {
         return sources.map(compileExpression).sort()
     }
 

@@ -106,10 +106,6 @@ export type resolve<
             ? t
             : never
         : never
-    : isAny<$[name]> extends true
-    ? any
-    : $[name] extends Type<infer t>
-    ? t
     : inferDefinition<$[name], $>
 
 export type subaliasOf<$> = {

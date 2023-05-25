@@ -6,7 +6,7 @@ import { registry } from "../registry.js"
 export class MorphNode extends BaseNode<typeof MorphNode> {
     static readonly kind = "morph"
 
-    static compile(morphs: Morph[]) {
+    static compile(morphs: readonly Morph[]) {
         // Avoid alphabetical sorting since morphs are non-commutative,
         // i.e. a|>b and b|>a are distinct and valid
         return morphs.map((morph) => registry().register(morph.name, morph))
