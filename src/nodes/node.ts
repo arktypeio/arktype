@@ -1,11 +1,12 @@
 import { CompiledFunction } from "../utils/compiledFunction.js"
-import type { BasisDefinition } from "./basis/basis.js"
 import type { ClassNode } from "./basis/class.js"
 import type { DomainNode } from "./basis/domain.js"
 import type { ValueNode } from "./basis/value.js"
 import type { DivisorNode } from "./constraints/divisor.js"
 import type { MorphNode } from "./constraints/morph.js"
 import type { NarrowNode } from "./constraints/narrow.js"
+import type { EntryNode } from "./constraints/props/entry.js"
+import type { PropsNode } from "./constraints/props/props.js"
 import type { RangeNode } from "./constraints/range.js"
 import type { RegexNode } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
@@ -21,6 +22,8 @@ export type NodeKinds = {
     morph: typeof MorphNode
     divisor: typeof DivisorNode
     basis: typeof DomainNode | typeof ValueNode | typeof ClassNode
+    props: typeof PropsNode
+    entry: typeof EntryNode
 }
 
 export type NodeInstances = {
@@ -35,9 +38,9 @@ export type SubclassNode = {
     compile(rule: never): string[]
 }
 
-const instances: {
+const instanceCache: {
     [kind in NodeKind]: {
-        [condition: string]: NodeInstances[kind]
+        [condition: string]: BaseNode<any>
     }
 } = {
     type: {},
@@ -47,7 +50,9 @@ const instances: {
     narrow: {},
     morph: {},
     divisor: {},
-    basis: {}
+    basis: {},
+    props: {},
+    entry: {}
 }
 
 export abstract class BaseNode<subclass extends SubclassNode> {
@@ -60,8 +65,8 @@ export abstract class BaseNode<subclass extends SubclassNode> {
     constructor(public rule: Parameters<subclass["compile"]>[0]) {
         const subconditions = this.prototype.compile(rule)
         const condition = subconditions.join(" && ")
-        if (instances[this.prototype.kind][condition]) {
-            return instances[this.prototype.kind][condition].instance
+        if (instanceCache[this.prototype.kind][condition]) {
+            return instanceCache[this.prototype.kind][condition]
         }
         this.condition = condition
         this.subconditions = subconditions
@@ -74,56 +79,23 @@ export abstract class BaseNode<subclass extends SubclassNode> {
         other: NodeInstances[subclass["kind"]]
     ): NodeInstances[subclass["kind"]] | Disjoint
 
-    private intersections: {
+    intersectionCache: {
         [otherCondition: string]: NodeInstances[subclass["kind"]] | Disjoint
     } = {}
 
     intersect(
         other: NodeInstances[subclass["kind"]]
-    ): InstanceType<subclass> | Disjoint {
+    ): NodeInstances[subclass["kind"]] | Disjoint {
         if (this === other) {
             return this as never
         }
-        if (
-            instances[this.kind][this.condition].intersections[other.condition]
-        ) {
-            return instances[this.kind][this.condition][
-                other.condition
-            ] as never
+        if (this.intersectionCache[other.condition]) {
+            return this.intersectionCache[other.condition]
         }
         const result = this.computeIntersection(other)
-        if (result instanceof Disjoint) {
-            instances[this.kind][this.condition][other.condition] = result
-            instances[this.kind][other.condition][this.condition] =
-                result.invert()
-            return result
-        }
-        instances[this.kind][this.condition][other.condition] = result
-        instances[this.kind][other.condition][this.condition] = result
+        this.intersectionCache[other.condition] = result
+        other.intersectionCache[this.condition] =
+            result instanceof Disjoint ? result.invert() : result
         return result
     }
 }
-
-// export const defineNode = <rule, instance extends BaseNode<rule>>(
-//     node: (new (
-//         ...args: ConstructorParameters<typeof BaseNode<rule>>
-//     ) => instance) & {
-//         compile(rule: rule): string[]
-//     }
-// ) => {
-//     const instances: {
-//         [condition: string]: instance
-//     } = {}
-
-//     const create = (rule: rule): instance => {
-//         const subconditions = node.compile(rule)
-//         const condition = subconditions.join(" && ") ?? "true"
-//         if (instances[condition]) {
-//             return instances[condition]
-//         }
-//         const instance = new node(rule, condition, subconditions, create)
-//         instances[condition] = instance
-//         return instance
-//     }
-//     return create
-// }

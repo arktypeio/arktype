@@ -7,6 +7,7 @@ import type { ValueNode } from "./basis/value.js"
 import { In, prependKey } from "./compilation.js"
 import type { RangeNode } from "./constraints/range.js"
 import type { PredicateNode } from "./predicate.js"
+import type { TypeNode } from "./type.js"
 
 type DisjointKinds = {
     domain?: {

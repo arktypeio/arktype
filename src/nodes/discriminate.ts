@@ -74,10 +74,10 @@ export const discriminate = (
                     rSerialized = (disjointAtPath.r as BasisDefinition).domain
                 } else if (kind === "value") {
                     lSerialized = compileSerializedValue(
-                        (disjointAtPath.l as ValueNode).child
+                        (disjointAtPath.l as ValueNode).rule
                     )
                     rSerialized = compileSerializedValue(
-                        (disjointAtPath.r as ValueNode).child
+                        (disjointAtPath.r as ValueNode).rule
                     )
                 } else {
                     return throwInternalError(
@@ -127,7 +127,7 @@ export const discriminate = (
             }
             caseBranches.push(pruned)
         }
-        discriminatedCases[k] = new TypeNode(...caseBranches)
+        discriminatedCases[k] = new TypeNode(caseBranches)
     }
     return {
         kind,

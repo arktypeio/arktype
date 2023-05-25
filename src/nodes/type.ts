@@ -1,5 +1,4 @@
 import { inferred } from "../parse/definition.js"
-import { throwParseError } from "../utils/errors.js"
 import type { conform, exact } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
 import { isArray } from "../utils/objectKinds.js"
@@ -7,10 +6,8 @@ import { type BasisInput } from "./basis/basis.js"
 import { ClassNode } from "./basis/class.js"
 import { ValueNode } from "./basis/value.js"
 import type { CompilationState } from "./compilation.js"
-import {
-    createArrayIndexMatcher,
-    PropsNode
-} from "./constraints/props/props.js"
+import { createArrayIndexMatcher } from "./constraints/props/array.js"
+import { PropsNode } from "./constraints/props/props.js"
 import type { CaseKey, Discriminant, DiscriminantKind } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import { BaseNode } from "./node.js"
@@ -211,10 +208,10 @@ export class TypeNode<t = any> extends BaseNode<typeof TypeNode> {
                 if (propsAtKey) {
                     const branchesAtKey =
                         typeof key === "string"
-                            ? propsAtKey.named?.[key]?.value.children
+                            ? propsAtKey.named?.[key]?.value.rule
                             : propsAtKey.indexed.find(
                                   (entry) => entry[0] === key
-                              )?.[1].children
+                              )?.[1].rule
                     if (branchesAtKey) {
                         next.push(...branchesAtKey)
                     }
@@ -352,24 +349,25 @@ export class TypeNode<t = any> extends BaseNode<typeof TypeNode> {
         return this.intersect(other) === this
     }
 
-    private declare _keyof: TypeNode | undefined
+    // private declare _keyof: TypeNode | undefined
     keyof(): TypeNode {
-        if (this.rule.length === 0) {
-            return throwParseError(`never is not a valid keyof operand`)
-        }
-        if (this._keyof) {
-            return this._keyof
-        }
-        let result = this.rule[0].keyof()
-        for (let i = 1; i < this.rule.length; i++) {
-            result = result.and(this.rule[i].keyof())
-        }
-        this._keyof = result
-        return result
+        return this
+        // if (this.rule.length === 0) {
+        //     return throwParseError(`never is not a valid keyof operand`)
+        // }
+        // if (this._keyof) {
+        //     return this._keyof
+        // }
+        // let result = this.rule[0].keyof()
+        // for (let i = 1; i < this.rule.length; i++) {
+        //     result = result.and(this.rule[i].keyof())
+        // }
+        // this._keyof = result
+        // return result
     }
 
     array(): TypeNode<t[]> {
-        const props = new PropsNode({}, [[arrayIndexTypeNode(), this]])
+        const props = new PropsNode([{}, [arrayIndexTypeNode(), this]])
         const predicate = new PredicateNode([arrayBasisNode, props])
         return new TypeNode([predicate])
     }
