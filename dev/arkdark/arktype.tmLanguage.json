@@ -26,7 +26,6 @@
         "quoted": {
             "name": "quoted",
             "match": "([\"'`])(.*?)?((?<!\\\\)(\\1))",
-            "match": "([\"'`])(.*?)?((?<!\\\\)(\\1))",
             "captures": {
                 "1": {
                     "name": "keyword.operator"
