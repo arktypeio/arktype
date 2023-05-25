@@ -13,7 +13,14 @@ export class ValueNode
     implements BasisDefinition
 {
     static readonly kind = "basis"
-    readonly level = "value"
+
+    get level() {
+        return "value" as const
+    }
+
+    get domain() {
+        return domainOf(this.rule)
+    }
 
     static compile(rule: unknown) {
         return [`${In} === ${compileSerializedValue(rule)}`]
@@ -21,10 +28,6 @@ export class ValueNode
 
     computeIntersection(other: BasisInstance) {
         return intersectBases(this, other)
-    }
-
-    get domain() {
-        return domainOf(this.rule)
     }
 
     assertAllowsConstraint(kind: ConstraintKind) {

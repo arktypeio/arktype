@@ -16,8 +16,6 @@ export class ClassNode
     implements BasisDefinition
 {
     static readonly kind = "basis"
-    readonly domain = "object"
-    readonly level = "class"
 
     static compile(rule: AbstractableConstructor) {
         return [
@@ -26,6 +24,14 @@ export class ClassNode
                 registry().register(rule.name, rule)
             }`
         ]
+    }
+
+    get domain() {
+        return "object" as const
+    }
+
+    get level() {
+        return "class" as const
     }
 
     assertAllowsConstraint(kind: ConstraintKind) {

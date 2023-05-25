@@ -60,18 +60,20 @@ export abstract class BaseNode<subclass extends SubclassNode> {
     allows!: (data: unknown) => boolean
     condition!: string
     subconditions!: string[]
-    declare prototype: subclass
+    subclass!: subclass
 
     constructor(public rule: Parameters<subclass["compile"]>[0]) {
-        const subconditions = this.prototype.compile(rule)
+        const subclass = this.constructor as subclass
+        const subconditions = subclass.compile(rule)
         const condition = subconditions.join(" && ")
-        if (instanceCache[this.prototype.kind][condition]) {
-            return instanceCache[this.prototype.kind][condition]
+        if (instanceCache[subclass.kind][condition]) {
+            return instanceCache[subclass.kind][condition]
         }
+        this.subclass = subclass
+        this.kind = subclass.kind
         this.condition = condition
         this.subconditions = subconditions
         this.allows = new CompiledFunction(`return ${condition}`)
-        this.kind = this.prototype.kind
         Object.freeze(this)
     }
 

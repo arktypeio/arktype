@@ -12,9 +12,14 @@ export class DomainNode
     implements BasisDefinition
 {
     static readonly kind = "basis"
-    readonly level = "domain"
 
-    domain = this.rule
+    get domain() {
+        return this.rule
+    }
+
+    get level() {
+        return "domain" as const
+    }
 
     static compile(domain: Domain) {
         return [

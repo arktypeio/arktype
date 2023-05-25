@@ -61,7 +61,7 @@ export class TypeNode<t = any> extends BaseNode<typeof TypeNode> {
     static readonly kind = "type";
     declare [inferred]: t
 
-    discriminant: Discriminant | undefined
+    // discriminant: Discriminant | undefined
 
     // constructor(public children: PredicateNode[]) {
     //     const condition = TypeNode.compile(children)

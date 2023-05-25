@@ -72,8 +72,13 @@ export class RangeNode extends BaseNode<typeof RangeNode> {
         return [`${rule}`]
     }
 
-    min = this.rule.min
-    max = this.rule.max
+    get min() {
+        return this.rule.min
+    }
+
+    get max() {
+        return this.rule.max
+    }
 
     computeIntersection(other: RangeNode) {
         const stricterMin = compareStrictness("min", this.min, other.min)
