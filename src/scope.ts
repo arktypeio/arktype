@@ -1,3 +1,4 @@
+import { scope } from "./main.js"
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import type {
@@ -172,7 +173,7 @@ export class Scope<exports = any, locals = any, root = any> {
 
     maybeResolve(name: string): Type | undefined {
         if (this.resolutions[name]) {
-            // TODO: Space resolution
+            // TODO: Scope resolution
             return this.resolutions[name] as Type
         }
         const aliasDef = this.aliases[name]

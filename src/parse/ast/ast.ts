@@ -16,7 +16,6 @@ import type {
     inferIntersection,
     validateIntersection
 } from "./intersections.js"
-import type { validateUnion } from "./union.js"
 import type { astToString } from "./utils.js"
 
 export type inferAst<ast, $> = ast extends List
@@ -78,9 +77,7 @@ export type validateAst<ast, $> = ast extends GenericAst
             ? validateInfix<ast, $>
             : validateIntersection<inferAst<l, $>, inferAst<r, $>>
         : operator extends "|"
-        ? validateInfix<ast, $> extends error
-            ? validateInfix<ast, $>
-            : validateUnion<inferAst<l, $>, inferAst<r, $>>
+        ? validateInfix<ast, $>
         : operator extends Comparator
         ? validateBound<l, r, $>
         : operator extends "%"
