@@ -132,15 +132,7 @@ export type Space<exports = Dict> = {
     [k in keyof exports]: exports[k] extends Space
         ? exports[k]
         : Type<exports[k]>
-} & {
-    [inferred]: Space<exports>
 }
-
-export const Space = class {
-    constructor(exports: Space) {
-        Object.assign(this, exports)
-    }
-} as new <exports>(exports: exports) => Space<exports>
 
 export class Scope<exports = any, locals = any, root = any> {
     declare infer: extractOut<exports>
@@ -194,7 +186,7 @@ export class Scope<exports = any, locals = any, root = any> {
             }
             this._compiled = true
         }
-        return new Space(this.exports as exports)
+        return this.exports as Space<exports>
     }
 }
 

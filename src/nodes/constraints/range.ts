@@ -117,11 +117,18 @@ export class RangeNode extends BaseNode<typeof RangeNode> {
     }
 }
 
+export const boundToComparator = <kind extends keyof Range>(
+    kind: kind,
+    bound: Bound
+) =>
+    `${kind === "min" ? ">" : "<"}${
+        bound.exclusive ? "" : "="
+    }` as kind extends "min" ? MinComparator : MaxComparator
+
 const boundToExpression = (
     kind: keyof Range,
     bound: Bound
-): `${Comparator}${number}` =>
-    `${kind === "min" ? ">" : "<"}${bound.exclusive ? "" : "="}${bound.limit}`
+): `${Comparator}${number}` => `${boundToComparator(kind, bound)}${bound.limit}`
 
 // compileTraverse(s: CompilationState) {
 //     return this.range
