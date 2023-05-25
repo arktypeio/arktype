@@ -34,6 +34,8 @@ type validateAliases<aliases, $> = evaluate<{
               >
         : k extends keyof $
         ? writeDuplicateAliasesMessage<k & string>
+        : aliases[k] extends Scope
+        ? aliases[k]
         : validateDefinition<aliases[k], $ & bootstrap<aliases>>
 }>
 
@@ -46,7 +48,9 @@ export type Generic<
 > = nominal<[params, def], "generic">
 
 type bootstrap<aliases> = {
-    [k in nonGenericNameFrom<keyof aliases>]: Alias<aliases[k]>
+    [k in nonGenericNameFrom<keyof aliases>]: aliases[k] extends Scope
+        ? aliases[k]
+        : Alias<aliases[k]>
 } & {
     // TODO: do I need to parse the def AST here? or something more so that
     // references can be resolved if it's used outside the scope
@@ -57,10 +61,12 @@ type bootstrap<aliases> = {
 }
 
 type inferScope<bootstrapped, $> = evaluate<{
-    [name in keyof bootstrapped]: bootstrapped[name] extends Generic
-        ? bootstrapped[name]
-        : bootstrapped[name] extends Alias<infer def>
+    [name in keyof bootstrapped]: bootstrapped[name] extends Alias<infer def>
         ? inferDefinition<def, $ & bootstrapped>
+        : bootstrapped[name] extends Generic
+        ? bootstrapped[name]
+        : bootstrapped[name] extends Scope
+        ? bootstrapped[name]
         : never
 }>
 
@@ -105,8 +111,10 @@ export type resolve<
     $
 > = name extends `${infer subscope}.${infer name}`
     ? subscope extends keyof $
-        ? $[subscope] extends Space<{ [k in name]: infer t }>
-            ? t
+        ? $[subscope] extends Scope
+            ? name extends keyof $[subscope]["infer"]
+                ? $[subscope]["infer"][name]
+                : never
             : never
         : never
     : isAny<$[name]> extends true
@@ -116,7 +124,7 @@ export type resolve<
     : $[name]
 
 export type subaliasOf<$> = {
-    [k in keyof $]: $[k] extends Space<infer exports>
+    [k in keyof $]: $[k] extends Scope<infer exports>
         ? {
               [subalias in keyof exports]: `${k & string}.${subalias & string}`
           }[keyof exports]
@@ -124,7 +132,13 @@ export type subaliasOf<$> = {
 }[keyof $]
 
 export type Space<exports = Dict, $ = Dict> = {
-    [k in keyof exports]: Type<exports[k], exports & $>
+    [k in keyof exports]: exports[k] extends Scope<
+        infer exports,
+        infer locals,
+        infer root
+    >
+        ? Space<exports, locals & root>
+        : Type<exports[k], exports & $>
 }
 
 export class Scope<exports = any, locals = any, root = any> {
@@ -146,7 +160,7 @@ export class Scope<exports = any, locals = any, root = any> {
     }
 
     type: TypeParser<this["$"]> = ((def: unknown, config: TypeConfig = {}) => {
-        return new Type(def, this)
+        return !config || new Type(def, this)
     }) as never
 
     scope: ScopeParser<exports, root> = ((

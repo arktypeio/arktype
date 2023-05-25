@@ -4,36 +4,41 @@ import { writeDuplicateAliasesMessage } from "../../src/scope.js"
 import { attest } from "../attest/main.js"
 import { lazily } from "./utils.js"
 
-suite("scope imports", () => {
-    const parent0 = lazily(() => scope({ zero: "0" }).compile())
-    const parent1 = lazily(() => scope({ one: "1" }).compile())
+suite("space destructuring", () => {
+    const threeSixtyNoScope = lazily(() =>
+        scope({
+            three: "3",
+            sixty: "60",
+            no: "'no'"
+        })
+    )
+    const yesScope = lazily(() => scope({ yes: "'yes'" }))
+
+    const threeSixtyNoSpace = lazily(() => threeSixtyNoScope.compile())
+    const yesSpace = lazily(() => yesScope.compile())
 
     test("single", () => {
-        const imported = scope({ ...parent0 }).scope({
-            a: "zero[]|true"
-        })
-        attest(imported.infer).typed as {
-            a: 0[] | true
+        const $ = scope({
+            ...threeSixtyNoSpace
+        }).scope({ threeSixtyNo: "three|sixty|no" })
+        attest($.infer).typed as {
+            threeSixtyNo: 3 | 60 | "no"
         }
     })
 
     test("multiple", () => {
-        const imported = scope({ ...parent0, ...parent1 }).scope({
-            a: "zero|one|false"
+        const imported = scope({
+            ...threeSixtyNoSpace,
+            ...yesSpace,
+            extra: "true"
+        }).scope({
+            a: "three|sixty|no|yes|extra"
         })
         attest(imported.infer).typed as {
-            a: 0 | 1 | false
+            a: 3 | 60 | "no" | "yes" | true
         }
     })
 
-    test("named", () => {
-        const imported = scope({ parent0, ...parent1 }).scope({
-            a: "parent0.zero|one|false"
-        })
-        attest(imported.infer).typed as {
-            a: 0 | 1 | false
-        }
-    })
     test("duplicate alias", () => {
         attest(() =>
             scope({ a: "boolean" })
