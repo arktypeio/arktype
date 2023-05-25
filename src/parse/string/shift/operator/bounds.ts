@@ -117,9 +117,10 @@ export type parseRightBound<
     s extends StaticState,
     comparator extends Comparator,
     unscanned extends string
-> = Scanner.shiftUntilNextTerminator<
-    Scanner.skipWhitespace<unscanned>
-> extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
+> = Scanner.shiftUntilNextTerminator<unscanned> extends Scanner.shiftResult<
+    infer scanned,
+    infer nextUnscanned
+>
     ? scanned extends NumberLiteral
         ? s["branches"]["range"] extends {}
             ? comparator extends MaxComparator

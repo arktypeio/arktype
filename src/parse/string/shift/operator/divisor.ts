@@ -21,9 +21,10 @@ export const parseDivisor = (s: DynamicStateWithRoot) => {
 export type parseDivisor<
     s extends StaticState,
     unscanned extends string
-> = Scanner.shiftUntilNextTerminator<
-    Scanner.skipWhitespace<unscanned>
-> extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
+> = Scanner.shiftUntilNextTerminator<unscanned> extends Scanner.shiftResult<
+    infer scanned,
+    infer nextUnscanned
+>
     ? scanned extends NumberLiteral<infer divisor>
         ? divisor extends 0
             ? error<writeInvalidDivisorMessage<0>>
