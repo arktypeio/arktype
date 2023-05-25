@@ -19,28 +19,7 @@
             "end": "(?<=([^\"'`]*([\"'`])[^\"'`]*\\2)*[^\"'`]*)\\)",
             "patterns": [
                 {
-                    "include": "#quoted"
-                },
-                {
-                    "include": "#object"
-                },
-                {
-                    "include": "#tuple"
-                },
-                {
-                    "include": "source.ts"
-                }
-            ]
-        },
-        "tuple": {
-            "begin": "\\[",
-            "end": "\\]",
-            "patterns": [
-                {
-                    "include": "#quoted"
-                },
-                {
-                    "include": "#object"
+                    "include": "#nested"
                 }
             ]
         },
@@ -57,10 +36,14 @@
                             "include": "#operator"
                         },
                         {
-                            "include": "#object"
+                            "include": "#commonNested"
                         },
                         {
                             "include": "#regex"
+                        },
+                        {
+                            "name": "keyword.operator",
+                            "match": "[^ \\w]"
                         },
                         {
                             "include": "source.ts#type"
@@ -86,6 +69,10 @@
                             "name": "constant.numeric.decimal.ts",
                             "match": "[0-9]"
                         },
+                        {
+                            "name": "keyword.operator",
+                            "match": "[^ \\w]"
+                        },
                         { "include": "#operator" },
                         { "include": "#quoted" }
                     ]
@@ -95,11 +82,11 @@
         },
         "operator": {
             "name": "keyword.operator",
-            "match": "[<>=%`']|\""
+            "match": "[<>=%`'&]|\""
         },
         "object": {
-            "begin": "{",
-            "end": "}",
+            "begin": "\\{",
+            "end": "\\}",
             "beginCaptures": {
                 "0": {
                     "name": "punctuation.definition.block.ts"
@@ -112,38 +99,39 @@
             },
             "patterns": [
                 {
+                    "match": "\\w+\\:",
+                    "name": "meta.object-literal.key.ts"
+                },
+                {
+                    "include": "#nested"
+                }
+            ]
+        },
+        "tuple": {
+            "begin": "\\[",
+            "end": "\\]",
+            "patterns": [
+                {
+                    "include": "#nested"
+                }
+            ]
+        },
+        "nested": {
+            "patterns": [
+                {
                     "include": "#quoted"
-                },
-                {
-                    "include": "source.ts#comment"
-                },
-                {
-                    "include": "#operator"
                 },
                 {
                     "include": "#object"
                 },
                 {
-                    "match": "(([\"'`])?(\\w+)(\\2)?\\: ?)((([\"'`]?)(.*)(\\7))|\\{)([^}]*)",
-                    "captures": {
-                        "1": {
-                            "name": "meta.object-literal.key.ts"
-                        },
-                        "5": {
-                            "patterns": [
-                                {
-                                    "include": "#quoted"
-                                }
-                            ]
-                        },
-                        "10": {
-                            "patterns": [
-                                {
-                                    "include": "source.ts"
-                                }
-                            ]
-                        }
-                    }
+                    "include": "#tuple"
+                },
+                {
+                    "include": "source.ts#comment"
+                },
+                {
+                    "include": "source.ts"
                 }
             ]
         }
