@@ -40,6 +40,11 @@ type validateAliases<aliases, $> = evaluate<{
 // trying to nested def here in an object or tuple cause circularities during some thunk validations
 export type Alias<def = {}> = nominal<def, "alias">
 
+export type Generic<
+    params extends string[] = string[],
+    def = unknown
+> = nominal<[params, def], "generic">
+
 type bootstrap<aliases> = {
     [k in nonGenericNameFrom<keyof aliases>]: Alias<aliases[k]>
 } & {
@@ -78,11 +83,6 @@ type paramsFrom<scopeKey> = scopeKey extends GenericDeclaration<
 >
     ? split<params, ",">
     : []
-
-export type Generic<
-    params extends string[] = string[],
-    def = unknown
-> = nominal<[params, def], "generic">
 
 export type ScopeOptions = {
     root?: Space

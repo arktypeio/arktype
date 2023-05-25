@@ -23,7 +23,7 @@ export type StaticState = {
     root: unknown
     branches: BranchState
     groups: BranchState[]
-    finalizer: StateFinalizer | undefined | error
+    finalizer: StateFinalizer | error | undefined
     scanned: string
     unscanned: string
 }
