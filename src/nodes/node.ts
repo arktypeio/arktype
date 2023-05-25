@@ -1,78 +1,101 @@
 import { CompiledFunction } from "../utils/compiledFunction.js"
+import type { ClassNode } from "./basis/class.js"
+import type { DomainNode } from "./basis/domain.js"
+import type { ValueNode } from "./basis/value.js"
+import type { DivisorNode } from "./constraints/divisor.js"
+import type { MorphNode } from "./constraints/morph.js"
+import type { NarrowNode } from "./constraints/narrow.js"
+import type { EntryNode } from "./constraints/props/entry.js"
+import type { PropsNode } from "./constraints/props/props.js"
+import type { RangeNode } from "./constraints/range.js"
+import type { RegexNode } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
+import type { PredicateNode } from "./predicate.js"
+import type { TypeNode } from "./type.js"
 
-type Intersection<rule> = (l: rule, r: rule) => rule | Disjoint
-
-type Base<rule> = ReturnType<typeof defineBase<rule>>
-
-type Instance<rule> = InstanceType<Base<rule>>
-
-const defineBase = <rule>(
-    intersectRules: Intersection<rule>,
-    create: (rule: rule) => any
-) => {
-    const intersections: {
-        [lCondition: string]: {
-            [rCondition: string]: Base<unknown> | Disjoint
-        }
-    } = {}
-
-    abstract class BaseNode {
-        abstract kind: string
-        allows: (data: unknown) => boolean
-
-        constructor(
-            public rule: rule,
-            public condition: string,
-            public subconditions: string[]
-        ) {
-            this.allows = new CompiledFunction(`return ${condition}`)
-        }
-
-        intersect(other: this): this | Disjoint {
-            if (this === (other as unknown)) {
-                return this
-            }
-            if (intersections[this.condition][other.condition]) {
-                return intersections[this.condition][other.condition] as never
-            }
-            const result = intersectRules(this.rule, other.rule)
-            if (result instanceof Disjoint) {
-                intersections[this.condition][other.condition] = result
-                intersections[other.condition][this.condition] = result.invert()
-                return result
-            }
-            const nodeResult = create(result)
-            intersections[this.condition][other.condition] = nodeResult
-            intersections[other.condition][this.condition] = nodeResult
-            return nodeResult
-        }
-    }
-    return BaseNode
+export type NodeKinds = {
+    type: typeof TypeNode
+    predicate: typeof PredicateNode
+    regex: typeof RegexNode
+    range: typeof RangeNode
+    narrow: typeof NarrowNode
+    morph: typeof MorphNode
+    divisor: typeof DivisorNode
+    basis: typeof DomainNode | typeof ValueNode | typeof ClassNode
+    props: typeof PropsNode
+    entry: typeof EntryNode
 }
 
-export const defineNode = <rule, instance extends Instance<rule>>(
-    compile: (rule: rule) => string[],
-    intersect: Intersection<rule>,
-    extend: (
-        base: Base<rule>
-    ) => new (...args: ConstructorParameters<Base<rule>>) => instance
-) => {
-    const instances: {
-        [condition: string]: instance
+export type NodeInstances = {
+    [kind in NodeKind]: InstanceType<NodeKinds[kind]>
+}
+
+export type NodeKind = keyof NodeKinds
+
+export type SubclassNode = {
+    readonly kind: NodeKind
+    new (rule: never): BaseNode<any>
+    compile(rule: never): string[]
+}
+
+const instanceCache: {
+    [kind in NodeKind]: {
+        [condition: string]: BaseNode<any>
+    }
+} = {
+    type: {},
+    predicate: {},
+    regex: {},
+    range: {},
+    narrow: {},
+    morph: {},
+    divisor: {},
+    basis: {},
+    props: {},
+    entry: {}
+}
+
+export abstract class BaseNode<subclass extends SubclassNode> {
+    kind!: subclass["kind"]
+    allows!: (data: unknown) => boolean
+    condition!: string
+    subconditions!: string[]
+    declare prototype: subclass
+
+    constructor(public rule: Parameters<subclass["compile"]>[0]) {
+        const subconditions = this.prototype.compile(rule)
+        const condition = subconditions.join(" && ")
+        if (instanceCache[this.prototype.kind][condition]) {
+            return instanceCache[this.prototype.kind][condition]
+        }
+        this.condition = condition
+        this.subconditions = subconditions
+        this.allows = new CompiledFunction(`return ${condition}`)
+        this.kind = this.prototype.kind
+        Object.freeze(this)
+    }
+
+    abstract computeIntersection(
+        other: NodeInstances[subclass["kind"]]
+    ): NodeInstances[subclass["kind"]] | Disjoint
+
+    intersectionCache: {
+        [otherCondition: string]: NodeInstances[subclass["kind"]] | Disjoint
     } = {}
 
-    const create = (rule: rule): instance => {
-        const subconditions = compile(rule)
-        const condition = subconditions.join(" && ") ?? "true"
-        if (instances[condition]) {
-            return instances[condition]
+    intersect(
+        other: NodeInstances[subclass["kind"]]
+    ): NodeInstances[subclass["kind"]] | Disjoint {
+        if (this === other) {
+            return this as never
         }
-        const instance = extend(
-            defineBase(intersect, create)
-        ) as unknown as instance
-        instances[condition] = instance
-        return instance
+        if (this.intersectionCache[other.condition]) {
+            return this.intersectionCache[other.condition]
+        }
+        const result = this.computeIntersection(other)
+        this.intersectionCache[other.condition] = result
+        other.intersectionCache[this.condition] =
+            result instanceof Disjoint ? result.invert() : result
+        return result
     }
-    return create
 }

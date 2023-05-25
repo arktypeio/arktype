@@ -4,7 +4,7 @@ import type { evaluate } from "../utils/generics.js"
 import type { keySet } from "../utils/records.js"
 import { entriesOf, isKeyOf } from "../utils/records.js"
 import type { SerializedPrimitive } from "../utils/serialize.js"
-import type { BasisNode } from "./basis/basis.js"
+import type { BasisDefinition } from "./basis/basis.js"
 import type { ValueNode } from "./basis/value.js"
 import { compileSerializedValue, In } from "./compilation.js"
 import type { QualifiedDisjoint } from "./disjoint.js"
@@ -70,14 +70,14 @@ export const discriminate = (
                 let lSerialized: string
                 let rSerialized: string
                 if (kind === "domain") {
-                    lSerialized = (disjointAtPath.l as BasisNode).domain
-                    rSerialized = (disjointAtPath.r as BasisNode).domain
+                    lSerialized = (disjointAtPath.l as BasisDefinition).domain
+                    rSerialized = (disjointAtPath.r as BasisDefinition).domain
                 } else if (kind === "value") {
                     lSerialized = compileSerializedValue(
-                        (disjointAtPath.l as ValueNode).child
+                        (disjointAtPath.l as ValueNode).rule
                     )
                     rSerialized = compileSerializedValue(
-                        (disjointAtPath.r as ValueNode).child
+                        (disjointAtPath.r as ValueNode).rule
                     )
                 } else {
                     return throwInternalError(
@@ -127,7 +127,7 @@ export const discriminate = (
             }
             caseBranches.push(pruned)
         }
-        discriminatedCases[k] = new TypeNode(...caseBranches)
+        discriminatedCases[k] = new TypeNode(caseBranches)
     }
     return {
         kind,

@@ -12,7 +12,7 @@ import {
     parseDefinition,
     type validateDefinition
 } from "./parse/definition.js"
-import type { alias, Scope } from "./scope.js"
+import type { Scope } from "./scope.js"
 import { type Ark } from "./scopes/ark.js"
 import { CompiledFunction } from "./utils/compiledFunction.js"
 import type { error } from "./utils/errors.js"
@@ -130,7 +130,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     }
 }
 
-type bindThis<$, def> = $ & { this: alias<def> }
+type bindThis<$, def> = $ & { this: def }
 
 type validateChainedExpression<def, $, inferred> =
     def extends validateDefinition<def, $>

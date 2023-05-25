@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { scope, type } from "../../src/main.js"
 
-type("string|number[]")
+type("(boolean | number | 'foo')[]")
 
 type({
     a: "string|number"
 })
+
+type(["string|number", "[]"])
 
 scope({
     // nested highlighting

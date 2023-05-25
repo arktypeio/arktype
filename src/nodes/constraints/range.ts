@@ -1,5 +1,5 @@
 import { Disjoint } from "../disjoint.js"
-import { defineNode } from "../node.js"
+import { BaseNode } from "../node.js"
 
 export const minComparators = {
     ">": true,
@@ -65,59 +65,70 @@ export type Range = {
 //     ? "items long"
 //     : ""
 
-export const RangeNode = defineNode(
-    (rule: Range) => [`${rule}`],
-    (l, r) => {
-        const stricterMin = compareStrictness("min", l.min, r.min)
-        const stricterMax = compareStrictness("max", l.max, r.max)
+export class RangeNode extends BaseNode<typeof RangeNode> {
+    static readonly kind = "range"
+
+    static compile(rule: Range) {
+        return [`${rule}`]
+    }
+
+    min = this.rule.min
+    max = this.rule.max
+
+    computeIntersection(other: RangeNode) {
+        const stricterMin = compareStrictness("min", this.min, other.min)
+        const stricterMax = compareStrictness("max", this.max, other.max)
         if (stricterMin === "l") {
             if (stricterMax === "r") {
-                return compareStrictness("min", l.min, r.max) === "l"
-                    ? Disjoint.from("range", l, r)
-                    : {
-                          min: l.min!,
-                          max: r.max!
-                      }
+                return compareStrictness("min", this.min, other.max) === "l"
+                    ? Disjoint.from("range", this, other)
+                    : new RangeNode({
+                          min: this.min!,
+                          max: other.max!
+                      })
             }
-            return l
+            return this
         }
         if (stricterMin === "r") {
             if (stricterMax === "l") {
-                return compareStrictness("max", l.max, r.min) === "l"
-                    ? Disjoint.from("range", l, r)
-                    : {
-                          min: r.min!,
-                          max: l.max!
-                      }
+                return compareStrictness("max", this.max, other.min) === "l"
+                    ? Disjoint.from("range", this, other)
+                    : new RangeNode({
+                          min: this.min!,
+                          max: other.max!
+                      })
             }
-            return r
+            return other
         }
-        return stricterMax === "l" ? l : r
-    },
-    (base) =>
-        class RangeNode extends base {
-            readonly kind = "range"
+        return stricterMax === "l" ? this : other
+    }
 
-            describe() {
-                return this.rule.min
-                    ? this.rule.max
-                        ? `the range bounded by ${boundToExpression(
-                              "min",
-                              this.rule.min
-                          )} and ${boundToExpression("max", this.rule.max)}`
-                        : boundToExpression("min", this.rule.min)
-                    : this.rule.max
-                    ? boundToExpression("max", this.rule.max)
-                    : "the unbounded range"
-            }
-        }
-)
+    describe() {
+        return this.rule.min
+            ? this.rule.max
+                ? `the range bounded by ${boundToExpression(
+                      "min",
+                      this.rule.min
+                  )} and ${boundToExpression("max", this.rule.max)}`
+                : boundToExpression("min", this.rule.min)
+            : this.rule.max
+            ? boundToExpression("max", this.rule.max)
+            : "the unbounded range"
+    }
+}
+
+export const boundToComparator = <kind extends keyof Range>(
+    kind: kind,
+    bound: Bound
+) =>
+    `${kind === "min" ? ">" : "<"}${
+        bound.exclusive ? "" : "="
+    }` as kind extends "min" ? MinComparator : MaxComparator
 
 const boundToExpression = (
     kind: keyof Range,
     bound: Bound
-): `${Comparator}${number}` =>
-    `${kind === "min" ? ">" : "<"}${bound.exclusive ? "" : "="}${bound.limit}`
+): `${Comparator}${number}` => `${boundToComparator(kind, bound)}${bound.limit}`
 
 // compileTraverse(s: CompilationState) {
 //     return this.range

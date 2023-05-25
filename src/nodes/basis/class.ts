@@ -1,25 +1,49 @@
 import type { AbstractableConstructor } from "../../utils/objectKinds.js"
-import { getExactBuiltinConstructorName } from "../../utils/objectKinds.js"
+import {
+    getExactBuiltinConstructorName,
+    prototypeKeysOf
+} from "../../utils/objectKinds.js"
 import { In } from "../compilation.js"
-import { defineNode } from "../node.js"
+import { BaseNode } from "../node.js"
+import type { ConstraintKind } from "../predicate.js"
+
 import { registry } from "../registry.js"
+import type { BasisDefinition, BasisInstance } from "./basis.js"
+import { assertAllowsConstraint, intersectBases } from "./basis.js"
 
-export class ClassNode extends defineNode<AbstractableConstructor>()({
-    kind: "divisor",
-    condition: (rule) =>
-        `${In} instanceof ${
-            getExactBuiltinConstructorName(rule) ??
-            registry().register(rule.name, rule)
-        }`,
-    describe: (rule) => rule.name,
-    intersect: (l, r) => l
-}) {}
+export class ClassNode
+    extends BaseNode<typeof ClassNode>
+    implements BasisDefinition
+{
+    static readonly kind = "basis"
+    readonly domain = "object"
+    readonly level = "class"
 
-// readonly domain = "object"
+    static compile(rule: AbstractableConstructor) {
+        return [
+            `${In} instanceof ${
+                getExactBuiltinConstructorName(rule) ??
+                registry().register(rule.name, rule)
+            }`
+        ]
+    }
 
-// literalKeysOf() {
-//     return prototypeKeysOf(this.child.prototype)
-// }
+    assertAllowsConstraint(kind: ConstraintKind) {
+        assertAllowsConstraint(this, kind)
+    }
+
+    computeIntersection(other: BasisInstance) {
+        return intersectBases(this, other)
+    }
+
+    literalKeysOf() {
+        return prototypeKeysOf(this.rule.prototype)
+    }
+
+    describe() {
+        return this.rule.name
+    }
+}
 
 // compileTraverse(s: CompilationState) {
 //     return s.ifNotThen(this.condition, s.problem("class", this.child))

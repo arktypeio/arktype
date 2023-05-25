@@ -1,7 +1,7 @@
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import { entriesOf, type entryOf } from "../utils/records.js"
 import { stringify } from "../utils/serialize.js"
-import type { BasisNode } from "./basis/basis.js"
+import type { BasisDefinition } from "./basis/basis.js"
 import type { ClassNode } from "./basis/class.js"
 import type { ValueNode } from "./basis/value.js"
 import { In, prependKey } from "./compilation.js"
@@ -11,8 +11,8 @@ import type { TypeNode } from "./type.js"
 
 type DisjointKinds = {
     domain?: {
-        l: BasisNode
-        r: BasisNode
+        l: BasisDefinition
+        r: BasisDefinition
     }
     value?: {
         l: ValueNode

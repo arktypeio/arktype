@@ -34,7 +34,7 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
         }
         ctx.path.pop()
     }
-    const props = new PropsNode(named, [])
+    const props = new PropsNode([named])
     const predicate = new PredicateNode([objectBasisNode, props])
     return new TypeNode([predicate])
 }

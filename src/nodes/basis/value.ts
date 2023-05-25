@@ -1,40 +1,60 @@
+import { domainOf } from "../../utils/domains.js"
+import { prototypeKeysOf } from "../../utils/objectKinds.js"
+import type { Key } from "../../utils/records.js"
 import { stringify } from "../../utils/serialize.js"
 import { compileSerializedValue, In } from "../compilation.js"
-import { defineNode } from "../node.js"
+import { BaseNode } from "../node.js"
+import type { ConstraintKind } from "../predicate.js"
+import type { BasisDefinition, BasisInstance } from "./basis.js"
+import { intersectBases, throwInvalidConstraintError } from "./basis.js"
 
-export class ValueNode extends defineNode<unknown>()({
-    kind: "divisor",
-    condition: (v) => `${In} === ${compileSerializedValue(v)}`,
-    describe: (v) => `${stringify(v)}`,
-    // TODO: don't
-    intersect: (l, r) => l
-}) {}
+export class ValueNode
+    extends BaseNode<typeof ValueNode>
+    implements BasisDefinition
+{
+    static readonly kind = "basis"
+    readonly level = "value"
+
+    static compile(rule: unknown) {
+        return [`${In} === ${compileSerializedValue(rule)}`]
+    }
+
+    computeIntersection(other: BasisInstance) {
+        return intersectBases(this, other)
+    }
+
+    get domain() {
+        return domainOf(this.rule)
+    }
+
+    assertAllowsConstraint(kind: ConstraintKind) {
+        if (kind !== "morph") {
+            throwInvalidConstraintError(
+                kind,
+                "a non-literal type",
+                stringify(this.rule)
+            )
+        }
+    }
+
+    literalKeysOf(): Key[] {
+        if (this.rule === null || this.rule === undefined) {
+            return []
+        }
+        return [...prototypeKeysOf(this.rule), ...Object.keys(this.rule)]
+    }
+
+    describe() {
+        return stringify(this.rule)
+    }
+}
 
 // compileTraverse(s: CompilationState) {
 //     return s.ifNotThen(this.condition, s.problem("value", this.child))
-// }
-
-// get domain() {
-//     return domainOf(this.child)
-// }
-
-// static compile(value: unknown) {
-//     return `${In} === ${compileSerializedValue(value)}`
-// }
-
-// toString() {
-//     return stringify(this.child)
 // }
 
 // getConstructor(): Constructor | undefined {
 //     return this.domain === "object"
 //         ? Object(this.child).constructor
 //         : undefined
-// }
-
-// literalKeysOf(): Key[] {
-//     if (this.child === null || this.child === undefined) {
-//         return []
-//     }
-//     return [...prototypeKeysOf(this.child), ...Object.keys(this.child)]
 // }

@@ -42,9 +42,7 @@ type validateAliases<aliases, $> = evaluate<{
 }>
 
 type bootstrap<aliases> = {
-    [k in nonGenericNameFrom<keyof aliases>]: aliases[k] extends Space
-        ? aliases[k]
-        : alias<aliases[k]>
+    [k in nonGenericNameFrom<keyof aliases>]: aliases[k]
 } & {
     [k in genericKey<keyof aliases> as genericNameFrom<k>]: generic<
         paramsFrom<k>,
@@ -55,10 +53,8 @@ type bootstrap<aliases> = {
 type inferScope<bootstrapped, $> = evaluate<{
     [name in keyof bootstrapped]: bootstrapped[name] extends generic
         ? bootstrapped[name]
-        : inferDefinition<bootstrapped[name], $ & bootstrapped>
+        : Type<inferDefinition<bootstrapped[name], $ & bootstrapped>>
 }>
-
-export type PrivateAlias<name extends string = string> = `#${name}`
 
 type genericKey<k> = k & GenericDeclaration
 
@@ -67,8 +63,6 @@ type genericNameFrom<k> = k extends GenericDeclaration<infer name>
     : never
 
 type nonGenericNameFrom<k> = Exclude<k, GenericDeclaration>
-
-type nameFrom<k> = nonGenericNameFrom<k> | genericNameFrom<k>
 
 export type GenericDeclaration<
     name extends string = string,
@@ -112,11 +106,7 @@ export type resolve<
             ? t
             : never
         : never
-    : isAny<$[name]> extends true
-    ? any
-    : $[name] extends alias<infer def>
-    ? inferDefinition<def, $>
-    : $[name]
+    : inferDefinition<$[name], $>
 
 export type subaliasOf<$> = {
     [k in keyof $]: $[k] extends Space<infer exports>
@@ -126,21 +116,11 @@ export type subaliasOf<$> = {
         : never
 }[keyof $]
 
-export type alias<def = {}> = nominal<def, "alias">
-
 export type Space<exports = Dict> = {
     [k in keyof exports]: exports[k] extends Space
         ? exports[k]
         : Type<exports[k]>
-} & {
-    [inferred]: Space<exports>
 }
-
-export const Space = class {
-    constructor(exports: Space) {
-        Object.assign(this, exports)
-    }
-} as new <exports>(exports: exports) => Space<exports>
 
 export class Scope<exports = any, locals = any, root = any> {
     declare infer: extractOut<exports>
@@ -194,7 +174,7 @@ export class Scope<exports = any, locals = any, root = any> {
             }
             this._compiled = true
         }
-        return new Space(this.exports as exports)
+        return this.exports as exports
     }
 }
 

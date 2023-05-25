@@ -96,9 +96,9 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
             value: TypeNode.from({ basis: ["===", def.length] })
         }
     }
-    const props = new PropsNode(named, ...indexed)
-    const predicate = new PredicateNode(arrayBasisNode, props)
-    return new TypeNode(predicate)
+    const props = new PropsNode([named, ...indexed])
+    const predicate = new PredicateNode([arrayBasisNode, props])
+    return new TypeNode([predicate])
 }
 
 const unknownArray = TypeNode.from({
