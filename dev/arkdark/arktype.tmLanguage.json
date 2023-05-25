@@ -82,7 +82,7 @@
             "match": "[<>=%`'&]|\""
         },
         "object": {
-            "begin": "\\{",
+            "begin": "(\\s*)?\\{",
             "end": "\\}",
             "beginCaptures": {
                 "0": {
@@ -105,7 +105,7 @@
             ]
         },
         "tuple": {
-            "begin": "\\[",
+            "begin": "(\\s*)?\\[",
             "end": "\\]",
             "patterns": [
                 {
@@ -116,13 +116,13 @@
         "nested": {
             "patterns": [
                 {
-                    "include": "#quoted"
-                },
-                {
                     "include": "#object"
                 },
                 {
                     "include": "#tuple"
+                },
+                {
+                    "include": "#quoted"
                 },
                 {
                     "include": "source.ts#comment"
