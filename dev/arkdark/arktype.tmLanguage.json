@@ -36,9 +36,6 @@
                             "include": "#operator"
                         },
                         {
-                            "include": "#commonNested"
-                        },
-                        {
                             "include": "#regex"
                         },
                         {
