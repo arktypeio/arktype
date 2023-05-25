@@ -36,7 +36,7 @@ export type parseEnclosed<
     infer nextUnscanned
 >
     ? nextUnscanned extends ""
-        ? error<writeUnterminatedEnclosedMessage<scanned, enclosing>>
+        ? state.error<writeUnterminatedEnclosedMessage<scanned, enclosing>>
         : state.setRoot<
               s,
               `${enclosing}${scanned}${enclosing}`,

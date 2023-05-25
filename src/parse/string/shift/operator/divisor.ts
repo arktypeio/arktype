@@ -1,4 +1,3 @@
-import type { error } from "../../../../utils/errors.js"
 import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
 import { tryParseWellFormedInteger } from "../../../../utils/numericLiterals.js"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
@@ -25,9 +24,9 @@ export type parseDivisor<
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
     ? scanned extends NumberLiteral<infer divisor>
         ? divisor extends 0
-            ? error<writeInvalidDivisorMessage<0>>
+            ? state.error<writeInvalidDivisorMessage<0>>
             : state.setRoot<s, [s["root"], "%", scanned], nextUnscanned>
-        : error<writeInvalidDivisorMessage<scanned>>
+        : state.error<writeInvalidDivisorMessage<scanned>>
     : never
 
 export const writeInvalidDivisorMessage = <divisor extends string | number>(

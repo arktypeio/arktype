@@ -7,7 +7,6 @@ import {
     RangeNode
 } from "../../../../nodes/constraints/range.js"
 import { Disjoint } from "../../../../nodes/disjoint.js"
-import type { error } from "../../../../utils/errors.js"
 import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
 import type { keySet } from "../../../../utils/records.js"
@@ -82,7 +81,7 @@ type shiftComparator<
     ? [`${start}=`, nextUnscanned]
     : start extends OneCharComparator
     ? [start, unscanned]
-    : error<singleEqualsMessage>
+    : state.error<singleEqualsMessage>
 
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage
@@ -131,7 +130,7 @@ export type parseRightBound<
                       scanned,
                       nextUnscanned
                   >
-                : error<writeUnpairableComparatorMessage<comparator>>
+                : state.error<writeUnpairableComparatorMessage<comparator>>
             : state.reduceSingleBound<s, comparator, scanned, nextUnscanned>
         : never
     : never

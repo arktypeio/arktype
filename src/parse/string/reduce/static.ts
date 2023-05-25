@@ -23,7 +23,7 @@ export type StaticState = {
     root: unknown
     branches: BranchState
     groups: BranchState[]
-    finalizer: StateFinalizer | undefined
+    finalizer: StateFinalizer | undefined | error
     scanned: string
     unscanned: string
 }
@@ -47,6 +47,15 @@ export namespace state {
         finalizer: undefined
         scanned: ""
         unscanned: def
+    }>
+
+    export type error<message extends string> = from<{
+        root: undefined
+        branches: initialBranches
+        groups: []
+        finalizer: `!${message}`
+        scanned: ""
+        unscanned: ""
     }>
 
     type initialBranches = branchesFrom<{
@@ -122,7 +131,7 @@ export namespace state {
         unscanned extends string
     > = comparator extends "<" | "<="
         ? s["branches"]["range"] extends {}
-            ? error<
+            ? state.error<
                   writeMultipleLeftBoundsMessage<
                       s["branches"]["range"]["limit"],
                       s["branches"]["range"]["comparator"],
@@ -150,7 +159,7 @@ export namespace state {
                   >
                   unscanned: unscanned
               }>
-        : error<writeUnpairableComparatorMessage<comparator>>
+        : state.error<writeUnpairableComparatorMessage<comparator>>
 
     export type reduceRange<
         s extends StaticState,
@@ -228,7 +237,7 @@ export namespace state {
               scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
               unscanned: unscanned
           }>
-        : error<writeUnmatchedGroupCloseMessage<unscanned>>
+        : state.error<writeUnmatchedGroupCloseMessage<unscanned>>
 
     export type reduceGroupOpen<
         s extends StaticState,
@@ -256,11 +265,10 @@ export namespace state {
                   scanned: s["scanned"]
                   unscanned: s["unscanned"]
               }>
-        : error<writeUnclosedGroupMessage<")">>
+        : state.error<writeUnclosedGroupMessage<")">>
 
-    type openRangeError<range extends defined<BranchState["range"]>> = error<
-        writeOpenRangeMessage<range["limit"], range["comparator"]>
-    >
+    type openRangeError<range extends defined<BranchState["range"]>> =
+        state.error<writeOpenRangeMessage<range["limit"], range["comparator"]>>
 
     export type previousOperator<s extends StaticState> =
         s["branches"]["range"] extends {}

@@ -58,17 +58,12 @@ export const parseUntilFinalizer = (s: DynamicState) => {
 }
 
 export type parseUntilFinalizer<
-    s extends StaticState | error,
+    s extends StaticState,
     $
-> = s extends StaticState
-    ? s["finalizer"] extends undefined
-        ? parseUntilFinalizer<next<s, $>, $>
-        : s
-    : // s is an error here
-      s
+> = s["finalizer"] extends undefined ? parseUntilFinalizer<next<s, $>, $> : s
 
-export type extractFinalizedResult<s extends StaticState | error> =
-    s extends StaticState ? s["root"] : s
+export type extractFinalizedResult<s extends StaticState> =
+    s["finalizer"] extends error ? s["finalizer"] : s["root"]
 
 const next = (s: DynamicState) =>
     s.hasRoot() ? parseOperator(s) : parseOperand(s)

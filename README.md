@@ -214,7 +214,7 @@ ArkType's mirrored static and dynamic parsers means the feedback you get in your
 
 If you're curious, below is an example of what that looks like under the hood. If not, just close that hood back up, `npm install arktype` and enjoy top-notch developer experience🔥
 
-```ts @blockFrom:src/parse/string/shift/operator/operator.ts:parseOperator
+```ts
 export const parseOperator = (s: DynamicStateWithRoot): void => {
     const lookahead = s.scanner.shift()
     return lookahead === ""

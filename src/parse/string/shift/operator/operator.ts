@@ -1,4 +1,3 @@
-import type { error } from "../../../../utils/errors.js"
 import { isKeyOf } from "../../../../utils/records.js"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { state, StateFinalizer, StaticState } from "../../reduce/static.js"
@@ -7,7 +6,6 @@ import type { ComparatorStartChar } from "./bounds.js"
 import { comparatorStartChars, parseBound } from "./bounds.js"
 import { parseDivisor } from "./divisor.js"
 
-// @snipStart:parseOperator
 export const parseOperator = (s: DynamicStateWithRoot): void => {
     const lookahead = s.scanner.shift()
     return lookahead === "["
@@ -32,7 +30,7 @@ export type parseOperator<s extends StaticState> =
         ? lookahead extends "["
             ? unscanned extends Scanner.shift<"]", infer nextUnscanned>
                 ? state.setRoot<s, [s["root"], "[]"], nextUnscanned>
-                : error<incompleteArrayTokenMessage>
+                : state.error<incompleteArrayTokenMessage>
             : lookahead extends "|" | "&"
             ? state.reduceBranch<s, lookahead, unscanned>
             : lookahead extends ")"
@@ -56,9 +54,8 @@ export type parseOperator<s extends StaticState> =
             ? parseDivisor<s, unscanned>
             : lookahead extends Scanner.WhiteSpaceToken
             ? parseOperator<state.scanTo<s, unscanned>>
-            : error<writeUnexpectedCharacterMessage<lookahead>>
+            : state.error<writeUnexpectedCharacterMessage<lookahead>>
         : state.finalize<s, "">
-// @snipEnd
 
 export const writeUnexpectedCharacterMessage = <
     char extends string,
