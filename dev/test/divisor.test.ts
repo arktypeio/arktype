@@ -48,16 +48,16 @@ suite("divisibility", () => {
                 writeInvalidDivisorMessage(0)
             )
         })
-        test("indivisible unknown", () => {
+        test("unknown", () => {
             // @ts-expect-error
             attest(() => type("unknown%2")).throwsAndHasTypeError(
                 writeIndivisibleMessage("'unknown'")
             )
         })
-        test("indivisible any", () => {
+        test("indivisible", () => {
             // @ts-expect-error
-            attest(() => type("any%1")).throwsAndHasTypeError(
-                writeIndivisibleMessage("'any'")
+            attest(() => type("string%1")).throwsAndHasTypeError(
+                writeIndivisibleMessage("'string'")
             )
         })
         test("overlapping", () => {

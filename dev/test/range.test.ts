@@ -255,16 +255,16 @@ suite("range", () => {
             })
 
             suite("errors", () => {
-                test("unboundable", () => {
+                test("unknown", () => {
                     // @ts-expect-error
                     attest(() => type("unknown<10")).throwsAndHasTypeError(
                         writeUnboundableMessage("'unknown'")
                     )
                 })
-                test("any", () => {
+                test("unboundable", () => {
                     // @ts-expect-error
-                    attest(() => type("any>10")).throwsAndHasTypeError(
-                        writeUnboundableMessage("'any'")
+                    attest(() => type("object>10")).throwsAndHasTypeError(
+                        writeUnboundableMessage("'object'")
                     )
                 })
                 test("overlapping", () => {

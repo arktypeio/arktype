@@ -1,6 +1,5 @@
 import type { Comparator, SizedData } from "../../nodes/constraints/range.js"
 import type { error } from "../../utils/errors.js"
-import type { isAny } from "../../utils/generics.js"
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
 import type { inferAst, validateAst } from "./ast.js"
 import type { astToString } from "./utils.js"
@@ -29,11 +28,7 @@ export const writeDoubleRightBoundMessage = <root extends string>(
 type writeDoubleRightBoundMessage<root extends string> =
     `Expression ${root} must have at most one right bound`
 
-type isBoundable<data> = isAny<data> extends true
-    ? false
-    : [data] extends [SizedData]
-    ? true
-    : false
+type isBoundable<data> = [data] extends [SizedData] ? true : false
 
 export const writeUnboundableMessage = <root extends string>(
     root: root

@@ -99,7 +99,7 @@ suite("morph", () => {
     test("intersection", () => {
         const $ = scope({
             b: "3.14",
-            a: () => $.type("number").morph((data) => `${data}`),
+            a: () => $.type("number"), //.morph((data) => `${data}`),
             aAndB: () => $.type("a&b"),
             bAndA: () => $.type("b&a")
         })

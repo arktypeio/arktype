@@ -1,9 +1,5 @@
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
-import type {
-    inferDefinition,
-    inferred,
-    validateDefinition
-} from "./parse/definition.js"
+import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import type {
     extractIn,
     extractOut,
@@ -41,19 +37,26 @@ type validateAliases<aliases, $> = evaluate<{
         : validateDefinition<aliases[k], $ & bootstrap<aliases>>
 }>
 
+// trying to nested def here in an object or tuple cause circularities during some thunk validations
+export type Alias<def = {}> = nominal<def, "alias">
+
 type bootstrap<aliases> = {
-    [k in nonGenericNameFrom<keyof aliases>]: aliases[k]
+    [k in nonGenericNameFrom<keyof aliases>]: Alias<aliases[k]>
 } & {
-    [k in genericKey<keyof aliases> as genericNameFrom<k>]: generic<
+    // TODO: do I need to parse the def AST here? or something more so that
+    // references can be resolved if it's used outside the scope
+    [k in genericKey<keyof aliases> as genericNameFrom<k>]: Generic<
         paramsFrom<k>,
         aliases[k]
     >
 }
 
 type inferScope<bootstrapped, $> = evaluate<{
-    [name in keyof bootstrapped]: bootstrapped[name] extends generic
+    [name in keyof bootstrapped]: bootstrapped[name] extends Generic
         ? bootstrapped[name]
-        : Type<inferDefinition<bootstrapped[name], $ & bootstrapped>>
+        : bootstrapped[name] extends Alias<infer def>
+        ? inferDefinition<def, $ & bootstrapped>
+        : never
 }>
 
 type genericKey<k> = k & GenericDeclaration
@@ -76,7 +79,7 @@ type paramsFrom<scopeKey> = scopeKey extends GenericDeclaration<
     ? split<params, ",">
     : []
 
-export type generic<
+export type Generic<
     params extends string[] = string[],
     def = unknown
 > = nominal<[params, def], "generic">
@@ -106,7 +109,11 @@ export type resolve<
             ? t
             : never
         : never
-    : inferDefinition<$[name], $>
+    : isAny<$[name]> extends true
+    ? any
+    : $[name] extends Alias<infer def>
+    ? inferDefinition<def, $>
+    : $[name]
 
 export type subaliasOf<$> = {
     [k in keyof $]: $[k] extends Space<infer exports>
@@ -116,10 +123,8 @@ export type subaliasOf<$> = {
         : never
 }[keyof $]
 
-export type Space<exports = Dict> = {
-    [k in keyof exports]: exports[k] extends Space
-        ? exports[k]
-        : Type<exports[k]>
+export type Space<exports = Dict, $ = Dict> = {
+    [k in keyof exports]: Type<exports[k], exports & $>
 }
 
 export class Scope<exports = any, locals = any, root = any> {
@@ -174,7 +179,7 @@ export class Scope<exports = any, locals = any, root = any> {
             }
             this._compiled = true
         }
-        return this.exports as exports
+        return this.exports as Space<exports, locals & root>
     }
 }
 
