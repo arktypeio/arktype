@@ -9,16 +9,15 @@ import type { DiscriminantKind } from "../../discriminate.js"
 import type { DisjointsSources } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
 import { BaseNode } from "../../node.js"
-import type { PredicateInput } from "../../predicate.js"
-import type { TypeInput } from "../../type.js"
 import {
     neverTypeNode,
     TypeNode,
     typeNodeFromInput,
     unknownTypeNode
 } from "../../type.js"
-import { extractArrayIndexRegex } from "./array.js"
-import type { NamedNode, NamedValueInput } from "./entry.js"
+import type { IndexedInputEntry, IndexedNodeEntry } from "./indexed.js"
+import { extractArrayIndexRegex } from "./indexed.js"
+import type { NamedPropRule, NamedValueInput } from "./named.js"
 
 export type PropsChildren = [NamedNodes, ...IndexedNodeEntry[]]
 
@@ -80,7 +79,7 @@ export class PropsNode extends BaseNode<typeof PropsNode> {
         const named = {} as mutable<NamedNodes>
         for (const k in namedInput) {
             named[k] = {
-                kind: namedInput[k].kind,
+                precedence: namedInput[k].kind,
                 value: typeNodeFromInput(namedInput[k].value)
             }
         }
@@ -96,7 +95,7 @@ export class PropsNode extends BaseNode<typeof PropsNode> {
 
     toString() {
         const entries = this.namedEntries.map((entry): [string, string] => {
-            const key = entry[0] + entry[1].kind === "optional" ? "?" : ""
+            const key = entry[0] + entry[1].precedence === "optional" ? "?" : ""
             const value = entry[1].value.toString()
             return [key, value]
         })
@@ -177,7 +176,7 @@ export class PropsNode extends BaseNode<typeof PropsNode> {
         if (hasKeys(disjointsByPath)) {
             return new Disjoint(disjointsByPath)
         }
-        if (named.length?.kind === "prerequisite") {
+        if (named.length?.precedence === "prerequisite") {
             // if the index key is from and unbounded array and we have a tuple length,
             // it has already been intersected and should be removed
             indexed = indexed.filter(
@@ -194,7 +193,7 @@ export class PropsNode extends BaseNode<typeof PropsNode> {
         const { [key]: _, ...preserved } = this.named
         if (prunedValue !== unknownTypeNode) {
             preserved[key] = {
-                kind: propAtKey.kind,
+                precedence: propAtKey.precedence,
                 value: prunedValue
             }
         }
@@ -237,13 +236,6 @@ export type PropsInputTuple<
 
 export type NamedPropsInput = Record<string, NamedValueInput>
 
-export type NamedNodes = Record<string, NamedNode>
-
-export type IndexedInputEntry = readonly [
-    keyType: PredicateInput<"string">,
-    valueType: TypeInput
-]
-
-export type IndexedNodeEntry = [keyType: TypeNode<string>, valueType: TypeNode]
+export type NamedNodes = Record<string, NamedPropRule>
 
 export type PropKind = "required" | "optional" | "prerequisite"

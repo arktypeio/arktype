@@ -1,7 +1,7 @@
 import {
     arrayBasisNode,
     arrayIndexTypeNode
-} from "../../nodes/constraints/props/array.js"
+} from "../../nodes/constraints/props/indexed.js"
 import {
     type IndexedNodeEntry,
     type NamedNodes,
@@ -84,7 +84,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
             indexed.push([arrayIndexTypeNode(i), elementType])
         } else {
             named[i] = {
-                kind: "required",
+                precedence: "required",
                 value
             }
         }
@@ -92,7 +92,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     }
     if (!isVariadic) {
         named.length = {
-            kind: "prerequisite",
+            precedence: "prerequisite",
             value: TypeNode.from({ basis: ["===", def.length] })
         }
     }

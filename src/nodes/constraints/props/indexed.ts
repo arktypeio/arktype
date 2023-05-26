@@ -1,7 +1,42 @@
 import { throwInternalError } from "../../../utils/errors.js"
+import { tryParseWellFormedInteger } from "../../../utils/numericLiterals.js"
 import { ClassNode } from "../../basis/class.js"
+import { In, IndexIn } from "../../compilation.js"
+import { BaseNode } from "../../node.js"
 import type { PredicateInput } from "../../predicate.js"
+import type { TypeInput } from "../../type.js"
 import { nonVariadicArrayIndexTypeNode, TypeNode } from "../../type.js"
+
+export class IndexedPropNode extends BaseNode<typeof IndexedPropNode> {
+    static readonly kind = "entry"
+
+    static compile(entry: unknown) {
+        return entry ? [] : []
+    }
+
+    computeIntersection(other: IndexedPropNode) {
+        return other ? this : this
+    }
+
+    toString() {
+        return ""
+    }
+
+    private static compileIndexedEntry(entry: IndexedNodeEntry) {
+        const indexMatcher = extractArrayIndexRegex(entry[0])
+        if (indexMatcher) {
+            return compileArrayElementsEntry(indexMatcher, entry[1])
+        }
+        return throwInternalError(`Unexpected index type ${entry[0].condition}`)
+    }
+}
+
+export type IndexedInputEntry = readonly [
+    keyType: PredicateInput<"string">,
+    valueType: TypeInput
+]
+
+export type IndexedNodeEntry = [keyType: TypeNode<string>, valueType: TypeNode]
 
 const arrayIndexMatcherSuffix = `(?:0|(?:[1-9]\\d*))$`
 
@@ -57,22 +92,40 @@ export const extractArrayIndexRegex = (keyNode: TypeNode<string>) => {
     return source as ArrayIndexMatcherSource
 }
 
-// const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
-//     if (!source.startsWith(excludedIndexMatcherStart)) {
-//         return 0
-//     }
-//     const excludedIndices = source.slice(
-//         excludedIndexMatcherStart.length,
-//         source.indexOf(excludedIndexMatcherEnd)
-//     )
-//     const firstExcludedIndex = excludedIndices.split("|")[0]
-//     return (
-//         tryParseWellFormedInteger(
-//             firstExcludedIndex,
-//             `Unexpectedly failed to parse a variadic index from ${source}`
-//         ) + 1
-//     )
-// }
+const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
+    if (!source.startsWith(excludedIndexMatcherStart)) {
+        return 0
+    }
+    const excludedIndices = source.slice(
+        excludedIndexMatcherStart.length,
+        source.indexOf(excludedIndexMatcherEnd)
+    )
+    const firstExcludedIndex = excludedIndices.split("|")[0]
+    return (
+        tryParseWellFormedInteger(
+            firstExcludedIndex,
+            `Unexpectedly failed to parse a variadic index from ${source}`
+        ) + 1
+    )
+}
+
+const compileArrayElementsEntry = (
+    indexMatcher: ArrayIndexMatcherSource,
+    valueNode: TypeNode
+) => {
+    const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
+    const elementCondition = valueNode.condition
+        .replaceAll(IndexIn, `${IndexIn}Inner`)
+        .replaceAll(In, `${In}[${IndexIn}]`)
+    const result = `(() => {
+    let valid = true;
+    for(let ${IndexIn} = ${firstVariadicIndex}; ${IndexIn} < ${In}.length; ${IndexIn}++) {
+        valid = ${elementCondition} && valid;
+    }
+    return valid
+})()`
+    return result
+}
 
 export const arrayBasisNode = new ClassNode(Array)
 

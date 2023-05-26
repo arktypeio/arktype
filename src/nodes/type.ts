@@ -9,7 +9,7 @@ import {
     arrayBasisNode,
     arrayIndexInput,
     arrayIndexTypeNode
-} from "./constraints/props/array.js"
+} from "./constraints/props/indexed.js"
 import { PropsNode } from "./constraints/props/props.js"
 import type { CaseKey, Discriminant, DiscriminantKind } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"

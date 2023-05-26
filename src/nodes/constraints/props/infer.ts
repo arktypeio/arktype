@@ -4,15 +4,11 @@ import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import type { Key } from "../../../utils/records.js"
 import type { inferTypeInput } from "../../type.js"
 import type {
+    IndexedInputEntry,
     NonVariadicIndexMatcherSource,
     VariadicIndexMatcherSource
-} from "./array.js"
-import type {
-    IndexedInputEntry,
-    NamedPropsInput,
-    PropsInput,
-    PropsInputTuple
-} from "./props.js"
+} from "./indexed.js"
+import type { NamedPropsInput, PropsInput, PropsInputTuple } from "./props.js"
 
 export type inferPropsInput<input extends PropsInput> =
     input extends PropsInputTuple<infer named, infer indexed>

@@ -29,7 +29,7 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
         }
         ctx.path.push(keyName)
         named[keyName] = {
-            kind,
+            precedence: kind,
             value: parseDefinition(def[definitionKey], ctx)
         }
         ctx.path.pop()
