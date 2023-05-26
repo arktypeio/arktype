@@ -2,6 +2,7 @@ import type { TypeNode } from "../../nodes/type.js"
 import { type error, throwParseError } from "../../utils/errors.js"
 import { type inferAst, writeUnsatisfiableExpressionError } from "../ast/ast.js"
 import type { ParseContext } from "../definition.js"
+import type { DynamicStateWithRoot } from "./reduce/dynamic.js"
 import { DynamicState } from "./reduce/dynamic.js"
 import type { state, StaticState } from "./reduce/static.js"
 import { parseOperand } from "./shift/operand/operand.js"
@@ -51,10 +52,10 @@ type fullStringParse<def extends string, $> = extractFinalizedResult<
 >
 
 export const parseUntilFinalizer = (s: DynamicState) => {
-    while (!s.scanner.finalized) {
+    while (s.finalizer === undefined) {
         next(s)
     }
-    return s.finalize()
+    return s as DynamicStateWithRoot
 }
 
 export type parseUntilFinalizer<

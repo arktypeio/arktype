@@ -1,14 +1,16 @@
 import { isKeyOf } from "../../../../utils/records.js"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
-import type { state, StateFinalizer, StaticState } from "../../reduce/static.js"
-import type { Scanner } from "../scanner.js"
+import type { state, StaticState } from "../../reduce/static.js"
+import { Scanner } from "../scanner.js"
 import type { ComparatorStartChar } from "./bounds.js"
 import { comparatorStartChars, parseBound } from "./bounds.js"
 import { parseDivisor } from "./divisor.js"
 
 export const parseOperator = (s: DynamicStateWithRoot): void => {
     const lookahead = s.scanner.shift()
-    return lookahead === "["
+    return lookahead === ""
+        ? s.finalize("")
+        : lookahead === "["
         ? s.scanner.shift() === "]"
             ? s.setRoot(s.root.array())
             : s.error(incompleteArrayTokenMessage)
@@ -23,6 +25,19 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
         : lookahead === " "
         ? parseOperator(s)
         : s.error(writeUnexpectedCharacterMessage(lookahead))
+}
+
+const lookaheadIsFinalizer = (
+    lookahead: string,
+    s: DynamicStateWithRoot
+): lookahead is Scanner.FinalizingLookahead => {
+    if (!isKeyOf(lookahead, Scanner.finalizingLookaheads)) {
+        return false
+    }
+    if (lookahead === ",") {
+        return true
+    }
+    return true
 }
 
 export type parseOperator<s extends StaticState> =
@@ -46,7 +61,7 @@ export type parseOperator<s extends StaticState> =
                   | [",", unknown]
             ? state.finalize<
                   state.scanTo<s, unscanned>,
-                  lookahead & StateFinalizer
+                  lookahead & Scanner.FinalizingLookahead
               >
             : lookahead extends ComparatorStartChar
             ? parseBound<s, lookahead, unscanned>
@@ -62,7 +77,7 @@ export const writeUnexpectedCharacterMessage = <
     shouldBe extends string
 >(
     char: char,
-    shouldBe?: shouldBe
+    shouldBe: shouldBe = "" as shouldBe
 ): writeUnexpectedCharacterMessage<char, shouldBe> =>
     `'${char}' is not allowed here${
         shouldBe && (` (should be ${shouldBe})` as any)

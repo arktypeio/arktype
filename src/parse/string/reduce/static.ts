@@ -17,13 +17,11 @@ import type {
     writeUnpairableComparatorMessage
 } from "./shared.js"
 
-export type StateFinalizer = Scanner.FinalizingLookahead | ""
-
 export type StaticState = {
     root: unknown
     branches: BranchState
     groups: BranchState[]
-    finalizer: StateFinalizer | error | undefined
+    finalizer: Scanner.FinalizingLookahead | error | undefined
     scanned: string
     unscanned: string
 }
@@ -253,7 +251,7 @@ export namespace state {
 
     export type finalize<
         s extends StaticState,
-        finalizer extends StateFinalizer
+        finalizer extends Scanner.FinalizingLookahead
     > = s["groups"] extends []
         ? s["branches"]["range"] extends {}
             ? openRangeError<s["branches"]["range"]>

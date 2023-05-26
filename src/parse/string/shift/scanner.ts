@@ -88,7 +88,8 @@ export namespace Scanner {
 
     export const finalizingLookaheads = {
         ">": true,
-        ",": true
+        ",": true,
+        "": true
     } as const
 
     export type FinalizingLookahead = keyof typeof finalizingLookaheads

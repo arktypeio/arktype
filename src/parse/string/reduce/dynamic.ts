@@ -35,6 +35,7 @@ export class DynamicState {
     branches: BranchState = {
         prefixes: []
     }
+    finalizer: Scanner.FinalizingLookahead | undefined
     groups: BranchState[] = []
 
     constructor(def: string, public readonly ctx: ParseContext) {
@@ -64,13 +65,12 @@ export class DynamicState {
         return root
     }
 
-    finalize() {
+    finalize(finalizer: Scanner.FinalizingLookahead) {
         if (this.groups.length) {
             return this.error(writeUnclosedGroupMessage(")"))
         }
         this.finalizeBranches()
-        this.scanner.finalized = true
-        return this as DynamicStateWithRoot
+        this.finalizer = finalizer
     }
 
     reduceLeftBound(limit: number, comparator: Comparator) {
