@@ -14,7 +14,7 @@ import {
     objectKindDescriptions
 } from "../utils/objectKinds.js"
 import { stringify } from "../utils/serialize.js"
-import type { RangeConstraint, SizedData } from "./constraints/range.js"
+import type { Bound, SizedData } from "./constraints/range.js"
 import { comparatorDescriptions } from "./constraints/range.js"
 import type { InternalId } from "./registry.js"
 
@@ -218,7 +218,7 @@ export class KeyProblem extends Problem<KeyProblemKind> {
     mustBe = this.rule === "missing" ? "defined" : "extraneous"
 }
 
-export class RangeProblem extends Problem<RangeConstraint, SizedData> {
+export class RangeProblem extends Problem<Bound, SizedData> {
     readonly code = "range"
 
     get mustBe() {

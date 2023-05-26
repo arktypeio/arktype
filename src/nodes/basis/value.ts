@@ -4,16 +4,22 @@ import type { Key } from "../../utils/records.js"
 import { stringify } from "../../utils/serialize.js"
 import { compileSerializedValue, In } from "../compilation.js"
 import { BaseNode } from "../node.js"
-import type { ConstraintKind } from "../predicate.js"
 import type { BasisDefinition, BasisInstance } from "./basis.js"
-import { intersectBases, throwInvalidConstraintError } from "./basis.js"
+import { intersectBases } from "./basis.js"
 
 export class ValueNode
     extends BaseNode<typeof ValueNode>
     implements BasisDefinition
 {
     static readonly kind = "basis"
-    readonly level = "value"
+
+    get level() {
+        return "value" as const
+    }
+
+    get domain() {
+        return domainOf(this.rule)
+    }
 
     static compile(rule: unknown) {
         return [`${In} === ${compileSerializedValue(rule)}`]
@@ -23,20 +29,6 @@ export class ValueNode
         return intersectBases(this, other)
     }
 
-    get domain() {
-        return domainOf(this.rule)
-    }
-
-    assertAllowsConstraint(kind: ConstraintKind) {
-        if (kind !== "morph") {
-            throwInvalidConstraintError(
-                kind,
-                "a non-literal type",
-                stringify(this.rule)
-            )
-        }
-    }
-
     literalKeysOf(): Key[] {
         if (this.rule === null || this.rule === undefined) {
             return []
@@ -44,7 +36,7 @@ export class ValueNode
         return [...prototypeKeysOf(this.rule), ...Object.keys(this.rule)]
     }
 
-    describe() {
+    toString() {
         return stringify(this.rule)
     }
 }

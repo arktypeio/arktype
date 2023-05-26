@@ -1,4 +1,3 @@
-import type { error } from "../../../../utils/errors.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type {
     AutocompletePrefix,
@@ -29,7 +28,7 @@ export type parseOperand<
         ? state.reduceGroupOpen<s, unscanned>
         : lookahead extends EnclosingChar
         ? parseEnclosed<s, lookahead, unscanned>
-        : lookahead extends " "
+        : lookahead extends Scanner.WhiteSpaceToken
         ? parseOperand<state.scanTo<s, unscanned>, $>
         : parseUnenclosed<s, $>
-    : error<`${s["scanned"]}${(keyof $ & string) | AutocompletePrefix}`>
+    : state.error<`${s["scanned"]}${(keyof $ & string) | AutocompletePrefix}`>

@@ -3,18 +3,22 @@ import { getBaseDomainKeys } from "../../utils/objectKinds.js"
 import type { Key } from "../../utils/records.js"
 import { In } from "../compilation.js"
 import { BaseNode } from "../node.js"
-import type { ConstraintKind } from "../predicate.js"
 import type { BasisDefinition, BasisInstance } from "./basis.js"
-import { assertAllowsConstraint, intersectBases } from "./basis.js"
+import { intersectBases } from "./basis.js"
 
 export class DomainNode
     extends BaseNode<typeof DomainNode>
     implements BasisDefinition
 {
     static readonly kind = "basis"
-    readonly level = "domain"
 
-    domain = this.rule
+    get domain() {
+        return this.rule
+    }
+
+    get level() {
+        return "domain" as const
+    }
 
     static compile(domain: Domain) {
         return [
@@ -28,15 +32,11 @@ export class DomainNode
         return intersectBases(this, other)
     }
 
-    assertAllowsConstraint(kind: ConstraintKind) {
-        assertAllowsConstraint(this, kind)
-    }
-
     literalKeysOf(): Key[] {
         return getBaseDomainKeys(this.rule)
     }
 
-    describe() {
+    toString() {
         return this.domain
     }
 }

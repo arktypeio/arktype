@@ -214,7 +214,7 @@ ArkType's mirrored static and dynamic parsers means the feedback you get in your
 
 If you're curious, below is an example of what that looks like under the hood. If not, just close that hood back up, `npm install arktype` and enjoy top-notch developer experience🔥
 
-```ts @blockFrom:src/parse/string/shift/operator/operator.ts:parseOperator
+```ts
 export const parseOperator = (s: DynamicStateWithRoot): void => {
     const lookahead = s.scanner.shift()
     return lookahead === ""
@@ -296,6 +296,6 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 
 ### Current Sponsors 🥰
 
-| [tmm](https://github.com/tmm)                                             | [xrexy](https://github.com/xrexy)                                          | [thomasballinger](https://github.com/thomasballinger)                    | [codeandcats](https://github.com/codeandcats)|
-| ------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ |----------------------------------------------|
-| <img height="64px" src="https://avatars.githubusercontent.com/u/6759464"> | <img height="64px" src="https://avatars.githubusercontent.com/u/71969236"> | <img height="64px" src="https://avatars.githubusercontent.com/u/458879"> |<img height="64px" src="https://avatars.githubusercontent.com/u/6035934"> |
+| [tmm](https://github.com/tmm)                                             | [xrexy](https://github.com/xrexy)                                          | [thomasballinger](https://github.com/thomasballinger)                    | [codeandcats](https://github.com/codeandcats)                             |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| <img height="64px" src="https://avatars.githubusercontent.com/u/6759464"> | <img height="64px" src="https://avatars.githubusercontent.com/u/71969236"> | <img height="64px" src="https://avatars.githubusercontent.com/u/458879"> | <img height="64px" src="https://avatars.githubusercontent.com/u/6035934"> |

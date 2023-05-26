@@ -3,19 +3,11 @@ import type { evaluate, isAny } from "../../utils/generics.js"
 import type { List, pathToString, Segments } from "../../utils/lists.js"
 import type { MorphAst, Out } from "./morph.js"
 
-export type validateIntersection<l, r> = inferIntersectionRecurse<
-    l,
-    r,
-    true,
-    []
->
-
-export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, false, []>
+export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, []>
 
 type inferIntersectionRecurse<
     l,
     r,
-    propagateErrors extends boolean,
     path extends string[]
 > = path["length"] extends 10
     ? l & r
@@ -33,31 +25,23 @@ type inferIntersectionRecurse<
         : (In: evaluate<lIn & r>) => Out<lOut>
     : r extends MorphAst<infer rIn, infer rOut>
     ? (In: evaluate<rIn & l>) => Out<rOut>
-    : intersectObjects<l, r, propagateErrors, path> extends infer result
-    ? propagateErrors extends true
-        ? result[keyof result]
-        : result
+    : intersectObjects<l, r, path> extends infer result
+    ? result
     : never
 
 type intersectObjects<
     l,
     r,
-    propagateErrors extends boolean,
     path extends string[]
     // for some reason if you do the list check within the extends check for
     // [object, object], the number of type instantiations increase drastically
 > = [l, r] extends [infer lList extends List, infer rList extends List]
-    ? inferArrayIntersection<lList, rList, propagateErrors, path>
+    ? inferArrayIntersection<lList, rList, path>
     : [l, r] extends [object, object]
     ? evaluate<
           {
               [k in keyof l]: k extends keyof r
-                  ? inferIntersectionRecurse<
-                        l[k],
-                        r[k],
-                        propagateErrors,
-                        [...path, k & string]
-                    >
+                  ? inferIntersectionRecurse<l[k], r[k], [...path, k & string]>
                   : l[k]
           } & r
       >
@@ -66,7 +50,6 @@ type intersectObjects<
 type inferArrayIntersection<
     l extends List,
     r extends List,
-    propagateErrors extends boolean,
     path extends string[],
     result extends List = []
 > = [l, r] extends [
@@ -76,14 +59,12 @@ type inferArrayIntersection<
     ? inferArrayIntersection<
           lTail,
           rTail,
-          propagateErrors,
           path,
           [
               ...result,
               inferIntersectionRecurse<
                   lHead,
                   rHead,
-                  propagateErrors,
                   [...path, `${result["length"]}`]
               >
           ]
@@ -104,14 +85,12 @@ type inferArrayIntersection<
         : inferArrayIntersection<
               lTail,
               r,
-              propagateErrors,
               path,
               [
                   ...result,
                   inferIntersectionRecurse<
                       lHead,
                       r[number],
-                      propagateErrors,
                       [...path, `${result["length"]}`]
                   >
               ]
@@ -132,14 +111,12 @@ type inferArrayIntersection<
         : inferArrayIntersection<
               l,
               rTail,
-              propagateErrors,
               path,
               [
                   ...result,
                   inferIntersectionRecurse<
                       l[number],
                       rHead,
-                      propagateErrors,
                       [...path, `${result["length"]}`]
                   >
               ]
@@ -150,7 +127,6 @@ type inferArrayIntersection<
           ...inferIntersectionRecurse<
               l[number],
               r[number],
-              propagateErrors,
               [...path, `${number}`]
           >[]
       ]

@@ -1,5 +1,7 @@
 import { throwInternalError } from "../../../utils/errors.js"
-import type { TypeNode } from "../../type.js"
+import { ClassNode } from "../../basis/class.js"
+import type { PredicateInput } from "../../predicate.js"
+import { nonVariadicArrayIndexTypeNode, TypeNode } from "../../type.js"
 
 const arrayIndexMatcherSuffix = `(?:0|(?:[1-9]\\d*))$`
 
@@ -71,3 +73,18 @@ export const extractArrayIndexRegex = (keyNode: TypeNode<string>) => {
 //         ) + 1
 //     )
 // }
+
+export const arrayBasisNode = new ClassNode(Array)
+
+export const arrayIndexInput = <index extends number = 0>(
+    firstVariadicIndex: index = 0 as index
+) =>
+    ({
+        basis: "string",
+        regex: createArrayIndexMatcher(firstVariadicIndex)
+    } as const satisfies PredicateInput<"string">)
+
+export const arrayIndexTypeNode = (firstVariadicIndex = 0) =>
+    firstVariadicIndex === 0
+        ? nonVariadicArrayIndexTypeNode
+        : TypeNode.from(arrayIndexInput(firstVariadicIndex))

@@ -1,14 +1,14 @@
 import {
+    arrayBasisNode,
+    arrayIndexTypeNode
+} from "../../nodes/constraints/props/array.js"
+import {
     type IndexedNodeEntry,
     type NamedNodes,
     PropsNode
 } from "../../nodes/constraints/props/props.js"
 import { PredicateNode } from "../../nodes/predicate.js"
-import {
-    arrayBasisNode,
-    arrayIndexTypeNode,
-    TypeNode
-} from "../../nodes/type.js"
+import { TypeNode } from "../../nodes/type.js"
 import type { extractIn, extractOut, TypeConfig } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"

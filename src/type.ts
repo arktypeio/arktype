@@ -12,7 +12,7 @@ import {
     parseDefinition,
     type validateDefinition
 } from "./parse/definition.js"
-import type { Scope } from "./scope.js"
+import type { Alias, Scope } from "./scope.js"
 import { type Ark } from "./scopes/ark.js"
 import { CompiledFunction } from "./utils/compiledFunction.js"
 import type { error } from "./utils/errors.js"
@@ -91,10 +91,32 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return this.binary(def, "|") as never
     }
 
-    morph<def extends Morph<extractOut<t>>>(
-        def: def
-    ): Type<(In: extractIn<t>) => Out<inferMorphOut<ReturnType<def>>>, $> {
-        return new Type([this.definition, "|>", def], this.scope) as never
+    morph<morph extends Morph<extractOut<t>>>(
+        morph: morph
+    ): Type<(In: this["inferIn"]) => Out<inferMorphOut<ReturnType<morph>>>>
+    morph<morph extends Morph<extractOut<t>>, def>(
+        morph: morph,
+        outValidator: validateDefinition<def, bindThis<$, def>>
+    ): Type<
+        (In: this["inferIn"]) => Out<
+            // TODO: validate overlapping
+            // inferMorphOut<ReturnType<morph>> &
+            extractOut<inferDefinition<def, bindThis<$, def>>>
+        >
+    >
+    morph(morph: Morph, outValidator?: unknown) {
+        // TODO: tuple expression
+        outValidator
+        return new Type([this.definition, "|>", morph], this.scope) as never
+    }
+
+    to<def>(
+        def: validateDefinition<def, bindThis<$, def>>
+    ): Type<
+        (In: this["inferIn"]) => Out<inferDefinition<def, bindThis<$, def>>>,
+        $
+    > {
+        return {} as never
     }
 
     // TODO: based on below, should maybe narrow morph output if used after
@@ -130,7 +152,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     }
 }
 
-type bindThis<$, def> = $ & { this: def }
+type bindThis<$, def> = $ & { this: Alias<def> }
 
 type validateChainedExpression<def, $, inferred> =
     def extends validateDefinition<def, $>

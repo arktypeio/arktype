@@ -1,18 +1,16 @@
+import { writeUnboundableMessage } from "../parse/ast/bound.js"
+import { writeIndivisibleMessage } from "../parse/ast/divisor.js"
 import type { inferMorphOut, Morph, Out } from "../parse/ast/morph.js"
 import type { GuardedNarrow, Narrow } from "../parse/ast/narrow.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
-import { throwParseError } from "../utils/errors.js"
+import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
 import type { Constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
 import { isKeyOf, type keySet } from "../utils/records.js"
-import type {
-    BasisDefinition,
-    BasisInput,
-    BasisInstance,
-    inferBasis
-} from "./basis/basis.js"
+import type { BasisInput, BasisInstance, inferBasis } from "./basis/basis.js"
+import { ClassNode } from "./basis/class.js"
 import { basisNodeFrom } from "./basis/from.js"
 import { ValueNode } from "./basis/value.js"
 import type { CompilationState } from "./compilation.js"
@@ -32,8 +30,6 @@ import { RegexNode } from "./constraints/regex.js"
 import type { DiscriminantKind } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import { BaseNode } from "./node.js"
-import type { TypeNode } from "./type.js"
-import { neverTypeNode } from "./type.js"
 
 export class PredicateNode extends BaseNode<typeof PredicateNode> {
     static readonly kind = "predicate"
@@ -205,17 +201,69 @@ export class PredicateNode extends BaseNode<typeof PredicateNode> {
     // }
 }
 
-const assertAllowsConstraint = (
-    basis: BasisDefinition | undefined,
+export const assertAllowsConstraint = (
+    basis: BasisInstance | undefined,
     kind: ConstraintKind
 ) => {
-    if (basis === undefined) {
-        return kind === "narrow" || kind === "morph"
-            ? undefined
-            : throwParseError(`${kind} constraint requires a basis`)
+    if (basis instanceof ValueNode) {
+        if (kind !== "morph") {
+            throwInvalidConstraintError(
+                kind,
+                "a non-literal type",
+                basis.toString()
+            )
+        }
+        return
     }
-    return basis.assertAllowsConstraint(kind)
+
+    const domain = basis?.domain ?? "unknown"
+
+    switch (kind) {
+        case "divisor":
+            if (domain !== "number") {
+                throwParseError(writeIndivisibleMessage(domain))
+            }
+            return
+        case "range":
+            if (domain !== "string" && domain !== "number") {
+                const hasSizedClassBasis =
+                    basis instanceof ClassNode &&
+                    basis.extendsOneOf(Array, Date)
+                if (!hasSizedClassBasis) {
+                    throwParseError(writeUnboundableMessage(domain))
+                }
+            }
+            return
+        case "regex":
+            if (domain !== "string") {
+                throwInvalidConstraintError("regex", "a string", domain)
+            }
+            return
+        case "props":
+            if (domain !== "object") {
+                throwInvalidConstraintError("props", "an object", domain)
+            }
+            return
+        case "narrow":
+            return
+        case "morph":
+            return
+        default:
+            throwInternalError(`Unexpxected rule kind '${kind}'`)
+    }
 }
+
+export const writeInvalidConstraintMessage = (
+    kind: ConstraintKind,
+    typeMustBe: string,
+    typeWas: string
+) => {
+    return `${kind} constraint may only be applied to ${typeMustBe} (was ${typeWas})`
+}
+
+export const throwInvalidConstraintError = (
+    ...args: Parameters<typeof writeInvalidConstraintMessage>
+) => throwParseError(writeInvalidConstraintMessage(...args))
 
 const constraintsByPrecedence = [
     "divisor",

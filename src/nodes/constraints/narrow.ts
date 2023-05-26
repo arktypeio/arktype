@@ -17,7 +17,7 @@ export class NarrowNode extends BaseNode<typeof NarrowNode> {
         return new NarrowNode(intersectUniqueLists(this.rule, other.rule))
     }
 
-    describe() {
+    toString() {
         return `narrowed by ${this.rule.map((rule) => rule.name)}`
     }
 }

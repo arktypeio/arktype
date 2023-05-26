@@ -1,18 +1,16 @@
-import type { error } from "../../../../utils/errors.js"
-import type { join } from "../../../../utils/lists.js"
 import { isKeyOf } from "../../../../utils/records.js"
-import type { stringifyUnion } from "../../../../utils/unionToTuple.js"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
-import type { Scanner } from "../scanner.js"
+import { Scanner } from "../scanner.js"
 import type { ComparatorStartChar } from "./bounds.js"
 import { comparatorStartChars, parseBound } from "./bounds.js"
 import { parseDivisor } from "./divisor.js"
 
-// @snipStart:parseOperator
 export const parseOperator = (s: DynamicStateWithRoot): void => {
     const lookahead = s.scanner.shift()
-    return lookahead === "["
+    return lookahead === ""
+        ? s.finalize("")
+        : lookahead === "["
         ? s.scanner.shift() === "]"
             ? s.setRoot(s.root.array())
             : s.error(incompleteArrayTokenMessage)
@@ -20,6 +18,8 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
         ? s.pushRootToBranch(lookahead)
         : lookahead === ")"
         ? s.finalizeGroup()
+        : Scanner.lookaheadIsFinalizing(lookahead, s.scanner.unscanned)
+        ? s.finalize(lookahead)
         : isKeyOf(lookahead, comparatorStartChars)
         ? parseBound(s, lookahead)
         : lookahead === "%"
@@ -34,27 +34,31 @@ export type parseOperator<s extends StaticState> =
         ? lookahead extends "["
             ? unscanned extends Scanner.shift<"]", infer nextUnscanned>
                 ? state.setRoot<s, [s["root"], "[]"], nextUnscanned>
-                : error<incompleteArrayTokenMessage>
+                : state.error<incompleteArrayTokenMessage>
             : lookahead extends "|" | "&"
             ? state.reduceBranch<s, lookahead, unscanned>
             : lookahead extends ")"
             ? state.finalizeGroup<s, unscanned>
+            : Scanner.lookaheadIsFinalizing<lookahead, unscanned> extends true
+            ? state.finalize<
+                  state.scanTo<s, unscanned>,
+                  lookahead & Scanner.FinalizingLookahead
+              >
             : lookahead extends ComparatorStartChar
             ? parseBound<s, lookahead, unscanned>
             : lookahead extends "%"
             ? parseDivisor<s, unscanned>
-            : lookahead extends " "
+            : lookahead extends Scanner.WhiteSpaceToken
             ? parseOperator<state.scanTo<s, unscanned>>
-            : error<writeUnexpectedCharacterMessage<lookahead>>
-        : error<writeUnexpectedCharacterMessage<"">>
-// @snipEnd
+            : state.error<writeUnexpectedCharacterMessage<lookahead>>
+        : state.finalize<s, "">
 
 export const writeUnexpectedCharacterMessage = <
     char extends string,
     shouldBe extends string
 >(
     char: char,
-    shouldBe?: shouldBe
+    shouldBe: shouldBe = "" as shouldBe
 ): writeUnexpectedCharacterMessage<char, shouldBe> =>
     `'${char}' is not allowed here${
         shouldBe && (` (should be ${shouldBe})` as any)

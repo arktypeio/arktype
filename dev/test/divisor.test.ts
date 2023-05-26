@@ -48,23 +48,25 @@ suite("divisibility", () => {
                 writeInvalidDivisorMessage(0)
             )
         })
-        test("indivisible unknown", () => {
+        test("unknown", () => {
             // @ts-expect-error
             attest(() => type("unknown%2")).throwsAndHasTypeError(
-                writeIndivisibleMessage("'unknown'")
+                writeIndivisibleMessage("unknown")
             )
         })
-        test("indivisible any", () => {
+        test("indivisible", () => {
             // @ts-expect-error
-            attest(() => type("any%1")).throwsAndHasTypeError(
-                writeIndivisibleMessage("'any'")
+            attest(() => type("string%1")).throwsAndHasTypeError(
+                writeIndivisibleMessage("string")
             )
         })
         test("overlapping", () => {
             // @ts-expect-error
-            attest(() => type("(number|string)%10")).throws.snap(
-                'Error: Divisibility operand {"number":true,"string":true} must be a number'
-            )
+            attest(() => type("(number|string)%10"))
+                .throws("Divisibility operand string must be a number")
+                .types.errors(
+                    "Divisibility operand number | string must be a number"
+                )
         })
     })
     suite("intersection", () => {
@@ -98,7 +100,7 @@ suite("divisibility", () => {
         })
         test("invalid literal", () => {
             attest(() => type("number%3&8")).throws.snap(
-                'Error: Intersection of literal value 8 and {"divisor":3} results in an unsatisfiable type'
+                "Error: Intersection at $arkRoot of number and a multiple of 3 and 8 results in an unsatisfiable type"
             )
         })
     })

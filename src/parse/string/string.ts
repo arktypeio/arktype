@@ -2,18 +2,17 @@ import type { TypeNode } from "../../nodes/type.js"
 import { type error, throwParseError } from "../../utils/errors.js"
 import { type inferAst, writeUnsatisfiableExpressionError } from "../ast/ast.js"
 import type { ParseContext } from "../definition.js"
+import type { DynamicStateWithRoot } from "./reduce/dynamic.js"
 import { DynamicState } from "./reduce/dynamic.js"
 import type { state, StaticState } from "./reduce/static.js"
 import { parseOperand } from "./shift/operand/operand.js"
 import { parseOperator } from "./shift/operator/operator.js"
-import type { Scanner } from "./shift/scanner.js"
 
 // TODO: cache
 export const parseString = (def: string, ctx: ParseContext) =>
     maybeNaiveParse(def, ctx) ?? fullStringParse(def, ctx)
 
-// TODO: investigate naive parse
-export type parseString<def extends string, $> = fullStringParse<def, $>
+export type parseString<def extends string, $> = maybeNaiveParse<def, $>
 
 export type inferString<def extends string, $> = inferAst<
     parseString<def, $>,
@@ -24,6 +23,7 @@ export type inferString<def extends string, $> = inferAst<
  * Try to parse the definition from right to left using the most common syntax.
  * This can be much more efficient for simple definitions.
  */
+// TODO: investigate with generics
 type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
     ? child extends keyof $
         ? [child, "[]"]
@@ -52,30 +52,19 @@ type fullStringParse<def extends string, $> = extractFinalizedResult<
 >
 
 export const parseUntilFinalizer = (s: DynamicState) => {
-    while (!s.scanner.finalized) {
+    while (s.finalizer === undefined) {
         next(s)
     }
-    return s.finalize()
+    return s as DynamicStateWithRoot
 }
 
 export type parseUntilFinalizer<
-    s extends StaticState | error,
+    s extends StaticState,
     $
-    // TODO: whitespace here?
-> = s extends StaticState
-    ? s["unscanned"] extends ""
-        ? state.finalize<s, $>
-        : s["unscanned"] extends `${Scanner.FinalizingLookahead}${string}`
-        ? // ensure the initial > is not treated as a finalizer in an expression like Set<number>5>
-          s["unscanned"] extends `>${"=" | ""}${number}${string}`
-            ? parseUntilFinalizer<next<s, $>, $>
-            : state.finalize<s, $>
-        : parseUntilFinalizer<next<s, $>, $>
-    : // s is an error here
-      s
+> = s["finalizer"] extends undefined ? parseUntilFinalizer<next<s, $>, $> : s
 
-export type extractFinalizedResult<s extends StaticState | error> =
-    s extends StaticState ? s["root"] : s
+export type extractFinalizedResult<s extends StaticState> =
+    s["finalizer"] extends error ? s["finalizer"] : s["root"]
 
 const next = (s: DynamicState) =>
     s.hasRoot() ? parseOperator(s) : parseOperand(s)

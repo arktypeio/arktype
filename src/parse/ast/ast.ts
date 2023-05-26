@@ -12,11 +12,7 @@ import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { parseString } from "../string/string.js"
 import type { validateBound } from "./bound.js"
 import type { validateDivisor } from "./divisor.js"
-import type {
-    inferIntersection,
-    validateIntersection
-} from "./intersections.js"
-import type { validateUnion } from "./union.js"
+import type { inferIntersection } from "./intersections.js"
 import type { astToString } from "./utils.js"
 
 export type inferAst<ast, $> = ast extends List
@@ -73,14 +69,8 @@ export type validateAst<ast, $> = ast extends GenericAst
         ? validateAst<operand, $>
         : never
     : ast extends InfixExpression<infer operator, infer l, infer r>
-    ? operator extends "&"
-        ? validateInfix<ast, $> extends error
-            ? validateInfix<ast, $>
-            : validateIntersection<inferAst<l, $>, inferAst<r, $>>
-        : operator extends "|"
-        ? validateInfix<ast, $> extends error
-            ? validateInfix<ast, $>
-            : validateUnion<inferAst<l, $>, inferAst<r, $>>
+    ? operator extends "&" | "|"
+        ? validateInfix<ast, $>
         : operator extends Comparator
         ? validateBound<l, r, $>
         : operator extends "%"

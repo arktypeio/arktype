@@ -2,13 +2,13 @@
     "name": "arkdark",
     "displayName": "ArkDark",
     "description": "ArkType syntax highlighting and theme⛵",
-    "version": "2.1.4",
+    "version": "2.2.0",
     "private": true,
     "publisher": "arktypeio",
     "type": "module",
     "scripts": {
         "build": "ts-node ./src/writeTheme.ts",
-        "vspublish": "pnpm build && npx vsce publish"
+        "vspublish": "pnpm build && pnpx vsce publish"
     },
     "devDependencies": {
         "@types/node": "18.15.13",

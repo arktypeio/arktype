@@ -201,13 +201,8 @@ export class PropsNode extends BaseNode<typeof PropsNode> {
         return new PropsNode([preserved, ...this.indexed])
     }
 
-    private _keyof?: TypeNode<Key>
     keyof() {
-        if (this._keyof) {
-            return this._keyof
-        }
-        this._keyof = this.namedKeyOf().or(this.indexedKeyOf())
-        return this._keyof
+        return this.namedKeyOf().or(this.indexedKeyOf())
     }
 
     indexedKeyOf() {

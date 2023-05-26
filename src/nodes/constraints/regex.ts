@@ -13,7 +13,7 @@ export class RegexNode extends BaseNode<typeof RegexNode> {
         return new RegexNode(intersectUniqueLists(this.rule, other.rule))
     }
 
-    describe() {
+    toString() {
         const literals = this.rule.map((_) => `/${_}/`)
         return literals.length === 1
             ? literals[0]

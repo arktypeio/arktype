@@ -7,7 +7,6 @@ import {
     RangeNode
 } from "../../../../nodes/constraints/range.js"
 import { Disjoint } from "../../../../nodes/disjoint.js"
-import type { error } from "../../../../utils/errors.js"
 import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
 import type { keySet } from "../../../../utils/records.js"
@@ -82,7 +81,7 @@ type shiftComparator<
     ? [`${start}=`, nextUnscanned]
     : start extends OneCharComparator
     ? [start, unscanned]
-    : error<singleEqualsMessage>
+    : state.error<singleEqualsMessage>
 
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
 type singleEqualsMessage = typeof singleEqualsMessage
@@ -97,14 +96,14 @@ export const parseRightBound = (
         writeInvalidLimitMessage(comparator, limitToken + s.scanner.unscanned)
     )
     if (!s.branches.range) {
-        s.root = s.root.constrain("range", { [comparator]: limit })
+        s.root = s.root.constrain("range", [{ comparator, limit }])
         return
     }
     if (!isKeyOf(comparator, maxComparators)) {
         return s.error(writeUnpairableComparatorMessage(comparator))
     }
     const intersectionResult = s.branches.range.intersect(
-        new RangeNode({ [comparator]: limit })
+        new RangeNode([{ comparator, limit }])
     )
     if (intersectionResult instanceof Disjoint) {
         return s.error(`${intersectionResult} is empty`)
@@ -117,10 +116,9 @@ export type parseRightBound<
     s extends StaticState,
     comparator extends Comparator,
     unscanned extends string
-> = Scanner.shiftUntilNextTerminator<unscanned> extends Scanner.shiftResult<
-    infer scanned,
-    infer nextUnscanned
->
+> = Scanner.shiftUntilNextTerminator<
+    Scanner.skipWhitespace<unscanned>
+> extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
     ? scanned extends NumberLiteral
         ? s["branches"]["range"] extends {}
             ? comparator extends MaxComparator
@@ -132,7 +130,7 @@ export type parseRightBound<
                       scanned,
                       nextUnscanned
                   >
-                : error<writeUnpairableComparatorMessage<comparator>>
+                : state.error<writeUnpairableComparatorMessage<comparator>>
             : state.reduceSingleBound<s, comparator, scanned, nextUnscanned>
         : never
     : never

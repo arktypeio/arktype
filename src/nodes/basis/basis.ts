@@ -1,7 +1,5 @@
-import { writeUnboundableMessage } from "../../parse/ast/bound.js"
-import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
 import type { Domain, inferDomain } from "../../utils/domains.js"
-import { throwInternalError, throwParseError } from "../../utils/errors.js"
+import { throwInternalError } from "../../utils/errors.js"
 import type { evaluate } from "../../utils/generics.js"
 import type {
     AbstractableConstructor,
@@ -11,7 +9,6 @@ import { constructorExtends } from "../../utils/objectKinds.js"
 import type { Key } from "../../utils/records.js"
 import type { DisjointKindEntries } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
-import { type ConstraintKind } from "../predicate.js"
 import { ClassNode } from "./class.js"
 import type { DomainNode } from "./domain.js"
 import { ValueNode } from "./value.js"
@@ -53,7 +50,6 @@ export type BasisDefinition = {
     literalKeysOf(): Key[]
     domain: Domain
     level: BasisLevel
-    assertAllowsConstraint(kind: ConstraintKind): void
 }
 
 export type BasisNode = typeof DomainNode | typeof ValueNode | typeof ClassNode
@@ -93,53 +89,3 @@ export const intersectBases = (
               `Unexpected non-disjoint intersection from basis nodes with equal precedence ${l} and ${r}`
           )
 }
-
-export const assertAllowsConstraint = (
-    basis: BasisDefinition,
-    kind: ConstraintKind
-) => {
-    switch (kind) {
-        case "divisor":
-            if (basis.domain !== "number") {
-                throwParseError(writeIndivisibleMessage(basis.domain))
-            }
-            return
-        case "range":
-            if (
-                basis.domain !== "string" &&
-                basis.domain !== "number"
-                // !this.hasConstructorExtending(Array, Date)
-            ) {
-                throwParseError(writeUnboundableMessage(basis.domain))
-            }
-            return
-        case "regex":
-            if (basis.domain !== "string") {
-                throwInvalidConstraintError("regex", "a string", basis.domain)
-            }
-            return
-        case "props":
-            if (basis.domain !== "object") {
-                throwInvalidConstraintError("props", "an object", basis.domain)
-            }
-            return
-        case "narrow":
-            return
-        case "morph":
-            return
-        default:
-            throwInternalError(`Unexpxected rule kind '${kind}'`)
-    }
-}
-
-export const writeInvalidConstraintMessage = (
-    kind: ConstraintKind,
-    typeMustBe: string,
-    typeWas: string
-) => {
-    return `${kind} constraint may only be applied to ${typeMustBe} (was ${typeWas})`
-}
-
-export const throwInvalidConstraintError = (
-    ...args: Parameters<typeof writeInvalidConstraintMessage>
-) => throwParseError(writeInvalidConstraintMessage(...args))

@@ -1,9 +1,5 @@
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
-import type {
-    inferDefinition,
-    inferred,
-    validateDefinition
-} from "./parse/definition.js"
+import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import type {
     extractIn,
     extractOut,
@@ -38,22 +34,40 @@ type validateAliases<aliases, $> = evaluate<{
               >
         : k extends keyof $
         ? writeDuplicateAliasesMessage<k & string>
+        : aliases[k] extends Scope
+        ? aliases[k]
         : validateDefinition<aliases[k], $ & bootstrap<aliases>>
 }>
 
+// trying to nested def here in an object or tuple cause circularities during some thunk validations
+export type Alias<def = {}> = nominal<def, "alias">
+
+export type Generic<
+    params extends string[] = string[],
+    def = unknown
+> = nominal<[params, def], "generic">
+
 type bootstrap<aliases> = {
-    [k in nonGenericNameFrom<keyof aliases>]: aliases[k]
+    [k in nonGenericNameFrom<keyof aliases>]: aliases[k] extends Scope
+        ? aliases[k]
+        : Alias<aliases[k]>
 } & {
-    [k in genericKey<keyof aliases> as genericNameFrom<k>]: generic<
+    // TODO: do I need to parse the def AST here? or something more so that
+    // references can be resolved if it's used outside the scope
+    [k in genericKey<keyof aliases> as genericNameFrom<k>]: Generic<
         paramsFrom<k>,
         aliases[k]
     >
 }
 
 type inferScope<bootstrapped, $> = evaluate<{
-    [name in keyof bootstrapped]: bootstrapped[name] extends generic
+    [name in keyof bootstrapped]: bootstrapped[name] extends Alias<infer def>
+        ? inferDefinition<def, $ & bootstrapped>
+        : bootstrapped[name] extends Generic
         ? bootstrapped[name]
-        : Type<inferDefinition<bootstrapped[name], $ & bootstrapped>>
+        : bootstrapped[name] extends Scope
+        ? bootstrapped[name]
+        : never
 }>
 
 type genericKey<k> = k & GenericDeclaration
@@ -76,11 +90,6 @@ type paramsFrom<scopeKey> = scopeKey extends GenericDeclaration<
     ? split<params, ",">
     : []
 
-export type generic<
-    params extends string[] = string[],
-    def = unknown
-> = nominal<[params, def], "generic">
-
 export type ScopeOptions = {
     root?: Space
     codes?: Record<ProblemCode, { mustBe?: string }>
@@ -102,24 +111,34 @@ export type resolve<
     $
 > = name extends `${infer subscope}.${infer name}`
     ? subscope extends keyof $
-        ? $[subscope] extends Space<{ [k in name]: infer t }>
-            ? t
+        ? $[subscope] extends Scope
+            ? name extends keyof $[subscope]["infer"]
+                ? $[subscope]["infer"][name]
+                : never
             : never
         : never
-    : inferDefinition<$[name], $>
+    : isAny<$[name]> extends true
+    ? any
+    : $[name] extends Alias<infer def>
+    ? inferDefinition<def, $>
+    : $[name]
 
 export type subaliasOf<$> = {
-    [k in keyof $]: $[k] extends Space<infer exports>
+    [k in keyof $]: $[k] extends Scope<infer exports>
         ? {
               [subalias in keyof exports]: `${k & string}.${subalias & string}`
           }[keyof exports]
         : never
 }[keyof $]
 
-export type Space<exports = Dict> = {
-    [k in keyof exports]: exports[k] extends Space
-        ? exports[k]
-        : Type<exports[k]>
+export type Space<exports = Dict, $ = Dict> = {
+    [k in keyof exports]: exports[k] extends Scope<
+        infer exports,
+        infer locals,
+        infer root
+    >
+        ? Space<exports, locals & root>
+        : Type<exports[k], exports & $>
 }
 
 export class Scope<exports = any, locals = any, root = any> {
@@ -141,7 +160,7 @@ export class Scope<exports = any, locals = any, root = any> {
     }
 
     type: TypeParser<this["$"]> = ((def: unknown, config: TypeConfig = {}) => {
-        return new Type(def, this)
+        return !config || new Type(def, this)
     }) as never
 
     scope: ScopeParser<exports, root> = ((
@@ -153,7 +172,7 @@ export class Scope<exports = any, locals = any, root = any> {
 
     maybeResolve(name: string): Type | undefined {
         if (this.resolutions[name]) {
-            // TODO: Space resolution
+            // TODO: Scope resolution
             return this.resolutions[name] as Type
         }
         const aliasDef = this.aliases[name]
@@ -174,7 +193,7 @@ export class Scope<exports = any, locals = any, root = any> {
             }
             this._compiled = true
         }
-        return this.exports as exports
+        return this.exports as Space<exports, locals & root>
     }
 }
 

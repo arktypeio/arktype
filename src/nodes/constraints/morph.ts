@@ -16,7 +16,7 @@ export class MorphNode extends BaseNode<typeof MorphNode> {
         return new MorphNode(intersectUniqueLists(this.rule, other.rule))
     }
 
-    describe() {
+    toString() {
         return `morphed by ${this.rule.map((rule) => rule.name).join("|>")}`
     }
 }

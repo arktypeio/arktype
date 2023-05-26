@@ -7,6 +7,7 @@ import type {
 import type { error } from "../../../utils/errors.js"
 import type { defined } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
+import type { Scanner } from "../shift/scanner.js"
 import type {
     Prefix,
     writeMultipleLeftBoundsMessage,
@@ -20,6 +21,7 @@ export type StaticState = {
     root: unknown
     branches: BranchState
     groups: BranchState[]
+    finalizer: Scanner.FinalizingLookahead | error | undefined
     scanned: string
     unscanned: string
 }
@@ -40,8 +42,18 @@ export namespace state {
         root: undefined
         branches: initialBranches
         groups: []
+        finalizer: undefined
         scanned: ""
         unscanned: def
+    }>
+
+    export type error<message extends string> = from<{
+        root: undefined
+        branches: initialBranches
+        groups: []
+        finalizer: `!${message}`
+        scanned: ""
+        unscanned: ""
     }>
 
     type initialBranches = branchesFrom<{
@@ -67,6 +79,7 @@ export namespace state {
         root: root
         branches: s["branches"]
         groups: s["groups"]
+        finalizer: s["finalizer"]
         scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>
@@ -84,6 +97,7 @@ export namespace state {
             "|": s["branches"]["|"]
         }
         groups: s["groups"]
+        finalizer: s["finalizer"]
         scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>
@@ -103,6 +117,7 @@ export namespace state {
                   "|": token extends "|" ? mergeToUnion<s> : s["branches"]["|"]
               }
               groups: s["groups"]
+              finalizer: s["finalizer"]
               scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
               unscanned: unscanned
           }>
@@ -114,7 +129,7 @@ export namespace state {
         unscanned extends string
     > = comparator extends "<" | "<="
         ? s["branches"]["range"] extends {}
-            ? error<
+            ? state.error<
                   writeMultipleLeftBoundsMessage<
                       s["branches"]["range"]["limit"],
                       s["branches"]["range"]["comparator"],
@@ -134,6 +149,7 @@ export namespace state {
                       "|": s["branches"]["|"]
                   }
                   groups: s["groups"]
+                  finalizer: s["finalizer"]
                   scanned: updateScanned<
                       s["scanned"],
                       s["unscanned"],
@@ -141,7 +157,7 @@ export namespace state {
                   >
                   unscanned: unscanned
               }>
-        : error<writeUnpairableComparatorMessage<comparator>>
+        : state.error<writeUnpairableComparatorMessage<comparator>>
 
     export type reduceRange<
         s extends StaticState,
@@ -159,6 +175,7 @@ export namespace state {
             "|": s["branches"]["|"]
         }
         groups: s["groups"]
+        finalizer: s["finalizer"]
         scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>
@@ -177,6 +194,7 @@ export namespace state {
             "|": s["branches"]["|"]
         }
         groups: s["groups"]
+        finalizer: s["finalizer"]
         scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>
@@ -213,10 +231,11 @@ export namespace state {
               groups: stack
               branches: top
               root: mergeToUnion<s>
+              finalizer: s["finalizer"]
               scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
               unscanned: unscanned
           }>
-        : error<writeUnmatchedGroupCloseMessage<unscanned>>
+        : state.error<writeUnmatchedGroupCloseMessage<unscanned>>
 
     export type reduceGroupOpen<
         s extends StaticState,
@@ -225,27 +244,29 @@ export namespace state {
         groups: [...s["groups"], s["branches"]]
         branches: initialBranches
         root: undefined
+        finalizer: s["finalizer"]
         scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>
 
-    export type finalize<s extends StaticState, $> = s["root"] extends undefined
-        ? error<`${s["scanned"]}${(keyof $ & string) | AutocompletePrefix}`>
-        : s["groups"] extends []
+    export type finalize<
+        s extends StaticState,
+        finalizer extends Scanner.FinalizingLookahead
+    > = s["groups"] extends []
         ? s["branches"]["range"] extends {}
             ? openRangeError<s["branches"]["range"]>
             : from<{
                   root: mergeToUnion<s>
                   groups: s["groups"]
                   branches: initialBranches
+                  finalizer: finalizer
                   scanned: s["scanned"]
                   unscanned: s["unscanned"]
               }>
-        : error<writeUnclosedGroupMessage<")">>
+        : state.error<writeUnclosedGroupMessage<")">>
 
-    type openRangeError<range extends defined<BranchState["range"]>> = error<
-        writeOpenRangeMessage<range["limit"], range["comparator"]>
-    >
+    type openRangeError<range extends defined<BranchState["range"]>> =
+        state.error<writeOpenRangeMessage<range["limit"], range["comparator"]>>
 
     export type previousOperator<s extends StaticState> =
         s["branches"]["range"] extends {}
@@ -265,6 +286,7 @@ export namespace state {
         root: s["root"]
         branches: s["branches"]
         groups: s["groups"]
+        finalizer: s["finalizer"]
         scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
         unscanned: unscanned
     }>

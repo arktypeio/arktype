@@ -1,5 +1,5 @@
 import { TypeNode } from "../../../../nodes/type.js"
-import type { generic, subaliasOf } from "../../../../scope.js"
+import type { Generic, subaliasOf } from "../../../../scope.js"
 import type { error } from "../../../../utils/errors.js"
 import type { join } from "../../../../utils/lists.js"
 import type {
@@ -10,7 +10,7 @@ import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "../../../../utils/numericLiterals.js"
-import type { GenericAst, genericAstFrom } from "../../../ast/ast.js"
+import type { genericAstFrom } from "../../../ast/ast.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { writeUnclosedGroupMessage } from "../../reduce/shared.js"
 import type {
@@ -41,9 +41,9 @@ export type parseUnenclosed<
         ? state.addPrefix<s, "keyof", unscanned>
         : tryResolve<s, token, $> extends infer result
         ? result extends error<infer message>
-            ? error<message>
+            ? state.error<message>
             : result extends keyof $
-            ? $[result] extends generic<infer params, infer def>
+            ? $[result] extends Generic<infer params, infer def>
                 ? parseGeneric<
                       token,
                       params,
@@ -62,7 +62,7 @@ type parseGeneric<
     def,
     s extends StaticState,
     $
-    // TODO: handle whitespace centrally here?
+    // have to skip whitespace here since TS allows instantiations like `Partial    <T>`
 > = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}`
     ? parseArgs<name, params, unscanned, $, [], []> extends infer result
         ? result extends ParsedArgs<infer asts, infer nextUnscanned>
@@ -70,7 +70,7 @@ type parseGeneric<
             : // propagate error
               result
         : never
-    : error<writeInvalidGenericParametersMessage<name, params, []>>
+    : state.error<writeInvalidGenericParametersMessage<name, params, []>>
 
 type ParsedArgs<asts extends unknown[], unscanned extends string> = [
     asts,
@@ -87,40 +87,37 @@ type parseArgs<
 > = parseUntilFinalizer<
     state.initialize<unscanned>,
     $
-> extends infer finalArgState
-    ? finalArgState extends StaticState
-        ? {
-              defs: [...argDefs, finalArgState["scanned"]]
-              asts: [...argAsts, finalArgState["root"]]
-              unscanned: finalArgState["unscanned"]
-          } extends {
-              defs: infer nextDefs extends string[]
-              asts: infer nextAsts extends unknown[]
-              unscanned: Scanner.shift<infer lookahead, infer nextUnscanned>
-          }
-            ? lookahead extends ">"
-                ? nextAsts["length"] extends params["length"]
-                    ? ParsedArgs<nextAsts, nextUnscanned>
-                    : error<
-                          writeInvalidGenericParametersMessage<
-                              name,
-                              params,
-                              nextDefs
-                          >
-                      >
-                : lookahead extends ","
-                ? parseArgs<name, params, nextUnscanned, $, nextDefs, nextAsts>
-                : error<
-                      writeUnexpectedCharacterMessage<
-                          lookahead,
-                          nextAsts["length"] extends params["length"]
-                              ? ">"
-                              : ","
+> extends infer finalArgState extends StaticState
+    ? {
+          defs: [...argDefs, finalArgState["scanned"]]
+          asts: [...argAsts, finalArgState["root"]]
+          unscanned: finalArgState["unscanned"]
+      } extends {
+          defs: infer nextDefs extends string[]
+          asts: infer nextAsts extends unknown[]
+          unscanned: infer nextUnscanned extends string
+      }
+        ? finalArgState["finalizer"] extends ">"
+            ? nextAsts["length"] extends params["length"]
+                ? ParsedArgs<nextAsts, nextUnscanned>
+                : state.error<
+                      writeInvalidGenericParametersMessage<
+                          name,
+                          params,
+                          nextDefs
                       >
                   >
-            : error<writeUnclosedGroupMessage<">">>
-        : // propagate error
-          finalArgState
+            : finalArgState["finalizer"] extends ","
+            ? parseArgs<name, params, nextUnscanned, $, nextDefs, nextAsts>
+            : finalArgState["finalizer"] extends error
+            ? finalArgState
+            : state.error<
+                  writeUnexpectedCharacterMessage<
+                      finalArgState["finalizer"] & string,
+                      nextAsts["length"] extends params["length"] ? ">" : ","
+                  >
+              >
+        : state.error<writeUnclosedGroupMessage<">">>
     : never
 
 type writeInvalidGenericParametersMessage<
@@ -157,8 +154,6 @@ const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
         return TypeNode.from({ basis: ["===", maybeBigint] })
     }
 }
-
-// TODO: initially parse scope into types/subscopes/generics
 
 // TODO: These checks seem to break cyclic thunk inference
 // $[token] extends generic<infer params>
