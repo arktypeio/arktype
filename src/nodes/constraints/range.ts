@@ -63,7 +63,7 @@ export class RangeNode extends BaseNode<typeof RangeNode> {
     static readonly kind = "range"
 
     static compile(rule: Range) {
-        return [`${rule}`]
+        return rule.map(RangeNode.compileBound)
     }
 
     isEquality(): this is { rule: [Bound<"==">] } {
