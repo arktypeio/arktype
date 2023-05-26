@@ -14,13 +14,9 @@ export const populateDemo = ({ data, type, problems }: PopulateDemoArgs) => {
 
     const resultElement = document.querySelector("#output")!
     if (problems) {
-        resultElement.textContent = `❌ problems:
-
-${problems}`
+        resultElement.textContent = `❌ problems:\n\n${problems}`
     } else {
-        resultElement.textContent = `✅ data:
-
-${stringify(data, 2)}`
+        resultElement.textContent = `✅ data:\n\n${stringify(data, 2)}`
         resultElement.innerHTML = recolor(resultElement.innerHTML)
     }
 }
