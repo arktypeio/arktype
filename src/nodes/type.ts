@@ -3,10 +3,13 @@ import type { conform, exact } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
 import { isArray } from "../utils/objectKinds.js"
 import { type BasisInput } from "./basis/basis.js"
-import { ClassNode } from "./basis/class.js"
 import { ValueNode } from "./basis/value.js"
 import type { CompilationState } from "./compilation.js"
-import { createArrayIndexMatcher } from "./constraints/props/array.js"
+import {
+    arrayBasisNode,
+    arrayIndexInput,
+    arrayIndexTypeNode
+} from "./constraints/props/array.js"
 import { PropsNode } from "./constraints/props/props.js"
 import type { CaseKey, Discriminant, DiscriminantKind } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
@@ -351,7 +354,7 @@ export class TypeNode<t = any> extends BaseNode<typeof TypeNode> {
 
     // private declare _keyof: TypeNode | undefined
     keyof(): TypeNode {
-        return this
+        return neverTypeNode
         // if (this.rule.length === 0) {
         //     return throwParseError(`never is not a valid keyof operand`)
         // }
@@ -384,23 +387,8 @@ export class TypeNode<t = any> extends BaseNode<typeof TypeNode> {
 export const typeNodeFromInput = (input: TypeInput) =>
     isArray(input) ? TypeNode.from(...input) : TypeNode.from(input)
 
-export const arrayBasisNode = new ClassNode(Array)
-
-export const arrayIndexInput = <index extends number = 0>(
-    firstVariadicIndex: index = 0 as index
-) =>
-    ({
-        basis: "string",
-        regex: createArrayIndexMatcher(firstVariadicIndex)
-    } as const satisfies PredicateInput<"string">)
-
-const nonVariadicArrayIndexTypeNode = TypeNode.from(arrayIndexInput())
-
-export const arrayIndexTypeNode = (firstVariadicIndex = 0) =>
-    firstVariadicIndex === 0
-        ? nonVariadicArrayIndexTypeNode
-        : TypeNode.from(arrayIndexInput(firstVariadicIndex))
-
 export const neverTypeNode = new TypeNode([])
 
 export const unknownTypeNode = new TypeNode([unknownPredicateNode])
+
+export const nonVariadicArrayIndexTypeNode = TypeNode.from(arrayIndexInput())

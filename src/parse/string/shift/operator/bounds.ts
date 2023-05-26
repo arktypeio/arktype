@@ -96,14 +96,14 @@ export const parseRightBound = (
         writeInvalidLimitMessage(comparator, limitToken + s.scanner.unscanned)
     )
     if (!s.branches.range) {
-        s.root = s.root.constrain("range", { [comparator]: limit })
+        s.root = s.root.constrain("range", [{ comparator, limit }])
         return
     }
     if (!isKeyOf(comparator, maxComparators)) {
         return s.error(writeUnpairableComparatorMessage(comparator))
     }
     const intersectionResult = s.branches.range.intersect(
-        new RangeNode({ [comparator]: limit })
+        new RangeNode([{ comparator, limit }])
     )
     if (intersectionResult instanceof Disjoint) {
         return s.error(`${intersectionResult} is empty`)

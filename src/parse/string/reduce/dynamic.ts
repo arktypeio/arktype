@@ -1,6 +1,5 @@
 import type { Comparator } from "../../../nodes/constraints/range.js"
 import {
-    boundToComparator,
     invertedComparators,
     minComparators,
     RangeNode
@@ -83,13 +82,15 @@ export class DynamicState {
             return this.error(
                 writeMultipleLeftBoundsMessage(
                     `${limit}`,
-                    boundToComparator("min", min),
+                    min.comparator,
                     `${limit}`,
                     invertedComparator
                 )
             )
         }
-        this.branches.range = new RangeNode({ [invertedComparator]: limit })
+        this.branches.range = new RangeNode([
+            { comparator: invertedComparator, limit }
+        ])
     }
 
     finalizeBranches() {
@@ -148,10 +149,7 @@ export class DynamicState {
         if (this.branches.range) {
             const min = this.branches.range.min!
             return this.error(
-                writeOpenRangeMessage(
-                    `${min.limit}`,
-                    boundToComparator("min", min)
-                )
+                writeOpenRangeMessage(`${min.limit}`, min.comparator)
             )
         }
     }
@@ -165,7 +163,7 @@ export class DynamicState {
 
     previousOperator() {
         return this.branches.range?.min
-            ? boundToComparator("min", this.branches.range.min)
+            ? this.branches.range.min.comparator
             : this.branches.prefixes.at(-1) ?? this.branches.intersection
             ? "&"
             : this.branches.union

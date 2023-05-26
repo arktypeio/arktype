@@ -1,3 +1,5 @@
+import { isKeyOf } from "../../utils/records.js"
+import { In } from "../compilation.js"
 import { Disjoint } from "../disjoint.js"
 import { BaseNode } from "../node.js"
 
@@ -43,20 +45,12 @@ export type InvertedComparators = typeof invertedComparators
 
 export type SizedData = string | number | readonly unknown[] | Date
 
-export type RangeConstraint<comparator extends Comparator = Comparator> = {
+export type Bound<comparator extends Comparator = Comparator> = {
     limit: number
     comparator: comparator
 }
 
-export type Bound = {
-    limit: number
-    exclusive?: true
-}
-
-export type Range = {
-    min?: Bound
-    max?: Bound
-}
+export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 
 // const units =
 // s.lastDomain === "string"
@@ -72,25 +66,51 @@ export class RangeNode extends BaseNode<typeof RangeNode> {
         return [`${rule}`]
     }
 
+    isEquality(): this is { rule: [Bound<"==">] } {
+        return this.rule[0].comparator === "=="
+    }
+
     get min() {
-        return this.rule.min
+        return isKeyOf(this.rule[0].comparator, minComparators)
+            ? (this.rule[0] as Bound<MinComparator>)
+            : undefined
     }
 
     get max() {
-        return this.rule.max
+        return this.rule[1] ?? isKeyOf(this.rule[0].comparator, maxComparators)
+            ? (this.rule[0] as Bound<MaxComparator>)
+            : undefined
     }
 
-    computeIntersection(other: RangeNode) {
+    private static compileBound(bound: Bound) {
+        return `(${In}.length ?? Number(${In})) ${
+            bound.comparator === "==" ? "===" : bound.comparator
+        } ${bound.limit}`
+    }
+
+    computeIntersection(other: RangeNode): RangeNode | Disjoint {
+        if (this.isEquality()) {
+            if (other.isEquality()) {
+                return this === other
+                    ? this
+                    : Disjoint.from("range", this, other)
+            }
+            return other.allows(this.rule[0].limit)
+                ? this
+                : Disjoint.from("range", this, other)
+        }
+        if (other.isEquality()) {
+            return this.allows(other.rule[0].limit)
+                ? other
+                : Disjoint.from("range", this, other)
+        }
         const stricterMin = compareStrictness("min", this.min, other.min)
         const stricterMax = compareStrictness("max", this.max, other.max)
         if (stricterMin === "l") {
             if (stricterMax === "r") {
                 return compareStrictness("min", this.min, other.max) === "l"
                     ? Disjoint.from("range", this, other)
-                    : new RangeNode({
-                          min: this.min!,
-                          max: other.max!
-                      })
+                    : new RangeNode([this.min!, this.max!])
             }
             return this
         }
@@ -98,10 +118,7 @@ export class RangeNode extends BaseNode<typeof RangeNode> {
             if (stricterMax === "l") {
                 return compareStrictness("max", this.max, other.min) === "l"
                     ? Disjoint.from("range", this, other)
-                    : new RangeNode({
-                          min: this.min!,
-                          max: other.max!
-                      })
+                    : new RangeNode([this.min!, other.max!])
             }
             return other
         }
@@ -109,31 +126,12 @@ export class RangeNode extends BaseNode<typeof RangeNode> {
     }
 
     describe() {
-        return this.rule.min
-            ? this.rule.max
-                ? `the range bounded by ${boundToExpression(
-                      "min",
-                      this.rule.min
-                  )} and ${boundToExpression("max", this.rule.max)}`
-                : boundToExpression("min", this.rule.min)
-            : this.rule.max
-            ? boundToExpression("max", this.rule.max)
-            : "the unbounded range"
+        const left = `${this.rule[0].comparator}${this.rule[0].limit}`
+        return this.rule[1]
+            ? `the range bounded by ${left} and ${this.rule[1].comparator}${this.rule[1].limit}`
+            : left
     }
 }
-
-export const boundToComparator = <kind extends keyof Range>(
-    kind: kind,
-    bound: Bound
-) =>
-    `${kind === "min" ? ">" : "<"}${
-        bound.exclusive ? "" : "="
-    }` as kind extends "min" ? MinComparator : MaxComparator
-
-const boundToExpression = (
-    kind: keyof Range,
-    bound: Bound
-): `${Comparator}${number}` => `${boundToComparator(kind, bound)}${bound.limit}`
 
 // compileTraverse(s: CompilationState) {
 //     return this.range
@@ -144,12 +142,6 @@ const boundToExpression = (
 //             )
 //         )
 //         .join("\n")
-// }
-
-// private static compileAssertion(constraint: RangeConstraint) {
-//     return `(${In}.length ?? Number(${In})) ${
-//         constraint.comparator === "==" ? "===" : constraint.comparator
-//     } ${constraint.limit}`
 // }
 
 export const compareStrictness = (
@@ -164,11 +156,12 @@ export const compareStrictness = (
         : !r
         ? "l"
         : l.limit === r.limit
-        ? l.exclusive
-            ? r.exclusive
+        ? // comparators of length 1 (<,>) are exclusive so have precedence
+          l.comparator.length === 1
+            ? r.comparator.length === 1
                 ? "="
                 : "l"
-            : r.exclusive
+            : r.comparator.length === 1
             ? "r"
             : "="
         : kind === "min"

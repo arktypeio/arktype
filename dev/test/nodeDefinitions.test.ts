@@ -1,6 +1,6 @@
 import { suite, test } from "mocha"
 import { TypeNode } from "../../src/main.js"
-import { arrayIndexInput } from "../../src/nodes/type.js"
+import { arrayIndexInput } from "../../src/nodes/constraints/props/array.js"
 import type { Out } from "../../src/parse/ast/morph.js"
 import { attest } from "../attest/main.js"
 
@@ -74,6 +74,7 @@ suite("node definitions", () => {
                         kind: "required",
                         value: { basis: "string" }
                     },
+                    // works for numeric or string keys
                     "1": {
                         kind: "required",
                         value: { basis: "number" }
@@ -103,7 +104,7 @@ suite("node definitions", () => {
                         }
                     }
                 },
-                "1": {
+                1: {
                     kind: "required",
                     value: {
                         basis: ["===", "arktype"]
