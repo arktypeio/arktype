@@ -77,6 +77,8 @@ export abstract class BaseNode<subclass extends SubclassNode> {
         Object.freeze(this)
     }
 
+    abstract toString(): string
+
     abstract computeIntersection(
         other: NodeInstances[subclass["kind"]]
     ): NodeInstances[subclass["kind"]] | Disjoint

@@ -1,15 +1,15 @@
 import type { AbstractableConstructor } from "../../utils/objectKinds.js"
 import {
+    constructorExtends,
     getExactBuiltinConstructorName,
     prototypeKeysOf
 } from "../../utils/objectKinds.js"
 import { In } from "../compilation.js"
 import { BaseNode } from "../node.js"
-import type { ConstraintKind } from "../predicate.js"
 
 import { registry } from "../registry.js"
 import type { BasisDefinition, BasisInstance } from "./basis.js"
-import { assertAllowsConstraint, intersectBases } from "./basis.js"
+import { intersectBases } from "./basis.js"
 
 export class ClassNode
     extends BaseNode<typeof ClassNode>
@@ -34,8 +34,10 @@ export class ClassNode
         return "class" as const
     }
 
-    assertAllowsConstraint(kind: ConstraintKind) {
-        assertAllowsConstraint(this, kind)
+    extendsOneOf(...baseConstructors: AbstractableConstructor[]) {
+        return baseConstructors.some((base) =>
+            constructorExtends(this.rule, base)
+        )
     }
 
     computeIntersection(other: BasisInstance) {
@@ -46,7 +48,7 @@ export class ClassNode
         return prototypeKeysOf(this.rule.prototype)
     }
 
-    describe() {
+    toString() {
         return this.rule.name
     }
 }

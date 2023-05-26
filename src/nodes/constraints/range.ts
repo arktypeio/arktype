@@ -125,7 +125,7 @@ export class RangeNode extends BaseNode<typeof RangeNode> {
         return stricterMax === "l" ? this : other
     }
 
-    describe() {
+    toString() {
         const left = `${this.rule[0].comparator}${this.rule[0].limit}`
         return this.rule[1]
             ? `the range bounded by ${left} and ${this.rule[1].comparator}${this.rule[1].limit}`

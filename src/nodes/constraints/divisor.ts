@@ -17,7 +17,7 @@ export class DivisorNode extends BaseNode<typeof DivisorNode> {
         )
     }
 
-    describe() {
+    toString() {
         return `a multiple of ${this.rule}`
     }
 }

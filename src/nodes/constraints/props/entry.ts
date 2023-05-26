@@ -27,6 +27,10 @@ export class EntryNode extends BaseNode<typeof EntryNode> {
         return other ? this : this
     }
 
+    toString() {
+        return ""
+    }
+
     private static compileNamedEntry(entry: NamedNodeEntry) {
         const valueCheck = entry[1].value.condition.replaceAll(
             In,
