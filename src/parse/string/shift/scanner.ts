@@ -1,5 +1,6 @@
 import type { Comparator } from "../../../nodes/constraints/range.js"
 import type { Dict } from "../../../utils/records.js"
+import { isKeyOf } from "../../../utils/records.js"
 
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]
@@ -110,6 +111,38 @@ export namespace Scanner {
     } as const
 
     export type WhiteSpaceToken = keyof typeof whiteSpaceTokens
+
+    export const lookaheadIsFinalizing = (
+        lookahead: string,
+        unscanned: string
+    ): lookahead is ">" | "," =>
+        lookahead === ">"
+            ? unscanned[0] === "="
+                ? // >== would only occur in an expression like Array<number>==5
+                  // otherwise, >= would only occur as part of a bound like number>=5
+                  unscanned[1] === "="
+                : // if > is the end of a generic instantiation, the next token will be an operator or the end of the string
+                  unscanned.trimStart() === "" ||
+                  isKeyOf(unscanned.trimStart()[0], Scanner.terminatingChars)
+            : // if the lookahead is a finalizing token but not >, it's unambiguously a finalizer (currently just ",")
+              lookahead === ","
+
+    export type lookaheadIsFinalizing<
+        lookahead extends string,
+        unscanned extends string
+    > = lookahead extends ">"
+        ? unscanned extends `=${infer nextUnscanned}`
+            ? nextUnscanned extends `=${string}`
+                ? true
+                : false
+            : Scanner.skipWhitespace<unscanned> extends
+                  | ""
+                  | `${TerminatingChar}${string}`
+            ? true
+            : false
+        : lookahead extends ","
+        ? true
+        : false
 
     export type shift<
         Lookahead extends string,

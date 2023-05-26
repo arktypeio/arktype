@@ -18,6 +18,8 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
         ? s.pushRootToBranch(lookahead)
         : lookahead === ")"
         ? s.finalizeGroup()
+        : Scanner.lookaheadIsFinalizing(lookahead, s.scanner.unscanned)
+        ? s.finalize(lookahead)
         : isKeyOf(lookahead, comparatorStartChars)
         ? parseBound(s, lookahead)
         : lookahead === "%"
@@ -25,19 +27,6 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
         : lookahead === " "
         ? parseOperator(s)
         : s.error(writeUnexpectedCharacterMessage(lookahead))
-}
-
-const lookaheadIsFinalizer = (
-    lookahead: string,
-    s: DynamicStateWithRoot
-): lookahead is Scanner.FinalizingLookahead => {
-    if (!isKeyOf(lookahead, Scanner.finalizingLookaheads)) {
-        return false
-    }
-    if (lookahead === ",") {
-        return true
-    }
-    return true
 }
 
 export type parseOperator<s extends StaticState> =
@@ -50,15 +39,7 @@ export type parseOperator<s extends StaticState> =
             ? state.reduceBranch<s, lookahead, unscanned>
             : lookahead extends ")"
             ? state.finalizeGroup<s, unscanned>
-            : // ensure the initial > is not treated as a finalizer in an expression like Set<number>5> or Set<number>=5>
-            // also ensures we still give correct error messages for invalid expressions like 3>number<5
-            [lookahead, Scanner.skipWhitespace<unscanned>] extends
-                  | [
-                        ">",
-                        // if the > is actually part of a bound, the next token should be an operand, not an operator
-                        "" | `${"=" | ""}${Scanner.OperatorToken}${string}`
-                    ]
-                  | [",", unknown]
+            : Scanner.lookaheadIsFinalizing<lookahead, unscanned> extends true
             ? state.finalize<
                   state.scanTo<s, unscanned>,
                   lookahead & Scanner.FinalizingLookahead
