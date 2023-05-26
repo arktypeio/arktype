@@ -44,7 +44,12 @@ h3 {
 .val {
     color: #f5cf8f;
 }
-
+.operator {
+    color: #eb9f2e;
+}
+.bracket {
+    color: #009eff;
+}
 .card {
     padding: 1rem;
     background-color: rgb(18, 18, 18);

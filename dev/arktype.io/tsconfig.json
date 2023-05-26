@@ -10,7 +10,7 @@
             "@docusaurus/module-type-aliases",
             "@docusaurus/preset-classic"
         ],
-        "lib": ["DOM"],
+        "lib": ["DOM", "ES2021.String"],
         // avoid docusaurus config triggering type errors in node_modules
         "allowJs": true
     },

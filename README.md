@@ -95,7 +95,7 @@ export const { data, problems } = types.package(packageData)
 
 ## Syntax
 
-This is an informal, non-exhaustive list of current and upcoming ArkType syntax. 
+This is an informal, non-exhaustive list of current and upcoming ArkType syntax.
 
 There are some subjects it doesn't cover, primarily tuple expressions and scopes. As mentioned below, keep an eye out for comprehensive docs coming with the upcoming beta release. In the meantime, join [our Discord](https://discord.gg/xEzdc3fJQC) or head to our [GitHub Discussions](https://github.com/arktypeio/arktype/discussions) to ask a question and there's a good chance you'll see a response within the hour 😊
 

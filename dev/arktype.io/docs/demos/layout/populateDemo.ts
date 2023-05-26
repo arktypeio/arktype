@@ -14,27 +14,29 @@ export const populateDemo = ({ data, type, problems }: PopulateDemoArgs) => {
 
     const resultElement = document.querySelector("#output")!
     if (problems) {
-        resultElement.textContent = `❌ problems:\n\n${problems}`
+        resultElement.textContent = `❌ problems:
+
+${problems}`
     } else {
-        resultElement.textContent = `✅ data:\n\n${stringify(
-            type(data).data,
-            2
-        )}`
+        resultElement.textContent = `✅ data:
+
+${stringify(data, 2)}`
         resultElement.innerHTML = recolor(resultElement.innerHTML)
     }
 }
 
 const recolor = (input: string) => {
     const lines = input.split("\\n")
-    const fixedInput: string[] = []
+    const fixedInput: string[] = ["<span class='val'>"]
     for (const line of lines) {
         if (line.includes(":")) {
             const parts = line.split(":")
             fixedInput.push(`${buildKey(parts[0])}: ${buildVal(parts[1])}`)
         } else {
-            fixedInput.push(line)
+            fixedInput.push(addArkdarkStyles(line))
         }
     }
+    fixedInput.push("</span>")
     return fixedInput.join("\\n")
 }
 
@@ -42,11 +44,29 @@ const buildKey = (key: string) => {
     return `<span class='key'>${key}</span>`
 }
 const buildVal = (val: string) => {
-    const formatted = val.trim()
+    const formatted = addArkdarkStyles(val.trim())
     if (formatted[formatted.length - 1] === ",") {
-        return `<span class='val'>${formatted.replace(",", "")}</span>,`
+        return `${formatted.replace(",", "")},`
     } else if (formatted[formatted.length - 1] === "{") {
         return "{"
     }
-    return `<span class='val'>${formatted}</span>`
+    return `${formatted}`
+}
+const addArkdarkStyles = (line: string) => {
+    const brackets = ["[", "]", "(", ")"]
+    const operators = ["&gt;", "&lt;", "&gte;", "&lte;", "|"]
+    let modifiedLine = line
+    for (const bracket of brackets) {
+        modifiedLine = modifiedLine.replaceAll(
+            bracket,
+            `<span class='bracket'>${bracket}</span>`
+        )
+    }
+    for (const operator of operators) {
+        modifiedLine = modifiedLine.replaceAll(
+            operator,
+            `<span class='operator'>${operator}</span>`
+        )
+    }
+    return modifiedLine
 }
