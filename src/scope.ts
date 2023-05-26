@@ -1,4 +1,3 @@
-import { scope } from "./main.js"
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import type {

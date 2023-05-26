@@ -1,3 +1,4 @@
+import { suite, test } from "mocha"
 import { scope } from "../../src/main.js"
 import { lazily } from "./utils.js"
 
@@ -13,8 +14,6 @@ suite("generic", () => {
         })
     )
     const types = lazily(() => $.compile())
-
-    const z = types.foo
 
     test("unary", () => {
         const t = $.type("box<string>")
