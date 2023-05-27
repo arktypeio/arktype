@@ -296,6 +296,6 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 
 ### Current Sponsors 🥰
 
-| [tmm](https://github.com/tmm)                                             | [xrexy](https://github.com/xrexy)                                          | [thomasballinger](https://github.com/thomasballinger)                    |
-| ------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| <img height="64px" src="https://avatars.githubusercontent.com/u/6759464"> | <img height="64px" src="https://avatars.githubusercontent.com/u/71969236"> | <img height="64px" src="https://avatars.githubusercontent.com/u/458879"> |
+| [tmm](https://github.com/tmm)                                             | [xrexy](https://github.com/xrexy)                                          | [thomasballinger](https://github.com/thomasballinger)                    | [codeandcats](https://github.com/codeandcats)                             |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| <img height="64px" src="https://avatars.githubusercontent.com/u/6759464"> | <img height="64px" src="https://avatars.githubusercontent.com/u/71969236"> | <img height="64px" src="https://avatars.githubusercontent.com/u/458879"> | <img height="64px" src="https://avatars.githubusercontent.com/u/6035934"> |
