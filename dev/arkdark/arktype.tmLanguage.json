@@ -5,9 +5,6 @@
     "patterns": [
         {
             "include": "#definition"
-        },
-        {
-            "include": "#arktypeHelpers"
         }
     ],
     "repository": {
