@@ -1,6 +1,6 @@
 import { suite, test } from "mocha"
 import { TypeNode } from "../../src/main.js"
-import { arrayIndexInput } from "../../src/nodes/constraints/props/array.js"
+import { arrayIndexInput } from "../../src/nodes/constraints/props/indexed.js"
 import type { Out } from "../../src/parse/ast/morph.js"
 import { attest } from "../attest/main.js"
 
@@ -49,9 +49,9 @@ suite("node definitions", () => {
             basis: Array,
             props: [
                 {},
-                [
-                    arrayIndexInput(),
-                    {
+                {
+                    key: arrayIndexInput(),
+                    value: {
                         basis: "object",
                         props: {
                             name: {
@@ -60,7 +60,7 @@ suite("node definitions", () => {
                             }
                         }
                     }
-                ]
+                }
             ]
         })
         attest(t).typed as TypeNode<{ name: string }[]>
@@ -80,12 +80,12 @@ suite("node definitions", () => {
                         value: { basis: "number" }
                     }
                 },
-                [
-                    arrayIndexInput(2),
-                    {
+                {
+                    key: arrayIndexInput(2),
+                    value: {
                         basis: "boolean"
                     }
-                ]
+                }
             ]
         })
         attest(t).typed as TypeNode<[string, number, ...boolean[]]>

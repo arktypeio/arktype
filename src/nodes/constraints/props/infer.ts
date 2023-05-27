@@ -4,7 +4,7 @@ import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import type { Key } from "../../../utils/records.js"
 import type { inferTypeInput } from "../../type.js"
 import type {
-    IndexedInputEntry,
+    IndexedPropInput,
     NonVariadicIndexMatcherSource,
     VariadicIndexMatcherSource
 } from "./indexed.js"
@@ -18,33 +18,33 @@ export type inferPropsInput<input extends PropsInput> =
         : never
 
 type inferIndexed<
-    indexed extends IndexedInputEntry[],
+    indexed extends IndexedPropInput[],
     result = unknown
 > = indexed extends [
-    infer entry extends IndexedInputEntry,
-    ...infer tail extends IndexedInputEntry[]
+    infer entry extends IndexedPropInput,
+    ...infer tail extends IndexedPropInput[]
 ]
     ? inferIndexed<
           tail,
-          entry[0] extends { readonly regex: VariadicIndexMatcherSource }
+          entry["key"] extends { readonly regex: VariadicIndexMatcherSource }
               ? result extends List
-                  ? [...result, ...inferTypeInput<entry[1]>[]]
+                  ? [...result, ...inferTypeInput<entry["value"]>[]]
                   : never
-              : entry[0] extends {
+              : entry["key"] extends {
                     readonly regex: NonVariadicIndexMatcherSource
                 }
-              ? inferTypeInput<entry[1]>[]
+              ? inferTypeInput<entry["value"]>[]
               : Record<
-                    Extract<inferTypeInput<entry[0]>, Key>,
-                    inferTypeInput<entry[1]>
+                    Extract<inferTypeInput<entry["key"]>, Key>,
+                    inferTypeInput<entry["value"]>
                 >
       >
     : result
 
 type inferNamedProps<
     named extends NamedPropsInput,
-    indexed extends IndexedInputEntry[]
-> = [named, indexed[0][0]] extends
+    indexed extends IndexedPropInput[]
+> = [named, indexed[0]["key"]] extends
     | [TupleLengthProps, unknown]
     | [unknown, { readonly regex: VariadicIndexMatcherSource }]
     ? inferNonVariadicTupleProps<named> &
@@ -88,5 +88,5 @@ type requiredKeyOf<input extends NamedPropsInput> = Exclude<
 >
 
 type optionalKeyOf<input extends NamedPropsInput> = {
-    [k in keyof input]: input[k]["kind"] extends "optional" ? k : never
+    [k in keyof input]: input[k]["optional"] extends true ? k : never
 }[keyof input]

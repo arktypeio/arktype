@@ -5,7 +5,6 @@ import type { ValueNode } from "./basis/value.js"
 import type { DivisorNode } from "./constraints/divisor.js"
 import type { MorphNode } from "./constraints/morph.js"
 import type { NarrowNode } from "./constraints/narrow.js"
-import type { IndexedPropNode } from "./constraints/props/indexed.js"
 import type { PropsNode } from "./constraints/props/props.js"
 import type { RangeNode } from "./constraints/range.js"
 import type { RegexNode } from "./constraints/regex.js"
@@ -23,7 +22,6 @@ export type NodeKinds = {
     divisor: typeof DivisorNode
     basis: typeof DomainNode | typeof ValueNode | typeof ClassNode
     props: typeof PropsNode
-    entry: typeof IndexedPropNode
 }
 
 export type NodeInstances = {
@@ -51,8 +49,7 @@ const instanceCache: {
     morph: {},
     divisor: {},
     basis: {},
-    props: {},
-    entry: {}
+    props: {}
 }
 
 export abstract class BaseNode<subclass extends SubclassNode> {

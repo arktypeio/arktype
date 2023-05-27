@@ -60,7 +60,7 @@ type extractBases<
       >
     : result
 
-export class TypeNode<t = any> extends BaseNode<typeof TypeNode> {
+export class TypeNode<t = unknown> extends BaseNode<typeof TypeNode> {
     static readonly kind = "type";
     declare [inferred]: t
 
@@ -144,6 +144,10 @@ export class TypeNode<t = any> extends BaseNode<typeof TypeNode> {
             >
         }
     ): TypeNode<inferBranches<branches>> {
+        return TypeNode.fromDynamic(...branches) as never
+    }
+
+    static fromDynamic(...branches: BranchesInput): TypeNode<unknown> {
         return new TypeNode(
             this.reduceBranches(
                 branches.map((branch) => PredicateNode.from(branch as never))
@@ -213,8 +217,8 @@ export class TypeNode<t = any> extends BaseNode<typeof TypeNode> {
                         typeof key === "string"
                             ? propsAtKey.named?.[key]?.value.rule
                             : propsAtKey.indexed.find(
-                                  (entry) => entry[0] === key
-                              )?.[1].rule
+                                  (entry) => entry.key === key
+                              )?.value.rule
                     if (branchesAtKey) {
                         next.push(...branchesAtKey)
                     }
@@ -370,7 +374,10 @@ export class TypeNode<t = any> extends BaseNode<typeof TypeNode> {
     }
 
     array(): TypeNode<t[]> {
-        const props = new PropsNode([{}, [arrayIndexTypeNode(), this]])
+        const props = new PropsNode([
+            {},
+            { key: arrayIndexTypeNode(), value: this }
+        ])
         const predicate = new PredicateNode([arrayBasisNode, props])
         return new TypeNode([predicate])
     }

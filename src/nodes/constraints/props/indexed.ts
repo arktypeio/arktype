@@ -2,41 +2,27 @@ import { throwInternalError } from "../../../utils/errors.js"
 import { tryParseWellFormedInteger } from "../../../utils/numericLiterals.js"
 import { ClassNode } from "../../basis/class.js"
 import { In, IndexIn } from "../../compilation.js"
-import { BaseNode } from "../../node.js"
 import type { PredicateInput } from "../../predicate.js"
 import type { TypeInput } from "../../type.js"
 import { nonVariadicArrayIndexTypeNode, TypeNode } from "../../type.js"
 
-export class IndexedPropNode extends BaseNode<typeof IndexedPropNode> {
-    static readonly kind = "entry"
-
-    static compile(entry: unknown) {
-        return entry ? [] : []
+export const compileIndexedProp = (rule: IndexedPropRule) => {
+    const indexMatcher = extractArrayIndexRegex(rule.key)
+    if (indexMatcher) {
+        return [compileArrayElementsEntry(indexMatcher, rule.value)]
     }
-
-    computeIntersection(other: IndexedPropNode) {
-        return other ? this : this
-    }
-
-    toString() {
-        return ""
-    }
-
-    private static compileIndexedEntry(entry: IndexedNodeEntry) {
-        const indexMatcher = extractArrayIndexRegex(entry[0])
-        if (indexMatcher) {
-            return compileArrayElementsEntry(indexMatcher, entry[1])
-        }
-        return throwInternalError(`Unexpected index type ${entry[0].condition}`)
-    }
+    return throwInternalError(`Unexpected index type ${rule.key}`)
 }
 
-export type IndexedInputEntry = readonly [
-    keyType: PredicateInput<"string">,
-    valueType: TypeInput
-]
+export type IndexedPropInput = {
+    key: PredicateInput<"string">
+    value: TypeInput
+}
 
-export type IndexedNodeEntry = [keyType: TypeNode<string>, valueType: TypeNode]
+export type IndexedPropRule = {
+    key: TypeNode<string>
+    value: TypeNode
+}
 
 const arrayIndexMatcherSuffix = `(?:0|(?:[1-9]\\d*))$`
 

@@ -1,7 +1,6 @@
 import { DomainNode } from "../nodes/basis/domain.js"
 import {
-    type NamedNodes,
-    type PropKind,
+    type NamedPropsRule,
     PropsNode
 } from "../nodes/constraints/props/props.js"
 import { PredicateNode } from "../nodes/predicate.js"
@@ -13,10 +12,10 @@ import { parseDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseRecord = (def: Dict, ctx: ParseContext) => {
-    const named: mutable<NamedNodes> = {}
+    const named: mutable<NamedPropsRule> = {}
     for (const definitionKey in def) {
         let keyName = definitionKey
-        let kind: PropKind = "required"
+        let optional = false
         if (definitionKey[definitionKey.length - 1] === "?") {
             if (
                 definitionKey[definitionKey.length - 2] === Scanner.escapeToken
@@ -24,12 +23,13 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
                 keyName = `${definitionKey.slice(0, -2)}?`
             } else {
                 keyName = definitionKey.slice(0, -1)
-                kind = "optional"
+                optional = true
             }
         }
         ctx.path.push(keyName)
         named[keyName] = {
-            precedence: kind,
+            prerequisite: false,
+            optional,
             value: parseDefinition(def[definitionKey], ctx)
         }
         ctx.path.pop()

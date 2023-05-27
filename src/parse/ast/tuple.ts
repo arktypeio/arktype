@@ -1,10 +1,10 @@
+import type { IndexedPropRule } from "../../nodes/constraints/props/indexed.js"
 import {
     arrayBasisNode,
     arrayIndexTypeNode
 } from "../../nodes/constraints/props/indexed.js"
 import {
-    type IndexedNodeEntry,
-    type NamedNodes,
+    type NamedPropsRule,
     PropsNode
 } from "../../nodes/constraints/props/props.js"
 import { PredicateNode } from "../../nodes/predicate.js"
@@ -55,8 +55,8 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
               )
             : tupleExpressionResult
     }
-    const named: mutable<NamedNodes> = {}
-    const indexed: IndexedNodeEntry[] = []
+    const named: mutable<NamedPropsRule> = {}
+    const indexed: IndexedPropRule[] = []
     let isVariadic = false
     for (let i = 0; i < def.length; i++) {
         let elementDef = def[i]
@@ -81,10 +81,11 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
                 return throwParseError(prematureRestMessage)
             }
             const elementType = value.getPath(arrayIndexTypeNode())
-            indexed.push([arrayIndexTypeNode(i), elementType])
+            indexed.push({ key: arrayIndexTypeNode(i), value: elementType })
         } else {
             named[i] = {
-                precedence: "required",
+                prerequisite: false,
+                optional: false,
                 value
             }
         }
@@ -92,7 +93,8 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     }
     if (!isVariadic) {
         named.length = {
-            precedence: "prerequisite",
+            prerequisite: true,
+            optional: false,
             value: TypeNode.from({ basis: ["===", def.length] })
         }
     }
