@@ -13,22 +13,7 @@
     "repository": {
         "definition": {
             "contentName": "meta.embedded.arktype.definition",
-            "begin": "(([^\\)\\(\\s]*\\.)?(type|scope)\\()",
-            "beginCaptures": {
-                "1": {
-                    "name": "entity.name.function.ts"
-                }
-            },
-            "end": "(?<=([^\"'`]*([\"'`])[^\"'`]*\\2)*[^\"'`]*)\\)",
-            "patterns": [
-                {
-                    "include": "#nested"
-                }
-            ]
-        },
-        "arktypeHelpers": {
-            "contentName": "meta.embedded.arktype.helper",
-            "begin": "\\.(morph|and|or)\\(",
+            "begin": "(([^\\)\\(\\s]*\\.)?(type|scope|morph|and|or)\\()",
             "beginCaptures": {
                 "1": {
                     "name": "entity.name.function.ts"
