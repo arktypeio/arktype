@@ -90,6 +90,9 @@ suite("divisibility", () => {
         })
         test("relatively prime", () => {
             const t = type("number%2&number%3")
+            attest(t.root.condition).snap(
+                'typeof $arkRoot === "number" && $arkRoot % 6 === 0'
+            )
             // attest(t.node).snap({
             //     number: { divisor: 6 }
             // })
@@ -99,8 +102,8 @@ suite("divisibility", () => {
             // attest(t.node).snap({ number: { value: 0 } })
         })
         test("invalid literal", () => {
-            attest(() => type("number%3&8")).throws.snap(
-                "Error: Intersection at $arkRoot of number and a multiple of 3 and 8 results in an unsatisfiable type"
+            attest(() => type("number%3&8")).throws(
+                "Intersection of number and a multiple of 3 and 8 results in an unsatisfiable type"
             )
         })
     })

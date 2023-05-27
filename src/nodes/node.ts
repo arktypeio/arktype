@@ -2,6 +2,7 @@ import { CompiledFunction } from "../utils/compiledFunction.js"
 import type { ClassNode } from "./basis/class.js"
 import type { DomainNode } from "./basis/domain.js"
 import type { ValueNode } from "./basis/value.js"
+import { In } from "./compilation.js"
 import type { DivisorNode } from "./constraints/divisor.js"
 import type { MorphNode } from "./constraints/morph.js"
 import type { NarrowNode } from "./constraints/narrow.js"
@@ -70,7 +71,7 @@ export abstract class BaseNode<subclass extends SubclassNode> {
         this.kind = subclass.kind
         this.condition = condition
         this.subconditions = subconditions
-        this.allows = new CompiledFunction(`return ${condition}`)
+        this.allows = new CompiledFunction(`${In}`, `return ${condition}`)
         Object.freeze(this)
     }
 
