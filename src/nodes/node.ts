@@ -72,6 +72,7 @@ export abstract class BaseNode<subclass extends SubclassNode> {
         this.condition = condition
         this.subconditions = subconditions
         this.allows = new CompiledFunction(`${In}`, `return ${condition}`)
+        instanceCache[subclass.kind][condition] = this
         Object.freeze(this)
     }
 

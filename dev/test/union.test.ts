@@ -15,14 +15,14 @@ suite("union", () => {
     test("nary", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
-        attest(nary.root).is(
+        attest(nary.condition).is(
             TypeNode.fromValue(
                 false as const,
                 null,
                 undefined,
                 0 as const,
                 "" as const
-            )
+            ).condition
         )
     })
     test("subtype pruning", () => {
@@ -31,7 +31,7 @@ suite("union", () => {
     test("multiple subtypes pruned", () => {
         const t = type("'foo'|'bar'|string|'baz'|/.*/")
         attest(t.infer).typed as string
-        attest(t.root).is(type("string").root)
+        attest(t.condition).is(type("string").condition)
     })
     test("union of true and false reduces to boolean", () => {})
     test("tuple expression", () => {

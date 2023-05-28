@@ -14,6 +14,16 @@ type({
 
 type(["string|number", "[]"])
 
+const a = "string"
+const b = "boolean"
+const c = "number"
+
+const t = type(a).and(b).and(c)
+
+const z = {
+    a: true
+}
+
 const types = scope({ notASpace: { a: type("string") } }).compile()
 attest(types.notASpace).typed as Type<{ a: string }, Ark>
 
@@ -28,7 +38,7 @@ test("type definition", () => {
 
 const $ = scope({
     b: "3.14",
-    a: () => $.type("number"), //.morph((data) => `${data}`),
+    a: () => $.type("number").morph((data) => `${data}`),
     aAndB: () => $.type("a&b"),
     bAndA: () => $.type("b&a")
 })

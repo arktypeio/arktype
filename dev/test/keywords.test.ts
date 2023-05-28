@@ -46,7 +46,7 @@ suite("keywords", () => {
     })
     suite("tsKeywords", () => {
         test("any", () => {
-            attest(type("any").root).is(type("unknown").root)
+            attest(type("any").condition).is(type("unknown").condition)
         })
         test("bigint", () => {
             attest(type("bigint").root.condition).snap(
@@ -95,7 +95,7 @@ suite("keywords", () => {
             attest(type("unknown").root.condition).snap("true")
         })
         test("void", () => {
-            attest(type("void").root).is(type("undefined").root)
+            attest(type("void").condition).is(type("undefined").condition)
         })
         test("undefined", () => {
             attest(type("undefined").root.condition).snap(

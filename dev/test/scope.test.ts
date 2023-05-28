@@ -57,7 +57,7 @@ suite("scope", () => {
         const importer = $.scope({ b: "a[]" })
         attest(importer.infer).typed as { b: string[] }
         const t = importer.type("b")
-        attest(t.root).is(type("string[]").root)
+        attest(t.condition).is(type("string[]").condition)
     })
     test("infers its own helpers", () => {
         const $ = scope({

@@ -26,8 +26,8 @@ suite("subscopes", () => {
             >
         }>
         attest(types.sub.alias.infer).typed as number
-        const expected = type("number").root
-        attest(types.sub.alias.root).is(expected)
-        attest(types.b.root).is(expected)
+        const expected = type("number").condition
+        attest(types.sub.alias.condition).is(expected)
+        attest(types.b.condition).is(expected)
     })
 })

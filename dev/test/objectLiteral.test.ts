@@ -31,8 +31,8 @@ suite("object literal", () => {
             b: string
             c?: string
         }
-        attest(abc.root).is(type({ ...a, ...b, ...c }).root)
-        attest(abc.root).is(type([[a, "&", b], "&", c]).root)
+        attest(abc.condition).equals(type({ ...a, ...b, ...c }).condition)
+        attest(abc.condition).equals(type([[a, "&", b], "&", c]).condition)
     })
     test("traverse optional", () => {
         const o = type({ "a?": "string" }, { keys: "strict" })
@@ -46,7 +46,7 @@ suite("object literal", () => {
         const t = type({ a: "number" }).and({ b: "boolean" })
         // Should be simplified from {a: number} & {b: boolean} to {a: number, b: boolean}
         attest(t.infer).types.toString.snap("{ a: number; b: boolean; }")
-        attest(t.root).is(type({ a: "number", b: "boolean" }).root)
+        attest(t.condition).is(type({ a: "number", b: "boolean" }).condition)
     })
     test("escaped optional token", () => {
         const t = type({ "a\\?": "string" })

@@ -40,16 +40,16 @@ suite("parse array", () => {
         attest(t.allows([["foo", 5]])).snap(false)
     })
     test("shallow array intersection", () => {
-        const actual = type("string[]&'foo'[]").root
-        const expected = type("'foo'[]").root
+        const actual = type("string[]&'foo'[]").condition
+        const expected = type("'foo'[]").condition
         attest(actual).is(expected)
     })
     test("deep array intersection", () => {
         const actual = type([{ a: "string" }, "[]"]).and([
             { b: "number" },
             "[]"
-        ]).root
-        const expected = type([{ a: "string", b: "number" }, "[]"]).root
+        ]).condition
+        const expected = type([{ a: "string", b: "number" }, "[]"]).condition
         attest(actual).is(expected)
     })
     it("tuple intersection", () => {
@@ -84,9 +84,9 @@ suite("parse array", () => {
                 b: boolean
             }
         ]
-        const expected = type([{ a: "string", b: "boolean" }])
-        attest(tupleAndArray.root).is(expected.root)
-        attest(arrayAndTuple.root).is(expected.root)
+        const expected = type([{ a: "string", b: "boolean" }]).condition
+        attest(tupleAndArray.condition).is(expected)
+        attest(arrayAndTuple.condition).is(expected)
     })
     test("multiple errors", () => {
         const stringArray = type("string[]")

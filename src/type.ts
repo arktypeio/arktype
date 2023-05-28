@@ -48,6 +48,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     declare inferIn: extractIn<t>
 
     root: TypeNode<t>
+    condition: string
     allows: this["root"]["allows"]
 
     constructor(public definition: unknown, public scope: Scope) {
@@ -62,6 +63,7 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return state.finalize(${In});`
         )
         this.root = root
+        this.condition = root.condition
         this.allows = root.allows
     }
 

@@ -106,7 +106,9 @@ suite("tuple", () => {
     suite("intersections", () => {
         test("tuple", () => {
             const t = type([[{ a: "string" }], "&", [{ b: "boolean" }]])
-            attest(t.root).is(type([{ a: "string", b: "boolean" }]).root)
+            attest(t.condition).is(
+                type([{ a: "string", b: "boolean" }]).condition
+            )
         })
         test("array", () => {
             const tupleAndArray = type([{ a: "string" }]).and([

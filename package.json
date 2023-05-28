@@ -34,6 +34,7 @@
         "testTsVersions": "ts-node ./dev/scripts/testTsVersions.ts",
         "typecheck": "tsc --noEmit",
         "tsin": "tsc --noEmit --extendedDiagnostics --composite false",
+        "bench": "cd ./dev/test/benches && ts-node",
         "lint": "eslint --max-warnings=0 .",
         "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
         "checkFormat": "prettier --check --ignore-path ./dev/configs/.prettierignore .",

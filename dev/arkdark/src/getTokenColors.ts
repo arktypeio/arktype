@@ -1062,7 +1062,7 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
                 "variable.ts"
             ],
             settings: {
-                foreground: variables
+                foreground
             }
         },
         {
