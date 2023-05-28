@@ -55,7 +55,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
               )
             : tupleExpressionResult
     }
-    const named: mutable<NamedPropsRule> = {}
+    const named: NamedPropsRule = {}
     const indexed: IndexedPropRule[] = []
     let isVariadic = false
     for (let i = 0; i < def.length; i++) {
@@ -86,7 +86,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
             named[i] = {
                 prerequisite: false,
                 optional: false,
-                value
+                type: value
             }
         }
         ctx.path.pop()
@@ -95,7 +95,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
         named.length = {
             prerequisite: true,
             optional: false,
-            value: TypeNode.from({ basis: ["===", def.length] })
+            type: TypeNode.from({ basis: ["===", def.length] })
         }
     }
     const props = new PropsNode([named, ...indexed])

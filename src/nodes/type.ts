@@ -375,7 +375,6 @@ export class TypeNode<t = unknown> extends BaseNode<typeof TypeNode> {
 
     array(): TypeNode<t[]> {
         const props = new PropsNode([
-            {},
             { key: arrayIndexTypeNode(), value: this }
         ])
         const predicate = new PredicateNode([arrayBasisNode, props])

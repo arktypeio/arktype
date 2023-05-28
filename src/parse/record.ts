@@ -1,18 +1,16 @@
 import { DomainNode } from "../nodes/basis/domain.js"
-import {
-    type NamedPropsRule,
-    PropsNode
-} from "../nodes/constraints/props/props.js"
+import type { NamedPropRule } from "../nodes/constraints/props/named.js"
+import { PropsNode } from "../nodes/constraints/props/props.js"
 import { PredicateNode } from "../nodes/predicate.js"
 import { TypeNode } from "../nodes/type.js"
 import type { evaluate } from "../utils/generics.js"
-import type { Dict, mutable } from "../utils/records.js"
+import type { Dict } from "../utils/records.js"
 import type { inferDefinition, ParseContext } from "./definition.js"
 import { parseDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseRecord = (def: Dict, ctx: ParseContext) => {
-    const named: mutable<NamedPropsRule> = {}
+    const named: NamedPropRule[] = []
     for (const definitionKey in def) {
         let keyName = definitionKey
         let optional = false
@@ -27,14 +25,15 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
             }
         }
         ctx.path.push(keyName)
-        named[keyName] = {
+        named.push({
+            key: keyName,
             prerequisite: false,
             optional,
             value: parseDefinition(def[definitionKey], ctx)
-        }
+        })
         ctx.path.pop()
     }
-    const props = new PropsNode([named])
+    const props = new PropsNode(named)
     const predicate = new PredicateNode([objectBasisNode, props])
     return new TypeNode([predicate])
 }

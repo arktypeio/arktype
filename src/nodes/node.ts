@@ -57,10 +57,13 @@ export abstract class BaseNode<subclass extends SubclassNode> {
     kind!: subclass["kind"]
     allows!: (data: unknown) => boolean
     condition!: string
-    subconditions!: string[]
+
     subclass!: subclass
 
+    normalize?(rule: this["rule"]): void
+
     constructor(public rule: Parameters<subclass["compile"]>[0]) {
+        this.normalize?.(rule)
         const subclass = this.constructor as subclass
         const subconditions = subclass.compile(rule)
         const condition = subconditions.join(" && ")
