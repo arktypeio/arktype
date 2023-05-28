@@ -16,49 +16,38 @@ import {
     unknownTypeNode
 } from "../../type.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
-import { extractArrayIndexRegex } from "./indexed.js"
+import { compileIndexedProp, extractArrayIndexRegex } from "./indexed.js"
 import type { NamedPropInput, NamedPropRule } from "./named.js"
-import { intersectNamedProp } from "./named.js"
+import { compileNamedProp, intersectNamedProp } from "./named.js"
 
 export type PropsChildren = [NamedPropsRule, ...IndexedPropRule[]]
 
-// ({
-//     kind: "props",
-//     condition: (n) => {
-//         // Sort keys first by precedence (prerequisite,required,optional),
-//         // then alphebetically by name (bar, baz, foo)
-//         const sortedNamedEntries = Object.entries(named).sort((l, r) => {
-//             const lPrecedence = precedenceByPropKind[l[1].kind]
-//             const rPrecedence = precedenceByPropKind[r[1].kind]
-//             return lPrecedence > rPrecedence
-//                 ? 1
-//                 : lPrecedence < rPrecedence
-//                 ? -1
-//                 : l[0] > r[0]
-//                 ? 1
-//                 : -1
-//         })
-//         indexed.sort((l, r) => (l[0].condition >= r[0].condition ? 1 : -1))
-//         const condition = PropsNode.compile(sortedNamedEntries, indexed)
-//         super("props", condition)
-//         this.namedEntries = sortedNamedEntries
-//     },
-//     describe: (n) => `props`,
-//     intersect: (l, r) => l
-// })
+const valuePrecedence = (rule: NamedPropRule) =>
+    rule.prerequisite ? -1 : rule.optional ? 1 : 0
 
 export class PropsNode extends BaseNode<typeof PropsNode> {
     static readonly kind = "props"
 
-    static compile(entries: PropsChildren) {
-        // const checks: string[] = []
-        // for (const k in named) {
-        //     checks.push(PropsNode.compileNamedEntry([k, named[k]]))
-        // }
-        // for (const entry of indexed) {
-        //     checks.push(PropsNode.compileIndexedEntry(entry))
-        // }
-        return []
+    static compile([named, ...indexed]: PropsChildren): string[] {
+        const sortedNamedEntries = Object.entries(named).sort((l, r) => {
+            // Sort keys first by precedence (prerequisite,required,optional),
+            // then alphebetically by name (bar, baz, foo)
+            const lPrecedence = valuePrecedence(l[1])
+            const rPrecedence = valuePrecedence(r[1])
+            return lPrecedence > rPrecedence
+                ? 1
+                : lPrecedence < rPrecedence
+                ? -1
+                : l[0] > r[0]
+                ? 1
+                : -1
+        })
+        const namedChecks: string[] = []
+        for (const entry of sortedNamedEntries) {
+            namedChecks.push(compileNamedProp(entry[0], entry[1]))
+        }
+        const indexedChecks = indexed.map(compileIndexedProp).sort()
+        return [...namedChecks, ...indexedChecks]
     }
 
     get namedEntries() {

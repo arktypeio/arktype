@@ -9,7 +9,7 @@ import { nonVariadicArrayIndexTypeNode, TypeNode } from "../../type.js"
 export const compileIndexedProp = (rule: IndexedPropRule) => {
     const indexMatcher = extractArrayIndexRegex(rule.key)
     if (indexMatcher) {
-        return [compileArrayElementsEntry(indexMatcher, rule.value)]
+        return compileArrayElementsEntry(indexMatcher, rule.value)
     }
     return throwInternalError(`Unexpected index type ${rule.key}`)
 }

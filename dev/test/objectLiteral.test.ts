@@ -10,20 +10,16 @@ suite("object literal", () => {
     test("required", () => {
         const o = type({ a: "string", b: "boolean" })
         attest(o.infer).typed as { a: string; b: boolean }
+        attest(o.root.condition).snap(
+            '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && typeof $arkRoot.a === "string" && ($arkRoot.b === false || $arkRoot.b === true)'
+        )
     })
     test("optional keys", () => {
         const o = type({ "a?": "string", b: "boolean" })
         attest(o.infer).typed as { a?: string; b: boolean }
-        attest(o.root.condition)
-            .snap(`((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && !('a' in $arkRoot) || typeof $arkRoot.a === "string" && (() => {
-        switch($arkRoot.b) {
-            case true: {
-                return true;
-            }case false: {
-                return true;
-            }
-        }
-    })()`)
+        attest(o.root.condition).snap(
+            '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && !(\'a\' in $arkRoot) || typeof $arkRoot.a === "string" && ($arkRoot.b === false || $arkRoot.b === true)'
+        )
     })
     test("intersections", () => {
         const a = { "a?": "string" } as const
@@ -35,9 +31,7 @@ suite("object literal", () => {
             b: string
             c?: string
         }
-        attest(abc.root.condition).snap(
-            '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && typeof $arkRoot.b === "string" && !(\'a\' in $arkRoot) || typeof $arkRoot.a === "string" && !(\'c\' in $arkRoot) || typeof $arkRoot.c === "string"'
-        )
+        attest(abc.root).is(type({ ...a, ...b, ...c }).root)
         attest(abc.root).is(type([[a, "&", b], "&", c]).root)
     })
     test("traverse optional", () => {
@@ -52,6 +46,7 @@ suite("object literal", () => {
         const t = type({ a: "number" }).and({ b: "boolean" })
         // Should be simplified from {a: number} & {b: boolean} to {a: number, b: boolean}
         attest(t.infer).types.toString.snap("{ a: number; b: boolean; }")
+        attest(t.root).is(type({ a: "number", b: "boolean" }).root)
     })
     test("escaped optional token", () => {
         const t = type({ "a\\?": "string" })

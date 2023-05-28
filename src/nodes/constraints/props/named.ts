@@ -8,9 +8,7 @@ export const compileNamedProp = (key: string, rule: NamedPropRule) => {
         In,
         `${In}${compilePropAccess(key)}`
     )
-    return [
-        rule.optional ? `!('${key}' in ${In}) || ${valueCheck}` : valueCheck
-    ]
+    return rule.optional ? `!('${key}' in ${In}) || ${valueCheck}` : valueCheck
 }
 
 export const intersectNamedProp = (
