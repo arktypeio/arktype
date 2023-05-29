@@ -1,4 +1,4 @@
-import { rm, writeFileSync } from "node:fs"
+import { rm, rmSync, writeFileSync } from "node:fs"
 import { dirname, join, relative, sep } from "node:path"
 import * as process from "node:process"
 
@@ -62,7 +62,12 @@ export const mapDir = (
             )} for details)`
         }
         const sourceMapPath = join(target, ".docgenSources.json")
-        rm(target, () => console.log())
+        if (process.platform === "win32") {
+            //with rmSync Windows throws ENOTEMPTY and does not delete the files until the process exits
+            rm(target, () => console.log())
+        } else {
+            rmSync(target, { recursive: true, force: true })
+        }
         const isBuildProcess = process.argv.some((arg) => /build.ts/.test(arg))
         for (const [
             path,
