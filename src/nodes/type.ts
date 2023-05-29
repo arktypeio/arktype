@@ -212,7 +212,7 @@ export class TypeNode<t = unknown> extends BaseNode<"type"> {
                 if (propsAtKey) {
                     const branchesAtKey =
                         typeof key === "string"
-                            ? propsAtKey.named?.[key]?.value.rule
+                            ? propsAtKey.byName?.[key]?.value.rule
                             : propsAtKey.indexed.find(
                                   (entry) => entry.key === key
                               )?.value.rule

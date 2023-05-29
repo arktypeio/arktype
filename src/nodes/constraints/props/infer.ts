@@ -77,7 +77,7 @@ type inferNonVariadicTupleProps<
 
 type TupleLengthProps<length extends number = number> = {
     readonly length: {
-        readonly kind: "prerequisite"
+        readonly prerequisite: true
         readonly value: { readonly basis: readonly ["===", length] }
     }
 }

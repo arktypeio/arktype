@@ -1,12 +1,9 @@
-import type { IndexedPropRule } from "../../nodes/constraints/props/indexed.js"
 import {
     arrayBasisNode,
     arrayIndexTypeNode
 } from "../../nodes/constraints/props/indexed.js"
-import {
-    type NamedPropsRule,
-    PropsNode
-} from "../../nodes/constraints/props/props.js"
+import type { PropRule } from "../../nodes/constraints/props/props.js"
+import { PropsNode } from "../../nodes/constraints/props/props.js"
 import { PredicateNode } from "../../nodes/predicate.js"
 import { TypeNode } from "../../nodes/type.js"
 import type { extractIn, extractOut, TypeConfig } from "../../type.js"
@@ -14,7 +11,6 @@ import { throwParseError } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"
 import { type Constructor, isArray } from "../../utils/objectKinds.js"
-import type { mutable } from "../../utils/records.js"
 import { stringify } from "../../utils/serialize.js"
 import type {
     inferDefinition,
@@ -55,8 +51,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
               )
             : tupleExpressionResult
     }
-    const named: NamedPropsRule = {}
-    const indexed: IndexedPropRule[] = []
+    const props: PropRule[] = []
     let isVariadic = false
     for (let i = 0; i < def.length; i++) {
         let elementDef = def[i]
@@ -81,25 +76,27 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
                 return throwParseError(prematureRestMessage)
             }
             const elementType = value.getPath(arrayIndexTypeNode())
-            indexed.push({ key: arrayIndexTypeNode(i), value: elementType })
+            props.push({ key: arrayIndexTypeNode(i), value: elementType })
         } else {
-            named[i] = {
+            props.push({
+                key: `${i}`,
                 prerequisite: false,
                 optional: false,
-                type: value
-            }
+                value
+            })
         }
         ctx.path.pop()
     }
     if (!isVariadic) {
-        named.length = {
+        props.push({
+            key: "length",
             prerequisite: true,
             optional: false,
-            type: TypeNode.from({ basis: ["===", def.length] })
-        }
+            value: TypeNode.from({ basis: ["===", def.length] })
+        })
     }
-    const props = new PropsNode([named, ...indexed])
-    const predicate = new PredicateNode([arrayBasisNode, props])
+    const propsNode = new PropsNode(props)
+    const predicate = new PredicateNode([arrayBasisNode, propsNode])
     return new TypeNode([predicate])
 }
 

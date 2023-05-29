@@ -30,11 +30,10 @@ suite("node definitions", () => {
             basis: "object",
             props: {
                 a: {
-                    kind: "required",
                     value: { basis: "string" }
                 },
                 b: {
-                    kind: "optional",
+                    optional: true,
                     value: { basis: "number" }
                 }
             }
@@ -95,23 +94,21 @@ suite("node definitions", () => {
             basis: Array,
             props: {
                 0: {
-                    kind: "required",
                     value: {
                         basis: "object",
                         props: {
-                            a: { kind: "required", value: { basis: "string" } },
-                            b: { kind: "required", value: { basis: "boolean" } }
+                            a: { value: { basis: "string" } },
+                            b: { value: { basis: "boolean" } }
                         }
                     }
                 },
                 1: {
-                    kind: "required",
                     value: {
                         basis: ["===", "arktype"]
                     }
                 },
                 length: {
-                    kind: "prerequisite",
+                    prerequisite: true,
                     value: { basis: ["===", 2] }
                 }
             }

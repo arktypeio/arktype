@@ -3,7 +3,7 @@ import { In } from "../compilation.js"
 import { BaseNode } from "../node.js"
 
 export class RegexNode extends BaseNode<"regex"> {
-    constructor(public rule: readonly string[]) {
+    constructor(public rule: string[]) {
         const subconditions = rule.sort().map(compileExpression)
         const condition = subconditions.join(" && ")
         return BaseNode.nodes.regex[condition] ?? super("regex", condition)

@@ -36,7 +36,7 @@ export class PredicateNode extends BaseNode<"predicate"> {
         const subconditions: string[] = []
         for (const r of rule) {
             if (r.condition !== "true") {
-                subconditions.push(rule.condition)
+                subconditions.push(r.condition)
             }
         }
         const condition = subconditions.join(" && ")

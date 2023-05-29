@@ -47,7 +47,6 @@ export const intersectNamedProp = (
 }
 
 export type NamedPropInput = {
-    key: string
     value: TypeInput
     optional?: boolean
     prerequisite?: boolean

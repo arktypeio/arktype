@@ -7,23 +7,18 @@ import { BaseNode } from "../node.js"
 import type { BasisDefinition, BasisInstance } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export class ValueNode
-    extends BaseNode<typeof ValueNode>
-    implements BasisDefinition
-{
-    static readonly kind = "basis"
+export class ValueNode extends BaseNode<"basis"> implements BasisDefinition {
+    readonly level = "value"
 
-    get level() {
-        return "value" as const
+    constructor(public rule: unknown) {
+        const condition = `${In} === ${compileSerializedValue(rule)}`
+        return (
+            (BaseNode.nodes.basis[condition] as ValueNode) ??
+            super("basis", condition)
+        )
     }
 
-    get domain() {
-        return domainOf(this.rule)
-    }
-
-    static compile(rule: unknown) {
-        return [`${In} === ${compileSerializedValue(rule)}`]
-    }
+    readonly domain = domainOf(this.rule)
 
     computeIntersection(other: BasisInstance) {
         return intersectBases(this, other)

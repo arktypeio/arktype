@@ -11,28 +11,21 @@ import { registry } from "../registry.js"
 import type { BasisDefinition, BasisInstance } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export class ClassNode
-    extends BaseNode<typeof ClassNode>
-    implements BasisDefinition
-{
-    static readonly kind = "basis"
-
-    static compile(rule: AbstractableConstructor) {
-        return [
-            `${In} instanceof ${
-                getExactBuiltinConstructorName(rule) ??
-                registry().register(rule.name, rule)
-            }`
-        ]
+export class ClassNode extends BaseNode<"basis"> implements BasisDefinition {
+    constructor(public rule: AbstractableConstructor) {
+        const condition = `${In} instanceof ${
+            getExactBuiltinConstructorName(rule) ??
+            registry().register(rule.name, rule)
+        }`
+        return (
+            (BaseNode.nodes.basis[condition] as ClassNode) ??
+            super("basis", condition)
+        )
     }
 
-    get domain() {
-        return "object" as const
-    }
+    readonly domain = "object"
 
-    get level() {
-        return "class" as const
-    }
+    readonly level = "class"
 
     extendsOneOf(...baseConstructors: AbstractableConstructor[]) {
         return baseConstructors.some((base) =>
