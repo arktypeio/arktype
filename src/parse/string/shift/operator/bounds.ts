@@ -108,8 +108,8 @@ export const parseRightBound = (
     if (intersectionResult instanceof Disjoint) {
         return s.error(`${intersectionResult} is empty`)
     }
-    delete s.branches.range
     s.root = s.root.constrain("range", intersectionResult.rule)
+    delete s.branches.range
 }
 
 export type parseRightBound<

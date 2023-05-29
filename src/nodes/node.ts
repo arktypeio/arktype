@@ -67,7 +67,6 @@ export abstract class BaseNode<kind extends NodeKind = NodeKind> {
             )
         }
         this.allows = new CompiledFunction(`${In}`, `return ${condition}`)
-        // TODO: needed?
         BaseNode.nodes[kind as never][condition] = this as never
     }
 

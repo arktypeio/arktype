@@ -110,7 +110,7 @@ export class RangeNode extends BaseNode<"range"> {
             if (stricterMax === "r") {
                 return compareStrictness("min", this.min, other.max) === "l"
                     ? Disjoint.from("range", this, other)
-                    : new RangeNode([this.min!, this.max!])
+                    : new RangeNode([this.min!, other.max!])
             }
             return this
         }
@@ -118,7 +118,7 @@ export class RangeNode extends BaseNode<"range"> {
             if (stricterMax === "l") {
                 return compareStrictness("max", this.max, other.min) === "l"
                     ? Disjoint.from("range", this, other)
-                    : new RangeNode([this.min!, other.max!])
+                    : new RangeNode([other.min!, this.max!])
             }
             return other
         }
