@@ -8,31 +8,41 @@ const packageRoot = process.cwd()
 const outRoot = join(packageRoot, "dist")
 const packageJson = readJson(join(packageRoot, "package.json"))
 
+const buildFormat = (module: "commonjs" | "esnext") => {
+    const outDir = join(outRoot, module === "commonjs" ? "cjs" : "mjs")
+    writeJson(tempTsConfig, {
+        ...tsConfigData,
+        include: ["src"],
+        compilerOptions: {
+            ...tsConfigData.compilerOptions,
+            noEmit: false,
+            module,
+            outDir
+        }
+    })
+    try {
+        shell(`pnpm tsc --project ${tempTsConfig}`)
+        const outSrc = join(outDir, "src")
+        // not sure which setting to change to get it to compile here in the first place
+        cpSync(outSrc, outDir, {
+            recursive: true,
+            force: true
+        })
+        if (module === "commonjs") {
+            writeJson(join(outDir, "package.json"), {
+                type: "commonjs"
+            })
+        }
+        rmSync(outSrc, { recursive: true, force: true })
+    } finally {
+        rmSync(tempTsConfig, { force: true })
+    }
+}
+
 console.log(`🔨 Building ${packageJson.name}...`)
 rmSync(outRoot, { recursive: true, force: true })
 const tsConfigData = readJson(join(repoDirs.configs, "tsconfig.base.json"))
 const tempTsConfig = join(packageRoot, "tsconfig.temp.json")
-writeJson(tempTsConfig, {
-    ...tsConfigData,
-    include: ["src"],
-    compilerOptions: {
-        ...tsConfigData.compilerOptions,
-        noEmit: false,
-        module: "commonjs",
-        outDir: "dist"
-    }
-})
-try {
-    shell(`pnpm tsc --project ${tempTsConfig}`)
-    const outSrc = join(outRoot, "src")
-    // not sure which setting to change to get it to compile here in the first place
-    cpSync(outSrc, outRoot, {
-        recursive: true,
-        force: true
-    })
-    writeJson(join(outRoot, "package.json"), { type: "commonjs" })
-    rmSync(outSrc, { recursive: true, force: true })
-} finally {
-    rmSync(tempTsConfig, { force: true })
-}
+buildFormat("esnext")
+buildFormat("commonjs")
 console.log(`📦 Successfully built ${packageJson.name}!`)
