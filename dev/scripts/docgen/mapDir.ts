@@ -1,4 +1,4 @@
-import { rm, rmSync, writeFileSync } from "node:fs"
+import { rm, writeFileSync } from "node:fs"
 import { dirname, join, relative, sep } from "node:path"
 import * as process from "node:process"
 
