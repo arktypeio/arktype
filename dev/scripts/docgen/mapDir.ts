@@ -1,4 +1,4 @@
-import { rmSync, writeFileSync } from "node:fs"
+import { rm, rmSync, writeFileSync } from "node:fs"
 import { dirname, join, relative, sep } from "node:path"
 import * as process from "node:process"
 
@@ -62,7 +62,7 @@ export const mapDir = (
             )} for details)`
         }
         const sourceMapPath = join(target, ".docgenSources.json")
-        rmSync(target, { recursive: true, force: true })
+        rm(target, () => console.log())
         const isBuildProcess = process.argv.some((arg) => /build.ts/.test(arg))
         for (const [
             path,
