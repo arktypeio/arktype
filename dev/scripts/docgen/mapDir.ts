@@ -1,5 +1,5 @@
 import { rmSync, writeFileSync } from "node:fs"
-import { dirname, join, relative } from "node:path"
+import { dirname, join, relative, resolve, sep } from "node:path"
 import * as process from "node:process"
 
 import {
@@ -25,7 +25,11 @@ export const mapDir = (
                 ignoreDirsMatching: /(node_modules)/
             }).map((sourceFilePath) => {
                 const sourceRelativePath = relative(sourceDir, sourceFilePath)
+                    .split(sep)
+                    .join("/")
                 const repoRelativePath = relative(repoDirs.root, sourceFilePath)
+                    .split(sep)
+                    .join("/")
                 if (!(repoRelativePath in snippetsByPath)) {
                     throw new Error(
                         `Expected to find ${repoRelativePath} in snippets.`
