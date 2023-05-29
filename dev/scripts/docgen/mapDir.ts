@@ -1,5 +1,5 @@
 import { rmSync, writeFileSync } from "node:fs"
-import { dirname, join, relative, resolve, sep } from "node:path"
+import { dirname, join, relative, sep } from "node:path"
 import * as process from "node:process"
 
 import {
