@@ -12,10 +12,10 @@ export class DomainNode extends BaseNode<"basis"> implements BasisDefinition {
             rule === "object"
                 ? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
                 : `typeof ${In} === "${rule}"`
-        return (
-            (BaseNode.nodes.basis[condition] as DomainNode) ??
-            super("basis", condition)
-        )
+        if (BaseNode.nodes.basis[condition]) {
+            return BaseNode.nodes.basis[condition] as DomainNode
+        }
+        super("basis", condition)
     }
 
     readonly domain = this.rule

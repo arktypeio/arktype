@@ -12,7 +12,10 @@ export class NarrowNode extends BaseNode<"narrow"> {
             registry().register(narrow.name, narrow)
         )
         const condition = subconditions.join(" && ")
-        return BaseNode.nodes.narrow[condition] ?? super("narrow", condition)
+        if (BaseNode.nodes.narrow[condition]) {
+            return BaseNode.nodes.narrow[condition]
+        }
+        super("narrow", condition)
     }
 
     computeIntersection(other: NarrowNode) {

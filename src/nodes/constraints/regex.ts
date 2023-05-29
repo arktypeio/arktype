@@ -6,7 +6,10 @@ export class RegexNode extends BaseNode<"regex"> {
     constructor(public rule: string[]) {
         const subconditions = rule.sort().map(compileExpression)
         const condition = subconditions.join(" && ")
-        return BaseNode.nodes.regex[condition] ?? super("regex", condition)
+        if (BaseNode.nodes.regex[condition]) {
+            return BaseNode.nodes.regex[condition]
+        }
+        super("regex", condition)
     }
 
     computeIntersection(other: this) {

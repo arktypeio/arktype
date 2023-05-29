@@ -11,7 +11,10 @@ export class MorphNode extends BaseNode<"morph"> {
             registry().register(morph.name, morph)
         )
         const condition = subconditions.join(" && ")
-        return BaseNode.nodes.morph[condition] ?? super("morph", condition)
+        if (BaseNode.nodes.morph[condition]) {
+            return BaseNode.nodes.morph[condition]
+        }
+        super("morph", condition)
     }
 
     computeIntersection(other: MorphNode) {

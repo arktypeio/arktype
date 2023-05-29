@@ -17,10 +17,10 @@ export class ClassNode extends BaseNode<"basis"> implements BasisDefinition {
             getExactBuiltinConstructorName(rule) ??
             registry().register(rule.name, rule)
         }`
-        return (
-            (BaseNode.nodes.basis[condition] as ClassNode) ??
-            super("basis", condition)
-        )
+        if (BaseNode.nodes.basis[condition]) {
+            return BaseNode.nodes.basis[condition] as ClassNode
+        }
+        super("basis", condition)
     }
 
     readonly domain = "object"

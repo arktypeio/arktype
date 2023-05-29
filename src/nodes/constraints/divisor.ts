@@ -4,7 +4,10 @@ import { BaseNode } from "../node.js"
 export class DivisorNode extends BaseNode<"divisor"> {
     constructor(public rule: number) {
         const condition = `${In} % ${rule} === 0`
-        return BaseNode.nodes.divisor[condition] ?? super("divisor", condition)
+        if (BaseNode.nodes.divisor[condition]) {
+            return BaseNode.nodes.divisor[condition]
+        }
+        super("divisor", condition)
     }
 
     computeIntersection(other: DivisorNode) {

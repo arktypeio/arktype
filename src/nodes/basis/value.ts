@@ -12,10 +12,10 @@ export class ValueNode extends BaseNode<"basis"> implements BasisDefinition {
 
     constructor(public rule: unknown) {
         const condition = `${In} === ${compileSerializedValue(rule)}`
-        return (
-            (BaseNode.nodes.basis[condition] as ValueNode) ??
-            super("basis", condition)
-        )
+        if (BaseNode.nodes.basis[condition]) {
+            return BaseNode.nodes.basis[condition] as ValueNode
+        }
+        super("basis", condition)
     }
 
     readonly domain = domainOf(this.rule)
