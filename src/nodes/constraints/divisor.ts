@@ -1,11 +1,10 @@
 import { In } from "../compilation.js"
 import { BaseNode } from "../node.js"
 
-export class DivisorNode extends BaseNode<typeof DivisorNode> {
-    static readonly kind = "divisor"
-
-    static compile(rule: number) {
-        return [`${In} % ${rule} === 0`]
+export class DivisorNode extends BaseNode<"divisor"> {
+    constructor(public rule: number) {
+        const condition = `${In} % ${rule} === 0`
+        return BaseNode.nodes.divisor[condition] ?? super("divisor", condition)
     }
 
     computeIntersection(other: DivisorNode) {

@@ -3,14 +3,16 @@ import { intersectUniqueLists } from "../../utils/lists.js"
 import { BaseNode } from "../node.js"
 import { registry } from "../registry.js"
 
-export class NarrowNode extends BaseNode<typeof NarrowNode> {
-    static readonly kind = "narrow"
-
-    static compile(narrows: readonly Narrow[]) {
+export class NarrowNode extends BaseNode<"narrow"> {
+    constructor(public rule: readonly Narrow[]) {
         // Depending on type-guards, altering the order in which narrows run could
         // lead to a non-typsafe access, so they are preserved.
         // TODO:  Figure out how this needs to work with intersections
-        return narrows.map((narrow) => registry().register(narrow.name, narrow))
+        const subconditions = rule.map((narrow) =>
+            registry().register(narrow.name, narrow)
+        )
+        const condition = subconditions.join(" && ")
+        return BaseNode.nodes.narrow[condition] ?? super("narrow", condition)
     }
 
     computeIntersection(other: NarrowNode) {

@@ -29,10 +29,8 @@ const isIndexed = (rule: PropRule): rule is IndexedPropRule =>
 const kindPrecedence = (rule: PropRule) =>
     isIndexed(rule) ? 2 : rule.prerequisite ? -1 : rule.optional ? 1 : 0
 
-export class PropsNode extends BaseNode<typeof PropsNode> {
-    static readonly kind = "props"
-
-    normalize(rule: PropRule[]) {
+export class PropsNode extends BaseNode<"props"> {
+    constructor(public rule: PropRule[]) {
         rule.sort((l, r) => {
             // Sort keys first by precedence (prerequisite,required,optional,indexed),
             // then alphebetically by key (bar, baz, foo)
@@ -46,12 +44,14 @@ export class PropsNode extends BaseNode<typeof PropsNode> {
                 ? 1
                 : -1
         })
-    }
-
-    static compile(rule: PropRule[]): string[] {
-        return rule.map((rule) =>
+        const subconditions = rule.map((rule) =>
             isIndexed(rule) ? compileIndexedProp(rule) : compileNamedProp(rule)
         )
+        const condition = subconditions.join(" && ")
+        if (BaseNode.nodes.props[condition]) {
+            return BaseNode.nodes.props[condition]
+        }
+        super("props", condition)
     }
 
     get named() {

@@ -1,4 +1,5 @@
 import { CompiledFunction } from "../utils/compiledFunction.js"
+import { throwInternalError } from "../utils/errors.js"
 import type { ClassNode } from "./basis/class.js"
 import type { DomainNode } from "./basis/domain.js"
 import type { ValueNode } from "./basis/value.js"
@@ -37,61 +38,50 @@ export type SubclassNode = {
     compile(rule: never): string[]
 }
 
-const instanceCache: {
-    [kind in NodeKind]: {
-        [condition: string]: BaseNode<any>
-    }
-} = {
-    type: {},
-    predicate: {},
-    regex: {},
-    range: {},
-    narrow: {},
-    morph: {},
-    divisor: {},
-    basis: {},
-    props: {}
-}
+export abstract class BaseNode<kind extends NodeKind = NodeKind> {
+    abstract rule: unknown
 
-export abstract class BaseNode<subclass extends SubclassNode> {
-    kind!: subclass["kind"]
     allows!: (data: unknown) => boolean
-    condition!: string
 
-    subclass!: subclass
-
-    normalize?(rule: this["rule"]): void
-
-    constructor(public rule: Parameters<subclass["compile"]>[0]) {
-        this.normalize?.(rule)
-        const subclass = this.constructor as subclass
-        const subconditions = subclass.compile(rule)
-        const condition = subconditions.join(" && ")
-        if (instanceCache[subclass.kind][condition]) {
-            return instanceCache[subclass.kind][condition]
+    static nodes: {
+        [kind in NodeKind]: {
+            [condition: string]: NodeInstances[kind]
         }
-        this.subclass = subclass
-        this.kind = subclass.kind
-        this.condition = condition
-        this.subconditions = subconditions
+    } = {
+        type: {},
+        predicate: {},
+        regex: {},
+        range: {},
+        narrow: {},
+        morph: {},
+        divisor: {},
+        basis: {},
+        props: {}
+    }
+
+    constructor(public kind: kind, public condition: string) {
+        if (BaseNode.nodes[kind][condition]) {
+            return throwInternalError(
+                `Unexpected attempt to duplicate a cached ${this.constructor.name}.` +
+                    `Ensure ${this.constructor.name}'s constructor returns a cached instance if one is available.`
+            )
+        }
         this.allows = new CompiledFunction(`${In}`, `return ${condition}`)
-        instanceCache[subclass.kind][condition] = this
-        Object.freeze(this)
+        // TODO: needed?
+        BaseNode.nodes[kind as never][condition] = this as never
     }
 
     abstract toString(): string
 
     abstract computeIntersection(
-        other: NodeInstances[subclass["kind"]]
-    ): NodeInstances[subclass["kind"]] | Disjoint
+        other: NodeInstances[kind]
+    ): NodeInstances[kind] | Disjoint
 
     intersectionCache: {
-        [otherCondition: string]: NodeInstances[subclass["kind"]] | Disjoint
+        [otherCondition: string]: NodeInstances[kind] | Disjoint
     } = {}
 
-    intersect(
-        other: NodeInstances[subclass["kind"]]
-    ): NodeInstances[subclass["kind"]] | Disjoint {
+    intersect(other: NodeInstances[kind]): NodeInstances[kind] | Disjoint {
         if (this === other) {
             return this as never
         }

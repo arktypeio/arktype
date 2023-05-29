@@ -59,27 +59,14 @@ export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 //     ? "items long"
 //     : ""
 
-export class RangeNode extends BaseNode<typeof RangeNode> {
-    static readonly kind = "range"
-
-    static compile(rule: Range) {
-        return rule.map(RangeNode.compileBound)
-    }
-
-    isEquality(): this is { rule: [Bound<"==">] } {
-        return this.rule[0].comparator === "=="
-    }
-
-    get min() {
-        return isKeyOf(this.rule[0].comparator, minComparators)
-            ? (this.rule[0] as Bound<MinComparator>)
-            : undefined
-    }
-
-    get max() {
-        return this.rule[1] ?? isKeyOf(this.rule[0].comparator, maxComparators)
-            ? (this.rule[0] as Bound<MaxComparator>)
-            : undefined
+export class RangeNode extends BaseNode<"range"> {
+    constructor(public rule: Range) {
+        const bounds = rule.map(RangeNode.compileBound)
+        const condition = bounds.join(" && ")
+        if (BaseNode.nodes.range[condition]) {
+            return BaseNode.nodes.range[condition]
+        }
+        super("range", condition)
     }
 
     private static compileBound(bound: Bound) {
@@ -87,6 +74,19 @@ export class RangeNode extends BaseNode<typeof RangeNode> {
             bound.comparator === "==" ? "===" : bound.comparator
         } ${bound.limit}`
     }
+
+    isEquality(): this is { rule: [Bound<"==">] } {
+        return this.rule[0].comparator === "=="
+    }
+
+    min = isKeyOf(this.rule[0].comparator, minComparators)
+        ? (this.rule[0] as Bound<MinComparator>)
+        : undefined
+
+    max =
+        this.rule[1] ?? isKeyOf(this.rule[0].comparator, maxComparators)
+            ? (this.rule[0] as Bound<MaxComparator>)
+            : undefined
 
     computeIntersection(other: RangeNode): RangeNode | Disjoint {
         if (this.isEquality()) {

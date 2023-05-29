@@ -12,6 +12,7 @@ import {
 } from "./constraints/props/indexed.js"
 import { PropsNode } from "./constraints/props/props.js"
 import type { CaseKey, Discriminant, DiscriminantKind } from "./discriminate.js"
+import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import { BaseNode } from "./node.js"
 import type {
@@ -60,23 +61,19 @@ type extractBases<
       >
     : result
 
-export class TypeNode<t = unknown> extends BaseNode<typeof TypeNode> {
+export class TypeNode<t = unknown> extends BaseNode<"type"> {
     static readonly kind = "type";
     declare [inferred]: t
 
-    // discriminant: Discriminant | undefined
+    discriminant: Discriminant | undefined
 
-    // constructor(public children: PredicateNode[]) {
-    //     const condition = TypeNode.compile(children)
-    //     super("type", condition)
-    //     if (!this.children) {
-    //         // TODO: Fix
-    //         this.discriminant = discriminate(children)
-    //     }
-    // }
-
-    static compile(branches: PredicateNode[]) {
-        return [TypeNode.compileIndiscriminable(branches)]
+    constructor(public rule: PredicateNode[]) {
+        const condition = TypeNode.compileIndiscriminable(rule.sort())
+        if (BaseNode.nodes.type[condition]) {
+            return BaseNode.nodes.type[condition] as TypeNode<any>
+        }
+        super("type", condition)
+        this.discriminant = discriminate(rule)
     }
 
     private static compileIndiscriminable(branches: PredicateNode[]) {

@@ -31,28 +31,26 @@ import type { DiscriminantKind } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import { BaseNode } from "./node.js"
 
-export class PredicateNode extends BaseNode<typeof PredicateNode> {
-    static readonly kind = "predicate"
-
-    get basis() {
-        return this.rule[0]?.kind === "basis" ? this.rule[0] : undefined
-    }
-
-    get constraints() {
-        return (
-            this.rule[0]?.kind === "basis" ? this.rule.slice(1) : this.rule
-        ) as ConstraintNode[]
-    }
-
-    static compile(rules: PredicateRules) {
+export class PredicateNode extends BaseNode<"predicate"> {
+    constructor(public rule: PredicateRules) {
         const subconditions: string[] = []
-        for (const rule of rules) {
-            if (rule.condition !== "true") {
+        for (const r of rule) {
+            if (r.condition !== "true") {
                 subconditions.push(rule.condition)
             }
         }
-        return subconditions
+        const condition = subconditions.join(" && ")
+        if (BaseNode.nodes.predicate[condition]) {
+            return BaseNode.nodes.predicate[condition]
+        }
+        super("predicate", condition)
     }
+
+    basis = this.rule[0]?.kind === "basis" ? this.rule[0] : undefined
+
+    constraints = (this.rule[0]?.kind === "basis"
+        ? this.rule.slice(1)
+        : this.rule) as ConstraintNode[]
 
     static from<const input extends PredicateInput>(input: input) {
         const basis = input.basis && basisNodeFrom(input.basis)

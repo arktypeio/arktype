@@ -2,11 +2,11 @@ import { intersectUniqueLists } from "../../utils/lists.js"
 import { In } from "../compilation.js"
 import { BaseNode } from "../node.js"
 
-export class RegexNode extends BaseNode<typeof RegexNode> {
-    static readonly kind = "regex"
-
-    static compile(sources: readonly string[]) {
-        return sources.map(compileExpression).sort()
+export class RegexNode extends BaseNode<"regex"> {
+    constructor(public rule: readonly string[]) {
+        const subconditions = rule.sort().map(compileExpression)
+        const condition = subconditions.join(" && ")
+        return BaseNode.nodes.regex[condition] ?? super("regex", condition)
     }
 
     computeIntersection(other: this) {
