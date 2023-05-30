@@ -12,5 +12,3 @@ export const pallete = {
     blue: "#009eff",
     lightBlue: "#80cff8"
 }
-
-export type Palette = Record<string, string>

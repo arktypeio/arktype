@@ -1,9 +1,12 @@
-import type { Palette } from "./sharedPalette.js"
 import { pallete } from "./sharedPalette.js"
+import type { ArkDarkPalette } from "./writeTheme.js"
 
 const { background, foreground, comment, red, orange } = pallete
 
-export const getTokenColors = (palette: Palette, useItalics: boolean) => {
+export const getTokenColors = (
+    palette: ArkDarkPalette,
+    useItalics: boolean
+) => {
     const { variables, keywordsAndTokens, primitives, functions, types } =
         palette
     return [

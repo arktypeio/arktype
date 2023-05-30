@@ -38,10 +38,7 @@ export class PropsNode extends BaseNode<"props"> {
                 ? 1
                 : -1
         })
-        const subconditions = rule.map((rule) =>
-            isIndexed(rule) ? compileIndexedProp(rule) : compileNamedProp(rule)
-        )
-        const condition = subconditions.join(" && ")
+        const condition = PropsNode.compile(rule)
         if (BaseNode.nodes.props[condition]) {
             return BaseNode.nodes.props[condition]
         }
@@ -56,7 +53,22 @@ export class PropsNode extends BaseNode<"props"> {
 
     indexed = this.rule.filter(isIndexed)
 
-    static compile(rule: PropRule[]) {}
+    static compile(rule: PropRule[]) {
+        const named = rule.filter(isNamed)
+        if (named.length === rule.length) {
+            return this.compileNamed(named)
+        }
+        const indexed = rule.filter(isIndexed)
+        return condition
+    }
+
+    private static compileNamed(rule: NamedPropRule[]) {
+        return rule.map(compileNamedProp).join(" && ")
+    }
+
+    private static compileIndexed(rule: NamedPropRule[]) {
+        return rule.map(compileNamedProp).join(" && ")
+    }
 
     static from(
         namedInput: NamedPropsInput,

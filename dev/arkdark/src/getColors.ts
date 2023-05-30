@@ -1,6 +1,6 @@
 import { shadeColor } from "./shadeColor.js"
-import type { Palette } from "./sharedPalette.js"
 import { pallete } from "./sharedPalette.js"
+import type { ArkDarkPalette } from "./writeTheme.js"
 
 const {
     background,
@@ -16,7 +16,7 @@ const {
     purple
 } = pallete
 
-export const getColors = (palette: Palette) => ({
+export const getColors = (palette: ArkDarkPalette) => ({
     contrastActiveBorder: null,
     contrastBorder: background,
     focusBorder: background,
@@ -225,7 +225,7 @@ export const getColors = (palette: Palette) => ({
     "textLink.activeForeground": shadeColor(blue, 30),
     "textPreformat.foreground": yellow,
     "editorBracketHighlight.foreground1": palette.types,
-    "editorBracketHighlight.foreground2": palette.functions,
+    "editorBracketHighlight.foreground2": palette.primitives,
     "editorBracketHighlight.unexpectedBracket.foreground":
         palette.keywordsAndTokens
 })

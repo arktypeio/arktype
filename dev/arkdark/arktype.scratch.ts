@@ -99,3 +99,14 @@ scope({
     const func = (f: any) => f
     const abc = func($.type("string"))
 }
+
+class F {
+    static compile(rule: PropRule[]) {
+        const named = rule.filter(isNamed)
+        if (named.length === rule.length) {
+            return this.compileNamed(named)
+        }
+        const indexed = rule.filter(isIndexed)
+        return condition
+    }
+}
