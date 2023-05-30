@@ -16,7 +16,7 @@ const getContent = (palette: ArkDarkPalette, useItalics: boolean) => {
 }
 
 const arkDarkPalette = {
-    variables: "#fffff0",
+    variables: "#f5cf8f",
     keywordsAndTokens: "#eb9f2e",
     primitives: "#f5cf8f",
     types: "#009eff",

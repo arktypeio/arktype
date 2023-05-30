@@ -1,10 +1,14 @@
 import { throwInternalError, throwParseError } from "../utils/errors.js"
-import { entriesOf, type entryOf } from "../utils/records.js"
+import {
+    entriesOf,
+    type entryOf,
+    fromEntries,
+    keysOf
+} from "../utils/records.js"
 import { stringify } from "../utils/serialize.js"
 import type { BasisDefinition } from "./basis/basis.js"
 import type { ClassNode } from "./basis/class.js"
 import type { ValueNode } from "./basis/value.js"
-import { In, prependKey } from "./compilation.js"
 import type { RangeNode } from "./constraints/range.js"
 import type { PredicateNode } from "./predicate.js"
 import type { TypeNode } from "./type.js"
@@ -41,27 +45,16 @@ type DisjointKinds = {
     }
 }
 
-export const parseQualifiedDisjoint = <
-    kind extends DisjointKind = DisjointKind
->(
-    qualifiedDisjoint: QualifiedDisjoint<kind>
-) => {
-    const splitIndex = qualifiedDisjoint.lastIndexOf(":")
-    return [
-        qualifiedDisjoint.slice(0, splitIndex),
-        qualifiedDisjoint.slice(splitIndex + 1)
-    ] as [path: string, kind: kind]
-}
-
 export type DisjointKindEntries = entryOf<DisjointKinds>[]
 
-export type QualifiedDisjoint<kind extends DisjointKind = DisjointKind> =
-    `${string}:${kind}`
+export type PathString = `[${string}]`
 
 export type DisjointsSources = {
-    [k in QualifiedDisjoint]: k extends QualifiedDisjoint<infer kind>
-        ? Required<DisjointKinds>[kind]
-        : never
+    [k in `${PathString}`]: DisjointsAtPath
+}
+
+export type DisjointsAtPath = {
+    [kind in DisjointKind]?: DisjointKinds[kind]
 }
 
 export type DisjointSourceEntry = entryOf<DisjointsSources>
@@ -77,10 +70,12 @@ export class Disjoint {
         r: Required<DisjointKinds>[kind]["r"]
     ) {
         return new Disjoint({
-            [`${In}:${kind}`]: {
-                l,
-                r
-            } as never
+            "[]": {
+                [kind]: {
+                    l,
+                    r
+                }
+            }
         })
     }
 
@@ -90,26 +85,25 @@ export class Disjoint {
                 `Unexpected attempt to create a disjoint from no entries`
             )
         }
-        const byPath: DisjointsSources = {}
-        for (const [kind, operands] of entries) {
-            byPath[`${In}:${kind}`] = operands as never
-        }
-        return new Disjoint(byPath)
+        return new Disjoint(fromEntries(entries))
     }
 
     describeReasons() {
-        const entries = entriesOf(this.sources)
-        if (entries.length === 1) {
-            const entry = entries[0]
-            const path = parseQualifiedDisjoint(entry[0])[0]
-            return `Intersection${path && ` at ${path}`} of ${entry[1].l} and ${
-                entry[1].r
-            } results in an unsatisfiable type`
-        }
-        const reasons = entriesOf(this.sources).map((entry) => {
-            const [path] = parseQualifiedDisjoint(entry[0])
-            return `${path && `${path}: `} ${entry[1].l} and ${entry[1].r}`
+        const reasons = entriesOf(this.sources).flatMap((entry) => {
+            const [serializedPath, disjointsAtPath] = entry
+            const segments = JSON.parse(serializedPath) as string[]
+            const path = segments.join(".")
+            const kinds = keysOf(disjointsAtPath)
+            return kinds.map(
+                (kind) =>
+                    `${path && `${path}: `} ${disjointsAtPath[kind]!.l} and ${
+                        disjointsAtPath[kind]!.r
+                    }`
+            )
         })
+        if (reasons.length === 1) {
+            return reasons[0]
+        }
         return `The following intersections result in unsatisfiable types:\n• ${reasons.join(
             "\n• "
         )}`
@@ -121,7 +115,6 @@ export class Disjoint {
 
     invert() {
         const inverted: DisjointsSources = {}
-        let path: QualifiedDisjoint
         for (path in this.sources) {
             inverted[path] = {
                 l: this.sources[path]!.r as never,
@@ -137,9 +130,7 @@ export class Disjoint {
         for (path in this.sources) {
             const [location, kind] = parseQualifiedDisjoint(path)
             const locationWithKey = prependKey(location, key)
-            disjoints[`${locationWithKey}:${kind}`] = this.sources[
-                path
-            ] as never
+            disjoints[`${location}:${kind}`] = this.sources[path] as never
         }
         return new Disjoint(disjoints)
     }

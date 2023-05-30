@@ -39,7 +39,7 @@ export class PredicateNode extends BaseNode<"predicate"> {
                 subconditions.push(r.condition)
             }
         }
-        const condition = subconditions.join(" && ")
+        const condition = subconditions.join(" && ") || "true"
         if (BaseNode.nodes.predicate[condition]) {
             return BaseNode.nodes.predicate[condition]
         }

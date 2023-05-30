@@ -809,7 +809,7 @@ export const getTokenColors = (
             name: "JS/TS object literal keys",
             scope: ["meta.object-literal.key"],
             settings: {
-                foreground: variables
+                foreground
             }
         },
         {

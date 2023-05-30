@@ -1,5 +1,5 @@
 import { hasDomain } from "./domains.js"
-import type { asConst, defined, evaluate } from "./generics.js"
+import type { defined, evaluate } from "./generics.js"
 import type { List } from "./lists.js"
 
 export type Dict<k extends string = string, v = unknown> = {
@@ -58,7 +58,7 @@ export type fromEntries<entries, result = {}> = entries extends readonly [
     ? fromEntries<tail, result & { [_ in k]: v }>
     : evaluate<result>
 
-export const fromEntries = <entries>(entries: asConst<entries>) =>
+export const fromEntries = <const entries>(entries: entries) =>
     Object.fromEntries(entries as Entry[]) as fromEntries<entries>
 
 /** Mimics the result of Object.keys(...) */
