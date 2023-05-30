@@ -1,5 +1,5 @@
-import { rmSync, writeFileSync } from "node:fs"
-import { dirname, join, relative } from "node:path"
+import { rm, rmSync, writeFileSync } from "node:fs"
+import { dirname, join, relative, sep } from "node:path"
 import * as process from "node:process"
 
 import {
@@ -25,7 +25,11 @@ export const mapDir = (
                 ignoreDirsMatching: /(node_modules)/
             }).map((sourceFilePath) => {
                 const sourceRelativePath = relative(sourceDir, sourceFilePath)
+                    .split(sep)
+                    .join("/")
                 const repoRelativePath = relative(repoDirs.root, sourceFilePath)
+                    .split(sep)
+                    .join("/")
                 if (!(repoRelativePath in snippetsByPath)) {
                     throw new Error(
                         `Expected to find ${repoRelativePath} in snippets.`
@@ -58,7 +62,12 @@ export const mapDir = (
             )} for details)`
         }
         const sourceMapPath = join(target, ".docgenSources.json")
-        rmSync(target, { recursive: true, force: true })
+        if (process.platform === "win32") {
+            //with rmSync Windows throws ENOTEMPTY and does not delete the files until the process exits
+            rm(target, () => console.log())
+        } else {
+            rmSync(target, { recursive: true, force: true })
+        }
         const isBuildProcess = process.argv.some((arg) => /build.ts/.test(arg))
         for (const [
             path,

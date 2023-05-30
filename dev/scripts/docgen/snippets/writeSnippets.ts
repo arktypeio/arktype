@@ -83,6 +83,7 @@ const getUpdatedLines = (
 ) => {
     let lines: string[]
     const lineFromReferenceParts = line
+        .replaceAll("\r", "")
         .slice(line.indexOf(token))
         .split(" ")[0]
         .split(":")

@@ -95,7 +95,7 @@ export const { data, problems } = types.package(packageData)
 
 ## Syntax
 
-This is an informal, non-exhaustive list of current and upcoming ArkType syntax. 
+This is an informal, non-exhaustive list of current and upcoming ArkType syntax.
 
 There are some subjects it doesn't cover, primarily tuple expressions and scopes. As mentioned below, keep an eye out for comprehensive docs coming with the upcoming beta release. In the meantime, join [our Discord](https://discord.gg/xEzdc3fJQC) or head to our [GitHub Discussions](https://github.com/arktypeio/arktype/discussions) to ask a question and there's a good chance you'll see a response within the hour 😊
 
@@ -261,6 +261,6 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 
 ### Current Sponsors 🥰
 
-| [tmm](https://github.com/tmm)                                             | [xrexy](https://github.com/xrexy)                                          | [thomasballinger](https://github.com/thomasballinger)                    | [codeandcats](https://github.com/codeandcats)|
-| ------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ |----------------------------------------------|
-| <img height="64px" src="https://avatars.githubusercontent.com/u/6759464"> | <img height="64px" src="https://avatars.githubusercontent.com/u/71969236"> | <img height="64px" src="https://avatars.githubusercontent.com/u/458879"> |<img height="64px" src="https://avatars.githubusercontent.com/u/6035934"> |
+| [tmm](https://github.com/tmm)                                             | [xrexy](https://github.com/xrexy)                                          | [thomasballinger](https://github.com/thomasballinger)                    | [codeandcats](https://github.com/codeandcats)                             |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| <img height="64px" src="https://avatars.githubusercontent.com/u/6759464"> | <img height="64px" src="https://avatars.githubusercontent.com/u/71969236"> | <img height="64px" src="https://avatars.githubusercontent.com/u/458879"> | <img height="64px" src="https://avatars.githubusercontent.com/u/6035934"> |
