@@ -4,13 +4,17 @@ import { Disjoint } from "../../disjoint.js"
 import type { TypeInput, TypeNode } from "../../type.js"
 import { neverTypeNode } from "../../type.js"
 
-export const compileNamedProp = (rule: NamedPropRule) => {
-    const valueCheck = rule.value.condition.replaceAll(
+export const compileNamedProps = (props: NamedPropRule[]) => {
+    return props.map(compileNamedProp).join(" && ")
+}
+
+const compileNamedProp = (prop: NamedPropRule) => {
+    const valueCheck = prop.value.condition.replaceAll(
         In,
-        `${In}${compilePropAccess(rule.key)}`
+        `${In}${compilePropAccess(prop.key)}`
     )
-    return rule.optional
-        ? `!('${rule.key}' in ${In}) || ${valueCheck}`
+    return prop.optional
+        ? `!('${prop.key}' in ${In}) || ${valueCheck}`
         : valueCheck
 }
 

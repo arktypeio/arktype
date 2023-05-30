@@ -20,6 +20,8 @@ export const In = "$arkRoot"
 
 export const IndexIn = "$arkIndex"
 
+export const KeyIn = "$arkKey"
+
 export const prependKey = (path: string, key: string) =>
     `${In}${compilePropAccess(key)}${path.slice(In.length)}`
 

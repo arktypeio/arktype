@@ -17,9 +17,12 @@ import {
     unknownTypeNode
 } from "../../type.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
-import { compileIndexedProp, extractArrayIndexRegex } from "./indexed.js"
+import {
+    compileNamedAndIndexedProps,
+    extractArrayIndexRegex
+} from "./indexed.js"
 import type { NamedPropInput, NamedPropRule } from "./named.js"
-import { compileNamedProp, intersectNamedProp } from "./named.js"
+import { compileNamedProps, intersectNamedProp } from "./named.js"
 
 export type PropRule = NamedPropRule | IndexedPropRule
 
@@ -56,18 +59,10 @@ export class PropsNode extends BaseNode<"props"> {
     static compile(rule: PropRule[]) {
         const named = rule.filter(isNamed)
         if (named.length === rule.length) {
-            return this.compileNamed(named)
+            return compileNamedProps(named)
         }
         const indexed = rule.filter(isIndexed)
-        return condition
-    }
-
-    private static compileNamed(rule: NamedPropRule[]) {
-        return rule.map(compileNamedProp).join(" && ")
-    }
-
-    private static compileIndexed(rule: NamedPropRule[]) {
-        return rule.map(compileNamedProp).join(" && ")
+        return compileNamedAndIndexedProps(named, indexed)
     }
 
     static from(

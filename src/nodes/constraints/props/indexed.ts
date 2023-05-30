@@ -1,17 +1,77 @@
 import { throwInternalError } from "../../../utils/errors.js"
 import { tryParseWellFormedInteger } from "../../../utils/numericLiterals.js"
 import { ClassNode } from "../../basis/class.js"
-import { In, IndexIn } from "../../compilation.js"
+import { In, IndexIn, KeyIn } from "../../compilation.js"
 import type { PredicateInput } from "../../predicate.js"
 import type { TypeInput } from "../../type.js"
 import { nonVariadicArrayIndexTypeNode, TypeNode } from "../../type.js"
+import type { NamedPropRule } from "./named.js"
+import { compileNamedProps } from "./named.js"
 
-export const compileIndexedProp = (rule: IndexedPropRule) => {
-    const indexMatcher = extractArrayIndexRegex(rule.key)
-    if (indexMatcher) {
-        return compileArrayElementsEntry(indexMatcher, rule.value)
+export const compileNamedAndIndexedProps = (
+    named: NamedPropRule[],
+    indexed: IndexedPropRule[]
+) => {
+    if (indexed.length === 1) {
+        // if the only unenumerable set of props are the indices of an array, we can iterate over it instead of checking each key
+        const indexMatcher = extractArrayIndexRegex(indexed[0].key)
+        if (indexMatcher) {
+            return compileArray(indexMatcher, indexed[0].value, named)
+        }
     }
-    return throwInternalError(`Unexpected index type ${rule.key}`)
+    return compileNonArray(named, indexed)
+}
+
+const compileArray = (
+    indexMatcher: ArrayIndexMatcherSource,
+    elementNode: TypeNode,
+    namedProps: NamedPropRule[]
+) => {
+    const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
+    const namedCheck = compileNamedProps(namedProps)
+    const elementCondition = elementNode.condition
+        .replaceAll(IndexIn, `${IndexIn}Inner`)
+        .replaceAll(In, `${In}[${IndexIn}]`)
+    // TODO: don't recheck named
+    const result = `(() => {
+    let valid = ${namedCheck};
+    for(let ${IndexIn} = ${firstVariadicIndex}; ${IndexIn} < ${In}.length; ${IndexIn}++) {
+        valid = ${elementCondition} && valid;
+    }
+    return valid
+})()`
+    return result
+}
+
+const compileNonArray = (
+    namedProps: NamedPropRule[],
+    indexedProps: IndexedPropRule[]
+) => {
+    const namedCheck = compileNamedProps(namedProps)
+    const indexedChecks = indexedProps.map(compileIndexedProp).join("\n")
+    // TODO: don't recheck named
+    return `(() => {
+    let valid = ${namedCheck};
+    for(const ${KeyIn} in ${In}) {
+        ${indexedChecks}
+    }
+    return valid
+})()`
+}
+
+const compileIndexedProp = (prop: IndexedPropRule) => {
+    const valueCheck = `valid = ${prop.value.condition
+        .replaceAll(KeyIn, `${KeyIn}Inner`)
+        .replaceAll(In, `${In}[${KeyIn}]`)} && valid`
+    if (prop.key === stringNode) {
+        // if the index signature is just for "string", we don't need to check it explicitly
+        return valueCheck
+    }
+    return `if(${prop.key.condition
+        .replaceAll(KeyIn, `${KeyIn}Inner`)
+        .replaceAll(In, KeyIn)}) {
+        ${valueCheck}
+    }`
 }
 
 export type IndexedPropInput = {
@@ -95,25 +155,9 @@ const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
     )
 }
 
-const compileArrayElementsEntry = (
-    indexMatcher: ArrayIndexMatcherSource,
-    valueNode: TypeNode
-) => {
-    const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
-    const elementCondition = valueNode.condition
-        .replaceAll(IndexIn, `${IndexIn}Inner`)
-        .replaceAll(In, `${In}[${IndexIn}]`)
-    const result = `(() => {
-    let valid = true;
-    for(let ${IndexIn} = ${firstVariadicIndex}; ${IndexIn} < ${In}.length; ${IndexIn}++) {
-        valid = ${elementCondition} && valid;
-    }
-    return valid
-})()`
-    return result
-}
-
 export const arrayBasisNode = new ClassNode(Array)
+
+export const stringNode = TypeNode.from({ basis: "string" })
 
 export const arrayIndexInput = <index extends number = 0>(
     firstVariadicIndex: index = 0 as index
