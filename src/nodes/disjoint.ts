@@ -85,7 +85,7 @@ export class Disjoint {
                 `Unexpected attempt to create a disjoint from no entries`
             )
         }
-        return new Disjoint(fromEntries(entries))
+        return new Disjoint({ "[]": fromEntries(entries) })
     }
 
     describeReasons() {
@@ -114,25 +114,30 @@ export class Disjoint {
     }
 
     invert() {
-        const inverted: DisjointsSources = {}
-        for (path in this.sources) {
-            inverted[path] = {
-                l: this.sources[path]!.r as never,
-                r: this.sources[path]!.l as never
-            }
-        }
-        return new Disjoint(inverted)
+        const invertedEntries = entriesOf(this.sources).map(
+            ([path, disjoints]): DisjointSourceEntry => [
+                path,
+                Object.fromEntries(
+                    entriesOf(disjoints).map(
+                        ([kind, disjoint]) =>
+                            [kind, { l: disjoint.r, r: disjoint.l }] as const
+                    )
+                )
+            ]
+        )
+        return new Disjoint(fromEntries(invertedEntries))
     }
 
     withPrefixKey(key: string) {
-        const disjoints: DisjointsSources = {}
-        let path: QualifiedDisjoint
-        for (path in this.sources) {
-            const [location, kind] = parseQualifiedDisjoint(path)
-            const locationWithKey = prependKey(location, key)
-            disjoints[`${location}:${kind}`] = this.sources[path] as never
-        }
-        return new Disjoint(disjoints)
+        const entriesWithPrefix = entriesOf(this.sources).map(
+            ([path, disjoints]): DisjointSourceEntry => {
+                const segments = JSON.parse(path) as string[]
+                segments.unshift(key)
+                const pathWithPrefix = JSON.stringify(segments) as `[${string}]`
+                return [pathWithPrefix, disjoints]
+            }
+        )
+        return new Disjoint(fromEntries(entriesWithPrefix))
     }
 
     toString() {
