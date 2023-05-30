@@ -61,12 +61,21 @@ export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 
 export class RangeNode extends BaseNode<"range"> {
     constructor(public rule: Range) {
-        const bounds = rule.map(RangeNode.compileBound)
-        const condition = bounds.join(" && ")
+        if (
+            rule[0].limit === rule[1]?.limit &&
+            rule[0].comparator === ">=" &&
+            rule[1].comparator === "<="
+        ) {
+            // reduce a range like `1<=number<=1` to `number==1`
+            rule = [{ comparator: "==", limit: rule[0].limit }]
+        }
+        const compiledBounds = rule.map(RangeNode.compileBound)
+        const condition = compiledBounds.join(" && ")
         if (BaseNode.nodes.range[condition]) {
             return BaseNode.nodes.range[condition]
         }
         super("range", condition)
+        this.rule = rule
     }
 
     private static compileBound(bound: Bound) {
@@ -84,9 +93,10 @@ export class RangeNode extends BaseNode<"range"> {
         : undefined
 
     max =
-        this.rule[1] ?? isKeyOf(this.rule[0].comparator, maxComparators)
+        this.rule[1] ??
+        (isKeyOf(this.rule[0].comparator, maxComparators)
             ? (this.rule[0] as Bound<MaxComparator>)
-            : undefined
+            : undefined)
 
     computeIntersection(other: RangeNode): RangeNode | Disjoint {
         if (this.isEquality()) {
@@ -116,7 +126,7 @@ export class RangeNode extends BaseNode<"range"> {
         }
         if (stricterMin === "r") {
             if (stricterMax === "l") {
-                return compareStrictness("max", this.max, other.min) === "l"
+                return compareStrictness("min", this.max, other.min) === "r"
                     ? Disjoint.from("range", this, other)
                     : new RangeNode([other.min!, this.max!])
             }

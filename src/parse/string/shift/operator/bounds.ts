@@ -106,7 +106,7 @@ export const parseRightBound = (
         new RangeNode([{ comparator, limit }])
     )
     if (intersectionResult instanceof Disjoint) {
-        return s.error(`${intersectionResult} is empty`)
+        return intersectionResult.throw()
     }
     s.root = s.root.constrain("range", intersectionResult.rule)
     delete s.branches.range

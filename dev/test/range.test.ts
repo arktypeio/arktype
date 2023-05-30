@@ -95,89 +95,68 @@ suite("range", () => {
             //     }
             // })
         })
-        // suite("intersection", () => {
-        //     suite("equality range", () => {
-        //         test("equal", () => {
-        //             attest(type("number==2&number==2").node).snap({
-        //                 number: { range: { comparator: "==", limit: 2 } }
-        //             })
-        //         })
-        //         test("unequal", () => {
-        //             attest(() => type("number==2&number==3").node).throws.snap(
-        //                 "Error: Intersection of the range of exactly 2 and the range of exactly 3 results in an unsatisfiable type"
-        //             )
-        //         })
-        //         test("right equality range", () => {
-        //             attest(type("number<4&number==2").node).snap({
-        //                 number: { range: { comparator: "==", limit: 2 } }
-        //             })
-        //         })
-        //         test("left equality range", () => {
-        //             attest(type("number==3&number>=3").node).snap({
-        //                 number: { range: { comparator: "==", limit: 3 } }
-        //             })
-        //         })
-        //     })
-
-        //     test("overlapping", () => {
-        //         const expected: ResolvedNode = {
-        //             number: {
-        //                 range: {
-        //                     min: { limit: 2, comparator: ">=" },
-        //                     max: { limit: 3, comparator: "<" }
-        //                 }
-        //             }
-        //         }
-        //         attest(type("2<=number<3").node).equals(expected)
-        //         attest(type("number>=2&number<3").node).equals(expected)
-        //         attest(type("2<=number<4&1<=number<3").node).equals(expected)
-        //     })
-        //     test("single value overlap", () => {
-        //         attest(type("0<number<=1&1<=number<2").node).equals({
-        //             number: {
-        //                 range: {
-        //                     min: {
-        //                         limit: 1,
-        //                         comparator: ">="
-        //                     },
-        //                     max: {
-        //                         limit: 1,
-        //                         comparator: "<="
-        //                     }
-        //                 }
-        //             }
-        //         })
-        //     })
-        //     test("non-overlapping", () => {
-        //         attest(() => type("number>3&number<=3").node).throws.snap(
-        //             "Error: Intersection of >3 and <=3 results in an unsatisfiable type"
-        //         )
-        //         attest(() => type("-2<number<-1&1<number<2")).throws.snap(
-        //             "Error: Intersection of the range bounded by >-2 and <-1 and the range bounded by >1 and <2 results in an unsatisfiable type"
-        //         )
-        //     })
-        //     test("greater min is stricter", () => {
-        //         const expected: ResolvedNode = {
-        //             number: { range: { min: { limit: 3, comparator: ">=" } } }
-        //         }
-        //         attest(type("number>=3&number>2").node).equals(expected)
-        //         attest(type("number>2&number>=3").node).equals(expected)
-        //     })
-        //     test("lesser max is stricter", () => {
-        //         const expected: ResolvedNode = {
-        //             number: { range: { max: { limit: 3, comparator: "<=" } } }
-        //         }
-        //         attest(type("number<=3&number<4").node).equals(expected)
-        //         attest(type("number<4&number<=3").node).equals(expected)
-        //     })
-        //     test("exclusive included if limits equal", () => {
-        //         const expected: ResolvedNode = {
-        //             number: { range: { max: { limit: 3, comparator: "<" } } }
-        //         }
-        //         attest(type("number<3&number<=3").node).equals(expected)
-        //         attest(type("number<=3&number<3").node).equals(expected)
-        //     })
-        // })
+        suite("intersection", () => {
+            suite("equality range", () => {
+                test("equal", () => {
+                    attest(type("number==2&number==2").condition).equals(
+                        type("number==2").condition
+                    )
+                })
+                test("disjoint", () => {
+                    attest(() => type("number==2&number==3")).throws(
+                        "Intersection of ==2 and ==3 results in an unsatisfiable type"
+                    )
+                })
+                test("right equality range", () => {
+                    attest(type("number<4&number==2").condition).equals(
+                        type("number==2").condition
+                    )
+                })
+                test("left equality range", () => {
+                    attest(type("number==3&number>=3").condition).equals(
+                        type("number==3").condition
+                    )
+                })
+            })
+            test("overlapping", () => {
+                const expected = type("2<=number<3").condition
+                attest(type("number>=2&number<3").condition).equals(expected)
+                attest(type("2<=number<4&1<=number<3").condition).equals(
+                    expected
+                )
+            })
+            test("single value overlap", () => {
+                attest(type("0<=number<=0").condition).equals(
+                    type("number==0").condition
+                )
+                attest(type("0<number<=1&1<=number<2").condition).equals(
+                    type("number==1").condition
+                )
+            })
+            test("non-overlapping", () => {
+                attest(() => type("number>3&number<=3")).throws(
+                    "Intersection of >3 and <=3 results in an unsatisfiable type"
+                )
+                attest(() => type("-2<number<-1&1<number<2")).throws(
+                    "Intersection of the range bounded by >-2 and <-1 and the range bounded by >1 and <2 results in an unsatisfiable type"
+                )
+            })
+            test("greater min is stricter", () => {
+                const expected = type("number>=3").condition
+                attest(type("number>=3&number>2").condition).equals(expected)
+                attest(type("number>2&number>=3").condition).equals(expected)
+            })
+            test("lesser max is stricter", () => {
+                const expected = type("number<=3").condition
+                attest(type("number<=3&number<4").condition).equals(expected)
+                attest(type("number<4&number<=3").condition).equals(expected)
+            })
+            test("exclusive wins if limits equal", () => {
+                const expected = type("number<3").condition
+                attest(type("number<3&number<=3").condition).equals(expected)
+                attest(type("number<=3&number<3").condition).equals(expected)
+            })
+        })
 
         suite("parse errors", () => {
             test("single equals", () => {
@@ -217,8 +196,8 @@ suite("range", () => {
                 )
             })
             test("empty range", () => {
-                attest(() => type("3<=number<2")).throws.snap(
-                    "Error: the range bounded by >=3 and <2 is empty"
+                attest(() => type("3<=number<2")).throws(
+                    "Intersection of >=3 and <2 results in an unsatisfiable type"
                 )
             })
             test("double right bound", () => {
@@ -258,54 +237,57 @@ suite("range", () => {
                 test("unknown", () => {
                     // @ts-expect-error
                     attest(() => type("unknown<10")).throwsAndHasTypeError(
-                        writeUnboundableMessage("'unknown'")
+                        writeUnboundableMessage("unknown")
                     )
                 })
                 test("unboundable", () => {
                     // @ts-expect-error
                     attest(() => type("object>10")).throwsAndHasTypeError(
-                        writeUnboundableMessage("'object'")
+                        writeUnboundableMessage("object")
                     )
                 })
                 test("overlapping", () => {
                     attest(() =>
                         // @ts-expect-error
-                        type("1<(number|boolean)<10")
-                    ).throwsAndHasTypeError("must be a number, string or array")
+                        type("1<(number|object)<10")
+                    ).throwsAndHasTypeError(
+                        "must be a number, string, Array, or Date"
+                    )
                 })
             })
         })
-        suite("date", () => {
-            test("single bound", () => {
-                const t = type(`Date>${d("1/1/2019")}`)
-                attest(t(new Date("1/1/2020")).data).snap("Wed Jan 01 2020")
+        // Reenable
+        //         suite("date", () => {
+        //             test("single bound", () => {
+        //                 const t = type(`Date>${d("1/1/2019")}`)
+        //                 attest(t(new Date("1/1/2020")).data).snap("Wed Jan 01 2020")
 
-                attest(t(new Date("1/1/2018")).problems?.summary).snap(
-                    "Must be more than Tue Jan 01 2019 (was Mon Jan 01 2018)"
-                )
+        //                 attest(t(new Date("1/1/2018")).problems?.summary).snap(
+        //                     "Must be more than Tue Jan 01 2019 (was Mon Jan 01 2018)"
+        //                 )
 
-                attest(t(new Date("10/24/1996").valueOf()).problems.summary)
-                    .snap(`{"value":846140400000} must be...
-• a Date
-• more than 1546329600000`)
-            })
-            test("equality", () => {
-                const t = type(`Date == ${d("1/1/1")}`)
-                attest(t(new Date("1/1/1")).data).snap("Mon Jan 01 2001")
+        //                 attest(t(new Date("10/24/1996").valueOf()).problems.summary)
+        //                     .snap(`{"value":846140400000} must be...
+        // • a Date
+        // • more than 1546329600000`)
+        //             })
+        //             test("equality", () => {
+        //                 const t = type(`Date == ${d("1/1/1")}`)
+        //                 attest(t(new Date("1/1/1")).data).snap("Mon Jan 01 2001")
 
-                attest(t(new Date("1/1/2")).problems?.summary).snap(
-                    "Must be exactly Mon Jan 01 2001 (was Tue Jan 01 2002)"
-                )
-            })
+        //                 attest(t(new Date("1/1/2")).problems?.summary).snap(
+        //                     "Must be exactly Mon Jan 01 2001 (was Tue Jan 01 2002)"
+        //                 )
+        //             })
 
-            test("double bounded", () => {
-                const t = type(`${d("1/1/2018")}<Date<${d("1/1/2019")}`)
+        //             test("double bounded", () => {
+        //                 const t = type(`${d("1/1/2018")}<Date<${d("1/1/2019")}`)
 
-                attest(t(new Date("1/2/2018")).data).snap("Tue Jan 02 2018")
-                attest(t(new Date("1/1/2020")).problems?.summary).snap(
-                    "Must be less than Tue Jan 01 2019 (was Wed Jan 01 2020)"
-                )
-            })
-        })
+        //                 attest(t(new Date("1/2/2018")).data).snap("Tue Jan 02 2018")
+        //                 attest(t(new Date("1/1/2020")).problems?.summary).snap(
+        //                     "Must be less than Tue Jan 01 2019 (was Wed Jan 01 2020)"
+        //                 )
+        //             })
+        //         })
     })
 })

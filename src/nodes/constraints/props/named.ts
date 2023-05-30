@@ -4,9 +4,8 @@ import { Disjoint } from "../../disjoint.js"
 import type { TypeInput, TypeNode } from "../../type.js"
 import { neverTypeNode } from "../../type.js"
 
-export const compileNamedProps = (props: NamedPropRule[]) => {
-    return props.map(compileNamedProp).join(" && ")
-}
+export const compileNamedProps = (props: NamedPropRule[]) =>
+    props.map(compileNamedProp).join(" && ") || "true"
 
 const compileNamedProp = (prop: NamedPropRule) => {
     const valueCheck = prop.value.condition.replaceAll(

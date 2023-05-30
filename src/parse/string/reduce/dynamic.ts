@@ -81,7 +81,7 @@ export class DynamicState {
             const min = this.branches.range.min!
             return this.error(
                 writeMultipleLeftBoundsMessage(
-                    `${limit}`,
+                    `${min.limit}`,
                     min.comparator,
                     `${limit}`,
                     invertedComparator
