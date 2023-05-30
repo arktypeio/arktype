@@ -12,7 +12,7 @@ import { shell } from "../attest/src/shell.js"
 import { repoDirs } from "./common.js"
 import { docgen } from "./docgen/main.js"
 
-const currentSuffix = "alpha"
+const currentSuffix = "beta"
 
 const packageJsonPath = fromPackageRoot("package.json")
 

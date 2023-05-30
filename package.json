@@ -1,7 +1,7 @@
 {
     "name": "arktype",
     "description": "TypeScript's 1:1 validator, optimized from editor to runtime",
-    "version": "1.0.14-alpha",
+    "version": "1.0.15-beta",
     "author": {
         "name": "David Blass",
         "email": "david@arktype.io",
@@ -28,7 +28,7 @@
         "dist",
         "!*.tsbuildinfo"
     ],
-    "packageManager": "pnpm@8.5.0",
+    "packageManager": "pnpm@8.6.0",
     "scripts": {
         "prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
         "build": "ts-node ./dev/scripts/build.ts",

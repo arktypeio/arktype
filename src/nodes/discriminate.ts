@@ -48,7 +48,7 @@ export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
 const parseDiscriminantKey = (key: DiscriminantKey) => {
     const lastPathIndex = key.lastIndexOf("]")
     return [
-        JSON.parse(key.slice(0, lastPathIndex)),
+        JSON.parse(key.slice(0, lastPathIndex + 1)),
         key.slice(lastPathIndex + 1)
     ] as [path: string[], kind: DiscriminantKind]
 }
