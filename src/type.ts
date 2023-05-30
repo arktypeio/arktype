@@ -14,7 +14,7 @@ import {
 } from "./parse/definition.js"
 import type { Alias, Scope } from "./scope.js"
 import { type Ark } from "./scopes/ark.js"
-import { CompiledFunction } from "./utils/compiledFunction.js"
+import { CompiledFunction } from "./utils/functions.js"
 import type { error } from "./utils/errors.js"
 import type { evaluate } from "./utils/generics.js"
 import { Path } from "./utils/lists.js"

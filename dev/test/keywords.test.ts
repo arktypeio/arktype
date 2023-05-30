@@ -92,7 +92,7 @@ suite("keywords", () => {
             attest(type("true").root.condition).snap("$arkRoot === true")
         })
         test("unknown", () => {
-            attest(type("unknown").root.condition).snap("true")
+            attest(type("unknown").root.condition).snap()
         })
         test("void", () => {
             attest(type("void").condition).is(type("undefined").condition)

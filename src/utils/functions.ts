@@ -1,5 +1,17 @@
 import { throwInternalError } from "./errors.js"
 
+export const cached = <T>(thunk: () => T) => {
+    let isCached = false
+    let result: T | undefined
+    return () => {
+        if (!isCached) {
+            result = thunk()
+            isCached = true
+        }
+        return result
+    }
+}
+
 export const CompiledFunction = class extends Function {
     constructor(...args: string[]) {
         try {

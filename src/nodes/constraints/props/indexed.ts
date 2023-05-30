@@ -1,4 +1,5 @@
 import { throwInternalError } from "../../../utils/errors.js"
+import { cached } from "../../../utils/functions.js"
 import { tryParseWellFormedInteger } from "../../../utils/numericLiterals.js"
 import { ClassNode } from "../../basis/class.js"
 import { In, IndexIn, KeyIn } from "../../compilation.js"
@@ -63,7 +64,7 @@ const compileIndexedProp = (prop: IndexedPropRule) => {
     const valueCheck = `valid = ${prop.value.condition
         .replaceAll(KeyIn, `${KeyIn}Inner`)
         .replaceAll(In, `${In}[${KeyIn}]`)} && valid`
-    if (prop.key === stringNode) {
+    if (prop.key === getStringNode()) {
         // if the index signature is just for "string", we don't need to check it explicitly
         return valueCheck
     }
@@ -157,7 +158,7 @@ const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
 
 export const arrayBasisNode = new ClassNode(Array)
 
-export const stringNode = TypeNode.from({ basis: "string" })
+export const getStringNode = cached(() => TypeNode.from({ basis: "string" }))
 
 export const arrayIndexInput = <index extends number = 0>(
     firstVariadicIndex: index = 0 as index
