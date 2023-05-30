@@ -1,6 +1,13 @@
-lockfileVersion: '6.0'
+lockfileVersion: '6.1'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
 
 dependencies:
+  arktype:
+    specifier: link:../../..
+    version: link:../../..
   ts-node:
     specifier: 10.9.1
     version: 10.9.1(@types/node@20.2.5)(typescript@5.0.4)

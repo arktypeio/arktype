@@ -21,33 +21,31 @@ const dataArray = [...new Array(1000)].map((_, i) => ({
     number: i
 }))
 
-const arkType = type({
-    number: "number",
-    negNumber: "number",
-    maxNumber: "number",
-    string: "string",
-    longString: "string",
-    boolean: "boolean",
-    deeplyNested: {
-        foo: "string",
-        num: "number",
-        bool: "boolean"
-    }
-})
+// const arkType = type({
+//     number: "number",
+//     negNumber: "number",
+//     maxNumber: "number",
+//     string: "string",
+//     longString: "string",
+//     boolean: "boolean",
+//     deeplyNested: {
+//         foo: "string",
+//         num: "number",
+//         bool: "boolean"
+//     }
+// })
 
-bench("arktype", () => {
-    arkType.root.allows(validInput)
-}).median([2.42, "ns"])
+// bench("arktype", () => {
+//     arkType.root.allows(validInput)
+// }).median([2.42, "ns"])
 
-bench("arktype mutated", () => {
-    for (let i = 0; i < 1000; i++) {
-        arkType.root.allows(dataArray[i])
-    }
-}).median([11.4, "us"])
+// bench("arktype mutated", () => {
+//     for (let i = 0; i < 1000; i++) {
+//         arkType.root.allows(dataArray[i])
+//     }
+// }).median([11.4, "us"])
 
 // =================== ZOD ========================= //
-
-// import z from "zod"
 
 // const zodType = z.object({
 //     number: z.number(),
@@ -72,22 +70,6 @@ bench("arktype mutated", () => {
 //         zodType.parse(dataArray[i])
 //     }
 // }).median([1.25, "ms"])
-
-// bench("arktype instantiations", () => {
-//     const arkType = type({
-//         number: "number",
-//         negNumber: "number",
-//         maxNumber: "number",
-//         string: "string",
-//         longString: "string",
-//         boolean: "boolean",
-//         deeplyNested: {
-//             foo: "string",
-//             num: "number",
-//             bool: "boolean"
-//         }
-//     })
-// }).types([3464, "instantiations"])
 
 // bench("zod instantiations", () => {
 //     const zodType = z.object({
