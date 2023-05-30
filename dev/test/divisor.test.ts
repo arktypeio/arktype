@@ -103,7 +103,7 @@ suite("divisibility", () => {
         })
         test("invalid literal", () => {
             attest(() => type("number%3&8")).throws(
-                "Intersection of number and a multiple of 3 and 8 results in an unsatisfiable type"
+                "Intersection of a multiple of 3 and the value 8 results in an unsatisfiable type"
             )
         })
     })

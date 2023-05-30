@@ -99,24 +99,20 @@ export class Disjoint {
     }
 
     describeReasons() {
-        const reasons = entriesOf(this.sources).flatMap((entry) => {
-            const [serializedPath, disjointsAtPath] = entry
-            const segments = JSON.parse(serializedPath) as string[]
-            const path = segments.join(".")
-            const kinds = keysOf(disjointsAtPath)
-            return kinds.map(
-                (kind) =>
-                    `${path && `${path}: `} ${disjointsAtPath[kind]!.l} and ${
-                        disjointsAtPath[kind]!.r
-                    }`
-            )
-        })
+        const reasons = this.flat
         if (reasons.length === 1) {
-            return reasons[0]
+            const { path, disjoint } = reasons[0]
+            const pathString = JSON.parse(path).join(".")
+            return `Intersection${pathString && ` at ${pathString}`} of ${
+                disjoint.l
+            } and ${disjoint.r} results in an unsatisfiable type`
         }
-        return `The following intersections result in unsatisfiable types:\n• ${reasons.join(
-            "\n• "
-        )}`
+        return `The following intersections result in unsatisfiable types:\n• ${reasons
+            .map(
+                ({ path, disjoint }) =>
+                    `${path}: ${disjoint.l} and ${disjoint.r}`
+            )
+            .join("\n• ")}`
     }
 
     throw() {

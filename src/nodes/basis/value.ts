@@ -32,7 +32,7 @@ export class ValueNode extends BaseNode<"basis"> implements BasisDefinition {
     }
 
     toString() {
-        return stringify(this.rule)
+        return `the value ${stringify(this.rule)}`
     }
 }
 

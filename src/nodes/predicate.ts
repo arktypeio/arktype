@@ -71,9 +71,13 @@ export class PredicateNode extends BaseNode<"predicate"> {
     }
 
     toString() {
-        return this.rule.length === 0
-            ? "unknown"
-            : this.rule.map((rule) => rule.toString()).join(" and ")
+        if (this.rule.length === 0) {
+            return "unknown"
+        }
+        const constraints = this.constraints
+        return constraints.length
+            ? constraints.map((rule) => rule.toString()).join(" and ")
+            : `${this.basis}`
     }
 
     compileTraverse(s: CompilationState) {
