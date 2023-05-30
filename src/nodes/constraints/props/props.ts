@@ -23,15 +23,6 @@ import { compileNamedProp, intersectNamedProp } from "./named.js"
 
 export type PropRule = NamedPropRule | IndexedPropRule
 
-const isIndexed = (rule: PropRule): rule is IndexedPropRule =>
-    typeof rule.key === "object"
-
-const isNamed = (rule: PropRule): rule is NamedPropRule =>
-    typeof rule.key === "string"
-
-const kindPrecedence = (rule: PropRule) =>
-    isIndexed(rule) ? 2 : rule.prerequisite ? -1 : rule.optional ? 1 : 0
-
 export class PropsNode extends BaseNode<"props"> {
     constructor(public rule: PropRule[]) {
         rule.sort((l, r) => {
@@ -64,6 +55,8 @@ export class PropsNode extends BaseNode<"props"> {
     )
 
     indexed = this.rule.filter(isIndexed)
+
+    static compile(rule: PropRule[]) {}
 
     static from(
         namedInput: NamedPropsInput,
@@ -240,6 +233,15 @@ export class PropsNode extends BaseNode<"props"> {
         return this.named.map((prop) => prop.key)
     }
 }
+
+const isIndexed = (rule: PropRule): rule is IndexedPropRule =>
+    typeof rule.key === "object"
+
+const isNamed = (rule: PropRule): rule is NamedPropRule =>
+    typeof rule.key === "string"
+
+const kindPrecedence = (rule: PropRule) =>
+    isIndexed(rule) ? 2 : rule.prerequisite ? -1 : rule.optional ? 1 : 0
 
 export const emptyPropsNode = new PropsNode([])
 

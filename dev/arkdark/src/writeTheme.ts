@@ -16,7 +16,7 @@ const getContent = (palette: Record<string, string>, useItalics: boolean) => {
 }
 
 const arkDarkPalette = {
-    variables: "#80cff8",
+    variables: "#fffff0",
     keywordsAndTokens: "#eb9f2e",
     primitives: "#f5cf8f",
     types: "#009eff",

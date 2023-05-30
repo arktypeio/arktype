@@ -796,11 +796,15 @@ export const getTokenColors = (palette: Palette, useItalics: boolean) => {
             }
         },
         {
-            name: "JSON Property Names and JS/TS object literal keys",
-            scope: [
-                "support.type.property-name.json",
-                "meta.object-literal.key"
-            ],
+            name: "JSON Property Names",
+            scope: ["support.type.property-name.json"],
+            settings: {
+                foreground: functions
+            }
+        },
+        {
+            name: "JS/TS object literal keys",
+            scope: ["meta.object-literal.key"],
             settings: {
                 foreground: variables
             }

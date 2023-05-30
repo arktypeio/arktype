@@ -24,6 +24,15 @@ const z = {
     a: true
 }
 
+const factor = (s: string) => s
+
+// not highlighted
+factor("foo|bar")
+// not highglighted
+or("foo|bar")
+
+const ff = type("string").or("foobar|baz")
+
 const types = scope({ notASpace: { a: type("string") } }).compile()
 attest(types.notASpace).typed as Type<{ a: string }, Ark>
 

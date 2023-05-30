@@ -10,9 +10,12 @@
     "repository": {
         "definition": {
             "contentName": "meta.embedded.arktype.definition",
-            "begin": "(([^\\)\\(\\s]*\\.)?(type|scope|morph|and|or)\\()",
+            "begin": "(([^\\)\\(\\s]*\\.)?(type|scope)\\()|(([^\\)\\(\\s]*\\.\\s*)(morph|and|or)\\()",
             "beginCaptures": {
                 "1": {
+                    "name": "entity.name.function.ts"
+                },
+                "4": {
                     "name": "entity.name.function.ts"
                 }
             },
