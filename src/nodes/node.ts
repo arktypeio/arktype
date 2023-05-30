@@ -1,5 +1,5 @@
-import { CompiledFunction } from "../utils/functions.js"
 import { throwInternalError } from "../utils/errors.js"
+import { CompiledFunction } from "../utils/functions.js"
 import type { ClassNode } from "./basis/class.js"
 import type { DomainNode } from "./basis/domain.js"
 import type { ValueNode } from "./basis/value.js"

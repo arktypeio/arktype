@@ -47,10 +47,10 @@ type DisjointKinds = {
 
 export type DisjointKindEntries = entryOf<DisjointKinds>[]
 
-export type PathString = `[${string}]`
+export type SerializedPath = `[${string}]`
 
 export type DisjointsSources = {
-    [k in `${PathString}`]: DisjointsAtPath
+    [k in `${SerializedPath}`]: DisjointsAtPath
 }
 
 export type DisjointsAtPath = {
@@ -86,6 +86,16 @@ export class Disjoint {
             )
         }
         return new Disjoint({ "[]": fromEntries(entries) })
+    }
+
+    get flat() {
+        return entriesOf(this.sources).flatMap(([path, disjointKinds]) =>
+            entriesOf(disjointKinds).map(([kind, disjoint]) => ({
+                path,
+                kind,
+                disjoint
+            }))
+        )
     }
 
     describeReasons() {
