@@ -13,5 +13,4 @@
         // // avoid docusaurus config triggering type errors in node_modules
         // "allowJs": true
     }
-    // "exclude": ["node_modules", "dist"]
 }

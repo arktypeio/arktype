@@ -127,7 +127,9 @@ const parseSnipComment = (
     filePath: string,
     lineNumber: number
 ): ParsedSnip => {
-    const snipText = snipComment.slice(snipComment.indexOf("@snip"))
+    const snipText = snipComment
+        .slice(snipComment.indexOf("@snip"))
+        .replaceAll("\r", "")
     const parts = snipText.split(" ")
     const [kind, id] = parts[0].split(":") as [
         ExtractionToken,

@@ -1,4 +1,4 @@
-import { basename, join, relative } from "node:path"
+import { basename, join, normalize, relative } from "node:path"
 import * as process from "node:process"
 import { Project } from "ts-morph"
 import type { WalkOptions } from "../../attest/src/fs.js"
@@ -109,15 +109,20 @@ const updateApiDocs = (project: Project) => {
 
 const getSnippetsAndUpdateReferences = (project: Project) => {
     process.stdout.write("Updating snippets...")
-    const sourceControlPaths = getSourceControlPaths().filter(
-        (path) =>
-            // Avoid conflicts between snip matching and the source
-            // code defining those matchers
-            !path.startsWith(relative(repoDirs.root, dirName())) &&
-            // Don't update old docs versions, which would incorrectly update
-            // snapshotted package.json versions
-            !path.startsWith(join("dev", "arktype.io", "versioned_docs"))
-    )
+    const sourceControlPaths = getSourceControlPaths().filter((path) => {
+        const normalizedPath = normalize(path)
+        // Avoid conflicts between snip matching and the source
+        // code defining those matchers
+        const sourceCodeMatchers = normalizedPath.startsWith(
+            relative(repoDirs.root, dirName())
+        )
+        // Don't update old docs versions, which would incorrectly update
+        // snapshotted package.json versions
+        const oldDocMatcher = normalizedPath.startsWith(
+            join("dev", "arktype.io", "versioned_docs")
+        )
+        return !oldDocMatcher && !sourceCodeMatchers
+    })
     const snippets = extractSnippets(sourceControlPaths, project)
     updateSnippetReferences(snippets)
     process.stdout.write("✅\n")
