@@ -224,7 +224,9 @@ export class Scope<exports = any, locals = any, root = any> {
     compile() {
         if (!this.compiled) {
             for (const name in this.aliases) {
-                this.exports[name] ??= this.maybeResolve(name) as Type
+                if (!this.exports[name]) {
+                    this.maybeResolve(name)
+                }
             }
             this.compiled = true
         }
