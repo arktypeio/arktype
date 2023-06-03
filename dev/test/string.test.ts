@@ -16,7 +16,7 @@ suite("string", () => {
         const t = type(`  \n   string  |
         boolean    []   `)
         attest(t.infer).typed as string | boolean[]
-        attest(t.root.toString()).snap("[object Object]")
+        attest(t.condition).equals(type("string|boolean[]").condition)
     })
     test("errors on bad whitespace", () => {
         attest(() =>

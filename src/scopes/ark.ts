@@ -1,34 +1,34 @@
 import { registry } from "../nodes/registry.js"
 import type { Out } from "../parse/ast/morph.js"
 import type { ScopeParser, Space } from "../scope.js"
-import { RootScope } from "../scope.js"
+import { EmptyScope } from "../scope.js"
 import type { TypeParser } from "../type.js"
-import { jsObjects, jsObjectsScope } from "./jsObjects.js"
-import { tsKeywords, tsKeywordsScope } from "./tsKeywords.js"
-import { validation, validationScope } from "./validation/validation.js"
+import { jsObject, jsObjectTypes } from "./jsObjects.js"
+import { tsKeyword, tsKeywordTypes } from "./tsKeywords.js"
+import { validation, validationTypes } from "./validation/validation.js"
 
-export const arkScope = RootScope.scope({
-    ...tsKeywords,
-    ...jsObjects,
-    ...validation
+export const ark = EmptyScope.scope({
+    ...tsKeywordTypes,
+    ...jsObjectTypes,
+    ...validationTypes
 })
 
-export const ark: Space<Ark, Ark> = arkScope.compile()
+export const arktypes: Space<Ark, Ark> = ark.compile()
 
 registry().register("ark", ark)
 
 export const scopes = {
-    tsKeywords: tsKeywordsScope,
-    jsObjects: jsObjectsScope,
-    validation: validationScope,
-    ark: arkScope
+    tsKeyword,
+    jsObject,
+    validation,
+    ark
 }
 
 export const spaces = {
-    tsKeywords,
-    jsObjects,
-    validation,
-    ark
+    tsKeyword: tsKeywordTypes,
+    jsObject: jsObjectTypes,
+    validation: validationTypes,
+    ark: arktypes
 } satisfies Record<Exclude<keyof typeof scopes, "root">, Space>
 
 // This is just copied from the inference of defaultScope. Creating an explicit
@@ -76,6 +76,6 @@ export type Ark = {
     Promise: Promise<unknown>
 }
 
-export const scope: ScopeParser<{}, Ark> = arkScope.scope as never
+export const scope: ScopeParser<{}, Ark> = ark.scope as never
 
-export const type: TypeParser<Ark> = arkScope.type
+export const type: TypeParser<Ark> = ark.type

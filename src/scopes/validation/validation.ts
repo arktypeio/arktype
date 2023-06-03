@@ -1,5 +1,5 @@
 import { TypeNode } from "../../nodes/type.js"
-import { RootScope } from "../../scope.js"
+import { EmptyScope } from "../../scope.js"
 import {
     wellFormedIntegerMatcher,
     wellFormedNumberMatcher
@@ -84,7 +84,7 @@ const json = TypeNode.from({
 // "semver": "a valid semantic version",
 // "json": "a JSON-parsable string",
 // "integer": "an integer"
-export const validationScope = RootScope.scope({
+export const validation = EmptyScope.scope({
     // Character sets
     alpha: /^[A-Za-z]*$/,
     alphanumeric: /^[A-Za-z\d]*$/,
@@ -101,4 +101,4 @@ export const validationScope = RootScope.scope({
     integer: TypeNode.from({ basis: "number", divisor: 1 })
 })
 
-export const validation = validationScope.compile()
+export const validationTypes = validation.compile()

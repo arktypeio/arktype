@@ -1,5 +1,5 @@
 // TODO: move this and other non-nodes out of nodes dir
-import type { ark } from "../main.js"
+import type { ark } from "../scopes/ark.js"
 import type { autocomplete } from "../utils/generics.js"
 import type { CheckResult, TraversalState } from "./traverse.js"
 

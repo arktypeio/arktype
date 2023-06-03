@@ -1,6 +1,6 @@
 import { suite, test } from "mocha"
 import type { Problem } from "../../src/main.js"
-import { ark, scope, type } from "../../src/main.js"
+import { arktypes, scope, type } from "../../src/main.js"
 import { writeUndiscriminatableMorphUnionMessage } from "../../src/nodes/discriminate.js"
 import type { Out } from "../../src/parse/ast/morph.js"
 import type { Ark } from "../../src/scopes/ark.js"
@@ -31,7 +31,7 @@ suite("morph", () => {
         attest(result.data).equals(false).typed as boolean
     })
     test("chained to type", () => {
-        const t = type(["string>5", "|>", ark.parsedDate])
+        const t = type(["string>5", "|>", arktypes.parsedDate])
         attest(t).typed as Type<(In: string) => Out<Date>>
         attest(t("5/21/1993").data?.getDate()).equals(21)
         attest(t("foobar").problems?.summary).snap(

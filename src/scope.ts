@@ -1,4 +1,5 @@
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
+import { registry } from "./nodes/registry.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import type {
     extractIn,
@@ -8,15 +9,16 @@ import type {
     TypeParser
 } from "./type.js"
 import { Type } from "./type.js"
+import { throwParseError } from "./utils/errors.js"
 import type { evaluate, isAny, nominal } from "./utils/generics.js"
 import type { split } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
 
-export type ScopeParser<parent, root> = {
-    <aliases>(aliases: validateAliases<aliases, parent & root>): Scope<
-        inferScope<bootstrap<aliases>, parent & root>,
-        parent,
-        root
+export type ScopeParser<local, ambient> = {
+    <aliases>(aliases: validateAliases<aliases, local & ambient>): Scope<
+        inferScope<bootstrap<aliases>, local & ambient>,
+        local,
+        ambient
     >
 }
 
@@ -91,15 +93,16 @@ type paramsFrom<scopeKey> = scopeKey extends GenericDeclaration<
     : []
 
 export type ScopeOptions = {
-    root?: Space
+    ambient?: Scope
+    local?: Scope
     codes?: Record<ProblemCode, { mustBe?: string }>
     keys?: KeyCheckKind
 }
 
-export type ScopeConfig = evaluate<{
+export type ScopeConfig = {
     readonly keys: KeyCheckKind
     readonly codes: ProblemOptionsByCode
-}>
+}
 
 export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
     codes: {},
@@ -141,33 +144,48 @@ export type Space<exports = Dict, $ = Dict> = {
         : Type<exports[k], exports & $>
 }
 
-export class Scope<exports = any, locals = any, root = any> {
+export class Scope<exports = any, locals = any, ambient = any> {
     declare infer: extractOut<exports>
     declare inferIn: extractIn<exports>
-    declare $: exports & locals & root
+    declare $: exports & locals & ambient
 
     readonly config: ScopeConfig
-    private resolutions: Record<string, Type | Space> = {}
+    readonly ambient: Scope | null
+    readonly local: Scope | null
+    private resolutions: Record<string, Type | Space>
     private exports: Record<string, Type | Space> = {}
 
     constructor(public aliases: Dict, opts: ScopeOptions = {}) {
         this.config = compileScopeOptions(opts)
-
-        // this.cacheSpaces(opts.root ?? registry().ark, "imports")
-        // if (opts.imports) {
-        //     this.cacheSpaces(opts.imports, "imports")
-        // }
+        this.ambient =
+            opts.ambient === undefined ? registry().ark : opts.ambient
+        this.resolutions = { ...this.ambient?.compile() }
+        this.local = opts.local ?? null
+        if (this.local) {
+            const locals = this.local.compile()
+            for (const k in locals) {
+                if (k in this.resolutions) {
+                    throwParseError(writeDuplicateAliasesMessage(k))
+                }
+                this.resolutions[k] = locals[k]
+            }
+        }
+        for (const k in aliases) {
+            if (k in this.resolutions) {
+                throwParseError(writeDuplicateAliasesMessage(k))
+            }
+        }
     }
 
     type: TypeParser<this["$"]> = ((def: unknown, config: TypeConfig = {}) => {
         return !config || new Type(def, this)
     }) as never
 
-    scope: ScopeParser<exports, root> = ((
+    scope: ScopeParser<exports, ambient> = ((
         aliases: Dict,
-        config: TypeConfig = {}
+        opts: ScopeOptions = {}
     ) => {
-        return new Scope(aliases, config)
+        return new Scope(aliases, { ...opts, local: this })
     }) as never
 
     maybeResolve(name: string): Type | undefined {
@@ -185,19 +203,19 @@ export class Scope<exports = any, locals = any, root = any> {
         return resolution
     }
 
-    private _compiled = false
+    private compiled = false
     compile() {
-        if (!this._compiled) {
+        if (!this.compiled) {
             for (const name in this.aliases) {
                 this.exports[name] ??= this.maybeResolve(name) as Type
             }
-            this._compiled = true
+            this.compiled = true
         }
-        return this.exports as Space<exports, locals & root>
+        return this.exports as Space<exports, locals & ambient>
     }
 }
 
-export const RootScope = new Scope<{}, {}, {}>({}, {})
+export const EmptyScope = new Scope<{}, {}, {}>({}, {})
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
