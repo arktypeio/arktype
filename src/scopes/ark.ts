@@ -1,13 +1,13 @@
 import { registry } from "../nodes/registry.js"
 import type { Out } from "../parse/ast/morph.js"
 import type { ScopeParser, Space } from "../scope.js"
-import { EmptyScope } from "../scope.js"
+import { Scope } from "../scope.js"
 import type { TypeParser } from "../type.js"
 import { jsObject, jsObjectTypes } from "./jsObjects.js"
 import { tsKeyword, tsKeywordTypes } from "./tsKeywords.js"
 import { validation, validationTypes } from "./validation/validation.js"
 
-export const ark = EmptyScope.scope({
+export const ark = Scope.root({
     ...tsKeywordTypes,
     ...jsObjectTypes,
     ...validationTypes
@@ -31,7 +31,7 @@ export const spaces = {
     ark: arktypes
 } satisfies Record<Exclude<keyof typeof scopes, "root">, Space>
 
-// This is just copied from the inference of defaultScope. Creating an explicit
+// This is just copied from the inference of the default scope. Creating an explicit
 // type like this makes validation for the default type and scope functions feel
 // significantly more responsive.
 export type Ark = {

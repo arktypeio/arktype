@@ -1,7 +1,7 @@
 import { TypeNode } from "../nodes/type.js"
-import { EmptyScope } from "../scope.js"
+import { Scope } from "../scope.js"
 
-export const jsObject = EmptyScope.scope({
+export const jsObject = Scope.root({
     Function: TypeNode.from({ basis: Function }),
     Date: TypeNode.from({ basis: Date }),
     Error: TypeNode.from({ basis: Error }),
