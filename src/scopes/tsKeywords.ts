@@ -31,8 +31,6 @@ export const tsKeyword = Scope.root({
     unknown: TypeNode.from({ basis: undefined }),
     void: "undefined" as Inferred<void>,
     undefined: TypeNode.from({ basis: ["===", undefined] })
-    // public: "foo",
-    // "#foo": "boolean"
 })
 
 export const tsKeywordTypes = tsKeyword.compile()

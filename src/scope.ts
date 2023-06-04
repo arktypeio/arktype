@@ -28,14 +28,14 @@ export type ScopeParser<parent, root> = {
 }
 
 type inferExports<aliases, inferred> = evaluate<{
-    [k in keyof inferred as `#${k}` extends keyof aliases
+    [k in keyof inferred as `#${k & string}` extends keyof aliases
         ? never
         : k]: inferred[k]
 }>
 
 type inferLocals<aliases, inferred, parent> = evaluate<
     parent & {
-        [k in keyof inferred as `#${k}` extends keyof aliases
+        [k in keyof inferred as `#${k & string}` extends keyof aliases
             ? k
             : never]: inferred[k]
     }
@@ -82,9 +82,7 @@ type bootstrap<aliases> = {
         aliases[k]
     >
 } & {
-    [k in privateKey<keyof aliases> as privateNameFrom<k>]: Alias<
-        aliases[`#${k}` & keyof aliases]
-    >
+    [k in privateKey<keyof aliases> as privateNameFrom<k>]: Alias<aliases[k]>
 }
 
 type inferBootstrapped<bootstrapped, $> = evaluate<{
