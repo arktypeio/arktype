@@ -1,5 +1,4 @@
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
-import { registry } from "./nodes/registry.js"
 import type { inferDefinition, validateDefinition } from "./parse/definition.js"
 import type {
     extractIn,
@@ -9,28 +8,21 @@ import type {
     TypeParser
 } from "./type.js"
 import { Type } from "./type.js"
-import { throwParseError } from "./utils/errors.js"
 import type { evaluate, isAny, nominal } from "./utils/generics.js"
 import type { split } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
 
-export type ScopeParser<ctx extends ScopeContext> = {
-    <aliases>(
-        aliases: validateAliases<aliases, ctx["locals"] & ctx["ambient"]>
-    ): Scope<{
-        exports: inferScope<bootstrap<aliases>, ctx["locals"] & ctx["ambient"]>
-        locals: ctx["exports"]
-        ambient: ctx["ambient"]
-    }>
+export type ScopeParser<parent, root> = {
+    <aliases>(aliases: validateAliases<aliases, parent & root>): Scope<
+        inferScope<bootstrap<aliases>, parent & root>,
+        parent,
+        root
+    >
 }
 
 export type RootScopeParser = <aliases>(
     aliases: validateAliases<aliases, {}>
-) => Scope<{
-    exports: inferScope<bootstrap<aliases>, {}>
-    locals: {}
-    ambient: {}
-}>
+) => Scope<inferScope<bootstrap<aliases>, {}>, {}, {}>
 
 type validateAliases<aliases, $> = evaluate<{
     [k in keyof aliases]: k extends GenericDeclaration<infer name>
@@ -103,16 +95,15 @@ type paramsFrom<scopeKey> = scopeKey extends GenericDeclaration<
     : []
 
 export type ScopeOptions = {
+    root?: Space
     codes?: Record<ProblemCode, { mustBe?: string }>
     keys?: KeyCheckKind
 }
 
-type InternalScopeOptions = ScopeOptions & { parent?: Scope | null }
-
-export type ScopeConfig = {
+export type ScopeConfig = evaluate<{
     readonly keys: KeyCheckKind
     readonly codes: ProblemOptionsByCode
-}
+}>
 
 export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
     codes: {},
@@ -122,13 +113,7 @@ export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
 export type resolve<
     name extends keyof $ | subaliasOf<$>,
     $
-> = name extends keyof $
-    ? isAny<$[name]> extends true
-        ? any
-        : $[name] extends Alias<infer def>
-        ? inferDefinition<def, $>
-        : $[name]
-    : name extends `${infer subscope}.${infer name}`
+> = name extends `${infer subscope}.${infer name}`
     ? subscope extends keyof $
         ? $[subscope] extends Scope
             ? name extends keyof $[subscope]["infer"]
@@ -136,7 +121,11 @@ export type resolve<
                 : never
             : never
         : never
-    : never
+    : isAny<$[name]> extends true
+    ? any
+    : $[name] extends Alias<infer def>
+    ? inferDefinition<def, $>
+    : $[name]
 
 export type subaliasOf<$> = {
     [k in keyof $]: $[k] extends Scope<infer exports>
@@ -146,79 +135,48 @@ export type subaliasOf<$> = {
         : never
 }[keyof $]
 
-export type Space<ctx extends ScopeContext = ScopeContext> = {
-    [k in keyof ctx["exports"]]: ctx["exports"][k] extends Scope<infer subCtx>
-        ? Space<subCtx>
-        : Type<ctx["exports"][k], resolutions<ctx>>
+export type Space<exports = Dict, locals = Dict, root = Dict> = {
+    [k in keyof exports]: exports[k] extends Scope<
+        infer exports,
+        infer locals,
+        infer root
+    >
+        ? Space<exports, locals & root>
+        : Type<exports[k], locals & root>
 }
 
-type resolutions<ctx extends ScopeContext> = ctx["exports"] &
-    ctx["locals"] &
-    ctx["ambient"]
-
-export type ScopeContext = {
-    exports: unknown
-    locals: unknown
-    ambient: unknown
-}
-
-export class Scope<ctx extends ScopeContext = any> {
-    declare infer: extractOut<ctx["exports"]>
-    declare inferIn: extractIn<ctx["exports"]>
-    declare $: resolutions<ctx>
+export class Scope<exports = any, locals = any, root = any> {
+    declare infer: extractOut<exports>
+    declare inferIn: extractIn<exports>
+    declare $: exports & locals & root
 
     readonly config: ScopeConfig
-    readonly root: Scope | null
-    readonly parent: Scope | null
-    private resolutions: Record<string, Type | Space>
+    private resolutions: Record<string, Type | Space> = {}
     private exports: Record<string, Type | Space> = {}
 
-    constructor(public aliases: Dict, opts: InternalScopeOptions = {}) {
+    constructor(public aliases: Dict, opts: ScopeOptions = {}) {
         this.config = compileScopeOptions(opts)
-        this.parent = opts.parent === undefined ? registry().ark : opts.parent
-        this.root =
-            this.parent === null
-                ? null
-                : this.parent.root === null
-                ? this.parent
-                : this.parent.root
-        this.resolutions = { ...this.root?.compile() }
-        if (this.parent && this.parent !== this.root) {
-            const locals = this.parent.compile()
-            for (const k in locals) {
-                if (k in this.resolutions) {
-                    throwParseError(writeDuplicateAliasesMessage(k))
-                }
-                this.resolutions[k] = locals[k]
-            }
-        }
-        for (const k in aliases) {
-            if (k in this.resolutions) {
-                throwParseError(writeDuplicateAliasesMessage(k))
-            }
-        }
+
+        // this.cacheSpaces(opts.root ?? registry().ark, "imports")
+        // if (opts.imports) {
+        //     this.cacheSpaces(opts.imports, "imports")
+        // }
     }
 
     static root: RootScopeParser = (aliases) => {
-        return new Scope(aliases, { parent: null })
+        return new Scope(aliases, {})
     }
 
     type: TypeParser<this["$"]> = ((def: unknown, config: TypeConfig = {}) => {
-        config
-        return new Type(def, this)
+        return !config || new Type(def, this)
     }) as never
 
-    scope: ScopeParser<ctx> = ((aliases: Dict, opts: ScopeOptions = {}) => {
-        return new Scope(aliases, { ...opts, parent: this })
+    scope: ScopeParser<exports, root> = ((
+        aliases: Dict,
+        config: TypeConfig = {}
+    ) => {
+        return new Scope(aliases, config)
     }) as never
-
-    toAmbient(): Scope<{
-        exports: {}
-        locals: {}
-        ambient: ctx["exports"]
-    }> {
-        return new Scope({}, { parent: this })
-    }
 
     maybeResolve(name: string): Type | undefined {
         if (this.resolutions[name]) {
@@ -235,19 +193,19 @@ export class Scope<ctx extends ScopeContext = any> {
         return resolution
     }
 
-    private compiled = false
+    private _compiled = false
     compile() {
-        if (!this.compiled) {
+        if (!this._compiled) {
             for (const name in this.aliases) {
-                if (!this.exports[name]) {
-                    this.maybeResolve(name)
-                }
+                this.exports[name] ??= this.maybeResolve(name) as Type
             }
-            this.compiled = true
+            this._compiled = true
         }
-        return this.exports as Space<ctx>
+        return this.exports as Space<exports, locals, root>
     }
 }
+
+export const RootScope = new Scope<{}, {}, {}>({}, {})
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
