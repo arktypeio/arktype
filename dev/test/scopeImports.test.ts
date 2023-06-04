@@ -1,6 +1,6 @@
 import { suite, test } from "mocha"
 import { scope } from "../../src/main.js"
-import type { Space } from "../../src/scope.js"
+import type { TypeSet } from "../../src/scope.js"
 import { writeDuplicateAliasesMessage } from "../../src/scope.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import { attest } from "../attest/main.js"
@@ -73,7 +73,7 @@ suite("scope imports", () => {
             "#private": "uuid"
         }).export()
 
-        attest(outOfScope).typed as Space<{
+        attest(outOfScope).typed as TypeSet<{
             exports: {
                 hasCrept: true
                 public: string | true | 3
@@ -94,7 +94,7 @@ suite("private aliases", () => {
             foo: "bar[]",
             "#bar": "boolean"
         }).export()
-        attest(types).typed as Space<{
+        attest(types).typed as TypeSet<{
             exports: { foo: boolean[] }
             locals: { bar: boolean }
             ambient: Ark

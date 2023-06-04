@@ -128,7 +128,7 @@ type paramsFrom<scopeKey> = scopeKey extends GenericDeclaration<
     : []
 
 export type ScopeOptions = {
-    root?: Space
+    root?: TypeSet
     codes?: Record<ProblemCode, { mustBe?: string }>
     keys?: KeyCheckKind
 }
@@ -173,25 +173,25 @@ export type subaliasOf<$> = {
         : never
 }[keyof $]
 
-export type Space<c extends Context = any> = {
-    [k in keyof c["exports"]]: c["exports"][k] extends Scope<infer sub>
-        ? Space<sub>
+export type TypeSet<c extends ScopeContext = any> = {
+    [k in keyof c["exports"]]: c["exports"][k] extends Scope<infer subcontext>
+        ? TypeSet<subcontext>
         : Type<c["exports"][k], c["exports"] & c["locals"] & c["ambient"]>
 }
 
-export type Context = {
+export type ScopeContext = {
     exports: unknown
     locals: unknown
     ambient: unknown
 }
 
-export class Scope<c extends Context = any> {
+export class Scope<c extends ScopeContext = any> {
     declare infer: extractOut<c["exports"]>
     declare inferIn: extractIn<c["exports"]>
 
     readonly config: ScopeConfig
-    private resolutions: Record<string, Type | Space> = {}
-    private exports: Record<string, Type | Space> = {}
+    private resolutions: Record<string, Type | TypeSet> = {}
+    private exports: Record<string, Type | TypeSet> = {}
 
     constructor(public aliases: Dict, opts: ScopeOptions = {}) {
         this.config = compileScopeOptions(opts)
@@ -249,14 +249,14 @@ export class Scope<c extends Context = any> {
             }
             this.exported = true
         }
-        return this.exports as Space<
+        return this.exports as TypeSet<
             names extends [] ? c : destructuredExportContext<c, names[number]>
         >
     }
 }
 
 type destructuredExportContext<
-    c extends Context,
+    c extends ScopeContext,
     name extends keyof c["exports"]
 > = {
     exports: { [k in name]: c["exports"][k] }
@@ -267,7 +267,7 @@ type destructuredExportContext<
 }
 
 type destructuredImportContext<
-    c extends Context,
+    c extends ScopeContext,
     name extends keyof c["exports"]
 > = {
     [k in name as `#${k & string}`]: Inferred<c["exports"][k]>

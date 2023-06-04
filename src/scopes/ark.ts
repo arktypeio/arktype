@@ -1,6 +1,6 @@
 import { registry } from "../nodes/registry.js"
 import type { Out } from "../parse/ast/morph.js"
-import type { ScopeParser, Space } from "../scope.js"
+import type { ScopeParser, TypeSet } from "../scope.js"
 import { Scope } from "../scope.js"
 import type { TypeParser } from "../type.js"
 import { jsObject, jsObjectTypes } from "./jsObjects.js"
@@ -18,7 +18,7 @@ export const ark = Scope.root({
 
 registry().register("ark", ark)
 
-export const arktypes: Space<{ exports: Ark; locals: {}; ambient: {} }> =
+export const arktypes: TypeSet<{ exports: Ark; locals: {}; ambient: {} }> =
     ark.export()
 
 export const scopes = {
@@ -33,7 +33,7 @@ export const spaces = {
     jsObject: jsObjectTypes,
     validation: validationTypes,
     ark: arktypes
-} satisfies Record<Exclude<keyof typeof scopes, "root">, Space>
+} satisfies Record<Exclude<keyof typeof scopes, "root">, TypeSet>
 
 // This is just copied from the inference of the default scope. Creating an explicit
 // type like this makes validation for the default type and scope functions feel

@@ -1,5 +1,5 @@
 import { suite, test } from "mocha"
-import type { Scope, Space } from "../../src/main.js"
+import type { Scope, TypeSet } from "../../src/main.js"
 import { scope, type } from "../../src/main.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import { attest } from "../attest/main.js"
@@ -14,7 +14,7 @@ suite("subscopes", () => {
             sub
         }).export()
 
-        attest(types).typed as Space<{
+        attest(types).typed as TypeSet<{
             exports: {
                 a: string
                 b: number
