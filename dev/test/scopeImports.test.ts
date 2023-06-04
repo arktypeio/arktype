@@ -27,13 +27,17 @@ suite("space destructuring", () => {
     })
 
     test("multiple", () => {
-        const imported = scope({
+        const base = scope({
             ...threeSixtyNoSpace,
             ...yesSpace,
             extra: "true"
-        }).scope({
+        })
+
+        const imported = scope({
+            ...base.import(),
             a: "three|sixty|no|yes|extra"
         })
+
         attest(imported.infer).typed as {
             a: 3 | 60 | "no" | "yes" | true
         }

@@ -9,7 +9,7 @@ suite("private aliases", () => {
         const types = scope({
             foo: "bar[]",
             "#bar": "boolean"
-        })
+        }).compile()
         attest(types).typed as Space<{ foo: boolean[] }, { bar: boolean }, Ark>
     })
 })

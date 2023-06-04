@@ -1,5 +1,9 @@
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
-import type { inferDefinition, validateDefinition } from "./parse/definition.js"
+import type {
+    inferDefinition,
+    Inferred,
+    validateDefinition
+} from "./parse/definition.js"
 import type {
     extractIn,
     extractOut,
@@ -206,6 +210,12 @@ export class Scope<exports = any, locals = any, root = any> {
     ) => {
         return new Scope(aliases, config)
     }) as never
+
+    import(): {
+        [k in keyof exports as `#${k & string}`]: Inferred<exports[k]>
+    } {
+        return {} as any
+    }
 
     maybeResolve(name: string): Type | undefined {
         if (this.resolutions[name]) {
