@@ -163,11 +163,11 @@ export type resolve<
     : never
 
 export type subaliasOf<$> = {
-    [k in keyof $]: $[k] extends Scope<infer $>
+    [k in keyof $]: $[k] extends Scope<infer sub>
         ? {
-              [subalias in keyof $["exports"]]: `${k & string}.${subalias &
+              [subalias in keyof sub["exports"]]: `${k & string}.${subalias &
                   string}`
-          }[keyof $["exports"]]
+          }[keyof sub["exports"]]
         : never
 }[keyof $]
 
