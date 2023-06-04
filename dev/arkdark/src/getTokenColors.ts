@@ -39,6 +39,16 @@ export const getTokenColors = (
             }
         },
         {
+            name: "Quotes",
+            scope: [
+                "punctuation.definition.string.begin",
+                "punctuation.definition.string.end"
+            ],
+            settings: {
+                foreground: variables
+            }
+        },
+        {
             name: "Support Constant Math",
             scope: "support.constant.math",
             settings: {
@@ -937,8 +947,6 @@ export const getTokenColors = (
             name: "Markdown Punctuation",
             scope: [
                 "punctuation.definition.string.markdown",
-                "punctuation.definition.string.begin.markdown",
-                "punctuation.definition.string.end.markdown",
                 "meta.link.inline.markdown punctuation.definition.string"
             ],
             settings: {

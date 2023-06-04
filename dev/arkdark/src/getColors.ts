@@ -224,7 +224,7 @@ export const getColors = (palette: ArkDarkPalette) => ({
     "textLink.foreground": blue,
     "textLink.activeForeground": shadeColor(blue, 30),
     "textPreformat.foreground": yellow,
-    "editorBracketHighlight.foreground1": palette.types,
+    "editorBracketHighlight.foreground1": palette.variables,
     "editorBracketHighlight.foreground2": palette.keywordsAndTokens,
     "editorBracketHighlight.unexpectedBracket.foreground":
         palette.keywordsAndTokens

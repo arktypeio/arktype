@@ -18,8 +18,8 @@ const getContent = (palette: ArkDarkPalette, useItalics: boolean) => {
 const arkDarkPalette = {
     variables: "#f5cf8f",
     keywordsAndTokens: "#eb9f2e",
-    primitives: "#f5cf8f",
-    types: "#009eff",
+    primitives: "#408fde",
+    types: "#40decc",
     functions: "#80cff8"
 }
 

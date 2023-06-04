@@ -52,7 +52,11 @@ export type Generic<
 > = nominal<[params, def], "generic">
 
 type bootstrap<aliases> = {
-    [k in nonGenericNameFrom<keyof aliases>]: aliases[k] extends Scope
+    [k in privateKey<keyof aliases> as privateNameFrom<k>]: Alias<
+        aliases[`#${k}` & keyof aliases]
+    >
+} & {
+    [k in unmodifiedName<keyof aliases>]: aliases[k] extends Scope
         ? aliases[k]
         : Alias<aliases[k]>
 } & {
@@ -65,7 +69,10 @@ type bootstrap<aliases> = {
 }
 
 type inferScope<bootstrapped, $> = evaluate<{
-    [name in keyof bootstrapped]: bootstrapped[name] extends Alias<infer def>
+    [name in Exclude<
+        keyof bootstrapped,
+        PrivateDeclaration
+    >]: bootstrapped[name] extends Alias<infer def>
         ? inferDefinition<def, $ & bootstrapped>
         : bootstrapped[name] extends Generic
         ? bootstrapped[name]
@@ -74,18 +81,32 @@ type inferScope<bootstrapped, $> = evaluate<{
         : never
 }>
 
+type inferAlias<def, $> = bootstrapped[name] extends Alias<infer def>
+    ? inferDefinition<def, $ & bootstrapped>
+    : bootstrapped[name] extends Generic
+    ? bootstrapped[name]
+    : bootstrapped[name] extends Scope
+    ? bootstrapped[name]
+    : never
+
 type genericKey<k> = k & GenericDeclaration
 
 type genericNameFrom<k> = k extends GenericDeclaration<infer name>
     ? name
     : never
 
-type nonGenericNameFrom<k> = Exclude<k, GenericDeclaration>
+type unmodifiedName<k> = Exclude<k, GenericDeclaration | PrivateDeclaration>
+
+type privateKey<k> = k & PrivateDeclaration
+
+type privateNameFrom<k> = k extends PrivateDeclaration<infer name> ? name : k
 
 export type GenericDeclaration<
     name extends string = string,
     params extends string = string
 > = `${name}<${params}>`
+
+type PrivateDeclaration<name extends string = string> = `#${name}`
 
 type paramsFrom<scopeKey> = scopeKey extends GenericDeclaration<
     string,

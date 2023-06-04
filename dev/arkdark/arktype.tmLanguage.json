@@ -34,7 +34,7 @@
             "match": "([\"'`])(.*?)?((?<!\\\\)(\\1))",
             "captures": {
                 "1": {
-                    "name": "keyword.operator"
+                    "name": "punctuation.definition.string.begin"
                 },
                 "2": {
                     "patterns": [
@@ -54,7 +54,7 @@
                     ]
                 },
                 "3": {
-                    "name": "keyword.operator"
+                    "name": "punctuation.definition.string.end"
                 }
             }
         },
