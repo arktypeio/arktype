@@ -143,16 +143,18 @@ export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
     keys: opts.keys ?? "loose"
 })
 
-export type resolve<
-    reference extends keyof $ | subaliasOf<$>,
+export type resolve<reference extends keyof $, $> = isAny<
+    $[reference]
+> extends true
+    ? any
+    : $[reference] extends Alias<infer def>
+    ? inferDefinition<def, $>
+    : $[reference]
+
+export type resolveSubalias<
+    reference extends subaliasOf<$>,
     $
-> = reference extends keyof $
-    ? isAny<$[reference]> extends true
-        ? any
-        : $[reference] extends Alias<infer def>
-        ? inferDefinition<def, $>
-        : $[reference]
-    : reference extends `${infer subscope}.${infer name}`
+> = reference extends `${infer subscope}.${infer name}`
     ? subscope extends keyof $
         ? $[subscope] extends Scope
             ? name extends keyof $[subscope]["infer"]
@@ -171,10 +173,10 @@ export type subaliasOf<$> = {
         : never
 }[keyof $]
 
-export type Space<$ extends Context = any> = {
-    [k in keyof $["exports"]]: $["exports"][k] extends Scope<infer sub>
+export type Space<c extends Context = any> = {
+    [k in keyof c["exports"]]: c["exports"][k] extends Scope<infer sub>
         ? Space<sub>
-        : Type<$["exports"][k], $["exports"] & $["locals"] & $["ambient"]>
+        : Type<c["exports"][k], c["exports"] & c["locals"] & c["ambient"]>
 }
 
 export type Context = {
@@ -183,9 +185,9 @@ export type Context = {
     ambient: unknown
 }
 
-export class Scope<$ extends Context = any> {
-    declare infer: extractOut<$["exports"]>
-    declare inferIn: extractIn<$["exports"]>
+export class Scope<c extends Context = any> {
+    declare infer: extractOut<c["exports"]>
+    declare inferIn: extractIn<c["exports"]>
 
     readonly config: ScopeConfig
     private resolutions: Record<string, Type | Space> = {}
@@ -204,23 +206,23 @@ export class Scope<$ extends Context = any> {
         return new Scope(aliases, {})
     }
 
-    type: TypeParser<$["exports"] & $["locals"] & $["ambient"]> = ((
+    type: TypeParser<c["exports"] & c["locals"] & c["ambient"]> = ((
         def: unknown,
         config: TypeConfig = {}
     ) => {
         return !config || new Type(def, this)
     }) as never
 
-    scope: ScopeParser<$["exports"], $["ambient"]> = ((
+    scope: ScopeParser<c["exports"], c["ambient"]> = ((
         aliases: Dict,
         config: TypeConfig = {}
     ) => {
         return new Scope(aliases, config)
     }) as never
 
-    import<names extends (keyof $["exports"])[]>(
+    import<names extends (keyof c["exports"])[]>(
         ...names: names
-    ): destructuredImportContext<$, names[number]> {
+    ): destructuredImportContext<c, names[number]> {
         return {} as any
     }
 
@@ -240,7 +242,7 @@ export class Scope<$ extends Context = any> {
     }
 
     private exported = false
-    export<names extends (keyof $["exports"])[]>(...names: names) {
+    export<names extends (keyof c["exports"])[]>(...names: names) {
         if (!this.exported) {
             for (const name in this.aliases) {
                 this.exports[name] ??= this.maybeResolve(name) as Type
@@ -248,27 +250,27 @@ export class Scope<$ extends Context = any> {
             this.exported = true
         }
         return this.exports as Space<
-            names extends [] ? $ : destructuredExportContext<$, names[number]>
+            names extends [] ? c : destructuredExportContext<c, names[number]>
         >
     }
 }
 
 type destructuredExportContext<
-    $ extends Context,
-    name extends keyof $["exports"]
+    c extends Context,
+    name extends keyof c["exports"]
 > = {
-    exports: { [k in name]: $["exports"][k] }
-    locals: $["locals"] & {
-        [k in Exclude<keyof $["exports"], name>]: $["exports"][k]
+    exports: { [k in name]: c["exports"][k] }
+    locals: c["locals"] & {
+        [k in Exclude<keyof c["exports"], name>]: c["exports"][k]
     }
-    ambient: $["ambient"]
+    ambient: c["ambient"]
 }
 
 type destructuredImportContext<
-    $ extends Context,
-    name extends keyof $["exports"]
+    c extends Context,
+    name extends keyof c["exports"]
 > = {
-    [k in name as `#${k & string}`]: Inferred<$["exports"][k]>
+    [k in name as `#${k & string}`]: Inferred<c["exports"][k]>
 }
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
