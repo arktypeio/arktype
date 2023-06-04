@@ -40,6 +40,8 @@ export type TypeParser<$> = {
 
 registry().register("state", TraversalState)
 
+const z = `foo`
+
 export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     (data: unknown) => CheckResult<extractOut<t>>
 > {

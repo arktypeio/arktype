@@ -10,7 +10,7 @@
     "repository": {
         "definition": {
             "contentName": "meta.embedded.arktype.definition",
-            "begin": "(([^\\)\\(\\s]*(\\.))?((type|scope)|((\\.)(morph|and|or)))\\()",
+            "begin": "(([^\\)\\(\\s]*(\\.))?((type|scope|define)|((\\.)(morph|and|or)))\\()",
             "beginCaptures": {
                 "1": {
                     "name": "entity.name.function.ts"
@@ -34,7 +34,7 @@
             "match": "([\"'`])(.*?)?((?<!\\\\)(\\1))",
             "captures": {
                 "1": {
-                    "name": "punctuation.definition.string.begin"
+                    "name": "string.quoted"
                 },
                 "2": {
                     "patterns": [
@@ -54,7 +54,7 @@
                     ]
                 },
                 "3": {
-                    "name": "punctuation.definition.string.end"
+                    "name": "string.quoted"
                 }
             }
         },

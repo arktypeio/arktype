@@ -19,7 +19,6 @@ const b = "boolean"
 const c = "number"
 
 const t = type(a).and(b).and(c)
-
 const z = {
     a: true
 }
@@ -157,3 +156,10 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
 //             ? parseOperator<state.scanTo<s, unscanned>>
 //             : state.error<writeUnexpectedCharacterMessage<lookahead>>
 //         : state.finalize<s, "">
+
+// This is used to generate highlighting.png
+const highlighted = type({
+    literals: "'foo' | 'bar' | true",
+    expressions: "boolean[] | 5 < number <= 10 | number % 2",
+    regex: "/^(?:4[0-9]{12}(?:[0-9]{3,6}))$/"
+})

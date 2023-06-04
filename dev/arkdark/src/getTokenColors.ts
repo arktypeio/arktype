@@ -28,24 +28,26 @@ export const getTokenColors = (
             name: "String",
             scope: "string",
             settings: {
-                foreground: primitives
+                foreground: variables
             }
         },
         {
             name: "String Quoted",
             scope: "string.quoted",
             settings: {
-                foreground: primitives
+                foreground: variables
             }
         },
         {
             name: "Quotes",
             scope: [
                 "punctuation.definition.string.begin",
-                "punctuation.definition.string.end"
+                "punctuation.definition.string.end",
+                "punctuation.definition.string.template.begin",
+                "punctuation.definition.string.template.end"
             ],
             settings: {
-                foreground: variables
+                foreground: primitives
             }
         },
         {
