@@ -17,13 +17,13 @@ suite("subscopes", () => {
         attest(types).typed as Space<{
             a: string
             b: number
-            sub: Scope<
-                {
+            sub: Scope<{
+                exports: {
                     alias: number
-                },
-                {},
-                Ark
-            >
+                }
+                locals: {}
+                root: Ark
+            }>
         }>
         attest(types.sub.alias.infer).typed as number
         const expected = type("number").condition

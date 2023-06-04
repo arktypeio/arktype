@@ -56,29 +56,35 @@ suite("scope imports", () => {
     })
 
     test("import & export", () => {
-        const importedBase = scope({
-            importedAlias: "string"
+        const threeSixtyNoScope = scope({
+            three: "3",
+            sixty: "60",
+            no: "'no'"
         })
-        const exportedBase = scope({
-            exportedAlias: "boolean"
+
+        const scopeCreep = scope({
+            hasCrept: "true"
         })
-        const imported = scope({
-            ...importedBase.import(),
-            ...exportedBase.export(),
-            public: "importedAlias|exportedAlias|private",
-            "#private": "number"
-        })
-        attest(imported).typed as Scope<
-            {
-                exportedAlias: boolean
-                public: string | number | boolean
-            },
-            {
-                importedAlias: string
-                private: number
-            },
-            Ark
-        >
+
+        const outOfScope = scope({
+            ...threeSixtyNoScope.import("three", "no"),
+            ...scopeCreep.export(),
+            public: "hasCrept|three|no|private",
+            "#private": "uuid"
+        }).export()
+
+        attest(outOfScope).typed as Space<{
+            exports: {
+                hasCrept: true
+                public: string | true | 3
+            }
+            locals: {
+                three: 3
+                no: "no"
+                private: string
+            }
+            ambient: Ark
+        }>
     })
 })
 
@@ -88,6 +94,10 @@ suite("private aliases", () => {
             foo: "bar[]",
             "#bar": "boolean"
         }).export()
-        attest(types).typed as Space<{ foo: boolean[] }, { bar: boolean }, Ark>
+        attest(types).typed as Space<{
+            exports: { foo: boolean[] }
+            locals: { bar: boolean }
+            ambient: Ark
+        }>
     })
 })

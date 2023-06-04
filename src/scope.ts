@@ -16,19 +16,19 @@ import type { evaluate, isAny, nominal } from "./utils/generics.js"
 import type { split } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
 
-export type ScopeParser<parent, root> = {
-    <aliases>(aliases: validateAliases<aliases, parent & root>): Scope<
-        inferExports<
+export type ScopeParser<parent, ambient> = {
+    <aliases>(aliases: validateAliases<aliases, parent & ambient>): Scope<{
+        exports: inferExports<
             aliases,
-            inferBootstrapped<bootstrap<aliases>, parent & root>
-        >,
-        inferLocals<
+            inferBootstrapped<bootstrap<aliases>, parent & ambient>
+        >
+        locals: inferLocals<
             aliases,
-            inferBootstrapped<bootstrap<aliases>, parent & root>,
+            inferBootstrapped<bootstrap<aliases>, parent & ambient>,
             parent
-        >,
-        root
-    >
+        >
+        ambient: ambient
+    }>
 }
 
 type inferExports<aliases, inferred> = evaluate<{
@@ -146,7 +146,13 @@ export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
 export type resolve<
     name extends keyof $ | subaliasOf<$>,
     $
-> = name extends `${infer subscope}.${infer name}`
+> = name extends keyof $
+    ? isAny<$[name]> extends true
+        ? any
+        : $[name] extends Alias<infer def>
+        ? inferDefinition<def, $>
+        : $[name]
+    : name extends `${infer subscope}.${infer name}`
     ? subscope extends keyof $
         ? $[subscope] extends Scope
             ? name extends keyof $[subscope]["infer"]
@@ -154,11 +160,7 @@ export type resolve<
                 : never
             : never
         : never
-    : isAny<$[name]> extends true
-    ? any
-    : $[name] extends Alias<infer def>
-    ? inferDefinition<def, $>
-    : $[name]
+    : never
 
 export type subaliasOf<$> = {
     [k in keyof $]: $[k] extends Scope<infer exports>
@@ -168,25 +170,21 @@ export type subaliasOf<$> = {
         : never
 }[keyof $]
 
-export type Space<
-    exports = Dict,
-    locals = Dict,
-    root = Dict,
-    name extends keyof exports = keyof exports
-> = {
-    [k in name]: exports[k] extends Scope<
-        infer exports,
-        infer locals,
-        infer root
-    >
-        ? Space<exports, locals & root>
-        : Type<exports[k], exports & locals & root>
+export type Space<$ extends Context = any> = {
+    [k in keyof $["exports"]]: $["exports"][k] extends Scope<infer sub>
+        ? Space<sub>
+        : Type<$["exports"][k], $["exports"] & $["locals"] & $["ambient"]>
 }
 
-export class Scope<exports = any, locals = any, root = any> {
-    declare infer: extractOut<exports>
-    declare inferIn: extractIn<exports>
-    declare $: exports & locals & root
+export type Context = {
+    exports: unknown
+    locals: unknown
+    ambient: unknown
+}
+
+export class Scope<$ extends Context = any> {
+    declare infer: extractOut<$["exports"]>
+    declare inferIn: extractIn<$["exports"]>
 
     readonly config: ScopeConfig
     private resolutions: Record<string, Type | Space> = {}
@@ -205,22 +203,25 @@ export class Scope<exports = any, locals = any, root = any> {
         return new Scope(aliases, {})
     }
 
-    type: TypeParser<this["$"]> = ((def: unknown, config: TypeConfig = {}) => {
+    type: TypeParser<$["exports"] & $["locals"] & $["ambient"]> = ((
+        def: unknown,
+        config: TypeConfig = {}
+    ) => {
         return !config || new Type(def, this)
     }) as never
 
-    scope: ScopeParser<exports, root> = ((
+    scope: ScopeParser<$["exports"], $["ambient"]> = ((
         aliases: Dict,
         config: TypeConfig = {}
     ) => {
         return new Scope(aliases, config)
     }) as never
 
-    import<names extends (keyof exports)[]>(
+    import<names extends (keyof $["exports"])[]>(
         ...names: names
     ): {
-        [k in names extends [] ? keyof exports : names[number] as `#${k &
-            string}`]: Inferred<exports[k]>
+        [k in names extends [] ? keyof $["exports"] : names[number] as `#${k &
+            string}`]: Inferred<$["exports"][k]>
     } {
         return {} as any
     }
@@ -241,7 +242,7 @@ export class Scope<exports = any, locals = any, root = any> {
     }
 
     private exported = false
-    export<names extends (keyof exports)[]>(...names: names) {
+    export<names extends (keyof $["exports"])[]>(...names: names) {
         if (!this.exported) {
             for (const name in this.aliases) {
                 this.exports[name] ??= this.maybeResolve(name) as Type
@@ -249,15 +250,21 @@ export class Scope<exports = any, locals = any, root = any> {
             this.exported = true
         }
         return this.exports as Space<
-            exports,
-            locals,
-            root,
-            names extends [] ? keyof exports : names[number]
+            names extends []
+                ? $
+                : {
+                      exports: { [k in names[number]]: $["exports"][k] }
+                      locals: $["locals"] & {
+                          [k in Exclude<
+                              keyof $["exports"],
+                              names[number]
+                          >]: $["exports"][k]
+                      }
+                      ambient: $["ambient"]
+                  }
         >
     }
 }
-
-export const RootScope = new Scope<{}, {}, {}>({}, {})
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
