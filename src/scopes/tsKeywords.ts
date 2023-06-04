@@ -33,4 +33,4 @@ export const tsKeyword = Scope.root({
     undefined: TypeNode.from({ basis: ["===", undefined] })
 })
 
-export const tsKeywordTypes = tsKeyword.compile()
+export const tsKeywordTypes = tsKeyword.export()

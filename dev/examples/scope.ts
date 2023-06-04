@@ -12,7 +12,7 @@ export const types = scope({
         email: "email",
         "packages?": "package[]"
     }
-}).compile()
+}).export()
 
 // Cyclic types are inferred to arbitrary depth...
 export type Package = typeof types.package.infer

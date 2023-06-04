@@ -168,14 +168,19 @@ export type subaliasOf<$> = {
         : never
 }[keyof $]
 
-export type Space<exports = Dict, locals = Dict, root = Dict> = {
-    [k in keyof exports]: exports[k] extends Scope<
+export type Space<
+    exports = Dict,
+    locals = Dict,
+    root = Dict,
+    name extends keyof exports = keyof exports
+> = {
+    [k in name]: exports[k] extends Scope<
         infer exports,
         infer locals,
         infer root
     >
         ? Space<exports, locals & root>
-        : Type<exports[k], locals & root>
+        : Type<exports[k], exports & locals & root>
 }
 
 export class Scope<exports = any, locals = any, root = any> {
@@ -211,8 +216,11 @@ export class Scope<exports = any, locals = any, root = any> {
         return new Scope(aliases, config)
     }) as never
 
-    import(): {
-        [k in keyof exports as `#${k & string}`]: Inferred<exports[k]>
+    import<names extends (keyof exports)[]>(
+        ...names: names
+    ): {
+        [k in names extends [] ? keyof exports : names[number] as `#${k &
+            string}`]: Inferred<exports[k]>
     } {
         return {} as any
     }
@@ -232,15 +240,20 @@ export class Scope<exports = any, locals = any, root = any> {
         return resolution
     }
 
-    private _compiled = false
-    compile() {
-        if (!this._compiled) {
+    private exported = false
+    export<names extends (keyof exports)[]>(...names: names) {
+        if (!this.exported) {
             for (const name in this.aliases) {
                 this.exports[name] ??= this.maybeResolve(name) as Type
             }
-            this._compiled = true
+            this.exported = true
         }
-        return this.exports as Space<exports, locals, root>
+        return this.exports as Space<
+            exports,
+            locals,
+            root,
+            names extends [] ? keyof exports : names[number]
+        >
     }
 }
 

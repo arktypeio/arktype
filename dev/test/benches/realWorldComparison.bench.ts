@@ -92,7 +92,7 @@ bench("arktype scope", () => {
             },
             type: "'public-key'"
         }
-    }).compile()
+    }).export()
 }).types([26173, "instantiations"])
 
 bench("zod", () => {

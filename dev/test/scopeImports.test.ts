@@ -1,10 +1,12 @@
 import { suite, test } from "mocha"
 import { scope } from "../../src/main.js"
+import type { Scope, Space } from "../../src/scope.js"
 import { writeDuplicateAliasesMessage } from "../../src/scope.js"
+import type { Ark } from "../../src/scopes/ark.js"
 import { attest } from "../attest/main.js"
 import { lazily } from "./utils.js"
 
-suite("space destructuring", () => {
+suite("scope imports", () => {
     const threeSixtyNoScope = lazily(() =>
         scope({
             three: "3",
@@ -14,8 +16,8 @@ suite("space destructuring", () => {
     )
     const yesScope = lazily(() => scope({ yes: "'yes'" }))
 
-    const threeSixtyNoSpace = lazily(() => threeSixtyNoScope.compile())
-    const yesSpace = lazily(() => yesScope.compile())
+    const threeSixtyNoSpace = lazily(() => threeSixtyNoScope.export())
+    const yesSpace = lazily(() => yesScope.export())
 
     test("single", () => {
         const $ = scope({
@@ -33,8 +35,7 @@ suite("space destructuring", () => {
             extra: "true"
         })
 
-        const imported = scope({
-            ...base.import(),
+        const imported = base.scope({
             a: "three|sixty|no|yes|extra"
         })
 
@@ -50,7 +51,43 @@ suite("space destructuring", () => {
                     // @ts-expect-error
                     { a: "string" }
                 )
-                .compile()
+                .export()
         ).throwsAndHasTypeError(writeDuplicateAliasesMessage("a"))
+    })
+
+    test("import & export", () => {
+        const importedBase = scope({
+            importedAlias: "string"
+        })
+        const exportedBase = scope({
+            exportedAlias: "boolean"
+        })
+        const imported = scope({
+            ...importedBase.import(),
+            ...exportedBase.export(),
+            public: "importedAlias|exportedAlias|private",
+            "#private": "number"
+        })
+        attest(imported).typed as Scope<
+            {
+                exportedAlias: boolean
+                public: string | number | boolean
+            },
+            {
+                importedAlias: string
+                private: number
+            },
+            Ark
+        >
+    })
+})
+
+suite("private aliases", () => {
+    test("non-generic", () => {
+        const types = scope({
+            foo: "bar[]",
+            "#bar": "boolean"
+        }).export()
+        attest(types).typed as Space<{ foo: boolean[] }, { bar: boolean }, Ark>
     })
 })

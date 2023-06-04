@@ -99,7 +99,7 @@ suite("morph", () => {
         const types = scope({
             lengthOfString: ["string", "|>", (data) => data.length],
             mapToLengths: "lengthOfString[]"
-        }).compile()
+        }).export()
         attest(types.mapToLengths).typed as Type<((In: string) => number)[]>
         const result = types.mapToLengths(["1", "22", "333"])
         if (result.problems) {
@@ -152,7 +152,7 @@ suite("morph", () => {
             b: "boolean",
             aOrB: "a|b",
             bOrA: "b|a"
-        }).compile()
+        }).export()
         attest(types.aOrB).typed as Type<boolean | ((In: number) => string)>
         // attest(types.aOrB.node).snap({
         //     number: { rules: {}, morph: "(function)" },
@@ -166,7 +166,7 @@ suite("morph", () => {
             a: { a: ["number>0", "|>", (data) => data + 1] },
             b: { a: "1" },
             c: "a&b"
-        }).compile()
+        }).export()
         attest(types.c).typed as Type<{
             a: (In: 1) => number
         }>
@@ -183,7 +183,7 @@ suite("morph", () => {
             a: { a: ["number>0", "|>", (data) => `${data}`] },
             b: { a: "Function" },
             c: "a|b"
-        }).compile()
+        }).export()
         attest(types.c).typed as Type<
             | {
                   a: (In: number) => string
@@ -217,7 +217,7 @@ suite("morph", () => {
             a: type("string").morph((s) => s.length),
             b: () => $.type("a").morph((n) => n === 0)
         })
-        const types = $.compile()
+        const types = $.export()
         attest(types.b).typed as Type<(In: string) => boolean>
         // attest(types.b.node).snap({
         //     string: { rules: {}, morph: ["(function)", "(function)"] }
@@ -229,7 +229,7 @@ suite("morph", () => {
             b: () => $.type({ a: "a" }).morph(({ a }) => a === 0)
         })
 
-        const types = $.compile()
+        const types = $.export()
         attest(types.b).typed as Type<(In: { a: string }) => boolean>
         // attest(types.b.node).snap({
         //     object: { rules: { props: { a: "a" } }, morph: "(function)" }
@@ -259,7 +259,7 @@ suite("morph", () => {
             b: ["boolean"],
             c: () => $.type("a|b")
         })
-        const types = $.compile()
+        const types = $.export()
         attest(types.c).typed as Type<[boolean] | ((In: [string]) => string[])>
     })
     test("double intersection", () => {
@@ -277,7 +277,7 @@ suite("morph", () => {
                 a: ["/.*/", "|>", (s) => s.trim()],
                 b: "string",
                 c: "a|b"
-            }).compile()
+            }).export()
         }).throws(writeUndiscriminatableMorphUnionMessage("/"))
     })
     test("deep double intersection", () => {
@@ -297,7 +297,7 @@ suite("morph", () => {
                 a: { a: ["string", "|>", (s) => s.trim()] },
                 b: { a: "'foo'" },
                 c: "a|b"
-            }).compile()
+            }).export()
         }).throws(writeUndiscriminatableMorphUnionMessage("/"))
     })
     test("deep undiscriminated reference", () => {
@@ -320,7 +320,7 @@ suite("morph", () => {
                 a: { a: ["string", "|>", (s) => s.trim()] },
                 b: { b: "boolean" },
                 c: "a|b"
-            }).compile()
+            }).export()
         }).throws(writeUndiscriminatableMorphUnionMessage("/"))
     })
     test("array double intersection", () => {
@@ -329,7 +329,7 @@ suite("morph", () => {
                 a: { a: ["number>0", "|>", (data) => data + 1] },
                 b: { a: ["number>0", "|>", (data) => data + 2] },
                 c: "a[]&b[]"
-            }).compile()
+            }).export()
         }).throws(
             "At [index]/a: Intersection of morphs results in an unsatisfiable type"
         )
@@ -340,7 +340,7 @@ suite("morph", () => {
                 a: { a: ["string", "|>", (s) => s.trim()] },
                 b: { b: "boolean" },
                 c: { key: "a|b" }
-            }).compile()
+            }).export()
         }).throws(writeUndiscriminatableMorphUnionMessage("key"))
     })
     test("helper morph intersection", () => {

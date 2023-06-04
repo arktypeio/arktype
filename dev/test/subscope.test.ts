@@ -12,7 +12,7 @@ suite("subscopes", () => {
             a: "string",
             b: "sub.alias",
             sub
-        }).compile()
+        }).export()
 
         attest(types).typed as Space<{
             a: string

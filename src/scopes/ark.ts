@@ -18,7 +18,7 @@ export const ark = Scope.root({
 
 registry().register("ark", ark)
 
-export const arktypes: Space<Ark, {}, {}> = ark.compile()
+export const arktypes: Space<Ark, {}, {}> = ark.export()
 
 export const scopes = {
     tsKeyword,

@@ -16,7 +16,7 @@ const getCyclicScope = () =>
     })
 
 type Package = ReturnType<
-    ReturnType<typeof getCyclicScope>["compile"]
+    ReturnType<typeof getCyclicScope>["export"]
 >["package"]["infer"]
 
 const getCyclicData = () => {

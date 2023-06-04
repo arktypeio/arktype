@@ -7,15 +7,15 @@ import { attest } from "../attest/main.js"
 
 suite("scope", () => {
     test("base definition", () => {
-        const types = scope({ a: "string" }).compile()
+        const types = scope({ a: "string" }).export()
         attest(types.a.infer).typed as string
         attest(() =>
             // @ts-expect-error
-            scope({ a: "strong" }).compile()
+            scope({ a: "strong" }).export()
         ).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
     })
     test("type definition", () => {
-        const types = scope({ a: type("string") }).compile()
+        const types = scope({ a: type("string") }).export()
         attest(types.a.infer).typed as string
         attest(() =>
             // @ts-expect-error
@@ -27,11 +27,11 @@ suite("scope", () => {
             a: "string>5",
             b: "email<=10",
             c: "a&b"
-        }).compile()
+        }).export()
         attest(types.c.infer).typed as string
     })
     test("object array", () => {
-        const types = scope({ a: "string", b: [{ c: "a" }] }).compile()
+        const types = scope({ a: "string", b: [{ c: "a" }] }).export()
         attest(types.b.infer).typed as [
             {
                 c: string
@@ -64,7 +64,7 @@ suite("scope", () => {
             a: () => $.type("string"),
             b: () => $.type("number")
         })
-        const types = $.compile()
+        const types = $.export()
         attest(types.a.infer).typed as string
         attest(types.b.infer).typed as number
     })
@@ -73,7 +73,7 @@ suite("scope", () => {
             n: () => $.type("number"),
             lessThan10: () => $.type("n<10")
         })
-        const types = $.compile()
+        const types = $.export()
         attest(types.n.infer).typed as number
         attest(types.lessThan10.infer).typed as number
     })
@@ -83,7 +83,7 @@ suite("scope", () => {
                 // @ts-expect-error
                 a: () => $.type("kung|foo")
             })
-            $.compile()
+            $.export()
         }).throwsAndHasTypeError(writeUnresolvableMessage("kung"))
     })
     test("errors on semantically invalid helper", () => {
@@ -93,7 +93,7 @@ suite("scope", () => {
                 // @ts-expect-error
                 lessThan10: () => $.type("b<10")
             })
-            $.compile()
+            $.export()
         }).throwsAndHasTypeError(writeUnboundableMessage("'b'"))
     })
     test("errors on ridiculous unexpected alias scenario", () => {
@@ -106,7 +106,7 @@ suite("scope", () => {
                     // @ts-expect-error
                     name: "Unexpected character 'c'"
                 }
-            }).compile()
+            }).export()
         ).throwsAndHasTypeError(writeUnexpectedCharacterMessage("c"))
     })
 })

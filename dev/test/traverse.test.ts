@@ -51,7 +51,7 @@ suite("traverse", () => {
             //     }
             // }
             //}
-        ).compile()
+        ).export()
         attest(types.isEven(3).problems?.summary).snap(
             "3 is not a multiple of 2!"
         )
@@ -105,7 +105,7 @@ suite("traverse", () => {
             b: { a: "number" },
             c: { a: "Function" },
             d: "a|b|c"
-        }).compile()
+        }).export()
         attest(types.d({}).problems?.summary).snap(
             "a must be a string, a number or an object (was undefined)"
         )

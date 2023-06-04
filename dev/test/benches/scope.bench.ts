@@ -22,19 +22,19 @@ bench("cyclic 10 intersection", () => {
 }).types([19581, "instantiations"])
 
 bench("cyclic(10)", () => {
-    const types = scope(cyclic10).compile()
+    const types = scope(cyclic10).export()
 })
     // .median([47.02, "us"])
     .types([3369, "instantiations"])
 
 bench("cyclic(100)", () => {
-    const types = scope(cyclic100).compile()
+    const types = scope(cyclic100).export()
 })
     // .median([417.71, "us"])
     .types([15378, "instantiations"])
 
 bench("cyclic(500)", () => {
-    const types = scope(cyclic500).compile()
+    const types = scope(cyclic500).export()
 })
     // .median([2.62, "ms"])
     .types([67195, "instantiations"])

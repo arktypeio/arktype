@@ -23,7 +23,7 @@ suite("autocomplete", () => {
                 foobar: "string",
                 // @ts-expect-error
                 baz: "fo"
-            }).compile()
+            }).export()
         }).types.errors(`Type '"fo"' is not assignable to type '"foobar"'`)
     })
     test("prefix", () => {

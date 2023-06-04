@@ -76,7 +76,7 @@ suite("tuple", () => {
             const types = scope({
                 myArrayKeyword: "boolean[]",
                 myVariadicKeyword: ["string", "...myArrayKeyword"]
-            }).compile()
+            }).export()
             attest(types.myVariadicKeyword.infer).typed as [
                 string,
                 ...boolean[]

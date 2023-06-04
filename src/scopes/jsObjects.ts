@@ -13,4 +13,4 @@ export const jsObject = Scope.root({
     Promise: TypeNode.from({ basis: Promise })
 })
 
-export const jsObjectTypes = jsObject.compile()
+export const jsObjectTypes = jsObject.export()

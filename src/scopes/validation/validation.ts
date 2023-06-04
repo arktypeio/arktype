@@ -101,4 +101,4 @@ export const validation = Scope.root({
     integer: TypeNode.from({ basis: "number", divisor: 1 })
 })
 
-export const validationTypes = validation.compile()
+export const validationTypes = validation.export()

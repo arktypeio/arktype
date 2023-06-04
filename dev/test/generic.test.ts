@@ -13,7 +13,7 @@ suite("generic", () => {
             bar: "boolean"
         })
     )
-    const types = lazily(() => $.compile())
+    const types = lazily(() => $.export())
 
     test("unary", () => {
         const t = $.type("box<string>")

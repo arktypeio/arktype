@@ -26,7 +26,7 @@ suite("this reference", () => {
                     // @ts-expect-error
                     "box?": "this"
                 }
-            }).compile()
+            }).export()
         ).throwsAndHasTypeError(writeUnresolvableMessage("this"))
     })
 })

@@ -32,7 +32,7 @@ suite("thunk", () => {
                 }
             }
         }
-        const types = $.compile()
+        const types = $.export()
         attest(types.a.infer).typed as {
             b: {
                 a: {
@@ -55,7 +55,7 @@ suite("thunk", () => {
             a: () => $.type({ b: "b" }),
             b: () => $.type({ a: "a" })
         })
-        const types = $.compile()
+        const types = $.export()
         attest(types.a.infer).typed as {
             b: {
                 a: any
@@ -75,7 +75,7 @@ suite("thunk", () => {
             b: { b: "boolean" },
             aAndB: () => $.type("a&b")
         })
-        const types = $.compile()
+        const types = $.export()
         attest(types.aAndB.infer).typed as {
             a: string
             b: boolean
@@ -97,7 +97,7 @@ suite("thunk", () => {
         const $ = scope({
             a: () => 42
         })
-        attest(() => $.compile()).throws(
+        attest(() => $.export()).throws(
             writeBadDefinitionTypeMessage("Function")
         )
     })
@@ -106,6 +106,6 @@ suite("thunk", () => {
             // @ts-expect-error
             a: () => $.type("bad")
         })
-        attest(() => $.compile()).throws(writeUnresolvableMessage("bad"))
+        attest(() => $.export()).throws(writeUnresolvableMessage("bad"))
     })
 })
