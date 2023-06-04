@@ -14,21 +14,23 @@ import type { evaluate, isAny, nominal } from "./utils/generics.js"
 import type { split } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
 
-export type ScopeParser<parent, root> = {
-    <aliases>(aliases: validateAliases<aliases, parent & root>): Scope<
-        inferScope<bootstrap<aliases>, parent & root>,
-        parent,
-        root
-    >
+export type ScopeParser<ctx extends ScopeContext> = {
+    <aliases>(
+        aliases: validateAliases<aliases, ctx["locals"] & ctx["ambient"]>
+    ): Scope<{
+        exports: inferScope<bootstrap<aliases>, ctx["locals"] & ctx["ambient"]>
+        locals: ctx["exports"]
+        ambient: ctx["ambient"]
+    }>
 }
 
 export type RootScopeParser = <aliases>(
     aliases: validateAliases<aliases, {}>
-) => Scope<
-    inferScope<bootstrap<aliases>, {}>,
-    {},
-    inferScope<bootstrap<aliases>, {}>
->
+) => Scope<{
+    exports: inferScope<bootstrap<aliases>, {}>
+    locals: {}
+    ambient: {}
+}>
 
 type validateAliases<aliases, $> = evaluate<{
     [k in keyof aliases]: k extends GenericDeclaration<infer name>
@@ -120,7 +122,13 @@ export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
 export type resolve<
     name extends keyof $ | subaliasOf<$>,
     $
-> = name extends `${infer subscope}.${infer name}`
+> = name extends keyof $
+    ? isAny<$[name]> extends true
+        ? any
+        : $[name] extends Alias<infer def>
+        ? inferDefinition<def, $>
+        : $[name]
+    : name extends `${infer subscope}.${infer name}`
     ? subscope extends keyof $
         ? $[subscope] extends Scope
             ? name extends keyof $[subscope]["infer"]
@@ -128,11 +136,7 @@ export type resolve<
                 : never
             : never
         : never
-    : isAny<$[name]> extends true
-    ? any
-    : $[name] extends Alias<infer def>
-    ? inferDefinition<def, $>
-    : $[name]
+    : never
 
 export type subaliasOf<$> = {
     [k in keyof $]: $[k] extends Scope<infer exports>
@@ -142,20 +146,26 @@ export type subaliasOf<$> = {
         : never
 }[keyof $]
 
-export type Space<exports = Dict, $ = Dict> = {
-    [k in keyof exports]: exports[k] extends Scope<
-        infer exports,
-        infer locals,
-        infer root
-    >
-        ? Space<exports, locals & root>
-        : Type<exports[k], exports & $>
+export type Space<ctx extends ScopeContext = ScopeContext> = {
+    [k in keyof ctx["exports"]]: ctx["exports"][k] extends Scope<infer subCtx>
+        ? Space<subCtx>
+        : Type<ctx["exports"][k], resolutions<ctx>>
 }
 
-export class Scope<exports = any, locals = any, root = any> {
-    declare infer: extractOut<exports>
-    declare inferIn: extractIn<exports>
-    declare $: exports & locals & root
+type resolutions<ctx extends ScopeContext> = ctx["exports"] &
+    ctx["locals"] &
+    ctx["ambient"]
+
+export type ScopeContext = {
+    exports: unknown
+    locals: unknown
+    ambient: unknown
+}
+
+export class Scope<ctx extends ScopeContext = any> {
+    declare infer: extractOut<ctx["exports"]>
+    declare inferIn: extractIn<ctx["exports"]>
+    declare $: resolutions<ctx>
 
     readonly config: ScopeConfig
     readonly root: Scope | null
@@ -198,12 +208,17 @@ export class Scope<exports = any, locals = any, root = any> {
         return new Type(def, this)
     }) as never
 
-    scope: ScopeParser<exports, root> = ((
-        aliases: Dict,
-        opts: ScopeOptions = {}
-    ) => {
+    scope: ScopeParser<ctx> = ((aliases: Dict, opts: ScopeOptions = {}) => {
         return new Scope(aliases, { ...opts, parent: this })
     }) as never
+
+    toAmbient(): Scope<{
+        exports: {}
+        locals: {}
+        ambient: ctx["exports"]
+    }> {
+        return new Scope({}, { parent: this })
+    }
 
     maybeResolve(name: string): Type | undefined {
         if (this.resolutions[name]) {
@@ -230,7 +245,7 @@ export class Scope<exports = any, locals = any, root = any> {
             }
             this.compiled = true
         }
-        return this.exports as Space<exports, locals & root>
+        return this.exports as Space<ctx>
     }
 }
 

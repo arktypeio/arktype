@@ -13,9 +13,16 @@ export const ark = Scope.root({
     ...validationTypes
 })
 
-export const arktypes: Space<Ark, Ark> = ark.compile()
+// TODO: fix never inference
+//  ark.infer.never
 
 registry().register("ark", ark)
+
+export const arktypes: Space<{
+    exports: Ark
+    locals: {}
+    ambient: {}
+}> = ark.compile()
 
 export const scopes = {
     tsKeyword,
@@ -76,6 +83,10 @@ export type Ark = {
     Promise: Promise<unknown>
 }
 
-export const scope: ScopeParser<{}, Ark> = ark.scope as never
+export const scope: ScopeParser<{
+    exports: {}
+    locals: {}
+    ambient: Ark
+}> = ark.toAmbient().scope as never
 
 export const type: TypeParser<Ark> = ark.type
