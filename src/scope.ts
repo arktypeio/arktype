@@ -14,15 +14,32 @@ import type { Dict } from "./utils/records.js"
 
 export type ScopeParser<parent, root> = {
     <aliases>(aliases: validateAliases<aliases, parent & root>): Scope<
-        inferScope<bootstrap<aliases>, parent & root>,
-        parent,
+        inferExports<
+            aliases,
+            inferBootstrapped<bootstrap<aliases>, parent & root>
+        >,
+        inferLocals<
+            aliases,
+            inferBootstrapped<bootstrap<aliases>, parent & root>,
+            parent
+        >,
         root
     >
 }
 
-export type RootScopeParser = <aliases>(
-    aliases: validateAliases<aliases, {}>
-) => Scope<inferScope<bootstrap<aliases>, {}>, {}, {}>
+type inferExports<aliases, inferred> = evaluate<{
+    [k in keyof inferred as `#${k}` extends keyof aliases
+        ? never
+        : k]: inferred[k]
+}>
+
+type inferLocals<aliases, inferred, parent> = evaluate<
+    parent & {
+        [k in keyof inferred as `#${k}` extends keyof aliases
+            ? k
+            : never]: inferred[k]
+    }
+>
 
 type validateAliases<aliases, $> = evaluate<{
     [k in keyof aliases]: k extends GenericDeclaration<infer name>
@@ -43,8 +60,10 @@ type validateAliases<aliases, $> = evaluate<{
         : validateDefinition<aliases[k], $ & bootstrap<aliases>>
 }>
 
+export type bindThis<$, def> = $ & { this: Alias<def> }
+
 // trying to nested def here in an object or tuple cause circularities during some thunk validations
-export type Alias<def = {}> = nominal<def, "alias">
+type Alias<def = {}> = nominal<def, "alias">
 
 export type Generic<
     params extends string[] = string[],
@@ -52,10 +71,6 @@ export type Generic<
 > = nominal<[params, def], "generic">
 
 type bootstrap<aliases> = {
-    [k in privateKey<keyof aliases> as privateNameFrom<k>]: Alias<
-        aliases[`#${k}` & keyof aliases]
-    >
-} & {
     [k in unmodifiedName<keyof aliases>]: aliases[k] extends Scope
         ? aliases[k]
         : Alias<aliases[k]>
@@ -66,13 +81,14 @@ type bootstrap<aliases> = {
         paramsFrom<k>,
         aliases[k]
     >
+} & {
+    [k in privateKey<keyof aliases> as privateNameFrom<k>]: Alias<
+        aliases[`#${k}` & keyof aliases]
+    >
 }
 
-type inferScope<bootstrapped, $> = evaluate<{
-    [name in Exclude<
-        keyof bootstrapped,
-        PrivateDeclaration
-    >]: bootstrapped[name] extends Alias<infer def>
+type inferBootstrapped<bootstrapped, $> = evaluate<{
+    [name in keyof bootstrapped]: bootstrapped[name] extends Alias<infer def>
         ? inferDefinition<def, $ & bootstrapped>
         : bootstrapped[name] extends Generic
         ? bootstrapped[name]
@@ -80,14 +96,6 @@ type inferScope<bootstrapped, $> = evaluate<{
         ? bootstrapped[name]
         : never
 }>
-
-type inferAlias<def, $> = bootstrapped[name] extends Alias<infer def>
-    ? inferDefinition<def, $ & bootstrapped>
-    : bootstrapped[name] extends Generic
-    ? bootstrapped[name]
-    : bootstrapped[name] extends Scope
-    ? bootstrapped[name]
-    : never
 
 type genericKey<k> = k & GenericDeclaration
 
@@ -99,7 +107,9 @@ type unmodifiedName<k> = Exclude<k, GenericDeclaration | PrivateDeclaration>
 
 type privateKey<k> = k & PrivateDeclaration
 
-type privateNameFrom<k> = k extends PrivateDeclaration<infer name> ? name : k
+type privateNameFrom<k> = k extends PrivateDeclaration<infer name>
+    ? name
+    : never
 
 export type GenericDeclaration<
     name extends string = string,
@@ -184,7 +194,7 @@ export class Scope<exports = any, locals = any, root = any> {
         // }
     }
 
-    static root: RootScopeParser = (aliases) => {
+    static root: ScopeParser<{}, {}> = (aliases) => {
         return new Scope(aliases, {})
     }
 

@@ -12,7 +12,7 @@ import {
     parseDefinition,
     type validateDefinition
 } from "./parse/definition.js"
-import type { Alias, Scope } from "./scope.js"
+import type { bindThis, Scope } from "./scope.js"
 import { type Ark } from "./scopes/ark.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
@@ -153,8 +153,6 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return new Type([this.definition, operator, def], this.scope)
     }
 }
-
-type bindThis<$, def> = $ & { this: Alias<def> }
 
 type validateChainedExpression<def, $, inferred> =
     def extends validateDefinition<def, $>
