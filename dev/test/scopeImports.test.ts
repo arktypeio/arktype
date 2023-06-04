@@ -1,6 +1,6 @@
 import { suite, test } from "mocha"
 import { scope } from "../../src/main.js"
-import type { Scope, Space } from "../../src/scope.js"
+import type { Space } from "../../src/scope.js"
 import { writeDuplicateAliasesMessage } from "../../src/scope.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import { attest } from "../attest/main.js"

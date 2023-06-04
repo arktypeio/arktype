@@ -144,15 +144,15 @@ export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
 })
 
 export type resolve<
-    name extends keyof $ | subaliasOf<$>,
+    reference extends keyof $ | subaliasOf<$>,
     $
-> = name extends keyof $
-    ? isAny<$[name]> extends true
+> = reference extends keyof $
+    ? isAny<$[reference]> extends true
         ? any
-        : $[name] extends Alias<infer def>
+        : $[reference] extends Alias<infer def>
         ? inferDefinition<def, $>
-        : $[name]
-    : name extends `${infer subscope}.${infer name}`
+        : $[reference]
+    : reference extends `${infer subscope}.${infer name}`
     ? subscope extends keyof $
         ? $[subscope] extends Scope
             ? name extends keyof $[subscope]["infer"]
@@ -163,10 +163,11 @@ export type resolve<
     : never
 
 export type subaliasOf<$> = {
-    [k in keyof $]: $[k] extends Scope<infer exports>
+    [k in keyof $]: $[k] extends Scope<infer $>
         ? {
-              [subalias in keyof exports]: `${k & string}.${subalias & string}`
-          }[keyof exports]
+              [subalias in keyof $["exports"]]: `${k & string}.${subalias &
+                  string}`
+          }[keyof $["exports"]]
         : never
 }[keyof $]
 
@@ -219,10 +220,7 @@ export class Scope<$ extends Context = any> {
 
     import<names extends (keyof $["exports"])[]>(
         ...names: names
-    ): {
-        [k in names extends [] ? keyof $["exports"] : names[number] as `#${k &
-            string}`]: Inferred<$["exports"][k]>
-    } {
+    ): destructuredImportContext<$, names[number]> {
         return {} as any
     }
 
@@ -250,20 +248,27 @@ export class Scope<$ extends Context = any> {
             this.exported = true
         }
         return this.exports as Space<
-            names extends []
-                ? $
-                : {
-                      exports: { [k in names[number]]: $["exports"][k] }
-                      locals: $["locals"] & {
-                          [k in Exclude<
-                              keyof $["exports"],
-                              names[number]
-                          >]: $["exports"][k]
-                      }
-                      ambient: $["ambient"]
-                  }
+            names extends [] ? $ : destructuredExportContext<$, names[number]>
         >
     }
+}
+
+type destructuredExportContext<
+    $ extends Context,
+    name extends keyof $["exports"]
+> = {
+    exports: { [k in name]: $["exports"][k] }
+    locals: $["locals"] & {
+        [k in Exclude<keyof $["exports"], name>]: $["exports"][k]
+    }
+    ambient: $["ambient"]
+}
+
+type destructuredImportContext<
+    $ extends Context,
+    name extends keyof $["exports"]
+> = {
+    [k in name as `#${k & string}`]: Inferred<$["exports"][k]>
 }
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
