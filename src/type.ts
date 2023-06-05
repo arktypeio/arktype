@@ -17,7 +17,6 @@ import { type Ark } from "./scopes/ark.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
 import { Path } from "./utils/lists.js"
-import type { BuiltinClass } from "./utils/objectKinds.js"
 
 export type TypeParser<$> = {
     // Parse and check the definition, returning either the original input for a
@@ -42,6 +41,24 @@ export type DefinitionParser<$> = <def>(
 ) => def
 
 registry().register("state", TraversalState)
+
+export class Generic<
+    params extends string[] = string[],
+    def = unknown,
+    $ = Ark
+> extends CompiledFunction<
+    <args extends unknown[]>(
+        ...args: { [i in keyof params]: args[i & number] }
+    ) => Type<args, $>
+> {
+    constructor(
+        public params: params,
+        public definition: def,
+        public scope: Scope
+    ) {
+        super()
+    }
+}
 
 export class Type<t = unknown, $ = Ark> extends CompiledFunction<
     (data: unknown) => CheckResult<extractOut<t>>

@@ -130,7 +130,7 @@ export type resolve<reference extends keyof $, $> = isAny<
 > extends true
     ? any
     : $[reference] extends Alias<infer def>
-    ? // never hits this branch even though it really shouldn't, but the result
+    ? // `never` hits this branch even though it really shouldn't, but the result
       // is still correct since inferring never as a definition results in never
       inferDefinition<def, $>
     : $[reference]
