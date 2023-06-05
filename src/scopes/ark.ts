@@ -3,10 +3,11 @@ import type { Out } from "../parse/ast/morph.js"
 import type { ScopeParser, TypeSet } from "../scope.js"
 import { Scope } from "../scope.js"
 import type { DefinitionParser, TypeParser } from "../type.js"
-import { jsObject, jsObjectTypes } from "./jsObjects.js"
-import { tsKeyword, tsKeywordTypes } from "./tsKeywords.js"
-import { validation, validationTypes } from "./validation/validation.js"
+import { jsObjectTypes } from "./jsObjects.js"
+import { tsKeywordTypes } from "./tsKeywords.js"
+import { validationTypes } from "./validation/validation.js"
 
+// TODO: figure out a more elegant way to export and make ambient simultaneously
 export const ark = Scope.root({
     ...tsKeywordTypes,
     ...jsObjectTypes,
@@ -20,20 +21,6 @@ registry().register("ark", ark)
 
 export const arktypes: TypeSet<{ exports: Ark; locals: {}; ambient: {} }> =
     ark.export()
-
-export const scopes = {
-    tsKeyword,
-    jsObject,
-    validation,
-    ark
-}
-
-export const spaces = {
-    tsKeyword: tsKeywordTypes,
-    jsObject: jsObjectTypes,
-    validation: validationTypes,
-    ark: arktypes
-} satisfies Record<Exclude<keyof typeof scopes, "root">, TypeSet>
 
 // This is just copied from the inference of the default scope. Creating an explicit
 // type like this makes validation for the default type and scope functions feel
@@ -80,7 +67,9 @@ export type Ark = {
     Promise: Promise<unknown>
 }
 
-export const scope: ScopeParser<{}, Ark> = ark.scope as never
+export const arkAmbient = Scope.root(ark.ambient())
+
+export const scope: ScopeParser<{}, Ark> = arkAmbient.scope as never
 
 export const type: TypeParser<Ark> = ark.type
 
