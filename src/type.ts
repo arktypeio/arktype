@@ -112,15 +112,6 @@ export class Type<t = unknown, $ = Ark> extends CompiledFunction<
         return new Type([this.definition, "|>", morph], this.scope) as never
     }
 
-    to<def>(
-        def: validateDefinition<def, bindThis<$, def>>
-    ): Type<
-        (In: this["inferIn"]) => Out<inferDefinition<def, bindThis<$, def>>>,
-        $
-    > {
-        return {} as never
-    }
-
     // TODO: based on below, should maybe narrow morph output if used after
     narrow<def extends Narrow<extractOut<t>>>(
         def: def
