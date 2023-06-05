@@ -1,10 +1,12 @@
-import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
-import { inferred } from "./parse/definition.js"
+import type { ProblemCode } from "./nodes/problems.js"
 import type {
     inferDefinition,
     Inferred,
     validateDefinition
 } from "./parse/definition.js"
+import { inferred } from "./parse/definition.js"
+import type { writeUnexpectedCharacterMessage } from "./parse/string/shift/operator/operator.js"
+import type { Scanner } from "./parse/string/shift/scanner.js"
 import type {
     DefinitionParser,
     extractIn,
@@ -14,8 +16,8 @@ import type {
     TypeParser
 } from "./type.js"
 import { Type } from "./type.js"
+import type { error } from "./utils/errors.js"
 import type { evaluate, isAny, nominal } from "./utils/generics.js"
-import type { split } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
 
 export type ScopeParser<parent, ambient> = {
@@ -33,17 +35,24 @@ export type ScopeParser<parent, ambient> = {
 }
 
 type validateAliases<aliases, $> = evaluate<{
-    [k in keyof aliases]: k extends GenericDeclaration<infer name>
+    [k in keyof aliases]: k extends GenericDeclaration<
+        infer name,
+        infer paramsDef
+    >
         ? name extends keyof $
             ? writeDuplicateAliasesMessage<name>
-            : validateDefinition<
-                  aliases[k],
-                  $ &
-                      bootstrap<aliases> & {
-                          // TODO: allow whitespace here
-                          [param in paramsFrom<k>[number]]: unknown
-                      }
-              >
+            : parseGenericParams<paramsDef> extends infer result
+            ? result extends string[]
+                ? validateDefinition<
+                      aliases[k],
+                      $ &
+                          bootstrap<aliases> & {
+                              [param in result[number]]: unknown
+                          }
+                  >
+                : // propagate error
+                  result
+            : never
         : k extends keyof $
         ? writeDuplicateAliasesMessage<k & string>
         : aliases[k] extends Scope
@@ -83,10 +92,10 @@ type bootstrapAliases<aliases> = {
 } & {
     // TODO: do I need to parse the def AST here? or something more so that
     // references can be resolved if it's used outside the scope
-    [k in keyof aliases & GenericDeclaration as extractGenericName<k>]: Generic<
-        paramsFrom<k>,
-        aliases[k]
-    >
+    [k in keyof aliases &
+        GenericDeclaration as extractGenericName<k>]: parseGenericParams<k> extends infer params extends string[]
+        ? Generic<params, aliases[k]>
+        : never
 }
 
 type inferBootstrapped<bootstrapped, $> = evaluate<{
@@ -114,28 +123,50 @@ export type GenericDeclaration<
 
 type PrivateDeclaration<key extends string = string> = `#${key}`
 
-type paramsFrom<scopeKey> = scopeKey extends GenericDeclaration<
-    string,
-    infer params
->
-    ? split<params, ",">
-    : []
+type parseGenericParams<def extends string> = parseParamsRecurse<
+    def,
+    "",
+    []
+> extends infer result
+    ? result extends string[]
+        ? "" extends result[number]
+            ? error<`An empty string is not a valid generic parameter name`>
+            : result
+        : // propagate error
+          result
+    : never
+
+type parseParamsRecurse<
+    unscanned extends string,
+    param extends string,
+    result extends string[]
+> = unscanned extends `${infer lookahead}${infer nextUnscanned}`
+    ? lookahead extends ","
+        ? parseParamsRecurse<nextUnscanned, "", [...result, param]>
+        : lookahead extends Scanner.WhiteSpaceToken
+        ? param extends ""
+            ? // if the next char is whitespace and we aren't in the middle of a param, skip to the next one
+              parseParamsRecurse<
+                  Scanner.skipWhitespace<nextUnscanned>,
+                  "",
+                  result
+              >
+            : Scanner.skipWhitespace<nextUnscanned> extends `${infer nextNonWhitespace}${infer rest}`
+            ? nextNonWhitespace extends ","
+                ? parseParamsRecurse<rest, "", [...result, param]>
+                : error<writeUnexpectedCharacterMessage<nextNonWhitespace, ",">>
+            : // params end with a single whitespace character, add the current token
+              [...result, param]
+        : parseParamsRecurse<nextUnscanned, `${param}${lookahead}`, result>
+    : param extends ""
+    ? result
+    : [...result, param]
 
 export type ScopeOptions = {
     root?: TypeSet
     codes?: Record<ProblemCode, { mustBe?: string }>
     keys?: KeyCheckKind
 }
-
-export type ScopeConfig = evaluate<{
-    readonly keys: KeyCheckKind
-    readonly codes: ProblemOptionsByCode
-}>
-
-export const compileScopeOptions = (opts: ScopeOptions): ScopeConfig => ({
-    codes: {},
-    keys: opts.keys ?? "loose"
-})
 
 export type resolve<reference extends keyof $, $> = isAny<
     $[reference]
@@ -175,13 +206,10 @@ export class Scope<c extends ScopeContext = any> {
     declare inferIn: extractIn<c["exports"]>;
     declare [inferred]: typeof inferred
 
-    readonly config: ScopeConfig
     private resolutions: Record<string, Type | TypeSet> = {}
     private exports: Record<string, Type | TypeSet> = {}
 
     constructor(public aliases: Dict, opts: ScopeOptions = {}) {
-        this.config = compileScopeOptions(opts)
-
         // this.cacheSpaces(opts.root ?? registry().ark, "imports")
         // if (opts.imports) {
         //     this.cacheSpaces(opts.imports, "imports")
@@ -211,7 +239,7 @@ export class Scope<c extends ScopeContext = any> {
     import<names extends (keyof c["exports"])[]>(
         ...names: names
     ): destructuredImportContext<c, names[number]> {
-        return {} as any
+        return {} as never
     }
 
     ambient(): Scope<{
@@ -219,7 +247,7 @@ export class Scope<c extends ScopeContext = any> {
         locals: {}
         ambient: c["exports"]
     }> {
-        return {} as any
+        return {} as never
     }
 
     maybeResolve(name: string): Type | undefined {
