@@ -49,6 +49,7 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
             if (def instanceof Type) {
                 return def.root
             }
+            // TODO: only handle thunks at scope root?
             if (isThunk(def)) {
                 const returned = def()
                 if (returned instanceof Type) {
@@ -78,10 +79,7 @@ export type inferDefinition<def, $> = isAny<def> extends true
     ? inferRecord<def, $>
     : never
 
-// we ignore functions in validation so that cyclic thunk definitions can be inferred in scopes
-export type validateDefinition<def, $> = def extends (...args: any[]) => any
-    ? def
-    : def extends Terminal
+export type validateDefinition<def, $> = def extends Terminal
     ? def
     : def extends string
     ? validateString<def, $>
@@ -97,7 +95,11 @@ export type validateDefinition<def, $> = def extends (...args: any[]) => any
           [k in keyof def]: validateDefinition<def[k], $>
       }>
 
-export const inferred = Symbol("inferred")
+// functions are ignored in validation so that cyclic thunk definitions can be
+// inferred in scopes
+type Terminal = RegExp | Inferred<unknown> | ((...args: never[]) => unknown)
+
+export declare const inferred: unique symbol
 
 export type Inferred<as> = {
     [inferred]?: as
@@ -107,8 +109,6 @@ const isThunk = (def: unknown): def is () => unknown =>
     typeof def === "function" && def.length === 0
 
 export type InferredThunk<t = unknown> = () => Inferred<t>
-
-type Terminal = RegExp | Inferred<unknown> | InferredThunk
 
 type BadDefinitionType = Exclude<Primitive, string>
 

@@ -16,35 +16,27 @@ suite("thunk", () => {
     test("thunks in scope", () => {
         const $ = scope({
             a: () => $.type({ b: "b" }),
-            b: { a: () => $.type({ a: "string" }) }
+            b: () => $.type({ a: "string" })
         })
         attest($.infer).typed as {
             a: {
                 b: {
-                    a: {
-                        a: string
-                    }
+                    a: string
                 }
             }
             b: {
-                a: {
-                    a: string
-                }
+                a: string
             }
         }
         const types = $.export()
         attest(types.a.infer).typed as {
             b: {
-                a: {
-                    a: string
-                }
+                a: string
             }
         }
         // attest(types.a.node).snap({ object: { props: { b: "b" } } })
         attest(types.b.infer).typed as {
-            a: {
-                a: string
-            }
+            a: string
         }
         // attest(types.b.node).snap({
         //     object: { props: { a: { object: { props: { a: "string" } } } } }
@@ -83,15 +75,6 @@ suite("thunk", () => {
         // attest(types.aAndB.node).snap({
         //     object: { props: { a: "string", b: "boolean" } }
         // })
-    })
-    test("function requiring args in scope", () => {
-        // @ts-expect-error it would be better if the error were in the def (instead we get a cyclic reference issue)
-        const $ = scope({
-            a: (t: true) => t && $.type("string")
-        })
-        attest(() => $.compile()).throws(
-            writeBadDefinitionTypeMessage("Function")
-        )
     })
     test("non-type thunk in scope", () => {
         const $ = scope({

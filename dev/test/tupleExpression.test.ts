@@ -11,6 +11,16 @@ suite("tuple expression", () => {
         const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
         attest(t.infer).typed as string | number | bigint | boolean
     })
+    test("autocompletion", () => {
+        // @ts-expect-error
+        attest(() => type([""])).types.errors(
+            `IndexZeroOperator | keyof Ark | "this"`
+        )
+        // @ts-expect-error
+        attest(() => type(["string", ""])).types.errors(
+            `"keyof" | keyof Ark | "this" | IndexOneOperator'`
+        )
+    })
     suite("errors", () => {
         test("missing right operand", () => {
             // @ts-expect-error
