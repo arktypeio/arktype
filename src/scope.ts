@@ -32,18 +32,21 @@ export type ScopeParser<parent, ambient> = {
 }
 
 type inferExports<aliases, inferred> = evaluate<{
-    [k in keyof inferred as `#${k & string}` extends keyof aliases
-        ? never
-        : k]: inferred[k]
+    [k in keyof inferred as privateKeyFrom<k, aliases> extends never
+        ? k
+        : never]: inferred[k]
 }>
 
 type inferLocals<aliases, inferred, parent> = evaluate<
     parent & {
-        [k in keyof inferred as `#${k & string}` extends keyof aliases
-            ? k
-            : never]: inferred[k]
+        [k in keyof inferred as privateKeyFrom<k, aliases> extends never
+            ? never
+            : k]: inferred[k]
     }
 >
+
+type privateKeyFrom<k, aliases> = `#${k & string}${"" | `<${string}>`}` &
+    keyof aliases
 
 type validateAliases<aliases, $> = evaluate<{
     [k in keyof aliases]: k extends GenericDeclaration<infer name>
