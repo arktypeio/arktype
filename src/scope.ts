@@ -142,7 +142,9 @@ export type resolve<reference extends keyof $, $> = isAny<
 > extends true
     ? any
     : $[reference] extends Alias<infer def>
-    ? inferDefinition<def, $>
+    ? // never hits this branch even though it really shouldn't, but the result
+      // is still correct since inferring never as a definition results in never
+      inferDefinition<def, $>
     : $[reference]
 
 export type resolutionsOf<c extends ScopeContext> = c["exports"] &
@@ -161,12 +163,6 @@ export type TypeSet<c extends ScopeContext = any> = {
             : TypeSet<subcontext>
         : Type<c["exports"][k], resolutionsOf<c>>
 }
-
-// ScopeContext extends subcontext
-//             ? c["exports"][k] extends never
-//                 ? never
-//                 : any
-//             :
 
 export type ScopeContext = {
     exports: unknown
