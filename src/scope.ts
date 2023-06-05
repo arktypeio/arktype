@@ -130,7 +130,7 @@ export type GenericDeclaration<
 
 type PrivateDeclaration<key extends string = string> = `#${key}`
 
-type AmbientDeclaration<key extends string = string> = `ambient ${key}`
+type AmbientDeclaration<key extends string = string> = `^${key}`
 
 type paramsFrom<scopeKey> = scopeKey extends GenericDeclaration<
     string,
@@ -218,13 +218,7 @@ export class Scope<c extends ScopeContext = any> {
 
     import<names extends (keyof c["exports"])[]>(
         ...names: names
-    ): destructuredImportContext<c, names, "#"> {
-        return {} as any
-    }
-
-    ambient<names extends (keyof c["exports"])[]>(
-        ...names: names
-    ): destructuredImportContext<c, names, "ambient "> {
+    ): destructuredImportContext<c, names[number]> {
         return {} as any
     }
 
@@ -270,12 +264,9 @@ type destructuredExportContext<
 
 type destructuredImportContext<
     c extends ScopeContext,
-    names extends (keyof c["exports"])[],
-    prefix extends "#" | "ambient "
+    name extends keyof c["exports"]
 > = {
-    [k in names extends []
-        ? keyof c["exports"]
-        : names[number] as `${prefix}${k & string}`]: Inferred<c["exports"][k]>
+    [k in name as `#${k & string}`]: Inferred<c["exports"][k]>
 }
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>

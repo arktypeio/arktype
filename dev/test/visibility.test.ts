@@ -31,7 +31,7 @@ suite("visibility", () => {
     test("ambient", () => {
         const types = scope({
             foo: "bar[]",
-            "ambient bar": "boolean"
+            "^bar": "boolean"
         }).export()
         attest(types).typed as TypeSet<{
             exports: { foo: boolean[] }
@@ -42,7 +42,7 @@ suite("visibility", () => {
     test("ambient generic", () => {
         const types = scope({
             foo: "bar<string>[]",
-            "ambient bar<t>": ["t"]
+            "^bar<t>": ["t"]
         }).export()
         attest(types).typed as TypeSet<{
             exports: { foo: [string][] }
