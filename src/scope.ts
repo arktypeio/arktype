@@ -18,33 +18,17 @@ import type { Dict } from "./utils/records.js"
 
 export type ScopeParser<parent, ambient> = {
     <aliases>(aliases: validateAliases<aliases, parent & ambient>): Scope<{
-        exports: inferExports<
-            aliases,
-            inferBootstrapped<bootstrap<aliases>, parent & ambient>
+        exports: inferBootstrapped<
+            bootstrapExports<aliases>,
+            bootstrap<aliases> & parent & ambient
         >
-        locals: inferLocals<
-            aliases,
-            inferBootstrapped<bootstrap<aliases>, parent & ambient>,
-            parent
+        locals: inferBootstrapped<
+            bootstrapLocals<aliases>,
+            bootstrap<aliases> & parent & ambient
         >
         ambient: ambient
     }>
 }
-
-type inferExports<aliases, inferred> = evaluate<{
-    [k in Exclude<
-        keyof aliases,
-        PrivateDeclaration
-    > as extractName<k>]: inferred[extractName<k> & keyof inferred]
-}>
-
-type inferLocals<aliases, inferred, parent> = evaluate<
-    parent & {
-        [k in keyof aliases &
-            PrivateDeclaration as extractName<k>]: inferred[extractName<k> &
-            keyof inferred]
-    }
->
 
 type validateAliases<aliases, $> = evaluate<{
     [k in keyof aliases]: k extends GenericDeclaration<infer name>
@@ -75,15 +59,18 @@ export type Generic<
     def = unknown
 > = nominal<[params, def], "generic">
 
-type bootstrap<aliases> = bootstrapAliases<{
+type bootstrap<aliases> = bootstrapLocals<aliases> & bootstrapExports<aliases>
+
+type bootstrapLocals<aliases> = bootstrapAliases<{
+    // intersection seems redundant but it is more efficient for TS to avoid
+    // mapping all the keys
+    [k in keyof aliases &
+        PrivateDeclaration as extractPrivateKey<k>]: aliases[k]
+}>
+
+type bootstrapExports<aliases> = bootstrapAliases<{
     [k in Exclude<keyof aliases, PrivateDeclaration>]: aliases[k]
-}> &
-    bootstrapAliases<{
-        // intersection seems redundant but it is more efficient for TS to avoid
-        // mapping all the keys
-        [k in keyof aliases &
-            PrivateDeclaration as extractPrivateKey<k>]: aliases[k]
-    }>
+}>
 
 type bootstrapAliases<aliases> = {
     [k in Exclude<keyof aliases, GenericDeclaration>]: aliases[k] extends Scope
@@ -97,14 +84,6 @@ type bootstrapAliases<aliases> = {
         aliases[k]
     >
 }
-
-type extractName<k> = k extends PrivateDeclaration<infer inner>
-    ? inner extends GenericDeclaration<infer name>
-        ? name
-        : inner
-    : k extends GenericDeclaration<infer name>
-    ? name
-    : k
 
 type inferBootstrapped<bootstrapped, $> = evaluate<{
     [name in keyof bootstrapped]: bootstrapped[name] extends Alias<infer def>
