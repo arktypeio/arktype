@@ -12,7 +12,7 @@ suite("intersection", () => {
     test("two types", () => {
         const t = type("boolean&true")
         attest(t.infer).typed as true
-        attest(t.root).is(TypeNode.fromValue(true as const))
+        attest(t.root).is(TypeNode.exactly(true as const))
     })
     test("intersection parsed before union", () => {
         // Should be parsed as:

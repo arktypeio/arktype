@@ -233,7 +233,7 @@ export class PropsNode extends BaseNode<"props"> {
     }
 
     namedKeyOf() {
-        return TypeNode.fromValue(...this.namedKeyLiterals()) as TypeNode<Key>
+        return TypeNode.exactly(...this.namedKeyLiterals()) as TypeNode<Key>
     }
 
     namedKeyLiterals() {

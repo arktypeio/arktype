@@ -16,7 +16,6 @@ import type { bindThis, Scope } from "./scope.js"
 import { type Ark } from "./scopes/ark.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
-import type { evaluate } from "./utils/generics.js"
 import { Path } from "./utils/lists.js"
 import type { BuiltinClass } from "./utils/objectKinds.js"
 
@@ -33,7 +32,7 @@ export type TypeParser<$> = {
         opts: TypeConfig
     ): Type<inferDefinition<def, bindThis<$, def>>, $>
 
-    fromValue: <branches extends readonly unknown[]>(
+    exactly: <branches extends readonly unknown[]>(
         ...branches: branches
     ) => Type<branches[number], $>
 }
@@ -159,10 +158,10 @@ type validateChainedExpression<def, $, inferred> =
 
 export type KeyCheckKind = "loose" | "strict" | "distilled"
 
-export type TypeConfig = evaluate<{
+export type TypeConfig = {
     keys?: KeyCheckKind
     mustBe?: string
-}>
+}
 
 export type extractIn<t> = extractMorphs<t, "in">
 
@@ -177,9 +176,8 @@ type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
         : o
     : t extends object
     ? t extends
-          | BuiltinClass
-          | ((...args: any[]) => any)
-          | (abstract new (...args: any[]) => any)
+          | ((...args: never[]) => unknown)
+          | (abstract new (...args: never[]) => unknown)
         ? t
         : { [k in keyof t]: extractMorphs<t[k], io> }
     : t

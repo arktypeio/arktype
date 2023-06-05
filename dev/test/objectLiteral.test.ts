@@ -21,6 +21,11 @@ suite("object literal", () => {
             '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && !(\'a\' in $arkRoot) || typeof $arkRoot.a === "string" && ($arkRoot.b === false || $arkRoot.b === true)'
         )
     })
+    test("nested", () => {
+        const t = type({ "a?": { b: "boolean" } })
+        attest(t.infer).typed as { a?: { b: boolean } }
+        attest(t.root.condition).snap()
+    })
     test("intersections", () => {
         const a = { "a?": "string" } as const
         const b = { b: "string" } as const

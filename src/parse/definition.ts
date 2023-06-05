@@ -91,9 +91,9 @@ export type validateDefinition<def, $> = def extends Terminal
       >
     : isUnknown<def> extends true
     ? (keyof $ & string) | AutocompletePrefix
-    : evaluate<{
+    : {
           [k in keyof def]: validateDefinition<def[k], $>
-      }>
+      }
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes

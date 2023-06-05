@@ -10,7 +10,13 @@ import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "../../../../utils/numericLiterals.js"
+import type { genericAstFrom } from "../../../ast/ast.js"
 import type { Inferred } from "../../../definition.js"
+import type {
+    ParsedArgs,
+    parseGenericArgs,
+    writeInvalidGenericParametersMessage
+} from "../../../generic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type {
     AutocompletePrefix,
@@ -18,7 +24,6 @@ import type {
     StaticState
 } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
-import type { parseGeneric } from "./generic.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
     const token = s.scanner.shiftUntilNextTerminator()
@@ -42,7 +47,7 @@ export type parseUnenclosed<
             ? state.error<message>
             : result extends keyof $
             ? $[result] extends Generic<infer params, infer def>
-                ? parseGeneric<
+                ? parseGenericInstantiation<
                       token,
                       params,
                       def,
@@ -53,6 +58,22 @@ export type parseUnenclosed<
             : state.setRoot<s, result, unscanned>
         : never
     : never
+
+export type parseGenericInstantiation<
+    name extends string,
+    params extends string[],
+    def,
+    s extends StaticState,
+    $
+    // have to skip whitespace here since TS allows instantiations like `Partial    <T>`
+> = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}`
+    ? parseGenericArgs<name, params, unscanned, $, [], []> extends infer result
+        ? result extends ParsedArgs<infer asts, infer nextUnscanned>
+            ? state.setRoot<s, genericAstFrom<params, asts, def>, nextUnscanned>
+            : // propagate error
+              result
+        : never
+    : state.error<writeInvalidGenericParametersMessage<name, params, []>>
 
 const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
     s.ctx.scope.maybeResolve(token)?.root ??

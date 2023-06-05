@@ -182,9 +182,7 @@ export class TypeNode<t = unknown> extends BaseNode<"type"> {
         return branchNodes.filter((_, i) => uniquenessByIndex[i])
     }
 
-    static fromValue<branches extends readonly unknown[]>(
-        ...branches: branches
-    ) {
+    static exactly<branches extends readonly unknown[]>(...branches: branches) {
         const seen: unknown[] = []
         const nodes: PredicateNode[] = []
         for (const v of branches) {

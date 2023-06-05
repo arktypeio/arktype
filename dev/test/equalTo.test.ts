@@ -15,7 +15,7 @@ suite("===", () => {
     })
     test("helper", () => {
         const myRef = { a: "bc" as const }
-        const myObj = type.fromValue(myRef)
+        const myObj = type.exactly(myRef)
         attest(myObj.infer).typed as { a: "bc" }
         attest(myObj(myRef).data).equals(myRef)
         attest(myObj({ a: "bc" }).problems?.summary).snap(

@@ -16,7 +16,7 @@ suite("union", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
         attest(nary.condition).is(
-            TypeNode.fromValue(
+            TypeNode.exactly(
                 false as const,
                 null,
                 undefined,
