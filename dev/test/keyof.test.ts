@@ -7,6 +7,10 @@ import type { Type } from "../../src/type.js"
 import { attest } from "../attest/main.js"
 
 suite("keyof", () => {
+    test("autocompletion", () => {
+        // @ts-expect-error
+        attest(() => type("k")).types.errors("keyof ")
+    })
     // test("primitive", () => {
     //     const t = type("keyof bigint")
     //     attest(t.infer).typed as keyof bigint

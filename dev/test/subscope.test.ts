@@ -34,4 +34,11 @@ suite("subscopes", () => {
         attest(types.sub.alias.condition).is(expected)
         attest(types.b.condition).is(expected)
     })
+    test("autocompletion", () => {
+        const base = scope({ foo: "true" })
+        // @ts-expect-error
+        attest(() => scope({ base, reference: "base." })).types.errors(
+            "base.foo"
+        )
+    })
 })

@@ -32,4 +32,18 @@ suite("string", () => {
             writeUnterminatedEnclosedMessage("bob", "'")
         )
     })
+    test("shallow single autocomplete", () => {
+        // @ts-expect-error
+        attest(() => type("str")).types.errors(
+            `Argument of type '"str"' is not assignable to parameter of type '"string"'`
+        )
+    })
+    test("shallow multi autocomplete", () => {
+        // @ts-expect-error
+        attest(() => type("s")).types.errors(`"string" | "symbol" | "semver"`)
+    })
+    test("post-operator autocomplete", () => {
+        // @ts-expect-error
+        attest(() => type("string|num")).types.errors(`"string|number"`)
+    })
 })

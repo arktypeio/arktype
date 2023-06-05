@@ -109,4 +109,13 @@ suite("scope", () => {
             }).export()
         ).throwsAndHasTypeError(writeUnexpectedCharacterMessage("c"))
     })
+    test("autocompletion", () => {
+        attest(() => {
+            scope({
+                foobar: "string",
+                // @ts-expect-error
+                baz: "fo"
+            }).export()
+        }).types.errors(`Type '"fo"' is not assignable to type '"foobar"'`)
+    })
 })
