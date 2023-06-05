@@ -1,4 +1,5 @@
 import type { ProblemCode, ProblemOptionsByCode } from "./nodes/problems.js"
+import { inferred } from "./parse/definition.js"
 import type {
     inferDefinition,
     Inferred,
@@ -46,6 +47,8 @@ type validateAliases<aliases, $> = evaluate<{
         : k extends keyof $
         ? writeDuplicateAliasesMessage<k & string>
         : aliases[k] extends Scope
+        ? aliases[k]
+        : aliases[k] extends Type
         ? aliases[k]
         : validateDefinition<aliases[k], $ & bootstrap<aliases>>
 }>
@@ -147,10 +150,23 @@ export type resolutionsOf<c extends ScopeContext> = c["exports"] &
     c["ambient"]
 
 export type TypeSet<c extends ScopeContext = any> = {
-    [k in keyof c["exports"]]: c["exports"][k] extends Scope<infer subcontext>
-        ? TypeSet<subcontext>
+    [k in keyof c["exports"]]: [c["exports"][k]] extends [
+        Scope<infer subcontext>
+    ]
+        ? // avoid treating types inferred as any or never as subscopes
+          c["exports"][k] extends never
+            ? Type<never, resolutionsOf<c>>
+            : isAny<c["exports"][k]> extends true
+            ? Type<any, resolutionsOf<c>>
+            : TypeSet<subcontext>
         : Type<c["exports"][k], resolutionsOf<c>>
 }
+
+// ScopeContext extends subcontext
+//             ? c["exports"][k] extends never
+//                 ? never
+//                 : any
+//             :
 
 export type ScopeContext = {
     exports: unknown
@@ -160,7 +176,8 @@ export type ScopeContext = {
 
 export class Scope<c extends ScopeContext = any> {
     declare infer: extractOut<c["exports"]>
-    declare inferIn: extractIn<c["exports"]>
+    declare inferIn: extractIn<c["exports"]>;
+    declare [inferred]: typeof inferred
 
     readonly config: ScopeConfig
     private resolutions: Record<string, Type | TypeSet> = {}
@@ -198,6 +215,14 @@ export class Scope<c extends ScopeContext = any> {
     import<names extends (keyof c["exports"])[]>(
         ...names: names
     ): destructuredImportContext<c, names[number]> {
+        return {} as any
+    }
+
+    ambient(): Scope<{
+        exports: c["exports"]
+        locals: {}
+        ambient: c["exports"]
+    }> {
         return {} as any
     }
 

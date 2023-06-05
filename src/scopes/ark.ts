@@ -11,14 +11,11 @@ export const ark = Scope.root({
     ...tsKeywordTypes,
     ...jsObjectTypes,
     ...validationTypes
-})
-
-// TODO: fix never inference
-//  ark.infer.never
+}).ambient()
 
 registry().register("ark", ark)
 
-export const arktypes: TypeSet<{ exports: Ark; locals: {}; ambient: {} }> =
+export const arktypes: TypeSet<{ exports: Ark; locals: {}; ambient: Ark }> =
     ark.export()
 
 export const scopes = {
