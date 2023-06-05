@@ -2,7 +2,7 @@ import { registry } from "../nodes/registry.js"
 import type { Out } from "../parse/ast/morph.js"
 import type { ScopeParser, TypeSet } from "../scope.js"
 import { Scope } from "../scope.js"
-import type { TypeParser } from "../type.js"
+import type { DefinitionParser, TypeParser } from "../type.js"
 import { jsObject, jsObjectTypes } from "./jsObjects.js"
 import { tsKeyword, tsKeywordTypes } from "./tsKeywords.js"
 import { validation, validationTypes } from "./validation/validation.js"
@@ -83,3 +83,5 @@ export type Ark = {
 export const scope: ScopeParser<{}, Ark> = ark.scope as never
 
 export const type: TypeParser<Ark> = ark.type
+
+export const define: DefinitionParser<Ark> = ark.define

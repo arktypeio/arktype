@@ -5,6 +5,7 @@ import type {
     validateDefinition
 } from "./parse/definition.js"
 import type {
+    DefinitionParser,
     extractIn,
     extractOut,
     KeyCheckKind,
@@ -191,6 +192,8 @@ export class Scope<c extends ScopeContext = any> {
     ) => {
         return new Scope(aliases, config)
     }) as never
+
+    define: DefinitionParser<resolutionsOf<c>> = (def) => def as never
 
     import<names extends (keyof c["exports"])[]>(
         ...names: names

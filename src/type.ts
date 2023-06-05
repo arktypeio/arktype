@@ -38,6 +38,10 @@ export type TypeParser<$> = {
     ) => Type<branches[number], $>
 }
 
+export type DefinitionParser<$> = <def>(
+    def: validateDefinition<def, bindThis<$, def>>
+) => def
+
 registry().register("state", TraversalState)
 
 export class Type<t = unknown, $ = Ark> extends CompiledFunction<
