@@ -23,11 +23,16 @@ export type ScopeParser<parent, ambient> = {
             bootstrapExports<aliases>,
             bootstrap<aliases> & parent & ambient
         >
-        locals: inferBootstrapped<
-            bootstrapLocals<aliases>,
-            bootstrap<aliases> & parent & ambient
-        >
-        ambient: ambient
+        locals: parent &
+            inferBootstrapped<
+                bootstrapLocals<aliases>,
+                bootstrap<aliases> & parent & ambient
+            >
+        ambient: ambient &
+            inferBootstrapped<
+                bootstrapAmbient<aliases>,
+                bootstrap<aliases> & parent & ambient
+            >
     }>
 }
 
@@ -60,7 +65,9 @@ export type Generic<
     def = unknown
 > = nominal<[params, def], "generic">
 
-type bootstrap<aliases> = bootstrapLocals<aliases> & bootstrapExports<aliases>
+type bootstrap<aliases> = bootstrapLocals<aliases> &
+    bootstrapExports<aliases> &
+    bootstrapAmbient<aliases>
 
 type bootstrapLocals<aliases> = bootstrapAliases<{
     // intersection seems redundant but it is more efficient for TS to avoid
@@ -69,8 +76,16 @@ type bootstrapLocals<aliases> = bootstrapAliases<{
         PrivateDeclaration as extractPrivateKey<k>]: aliases[k]
 }>
 
+type bootstrapAmbient<aliases> = bootstrapAliases<{
+    [k in keyof aliases &
+        AmbientDeclaration as extractAmbientKey<k>]: aliases[k]
+}>
+
 type bootstrapExports<aliases> = bootstrapAliases<{
-    [k in Exclude<keyof aliases, PrivateDeclaration>]: aliases[k]
+    [k in Exclude<
+        keyof aliases,
+        PrivateDeclaration | AmbientDeclaration
+    >]: aliases[k]
 }>
 
 type bootstrapAliases<aliases> = {
@@ -104,12 +119,18 @@ type extractPrivateKey<k> = k extends PrivateDeclaration<infer key>
     ? key
     : never
 
+type extractAmbientKey<k> = k extends AmbientDeclaration<infer key>
+    ? key
+    : never
+
 export type GenericDeclaration<
     name extends string = string,
     params extends string = string
 > = `${name}<${params}>`
 
 type PrivateDeclaration<key extends string = string> = `#${key}`
+
+type AmbientDeclaration<key extends string = string> = `^${key}`
 
 type paramsFrom<scopeKey> = scopeKey extends GenericDeclaration<
     string,
