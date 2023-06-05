@@ -151,28 +151,6 @@ export type resolve<reference extends keyof $, $> = isAny<
     ? inferDefinition<def, $>
     : $[reference]
 
-export type resolveSubalias<
-    reference extends subaliasOf<$>,
-    $
-> = reference extends `${infer subscope}.${infer name}`
-    ? subscope extends keyof $
-        ? $[subscope] extends Scope
-            ? name extends keyof $[subscope]["infer"]
-                ? $[subscope]["infer"][name]
-                : never
-            : never
-        : never
-    : never
-
-export type subaliasOf<$> = {
-    [k in keyof $]: $[k] extends Scope<infer sub>
-        ? {
-              [subalias in keyof sub["exports"]]: `${k & string}.${subalias &
-                  string}`
-          }[keyof sub["exports"]]
-        : never
-}[keyof $]
-
 export type TypeSet<c extends ScopeContext = any> = {
     [k in keyof c["exports"]]: c["exports"][k] extends Scope<infer subcontext>
         ? TypeSet<subcontext>

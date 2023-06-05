@@ -1,5 +1,5 @@
 import { TypeNode } from "../../../../nodes/type.js"
-import type { Generic, subaliasOf } from "../../../../scope.js"
+import type { Generic, Scope } from "../../../../scope.js"
 import type { error } from "../../../../utils/errors.js"
 import type { join } from "../../../../utils/lists.js"
 import type {
@@ -10,17 +10,15 @@ import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "../../../../utils/numericLiterals.js"
-import type { genericAstFrom } from "../../../ast/ast.js"
+import type { Inferred } from "../../../definition.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
-import type { writeUnclosedGroupMessage } from "../../reduce/shared.js"
 import type {
     AutocompletePrefix,
     state,
     StaticState
 } from "../../reduce/static.js"
-import type { parseUntilFinalizer } from "../../string.js"
-import type { writeUnexpectedCharacterMessage } from "../operator/operator.js"
 import type { Scanner } from "../scanner.js"
+import type { parseGeneric } from "./generic.js"
 
 export const parseUnenclosed = (s: DynamicState) => {
     const token = s.scanner.shiftUntilNextTerminator()
@@ -56,85 +54,6 @@ export type parseUnenclosed<
         : never
     : never
 
-type parseGeneric<
-    name extends string,
-    params extends string[],
-    def,
-    s extends StaticState,
-    $
-    // have to skip whitespace here since TS allows instantiations like `Partial    <T>`
-> = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}`
-    ? parseArgs<name, params, unscanned, $, [], []> extends infer result
-        ? result extends ParsedArgs<infer asts, infer nextUnscanned>
-            ? state.setRoot<s, genericAstFrom<params, asts, def>, nextUnscanned>
-            : // propagate error
-              result
-        : never
-    : state.error<writeInvalidGenericParametersMessage<name, params, []>>
-
-type ParsedArgs<asts extends unknown[], unscanned extends string> = [
-    asts,
-    unscanned
-]
-
-type parseArgs<
-    name extends string,
-    params extends string[],
-    unscanned extends string,
-    $,
-    argDefs extends string[],
-    argAsts extends unknown[]
-> = parseUntilFinalizer<
-    state.initialize<unscanned>,
-    $
-> extends infer finalArgState extends StaticState
-    ? {
-          defs: [...argDefs, finalArgState["scanned"]]
-          asts: [...argAsts, finalArgState["root"]]
-          unscanned: finalArgState["unscanned"]
-      } extends {
-          defs: infer nextDefs extends string[]
-          asts: infer nextAsts extends unknown[]
-          unscanned: infer nextUnscanned extends string
-      }
-        ? finalArgState["finalizer"] extends ">"
-            ? nextAsts["length"] extends params["length"]
-                ? ParsedArgs<nextAsts, nextUnscanned>
-                : state.error<
-                      writeInvalidGenericParametersMessage<
-                          name,
-                          params,
-                          nextDefs
-                      >
-                  >
-            : finalArgState["finalizer"] extends ","
-            ? parseArgs<name, params, nextUnscanned, $, nextDefs, nextAsts>
-            : finalArgState["finalizer"] extends error
-            ? finalArgState
-            : state.error<
-                  writeUnexpectedCharacterMessage<
-                      finalArgState["finalizer"] & string,
-                      nextAsts["length"] extends params["length"] ? ">" : ","
-                  >
-              >
-        : state.error<writeUnclosedGroupMessage<">">>
-    : never
-
-type writeInvalidGenericParametersMessage<
-    name extends string,
-    params extends string[],
-    argDefs extends string[]
-> = `${name}<${params["length"] extends 1
-    ? params[0]
-    : join<
-          params,
-          ", "
-      >}> requires exactly ${params["length"]} parameters (got ${argDefs["length"]}: ${join<
-    argDefs,
-    ","
->})`
-
-// TODO: configs attached to type?
 const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
     s.ctx.scope.maybeResolve(token)?.root ??
     maybeParseUnenclosedLiteral(token) ??
@@ -155,34 +74,47 @@ const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
     }
 }
 
-// TODO: These checks seem to break cyclic thunk inference
-// $[token] extends generic<infer params>
-// ?
-// : token
 type tryResolve<
     s extends StaticState,
     token extends string,
     $
 > = token extends keyof $
     ? token
-    : token extends subaliasOf<$>
-    ? token
+    : token extends `${infer subscope extends keyof $ &
+          string}.${infer reference}`
+    ? $[subscope] extends Scope
+        ? reference extends keyof $[subscope]["infer"]
+            ? Inferred<$[subscope]["infer"][reference]>
+            : unresolvableError<s, reference, $[subscope]["infer"], [subscope]>
+        : error<writeInvalidSubscopeReferenceMessage<subscope>>
     : token extends NumberLiteral
     ? token
     : token extends BigintLiteral
     ? token
     : unresolvableError<s, token, $>
 
+export type writeInvalidSubscopeReferenceMessage<name extends string> =
+    `'${name}' must reference a scope to be accessed using dot syntax`
+
 export type unresolvableError<
     s extends StaticState,
     token extends string,
-    $
-> = Extract<keyof $ | AutocompletePrefix, `${token}${string}`> extends never
+    $,
+    subscopePath extends string[] = []
+> = Extract<validReference<$, subscopePath>, `${token}${string}`> extends never
     ? error<writeUnresolvableMessage<token>>
-    : error<`${s["scanned"]}${Extract<
-          keyof $ | AutocompletePrefix,
-          `${token}${string}`
+    : error<`${s["scanned"]}${join<
+          [
+              ...subscopePath,
+              Extract<validReference<$, subscopePath>, `${token}${string}`>
+          ],
+          "."
       >}`>
+
+// AutocompletePrefixes like "keyof" are not accessible from a subscope
+type validReference<$, subscopePath extends string[]> = subscopePath extends []
+    ? keyof $ | AutocompletePrefix
+    : keyof $
 
 export const writeUnresolvableMessage = <token extends string>(
     token: token

@@ -30,4 +30,11 @@ suite("autocomplete", () => {
         // @ts-expect-error
         attest(() => type("k")).types.errors("keyof ")
     })
+    test("subscope", () => {
+        const base = scope({ foo: "true" })
+        // @ts-expect-error
+        attest(() => scope({ base, reference: "base." })).types.errors(
+            "base.foo"
+        )
+    })
 })
