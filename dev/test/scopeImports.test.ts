@@ -87,3 +87,28 @@ suite("scope imports", () => {
         }>
     })
 })
+
+suite("private aliases", () => {
+    test("non-generic", () => {
+        const types = scope({
+            foo: "bar[]",
+            "#bar": "boolean"
+        }).export()
+        attest(types).typed as TypeSet<{
+            exports: { foo: boolean[] }
+            locals: { bar: boolean }
+            ambient: Ark
+        }>
+    })
+    test("generic", () => {
+        const types = scope({
+            foo: "bar<string>[]",
+            "#bar<t>": ["t"]
+        }).export()
+        attest(types).typed as TypeSet<{
+            exports: { foo: [string][] }
+            locals: { bar: Generic<["t"], ["t"]> }
+            ambient: Ark
+        }>
+    })
+})
