@@ -1,6 +1,6 @@
 import { suite, test } from "mocha"
 import { scope } from "../../src/main.js"
-import type { TypeSet } from "../../src/scope.js"
+import type { Generic, TypeSet } from "../../src/scope.js"
 import { writeDuplicateAliasesMessage } from "../../src/scope.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import { attest } from "../attest/main.js"
@@ -97,6 +97,17 @@ suite("private aliases", () => {
         attest(types).typed as TypeSet<{
             exports: { foo: boolean[] }
             locals: { bar: boolean }
+            ambient: Ark
+        }>
+    })
+    test("generic", () => {
+        const types = scope({
+            foo: "bar<string>[]",
+            "#bar<t>": ["t"]
+        }).export()
+        attest(types).typed as TypeSet<{
+            exports: { foo: [string][] }
+            locals: { bar: Generic<["t"], ["t"]> }
             ambient: Ark
         }>
     })

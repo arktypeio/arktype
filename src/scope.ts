@@ -74,19 +74,27 @@ export type Generic<
     def = unknown
 > = nominal<[params, def], "generic">
 
-type bootstrap<aliases> = {
-    [k in unmodifiedName<keyof aliases>]: aliases[k] extends Scope
+type bootstrap<aliases> = bootstrapAliases<{
+    [k in Exclude<keyof aliases, PrivateDeclaration>]: aliases[k]
+}> &
+    bootstrapAliases<{
+        // intersection seems redundant but it is more efficient for TS to avoid
+        // mapping all the keys
+        [k in keyof aliases &
+            PrivateDeclaration as extractPrivateKey<k>]: aliases[k]
+    }>
+
+type bootstrapAliases<aliases> = {
+    [k in Exclude<keyof aliases, GenericDeclaration>]: aliases[k] extends Scope
         ? aliases[k]
         : Alias<aliases[k]>
 } & {
     // TODO: do I need to parse the def AST here? or something more so that
     // references can be resolved if it's used outside the scope
-    [k in genericKey<keyof aliases> as genericNameFrom<k>]: Generic<
+    [k in keyof aliases & GenericDeclaration as extractGenericName<k>]: Generic<
         paramsFrom<k>,
         aliases[k]
     >
-} & {
-    [k in privateKey<keyof aliases> as privateNameFrom<k>]: Alias<aliases[k]>
 }
 
 type inferBootstrapped<bootstrapped, $> = evaluate<{
@@ -99,18 +107,12 @@ type inferBootstrapped<bootstrapped, $> = evaluate<{
         : never
 }>
 
-type genericKey<k> = k & GenericDeclaration
-
-type genericNameFrom<k> = k extends GenericDeclaration<infer name>
+type extractGenericName<k> = k extends GenericDeclaration<infer name>
     ? name
     : never
 
-type unmodifiedName<k> = Exclude<k, GenericDeclaration | PrivateDeclaration>
-
-type privateKey<k> = k & PrivateDeclaration
-
-type privateNameFrom<k> = k extends PrivateDeclaration<infer name>
-    ? name
+type extractPrivateKey<k> = k extends PrivateDeclaration<infer key>
+    ? key
     : never
 
 export type GenericDeclaration<
@@ -118,7 +120,7 @@ export type GenericDeclaration<
     params extends string = string
 > = `${name}<${params}>`
 
-type PrivateDeclaration<name extends string = string> = `#${name}`
+type PrivateDeclaration<key extends string = string> = `#${key}`
 
 type paramsFrom<scopeKey> = scopeKey extends GenericDeclaration<
     string,
@@ -151,10 +153,14 @@ export type resolve<reference extends keyof $, $> = isAny<
     ? inferDefinition<def, $>
     : $[reference]
 
+export type resolutionsOf<c extends ScopeContext> = c["exports"] &
+    c["locals"] &
+    c["ambient"]
+
 export type TypeSet<c extends ScopeContext = any> = {
     [k in keyof c["exports"]]: c["exports"][k] extends Scope<infer subcontext>
         ? TypeSet<subcontext>
-        : Type<c["exports"][k], c["exports"] & c["locals"] & c["ambient"]>
+        : Type<c["exports"][k], resolutionsOf<c>>
 }
 
 export type ScopeContext = {
@@ -184,7 +190,7 @@ export class Scope<c extends ScopeContext = any> {
         return new Scope(aliases, {})
     }
 
-    type: TypeParser<c["exports"] & c["locals"] & c["ambient"]> = ((
+    type: TypeParser<resolutionsOf<c>> = ((
         def: unknown,
         config: TypeConfig = {}
     ) => {
