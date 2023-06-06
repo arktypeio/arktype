@@ -40,7 +40,7 @@ suite("object literal", () => {
         attest(abc.condition).equals(type([[a, "&", b], "&", c]).condition)
     })
     test("traverse optional", () => {
-        const o = type({ "a?": "string" }, { keys: "strict" })
+        const o = type({ "a?": "string" }).configure({ keys: "strict" })
         attest(o({ a: "a" }).data).snap({ a: "a" })
         attest(o({}).data).snap({})
         attest(o({ a: 1 }).problems?.summary).snap(
@@ -58,7 +58,9 @@ suite("object literal", () => {
         attest(t.infer).typed as { "a?": string }
     })
     test("multiple bad strict", () => {
-        const t = type({ a: "string", b: "boolean" }, { keys: "strict" })
+        const t = type({ a: "string", b: "boolean" }).configure({
+            keys: "strict"
+        })
         attest(t({ a: 1, b: 2 }).problems?.summary).snap(
             "a must be a string (was number)\nb must be boolean (was number)"
         )

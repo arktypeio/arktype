@@ -12,7 +12,7 @@ suite("key traversal", () => {
         attest(t(dataWithExtraneousB).data).equals(dataWithExtraneousB)
     })
     test("invalid union", () => {
-        const o = type([{ a: "string" }, "|", { b: "boolean" }], {
+        const o = type([{ a: "string" }, "|", { b: "boolean" }]).configure({
             keys: "strict"
         })
         // attest(o({ a: 2 }).problems?.summary).snap(
@@ -20,22 +20,16 @@ suite("key traversal", () => {
         // )
     })
     test("distilled type", () => {
-        const t = type(
-            {
-                a: "string"
-            },
-            { keys: "distilled" }
-        )
+        const t = type({
+            a: "string"
+        }).configure({ keys: "distilled" })
         attest(t({ a: "ok" }).data).equals({ a: "ok" })
         attest(t(getExtraneousB()).data).snap({ a: "ok" })
     })
     test("distilled array", () => {
-        const o = type(
-            { a: "email[]" },
-            {
-                keys: "distilled"
-            }
-        )
+        const o = type({ a: "email[]" }).configure({
+            keys: "distilled"
+        })
         attest(o({ a: ["shawn@arktype.io"] }).data).snap({
             a: ["shawn@arktype.io"]
         })
@@ -46,7 +40,7 @@ suite("key traversal", () => {
         attest(o({ b: ["shawn"] }).problems?.summary).snap("a must be defined")
     })
     test("distilled union", () => {
-        const o = type([{ a: "string" }, "|", { b: "boolean" }], {
+        const o = type([{ a: "string" }, "|", { b: "boolean" }]).configure({
             keys: "distilled"
         })
         // can distill to first branch
@@ -59,22 +53,16 @@ suite("key traversal", () => {
         )
     })
     test("strict type", () => {
-        const t = type(
-            {
-                a: "string"
-            },
-            { keys: "strict" }
-        )
+        const t = type({
+            a: "string"
+        }).configure({ keys: "strict" })
         attest(t({ a: "ok" }).data).equals({ a: "ok" })
         attest(t(getExtraneousB()).problems?.summary).snap("b must be removed")
     })
     test("strict array", () => {
-        const o = type(
-            { a: "string[]" },
-            {
-                keys: "strict"
-            }
-        )
+        const o = type({ a: "string[]" }).configure({
+            keys: "strict"
+        })
         attest(o({ a: ["shawn"] }).data).snap({ a: ["shawn"] })
         attest(o({ a: [2] }).problems?.summary).snap(
             "a/0 must be a string (was number)"

@@ -161,6 +161,8 @@ export class Scope<r extends Resolutions = any> {
     declare inferIn: extractIn<r["exports"]>;
     declare [inferred]: typeof inferred
 
+    config: TypeConfig
+
     private resolutions: Record<string, Type | TypeSet> = {}
     private exports: Record<string, Type | TypeSet> = {}
 
@@ -169,6 +171,7 @@ export class Scope<r extends Resolutions = any> {
         // if (opts.imports) {
         //     this.cacheSpaces(opts.imports, "imports")
         // }
+        this.config = {}
     }
 
     static root: ScopeParser<{}, {}> = (aliases) => {

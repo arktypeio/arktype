@@ -55,24 +55,16 @@ export type TypeParser<$> = {
     ) => Type<branches[number], $>
 }
 
-const boxesOf = type("<t, u>", { box: "t", boxes: "u[]" })
-
-export const myBoxes = boxesOf("string", "number")
-//           ^?
-
-declare const type: TypeParser<Ark>
-
 export type DefinitionParser<$> = <def>(
     def: validateDefinition<def, bindThis<$, def>>
 ) => def
 
 registry().register("state", TraversalState)
 
-type bindGenericInstantiationToScope<
-    params extends string[],
-    args extends unknown[],
-    $
-> = [params, args] extends [
+type bindGenericInstantiationToScope<params extends string[], args, $> = [
+    params,
+    args
+] extends [
     [infer pHead extends string, ...infer pTail extends string[]],
     [infer aHead, ...infer aTail]
 ]
@@ -94,10 +86,9 @@ export type Generic<
         ...args: conform<
             args,
             {
-                [i in keyof params]: validateDefinition<
-                    args[i],
-                    bindThis<$, def>
-                >
+                [i in keyof params]: i extends keyof args
+                    ? validateDefinition<args[i], bindThis<$, def>>
+                    : unknown
             }
         >
     ): Type<
@@ -117,6 +108,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     declare infer: extractOut<t>
     declare inferIn: extractIn<t>
 
+    config: TypeConfig
     root: TypeNode<t>
     condition: string
     allows: this["root"]["allows"]
@@ -135,6 +127,12 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
         this.root = root
         this.condition = root.condition
         this.allows = root.allows
+        this.config = scope.config
+    }
+
+    configure(config: TypeConfig) {
+        this.config = { ...this.config, ...config }
+        return this
     }
 
     // TODO: should return out
