@@ -3,6 +3,14 @@ import { scope } from "../../src/main.js"
 import { lazily } from "./utils.js"
 
 suite("generic", () => {
+    const z = scope({
+        "box<t>": {
+            box: "t"
+        },
+        "pair<t,u>": ["t", "u"],
+        foo: "box<bar>",
+        bar: "boolean"
+    })
     const $ = lazily(() =>
         scope({
             "box<t>": {

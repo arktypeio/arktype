@@ -1,8 +1,9 @@
 import { suite, test } from "mocha"
 import { scope } from "../../src/main.js"
-import type { Generic, TypeSet } from "../../src/scope.js"
+import type { TypeSet } from "../../src/scope.js"
 import { writeDuplicateAliasesMessage } from "../../src/scope.js"
 import type { Ark } from "../../src/scopes/ark.js"
+import type { Generic } from "../../src/type.js"
 import { attest } from "../attest/main.js"
 import { lazily } from "./utils.js"
 

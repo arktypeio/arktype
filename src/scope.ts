@@ -14,12 +14,14 @@ import type {
     DefinitionParser,
     extractIn,
     extractOut,
+    Generic,
+    GenericProps,
     KeyCheckKind,
     TypeConfig,
     TypeParser
 } from "./type.js"
 import { Type } from "./type.js"
-import type { evaluate, isAny, nominal } from "./utils/generics.js"
+import type { evaluate, id, isAny, nominal } from "./utils/generics.js"
 import type { Dict } from "./utils/records.js"
 
 export type ScopeParser<parent, ambient> = {
@@ -68,11 +70,6 @@ export type bindThis<$, def> = $ & { this: Alias<def> }
 // trying to nest def here in an object or tuple cause circularities during some thunk validations
 type Alias<def = {}> = nominal<def, "alias">
 
-export type Generic<
-    params extends string[] = string[],
-    def = unknown
-> = nominal<[params, def], "generic">
-
 type bootstrap<aliases> = bootstrapLocals<aliases> & bootstrapExports<aliases>
 
 type bootstrapLocals<aliases> = bootstrapAliases<{
@@ -94,7 +91,7 @@ type bootstrapAliases<aliases> = {
     // TODO: do I need to parse the def AST here? or something more so that
     // references can be resolved if it's used outside the scope
     [k in keyof aliases & GenericDeclaration as extractGenericName<k>]: Generic<
-        parseGenericParams<extractGenericName<k>>,
+        parseGenericParams<extractGenericParameters<k>>,
         aliases[k]
     >
 }
@@ -102,7 +99,7 @@ type bootstrapAliases<aliases> = {
 type inferBootstrapped<bootstrapped, $> = evaluate<{
     [name in keyof bootstrapped]: bootstrapped[name] extends Alias<infer def>
         ? inferDefinition<def, $ & bootstrapped>
-        : bootstrapped[name] extends Generic
+        : bootstrapped[name] extends GenericProps
         ? bootstrapped[name]
         : bootstrapped[name] extends Scope
         ? bootstrapped[name]
@@ -111,6 +108,13 @@ type inferBootstrapped<bootstrapped, $> = evaluate<{
 
 type extractGenericName<k> = k extends GenericDeclaration<infer name>
     ? name
+    : never
+
+type extractGenericParameters<k> = k extends GenericDeclaration<
+    string,
+    infer params
+>
+    ? params
     : never
 
 type extractPrivateKey<k> = k extends PrivateDeclaration<infer key>

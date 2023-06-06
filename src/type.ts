@@ -20,7 +20,7 @@ import type { bindThis, Scope } from "./scope.js"
 import { type Ark } from "./scopes/ark.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
-import type { conform } from "./utils/generics.js"
+import type { conform, id } from "./utils/generics.js"
 import { Path } from "./utils/lists.js"
 
 export type TypeParser<$> = {
@@ -77,29 +77,33 @@ type bindGenericInstantiationToScope<params extends string[], args, $> = [
       >
     : $
 
-export type Generic<
-    params extends string[] = string[],
-    def = unknown,
-    $ = Ark
-> = {
-    <args>(
-        ...args: conform<
-            args,
-            {
-                [i in keyof params]: i extends keyof args
-                    ? validateDefinition<args[i], bindThis<$, def>>
-                    : unknown
-            }
-        >
-    ): Type<
-        inferDefinition<def, bindGenericInstantiationToScope<params, args, $>>,
-        $
-    >
-
+// Comparing to Generic directly doesn't work well, so we use this similarly to
+// the [inferred] symbol for Type
+export type GenericProps<params extends string[] = string[], def = unknown> = {
+    [id]: "generic"
     parameters: params
     definition: def
     scope: Scope
 }
+
+export type Generic<
+    params extends string[] = string[],
+    def = unknown,
+    $ = any
+> = (<args>(
+    ...args: conform<
+        args,
+        {
+            [i in keyof params]: i extends keyof args
+                ? validateDefinition<args[i], bindThis<$, def>>
+                : unknown
+        }
+    >
+) => Type<
+    inferDefinition<def, bindGenericInstantiationToScope<params, args, $>>,
+    $
+>) &
+    GenericProps<params, def>
 
 export class Type<t = unknown, $ = any> extends CompiledFunction<
     (data: unknown) => CheckResult<extractOut<t>>

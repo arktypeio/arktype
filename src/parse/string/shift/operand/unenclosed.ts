@@ -1,5 +1,6 @@
 import { TypeNode } from "../../../../nodes/type.js"
-import type { Generic, Scope } from "../../../../scope.js"
+import type { Scope } from "../../../../scope.js"
+import type { Generic, GenericProps } from "../../../../type.js"
 import type { error } from "../../../../utils/errors.js"
 import type { join } from "../../../../utils/lists.js"
 import type {
@@ -46,7 +47,7 @@ export type parseUnenclosed<
         ? result extends error<infer message>
             ? state.error<message>
             : result extends keyof $
-            ? $[result] extends Generic<infer params, infer def>
+            ? $[result] extends GenericProps<infer params, infer def>
                 ? parseGenericInstantiation<
                       token,
                       params,

@@ -34,9 +34,13 @@ export type genericAstFrom<
     params extends string[],
     args extends unknown[],
     def
-> = GenericAst<def, genericScopeNames<params, args>>
+> = GenericInstantiationAst<def, genericScopeNames<params, args>>
 
-export type GenericAst<def = unknown, names = unknown> = [def, "<>", names]
+export type GenericInstantiationAst<def = unknown, names = unknown> = [
+    def,
+    "<>",
+    names
+]
 
 export type inferExpression<ast extends List, $> = ast[1] extends "<>"
     ? inferDefinition<
@@ -60,7 +64,7 @@ export type inferExpression<ast extends List, $> = ast[1] extends "<>"
     : never
 
 // TODO: standarize AST handling for generics
-export type validateAst<ast, $> = ast extends GenericAst
+export type validateAst<ast, $> = ast extends GenericInstantiationAst
     ? ast
     : ast extends string
     ? validateStringAst<ast>
