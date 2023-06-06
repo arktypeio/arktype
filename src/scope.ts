@@ -172,11 +172,11 @@ export class Scope<r extends Resolutions = any> {
     }
 
     static root: ScopeParser<{}, {}> = (aliases) => {
-        return new Scope(aliases, {})
+        return new Scope(aliases, {}) as never
     }
 
     type: TypeParser<$<r>> = ((def: unknown, config: TypeConfig = {}) => {
-        return !config || new Type(def, this)
+        return !config || new Type(def, this as never)
     }) as never
 
     scope: ScopeParser<r["exports"], r["ambient"]> = ((
@@ -211,7 +211,7 @@ export class Scope<r extends Resolutions = any> {
         if (!aliasDef) {
             return
         }
-        const resolution = new Type(aliasDef, this)
+        const resolution = new Type(aliasDef, this as never)
         this.resolutions[name] = resolution
         this.exports[name] = resolution
         return resolution

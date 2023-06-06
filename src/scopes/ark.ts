@@ -16,21 +16,7 @@ export const ark = Scope.root({
 registry().register("ark", ark)
 
 export const arktypes: TypeSet<{ exports: Ark; locals: {}; ambient: Ark }> =
-    ark.export()
-
-export const scopes = {
-    tsKeyword,
-    jsObject,
-    validation,
-    ark
-}
-
-export const spaces = {
-    tsKeyword: tsKeywordTypes,
-    jsObject: jsObjectTypes,
-    validation: validationTypes,
-    ark: arktypes
-} satisfies Record<Exclude<keyof typeof scopes, "root">, TypeSet>
+    ark.export() as never
 
 // This is just copied from the inference of the default scope. Creating an explicit
 // type like this makes validation for the default type and scope functions feel
@@ -79,6 +65,6 @@ export type Ark = {
 
 export const scope: ScopeParser<{}, Ark> = ark.scope as never
 
-export const type: TypeParser<Ark> = ark.type
+export const type: TypeParser<Ark> = ark.type as never
 
 export const define: DefinitionParser<Ark> = ark.define

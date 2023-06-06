@@ -12,10 +12,15 @@ import {
     parseDefinition,
     type validateDefinition
 } from "./parse/definition.js"
+import type {
+    GenericParamsParseError,
+    parseGenericParams
+} from "./parse/generic.js"
 import type { bindThis, Scope } from "./scope.js"
 import { type Ark } from "./scopes/ark.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
+import type { conform } from "./utils/generics.js"
 import { Path } from "./utils/lists.js"
 
 export type TypeParser<$> = {
@@ -26,15 +31,36 @@ export type TypeParser<$> = {
         $
     >
 
-    <def>(
-        def: validateDefinition<def, bindThis<$, def>>,
-        opts: TypeConfig
-    ): Type<inferDefinition<def, bindThis<$, def>>, $>
+    <params extends string, def>(
+        params: `<${parseGenericParams<params> extends GenericParamsParseError<
+            infer message
+        >
+            ? message
+            : params}>`,
+        def: validateDefinition<
+            def,
+            bindThis<$, def> & {
+                [param in parseGenericParams<params>[number]]: unknown
+            }
+        >
+    ): Generic<parseGenericParams<params>, def, $>
+
+    // <def>(
+    //     def: validateDefinition<def, bindThis<$, def>>,
+    //     opts: TypeConfig
+    // ): Type<inferDefinition<def, bindThis<$, def>>, $>
 
     exactly: <branches extends readonly unknown[]>(
         ...branches: branches
     ) => Type<branches[number], $>
 }
+
+const boxesOf = type("<t, u>", { box: "t", boxes: "u[]" })
+
+export const myBoxes = boxesOf("string", "number")
+//           ^?
+
+declare const type: TypeParser<Ark>
 
 export type DefinitionParser<$> = <def>(
     def: validateDefinition<def, bindThis<$, def>>
@@ -42,25 +68,49 @@ export type DefinitionParser<$> = <def>(
 
 registry().register("state", TraversalState)
 
-export class Generic<
+type bindGenericInstantiationToScope<
+    params extends string[],
+    args extends unknown[],
+    $
+> = [params, args] extends [
+    [infer pHead extends string, ...infer pTail extends string[]],
+    [infer aHead, ...infer aTail]
+]
+    ? bindGenericInstantiationToScope<
+          pTail,
+          aTail,
+          $ & {
+              [_ in pHead]: inferDefinition<aHead, bindThis<$, aHead>>
+          }
+      >
+    : $
+
+export type Generic<
     params extends string[] = string[],
     def = unknown,
     $ = Ark
-> extends CompiledFunction<
-    <args extends unknown[]>(
-        ...args: { [i in keyof params]: args[i & number] }
-    ) => Type<args, $>
-> {
-    constructor(
-        public params: params,
-        public definition: def,
-        public scope: Scope
-    ) {
-        super()
-    }
+> = {
+    <args>(
+        ...args: conform<
+            args,
+            {
+                [i in keyof params]: validateDefinition<
+                    args[i],
+                    bindThis<$, def>
+                >
+            }
+        >
+    ): Type<
+        inferDefinition<def, bindGenericInstantiationToScope<params, args, $>>,
+        $
+    >
+
+    parameters: params
+    definition: def
+    scope: Scope
 }
 
-export class Type<t = unknown, $ = Ark> extends CompiledFunction<
+export class Type<t = unknown, $ = any> extends CompiledFunction<
     (data: unknown) => CheckResult<extractOut<t>>
 > {
     declare [inferred]: t
