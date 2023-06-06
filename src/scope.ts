@@ -26,16 +26,16 @@ import type { Dict } from "./utils/records.js"
 
 export type ScopeParser<parent, ambient> = {
     <aliases>(aliases: validateAliases<aliases, parent & ambient>): Scope<{
-        exports: inferBootstrapped<
-            bootstrapExports<aliases>,
-            // evaluate the intersection between the bootstrapped aliases and
-            // parent, but not ambient to avoid expanding the default scope
-            bootstrap<aliases> & parent & ambient
-        >
-        locals: inferBootstrapped<
-            bootstrapLocals<aliases>,
-            bootstrap<aliases> & parent & ambient
-        >
+        exports: inferBootstrapped<{
+            exports: evaluate<bootstrapExports<aliases>>
+            locals: evaluate<bootstrapLocals<aliases> & parent>
+            ambient: ambient
+        }>
+        locals: inferBootstrapped<{
+            exports: evaluate<bootstrapLocals<aliases>>
+            locals: evaluate<bootstrapExports<aliases> & parent>
+            ambient: ambient
+        }>
         ambient: ambient
     }>
 }
@@ -59,19 +59,17 @@ type validateAliases<aliases, $> = {
                   >
             : never
         : k extends keyof $
-        ? writeDuplicateAliasesMessage<k & string>
+        ? // TODO: more duplicate alias scenarios
+          writeDuplicateAliasesMessage<k & string>
         : aliases[k] extends Scope | Type | GenericProps
         ? aliases[k]
         : validateDefinition<aliases[k], $ & bootstrap<aliases>>
 }
 
-export type bindThis<$, def> = $ & { this: d<def> }
+export type bindThis<$, def> = $ & { this: Def<def> }
 
-/** nominal type for an unparsed definition used during scope bootstrapping.
- *  uses a minimal name ("d") to minimize its footprint in hovers it
- *  occasionally appears in, e.g. snapshotted scopes for generics
- */
-type d<def = {}> = nominal<def, "unparsed">
+/** nominal type for an unparsed definition used during scope bootstrapping */
+type Def<def = {}> = nominal<def, "unparsed">
 
 type bootstrap<aliases> = bootstrapLocals<aliases> & bootstrapExports<aliases>
 
@@ -89,7 +87,7 @@ type bootstrapExports<aliases> = bootstrapAliases<{
 type bootstrapAliases<aliases> = {
     [k in Exclude<keyof aliases, GenericDeclaration>]: aliases[k] extends Scope
         ? aliases[k]
-        : d<aliases[k]>
+        : Def<aliases[k]>
 } & {
     [k in keyof aliases & GenericDeclaration as extractGenericName<k>]: Generic<
         parseGenericParams<extractGenericParameters<k>>,
@@ -97,14 +95,13 @@ type bootstrapAliases<aliases> = {
     >
 }
 
-type inferBootstrapped<bootstrapped, $> = evaluate<{
-    [name in keyof bootstrapped]: bootstrapped[name] extends d<infer def>
-        ? inferDefinition<def, $ & bootstrapped>
-        : bootstrapped[name] extends GenericProps<infer params, infer def>
-        ? Generic<params, def, $>
-        : bootstrapped[name] extends Scope
-        ? bootstrapped[name]
-        : never
+type inferBootstrapped<r extends Resolutions> = evaluate<{
+    [k in keyof r["exports"]]: r["exports"][k] extends Def<infer def>
+        ? inferDefinition<def, $<r>>
+        : r["exports"][k] extends GenericProps<infer params, infer def>
+        ? Generic<params, def, $<r>>
+        : // otherwise should be a subscope
+          r["exports"][k]
 }>
 
 type extractGenericName<k> = k extends GenericDeclaration<infer name>
@@ -129,7 +126,7 @@ export type ScopeOptions = {
     keys?: KeyCheckKind
 }
 
-export type resolve<reference extends keyof $, $> = $[reference] extends d<
+export type resolve<reference extends keyof $, $> = $[reference] extends Def<
     infer def
 >
     ? $[reference] extends null
@@ -240,6 +237,7 @@ export class Scope<r extends Resolutions = any> {
 type destructuredExportContext<
     r extends Resolutions,
     name extends keyof r["exports"]
+    // TODO: is this okay?
 > = {
     exports: { [k in name]: r["exports"][k] }
     locals: r["locals"] & {
