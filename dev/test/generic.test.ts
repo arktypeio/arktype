@@ -22,6 +22,7 @@ suite("generic", () => {
     test("cyclic", () => {
         // attest(types.bitBox).types.toString()
     })
+    // TODO: add tests for generics referencing types that are no longer in scope
     test("errors on missing args", () => {})
 })
 

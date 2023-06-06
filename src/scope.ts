@@ -21,18 +21,20 @@ import type {
     TypeParser
 } from "./type.js"
 import { Type } from "./type.js"
-import type { evaluate, id, isAny, nominal } from "./utils/generics.js"
+import type { evaluate, isAny, nominal } from "./utils/generics.js"
 import type { Dict } from "./utils/records.js"
 
 export type ScopeParser<parent, ambient> = {
     <aliases>(aliases: validateAliases<aliases, parent & ambient>): Scope<{
         exports: inferBootstrapped<
             bootstrapExports<aliases>,
-            bootstrap<aliases> & parent & ambient
+            // evaluate the intersection between the bootstrapped aliases and
+            // parent, but not ambient to avoid expanding the default scope
+            evaluate<bootstrap<aliases> & parent> & ambient
         >
         locals: inferBootstrapped<
             bootstrapLocals<aliases>,
-            bootstrap<aliases> & parent & ambient
+            evaluate<bootstrap<aliases> & parent> & ambient
         >
         ambient: ambient
     }>
@@ -88,8 +90,6 @@ type bootstrapAliases<aliases> = {
         ? aliases[k]
         : Alias<aliases[k]>
 } & {
-    // TODO: do I need to parse the def AST here? or something more so that
-    // references can be resolved if it's used outside the scope
     [k in keyof aliases & GenericDeclaration as extractGenericName<k>]: Generic<
         parseGenericParams<extractGenericParameters<k>>,
         aliases[k]
@@ -99,8 +99,8 @@ type bootstrapAliases<aliases> = {
 type inferBootstrapped<bootstrapped, $> = evaluate<{
     [name in keyof bootstrapped]: bootstrapped[name] extends Alias<infer def>
         ? inferDefinition<def, $ & bootstrapped>
-        : bootstrapped[name] extends GenericProps
-        ? bootstrapped[name]
+        : bootstrapped[name] extends GenericProps<infer params, infer def>
+        ? Generic<params, def, $>
         : bootstrapped[name] extends Scope
         ? bootstrapped[name]
         : never
