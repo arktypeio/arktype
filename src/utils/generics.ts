@@ -18,6 +18,8 @@ export type merge<base, merged> = evaluate<Omit<base, keyof merged> & merged>
 
 export type isAny<t> = [unknown, t] extends [t, {}] ? true : false
 
+export type isNever<t> = [t] extends [never] ? true : false
+
 export type isUnknown<t> = unknown extends t
     ? [t] extends [{}]
         ? false

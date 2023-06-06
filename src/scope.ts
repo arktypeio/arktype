@@ -145,14 +145,10 @@ export type resolve<reference extends keyof $, $> = isAny<
 type $<r extends Resolutions> = r["exports"] & r["locals"] & r["ambient"]
 
 export type TypeSet<r extends Resolutions = any> = {
-    [k in keyof r["exports"]]: [r["exports"][k]] extends [
-        Scope<infer subcontext>
-    ]
-        ? // avoid treating types inferred as any or never as subscopes
-          r["exports"][k] extends never
-            ? Type<never, $<r>>
-            : isAny<r["exports"][k]> extends true
-            ? Type<any, $<r>>
+    [k in keyof r["exports"]]: r["exports"][k] extends Scope<infer subcontext>
+        ? // avoid treating any, never as subscopes
+          r["exports"][k] extends null
+            ? Type<r["exports"][k], $<r>>
             : TypeSet<subcontext>
         : Type<r["exports"][k], $<r>>
 }
