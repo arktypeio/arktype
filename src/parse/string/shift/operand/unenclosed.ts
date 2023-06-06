@@ -1,6 +1,6 @@
 import { TypeNode } from "../../../../nodes/type.js"
 import type { Scope } from "../../../../scope.js"
-import type { Generic, GenericProps } from "../../../../type.js"
+import type { GenericProps } from "../../../../type.js"
 import type { error } from "../../../../utils/errors.js"
 import type { join } from "../../../../utils/lists.js"
 import type {
@@ -11,7 +11,7 @@ import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "../../../../utils/numericLiterals.js"
-import type { genericAstFrom } from "../../../ast/ast.js"
+import type { genericInstantiationAstFrom } from "../../../ast/ast.js"
 import type { Inferred } from "../../../definition.js"
 import type {
     ParsedArgs,
@@ -69,8 +69,12 @@ export type parseGenericInstantiation<
     // have to skip whitespace here since TS allows instantiations like `Partial    <T>`
 > = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}`
     ? parseGenericArgs<name, params, unscanned, $, [], []> extends infer result
-        ? result extends ParsedArgs<infer asts, infer nextUnscanned>
-            ? state.setRoot<s, genericAstFrom<params, asts, def>, nextUnscanned>
+        ? result extends ParsedArgs<infer argAsts, infer nextUnscanned>
+            ? state.setRoot<
+                  s,
+                  genericInstantiationAstFrom<params, argAsts, def>,
+                  nextUnscanned
+              >
             : // propagate error
               result
         : never

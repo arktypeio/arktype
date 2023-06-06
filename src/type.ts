@@ -17,7 +17,6 @@ import type {
     parseGenericParams
 } from "./parse/generic.js"
 import type { bindThis, Scope } from "./scope.js"
-import { type Ark } from "./scopes/ark.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
 import type { conform, id } from "./utils/generics.js"
@@ -45,11 +44,6 @@ export type TypeParser<$> = {
         >
     ): Generic<parseGenericParams<params>, def, $>
 
-    // <def>(
-    //     def: validateDefinition<def, bindThis<$, def>>,
-    //     opts: TypeConfig
-    // ): Type<inferDefinition<def, bindThis<$, def>>, $>
-
     exactly: <branches extends readonly unknown[]>(
         ...branches: branches
     ) => Type<branches[number], $>
@@ -61,21 +55,11 @@ export type DefinitionParser<$> = <def>(
 
 registry().register("state", TraversalState)
 
-type bindGenericInstantiationToScope<params extends string[], args, $> = [
-    params,
-    args
-] extends [
-    [infer pHead extends string, ...infer pTail extends string[]],
-    [infer aHead, ...infer aTail]
-]
-    ? bindGenericInstantiationToScope<
-          pTail,
-          aTail,
-          $ & {
-              [_ in pHead]: inferDefinition<aHead, bindThis<$, aHead>>
-          }
-      >
-    : $
+type bindGenericInstantiationToScope<params extends string[], argDefs, $> = {
+    [i in keyof params as params[i & number]]: i extends keyof argDefs
+        ? inferDefinition<argDefs[i], bindThis<$, argDefs[i]>>
+        : never
+} & $
 
 // Comparing to Generic directly doesn't work well, so we use this similarly to
 // the [inferred] symbol for Type
@@ -91,14 +75,13 @@ export type Generic<
     def = unknown,
     $ = any
 > = (<args>(
-    ...args: conform<
-        args,
-        {
-            [i in keyof params]: i extends keyof args
-                ? validateDefinition<args[i], bindThis<$, def>>
-                : unknown
-        }
-    >
+    /** @ts-expect-error can't constrain this to be an array without breaking narrowing */
+    ...args: {
+        [i in keyof args]: conform<
+            args[i],
+            validateDefinition<args[i], bindThis<$, def>>
+        >
+    }
 ) => Type<
     inferDefinition<def, bindGenericInstantiationToScope<params, args, $>>,
     $

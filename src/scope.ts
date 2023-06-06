@@ -67,10 +67,13 @@ type validateAliases<aliases, $> = {
         : validateDefinition<aliases[k], $ & bootstrap<aliases>>
 }
 
-export type bindThis<$, def> = $ & { this: Alias<def> }
+export type bindThis<$, def> = $ & { this: d<def> }
 
-// trying to nest def here in an object or tuple cause circularities during some thunk validations
-type Alias<def = {}> = nominal<def, "alias">
+/** nominal type for an unparsed definition used during scope bootstrapping.
+ *  uses a minimal name ("d") to minimize its footprint in hovers it
+ *  occasionally appears in, e.g. snapshotted scopes for generics
+ */
+type d<def = {}> = nominal<def, "unparsed">
 
 type bootstrap<aliases> = bootstrapLocals<aliases> & bootstrapExports<aliases>
 
@@ -88,7 +91,7 @@ type bootstrapExports<aliases> = bootstrapAliases<{
 type bootstrapAliases<aliases> = {
     [k in Exclude<keyof aliases, GenericDeclaration>]: aliases[k] extends Scope
         ? aliases[k]
-        : Alias<aliases[k]>
+        : d<aliases[k]>
 } & {
     [k in keyof aliases & GenericDeclaration as extractGenericName<k>]: Generic<
         parseGenericParams<extractGenericParameters<k>>,
@@ -97,7 +100,7 @@ type bootstrapAliases<aliases> = {
 }
 
 type inferBootstrapped<bootstrapped, $> = evaluate<{
-    [name in keyof bootstrapped]: bootstrapped[name] extends Alias<infer def>
+    [name in keyof bootstrapped]: bootstrapped[name] extends d<infer def>
         ? inferDefinition<def, $ & bootstrapped>
         : bootstrapped[name] extends GenericProps<infer params, infer def>
         ? Generic<params, def, $>
@@ -133,7 +136,7 @@ export type resolve<reference extends keyof $, $> = isAny<
     $[reference]
 > extends true
     ? any
-    : $[reference] extends Alias<infer def>
+    : $[reference] extends d<infer def>
     ? // `never` hits this branch even though it really shouldn't, but the result
       // is still correct since inferring never as a definition results in never
       inferDefinition<def, $>
@@ -183,7 +186,7 @@ export class Scope<r extends Resolutions = any> {
     }
 
     type: TypeParser<$<r>> = ((def: unknown, config: TypeConfig = {}) => {
-        return !config || new Type(def, this as never)
+        return !config || new Type(def, this)
     }) as never
 
     scope: ScopeParser<r["exports"], r["ambient"]> = ((
@@ -218,7 +221,7 @@ export class Scope<r extends Resolutions = any> {
         if (!aliasDef) {
             return
         }
-        const resolution = new Type(aliasDef, this as never)
+        const resolution = new Type(aliasDef, this)
         this.resolutions[name] = resolution
         this.exports[name] = resolution
         return resolution

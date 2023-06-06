@@ -19,27 +19,28 @@ export type inferAst<ast, $> = ast extends List
     ? inferExpression<ast, $>
     : inferTerminal<ast, $>
 
-type genericScopeNames<
+type bindGenericArgsAsScope<
     params extends string[],
-    args extends unknown[],
+    argAsts extends unknown[],
     result = {}
-> = [params, args] extends [
+> = [params, argAsts] extends [
     [infer pHead extends string, ...infer pTail extends string[]],
     [infer aHead, ...infer aTail]
 ]
-    ? genericScopeNames<pTail, aTail, result & { [_ in pHead]: aHead }>
+    ? bindGenericArgsAsScope<pTail, aTail, result & { [_ in pHead]: aHead }>
     : result
 
-export type genericAstFrom<
+export type genericInstantiationAstFrom<
     params extends string[],
-    args extends unknown[],
+    argAsts extends unknown[],
     def
-> = GenericInstantiationAst<def, genericScopeNames<params, args>>
+> = GenericInstantiationAst<def, bindGenericArgsAsScope<params, argAsts>>
 
-export type GenericInstantiationAst<def = unknown, names = unknown> = [
+export type GenericInstantiationAst<def = unknown, boundParams = unknown> = [
     def,
     "<>",
-    names
+    // maps param names to ASTs, e.g. { param1: ["string", "|", "number"] }
+    boundParams
 ]
 
 export type inferExpression<ast extends List, $> = ast[1] extends "<>"
@@ -63,10 +64,7 @@ export type inferExpression<ast extends List, $> = ast[1] extends "<>"
     ? keyof inferAst<ast[1], $>
     : never
 
-// TODO: standarize AST handling for generics
-export type validateAst<ast, $> = ast extends GenericInstantiationAst
-    ? ast
-    : ast extends string
+export type validateAst<ast, $> = ast extends string
     ? validateStringAst<ast>
     : ast extends PostfixExpression<infer operator, infer operand>
     ? operator extends "[]"
@@ -84,6 +82,8 @@ export type validateAst<ast, $> = ast extends GenericInstantiationAst
     ? [keyof inferAst<operand, $>] extends [never]
         ? error<writeUnsatisfiableExpressionError<astToString<ast>>>
         : validateAst<operand, $>
+    : ast extends GenericInstantiationAst
+    ? ast
     : never
 
 export const writeUnsatisfiableExpressionError = <expression extends string>(

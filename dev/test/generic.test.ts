@@ -1,8 +1,53 @@
 import { suite, test } from "mocha"
-import { scope } from "../../src/main.js"
+import { scope, type } from "../../src/main.js"
+import type { Ark } from "../../src/scopes/ark.js"
+import type { Generic } from "../../src/type.js"
+import { attest } from "../attest/main.js"
 import { lazily } from "./utils.js"
 
-suite("generic", () => {
+suite("standalone generic", () => {
+    test("unary", () => {
+        const boxOf = type("<t>", { box: "t" })
+        attest(boxOf).typed as Generic<
+            ["t"],
+            {
+                box: "t"
+            },
+            Ark
+        >
+        const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
+        attest(schrodingersBox.infer).typed as {
+            box: { cat: { isAlive: boolean } }
+        }
+    })
+    test("binary", () => {
+        const either = type("<first, second>", "first|second")
+        attest(either).typed as Generic<
+            ["first", "second"],
+            "first|second",
+            Ark
+        >
+        const schrodingersBox = either(
+            { cat: { isAlive: "true" } },
+            { cat: { isAlive: "false" } }
+        )
+        attest(schrodingersBox.infer).typed as
+            | {
+                  cat: {
+                      isAlive: true
+                  }
+              }
+            | {
+                  cat: {
+                      isAlive: false
+                  }
+              }
+        // ideally this would be reduced to { cat: { isAlive: boolean } }:
+        // https://github.com/arktypeio/arktype/issues/751
+    })
+})
+
+suite("in-scope generic", () => {
     const $ = lazily(() =>
         scope({
             "box<t>": {
@@ -17,6 +62,11 @@ suite("generic", () => {
 
     test("unary", () => {
         const t = $.type("box<string>")
+        attest(t.infer)
+    })
+
+    test("binary", () => {
+        const t = $.type("pair<string, number>")
     })
 
     test("cyclic", () => {
