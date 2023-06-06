@@ -21,7 +21,7 @@ import type {
     TypeParser
 } from "./type.js"
 import { Type } from "./type.js"
-import type { evaluate, isAny, nominal } from "./utils/generics.js"
+import type { evaluate, nominal } from "./utils/generics.js"
 import type { Dict } from "./utils/records.js"
 
 export type ScopeParser<parent, ambient> = {
@@ -30,11 +30,11 @@ export type ScopeParser<parent, ambient> = {
             bootstrapExports<aliases>,
             // evaluate the intersection between the bootstrapped aliases and
             // parent, but not ambient to avoid expanding the default scope
-            evaluate<bootstrap<aliases> & parent> & ambient
+            bootstrap<aliases> & parent & ambient
         >
         locals: inferBootstrapped<
             bootstrapLocals<aliases>,
-            evaluate<bootstrap<aliases> & parent> & ambient
+            bootstrap<aliases> & parent & ambient
         >
         ambient: ambient
     }>
@@ -60,9 +60,7 @@ type validateAliases<aliases, $> = {
             : never
         : k extends keyof $
         ? writeDuplicateAliasesMessage<k & string>
-        : aliases[k] extends Scope
-        ? aliases[k]
-        : aliases[k] extends Type
+        : aliases[k] extends Scope | Type | GenericProps
         ? aliases[k]
         : validateDefinition<aliases[k], $ & bootstrap<aliases>>
 }
@@ -127,29 +125,31 @@ type extractPrivateKey<k> = k extends PrivateDeclaration<infer key>
 type PrivateDeclaration<key extends string = string> = `#${key}`
 
 export type ScopeOptions = {
-    root?: TypeSet
     codes?: Record<ProblemCode, { mustBe?: string }>
     keys?: KeyCheckKind
 }
 
-export type resolve<reference extends keyof $, $> = isAny<
-    $[reference]
-> extends true
-    ? any
-    : $[reference] extends d<infer def>
-    ? // `never` hits this branch even though it really shouldn't, but the result
-      // is still correct since inferring never as a definition results in never
-      inferDefinition<def, $>
+export type resolve<reference extends keyof $, $> = $[reference] extends d<
+    infer def
+>
+    ? $[reference] extends null
+        ? // avoid inferring any, never
+          $[reference]
+        : inferDefinition<def, $>
     : $[reference]
 
 type $<r extends Resolutions> = r["exports"] & r["locals"] & r["ambient"]
 
 export type TypeSet<r extends Resolutions = any> = {
-    [k in keyof r["exports"]]: r["exports"][k] extends Scope<infer subcontext>
+    [k in keyof r["exports"]]: [r["exports"][k]] extends [
+        Scope<infer subresolutions>
+    ]
         ? // avoid treating any, never as subscopes
           r["exports"][k] extends null
             ? Type<r["exports"][k], $<r>>
-            : TypeSet<subcontext>
+            : TypeSet<subresolutions>
+        : r["exports"][k] extends GenericProps
+        ? r["exports"][k]
         : Type<r["exports"][k], $<r>>
 }
 
@@ -166,8 +166,8 @@ export class Scope<r extends Resolutions = any> {
 
     config: TypeConfig
 
-    private resolutions: Record<string, Type | TypeSet> = {}
-    private exports: Record<string, Type | TypeSet> = {}
+    private resolutions: TypeSet = {}
+    private exports: TypeSet = {}
 
     constructor(public aliases: Dict, opts: ScopeOptions = {}) {
         // this.cacheSpaces(opts.root ?? registry().ark, "imports")

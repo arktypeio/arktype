@@ -47,6 +47,8 @@ suite("standalone generic", () => {
     })
 })
 
+// TODO: generic referenced when defining a scope
+
 suite("in-scope generic", () => {
     const $ = lazily(() =>
         scope({
