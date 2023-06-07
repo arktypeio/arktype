@@ -828,14 +828,14 @@ export const getTokenColors = (
             name: "JSON Support Constants",
             scope: "support.constant.json",
             settings: {
-                foreground: primitives
+                foreground: variables
             }
         },
         {
             name: "JSON Property values (string)",
             scope: "meta.structure.dictionary.value.json string.quoted.double",
             settings: {
-                foreground: primitives
+                foreground: variables
             }
         },
         {
