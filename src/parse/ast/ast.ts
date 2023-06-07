@@ -31,6 +31,9 @@ type bindGenericArgAstsToScope<
         argAsts[i & keyof argAsts],
         $
     >
+    // If the generic was defined in the current scope, its definition can be
+    // resolved using the same scope as that of the input args. Otherwise, use
+    // the scope that was explicitly associated with it.
 } & Omit<g["$"] extends UnparsedScope ? $ : g["$"], g["parameters"][number]>
 
 export type GenericInstantiationAst<
