@@ -30,7 +30,6 @@
     ],
     "packageManager": "pnpm@8.6.0",
     "scripts": {
-        "setup": "pnpm install && cd dev/attest && pnpm install && cd ../.. && pnpm build",
         "prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
         "build": "ts-node ./dev/scripts/build.ts",
         "buildRepo": "pnpm build && cd ./dev/attest && pnpm build && cd ../arktype.io && pnpm build",
@@ -44,7 +43,7 @@
         "lint": "eslint --max-warnings=0 .",
         "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
         "checkFormat": "prettier --check --ignore-path ./dev/configs/.prettierignore .",
-        "prepare": "husky install dev/configs/.husky && npx only-allow pnpm",
+        "prepare": "husky install dev/configs/.husky && npx only-allow pnpm && cd dev/attest && pnpm install && cd ../.. && pnpm build",
         "changes": "cd ./dev/configs && node ../../node_modules/@changesets/cli/bin.js",
         "knip": "knip",
         "ci:publish": "pnpm changes publish",
