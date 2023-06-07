@@ -9,7 +9,7 @@ import { getSnapshotByName, queueSnapshotUpdate } from "../snapshot.js"
 import { getTypeDataAtPos } from "../type/getAssertionAtPos.js"
 import { chainableNoOpProxy } from "../utils.js"
 import { updateExternalSnapshot } from "../writeSnapshot.js"
-import type { ExternalSnapshotArgs, RootAssertions } from "./types.js"
+import type { ExternalSnapshotArgs, rootAssertions } from "./types.js"
 import {
     assertEqualOrMatching,
     callAssertedFunction,
@@ -22,7 +22,7 @@ export type ChainableAssertionOptions = {
     defaultExpected?: unknown
 }
 
-type AssertionRecord = Record<keyof RootAssertions<any, true>, unknown>
+type AssertionRecord = Record<keyof rootAssertions<any, true>, unknown>
 
 export class Assertions implements AssertionRecord {
     constructor(private ctx: AssertionContext) {}

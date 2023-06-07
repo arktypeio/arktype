@@ -59,7 +59,7 @@ type bindGenericInstantiationToScope<params extends string[], argDefs, $> = {
     [i in keyof params as params[i & number]]: i extends keyof argDefs
         ? inferDefinition<argDefs[i], bindThis<$, argDefs[i]>>
         : never
-} & $
+} & Omit<$, params[number]>
 
 // Comparing to Generic directly doesn't work well, so we use this similarly to
 // the [inferred] symbol for Type

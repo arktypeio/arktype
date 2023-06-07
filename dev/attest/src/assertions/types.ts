@@ -1,35 +1,35 @@
 import type { snapshot } from "arktype/internal/utils/serialize.js"
 
-export type RootAssertions<
-    T,
-    AllowTypeAssertions extends boolean
-> = ValueAssertions<T, AllowTypeAssertions> & TypeAssertionsRoot
+export type rootAssertions<
+    t,
+    allowTypeAssertions extends boolean
+> = valueAssertions<t, allowTypeAssertions> & TypeAssertionsRoot
 
-export type ValueAssertions<
-    T,
-    AllowTypeAssertions extends boolean
-> = ComparableValueAssertion<T, AllowTypeAssertions> &
-    (T extends () => unknown ? FunctionAssertions<AllowTypeAssertions> : {})
+export type valueAssertions<
+    t,
+    allowTypeAssertions extends boolean
+> = comparableValueAssertion<t, allowTypeAssertions> &
+    (t extends () => unknown ? functionAssertions<allowTypeAssertions> : {})
 
-export type NextAssertions<AllowTypeAssertions extends boolean> =
-    AllowTypeAssertions extends true ? TypeAssertionsRoot : {}
+export type nextAssertions<allowTypeAssertions extends boolean> =
+    allowTypeAssertions extends true ? TypeAssertionsRoot : {}
 
-export type InferredAssertions<
-    ArgsType extends [value: any, ...rest: any[]],
-    AllowTypeAssertions extends boolean,
-    Chained = ArgsType[0]
-> = RootAssertions<Chained, AllowTypeAssertions> &
-    (<Args extends ArgsType | [] = []>(
+export type inferredAssertions<
+    argsType extends [value: any, ...rest: any[]],
+    allowTypeAssertions extends boolean,
+    chained = argsType[0]
+> = rootAssertions<chained, allowTypeAssertions> &
+    (<Args extends argsType | [] = []>(
         ...args: Args
-    ) => NextAssertions<AllowTypeAssertions>)
+    ) => nextAssertions<allowTypeAssertions>)
 
 export type ChainContext = {
     allowRegex?: boolean
     defaultExpected?: unknown
 }
 
-export type FunctionAssertions<AllowTypeAssertions extends boolean> = {
-    throws: InferredAssertions<
+export type functionAssertions<AllowTypeAssertions extends boolean> = {
+    throws: inferredAssertions<
         [message: string | RegExp],
         AllowTypeAssertions,
         string
@@ -40,10 +40,25 @@ export type FunctionAssertions<AllowTypeAssertions extends boolean> = {
       }
     : {})
 
-export type ValueFromTypeAssertion<
+export type valueFromTypeAssertion<
     Expected,
     Chained = Expected
-> = InferredAssertions<[expected: Expected], false, Chained>
+> = inferredAssertions<[expected: Expected], false, Chained>
+
+export type comparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
+    is: (value: T) => nextAssertions<AllowTypeAssertions>
+    snap: (value?: snapshot<T>) => nextAssertions<AllowTypeAssertions>
+    snapToFile: (
+        args: ExternalSnapshotArgs
+    ) => nextAssertions<AllowTypeAssertions>
+    equals: (value: T) => nextAssertions<AllowTypeAssertions>
+    // This can be used to assert values without type constraints
+    unknown: Omit<
+        comparableValueAssertion<unknown, AllowTypeAssertions>,
+        "unknown"
+    >
+    typedValue: (expected: T) => undefined
+}
 
 export type TypeAssertionsRoot = {
     types: TypeAssertionProps
@@ -51,23 +66,8 @@ export type TypeAssertionsRoot = {
 }
 
 export type TypeAssertionProps = {
-    toString: ValueFromTypeAssertion<string>
-    errors: ValueFromTypeAssertion<string | RegExp, string>
-}
-
-export type ComparableValueAssertion<T, AllowTypeAssertions extends boolean> = {
-    is: (value: T) => NextAssertions<AllowTypeAssertions>
-    snap: (value?: snapshot<T>) => NextAssertions<AllowTypeAssertions>
-    snapToFile: (
-        args: ExternalSnapshotArgs
-    ) => NextAssertions<AllowTypeAssertions>
-    equals: (value: T) => NextAssertions<AllowTypeAssertions>
-    // This can be used to assert values without type constraints
-    unknown: Omit<
-        ComparableValueAssertion<unknown, AllowTypeAssertions>,
-        "unknown"
-    >
-    typedValue: (expected: T) => undefined
+    toString: valueFromTypeAssertion<string>
+    errors: valueFromTypeAssertion<string | RegExp, string>
 }
 
 export type ExternalSnapshotArgs = {

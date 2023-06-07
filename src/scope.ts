@@ -48,8 +48,8 @@ type validateAliases<aliases, $> = {
         ? name extends keyof $
             ? writeDuplicateAliasesMessage<name>
             : parseGenericParams<paramsDef> extends infer result extends string[]
-            ? result extends GenericParamsParseError<infer message>
-                ? message
+            ? result extends GenericParamsParseError
+                ? result[0]
                 : validateDefinition<
                       aliases[k],
                       $ &
@@ -84,9 +84,16 @@ type bootstrapExports<aliases> = bootstrapAliases<{
     [k in Exclude<keyof aliases, PrivateDeclaration>]: aliases[k]
 }>
 
+type Preparsed = Scope | GenericProps
+
 type bootstrapAliases<aliases> = {
-    [k in Exclude<keyof aliases, GenericDeclaration>]: aliases[k] extends Scope
+    [k in Exclude<
+        keyof aliases,
+        GenericDeclaration
+    >]: aliases[k] extends Preparsed
         ? aliases[k]
+        : aliases[k] extends (() => infer thunkReturn extends Preparsed)
+        ? thunkReturn
         : Def<aliases[k]>
 } & {
     [k in keyof aliases & GenericDeclaration as extractGenericName<k>]: Generic<
@@ -205,6 +212,12 @@ export class Scope<r extends Resolutions = any> {
         return {} as never
     }
 
+    extract<name extends keyof r["exports"]>(
+        name: name
+    ): Type<r["exports"][name], $<r>> {
+        return this.maybeResolve(name as never) as never
+    }
+
     maybeResolve(name: string): Type | undefined {
         if (this.resolutions[name]) {
             // TODO: Scope resolution
@@ -237,7 +250,6 @@ export class Scope<r extends Resolutions = any> {
 type destructuredExportContext<
     r extends Resolutions,
     name extends keyof r["exports"]
-    // TODO: is this okay?
 > = {
     exports: { [k in name]: r["exports"][k] }
     locals: r["locals"] & {

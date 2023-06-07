@@ -1,4 +1,5 @@
 import type { error } from "../utils/errors.js"
+import type { nominal } from "../utils/generics.js"
 import type { join } from "../utils/lists.js"
 import type { writeUnclosedGroupMessage } from "./string/reduce/shared.js"
 import type { state, StaticState } from "./string/reduce/static.js"
@@ -13,7 +14,7 @@ export type GenericDeclaration<
 
 // we put the error in a tuple so that parseGenericParams always returns a string[]
 export type GenericParamsParseError<message extends string = string> = [
-    error<message>
+    nominal<message, "InvalidGenericParameters">
 ]
 
 export type parseGenericParams<def extends string> = parseParamsRecurse<

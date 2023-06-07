@@ -1,13 +1,21 @@
 import { fileURLToPath } from "node:url"
 import { Assertions } from "./assertions/assertions.js"
-import type { RootAssertions } from "./assertions/types.js"
+import type {
+    rootAssertions,
+    TypeAssertionsRoot,
+    valueAssertions
+} from "./assertions/types.js"
 import { caller, getCallStack } from "./caller.js"
 import type { AttestConfig } from "./config.js"
 import { getConfig } from "./config.js"
 
 import type { SourcePosition } from "./utils.js"
 
-export type AssertFn = <T>(value: T) => RootAssertions<T, true>
+export type AttestFn = <T>(
+    value: T
+) => [T] extends [never]
+    ? rootAssertions<unknown, true>
+    : rootAssertions<T, true>
 
 export type AssertionContext = {
     actual: unknown
@@ -38,4 +46,4 @@ export const attest = ((
         assertionStack: getCallStack({ offset: 1 }).join("\n")
     }
     return new Assertions(ctx)
-}) as AssertFn
+}) as AttestFn

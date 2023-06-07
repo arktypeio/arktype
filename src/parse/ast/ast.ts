@@ -46,7 +46,9 @@ export type GenericInstantiationAst<def = unknown, boundParams = unknown> = [
 export type inferExpression<ast extends List, $> = ast[1] extends "<>"
     ? inferDefinition<
           ast[0],
-          $ & { [k in keyof ast[2]]: inferAst<ast[2][k], $> }
+          Omit<$, keyof ast[2]> & {
+              [k in keyof ast[2]]: inferAst<ast[2][k], $>
+          }
       >
     : ast[1] extends "[]"
     ? inferAst<ast[0], $>[]
