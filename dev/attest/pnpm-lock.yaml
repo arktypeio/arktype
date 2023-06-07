@@ -5,9 +5,6 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
-  arktype:
-    specifier: link:../..
-    version: link:../..
   ts-morph:
     specifier: 18.0.0
     version: 18.0.0

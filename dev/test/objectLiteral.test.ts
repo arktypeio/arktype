@@ -24,8 +24,11 @@ suite("object literal", () => {
     test("nested", () => {
         const t = type({ "a?": { b: "boolean" } })
         attest(t.infer).typed as { a?: { b: boolean } }
-        attest(t.root.condition).snap()
+        attest(t.root.condition).snap(
+            '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && !(\'a\' in $arkRoot) || ((typeof $arkRoot.a === "object" && $arkRoot.a !== null) || typeof $arkRoot.a === "function") && ($arkRoot.a.b === false || $arkRoot.a.b === true)'
+        )
     })
+
     test("intersections", () => {
         const a = { "a?": "string" } as const
         const b = { b: "string" } as const

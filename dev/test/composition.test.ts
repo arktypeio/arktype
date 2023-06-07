@@ -1,4 +1,4 @@
-import { suite } from "mocha"
+import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
 

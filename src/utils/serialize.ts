@@ -1,12 +1,7 @@
 import { domainOf, type inferDomain, type Primitive } from "./domains.js"
 import type { List } from "./lists.js"
 import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
-import {
-    tryParseWellFormedBigint,
-    tryParseWellFormedNumber
-} from "./numericLiterals.js"
 import type { Dict } from "./records.js"
-import { isKeyOf } from "./records.js"
 
 export type SerializationOptions = {
     onCycle?: (value: object) => string
@@ -137,36 +132,3 @@ export type serializePrimitive<value extends SerializablePrimitive> =
         : value extends bigint
         ? `${value}n`
         : `${value}`
-
-export const deserializePrimitive = <serialized extends SerializedPrimitive>(
-    serialized: serialized
-) =>
-    (isKeyOf(serialized, serializedKeywords)
-        ? serializedKeywords[serialized]
-        : serialized[0] === `"`
-        ? serialized.slice(1, -1)
-        : tryParseWellFormedBigint(serialized) ??
-          tryParseWellFormedNumber(
-              serialized,
-              true
-          )) as deserializePrimitive<serialized>
-
-export type deserializePrimitive<serialized extends SerializedPrimitive> =
-    serialized extends keyof SerializedKeywords
-        ? SerializedKeywords[serialized]
-        : serialized extends SerializedString<infer value>
-        ? value
-        : serialized extends NumberLiteral<infer value>
-        ? value
-        : serialized extends BigintLiteral<infer value>
-        ? value
-        : never
-
-const serializedKeywords = {
-    true: true,
-    false: false,
-    undefined,
-    null: null
-} as const
-
-type SerializedKeywords = typeof serializedKeywords

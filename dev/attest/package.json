@@ -8,18 +8,20 @@
         "url": "https://arktype.io"
     },
     "type": "module",
-    "main": "./dist/main.js",
-    "types": "./dist/main.d.ts",
+    "main": "./dist/cjs/main.js",
+    "types": "./dist/cjs/main.d.ts",
     "exports": {
-        ".": "./dist/main.js"
+        ".": {
+            "import": "./dist/mjs/main.js",
+            "require": "./dist/cjs/main.js"
+        }
     },
     "files": [
         "dist",
         "!*.tsbuildinfo"
     ],
     "dependencies": {
-        "ts-morph": "18.0.0",
-        "arktype": "link:../.."
+        "ts-morph": "18.0.0"
     },
     "devDependencies": {
         "ts-node": "10.9.1",

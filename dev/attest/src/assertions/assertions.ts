@@ -1,6 +1,7 @@
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
-import { snapshot, stringify } from "arktype/internal/utils/serialize.js"
+
+import { snapshot, stringify } from "../../../../src/utils/serialize.js"
 import { assertEquals } from "../assertions.js"
 import type { AssertionContext } from "../attest.js"
 import { caller } from "../main.js"
