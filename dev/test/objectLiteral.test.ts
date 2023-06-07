@@ -18,7 +18,7 @@ suite("object literal", () => {
         const o = type({ "a?": "string", b: "boolean" })
         attest(o.infer).typed as { a?: string; b: boolean }
         attest(o.root.condition).snap(
-            '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && !(\'a\' in $arkRoot) || typeof $arkRoot.a === "string" && ($arkRoot.b === false || $arkRoot.b === true)'
+            '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && ($arkRoot.b === false || $arkRoot.b === true) && !(\'a\' in $arkRoot) || typeof $arkRoot.a === "string"'
         )
     })
     test("nested", () => {

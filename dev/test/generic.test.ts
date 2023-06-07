@@ -25,6 +25,7 @@ suite("generics", () => {
                 box: { cat: { isAlive: boolean } }
             }
         })
+
         test("binary", () => {
             const either = type("<first, second>", "first|second")
             attest(either).typed as Generic<
@@ -50,6 +51,7 @@ suite("generics", () => {
             // ideally this would be reduced to { cat: { isAlive: boolean } }:
             // https://github.com/arktypeio/arktype/issues/751
         })
+
         test("referenced in scope", () => {
             const t = type("<t>", "t[]")
             const types = scope({
@@ -58,6 +60,7 @@ suite("generics", () => {
             const stringArray = types.arrayOf("string")
             attest(stringArray.infer).typed as string[]
         })
+
         test("referenced in scope inline", () => {
             const $ = scope({
                 one: "1",
@@ -67,6 +70,7 @@ suite("generics", () => {
             const bit = types.orOne("0")
             attest(bit.infer).typed as 0 | 1
         })
+
         test("referenced from other scope", () => {
             // This should work to inline directly without a thunk, but
             // causes an infinite recursion:
@@ -77,6 +81,7 @@ suite("generics", () => {
             const stringArray = types.arrayOf("string")
             attest(stringArray.infer).typed as string[]
         })
+
         test("this in def", () => {
             const nestableBoxOf = type("<t>", {
                 box: "t | this"
@@ -149,8 +154,6 @@ suite("generics", () => {
             const t = types.box("'baz'")
             attest(t.infer).typed as { box: "bar" | "baz" }
         })
-
-        // TODO: this?
 
         test("self-reference", () => {
             const types = scope({

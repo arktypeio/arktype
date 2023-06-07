@@ -1,6 +1,5 @@
 import type { TypeConfig } from "../type.js"
 import { type Domain, hasDomain } from "../utils/domains.js"
-import type { Segments } from "../utils/lists.js"
 import { Path } from "../utils/lists.js"
 import type { SerializablePrimitive } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
@@ -25,20 +24,26 @@ export const KeyIn = "$arkKey"
 export const prependIndex = (path: string) =>
     `${In}[${IndexIn}]${path.slice(In.length)}`
 
-export const compilePathAccess = (segments: Segments, root = In) => {
-    for (const segment of segments) {
-        root += compilePropAccess(segment)
-    }
-    return root
+export type CompilePathAccessOptions = {
+    root?: string
+    optional?: boolean
 }
 
-export const compilePropAccess = (key: string | number) => {
-    if (typeof key === "number") {
-        return `[${key}]`
+export const compilePathAccess = (
+    segments: string[],
+    opts?: CompilePathAccessOptions
+) => {
+    let result = opts?.root ?? In
+    for (const segment of segments) {
+        result += compilePropAccess(segment, opts?.optional)
     }
+    return result
+}
+
+export const compilePropAccess = (key: string, optional = false) => {
     return /^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(key)
-        ? `.${key}`
-        : `[${JSON.stringify(key)}]`
+        ? `${optional ? "?" : ""}.${key}`
+        : `${optional ? "?." : ""}[${JSON.stringify(key)}]`
 }
 
 export const compileSerializedValue = (value: unknown) => {

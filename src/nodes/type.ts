@@ -6,6 +6,7 @@ import { isArray } from "../utils/objectKinds.js"
 import { type BasisInput } from "./basis/basis.js"
 import { ValueNode } from "./basis/value.js"
 import type { CompilationState } from "./compilation.js"
+import { compilePathAccess } from "./compilation.js"
 import {
     arrayBasisNode,
     arrayIndexInput,
@@ -89,11 +90,13 @@ export class TypeNode<t = unknown> extends BaseNode<"type"> {
     }
 
     private static compileSwitch(discriminant: Discriminant): string {
-        // TODO: optional access
+        const compiledPath = compilePathAccess(discriminant.path, {
+            optional: true
+        })
         const condition =
             discriminant.kind === "domain"
-                ? `typeof ${discriminant.path}`
-                : `${discriminant.path}`
+                ? `typeof ${compiledPath}`
+                : compiledPath
         let compiledCases = ""
         let k: CaseKey
         for (k in discriminant.cases) {

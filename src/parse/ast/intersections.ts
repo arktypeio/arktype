@@ -1,6 +1,6 @@
 import type { error } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"
-import type { List, pathToString, Segments } from "../../utils/lists.js"
+import type { List, pathToString } from "../../utils/lists.js"
 import type { MorphAst, Out } from "./morph.js"
 
 export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, []>
@@ -133,7 +133,7 @@ type inferArrayIntersection<
     : result
 
 export type writeImplicitNeverMessage<
-    path extends Segments,
+    path extends string[],
     operator extends "Intersection" | "keyof",
     description extends string = ""
 > = `${path extends []

@@ -1,7 +1,7 @@
 import type { Domain } from "../utils/domains.js"
 import { domainDescriptions, domainOf } from "../utils/domains.js"
 import type { conform } from "../utils/generics.js"
-import type { arraySubclassToReadonly, Segments } from "../utils/lists.js"
+import type { arraySubclassToReadonly } from "../utils/lists.js"
 import { Path } from "../utils/lists.js"
 import type {
     AbstractableConstructor,
@@ -34,7 +34,7 @@ export abstract class Problem<requirement = unknown, data = unknown> {
     abstract readonly code: ProblemCode
     abstract mustBe: string
 
-    constructor(public rule: requirement, data: data, segments: Segments) {
+    constructor(public rule: requirement, data: data, segments: string[]) {
         this.path = new Path(...segments)
         this.data = new DataWrapper(data)
     }

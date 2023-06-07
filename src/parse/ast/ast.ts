@@ -31,13 +31,15 @@ type bindGenericArgAstsToScope<
         argAsts[i & keyof argAsts],
         $
     >
+} & Omit<
     // If the generic was defined in the current scope, its definition can be
     // resolved using the same scope as that of the input args. Otherwise, use
     // the scope that was explicitly associated with it.
-} & Omit<
     g["$"] extends UnparsedScope
         ? $
-        : g["$"] & { [k in "this" & keyof $]: $[k] },
+        : // if "this" is in the arg scope (i.e. the generic is being instantiated as a standalone type)
+          // include the same "this" value in the generic definition's scope
+          g["$"] & { [k in "this" & keyof $]: $[k] },
     g["parameters"][number]
 >
 

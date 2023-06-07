@@ -55,7 +55,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     let isVariadic = false
     for (let i = 0; i < def.length; i++) {
         let elementDef = def[i]
-        ctx.path.push(i)
+        ctx.path.push(`${i}`)
         if (typeof elementDef === "string" && elementDef.startsWith("...")) {
             elementDef = elementDef.slice(3)
             isVariadic = true

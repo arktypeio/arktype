@@ -1,4 +1,4 @@
-export class Path extends Array<string | number> {
+export class Path extends Array<string> {
     static fromString(s: string, delimiter = "/") {
         return s === delimiter ? new Path() : new Path(...s.split(delimiter))
     }
@@ -14,15 +14,13 @@ export class Path extends Array<string | number> {
 
 export type ReadonlyPath = arraySubclassToReadonly<Path>
 
-export type Segments = (string | number)[]
-
 export type pathToString<
-    segments extends Segments,
+    segments extends string[],
     delimiter extends string = "/"
 > = segments extends [] ? "/" : join<segments, delimiter>
 
 export type join<
-    segments extends Segments,
+    segments extends string[],
     delimiter extends string,
     result extends string = ""
 > = segments extends [infer head extends string, ...infer tail extends string[]]
