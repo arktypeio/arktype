@@ -209,7 +209,7 @@ export class Scope<r extends Resolutions = any> {
     import<names extends (keyof r["exports"])[]>(
         ...names: names
     ): destructuredImportContext<r, names[number]> {
-        return {} as never
+        return this as never
     }
 
     ambient(): Scope<{

@@ -38,7 +38,7 @@ export type TypeParser<$> = {
                 [param in parseGenericParams<params>[number]]: unknown
             }
         >
-    ): Generic<parseGenericParams<params>, def, $>
+    ): Generic<parseGenericParams<params>, def, bindThis<$, def>>
 
     exactly: <branches extends readonly unknown[]>(
         ...branches: branches

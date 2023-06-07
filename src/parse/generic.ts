@@ -101,13 +101,8 @@ export type parseGenericArgs<
               >
             : finalArgState["finalizer"] extends error
             ? finalArgState
-            : state.error<
-                  writeUnexpectedCharacterMessage<
-                      finalArgState["finalizer"] & string,
-                      nextAsts["length"] extends params["length"] ? ">" : ","
-                  >
-              >
-        : state.error<writeUnclosedGroupMessage<">">>
+            : state.error<writeUnclosedGroupMessage<">">>
+        : never
     : never
 
 export type writeInvalidGenericParametersMessage<

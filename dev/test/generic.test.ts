@@ -1,7 +1,9 @@
 import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
+import { writeUnclosedGroupMessage } from "../../src/parse/string/reduce/shared.js"
 import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
+import { writeUnexpectedCharacterMessage } from "../../src/parse/string/shift/operator/operator.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Generic } from "../../src/type.js"
 import { attest } from "../attest/main.js"
@@ -75,6 +77,16 @@ suite("generics", () => {
             const stringArray = types.arrayOf("string")
             attest(stringArray.infer).typed as string[]
         })
+        test("this in def", () => {
+            const nestableBoxOf = type("<t>", {
+                box: "t | this"
+            })
+            const t = nestableBoxOf("string")
+            type Expected = {
+                box: string | Expected
+            }
+            attest(t.infer).typed as Expected
+        })
     })
 
     suite("in-scope", () => {
@@ -94,16 +106,28 @@ suite("generics", () => {
             }
         })
 
-        test("nested this", () => {
-            type Expected = {
+        test("nested", () => {
+            const t = $.type("box<0|1, box<'one', 'zero'>>")
+            attest(t.infer).typed as {
                 box:
                     | 0
                     | 1
                     | {
-                          box: "one" | "zero" | Expected
+                          box: "one" | "zero"
                       }
             }
-            const t = $.type("box<0|1, box<'one'|'zero', this>>")
+        })
+
+        test("in expression", () => {
+            const t = $.type("string | box<0, 1> | boolean")
+            attest(t.infer).typed as string | { box: 0 | 1 } | boolean
+        })
+
+        test("this in args", () => {
+            const t = $.type("box<0,  this>")
+            type Expected = {
+                box: 0 | Expected
+            }
             attest(t.infer).typed as Expected
         })
 
@@ -174,6 +198,18 @@ suite("generics", () => {
                 ).throwsAndHasTypeError(
                     "An empty string is not a valid generic parameter name"
                 )
+            })
+            test("unclosed instantiation", () => {
+                // @ts-expect-error
+                attest(() => $.type("box<0,  1")).throwsAndHasTypeError(
+                    writeUnclosedGroupMessage(">")
+                )
+            })
+            test("extra >", () => {
+                attest(() =>
+                    // @ts-expect-error
+                    $.type("box<0,  this>>")
+                ).throwsAndHasTypeError(writeUnexpectedCharacterMessage(">"))
             })
             test("too few args", () => {
                 attest(() =>

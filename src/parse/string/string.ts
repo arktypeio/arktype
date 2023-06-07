@@ -6,6 +6,7 @@ import type { DynamicStateWithRoot } from "./reduce/dynamic.js"
 import { DynamicState } from "./reduce/dynamic.js"
 import type { state, StaticState } from "./reduce/static.js"
 import { parseOperand } from "./shift/operand/operand.js"
+import type { writeUnexpectedCharacterMessage } from "./shift/operator/operator.js"
 import { parseOperator } from "./shift/operator/operator.js"
 
 // TODO: cache
@@ -64,7 +65,11 @@ export type parseUntilFinalizer<
 > = s["finalizer"] extends undefined ? parseUntilFinalizer<next<s, $>, $> : s
 
 export type extractFinalizedResult<s extends StaticState> =
-    s["finalizer"] extends error ? s["finalizer"] : s["root"]
+    s["finalizer"] extends error
+        ? s["finalizer"]
+        : s["finalizer"] extends ""
+        ? s["root"]
+        : error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>
 
 const next = (s: DynamicState) =>
     s.hasRoot() ? parseOperator(s) : parseOperand(s)
