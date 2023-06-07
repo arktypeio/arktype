@@ -1,6 +1,5 @@
 import { domainOf } from "../../utils/domains.js"
 import { prototypeKeysOf } from "../../utils/objectKinds.js"
-import type { Key } from "../../utils/records.js"
 import { stringify } from "../../utils/serialize.js"
 import { compileSerializedValue, In } from "../compilation.js"
 import { BaseNode } from "../node.js"
@@ -24,7 +23,7 @@ export class ValueNode extends BaseNode<"basis"> implements BasisDefinition {
         return intersectBases(this, other)
     }
 
-    literalKeysOf(): Key[] {
+    literalKeysOf(): PropertyKey[] {
         if (this.rule === null || this.rule === undefined) {
             return []
         }

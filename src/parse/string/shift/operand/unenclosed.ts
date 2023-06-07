@@ -11,7 +11,7 @@ import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "../../../../utils/numericLiterals.js"
-import type { genericInstantiationAstFrom } from "../../../ast/ast.js"
+import type { GenericInstantiationAst } from "../../../ast/ast.js"
 import type { Inferred } from "../../../definition.js"
 import type {
     ParsedArgs,
@@ -47,11 +47,10 @@ export type parseUnenclosed<
         ? result extends error<infer message>
             ? state.error<message>
             : result extends keyof $
-            ? $[result] extends GenericProps<infer params, infer def>
+            ? $[result] extends GenericProps
                 ? parseGenericInstantiation<
                       token,
-                      params,
-                      def,
+                      $[result],
                       state.scanTo<s, unscanned>,
                       $
                   >
@@ -62,23 +61,31 @@ export type parseUnenclosed<
 
 export type parseGenericInstantiation<
     name extends string,
-    params extends string[],
-    def,
+    g extends GenericProps,
     s extends StaticState,
     $
     // have to skip whitespace here since TS allows instantiations like `Partial    <T>`
 > = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}`
-    ? parseGenericArgs<name, params, unscanned, $, [], []> extends infer result
+    ? parseGenericArgs<
+          name,
+          g["parameters"],
+          unscanned,
+          $,
+          [],
+          []
+      > extends infer result
         ? result extends ParsedArgs<infer argAsts, infer nextUnscanned>
             ? state.setRoot<
                   s,
-                  genericInstantiationAstFrom<params, argAsts, def>,
+                  GenericInstantiationAst<g, argAsts>,
                   nextUnscanned
               >
             : // propagate error
               result
         : never
-    : state.error<writeInvalidGenericParametersMessage<name, params, []>>
+    : state.error<
+          writeInvalidGenericParametersMessage<name, g["parameters"], []>
+      >
 
 const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
     s.ctx.scope.maybeResolve(token)?.root ??

@@ -49,7 +49,9 @@ type validateAliases<aliases, $> = {
             ? writeDuplicateAliasesMessage<name>
             : parseGenericParams<paramsDef> extends infer result extends string[]
             ? result extends GenericParamsParseError
-                ? result[0]
+                ? // use the full nominal type here to avoid an overlap between the
+                  // error message and a possible value for the property
+                  result[0]
                 : validateDefinition<
                       aliases[k],
                       $ &
@@ -276,3 +278,114 @@ export const writeDuplicateAliasesMessage = <name extends string>(
 
 type writeDuplicateAliasesMessage<name extends string> =
     `Alias '${name}' is already defined`
+
+// type validateAliases<aliases, $> = {
+//     [k in keyof aliases]: k extends GenericDeclaration<
+//         infer name,
+//         infer paramsDef
+//     >
+//         ? name extends keyof $
+//             ? writeDuplicateAliasesMessage<name>
+//             : parseGenericParams<paramsDef> extends infer result extends string[]
+//             ? result extends GenericParamsParseError
+//                 ? // use the full nominal type here to avoid an overlap between the
+//                   // error message and a possible value for the property
+//                   result[0]
+//                 : validateDefinition<
+//                       aliases[k],
+//                       $ &
+//                           bootstrapAliases<aliases, "locals"> &
+//                           bootstrapAliases<aliases, "exports"> & {
+//                               [param in result[number]]: unknown
+//                           }
+//                   >
+//             : never
+//         : k extends keyof $
+//         ? // TODO: more duplicate alias scenarios
+//           writeDuplicateAliasesMessage<k & string>
+//         : aliases[k] extends Scope | Type | GenericProps
+//         ? aliases[k]
+//         : validateDefinition<
+//               aliases[k],
+//               $ &
+//                   bootstrapAliases<aliases, "locals"> &
+//                   bootstrapAliases<aliases, "exports">
+//           >
+// }
+
+// export type bindThis<$, def> = $ & { this: Def<def> }
+
+// /** nominal type for an unparsed definition used during scope bootstrapping */
+// type Def<def = {}> = nominal<def, "unparsed">
+
+// type AliasKeyFilterKind = "exports" | "locals"
+
+// type Preparsed = Scope | GenericProps
+
+// type bootstrapAliases<aliases, filter extends AliasKeyFilterKind> = {
+//     [k in Exclude<
+//         filteredAliasKeys<aliases, filter>,
+//         GenericDeclaration
+//     > as extractAliasName<k>]: aliases[k] extends Preparsed
+//         ? aliases[k]
+//         : aliases[k] extends (() => infer thunkReturn extends Preparsed)
+//         ? thunkReturn
+//         : Def<aliases[k]>
+// } & {
+//     [k in filteredAliasKeys<aliases, filter> &
+//         GenericDeclaration as extractAliasName<k>]: Generic<
+//         parseGenericParams<extractGenericParameters<k>>,
+//         aliases[k]
+//     >
+// }
+
+// type filteredAliasKeys<
+//     aliases,
+//     kind extends AliasKeyFilterKind
+// > = kind extends "locals"
+//     ? keyof aliases & PrivateDeclaration
+//     : Exclude<keyof aliases, PrivateDeclaration>
+
+// type compileResolutions<aliases, parent, ambient> = {
+//     exports: inferBootstrapped<
+//         bootstrapAliases<aliases, "exports">,
+//         bootstrapAliases<aliases, "exports"> &
+//             bootstrapAliases<aliases, "locals"> &
+//             parent &
+//             ambient
+//     >
+//     locals: inferBootstrapped<
+//         bootstrapAliases<aliases, "locals">,
+//         bootstrapAliases<aliases, "exports"> &
+//             bootstrapAliases<aliases, "locals"> &
+//             parent &
+//             ambient
+//     >
+//     ambient: ambient
+// } & unknown
+
+// type inferBootstrapped<bootstrapped, $> = evaluate<{
+//     [k in keyof bootstrapped]: bootstrapped[k] extends Def<infer def>
+//         ? inferDefinition<def, $>
+//         : bootstrapped[k] extends GenericProps<infer params, infer def>
+//         ? Generic<params, def, $>
+//         : // should be a subscope
+//           bootstrapped[k]
+// }>
+
+// type extractAliasName<k> = k extends PrivateDeclaration<infer inner>
+//     ? extractGenericAliasName<inner>
+//     : extractGenericAliasName<k>
+
+// type extractGenericAliasName<k> = k extends GenericDeclaration<infer name>
+//     ? name
+//     : k
+
+// type extractGenericParameters<k> = k extends GenericDeclaration<
+//     string,
+//     infer params
+// >
+//     ? params
+//     : never
+
+// type PrivateDeclaration<key extends string = string> = `#${key}`

@@ -1,5 +1,4 @@
 import { throwInternalError } from "../../../utils/errors.js"
-import type { Key } from "../../../utils/records.js"
 import { fromEntries, hasKeys } from "../../../utils/records.js"
 import {
     type CompilationState,
@@ -229,11 +228,13 @@ export class PropsNode extends BaseNode<"props"> {
     indexedKeyOf() {
         return new TypeNode(
             this.indexed.flatMap((entry) => entry.key.rule)
-        ) as TypeNode<Key>
+        ) as TypeNode<PropertyKey>
     }
 
     namedKeyOf() {
-        return TypeNode.exactly(...this.namedKeyLiterals()) as TypeNode<Key>
+        return TypeNode.exactly(
+            ...this.namedKeyLiterals()
+        ) as TypeNode<PropertyKey>
     }
 
     namedKeyLiterals() {

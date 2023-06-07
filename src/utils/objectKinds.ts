@@ -1,7 +1,6 @@
 import type { Domain } from "./domains.js"
 import { domainOf } from "./domains.js"
 import type { evaluate } from "./generics.js"
-import type { Key } from "./records.js"
 import { isKeyOf } from "./records.js"
 
 // Built-in object constructors based on a subset of:
@@ -167,7 +166,7 @@ export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
     return result as evaluate<keyof t>[]
 }
 
-const baseKeysByDomain: Record<Domain, readonly Key[]> = {
+const baseKeysByDomain: Record<Domain, readonly PropertyKey[]> = {
     bigint: prototypeKeysOf(0n),
     boolean: prototypeKeysOf(false),
     null: [],

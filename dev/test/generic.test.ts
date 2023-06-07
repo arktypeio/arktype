@@ -125,6 +125,8 @@ suite("generics", () => {
             attest(t.infer).typed as { box: "bar" | "baz" }
         })
 
+        // TODO: this?
+
         test("self-reference", () => {
             const types = scope({
                 "alternate<a, b>": {

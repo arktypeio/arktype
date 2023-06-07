@@ -1,5 +1,6 @@
 import type { Comparator } from "../../nodes/constraints/range.js"
 import type { resolve } from "../../scope.js"
+import type { GenericProps } from "../../type.js"
 import type { error } from "../../utils/errors.js"
 import type { List } from "../../utils/lists.js"
 import type {
@@ -7,7 +8,7 @@ import type {
     NumberLiteral,
     writeMalformedNumericLiteralMessage
 } from "../../utils/numericLiterals.js"
-import type { inferDefinition, Inferred } from "../definition.js"
+import type { Inferred, inferDefinition } from "../definition.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { parseString } from "../string/string.js"
 import type { validateBound } from "./bound.js"
@@ -19,36 +20,27 @@ export type inferAst<ast, $> = ast extends List
     ? inferExpression<ast, $>
     : inferTerminal<ast, $>
 
-type bindGenericArgsAsScope<
-    params extends string[],
+type bindGenericArgAstsToScope<
+    g extends GenericProps,
     argAsts extends unknown[],
-    result = {}
-> = [params, argAsts] extends [
-    [infer pHead extends string, ...infer pTail extends string[]],
-    [infer aHead, ...infer aTail]
-]
-    ? bindGenericArgsAsScope<pTail, aTail, result & { [_ in pHead]: aHead }>
-    : result
+    $
+> = {
+    [i in keyof g["parameters"] as g["parameters"][i &
+        number]]: i extends keyof argAsts ? inferAst<argAsts[i], $> : never
+} & Omit<g["$"], g["parameters"][number]>
 
-export type genericInstantiationAstFrom<
-    params extends string[],
-    argAsts extends unknown[],
-    def
-> = GenericInstantiationAst<def, bindGenericArgsAsScope<params, argAsts>>
+export type GenericInstantiationAst<
+    g extends GenericProps = GenericProps,
+    argAsts extends unknown[] = unknown[]
+> = [g, "<>", argAsts]
 
-export type GenericInstantiationAst<def = unknown, boundParams = unknown> = [
-    def,
-    "<>",
-    // maps param names to ASTs, e.g. { param1: ["string", "|", "number"] }
-    boundParams
-]
-
-export type inferExpression<ast extends List, $> = ast[1] extends "<>"
+export type inferExpression<
+    ast extends List,
+    $
+> = ast extends GenericInstantiationAst
     ? inferDefinition<
-          ast[0],
-          Omit<$, keyof ast[2]> & {
-              [k in keyof ast[2]]: inferAst<ast[2][k], $>
-          }
+          ast[0]["definition"],
+          bindGenericArgAstsToScope<ast[0], ast[2], $>
       >
     : ast[1] extends "[]"
     ? inferAst<ast[0], $>[]
@@ -85,7 +77,7 @@ export type validateAst<ast, $> = ast extends string
         ? error<writeUnsatisfiableExpressionError<astToString<ast>>>
         : validateAst<operand, $>
     : ast extends GenericInstantiationAst
-    ? ast
+    ? undefined
     : never
 
 export const writeUnsatisfiableExpressionError = <expression extends string>(

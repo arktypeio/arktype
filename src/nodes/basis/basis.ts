@@ -6,7 +6,6 @@ import type {
     Constructor
 } from "../../utils/objectKinds.js"
 import { constructorExtends } from "../../utils/objectKinds.js"
-import type { Key } from "../../utils/records.js"
 import type { DisjointKindEntries } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
 import { ClassNode } from "./class.js"
@@ -47,7 +46,7 @@ export const precedenceByLevel: Record<BasisLevel, number> = {
 export type BasisNodeSubclass = BasisNodesByLevel[BasisLevel]
 
 export type BasisDefinition = {
-    literalKeysOf(): Key[]
+    literalKeysOf(): PropertyKey[]
     domain: Domain
     level: BasisLevel
 }

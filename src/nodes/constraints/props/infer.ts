@@ -1,7 +1,6 @@
 import type { evaluate } from "../../../utils/generics.js"
 import type { List } from "../../../utils/lists.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
-import type { Key } from "../../../utils/records.js"
 import type { inferTypeInput } from "../../type.js"
 import type {
     IndexedPropInput,
@@ -35,7 +34,7 @@ type inferIndexed<
                 }
               ? inferTypeInput<entry["value"]>[]
               : Record<
-                    Extract<inferTypeInput<entry["key"]>, Key>,
+                    Extract<inferTypeInput<entry["key"]>, PropertyKey>,
                     inferTypeInput<entry["value"]>
                 >
       >

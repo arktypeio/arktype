@@ -31,11 +31,7 @@ export type TypeParser<$> = {
     >
 
     <params extends string, def>(
-        params: `<${parseGenericParams<params> extends GenericParamsParseError<
-            infer message
-        >
-            ? message
-            : params}>`,
+        params: `<${validateParameterString<params>}>`,
         def: validateDefinition<
             def,
             bindThis<$, def> & {
@@ -54,39 +50,6 @@ export type DefinitionParser<$> = <def>(
 ) => def
 
 registry().register("state", TraversalState)
-
-type bindGenericInstantiationToScope<params extends string[], argDefs, $> = {
-    [i in keyof params as params[i & number]]: i extends keyof argDefs
-        ? inferDefinition<argDefs[i], bindThis<$, argDefs[i]>>
-        : never
-} & Omit<$, params[number]>
-
-// Comparing to Generic directly doesn't work well, so we use this similarly to
-// the [inferred] symbol for Type
-export type GenericProps<params extends string[] = string[], def = unknown> = {
-    [id]: "generic"
-    parameters: params
-    definition: def
-    scope: Scope
-}
-
-export type Generic<
-    params extends string[] = string[],
-    def = unknown,
-    $ = any
-> = (<args>(
-    /** @ts-expect-error can't constrain this to be an array without breaking narrowing */
-    ...args: {
-        [i in keyof args]: conform<
-            args[i],
-            validateDefinition<args[i], bindThis<$, def>>
-        >
-    }
-) => Type<
-    inferDefinition<def, bindGenericInstantiationToScope<params, args, $>>,
-    $
->) &
-    GenericProps<params, def>
 
 export class Type<t = unknown, $ = any> extends CompiledFunction<
     (data: unknown) => CheckResult<extractOut<t>>
@@ -207,6 +170,49 @@ type validateChainedExpression<def, $, inferred> =
             ? inferred
             : def
         : validateDefinition<def, $>
+
+type validateParameterString<params extends string> =
+    parseGenericParams<params> extends GenericParamsParseError<infer message>
+        ? message
+        : params
+
+type bindGenericInstantiationToScope<params extends string[], argDefs, $> = {
+    [i in keyof params as params[i & number]]: i extends keyof argDefs
+        ? inferDefinition<argDefs[i], bindThis<$, argDefs[i]>>
+        : never
+} & Omit<$, params[number]>
+
+// Comparing to Generic directly doesn't work well, so we use this similarly to
+// the [inferred] symbol for Type
+export type GenericProps<
+    params extends string[] = string[],
+    def = unknown,
+    $ = any
+> = {
+    [id]: "generic"
+    $: $
+    parameters: params
+    definition: def
+    scope: Scope
+}
+
+export type Generic<
+    params extends string[] = string[],
+    def = unknown,
+    $ = any
+> = (<args>(
+    /** @ts-expect-error can't constrain this to be an array without breaking narrowing */
+    ...args: {
+        [i in keyof args]: conform<
+            args[i],
+            validateDefinition<args[i], bindThis<$, def>>
+        >
+    }
+) => Type<
+    inferDefinition<def, bindGenericInstantiationToScope<params, args, $>>,
+    $
+>) &
+    GenericProps<params, def, $>
 
 export type KeyCheckKind = "loose" | "strict" | "distilled"
 

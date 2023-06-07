@@ -1,6 +1,5 @@
 import type { Domain } from "../../utils/domains.js"
 import { getBaseDomainKeys } from "../../utils/objectKinds.js"
-import type { Key } from "../../utils/records.js"
 import { In } from "../compilation.js"
 import { BaseNode } from "../node.js"
 import type { BasisDefinition, BasisInstance } from "./basis.js"
@@ -26,7 +25,7 @@ export class DomainNode extends BaseNode<"basis"> implements BasisDefinition {
         return intersectBases(this, other)
     }
 
-    literalKeysOf(): Key[] {
+    literalKeysOf(): PropertyKey[] {
         return getBaseDomainKeys(this.rule)
     }
 

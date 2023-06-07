@@ -43,9 +43,7 @@ export type entriesOf<o extends object> = evaluate<entryOf<o>[]>
 export const entriesOf = <o extends object>(o: o) =>
     Object.entries(o) as entriesOf<o>
 
-export type Key = string | number | symbol
-
-type Entry<key extends Key = Key, value = unknown> = readonly [
+type Entry<key extends PropertyKey = PropertyKey, value = unknown> = readonly [
     key: key,
     value: value
 ]
