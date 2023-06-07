@@ -1,4 +1,4 @@
-import { compileSerializedValue, In } from "../../compile/compilation.js"
+import { compileSerializedValue, In } from "../../compile/compile.js"
 import { domainOf } from "../../utils/domains.js"
 import { prototypeKeysOf } from "../../utils/objectKinds.js"
 import { stringify } from "../../utils/serialize.js"

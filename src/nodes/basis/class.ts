@@ -1,4 +1,4 @@
-import { In } from "../../compile/compilation.js"
+import { In } from "../../compile/compile.js"
 import { registry } from "../../compile/registry.js"
 import type { AbstractableConstructor } from "../../utils/objectKinds.js"
 import {

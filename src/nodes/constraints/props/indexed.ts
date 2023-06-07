@@ -1,4 +1,4 @@
-import { In, IndexIn, KeyIn } from "../../../compile/compilation.js"
+import { In, IndexIn, KeyIn } from "../../../compile/compile.js"
 import { throwInternalError } from "../../../utils/errors.js"
 import { cached } from "../../../utils/functions.js"
 import { tryParseWellFormedInteger } from "../../../utils/numericLiterals.js"

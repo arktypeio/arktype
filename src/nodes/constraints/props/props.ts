@@ -2,7 +2,7 @@ import {
     type CompilationState,
     compilePropAccess,
     In
-} from "../../../compile/compilation.js"
+} from "../../../compile/compile.js"
 import { throwInternalError } from "../../../utils/errors.js"
 import { fromEntries, hasKeys } from "../../../utils/records.js"
 import type { DiscriminantKind } from "../../discriminate.js"

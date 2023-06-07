@@ -1,4 +1,4 @@
-import { compileSerializedValue } from "../compile/compilation.js"
+import { compileSerializedValue } from "../compile/compile.js"
 import type { Domain } from "../utils/domains.js"
 import { throwInternalError } from "../utils/errors.js"
 import type { evaluate } from "../utils/generics.js"

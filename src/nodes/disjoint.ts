@@ -1,10 +1,5 @@
 import { throwInternalError, throwParseError } from "../utils/errors.js"
-import {
-    entriesOf,
-    type entryOf,
-    fromEntries,
-    keysOf
-} from "../utils/records.js"
+import { entriesOf, type entryOf, fromEntries } from "../utils/records.js"
 import { stringify } from "../utils/serialize.js"
 import type { BasisDefinition } from "./basis/basis.js"
 import type { ClassNode } from "./basis/class.js"

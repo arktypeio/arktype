@@ -1,4 +1,4 @@
-import { In } from "../../compile/compilation.js"
+import { In } from "../../compile/compile.js"
 import { BaseNode } from "../node.js"
 
 export class DivisorNode extends BaseNode<"divisor"> {

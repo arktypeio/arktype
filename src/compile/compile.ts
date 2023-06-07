@@ -1,3 +1,4 @@
+import type { TypeNode } from "../main.js"
 import type { TypeConfig } from "../type.js"
 import { type Domain, hasDomain } from "../utils/domains.js"
 import { Path } from "../utils/lists.js"
@@ -5,6 +6,8 @@ import type { SerializablePrimitive } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
+
+export const compile = () => {}
 
 export type TraversalConfig = {
     [k in keyof TypeConfig]-?: TypeConfig[k][]

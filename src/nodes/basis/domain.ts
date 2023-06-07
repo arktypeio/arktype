@@ -1,4 +1,4 @@
-import { In } from "../../compile/compilation.js"
+import { In } from "../../compile/compile.js"
 import type { Domain } from "../../utils/domains.js"
 import { getBaseDomainKeys } from "../../utils/objectKinds.js"
 import { BaseNode } from "../node.js"

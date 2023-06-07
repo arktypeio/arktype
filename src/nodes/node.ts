@@ -1,4 +1,4 @@
-import { In } from "../compile/compilation.js"
+import { In } from "../compile/compile.js"
 import { throwInternalError } from "../utils/errors.js"
 import { CompiledFunction } from "../utils/functions.js"
 import type { ClassNode } from "./basis/class.js"

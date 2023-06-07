@@ -1,5 +1,5 @@
-import type { CompilationState } from "../compile/compilation.js"
-import { compilePathAccess } from "../compile/compilation.js"
+import type { CompilationState } from "../compile/compile.js"
+import { compilePathAccess } from "../compile/compile.js"
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import type { inferred } from "../parse/definition.js"
 import type { conform, exact } from "../utils/generics.js"

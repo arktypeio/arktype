@@ -1,4 +1,4 @@
-import { CompilationState, In } from "./compile/compilation.js"
+import { CompilationState, In } from "./compile/compile.js"
 import { registry } from "./compile/registry.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"

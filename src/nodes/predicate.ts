@@ -1,4 +1,4 @@
-import type { CompilationState } from "../compile/compilation.js"
+import type { CompilationState } from "../compile/compile.js"
 import { writeUnboundableMessage } from "../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../parse/ast/divisor.js"
 import type { inferMorphOut, Morph, Out } from "../parse/ast/morph.js"
