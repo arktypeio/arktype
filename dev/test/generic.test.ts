@@ -1,5 +1,6 @@
 import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
+import { writeIndivisibleMessage } from "../../src/parse/ast/divisor.js"
 import { writeInvalidDivisorMessage } from "../../src/parse/string/shift/operator/divisor.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Generic } from "../../src/type.js"
@@ -177,7 +178,7 @@ suite("generics", () => {
             test("too few args", () => {
                 attest(() =>
                     // @ts-expect-error
-                    $.type("box<0,box<1,number%0>>")
+                    $.type("box<0,box<2|3>>")
                 ).throwsAndHasTypeError(
                     "box<t, u> requires exactly 2 parameters (got 1: 2|3)"
                 )
@@ -185,14 +186,22 @@ suite("generics", () => {
             test("too many args", () => {
                 attest(() =>
                     // @ts-expect-error
-                    $.type("box<0|1, box<2, 3, 4>>")
-                ).throwsAndHasTypeError(writeInvalidDivisorMessage(0))
+                    $.type("box<0, box<1, 2, 3>>")
+                ).throwsAndHasTypeError(
+                    "box<t, u> requires exactly 2 parameters (got 3: 1, 2, 3)"
+                )
             })
-            test("semantic", () => {
+            test("syntactic error in arg", () => {
                 attest(() =>
                     // @ts-expect-error
-                    $.type("box<0,box<1,number%0>>")
+                    $.type("box<1, number%0>")
                 ).throwsAndHasTypeError(writeInvalidDivisorMessage(0))
+            })
+            test("semantic error in arg", () => {
+                attest(() =>
+                    // @ts-expect-error
+                    $.type("box<1,boolean%2>")
+                ).throwsAndHasTypeError(writeIndivisibleMessage("boolean"))
             })
         })
     })

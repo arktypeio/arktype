@@ -73,6 +73,9 @@ export type bindThis<$, def> = $ & { this: Def<def> }
 /** nominal type for an unparsed definition used during scope bootstrapping */
 type Def<def = {}> = nominal<def, "unparsed">
 
+/** sentinel indicating a scope that will be associated with a generic has not yet been parsed */
+export type UnparsedScope = "$"
+
 type bootstrap<aliases> = bootstrapLocals<aliases> & bootstrapExports<aliases>
 
 type bootstrapLocals<aliases> = bootstrapAliases<{
@@ -100,7 +103,8 @@ type bootstrapAliases<aliases> = {
 } & {
     [k in keyof aliases & GenericDeclaration as extractGenericName<k>]: Generic<
         parseGenericParams<extractGenericParameters<k>>,
-        aliases[k]
+        aliases[k],
+        UnparsedScope
     >
 }
 

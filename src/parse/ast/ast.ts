@@ -1,5 +1,5 @@
 import type { Comparator } from "../../nodes/constraints/range.js"
-import type { resolve } from "../../scope.js"
+import type { resolve, UnparsedScope } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
 import type { error } from "../../utils/errors.js"
 import type { List } from "../../utils/lists.js"
@@ -8,7 +8,7 @@ import type {
     NumberLiteral,
     writeMalformedNumericLiteralMessage
 } from "../../utils/numericLiterals.js"
-import type { Inferred, inferDefinition } from "../definition.js"
+import type { inferDefinition, Inferred } from "../definition.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { parseString } from "../string/string.js"
 import type { validateBound } from "./bound.js"
@@ -25,9 +25,13 @@ type bindGenericArgAstsToScope<
     argAsts extends unknown[],
     $
 > = {
-    [i in keyof g["parameters"] as g["parameters"][i &
-        number]]: i extends keyof argAsts ? inferAst<argAsts[i], $> : never
-} & Omit<g["$"], g["parameters"][number]>
+    // using keyof g["parameters"] & number here results in the element types
+    // being mixed- another reason TS should not have separate `${number}` and number keys!
+    [i in keyof g["parameters"] & `${number}` as g["parameters"][i]]: inferAst<
+        argAsts[i & keyof argAsts],
+        $
+    >
+} & Omit<g["$"] extends UnparsedScope ? $ : g["$"], g["parameters"][number]>
 
 export type GenericInstantiationAst<
     g extends GenericProps = GenericProps,
@@ -77,8 +81,17 @@ export type validateAst<ast, $> = ast extends string
         ? error<writeUnsatisfiableExpressionError<astToString<ast>>>
         : validateAst<operand, $>
     : ast extends GenericInstantiationAst
-    ? undefined
+    ? validateGenericArgs<ast["2"], $>
     : never
+
+type validateGenericArgs<argAsts extends unknown[], $> = argAsts extends [
+    infer head,
+    ...infer tail
+]
+    ? validateAst<head, $> extends error<infer message>
+        ? error<message>
+        : validateGenericArgs<tail, $>
+    : undefined
 
 export const writeUnsatisfiableExpressionError = <expression extends string>(
     expression: expression
