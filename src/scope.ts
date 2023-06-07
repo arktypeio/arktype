@@ -1,10 +1,12 @@
 import type { ProblemCode } from "./nodes/problems.js"
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import type {
     inferDefinition,
+    inferred,
     Inferred,
     validateDefinition
 } from "./parse/definition.js"
-import { inferred } from "./parse/definition.js"
+
 import type {
     GenericDeclaration,
     GenericParamsParseError,
@@ -215,7 +217,7 @@ export class Scope<r extends Resolutions = any> {
         locals: {}
         ambient: r["exports"]
     }> {
-        return {} as never
+        return this as never
     }
 
     extract<name extends keyof r["exports"]>(

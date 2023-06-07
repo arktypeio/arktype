@@ -90,7 +90,8 @@ export type validateDefinition<def, $> = def extends Terminal
           objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
       >
     : isUnknown<def> extends true
-    ? (keyof $ & string) | AutocompletePrefix
+    ? // this allows the initial list of autocompletions to be populated when a user writes "type()", before having specified a definition
+      (keyof $ & string) | AutocompletePrefix | {}
     : {
           [k in keyof def]: validateDefinition<def[k], $>
       }

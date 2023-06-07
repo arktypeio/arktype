@@ -1,4 +1,5 @@
-import { inferred } from "../parse/definition.js"
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import type { inferred } from "../parse/definition.js"
 import type { conform, exact } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
 import { isArray } from "../utils/objectKinds.js"

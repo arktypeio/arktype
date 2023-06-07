@@ -8,7 +8,7 @@ import type { inferMorphOut, Morph, MorphAst, Out } from "./parse/ast/morph.js"
 import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
 import {
     type inferDefinition,
-    inferred,
+    type inferred,
     parseDefinition,
     type validateDefinition
 } from "./parse/definition.js"
