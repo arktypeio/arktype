@@ -30,7 +30,7 @@
     ],
     "packageManager": "pnpm@8.6.0",
     "scripts": {
-        "deps": "pnpm install && cd dev/attest && pnpm install && cd ../..",
+        "setup": "pnpm install && cd dev/attest && pnpm install && cd ../.. && pnpm build",
         "prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
         "build": "ts-node ./dev/scripts/build.ts",
         "buildRepo": "pnpm build && cd ./dev/attest && pnpm build && cd ../arktype.io && pnpm build",
