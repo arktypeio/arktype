@@ -1,16 +1,16 @@
-import type {
-    Comparator,
-    MaxComparator
-} from "../../../../nodes/constraints/range.js"
-import {
-    maxComparators,
-    RangeNode
-} from "../../../../nodes/constraints/range.js"
-import { Disjoint } from "../../../../nodes/disjoint.js"
 import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
 import type { keySet } from "../../../../utils/records.js"
 import { isKeyOf } from "../../../../utils/records.js"
+import {
+    maxComparators,
+    RangeNode
+} from "../../../../nodes/constraints/range.js"
+import type {
+    Comparator,
+    MaxComparator
+} from "../../../../nodes/constraints/range.js"
+import { Disjoint } from "../../../../nodes/disjoint.js"
 import type {
     DynamicState,
     DynamicStateWithRoot

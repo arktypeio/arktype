@@ -1,6 +1,6 @@
+import { In } from "../../compile/compilation.js"
 import type { Domain } from "../../utils/domains.js"
 import { getBaseDomainKeys } from "../../utils/objectKinds.js"
-import { In } from "../compilation.js"
 import { BaseNode } from "../node.js"
 import type { BasisDefinition, BasisInstance } from "./basis.js"
 import { intersectBases } from "./basis.js"

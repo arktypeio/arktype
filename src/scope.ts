@@ -1,4 +1,4 @@
-import type { ProblemCode } from "./nodes/problems.js"
+import type { ProblemCode } from "./compile/problems.js"
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import type {
     inferDefinition,
@@ -6,7 +6,6 @@ import type {
     Inferred,
     validateDefinition
 } from "./parse/definition.js"
-
 import type {
     GenericDeclaration,
     GenericParamsParseError,

@@ -1,10 +1,10 @@
-import { throwInternalError } from "../../../utils/errors.js"
-import { fromEntries, hasKeys } from "../../../utils/records.js"
 import {
     type CompilationState,
     compilePropAccess,
     In
-} from "../../compilation.js"
+} from "../../../compile/compilation.js"
+import { throwInternalError } from "../../../utils/errors.js"
+import { fromEntries, hasKeys } from "../../../utils/records.js"
 import type { DiscriminantKind } from "../../discriminate.js"
 import type { DisjointsSources } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
@@ -29,7 +29,7 @@ export class PropsNode extends BaseNode<"props"> {
     constructor(public rule: PropRule[]) {
         rule.sort((l, r) => {
             // Sort keys first by precedence (prerequisite,required,optional,indexed),
-            // then alphebetically by key (bar, baz, foo)
+            // then alphebetically by key
             const lPrecedence = kindPrecedence(l)
             const rPrecedence = kindPrecedence(r)
             return lPrecedence > rPrecedence

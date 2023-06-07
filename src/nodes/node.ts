@@ -1,9 +1,9 @@
+import { In } from "../compile/compilation.js"
 import { throwInternalError } from "../utils/errors.js"
 import { CompiledFunction } from "../utils/functions.js"
 import type { ClassNode } from "./basis/class.js"
 import type { DomainNode } from "./basis/domain.js"
 import type { ValueNode } from "./basis/value.js"
-import { In } from "./compilation.js"
 import type { DivisorNode } from "./constraints/divisor.js"
 import type { MorphNode } from "./constraints/morph.js"
 import type { NarrowNode } from "./constraints/narrow.js"
@@ -72,7 +72,7 @@ export abstract class BaseNode<kind extends NodeKind = NodeKind> {
 
     abstract toString(): string
 
-    abstract computeIntersection(
+    protected abstract computeIntersection(
         other: NodeInstances[kind]
     ): NodeInstances[kind] | Disjoint
 

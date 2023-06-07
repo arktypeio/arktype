@@ -1,7 +1,7 @@
+import { compileSerializedValue, In } from "../../compile/compilation.js"
 import { domainOf } from "../../utils/domains.js"
 import { prototypeKeysOf } from "../../utils/objectKinds.js"
 import { stringify } from "../../utils/serialize.js"
-import { compileSerializedValue, In } from "../compilation.js"
 import { BaseNode } from "../node.js"
 import type { BasisDefinition, BasisInstance } from "./basis.js"
 import { intersectBases } from "./basis.js"

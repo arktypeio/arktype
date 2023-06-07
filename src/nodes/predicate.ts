@@ -1,3 +1,4 @@
+import type { CompilationState } from "../compile/compilation.js"
 import { writeUnboundableMessage } from "../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../parse/ast/divisor.js"
 import type { inferMorphOut, Morph, Out } from "../parse/ast/morph.js"
@@ -13,7 +14,6 @@ import type { BasisInput, BasisInstance, inferBasis } from "./basis/basis.js"
 import { ClassNode } from "./basis/class.js"
 import { basisNodeFrom } from "./basis/from.js"
 import { ValueNode } from "./basis/value.js"
-import type { CompilationState } from "./compilation.js"
 import { DivisorNode } from "./constraints/divisor.js"
 import { MorphNode } from "./constraints/morph.js"
 import { NarrowNode } from "./constraints/narrow.js"
@@ -85,6 +85,7 @@ export class PredicateNode extends BaseNode<"predicate"> {
         // for (const constraint of this.rule) {
         //     result += "\n" + constraint.compileTraverse(s)
         // }
+        s
         return "true" //result
     }
 

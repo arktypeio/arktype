@@ -1,7 +1,7 @@
+import { registry } from "../../compile/registry.js"
 import type { Narrow } from "../../parse/ast/narrow.js"
 import { intersectUniqueLists } from "../../utils/lists.js"
 import { BaseNode } from "../node.js"
-import { registry } from "../registry.js"
 
 export class NarrowNode extends BaseNode<"narrow"> {
     constructor(public rule: readonly Narrow[]) {

@@ -1,7 +1,7 @@
 import { AssertionError } from "node:assert"
 import { suite, test } from "mocha"
 import { define, scope, type } from "../../src/main.js"
-import { ArkTypeError } from "../../src/nodes/problems.js"
+import { ArkTypeError } from "../../src/compile/problems.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 

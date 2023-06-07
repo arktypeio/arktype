@@ -1,13 +1,13 @@
+import { In } from "../../compile/compilation.js"
+import { registry } from "../../compile/registry.js"
 import type { AbstractableConstructor } from "../../utils/objectKinds.js"
 import {
     constructorExtends,
     getExactBuiltinConstructorName,
     prototypeKeysOf
 } from "../../utils/objectKinds.js"
-import { In } from "../compilation.js"
 import { BaseNode } from "../node.js"
 
-import { registry } from "../registry.js"
 import type { BasisDefinition, BasisInstance } from "./basis.js"
 import { intersectBases } from "./basis.js"
 

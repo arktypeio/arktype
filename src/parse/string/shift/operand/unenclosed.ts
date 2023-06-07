@@ -1,6 +1,3 @@
-import { TypeNode } from "../../../../nodes/type.js"
-import type { Scope } from "../../../../scope.js"
-import type { GenericProps } from "../../../../type.js"
 import type { error } from "../../../../utils/errors.js"
 import type { join } from "../../../../utils/lists.js"
 import type {
@@ -11,6 +8,9 @@ import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "../../../../utils/numericLiterals.js"
+import { TypeNode } from "../../../../nodes/type.js"
+import type { Scope } from "../../../../scope.js"
+import type { GenericProps } from "../../../../type.js"
 import type { GenericInstantiationAst } from "../../../ast/ast.js"
 import type { Inferred } from "../../../definition.js"
 import type {

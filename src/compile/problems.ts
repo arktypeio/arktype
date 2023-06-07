@@ -1,3 +1,5 @@
+import type { Bound, SizedData } from "../nodes/constraints/range.js"
+import { comparatorDescriptions } from "../nodes/constraints/range.js"
 import type { Domain } from "../utils/domains.js"
 import { domainDescriptions, domainOf } from "../utils/domains.js"
 import type { conform } from "../utils/generics.js"
@@ -14,8 +16,6 @@ import {
     objectKindDescriptions
 } from "../utils/objectKinds.js"
 import { stringify } from "../utils/serialize.js"
-import type { Bound, SizedData } from "./constraints/range.js"
-import { comparatorDescriptions } from "./constraints/range.js"
 import type { InternalId } from "./registry.js"
 
 export class ArkTypeError extends TypeError {

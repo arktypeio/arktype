@@ -1,3 +1,5 @@
+import type { CompilationState } from "../compile/compilation.js"
+import { compilePathAccess } from "../compile/compilation.js"
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import type { inferred } from "../parse/definition.js"
 import type { conform, exact } from "../utils/generics.js"
@@ -5,8 +7,6 @@ import type { List } from "../utils/lists.js"
 import { isArray } from "../utils/objectKinds.js"
 import { type BasisInput } from "./basis/basis.js"
 import { ValueNode } from "./basis/value.js"
-import type { CompilationState } from "./compilation.js"
-import { compilePathAccess } from "./compilation.js"
 import {
     arrayBasisNode,
     arrayIndexInput,

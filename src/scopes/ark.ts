@@ -1,4 +1,4 @@
-import { registry } from "../nodes/registry.js"
+import { registry } from "../compile/registry.js"
 import type { Out } from "../parse/ast/morph.js"
 import type { ScopeParser, TypeSet } from "../scope.js"
 import { Scope } from "../scope.js"

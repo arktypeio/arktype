@@ -1,5 +1,5 @@
+import { In } from "../../compile/compilation.js"
 import { intersectUniqueLists } from "../../utils/lists.js"
-import { In } from "../compilation.js"
 import { BaseNode } from "../node.js"
 
 export class RegexNode extends BaseNode<"regex"> {
