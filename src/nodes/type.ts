@@ -17,9 +17,10 @@ export const TypeNode = defineNodeKind<TypeNode>({
         const condition = compileIndiscriminable(rule.sort())
         return condition
     },
-    extend: (base) => ({
-        discriminant: discriminate(base.rule)
-    }),
+    construct: (base) =>
+        Object.assign(base, {
+            discriminant: discriminate(base.rule)
+        }),
     intersect: (l, r): TypeNode | Disjoint => {
         if (l.rule.length === 1 && r.rule.length === 1) {
             const result = l.rule[0].intersect(r.rule[0])

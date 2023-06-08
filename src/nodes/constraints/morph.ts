@@ -19,6 +19,7 @@ export const MorphNode = defineNodeKind<MorphNode>({
         )
         return subconditions.join(" && ")
     },
+    construct: (base) => base,
     intersect: (l, r): MorphNode =>
         MorphNode(intersectUniqueLists(l.rule, r.rule)),
     describe: (node) =>

@@ -82,17 +82,18 @@ export const RangeNode = defineNodeKind<RangeNode>({
         const compiledBounds = rule.map(compileBound)
         return compiledBounds.join(" && ")
     },
-    extend: (base) => ({
-        min: isKeyOf(base.rule[0].comparator, minComparators)
-            ? (base.rule[0] as Bound<MinComparator>)
-            : undefined,
+    construct: (base) =>
+        Object.assign(base, {
+            min: isKeyOf(base.rule[0].comparator, minComparators)
+                ? (base.rule[0] as Bound<MinComparator>)
+                : undefined,
 
-        max:
-            base.rule[1] ??
-            (isKeyOf(base.rule[0].comparator, maxComparators)
-                ? (base.rule[0] as Bound<MaxComparator>)
-                : undefined)
-    }),
+            max:
+                base.rule[1] ??
+                (isKeyOf(base.rule[0].comparator, maxComparators)
+                    ? (base.rule[0] as Bound<MaxComparator>)
+                    : undefined)
+        }),
     intersect: (l, r): RangeNode | Disjoint => {
         if (isEqualityRangeNode(l)) {
             if (isEqualityRangeNode(r)) {

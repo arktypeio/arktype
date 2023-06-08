@@ -11,6 +11,7 @@ export const RegexNode = defineNodeKind<RegexNode>({
         const subconditions = rule.sort().map(compileExpression)
         return subconditions.join(" && ")
     },
+    construct: (base) => base,
     intersect: (l, r): RegexNode =>
         RegexNode(intersectUniqueLists(l.rule, r.rule)),
     describe: (node) => {

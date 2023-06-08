@@ -12,6 +12,7 @@ export type ValueNode = BasisNode<{
 export const ValueNode = defineBasisNode<ValueNode>({
     level: "value",
     domain: domainOf,
+    construct: (base) => base,
     compile: (rule) => `${In} === ${compileSerializedValue(rule)}`,
     describe: (node) => `the value ${stringify(node.rule)}`
 })

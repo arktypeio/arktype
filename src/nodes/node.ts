@@ -24,9 +24,7 @@ export type NodeDefinition<
 > = {
     kind: node["kind"]
     compile: (rule: node["rule"]) => string
-    extend?: (
-        base: BaseNode<node["kind"], node["rule"]>
-    ) => Omit<node, keyof BaseNode>
+    construct: (base: BaseNode<node["kind"], node["rule"]>) => node
     intersect: (l: intersectedAs, r: intersectedAs) => intersectedAs | Disjoint
     describe: (node: node) => string
 }
@@ -98,7 +96,7 @@ export const defineNodeKind = <node extends Node>(
                 return resultNode
             }
         }
-        return (def.extend?.(base) ?? base) as node
+        return (def.construct?.(base) ?? base) as node
     }
     return construct
 }

@@ -58,11 +58,18 @@ export type BasisNodeDef = {
     level: BasisLevel
 }
 
+// Need an interface to use `this`
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+interface BasisNodeProps {
+    kind: "basis"
+    domain: Domain
+    hasLevel<level extends BasisLevel>(
+        level: level
+    ): this is BasisNodesByLevel[level]
+}
+
 export type BasisNode<def extends BasisNodeDef = BasisNodeDef> = Node<
-    {
-        kind: "basis"
-        domain: Domain
-    } & def
+    BasisNodeProps & def
 >
 
 type BasisProvidedKey = "intersect" | "kind"
@@ -75,9 +82,13 @@ export const defineBasisNode = <node extends BasisNode>(
 ) => {
     const basisProps: Pick<
         NodeDefinition<node, BasisNode>,
-        BasisProvidedKey
+        BasisProvidedKey | "construct"
     > = {
         kind: "basis",
+        construct: (base) => ({
+            ...def.construct?.(base),
+            hasLevel: (level: BasisLevel) => level === def.level
+        }),
         intersect: (l, r): BasisNode | Disjoint => {
             if (l.level === "class" && r.level === "class") {
                 return constructorExtends(l.rule, r.rule)
@@ -106,5 +117,7 @@ export const defineBasisNode = <node extends BasisNode>(
                   )
         }
     }
-    return defineNodeKind(Object.assign(def, basisProps))
+    return defineNodeKind(
+        Object.assign(basisProps, def) as NodeDefinition<node>
+    )
 }

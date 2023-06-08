@@ -57,7 +57,7 @@ export const PredicateNode = defineNodeKind<PredicateNode>({
         const condition = subconditions.join(" && ") || "true"
         return condition
     },
-    extend: (base) => ({
+    construct: (base) => ({
         basis: base.rule[0]?.kind === "basis" ? base.rule[0] : undefined,
         constraints: (base.rule[0]?.kind === "basis"
             ? base.rule.slice(1)
