@@ -73,7 +73,7 @@ export const RangeNode = defineNodeKind({
         const compiledBounds = rule.map(compileBound)
         return compiledBounds.join(" && ")
     },
-    extend: (base) =>
+    construct: (base) =>
         Object.assign(base, {
             min: isKeyOf(base.rule[0].comparator, minComparators)
                 ? (base.rule[0] as Bound<MinComparator>)
@@ -85,18 +85,18 @@ export const RangeNode = defineNodeKind({
                     ? (base.rule[0] as Bound<MaxComparator>)
                     : undefined)
         }),
-    intersect: (lRule, rRule, l, r): Range | Disjoint => {
+    intersect: (l, r): Range | Disjoint => {
         if (isEqualityRange(l)) {
             if (isEqualityRange(r)) {
-                return l === r ? lRule : Disjoint.from("range", l, r)
+                return l === r ? l.rule : Disjoint.from("range", l, r)
             }
-            return r.allows(lRule[0].limit)
-                ? lRule
+            return r.allows(l.rule[0].limit)
+                ? l.rule
                 : Disjoint.from("range", l, r)
         }
         if (isEqualityRange(r)) {
-            return l.allows(rRule[0].limit)
-                ? rRule
+            return l.allows(r.rule[0].limit)
+                ? r.rule
                 : Disjoint.from("range", l, r)
         }
         const stricterMin = compareStrictness("min", l.min, r.min)
@@ -107,7 +107,7 @@ export const RangeNode = defineNodeKind({
                     ? Disjoint.from("range", l, r)
                     : [l.min!, r.max!]
             }
-            return lRule
+            return l.rule
         }
         if (stricterMin === "r") {
             if (stricterMax === "l") {
@@ -115,9 +115,9 @@ export const RangeNode = defineNodeKind({
                     ? Disjoint.from("range", l, r)
                     : [r.min!, l.max!]
             }
-            return rRule
+            return r.rule
         }
-        return stricterMax === "l" ? lRule : rRule
+        return stricterMax === "l" ? l.rule : r.rule
     },
     describe: (rule) => {
         const left = `${rule[0].comparator}${rule[0].limit}`

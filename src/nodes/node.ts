@@ -25,9 +25,9 @@ export type NodeDefinition<
 > = {
     kind: kind
     compile: (rule: rule) => string
-    extend?: (base: Node<kind, rule>) => node
-    intersect: (l: rule, r: rule, lNode: node, rNode: node) => rule | Disjoint
-    describe: (rule: rule, node: node) => string
+    construct?: (base: Node<kind, rule>) => node
+    intersect: (l: node, r: node) => rule | Disjoint
+    describe: (rule: rule) => string
 }
 
 // Need an interface to use `this`
@@ -49,12 +49,12 @@ export const defineNodeKind = <
     def: NodeDefinition<kind, rule, node>
 ) => {
     const nodeCache: {
-        [condition: string]: node
+        [condition: string]: node | undefined
     } = {}
     const construct = (rule: rule) => {
         const condition = def.compile(rule)
         if (nodeCache[condition]) {
-            return nodeCache[condition]
+            return nodeCache[condition]!
         }
         const base: Node<kind, rule> = {
             kind: def.kind,
@@ -69,7 +69,7 @@ export const defineNodeKind = <
                 if (this.intersectionCache[other.condition]) {
                     return this.intersectionCache[other.condition]
                 }
-                const result = def.intersect(this.rule, other.rule, this, other)
+                const result = def.intersect(this, other)
                 if (result instanceof Disjoint) {
                     this.intersectionCache[other.condition] = result
                     other.intersectionCache[condition] = result.invert()
@@ -81,7 +81,7 @@ export const defineNodeKind = <
                 return resultNode
             }
         }
-        return (def.extend?.(base) ?? base) as node
+        return (def.construct?.(base) ?? base) as node
     }
     return construct
 }

@@ -4,7 +4,8 @@ import { defineNodeKind } from "../node.js"
 export const DivisorNode = defineNodeKind({
     kind: "divisor",
     compile: (rule: number) => `${In} % ${rule} === 0`,
-    intersect: (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r)),
+    intersect: (l, r) =>
+        Math.abs((l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)),
     describe: (rule) => `a multiple of ${rule}`
 })
 

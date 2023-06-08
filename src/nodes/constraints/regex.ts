@@ -1,27 +1,24 @@
 import { In } from "../../compile/compile.js"
 import { intersectUniqueLists } from "../../utils/lists.js"
-import type { ConditionNode } from "../node.js"
-import { nodeCache } from "../node.js"
+import { defineNodeKind } from "../node.js"
 
-export class RegexNode implements ConditionNode<"regex"> {
-    constructor(public rule: string[]) {
+export const RegexNode = defineNodeKind({
+    kind: "regex",
+    compile: (rule: string[]) => {
         const subconditions = rule.sort().map(compileExpression)
-        const condition = subconditions.join(" && ")
-        if (nodeCache.regex[condition]) {
-            return nodeCache.regex[condition]!
-        }
-    }
-
-    intersect(other: this) {
-        return new RegexNode(intersectUniqueLists(this.rule, other.rule))
-    }
-
-    toString() {
-        const literals = this.rule.map((_) => `/${_}/`)
+        return subconditions.join(" && ")
+    },
+    intersect: (l, r) => intersectUniqueLists(l.rule, r.rule),
+    describe: (rule) => {
+        const literals = rule.map((_) => `/${_}/`)
         return literals.length === 1
             ? literals[0]
             : `expressions ${literals.join(", ")}`
     }
+})
+
+const compileExpression = (source: string) => {
+    return `${In}.match(/${source}/)`
 }
 
 // return this.children
@@ -32,7 +29,3 @@ export class RegexNode implements ConditionNode<"regex"> {
 //     )
 // )
 // .join("\n")
-
-const compileExpression = (source: string) => {
-    return `${In}.match(/${source}/)`
-}
