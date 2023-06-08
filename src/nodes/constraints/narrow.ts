@@ -1,9 +1,12 @@
 import { registry } from "../../compile/registry.js"
 import type { Narrow } from "../../parse/ast/narrow.js"
 import { intersectUniqueLists } from "../../utils/lists.js"
+import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export const NarrowNode = defineNodeKind({
+export type NarrowNode = Node<"narrow", readonly Narrow[]>
+
+export const NarrowNode = defineNodeKind<NarrowNode>({
     kind: "narrow",
     compile: (rule: readonly Narrow[]) => {
         // Depending on type-guards, altering the order in which narrows run could
@@ -14,7 +17,8 @@ export const NarrowNode = defineNodeKind({
         )
         return subconditions.join(" && ")
     },
-    intersect: (l, r) => intersectUniqueLists(l.rule, r.rule),
+    intersect: (l, r): NarrowNode =>
+        NarrowNode(intersectUniqueLists(l.rule, r.rule)),
     describe: (node) => `narrowed by ${node.rule.map((narrow) => narrow.name)}`
 })
 

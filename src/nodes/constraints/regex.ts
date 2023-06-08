@@ -1,14 +1,18 @@
 import { In } from "../../compile/compile.js"
 import { intersectUniqueLists } from "../../utils/lists.js"
+import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export const RegexNode = defineNodeKind({
+export type RegexNode = Node<"regex", string[]>
+
+export const RegexNode = defineNodeKind<RegexNode>({
     kind: "regex",
-    compile: (rule: string[]) => {
+    compile: (rule) => {
         const subconditions = rule.sort().map(compileExpression)
         return subconditions.join(" && ")
     },
-    intersect: (l, r) => intersectUniqueLists(l.rule, r.rule),
+    intersect: (l, r): RegexNode =>
+        RegexNode(intersectUniqueLists(l.rule, r.rule)),
     describe: (node) => {
         const literals = node.rule.map((_) => `/${_}/`)
         return literals.length === 1

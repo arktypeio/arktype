@@ -1,6 +1,7 @@
 import { fromEntries, hasKeys } from "../../../utils/records.js"
 import type { DisjointsSources } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
+import type { Node } from "../../node.js"
 import { defineNodeKind } from "../../node.js"
 import { neverTypeNode } from "../../type.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
@@ -13,7 +14,17 @@ import { compileNamedProps, intersectNamedProp } from "./named.js"
 
 export type PropRule = NamedPropRule | IndexedPropRule
 
-export const PropsNode = defineNodeKind({
+export type PropsNode = Node<
+    "props",
+    PropRule[],
+    {
+        named: NamedPropRule[]
+        indexed: IndexedPropRule[]
+        byName: Record<string, NamedPropRule>
+    }
+>
+
+export const PropsNode = defineNodeKind<PropsNode>({
     kind: "props",
     compile: (rule: PropRule[]) => {
         rule.sort((l, r) => {
@@ -36,17 +47,17 @@ export const PropsNode = defineNodeKind({
         const indexed = rule.filter(isIndexed)
         return compileNamedAndIndexedProps(named, indexed)
     },
-    construct: (base) => {
+    extend: (base) => {
         const named = base.rule.filter(isNamed)
-        return Object.assign(base, {
+        return {
             named,
             byName: Object.fromEntries(
                 named.map((prop) => [prop.key, prop] as const)
             ),
             indexed: base.rule.filter(isIndexed)
-        })
+        }
     },
-    intersect: (l, r): PropRule[] | Disjoint => {
+    intersect: (l, r): PropsNode | Disjoint => {
         let indexed = [...l.indexed]
         for (const { key, value } of r.indexed) {
             const matchingIndex = indexed.findIndex(
@@ -129,7 +140,7 @@ export const PropsNode = defineNodeKind({
                 (entry) => !extractArrayIndexRegex(entry.key)
             )
         }
-        return [...named, ...indexed]
+        return PropsNode([...named, ...indexed])
     },
     describe: (node) => {
         const entries = node.named.map((prop): [string, string] => {
@@ -229,7 +240,7 @@ const isNamed = (rule: PropRule): rule is NamedPropRule =>
 const kindPrecedence = (rule: PropRule) =>
     isIndexed(rule) ? 2 : rule.prerequisite ? -1 : rule.optional ? 1 : 0
 
-export const emptyPropsNode = new PropsNode([])
+export const emptyPropsNode = PropsNode([])
 
 export type PropsInput = NamedPropsInput | PropsInputTuple
 

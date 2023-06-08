@@ -1,9 +1,12 @@
 import { registry } from "../../compile/registry.js"
 import type { Morph } from "../../parse/ast/morph.js"
 import { intersectUniqueLists } from "../../utils/lists.js"
+import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export const MorphNode = defineNodeKind({
+export type MorphNode = Node<"morph", readonly Morph[]>
+
+export const MorphNode = defineNodeKind<MorphNode>({
     kind: "morph",
     compile: (rule: readonly Morph[]) => {
         // Avoid alphabetical sorting since morphs are non-commutative,
@@ -13,7 +16,8 @@ export const MorphNode = defineNodeKind({
         )
         return subconditions.join(" && ")
     },
-    intersect: (l, r) => intersectUniqueLists(l.rule, r.rule),
+    intersect: (l, r): MorphNode =>
+        MorphNode(intersectUniqueLists(l.rule, r.rule)),
     describe: (node) =>
         `morphed by ${node.rule.map((morph) => morph.name).join("|>")}`
 })

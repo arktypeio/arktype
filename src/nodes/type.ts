@@ -1,22 +1,31 @@
+import type { Discriminant } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
+import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
 import type { PredicateNode } from "./predicate.js"
 
-export const TypeNode = defineNodeKind({
+export type TypeNode = Node<
+    "type",
+    PredicateNode[],
+    {
+        discriminant: Discriminant | undefined
+    }
+>
+
+export const TypeNode = defineNodeKind<TypeNode>({
     kind: "type",
     compile: (rule: PredicateNode[]) => {
         const condition = compileIndiscriminable(rule.sort())
         return condition
     },
-    construct: (base) =>
-        Object.assign(base, {
-            discriminant: discriminate(base.rule)
-        }),
-    intersect: (l, r): PredicateNode[] | Disjoint => {
+    extend: (base) => ({
+        discriminant: discriminate(base.rule)
+    }),
+    intersect: (l, r): TypeNode | Disjoint => {
         if (l.rule.length === 1 && r.rule.length === 1) {
             const result = l.rule[0].intersect(r.rule[0])
-            return result instanceof Disjoint ? result : [result]
+            return result instanceof Disjoint ? result : TypeNode([result])
         }
         // Branches that are determined to be a subtype of an opposite branch are
         // guaranteed to be a member of the final reduced intersection, so long as
@@ -85,7 +94,7 @@ export const TypeNode = defineNodeKind({
             candidates?.forEach((candidate) => finalBranches.push(candidate))
         }
         return finalBranches.length
-            ? finalBranches
+            ? TypeNode(finalBranches)
             : Disjoint.from("union", l, r)
     },
     describe: (node) =>
@@ -93,8 +102,6 @@ export const TypeNode = defineNodeKind({
             ? "never"
             : node.rule.map((branch) => branch.toString()).join(" or ")
 })
-
-export type TypeNode = ReturnType<typeof TypeNode>
 
 const compileIndiscriminable = (branches: PredicateNode[]) => {
     return branches.length === 0

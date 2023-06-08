@@ -1,11 +1,16 @@
 import { In } from "../../compile/compile.js"
+import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export const DivisorNode = defineNodeKind({
+export type DivisorNode = Node<"divisor", number>
+
+export const DivisorNode = defineNodeKind<DivisorNode>({
     kind: "divisor",
-    compile: (rule: number) => `${In} % ${rule} === 0`,
-    intersect: (l, r) =>
-        Math.abs((l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)),
+    compile: (rule) => `${In} % ${rule} === 0`,
+    intersect: (l, r): DivisorNode =>
+        DivisorNode(
+            Math.abs((l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule))
+        ),
     describe: (node) => `a multiple of ${node.rule}`
 })
 

@@ -9,7 +9,12 @@ import type { List, listable } from "../utils/lists.js"
 import type { Constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
 import { isKeyOf, type keySet } from "../utils/records.js"
-import type { BasisInput, BasisInstance, inferBasis } from "./basis/basis.js"
+import type {
+    BasisInput,
+    BasisInstance,
+    BasisNode,
+    inferBasis
+} from "./basis/basis.js"
 import { ClassNode } from "./basis/class.js"
 import { ValueNode } from "./basis/value.js"
 import { DivisorNode } from "./constraints/divisor.js"
@@ -26,9 +31,22 @@ import type { Range } from "./constraints/range.js"
 import { RangeNode } from "./constraints/range.js"
 import { RegexNode } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
+import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
 
-export const PredicateNode = defineNodeKind({
+export type PredicateNode = Node<
+    "predicate",
+    PredicateRules,
+    {
+        basis: BasisNode | undefined
+        constraints: ConstraintNode[]
+        getConstraint: <k extends ConstraintKind>(
+            k: k
+        ) => instanceOf<ConstraintKinds[k]> | undefined
+    }
+>
+
+export const PredicateNode = defineNodeKind<PredicateNode>({
     kind: "predicate",
     compile: (rule: PredicateRules) => {
         const subconditions: string[] = []
@@ -41,18 +59,15 @@ export const PredicateNode = defineNodeKind({
         const condition = subconditions.join(" && ") || "true"
         return condition
     },
-    construct: (base) =>
-        Object.assign(base, {
-            basis: base.rule[0]?.kind === "basis" ? base.rule[0] : undefined,
-            constraints: (base.rule[0]?.kind === "basis"
-                ? base.rule.slice(1)
-                : base.rule) as ConstraintNode[],
-            getConstraint: <k extends ConstraintKind>(k: k) =>
-                base.rule.find((constraint) => constraint.kind === k) as
-                    | instanceOf<ConstraintKinds[k]>
-                    | undefined
-        }),
-    intersect: (l, r): PredicateRules | Disjoint => {
+    extend: (base) => ({
+        basis: base.rule[0]?.kind === "basis" ? base.rule[0] : undefined,
+        constraints: (base.rule[0]?.kind === "basis"
+            ? base.rule.slice(1)
+            : base.rule) as ConstraintNode[],
+        getConstraint: (k) =>
+            base.rule.find((constraint) => constraint.kind === k)
+    }),
+    intersect: (l, r): PredicateNode | Disjoint => {
         // if (
         //     // s.lastOperator === "&" &&
         //     rules.morphs?.some(
@@ -100,7 +115,7 @@ export const PredicateNode = defineNodeKind({
                 rules.push(rNode)
             }
         }
-        return rules
+        return PredicateNode(rules)
     },
     describe: (node) => {
         if (node.rule.length === 0) {
@@ -114,8 +129,6 @@ export const PredicateNode = defineNodeKind({
                   .join(" and ")
     }
 })
-
-export type PredicateNode = ReturnType<typeof PredicateNode>
 
 // static from<const input extends PredicateInput>(input: input) {
 //     const basis = input.basis && basisNodeFrom(input.basis)
@@ -277,7 +290,7 @@ const listableInputKinds = {
 
 type ListableInputKind = keyof typeof listableInputKinds
 
-export const unknownPredicateNode = new PredicateNode([])
+export const unknownPredicateNode = PredicateNode([])
 
 export type PredicateRules =
     | [BasisInstance, ...ConstraintNode[]]
@@ -307,7 +320,7 @@ export const constraintKinds = {
 } as const
 
 export type ConstraintNode<kind extends ConstraintKind = ConstraintKind> =
-    instanceOf<ConstraintKinds[kind]>
+    ReturnType<ConstraintKinds[kind]>
 
 type ConstraintKinds = typeof constraintKinds
 

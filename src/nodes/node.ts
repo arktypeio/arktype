@@ -18,21 +18,19 @@ export const precedenceByKind = {
 
 export type NodeKind = keyof typeof precedenceByKind
 
-export type NodeDefinition<
-    kind extends NodeKind,
-    rule,
-    node extends Node<kind, rule> = Node<kind, rule>
-> = {
-    kind: kind
-    compile: (rule: rule) => string
-    construct?: (base: Node<kind, rule>) => node
-    intersect: (l: node, r: node) => rule | Disjoint
+export type NodeDefinition<node extends Node> = {
+    kind: node["kind"]
+    compile: (rule: node["rule"]) => string
+    extend?: (
+        base: BaseNode<node["kind"], node["rule"]>
+    ) => Omit<node, keyof BaseNode>
+    intersect: (l: node, r: node) => node | Disjoint
     describe: (node: node) => string
 }
 
 // Need an interface to use `this`
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-export interface Node<kind extends NodeKind = NodeKind, rule = unknown> {
+export interface BaseNode<kind extends NodeKind = NodeKind, rule = unknown> {
     kind: kind
     rule: rule
     condition: string
@@ -41,22 +39,24 @@ export interface Node<kind extends NodeKind = NodeKind, rule = unknown> {
     allows(data: unknown): boolean
 }
 
-export const defineNodeKind = <
-    kind extends NodeKind,
-    rule,
-    node extends Node<kind, rule>
->(
-    def: NodeDefinition<kind, rule, node>
+export type Node<
+    kind extends NodeKind = NodeKind,
+    rule = unknown,
+    props = {}
+> = BaseNode<kind, rule> & props
+
+export const defineNodeKind = <node extends Node>(
+    def: NodeDefinition<node>
 ) => {
     const nodeCache: {
         [condition: string]: node | undefined
     } = {}
-    const construct = (rule: rule) => {
+    const construct = (rule: node["rule"]) => {
         const condition = def.compile(rule)
         if (nodeCache[condition]) {
             return nodeCache[condition]!
         }
-        const base: Node<kind, rule> = {
+        const base: BaseNode<node["kind"], node["rule"]> = {
             kind: def.kind,
             condition,
             rule,
@@ -81,7 +81,7 @@ export const defineNodeKind = <
                 return resultNode
             }
         }
-        return (def.construct?.(base) ?? base) as node
+        return (def.extend?.(base) ?? base) as node
     }
     return construct
 }
