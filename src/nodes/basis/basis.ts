@@ -8,8 +8,7 @@ import type {
 import { constructorExtends } from "../../utils/objectKinds.js"
 import type { DisjointKindEntries } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
-import type { Node, NodeDefinition } from "../node.js"
-import { defineNodeKind } from "../node.js"
+import type { Node } from "../node.js"
 import type { ClassNode } from "./class.js"
 import type { DomainNode } from "./domain.js"
 import { ValueNode } from "./value.js"
@@ -47,12 +46,6 @@ export const precedenceByLevel: Record<BasisLevel, number> = {
 
 export type BasisNodeSubclass = BasisNodesByLevel[BasisLevel]
 
-export type BasisDefinition = {
-    literalKeysOf(): PropertyKey[]
-    domain: Domain
-    level: BasisLevel
-}
-
 export type BasisNodeDef = {
     rule: unknown
     level: BasisLevel
@@ -63,6 +56,7 @@ export type BasisNodeDef = {
 interface BasisNodeProps {
     kind: "basis"
     domain: Domain
+    literalKeysOf(): PropertyKey[]
     hasLevel<level extends BasisLevel>(
         level: level
     ): this is BasisNodesByLevel[level]
@@ -72,52 +66,33 @@ export type BasisNode<def extends BasisNodeDef = BasisNodeDef> = Node<
     BasisNodeProps & def
 >
 
-type BasisProvidedKey = "intersect" | "kind"
-
-export const defineBasisNode = <node extends BasisNode>(
-    def: Omit<NodeDefinition<node>, BasisProvidedKey> & {
-        domain: (rule: node["rule"]) => Domain
-        level: BasisLevel
+export const intersectBases = (
+    l: BasisNode,
+    r: BasisNode
+): BasisNode | Disjoint => {
+    if (l.level === "class" && r.level === "class") {
+        return constructorExtends(l.rule, r.rule)
+            ? l
+            : constructorExtends(r.rule, l.rule)
+            ? r
+            : Disjoint.from("class", l, r)
     }
-) => {
-    const basisProps: Pick<
-        NodeDefinition<node, BasisNode>,
-        BasisProvidedKey | "construct"
-    > = {
-        kind: "basis",
-        construct: (base) => ({
-            ...def.construct?.(base),
-            hasLevel: (level: BasisLevel) => level === def.level
-        }),
-        intersect: (l, r): BasisNode | Disjoint => {
-            if (l.level === "class" && r.level === "class") {
-                return constructorExtends(l.rule, r.rule)
-                    ? l
-                    : constructorExtends(r.rule, l.rule)
-                    ? r
-                    : Disjoint.from("class", l, r)
-            }
-            const disjointEntries: DisjointKindEntries = []
-            if (l.domain !== r.domain) {
-                disjointEntries.push(["domain", { l, r }])
-            }
-            if (l instanceof ValueNode && r instanceof ValueNode) {
-                if (l !== r) {
-                    disjointEntries.push(["value", { l, r }])
-                }
-            }
-            return disjointEntries.length
-                ? Disjoint.fromEntries(disjointEntries)
-                : precedenceByLevel[l.level] < precedenceByLevel[r.level]
-                ? l
-                : precedenceByLevel[r.level] < precedenceByLevel[l.level]
-                ? r
-                : throwInternalError(
-                      `Unexpected non-disjoint intersection from basis nodes with equal precedence ${l} and ${r}`
-                  )
+    const disjointEntries: DisjointKindEntries = []
+    if (l.domain !== r.domain) {
+        disjointEntries.push(["domain", { l, r }])
+    }
+    if (l instanceof ValueNode && r instanceof ValueNode) {
+        if (l !== r) {
+            disjointEntries.push(["value", { l, r }])
         }
     }
-    return defineNodeKind(
-        Object.assign(basisProps, def) as NodeDefinition<node>
-    )
+    return disjointEntries.length
+        ? Disjoint.fromEntries(disjointEntries)
+        : precedenceByLevel[l.level] < precedenceByLevel[r.level]
+        ? l
+        : precedenceByLevel[r.level] < precedenceByLevel[l.level]
+        ? r
+        : throwInternalError(
+              `Unexpected non-disjoint intersection from basis nodes with equal precedence ${l} and ${r}`
+          )
 }
