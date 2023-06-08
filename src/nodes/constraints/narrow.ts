@@ -15,7 +15,7 @@ export const NarrowNode = defineNodeKind({
         return subconditions.join(" && ")
     },
     intersect: (l, r) => intersectUniqueLists(l.rule, r.rule),
-    describe: (rule) => `narrowed by ${rule.map((narrow) => narrow.name)}`
+    describe: (node) => `narrowed by ${node.rule.map((narrow) => narrow.name)}`
 })
 
 //     compileTraverse(s: CompilationState) {

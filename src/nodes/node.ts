@@ -27,7 +27,7 @@ export type NodeDefinition<
     compile: (rule: rule) => string
     construct?: (base: Node<kind, rule>) => node
     intersect: (l: node, r: node) => rule | Disjoint
-    describe: (rule: rule) => string
+    describe: (node: node) => string
 }
 
 // Need an interface to use `this`

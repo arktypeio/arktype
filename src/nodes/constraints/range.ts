@@ -119,10 +119,10 @@ export const RangeNode = defineNodeKind({
         }
         return stricterMax === "l" ? l.rule : r.rule
     },
-    describe: (rule) => {
-        const left = `${rule[0].comparator}${rule[0].limit}`
-        return rule[1]
-            ? `the range bounded by ${left} and ${rule[1].comparator}${rule[1].limit}`
+    describe: (node) => {
+        const left = `${node.rule[0].comparator}${node.rule[0].limit}`
+        return node.rule[1]
+            ? `the range bounded by ${left} and ${node.rule[1].comparator}${node.rule[1].limit}`
             : left
     }
 })

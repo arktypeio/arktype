@@ -14,8 +14,8 @@ export const MorphNode = defineNodeKind({
         return subconditions.join(" && ")
     },
     intersect: (l, r) => intersectUniqueLists(l.rule, r.rule),
-    describe: (rule) =>
-        `morphed by ${rule.map((morph) => morph.name).join("|>")}`
+    describe: (node) =>
+        `morphed by ${node.rule.map((morph) => morph.name).join("|>")}`
 })
 
 // compileTraverse(s: CompilationState) {

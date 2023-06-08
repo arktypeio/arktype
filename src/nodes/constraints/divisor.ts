@@ -6,7 +6,7 @@ export const DivisorNode = defineNodeKind({
     compile: (rule: number) => `${In} % ${rule} === 0`,
     intersect: (l, r) =>
         Math.abs((l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)),
-    describe: (rule) => `a multiple of ${rule}`
+    describe: (node) => `a multiple of ${node.rule}`
 })
 
 // compile: (n, condition, s) => s.ifNotThen(condition, s.problem("divisor", n))

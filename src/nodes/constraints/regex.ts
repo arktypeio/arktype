@@ -9,8 +9,8 @@ export const RegexNode = defineNodeKind({
         return subconditions.join(" && ")
     },
     intersect: (l, r) => intersectUniqueLists(l.rule, r.rule),
-    describe: (rule) => {
-        const literals = rule.map((_) => `/${_}/`)
+    describe: (node) => {
+        const literals = node.rule.map((_) => `/${_}/`)
         return literals.length === 1
             ? literals[0]
             : `expressions ${literals.join(", ")}`
