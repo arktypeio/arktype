@@ -24,45 +24,6 @@ import type {
 } from "./predicate.js"
 import { PredicateNode, unknownPredicateNode } from "./predicate.js"
 
-type inferBranches<branches extends BranchesInput> = {
-    [i in keyof branches]: inferPredicateDefinition<branches[i]>
-}[number]
-
-export type inferTypeInput<input extends TypeInput> = inferPredicateDefinition<
-    input extends BranchesInput ? input[number] : input
->
-
-export type BranchesInput = List<PredicateInput>
-
-export type TypeInput = PredicateInput | BranchesInput
-
-type validatedTypeNodeInput<
-    branches extends BranchesInput,
-    bases extends BasisInput[]
-> = {
-    [i in keyof branches]: exact<
-        branches[i],
-        PredicateInput<bases[i & keyof bases]>
-    >
-}
-
-type extractBases<
-    branches,
-    result extends BasisInput[] = []
-> = branches extends [infer head, ...infer tail]
-    ? extractBases<
-          tail,
-          [
-              ...result,
-              head extends {
-                  basis: infer basis extends BasisInput
-              }
-                  ? basis
-                  : BasisInput
-          ]
-      >
-    : result
-
 export class TypeNode<t = unknown> extends BaseNode<"type"> {
     static readonly kind = "type";
     declare [inferred]: t
@@ -388,6 +349,45 @@ export class TypeNode<t = unknown> extends BaseNode<"type"> {
         return this === unknownTypeNode
     }
 }
+
+type inferBranches<branches extends BranchesInput> = {
+    [i in keyof branches]: inferPredicateDefinition<branches[i]>
+}[number]
+
+export type inferTypeInput<input extends TypeInput> = inferPredicateDefinition<
+    input extends BranchesInput ? input[number] : input
+>
+
+export type BranchesInput = List<PredicateInput>
+
+export type TypeInput = PredicateInput | BranchesInput
+
+type validatedTypeNodeInput<
+    branches extends BranchesInput,
+    bases extends BasisInput[]
+> = {
+    [i in keyof branches]: exact<
+        branches[i],
+        PredicateInput<bases[i & keyof bases]>
+    >
+}
+
+type extractBases<
+    branches,
+    result extends BasisInput[] = []
+> = branches extends [infer head, ...infer tail]
+    ? extractBases<
+          tail,
+          [
+              ...result,
+              head extends {
+                  basis: infer basis extends BasisInput
+              }
+                  ? basis
+                  : BasisInput
+          ]
+      >
+    : result
 
 export const typeNodeFromInput = (input: TypeInput) =>
     isArray(input) ? TypeNode.from(...input) : TypeNode.from(input)

@@ -32,12 +32,6 @@ export type NodeInstances = {
 
 export type NodeKind = keyof NodeKinds
 
-export type SubclassNode = {
-    readonly kind: NodeKind
-    new (rule: never): BaseNode<any>
-    compile(rule: never): string[]
-}
-
 export abstract class BaseNode<kind extends NodeKind = NodeKind> {
     abstract rule: unknown
 

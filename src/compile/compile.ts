@@ -7,7 +7,7 @@ import { serializePrimitive } from "../utils/serialize.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 
-export const compile = () => {}
+export const compile = (root: TypeNode) => {}
 
 export type TraversalConfig = {
     [k in keyof TypeConfig]-?: TypeConfig[k][]
