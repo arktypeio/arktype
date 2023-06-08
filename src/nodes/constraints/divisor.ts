@@ -1,43 +1,12 @@
 import { In } from "../../compile/compile.js"
 import { defineNodeKind } from "../node.js"
 
-// export const DivisorNode = defineNodeKind<number>(
-//     {
-//         kind: "divisor",
-//         compile: (rule) => `${In} % ${rule} === 0`,
-//         create: (base) => base
-//     },
-//     (l, r) => {
-//         return DivisorNode(
-//             Math.abs((l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule))
-//         )
-//     }
-// )
-
-// export class DivisorNode implements ConditionNode<"divisor"> {
-//     readonly kind = "divisor"
-//     readonly precedence = 3
-
-//     constructor(public rule: number) {
-//         const condition = `${In} % ${rule} === 0`
-//         if (nodeCache.divisor[condition]) {
-//             return nodeCache.divisor[condition]!
-//         }
-//     }
-
-//     intersect(other: DivisorNode) {
-//         return new DivisorNode(
-//             Math.abs(
-//                 (this.rule * other.rule) /
-//                     greatestCommonDivisor(this.rule, other.rule)
-//             )
-//         )
-//     }
-
-//     toString() {
-//         return `a multiple of ${this.rule}`
-//     }
-// }
+export const DivisorNode = defineNodeKind({
+    kind: "divisor",
+    compile: (rule: number) => `${In} % ${rule} === 0`,
+    intersect: (l, r) => Math.abs((l * r) / greatestCommonDivisor(l, r)),
+    describe: (rule) => `a multiple of ${rule}`
+})
 
 // compile: (n, condition, s) => s.ifNotThen(condition, s.problem("divisor", n))
 

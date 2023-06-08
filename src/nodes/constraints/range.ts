@@ -1,8 +1,7 @@
 import { In } from "../../compile/compile.js"
 import { isKeyOf } from "../../utils/records.js"
 import { Disjoint } from "../disjoint.js"
-import type { ConditionNode } from "../node.js"
-import { nodeCache } from "../node.js"
+import { defineNodeKind } from "../node.js"
 
 export const minComparators = {
     ">": true,
@@ -60,10 +59,9 @@ export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 //     ? "items long"
 //     : ""
 
-export class RangeNode implements ConditionNode<"range"> {
-    readonly kind = "range"
-
-    constructor(public rule: Range) {
+export const RangeNode = defineNodeKind({
+    kind: "range",
+    compile: (rule: Range) => {
         if (
             rule[0].limit === rule[1]?.limit &&
             rule[0].comparator === ">=" &&
@@ -72,78 +70,74 @@ export class RangeNode implements ConditionNode<"range"> {
             // reduce a range like `1<=number<=1` to `number==1`
             rule = [{ comparator: "==", limit: rule[0].limit }]
         }
-        const compiledBounds = rule.map(RangeNode.compileBound)
-        const condition = compiledBounds.join(" && ")
-        if (nodeCache.range[condition]) {
-            return nodeCache.range[condition]!
-        }
-        this.rule = rule
-    }
+        const compiledBounds = rule.map(compileBound)
+        return compiledBounds.join(" && ")
+    },
+    extend: (base) =>
+        Object.assign(base, {
+            min: isKeyOf(base.rule[0].comparator, minComparators)
+                ? (base.rule[0] as Bound<MinComparator>)
+                : undefined,
 
-    private static compileBound(bound: Bound) {
-        return `(${In}.length ?? Number(${In})) ${
-            bound.comparator === "==" ? "===" : bound.comparator
-        } ${bound.limit}`
-    }
-
-    isEquality(): this is { rule: [Bound<"==">] } {
-        return this.rule[0].comparator === "=="
-    }
-
-    min = isKeyOf(this.rule[0].comparator, minComparators)
-        ? (this.rule[0] as Bound<MinComparator>)
-        : undefined
-
-    max =
-        this.rule[1] ??
-        (isKeyOf(this.rule[0].comparator, maxComparators)
-            ? (this.rule[0] as Bound<MaxComparator>)
-            : undefined)
-
-    intersect(other: RangeNode): RangeNode | Disjoint {
-        if (this.isEquality()) {
-            if (other.isEquality()) {
-                return this === other
-                    ? this
-                    : Disjoint.from("range", this, other)
+            max:
+                base.rule[1] ??
+                (isKeyOf(base.rule[0].comparator, maxComparators)
+                    ? (base.rule[0] as Bound<MaxComparator>)
+                    : undefined)
+        }),
+    intersect: (lRule, rRule, l, r): Range | Disjoint => {
+        if (isEqualityRange(l)) {
+            if (isEqualityRange(r)) {
+                return l === r ? lRule : Disjoint.from("range", l, r)
             }
-            return other.allows(this.rule[0].limit)
-                ? this
-                : Disjoint.from("range", this, other)
+            return r.allows(lRule[0].limit)
+                ? lRule
+                : Disjoint.from("range", l, r)
         }
-        if (other.isEquality()) {
-            return this.allows(other.rule[0].limit)
-                ? other
-                : Disjoint.from("range", this, other)
+        if (isEqualityRange(r)) {
+            return l.allows(rRule[0].limit)
+                ? rRule
+                : Disjoint.from("range", l, r)
         }
-        const stricterMin = compareStrictness("min", this.min, other.min)
-        const stricterMax = compareStrictness("max", this.max, other.max)
+        const stricterMin = compareStrictness("min", l.min, r.min)
+        const stricterMax = compareStrictness("max", l.max, r.max)
         if (stricterMin === "l") {
             if (stricterMax === "r") {
-                return compareStrictness("min", this.min, other.max) === "l"
-                    ? Disjoint.from("range", this, other)
-                    : new RangeNode([this.min!, other.max!])
+                return compareStrictness("min", l.min, r.max) === "l"
+                    ? Disjoint.from("range", l, r)
+                    : [l.min!, r.max!]
             }
-            return this
+            return lRule
         }
         if (stricterMin === "r") {
             if (stricterMax === "l") {
-                return compareStrictness("min", this.max, other.min) === "r"
-                    ? Disjoint.from("range", this, other)
-                    : new RangeNode([other.min!, this.max!])
+                return compareStrictness("min", l.max, r.min) === "r"
+                    ? Disjoint.from("range", l, r)
+                    : [r.min!, l.max!]
             }
-            return other
+            return rRule
         }
-        return stricterMax === "l" ? this : other
-    }
-
-    toString() {
-        const left = `${this.rule[0].comparator}${this.rule[0].limit}`
-        return this.rule[1]
-            ? `the range bounded by ${left} and ${this.rule[1].comparator}${this.rule[1].limit}`
+        return stricterMax === "l" ? lRule : rRule
+    },
+    describe: (rule) => {
+        const left = `${rule[0].comparator}${rule[0].limit}`
+        return rule[1]
+            ? `the range bounded by ${left} and ${rule[1].comparator}${rule[1].limit}`
             : left
     }
-}
+})
+
+export type RangeNode = ReturnType<typeof RangeNode>
+
+const compileBound = (bound: Bound) =>
+    `(${In}.length ?? Number(${In})) ${
+        bound.comparator === "==" ? "===" : bound.comparator
+    } ${bound.limit}`
+
+const isEqualityRange = (
+    node: RangeNode
+): node is RangeNode & { rule: [Bound<"==">] } =>
+    node.rule[0].comparator === "=="
 
 // compileTraverse(s: CompilationState) {
 //     return this.range

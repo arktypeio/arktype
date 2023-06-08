@@ -21,14 +21,16 @@ export type NodeKind = keyof typeof precedenceByKind
 export type NodeDefinition<
     kind extends NodeKind,
     rule,
-    node extends Node<kind, rule>
+    node extends Node<kind, rule> = Node<kind, rule>
 > = {
     kind: kind
-
-    compile(rule: rule): string
-    create(base: Node<kind, rule>): node
+    compile: (rule: rule) => string
+    extend?: (base: Node<kind, rule>) => node
+    intersect: (l: rule, r: rule, lNode: node, rNode: node) => rule | Disjoint
+    describe: (rule: rule, node: node) => string
 }
 
+// Need an interface to use `this`
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export interface Node<kind extends NodeKind = NodeKind, rule = unknown> {
     kind: kind
@@ -42,14 +44,10 @@ export interface Node<kind extends NodeKind = NodeKind, rule = unknown> {
 export const defineNodeKind = <
     kind extends NodeKind,
     rule,
-    props,
-    node extends Node<kind, rule> & props = Node<kind, rule> & props
->(def: {
-    kind: kind
-    compile: (rule: rule) => string
-    construct: (base: Node<kind, rule>) => props
-    intersect: (l: node, r: node) => rule | Disjoint
-}) => {
+    node extends Node<kind, rule>
+>(
+    def: NodeDefinition<kind, rule, node>
+) => {
     const nodeCache: {
         [condition: string]: node
     } = {}
@@ -71,7 +69,7 @@ export const defineNodeKind = <
                 if (this.intersectionCache[other.condition]) {
                     return this.intersectionCache[other.condition]
                 }
-                const result = def.intersect(this, other)
+                const result = def.intersect(this.rule, other.rule, this, other)
                 if (result instanceof Disjoint) {
                     this.intersectionCache[other.condition] = result
                     other.intersectionCache[condition] = result.invert()
@@ -83,7 +81,7 @@ export const defineNodeKind = <
                 return resultNode
             }
         }
-        return { ...base, ...def.construct(base) } as node
+        return (def.extend?.(base) ?? base) as node
     }
     return construct
 }

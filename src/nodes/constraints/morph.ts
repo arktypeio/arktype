@@ -13,15 +13,10 @@ export const MorphNode = defineNodeKind({
         )
         return subconditions.join(" && ")
     },
-    construct: (base) => ({ ...base, extra: true }),
-    intersect: (l, r) => {
-        return intersectUniqueLists(l.rule, r.rule)
-    }
+    intersect: intersectUniqueLists,
+    describe: (morphs) =>
+        `morphed by ${morphs.map((rule) => rule.name).join("|>")}`
 })
-
-// toString() {
-//     return `morphed by ${this.rule.map((rule) => rule.name).join("|>")}`
-// }
 
 // compileTraverse(s: CompilationState) {
 //     return s.ifNotThen("false", s.problem("custom", "morphs"))
