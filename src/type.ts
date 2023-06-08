@@ -59,7 +59,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     declare inferIn: extractIn<t>
 
     config: TypeConfig
-    root: TypeNode<t>
+    root: TypeNode
     condition: string
     allows: this["root"]["allows"]
 
@@ -67,7 +67,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
         const root = parseDefinition(definition, {
             path: new Path(),
             scope
-        }) as TypeNode<t>
+        }) as TypeNode
         super(
             In,
             `const state = new ${registry().reference("state")}();
