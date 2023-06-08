@@ -1,7 +1,8 @@
-import { isKeyOf } from "../../utils/records.js"
 import { In } from "../../compile/compile.js"
+import { isKeyOf } from "../../utils/records.js"
 import { Disjoint } from "../disjoint.js"
-import { BaseNode } from "../node.js"
+import type { ConditionNode } from "../node.js"
+import { nodeCache } from "../node.js"
 
 export const minComparators = {
     ">": true,
@@ -59,7 +60,9 @@ export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 //     ? "items long"
 //     : ""
 
-export class RangeNode extends BaseNode<"range"> {
+export class RangeNode implements ConditionNode<"range"> {
+    readonly kind = "range"
+
     constructor(public rule: Range) {
         if (
             rule[0].limit === rule[1]?.limit &&
@@ -71,10 +74,9 @@ export class RangeNode extends BaseNode<"range"> {
         }
         const compiledBounds = rule.map(RangeNode.compileBound)
         const condition = compiledBounds.join(" && ")
-        if (BaseNode.nodes.range[condition]) {
-            return BaseNode.nodes.range[condition]
+        if (nodeCache.range[condition]) {
+            return nodeCache.range[condition]!
         }
-        super("range", condition)
         this.rule = rule
     }
 
@@ -98,7 +100,7 @@ export class RangeNode extends BaseNode<"range"> {
             ? (this.rule[0] as Bound<MaxComparator>)
             : undefined)
 
-    computeIntersection(other: RangeNode): RangeNode | Disjoint {
+    intersect(other: RangeNode): RangeNode | Disjoint {
         if (this.isEquality()) {
             if (other.isEquality()) {
                 return this === other

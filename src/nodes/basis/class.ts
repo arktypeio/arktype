@@ -6,12 +6,12 @@ import {
     getExactBuiltinConstructorName,
     prototypeKeysOf
 } from "../../utils/objectKinds.js"
-import { BaseNode } from "../node.js"
+import type { ConditionNode } from "../node.js"
 
 import type { BasisDefinition, BasisInstance } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export class ClassNode extends BaseNode<"basis"> implements BasisDefinition {
+export class ClassNode implements ConditionNode<"basis"> {
     constructor(public rule: AbstractableConstructor) {
         const condition = `${In} instanceof ${
             getExactBuiltinConstructorName(rule) ??
@@ -33,7 +33,7 @@ export class ClassNode extends BaseNode<"basis"> implements BasisDefinition {
         )
     }
 
-    computeIntersection(other: BasisInstance) {
+    intersect(other: BasisInstance) {
         return intersectBases(this, other)
     }
 

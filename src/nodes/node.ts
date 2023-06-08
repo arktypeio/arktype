@@ -1,90 +1,89 @@
 import { In } from "../compile/compile.js"
-import { throwInternalError } from "../utils/errors.js"
 import { CompiledFunction } from "../utils/functions.js"
-import type { ClassNode } from "./basis/class.js"
-import type { DomainNode } from "./basis/domain.js"
-import type { ValueNode } from "./basis/value.js"
-import type { DivisorNode } from "./constraints/divisor.js"
-import type { MorphNode } from "./constraints/morph.js"
-import type { NarrowNode } from "./constraints/narrow.js"
-import type { PropsNode } from "./constraints/props/props.js"
-import type { RangeNode } from "./constraints/range.js"
-import type { RegexNode } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
-import type { PredicateNode } from "./predicate.js"
-import type { TypeNode } from "./type.js"
 
-export type NodeKinds = {
-    type: typeof TypeNode
-    predicate: typeof PredicateNode
-    regex: typeof RegexNode
-    range: typeof RangeNode
-    narrow: typeof NarrowNode
-    morph: typeof MorphNode
-    divisor: typeof DivisorNode
-    basis: typeof DomainNode | typeof ValueNode | typeof ClassNode
-    props: typeof PropsNode
+export const precedenceByKind = {
+    type: 0,
+    predicate: 1,
+    basis: 2,
+    // shallow checks
+    range: 3,
+    divisor: 3,
+    regex: 3,
+    //
+    props: 4,
+    narrow: 5,
+    morph: 6
+} as const
+
+export type NodeKind = keyof typeof precedenceByKind
+
+export type NodeDefinition<
+    kind extends NodeKind,
+    rule,
+    node extends Node<kind, rule>
+> = {
+    kind: kind
+
+    compile(rule: rule): string
+    create(base: Node<kind, rule>): node
 }
 
-export type NodeInstances = {
-    [kind in NodeKind]: InstanceType<NodeKinds[kind]>
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+export interface Node<kind extends NodeKind = NodeKind, rule = unknown> {
+    kind: kind
+    rule: rule
+    condition: string
+    intersect(other: this): this | Disjoint
+    intersectionCache: Record<string, this | Disjoint>
+    allows(data: unknown): boolean
 }
 
-export type NodeKind = keyof NodeKinds
-
-export abstract class BaseNode<kind extends NodeKind = NodeKind> {
-    abstract rule: unknown
-
-    allows!: (data: unknown) => boolean
-
-    static nodes: {
-        [kind in NodeKind]: {
-            [condition: string]: NodeInstances[kind]
-        }
-    } = {
-        type: {},
-        predicate: {},
-        regex: {},
-        range: {},
-        narrow: {},
-        morph: {},
-        divisor: {},
-        basis: {},
-        props: {}
-    }
-
-    constructor(public kind: kind, public condition: string) {
-        if (BaseNode.nodes[kind][condition]) {
-            return throwInternalError(
-                `Unexpected attempt to duplicate a cached ${this.constructor.name}.` +
-                    `Ensure ${this.constructor.name}'s constructor returns a cached instance if one is available.`
-            )
-        }
-        this.allows = new CompiledFunction(`${In}`, `return ${condition}`)
-        BaseNode.nodes[kind as never][condition] = this as never
-    }
-
-    abstract toString(): string
-
-    protected abstract computeIntersection(
-        other: NodeInstances[kind]
-    ): NodeInstances[kind] | Disjoint
-
-    intersectionCache: {
-        [otherCondition: string]: NodeInstances[kind] | Disjoint
+export const defineNodeKind = <
+    kind extends NodeKind,
+    rule,
+    props,
+    node extends Node<kind, rule> & props = Node<kind, rule> & props
+>(def: {
+    kind: kind
+    compile: (rule: rule) => string
+    construct: (base: Node<kind, rule>) => props
+    intersect: (l: node, r: node) => rule | Disjoint
+}) => {
+    const nodeCache: {
+        [condition: string]: node
     } = {}
-
-    intersect(other: NodeInstances[kind]): NodeInstances[kind] | Disjoint {
-        if (this === other) {
-            return this as never
+    const construct = (rule: rule) => {
+        const condition = def.compile(rule)
+        if (nodeCache[condition]) {
+            return nodeCache[condition]
         }
-        if (this.intersectionCache[other.condition]) {
-            return this.intersectionCache[other.condition]
+        const base: Node<kind, rule> = {
+            kind: def.kind,
+            condition,
+            rule,
+            allows: new CompiledFunction(`${In}`, `return ${condition}`),
+            intersectionCache: {},
+            intersect(this: node, other: node): node | Disjoint {
+                if (this === other) {
+                    return this
+                }
+                if (this.intersectionCache[other.condition]) {
+                    return this.intersectionCache[other.condition]
+                }
+                const result = def.intersect(this, other)
+                if (result instanceof Disjoint) {
+                    this.intersectionCache[other.condition] = result
+                    other.intersectionCache[condition] = result.invert()
+                    return result
+                }
+                const resultNode = construct(result)
+                this.intersectionCache[other.condition] = resultNode
+                other.intersectionCache[condition] = resultNode
+                return resultNode
+            }
         }
-        const result = this.computeIntersection(other)
-        this.intersectionCache[other.condition] = result
-        other.intersectionCache[this.condition] =
-            result instanceof Disjoint ? result.invert() : result
-        return result
+        return { ...base, ...def.construct(base) } as node
     }
+    return construct
 }

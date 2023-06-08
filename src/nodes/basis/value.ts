@@ -2,11 +2,11 @@ import { compileSerializedValue, In } from "../../compile/compile.js"
 import { domainOf } from "../../utils/domains.js"
 import { prototypeKeysOf } from "../../utils/objectKinds.js"
 import { stringify } from "../../utils/serialize.js"
-import { BaseNode } from "../node.js"
+import type { ConditionNode } from "../node.js"
 import type { BasisDefinition, BasisInstance } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export class ValueNode extends BaseNode<"basis"> implements BasisDefinition {
+export class ValueNode implements ConditionNode<"basis"> {
     readonly level = "value"
 
     constructor(public rule: unknown) {
@@ -19,7 +19,7 @@ export class ValueNode extends BaseNode<"basis"> implements BasisDefinition {
 
     readonly domain = domainOf(this.rule)
 
-    computeIntersection(other: BasisInstance) {
+    intersect(other: BasisInstance) {
         return intersectBases(this, other)
     }
 

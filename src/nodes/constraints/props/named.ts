@@ -8,7 +8,7 @@ export const compileNamedProps = (props: NamedPropRule[]) =>
     props.map(compileNamedProp).join(" && ") || "true"
 
 const compileNamedProp = (prop: NamedPropRule) => {
-    const valueCheck = prop.value.condition.replaceAll(
+    const valueCheck = prop.value.rule.replaceAll(
         In,
         `${In}${compilePropAccess(prop.key)}`
     )

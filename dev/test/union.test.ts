@@ -22,7 +22,7 @@ suite("union", () => {
                 undefined,
                 0 as const,
                 "" as const
-            ).condition
+            ).rule
         )
     })
     test("subtype pruning", () => {

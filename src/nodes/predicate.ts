@@ -29,21 +29,23 @@ import { RangeNode } from "./constraints/range.js"
 import { RegexNode } from "./constraints/regex.js"
 import type { DiscriminantKind } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
-import { BaseNode } from "./node.js"
+import type { ConditionNode } from "./node.js"
+import { nodeCache } from "./node.js"
 
-export class PredicateNode extends BaseNode<"predicate"> {
+export class PredicateNode implements ConditionNode<"predicate"> {
+    readonly kind = "predicate"
+
     constructor(public rule: PredicateRules) {
         const subconditions: string[] = []
         for (const r of rule) {
-            if (r.condition !== "true") {
-                subconditions.push(r.condition)
+            if (r.rule !== "true") {
+                subconditions.push(r.rule)
             }
         }
         const condition = subconditions.join(" && ") || "true"
-        if (BaseNode.nodes.predicate[condition]) {
-            return BaseNode.nodes.predicate[condition]
+        if (nodeCache.predicate[condition]) {
+            return nodeCache.predicate[condition]!
         }
-        super("predicate", condition)
     }
 
     basis = this.rule[0]?.kind === "basis" ? this.rule[0] : undefined
@@ -93,7 +95,7 @@ export class PredicateNode extends BaseNode<"predicate"> {
         return this.basis instanceof ValueNode ? this.basis : undefined
     }
 
-    computeIntersection(r: PredicateNode): PredicateNode | Disjoint {
+    intersect(r: PredicateNode): PredicateNode | Disjoint {
         // if (
         //     // s.lastOperator === "&" &&
         //     rules.morphs?.some(

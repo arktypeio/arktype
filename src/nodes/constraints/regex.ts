@@ -1,18 +1,18 @@
 import { In } from "../../compile/compile.js"
 import { intersectUniqueLists } from "../../utils/lists.js"
-import { BaseNode } from "../node.js"
+import type { ConditionNode } from "../node.js"
+import { nodeCache } from "../node.js"
 
-export class RegexNode extends BaseNode<"regex"> {
+export class RegexNode implements ConditionNode<"regex"> {
     constructor(public rule: string[]) {
         const subconditions = rule.sort().map(compileExpression)
         const condition = subconditions.join(" && ")
-        if (BaseNode.nodes.regex[condition]) {
-            return BaseNode.nodes.regex[condition]
+        if (nodeCache.regex[condition]) {
+            return nodeCache.regex[condition]!
         }
-        super("regex", condition)
     }
 
-    computeIntersection(other: this) {
+    intersect(other: this) {
         return new RegexNode(intersectUniqueLists(this.rule, other.rule))
     }
 

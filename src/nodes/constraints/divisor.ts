@@ -1,28 +1,43 @@
 import { In } from "../../compile/compile.js"
-import { BaseNode } from "../node.js"
+import { defineNodeKind } from "../node.js"
 
-export class DivisorNode extends BaseNode<"divisor"> {
-    constructor(public rule: number) {
-        const condition = `${In} % ${rule} === 0`
-        if (BaseNode.nodes.divisor[condition]) {
-            return BaseNode.nodes.divisor[condition]
-        }
-        super("divisor", condition)
-    }
+// export const DivisorNode = defineNodeKind<number>(
+//     {
+//         kind: "divisor",
+//         compile: (rule) => `${In} % ${rule} === 0`,
+//         create: (base) => base
+//     },
+//     (l, r) => {
+//         return DivisorNode(
+//             Math.abs((l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule))
+//         )
+//     }
+// )
 
-    computeIntersection(other: DivisorNode) {
-        return new DivisorNode(
-            Math.abs(
-                (this.rule * other.rule) /
-                    greatestCommonDivisor(this.rule, other.rule)
-            )
-        )
-    }
+// export class DivisorNode implements ConditionNode<"divisor"> {
+//     readonly kind = "divisor"
+//     readonly precedence = 3
 
-    toString() {
-        return `a multiple of ${this.rule}`
-    }
-}
+//     constructor(public rule: number) {
+//         const condition = `${In} % ${rule} === 0`
+//         if (nodeCache.divisor[condition]) {
+//             return nodeCache.divisor[condition]!
+//         }
+//     }
+
+//     intersect(other: DivisorNode) {
+//         return new DivisorNode(
+//             Math.abs(
+//                 (this.rule * other.rule) /
+//                     greatestCommonDivisor(this.rule, other.rule)
+//             )
+//         )
+//     }
+
+//     toString() {
+//         return `a multiple of ${this.rule}`
+//     }
+// }
 
 // compile: (n, condition, s) => s.ifNotThen(condition, s.problem("divisor", n))
 

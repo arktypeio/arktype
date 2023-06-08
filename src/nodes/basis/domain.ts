@@ -1,11 +1,11 @@
 import { In } from "../../compile/compile.js"
 import type { Domain } from "../../utils/domains.js"
 import { getBaseDomainKeys } from "../../utils/objectKinds.js"
-import { BaseNode } from "../node.js"
+import type { ConditionNode } from "../node.js"
 import type { BasisDefinition, BasisInstance } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export class DomainNode extends BaseNode<"basis"> implements BasisDefinition {
+export class DomainNode implements ConditionNode<"basis"> {
     constructor(public rule: Domain) {
         const condition =
             rule === "object"
@@ -21,7 +21,7 @@ export class DomainNode extends BaseNode<"basis"> implements BasisDefinition {
 
     readonly level = "domain"
 
-    computeIntersection(other: BasisInstance) {
+    intersect(other: BasisInstance) {
         return intersectBases(this, other)
     }
 

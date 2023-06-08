@@ -30,7 +30,7 @@ const compileArray = (
 ) => {
     const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
     const namedCheck = compileNamedProps(namedProps)
-    const elementCondition = elementNode.condition
+    const elementCondition = elementNode.rule
         .replaceAll(IndexIn, `${IndexIn}Inner`)
         .replaceAll(In, `${In}[${IndexIn}]`)
     // TODO: don't recheck named
@@ -61,14 +61,14 @@ const compileNonArray = (
 }
 
 const compileIndexedProp = (prop: IndexedPropRule) => {
-    const valueCheck = `valid = ${prop.value.condition
+    const valueCheck = `valid = ${prop.value.rule
         .replaceAll(KeyIn, `${KeyIn}Inner`)
         .replaceAll(In, `${In}[${KeyIn}]`)} && valid`
     if (prop.key === getStringNode()) {
         // if the index signature is just for "string", we don't need to check it explicitly
         return valueCheck
     }
-    return `if(${prop.key.condition
+    return `if(${prop.key.rule
         .replaceAll(KeyIn, `${KeyIn}Inner`)
         .replaceAll(In, KeyIn)}) {
         ${valueCheck}

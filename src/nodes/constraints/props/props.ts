@@ -8,7 +8,8 @@ import { fromEntries, hasKeys } from "../../../utils/records.js"
 import type { DiscriminantKind } from "../../discriminate.js"
 import type { DisjointsSources } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
-import { BaseNode } from "../../node.js"
+import type { ConditionNode } from "../../node.js"
+import { nodeCache } from "../../node.js"
 import {
     neverTypeNode,
     TypeNode,
@@ -25,7 +26,7 @@ import { compileNamedProps, intersectNamedProp } from "./named.js"
 
 export type PropRule = NamedPropRule | IndexedPropRule
 
-export class PropsNode extends BaseNode<"props"> {
+export class PropsNode implements ConditionNode<"props"> {
     constructor(public rule: PropRule[]) {
         rule.sort((l, r) => {
             // Sort keys first by precedence (prerequisite,required,optional,indexed),
@@ -41,10 +42,10 @@ export class PropsNode extends BaseNode<"props"> {
                 : -1
         })
         const condition = PropsNode.compile(rule)
-        if (BaseNode.nodes.props[condition]) {
-            return BaseNode.nodes.props[condition]
+        // TODO: test every node type has cached instances and intersections
+        if (nodeCache.props[condition]) {
+            return nodeCache.props[condition]!
         }
-        super("props", condition)
     }
 
     named = this.rule.filter(isNamed)
@@ -109,7 +110,7 @@ export class PropsNode extends BaseNode<"props"> {
             .join("\n")
     }
 
-    computeIntersection(other: PropsNode) {
+    intersect(other: PropsNode) {
         let indexed = [...this.indexed]
         for (const { key, value } of other.indexed) {
             const matchingIndex = indexed.findIndex(

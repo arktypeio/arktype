@@ -5,41 +5,37 @@ import { attest } from "../attest/main.js"
 suite("keywords", () => {
     suite("jsObjects", () => {
         test(" Function", () => {
-            attest(type("Function").root.condition).snap(
+            attest(type("Function").root.rule).snap(
                 "$arkRoot instanceof Function"
             )
         })
         test("Date", () => {
-            attest(type("Date").root.condition).snap("$arkRoot instanceof Date")
+            attest(type("Date").root.rule).snap("$arkRoot instanceof Date")
         })
         test("Error", () => {
-            attest(type("Error").root.condition).snap(
-                "$arkRoot instanceof Error"
-            )
+            attest(type("Error").root.rule).snap("$arkRoot instanceof Error")
         })
         test("Map", () => {
-            attest(type("Map").root.condition).snap("$arkRoot instanceof Map")
+            attest(type("Map").root.rule).snap("$arkRoot instanceof Map")
         })
         test("RegExp", () => {
-            attest(type("RegExp").root.condition).snap(
-                "$arkRoot instanceof RegExp"
-            )
+            attest(type("RegExp").root.rule).snap("$arkRoot instanceof RegExp")
         })
         test("Set", () => {
-            attest(type("Set").root.condition).snap("$arkRoot instanceof Set")
+            attest(type("Set").root.rule).snap("$arkRoot instanceof Set")
         })
         test("WeakMap", () => {
-            attest(type("WeakMap").root.condition).snap(
+            attest(type("WeakMap").root.rule).snap(
                 "$arkRoot instanceof WeakMap"
             )
         })
         test("WeakSet", () => {
-            attest(type("WeakSet").root.condition).snap(
+            attest(type("WeakSet").root.rule).snap(
                 "$arkRoot instanceof WeakSet"
             )
         })
         test("Promise", () => {
-            attest(type("Promise").root.condition).snap(
+            attest(type("Promise").root.rule).snap(
                 "$arkRoot instanceof Promise"
             )
         })
@@ -49,58 +45,56 @@ suite("keywords", () => {
             attest(type("any").condition).is(type("unknown").condition)
         })
         test("bigint", () => {
-            attest(type("bigint").root.condition).snap(
+            attest(type("bigint").root.rule).snap(
                 'typeof $arkRoot === "bigint"'
             )
         })
         test("boolean", () => {
             // TODO: discriminated?
-            attest(type("boolean").root.condition).snap(
+            attest(type("boolean").root.rule).snap(
                 "($arkRoot === false || $arkRoot === true)"
             )
         })
         test("false", () => {
-            attest(type("false").root.condition).snap("$arkRoot === false")
+            attest(type("false").root.rule).snap("$arkRoot === false")
         })
         test("never", () => {
-            attest(type("never").root.condition).snap("false")
+            attest(type("never").root.rule).snap("false")
         })
         test("null", () => {
-            attest(type("null").root.condition).snap("$arkRoot === null")
+            attest(type("null").root.rule).snap("$arkRoot === null")
         })
         test("number", () => {
-            attest(type("number").root.condition).snap(
+            attest(type("number").root.rule).snap(
                 'typeof $arkRoot === "number"'
             )
         })
         test("object", () => {
-            attest(type("object").root.condition).snap(
+            attest(type("object").root.rule).snap(
                 '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function")'
             )
         })
         test("string", () => {
-            attest(type("string").root.condition).snap(
+            attest(type("string").root.rule).snap(
                 'typeof $arkRoot === "string"'
             )
         })
         test("symbol", () => {
-            attest(type("symbol").root.condition).snap(
+            attest(type("symbol").root.rule).snap(
                 'typeof $arkRoot === "symbol"'
             )
         })
         test("true", () => {
-            attest(type("true").root.condition).snap("$arkRoot === true")
+            attest(type("true").root.rule).snap("$arkRoot === true")
         })
         test("unknown", () => {
-            attest(type("unknown").root.condition).snap("true")
+            attest(type("unknown").root.rule).snap("true")
         })
         test("void", () => {
             attest(type("void").condition).is(type("undefined").condition)
         })
         test("undefined", () => {
-            attest(type("undefined").root.condition).snap(
-                "$arkRoot === undefined"
-            )
+            attest(type("undefined").root.rule).snap("$arkRoot === undefined")
         })
     })
     // suite("validation", () => {

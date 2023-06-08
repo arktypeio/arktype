@@ -16,7 +16,8 @@ import { PropsNode } from "./constraints/props/props.js"
 import type { CaseKey, Discriminant, DiscriminantKind } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
-import { BaseNode } from "./node.js"
+import type { ConditionNode } from "./node.js"
+import { nodeCache } from "./node.js"
 import type {
     ConstraintKind,
     inferPredicateDefinition,
@@ -24,18 +25,17 @@ import type {
 } from "./predicate.js"
 import { PredicateNode, unknownPredicateNode } from "./predicate.js"
 
-export class TypeNode<t = unknown> extends BaseNode<"type"> {
-    static readonly kind = "type";
+export class TypeNode<t = unknown> implements ConditionNode<"type"> {
+    readonly kind = "type";
     declare [inferred]: t
 
     discriminant: Discriminant | undefined
 
     constructor(public rule: PredicateNode[]) {
         const condition = TypeNode.compileIndiscriminable(rule.sort())
-        if (BaseNode.nodes.type[condition]) {
-            return BaseNode.nodes.type[condition] as TypeNode<any>
+        if (nodeCache.type[condition]) {
+            return nodeCache.type[condition]! as TypeNode<any>
         }
-        super("type", condition)
         this.discriminant = discriminate(rule)
     }
 
@@ -43,9 +43,9 @@ export class TypeNode<t = unknown> extends BaseNode<"type"> {
         return branches.length === 0
             ? "false"
             : branches.length === 1
-            ? branches[0].condition
+            ? branches[0].rule
             : `(${branches
-                  .map((branch) => branch.condition)
+                  .map((branch) => branch.rule)
                   .sort()
                   .join(" || ")})`
     }
@@ -64,7 +64,7 @@ export class TypeNode<t = unknown> extends BaseNode<"type"> {
             const caseCondition = k === "default" ? "default" : `case ${k}`
             const caseNode = discriminant.cases[k]
             compiledCases += `${caseCondition}: {
-                return ${caseNode.condition};
+                return ${caseNode.rule};
             }`
         }
         return `(() => {
@@ -199,8 +199,8 @@ export class TypeNode<t = unknown> extends BaseNode<"type"> {
         return new TypeNode(prunedBranches)
     }
 
-    computeIntersection(other: this): this | Disjoint
-    computeIntersection(r: TypeNode): TypeNode | Disjoint {
+    intersect(other: this): this | Disjoint
+    intersect(r: TypeNode): TypeNode | Disjoint {
         if (this === r) {
             return this
         }

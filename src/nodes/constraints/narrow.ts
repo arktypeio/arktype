@@ -1,9 +1,12 @@
 import { registry } from "../../compile/registry.js"
 import type { Narrow } from "../../parse/ast/narrow.js"
 import { intersectUniqueLists } from "../../utils/lists.js"
-import { BaseNode } from "../node.js"
+import type { ConditionNode } from "../node.js"
+import { nodeCache } from "../node.js"
 
-export class NarrowNode extends BaseNode<"narrow"> {
+export class NarrowNode implements ConditionNode<"narrow"> {
+    readonly kind = "narrow"
+
     constructor(public rule: readonly Narrow[]) {
         // Depending on type-guards, altering the order in which narrows run could
         // lead to a non-typsafe access, so they are preserved.
@@ -12,13 +15,12 @@ export class NarrowNode extends BaseNode<"narrow"> {
             registry().register(narrow.name, narrow)
         )
         const condition = subconditions.join(" && ")
-        if (BaseNode.nodes.narrow[condition]) {
-            return BaseNode.nodes.narrow[condition]
+        if (nodeCache.narrow[condition]) {
+            return nodeCache.narrow[condition]!
         }
-        super("narrow", condition)
     }
 
-    computeIntersection(other: NarrowNode) {
+    intersect(other: NarrowNode) {
         return new NarrowNode(intersectUniqueLists(this.rule, other.rule))
     }
 
