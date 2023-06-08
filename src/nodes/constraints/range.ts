@@ -60,14 +60,13 @@ export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 //     ? "items long"
 //     : ""
 
-export type RangeNode = Node<
-    "range",
-    Range,
-    {
-        min: Bound<MinComparator> | undefined
-        max: Bound<MaxComparator> | undefined
-    }
->
+export type RangeNode = Node<{
+    kind: "range"
+    rule: Range
+
+    min: Bound<MinComparator> | undefined
+    max: Bound<MaxComparator> | undefined
+}>
 
 export const RangeNode = defineNodeKind<RangeNode>({
     kind: "range",

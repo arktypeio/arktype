@@ -2,7 +2,10 @@ import { In } from "../../compile/compile.js"
 import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export type DivisorNode = Node<"divisor", number>
+export type DivisorNode = Node<{
+    kind: "divisor"
+    rule: number
+}>
 
 export const DivisorNode = defineNodeKind<DivisorNode>({
     kind: "divisor",

@@ -1,50 +1,35 @@
 import { In } from "../../compile/compile.js"
 import { registry } from "../../compile/registry.js"
 import type { AbstractableConstructor } from "../../utils/objectKinds.js"
-import {
-    constructorExtends,
-    getExactBuiltinConstructorName,
-    prototypeKeysOf
-} from "../../utils/objectKinds.js"
-import type { ConditionNode } from "../node.js"
+import { getExactBuiltinConstructorName } from "../../utils/objectKinds.js"
+import type { BasisNode } from "./basis.js"
+import { defineBasisNode } from "./basis.js"
 
-import type { BasisDefinition, BasisInstance } from "./basis.js"
-import { intersectBases } from "./basis.js"
+export type ClassNode = BasisNode<{
+    rule: AbstractableConstructor
+    level: "class"
+}>
 
-export class ClassNode implements ConditionNode<"basis"> {
-    constructor(public rule: AbstractableConstructor) {
-        const condition = `${In} instanceof ${
+export const ClassNode = defineBasisNode<ClassNode>({
+    domain: () => "object",
+    level: "class",
+    compile: (rule) =>
+        `${In} instanceof ${
             getExactBuiltinConstructorName(rule) ??
             registry().register(rule.name, rule)
-        }`
-        if (BaseNode.nodes.basis[condition]) {
-            return BaseNode.nodes.basis[condition] as ClassNode
-        }
-        super("basis", condition)
-    }
+        }`,
+    describe: (node) => node.rule.name
+})
 
-    readonly domain = "object"
+// extendsOneOf(...baseConstructors: AbstractableConstructor[]) {
+//     return baseConstructors.some((base) =>
+//         constructorExtends(this.rule, base)
+//     )
+// }
 
-    readonly level = "class"
-
-    extendsOneOf(...baseConstructors: AbstractableConstructor[]) {
-        return baseConstructors.some((base) =>
-            constructorExtends(this.rule, base)
-        )
-    }
-
-    intersect(other: BasisInstance) {
-        return intersectBases(this, other)
-    }
-
-    literalKeysOf() {
-        return prototypeKeysOf(this.rule.prototype)
-    }
-
-    toString() {
-        return this.rule.name
-    }
-}
+// literalKeysOf() {
+//     return prototypeKeysOf(this.rule.prototype)
+// }
 
 // compileTraverse(s: CompilationState) {
 //     return s.ifNotThen(this.condition, s.problem("class", this.child))

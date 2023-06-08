@@ -16,11 +16,11 @@ export type basisNodeFrom<input extends BasisInput> = input extends Domain
 export const basisNodeFrom = ((input) => {
     switch (typeof input) {
         case "string":
-            return new DomainNode(input)
+            return DomainNode(input)
         case "object":
-            return new ValueNode(input[1])
+            return ValueNode(input[1])
         case "function":
-            return new ClassNode(input)
+            return ClassNode(input)
         default:
             throwInternalError(
                 `Unexpectedly got a basis input of type ${domainOf(input)}`

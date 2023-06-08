@@ -5,17 +5,15 @@ import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
 import type { PredicateNode } from "./predicate.js"
 
-export type TypeNode = Node<
-    "type",
-    PredicateNode[],
-    {
-        discriminant: Discriminant | undefined
-    }
->
+export type TypeNode = Node<{
+    kind: "type"
+    rule: PredicateNode[]
+    discriminant: Discriminant | undefined
+}>
 
 export const TypeNode = defineNodeKind<TypeNode>({
     kind: "type",
-    compile: (rule: PredicateNode[]) => {
+    compile: (rule) => {
         const condition = compileIndiscriminable(rule.sort())
         return condition
     },

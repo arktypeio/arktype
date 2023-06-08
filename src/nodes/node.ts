@@ -18,32 +18,49 @@ export const precedenceByKind = {
 
 export type NodeKind = keyof typeof precedenceByKind
 
-export type NodeDefinition<node extends Node> = {
+export type NodeDefinition<
+    node extends Node,
+    intersectedAs extends Node = node
+> = {
     kind: node["kind"]
     compile: (rule: node["rule"]) => string
     extend?: (
         base: BaseNode<node["kind"], node["rule"]>
     ) => Omit<node, keyof BaseNode>
-    intersect: (l: node, r: node) => node | Disjoint
+    intersect: (l: intersectedAs, r: intersectedAs) => intersectedAs | Disjoint
     describe: (node: node) => string
 }
 
 // Need an interface to use `this`
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-export interface BaseNode<kind extends NodeKind = NodeKind, rule = unknown> {
+export interface BaseNode<
+    kind extends NodeKind = NodeKind,
+    rule = unknown,
+    intersectedAs = null
+> {
     kind: kind
     rule: rule
     condition: string
-    intersect(other: this): this | Disjoint
-    intersectionCache: Record<string, this | Disjoint>
+    intersect(
+        other: intersectedAs extends null ? this : intersectedAs
+    ): (intersectedAs extends null ? this : intersectedAs) | Disjoint
+    intersectionCache: Record<
+        string,
+        (intersectedAs extends null ? this : intersectedAs) | Disjoint
+    >
     allows(data: unknown): boolean
 }
 
-export type Node<
-    kind extends NodeKind = NodeKind,
-    rule = unknown,
-    props = {}
-> = BaseNode<kind, rule> & props
+export type NodeInput = {
+    kind: NodeKind
+    rule: unknown
+}
+
+export type Node<input extends NodeInput = NodeInput> = BaseNode<
+    input["kind"],
+    input["rule"]
+> &
+    input
 
 export const defineNodeKind = <node extends Node>(
     def: NodeDefinition<node>

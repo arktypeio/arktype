@@ -34,17 +34,15 @@ import { Disjoint } from "./disjoint.js"
 import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
 
-export type PredicateNode = Node<
-    "predicate",
-    PredicateRules,
-    {
-        basis: BasisNode | undefined
-        constraints: ConstraintNode[]
-        getConstraint: <k extends ConstraintKind>(
-            k: k
-        ) => instanceOf<ConstraintKinds[k]> | undefined
-    }
->
+export type PredicateNode = Node<{
+    kind: "predicate"
+    rule: PredicateRules
+    basis: BasisNode | undefined
+    constraints: ConstraintNode[]
+    getConstraint: <k extends ConstraintKind>(
+        k: k
+    ) => ReturnType<ConstraintKinds[k]> | undefined
+}>
 
 export const PredicateNode = defineNodeKind<PredicateNode>({
     kind: "predicate",

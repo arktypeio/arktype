@@ -1,6 +1,3 @@
-import { throwInternalError, throwParseError } from "../../../utils/errors.js"
-import type { requireKeys } from "../../../utils/records.js"
-import { isKeyOf } from "../../../utils/records.js"
 import type { Comparator } from "../../../nodes/constraints/range.js"
 import {
     invertedComparators,
@@ -8,6 +5,9 @@ import {
     RangeNode
 } from "../../../nodes/constraints/range.js"
 import type { TypeNode } from "../../../nodes/type.js"
+import { throwInternalError, throwParseError } from "../../../utils/errors.js"
+import type { requireKeys } from "../../../utils/records.js"
+import { isKeyOf } from "../../../utils/records.js"
 import type { ParseContext } from "../../definition.js"
 import { Scanner } from "../shift/scanner.js"
 import type { Prefix } from "./shared.js"
@@ -88,7 +88,7 @@ export class DynamicState {
                 )
             )
         }
-        this.branches.range = new RangeNode([
+        this.branches.range = RangeNode([
             { comparator: invertedComparator, limit }
         ])
     }

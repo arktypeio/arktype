@@ -14,15 +14,13 @@ import { compileNamedProps, intersectNamedProp } from "./named.js"
 
 export type PropRule = NamedPropRule | IndexedPropRule
 
-export type PropsNode = Node<
-    "props",
-    PropRule[],
-    {
-        named: NamedPropRule[]
-        indexed: IndexedPropRule[]
-        byName: Record<string, NamedPropRule>
-    }
->
+export type PropsNode = Node<{
+    kind: "props"
+    rule: PropRule[]
+    named: NamedPropRule[]
+    indexed: IndexedPropRule[]
+    byName: Record<string, NamedPropRule>
+}>
 
 export const PropsNode = defineNodeKind<PropsNode>({
     kind: "props",

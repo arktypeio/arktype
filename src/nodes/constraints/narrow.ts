@@ -4,7 +4,10 @@ import { intersectUniqueLists } from "../../utils/lists.js"
 import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export type NarrowNode = Node<"narrow", readonly Narrow[]>
+export type NarrowNode = Node<{
+    kind: "narrow"
+    rule: readonly Narrow[]
+}>
 
 export const NarrowNode = defineNodeKind<NarrowNode>({
     kind: "narrow",

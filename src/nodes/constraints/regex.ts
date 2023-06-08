@@ -3,7 +3,7 @@ import { intersectUniqueLists } from "../../utils/lists.js"
 import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export type RegexNode = Node<"regex", string[]>
+export type RegexNode = Node<{ kind: "regex"; rule: string[] }>
 
 export const RegexNode = defineNodeKind<RegexNode>({
     kind: "regex",
