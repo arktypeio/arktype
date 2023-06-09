@@ -51,7 +51,10 @@ type BasisNodeInput = {
 }
 
 export type defineBasisNode<input extends BasisNodeInput> = Node<
-    input & { domain: Domain; literalKeys: PropertyKey[] }
+    input & {
+        domain: Domain
+        literalKeys: PropertyKey[]
+    }
 >
 
 export type BasisNode = DomainNode | ClassNode | ValueNode

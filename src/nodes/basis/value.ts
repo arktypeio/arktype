@@ -5,12 +5,12 @@ import { prototypeKeysOf } from "../../utils/objectKinds.js"
 import { stringify } from "../../utils/serialize.js"
 import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
+import type { BasisNode, defineBasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export type ValueNode = Node<{
+export type ValueNode = defineBasisNode<{
     kind: "value"
     rule: unknown
-    domain: Domain
 }>
 
 export const ValueNode = defineNodeKind<ValueNode>({
@@ -26,6 +26,8 @@ export const ValueNode = defineNodeKind<ValueNode>({
     compile: (rule) => `${In} === ${compileSerializedValue(rule)}`,
     describe: (node) => `the value ${stringify(node.rule)}`
 })
+
+const z = ValueNode(5)
 
 // compileTraverse(s: CompilationState) {
 //     return s.ifNotThen(this.condition, s.problem("value", this.child))

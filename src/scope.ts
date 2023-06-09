@@ -21,7 +21,7 @@ import type {
     TypeConfig,
     TypeParser
 } from "./type.js"
-import { Type } from "./type.js"
+import { createTypeParser, Type } from "./type.js"
 import type { evaluate, nominal } from "./utils/generics.js"
 import type { Dict } from "./utils/records.js"
 
@@ -192,9 +192,7 @@ export class Scope<r extends Resolutions = any> {
         return new Scope(aliases, {}) as never
     }
 
-    type: TypeParser<$<r>> = ((def: unknown, config: TypeConfig = {}) => {
-        return !config || new Type(def, this)
-    }) as never
+    type: TypeParser<$<r>> = createTypeParser(this)
 
     scope: ScopeParser<r["exports"], r["ambient"]> = ((
         aliases: Dict,

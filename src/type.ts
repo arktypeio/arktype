@@ -1,8 +1,10 @@
-import { CompilationState, In } from "./compile/compile.js"
+import { compile, In } from "./compile/compile.js"
 import { registry } from "./compile/registry.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
-import { type TypeNode } from "./nodes/type.js"
+import { ValueNode } from "./nodes/basis/value.js"
+import { PredicateNode } from "./nodes/predicate.js"
+import { TypeNode } from "./nodes/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
 import type { inferMorphOut, Morph, MorphAst, Out } from "./parse/ast/morph.js"
 import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
@@ -45,6 +47,26 @@ export type TypeParser<$> = {
     ) => Type<branches[number], $>
 }
 
+export const createTypeParser = (scope: Scope): TypeParser<any> =>
+    Object.assign(
+        (def: unknown, config: TypeConfig = {}) => {
+            return !config || new Type(def, scope)
+        },
+        {
+            exactly: (...branches: readonly unknown[]) => {
+                const seen: unknown[] = []
+                const nodes: PredicateNode[] = []
+                for (const v of branches) {
+                    if (!seen.includes(v)) {
+                        nodes.push(PredicateNode([ValueNode(v)]))
+                        seen.push(v)
+                    }
+                }
+                return TypeNode(nodes)
+            }
+        }
+    )
+
 export type DefinitionParser<$> = <def>(
     def: validateDefinition<def, bindThis<$, def>>
 ) => def
@@ -71,11 +93,11 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
         super(
             In,
             `const state = new ${registry().reference("state")}();
-        ${root.compileTraverse(new CompilationState())}
+        ${compile(root)}
         return state.finalize(${In});`
         )
         this.root = root
-        this.condition = root.rule
+        this.condition = root.condition
         this.allows = root.allows
         this.config = scope.config
     }

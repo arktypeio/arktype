@@ -4,11 +4,16 @@ import { getBaseDomainKeys } from "../../utils/objectKinds.js"
 import { defineNodeKind } from "../node.js"
 import type { BasisKind, defineBasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
+import type { ClassNode } from "./class.js"
+import type { ValueNode } from "./value.js"
 
-export type DomainNode = defineBasisNode<{
-    kind: "domain"
-    rule: Domain
-}>
+export type DomainNode = defineBasisNode<
+    {
+        kind: "domain"
+        rule: Domain
+    },
+    ClassNode | ValueNode
+>
 
 export const DomainNode = defineNodeKind<DomainNode>({
     kind: "domain",

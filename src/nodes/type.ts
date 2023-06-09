@@ -216,20 +216,6 @@ const compileIndiscriminable = (branches: PredicateNode[]) => {
 //     return branchNodes.filter((_, i) => uniquenessByIndex[i])
 // }
 
-// const exactly = <branches extends readonly unknown[]>(
-//     ...branches: branches
-// ) => {
-//     const seen: unknown[] = []
-//     const nodes: PredicateNode[] = []
-//     for (const v of branches) {
-//         if (!seen.includes(v)) {
-//             nodes.push(new PredicateNode([new ValueNode(v)]))
-//             seen.push(v)
-//         }
-//     }
-//     return new TypeNode<branches[number]>(nodes)
-// }
-
 // function getPath(node: TypeNode, ...path: (string | TypeNode<string>)[]) {
 //     let current: PredicateNode[] = this.rule
 //     let next: PredicateNode[] = []
