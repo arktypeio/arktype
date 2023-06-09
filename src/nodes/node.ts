@@ -55,47 +55,35 @@ export type NodeDefinition<node extends Node> = {
     intersect: (
         l: Parameters<node["intersect"]>[0],
         r: Parameters<node["intersect"]>[0]
-    ) => Parameters<node["intersect"]>[0] | Disjoint
+    ) => ReturnType<node["intersect"]>
     describe: (node: node) => string
     // require a construct call that returns the extra props to assign if and
     // only if all declared props are not present on BaseNode
-} & (keyof node extends keyof BaseNode
+} & (keyof node extends keyof Node
     ? { extend?: undefined }
     : { extend: NodeExtension<node> })
 
 type NodeExtension<node extends Node> = (
-    base: BaseNode<node["kind"], node["rule"]>
-) => Omit<node, keyof BaseNode>
+    base: Node<node["kind"], node["rule"]>
+) => Omit<node, keyof Node>
 
 // Need an interface to use `this`
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-export interface BaseNode<
-    kind extends NodeKind = NodeKind,
-    rule = unknown,
-    intersectsWith extends Node = never
+export interface Node<
+    kind extends NodeKind = any,
+    rule = any,
+    intersected extends Node<any, any, any> = Node<any, any, any>
 > {
     kind: kind
     rule: rule
     condition: string
-    intersect: Intersector<this | intersectsWith>
-    intersectionCache: IntersectionCache<this | intersectsWith>
+    intersect(other: intersected): intersected | Disjoint
+    intersectionCache: Record<string, intersected | Disjoint | undefined>
     allows(data: unknown): boolean
-    hasKind(kind: NodeKind): this is NodeKinds[kind]
+    hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
 }
-
-type Intersector<node> = (other: node) => node | Disjoint
 
 type IntersectionCache<node> = Record<string, node | Disjoint | undefined>
-
-export type NodeInput = {
-    kind: NodeKind
-    rule: unknown
-}
-
-export type Node<
-    input extends NodeInput = NodeInput,
-    intersectsWith extends Node = never
-> = BaseNode<input["kind"], input["rule"], intersectsWith> & input
 
 export const defineNodeKind = <node extends Node>(
     def: NodeDefinition<node>
@@ -109,7 +97,7 @@ export const defineNodeKind = <node extends Node>(
             return nodeCache[condition]!
         }
         const intersectionCache: IntersectionCache<Node> = {}
-        const base: BaseNode<node["kind"], node["rule"]> = {
+        const base: Node<node["kind"], node["rule"]> = {
             kind: def.kind,
             hasKind: (kind) => kind === def.kind,
             condition,

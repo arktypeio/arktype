@@ -1,17 +1,12 @@
 import { compileSerializedValue, In } from "../../compile/compile.js"
-import type { Domain } from "../../utils/domains.js"
 import { domainOf } from "../../utils/domains.js"
 import { prototypeKeysOf } from "../../utils/objectKinds.js"
 import { stringify } from "../../utils/serialize.js"
-import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
-import type { BasisNode, defineBasisNode } from "./basis.js"
+import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export type ValueNode = defineBasisNode<{
-    kind: "value"
-    rule: unknown
-}>
+export type ValueNode = BasisNode<"value", unknown>
 
 export const ValueNode = defineNodeKind<ValueNode>({
     kind: "value",
@@ -26,8 +21,6 @@ export const ValueNode = defineNodeKind<ValueNode>({
     compile: (rule) => `${In} === ${compileSerializedValue(rule)}`,
     describe: (node) => `the value ${stringify(node.rule)}`
 })
-
-const z = ValueNode(5)
 
 // compileTraverse(s: CompilationState) {
 //     return s.ifNotThen(this.condition, s.problem("value", this.child))

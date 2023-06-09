@@ -45,19 +45,13 @@ export const basisPrecedenceByKind: Record<BasisKind, number> = {
 
 export type BasisNodeSubclass = BasisNodesByKind[BasisKind]
 
-type BasisNodeInput = {
-    kind: BasisKind
-    rule: unknown
+export type BasisNode<
+    kind extends BasisKind = BasisKind,
+    rule = unknown
+> = Node<kind, rule, BasisNode> & {
+    domain: Domain
+    literalKeys: PropertyKey[]
 }
-
-export type defineBasisNode<input extends BasisNodeInput> = Node<
-    input & {
-        domain: Domain
-        literalKeys: PropertyKey[]
-    }
->
-
-export type BasisNode = DomainNode | ClassNode | ValueNode
 
 export const intersectBases = (
     l: BasisNode,

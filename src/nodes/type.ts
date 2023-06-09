@@ -13,11 +13,9 @@ import type {
     PredicateNode
 } from "./predicate.js"
 
-export type TypeNode = Node<{
-    kind: "type"
-    rule: PredicateNode[]
+export type TypeNode = Node<"type", PredicateNode[], TypeNode> & {
     discriminant: Discriminant | undefined
-}>
+}
 
 export const TypeNode = defineNodeKind<TypeNode>({
     kind: "type",

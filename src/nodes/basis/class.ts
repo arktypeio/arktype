@@ -6,13 +6,11 @@ import {
     prototypeKeysOf
 } from "../../utils/objectKinds.js"
 import { defineNodeKind } from "../node.js"
-import type { defineBasisNode } from "./basis.js"
+import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export type ClassNode = defineBasisNode<{
-    kind: "class"
-    rule: AbstractableConstructor
-}>
+export interface ClassNode
+    extends BasisNode<"class", AbstractableConstructor> {}
 
 export const ClassNode = defineNodeKind<ClassNode>({
     kind: "class",

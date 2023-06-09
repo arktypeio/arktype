@@ -30,16 +30,14 @@ import { Disjoint } from "./disjoint.js"
 import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
 
-export type PredicateNode = Node<{
-    kind: "predicate"
-    rule: PredicateRules
+export type PredicateNode = Node<"predicate", PredicateRules, PredicateNode> & {
     basis: BasisNode | undefined
     constraints: ConstraintNode[]
-    getConstraint: <k extends ConstraintKind>(
-        k: k
-    ) => ReturnType<ConstraintKinds[k]> | undefined
+    // getConstraint: <k extends ConstraintKind>(
+    //     k: k
+    // ) => ReturnType<ConstraintKinds[k]> | undefined
     valueNode: ValueNode | undefined
-}>
+}
 
 export const PredicateNode = defineNodeKind<PredicateNode>({
     kind: "predicate",
@@ -55,7 +53,7 @@ export const PredicateNode = defineNodeKind<PredicateNode>({
         return condition
     },
     extend: (base) => {
-        const hasBasis = isKeyOf(base.rule[0]?.kind, basisPrecedenceByKind)
+        const hasBasis = !!basisPrecedenceByKind[base.rule[0]?.kind as never]
         const basis = (hasBasis ? base.rule[0] : undefined) as
             | BasisNode
             | undefined
