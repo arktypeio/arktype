@@ -13,9 +13,9 @@ import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
 import { basisPrecedenceByKind } from "./basis/basis.js"
 import { ClassNode } from "./basis/class.js"
 import { ValueNode } from "./basis/value.js"
-import { DivisorNode } from "./constraints/divisor.js"
-import { MorphNode } from "./constraints/morph.js"
-import { NarrowNode } from "./constraints/narrow.js"
+import type { DivisorNode } from "./constraints/divisor.js"
+import type { MorphNode } from "./constraints/morph.js"
+import type { NarrowNode } from "./constraints/narrow.js"
 import type { inferPropsInput } from "./constraints/props/infer.js"
 import type {
     NamedPropsInput,
@@ -23,9 +23,8 @@ import type {
     PropsInputTuple
 } from "./constraints/props/props.js"
 import { PropsNode } from "./constraints/props/props.js"
-import type { Range } from "./constraints/range.js"
-import { RangeNode } from "./constraints/range.js"
-import { RegexNode } from "./constraints/regex.js"
+import type { Range, RangeNode } from "./constraints/range.js"
+import type { RegexNode } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
 import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
@@ -33,9 +32,7 @@ import { defineNodeKind } from "./node.js"
 export type PredicateNode = Node<"predicate", PredicateRules, PredicateNode> & {
     basis: BasisNode | undefined
     constraints: ConstraintNode[]
-    // getConstraint: <k extends ConstraintKind>(
-    //     k: k
-    // ) => ReturnType<ConstraintKinds[k]> | undefined
+    getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
     valueNode: ValueNode | undefined
 }
 
@@ -63,9 +60,10 @@ export const PredicateNode = defineNodeKind<PredicateNode>({
         return {
             basis,
             constraints,
-            getConstraint: (k: ConstraintKind) =>
-                // TODO: null should be an error
-                constraints.find((constraint) => constraint.kind === k) || null,
+            getConstraint: (k) =>
+                constraints.find(
+                    (constraint) => constraint.kind === k
+                ) as never,
             valueNode: basis?.hasKind("value") ? basis : undefined
         }
     },
@@ -303,19 +301,25 @@ export const createConstraint = <kind extends ConstraintKind>(
                   : input) as never
           )) as ConstraintNode<kind>
 
-export const constraintKinds = {
-    range: RangeNode,
-    divisor: DivisorNode,
-    regex: RegexNode,
-    props: PropsNode,
-    narrow: NarrowNode,
+// export const constraintKinds = {
+//     range: RangeNode,
+//     divisor: DivisorNode,
+//     regex: RegexNode,
+//     props: PropsNode,
+//     narrow: NarrowNode,
+//     morph: MorphNode
+// } as const
+
+export type ConstraintNode = ConstraintKinds[ConstraintKind]
+
+type ConstraintKinds = {
+    range: RangeNode
+    divisor: DivisorNode
+    regex: RegexNode
+    props: PropsNode
+    narrow: NarrowNode
     morph: MorphNode
-} as const
-
-export type ConstraintNode<kind extends ConstraintKind = ConstraintKind> =
-    ReturnType<ConstraintKinds[kind]>
-
-type ConstraintKinds = typeof constraintKinds
+}
 
 export type RuleKind = "basis" | ConstraintKind
 
@@ -342,10 +346,10 @@ export type ConstraintsInput<
 type unknownConstraintInput<kind extends ConstraintKind> = kind extends "props"
     ? PropsInput
     :
-          | Parameters<ConstraintKinds[kind]>[0]
+          | ConstraintKinds[kind]["rule"]
           // Add the unlisted version as a valid input for these kinds
           | (kind extends ListableInputKind
-                ? Parameters<ConstraintKinds[kind]>[0][number]
+                ? ConstraintKinds[kind]["rule"][number]
                 : never)
 
 export type inferPredicateDefinition<input extends PredicateInput> =

@@ -57,7 +57,7 @@ export type NodeDefinition<node extends Node> = {
         r: Parameters<node["intersect"]>[0]
     ) => ReturnType<node["intersect"]>
     describe: (node: node) => string
-    // require a construct call that returns the extra props to assign if and
+    // require an extend call that returns the extra props to assign if and
     // only if all declared props are not present on BaseNode
 } & (keyof node extends keyof Node
     ? { extend?: undefined }

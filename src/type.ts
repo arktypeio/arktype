@@ -3,8 +3,16 @@ import { registry } from "./compile/registry.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
 import { ValueNode } from "./nodes/basis/value.js"
+import type { PredicateInput } from "./nodes/predicate.js"
 import { PredicateNode } from "./nodes/predicate.js"
-import { TypeNode } from "./nodes/type.js"
+import type {
+    BranchesInput,
+    extractBases,
+    inferBranches,
+    TypeNode,
+    validatedTypeNodeInput
+} from "./nodes/type.js"
+import { typeNodeFromInput, typeNodeFromValues } from "./nodes/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
 import type { inferMorphOut, Morph, MorphAst, Out } from "./parse/ast/morph.js"
 import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
@@ -24,7 +32,9 @@ import { CompiledFunction } from "./utils/functions.js"
 import type { conform, id } from "./utils/generics.js"
 import { Path } from "./utils/lists.js"
 
-export type TypeParser<$> = {
+export type TypeParser<$> = TypeOverloads<$> & TypeProps<$>
+
+type TypeOverloads<$> = {
     // Parse and check the definition, returning either the original input for a
     // valid definition or a string representing an error message.
     <def>(def: validateDefinition<def, bindThis<$, def>>): Type<
@@ -41,31 +51,34 @@ export type TypeParser<$> = {
             }
         >
     ): Generic<parseGenericParams<params>, def, bindThis<$, def>>
+}
 
+type TypeProps<$> = {
     exactly: <branches extends readonly unknown[]>(
         ...branches: branches
     ) => Type<branches[number], $>
+    fromNode: <const branches extends BranchesInput>(
+        ...branches: {
+            [i in keyof branches]: conform<
+                branches[i],
+                validatedTypeNodeInput<branches, extractBases<branches>>[i]
+            >
+        }
+    ) => Type<inferBranches<branches>>
 }
 
-export const createTypeParser = (scope: Scope): TypeParser<any> =>
-    Object.assign(
-        (def: unknown, config: TypeConfig = {}) => {
-            return !config || new Type(def, scope)
-        },
-        {
-            exactly: (...branches: readonly unknown[]) => {
-                const seen: unknown[] = []
-                const nodes: PredicateNode[] = []
-                for (const v of branches) {
-                    if (!seen.includes(v)) {
-                        nodes.push(PredicateNode([ValueNode(v)]))
-                        seen.push(v)
-                    }
-                }
-                return TypeNode(nodes)
-            }
-        }
-    )
+export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
+    const parser: TypeOverloads<$> = (...args: unknown[]) => {
+        return new Type(args[0], scope) as never
+    }
+    const props: TypeProps<$> = {
+        exactly: (...branches: readonly unknown[]) =>
+            new Type(typeNodeFromValues(branches), scope),
+        fromNode: (...branches: readonly PredicateInput[]) =>
+            new Type(typeNodeFromInput(branches), scope)
+    }
+    return Object.assign(parser, props)
+}
 
 export type DefinitionParser<$> = <def>(
     def: validateDefinition<def, bindThis<$, def>>

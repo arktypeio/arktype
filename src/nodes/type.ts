@@ -2,16 +2,14 @@ import type { exact } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { BasisInput } from "./basis/basis.js"
+import { ValueNode } from "./basis/value.js"
 import type { Discriminant } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
-import type {
-    inferPredicateDefinition,
-    PredicateInput,
-    PredicateNode
-} from "./predicate.js"
+import { PredicateNode } from "./predicate.js"
+import type { inferPredicateDefinition, PredicateInput } from "./predicate.js"
 
 export type TypeNode = Node<"type", PredicateNode[], TypeNode> & {
     discriminant: Discriminant | undefined
@@ -165,54 +163,43 @@ const compileIndiscriminable = (branches: PredicateNode[]) => {
 //     }
 // }
 
-//     static from<const branches extends BranchesInput>(
-//         ...branches: {
-//             [i in keyof branches]: conform<
-//                 branches[i],
-//                 validatedTypeNodeInput<branches, extractBases<branches>>[i]
-//             >
-//         }
-//     ): TypeNode<inferBranches<branches>> {
-//         return TypeNode.fromDynamic(...branches) as never
-//     }
+const fromDynamic = (...branches: BranchesInput): TypeNode => {
+    return TypeNode(
+        reduceBranches(
+            branches.map((branch) => PredicateNode.from(branch as never))
+        )
+    )
+}
 
-//     static fromDynamic(...branches: BranchesInput): TypeNode<unknown> {
-//         return new TypeNode(
-//             this.reduceBranches(
-//                 branches.map((branch) => PredicateNode.from(branch as never))
-//             )
-//         )
-//     }
-
-// const reduceBranches = (branchNodes: PredicateNode[]) => {
-//     const uniquenessByIndex: Record<number, boolean> = branchNodes.map(
-//         () => true
-//     )
-//     for (let i = 0; i < branchNodes.length; i++) {
-//         for (
-//             let j = i + 1;
-//             j < branchNodes.length &&
-//             uniquenessByIndex[i] &&
-//             uniquenessByIndex[j];
-//             j++
-//         ) {
-//             if (branchNodes[i] === branchNodes[j]) {
-//                 // if the two branches are equal, only "j" is marked as
-//                 // redundant so at least one copy could still be included in
-//                 // the final set of branches.
-//                 uniquenessByIndex[j] = false
-//                 continue
-//             }
-//             const intersection = branchNodes[i].intersect(branchNodes[j])
-//             if (intersection === branchNodes[i]) {
-//                 uniquenessByIndex[i] = false
-//             } else if (intersection === branchNodes[j]) {
-//                 uniquenessByIndex[j] = false
-//             }
-//         }
-//     }
-//     return branchNodes.filter((_, i) => uniquenessByIndex[i])
-// }
+const reduceBranches = (branchNodes: PredicateNode[]) => {
+    const uniquenessByIndex: Record<number, boolean> = branchNodes.map(
+        () => true
+    )
+    for (let i = 0; i < branchNodes.length; i++) {
+        for (
+            let j = i + 1;
+            j < branchNodes.length &&
+            uniquenessByIndex[i] &&
+            uniquenessByIndex[j];
+            j++
+        ) {
+            if (branchNodes[i] === branchNodes[j]) {
+                // if the two branches are equal, only "j" is marked as
+                // redundant so at least one copy could still be included in
+                // the final set of branches.
+                uniquenessByIndex[j] = false
+                continue
+            }
+            const intersection = branchNodes[i].intersect(branchNodes[j])
+            if (intersection === branchNodes[i]) {
+                uniquenessByIndex[i] = false
+            } else if (intersection === branchNodes[j]) {
+                uniquenessByIndex[j] = false
+            }
+        }
+    }
+    return branchNodes.filter((_, i) => uniquenessByIndex[i])
+}
 
 // function getPath(node: TypeNode, ...path: (string | TypeNode<string>)[]) {
 //     let current: PredicateNode[] = this.rule
@@ -295,7 +282,7 @@ const compileIndiscriminable = (branches: PredicateNode[]) => {
 //     return this === unknownTypeNode
 // }
 
-type inferBranches<branches extends BranchesInput> = {
+export type inferBranches<branches extends BranchesInput> = {
     [i in keyof branches]: inferPredicateDefinition<branches[i]>
 }[number]
 
@@ -307,7 +294,7 @@ export type BranchesInput = List<PredicateInput>
 
 export type TypeInput = PredicateInput | BranchesInput
 
-type validatedTypeNodeInput<
+export type validatedTypeNodeInput<
     branches extends BranchesInput,
     bases extends BasisInput[]
 > = {
@@ -317,7 +304,7 @@ type validatedTypeNodeInput<
     >
 }
 
-type extractBases<
+export type extractBases<
     branches,
     result extends BasisInput[] = []
 > = branches extends [infer head, ...infer tail]
@@ -334,6 +321,18 @@ type extractBases<
       >
     : result
 
+export const typeNodeFromValues = (branches: readonly unknown[]) => {
+    const seen: unknown[] = []
+    const nodes: PredicateNode[] = []
+    for (const v of branches) {
+        if (!seen.includes(v)) {
+            nodes.push(PredicateNode([ValueNode(v)]))
+            seen.push(v)
+        }
+    }
+    return TypeNode(nodes)
+}
+
 export const typeNodeFromInput = (input: TypeInput) =>
     isArray(input) ? TypeNode.from(...input) : TypeNode.from(input)
 
@@ -341,4 +340,6 @@ export const neverTypeNode = TypeNode([])
 
 export const unknownTypeNode = TypeNode([unknownPredicateNode])
 
-export const nonVariadicArrayIndexTypeNode = TypeNode.from(arrayIndexInput())
+export const nonVariadicArrayIndexTypeNode = typeNodeFromInput(
+    arrayIndexInput()
+)
