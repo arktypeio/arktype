@@ -1,5 +1,4 @@
 import type { exact } from "../utils/generics.js"
-import type { List } from "../utils/lists.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { BasisInput } from "./basis/basis.js"
 import { ValueNode } from "./basis/value.js"
@@ -8,13 +7,9 @@ import type { Discriminant } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import type { Node } from "./node.js"
-import { defineNodeKind } from "./node.js"
-import {
-    predicateFromInput,
-    PredicateNode,
-    unknownPredicateNode
-} from "./predicate.js"
+import { defineNodeKind, isNode } from "./node.js"
 import type { inferPredicateDefinition, PredicateInput } from "./predicate.js"
+import { PredicateNode, unknownPredicateNode } from "./predicate.js"
 
 export type TypeNode = Node<
     {
@@ -28,8 +23,19 @@ export type TypeNode = Node<
     }
 >
 
-export const TypeNode = defineNodeKind<TypeNode>({
+export const TypeNode = defineNodeKind<
+    TypeNode,
+    PredicateInput | PredicateInput[]
+>({
     kind: "type",
+    parse: (input) =>
+        isArray(input)
+            ? reduceBranches(
+                  input.map((branch) =>
+                      isNode(branch) ? branch : PredicateNode(branch)
+                  )
+              )
+            : [PredicateNode(input)],
     compile: (rule) => {
         const condition = compileIndiscriminable(rule.sort())
         return condition
@@ -291,20 +297,18 @@ const reduceBranches = (branchNodes: PredicateNode[]) => {
 //     return this === unknownTypeNode
 // }
 
-export type inferBranches<branches extends BranchesInput> = {
+export type inferBranches<branches extends PredicateInput[]> = {
     [i in keyof branches]: inferPredicateDefinition<branches[i]>
 }[number]
 
 export type inferTypeInput<input extends TypeInput> = inferPredicateDefinition<
-    input extends BranchesInput ? input[number] : input
+    input extends unknown[] ? input[number] : input
 >
 
-export type BranchesInput = List<PredicateInput>
-
-export type TypeInput = PredicateInput | BranchesInput
+export type TypeInput = PredicateInput | PredicateInput[]
 
 export type validatedTypeNodeInput<
-    branches extends BranchesInput,
+    branches extends PredicateInput[],
     bases extends BasisInput[]
 > = {
     [i in keyof branches]: exact<
@@ -342,17 +346,8 @@ export const typeNodeFromValues = (branches: readonly unknown[]) => {
     return TypeNode(nodes)
 }
 
-export const typeNodeFromInput = (input: TypeInput) =>
-    isArray(input)
-        ? TypeNode(
-              reduceBranches(input.map((branch) => predicateFromInput(branch)))
-          )
-        : TypeNode([predicateFromInput(input)])
-
 export const neverTypeNode = TypeNode([])
 
 export const unknownTypeNode = TypeNode([unknownPredicateNode])
 
-export const nonVariadicArrayIndexTypeNode = typeNodeFromInput(
-    arrayIndexInput()
-)
+export const nonVariadicArrayIndexTypeNode = TypeNode([arrayIndexInput()])

@@ -4,8 +4,8 @@ import { throwInternalError } from "../utils/errors.js"
 import type { evaluate } from "../utils/generics.js"
 import type { keySet } from "../utils/records.js"
 import { entriesOf, isKeyOf } from "../utils/records.js"
-import type { SerializedPrimitive, snapshot } from "../utils/serialize.js"
-import type { BasisDefinition } from "./basis/basis.js"
+import type { SerializedPrimitive } from "../utils/serialize.js"
+import type { BasisNode } from "./basis/basis.js"
 import type { ValueNode } from "./basis/value.js"
 import type { SerializedPath } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
@@ -76,8 +76,8 @@ export const discriminate = (
                 let lSerialized: string
                 let rSerialized: string
                 if (kind === "domain") {
-                    lSerialized = (disjoint.l as BasisDefinition).domain
-                    rSerialized = (disjoint.r as BasisDefinition).domain
+                    lSerialized = (disjoint.l as BasisNode).domain
+                    rSerialized = (disjoint.r as BasisNode).domain
                 } else if (kind === "value") {
                     lSerialized = compileSerializedValue(
                         (disjoint.l as ValueNode).rule
@@ -124,7 +124,8 @@ export const discriminate = (
     for (const k in predicateCases) {
         let caseBranches: PredicateNode[] = []
         for (const branch of predicateCases[k]) {
-            const pruned = branch.pruneDiscriminant(path, kind)
+            // TODO: fix
+            const pruned = branch //.pruneDiscriminant(path, kind)
             if (pruned === null) {
                 caseBranches = [unknownPredicateNode]
                 break

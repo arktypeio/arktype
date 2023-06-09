@@ -73,4 +73,6 @@ export type arraySubclassToReadonly<t extends unknown[]> =
     }
 
 export const listFrom = <t>(data: t) =>
-    (Array.isArray(data) ? data : [data]) as t extends unknown[] ? t : t[]
+    (Array.isArray(data) ? data : [data]) as t extends readonly unknown[]
+        ? t
+        : t[]

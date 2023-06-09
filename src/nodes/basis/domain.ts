@@ -13,12 +13,12 @@ export const DomainNode = defineNodeKind<DomainNode>({
         rule === "object"
             ? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
             : `typeof ${In} === "${rule}"`,
-    extend: (base) => ({
+    props: (base) => ({
         domain: base.rule,
-        literalKeys: getBaseDomainKeys(base.rule)
+        literalKeys: getBaseDomainKeys(base.rule),
+        description: base.rule
     }),
-    intersect: intersectBases,
-    describe: (node) => node.rule
+    intersect: intersectBases
 })
 
 // compileTraverse(s: CompilationState) {

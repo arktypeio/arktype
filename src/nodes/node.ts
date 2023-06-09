@@ -1,6 +1,5 @@
 import { In } from "../compile/compile.js"
 import { CompiledFunction } from "../utils/functions.js"
-import type { extend } from "../utils/generics.js"
 import type { ClassNode } from "./basis/class.js"
 import type { DomainNode } from "./basis/domain.js"
 import type { ValueNode } from "./basis/value.js"
@@ -50,7 +49,7 @@ export type NodeKinds = {
 
 export type NodeKind = keyof NodeKinds
 
-export type NodeImplementation<node extends Node> = {
+export type NodeImplementation<node extends Node, input> = {
     kind: node["kind"]
     compile: (rule: node["rule"]) => string
     intersect: (
@@ -58,7 +57,14 @@ export type NodeImplementation<node extends Node> = {
         r: Parameters<node["intersect"]>[0]
     ) => ReturnType<node["intersect"]>
     props: PropsCreator<node>
-}
+    // only require a parse implementation if an input format was specified
+} & ([input] extends [node["rule"]]
+    ? { parse?: InputParser<node, input> }
+    : { parse: InputParser<node, input> })
+
+type InputParser<node extends Node, input> = (
+    input: node["rule"] | input
+) => node["rule"]
 
 type PropsCreator<node extends Node> = (
     base: basePropsOf<node>
@@ -77,6 +83,7 @@ export type NodeDefinition = {
 // Need an interface to use `this`
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export interface NodeBase<def extends NodeDefinition> {
+    [arkKind]: "node"
     kind: def["kind"]
     rule: def["rule"]
     condition: string
@@ -97,27 +104,26 @@ export type Node<
 
 type IntersectionCache<node> = Record<string, node | Disjoint | undefined>
 
-export const defineNodeKind = <
-    node extends Node,
-    args extends unknown[] = [node["rule"]]
->(
-    def: NodeImplementation<node>,
-    ...parseArgs: args extends [node["rule"]]
-        ? [transformRule?: (...args: args) => node["rule"]]
-        : [(...args: args) => node["rule"]]
+export const isNode = (value: unknown): value is Node =>
+    (value as any)?.[arkKind] === "node"
+
+export const arkKind = Symbol("ArkTypeInternalKind")
+
+export const defineNodeKind = <node extends Node, input = never>(
+    def: NodeImplementation<node, input>
 ) => {
-    const parseInput = parseArgs.at(0)
     const nodeCache: {
         [condition: string]: node | undefined
     } = {}
-    const construct = (...args: args) => {
-        const rule = parseInput ? parseInput(args) : (args[0] as node["rule"])
+    const construct = (input: node["rule"] | input) => {
+        const rule = def.parse ? def.parse(input) : (input as node["rule"])
         const condition = def.compile(rule)
         if (nodeCache[condition]) {
             return nodeCache[condition]!
         }
         const intersectionCache: IntersectionCache<Node> = {}
         const base: NodeBase<NodeDefinition> & ThisType<node> = {
+            [arkKind]: "node",
             kind: def.kind,
             hasKind: (kind) => kind === def.kind,
             condition,

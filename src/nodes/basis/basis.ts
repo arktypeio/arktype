@@ -51,10 +51,13 @@ export type BasisNodeDefinition = {
 }
 
 export type BasisNode<def extends BasisNodeDefinition = BasisNodeDefinition> =
-    Node<def & { intersected: BasisNode }> & {
-        domain: Domain
-        literalKeys: PropertyKey[]
-    }
+    Node<
+        def & { intersected: BasisNode },
+        {
+            domain: Domain
+            literalKeys: PropertyKey[]
+        }
+    >
 
 export const intersectBases = (
     l: BasisNode,

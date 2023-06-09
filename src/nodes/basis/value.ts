@@ -10,16 +10,16 @@ export type ValueNode = BasisNode<{ kind: "value"; rule: unknown }>
 
 export const ValueNode = defineNodeKind<ValueNode>({
     kind: "value",
-    extend: (base) => ({
+    props: (base) => ({
         domain: domainOf(base.rule),
         literalKeys:
             base.rule === null || base.rule === undefined
                 ? []
-                : [...prototypeKeysOf(base.rule), ...Object.keys(base.rule)]
+                : [...prototypeKeysOf(base.rule), ...Object.keys(base.rule)],
+        description: `the value ${stringify(base.rule)}`
     }),
     intersect: intersectBases,
-    compile: (rule) => `${In} === ${compileSerializedValue(rule)}`,
-    describe: (node) => `the value ${stringify(node.rule)}`
+    compile: (rule) => `${In} === ${compileSerializedValue(rule)}`
 })
 
 // compileTraverse(s: CompilationState) {

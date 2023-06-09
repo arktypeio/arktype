@@ -6,7 +6,6 @@ import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
-import { listFrom } from "../utils/lists.js"
 import type { Constructor, instanceOf } from "../utils/objectKinds.js"
 import { type keySet } from "../utils/records.js"
 import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
@@ -17,10 +16,9 @@ import type { DivisorNode } from "./constraints/divisor.js"
 import type { MorphNode } from "./constraints/morph.js"
 import type { NarrowNode } from "./constraints/narrow.js"
 import type { inferPropsInput } from "./constraints/props/infer.js"
-import type { PropsInput, PropsNode } from "./constraints/props/props.js"
-import { parsePropsInput } from "./constraints/props/props.js"
+import type { PropsNode, UnparsedProps } from "./constraints/props/props.js"
 import type { Range, RangeNode } from "./constraints/range.js"
-import { RegexNode } from "./constraints/regex.js"
+import type { RegexNode } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
 import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
@@ -39,13 +37,28 @@ export type PredicateNode = Node<
     }
 >
 
-export const PredicateNode = defineNodeKind<PredicateNode>({
+export const PredicateNode = defineNodeKind<PredicateNode, PredicateInput>({
     kind: "predicate",
-    compile: (rule: PredicateRules) => {
+    parse: (input) => {
+        if (Array.isArray(input)) {
+            return input as PredicateRules
+        }
+        const basis = input.basis && basisNodeFrom(input.basis)
+        const rules: PredicateRules = basis ? [basis] : []
+        for (const kind of constraintsByPrecedence) {
+            if (input[kind]) {
+                assertAllowsConstraint(basis, kind)
+                // TODO: Create node kind
+                // rules.push(createConstraint(kind, input[kind]))
+            }
+        }
+        return rules
+    },
+    compile: (rule) => {
         const subconditions: string[] = []
         for (const r of rule) {
             if (r.rule !== "true") {
-                subconditions.push(r.rule)
+                subconditions.push(r.condition)
             }
         }
         // TODO: move || true to parent
@@ -128,18 +141,6 @@ export const PredicateNode = defineNodeKind<PredicateNode>({
         return PredicateNode(rules)
     }
 })
-
-export const predicateFromInput = (input: PredicateInput) => {
-    const basis = input.basis && basisNodeFrom(input.basis)
-    const rules: PredicateRules = basis ? [basis] : []
-    for (const kind of constraintsByPrecedence) {
-        if (input[kind]) {
-            assertAllowsConstraint(basis, kind)
-            rules.push(createConstraint(kind, input[kind]))
-        }
-    }
-    return PredicateNode(rules)
-}
 
 // compileTraverse(s: CompilationState) {
 //     // let result = this.basis?.compileTraverse(s) ?? ""
@@ -288,18 +289,6 @@ export const unknownPredicateNode = PredicateNode([])
 
 export type PredicateRules = [BasisNode, ...ConstraintNode[]] | ConstraintNode[]
 
-export const createConstraint = <kind extends ConstraintKind>(
-    kind: kind,
-    input: ConstraintsInput[kind]
-): ConstraintNode => {
-    switch (kind) {
-        case "props":
-            return parsePropsInput(input as PropsInput)
-        case "regex":
-            return RegexNode(listFrom(input as ConstraintsInput["regex"]))
-    }
-}
-
 // export const constraintKinds = {
 //     range: RangeNode,
 //     divisor: DivisorNode,
@@ -343,7 +332,7 @@ export type ConstraintsInput<
     : functionalConstraints<unknown>
 
 type unknownConstraintInput<kind extends ConstraintKind> = kind extends "props"
-    ? PropsInput
+    ? UnparsedProps
     :
           | ConstraintKinds[kind]["rule"]
           // Add the unlisted version as a valid input for these kinds
@@ -384,7 +373,7 @@ type inferNarrowArray<
 
 type inferNonFunctionalConstraints<input extends PredicateInput> =
     input["basis"] extends BasisInput
-        ? input["props"] extends PropsInput
+        ? input["props"] extends UnparsedProps
             ? inferPropsInput<input["props"]>
             : inferBasis<input["basis"]>
         : unknown
@@ -400,7 +389,7 @@ type constraintsOf<basis extends BasisInput> = basis extends Domain
 
 type domainConstraints<basis extends Domain> = basis extends "object"
     ? {
-          props?: PropsInput
+          props?: UnparsedProps
       }
     : basis extends "string"
     ? {
@@ -421,9 +410,9 @@ type functionalConstraints<input> = {
 
 type classConstraints<base extends Constructor> = base extends typeof Array
     ? {
-          props?: PropsInput
+          props?: UnparsedProps
           range?: Range
       }
     : {
-          props?: PropsInput
+          props?: UnparsedProps
       }

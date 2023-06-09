@@ -25,14 +25,16 @@ export const ClassNode = defineNodeKind<ClassNode>({
             getExactBuiltinConstructorName(rule) ??
             registry().register(rule.name, rule)
         }`,
-    extend: (base) => ({
+    props: (base) => ({
         domain: "object",
         literalKeys: prototypeKeysOf(base.rule.prototype),
         extendsOneOf: (...baseConstructors: AbstractableConstructor[]) =>
-            baseConstructors.some((ctor) => constructorExtends(base.rule, ctor))
+            baseConstructors.some((ctor) =>
+                constructorExtends(base.rule, ctor)
+            ),
+        description: base.rule.name
     }),
-    intersect: intersectBases,
-    describe: (node) => node.rule.name
+    intersect: intersectBases
 })
 
 // compileTraverse(s: CompilationState) {

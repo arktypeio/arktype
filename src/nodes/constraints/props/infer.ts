@@ -7,9 +7,13 @@ import type {
     NonVariadicIndexMatcherSource,
     VariadicIndexMatcherSource
 } from "./indexed.js"
-import type { NamedPropsInput, PropsInput, PropsInputTuple } from "./props.js"
+import type {
+    NamedPropsInput,
+    PropsInputTuple,
+    UnparsedProps
+} from "./props.js"
 
-export type inferPropsInput<input extends PropsInput> =
+export type inferPropsInput<input extends UnparsedProps> =
     input extends PropsInputTuple<infer named, infer indexed>
         ? inferIndexed<indexed, inferNamedProps<named, indexed>>
         : input extends NamedPropsInput

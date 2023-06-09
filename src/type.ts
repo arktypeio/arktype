@@ -2,7 +2,7 @@ import { compile, In } from "./compile/compile.js"
 import { registry } from "./compile/registry.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
-import type { PredicateInput } from "./nodes/predicate.js"
+import type { UnparsedPredicate } from "./nodes/predicate.js"
 import type {
     BranchesInput,
     extractBases,
@@ -72,7 +72,7 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
     const props: TypeProps<$> = {
         exactly: (...branches: readonly unknown[]) =>
             new Type(typeNodeFromValues(branches), scope),
-        fromNode: (...branches: readonly PredicateInput[]) =>
+        fromNode: (...branches: readonly UnparsedPredicate[]) =>
             new Type(typeNodeFromInput(branches), scope)
     }
     return Object.assign(parser, props)
