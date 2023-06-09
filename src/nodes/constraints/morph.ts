@@ -10,25 +10,27 @@ export type MorphNode = Node<{
     intersected: MorphNode
 }>
 
-export const MorphNode = defineNodeKind<MorphNode, Morph>({
-    kind: "morph",
-    parse: listFrom,
-    compile: (rule) => {
-        // Avoid alphabetical sorting since morphs are non-commutative,
-        // i.e. a|>b and b|>a are distinct and valid
-        const subconditions = rule.map((morph) =>
-            registry().register(morph.name, morph)
-        )
-        return subconditions.join(" && ")
+export const MorphNode = defineNodeKind<MorphNode, Morph>(
+    {
+        kind: "morph",
+        parse: listFrom,
+        compile: (rule) => {
+            // Avoid alphabetical sorting since morphs are non-commutative,
+            // i.e. a|>b and b|>a are distinct and valid
+            const subconditions = rule.map((morph) =>
+                registry().register(morph.name, morph)
+            )
+            return subconditions.join(" && ")
+        },
+        intersect: (l, r): MorphNode =>
+            MorphNode(intersectUniqueLists(l.rule, r.rule))
     },
-    intersect: (l, r): MorphNode =>
-        MorphNode(intersectUniqueLists(l.rule, r.rule)),
-    props: (base) => ({
+    (base) => ({
         description: `morphed by ${base.rule
             .map((morph) => morph.name)
             .join("|>")}`
     })
-})
+)
 
 // compileTraverse(s: CompilationState) {
 //     return s.ifNotThen("false", s.problem("custom", "morphs"))

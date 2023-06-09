@@ -26,21 +26,33 @@ export type TypeNode = Node<
 export const TypeNode = defineNodeKind<
     TypeNode,
     PredicateInput | PredicateInput[]
->({
-    kind: "type",
-    parse: (input) =>
-        isArray(input)
-            ? reduceBranches(
-                  input.map((branch) =>
-                      isNode(branch) ? branch : PredicateNode(branch)
+>(
+    {
+        kind: "type",
+        parse: (input) =>
+            isArray(input)
+                ? reduceBranches(
+                      input.map((branch) =>
+                          isNode(branch) ? branch : PredicateNode(branch)
+                      )
                   )
-              )
-            : [PredicateNode(input)],
-    compile: (rule) => {
-        const condition = compileIndiscriminable(rule.sort())
-        return condition
+                : [PredicateNode(input)],
+        compile: (rule) => {
+            const condition = compileIndiscriminable(rule.sort())
+            return condition
+        },
+        intersect: (l, r): TypeNode | Disjoint => {
+            if (l.rule.length === 1 && r.rule.length === 1) {
+                const result = l.rule[0].intersect(r.rule[0])
+                return result instanceof Disjoint ? result : TypeNode([result])
+            }
+            const resultBranches = intersectBranches(l.rule, r.rule)
+            return resultBranches.length
+                ? TypeNode(resultBranches)
+                : Disjoint.from("union", l, r)
+        }
     },
-    props: (base) => {
+    (base) => {
         const description =
             base.rule.length === 0
                 ? "never"
@@ -51,83 +63,81 @@ export const TypeNode = defineNodeKind<
             valueNode:
                 base.rule.length === 1 ? base.rule[0].valueNode : undefined
         }
-    },
-    intersect: (l, r): TypeNode | Disjoint => {
-        if (l.rule.length === 1 && r.rule.length === 1) {
-            const result = l.rule[0].intersect(r.rule[0])
-            return result instanceof Disjoint ? result : TypeNode([result])
-        }
-        // Branches that are determined to be a subtype of an opposite branch are
-        // guaranteed to be a member of the final reduced intersection, so long as
-        // each individual set of branches has been correctly reduced to exclude
-        // redundancies.
-        const finalBranches: PredicateNode[] = []
-        // Each rBranch is initialized to an empty array to which distinct
-        // intersections will be appended. If the rBranch is identified as a
-        // subtype or equal of any lBranch, the corresponding value should be
-        // set to null so we can avoid including previous/future intersections
-        // in the final result.
-        const candidatesByR: (PredicateNode[] | null)[] = r.rule.map(() => [])
-        for (let lIndex = 0; lIndex < l.rule.length; lIndex++) {
-            const lBranch = l.rule[lIndex]
-            let currentCandidateByR: { [rIndex in number]: PredicateNode } = {}
-            for (let rIndex = 0; rIndex < r.rule.length; rIndex++) {
-                const rBranch = r.rule[rIndex]
-                if (!candidatesByR[rIndex]) {
-                    // we've identified rBranch as a subtype of
-                    // an lBranch and will not yield any distinct intersections.
-                    continue
-                }
-                if (lBranch === rBranch) {
-                    // Combination of subtype and supertype cases
-                    finalBranches.push(lBranch)
-                    candidatesByR[rIndex] = null
-                    currentCandidateByR = {}
-                    break
-                }
-                const branchIntersection = lBranch.intersect(rBranch)
-                if (branchIntersection instanceof Disjoint) {
-                    // doesn't tell us about any redundancies or add a distinct intersection
-                    continue
-                }
-                if (branchIntersection === lBranch) {
-                    // If l is a subtype of the current r branch, intersections
-                    // with previous and remaining branches of r won't lead to
-                    // distinct intersections, so empty currentCandidatesByR and break
-                    // from the inner loop.
-                    finalBranches.push(lBranch)
-                    currentCandidateByR = {}
-                    break
-                }
-                if (branchIntersection === rBranch) {
-                    // If r is a subtype of the current l branch, set its
-                    // intersections to null, removing any previous
-                    // intersections and preventing any of its
-                    // remaining intersections from being computed.
-                    finalBranches.push(rBranch)
-                    candidatesByR[rIndex] = null
-                    continue
-                }
-                // If neither l nor r is a subtype of the other, add their
-                // intersection as a candidate to the current batch (could
-                // still be removed if it is determined l or r is a subtype
-                // of a remaining branch).
-                currentCandidateByR[rIndex] = branchIntersection
-            }
-            for (const rIndex in currentCandidateByR) {
-                // candidatesByR at rIndex should never be null if it is in currentCandidates
-                candidatesByR[rIndex]!.push(currentCandidateByR[rIndex])
-            }
-        }
-        // All remaining candidates are distinct, so include them in the final result
-        for (const candidates of candidatesByR) {
-            candidates?.forEach((candidate) => finalBranches.push(candidate))
-        }
-        return finalBranches.length
-            ? TypeNode(finalBranches)
-            : Disjoint.from("union", l, r)
     }
-})
+)
+
+const intersectBranches = (
+    l: PredicateNode[],
+    r: PredicateNode[]
+): PredicateNode[] => {
+    // Branches that are determined to be a subtype of an opposite branch are
+    // guaranteed to be a member of the final reduced intersection, so long as
+    // each individual set of branches has been correctly reduced to exclude
+    // redundancies.
+    const finalBranches: PredicateNode[] = []
+    // Each rBranch is initialized to an empty array to which distinct
+    // intersections will be appended. If the rBranch is identified as a
+    // subtype or equal of any lBranch, the corresponding value should be
+    // set to null so we can avoid including previous/future intersections
+    // in the final result.
+    const candidatesByR: (PredicateNode[] | null)[] = r.map(() => [])
+    for (let lIndex = 0; lIndex < l.length; lIndex++) {
+        const lBranch = l[lIndex]
+        let currentCandidateByR: { [rIndex in number]: PredicateNode } = {}
+        for (let rIndex = 0; rIndex < r.length; rIndex++) {
+            const rBranch = r[rIndex]
+            if (!candidatesByR[rIndex]) {
+                // we've identified rBranch as a subtype of
+                // an lBranch and will not yield any distinct intersections.
+                continue
+            }
+            if (lBranch === rBranch) {
+                // Combination of subtype and supertype cases
+                finalBranches.push(lBranch)
+                candidatesByR[rIndex] = null
+                currentCandidateByR = {}
+                break
+            }
+            const branchIntersection = lBranch.intersect(rBranch)
+            if (branchIntersection instanceof Disjoint) {
+                // doesn't tell us about any redundancies or add a distinct intersection
+                continue
+            }
+            if (branchIntersection === lBranch) {
+                // If l is a subtype of the current r branch, intersections
+                // with previous and remaining branches of r won't lead to
+                // distinct intersections, so empty currentCandidatesByR and break
+                // from the inner loop.
+                finalBranches.push(lBranch)
+                currentCandidateByR = {}
+                break
+            }
+            if (branchIntersection === rBranch) {
+                // If r is a subtype of the current l branch, set its
+                // intersections to null, removing any previous
+                // intersections and preventing any of its
+                // remaining intersections from being computed.
+                finalBranches.push(rBranch)
+                candidatesByR[rIndex] = null
+                continue
+            }
+            // If neither l nor r is a subtype of the other, add their
+            // intersection as a candidate to the current batch (could
+            // still be removed if it is determined l or r is a subtype
+            // of a remaining branch).
+            currentCandidateByR[rIndex] = branchIntersection
+        }
+        for (const rIndex in currentCandidateByR) {
+            // candidatesByR at rIndex should never be null if it is in currentCandidates
+            candidatesByR[rIndex]!.push(currentCandidateByR[rIndex])
+        }
+    }
+    // All remaining candidates are distinct, so include them in the final result
+    for (const candidates of candidatesByR) {
+        candidates?.forEach((candidate) => finalBranches.push(candidate))
+    }
+    return finalBranches
+}
 
 const compileIndiscriminable = (branches: PredicateNode[]) => {
     return branches.length === 0

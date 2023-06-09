@@ -7,19 +7,21 @@ import { intersectBases } from "./basis.js"
 
 export type DomainNode = BasisNode<{ kind: "domain"; rule: Domain }>
 
-export const DomainNode = defineNodeKind<DomainNode>({
-    kind: "domain",
-    compile: (rule) =>
-        rule === "object"
-            ? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
-            : `typeof ${In} === "${rule}"`,
-    props: (base) => ({
+export const DomainNode = defineNodeKind<DomainNode>(
+    {
+        kind: "domain",
+        compile: (rule) =>
+            rule === "object"
+                ? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
+                : `typeof ${In} === "${rule}"`,
+        intersect: intersectBases
+    },
+    (base) => ({
         domain: base.rule,
         literalKeys: getBaseDomainKeys(base.rule),
         description: base.rule
-    }),
-    intersect: intersectBases
-})
+    })
+)
 
 // compileTraverse(s: CompilationState) {
 //     return s.ifNotThen(this.condition, s.problem("domain", this.child))

@@ -18,14 +18,17 @@ export type ClassNode = BasisNode<{
     extendsOneOf: (...baseConstructors: AbstractableConstructor[]) => boolean
 }
 
-export const ClassNode = defineNodeKind<ClassNode>({
-    kind: "class",
-    compile: (rule) =>
-        `${In} instanceof ${
-            getExactBuiltinConstructorName(rule) ??
-            registry().register(rule.name, rule)
-        }`,
-    props: (base) => ({
+export const ClassNode = defineNodeKind<ClassNode>(
+    {
+        kind: "class",
+        compile: (rule) =>
+            `${In} instanceof ${
+                getExactBuiltinConstructorName(rule) ??
+                registry().register(rule.name, rule)
+            }`,
+        intersect: intersectBases
+    },
+    (base) => ({
         domain: "object",
         literalKeys: prototypeKeysOf(base.rule.prototype),
         extendsOneOf: (...baseConstructors: AbstractableConstructor[]) =>
@@ -33,9 +36,8 @@ export const ClassNode = defineNodeKind<ClassNode>({
                 constructorExtends(base.rule, ctor)
             ),
         description: base.rule.name
-    }),
-    intersect: intersectBases
-})
+    })
+)
 
 // compileTraverse(s: CompilationState) {
 //     return s.ifNotThen(this.condition, s.problem("class", this.child))

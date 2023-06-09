@@ -72,21 +72,57 @@ export type RangeNode = Node<
     }
 >
 
-export const RangeNode = defineNodeKind<RangeNode>({
-    kind: "range",
-    compile: (rule) => {
-        if (
-            rule[0].limit === rule[1]?.limit &&
-            rule[0].comparator === ">=" &&
-            rule[1].comparator === "<="
-        ) {
-            // reduce a range like `1<=number<=1` to `number==1`
-            rule = [{ comparator: "==", limit: rule[0].limit }]
+export const RangeNode = defineNodeKind<RangeNode>(
+    {
+        kind: "range",
+        compile: (rule) => {
+            if (
+                rule[0].limit === rule[1]?.limit &&
+                rule[0].comparator === ">=" &&
+                rule[1].comparator === "<="
+            ) {
+                // reduce a range like `1<=number<=1` to `number==1`
+                rule = [{ comparator: "==", limit: rule[0].limit }]
+            }
+            const compiledBounds = rule.map(compileBound)
+            return compiledBounds.join(" && ")
+        },
+        intersect: (l, r): RangeNode | Disjoint => {
+            if (isEqualityRangeNode(l)) {
+                if (isEqualityRangeNode(r)) {
+                    return l === r ? l : Disjoint.from("range", l, r)
+                }
+                return r.allows(l.rule[0].limit)
+                    ? l
+                    : Disjoint.from("range", l, r)
+            }
+            if (isEqualityRangeNode(r)) {
+                return l.allows(r.rule[0].limit)
+                    ? r
+                    : Disjoint.from("range", l, r)
+            }
+            const stricterMin = compareStrictness("min", l.min, r.min)
+            const stricterMax = compareStrictness("max", l.max, r.max)
+            if (stricterMin === "l") {
+                if (stricterMax === "r") {
+                    return compareStrictness("min", l.min, r.max) === "l"
+                        ? Disjoint.from("range", l, r)
+                        : RangeNode([l.min!, r.max!])
+                }
+                return l
+            }
+            if (stricterMin === "r") {
+                if (stricterMax === "l") {
+                    return compareStrictness("min", l.max, r.min) === "r"
+                        ? Disjoint.from("range", l, r)
+                        : RangeNode([r.min!, l.max!])
+                }
+                return r
+            }
+            return stricterMax === "l" ? l : r
         }
-        const compiledBounds = rule.map(compileBound)
-        return compiledBounds.join(" && ")
     },
-    props: (base) => {
+    (base) => {
         const leftDescription = `${base.rule[0].comparator}${base.rule[0].limit}`
         const description = base.rule[1]
             ? `the range bounded by ${leftDescription} and ${base.rule[1].comparator}${base.rule[1].limit}`
@@ -102,38 +138,8 @@ export const RangeNode = defineNodeKind<RangeNode>({
                     ? (base.rule[0] as Bound<MaxComparator>)
                     : undefined)
         }
-    },
-    intersect: (l, r): RangeNode | Disjoint => {
-        if (isEqualityRangeNode(l)) {
-            if (isEqualityRangeNode(r)) {
-                return l === r ? l : Disjoint.from("range", l, r)
-            }
-            return r.allows(l.rule[0].limit) ? l : Disjoint.from("range", l, r)
-        }
-        if (isEqualityRangeNode(r)) {
-            return l.allows(r.rule[0].limit) ? r : Disjoint.from("range", l, r)
-        }
-        const stricterMin = compareStrictness("min", l.min, r.min)
-        const stricterMax = compareStrictness("max", l.max, r.max)
-        if (stricterMin === "l") {
-            if (stricterMax === "r") {
-                return compareStrictness("min", l.min, r.max) === "l"
-                    ? Disjoint.from("range", l, r)
-                    : RangeNode([l.min!, r.max!])
-            }
-            return l
-        }
-        if (stricterMin === "r") {
-            if (stricterMax === "l") {
-                return compareStrictness("min", l.max, r.min) === "r"
-                    ? Disjoint.from("range", l, r)
-                    : RangeNode([r.min!, l.max!])
-            }
-            return r
-        }
-        return stricterMax === "l" ? l : r
     }
-})
+)
 
 const compileBound = (bound: Bound) =>
     `(${In}.length ?? Number(${In})) ${

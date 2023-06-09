@@ -37,35 +37,87 @@ export type PredicateNode = Node<
     }
 >
 
-export const PredicateNode = defineNodeKind<PredicateNode, PredicateInput>({
-    kind: "predicate",
-    parse: (input) => {
-        if (Array.isArray(input)) {
-            return input as PredicateRules
-        }
-        const basis = input.basis && basisNodeFrom(input.basis)
-        const rules: PredicateRules = basis ? [basis] : []
-        for (const kind of constraintsByPrecedence) {
-            if (input[kind]) {
-                assertAllowsConstraint(basis, kind)
-                // TODO: Create node kind
-                // rules.push(createConstraint(kind, input[kind]))
+export const PredicateNode = defineNodeKind<PredicateNode, PredicateInput>(
+    {
+        kind: "predicate",
+        parse: (input) => {
+            if (Array.isArray(input)) {
+                return input as PredicateRules
             }
-        }
-        return rules
-    },
-    compile: (rule) => {
-        const subconditions: string[] = []
-        for (const r of rule) {
-            if (r.rule !== "true") {
-                subconditions.push(r.condition)
+            const basis = input.basis && basisNodeFrom(input.basis)
+            const rules: PredicateRules = basis ? [basis] : []
+            for (const kind of constraintsByPrecedence) {
+                if (input[kind]) {
+                    assertAllowsConstraint(basis, kind)
+                    // TODO: Create node kind
+                    // rules.push(createConstraint(kind, input[kind]))
+                }
             }
+            return rules
+        },
+        compile: (rule) => {
+            const subconditions: string[] = []
+            for (const r of rule) {
+                if (r.rule !== "true") {
+                    subconditions.push(r.condition)
+                }
+            }
+            // TODO: move || true to parent
+            const condition = subconditions.join(" && ") || "true"
+            return condition
+        },
+        intersect: (l, r): PredicateNode | Disjoint => {
+            // if (
+            //     // s.lastOperator === "&" &&
+            //     rules.morphs?.some(
+            //         (morph, i) => morph !== branch.tree.morphs?.[i]
+            //     )
+            // ) {
+            //     throwParseError(
+            //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
+            //     )
+            // }
+            const basis = l.basis
+                ? r.basis
+                    ? l.basis.intersect(r.basis)
+                    : l.basis
+                : r.basis
+            if (basis instanceof Disjoint) {
+                return basis
+            }
+            if (l.valueNode) {
+                return r.allows(l.valueNode.rule)
+                    ? l
+                    : Disjoint.from("assignability", l.valueNode, r)
+            }
+            if (r.valueNode) {
+                return l.allows(r.valueNode.rule)
+                    ? r
+                    : Disjoint.from("assignability", l, r.valueNode)
+            }
+            const rules: PredicateRules = basis ? [basis] : []
+            for (const kind of constraintsByPrecedence) {
+                const lNode = l.getConstraint(kind)
+                const rNode = r.getConstraint(kind)
+                if (lNode) {
+                    if (rNode) {
+                        const result = lNode.intersect(rNode as never)
+                        // TODO: don't return here
+                        if (result instanceof Disjoint) {
+                            return result
+                        }
+                        rules.push(result)
+                    } else {
+                        rules.push(lNode)
+                    }
+                } else if (rNode) {
+                    rules.push(rNode)
+                }
+            }
+            return PredicateNode(rules)
         }
-        // TODO: move || true to parent
-        const condition = subconditions.join(" && ") || "true"
-        return condition
     },
-    props: (base) => {
+    (base) => {
         const hasBasis = !!basisPrecedenceByKind[base.rule[0]?.kind as never]
         const basis = (hasBasis ? base.rule[0] : undefined) as
             | BasisNode
@@ -89,58 +141,8 @@ export const PredicateNode = defineNodeKind<PredicateNode, PredicateInput>({
                 ) as never,
             valueNode: basis?.hasKind("value") ? basis : undefined
         }
-    },
-    intersect: (l, r): PredicateNode | Disjoint => {
-        // if (
-        //     // s.lastOperator === "&" &&
-        //     rules.morphs?.some(
-        //         (morph, i) => morph !== branch.tree.morphs?.[i]
-        //     )
-        // ) {
-        //     throwParseError(
-        //         writeImplicitNeverMessage(s.path, "Intersection", "of morphs")
-        //     )
-        // }
-        const basis = l.basis
-            ? r.basis
-                ? l.basis.intersect(r.basis)
-                : l.basis
-            : r.basis
-        if (basis instanceof Disjoint) {
-            return basis
-        }
-        if (l.valueNode) {
-            return r.allows(l.valueNode.rule)
-                ? l
-                : Disjoint.from("assignability", l.valueNode, r)
-        }
-        if (r.valueNode) {
-            return l.allows(r.valueNode.rule)
-                ? r
-                : Disjoint.from("assignability", l, r.valueNode)
-        }
-        const rules: PredicateRules = basis ? [basis] : []
-        for (const kind of constraintsByPrecedence) {
-            const lNode = l.getConstraint(kind)
-            const rNode = r.getConstraint(kind)
-            if (lNode) {
-                if (rNode) {
-                    const result = lNode.intersect(rNode as never)
-                    // TODO: don't return here
-                    if (result instanceof Disjoint) {
-                        return result
-                    }
-                    rules.push(result)
-                } else {
-                    rules.push(lNode)
-                }
-            } else if (rNode) {
-                rules.push(rNode)
-            }
-        }
-        return PredicateNode(rules)
     }
-})
+)
 
 // compileTraverse(s: CompilationState) {
 //     // let result = this.basis?.compileTraverse(s) ?? ""

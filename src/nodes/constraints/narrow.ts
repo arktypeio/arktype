@@ -10,24 +10,26 @@ export type NarrowNode = Node<{
     intersected: NarrowNode
 }>
 
-export const NarrowNode = defineNodeKind<NarrowNode, Narrow>({
-    kind: "narrow",
-    parse: listFrom,
-    compile: (rule: readonly Narrow[]) => {
-        // Depending on type-guards, altering the order in which narrows run could
-        // lead to a non-typsafe access, so they are preserved.
-        // TODO:  Figure out how this needs to work with intersections
-        const subconditions = rule.map((narrow) =>
-            registry().register(narrow.name, narrow)
-        )
-        return subconditions.join(" && ")
+export const NarrowNode = defineNodeKind<NarrowNode, Narrow>(
+    {
+        kind: "narrow",
+        parse: listFrom,
+        compile: (rule: readonly Narrow[]) => {
+            // Depending on type-guards, altering the order in which narrows run could
+            // lead to a non-typsafe access, so they are preserved.
+            // TODO:  Figure out how this needs to work with intersections
+            const subconditions = rule.map((narrow) =>
+                registry().register(narrow.name, narrow)
+            )
+            return subconditions.join(" && ")
+        },
+        intersect: (l, r): NarrowNode =>
+            NarrowNode(intersectUniqueLists(l.rule, r.rule))
     },
-    intersect: (l, r): NarrowNode =>
-        NarrowNode(intersectUniqueLists(l.rule, r.rule)),
-    props: (base) => ({
+    (base) => ({
         description: `narrowed by ${base.rule.map((narrow) => narrow.name)}`
     })
-})
+)
 
 //     compileTraverse(s: CompilationState) {
 //         return s.ifNotThen("false", s.problem("custom", "filters"))

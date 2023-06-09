@@ -49,14 +49,13 @@ export type NodeKinds = {
 
 export type NodeKind = keyof NodeKinds
 
-export type NodeImplementation<node extends Node, input> = {
+type BaseNodeImplementation<node extends Node, input> = {
     kind: node["kind"]
     compile: (rule: node["rule"]) => string
     intersect: (
         l: Parameters<node["intersect"]>[0],
         r: Parameters<node["intersect"]>[0]
     ) => ReturnType<node["intersect"]>
-    props: PropsCreator<node>
     // only require a parse implementation if an input format was specified
 } & ([input] extends [node["rule"]]
     ? { parse?: InputParser<node, input> }
@@ -66,7 +65,7 @@ type InputParser<node extends Node, input> = (
     input: node["rule"] | input
 ) => node["rule"]
 
-type PropsCreator<node extends Node> = (
+type PropsConstructor<node extends Node> = (
     base: basePropsOf<node>
 ) => extendedPropsOf<node>
 
@@ -110,22 +109,23 @@ export const isNode = (value: unknown): value is Node =>
 export const arkKind = Symbol("ArkTypeInternalKind")
 
 export const defineNodeKind = <node extends Node, input = never>(
-    def: NodeImplementation<node, input>
+    base: BaseNodeImplementation<node, input>,
+    addProps: PropsConstructor<node>
 ) => {
     const nodeCache: {
         [condition: string]: node | undefined
     } = {}
     const construct = (input: node["rule"] | input) => {
-        const rule = def.parse ? def.parse(input) : (input as node["rule"])
-        const condition = def.compile(rule)
+        const rule = base.parse ? base.parse(input) : (input as node["rule"])
+        const condition = base.compile(rule)
         if (nodeCache[condition]) {
             return nodeCache[condition]!
         }
         const intersectionCache: IntersectionCache<Node> = {}
-        const base: NodeBase<NodeDefinition> & ThisType<node> = {
+        const instance: NodeBase<NodeDefinition> & ThisType<node> = {
             [arkKind]: "node",
-            kind: def.kind,
-            hasKind: (kind) => kind === def.kind,
+            kind: base.kind,
+            hasKind: (kind) => kind === base.kind,
             condition,
             rule,
             allows: new CompiledFunction(`${In}`, `return ${condition}`),
@@ -137,15 +137,15 @@ export const defineNodeKind = <node extends Node, input = never>(
                 if (intersectionCache[other.condition]) {
                     return intersectionCache[other.condition]!
                 }
-                const result = def.intersect(this as never, other as never)
+                const result = base.intersect(this as never, other as never)
                 intersectionCache[other.condition] = result
                 other.intersectionCache[condition] =
                     result instanceof Disjoint ? result.invert() : result
                 return result
             }
         }
-        const props = def.props(base)
-        return Object.assign(base, props, {
+        const props = addProps(instance)
+        return Object.assign(instance, props, {
             toString(this: node) {
                 return this.description
             }

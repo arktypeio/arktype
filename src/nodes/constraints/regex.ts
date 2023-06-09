@@ -9,16 +9,18 @@ export type RegexNode = Node<{
     intersected: RegexNode
 }>
 
-export const RegexNode = defineNodeKind<RegexNode, string | string[]>({
-    kind: "regex",
-    parse: listFrom,
-    compile: (rule) => {
-        const subconditions = rule.sort().map(compileExpression)
-        return subconditions.join(" && ")
+export const RegexNode = defineNodeKind<RegexNode, string | string[]>(
+    {
+        kind: "regex",
+        parse: listFrom,
+        compile: (rule) => {
+            const subconditions = rule.sort().map(compileExpression)
+            return subconditions.join(" && ")
+        },
+        intersect: (l, r): RegexNode =>
+            RegexNode(intersectUniqueLists(l.rule, r.rule))
     },
-    intersect: (l, r): RegexNode =>
-        RegexNode(intersectUniqueLists(l.rule, r.rule)),
-    props: (base) => {
+    (base) => {
         const literals = base.rule.map((_) => `/${_}/`)
         const description =
             literals.length === 1
@@ -26,7 +28,7 @@ export const RegexNode = defineNodeKind<RegexNode, string | string[]>({
                 : `expressions ${literals.join(", ")}`
         return { description }
     }
-})
+)
 
 const compileExpression = (source: string) => {
     return `${In}.match(/${source}/)`

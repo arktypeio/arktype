@@ -8,15 +8,19 @@ export type DivisorNode = Node<{
     intersected: DivisorNode
 }>
 
-export const DivisorNode = defineNodeKind<DivisorNode>({
-    kind: "divisor",
-    compile: (rule) => `${In} % ${rule} === 0`,
-    intersect: (l, r): DivisorNode =>
-        DivisorNode(
-            Math.abs((l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule))
-        ),
-    props: (base) => ({ description: `a multiple of ${base.rule}` })
-})
+export const DivisorNode = defineNodeKind<DivisorNode>(
+    {
+        kind: "divisor",
+        compile: (rule) => `${In} % ${rule} === 0`,
+        intersect: (l, r): DivisorNode =>
+            DivisorNode(
+                Math.abs(
+                    (l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
+                )
+            )
+    },
+    (base) => ({ description: `a multiple of ${base.rule}` })
+)
 
 // compile: (n, condition, s) => s.ifNotThen(condition, s.problem("divisor", n))
 
