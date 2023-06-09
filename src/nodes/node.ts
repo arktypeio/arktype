@@ -1,5 +1,6 @@
 import { In } from "../compile/compile.js"
 import { CompiledFunction } from "../utils/functions.js"
+import type { extend } from "../utils/generics.js"
 import type { ClassNode } from "./basis/class.js"
 import type { DomainNode } from "./basis/domain.js"
 import type { ValueNode } from "./basis/value.js"
@@ -56,16 +57,16 @@ export type NodeImplementation<node extends Node> = {
         l: Parameters<node["intersect"]>[0],
         r: Parameters<node["intersect"]>[0]
     ) => ReturnType<node["intersect"]>
-    describe: (node: node) => string
-    // require an extend call that returns the extra props to assign if and
-    // only if all declared props are not present on BaseNode
-} & (keyof node extends keyof Node
-    ? { extend?: undefined }
-    : { extend: NodeExtension<node> })
+    props: PropsCreator<node>
+}
 
-type NodeExtension<node extends Node> = (
-    base: Pick<node, keyof Node>
-) => Omit<node, keyof Node>
+type PropsCreator<node extends Node> = (
+    base: basePropsOf<node>
+) => extendedPropsOf<node>
+
+export type basePropsOf<node extends Node> = Pick<node, keyof NodeBase<any>>
+
+export type extendedPropsOf<node extends Node> = Omit<node, keyof NodeBase<any>>
 
 export type NodeDefinition = {
     kind: NodeKind
@@ -75,7 +76,7 @@ export type NodeDefinition = {
 
 // Need an interface to use `this`
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-export interface Node<def extends NodeDefinition = NodeDefinition> {
+export interface NodeBase<def extends NodeDefinition> {
     kind: def["kind"]
     rule: def["rule"]
     condition: string
@@ -85,21 +86,38 @@ export interface Node<def extends NodeDefinition = NodeDefinition> {
     hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
 }
 
+export type BaseNodeExtensionProps = {
+    description: string
+}
+
+export type Node<
+    def extends NodeDefinition = NodeDefinition,
+    props extends Record<string, unknown> = {}
+> = NodeBase<def> & BaseNodeExtensionProps & props
+
 type IntersectionCache<node> = Record<string, node | Disjoint | undefined>
 
-export const defineNodeKind = <node extends Node>(
-    def: NodeImplementation<node>
+export const defineNodeKind = <
+    node extends Node,
+    args extends unknown[] = [node["rule"]]
+>(
+    def: NodeImplementation<node>,
+    ...parseArgs: args extends [node["rule"]]
+        ? [transformRule?: (...args: args) => node["rule"]]
+        : [(...args: args) => node["rule"]]
 ) => {
+    const parseInput = parseArgs.at(0)
     const nodeCache: {
         [condition: string]: node | undefined
     } = {}
-    const construct = (rule: node["rule"]) => {
+    const construct = (...args: args) => {
+        const rule = parseInput ? parseInput(args) : (args[0] as node["rule"])
         const condition = def.compile(rule)
         if (nodeCache[condition]) {
             return nodeCache[condition]!
         }
         const intersectionCache: IntersectionCache<Node> = {}
-        const base: Node = {
+        const base: NodeBase<NodeDefinition> & ThisType<node> = {
             kind: def.kind,
             hasKind: (kind) => kind === def.kind,
             condition,
@@ -120,9 +138,12 @@ export const defineNodeKind = <node extends Node>(
                 return result
             }
         }
-        return (
-            def.extend ? Object.assign(base, def.extend(base)) : base
-        ) as node
+        const props = def.props(base)
+        return Object.assign(base, props, {
+            toString(this: node) {
+                return this.description
+            }
+        }) as node
     }
     return construct
 }

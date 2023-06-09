@@ -17,11 +17,13 @@ export const RegexNode = defineNodeKind<RegexNode>({
     },
     intersect: (l, r): RegexNode =>
         RegexNode(intersectUniqueLists(l.rule, r.rule)),
-    describe: (node) => {
-        const literals = node.rule.map((_) => `/${_}/`)
-        return literals.length === 1
-            ? literals[0]
-            : `expressions ${literals.join(", ")}`
+    props: (base) => {
+        const literals = base.rule.map((_) => `/${_}/`)
+        const description =
+            literals.length === 1
+                ? literals[0]
+                : `expressions ${literals.join(", ")}`
+        return { description }
     }
 })
 

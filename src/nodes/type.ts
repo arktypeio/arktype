@@ -16,14 +16,17 @@ import {
 } from "./predicate.js"
 import type { inferPredicateDefinition, PredicateInput } from "./predicate.js"
 
-export type TypeNode = Node<{
-    kind: "type"
-    rule: PredicateNode[]
-    intersected: TypeNode
-}> & {
-    discriminant: Discriminant | undefined
-    valueNode: ValueNode | undefined
-}
+export type TypeNode = Node<
+    {
+        kind: "type"
+        rule: PredicateNode[]
+        intersected: TypeNode
+    },
+    {
+        discriminant: Discriminant | undefined
+        valueNode: ValueNode | undefined
+    }
+>
 
 export const TypeNode = defineNodeKind<TypeNode>({
     kind: "type",
@@ -31,10 +34,18 @@ export const TypeNode = defineNodeKind<TypeNode>({
         const condition = compileIndiscriminable(rule.sort())
         return condition
     },
-    extend: (base) => ({
-        discriminant: discriminate(base.rule),
-        valueNode: base.rule.length === 1 ? base.rule[0].valueNode : undefined
-    }),
+    props: (base) => {
+        const description =
+            base.rule.length === 0
+                ? "never"
+                : base.rule.map((branch) => branch.toString()).join(" or ")
+        return {
+            description,
+            discriminant: discriminate(base.rule),
+            valueNode:
+                base.rule.length === 1 ? base.rule[0].valueNode : undefined
+        }
+    },
     intersect: (l, r): TypeNode | Disjoint => {
         if (l.rule.length === 1 && r.rule.length === 1) {
             const result = l.rule[0].intersect(r.rule[0])
@@ -109,11 +120,7 @@ export const TypeNode = defineNodeKind<TypeNode>({
         return finalBranches.length
             ? TypeNode(finalBranches)
             : Disjoint.from("union", l, r)
-    },
-    describe: (node) =>
-        node.rule.length === 0
-            ? "never"
-            : node.rule.map((branch) => branch.toString()).join(" or ")
+    }
 })
 
 const compileIndiscriminable = (branches: PredicateNode[]) => {

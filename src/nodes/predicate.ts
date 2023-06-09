@@ -8,7 +8,6 @@ import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
 import { listFrom } from "../utils/lists.js"
 import type { Constructor, instanceOf } from "../utils/objectKinds.js"
-import { isArray } from "../utils/objectKinds.js"
 import { type keySet } from "../utils/records.js"
 import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
 import { basisPrecedenceByKind } from "./basis/basis.js"
@@ -18,29 +17,27 @@ import type { DivisorNode } from "./constraints/divisor.js"
 import type { MorphNode } from "./constraints/morph.js"
 import type { NarrowNode } from "./constraints/narrow.js"
 import type { inferPropsInput } from "./constraints/props/infer.js"
-import type {
-    NamedPropsInput,
-    PropsInput,
-    PropsInputTuple,
-    PropsNode
-} from "./constraints/props/props.js"
-import { propsNodeFrom } from "./constraints/props/props.js"
+import type { PropsInput, PropsNode } from "./constraints/props/props.js"
+import { parsePropsInput } from "./constraints/props/props.js"
 import type { Range, RangeNode } from "./constraints/range.js"
 import { RegexNode } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
 import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
 
-export type PredicateNode = Node<{
-    kind: "predicate"
-    rule: PredicateRules
-    intersected: PredicateNode
-}> & {
-    basis: BasisNode | undefined
-    constraints: ConstraintNode[]
-    getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
-    valueNode: ValueNode | undefined
-}
+export type PredicateNode = Node<
+    {
+        kind: "predicate"
+        rule: PredicateRules
+        intersected: PredicateNode
+    },
+    {
+        basis: BasisNode | undefined
+        constraints: ConstraintNode[]
+        getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
+        valueNode: ValueNode | undefined
+    }
+>
 
 export const PredicateNode = defineNodeKind<PredicateNode>({
     kind: "predicate",
@@ -55,7 +52,7 @@ export const PredicateNode = defineNodeKind<PredicateNode>({
         const condition = subconditions.join(" && ") || "true"
         return condition
     },
-    extend: (base) => {
+    props: (base) => {
         const hasBasis = !!basisPrecedenceByKind[base.rule[0]?.kind as never]
         const basis = (hasBasis ? base.rule[0] : undefined) as
             | BasisNode
@@ -63,7 +60,14 @@ export const PredicateNode = defineNodeKind<PredicateNode>({
         const constraints = (
             basis ? base.rule.slice(1) : base.rule
         ) as ConstraintNode[]
+        const description =
+            base.rule.length === 0
+                ? "unknown"
+                : constraints.length
+                ? constraints.map((rule) => rule.toString()).join(" and ")
+                : `${basis}`
         return {
+            description,
             basis,
             constraints,
             getConstraint: (k) =>
@@ -122,14 +126,6 @@ export const PredicateNode = defineNodeKind<PredicateNode>({
             }
         }
         return PredicateNode(rules)
-    },
-    describe: (node) => {
-        if (node.rule.length === 0) {
-            return "unknown"
-        }
-        return node.constraints.length
-            ? node.constraints.map((rule) => rule.toString()).join(" and ")
-            : `${node.basis}`
     }
 })
 
@@ -298,9 +294,7 @@ export const createConstraint = <kind extends ConstraintKind>(
 ): ConstraintNode => {
     switch (kind) {
         case "props":
-            return isArray(input)
-                ? propsNodeFrom(...(input as PropsInputTuple))
-                : propsNodeFrom(input as NamedPropsInput)
+            return parsePropsInput(input as PropsInput)
         case "regex":
             return RegexNode(listFrom(input as ConstraintsInput["regex"]))
     }

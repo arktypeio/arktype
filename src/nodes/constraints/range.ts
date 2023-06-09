@@ -60,14 +60,17 @@ export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 //     ? "items long"
 //     : ""
 
-export type RangeNode = Node<{
-    kind: "range"
-    rule: Range
-    intersected: RangeNode
-}> & {
-    min: Bound<MinComparator> | undefined
-    max: Bound<MaxComparator> | undefined
-}
+export type RangeNode = Node<
+    {
+        kind: "range"
+        rule: Range
+        intersected: RangeNode
+    },
+    {
+        min: Bound<MinComparator> | undefined
+        max: Bound<MaxComparator> | undefined
+    }
+>
 
 export const RangeNode = defineNodeKind<RangeNode>({
     kind: "range",
@@ -83,17 +86,23 @@ export const RangeNode = defineNodeKind<RangeNode>({
         const compiledBounds = rule.map(compileBound)
         return compiledBounds.join(" && ")
     },
-    extend: (base) => ({
-        min: isKeyOf(base.rule[0].comparator, minComparators)
-            ? (base.rule[0] as Bound<MinComparator>)
-            : undefined,
-
-        max:
-            base.rule[1] ??
-            (isKeyOf(base.rule[0].comparator, maxComparators)
-                ? (base.rule[0] as Bound<MaxComparator>)
-                : undefined)
-    }),
+    props: (base) => {
+        const leftDescription = `${base.rule[0].comparator}${base.rule[0].limit}`
+        const description = base.rule[1]
+            ? `the range bounded by ${leftDescription} and ${base.rule[1].comparator}${base.rule[1].limit}`
+            : leftDescription
+        return {
+            description,
+            min: isKeyOf(base.rule[0].comparator, minComparators)
+                ? (base.rule[0] as Bound<MinComparator>)
+                : undefined,
+            max:
+                base.rule[1] ??
+                (isKeyOf(base.rule[0].comparator, maxComparators)
+                    ? (base.rule[0] as Bound<MaxComparator>)
+                    : undefined)
+        }
+    },
     intersect: (l, r): RangeNode | Disjoint => {
         if (isEqualityRangeNode(l)) {
             if (isEqualityRangeNode(r)) {
@@ -123,12 +132,6 @@ export const RangeNode = defineNodeKind<RangeNode>({
             return r
         }
         return stricterMax === "l" ? l : r
-    },
-    describe: (node) => {
-        const left = `${node.rule[0].comparator}${node.rule[0].limit}`
-        return node.rule[1]
-            ? `the range bounded by ${left} and ${node.rule[1].comparator}${node.rule[1].limit}`
-            : left
     }
 })
 

@@ -22,8 +22,11 @@ export const MorphNode = defineNodeKind<MorphNode>({
     },
     intersect: (l, r): MorphNode =>
         MorphNode(intersectUniqueLists(l.rule, r.rule)),
-    describe: (node) =>
-        `morphed by ${node.rule.map((morph) => morph.name).join("|>")}`
+    props: (base) => ({
+        description: `morphed by ${base.rule
+            .map((morph) => morph.name)
+            .join("|>")}`
+    })
 })
 
 // compileTraverse(s: CompilationState) {

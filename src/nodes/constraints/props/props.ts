@@ -1,3 +1,4 @@
+import { isArray } from "../../../utils/objectKinds.js"
 import { fromEntries, hasKeys } from "../../../utils/records.js"
 import type { DisjointsSources } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
@@ -14,15 +15,18 @@ import { compileNamedProps, intersectNamedProp } from "./named.js"
 
 export type PropRule = NamedPropRule | IndexedPropRule
 
-export type PropsNode = Node<{
-    kind: "props"
-    rule: PropRule[]
-    intersected: PropsNode
-}> & {
-    named: NamedPropRule[]
-    indexed: IndexedPropRule[]
-    byName: Record<string, NamedPropRule>
-}
+export type PropsNode = Node<
+    {
+        kind: "props"
+        rule: PropRule[]
+        intersected: PropsNode
+    },
+    {
+        named: NamedPropRule[]
+        indexed: IndexedPropRule[]
+        byName: Record<string, NamedPropRule>
+    }
+>
 
 export const PropsNode = defineNodeKind<PropsNode>({
     kind: "props",
@@ -47,14 +51,17 @@ export const PropsNode = defineNodeKind<PropsNode>({
         const indexed = rule.filter(isIndexed)
         return compileNamedAndIndexedProps(named, indexed)
     },
-    extend: (base) => {
+    props: (base) => {
         const named = base.rule.filter(isNamed)
+        const indexed = base.rule.filter(isIndexed)
+        const description = describeProps(named, indexed)
         return {
+            description,
             named,
             byName: Object.fromEntries(
                 named.map((prop) => [prop.key, prop] as const)
             ),
-            indexed: base.rule.filter(isIndexed)
+            indexed
         }
     },
     intersect: (l, r): PropsNode | Disjoint => {
@@ -141,25 +148,21 @@ export const PropsNode = defineNodeKind<PropsNode>({
             )
         }
         return PropsNode([...named, ...indexed])
-    },
-    describe: (node) => {
-        const entries = node.named.map((prop): [string, string] => {
-            return [
-                `${prop.key}${prop.optional ? "?" : ""}`,
-                prop.value.toString()
-            ]
-        })
-        for (const entry of node.indexed) {
-            entries.push([`[${entry.key}]`, entry.value.toString()])
-        }
-        return JSON.stringify(fromEntries(entries))
     }
 })
 
-export const propsNodeFrom = (
-    namedInput: NamedPropsInput,
-    ...indexedInput: IndexedPropInput[]
-) => {
+const describeProps = (named: NamedPropRule[], indexed: IndexedPropRule[]) => {
+    const entries = named.map((prop): [string, string] => {
+        return [`${prop.key}${prop.optional ? "?" : ""}`, prop.value.toString()]
+    })
+    for (const entry of indexed) {
+        entries.push([`[${entry.key}]`, entry.value.toString()])
+    }
+    return JSON.stringify(fromEntries(entries))
+}
+
+export const parsePropsInput = (input: PropsInput) => {
+    const [namedInput, ...indexedInput] = isArray(input) ? input : [input]
     const props: PropRule[] = []
     for (const k in namedInput) {
         props.push({

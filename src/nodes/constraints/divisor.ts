@@ -15,7 +15,7 @@ export const DivisorNode = defineNodeKind<DivisorNode>({
         DivisorNode(
             Math.abs((l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule))
         ),
-    describe: (node) => `a multiple of ${node.rule}`
+    props: (base) => ({ description: `a multiple of ${base.rule}` })
 })
 
 // compile: (n, condition, s) => s.ifNotThen(condition, s.problem("divisor", n))
