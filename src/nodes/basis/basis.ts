@@ -11,7 +11,7 @@ import { Disjoint } from "../disjoint.js"
 import type { Node } from "../node.js"
 import type { ClassNode } from "./class.js"
 import type { DomainNode } from "./domain.js"
-import { ValueNode } from "./value.js"
+import type { ValueNode } from "./value.js"
 
 type BasisNodesByKind = {
     domain: DomainNode
@@ -45,13 +45,16 @@ export const basisPrecedenceByKind: Record<BasisKind, number> = {
 
 export type BasisNodeSubclass = BasisNodesByKind[BasisKind]
 
-export type BasisNode<
-    kind extends BasisKind = BasisKind,
-    rule = unknown
-> = Node<kind, rule, BasisNode> & {
-    domain: Domain
-    literalKeys: PropertyKey[]
+export type BasisNodeDefinition = {
+    kind: BasisKind
+    rule: unknown
 }
+
+export type BasisNode<def extends BasisNodeDefinition = BasisNodeDefinition> =
+    Node<def & { intersected: BasisNode }> & {
+        domain: Domain
+        literalKeys: PropertyKey[]
+    }
 
 export const intersectBases = (
     l: BasisNode,
@@ -68,16 +71,16 @@ export const intersectBases = (
     if (l.domain !== r.domain) {
         disjointEntries.push(["domain", { l, r }])
     }
-    if (l instanceof ValueNode && r instanceof ValueNode) {
+    if (l.hasKind("value") && r.hasKind("value")) {
         if (l !== r) {
             disjointEntries.push(["value", { l, r }])
         }
     }
     return disjointEntries.length
         ? Disjoint.fromEntries(disjointEntries)
-        : basisPrecedenceByKind[l.level] < basisPrecedenceByKind[r.level]
+        : basisPrecedenceByKind[l.kind] < basisPrecedenceByKind[r.kind]
         ? l
-        : basisPrecedenceByKind[r.level] < basisPrecedenceByKind[l.level]
+        : basisPrecedenceByKind[r.kind] < basisPrecedenceByKind[l.kind]
         ? r
         : throwInternalError(
               `Unexpected non-disjoint intersection from basis nodes with equal precedence ${l} and ${r}`

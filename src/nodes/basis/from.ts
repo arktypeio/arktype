@@ -13,7 +13,7 @@ export type basisNodeFrom<input extends BasisInput> = input extends Domain
     ? ClassNode
     : ValueNode
 
-export const basisNodeFrom = ((input) => {
+export const basisNodeFrom = (input: BasisInput) => {
     switch (typeof input) {
         case "string":
             return DomainNode(input)
@@ -26,4 +26,4 @@ export const basisNodeFrom = ((input) => {
                 `Unexpectedly got a basis input of type ${domainOf(input)}`
             )
     }
-}) as <input extends BasisInput>(input: input) => basisNodeFrom<input>
+}

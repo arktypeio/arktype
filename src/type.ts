@@ -2,9 +2,7 @@ import { compile, In } from "./compile/compile.js"
 import { registry } from "./compile/registry.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
-import { ValueNode } from "./nodes/basis/value.js"
 import type { PredicateInput } from "./nodes/predicate.js"
-import { PredicateNode } from "./nodes/predicate.js"
 import type {
     BranchesInput,
     extractBases,

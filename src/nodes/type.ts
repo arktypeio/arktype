@@ -3,16 +3,26 @@ import type { List } from "../utils/lists.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { BasisInput } from "./basis/basis.js"
 import { ValueNode } from "./basis/value.js"
+import { arrayIndexInput } from "./constraints/props/indexed.js"
 import type { Discriminant } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
-import { PredicateNode } from "./predicate.js"
+import {
+    predicateFromInput,
+    PredicateNode,
+    unknownPredicateNode
+} from "./predicate.js"
 import type { inferPredicateDefinition, PredicateInput } from "./predicate.js"
 
-export type TypeNode = Node<"type", PredicateNode[], TypeNode> & {
+export type TypeNode = Node<{
+    kind: "type"
+    rule: PredicateNode[]
+    intersected: TypeNode
+}> & {
     discriminant: Discriminant | undefined
+    valueNode: ValueNode | undefined
 }
 
 export const TypeNode = defineNodeKind<TypeNode>({
@@ -162,14 +172,6 @@ const compileIndiscriminable = (branches: PredicateNode[]) => {
 //             return result
 //     }
 // }
-
-const fromDynamic = (...branches: BranchesInput): TypeNode => {
-    return TypeNode(
-        reduceBranches(
-            branches.map((branch) => PredicateNode.from(branch as never))
-        )
-    )
-}
 
 const reduceBranches = (branchNodes: PredicateNode[]) => {
     const uniquenessByIndex: Record<number, boolean> = branchNodes.map(
@@ -334,7 +336,11 @@ export const typeNodeFromValues = (branches: readonly unknown[]) => {
 }
 
 export const typeNodeFromInput = (input: TypeInput) =>
-    isArray(input) ? TypeNode.from(...input) : TypeNode.from(input)
+    isArray(input)
+        ? TypeNode(
+              reduceBranches(input.map((branch) => predicateFromInput(branch)))
+          )
+        : TypeNode([predicateFromInput(input)])
 
 export const neverTypeNode = TypeNode([])
 

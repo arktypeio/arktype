@@ -6,12 +6,13 @@ import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
+import { listFrom } from "../utils/lists.js"
 import type { Constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
-import { isKeyOf, type keySet } from "../utils/records.js"
+import { type keySet } from "../utils/records.js"
 import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
 import { basisPrecedenceByKind } from "./basis/basis.js"
-import { ClassNode } from "./basis/class.js"
+import { basisNodeFrom } from "./basis/from.js"
 import { ValueNode } from "./basis/value.js"
 import type { DivisorNode } from "./constraints/divisor.js"
 import type { MorphNode } from "./constraints/morph.js"
@@ -20,16 +21,21 @@ import type { inferPropsInput } from "./constraints/props/infer.js"
 import type {
     NamedPropsInput,
     PropsInput,
-    PropsInputTuple
+    PropsInputTuple,
+    PropsNode
 } from "./constraints/props/props.js"
-import { PropsNode } from "./constraints/props/props.js"
+import { propsNodeFrom } from "./constraints/props/props.js"
 import type { Range, RangeNode } from "./constraints/range.js"
-import type { RegexNode } from "./constraints/regex.js"
+import { RegexNode } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
 import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
 
-export type PredicateNode = Node<"predicate", PredicateRules, PredicateNode> & {
+export type PredicateNode = Node<{
+    kind: "predicate"
+    rule: PredicateRules
+    intersected: PredicateNode
+}> & {
     basis: BasisNode | undefined
     constraints: ConstraintNode[]
     getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
@@ -127,17 +133,17 @@ export const PredicateNode = defineNodeKind<PredicateNode>({
     }
 })
 
-// static from<const input extends PredicateInput>(input: input) {
-//     const basis = input.basis && basisNodeFrom(input.basis)
-//     const rules: PredicateRules = basis ? [basis] : []
-//     for (const kind of constraintsByPrecedence) {
-//         if (input[kind]) {
-//             assertAllowsConstraint(basis, kind)
-//             rules.push(createConstraint(kind, input[kind]))
-//         }
-//     }
-//     return new PredicateNode(rules)
-// }
+export const predicateFromInput = (input: PredicateInput) => {
+    const basis = input.basis && basisNodeFrom(input.basis)
+    const rules: PredicateRules = basis ? [basis] : []
+    for (const kind of constraintsByPrecedence) {
+        if (input[kind]) {
+            assertAllowsConstraint(basis, kind)
+            rules.push(createConstraint(kind, input[kind]))
+        }
+    }
+    return PredicateNode(rules)
+}
 
 // compileTraverse(s: CompilationState) {
 //     // let result = this.basis?.compileTraverse(s) ?? ""
@@ -228,8 +234,7 @@ export const assertAllowsConstraint = (
         case "range":
             if (domain !== "string" && domain !== "number") {
                 const hasSizedClassBasis =
-                    basis instanceof ClassNode &&
-                    basis.extendsOneOf(Array, Date)
+                    basis?.hasKind("class") && basis.extendsOneOf(Array, Date)
                 if (!hasSizedClassBasis) {
                     throwParseError(writeUnboundableMessage(domain))
                 }
@@ -290,16 +295,16 @@ export type PredicateRules = [BasisNode, ...ConstraintNode[]] | ConstraintNode[]
 export const createConstraint = <kind extends ConstraintKind>(
     kind: kind,
     input: ConstraintsInput[kind]
-) =>
-    (kind === "props"
-        ? isArray(input)
-            ? PropsNode.from(...(input as PropsInputTuple))
-            : PropsNode.from(input as NamedPropsInput)
-        : constraintKinds[kind as Exclude<ConstraintKind, "props">](
-              (isKeyOf(kind, listableInputKinds) && !isArray(input)
-                  ? [input]
-                  : input) as never
-          )) as ConstraintNode<kind>
+): ConstraintNode => {
+    switch (kind) {
+        case "props":
+            return isArray(input)
+                ? propsNodeFrom(...(input as PropsInputTuple))
+                : propsNodeFrom(input as NamedPropsInput)
+        case "regex":
+            return RegexNode(listFrom(input as ConstraintsInput["regex"]))
+    }
+}
 
 // export const constraintKinds = {
 //     range: RangeNode,

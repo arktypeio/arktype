@@ -3,7 +3,7 @@ import type { DisjointsSources } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
 import type { Node } from "../../node.js"
 import { defineNodeKind } from "../../node.js"
-import { neverTypeNode } from "../../type.js"
+import { neverTypeNode, typeNodeFromInput } from "../../type.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
 import {
     compileNamedAndIndexedProps,
@@ -14,7 +14,11 @@ import { compileNamedProps, intersectNamedProp } from "./named.js"
 
 export type PropRule = NamedPropRule | IndexedPropRule
 
-export type PropsNode = Node<"props", PropRule[], PropsNode> & {
+export type PropsNode = Node<{
+    kind: "props"
+    rule: PropRule[]
+    intersected: PropsNode
+}> & {
     named: NamedPropRule[]
     indexed: IndexedPropRule[]
     byName: Record<string, NamedPropRule>
@@ -152,27 +156,27 @@ export const PropsNode = defineNodeKind<PropsNode>({
     }
 })
 
-// static from(
-//     namedInput: NamedPropsInput,
-//     ...indexedInput: IndexedPropInput[]
-// ) {
-//     const props: PropRule[] = []
-//     for (const k in namedInput) {
-//         props.push({
-//             key: k,
-//             prerequisite: namedInput[k].prerequisite ?? false,
-//             optional: namedInput[k].optional ?? false,
-//             value: typeNodeFromInput(namedInput[k].value)
-//         })
-//     }
-//     for (const prop of indexedInput) {
-//         props.push({
-//             key: typeNodeFromInput(prop.key) as TypeNode<string>,
-//             value: typeNodeFromInput(prop.value)
-//         })
-//     }
-//     return new PropsNode(props)
-// }
+export const propsNodeFrom = (
+    namedInput: NamedPropsInput,
+    ...indexedInput: IndexedPropInput[]
+) => {
+    const props: PropRule[] = []
+    for (const k in namedInput) {
+        props.push({
+            key: k,
+            prerequisite: namedInput[k].prerequisite ?? false,
+            optional: namedInput[k].optional ?? false,
+            value: typeNodeFromInput(namedInput[k].value)
+        })
+    }
+    for (const prop of indexedInput) {
+        props.push({
+            key: typeNodeFromInput(prop.key),
+            value: typeNodeFromInput(prop.value)
+        })
+    }
+    return PropsNode(props)
+}
 
 // compileTraverse(s: CompilationState) {
 //     return this.named

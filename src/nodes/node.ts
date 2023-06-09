@@ -49,7 +49,7 @@ export type NodeKinds = {
 
 export type NodeKind = keyof NodeKinds
 
-export type NodeDefinition<node extends Node> = {
+export type NodeImplementation<node extends Node> = {
     kind: node["kind"]
     compile: (rule: node["rule"]) => string
     intersect: (
@@ -64,21 +64,23 @@ export type NodeDefinition<node extends Node> = {
     : { extend: NodeExtension<node> })
 
 type NodeExtension<node extends Node> = (
-    base: Node<node["kind"], node["rule"]>
+    base: Pick<node, keyof Node>
 ) => Omit<node, keyof Node>
+
+export type NodeDefinition = {
+    kind: NodeKind
+    rule: unknown
+    intersected: Node<any>
+}
 
 // Need an interface to use `this`
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-export interface Node<
-    kind extends NodeKind = any,
-    rule = any,
-    intersected extends Node<any, any, any> = Node<any, any, any>
-> {
-    kind: kind
-    rule: rule
+export interface Node<def extends NodeDefinition = NodeDefinition> {
+    kind: def["kind"]
+    rule: def["rule"]
     condition: string
-    intersect(other: intersected): intersected | Disjoint
-    intersectionCache: Record<string, intersected | Disjoint | undefined>
+    intersect(other: def["intersected"]): def["intersected"] | Disjoint
+    intersectionCache: Record<string, def["intersected"] | Disjoint | undefined>
     allows(data: unknown): boolean
     hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
 }
@@ -86,7 +88,7 @@ export interface Node<
 type IntersectionCache<node> = Record<string, node | Disjoint | undefined>
 
 export const defineNodeKind = <node extends Node>(
-    def: NodeDefinition<node>
+    def: NodeImplementation<node>
 ) => {
     const nodeCache: {
         [condition: string]: node | undefined
@@ -97,7 +99,7 @@ export const defineNodeKind = <node extends Node>(
             return nodeCache[condition]!
         }
         const intersectionCache: IntersectionCache<Node> = {}
-        const base: Node<node["kind"], node["rule"]> = {
+        const base: Node = {
             kind: def.kind,
             hasKind: (kind) => kind === def.kind,
             condition,

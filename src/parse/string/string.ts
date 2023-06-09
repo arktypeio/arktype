@@ -1,5 +1,5 @@
-import { type error, throwParseError } from "../../utils/errors.js"
 import type { TypeNode } from "../../nodes/type.js"
+import { type error, throwParseError } from "../../utils/errors.js"
 import { type inferAst, writeUnsatisfiableExpressionError } from "../ast/ast.js"
 import type { ParseContext } from "../definition.js"
 import type { DynamicStateWithRoot } from "./reduce/dynamic.js"
@@ -64,16 +64,16 @@ export type parseUntilFinalizer<
     $
 > = s["finalizer"] extends undefined ? parseUntilFinalizer<next<s, $>, $> : s
 
-export type extractFinalizedResult<s extends StaticState> =
-    s["finalizer"] extends error
-        ? s["finalizer"]
-        : s["finalizer"] extends ""
-        ? s["root"]
-        : error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>
-
 const next = (s: DynamicState) =>
     s.hasRoot() ? parseOperator(s) : parseOperand(s)
 
 type next<s extends StaticState, $> = s["root"] extends undefined
     ? parseOperand<s, $>
     : parseOperator<s>
+
+export type extractFinalizedResult<s extends StaticState> =
+    s["finalizer"] extends error
+        ? s["finalizer"]
+        : s["finalizer"] extends ""
+        ? s["root"]
+        : error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>

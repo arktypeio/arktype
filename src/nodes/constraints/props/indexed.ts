@@ -4,8 +4,8 @@ import { cached } from "../../../utils/functions.js"
 import { tryParseWellFormedInteger } from "../../../utils/numericLiterals.js"
 import { ClassNode } from "../../basis/class.js"
 import type { PredicateInput } from "../../predicate.js"
-import type { TypeInput } from "../../type.js"
-import { nonVariadicArrayIndexTypeNode, TypeNode } from "../../type.js"
+import type { TypeInput, TypeNode } from "../../type.js"
+import { nonVariadicArrayIndexTypeNode, typeNodeFromInput } from "../../type.js"
 import type { NamedPropRule } from "./named.js"
 import { compileNamedProps } from "./named.js"
 
@@ -158,7 +158,9 @@ const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
 
 export const arrayBasisNode = ClassNode(Array)
 
-export const getStringNode = cached(() => TypeNode.from({ basis: "string" }))
+export const getStringNode = cached(() =>
+    typeNodeFromInput({ basis: "string" })
+)
 
 export const arrayIndexInput = <index extends number = 0>(
     firstVariadicIndex: index = 0 as index
@@ -171,4 +173,4 @@ export const arrayIndexInput = <index extends number = 0>(
 export const arrayIndexTypeNode = (firstVariadicIndex = 0) =>
     firstVariadicIndex === 0
         ? nonVariadicArrayIndexTypeNode
-        : TypeNode.from(arrayIndexInput(firstVariadicIndex))
+        : typeNodeFromInput(arrayIndexInput(firstVariadicIndex))

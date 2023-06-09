@@ -60,7 +60,11 @@ export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 //     ? "items long"
 //     : ""
 
-export type RangeNode = Node<"range", Range, RangeNode> & {
+export type RangeNode = Node<{
+    kind: "range"
+    rule: Range
+    intersected: RangeNode
+}> & {
     min: Bound<MinComparator> | undefined
     max: Bound<MaxComparator> | undefined
 }
