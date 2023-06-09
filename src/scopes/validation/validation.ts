@@ -10,13 +10,13 @@ import { parsedDate } from "./date.js"
 // Non-trivial expressions should have an explanation or attribution
 
 // TODO: { mustBe: "a well-formed numeric string" }
-const parsedNumber = TypeNode.from({
+const parsedNumber = TypeNode({
     basis: "string",
     regex: wellFormedNumberMatcher.source,
     morph: (s) => parseFloat(s)
 })
 
-const parsedInteger = TypeNode.from({
+const parsedInteger = TypeNode({
     basis: "string",
     regex: wellFormedIntegerMatcher.source,
     morph: (s) => parseInt(s)
@@ -40,7 +40,7 @@ const parsedInteger = TypeNode.from({
 const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 
 //  "a valid email"
-const email = TypeNode.from({
+const email = TypeNode({
     basis: "string",
     regex: emailMatcher.source
 })
@@ -50,7 +50,7 @@ const uuidMatcher =
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 // "a valid UUID"
-const uuid = TypeNode.from({
+const uuid = TypeNode({
     basis: "string",
     regex: uuidMatcher.source
 })
@@ -60,13 +60,13 @@ const semverMatcher =
 
 // https://semver.org/
 // "a valid semantic version (see https://semver.org/)"
-const semver = TypeNode.from({
+const semver = TypeNode({
     basis: "string",
     regex: semverMatcher.source
 })
 
 // "a JSON-parsable string"
-const json = TypeNode.from({
+const json = TypeNode({
     basis: "string",
     morph: (s) => JSON.parse(s)
 })
@@ -98,7 +98,7 @@ export const validation = Scope.root({
     parsedDate,
     semver,
     json,
-    integer: TypeNode.from({ basis: "number", divisor: 1 })
+    integer: TypeNode({ basis: "number", divisor: 1 })
 })
 
 export const validationTypes = validation.export()

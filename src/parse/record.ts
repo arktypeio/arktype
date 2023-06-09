@@ -33,12 +33,12 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
         })
         ctx.path.pop()
     }
-    const props = new PropsNode(named)
-    const predicate = new PredicateNode([objectBasisNode, props])
-    return new TypeNode([predicate])
+    const props = PropsNode(named)
+    const predicate = PredicateNode([objectBasisNode, props])
+    return TypeNode([predicate])
 }
 
-const objectBasisNode = new DomainNode("object")
+const objectBasisNode = DomainNode("object")
 
 type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`
     ? `${name}${Scanner.EscapeToken}?`

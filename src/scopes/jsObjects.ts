@@ -2,15 +2,15 @@ import { TypeNode } from "../nodes/type.js"
 import { Scope } from "../scope.js"
 
 export const jsObject = Scope.root({
-    Function: TypeNode.from({ basis: Function }),
-    Date: TypeNode.from({ basis: Date }),
-    Error: TypeNode.from({ basis: Error }),
-    Map: TypeNode.from({ basis: Map }),
-    RegExp: TypeNode.from({ basis: RegExp }),
-    Set: TypeNode.from({ basis: Set }),
-    WeakMap: TypeNode.from({ basis: WeakMap }),
-    WeakSet: TypeNode.from({ basis: WeakSet }),
-    Promise: TypeNode.from({ basis: Promise })
+    Function: TypeNode({ basis: Function }),
+    Date: TypeNode({ basis: Date }),
+    Error: TypeNode({ basis: Error }),
+    Map: TypeNode({ basis: Map }),
+    RegExp: TypeNode({ basis: RegExp }),
+    Set: TypeNode({ basis: Set }),
+    WeakMap: TypeNode({ basis: WeakMap }),
+    WeakSet: TypeNode({ basis: WeakSet }),
+    Promise: TypeNode({ basis: Promise })
 })
 
 export const jsObjectTypes = jsObject.export()

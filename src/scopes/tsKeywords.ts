@@ -18,19 +18,19 @@ import { Scope } from "../scope.js"
 
 export const tsKeyword = Scope.root({
     any: "unknown" as Inferred<any>,
-    bigint: TypeNode.from({ basis: "bigint" }),
+    bigint: TypeNode({ basis: "bigint" }),
     boolean: "true|false",
-    false: TypeNode.from({ basis: ["===", false as const] }),
-    never: TypeNode.from(),
-    null: TypeNode.from({ basis: ["===", null] }),
-    number: TypeNode.from({ basis: "number" }),
-    object: TypeNode.from({ basis: "object" }),
-    string: TypeNode.from({ basis: "string" }),
-    symbol: TypeNode.from({ basis: "symbol" }),
-    true: TypeNode.from({ basis: ["===", true as const] }),
-    unknown: TypeNode.from({ basis: undefined }),
+    false: TypeNode({ basis: ["===", false as const] }),
+    never: TypeNode(),
+    null: TypeNode({ basis: ["===", null] }),
+    number: TypeNode({ basis: "number" }),
+    object: TypeNode({ basis: "object" }),
+    string: TypeNode({ basis: "string" }),
+    symbol: TypeNode({ basis: "symbol" }),
+    true: TypeNode({ basis: ["===", true as const] }),
+    unknown: TypeNode({ basis: undefined }),
     void: "undefined" as Inferred<void>,
-    undefined: TypeNode.from({ basis: ["===", undefined] })
+    undefined: TypeNode({ basis: ["===", undefined] })
 })
 
 export const tsKeywordTypes = tsKeyword.export()

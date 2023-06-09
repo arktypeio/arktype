@@ -1,3 +1,4 @@
+import { isNode } from "../nodes/node.js"
 import { TypeNode } from "../nodes/type.js"
 import type { Scope } from "../scope.js"
 import { Type } from "../type.js"
@@ -34,14 +35,14 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
     const objectKind = objectKindOf(def)
     switch (objectKind) {
         case "Object":
-            if (def instanceof TypeNode) {
+            if (isNode(def) && def.hasKind("type")) {
                 return def
             }
             return parseRecord(def as Dict, ctx)
         case "Array":
             return parseTuple(def as List, ctx)
         case "RegExp":
-            return TypeNode.from({
+            return TypeNode({
                 basis: "string",
                 regex: (def as RegExp).source
             })
