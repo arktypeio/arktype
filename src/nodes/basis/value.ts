@@ -1,28 +1,31 @@
 import { compileSerializedValue, In } from "../../compile/compile.js"
+import type { Domain } from "../../utils/domains.js"
 import { domainOf } from "../../utils/domains.js"
+import { prototypeKeysOf } from "../../utils/objectKinds.js"
 import { stringify } from "../../utils/serialize.js"
-import type { BasisNode } from "./basis.js"
-import { defineBasisNode } from "./basis.js"
+import type { Node } from "../node.js"
+import { defineNodeKind } from "../node.js"
+import { intersectBases } from "./basis.js"
 
-export type ValueNode = BasisNode<{
+export type ValueNode = Node<{
+    kind: "value"
     rule: unknown
-    level: "value"
+    domain: Domain
 }>
 
-export const ValueNode = defineBasisNode<ValueNode>({
-    level: "value",
-    domain: domainOf,
-    construct: (base) => base,
+export const ValueNode = defineNodeKind<ValueNode>({
+    kind: "value",
+    extend: (base) => ({
+        domain: domainOf(base.rule),
+        literalKeys:
+            base.rule === null || base.rule === undefined
+                ? []
+                : [...prototypeKeysOf(base.rule), ...Object.keys(base.rule)]
+    }),
+    intersect: intersectBases,
     compile: (rule) => `${In} === ${compileSerializedValue(rule)}`,
     describe: (node) => `the value ${stringify(node.rule)}`
 })
-
-// literalKeysOf(): PropertyKey[] {
-//     if (this.rule === null || this.rule === undefined) {
-//         return []
-//     }
-//     return [...prototypeKeysOf(this.rule), ...Object.keys(this.rule)]
-// }
 
 // compileTraverse(s: CompilationState) {
 //     return s.ifNotThen(this.condition, s.problem("value", this.child))

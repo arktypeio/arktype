@@ -9,12 +9,8 @@ import type { List, listable } from "../utils/lists.js"
 import type { Constructor, instanceOf } from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
 import { isKeyOf, type keySet } from "../utils/records.js"
-import type {
-    BasisInput,
-    BasisInstance,
-    BasisNode,
-    inferBasis
-} from "./basis/basis.js"
+import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
+import { basisPrecedenceByKind } from "./basis/basis.js"
 import { ClassNode } from "./basis/class.js"
 import { ValueNode } from "./basis/value.js"
 import { DivisorNode } from "./constraints/divisor.js"
@@ -42,6 +38,7 @@ export type PredicateNode = Node<{
     getConstraint: <k extends ConstraintKind>(
         k: k
     ) => ReturnType<ConstraintKinds[k]> | undefined
+    valueNode: ValueNode | undefined
 }>
 
 export const PredicateNode = defineNodeKind<PredicateNode>({
@@ -57,14 +54,23 @@ export const PredicateNode = defineNodeKind<PredicateNode>({
         const condition = subconditions.join(" && ") || "true"
         return condition
     },
-    construct: (base) => ({
-        basis: base.rule[0]?.kind === "basis" ? base.rule[0] : undefined,
-        constraints: (base.rule[0]?.kind === "basis"
-            ? base.rule.slice(1)
-            : base.rule) as ConstraintNode[],
-        getConstraint: (k) =>
-            base.rule.find((constraint) => constraint.kind === k)
-    }),
+    extend: (base) => {
+        const hasBasis = isKeyOf(base.rule[0]?.kind, basisPrecedenceByKind)
+        const basis = (hasBasis ? base.rule[0] : undefined) as
+            | BasisNode
+            | undefined
+        const constraints = (
+            basis ? base.rule.slice(1) : base.rule
+        ) as ConstraintNode[]
+        return {
+            basis,
+            constraints,
+            getConstraint: (k: ConstraintKind) =>
+                // TODO: null should be an error
+                constraints.find((constraint) => constraint.kind === k) || null,
+            valueNode: basis?.hasKind("value") ? basis : undefined
+        }
+    },
     intersect: (l, r): PredicateNode | Disjoint => {
         // if (
         //     // s.lastOperator === "&" &&
@@ -119,12 +125,9 @@ export const PredicateNode = defineNodeKind<PredicateNode>({
         if (node.rule.length === 0) {
             return "unknown"
         }
-        return node.rule[0]?.kind === "basis"
-            ? `${node.rule[0]}`
-            : node.rule
-                  .slice(1)
-                  .map((rule) => rule.toString())
-                  .join(" and ")
+        return node.constraints.length
+            ? node.constraints.map((rule) => rule.toString()).join(" and ")
+            : `${node.basis}`
     }
 })
 
@@ -147,10 +150,6 @@ export const PredicateNode = defineNodeKind<PredicateNode>({
 //     // }
 //     s
 //     return "true" //result
-// }
-
-// get valueNode(): ValueNode | undefined {
-//     return this.basis instanceof ValueNode ? this.basis : undefined
 // }
 
 // constrain<kind extends ConstraintKind>(
@@ -208,7 +207,7 @@ export const PredicateNode = defineNodeKind<PredicateNode>({
 // }
 
 export const assertAllowsConstraint = (
-    basis: BasisInstance | undefined,
+    basis: BasisNode | undefined,
     kind: ConstraintKind
 ) => {
     if (basis instanceof ValueNode) {
@@ -290,9 +289,7 @@ type ListableInputKind = keyof typeof listableInputKinds
 
 export const unknownPredicateNode = PredicateNode([])
 
-export type PredicateRules =
-    | [BasisInstance, ...ConstraintNode[]]
-    | ConstraintNode[]
+export type PredicateRules = [BasisNode, ...ConstraintNode[]] | ConstraintNode[]
 
 export const createConstraint = <kind extends ConstraintKind>(
     kind: kind,
@@ -302,7 +299,7 @@ export const createConstraint = <kind extends ConstraintKind>(
         ? isArray(input)
             ? PropsNode.from(...(input as PropsInputTuple))
             : PropsNode.from(input as NamedPropsInput)
-        : new constraintKinds[kind as Exclude<ConstraintKind, "props">](
+        : constraintKinds[kind as Exclude<ConstraintKind, "props">](
               (isKeyOf(kind, listableInputKinds) && !isArray(input)
                   ? [input]
                   : input) as never
@@ -347,10 +344,10 @@ export type ConstraintsInput<
 type unknownConstraintInput<kind extends ConstraintKind> = kind extends "props"
     ? PropsInput
     :
-          | ConstructorParameters<ConstraintKinds[kind]>[0]
+          | Parameters<ConstraintKinds[kind]>[0]
           // Add the unlisted version as a valid input for these kinds
           | (kind extends ListableInputKind
-                ? ConstructorParameters<ConstraintKinds[kind]>[0][number]
+                ? Parameters<ConstraintKinds[kind]>[0][number]
                 : never)
 
 export type inferPredicateDefinition<input extends PredicateInput> =

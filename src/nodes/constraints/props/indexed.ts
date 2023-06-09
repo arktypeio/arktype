@@ -30,7 +30,7 @@ const compileArray = (
 ) => {
     const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
     const namedCheck = compileNamedProps(namedProps)
-    const elementCondition = elementNode.rule
+    const elementCondition = elementNode.condition
         .replaceAll(IndexIn, `${IndexIn}Inner`)
         .replaceAll(In, `${In}[${IndexIn}]`)
     // TODO: don't recheck named
@@ -61,14 +61,14 @@ const compileNonArray = (
 }
 
 const compileIndexedProp = (prop: IndexedPropRule) => {
-    const valueCheck = `valid = ${prop.value.rule
+    const valueCheck = `valid = ${prop.value.condition
         .replaceAll(KeyIn, `${KeyIn}Inner`)
         .replaceAll(In, `${In}[${KeyIn}]`)} && valid`
     if (prop.key === getStringNode()) {
         // if the index signature is just for "string", we don't need to check it explicitly
         return valueCheck
     }
-    return `if(${prop.key.rule
+    return `if(${prop.key.condition
         .replaceAll(KeyIn, `${KeyIn}Inner`)
         .replaceAll(In, KeyIn)}) {
         ${valueCheck}
@@ -81,7 +81,7 @@ export type IndexedPropInput = {
 }
 
 export type IndexedPropRule = {
-    key: TypeNode<string>
+    key: TypeNode
     value: TypeNode
 }
 
@@ -124,7 +124,7 @@ export const createArrayIndexMatcher = <index extends number>(
         ? NonVariadicIndexMatcherSource
         : VariadicIndexMatcherSource
 
-export const extractArrayIndexRegex = (keyNode: TypeNode<string>) => {
+export const extractArrayIndexRegex = (keyNode: TypeNode) => {
     if (keyNode.rule.length !== 1) {
         return
     }
@@ -156,7 +156,7 @@ const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
     )
 }
 
-export const arrayBasisNode = new ClassNode(Array)
+export const arrayBasisNode = ClassNode(Array)
 
 export const getStringNode = cached(() => TypeNode.from({ basis: "string" }))
 

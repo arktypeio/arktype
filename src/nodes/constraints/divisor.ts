@@ -10,7 +10,6 @@ export type DivisorNode = Node<{
 export const DivisorNode = defineNodeKind<DivisorNode>({
     kind: "divisor",
     compile: (rule) => `${In} % ${rule} === 0`,
-    construct: (base) => base,
     intersect: (l, r): DivisorNode =>
         DivisorNode(
             Math.abs((l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule))

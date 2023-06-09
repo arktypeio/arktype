@@ -63,7 +63,6 @@ export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 export type RangeNode = Node<{
     kind: "range"
     rule: Range
-
     min: Bound<MinComparator> | undefined
     max: Bound<MaxComparator> | undefined
 }>
@@ -82,18 +81,17 @@ export const RangeNode = defineNodeKind<RangeNode>({
         const compiledBounds = rule.map(compileBound)
         return compiledBounds.join(" && ")
     },
-    construct: (base) =>
-        Object.assign(base, {
-            min: isKeyOf(base.rule[0].comparator, minComparators)
-                ? (base.rule[0] as Bound<MinComparator>)
-                : undefined,
+    extend: (base) => ({
+        min: isKeyOf(base.rule[0].comparator, minComparators)
+            ? (base.rule[0] as Bound<MinComparator>)
+            : undefined,
 
-            max:
-                base.rule[1] ??
-                (isKeyOf(base.rule[0].comparator, maxComparators)
-                    ? (base.rule[0] as Bound<MaxComparator>)
-                    : undefined)
-        }),
+        max:
+            base.rule[1] ??
+            (isKeyOf(base.rule[0].comparator, maxComparators)
+                ? (base.rule[0] as Bound<MaxComparator>)
+                : undefined)
+    }),
     intersect: (l, r): RangeNode | Disjoint => {
         if (isEqualityRangeNode(l)) {
             if (isEqualityRangeNode(r)) {

@@ -1,9 +1,17 @@
+import type { exact } from "../utils/generics.js"
+import type { List } from "../utils/lists.js"
+import { isArray } from "../utils/objectKinds.js"
+import type { BasisInput } from "./basis/basis.js"
 import type { Discriminant } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
-import type { PredicateNode } from "./predicate.js"
+import type {
+    inferPredicateDefinition,
+    PredicateInput,
+    PredicateNode
+} from "./predicate.js"
 
 export type TypeNode = Node<{
     kind: "type"
@@ -17,10 +25,10 @@ export const TypeNode = defineNodeKind<TypeNode>({
         const condition = compileIndiscriminable(rule.sort())
         return condition
     },
-    construct: (base) =>
-        Object.assign(base, {
-            discriminant: discriminate(base.rule)
-        }),
+    extend: (base) => ({
+        discriminant: discriminate(base.rule),
+        valueNode: base.rule.length === 1 ? base.rule[0].valueNode : undefined
+    }),
     intersect: (l, r): TypeNode | Disjoint => {
         if (l.rule.length === 1 && r.rule.length === 1) {
             const result = l.rule[0].intersect(r.rule[0])
@@ -278,10 +286,6 @@ const compileIndiscriminable = (branches: PredicateNode[]) => {
 //     return new TypeNode(TypeNode.reduceBranches([...this.rule, ...other.rule]))
 // }
 
-// function valueNode(): ValueNode | undefined {
-//     return this.rule.length === 1 ? this.rule[0].valueNode : undefined
-// }
-
 // function equals<other>(other: TypeNode<other>): this is TypeNode<other> {
 //     return this === (other as unknown)
 // }
@@ -307,47 +311,47 @@ const compileIndiscriminable = (branches: PredicateNode[]) => {
 //     return this === unknownTypeNode
 // }
 
-// type inferBranches<branches extends BranchesInput> = {
-//     [i in keyof branches]: inferPredicateDefinition<branches[i]>
-// }[number]
+type inferBranches<branches extends BranchesInput> = {
+    [i in keyof branches]: inferPredicateDefinition<branches[i]>
+}[number]
 
-// export type inferTypeInput<input extends TypeInput> = inferPredicateDefinition<
-//     input extends BranchesInput ? input[number] : input
-// >
+export type inferTypeInput<input extends TypeInput> = inferPredicateDefinition<
+    input extends BranchesInput ? input[number] : input
+>
 
-// export type BranchesInput = List<PredicateInput>
+export type BranchesInput = List<PredicateInput>
 
-// export type TypeInput = PredicateInput | BranchesInput
+export type TypeInput = PredicateInput | BranchesInput
 
-// type validatedTypeNodeInput<
-//     branches extends BranchesInput,
-//     bases extends BasisInput[]
-// > = {
-//     [i in keyof branches]: exact<
-//         branches[i],
-//         PredicateInput<bases[i & keyof bases]>
-//     >
-// }
+type validatedTypeNodeInput<
+    branches extends BranchesInput,
+    bases extends BasisInput[]
+> = {
+    [i in keyof branches]: exact<
+        branches[i],
+        PredicateInput<bases[i & keyof bases]>
+    >
+}
 
-// type extractBases<
-//     branches,
-//     result extends BasisInput[] = []
-// > = branches extends [infer head, ...infer tail]
-//     ? extractBases<
-//           tail,
-//           [
-//               ...result,
-//               head extends {
-//                   basis: infer basis extends BasisInput
-//               }
-//                   ? basis
-//                   : BasisInput
-//           ]
-//       >
-//     : result
+type extractBases<
+    branches,
+    result extends BasisInput[] = []
+> = branches extends [infer head, ...infer tail]
+    ? extractBases<
+          tail,
+          [
+              ...result,
+              head extends {
+                  basis: infer basis extends BasisInput
+              }
+                  ? basis
+                  : BasisInput
+          ]
+      >
+    : result
 
-// export const typeNodeFromInput = (input: TypeInput) =>
-//     isArray(input) ? TypeNode.from(...input) : TypeNode.from(input)
+export const typeNodeFromInput = (input: TypeInput) =>
+    isArray(input) ? TypeNode.from(...input) : TypeNode.from(input)
 
 export const neverTypeNode = TypeNode([])
 

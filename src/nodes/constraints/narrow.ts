@@ -20,7 +20,6 @@ export const NarrowNode = defineNodeKind<NarrowNode>({
         )
         return subconditions.join(" && ")
     },
-    construct: (base) => base,
     intersect: (l, r): NarrowNode =>
         NarrowNode(intersectUniqueLists(l.rule, r.rule)),
     describe: (node) => `narrowed by ${node.rule.map((narrow) => narrow.name)}`

@@ -45,15 +45,15 @@ export const PropsNode = defineNodeKind<PropsNode>({
         const indexed = rule.filter(isIndexed)
         return compileNamedAndIndexedProps(named, indexed)
     },
-    construct: (base) => {
+    extend: (base) => {
         const named = base.rule.filter(isNamed)
-        return Object.assign(base, {
+        return {
             named,
             byName: Object.fromEntries(
                 named.map((prop) => [prop.key, prop] as const)
             ),
             indexed: base.rule.filter(isIndexed)
-        })
+        }
     },
     intersect: (l, r): PropsNode | Disjoint => {
         let indexed = [...l.indexed]

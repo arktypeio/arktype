@@ -1,36 +1,74 @@
 import { In } from "../compile/compile.js"
 import { CompiledFunction } from "../utils/functions.js"
-import type { BasisNode } from "./basis/basis.js"
+import type { BasisKind, BasisNode } from "./basis/basis.js"
+import type { ClassNode } from "./basis/class.js"
+import type { DomainNode } from "./basis/domain.js"
+import type { ValueNode } from "./basis/value.js"
+import type { DivisorNode } from "./constraints/divisor.js"
+import type { MorphNode } from "./constraints/morph.js"
+import type { NarrowNode } from "./constraints/narrow.js"
+import type { PropsNode } from "./constraints/props/props.js"
+import type { RangeNode } from "./constraints/range.js"
+import type { RegexNode } from "./constraints/regex.js"
 import { Disjoint } from "./disjoint.js"
+import type { PredicateNode } from "./predicate.js"
+import type { TypeNode } from "./type.js"
 
 export const precedenceByKind = {
+    // roots
     type: 0,
     predicate: 1,
-    basis: 2,
+    // basis checks
+    domain: 2,
+    class: 2,
+    value: 2,
     // shallow checks
     range: 3,
     divisor: 3,
     regex: 3,
-    //
+    // deep checks
     props: 4,
+    // narrows
     narrow: 5,
+    // morphs
     morph: 6
-} as const
+} as const satisfies Record<NodeKind, number>
 
-export type NodeKind = keyof typeof precedenceByKind
+export type NodeKinds = {
+    type: TypeNode
+    predicate: PredicateNode
+    domain: DomainNode
+    class: ClassNode
+    value: ValueNode
+    range: RangeNode
+    divisor: DivisorNode
+    regex: RegexNode
+    props: PropsNode
+    narrow: NarrowNode
+    morph: MorphNode
+}
+
+export type NodeKind = keyof NodeKinds
 
 export type NodeDefinition<node extends Node> = {
     kind: node["kind"]
     compile: (rule: node["rule"]) => string
-    construct: (base: BaseNode<node["kind"], node["rule"]>) => node
     intersect: (
         l: intersectedAs<node>,
         r: intersectedAs<node>
     ) => intersectedAs<node> | Disjoint
     describe: (node: node) => string
-}
+    // require a construct call that returns the extra props to assign if and
+    // only if all declared props are not present on BaseNode
+} & (keyof node extends keyof BaseNode
+    ? { extend?: undefined }
+    : { extend: NodeExtension<node> })
 
-type intersectedAs<node extends Node> = node["kind"] extends "basis"
+type NodeExtension<node extends Node> = (
+    base: BaseNode<node["kind"], node["rule"]>
+) => Omit<node, keyof BaseNode>
+
+type intersectedAs<node extends Node> = node["kind"] extends BasisKind
     ? BasisNode
     : node
 
@@ -43,6 +81,7 @@ export interface BaseNode<kind extends NodeKind = NodeKind, rule = unknown> {
     intersect(other: intersectedAs<this>): intersectedAs<this> | Disjoint
     intersectionCache: IntersectionCache<this>
     allows(data: unknown): boolean
+    hasKind(kind: NodeKind): this is NodeKinds[kind]
 }
 
 type IntersectionCache<node extends Node = Node> = Record<
@@ -75,6 +114,7 @@ export const defineNodeKind = <node extends Node>(
         const intersectionCache: IntersectionCache<node> = {}
         const base: BaseNode<node["kind"], node["rule"]> = {
             kind: def.kind,
+            hasKind: (kind) => kind === def.kind,
             condition,
             rule,
             allows: new CompiledFunction(`${In}`, `return ${condition}`),
@@ -96,7 +136,7 @@ export const defineNodeKind = <node extends Node>(
                 return result
             }
         }
-        return def.construct(base)
+        return def.extend ? Object.assign(base, def.extend(base)) : base
     }
     return construct
 }

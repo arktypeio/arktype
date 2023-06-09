@@ -13,7 +13,7 @@ import type { ClassNode } from "./class.js"
 import type { DomainNode } from "./domain.js"
 import { ValueNode } from "./value.js"
 
-type BasisNodesByLevel = {
+type BasisNodesByKind = {
     domain: DomainNode
     class: ClassNode
     value: ValueNode
@@ -25,8 +25,7 @@ type BasisInputs = {
     class: AbstractableConstructor
 }
 
-export type BasisInput<level extends BasisLevel = BasisLevel> =
-    BasisInputs[level]
+export type BasisInput<level extends BasisKind = BasisKind> = BasisInputs[level]
 
 export type inferBasis<basis extends BasisInput> = basis extends Domain
     ? inferDomain<basis>
@@ -36,41 +35,32 @@ export type inferBasis<basis extends BasisInput> = basis extends Domain
     ? value
     : never
 
-export type BasisLevel = evaluate<keyof BasisNodesByLevel>
+export type BasisKind = evaluate<keyof BasisNodesByKind>
 
-export const precedenceByLevel: Record<BasisLevel, number> = {
+export const basisPrecedenceByKind: Record<BasisKind, number> = {
     value: 0,
     class: 1,
     domain: 2
 }
 
-export type BasisNodeSubclass = BasisNodesByLevel[BasisLevel]
+export type BasisNodeSubclass = BasisNodesByKind[BasisKind]
 
-export type BasisNodeDef = {
+type BasisNodeInput = {
+    kind: BasisKind
     rule: unknown
-    level: BasisLevel
 }
 
-// Need an interface to use `this`
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-interface BasisNodeProps {
-    kind: "basis"
-    domain: Domain
-    literalKeysOf(): PropertyKey[]
-    hasLevel<level extends BasisLevel>(
-        level: level
-    ): this is BasisNodesByLevel[level]
-}
-
-export type BasisNode<def extends BasisNodeDef = BasisNodeDef> = Node<
-    BasisNodeProps & def
+export type defineBasisNode<input extends BasisNodeInput> = Node<
+    input & { domain: Domain; literalKeys: PropertyKey[] }
 >
+
+export type BasisNode = DomainNode | ClassNode | ValueNode
 
 export const intersectBases = (
     l: BasisNode,
     r: BasisNode
 ): BasisNode | Disjoint => {
-    if (l.level === "class" && r.level === "class") {
+    if (l.hasKind("class") && r.hasKind("class")) {
         return constructorExtends(l.rule, r.rule)
             ? l
             : constructorExtends(r.rule, l.rule)
@@ -88,9 +78,9 @@ export const intersectBases = (
     }
     return disjointEntries.length
         ? Disjoint.fromEntries(disjointEntries)
-        : precedenceByLevel[l.level] < precedenceByLevel[r.level]
+        : basisPrecedenceByKind[l.level] < basisPrecedenceByKind[r.level]
         ? l
-        : precedenceByLevel[r.level] < precedenceByLevel[l.level]
+        : basisPrecedenceByKind[r.level] < basisPrecedenceByKind[l.level]
         ? r
         : throwInternalError(
               `Unexpected non-disjoint intersection from basis nodes with equal precedence ${l} and ${r}`

@@ -1,23 +1,31 @@
 import { In } from "../../compile/compile.js"
 import { registry } from "../../compile/registry.js"
 import type { AbstractableConstructor } from "../../utils/objectKinds.js"
-import { getExactBuiltinConstructorName } from "../../utils/objectKinds.js"
+import {
+    getExactBuiltinConstructorName,
+    prototypeKeysOf
+} from "../../utils/objectKinds.js"
 import { defineNodeKind } from "../node.js"
-import type { BasisNode } from "./basis.js"
+import type { defineBasisNode } from "./basis.js"
+import { intersectBases } from "./basis.js"
 
-export type ClassNode = BasisNode<{
+export type ClassNode = defineBasisNode<{
+    kind: "class"
     rule: AbstractableConstructor
-    level: "class"
 }>
 
 export const ClassNode = defineNodeKind<ClassNode>({
-    level: "class",
+    kind: "class",
     compile: (rule) =>
         `${In} instanceof ${
             getExactBuiltinConstructorName(rule) ??
             registry().register(rule.name, rule)
         }`,
-    construct: (base) => Object.assign(base, { domain: () => "object" }),
+    extend: (base) => ({
+        domain: "object",
+        literalKeys: prototypeKeysOf(base.rule.prototype)
+    }),
+    intersect: intersectBases,
     describe: (node) => node.rule.name
 })
 
@@ -25,10 +33,6 @@ export const ClassNode = defineNodeKind<ClassNode>({
 //     return baseConstructors.some((base) =>
 //         constructorExtends(this.rule, base)
 //     )
-// }
-
-// literalKeysOf() {
-//     return prototypeKeysOf(this.rule.prototype)
 // }
 
 // compileTraverse(s: CompilationState) {
