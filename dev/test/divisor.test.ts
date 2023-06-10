@@ -90,7 +90,7 @@ suite("divisibility", () => {
         })
         test("relatively prime", () => {
             const t = type("number%2&number%3")
-            attest(t.root.rule).snap(
+            attest(t.root.condition).snap(
                 'typeof $arkRoot === "number" && $arkRoot % 6 === 0'
             )
             // attest(t.node).snap({

@@ -34,6 +34,10 @@ export type PredicateNode = Node<
         constraints: ConstraintNode[]
         getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
         valueNode: ValueNode | undefined
+        constrain<kind extends ConstraintKind>(
+            kind: kind,
+            input: ConstraintsInput[kind]
+        ): PredicateNode
     }
 >
 
@@ -124,7 +128,18 @@ export const PredicateNode = defineNodeKind<PredicateNode>(
                 constraints.find(
                     (constraint) => constraint.kind === k
                 ) as never,
-            valueNode: basis?.hasKind("value") ? basis : undefined
+            valueNode: basis?.hasKind("value") ? basis : undefined,
+            constrain(kind, input): PredicateNode {
+                assertAllowsConstraint(this.basis, kind)
+                const result = this.intersect(
+                    // TODO: Fix createConstraint(kind, input)
+                    PredicateNode([])
+                )
+                if (result instanceof Disjoint) {
+                    return result.throw()
+                }
+                return result
+            }
         }
     }
 )
@@ -149,20 +164,6 @@ export const parsePredicateNode = (input: PredicateInput) => {
 //     // }
 //     s
 //     return "true" //result
-// }
-
-// constrain<kind extends ConstraintKind>(
-//     kind: kind,
-//     input: ConstraintsInput[kind]
-// ): PredicateNode {
-//     assertAllowsConstraint(this.basis, kind)
-//     const result = this.intersect(
-//         new PredicateNode([createConstraint(kind, input)])
-//     )
-//     if (result instanceof Disjoint) {
-//         return result.throw()
-//     }
-//     return result
 // }
 
 // pruneDiscriminant(path: string[], kind: DiscriminantKind): PredicateNode {

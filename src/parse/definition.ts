@@ -1,5 +1,6 @@
 import { isNode } from "../nodes/node.js"
-import { TypeNode } from "../nodes/type.js"
+import type { TypeNode } from "../nodes/type.js"
+import { node } from "../nodes/type.js"
 import type { Scope } from "../scope.js"
 import { Type } from "../type.js"
 import type { Primitive } from "../utils/domains.js"
@@ -42,7 +43,7 @@ export const parseDefinition = (def: unknown, ctx: ParseContext): TypeNode => {
         case "Array":
             return parseTuple(def as List, ctx)
         case "RegExp":
-            return TypeNode({
+            return node({
                 basis: "string",
                 regex: (def as RegExp).source
             })

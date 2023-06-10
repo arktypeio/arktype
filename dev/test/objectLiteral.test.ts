@@ -10,21 +10,21 @@ suite("object literal", () => {
     test("required", () => {
         const o = type({ a: "string", b: "boolean" })
         attest(o.infer).typed as { a: string; b: boolean }
-        attest(o.root.rule).snap(
+        attest(o.root.condition).snap(
             '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && typeof $arkRoot.a === "string" && ($arkRoot.b === false || $arkRoot.b === true)'
         )
     })
     test("optional keys", () => {
         const o = type({ "a?": "string", b: "boolean" })
         attest(o.infer).typed as { a?: string; b: boolean }
-        attest(o.root.rule).snap(
+        attest(o.root.condition).snap(
             '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && ($arkRoot.b === false || $arkRoot.b === true) && !(\'a\' in $arkRoot) || typeof $arkRoot.a === "string"'
         )
     })
     test("nested", () => {
         const t = type({ "a?": { b: "boolean" } })
         attest(t.infer).typed as { a?: { b: boolean } }
-        attest(t.root.rule).snap(
+        attest(t.root.condition).snap(
             '((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && !(\'a\' in $arkRoot) || ((typeof $arkRoot.a === "object" && $arkRoot.a !== null) || typeof $arkRoot.a === "function") && ($arkRoot.a.b === false || $arkRoot.a.b === true)'
         )
     })

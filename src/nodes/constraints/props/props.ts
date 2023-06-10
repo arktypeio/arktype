@@ -4,7 +4,7 @@ import type { DisjointsSources } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
 import type { Node } from "../../node.js"
 import { defineNodeKind } from "../../node.js"
-import { neverTypeNode, node } from "../../type.js"
+import { neverTypeNode, parseTypeNode } from "../../type.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
 import {
     compileNamedAndIndexedProps,
@@ -36,13 +36,13 @@ export const parsePropsNode = (input: PropsInput) => {
             key: k,
             prerequisite: namedInput[k].prerequisite ?? false,
             optional: namedInput[k].optional ?? false,
-            value: node(namedInput[k].value)
+            value: parseTypeNode(namedInput[k].value)
         })
     }
     for (const prop of indexedInput) {
         rule.push({
-            key: node(prop.key),
-            value: node(prop.value)
+            key: parseTypeNode(prop.key),
+            value: parseTypeNode(prop.value)
         })
     }
     return rule

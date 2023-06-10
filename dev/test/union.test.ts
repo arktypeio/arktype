@@ -1,5 +1,6 @@
 import { suite, test } from "mocha"
 import { type, TypeNode } from "../../src/main.js"
+import { node } from "../../src/nodes/type.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage
@@ -15,14 +16,14 @@ suite("union", () => {
     test("nary", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
-        attest(nary.condition).is(
-            TypeNode.exactly(
+        attest(nary.root).is(
+            node.fromValues(
                 false as const,
                 null,
                 undefined,
                 0 as const,
                 "" as const
-            ).rule
+            )
         )
     })
     test("subtype pruning", () => {

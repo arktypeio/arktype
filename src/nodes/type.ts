@@ -1,6 +1,6 @@
 import type { inferred } from "../parse/definition.js"
-import type { Type } from "../type.js"
 import type { conform, exact } from "../utils/generics.js"
+import { isArray } from "../utils/objectKinds.js"
 import type { BasisInput } from "./basis/basis.js"
 import { ValueNode } from "./basis/value.js"
 import {
@@ -14,26 +14,42 @@ import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
-import type { inferPredicateDefinition, PredicateInput } from "./predicate.js"
+import type {
+    ConstraintKind,
+    inferPredicateDefinition,
+    PredicateInput
+} from "./predicate.js"
 import {
     parsePredicateNode,
     PredicateNode,
     unknownPredicateNode
 } from "./predicate.js"
 
-export type TypeNode<t = unknown> = Node<
-    {
+// Need an interface to use `this`
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+export interface TypeNode<t = unknown>
+    extends Node<{
         kind: "type"
         rule: PredicateNode[]
         intersected: TypeNode
-    },
-    {
-        [inferred]: t
-        discriminant: Discriminant | undefined
-        valueNode: ValueNode | undefined
-        array(): TypeNode
-    }
->
+    }> {
+    [inferred]: t
+    discriminant: Discriminant | undefined
+    valueNode: ValueNode | undefined
+    array(): TypeNode<t[]>
+    isNever(): this is TypeNode<never>
+    isUnknown(): this is TypeNode<unknown>
+    and<other>(other: TypeNode<other>): TypeNode<t & other>
+    or<other>(other: TypeNode<other>): TypeNode<t | other>
+    constrain<kind extends ConstraintKind>(
+        kind: kind,
+        definition: PredicateInput[kind]
+    ): TypeNode<t>
+    equals<other>(other: TypeNode<other>): this is TypeNode<other>
+    extends<other>(other: TypeNode<other>): this is TypeNode<t & other>
+    keyof(): TypeNode<keyof t>
+    getPath(...path: (string | TypeNode<string>)[]): TypeNode
+}
 
 export const TypeNode = defineNodeKind<TypeNode>(
     {
@@ -60,12 +76,66 @@ export const TypeNode = defineNodeKind<TypeNode>(
                 : base.rule.map((branch) => branch.toString()).join(" or "),
         discriminant: discriminate(base.rule),
         valueNode: base.rule.length === 1 ? base.rule[0].valueNode : undefined,
-        array(): TypeNode {
+        array(): any {
             const props = PropsNode([
                 { key: arrayIndexTypeNode(), value: this }
             ])
             const predicate = PredicateNode([arrayBasisNode, props])
             return TypeNode([predicate])
+        },
+        isNever() {
+            return this.rule.length === 0
+        },
+        isUnknown() {
+            return this.rule.length === 1 && this.rule[0].rule.length === 0
+        },
+        and(other): any {
+            const result = this.intersect(other as never)
+            return result instanceof Disjoint ? result.throw() : result
+        },
+        or(other): any {
+            if (this === (other as unknown)) {
+                return this
+            }
+            return TypeNode(reduceBranches([...this.rule, ...other.rule]))
+        },
+        constrain(kind, def): any {
+            return TypeNode(
+                this.rule.map((branch) => branch.constrain(kind, def))
+            )
+        },
+        equals(other) {
+            return this === other
+        },
+        extends(other) {
+            return this.intersect(other as never) === this
+        },
+        keyof(): any {
+            return this
+        },
+        getPath(...path): any {
+            let current: PredicateNode[] = this.rule
+            let next: PredicateNode[] = []
+            while (path.length) {
+                const key = path.shift()!
+                for (const branch of current) {
+                    const propsAtKey = branch.getConstraint("props")
+                    if (propsAtKey) {
+                        const branchesAtKey =
+                            typeof key === "string"
+                                ? propsAtKey.byName?.[key]?.value.rule
+                                : propsAtKey.indexed.find(
+                                      (entry) => entry.key === key
+                                  )?.value.rule
+                        if (branchesAtKey) {
+                            next.push(...branchesAtKey)
+                        }
+                    }
+                }
+                current = next
+                next = []
+            }
+            return TypeNode(current)
         }
     })
 )
@@ -233,30 +303,6 @@ const reduceBranches = (branchNodes: PredicateNode[]) => {
     return branchNodes.filter((_, i) => uniquenessByIndex[i])
 }
 
-// function getPath(node: TypeNode, ...path: (string | TypeNode<string>)[]) {
-//     let current: PredicateNode[] = this.rule
-//     let next: PredicateNode[] = []
-//     while (path.length) {
-//         const key = path.shift()!
-//         for (const branch of current) {
-//             const propsAtKey = branch.getConstraint("props")
-//             if (propsAtKey) {
-//                 const branchesAtKey =
-//                     typeof key === "string"
-//                         ? propsAtKey.byName?.[key]?.value.rule
-//                         : propsAtKey.indexed.find((entry) => entry.key === key)
-//                               ?.value.rule
-//                 if (branchesAtKey) {
-//                     next.push(...branchesAtKey)
-//                 }
-//             }
-//         }
-//         current = next
-//         next = []
-//     }
-//     return TypeNode.from(...(current as any))
-// }
-
 // function pruneDiscriminant(path: string[], kind: DiscriminantKind) {
 //     const prunedBranches: PredicateNode[] = []
 //     for (const branch of this.rule) {
@@ -266,67 +312,46 @@ const reduceBranches = (branchNodes: PredicateNode[]) => {
 //     return new TypeNode(prunedBranches)
 // }
 
-// function constrain<kind extends ConstraintKind>(
-//     kind: kind,
-//     definition: PredicateInput[kind]
-// ) {
-//     return new TypeNode(
-//         this.rule.map((branch) => branch.constrain(kind, definition))
-//     )
-// }
+export type TypeNodeParser = {
+    <const branches extends PredicateInput[]>(
+        ...branches: {
+            [i in keyof branches]: conform<
+                branches[i],
+                validatedTypeNodeInput<branches, extractBases<branches>>[i]
+            >
+        }
+    ): TypeNode<inferBranches<branches>>
 
-// function and<other>(other: TypeNode<other>): TypeNode<t & other> {
-//     const result = this.intersect(other)
-//     return result instanceof Disjoint
-//         ? result.throw()
-//         : (result as TypeNode<t & other>)
-// }
+    fromValues<const branches extends unknown[]>(
+        ...branches: branches
+    ): TypeNode<branches[number]>
+}
 
-// function or<other>(other: TypeNode<other>): TypeNode<t | other> {
-//     if (this === (other as unknown)) {
-//         return this
-//     }
-//     return new TypeNode(TypeNode.reduceBranches([...this.rule, ...other.rule]))
-// }
-
-// function equals<other>(other: TypeNode<other>): this is TypeNode<other> {
-//     return this === (other as unknown)
-// }
-
-// // function extends<other>(other: TypeNode<other>): this is TypeNode<other> {
-// //     return this.intersect(other) === this
-// // }
-
-// // private declare _keyof: TypeNode | undefined
-// const keyof = (): TypeNode => neverTypeNode
-
-// function array(): TypeNode<t[]> {
-//     const props = new PropsNode([{ key: arrayIndexTypeNode(), value: this }])
-//     const predicate = new PredicateNode([arrayBasisNode, props])
-//     return new TypeNode([predicate])
-// }
-
-// function isNever(): this is TypeNode<never> {
-//     return this === neverTypeNode
-// }
-
-// function isUnknown(): this is TypeNode<unknown> {
-//     return this === unknownTypeNode
-// }
-
-export type TypeNodeParser = <const branches extends PredicateInput[]>(
-    ...branches: {
-        [i in keyof branches]: conform<
-            branches[i],
-            validatedTypeNodeInput<branches, extractBases<branches>>[i]
-        >
+export const node: TypeNodeParser = Object.assign(
+    (...branches: PredicateInput[]) => parseTypeNode(branches),
+    {
+        fromValues: (...branches: unknown[]) => typeNodeFromValues(branches)
     }
-) => TypeNode<inferBranches<branches>>
+) as never
 
-export const node: TypeNodeParser = ((...branches: PredicateInput[]) =>
-    TypeNode(
-        reduceBranches(branches.map((branch) => parsePredicateNode(branch)))
-    )) as never
+export const parseTypeNode = (input: TypeInput) =>
+    isArray(input)
+        ? TypeNode(
+              reduceBranches(input.map((branch) => parsePredicateNode(branch)))
+          )
+        : TypeNode([parsePredicateNode(input)])
+
+export const typeNodeFromValues = (branches: readonly unknown[]) => {
+    const seen: unknown[] = []
+    const nodes: PredicateNode[] = []
+    for (const v of branches) {
+        if (!seen.includes(v)) {
+            nodes.push(PredicateNode([ValueNode(v)]))
+            seen.push(v)
+        }
+    }
+    return TypeNode(nodes)
+}
 
 export type inferBranches<branches extends PredicateInput[]> = {
     [i in keyof branches]: inferPredicateDefinition<branches[i]>
@@ -364,18 +389,6 @@ export type extractBases<
           ]
       >
     : result
-
-export const typeNodeFromValues = (branches: readonly unknown[]) => {
-    const seen: unknown[] = []
-    const nodes: PredicateNode[] = []
-    for (const v of branches) {
-        if (!seen.includes(v)) {
-            nodes.push(PredicateNode([ValueNode(v)]))
-            seen.push(v)
-        }
-    }
-    return TypeNode(nodes)
-}
 
 export const neverTypeNode = TypeNode([])
 

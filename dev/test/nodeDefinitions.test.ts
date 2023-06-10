@@ -1,32 +1,33 @@
 import { suite, test } from "mocha"
-import { TypeNode } from "../../src/main.js"
+import type { TypeNode } from "../../src/main.js"
 import { arrayIndexInput } from "../../src/nodes/constraints/props/indexed.js"
+import { node } from "../../src/nodes/type.js"
 import type { Out } from "../../src/parse/ast/morph.js"
 import { attest } from "../attest/main.js"
 
 suite("node definitions", () => {
     suite("basis", () => {
         test("domain", () => {
-            const t = TypeNode.from({
+            const t = node({
                 basis: "string"
             })
             attest(t).typed as TypeNode<string>
         })
         test("class", () => {
-            const t = TypeNode.from({
+            const t = node({
                 basis: Date
             })
             attest(t).typed as TypeNode<Date>
         })
         test("value", () => {
-            const t = TypeNode.from({
+            const t = node({
                 basis: ["===", 3.14159]
             })
             attest(t).typed as TypeNode<3.14159>
         })
     })
     test("optional props", () => {
-        const t = TypeNode.from({
+        const t = node({
             basis: "object",
             props: {
                 a: {
@@ -44,7 +45,7 @@ suite("node definitions", () => {
         }>
     })
     test("arrays", () => {
-        const t = TypeNode.from({
+        const t = node({
             basis: Array,
             props: [
                 {},
@@ -65,7 +66,7 @@ suite("node definitions", () => {
         attest(t).typed as TypeNode<{ name: string }[]>
     })
     test("variadic tuple", () => {
-        const t = TypeNode.from({
+        const t = node({
             basis: Array,
             props: [
                 {
@@ -90,7 +91,7 @@ suite("node definitions", () => {
         attest(t).typed as TypeNode<[string, number, ...boolean[]]>
     })
     test("non-variadic tuple", () => {
-        const t = TypeNode.from({
+        const t = node({
             basis: Array,
             props: {
                 0: {
@@ -124,7 +125,7 @@ suite("node definitions", () => {
         >
     })
     test("branches", () => {
-        const t = TypeNode.from(
+        const t = node(
             { basis: ["===", "foo"] },
             { basis: ["===", "bar"] },
             { basis: "number" },
@@ -136,14 +137,14 @@ suite("node definitions", () => {
         attest(t).typed as TypeNode<number | "foo" | "bar" | { a: bigint }>
     })
     test("narrow", () => {
-        const t = TypeNode.from({
+        const t = node({
             basis: "string",
             narrow: (s): s is "foo" => s === "foo"
         })
         attest(t).typed as TypeNode<"foo">
     })
     test("narrow array", () => {
-        const t = TypeNode.from({
+        const t = node({
             basis: "object",
             narrow: [
                 (o): o is { a: string } => typeof o.a === "string",
@@ -156,26 +157,26 @@ suite("node definitions", () => {
         }>
     })
     test("morph", () => {
-        const t = TypeNode.from({
+        const t = node({
             basis: "string",
             morph: (s: string) => s.length
         })
         attest(t).typed as TypeNode<(In: string) => Out<number>>
     })
     test("morph list", () => {
-        const t = TypeNode.from({
+        const t = node({
             basis: "string",
             morph: [(s: string) => s.length, (n: number) => ({ n })] as const
         })
         attest(t).typed as TypeNode<(In: string) => Out<{ n: number }>>
     })
     test("never", () => {
-        const t = TypeNode.from()
+        const t = node()
         attest(t).typed as TypeNode<never>
     })
     test("errors on rule in wrong domain", () => {
         attest(() =>
-            TypeNode.from({
+            node({
                 basis: "number",
                 divisor: 5,
                 // @ts-expect-error
@@ -187,7 +188,7 @@ suite("node definitions", () => {
     })
     test("errors on filter literal", () => {
         attest(() =>
-            TypeNode.from({
+            node({
                 basis: ["===", true],
                 // @ts-expect-error
                 narrow: (b: boolean) => b === true

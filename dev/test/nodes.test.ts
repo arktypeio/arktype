@@ -1,11 +1,9 @@
 import { suite, test } from "mocha"
-import { TypeNode } from "../../src/main.js"
+import { node } from "../../src/nodes/type.js"
 import { attest } from "../attest/main.js"
 
 suite("nodes", () => {
     test("cached", () => {
-        attest(TypeNode.from({ basis: "string" })).is(
-            TypeNode.from({ basis: "string" })
-        )
+        attest(node({ basis: "string" })).is(node({ basis: "string" }))
     })
 })

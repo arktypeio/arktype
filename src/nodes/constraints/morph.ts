@@ -1,6 +1,6 @@
 import { registry } from "../../compile/registry.js"
 import type { Morph } from "../../parse/ast/morph.js"
-import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
+import { intersectUniqueLists } from "../../utils/lists.js"
 import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
@@ -10,10 +10,9 @@ export type MorphNode = Node<{
     intersected: MorphNode
 }>
 
-export const MorphNode = defineNodeKind<MorphNode, Morph>(
+export const MorphNode = defineNodeKind<MorphNode>(
     {
         kind: "morph",
-        parse: listFrom,
         compile: (rule) => {
             // Avoid alphabetical sorting since morphs are non-commutative,
             // i.e. a|>b and b|>a are distinct and valid

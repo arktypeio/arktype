@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { suite, test } from "mocha"
 import { type, TypeNode } from "../../src/main.js"
+import { node } from "../../src/nodes/type.js"
 import { writeUnsatisfiableExpressionError } from "../../src/parse/ast/ast.js"
 import {
     writeMissingRightOperandMessage,
@@ -12,7 +13,7 @@ suite("intersection", () => {
     test("two types", () => {
         const t = type("boolean&true")
         attest(t.infer).typed as true
-        attest(t.root).is(TypeNode.exactly(true as const))
+        attest(t.root).is(node.fromValues(true as const))
     })
     test("intersection parsed before union", () => {
         // Should be parsed as:

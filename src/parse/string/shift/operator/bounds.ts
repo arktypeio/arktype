@@ -1,16 +1,16 @@
-import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
-import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
-import type { keySet } from "../../../../utils/records.js"
-import { isKeyOf } from "../../../../utils/records.js"
-import {
-    maxComparators,
-    RangeNode
-} from "../../../../nodes/constraints/range.js"
 import type {
     Comparator,
     MaxComparator
 } from "../../../../nodes/constraints/range.js"
+import {
+    maxComparators,
+    RangeNode
+} from "../../../../nodes/constraints/range.js"
 import { Disjoint } from "../../../../nodes/disjoint.js"
+import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
+import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
+import type { keySet } from "../../../../utils/records.js"
+import { isKeyOf } from "../../../../utils/records.js"
 import type {
     DynamicState,
     DynamicStateWithRoot
@@ -103,7 +103,7 @@ export const parseRightBound = (
         return s.error(writeUnpairableComparatorMessage(comparator))
     }
     const intersectionResult = s.branches.range.intersect(
-        new RangeNode([{ comparator, limit }])
+        RangeNode([{ comparator, limit }])
     )
     if (intersectionResult instanceof Disjoint) {
         return intersectionResult.throw()

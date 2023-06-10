@@ -98,7 +98,7 @@ suite("narrow", () => {
             .morph((s) => s.length)
             .narrow((n): n is 5 => n === 5)
         attest(t).typed as Type<(In: string) => 5, Ark>
-        attest(t.root.rule).snap(
+        attest(t.root.condition).snap(
             'typeof $arkRoot === "string" && false && false'
         )
     })

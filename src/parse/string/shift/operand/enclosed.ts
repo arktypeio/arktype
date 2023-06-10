@@ -1,4 +1,4 @@
-import { TypeNode } from "../../../../nodes/type.js"
+import { parseTypeNode } from "../../../../nodes/type.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
@@ -20,9 +20,9 @@ export const parseEnclosed = (s: DynamicState, enclosing: EnclosingChar) => {
     }
     // Shift the scanner one additional time for the second enclosing token
     if (s.scanner.shift() === "/") {
-        s.root = TypeNode.from({ basis: "string", regex: token })
+        s.root = parseTypeNode({ basis: "string", regex: token })
     } else {
-        s.root = TypeNode.from({ basis: ["===", token] })
+        s.root = parseTypeNode({ basis: ["===", token] })
     }
 }
 

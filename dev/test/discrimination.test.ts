@@ -33,7 +33,7 @@ return (() => {
         })
     test("nestedd", () => {
         const t = getPlaces().type("ocean|sky|rainForest|desert")
-        attest(t.root.rule).snap(`(() => {
+        attest(t.root.condition).snap(`(() => {
         switch($arkRoot.color) {
             case "blue": {
                 return (() => {

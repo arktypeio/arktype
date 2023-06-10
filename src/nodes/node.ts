@@ -50,21 +50,14 @@ export type NodeKinds = {
 
 export type NodeKind = keyof NodeKinds
 
-type BaseNodeImplementation<node extends Node, input> = {
+type BaseNodeImplementation<node extends Node> = {
     kind: node["kind"]
     compile: (rule: node["rule"]) => string
     intersect: (
         l: Parameters<node["intersect"]>[0],
         r: Parameters<node["intersect"]>[0]
     ) => ReturnType<node["intersect"]>
-    // only require a parse implementation if an input format was specified
-} & ([input] extends [node["rule"]]
-    ? { parse?: InputParser<node, input> }
-    : { parse: InputParser<node, input> })
-
-type InputParser<node extends Node, input> = (
-    input: node["rule"] | input
-) => node["rule"]
+}
 
 type NodeExtension<node extends Node> = (
     base: basePropsOf<node>
@@ -103,7 +96,7 @@ export type BaseNodeExtensionProps = {
 
 export type Node<
     def extends NodeDefinition = NodeDefinition,
-    props extends Record<string, unknown> = {}
+    props = {}
 > = NodeBase<def> & BaseNodeExtensionProps & props
 
 type IntersectionCache<node> = Record<string, node | Disjoint | undefined>
@@ -113,15 +106,14 @@ export const isNode = (value: unknown): value is Node =>
 
 export const arkKind = Symbol("ArkTypeInternalKind")
 
-export const defineNodeKind = <node extends Node, input = never>(
-    base: BaseNodeImplementation<node, input>,
+export const defineNodeKind = <node extends Node>(
+    base: BaseNodeImplementation<node>,
     addProps: NodeExtension<node>
 ) => {
     const nodeCache: {
         [condition: string]: node | undefined
     } = {}
-    const construct = (input: node["rule"] | input) => {
-        const rule = base.parse ? base.parse(input) : (input as node["rule"])
+    const construct = (rule: node["rule"]) => {
         const condition = base.compile(rule)
         if (nodeCache[condition]) {
             return nodeCache[condition]!
