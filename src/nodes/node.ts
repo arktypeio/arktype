@@ -31,8 +31,6 @@ export type NodeDefinition = {
     intersected: Node<any>
 }
 
-// Need an interface to use `this`
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export interface NodeBase<def extends NodeDefinition> {
     [arkKind]: "node"
     kind: def["kind"]

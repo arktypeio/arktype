@@ -25,8 +25,6 @@ import {
     unknownPredicateNode
 } from "./predicate.js"
 
-// Need an interface to use `this`
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export interface TypeNode<t = unknown>
     extends Node<{
         kind: "type"

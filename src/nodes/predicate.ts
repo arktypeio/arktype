@@ -6,9 +6,7 @@ import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
-import { listFrom } from "../utils/lists.js"
 import type { Constructor, instanceOf } from "../utils/objectKinds.js"
-import { isKeyOf, type keySet } from "../utils/records.js"
 import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
 import { basisPrecedenceByKind } from "./basis/basis.js"
 import { basisNodeFrom } from "./basis/from.js"
@@ -128,12 +126,7 @@ export const PredicateNode = defineNodeKind<PredicateNode>(
             valueNode: basis?.hasKind("value") ? basis : undefined,
             constrain(kind, input): PredicateNode {
                 assertAllowsConstraint(this.basis, kind)
-                const constraint = createNodeOfKind(
-                    kind,
-                    (isKeyOf(kind, listableInputKinds)
-                        ? listFrom(input)
-                        : input) as never
-                )
+                const constraint = createNodeOfKind(kind, input as never)
                 const result = this.intersect(PredicateNode([constraint]))
                 if (result instanceof Disjoint) {
                     return result.throw()
@@ -150,15 +143,7 @@ export const parsePredicateNode = (input: PredicateInput) => {
     for (const kind of constraintsByPrecedence) {
         if (input[kind]) {
             assertAllowsConstraint(basis, kind)
-            rules.push(
-                createNodeOfKind(
-                    kind,
-                    // TODO: better solution
-                    isKeyOf(kind, listableInputKinds)
-                        ? listFrom(input[kind])
-                        : (input[kind] as any)
-                )
-            )
+            rules.push(createNodeOfKind(kind, input[kind] as never))
         }
     }
     return PredicateNode(rules)
@@ -284,13 +269,7 @@ const constraintsByPrecedence = [
     "morph"
 ] as const satisfies List<ConstraintKind>
 
-const listableInputKinds = {
-    regex: true,
-    narrow: true,
-    morph: true
-} satisfies keySet<ConstraintKind>
-
-type ListableInputKind = keyof typeof listableInputKinds
+export type ListableInputKind = "regex" | "narrow" | "morph"
 
 export const unknownPredicateNode = PredicateNode([])
 
