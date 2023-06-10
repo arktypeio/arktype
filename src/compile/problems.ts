@@ -1,5 +1,5 @@
-import type { Bound, SizedData } from "../nodes/constraints/range.js"
-import { comparatorDescriptions } from "../nodes/constraints/range.js"
+import type { Bound, SizedData } from "../nodes/shallow/range.js"
+import { comparatorDescriptions } from "../nodes/shallow/range.js"
 import type { Domain } from "../utils/domains.js"
 import { domainDescriptions, domainOf } from "../utils/domains.js"
 import type { conform } from "../utils/generics.js"

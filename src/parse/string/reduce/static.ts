@@ -6,7 +6,7 @@ import type {
     InvertedComparators,
     MaxComparator,
     MinComparator
-} from "../../../nodes/constraints/range.js"
+} from "../../../nodes/shallow/range.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
     Prefix,

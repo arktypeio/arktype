@@ -9,8 +9,8 @@ import {
     arrayBasisNode,
     arrayIndexInput,
     arrayIndexTypeNode
-} from "./constraints/props/indexed.js"
-import { propsNode } from "./constraints/props/props.js"
+} from "./deep/indexed.js"
+import { propsNode } from "./deep/props.js"
 import type { Discriminant } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
@@ -62,7 +62,7 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
         compile: (rule) => {
             return {
                 operator: "|",
-                children: [rule.map((branch) => branch.compilation)]
+                children: rule.map((branch) => branch.compilation)
             }
         },
         intersect: (l, r): TypeNode | Disjoint => {

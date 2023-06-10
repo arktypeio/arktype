@@ -1,25 +1,18 @@
-import {
-    compilePropAccess,
-    In,
-    IndexIn,
-    KeyIn
-} from "../../../compile/compile.js"
-import { isArray } from "../../../utils/objectKinds.js"
-import { fromEntries, hasKeys } from "../../../utils/records.js"
-import type { DisjointsSources } from "../../disjoint.js"
-import { Disjoint } from "../../disjoint.js"
-import type { Node } from "../../node.js"
-import { defineNodeKind, isNode } from "../../node.js"
-import type { TypeNode } from "../../type.js"
-import { builtins, typeNode } from "../../type.js"
-import type {
-    ArrayIndexMatcherSource,
-    IndexedPropInput,
-    IndexedPropRule
-} from "./indexed.js"
-import { extractArrayIndexRegex, extractFirstVariadicIndex } from "./indexed.js"
-import type { NamedPropInput, NamedPropRule } from "./named.js"
+import type { CompilationNode } from "../../compile/compile.js"
+import { isArray } from "../../utils/objectKinds.js"
+import { fromEntries, hasKeys } from "../../utils/records.js"
+import type { DisjointsSources } from "../disjoint.js"
+import { Disjoint } from "../disjoint.js"
+import type { Node } from "../node.js"
+import { defineNodeKind, isNode } from "../node.js"
+import type { TypeNode } from "../type.js"
+import { builtins, typeNode } from "../type.js"
+import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
+import { extractArrayIndexRegex } from "./indexed.js"
+import type { NamedKeyRule, NamedPropInput, NamedPropRule } from "./named.js"
 import { intersectNamedProp } from "./named.js"
+
+export type KeyRule = NamedKeyRule | TypeNode
 
 export type PropRule = NamedPropRule | IndexedPropRule
 
@@ -47,35 +40,14 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
     {
         kind: "props",
         parse: (input) => {
-            if (isParsedPropsRule(input)) {
-                return input
-            }
-            const [namedInput, ...indexedInput] = isArray(input)
+            const rule = isParsedPropsRule(input)
                 ? input
-                : [input]
-            const rule: PropRule[] = []
-            for (const k in namedInput) {
-                rule.push({
-                    key: k,
-                    prerequisite: namedInput[k].prerequisite ?? false,
-                    optional: namedInput[k].optional ?? false,
-                    value: typeNode(namedInput[k].value)
-                })
-            }
-            for (const prop of indexedInput) {
-                rule.push({
-                    key: typeNode(prop.key),
-                    value: typeNode(prop.value)
-                })
-            }
-            return rule
-        },
-        compile: (rule: PropRule[]) => {
-            rule.sort((l, r) => {
+                : parsePropsInput(input)
+            return rule.sort((l, r) => {
                 // Sort keys first by precedence (prerequisite,required,optional,indexed),
                 // then alphebetically by key
-                const lPrecedence = kindPrecedence(l)
-                const rPrecedence = kindPrecedence(r)
+                const lPrecedence = kindPrecedence(l.key)
+                const rPrecedence = kindPrecedence(r.key)
                 return lPrecedence > rPrecedence
                     ? 1
                     : lPrecedence < rPrecedence
@@ -84,13 +56,14 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
                     ? 1
                     : -1
             })
-            const named = rule.filter(isNamed)
-            if (named.length === rule.length) {
-                return compileNamedProps(named)
-            }
-            const indexed = rule.filter(isIndexed)
-            return compileNamedAndIndexedProps(named, indexed)
         },
+        compile: (rule: PropRule[]) => ({
+            operator: "&",
+            children: rule.map((prop) => ({
+                key: prop.key,
+                ...prop.value.compilation
+            }))
+        }),
         intersect: (l, r) => intersectProps(l, r)
     },
     (base) => {
@@ -101,7 +74,7 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
             description,
             named,
             byName: Object.fromEntries(
-                named.map((prop) => [prop.key, prop] as const)
+                named.map((prop) => [prop.key.name, prop] as const)
             ),
             indexed
         }
@@ -140,9 +113,11 @@ const intersectProps = (l: PropsNode, r: PropsNode): PropsNode | Disjoint => {
                 for (const { key, value } of r.indexed) {
                     if (key.allows(k)) {
                         intersectedValue = intersectNamedProp(l.byName[k], {
-                            key: k,
-                            prerequisite: false,
-                            optional: true,
+                            key: {
+                                name: k,
+                                prerequisite: false,
+                                optional: true
+                            },
                             value
                         })
                     }
@@ -154,9 +129,11 @@ const intersectProps = (l: PropsNode, r: PropsNode): PropsNode | Disjoint => {
             for (const { key, value } of l.indexed) {
                 if (key.allows(k)) {
                     intersectedValue = intersectNamedProp(r.byName[k], {
-                        key: k,
-                        prerequisite: false,
-                        optional: true,
+                        key: {
+                            name: k,
+                            prerequisite: false,
+                            optional: true
+                        },
                         value
                     })
                 }
@@ -176,8 +153,8 @@ const intersectProps = (l: PropsNode, r: PropsNode): PropsNode | Disjoint => {
     }
     if (
         named.some(
-            (prop) =>
-                isNamed(prop) && prop.key === "length" && prop.prerequisite
+            ({ key }) =>
+                !isNode(key) && key.name === "length" && key.prerequisite
         )
     ) {
         // if the index key is from and unbounded array and we have a tuple length,
@@ -187,9 +164,31 @@ const intersectProps = (l: PropsNode, r: PropsNode): PropsNode | Disjoint => {
     return propsNode([...named, ...indexed])
 }
 
+const parsePropsInput = (input: PropsInput) => {
+    const [namedInput, ...indexedInput] = isArray(input) ? input : [input]
+    const rule: PropRule[] = []
+    for (const k in namedInput) {
+        rule.push({
+            key: {
+                name: k,
+                prerequisite: namedInput[k].prerequisite ?? false,
+                optional: namedInput[k].optional ?? false
+            },
+            value: typeNode(namedInput[k].value)
+        })
+    }
+    for (const prop of indexedInput) {
+        rule.push({
+            key: typeNode(prop.key),
+            value: typeNode(prop.value)
+        })
+    }
+    return rule
+}
+
 const describeProps = (named: NamedPropRule[], indexed: IndexedPropRule[]) => {
-    const entries = named.map((prop): [string, string] => {
-        return [`${prop.key}${prop.optional ? "?" : ""}`, prop.value.toString()]
+    const entries = named.map(({ key, value }): [string, string] => {
+        return [`${key.name}${key.optional ? "?" : ""}`, value.toString()]
     })
     for (const entry of indexed) {
         entries.push([`[${entry.key}]`, entry.value.toString()])
@@ -197,98 +196,9 @@ const describeProps = (named: NamedPropRule[], indexed: IndexedPropRule[]) => {
     return JSON.stringify(fromEntries(entries))
 }
 
-export const compileNamedProps = (props: NamedPropRule[]) =>
-    props.map(compileNamedProp).join(" && ") || "true"
-
-const compileNamedProp = (prop: NamedPropRule) => {
-    const valueCheck = prop.value.condition.replaceAll(
-        In,
-        `${In}${compilePropAccess(prop.key)}`
-    )
-    return prop.optional
-        ? `!('${prop.key}' in ${In}) || ${valueCheck}`
-        : valueCheck
-}
-
-export const compileNamedAndIndexedProps = (
-    named: NamedPropRule[],
-    indexed: IndexedPropRule[]
-) => {
-    if (indexed.length === 1) {
-        // if the only unenumerable set of props are the indices of an array, we can iterate over it instead of checking each key
-        const indexMatcher = extractArrayIndexRegex(indexed[0].key)
-        if (indexMatcher) {
-            return compileArray(indexMatcher, indexed[0].value, named)
-        }
-    }
-    return compileNonArray(named, indexed)
-}
-
-const compileArray = (
-    indexMatcher: ArrayIndexMatcherSource,
-    elementNode: TypeNode,
-    namedProps: NamedPropRule[]
-) => {
-    const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
-    const namedCheck = compileNamedProps(namedProps)
-    const elementCondition = elementNode.condition
-        .replaceAll(IndexIn, `${IndexIn}Inner`)
-        .replaceAll(In, `${In}[${IndexIn}]`)
-    // TODO: don't recheck named
-    const result = `(() => {
-    let valid = ${namedCheck};
-    for(let ${IndexIn} = ${firstVariadicIndex}; ${IndexIn} < ${In}.length; ${IndexIn}++) {
-        valid = ${elementCondition} && valid;
-    }
-    return valid
-})()`
-    return result
-}
-
-const compileNonArray = (
-    namedProps: NamedPropRule[],
-    indexedProps: IndexedPropRule[]
-) => {
-    const namedCheck = compileNamedProps(namedProps)
-    const indexedChecks = indexedProps.map(compileIndexedProp).join("\n")
-    // TODO: don't recheck named
-    return `(() => {
-    let valid = ${namedCheck};
-    for(const ${KeyIn} in ${In}) {
-        ${indexedChecks}
-    }
-    return valid
-})()`
-}
-
-const compileIndexedProp = (prop: IndexedPropRule) => {
-    const valueCheck = `valid = ${prop.value.condition
-        .replaceAll(KeyIn, `${KeyIn}Inner`)
-        .replaceAll(In, `${In}[${KeyIn}]`)} && valid`
-    if (prop.key === builtins.string()) {
-        // if the index signature is just for "string", we don't need to check it explicitly
-        return valueCheck
-    }
-    return `if(${prop.key.condition
-        .replaceAll(KeyIn, `${KeyIn}Inner`)
-        .replaceAll(In, KeyIn)}) {
-        ${valueCheck}
-    }`
-}
-
-// compileTraverse(s: CompilationState) {
-//     return this.named
-//         .map((prop) =>
-//             prop.value
-//                 .compileTraverse(s)
-//                 .replaceAll(In, `${In}${compilePropAccess(prop.key)}`)
-//         )
-//         .join("\n")
-// }
-
 // pruneDiscriminant(path: string[], kind: DiscriminantKind): PropsNode {
 //     const [key, ...nextPath] = path
-//     const indexToPrune = this.named.findIndex((prop) => prop.key === key)
+//     const indexToPrune = this.named.findIndex((prop) => prop.key.name === key)
 //     if (indexToPrune === -1) {
 //         return throwInternalError(`Unexpectedly failed to prune key ${key}`)
 //     }
@@ -326,17 +236,15 @@ const compileIndexedProp = (prop: IndexedPropRule) => {
 // }
 
 // namedKeyLiterals() {
-//     return this.named.map((prop) => prop.key)
+//     return this.named.map((prop) => prop.key.name)
 // }
 
-const isIndexed = (rule: PropRule): rule is IndexedPropRule =>
-    typeof rule.key === "object"
+const isIndexed = (rule: PropRule): rule is IndexedPropRule => isNode(rule.key)
 
-const isNamed = (rule: PropRule): rule is NamedPropRule =>
-    typeof rule.key === "string"
+const isNamed = (rule: PropRule): rule is NamedPropRule => !isNode(rule.key)
 
-const kindPrecedence = (rule: PropRule) =>
-    isIndexed(rule) ? 2 : rule.prerequisite ? -1 : rule.optional ? 1 : 0
+const kindPrecedence = (key: KeyRule) =>
+    isNode(key) ? 2 : key.prerequisite ? -1 : key.optional ? 1 : 0
 
 export const emptyPropsNode = propsNode([])
 

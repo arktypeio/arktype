@@ -1,3 +1,15 @@
+import type { TypeNode } from "../main.js"
+import type {
+    ArrayIndexMatcherSource,
+    IndexedPropRule
+} from "../nodes/deep/indexed.js"
+import {
+    extractArrayIndexRegex,
+    extractFirstVariadicIndex
+} from "../nodes/deep/indexed.js"
+import type { NamedPropRule } from "../nodes/deep/named.js"
+import type { KeyRule } from "../nodes/deep/props.js"
+import { builtins } from "../nodes/type.js"
 import type { TypeConfig } from "../type.js"
 import { type Domain, hasDomain } from "../utils/domains.js"
 import { Path } from "../utils/lists.js"
@@ -7,29 +19,130 @@ import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 
 export const compile = (root: CompilationNode): string =>
-    typeof root === "string"
-        ? root
+    isTerminal(root)
+        ? root.condition
         : root.children.length === 0
         ? root.operator === "&"
             ? "true"
             : "false"
-        : root.children
-              .flatMap((group) => {
-                  if (typeof group === "string") {
-                      return group
-                  }
-                  // sort only within groups to preserve precedence while
-                  // guaranteeing equivalent types compile to the same string
-                  return group.map(compile).sort()
-              })
-              .join(` ${root.operator} `)
+        : root.children.map(compile).sort().join(` ${root.operator} `)
 
-export type CompilationNode = string | NonTerminalCompilationNode
+//   const children: CompilationNode[] = []
+//   let lastPrecedence = -1
+//   for (const r of rule) {
+//       // TODO: unify with constraints by precedence
+//       const currentPrecedence = precedenceByKind[r.kind]
+//       if (currentPrecedence > lastPrecedence) {
+//           children.push(r.compilation)
+//           lastPrecedence = currentPrecedence
+//       } else {
+//           children.at(-1)!.push(r.compilation)
+//       }
+//   }
+
+export type CompilationNode =
+    | TerminalCompilationNode
+    | NonTerminalCompilationNode
+
+const isTerminal = (node: CompilationNode): node is TerminalCompilationNode =>
+    "condition" in node
 
 type NonTerminalCompilationNode = {
-    key?: string
+    key?: KeyRule
     operator: "&" | "|"
-    children: CompilationNode[][]
+    children: CompilationNode[]
+}
+
+export type ConditionPrecedence =
+    | "basis"
+    | "shallow"
+    | "deep"
+    | "narrow"
+    | "morph"
+
+type TerminalCompilationNode = {
+    key?: KeyRule
+    precedence: ConditionPrecedence
+    condition: string
+}
+
+const compileNamedProps = (props: NamedPropRule[]) =>
+    props.map(compileNamedProp).join(" && ")
+
+const compileNamedProp = (prop: NamedPropRule) => {
+    const valueCheck = prop.value.condition.replaceAll(
+        In,
+        `${In}${compilePropAccess(prop.key.name)}`
+    )
+    return prop.key.optional
+        ? `!('${prop.key.name}' in ${In}) || ${valueCheck}`
+        : valueCheck
+}
+
+const compileNamedAndIndexedProps = (
+    named: NamedPropRule[],
+    indexed: IndexedPropRule[]
+) => {
+    if (indexed.length === 1) {
+        // if the only unenumerable set of props are the indices of an array, we can iterate over it instead of checking each key
+        const indexMatcher = extractArrayIndexRegex(indexed[0].key)
+        if (indexMatcher) {
+            return compileArray(indexMatcher, indexed[0].value, named)
+        }
+    }
+    return compileNonArray(named, indexed)
+}
+
+const compileArray = (
+    indexMatcher: ArrayIndexMatcherSource,
+    elementNode: TypeNode,
+    namedProps: NamedPropRule[]
+) => {
+    const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
+    const namedCheck = compileNamedProps(namedProps)
+    const elementCondition = elementNode.condition
+        .replaceAll(IndexIn, `${IndexIn}Inner`)
+        .replaceAll(In, `${In}[${IndexIn}]`)
+    // TODO: don't recheck named
+    const result = `(() => {
+    let valid = ${namedCheck};
+    for(let ${IndexIn} = ${firstVariadicIndex}; ${IndexIn} < ${In}.length; ${IndexIn}++) {
+        valid = ${elementCondition} && valid;
+    }
+    return valid
+})()`
+    return result
+}
+
+const compileNonArray = (
+    namedProps: NamedPropRule[],
+    indexedProps: IndexedPropRule[]
+) => {
+    const namedCheck = compileNamedProps(namedProps)
+    const indexedChecks = indexedProps.map(compileIndexedProp).join("\n")
+    // TODO: don't recheck named
+    return `(() => {
+    let valid = ${namedCheck};
+    for(const ${KeyIn} in ${In}) {
+        ${indexedChecks}
+    }
+    return valid
+})()`
+}
+
+const compileIndexedProp = (prop: IndexedPropRule) => {
+    const valueCheck = `valid = ${prop.value.condition
+        .replaceAll(KeyIn, `${KeyIn}Inner`)
+        .replaceAll(In, `${In}[${KeyIn}]`)} && valid`
+    if (prop.key === builtins.string()) {
+        // if the index signature is just for "string", we don't need to check it explicitly
+        return valueCheck
+    }
+    return `if(${prop.key.condition
+        .replaceAll(KeyIn, `${KeyIn}Inner`)
+        .replaceAll(In, KeyIn)}) {
+        ${valueCheck}
+    }`
 }
 
 export type TraversalConfig = {

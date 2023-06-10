@@ -1,9 +1,6 @@
-import {
-    arrayBasisNode,
-    arrayIndexTypeNode
-} from "../../nodes/constraints/props/indexed.js"
-import type { PropRule } from "../../nodes/constraints/props/props.js"
-import { propsNode } from "../../nodes/constraints/props/props.js"
+import { arrayBasisNode, arrayIndexTypeNode } from "../../nodes/deep/indexed.js"
+import type { PropRule } from "../../nodes/deep/props.js"
+import { propsNode } from "../../nodes/deep/props.js"
 import { predicateNode } from "../../nodes/predicate.js"
 import type { TypeNode } from "../../nodes/type.js"
 import { builtins, typeNode } from "../../nodes/type.js"
@@ -80,9 +77,11 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
             props.push({ key: arrayIndexTypeNode(i), value: elementType })
         } else {
             props.push({
-                key: `${i}`,
-                prerequisite: false,
-                optional: false,
+                key: {
+                    name: `${i}`,
+                    prerequisite: false,
+                    optional: false
+                },
                 value
             })
         }
@@ -90,9 +89,11 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     }
     if (!isVariadic) {
         props.push({
-            key: "length",
-            prerequisite: true,
-            optional: false,
+            key: {
+                name: "length",
+                prerequisite: true,
+                optional: false
+            },
             value: typeNode({ basis: ["===", def.length] })
         })
     }

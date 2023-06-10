@@ -21,14 +21,14 @@ import type { DomainNode } from "./basis/domain.js"
 import { domainNode } from "./basis/domain.js"
 import type { ValueNode } from "./basis/value.js"
 import { valueNode } from "./basis/value.js"
-import type { inferPropsInput } from "./constraints/props/infer.js"
-import type { PropsInput } from "./constraints/props/props.js"
-import type { Range } from "./constraints/range.js"
+import type { inferPropsInput } from "./deep/infer.js"
+import type { PropsInput } from "./deep/props.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeKinds } from "./kinds.js"
 import { createNodeOfKind, precedenceByKind } from "./kinds.js"
 import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
+import type { Range } from "./shallow/range.js"
 
 export interface PredicateNode
     extends Node<{
@@ -64,21 +64,9 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             return rules
         },
         compile: (rule) => {
-            const children: CompilationNode[][] = []
-            let lastPrecedence = -1
-            for (const r of rule) {
-                // TODO: unify with constraints by precedence
-                const currentPrecedence = precedenceByKind[r.kind]
-                if (currentPrecedence > lastPrecedence) {
-                    children.push([r.compilation])
-                    lastPrecedence = currentPrecedence
-                } else {
-                    children.at(-1)!.push(r.compilation)
-                }
-            }
             return {
                 operator: "&",
-                children
+                children: rule.map((child) => child.compilation)
             }
         },
         intersect: (l, r): PredicateNode | Disjoint => {

@@ -20,10 +20,12 @@ export const narrowNode = defineNodeKind<NarrowNode, listable<Narrow>>(
             // Depending on type-guards, altering the order in which narrows run could
             // lead to a non-typsafe access, so they are preserved.
             // TODO:  Figure out how this needs to work with intersections
-            const subconditions = rule.map((narrow) =>
-                registry().register(narrow.name, narrow)
-            )
-            return subconditions.join(" && ")
+            return {
+                precedence: "narrow",
+                condition: rule
+                    .map((narrow) => registry().register(narrow.name, narrow))
+                    .join(" && ")
+            }
         },
         intersect: (l, r): NarrowNode =>
             narrowNode(intersectUniqueLists(l.rule, r.rule))

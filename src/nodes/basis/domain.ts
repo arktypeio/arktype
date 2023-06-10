@@ -12,10 +12,13 @@ export const domainNode = defineNodeKind<DomainNode>(
     {
         kind: "domain",
         parse: (input) => input,
-        compile: (rule) =>
-            rule === "object"
-                ? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
-                : `typeof ${In} === "${rule}"`,
+        compile: (rule) => ({
+            precedence: "basis",
+            condition:
+                rule === "object"
+                    ? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`
+                    : `typeof ${In} === "${rule}"`
+        }),
         intersect: intersectBases
     },
     (base) => ({

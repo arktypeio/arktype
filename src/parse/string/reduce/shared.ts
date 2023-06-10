@@ -2,8 +2,8 @@ import type {
     Comparator,
     InvertedComparators,
     MinComparator
-} from "../../../nodes/constraints/range.js"
-import { invertedComparators } from "../../../nodes/constraints/range.js"
+} from "../../../nodes/shallow/range.js"
+import { invertedComparators } from "../../../nodes/shallow/range.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 
 export type Prefix = "keyof"

@@ -4,8 +4,8 @@ import { stringify } from "../utils/serialize.js"
 import type { BasisNode } from "./basis/basis.js"
 import type { ClassNode } from "./basis/class.js"
 import type { ValueNode } from "./basis/value.js"
-import type { RangeNode } from "./constraints/range.js"
 import type { PredicateNode } from "./predicate.js"
+import type { RangeNode } from "./shallow/range.js"
 import type { TypeNode } from "./type.js"
 
 type DisjointKinds = {

@@ -16,14 +16,14 @@ export const morphNode = defineNodeKind<MorphNode, listable<Morph>>(
     {
         kind: "morph",
         parse: listFrom,
-        compile: (rule) => {
+        compile: (rule) => ({
+            precedence: "morph",
             // Avoid alphabetical sorting since morphs are non-commutative,
             // i.e. a|>b and b|>a are distinct and valid
-            const subconditions = rule.map((morph) =>
-                registry().register(morph.name, morph)
-            )
-            return subconditions.join(" && ")
-        },
+            condition: rule
+                .map((morph) => registry().register(morph.name, morph))
+                .join(" && ")
+        }),
         intersect: (l, r): MorphNode =>
             morphNode(intersectUniqueLists(l.rule, r.rule))
     },

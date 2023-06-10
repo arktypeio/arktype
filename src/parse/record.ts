@@ -1,6 +1,6 @@
 import { domainNode } from "../nodes/basis/domain.js"
-import type { NamedPropRule } from "../nodes/constraints/props/named.js"
-import { propsNode } from "../nodes/constraints/props/props.js"
+import type { NamedPropRule } from "../nodes/deep/named.js"
+import { propsNode } from "../nodes/deep/props.js"
 import { predicateNode } from "../nodes/predicate.js"
 import { typeNode } from "../nodes/type.js"
 import type { evaluate } from "../utils/generics.js"
@@ -26,9 +26,11 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
         }
         ctx.path.push(keyName)
         named.push({
-            key: keyName,
-            prerequisite: false,
-            optional,
+            key: {
+                name: keyName,
+                prerequisite: false,
+                optional
+            },
             value: parseDefinition(def[definitionKey], ctx)
         })
         ctx.path.pop()

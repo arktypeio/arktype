@@ -1,4 +1,4 @@
-import type { Comparator } from "../../nodes/constraints/range.js"
+import type { Comparator } from "../../nodes/shallow/range.js"
 import type { resolve, UnparsedScope } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
 import type { error } from "../../utils/errors.js"

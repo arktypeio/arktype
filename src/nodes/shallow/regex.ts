@@ -14,10 +14,10 @@ export const regexNode = defineNodeKind<RegexNode, string | string[]>(
     {
         kind: "regex",
         parse: listFrom,
-        compile: (rule) => {
-            const subconditions = rule.sort().map(compileExpression)
-            return subconditions.join(" && ")
-        },
+        compile: (rule) => ({
+            precedence: "shallow",
+            condition: rule.sort().map(compileExpression).join(" && ")
+        }),
         intersect: (l, r): RegexNode =>
             regexNode(intersectUniqueLists(l.rule, r.rule))
     },

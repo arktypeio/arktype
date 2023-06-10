@@ -83,8 +83,10 @@ export const rangeNode = defineNodeKind<RangeNode>(
                 // reduce a range like `1<=number<=1` to `number==1`
                 rule = [{ comparator: "==", limit: rule[0].limit }]
             }
-            const compiledBounds = rule.map(compileBound)
-            return compiledBounds.join(" && ")
+            return {
+                precedence: "shallow",
+                condition: rule.map(compileBound).join(" && ")
+            }
         },
         intersect: (l, r): RangeNode | Disjoint => {
             if (isEqualityRangeNode(l)) {

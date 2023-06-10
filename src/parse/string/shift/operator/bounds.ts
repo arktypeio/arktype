@@ -1,11 +1,8 @@
 import type {
     Comparator,
     MaxComparator
-} from "../../../../nodes/constraints/range.js"
-import {
-    maxComparators,
-    rangeNode
-} from "../../../../nodes/constraints/range.js"
+} from "../../../../nodes/shallow/range.js"
+import { maxComparators, rangeNode } from "../../../../nodes/shallow/range.js"
 import { Disjoint } from "../../../../nodes/disjoint.js"
 import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
