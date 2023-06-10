@@ -20,7 +20,7 @@ import type {
 import type { bindThis, Scope } from "./scope.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
-import type { conform, id } from "./utils/generics.js"
+import type { conform, id, Literalable } from "./utils/generics.js"
 import { Path } from "./utils/lists.js"
 
 export type TypeParser<$> = TypeOverloads<$> & TypeProps<$>
@@ -45,7 +45,7 @@ type TypeOverloads<$> = {
 }
 
 type TypeProps<$> = {
-    exactly: <branches extends readonly unknown[]>(
+    literal: <branches extends readonly Literalable[]>(
         ...branches: branches
     ) => Type<branches[number], $>
 }
@@ -55,7 +55,7 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
         return new Type(args[0], scope) as never
     }
     const props: TypeProps<$> = {
-        exactly: (...branches: readonly unknown[]) =>
+        literal: (...branches: readonly unknown[]) =>
             new Type(typeNodeFromValues(branches), scope)
     }
     return Object.assign(parser, props)

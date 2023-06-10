@@ -4,7 +4,7 @@ type asConstRecurse<t> = {
     [k in keyof t]: t[k] extends Literalable | [] ? t[k] : asConstRecurse<t[k]>
 }
 
-export type Literalable = string | boolean | number | bigint
+export type Literalable = string | boolean | number | bigint | null | undefined
 
 export type evaluate<t> = { [k in keyof t]: t[k] } & unknown
 
