@@ -1,4 +1,4 @@
-import { TypeNode } from "../../nodes/type.js"
+import { node } from "../../nodes/type.js"
 
 type DayDelimiter = "." | "/" | "-"
 
@@ -97,7 +97,7 @@ export const tryParseDate = (
     return writeFormattedMustBe(opts.format)
 }
 
-export const parsedDate = TypeNode.from({
+export const parsedDate = node({
     basis: "string",
     morph: (s, state) => {
         const result = tryParseDate(s)

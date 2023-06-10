@@ -1,4 +1,5 @@
 import { In } from "../compile/compile.js"
+import type { inferred } from "../parse/definition.js"
 import { CompiledFunction } from "../utils/functions.js"
 import type { ClassNode } from "./basis/class.js"
 import type { DomainNode } from "./basis/domain.js"
@@ -65,13 +66,17 @@ type InputParser<node extends Node, input> = (
     input: node["rule"] | input
 ) => node["rule"]
 
-type PropsConstructor<node extends Node> = (
+type NodeExtension<node extends Node> = (
     base: basePropsOf<node>
 ) => extendedPropsOf<node>
 
 export type basePropsOf<node extends Node> = Pick<node, keyof NodeBase<any>>
 
-export type extendedPropsOf<node extends Node> = Omit<node, keyof NodeBase<any>>
+export type extendedPropsOf<node extends Node> = Omit<
+    node,
+    keyof NodeBase<any> | typeof inferred
+> &
+    ThisType<node>
 
 export type NodeDefinition = {
     kind: NodeKind
@@ -110,7 +115,7 @@ export const arkKind = Symbol("ArkTypeInternalKind")
 
 export const defineNodeKind = <node extends Node, input = never>(
     base: BaseNodeImplementation<node, input>,
-    addProps: PropsConstructor<node>
+    addProps: NodeExtension<node>
 ) => {
     const nodeCache: {
         [condition: string]: node | undefined

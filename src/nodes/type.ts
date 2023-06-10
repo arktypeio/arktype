@@ -1,42 +1,43 @@
-import type { exact } from "../utils/generics.js"
-import { isArray } from "../utils/objectKinds.js"
+import type { inferred } from "../parse/definition.js"
+import type { Type } from "../type.js"
+import type { conform, exact } from "../utils/generics.js"
 import type { BasisInput } from "./basis/basis.js"
 import { ValueNode } from "./basis/value.js"
-import { arrayIndexInput } from "./constraints/props/indexed.js"
+import {
+    arrayBasisNode,
+    arrayIndexInput,
+    arrayIndexTypeNode
+} from "./constraints/props/indexed.js"
+import { PropsNode } from "./constraints/props/props.js"
 import type { Discriminant } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
 import { Disjoint } from "./disjoint.js"
 import type { Node } from "./node.js"
-import { defineNodeKind, isNode } from "./node.js"
+import { defineNodeKind } from "./node.js"
 import type { inferPredicateDefinition, PredicateInput } from "./predicate.js"
-import { PredicateNode, unknownPredicateNode } from "./predicate.js"
+import {
+    parsePredicateNode,
+    PredicateNode,
+    unknownPredicateNode
+} from "./predicate.js"
 
-export type TypeNode = Node<
+export type TypeNode<t = unknown> = Node<
     {
         kind: "type"
         rule: PredicateNode[]
         intersected: TypeNode
     },
     {
+        [inferred]: t
         discriminant: Discriminant | undefined
         valueNode: ValueNode | undefined
+        array(): TypeNode
     }
 >
 
-export const TypeNode = defineNodeKind<
-    TypeNode,
-    PredicateInput | PredicateInput[]
->(
+export const TypeNode = defineNodeKind<TypeNode>(
     {
         kind: "type",
-        parse: (input) =>
-            isArray(input)
-                ? reduceBranches(
-                      input.map((branch) =>
-                          isNode(branch) ? branch : PredicateNode(branch)
-                      )
-                  )
-                : [PredicateNode(input)],
         compile: (rule) => {
             const condition = compileIndiscriminable(rule.sort())
             return condition
@@ -52,18 +53,21 @@ export const TypeNode = defineNodeKind<
                 : Disjoint.from("union", l, r)
         }
     },
-    (base) => {
-        const description =
+    (base) => ({
+        description:
             base.rule.length === 0
                 ? "never"
-                : base.rule.map((branch) => branch.toString()).join(" or ")
-        return {
-            description,
-            discriminant: discriminate(base.rule),
-            valueNode:
-                base.rule.length === 1 ? base.rule[0].valueNode : undefined
+                : base.rule.map((branch) => branch.toString()).join(" or "),
+        discriminant: discriminate(base.rule),
+        valueNode: base.rule.length === 1 ? base.rule[0].valueNode : undefined,
+        array(): TypeNode {
+            const props = PropsNode([
+                { key: arrayIndexTypeNode(), value: this }
+            ])
+            const predicate = PredicateNode([arrayBasisNode, props])
+            return TypeNode([predicate])
         }
-    }
+    })
 )
 
 const intersectBranches = (
@@ -197,6 +201,9 @@ const compileIndiscriminable = (branches: PredicateNode[]) => {
 // }
 
 const reduceBranches = (branchNodes: PredicateNode[]) => {
+    if (branchNodes.length < 2) {
+        return branchNodes
+    }
     const uniquenessByIndex: Record<number, boolean> = branchNodes.map(
         () => true
     )
@@ -307,6 +314,20 @@ const reduceBranches = (branchNodes: PredicateNode[]) => {
 //     return this === unknownTypeNode
 // }
 
+export type TypeNodeParser = <const branches extends PredicateInput[]>(
+    ...branches: {
+        [i in keyof branches]: conform<
+            branches[i],
+            validatedTypeNodeInput<branches, extractBases<branches>>[i]
+        >
+    }
+) => TypeNode<inferBranches<branches>>
+
+export const node: TypeNodeParser = ((...branches: PredicateInput[]) =>
+    TypeNode(
+        reduceBranches(branches.map((branch) => parsePredicateNode(branch)))
+    )) as never
+
 export type inferBranches<branches extends PredicateInput[]> = {
     [i in keyof branches]: inferPredicateDefinition<branches[i]>
 }[number]
@@ -360,4 +381,4 @@ export const neverTypeNode = TypeNode([])
 
 export const unknownTypeNode = TypeNode([unknownPredicateNode])
 
-export const nonVariadicArrayIndexTypeNode = TypeNode([arrayIndexInput()])
+export const nonVariadicArrayIndexTypeNode = node(arrayIndexInput())

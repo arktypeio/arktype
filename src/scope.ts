@@ -192,7 +192,7 @@ export class Scope<r extends Resolutions = any> {
         return new Scope(aliases, {}) as never
     }
 
-    type: TypeParser<$<r>> = createTypeParser(this)
+    type: TypeParser<$<r>> = createTypeParser(this as never)
 
     scope: ScopeParser<r["exports"], r["ambient"]> = ((
         aliases: Dict,

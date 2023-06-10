@@ -4,7 +4,7 @@ import type { DisjointsSources } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
 import type { Node } from "../../node.js"
 import { defineNodeKind } from "../../node.js"
-import { neverTypeNode, TypeNode } from "../../type.js"
+import { neverTypeNode, node } from "../../type.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
 import {
     compileNamedAndIndexedProps,
@@ -28,38 +28,31 @@ export type PropsNode = Node<
     }
 >
 
-const isPreparsed = (input: PropsInput): input is PropRule[] =>
-    isArray(input) && (input.length === 0 || isArray(input[0]))
+export const parsePropsNode = (input: PropsInput) => {
+    const [namedInput, ...indexedInput] = isArray(input) ? input : [input]
+    const rule: PropRule[] = []
+    for (const k in namedInput) {
+        rule.push({
+            key: k,
+            prerequisite: namedInput[k].prerequisite ?? false,
+            optional: namedInput[k].optional ?? false,
+            value: node(namedInput[k].value)
+        })
+    }
+    for (const prop of indexedInput) {
+        rule.push({
+            key: node(prop.key),
+            value: node(prop.value)
+        })
+    }
+    return rule
+}
 
-export type PropsInput = UnparsedProps | PropRule[]
+export type PropsInput = NamedPropsInput | PropsInputTuple
 
-export const PropsNode = defineNodeKind<PropsNode, PropsInput>(
+export const PropsNode = defineNodeKind<PropsNode>(
     {
         kind: "props",
-        parse: (input) => {
-            if (isPreparsed(input)) {
-                return input
-            }
-            const [namedInput, ...indexedInput] = isArray(input)
-                ? input
-                : [input]
-            const rule: PropRule[] = []
-            for (const k in namedInput) {
-                rule.push({
-                    key: k,
-                    prerequisite: namedInput[k].prerequisite ?? false,
-                    optional: namedInput[k].optional ?? false,
-                    value: TypeNode(namedInput[k].value)
-                })
-            }
-            for (const prop of indexedInput) {
-                rule.push({
-                    key: TypeNode(prop.key),
-                    value: TypeNode(prop.value)
-                })
-            }
-            return rule
-        },
         compile: (rule: PropRule[]) => {
             rule.sort((l, r) => {
                 // Sort keys first by precedence (prerequisite,required,optional,indexed),
@@ -260,8 +253,6 @@ const kindPrecedence = (rule: PropRule) =>
     isIndexed(rule) ? 2 : rule.prerequisite ? -1 : rule.optional ? 1 : 0
 
 export const emptyPropsNode = PropsNode([])
-
-export type UnparsedProps = NamedPropsInput | PropsInputTuple
 
 export type PropsInputTuple<
     named extends NamedPropsInput = NamedPropsInput,
