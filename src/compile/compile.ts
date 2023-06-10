@@ -1,4 +1,14 @@
 import type { TypeNode } from "../main.js"
+import type {
+    ArrayIndexMatcherSource,
+    IndexedPropRule
+} from "../nodes/constraints/props/indexed.js"
+import {
+    extractArrayIndexRegex,
+    extractFirstVariadicIndex,
+    getStringNode
+} from "../nodes/constraints/props/indexed.js"
+import type { NamedPropRule } from "../nodes/constraints/props/named.js"
 import type { TypeConfig } from "../type.js"
 import { type Domain, hasDomain } from "../utils/domains.js"
 import { Path } from "../utils/lists.js"
@@ -7,13 +17,106 @@ import { serializePrimitive } from "../utils/serialize.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 
-export const compile = (root: TypeNode) => {}
+export const compile = (root: CompilationNode): string =>
+    typeof root === "string"
+        ? root
+        : root.children.length === 0
+        ? root.operator === "&"
+            ? "true"
+            : "false"
+        : root.children
+              .flatMap((group) =>
+                  // sort only within groups to preserve precedence while
+                  // guaranteeing equivalent types compile to the same string
+                  typeof group === "string" ? group : group.map(compile).sort()
+              )
+              .join(` ${root.operator} `)
 
 export type CompilationNode = string | NonTerminalCompilationNode
 
 type NonTerminalCompilationNode = {
     key?: string
-    children: CompilationNode[]
+    operator: "&" | "|"
+    children: CompilationNode[][]
+}
+
+export const compileNamedProps = (props: NamedPropRule[]) =>
+    props.map(compileNamedProp).join(" && ") || "true"
+
+const compileNamedProp = (prop: NamedPropRule) => {
+    const valueCheck = prop.value.condition.replaceAll(
+        In,
+        `${In}${compilePropAccess(prop.key)}`
+    )
+    return prop.optional
+        ? `!('${prop.key}' in ${In}) || ${valueCheck}`
+        : valueCheck
+}
+
+export const compileNamedAndIndexedProps = (
+    named: NamedPropRule[],
+    indexed: IndexedPropRule[]
+) => {
+    if (indexed.length === 1) {
+        // if the only unenumerable set of props are the indices of an array, we can iterate over it instead of checking each key
+        const indexMatcher = extractArrayIndexRegex(indexed[0].key)
+        if (indexMatcher) {
+            return compileArray(indexMatcher, indexed[0].value, named)
+        }
+    }
+    return compileNonArray(named, indexed)
+}
+
+const compileArray = (
+    indexMatcher: ArrayIndexMatcherSource,
+    elementNode: TypeNode,
+    namedProps: NamedPropRule[]
+) => {
+    const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
+    const namedCheck = compileNamedProps(namedProps)
+    const elementCondition = elementNode.condition
+        .replaceAll(IndexIn, `${IndexIn}Inner`)
+        .replaceAll(In, `${In}[${IndexIn}]`)
+    // TODO: don't recheck named
+    const result = `(() => {
+    let valid = ${namedCheck};
+    for(let ${IndexIn} = ${firstVariadicIndex}; ${IndexIn} < ${In}.length; ${IndexIn}++) {
+        valid = ${elementCondition} && valid;
+    }
+    return valid
+})()`
+    return result
+}
+
+const compileNonArray = (
+    namedProps: NamedPropRule[],
+    indexedProps: IndexedPropRule[]
+) => {
+    const namedCheck = compileNamedProps(namedProps)
+    const indexedChecks = indexedProps.map(compileIndexedProp).join("\n")
+    // TODO: don't recheck named
+    return `(() => {
+    let valid = ${namedCheck};
+    for(const ${KeyIn} in ${In}) {
+        ${indexedChecks}
+    }
+    return valid
+})()`
+}
+
+const compileIndexedProp = (prop: IndexedPropRule) => {
+    const valueCheck = `valid = ${prop.value.condition
+        .replaceAll(KeyIn, `${KeyIn}Inner`)
+        .replaceAll(In, `${In}[${KeyIn}]`)} && valid`
+    if (prop.key === getStringNode()) {
+        // if the index signature is just for "string", we don't need to check it explicitly
+        return valueCheck
+    }
+    return `if(${prop.key.condition
+        .replaceAll(KeyIn, `${KeyIn}Inner`)
+        .replaceAll(In, KeyIn)}) {
+        ${valueCheck}
+    }`
 }
 
 export type TraversalConfig = {

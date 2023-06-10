@@ -1,3 +1,7 @@
+import {
+    compileNamedAndIndexedProps,
+    compileNamedProps
+} from "../../../compile/compile.js"
 import { isArray } from "../../../utils/objectKinds.js"
 import { fromEntries, hasKeys } from "../../../utils/records.js"
 import type { DisjointsSources } from "../../disjoint.js"
@@ -6,12 +10,9 @@ import type { Node } from "../../node.js"
 import { defineNodeKind } from "../../node.js"
 import { neverTypeNode, parseTypeNode } from "../../type.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
-import {
-    compileNamedAndIndexedProps,
-    extractArrayIndexRegex
-} from "./indexed.js"
+import { extractArrayIndexRegex } from "./indexed.js"
 import type { NamedPropInput, NamedPropRule } from "./named.js"
-import { compileNamedProps, intersectNamedProp } from "./named.js"
+import { intersectNamedProp } from "./named.js"
 
 export type PropRule = NamedPropRule | IndexedPropRule
 

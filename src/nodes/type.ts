@@ -53,8 +53,10 @@ export const TypeNode = defineNodeKind<TypeNode>(
     {
         kind: "type",
         compile: (rule) => {
-            const condition = compileIndiscriminable(rule.sort())
-            return condition
+            return {
+                operator: "|",
+                children: [rule.map((branch) => branch.compilation)]
+            }
         },
         intersect: (l, r): TypeNode | Disjoint => {
             if (l.rule.length === 1 && r.rule.length === 1) {
@@ -209,17 +211,6 @@ const intersectBranches = (
         candidates?.forEach((candidate) => finalBranches.push(candidate))
     }
     return finalBranches
-}
-
-const compileIndiscriminable = (branches: PredicateNode[]) => {
-    return branches.length === 0
-        ? "false"
-        : branches.length === 1
-        ? branches[0].condition
-        : `(${branches
-              .map((branch) => branch.condition)
-              .sort()
-              .join(" || ")})`
 }
 
 // const compileSwitch = (discriminant: Discriminant): string => {

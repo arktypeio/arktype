@@ -4,19 +4,6 @@ import { Disjoint } from "../../disjoint.js"
 import type { TypeInput, TypeNode } from "../../type.js"
 import { neverTypeNode } from "../../type.js"
 
-export const compileNamedProps = (props: NamedPropRule[]) =>
-    props.map(compileNamedProp).join(" && ") || "true"
-
-const compileNamedProp = (prop: NamedPropRule) => {
-    const valueCheck = prop.value.condition.replaceAll(
-        In,
-        `${In}${compilePropAccess(prop.key)}`
-    )
-    return prop.optional
-        ? `!('${prop.key}' in ${In}) || ${valueCheck}`
-        : valueCheck
-}
-
 export const intersectNamedProp = (
     l: NamedPropRule,
     r: NamedPropRule

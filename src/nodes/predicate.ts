@@ -1,3 +1,4 @@
+import type { CompilationNode } from "../compile/compile.js"
 import { writeUnboundableMessage } from "../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../parse/ast/divisor.js"
 import type { inferMorphOut, Morph, Out } from "../parse/ast/morph.js"
@@ -15,7 +16,7 @@ import type { PropsInput } from "./constraints/props/props.js"
 import type { Range } from "./constraints/range.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeKinds } from "./kinds.js"
-import { createNodeOfKind } from "./kinds.js"
+import { createNodeOfKind, precedenceByKind } from "./kinds.js"
 import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
 
@@ -39,15 +40,22 @@ export const PredicateNode = defineNodeKind<PredicateNode>(
     {
         kind: "predicate",
         compile: (rule) => {
-            const subconditions: string[] = []
+            const children: CompilationNode[][] = []
+            let lastPrecedence = -1
             for (const r of rule) {
-                if (r.condition !== "true") {
-                    subconditions.push(r.condition)
+                // TODO: unify with constraints by precedence
+                const currentPrecedence = precedenceByKind[r.kind]
+                if (currentPrecedence > lastPrecedence) {
+                    children.push([r.compilation])
+                    lastPrecedence = currentPrecedence
+                } else {
+                    children.at(-1)!.push(r.compilation)
                 }
             }
-            // TODO: move || true to parent
-            const condition = subconditions.join(" && ") || "true"
-            return condition
+            return {
+                operator: "&",
+                children
+            }
         },
         intersect: (l, r): PredicateNode | Disjoint => {
             // if (

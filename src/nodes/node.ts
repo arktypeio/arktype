@@ -1,4 +1,5 @@
-import { In } from "../compile/compile.js"
+import type { CompilationNode } from "../compile/compile.js"
+import { compile, In } from "../compile/compile.js"
 import type { inferred } from "../parse/definition.js"
 import { CompiledFunction } from "../utils/functions.js"
 import { Disjoint } from "./disjoint.js"
@@ -6,7 +7,7 @@ import type { NodeKind, NodeKinds } from "./kinds.js"
 
 type BaseNodeImplementation<node extends Node> = {
     kind: node["kind"]
-    compile: (rule: node["rule"]) => string
+    compile: (rule: node["rule"]) => CompilationNode
     intersect: (
         l: Parameters<node["intersect"]>[0],
         r: Parameters<node["intersect"]>[0]
@@ -35,6 +36,7 @@ export interface NodeBase<def extends NodeDefinition> {
     [arkKind]: "node"
     kind: def["kind"]
     rule: def["rule"]
+    compilation: CompilationNode
     condition: string
     intersect(other: def["intersected"]): def["intersected"] | Disjoint
     intersectionCache: Record<string, def["intersected"] | Disjoint | undefined>
@@ -64,7 +66,9 @@ export const defineNodeKind = <node extends Node>(
         [condition: string]: node | undefined
     } = {}
     return (rule: node["rule"]) => {
-        const condition = def.compile(rule)
+        const compilation = def.compile(rule)
+        const condition =
+            typeof compilation === "string" ? compilation : compile(compilation)
         if (nodeCache[condition]) {
             return nodeCache[condition]!
         }
@@ -73,6 +77,7 @@ export const defineNodeKind = <node extends Node>(
             [arkKind]: "node",
             kind: def.kind,
             hasKind: (kind) => kind === def.kind,
+            compilation,
             condition,
             rule,
             allows: new CompiledFunction(`${In}`, `return ${condition}`),
