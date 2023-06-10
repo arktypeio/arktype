@@ -4,14 +4,23 @@ import { writeIndivisibleMessage } from "../parse/ast/divisor.js"
 import type { inferMorphOut, Morph, Out } from "../parse/ast/morph.js"
 import type { GuardedNarrow, Narrow } from "../parse/ast/narrow.js"
 import type { Domain, inferDomain } from "../utils/domains.js"
+import { domainOf } from "../utils/domains.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
-import type { Constructor, instanceOf } from "../utils/objectKinds.js"
+import type {
+    AbstractableConstructor,
+    Constructor,
+    instanceOf
+} from "../utils/objectKinds.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
-import { basisNodeFrom } from "./basis/from.js"
+import type { ClassNode } from "./basis/class.js"
+import { classNode } from "./basis/class.js"
+import type { DomainNode } from "./basis/domain.js"
+import { domainNode } from "./basis/domain.js"
 import type { ValueNode } from "./basis/value.js"
+import { valueNode } from "./basis/value.js"
 import type { inferPropsInput } from "./constraints/props/infer.js"
 import type { PropsInput } from "./constraints/props/props.js"
 import type { Range } from "./constraints/range.js"
@@ -404,3 +413,24 @@ type classConstraints<base extends Constructor> = base extends typeof Array
     : {
           props?: PropsInput
       }
+
+export type basisNodeFrom<input extends BasisInput> = input extends Domain
+    ? DomainNode
+    : input extends AbstractableConstructor
+    ? ClassNode
+    : ValueNode
+
+export const basisNodeFrom = (input: BasisInput) => {
+    switch (typeof input) {
+        case "string":
+            return domainNode(input)
+        case "object":
+            return valueNode(input[1])
+        case "function":
+            return classNode(input)
+        default:
+            throwInternalError(
+                `Unexpectedly got a basis input of type ${domainOf(input)}`
+            )
+    }
+}

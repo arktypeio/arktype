@@ -8,7 +8,7 @@ import { intersectBases } from "./basis.js"
 export interface DomainNode
     extends BasisNode<{ kind: "domain"; rule: Domain }> {}
 
-export const DomainNode = defineNodeKind<DomainNode>(
+export const domainNode = defineNodeKind<DomainNode>(
     {
         kind: "domain",
         parse: (input) => input,

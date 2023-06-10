@@ -9,7 +9,7 @@ import { intersectBases } from "./basis.js"
 export interface ValueNode
     extends BasisNode<{ kind: "value"; rule: unknown }> {}
 
-export const ValueNode = defineNodeKind<ValueNode>(
+export const valueNode = defineNodeKind<ValueNode>(
     {
         kind: "value",
         parse: (input) => input,

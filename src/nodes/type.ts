@@ -3,7 +3,8 @@ import { cached } from "../utils/functions.js"
 import type { conform, exact, Literalable } from "../utils/generics.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { BasisInput } from "./basis/basis.js"
-import { ValueNode } from "./basis/value.js"
+import type { ValueNode } from "./basis/value.js"
+import { valueNode } from "./basis/value.js"
 import {
     arrayBasisNode,
     arrayIndexInput,
@@ -342,7 +343,7 @@ export const typeNodeFromValues = (branches: readonly unknown[]) => {
     const nodes: PredicateNode[] = []
     for (const v of branches) {
         if (!seen.includes(v)) {
-            nodes.push(predicateNode([ValueNode(v)]))
+            nodes.push(predicateNode([valueNode(v)]))
             seen.push(v)
         }
     }

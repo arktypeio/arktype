@@ -1,4 +1,4 @@
-import { DomainNode } from "../nodes/basis/domain.js"
+import { domainNode } from "../nodes/basis/domain.js"
 import type { NamedPropRule } from "../nodes/constraints/props/named.js"
 import { propsNode } from "../nodes/constraints/props/props.js"
 import { predicateNode } from "../nodes/predicate.js"
@@ -38,7 +38,7 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
     return typeNode([predicate])
 }
 
-const objectBasisNode = DomainNode("object")
+const objectBasisNode = domainNode("object")
 
 type withPossiblePreviousEscapeCharacter<k> = k extends `${infer name}?`
     ? `${name}${Scanner.EscapeToken}?`

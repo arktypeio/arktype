@@ -18,7 +18,7 @@ export interface ClassNode
     extendsOneOf: (...baseConstructors: AbstractableConstructor[]) => boolean
 }
 
-export const ClassNode = defineNodeKind<ClassNode>(
+export const classNode = defineNodeKind<ClassNode>(
     {
         kind: "class",
         parse: (input) => input,

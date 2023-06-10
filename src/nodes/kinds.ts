@@ -1,9 +1,10 @@
-import { throwInternalError } from "../utils/errors.js"
-import type { listable } from "../utils/lists.js"
-import { listFrom } from "../utils/lists.js"
-import { ClassNode } from "./basis/class.js"
-import { DomainNode } from "./basis/domain.js"
-import { ValueNode } from "./basis/value.js"
+import { cached } from "../utils/functions.js"
+import type { ClassNode } from "./basis/class.js"
+import { classNode } from "./basis/class.js"
+import type { DomainNode } from "./basis/domain.js"
+import { domainNode } from "./basis/domain.js"
+import type { ValueNode } from "./basis/value.js"
+import { valueNode } from "./basis/value.js"
 import type { DivisorNode } from "./constraints/divisor.js"
 import { divisorNode } from "./constraints/divisor.js"
 import type { MorphNode } from "./constraints/morph.js"
@@ -16,7 +17,8 @@ import type { RangeNode } from "./constraints/range.js"
 import { rangeNode } from "./constraints/range.js"
 import type { RegexNode } from "./constraints/regex.js"
 import { regexNode } from "./constraints/regex.js"
-import type { ListableInputKind, PredicateNode } from "./predicate.js"
+import type { NodeConstructor } from "./node.js"
+import type { PredicateNode } from "./predicate.js"
 import { predicateNode } from "./predicate.js"
 import type { TypeNode } from "./type.js"
 import { typeNode } from "./type.js"
@@ -57,40 +59,28 @@ export type NodeKinds = {
 
 export type NodeKind = keyof NodeKinds
 
-export const createNodeOfKind = ((kind, unknownRule: any) => {
-    switch (kind) {
-        case "type":
-            return typeNode(unknownRule)
-        case "predicate":
-            return predicateNode(unknownRule)
-        case "domain":
-            return DomainNode(unknownRule)
-        case "class":
-            return ClassNode(unknownRule)
-        case "value":
-            return ValueNode(unknownRule)
-        case "divisor":
-            return divisorNode(unknownRule)
-        case "range":
-            return rangeNode(unknownRule)
-        case "regex":
-            return regexNode(listFrom(unknownRule))
-        case "props":
-            return propsNode(unknownRule)
-        case "narrow":
-            return narrowNode(listFrom(unknownRule))
-        case "morph":
-            return morphNode(listFrom(unknownRule))
-        default:
-            return throwInternalError(`Unexpected node kind '${kind}'`)
-    }
-}) as <kind extends NodeKind>(
-    kind: kind,
-    rule: RuleInputs[kind]
-) => NodeKinds[kind]
+const nodeKinds = cached(
+    () =>
+        ({
+            type: typeNode,
+            predicate: predicateNode,
+            domain: domainNode,
+            class: classNode,
+            value: valueNode,
+            range: rangeNode,
+            divisor: divisorNode,
+            regex: regexNode,
+            props: propsNode,
+            narrow: narrowNode,
+            morph: morphNode
+        } satisfies { [k in NodeKind]: NodeConstructor<NodeKinds[k], never> })
+)
 
-export type RuleInputs = {
-    [kind in NodeKind]: kind extends ListableInputKind
-        ? listable<NodeKinds[kind]["rule"][number]>
-        : NodeKinds[kind]["rule"]
-}
+type NodeConstructors = { [k in NodeKind]: ReturnType<typeof nodeKinds>[k] }
+
+export type NodeInputs = { [k in NodeKind]: Parameters<NodeConstructors[k]>[0] }
+
+export const createNodeOfKind = <kind extends NodeKind>(
+    kind: kind,
+    input: NodeInputs[kind]
+) => nodeKinds()[kind](input as never) as NodeKinds[kind]

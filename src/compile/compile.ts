@@ -14,11 +14,14 @@ export const compile = (root: CompilationNode): string =>
             ? "true"
             : "false"
         : root.children
-              .flatMap((group) =>
+              .flatMap((group) => {
+                  if (typeof group === "string") {
+                      return group
+                  }
                   // sort only within groups to preserve precedence while
                   // guaranteeing equivalent types compile to the same string
-                  typeof group === "string" ? group : group.map(compile).sort()
-              )
+                  return group.map(compile).sort()
+              })
               .join(` ${root.operator} `)
 
 export type CompilationNode = string | NonTerminalCompilationNode

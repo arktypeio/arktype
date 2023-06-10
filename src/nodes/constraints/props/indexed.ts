@@ -1,6 +1,6 @@
 import { throwInternalError } from "../../../utils/errors.js"
 import { tryParseWellFormedInteger } from "../../../utils/numericLiterals.js"
-import { ClassNode } from "../../basis/class.js"
+import { classNode } from "../../basis/class.js"
 import type { PredicateInput } from "../../predicate.js"
 import type { TypeInput, TypeNode } from "../../type.js"
 import { builtins, node } from "../../type.js"
@@ -87,7 +87,7 @@ export const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
     )
 }
 
-export const arrayBasisNode = ClassNode(Array)
+export const arrayBasisNode = classNode(Array)
 
 export const arrayIndexInput = <index extends number = 0>(
     firstVariadicIndex: index = 0 as index
