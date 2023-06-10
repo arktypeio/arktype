@@ -48,6 +48,7 @@ type TypeProps<$> = {
     literal: <branches extends readonly Literalable[]>(
         ...branches: branches
     ) => Type<branches[number], $>
+    // TODO: add instance here
 }
 
 export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {

@@ -7,6 +7,7 @@ import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
 import type { Constructor, instanceOf } from "../utils/objectKinds.js"
+import { isKeyOf } from "../utils/records.js"
 import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
 import { basisPrecedenceByKind } from "./basis/basis.js"
 import { basisNodeFrom } from "./basis/from.js"
@@ -102,10 +103,13 @@ export const PredicateNode = defineNodeKind<PredicateNode>(
         }
     },
     (base) => {
-        const hasBasis = !!basisPrecedenceByKind[base.rule[0]?.kind as never]
-        const basis = (hasBasis ? base.rule[0] : undefined) as
-            | BasisNode
-            | undefined
+        const initialRule = base.rule.at(0)
+        const basis =
+            initialRule?.hasKind("domain") ||
+            initialRule?.hasKind("value") ||
+            initialRule?.hasKind("class")
+                ? initialRule
+                : undefined
         const constraints = (
             basis ? base.rule.slice(1) : base.rule
         ) as ConstraintNode[]
