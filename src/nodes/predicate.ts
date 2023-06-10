@@ -36,9 +36,29 @@ export interface PredicateNode
     ): PredicateNode
 }
 
-export const PredicateNode = defineNodeKind<PredicateNode>(
+export const PredicateNode = defineNodeKind<
+    PredicateNode,
+    {
+        builtins: { unknown: PredicateNode }
+        input: PredicateInput
+    }
+>(
     {
         kind: "predicate",
+        builtins: {
+            unknown: {}
+        },
+        parse: (input) => {
+            const basis = input.basis && basisNodeFrom(input.basis)
+            const rules: PredicateRules = basis ? [basis] : []
+            for (const kind of constraintsByPrecedence) {
+                if (input[kind]) {
+                    assertAllowsConstraint(basis, kind)
+                    rules.push(createNodeOfKind(kind, input[kind] as never))
+                }
+            }
+            return rules
+        },
         compile: (rule) => {
             const children: CompilationNode[][] = []
             let lastPrecedence = -1
@@ -146,18 +166,6 @@ export const PredicateNode = defineNodeKind<PredicateNode>(
         }
     }
 )
-
-export const parsePredicateNode = (input: PredicateInput) => {
-    const basis = input.basis && basisNodeFrom(input.basis)
-    const rules: PredicateRules = basis ? [basis] : []
-    for (const kind of constraintsByPrecedence) {
-        if (input[kind]) {
-            assertAllowsConstraint(basis, kind)
-            rules.push(createNodeOfKind(kind, input[kind] as never))
-        }
-    }
-    return PredicateNode(rules)
-}
 
 // compileTraverse(s: CompilationState) {
 //     // let result constraint of this.rule) {
@@ -298,11 +306,13 @@ export type ConstraintKind = keyof ConstraintKinds
 
 export type PredicateInput<
     basis extends BasisInput | undefined = BasisInput | undefined
-> = evaluate<
-    {
-        basis: basis
-    } & ConstraintsInput<basis>
->
+> =
+    | Record<string, never>
+    | evaluate<
+          {
+              basis: basis
+          } & ConstraintsInput<basis>
+      >
 
 export type ConstraintsInput<
     basis extends BasisInput | undefined = BasisInput | undefined

@@ -12,6 +12,7 @@ export interface DivisorNode
 export const DivisorNode = defineNodeKind<DivisorNode>(
     {
         kind: "divisor",
+        parse: (input) => input,
         compile: (rule) => `${In} % ${rule} === 0`,
         intersect: (l, r): DivisorNode =>
             DivisorNode(

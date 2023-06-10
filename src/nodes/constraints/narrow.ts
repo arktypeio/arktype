@@ -1,6 +1,7 @@
 import { registry } from "../../compile/registry.js"
 import type { Narrow } from "../../parse/ast/narrow.js"
-import { intersectUniqueLists } from "../../utils/lists.js"
+import type { listable } from "../../utils/lists.js"
+import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
 import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
@@ -11,10 +12,16 @@ export interface NarrowNode
         intersected: NarrowNode
     }> {}
 
-export const NarrowNode = defineNodeKind<NarrowNode>(
+export const NarrowNode = defineNodeKind<
+    NarrowNode,
+    {
+        input: listable<Narrow>
+    }
+>(
     {
         kind: "narrow",
-        compile: (rule: readonly Narrow[]) => {
+        parse: listFrom,
+        compile: (rule) => {
             // Depending on type-guards, altering the order in which narrows run could
             // lead to a non-typsafe access, so they are preserved.
             // TODO:  Figure out how this needs to work with intersections

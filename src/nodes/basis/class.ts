@@ -21,6 +21,7 @@ export interface ClassNode
 export const ClassNode = defineNodeKind<ClassNode>(
     {
         kind: "class",
+        parse: (input) => input,
         compile: (rule) =>
             `${In} instanceof ${
                 getExactBuiltinConstructorName(rule) ??

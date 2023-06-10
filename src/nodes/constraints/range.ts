@@ -73,6 +73,7 @@ export interface RangeNode
 export const RangeNode = defineNodeKind<RangeNode>(
     {
         kind: "range",
+        parse: (input) => input,
         compile: (rule) => {
             if (
                 rule[0].limit === rule[1]?.limit &&

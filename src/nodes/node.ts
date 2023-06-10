@@ -5,14 +5,41 @@ import { CompiledFunction } from "../utils/functions.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
 
-type BaseNodeImplementation<node extends Node> = {
+export type BaseNodeImplementation<
+    node extends Node,
+    staticDef extends StaticNodeDefinition<node>
+> = {
     kind: node["kind"]
     compile: (rule: node["rule"]) => CompilationNode
     intersect: (
         l: Parameters<node["intersect"]>[0],
         r: Parameters<node["intersect"]>[0]
     ) => ReturnType<node["intersect"]>
+} & StaticNodeImplementation<node, staticDef>
+
+type StaticNodeImplementation<
+    node extends Node,
+    staticDef extends StaticNodeDefinition<node>
+> = {
+    [k in keyof staticDef as k extends "input" ? "parse" : k]: k extends "input"
+        ? (input: staticDef["input"]) => node["rule"]
+        : k extends "builtins"
+        ? {
+              [k in keyof staticDef["builtins"]]: staticDef["input"]
+          }
+        : never
 }
+
+type StaticNodeDefinition<node extends Node> = {
+    input: unknown
+    builtins?: Record<string, node>
+}
+
+type attachStatic<
+    node extends Node,
+    def extends StaticNodeDefinition<node>
+> = NodeConstructor<node> &
+    def["builtins"] & { parse: (input: def["input"]) => node }
 
 type NodeExtension<node extends Node> = (
     base: basePropsOf<node>
@@ -58,14 +85,19 @@ export const isNode = (value: unknown): value is Node =>
 
 export const arkKind = Symbol("ArkTypeInternalKind")
 
-export const defineNodeKind = <node extends Node>(
-    def: BaseNodeImplementation<node>,
+export type NodeConstructor<node extends Node> = (rule: node["rule"]) => node
+
+export const defineNodeKind = <
+    node extends Node,
+    staticDef extends StaticNodeDefinition<node> = { input: node["rule"] }
+>(
+    def: BaseNodeImplementation<node, staticDef>,
     addProps: NodeExtension<node>
 ) => {
     const nodeCache: {
         [condition: string]: node | undefined
     } = {}
-    return (rule: node["rule"]) => {
+    const construct: NodeConstructor<node> = (rule) => {
         const compilation = def.compile(rule)
         const condition =
             typeof compilation === "string" ? compilation : compile(compilation)
@@ -104,4 +136,14 @@ export const defineNodeKind = <node extends Node>(
         nodeCache[condition] = instance
         return instance
     }
+    if (def.builtins) {
+        const instances = Object.fromEntries(
+            Object.entries(def.builtins).map(([k, rule]) => [
+                k,
+                construct(rule)
+            ])
+        )
+        Object.assign(construct, instances)
+    }
+    return construct as attachStatic<node, staticDef>
 }

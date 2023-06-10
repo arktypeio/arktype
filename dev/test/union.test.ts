@@ -16,7 +16,7 @@ suite("union", () => {
     test("nary", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
-        const expected = node.fromValues(
+        const expected = node.literal(
             false as const,
             null,
             undefined,

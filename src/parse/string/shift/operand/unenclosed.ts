@@ -1,5 +1,4 @@
-import type { TypeNode } from "../../../../nodes/type.js"
-import { parseTypeNode } from "../../../../nodes/type.js"
+import { TypeNode } from "../../../../nodes/type.js"
 import type { Scope } from "../../../../scope.js"
 import type { GenericProps } from "../../../../type.js"
 import type { error } from "../../../../utils/errors.js"
@@ -100,11 +99,11 @@ const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
 const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)
     if (maybeNumber !== undefined) {
-        return parseTypeNode({ basis: ["===", maybeNumber] })
+        return TypeNode.parse({ basis: ["===", maybeNumber] })
     }
     const maybeBigint = tryParseWellFormedBigint(token)
     if (maybeBigint !== undefined) {
-        return parseTypeNode({ basis: ["===", maybeBigint] })
+        return TypeNode.parse({ basis: ["===", maybeBigint] })
     }
 }
 

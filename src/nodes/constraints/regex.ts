@@ -1,5 +1,5 @@
 import { In } from "../../compile/compile.js"
-import { intersectUniqueLists } from "../../utils/lists.js"
+import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
 import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
@@ -10,9 +10,15 @@ export interface RegexNode
         intersected: RegexNode
     }> {}
 
-export const RegexNode = defineNodeKind<RegexNode>(
+export const RegexNode = defineNodeKind<
+    RegexNode,
+    {
+        input: string | string[]
+    }
+>(
     {
         kind: "regex",
+        parse: listFrom,
         compile: (rule) => {
             const subconditions = rule.sort().map(compileExpression)
             return subconditions.join(" && ")

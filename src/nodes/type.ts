@@ -1,5 +1,5 @@
 import type { inferred } from "../parse/definition.js"
-import type { conform, exact } from "../utils/generics.js"
+import type { conform, exact, Literalable } from "../utils/generics.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { BasisInput } from "./basis/basis.js"
 import { ValueNode } from "./basis/value.js"
@@ -19,11 +19,7 @@ import type {
     inferPredicateDefinition,
     PredicateInput
 } from "./predicate.js"
-import {
-    parsePredicateNode,
-    PredicateNode,
-    unknownPredicateNode
-} from "./predicate.js"
+import { PredicateNode } from "./predicate.js"
 
 export interface TypeNode<t = unknown>
     extends Node<{
@@ -49,7 +45,19 @@ export interface TypeNode<t = unknown>
     getPath(...path: (string | TypeNode<string>)[]): TypeNode
 }
 
-export const TypeNode = defineNodeKind<TypeNode>(
+export const TypeNode = defineNodeKind<
+    TypeNode,
+    {
+        builtins: {
+            never: TypeNode<never>
+            unknown: TypeNode<unknown>
+            nonVariadicArrayIndex: TypeNode<string>
+            string: TypeNode<string>
+            array: TypeNode<unknown[]>
+        }
+        input: TypeInput
+    }
+>(
     {
         kind: "type",
         compile: (rule) => {
@@ -67,7 +75,20 @@ export const TypeNode = defineNodeKind<TypeNode>(
             return resultBranches.length
                 ? TypeNode(resultBranches)
                 : Disjoint.from("union", l, r)
-        }
+        },
+        builtins: {
+            never: [],
+            unknown: [{}],
+            nonVariadicArrayIndex: arrayIndexInput(),
+            string: { basis: "string" },
+            array: { basis: Array }
+        },
+        parse: (input) =>
+            isArray(input)
+                ? reduceBranches(
+                      input.map((branch) => PredicateNode.parse(branch))
+                  )
+                : [PredicateNode.parse(input)]
     },
     (base) => ({
         description:
@@ -311,24 +332,17 @@ export type TypeNodeParser = {
         }
     ): TypeNode<inferBranches<branches>>
 
-    fromValues<const branches extends readonly unknown[]>(
+    literal<const branches extends readonly unknown[]>(
         ...branches: branches
     ): TypeNode<branches[number]>
 }
 
 export const node: TypeNodeParser = Object.assign(
-    (...branches: PredicateInput[]) => parseTypeNode(branches),
+    (...branches: PredicateInput[]) => TypeNode.parse(branches),
     {
-        fromValues: (...branches: unknown[]) => typeNodeFromValues(branches)
+        literal: (...branches: Literalable[]) => typeNodeFromValues(branches)
     }
 ) as never
-
-export const parseTypeNode = (input: TypeInput) =>
-    isArray(input)
-        ? TypeNode(
-              reduceBranches(input.map((branch) => parsePredicateNode(branch)))
-          )
-        : TypeNode([parsePredicateNode(input)])
 
 export const typeNodeFromValues = (branches: readonly unknown[]) => {
     const seen: unknown[] = []
@@ -378,9 +392,3 @@ export type extractBases<
           ]
       >
     : result
-
-export const neverTypeNode = TypeNode([])
-
-export const unknownTypeNode = TypeNode([unknownPredicateNode])
-
-export const nonVariadicArrayIndexTypeNode = node(arrayIndexInput())

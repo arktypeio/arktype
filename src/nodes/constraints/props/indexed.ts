@@ -1,14 +1,9 @@
 import { throwInternalError } from "../../../utils/errors.js"
-import { cached } from "../../../utils/functions.js"
 import { tryParseWellFormedInteger } from "../../../utils/numericLiterals.js"
 import { ClassNode } from "../../basis/class.js"
 import type { PredicateInput } from "../../predicate.js"
-import type { TypeInput, TypeNode } from "../../type.js"
-import {
-    node,
-    nonVariadicArrayIndexTypeNode,
-    parseTypeNode
-} from "../../type.js"
+import type { TypeInput } from "../../type.js"
+import { node, TypeNode } from "../../type.js"
 
 export type IndexedPropInput = {
     key: PredicateInput<"string">
@@ -94,8 +89,6 @@ export const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
 
 export const arrayBasisNode = ClassNode(Array)
 
-export const getStringNode = cached(() => parseTypeNode({ basis: "string" }))
-
 export const arrayIndexInput = <index extends number = 0>(
     firstVariadicIndex: index = 0 as index
 ) =>
@@ -106,5 +99,5 @@ export const arrayIndexInput = <index extends number = 0>(
 
 export const arrayIndexTypeNode = (firstVariadicIndex = 0) =>
     firstVariadicIndex === 0
-        ? nonVariadicArrayIndexTypeNode
+        ? TypeNode.nonVariadicArrayIndex
         : node(arrayIndexInput(firstVariadicIndex))

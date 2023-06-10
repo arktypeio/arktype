@@ -11,6 +11,7 @@ export interface DomainNode
 export const DomainNode = defineNodeKind<DomainNode>(
     {
         kind: "domain",
+        parse: (input) => input,
         compile: (rule) =>
             rule === "object"
                 ? `((typeof ${In} === "object" && ${In} !== null) || typeof ${In} === "function")`

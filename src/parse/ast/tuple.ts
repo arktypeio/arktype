@@ -5,7 +5,7 @@ import {
 import type { PropRule } from "../../nodes/constraints/props/props.js"
 import { PropsNode } from "../../nodes/constraints/props/props.js"
 import { PredicateNode } from "../../nodes/predicate.js"
-import { node, parseTypeNode, TypeNode } from "../../nodes/type.js"
+import { TypeNode } from "../../nodes/type.js"
 import type { extractIn, extractOut, TypeConfig } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"
@@ -69,7 +69,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
         }
         const value = parseDefinition(elementDef, ctx)
         if (isVariadic) {
-            if (!value.extends(unknownArray)) {
+            if (!value.extends(TypeNode.array)) {
                 return throwParseError(writeNonArrayRestMessage(elementDef))
             }
             if (i !== def.length - 1) {
@@ -92,17 +92,13 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
             key: "length",
             prerequisite: true,
             optional: false,
-            value: parseTypeNode({ basis: ["===", def.length] })
+            value: TypeNode.parse({ basis: ["===", def.length] })
         })
     }
     const propsNode = PropsNode(props)
     const predicate = PredicateNode([arrayBasisNode, propsNode])
     return TypeNode([predicate])
 }
-
-const unknownArray = node({
-    basis: Array
-})
 
 type InfixExpression = [unknown, InfixOperator, ...unknown[]]
 
@@ -376,11 +372,11 @@ const prefixParsers: {
                 `Expected a constructor following 'instanceof' operator (was ${typeof def[1]}).`
             )
         }
-        return parseTypeNode({
+        return TypeNode.parse({
             basis: def[1] as Constructor
         })
     },
-    "===": (def) => parseTypeNode({ basis: ["===", def[1]] })
+    "===": (def) => TypeNode.parse({ basis: ["===", def[1]] })
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>

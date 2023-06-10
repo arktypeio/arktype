@@ -1,8 +1,7 @@
-import { compilePropAccess, In } from "../../../compile/compile.js"
 import { throwInternalError } from "../../../utils/errors.js"
 import { Disjoint } from "../../disjoint.js"
-import type { TypeInput, TypeNode } from "../../type.js"
-import { neverTypeNode } from "../../type.js"
+import type { TypeInput } from "../../type.js"
+import { TypeNode } from "../../type.js"
 
 export const intersectNamedProp = (
     l: NamedPropRule,
@@ -21,7 +20,7 @@ export const intersectNamedProp = (
         if (optional) {
             return {
                 key,
-                value: neverTypeNode,
+                value: TypeNode.never,
                 optional,
                 prerequisite
             }

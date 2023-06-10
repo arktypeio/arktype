@@ -12,6 +12,7 @@ export interface ValueNode
 export const ValueNode = defineNodeKind<ValueNode>(
     {
         kind: "value",
+        parse: (input) => input,
         intersect: intersectBases,
         compile: (rule) => `${In} === ${compileSerializedValue(rule)}`
     },
