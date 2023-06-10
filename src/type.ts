@@ -88,7 +88,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
         super(
             In,
             `const state = new ${registry().reference("state")}();
-        ${compile(root)}
+        ${root.condition}
         return state.finalize(${In});`
         )
         this.root = root

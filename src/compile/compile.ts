@@ -9,6 +9,13 @@ import { registry } from "./registry.js"
 
 export const compile = (root: TypeNode) => {}
 
+export type CompilationNode = string | NonTerminalCompilationNode
+
+type NonTerminalCompilationNode = {
+    key?: string
+    children: CompilationNode[]
+}
+
 export type TraversalConfig = {
     [k in keyof TypeConfig]-?: TypeConfig[k][]
 }
