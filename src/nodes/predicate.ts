@@ -6,20 +6,19 @@ import type { Domain, inferDomain } from "../utils/domains.js"
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
+import { listFrom } from "../utils/lists.js"
 import type { Constructor, instanceOf } from "../utils/objectKinds.js"
-import { type keySet } from "../utils/records.js"
+import { isKeyOf, type keySet } from "../utils/records.js"
 import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
 import { basisPrecedenceByKind } from "./basis/basis.js"
 import { basisNodeFrom } from "./basis/from.js"
 import type { ValueNode } from "./basis/value.js"
-import type { DivisorNode } from "./constraints/divisor.js"
-import type { MorphNode } from "./constraints/morph.js"
-import type { NarrowNode } from "./constraints/narrow.js"
 import type { inferPropsInput } from "./constraints/props/infer.js"
-import type { PropsInput, PropsNode } from "./constraints/props/props.js"
-import type { Range, RangeNode } from "./constraints/range.js"
-import type { RegexNode } from "./constraints/regex.js"
+import type { PropsInput } from "./constraints/props/props.js"
+import type { Range } from "./constraints/range.js"
 import { Disjoint } from "./disjoint.js"
+import type { NodeKinds } from "./kinds.js"
+import { createNodeOfKind } from "./kinds.js"
 import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
 
@@ -129,10 +128,13 @@ export const PredicateNode = defineNodeKind<PredicateNode>(
             valueNode: basis?.hasKind("value") ? basis : undefined,
             constrain(kind, input): PredicateNode {
                 assertAllowsConstraint(this.basis, kind)
-                const result = this.intersect(
-                    // TODO: Fix createConstraint(kind, input)
-                    PredicateNode([])
+                const constraint = createNodeOfKind(
+                    kind,
+                    (isKeyOf(kind, listableInputKinds)
+                        ? listFrom(input)
+                        : input) as never
                 )
+                const result = this.intersect(PredicateNode([constraint]))
                 if (result instanceof Disjoint) {
                     return result.throw()
                 }
@@ -220,7 +222,6 @@ export const assertAllowsConstraint = (
     }
 
     const domain = basis?.domain ?? "unknown"
-
     switch (kind) {
         case "divisor":
             if (domain !== "number") {
@@ -288,25 +289,12 @@ export const unknownPredicateNode = PredicateNode([])
 
 export type PredicateRules = [BasisNode, ...ConstraintNode[]] | ConstraintNode[]
 
-// export const constraintKinds = {
-//     range: RangeNode,
-//     divisor: DivisorNode,
-//     regex: RegexNode,
-//     props: PropsNode,
-//     narrow: NarrowNode,
-//     morph: MorphNode
-// } as const
-
 export type ConstraintNode = ConstraintKinds[ConstraintKind]
 
-type ConstraintKinds = {
-    range: RangeNode
-    divisor: DivisorNode
-    regex: RegexNode
-    props: PropsNode
-    narrow: NarrowNode
-    morph: MorphNode
-}
+type ConstraintKinds = Pick<
+    NodeKinds,
+    "range" | "divisor" | "regex" | "props" | "narrow" | "morph"
+>
 
 export type RuleKind = "basis" | ConstraintKind
 
