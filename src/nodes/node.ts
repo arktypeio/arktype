@@ -94,10 +94,8 @@ export type BaseNodeExtensionProps = {
     description: string
 }
 
-export type Node<
-    def extends NodeDefinition = NodeDefinition,
-    props = {}
-> = NodeBase<def> & BaseNodeExtensionProps & props
+export type Node<def extends NodeDefinition = NodeDefinition> = NodeBase<def> &
+    BaseNodeExtensionProps
 
 type IntersectionCache<node> = Record<string, node | Disjoint | undefined>
 

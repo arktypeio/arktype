@@ -35,7 +35,7 @@ module.exports = defineConfig({
         ],
         "@typescript-eslint/default-param-last": "warn",
         "@typescript-eslint/consistent-type-imports": "warn",
-        "@typescript-eslint/consistent-type-definitions": ["warn", "type"],
+        "@typescript-eslint/no-empty-interface": "off",
         /**
          * Require the use of arrow functions where possible
          */

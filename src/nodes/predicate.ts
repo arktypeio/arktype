@@ -11,7 +11,7 @@ import { type keySet } from "../utils/records.js"
 import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
 import { basisPrecedenceByKind } from "./basis/basis.js"
 import { basisNodeFrom } from "./basis/from.js"
-import { ValueNode } from "./basis/value.js"
+import type { ValueNode } from "./basis/value.js"
 import type { DivisorNode } from "./constraints/divisor.js"
 import type { MorphNode } from "./constraints/morph.js"
 import type { NarrowNode } from "./constraints/narrow.js"
@@ -23,23 +23,21 @@ import { Disjoint } from "./disjoint.js"
 import type { Node } from "./node.js"
 import { defineNodeKind } from "./node.js"
 
-export type PredicateNode = Node<
-    {
+export interface PredicateNode
+    extends Node<{
         kind: "predicate"
         rule: PredicateRules
         intersected: PredicateNode
-    },
-    {
-        basis: BasisNode | undefined
-        constraints: ConstraintNode[]
-        getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
-        valueNode: ValueNode | undefined
-        constrain<kind extends ConstraintKind>(
-            kind: kind,
-            input: ConstraintsInput[kind]
-        ): PredicateNode
-    }
->
+    }> {
+    basis: BasisNode | undefined
+    constraints: ConstraintNode[]
+    getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
+    valueNode: ValueNode | undefined
+    constrain<kind extends ConstraintKind>(
+        kind: kind,
+        input: ConstraintsInput[kind]
+    ): PredicateNode
+}
 
 export const PredicateNode = defineNodeKind<PredicateNode>(
     {
@@ -168,7 +166,7 @@ export const parsePredicateNode = (input: PredicateInput) => {
 
 // pruneDiscriminant(path: string[], kind: DiscriminantKind): PredicateNode {
 //     if (path.length === 0) {
-//         if (kind === "domain" && this.basis instanceof ValueNode) {
+//         if (kind === "domain" && this.basis.hasKind("value")) {
 //             // if the basis specifies an exact value but was used to
 //             // discriminate based on a domain, we can't prune it
 //             return this
@@ -210,7 +208,7 @@ export const assertAllowsConstraint = (
     basis: BasisNode | undefined,
     kind: ConstraintKind
 ) => {
-    if (basis instanceof ValueNode) {
+    if (basis?.hasKind("value")) {
         if (kind !== "morph") {
             throwInvalidConstraintError(
                 kind,

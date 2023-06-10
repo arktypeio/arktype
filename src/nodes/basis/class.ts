@@ -10,11 +10,11 @@ import { defineNodeKind } from "../node.js"
 import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export type ClassNode = BasisNode<{
-    kind: "class"
-    rule: AbstractableConstructor
-    // TODO: have node take props as second optional param?
-}> & {
+export interface ClassNode
+    extends BasisNode<{
+        kind: "class"
+        rule: AbstractableConstructor
+    }> {
     extendsOneOf: (...baseConstructors: AbstractableConstructor[]) => boolean
 }
 

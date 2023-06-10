@@ -4,11 +4,12 @@ import { intersectUniqueLists } from "../../utils/lists.js"
 import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export type NarrowNode = Node<{
-    kind: "narrow"
-    rule: readonly Narrow[]
-    intersected: NarrowNode
-}>
+export interface NarrowNode
+    extends Node<{
+        kind: "narrow"
+        rule: readonly Narrow[]
+        intersected: NarrowNode
+    }> {}
 
 export const NarrowNode = defineNodeKind<NarrowNode>(
     {

@@ -4,11 +4,12 @@ import { intersectUniqueLists } from "../../utils/lists.js"
 import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export type MorphNode = Node<{
-    kind: "morph"
-    rule: readonly Morph[]
-    intersected: MorphNode
-}>
+export interface MorphNode
+    extends Node<{
+        kind: "morph"
+        rule: readonly Morph[]
+        intersected: MorphNode
+    }> {}
 
 export const MorphNode = defineNodeKind<MorphNode>(
     {

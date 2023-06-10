@@ -15,18 +15,16 @@ import { compileNamedProps, intersectNamedProp } from "./named.js"
 
 export type PropRule = NamedPropRule | IndexedPropRule
 
-export type PropsNode = Node<
-    {
+export interface PropsNode
+    extends Node<{
         kind: "props"
         rule: PropRule[]
         intersected: PropsNode
-    },
-    {
-        named: NamedPropRule[]
-        indexed: IndexedPropRule[]
-        byName: Record<string, NamedPropRule>
-    }
->
+    }> {
+    named: NamedPropRule[]
+    indexed: IndexedPropRule[]
+    byName: Record<string, NamedPropRule>
+}
 
 export const parsePropsNode = (input: PropsInput) => {
     const [namedInput, ...indexedInput] = isArray(input) ? input : [input]

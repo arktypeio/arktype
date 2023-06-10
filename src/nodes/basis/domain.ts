@@ -5,7 +5,8 @@ import { defineNodeKind } from "../node.js"
 import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export type DomainNode = BasisNode<{ kind: "domain"; rule: Domain }>
+export interface DomainNode
+    extends BasisNode<{ kind: "domain"; rule: Domain }> {}
 
 export const DomainNode = defineNodeKind<DomainNode>(
     {

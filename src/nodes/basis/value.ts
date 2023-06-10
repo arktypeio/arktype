@@ -6,7 +6,8 @@ import { defineNodeKind } from "../node.js"
 import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export type ValueNode = BasisNode<{ kind: "value"; rule: unknown }>
+export interface ValueNode
+    extends BasisNode<{ kind: "value"; rule: unknown }> {}
 
 export const ValueNode = defineNodeKind<ValueNode>(
     {

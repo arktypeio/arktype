@@ -1,5 +1,5 @@
 import { suite, test } from "mocha"
-import { type, TypeNode } from "../../src/main.js"
+import { type } from "../../src/main.js"
 import { node } from "../../src/nodes/type.js"
 import {
     writeMissingRightOperandMessage,

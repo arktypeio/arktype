@@ -219,7 +219,7 @@ const compileIndiscriminable = (branches: PredicateNode[]) => {
         : branches.length === 1
         ? branches[0].condition
         : `(${branches
-              .map((branch) => branch.rule)
+              .map((branch) => branch.condition)
               .sort()
               .join(" || ")})`
 }
