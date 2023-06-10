@@ -44,7 +44,7 @@ export const PredicateNode = defineNodeKind<PredicateNode>(
         compile: (rule) => {
             const subconditions: string[] = []
             for (const r of rule) {
-                if (r.rule !== "true") {
+                if (r.condition !== "true") {
                     subconditions.push(r.condition)
                 }
             }
@@ -150,8 +150,15 @@ export const parsePredicateNode = (input: PredicateInput) => {
     for (const kind of constraintsByPrecedence) {
         if (input[kind]) {
             assertAllowsConstraint(basis, kind)
-            // TODO: Create node kind
-            // rules.push(createConstraint(kind, input[kind]))
+            rules.push(
+                createNodeOfKind(
+                    kind,
+                    // TODO: better solution
+                    isKeyOf(kind, listableInputKinds)
+                        ? listFrom(input[kind])
+                        : (input[kind] as any)
+                )
+            )
         }
     }
     return PredicateNode(rules)

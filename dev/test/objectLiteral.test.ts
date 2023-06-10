@@ -5,7 +5,7 @@ import { attest } from "../attest/main.js"
 suite("object literal", () => {
     test("empty", () => {
         const o = type({})
-        attest(o.root).equals(type("object").root)
+        attest(o.condition).equals(type("object").condition)
     })
     test("required", () => {
         const o = type({ a: "string", b: "boolean" })

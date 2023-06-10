@@ -136,7 +136,7 @@ suite("tuple", () => {
                 { a: "string", c: "number" },
                 { b: "boolean", d: "Date" }
             ])
-            attest(t.root).typedValue(expected.root)
+            attest(t.condition).typedValue(expected.condition)
         })
     })
 })
