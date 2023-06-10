@@ -122,8 +122,8 @@ suite("tuple", () => {
                 [{ a: "string" }]
             ])
             const expected = type([{ a: "string", b: "boolean" }])
-            attest(tupleAndArray.root).typedValue(expected.root)
-            attest(arrayAndTuple.root).typedValue(expected.root)
+            attest(tupleAndArray.condition).equals(expected.condition)
+            attest(arrayAndTuple.condition).equals(expected.condition)
         })
         test("variadic", () => {
             const b = type([{ b: "boolean" }, "[]"])

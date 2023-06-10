@@ -16,15 +16,14 @@ suite("union", () => {
     test("nary", () => {
         const nary = type("false|null|undefined|0|''")
         attest(nary.infer).typed as false | "" | 0 | null | undefined
-        attest(nary.root).is(
-            node.fromValues(
-                false as const,
-                null,
-                undefined,
-                0 as const,
-                "" as const
-            )
+        const expected = node.fromValues(
+            false as const,
+            null,
+            undefined,
+            0 as const,
+            "" as const
         )
+        attest(nary.root).is(expected)
     })
     test("subtype pruning", () => {
         type([{ a: "string" }, "|", { a: "'foo'" }])

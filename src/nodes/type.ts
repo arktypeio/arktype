@@ -313,7 +313,7 @@ const reduceBranches = (branchNodes: PredicateNode[]) => {
 // }
 
 export type TypeNodeParser = {
-    <const branches extends PredicateInput[]>(
+    <const branches extends readonly PredicateInput[]>(
         ...branches: {
             [i in keyof branches]: conform<
                 branches[i],
@@ -322,7 +322,7 @@ export type TypeNodeParser = {
         }
     ): TypeNode<inferBranches<branches>>
 
-    fromValues<const branches extends unknown[]>(
+    fromValues<const branches extends readonly unknown[]>(
         ...branches: branches
     ): TypeNode<branches[number]>
 }
@@ -353,7 +353,7 @@ export const typeNodeFromValues = (branches: readonly unknown[]) => {
     return TypeNode(nodes)
 }
 
-export type inferBranches<branches extends PredicateInput[]> = {
+export type inferBranches<branches extends readonly PredicateInput[]> = {
     [i in keyof branches]: inferPredicateDefinition<branches[i]>
 }[number]
 
@@ -364,7 +364,7 @@ export type inferTypeInput<input extends TypeInput> = inferPredicateDefinition<
 export type TypeInput = PredicateInput | PredicateInput[]
 
 export type validatedTypeNodeInput<
-    branches extends PredicateInput[],
+    branches extends readonly PredicateInput[],
     bases extends BasisInput[]
 > = {
     [i in keyof branches]: exact<
