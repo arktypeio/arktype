@@ -1,6 +1,8 @@
 import {
-    compileNamedAndIndexedProps,
-    compileNamedProps
+    compilePropAccess,
+    In,
+    IndexIn,
+    KeyIn
 } from "../../../compile/compile.js"
 import { isArray } from "../../../utils/objectKinds.js"
 import { fromEntries, hasKeys } from "../../../utils/records.js"
@@ -8,9 +10,14 @@ import type { DisjointsSources } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
 import type { Node } from "../../node.js"
 import { defineNodeKind, isNode } from "../../node.js"
+import type { TypeNode } from "../../type.js"
 import { builtins, typeNode } from "../../type.js"
-import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
-import { extractArrayIndexRegex } from "./indexed.js"
+import type {
+    ArrayIndexMatcherSource,
+    IndexedPropInput,
+    IndexedPropRule
+} from "./indexed.js"
+import { extractArrayIndexRegex, extractFirstVariadicIndex } from "./indexed.js"
 import type { NamedPropInput, NamedPropRule } from "./named.js"
 import { intersectNamedProp } from "./named.js"
 
@@ -33,7 +40,8 @@ export type PropsInput = NamedPropsInput | PropsInputTuple
 
 export const isParsedPropsRule = (
     input: PropsInput | PropsRule
-): input is PropsRule => isArray(input) && isNode(input[0].value)
+): input is PropsRule =>
+    isArray(input) && (input.length === 0 || isNode(input[0].value))
 
 export const propsNode = defineNodeKind<PropsNode, PropsInput>(
     {
@@ -187,6 +195,85 @@ const describeProps = (named: NamedPropRule[], indexed: IndexedPropRule[]) => {
         entries.push([`[${entry.key}]`, entry.value.toString()])
     }
     return JSON.stringify(fromEntries(entries))
+}
+
+export const compileNamedProps = (props: NamedPropRule[]) =>
+    props.map(compileNamedProp).join(" && ") || "true"
+
+const compileNamedProp = (prop: NamedPropRule) => {
+    const valueCheck = prop.value.condition.replaceAll(
+        In,
+        `${In}${compilePropAccess(prop.key)}`
+    )
+    return prop.optional
+        ? `!('${prop.key}' in ${In}) || ${valueCheck}`
+        : valueCheck
+}
+
+export const compileNamedAndIndexedProps = (
+    named: NamedPropRule[],
+    indexed: IndexedPropRule[]
+) => {
+    if (indexed.length === 1) {
+        // if the only unenumerable set of props are the indices of an array, we can iterate over it instead of checking each key
+        const indexMatcher = extractArrayIndexRegex(indexed[0].key)
+        if (indexMatcher) {
+            return compileArray(indexMatcher, indexed[0].value, named)
+        }
+    }
+    return compileNonArray(named, indexed)
+}
+
+const compileArray = (
+    indexMatcher: ArrayIndexMatcherSource,
+    elementNode: TypeNode,
+    namedProps: NamedPropRule[]
+) => {
+    const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
+    const namedCheck = compileNamedProps(namedProps)
+    const elementCondition = elementNode.condition
+        .replaceAll(IndexIn, `${IndexIn}Inner`)
+        .replaceAll(In, `${In}[${IndexIn}]`)
+    // TODO: don't recheck named
+    const result = `(() => {
+    let valid = ${namedCheck};
+    for(let ${IndexIn} = ${firstVariadicIndex}; ${IndexIn} < ${In}.length; ${IndexIn}++) {
+        valid = ${elementCondition} && valid;
+    }
+    return valid
+})()`
+    return result
+}
+
+const compileNonArray = (
+    namedProps: NamedPropRule[],
+    indexedProps: IndexedPropRule[]
+) => {
+    const namedCheck = compileNamedProps(namedProps)
+    const indexedChecks = indexedProps.map(compileIndexedProp).join("\n")
+    // TODO: don't recheck named
+    return `(() => {
+    let valid = ${namedCheck};
+    for(const ${KeyIn} in ${In}) {
+        ${indexedChecks}
+    }
+    return valid
+})()`
+}
+
+const compileIndexedProp = (prop: IndexedPropRule) => {
+    const valueCheck = `valid = ${prop.value.condition
+        .replaceAll(KeyIn, `${KeyIn}Inner`)
+        .replaceAll(In, `${In}[${KeyIn}]`)} && valid`
+    if (prop.key === builtins.string()) {
+        // if the index signature is just for "string", we don't need to check it explicitly
+        return valueCheck
+    }
+    return `if(${prop.key.condition
+        .replaceAll(KeyIn, `${KeyIn}Inner`)
+        .replaceAll(In, KeyIn)}) {
+        ${valueCheck}
+    }`
 }
 
 // compileTraverse(s: CompilationState) {

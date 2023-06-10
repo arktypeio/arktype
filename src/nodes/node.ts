@@ -70,7 +70,8 @@ export const defineNodeKind = <node extends Node, input = never>(
     const nodeCache: {
         [condition: string]: node | undefined
     } = {}
-    return (rule) => {
+    return (input) => {
+        const rule = def.parse(input)
         const compilation = def.compile(rule)
         const condition =
             typeof compilation === "string" ? compilation : compile(compilation)
