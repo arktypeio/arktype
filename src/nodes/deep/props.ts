@@ -1,4 +1,3 @@
-import type { CompilationNode } from "../../compile/compile.js"
 import { isArray } from "../../utils/objectKinds.js"
 import { fromEntries, hasKeys } from "../../utils/records.js"
 import type { DisjointsSources } from "../disjoint.js"
