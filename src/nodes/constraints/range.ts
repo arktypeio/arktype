@@ -70,7 +70,7 @@ export interface RangeNode
     max: Bound<MaxComparator> | undefined
 }
 
-export const RangeNode = defineNodeKind<RangeNode>(
+export const rangeNode = defineNodeKind<RangeNode>(
     {
         kind: "range",
         parse: (input) => input,
@@ -106,7 +106,7 @@ export const RangeNode = defineNodeKind<RangeNode>(
                 if (stricterMax === "r") {
                     return compareStrictness("min", l.min, r.max) === "l"
                         ? Disjoint.from("range", l, r)
-                        : RangeNode([l.min!, r.max!])
+                        : rangeNode([l.min!, r.max!])
                 }
                 return l
             }
@@ -114,7 +114,7 @@ export const RangeNode = defineNodeKind<RangeNode>(
                 if (stricterMax === "l") {
                     return compareStrictness("min", l.max, r.min) === "r"
                         ? Disjoint.from("range", l, r)
-                        : RangeNode([r.min!, l.max!])
+                        : rangeNode([r.min!, l.max!])
                 }
                 return r
             }

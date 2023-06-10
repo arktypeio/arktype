@@ -12,12 +12,7 @@ export interface NarrowNode
         intersected: NarrowNode
     }> {}
 
-export const NarrowNode = defineNodeKind<
-    NarrowNode,
-    {
-        input: listable<Narrow>
-    }
->(
+export const narrowNode = defineNodeKind<NarrowNode, listable<Narrow>>(
     {
         kind: "narrow",
         parse: listFrom,
@@ -31,7 +26,7 @@ export const NarrowNode = defineNodeKind<
             return subconditions.join(" && ")
         },
         intersect: (l, r): NarrowNode =>
-            NarrowNode(intersectUniqueLists(l.rule, r.rule))
+            narrowNode(intersectUniqueLists(l.rule, r.rule))
     },
     (base) => ({
         description: `narrowed by ${base.rule.map((narrow) => narrow.name)}`

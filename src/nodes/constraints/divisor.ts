@@ -9,13 +9,13 @@ export interface DivisorNode
         intersected: DivisorNode
     }> {}
 
-export const DivisorNode = defineNodeKind<DivisorNode>(
+export const divisorNode = defineNodeKind<DivisorNode>(
     {
         kind: "divisor",
         parse: (input) => input,
         compile: (rule) => `${In} % ${rule} === 0`,
         intersect: (l, r): DivisorNode =>
-            DivisorNode(
+            divisorNode(
                 Math.abs(
                     (l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
                 )

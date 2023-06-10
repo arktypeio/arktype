@@ -7,14 +7,16 @@ import { fromEntries, hasKeys } from "../../../utils/records.js"
 import type { DisjointsSources } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
 import type { Node } from "../../node.js"
-import { defineNodeKind } from "../../node.js"
-import { TypeNode } from "../../type.js"
+import { defineNodeKind, isNode } from "../../node.js"
+import { builtins, typeNode } from "../../type.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
 import { extractArrayIndexRegex } from "./indexed.js"
 import type { NamedPropInput, NamedPropRule } from "./named.js"
 import { intersectNamedProp } from "./named.js"
 
 export type PropRule = NamedPropRule | IndexedPropRule
+
+export type PropsRule = PropRule[]
 
 export interface PropsNode
     extends Node<{
@@ -29,19 +31,17 @@ export interface PropsNode
 
 export type PropsInput = NamedPropsInput | PropsInputTuple
 
-export const PropsNode = defineNodeKind<
-    PropsNode,
-    {
-        builtins: { empty: PropsNode }
-        input: PropsInput
-    }
->(
+export const isParsedPropsRule = (
+    input: PropsInput | PropsRule
+): input is PropsRule => isArray(input) && isNode(input[0].value)
+
+export const propsNode = defineNodeKind<PropsNode, PropsInput>(
     {
         kind: "props",
-        builtins: {
-            empty: {}
-        },
         parse: (input) => {
+            if (isParsedPropsRule(input)) {
+                return input
+            }
             const [namedInput, ...indexedInput] = isArray(input)
                 ? input
                 : [input]
@@ -51,13 +51,13 @@ export const PropsNode = defineNodeKind<
                     key: k,
                     prerequisite: namedInput[k].prerequisite ?? false,
                     optional: namedInput[k].optional ?? false,
-                    value: TypeNode.parse(namedInput[k].value)
+                    value: typeNode(namedInput[k].value)
                 })
             }
             for (const prop of indexedInput) {
                 rule.push({
-                    key: TypeNode.parse(prop.key),
-                    value: TypeNode.parse(prop.value)
+                    key: typeNode(prop.key),
+                    value: typeNode(prop.value)
                 })
             }
             return rule
@@ -109,7 +109,7 @@ const intersectProps = (l: PropsNode, r: PropsNode): PropsNode | Disjoint => {
         } else {
             const result = indexed[matchingIndex].value.intersect(value)
             indexed[matchingIndex].value =
-                result instanceof Disjoint ? TypeNode.never : result
+                result instanceof Disjoint ? builtins.never() : result
         }
     }
     const byName = { ...l.byName, ...r.byName }
@@ -176,7 +176,7 @@ const intersectProps = (l: PropsNode, r: PropsNode): PropsNode | Disjoint => {
         // it has already been intersected and should be removed
         indexed = indexed.filter((entry) => !extractArrayIndexRegex(entry.key))
     }
-    return PropsNode([...named, ...indexed])
+    return propsNode([...named, ...indexed])
 }
 
 const describeProps = (named: NamedPropRule[], indexed: IndexedPropRule[]) => {
@@ -251,7 +251,7 @@ const isNamed = (rule: PropRule): rule is NamedPropRule =>
 const kindPrecedence = (rule: PropRule) =>
     isIndexed(rule) ? 2 : rule.prerequisite ? -1 : rule.optional ? 1 : 0
 
-export const emptyPropsNode = PropsNode([])
+export const emptyPropsNode = propsNode([])
 
 export type PropsInputTuple<
     named extends NamedPropsInput = NamedPropsInput,

@@ -4,7 +4,7 @@ import type {
 } from "../../../../nodes/constraints/range.js"
 import {
     maxComparators,
-    RangeNode
+    rangeNode
 } from "../../../../nodes/constraints/range.js"
 import { Disjoint } from "../../../../nodes/disjoint.js"
 import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
@@ -103,7 +103,7 @@ export const parseRightBound = (
         return s.error(writeUnpairableComparatorMessage(comparator))
     }
     const intersectionResult = s.branches.range.intersect(
-        RangeNode([{ comparator, limit }])
+        rangeNode([{ comparator, limit }])
     )
     if (intersectionResult instanceof Disjoint) {
         return intersectionResult.throw()

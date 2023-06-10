@@ -10,12 +10,7 @@ export interface RegexNode
         intersected: RegexNode
     }> {}
 
-export const RegexNode = defineNodeKind<
-    RegexNode,
-    {
-        input: string | string[]
-    }
->(
+export const regexNode = defineNodeKind<RegexNode, string | string[]>(
     {
         kind: "regex",
         parse: listFrom,
@@ -24,7 +19,7 @@ export const RegexNode = defineNodeKind<
             return subconditions.join(" && ")
         },
         intersect: (l, r): RegexNode =>
-            RegexNode(intersectUniqueLists(l.rule, r.rule))
+            regexNode(intersectUniqueLists(l.rule, r.rule))
     },
     (base) => {
         const literals = base.rule.map((_) => `/${_}/`)

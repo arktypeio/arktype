@@ -1,8 +1,8 @@
 import { DomainNode } from "../nodes/basis/domain.js"
 import type { NamedPropRule } from "../nodes/constraints/props/named.js"
-import { PropsNode } from "../nodes/constraints/props/props.js"
-import { PredicateNode } from "../nodes/predicate.js"
-import { TypeNode } from "../nodes/type.js"
+import { propsNode } from "../nodes/constraints/props/props.js"
+import { predicateNode } from "../nodes/predicate.js"
+import { typeNode } from "../nodes/type.js"
 import type { evaluate } from "../utils/generics.js"
 import type { Dict } from "../utils/records.js"
 import type { inferDefinition, ParseContext } from "./definition.js"
@@ -33,9 +33,9 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
         })
         ctx.path.pop()
     }
-    const props = PropsNode(named)
-    const predicate = PredicateNode([objectBasisNode, props])
-    return TypeNode([predicate])
+    const props = propsNode(named)
+    const predicate = predicateNode([objectBasisNode, props])
+    return typeNode([predicate])
 }
 
 const objectBasisNode = DomainNode("object")

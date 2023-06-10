@@ -1,4 +1,3 @@
-import { TypeNode } from "../main.js"
 import type {
     ArrayIndexMatcherSource,
     IndexedPropRule
@@ -8,6 +7,8 @@ import {
     extractFirstVariadicIndex
 } from "../nodes/constraints/props/indexed.js"
 import type { NamedPropRule } from "../nodes/constraints/props/named.js"
+import type { TypeNode } from "../nodes/type.js"
+import { builtins } from "../nodes/type.js"
 import type { TypeConfig } from "../type.js"
 import { type Domain, hasDomain } from "../utils/domains.js"
 import { Path } from "../utils/lists.js"
@@ -107,7 +108,7 @@ const compileIndexedProp = (prop: IndexedPropRule) => {
     const valueCheck = `valid = ${prop.value.condition
         .replaceAll(KeyIn, `${KeyIn}Inner`)
         .replaceAll(In, `${In}[${KeyIn}]`)} && valid`
-    if (prop.key === TypeNode.string) {
+    if (prop.key === builtins.string()) {
         // if the index signature is just for "string", we don't need to check it explicitly
         return valueCheck
     }

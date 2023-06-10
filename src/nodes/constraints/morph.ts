@@ -12,7 +12,7 @@ export interface MorphNode
         intersected: MorphNode
     }> {}
 
-export const MorphNode = defineNodeKind<MorphNode, { input: listable<Morph> }>(
+export const morphNode = defineNodeKind<MorphNode, listable<Morph>>(
     {
         kind: "morph",
         parse: listFrom,
@@ -25,7 +25,7 @@ export const MorphNode = defineNodeKind<MorphNode, { input: listable<Morph> }>(
             return subconditions.join(" && ")
         },
         intersect: (l, r): MorphNode =>
-            MorphNode(intersectUniqueLists(l.rule, r.rule))
+            morphNode(intersectUniqueLists(l.rule, r.rule))
     },
     (base) => ({
         description: `morphed by ${base.rule

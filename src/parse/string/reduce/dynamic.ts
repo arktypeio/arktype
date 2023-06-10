@@ -1,8 +1,8 @@
-import type { Comparator } from "../../../nodes/constraints/range.js"
+import type { Comparator, RangeNode } from "../../../nodes/constraints/range.js"
 import {
     invertedComparators,
     minComparators,
-    RangeNode
+    rangeNode
 } from "../../../nodes/constraints/range.js"
 import type { TypeNode } from "../../../nodes/type.js"
 import { throwInternalError, throwParseError } from "../../../utils/errors.js"
@@ -88,7 +88,7 @@ export class DynamicState {
                 )
             )
         }
-        this.branches.range = RangeNode([
+        this.branches.range = rangeNode([
             { comparator: invertedComparator, limit }
         ])
     }

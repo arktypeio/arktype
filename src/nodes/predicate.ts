@@ -8,6 +8,7 @@ import { throwInternalError, throwParseError } from "../utils/errors.js"
 import type { evaluate, isUnknown } from "../utils/generics.js"
 import type { List, listable } from "../utils/lists.js"
 import type { Constructor, instanceOf } from "../utils/objectKinds.js"
+import { isArray } from "../utils/objectKinds.js"
 import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
 import { basisNodeFrom } from "./basis/from.js"
 import type { ValueNode } from "./basis/value.js"
@@ -36,19 +37,13 @@ export interface PredicateNode
     ): PredicateNode
 }
 
-export const PredicateNode = defineNodeKind<
-    PredicateNode,
-    {
-        builtins: { unknown: PredicateNode }
-        input: PredicateInput
-    }
->(
+export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
     {
         kind: "predicate",
-        builtins: {
-            unknown: {}
-        },
         parse: (input) => {
+            if (isArray(input)) {
+                return input
+            }
             const basis = input.basis && basisNodeFrom(input.basis)
             const rules: PredicateRules = basis ? [basis] : []
             for (const kind of constraintsByPrecedence) {
@@ -125,7 +120,7 @@ export const PredicateNode = defineNodeKind<
                     rules.push(rNode)
                 }
             }
-            return PredicateNode(rules)
+            return predicateNode(rules)
         }
     },
     (base) => {
@@ -157,7 +152,7 @@ export const PredicateNode = defineNodeKind<
             constrain(kind, input): PredicateNode {
                 assertAllowsConstraint(this.basis, kind)
                 const constraint = createNodeOfKind(kind, input as never)
-                const result = this.intersect(PredicateNode([constraint]))
+                const result = this.intersect(predicateNode([constraint]))
                 if (result instanceof Disjoint) {
                     return result.throw()
                 }
@@ -289,7 +284,7 @@ const constraintsByPrecedence = [
 
 export type ListableInputKind = "regex" | "narrow" | "morph"
 
-export const unknownPredicateNode = PredicateNode([])
+export const unknownPredicateNode = predicateNode([])
 
 export type PredicateRules = [BasisNode, ...ConstraintNode[]] | ConstraintNode[]
 

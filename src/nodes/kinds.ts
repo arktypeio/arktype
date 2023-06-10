@@ -4,15 +4,22 @@ import { listFrom } from "../utils/lists.js"
 import { ClassNode } from "./basis/class.js"
 import { DomainNode } from "./basis/domain.js"
 import { ValueNode } from "./basis/value.js"
-import { DivisorNode } from "./constraints/divisor.js"
-import { MorphNode } from "./constraints/morph.js"
-import { NarrowNode } from "./constraints/narrow.js"
-import { PropsNode } from "./constraints/props/props.js"
-import { RangeNode } from "./constraints/range.js"
-import { RegexNode } from "./constraints/regex.js"
-import type { ListableInputKind } from "./predicate.js"
-import { PredicateNode } from "./predicate.js"
-import { TypeNode } from "./type.js"
+import type { DivisorNode } from "./constraints/divisor.js"
+import { divisorNode } from "./constraints/divisor.js"
+import type { MorphNode } from "./constraints/morph.js"
+import { morphNode } from "./constraints/morph.js"
+import type { NarrowNode } from "./constraints/narrow.js"
+import { narrowNode } from "./constraints/narrow.js"
+import type { PropsNode } from "./constraints/props/props.js"
+import { propsNode } from "./constraints/props/props.js"
+import type { RangeNode } from "./constraints/range.js"
+import { rangeNode } from "./constraints/range.js"
+import type { RegexNode } from "./constraints/regex.js"
+import { regexNode } from "./constraints/regex.js"
+import type { ListableInputKind, PredicateNode } from "./predicate.js"
+import { predicateNode } from "./predicate.js"
+import type { TypeNode } from "./type.js"
+import { typeNode } from "./type.js"
 
 export const precedenceByKind = {
     // roots
@@ -53,9 +60,9 @@ export type NodeKind = keyof NodeKinds
 export const createNodeOfKind = ((kind, unknownRule: any) => {
     switch (kind) {
         case "type":
-            return TypeNode(unknownRule)
+            return typeNode(unknownRule)
         case "predicate":
-            return PredicateNode(unknownRule)
+            return predicateNode(unknownRule)
         case "domain":
             return DomainNode(unknownRule)
         case "class":
@@ -63,17 +70,17 @@ export const createNodeOfKind = ((kind, unknownRule: any) => {
         case "value":
             return ValueNode(unknownRule)
         case "divisor":
-            return DivisorNode(unknownRule)
+            return divisorNode(unknownRule)
         case "range":
-            return RangeNode(unknownRule)
+            return rangeNode(unknownRule)
         case "regex":
-            return RegexNode(listFrom(unknownRule))
+            return regexNode(listFrom(unknownRule))
         case "props":
-            return PropsNode(unknownRule)
+            return propsNode(unknownRule)
         case "narrow":
-            return NarrowNode(listFrom(unknownRule))
+            return narrowNode(listFrom(unknownRule))
         case "morph":
-            return MorphNode(listFrom(unknownRule))
+            return morphNode(listFrom(unknownRule))
         default:
             return throwInternalError(`Unexpected node kind '${kind}'`)
     }

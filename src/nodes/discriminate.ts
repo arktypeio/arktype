@@ -9,8 +9,10 @@ import type { BasisNode } from "./basis/basis.js"
 import type { ValueNode } from "./basis/value.js"
 import type { SerializedPath } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
-import { type PredicateNode, unknownPredicateNode } from "./predicate.js"
-import { TypeNode } from "./type.js"
+import { unknownPredicateNode } from "./predicate.js"
+import type { PredicateNode } from "./predicate.js"
+import type { TypeNode } from "./type.js"
+import { typeNode } from "./type.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
@@ -132,7 +134,7 @@ export const discriminate = (
             }
             caseBranches.push(pruned)
         }
-        discriminatedCases[k] = TypeNode(caseBranches)
+        discriminatedCases[k] = typeNode(caseBranches)
     }
     return {
         kind,

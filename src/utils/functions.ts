@@ -8,7 +8,7 @@ export const cached = <T>(thunk: () => T) => {
             result = thunk()
             isCached = true
         }
-        return result
+        return result as T
     }
 }
 
