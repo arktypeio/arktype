@@ -1,6 +1,6 @@
-import { hasDomain } from "./domains.js"
-import type { defined, evaluate } from "./generics.js"
-import type { List } from "./lists.js"
+import { hasDomain } from "./domains.ts"
+import type { defined, evaluate } from "./generics.ts"
+import type { List } from "./lists.ts"
 
 export type Dict<k extends string = string, v = unknown> = {
     readonly [_ in k]: v
@@ -62,12 +62,12 @@ export const fromEntries = <const entries extends readonly Entry[]>(
 /** Mimics the result of Object.keys(...) */
 export type keysOf<o> = [o] extends [object]
     ? o extends readonly unknown[]
-        ? any[] extends o
-            ? `${number}`
-            : keyof o & `${number}`
-        : keyof o extends number
-        ? `${keyof o}`
-        : Exclude<keyof o, symbol>
+    ? any[] extends o
+    ? `${number}`
+    : keyof o & `${number}`
+    : keyof o extends number
+    ? `${keyof o}`
+    : Exclude<keyof o, symbol>
     : never
 
 export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>[]

@@ -5,12 +5,12 @@ import type { SerializedPath } from "../nodes/disjoint.js"
 import { Disjoint } from "../nodes/disjoint.js"
 import type { BasisNode } from "../nodes/primitive/basis/basis.js"
 import type { ValueNode } from "../nodes/primitive/basis/value.js"
-import type { Domain } from "../utils/domains.js"
-import { throwInternalError } from "../utils/errors.js"
-import type { evaluate } from "../utils/generics.js"
-import { entriesOf, isKeyOf } from "../utils/records.js"
-import type { keySet } from "../utils/records.js"
-import type { SerializedPrimitive } from "../utils/serialize.js"
+import type { Domain } from "../../dev/utils/domains.ts"
+import { throwInternalError } from "../../dev/utils/errors.ts"
+import type { evaluate } from "../../dev/utils/generics.ts"
+import { entriesOf, isKeyOf } from "../../dev/utils/records.ts"
+import type { keySet } from "../../dev/utils/records.ts"
+import type { SerializedPrimitive } from "../../dev/utils/serialize.ts"
 import { compileSerializedValue } from "./compile.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
@@ -25,8 +25,8 @@ export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
 export type DiscriminatedCases<
     kind extends DiscriminantKind = DiscriminantKind
 > = {
-    [caseKey in CaseKey<kind>]: TypeNode
-}
+        [caseKey in CaseKey<kind>]: TypeNode
+    }
 
 type DiscriminantKey = `${SerializedPath}${DiscriminantKind}`
 
@@ -145,6 +145,5 @@ export const discriminate = (
 export const writeUndiscriminatableMorphUnionMessage = <path extends string>(
     path: path
 ) =>
-    `${
-        path === "/" ? "A" : `At ${path}, a`
+    `${path === "/" ? "A" : `At ${path}, a`
     } union including one or more morphs must be discriminatable`

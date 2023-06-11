@@ -1,5 +1,5 @@
 import { In } from "../../compile/compile.js"
-import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
+import { intersectUniqueLists, listFrom } from "../../../dev/utils/lists.ts"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 

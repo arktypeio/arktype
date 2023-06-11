@@ -1,21 +1,21 @@
 import type { Bound, SizedData } from "../nodes/primitive/range.js"
 import { comparatorDescriptions } from "../nodes/primitive/range.js"
-import type { Domain } from "../utils/domains.js"
-import { domainDescriptions, domainOf } from "../utils/domains.js"
-import type { conform } from "../utils/generics.js"
-import type { arraySubclassToReadonly } from "../utils/lists.js"
-import { Path } from "../utils/lists.js"
+import type { Domain } from "../../dev/utils/domains.ts"
+import { domainDescriptions, domainOf } from "../../dev/utils/domains.ts"
+import type { conform } from "../../dev/utils/generics.ts"
+import type { arraySubclassToReadonly } from "../../dev/utils/lists.ts"
+import { Path } from "../../dev/utils/lists.ts"
 import type {
     AbstractableConstructor,
     Constructor,
     DefaultObjectKind,
     instanceOf
-} from "../utils/objectKinds.js"
+} from "../../dev/utils/objectKinds.ts"
 import {
     getExactBuiltinConstructorName,
     objectKindDescriptions
-} from "../utils/objectKinds.js"
-import { stringify } from "../utils/serialize.js"
+} from "../../dev/utils/objectKinds.ts"
+import { stringify } from "../../dev/utils/serialize.ts"
 import type { InternalId } from "./registry.js"
 
 export class ArkTypeError extends TypeError {
@@ -47,8 +47,8 @@ export abstract class Problem<requirement = unknown, data = unknown> {
         return this.path.length === 0
             ? capitalize(this.reason)
             : this.path.length === 1 && typeof this.path[0] === "number"
-            ? `Item at index ${this.path[0]} ${this.reason}`
-            : `${this.path} ${this.reason}`
+                ? `Item at index ${this.path[0]} ${this.reason}`
+                : `${this.path} ${this.reason}`
     }
 
     get reason() {
@@ -177,12 +177,11 @@ export class ProblemUnion extends Problem<Problems> {
         return describeBranches(
             this.rule.map(
                 (problem) =>
-                    `${problem.path} must be ${
-                        problem.hasCode("intersection")
-                            ? describeBranches(
-                                  problem.rule.map((part) => part.mustBe)
-                              )
-                            : problem.mustBe
+                    `${problem.path} must be ${problem.hasCode("intersection")
+                        ? describeBranches(
+                            problem.rule.map((part) => part.mustBe)
+                        )
+                        : problem.mustBe
                     }`
             )
         )
@@ -222,11 +221,10 @@ export class RangeProblem extends Problem<Bound, SizedData> {
     readonly code = "range"
 
     get mustBe() {
-        return `${comparatorDescriptions[this.rule.comparator]} ${
-            this.data.value instanceof Date
+        return `${comparatorDescriptions[this.rule.comparator]} ${this.data.value instanceof Date
                 ? new Date(this.rule.limit).toDateString()
                 : this.rule.limit
-        }${this.data.units ? ` ${this.data.units}` : ""}`
+            }${this.data.units ? ` ${this.data.units}` : ""}`
     }
 
     get was() {
@@ -316,20 +314,20 @@ export const sizeOf = (data: unknown) =>
     typeof data === "string" || Array.isArray(data)
         ? data.length
         : typeof data === "number"
-        ? data
-        : data instanceof Date
-        ? data.valueOf()
-        : 0
+            ? data
+            : data instanceof Date
+                ? data.valueOf()
+                : 0
 
 export const unitsOf = (data: unknown) =>
     typeof data === "string"
         ? "characters"
         : Array.isArray(data)
-        ? "items long"
-        : ""
+            ? "items long"
+            : ""
 
 export class DataWrapper<value = unknown> {
-    constructor(public value: value) {}
+    constructor(public value: value) { }
 
     toString() {
         return stringify(this.value)

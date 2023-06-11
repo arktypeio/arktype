@@ -1,6 +1,6 @@
-import type { error } from "../utils/errors.js"
-import type { nominal } from "../utils/generics.js"
-import type { join } from "../utils/lists.js"
+import type { error } from "../../dev/utils/errors.ts"
+import type { nominal } from "../../dev/utils/generics.ts"
+import type { join } from "../../dev/utils/lists.ts"
 import type { writeUnclosedGroupMessage } from "./string/reduce/shared.js"
 import type { state, StaticState } from "./string/reduce/static.js"
 import type { writeUnexpectedCharacterMessage } from "./string/shift/operator/operator.js"
@@ -23,8 +23,8 @@ export type parseGenericParams<def extends string> = parseParamsRecurse<
     []
 > extends infer result extends string[]
     ? "" extends result[number]
-        ? GenericParamsParseError<`An empty string is not a valid generic parameter name`>
-        : result
+    ? GenericParamsParseError<`An empty string is not a valid generic parameter name`>
+    : result
     : never
 
 type parseParamsRecurse<
@@ -33,24 +33,24 @@ type parseParamsRecurse<
     result extends string[]
 > = unscanned extends `${infer lookahead}${infer nextUnscanned}`
     ? lookahead extends ","
-        ? parseParamsRecurse<nextUnscanned, "", [...result, param]>
-        : lookahead extends Scanner.WhiteSpaceToken
-        ? param extends ""
-            ? // if the next char is whitespace and we aren't in the middle of a param, skip to the next one
-              parseParamsRecurse<
-                  Scanner.skipWhitespace<nextUnscanned>,
-                  "",
-                  result
-              >
-            : Scanner.skipWhitespace<nextUnscanned> extends `${infer nextNonWhitespace}${infer rest}`
-            ? nextNonWhitespace extends ","
-                ? parseParamsRecurse<rest, "", [...result, param]>
-                : GenericParamsParseError<
-                      writeUnexpectedCharacterMessage<nextNonWhitespace, ",">
-                  >
-            : // params end with a single whitespace character, add the current token
-              [...result, param]
-        : parseParamsRecurse<nextUnscanned, `${param}${lookahead}`, result>
+    ? parseParamsRecurse<nextUnscanned, "", [...result, param]>
+    : lookahead extends Scanner.WhiteSpaceToken
+    ? param extends ""
+    ? // if the next char is whitespace and we aren't in the middle of a param, skip to the next one
+    parseParamsRecurse<
+        Scanner.skipWhitespace<nextUnscanned>,
+        "",
+        result
+    >
+    : Scanner.skipWhitespace<nextUnscanned> extends `${infer nextNonWhitespace}${infer rest}`
+    ? nextNonWhitespace extends ","
+    ? parseParamsRecurse<rest, "", [...result, param]>
+    : GenericParamsParseError<
+        writeUnexpectedCharacterMessage<nextNonWhitespace, ",">
+    >
+    : // params end with a single whitespace character, add the current token
+    [...result, param]
+    : parseParamsRecurse<nextUnscanned, `${param}${lookahead}`, result>
     : param extends ""
     ? result
     : [...result, param]
@@ -72,37 +72,37 @@ export type parseGenericArgs<
     $
 > extends infer finalArgState extends StaticState
     ? {
-          defs: [...argDefs, finalArgState["scanned"]]
-          asts: [...argAsts, finalArgState["root"]]
-          unscanned: finalArgState["unscanned"]
-      } extends {
-          defs: infer nextDefs extends string[]
-          asts: infer nextAsts extends unknown[]
-          unscanned: infer nextUnscanned extends string
-      }
-        ? finalArgState["finalizer"] extends ">"
-            ? nextAsts["length"] extends params["length"]
-                ? ParsedArgs<nextAsts, nextUnscanned>
-                : state.error<
-                      writeInvalidGenericParametersMessage<
-                          name,
-                          params,
-                          nextDefs
-                      >
-                  >
-            : finalArgState["finalizer"] extends ","
-            ? parseGenericArgs<
-                  name,
-                  params,
-                  nextUnscanned,
-                  $,
-                  nextDefs,
-                  nextAsts
-              >
-            : finalArgState["finalizer"] extends error
-            ? finalArgState
-            : state.error<writeUnclosedGroupMessage<">">>
-        : never
+        defs: [...argDefs, finalArgState["scanned"]]
+        asts: [...argAsts, finalArgState["root"]]
+        unscanned: finalArgState["unscanned"]
+    } extends {
+        defs: infer nextDefs extends string[]
+        asts: infer nextAsts extends unknown[]
+        unscanned: infer nextUnscanned extends string
+    }
+    ? finalArgState["finalizer"] extends ">"
+    ? nextAsts["length"] extends params["length"]
+    ? ParsedArgs<nextAsts, nextUnscanned>
+    : state.error<
+        writeInvalidGenericParametersMessage<
+            name,
+            params,
+            nextDefs
+        >
+    >
+    : finalArgState["finalizer"] extends ","
+    ? parseGenericArgs<
+        name,
+        params,
+        nextUnscanned,
+        $,
+        nextDefs,
+        nextAsts
+    >
+    : finalArgState["finalizer"] extends error
+    ? finalArgState
+    : state.error<writeUnclosedGroupMessage<">">>
+    : never
     : never
 
 export type writeInvalidGenericParametersMessage<
@@ -110,11 +110,11 @@ export type writeInvalidGenericParametersMessage<
     params extends string[],
     argDefs extends string[]
 > = `${name}<${params["length"] extends 1
-    ? params[0]
-    : join<
-          params,
-          ", "
-      >}> requires exactly ${params["length"]} parameters (got ${argDefs["length"]}: ${join<
+? params[0]
+: join<
+    params,
+    ", "
+>}> requires exactly ${params["length"]} parameters (got ${argDefs["length"]}: ${join<
     argDefs,
     ","
 >})`

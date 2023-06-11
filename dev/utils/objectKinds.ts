@@ -1,7 +1,7 @@
-import type { Domain } from "./domains.js"
-import { domainOf } from "./domains.js"
-import type { evaluate } from "./generics.js"
-import { isKeyOf } from "./records.js"
+import type { Domain } from "./domains.ts"
+import { domainOf } from "./domains.ts"
+import type { evaluate } from "./generics.ts"
+import { isKeyOf } from "./records.ts"
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
@@ -59,14 +59,14 @@ export type objectKindOf<
     ? undefined | keyof kinds
     : data extends object
     ? object extends data
-        ? keyof kinds
-        : {
-              [kind in keyof kinds]: kinds[kind] extends Constructor<data>
-                  ? kind
-                  : data extends (...args: any[]) => unknown
-                  ? "Function"
-                  : "Object"
-          }[keyof kinds]
+    ? keyof kinds
+    : {
+        [kind in keyof kinds]: kinds[kind] extends Constructor<data>
+        ? kind
+        : data extends (...args: any[]) => unknown
+        ? "Function"
+        : "Object"
+    }[keyof kinds]
     : undefined
 
 export const objectKindOf = <

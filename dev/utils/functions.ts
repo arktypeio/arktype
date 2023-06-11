@@ -1,4 +1,4 @@
-import { throwInternalError } from "./errors.js"
+import { throwInternalError } from "./errors.ts"
 
 export const cached = <T>(thunk: () => T) => {
     let isCached = false

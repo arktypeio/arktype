@@ -4,8 +4,8 @@ import {
     joinUnionConditions
 } from "../compile/compile.js"
 import type { inferred } from "../parse/definition.js"
-import { CompiledFunction } from "../utils/functions.js"
-import type { evaluate } from "../utils/generics.js"
+import { CompiledFunction } from "../../dev/utils/functions.ts"
+import type { evaluate } from "../../dev/utils/generics.ts"
 import type { NodeEntry } from "./composite/props.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
