@@ -39,6 +39,8 @@ export type NodeKinds = {
 
 export type NodeKind = keyof NodeKinds
 
+export type Node = NodeKinds[NodeKind]
+
 const nodeKinds = cached(
     () =>
         ({

@@ -5,8 +5,8 @@ import { cached } from "../../utils/functions.js"
 import type { conform, exact, Literalable } from "../../utils/generics.js"
 import { isArray } from "../../utils/objectKinds.js"
 import { Disjoint } from "../disjoint.js"
-import type { Node } from "../node.js"
-import { defineNodeKind, isNode } from "../node.js"
+import type { BaseNode } from "../node.js"
+import { alphabetizeByCondition, defineNodeKind, isNode } from "../node.js"
 import type { BasisInput } from "../primitive/basis/basis.js"
 import { arrayClassNode } from "../primitive/basis/class.js"
 import { valueNode } from "../primitive/basis/value.js"
@@ -21,7 +21,7 @@ import type {
 } from "./predicate.js"
 import { propsNode } from "./props.js"
 
-export interface TypeNode<t = unknown> extends Node<PredicateNode[]> {
+export interface TypeNode<t = unknown> extends BaseNode<PredicateNode[]> {
     [inferred]: t
     discriminant: Discriminant | undefined
     valueNode: ValueNode | undefined
@@ -40,23 +40,23 @@ export interface TypeNode<t = unknown> extends Node<PredicateNode[]> {
     getPath(...path: (string | TypeNode<string>)[]): TypeNode
 }
 
+export const isParsedTypeRule = (
+    input: TypeInput | PredicateNode[]
+): input is PredicateNode[] =>
+    isArray(input) && (input.length === 0 || isNode(input[0]))
+
 export const typeNode = defineNodeKind<TypeNode, TypeInput>(
     {
         kind: "type",
-        parse: (input) =>
-            isArray(input)
-                ? reduceBranches(
-                      input.map((branch) =>
-                          isNode(branch) ? branch : predicateNode(branch)
-                      )
-                  )
-                : [predicateNode(input)],
-        compile: (rule) => {
-            return {
-                operator: "||",
-                children: rule.map((branch) => branch.compilation)
+        parse: (input) => {
+            if (!isParsedTypeRule(input)) {
+                input = isArray(input)
+                    ? input.map(predicateNode)
+                    : [predicateNode(input)]
             }
+            return alphabetizeByCondition(reduceBranches(input))
         },
+        compile: (children) => children.map((branch) => branch.condition),
         intersect: (l, r): TypeNode | Disjoint => {
             if (l.rule.length === 1 && r.rule.length === 1) {
                 const result = l.rule[0].intersect(r.rule[0])

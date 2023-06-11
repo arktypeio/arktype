@@ -1,3 +1,4 @@
+import { precedenceByKind } from "../../compile/compile.js"
 import { writeUnboundableMessage } from "../../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
 import type { inferMorphOut, Morph, Out } from "../../parse/ast/morph.js"
@@ -16,7 +17,7 @@ import { isArray } from "../../utils/objectKinds.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeKinds } from "../kinds.js"
 import { createNodeOfKind } from "../kinds.js"
-import type { Node } from "../node.js"
+import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 import type {
     BasisInput,
@@ -33,7 +34,7 @@ import type { Range } from "../primitive/range.js"
 import type { inferPropsInput } from "./infer.js"
 import type { PropsInput } from "./props.js"
 
-export interface PredicateNode extends Node<PredicateRules> {
+export interface PredicateNode extends BaseNode<PredicateChildren> {
     basis: BasisNode | undefined
     constraints: ConstraintNode[]
     getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]
@@ -48,25 +49,33 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
     {
         kind: "predicate",
         parse: (input) => {
+            let children: PredicateChildren
             if (isArray(input)) {
-                return input
-            }
-            const basis = input.basis && basisNodeFrom(input.basis)
-            const rules: PredicateRules = basis ? [basis] : []
-            for (const kind of constraintsByPrecedence) {
-                if (input[kind]) {
-                    assertAllowsConstraint(basis, kind)
-                    rules.push(createNodeOfKind(kind, input[kind] as never))
+                children = input
+            } else {
+                const basis = input.basis && basisNodeFrom(input.basis)
+                children = basis ? [basis] : []
+                for (const kind of constraintKindNames) {
+                    if (input[kind]) {
+                        assertAllowsConstraint(basis, kind)
+                        children.push(
+                            createNodeOfKind(kind, input[kind] as never)
+                        )
+                    }
                 }
             }
-            return rules
+            // sort by precedence, and then alphabetically by kind
+            return children.sort((l, r) =>
+                precedenceByKind[l.kind] > precedenceByKind[r.kind]
+                    ? 1
+                    : precedenceByKind[l.kind] < precedenceByKind[r.kind]
+                    ? -1
+                    : l.kind > r.kind
+                    ? 1
+                    : -1
+            )
         },
-        compile: (rule) => {
-            return {
-                operator: "&&",
-                children: rule.map((child) => child.compilation)
-            }
-        },
+        compile: (children) => children.map((child) => child.condition),
         intersect: (l, r): PredicateNode | Disjoint => {
             // if (
             //     // s.lastOperator === "&" &&
@@ -96,8 +105,8 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
                     ? r
                     : Disjoint.from("assignability", l, r.valueNode)
             }
-            const rules: PredicateRules = basis ? [basis] : []
-            for (const kind of constraintsByPrecedence) {
+            const rules: PredicateChildren = basis ? [basis] : []
+            for (const kind of constraintKindNames) {
                 const lNode = l.getConstraint(kind)
                 const rNode = r.getConstraint(kind)
                 if (lNode) {
@@ -220,7 +229,6 @@ export const assertAllowsConstraint = (
         }
         return
     }
-
     const domain = basis?.domain ?? "unknown"
     switch (kind) {
         case "divisor":
@@ -268,7 +276,7 @@ export const throwInvalidConstraintError = (
     ...args: Parameters<typeof writeInvalidConstraintMessage>
 ) => throwParseError(writeInvalidConstraintMessage(...args))
 
-const constraintsByPrecedence = [
+const constraintKindNames = [
     "divisor",
     "range",
     "regex",
@@ -279,7 +287,9 @@ const constraintsByPrecedence = [
 
 export type ListableInputKind = "regex" | "narrow" | "morph"
 
-export type PredicateRules = [BasisNode, ...ConstraintNode[]] | ConstraintNode[]
+export type PredicateChildren =
+    | [BasisNode, ...ConstraintNode[]]
+    | ConstraintNode[]
 
 export type ConstraintNode = ConstraintKinds[ConstraintKind]
 
@@ -288,7 +298,7 @@ type ConstraintKinds = Pick<
     "range" | "divisor" | "regex" | "props" | "narrow" | "morph"
 >
 
-export type RuleKind = "basis" | ConstraintKind
+export type PredicateChildKind = "basis" | ConstraintKind
 
 export type ConstraintKind = keyof ConstraintKinds
 
@@ -404,7 +414,9 @@ export type basisNodeFrom<input extends BasisInput> = input extends Domain
     ? ClassNode
     : ValueNode
 
-export const basisNodeFrom = (input: BasisInput) => {
+export const basisNodeFrom = (
+    input: BasisInput
+): DomainNode | ClassNode | ValueNode => {
     switch (typeof input) {
         case "string":
             return domainNode(input)
@@ -413,7 +425,7 @@ export const basisNodeFrom = (input: BasisInput) => {
         case "function":
             return classNode(input)
         default:
-            throwInternalError(
+            return throwInternalError(
                 `Unexpectedly got a basis input of type ${domainOf(input)}`
             )
     }

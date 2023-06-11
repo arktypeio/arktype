@@ -76,3 +76,19 @@ export const listFrom = <t>(data: t) =>
     (Array.isArray(data) ? data : [data]) as t extends readonly unknown[]
         ? t
         : t[]
+
+export const spliterate = <item, included extends item>(
+    list: readonly item[],
+    by: (item: item) => item is included
+) => {
+    const result: [included: included[], excluded: Exclude<item, included>[]] =
+        [[], []]
+    for (const item of list) {
+        if (by(item)) {
+            result[0].push(item)
+        } else {
+            result[1].push(item as any)
+        }
+    }
+    return result
+}

@@ -1,8 +1,8 @@
 import { In } from "../../compile/compile.js"
 import { isKeyOf } from "../../utils/records.js"
 import { Disjoint } from "../disjoint.js"
+import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
-import type { PrimitiveNode } from "./primitive.js"
 
 export const minComparators = {
     ">": true,
@@ -60,7 +60,7 @@ export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 //     ? "items long"
 //     : ""
 
-export interface RangeNode extends PrimitiveNode<Range> {
+export interface RangeNode extends BaseNode<Range> {
     min: Bound<MinComparator> | undefined
     max: Bound<MaxComparator> | undefined
 }
@@ -78,10 +78,8 @@ export const rangeNode = defineNodeKind<RangeNode>(
                 // reduce a range like `1<=number<=1` to `number==1`
                 rule = [{ comparator: "==", limit: rule[0].limit }]
             }
-            return {
-                precedence: "shallow",
-                condition: rule.map(compileBound).join(" && ")
-            }
+            // sorted as lower, upper by definition
+            return rule.map(compileBound)
         },
         intersect: (l, r): RangeNode | Disjoint => {
             if (isEqualityRangeNode(l)) {

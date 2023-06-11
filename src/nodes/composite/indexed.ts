@@ -1,5 +1,8 @@
+import { In, IndexIn, KeyIn } from "../../compile/compile.js"
 import { throwInternalError } from "../../utils/errors.js"
 import { tryParseWellFormedInteger } from "../../utils/numericLiterals.js"
+import type { NamedPropRule } from "./named.js"
+import { compileNamedProp } from "./named.js"
 import type { PredicateInput } from "./predicate.js"
 import type { TypeInput, TypeNode } from "./type.js"
 import { builtins, node } from "./type.js"
@@ -98,3 +101,54 @@ export const arrayIndexTypeNode = (firstVariadicIndex = 0): TypeNode<string> =>
     firstVariadicIndex === 0
         ? builtins.nonVariadicArrayIndex()
         : node(arrayIndexInput(firstVariadicIndex))
+
+export const compileArray = (
+    indexMatcher: ArrayIndexMatcherSource,
+    elementNode: TypeNode,
+    namedProps: NamedPropRule[]
+) => {
+    const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
+    const namedCheck = namedProps.map(compileNamedProp)
+    const elementCondition = elementNode.condition
+        .replaceAll(IndexIn, `${IndexIn}Inner`)
+        .replaceAll(In, `${In}[${IndexIn}]`)
+    // TODO: don't recheck named
+    return `(() => {
+    let valid = ${namedCheck};
+    for(let ${IndexIn} = ${firstVariadicIndex}; ${IndexIn} < ${In}.length; ${IndexIn}++) {
+        valid = ${elementCondition} && valid;
+    }
+    return valid
+})()`
+}
+
+export const compileIndexed = (
+    namedProps: NamedPropRule[],
+    indexedProps: IndexedPropRule[]
+) => {
+    const namedCheck = namedProps.map(compileNamedProp)
+    const indexedChecks = indexedProps.map(compileIndexedProp).join("\n")
+    // TODO: don't recheck named
+    return `(() => {
+    let valid = ${namedCheck};
+    for(const ${KeyIn} in ${In}) {
+        ${indexedChecks}
+    }
+    return valid
+})()`
+}
+
+const compileIndexedProp = (prop: IndexedPropRule) => {
+    const valueCheck = `valid = ${prop.value.condition
+        .replaceAll(KeyIn, `${KeyIn}Inner`)
+        .replaceAll(In, `${In}[${KeyIn}]`)} && valid`
+    if (prop.key === builtins.string()) {
+        // if the index signature is just for "string", we don't need to check it explicitly
+        return valueCheck
+    }
+    return `if(${prop.key.condition
+        .replaceAll(KeyIn, `${KeyIn}Inner`)
+        .replaceAll(In, KeyIn)}) {
+        ${valueCheck}
+    }`
+}

@@ -19,13 +19,12 @@ export const classNode = defineNodeKind<ClassNode>(
     {
         kind: "class",
         parse: (input) => input,
-        compile: (rule) => ({
-            precedence: "basis",
-            condition: `${In} instanceof ${
+        compile: (rule) => [
+            `${In} instanceof ${
                 getExactBuiltinConstructorName(rule) ??
                 registry().register(rule.name, rule)
             }`
-        }),
+        ],
         intersect: intersectBases
     },
     (base) => ({

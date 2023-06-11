@@ -1,6 +1,6 @@
 import { arrayIndexTypeNode } from "../../nodes/composite/indexed.js"
 import { predicateNode } from "../../nodes/composite/predicate.js"
-import type { PropRule } from "../../nodes/composite/props.js"
+import type { NodeEntry } from "../../nodes/composite/props.js"
 import { propsNode } from "../../nodes/composite/props.js"
 import type { TypeNode } from "../../nodes/composite/type.js"
 import { builtins, typeNode } from "../../nodes/composite/type.js"
@@ -50,7 +50,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
               )
             : tupleExpressionResult
     }
-    const props: PropRule[] = []
+    const props: NodeEntry[] = []
     let isVariadic = false
     for (let i = 0; i < def.length; i++) {
         let elementDef = def[i]

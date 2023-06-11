@@ -1,15 +1,3 @@
-import type { TypeNode } from "../main.js"
-import type {
-    ArrayIndexMatcherSource,
-    IndexedPropRule
-} from "../nodes/composite/indexed.js"
-import {
-    extractArrayIndexRegex,
-    extractFirstVariadicIndex
-} from "../nodes/composite/indexed.js"
-import type { NamedPropRule } from "../nodes/composite/named.js"
-import type { KeyRule } from "../nodes/composite/props.js"
-import { builtins } from "../nodes/composite/type.js"
 import type { NodeKind } from "../nodes/kinds.js"
 import type { TypeConfig } from "../type.js"
 import { type Domain, hasDomain } from "../utils/domains.js"
@@ -18,39 +6,6 @@ import type { SerializablePrimitive } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
-
-export type CompilationContext = {
-    path: KeyRule[]
-    value: string
-}
-
-export const compile = (
-    root: CompilationNode,
-    ctx: CompilationContext = { path: [], value: In }
-): string => {
-    if (typeof root.children === "string") {
-        return root.children.replaceAll(In, ctx.value)
-    }
-    if (root.children.length === 0) {
-        // an empty set of conditions is never for a union (type),
-        // or unknown for an intersection (predicate, props)
-        return root.kind === "type" ? "false" : "true"
-    }
-    // const children: CompilationNode[][] = []
-    // let lastPrecedence = -1
-    // let current: CompilationNode[] = []
-    // // TODO: unify with constraints by precedence
-    // for (const child of root.children) {
-    //     const currentPrecedence = precedenceByKind[child.kind]
-    //     // if (currentPrecedence > lastPrecedence) {
-    //     //     children.push(child.compilation)
-    //     //     lastPrecedence = currentPrecedence
-    //     // } else {
-    //     //     children.at(-1)!.push(child.compilation)
-    //     //}
-    // }
-    return ""
-}
 
 export const precedenceByKind = {
     // roots
@@ -71,105 +26,6 @@ export const precedenceByKind = {
     // morphs
     morph: 5
 } as const satisfies Record<NodeKind, number>
-
-// isTerminal(root)
-//     ? root.condition.replaceAll(In, ctx.value)
-//     : root.children.length === 0
-//     ? root.operator === "&&"
-//         ? "true"
-//         : "false"
-//     : root.children
-//           .map((child) => {
-//               if (!child.key) {
-//                   return compile(child, ctx)
-//               }
-//               if (isNode(child.key)) {
-//                   return "false"
-//               }
-//               const valueCondition = compile(child, {
-//                   path: [...ctx.path, child.key],
-//                   value: `${ctx.value}${compilePropAccess(child.key.name)}`
-//               })
-//               return child.key.optional
-//                   ? `!('${child.key.name}' in ${ctx.value}) || ${valueCondition}`
-//                   : valueCondition
-//           })
-//           .filter((condition) => condition !== "true")
-//           .sort((l, r) => {})
-//           .join(` ${root.operator} `)
-
-export type CompilationNode = {
-    key?: KeyRule
-    kind: NodeKind
-    children: CompilationNode[] | string
-}
-
-const compileNamedAndIndexedProps = (
-    named: NamedPropRule[],
-    indexed: IndexedPropRule[]
-) => {
-    if (indexed.length === 1) {
-        // if the only unenumerable set of props are the indices of an array, we can iterate over it instead of checking each key
-        const indexMatcher = extractArrayIndexRegex(indexed[0].key)
-        if (indexMatcher) {
-            return compileArray(indexMatcher, indexed[0].value, named)
-        }
-    }
-    return compileNonArray(named, indexed)
-}
-
-const compileArray = (
-    indexMatcher: ArrayIndexMatcherSource,
-    elementNode: TypeNode,
-    namedProps: NamedPropRule[]
-) => {
-    const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
-    // const namedCheck = compileNamedProps(namedProps)
-    const elementCondition = elementNode.condition
-        .replaceAll(IndexIn, `${IndexIn}Inner`)
-        .replaceAll(In, `${In}[${IndexIn}]`)
-    // TODO: don't recheck named
-    // let valid = ${namedCheck};
-    const result = `(() => {
-
-    for(let ${IndexIn} = ${firstVariadicIndex}; ${IndexIn} < ${In}.length; ${IndexIn}++) {
-        valid = ${elementCondition} && valid;
-    }
-    return valid
-})()`
-    return result
-}
-
-const compileNonArray = (
-    namedProps: NamedPropRule[],
-    indexedProps: IndexedPropRule[]
-) => {
-    // TODO: don't recheck named
-    // const namedCheck = compileNamedProps(namedProps)
-    const indexedChecks = indexedProps.map(compileIndexedProp).join("\n")
-
-    return `(() => {
-    for(const ${KeyIn} in ${In}) {
-        ${indexedChecks}
-    }
-    return valid
-})()`
-}
-
-const compileIndexedProp = (prop: IndexedPropRule) => {
-    const valueCheck = `valid = ${prop.value.condition
-        .replaceAll(KeyIn, `${KeyIn}Inner`)
-        .replaceAll(In, `${In}[${KeyIn}]`)} && valid`
-    if (prop.key === builtins.string()) {
-        // if the index signature is just for "string", we don't need to check it explicitly
-        return valueCheck
-    }
-    return `if(${prop.key.condition
-        .replaceAll(KeyIn, `${KeyIn}Inner`)
-        .replaceAll(In, KeyIn)}) {
-        ${valueCheck}
-    }`
-}
 
 export type TraversalConfig = {
     [k in keyof TypeConfig]-?: TypeConfig[k][]

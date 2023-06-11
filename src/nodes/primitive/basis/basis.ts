@@ -8,7 +8,7 @@ import type {
 import { constructorExtends } from "../../../utils/objectKinds.js"
 import type { DisjointKindEntries } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
-import type { PrimitiveNode } from "../primitive.js"
+import type { BaseNode } from "../../node.js"
 import type { ClassNode } from "./class.js"
 import type { DomainNode } from "./domain.js"
 import type { ValueNode } from "./value.js"
@@ -49,7 +49,7 @@ export type BasisNodeDefinition = {
     rule: unknown
 }
 
-export type BasisNode<rule = unknown> = PrimitiveNode<rule, BasisNode<any>> & {
+export interface BasisNode<rule = unknown> extends BaseNode<rule, BasisNode> {
     kind: BasisKind
     domain: Domain
     literalKeys: PropertyKey[]

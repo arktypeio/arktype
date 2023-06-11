@@ -1,17 +1,14 @@
 import { In } from "../../compile/compile.js"
+import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
-import type { PrimitiveNode } from "./primitive.js"
 
-export interface DivisorNode extends PrimitiveNode<number> {}
+export interface DivisorNode extends BaseNode<number> {}
 
 export const divisorNode = defineNodeKind<DivisorNode>(
     {
         kind: "divisor",
         parse: (input) => input,
-        compile: (rule) => ({
-            precedence: "shallow",
-            condition: `${In} % ${rule} === 0`
-        }),
+        compile: (rule) => [`${In} % ${rule} === 0`],
         intersect: (l, r): DivisorNode =>
             divisorNode(
                 Math.abs(

@@ -1,3 +1,4 @@
+import { compilePropAccess, In } from "../../compile/compile.js"
 import { throwInternalError } from "../../utils/errors.js"
 import { Disjoint } from "../disjoint.js"
 import type { TypeInput, TypeNode } from "./type.js"
@@ -31,6 +32,16 @@ export const intersectNamedProp = (
         key,
         value
     }
+}
+
+export const compileNamedProp = (prop: NamedPropRule) => {
+    const valueCheck = prop.value.condition.replaceAll(
+        In,
+        `${In}${compilePropAccess(prop.key.name)}`
+    )
+    return prop.key.optional
+        ? `!('${prop.key.name}' in ${In}) || ${valueCheck}`
+        : valueCheck
 }
 
 export type NamedPropInput = {

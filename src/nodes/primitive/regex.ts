@@ -1,18 +1,15 @@
 import { In } from "../../compile/compile.js"
 import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
+import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
-import type { PrimitiveNode } from "./primitive.js"
 
-export type RegexNode = PrimitiveNode<string[]>
+export type RegexNode = BaseNode<string[]>
 
 export const regexNode = defineNodeKind<RegexNode, string | string[]>(
     {
         kind: "regex",
-        parse: listFrom,
-        compile: (rule) => ({
-            precedence: "shallow",
-            condition: rule.sort().map(compileExpression).join(" && ")
-        }),
+        parse: (input) => listFrom(input).sort(),
+        compile: (rule) => rule.map((source) => `${In}.match(/${source}/)`),
         intersect: (l, r): RegexNode =>
             regexNode(intersectUniqueLists(l.rule, r.rule))
     },
@@ -25,10 +22,6 @@ export const regexNode = defineNodeKind<RegexNode, string | string[]>(
         return { description }
     }
 )
-
-const compileExpression = (source: string) => {
-    return `${In}.match(/${source}/)`
-}
 
 // return this.children
 // .map((source) =>

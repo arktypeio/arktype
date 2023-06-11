@@ -13,10 +13,7 @@ export const valueNode = defineNodeKind<ValueNode>(
         kind: "value",
         parse: (input) => input,
         intersect: intersectBases,
-        compile: (rule) => ({
-            precedence: "basis",
-            condition: `${In} === ${compileSerializedValue(rule)}`
-        })
+        compile: (rule) => [`${In} === ${compileSerializedValue(rule)}`]
     },
     (base) => ({
         domain: domainOf(base.rule),
