@@ -51,7 +51,7 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
                     ? 1
                     : lPrecedence < rPrecedence
                     ? -1
-                    : l.key.toString() > r.key.toString()
+                    : keyNameToString(l.key) > keyNameToString(r.key)
                     ? 1
                     : -1
             })
@@ -251,6 +251,8 @@ const isNamed = (rule: NodeEntry): rule is NamedPropRule => !isNode(rule.key)
 
 const kindPrecedence = (key: KeyRule) =>
     isNode(key) ? 2 : key.prerequisite ? -1 : key.optional ? 1 : 0
+
+const keyNameToString = (key: KeyRule) => (isNode(key) ? `${key}` : key.name)
 
 export type PropsInputTuple<
     named extends NamedPropsInput = NamedPropsInput,

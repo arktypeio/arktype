@@ -88,8 +88,10 @@ export const defineNodeKind = <
     } = {}
     return (input) => {
         const rule = def.parse(input)
-        const subconditions = def.compile(rule)
-        const condition =
+        const subconditions = def
+            .compile(rule)
+            .filter((condition) => condition !== "true")
+        let condition =
             subconditions.length === 0
                 ? // an empty set of conditions is never for a union (type),
                   // or unknown for an intersection (predicate, props)
@@ -97,6 +99,10 @@ export const defineNodeKind = <
                     ? "false"
                     : "true"
                 : subconditions.join(def.kind === "type" ? " || " : " && ")
+        // TODO: how to parenthesize only when needed?
+        if (subconditions.length > 1 && def.kind === "type") {
+            condition = `(${condition})`
+        }
         if (nodeCache[condition]) {
             return nodeCache[condition]!
         }
