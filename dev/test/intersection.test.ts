@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { suite, test } from "mocha"
 import { type, TypeNode } from "../../src/main.js"
-import { node } from "../../src/nodes/type.js"
+import { node } from "../../src/nodes/composite/type.js"
 import { writeUnsatisfiableExpressionError } from "../../src/parse/ast/ast.js"
 import {
     writeMissingRightOperandMessage,

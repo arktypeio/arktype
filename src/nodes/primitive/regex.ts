@@ -1,14 +1,9 @@
 import { In } from "../../compile/compile.js"
 import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
-import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
+import type { PrimitiveNode } from "./primitive.js"
 
-export interface RegexNode
-    extends Node<{
-        kind: "regex"
-        rule: string[]
-        intersected: RegexNode
-    }> {}
+export type RegexNode = PrimitiveNode<string[]>
 
 export const regexNode = defineNodeKind<RegexNode, string | string[]>(
     {

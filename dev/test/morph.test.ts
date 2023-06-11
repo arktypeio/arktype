@@ -1,7 +1,7 @@
 import { suite, test } from "mocha"
+import { writeUndiscriminatableMorphUnionMessage } from "../../src/compile/discriminate.js"
 import type { Problem } from "../../src/main.js"
 import { arktypes, scope, type } from "../../src/main.js"
-import { writeUndiscriminatableMorphUnionMessage } from "../../src/nodes/discriminate.js"
 import type { Out } from "../../src/parse/ast/morph.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"

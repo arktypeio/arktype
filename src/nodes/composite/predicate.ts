@@ -1,40 +1,39 @@
-import { writeUnboundableMessage } from "../parse/ast/bound.js"
-import { writeIndivisibleMessage } from "../parse/ast/divisor.js"
-import type { inferMorphOut, Morph, Out } from "../parse/ast/morph.js"
-import type { GuardedNarrow, Narrow } from "../parse/ast/narrow.js"
-import type { Domain, inferDomain } from "../utils/domains.js"
-import { domainOf } from "../utils/domains.js"
-import { throwInternalError, throwParseError } from "../utils/errors.js"
-import type { evaluate, isUnknown } from "../utils/generics.js"
-import type { List, listable } from "../utils/lists.js"
+import { writeUnboundableMessage } from "../../parse/ast/bound.js"
+import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
+import type { inferMorphOut, Morph, Out } from "../../parse/ast/morph.js"
+import type { GuardedNarrow, Narrow } from "../../parse/ast/narrow.js"
+import type { Domain, inferDomain } from "../../utils/domains.js"
+import { domainOf } from "../../utils/domains.js"
+import { throwInternalError, throwParseError } from "../../utils/errors.js"
+import type { evaluate, isUnknown } from "../../utils/generics.js"
+import type { List, listable } from "../../utils/lists.js"
 import type {
     AbstractableConstructor,
     Constructor,
     instanceOf
-} from "../utils/objectKinds.js"
-import { isArray } from "../utils/objectKinds.js"
-import type { BasisInput, BasisNode, inferBasis } from "./basis/basis.js"
-import type { ClassNode } from "./basis/class.js"
-import { classNode } from "./basis/class.js"
-import type { DomainNode } from "./basis/domain.js"
-import { domainNode } from "./basis/domain.js"
-import type { ValueNode } from "./basis/value.js"
-import { valueNode } from "./basis/value.js"
-import type { inferPropsInput } from "./deep/infer.js"
-import type { PropsInput } from "./deep/props.js"
-import { Disjoint } from "./disjoint.js"
-import type { NodeKinds } from "./kinds.js"
-import { createNodeOfKind } from "./kinds.js"
-import type { Node } from "./node.js"
-import { defineNodeKind } from "./node.js"
-import type { Range } from "./shallow/range.js"
+} from "../../utils/objectKinds.js"
+import { isArray } from "../../utils/objectKinds.js"
+import { Disjoint } from "../disjoint.js"
+import type { NodeKinds } from "../kinds.js"
+import { createNodeOfKind } from "../kinds.js"
+import type { Node } from "../node.js"
+import { defineNodeKind } from "../node.js"
+import type {
+    BasisInput,
+    BasisNode,
+    inferBasis
+} from "../primitive/basis/basis.js"
+import type { ClassNode } from "../primitive/basis/class.js"
+import { classNode } from "../primitive/basis/class.js"
+import type { DomainNode } from "../primitive/basis/domain.js"
+import { domainNode } from "../primitive/basis/domain.js"
+import type { ValueNode } from "../primitive/basis/value.js"
+import { valueNode } from "../primitive/basis/value.js"
+import type { Range } from "../primitive/range.js"
+import type { inferPropsInput } from "./infer.js"
+import type { PropsInput } from "./props.js"
 
-export interface PredicateNode
-    extends Node<{
-        kind: "predicate"
-        rule: PredicateRules
-        intersected: PredicateNode
-    }> {
+export interface PredicateNode extends Node<PredicateRules> {
     basis: BasisNode | undefined
     constraints: ConstraintNode[]
     getConstraint: <k extends ConstraintKind>(k: k) => ConstraintKinds[k]

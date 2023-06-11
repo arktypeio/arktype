@@ -2,15 +2,15 @@ import type { TypeNode } from "../main.js"
 import type {
     ArrayIndexMatcherSource,
     IndexedPropRule
-} from "../nodes/deep/indexed.js"
+} from "../nodes/composite/indexed.js"
 import {
     extractArrayIndexRegex,
     extractFirstVariadicIndex
-} from "../nodes/deep/indexed.js"
-import type { NamedPropRule } from "../nodes/deep/named.js"
-import type { KeyRule } from "../nodes/deep/props.js"
-import { isNode } from "../nodes/node.js"
-import { builtins } from "../nodes/type.js"
+} from "../nodes/composite/indexed.js"
+import type { NamedPropRule } from "../nodes/composite/named.js"
+import type { KeyRule } from "../nodes/composite/props.js"
+import { builtins } from "../nodes/composite/type.js"
+import type { NodeKind } from "../nodes/kinds.js"
 import type { TypeConfig } from "../type.js"
 import { type Domain, hasDomain } from "../utils/domains.js"
 import { Path } from "../utils/lists.js"
@@ -27,70 +27,81 @@ export type CompilationContext = {
 export const compile = (
     root: CompilationNode,
     ctx: CompilationContext = { path: [], value: In }
-): string =>
-    isTerminal(root)
-        ? root.condition.replaceAll(In, ctx.value)
-        : root.children.length === 0
-        ? root.operator === "&&"
-            ? "true"
-            : "false"
-        : root.children
-              .map((child) => {
-                  if (!child.key) {
-                      return compile(child, ctx)
-                  }
-                  if (isNode(child.key)) {
-                      return "false"
-                  }
-                  const valueCondition = compile(child, {
-                      path: [...ctx.path, child.key],
-                      value: `${ctx.value}${compilePropAccess(child.key.name)}`
-                  })
-                  return child.key.optional
-                      ? `!('${child.key.name}' in ${ctx.value}) || ${valueCondition}`
-                      : valueCondition
-              })
-              .filter((condition) => condition !== "true")
-              .sort()
-              .join(` ${root.operator} `)
-
-//   const children: CompilationNode[] = []
-//   let lastPrecedence = -1
-//   for (const r of rule) {
-//       // TODO: unify with constraints by precedence
-//       const currentPrecedence = precedenceByKind[r.kind]
-//       if (currentPrecedence > lastPrecedence) {
-//           children.push(r.compilation)
-//           lastPrecedence = currentPrecedence
-//       } else {
-//           children.at(-1)!.push(r.compilation)
-//       }
-//   }
-
-export type CompilationNode =
-    | TerminalCompilationNode
-    | NonTerminalCompilationNode
-
-const isTerminal = (node: CompilationNode): node is TerminalCompilationNode =>
-    "condition" in node
-
-type NonTerminalCompilationNode = {
-    key?: KeyRule
-    operator: "&&" | "||"
-    children: CompilationNode[]
+): string => {
+    if (typeof root.children === "string") {
+        return root.children.replaceAll(In, ctx.value)
+    }
+    if (root.children.length === 0) {
+        // an empty set of conditions is never for a union (type),
+        // or unknown for an intersection (predicate, props)
+        return root.kind === "type" ? "false" : "true"
+    }
+    const children: CompilationNode[][] = []
+    let lastPrecedence = -1
+    let current: CompilationNode[] = []
+    // TODO: unify with constraints by precedence
+    for (const child of root.children) {
+        const currentPrecedence = precedenceByKind[child.kind]
+        if (currentPrecedence > lastPrecedence) {
+            children.push(child.compilation)
+            lastPrecedence = currentPrecedence
+        } else {
+            children.at(-1)!.push(child.compilation)
+        }
+    }
+    return ""
 }
 
-export type ConditionPrecedence =
-    | "basis"
-    | "shallow"
-    | "deep"
-    | "narrow"
-    | "morph"
+export const precedenceByKind = {
+    // roots
+    type: 0,
+    predicate: 0,
+    // basis checks
+    domain: 1,
+    class: 1,
+    value: 1,
+    // shallow checks
+    range: 2,
+    divisor: 2,
+    regex: 2,
+    // deep checks
+    props: 3,
+    // narrows
+    narrow: 4,
+    // morphs
+    morph: 5
+} as const satisfies Record<NodeKind, number>
 
-type TerminalCompilationNode = {
+// isTerminal(root)
+//     ? root.condition.replaceAll(In, ctx.value)
+//     : root.children.length === 0
+//     ? root.operator === "&&"
+//         ? "true"
+//         : "false"
+//     : root.children
+//           .map((child) => {
+//               if (!child.key) {
+//                   return compile(child, ctx)
+//               }
+//               if (isNode(child.key)) {
+//                   return "false"
+//               }
+//               const valueCondition = compile(child, {
+//                   path: [...ctx.path, child.key],
+//                   value: `${ctx.value}${compilePropAccess(child.key.name)}`
+//               })
+//               return child.key.optional
+//                   ? `!('${child.key.name}' in ${ctx.value}) || ${valueCondition}`
+//                   : valueCondition
+//           })
+//           .filter((condition) => condition !== "true")
+//           .sort((l, r) => {})
+//           .join(` ${root.operator} `)
+
+export type CompilationNode = {
     key?: KeyRule
-    precedence: ConditionPrecedence
-    condition: string
+    kind: NodeKind
+    children: CompilationNode[] | string
 }
 
 const compileNamedAndIndexedProps = (

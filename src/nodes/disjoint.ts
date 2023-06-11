@@ -1,12 +1,12 @@
 import { throwInternalError, throwParseError } from "../utils/errors.js"
 import { entriesOf, type entryOf, fromEntries } from "../utils/records.js"
 import { stringify } from "../utils/serialize.js"
-import type { BasisNode } from "./basis/basis.js"
-import type { ClassNode } from "./basis/class.js"
-import type { ValueNode } from "./basis/value.js"
-import type { PredicateNode } from "./predicate.js"
-import type { RangeNode } from "./shallow/range.js"
-import type { TypeNode } from "./type.js"
+import type { PredicateNode } from "./composite/predicate.js"
+import type { TypeNode } from "./composite/type.js"
+import type { BasisNode } from "./primitive/basis/basis.js"
+import type { ClassNode } from "./primitive/basis/class.js"
+import type { ValueNode } from "./primitive/basis/value.js"
+import type { RangeNode } from "./primitive/range.js"
 
 type DisjointKinds = {
     // TODO:  should this be a domain node?

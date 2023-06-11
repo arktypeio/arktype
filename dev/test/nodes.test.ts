@@ -1,5 +1,5 @@
 import { suite, test } from "mocha"
-import { node } from "../../src/nodes/type.js"
+import { node } from "../../src/nodes/composite/type.js"
 import { attest } from "../attest/main.js"
 
 suite("nodes", () => {

@@ -1,7 +1,7 @@
 import { suite, test } from "mocha"
 import type { TypeNode } from "../../src/main.js"
-import { arrayIndexInput } from "../../src/nodes/deep/indexed.js"
-import { node } from "../../src/nodes/type.js"
+import { arrayIndexInput } from "../../src/nodes/composite/indexed.js"
+import { node } from "../../src/nodes/composite/type.js"
 import type { Out } from "../../src/parse/ast/morph.js"
 import { attest } from "../attest/main.js"
 

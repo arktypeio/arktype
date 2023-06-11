@@ -1,4 +1,4 @@
-import { node } from "../../nodes/type.js"
+import { node } from "../../nodes/composite/type.js"
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isLuhnNumber.js
 export const isLuhnValid = (creditCardInput: string) => {

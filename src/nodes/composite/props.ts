@@ -4,12 +4,12 @@ import type { DisjointsSources } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
 import type { Node } from "../node.js"
 import { defineNodeKind, isNode } from "../node.js"
-import type { TypeNode } from "../type.js"
-import { builtins, typeNode } from "../type.js"
 import type { IndexedPropInput, IndexedPropRule } from "./indexed.js"
 import { extractArrayIndexRegex } from "./indexed.js"
 import type { NamedKeyRule, NamedPropInput, NamedPropRule } from "./named.js"
 import { intersectNamedProp } from "./named.js"
+import { builtins, typeNode } from "./type.js"
+import type { TypeNode } from "./type.js"
 
 export type KeyRule = NamedKeyRule | TypeNode
 
@@ -17,12 +17,7 @@ export type PropRule = NamedPropRule | IndexedPropRule
 
 export type PropsRule = PropRule[]
 
-export interface PropsNode
-    extends Node<{
-        kind: "props"
-        rule: PropRule[]
-        intersected: PropsNode
-    }> {
+export interface PropsNode extends Node<PropRule[]> {
     named: NamedPropRule[]
     indexed: IndexedPropRule[]
     byName: Record<string, NamedPropRule>

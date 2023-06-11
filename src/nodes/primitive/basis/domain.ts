@@ -1,12 +1,11 @@
-import { In } from "../../compile/compile.js"
-import type { Domain } from "../../utils/domains.js"
-import { getBaseDomainKeys } from "../../utils/objectKinds.js"
-import { defineNodeKind } from "../node.js"
+import { In } from "../../../compile/compile.js"
+import type { Domain } from "../../../utils/domains.js"
+import { getBaseDomainKeys } from "../../../utils/objectKinds.js"
+import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export interface DomainNode
-    extends BasisNode<{ kind: "domain"; rule: Domain }> {}
+export interface DomainNode extends BasisNode<Domain> {}
 
 export const domainNode = defineNodeKind<DomainNode>(
     {

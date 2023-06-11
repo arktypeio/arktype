@@ -1,8 +1,8 @@
 import { In } from "../../compile/compile.js"
 import { isKeyOf } from "../../utils/records.js"
 import { Disjoint } from "../disjoint.js"
-import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
+import type { PrimitiveNode } from "./primitive.js"
 
 export const minComparators = {
     ">": true,
@@ -60,12 +60,7 @@ export type Range = [Bound] | [Bound<MinComparator>, Bound<MaxComparator>]
 //     ? "items long"
 //     : ""
 
-export interface RangeNode
-    extends Node<{
-        kind: "range"
-        rule: Range
-        intersected: RangeNode
-    }> {
+export interface RangeNode extends PrimitiveNode<Range> {
     min: Bound<MinComparator> | undefined
     max: Bound<MaxComparator> | undefined
 }

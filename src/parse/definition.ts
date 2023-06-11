@@ -1,6 +1,6 @@
+import type { TypeNode } from "../nodes/composite/type.js"
+import { node } from "../nodes/composite/type.js"
 import { isNode } from "../nodes/node.js"
-import type { TypeNode } from "../nodes/type.js"
-import { node } from "../nodes/type.js"
 import type { Scope } from "../scope.js"
 import { Type } from "../type.js"
 import type { Primitive } from "../utils/domains.js"

@@ -1,9 +1,9 @@
+import { Disjoint } from "../../../../nodes/disjoint.js"
 import type {
     Comparator,
     MaxComparator
-} from "../../../../nodes/shallow/range.js"
-import { maxComparators, rangeNode } from "../../../../nodes/shallow/range.js"
-import { Disjoint } from "../../../../nodes/disjoint.js"
+} from "../../../../nodes/primitive/range.js"
+import { maxComparators, rangeNode } from "../../../../nodes/primitive/range.js"
 import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
 import type { keySet } from "../../../../utils/records.js"

@@ -1,14 +1,14 @@
-import type { Domain, inferDomain } from "../../utils/domains.js"
-import { throwInternalError } from "../../utils/errors.js"
-import type { evaluate } from "../../utils/generics.js"
+import type { Domain, inferDomain } from "../../../utils/domains.js"
+import { throwInternalError } from "../../../utils/errors.js"
+import type { evaluate } from "../../../utils/generics.js"
 import type {
     AbstractableConstructor,
     Constructor
-} from "../../utils/objectKinds.js"
-import { constructorExtends } from "../../utils/objectKinds.js"
-import type { DisjointKindEntries } from "../disjoint.js"
-import { Disjoint } from "../disjoint.js"
-import type { Node } from "../node.js"
+} from "../../../utils/objectKinds.js"
+import { constructorExtends } from "../../../utils/objectKinds.js"
+import type { DisjointKindEntries } from "../../disjoint.js"
+import { Disjoint } from "../../disjoint.js"
+import type { PrimitiveNode } from "../primitive.js"
 import type { ClassNode } from "./class.js"
 import type { DomainNode } from "./domain.js"
 import type { ValueNode } from "./value.js"
@@ -46,13 +46,11 @@ export const basisPrecedenceByKind: Record<BasisKind, number> = {
 export type BasisNodeSubclass = BasisNodesByKind[BasisKind]
 
 export type BasisNodeDefinition = {
-    kind: BasisKind
     rule: unknown
 }
 
-export interface BasisNode<
-    def extends BasisNodeDefinition = BasisNodeDefinition
-> extends Node<def & { intersected: BasisNode }> {
+export type BasisNode<rule = unknown> = PrimitiveNode<rule, BasisNode<any>> & {
+    kind: BasisKind
     domain: Domain
     literalKeys: PropertyKey[]
 }

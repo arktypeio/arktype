@@ -1,13 +1,13 @@
 import type { evaluate } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"
 import type { NumberLiteral } from "../../utils/numericLiterals.js"
-import type { inferTypeInput } from "../type.js"
 import type {
     IndexedPropInput,
     NonVariadicIndexMatcherSource,
     VariadicIndexMatcherSource
 } from "./indexed.js"
 import type { NamedPropsInput, PropsInput, PropsInputTuple } from "./props.js"
+import type { inferTypeInput } from "./type.js"
 
 export type inferPropsInput<input extends PropsInput> =
     input extends PropsInputTuple<infer named, infer indexed>

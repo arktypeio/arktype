@@ -1,12 +1,12 @@
-import type { error } from "../../../utils/errors.js"
-import type { defined } from "../../../utils/generics.js"
-import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import type {
     Comparator,
     InvertedComparators,
     MaxComparator,
     MinComparator
-} from "../../../nodes/shallow/range.js"
+} from "../../../nodes/primitive/range.js"
+import type { error } from "../../../utils/errors.js"
+import type { defined } from "../../../utils/generics.js"
+import type { NumberLiteral } from "../../../utils/numericLiterals.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
     Prefix,

@@ -1,10 +1,10 @@
-import type { Comparator, RangeNode } from "../../../nodes/shallow/range.js"
+import type { TypeNode } from "../../../nodes/composite/type.js"
+import type { Comparator, RangeNode } from "../../../nodes/primitive/range.js"
 import {
     invertedComparators,
     minComparators,
     rangeNode
-} from "../../../nodes/shallow/range.js"
-import type { TypeNode } from "../../../nodes/type.js"
+} from "../../../nodes/primitive/range.js"
 import { throwInternalError, throwParseError } from "../../../utils/errors.js"
 import type { requireKeys } from "../../../utils/records.js"
 import { isKeyOf } from "../../../utils/records.js"

@@ -1,5 +1,5 @@
-import type { TypeNode } from "../../../../nodes/type.js"
-import { typeNode } from "../../../../nodes/type.js"
+import type { TypeNode } from "../../../../nodes/composite/type.js"
+import { typeNode } from "../../../../nodes/composite/type.js"
 import type { Scope } from "../../../../scope.js"
 import type { GenericProps } from "../../../../type.js"
 import type { error } from "../../../../utils/errors.js"

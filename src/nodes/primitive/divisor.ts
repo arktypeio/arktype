@@ -1,13 +1,8 @@
 import { In } from "../../compile/compile.js"
-import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
+import type { PrimitiveNode } from "./primitive.js"
 
-export interface DivisorNode
-    extends Node<{
-        kind: "divisor"
-        rule: number
-        intersected: DivisorNode
-    }> {}
+export interface DivisorNode extends PrimitiveNode<number> {}
 
 export const divisorNode = defineNodeKind<DivisorNode>(
     {

@@ -2,15 +2,10 @@ import { registry } from "../../compile/registry.js"
 import type { Morph } from "../../parse/ast/morph.js"
 import type { listable } from "../../utils/lists.js"
 import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
-import type { Node } from "../node.js"
 import { defineNodeKind } from "../node.js"
+import type { PrimitiveNode } from "./primitive.js"
 
-export interface MorphNode
-    extends Node<{
-        kind: "morph"
-        rule: readonly Morph[]
-        intersected: MorphNode
-    }> {}
+export interface MorphNode extends PrimitiveNode<readonly Morph[]> {}
 
 export const morphNode = defineNodeKind<MorphNode, listable<Morph>>(
     {

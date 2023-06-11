@@ -5,10 +5,10 @@ import { CompiledFunction } from "../utils/functions.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
 
-export type BaseNodeImplementation<node extends Node, input> = {
+export type BaseNodeImplementation<node extends Node, parsableFrom> = {
     kind: node["kind"]
-    parse: (rule: node["rule"] | input) => node["rule"]
-    compile: (rule: node["rule"]) => CompilationNode
+    parse: (rule: node["rule"] | parsableFrom) => node["rule"]
+    compile: (rule: node["rule"]) => any //CompilationNode
     intersect: (
         l: Parameters<node["intersect"]>[0],
         r: Parameters<node["intersect"]>[0]
@@ -19,28 +19,28 @@ type NodeExtension<node extends Node> = (
     base: basePropsOf<node>
 ) => extendedPropsOf<node>
 
-export type basePropsOf<node extends Node> = Pick<node, keyof NodeBase<any>>
+export type basePropsOf<node extends Node> = Pick<
+    node,
+    keyof NodeBase<any, any>
+>
 
 export type extendedPropsOf<node extends Node> = Omit<
     node,
-    keyof NodeBase<any> | typeof inferred
+    keyof NodeBase<any, any> | typeof inferred
 > &
     ThisType<node>
 
-export type NodeDefinition = {
-    kind: NodeKind
-    rule: unknown
-    intersected: Node<any>
-}
-
-export interface NodeBase<def extends NodeDefinition> {
+export interface NodeBase<rule, intersectsWith> {
     [arkKind]: "node"
-    kind: def["kind"]
-    rule: def["rule"]
+    kind: NodeKind
+    rule: rule
     compilation: CompilationNode
     condition: string
-    intersect(other: def["intersected"]): def["intersected"] | Disjoint
-    intersectionCache: Record<string, def["intersected"] | Disjoint | undefined>
+    intersect(other: intersectsWith | this): intersectsWith | this | Disjoint
+    intersectionCache: Record<
+        string,
+        this | intersectsWith | Disjoint | undefined
+    >
     allows(data: unknown): boolean
     hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
 }
@@ -49,7 +49,10 @@ export type BaseNodeExtensionProps = {
     description: string
 }
 
-export type Node<def extends NodeDefinition = NodeDefinition> = NodeBase<def> &
+export type Node<rule = unknown, intersectsWith = never> = NodeBase<
+    rule,
+    intersectsWith
+> &
     BaseNodeExtensionProps
 
 type IntersectionCache<node> = Record<string, node | Disjoint | undefined>
@@ -63,10 +66,13 @@ export type NodeConstructor<node extends Node, input> = (
     rule: node["rule"] | input
 ) => node
 
-export const defineNodeKind = <node extends Node, input = never>(
-    def: BaseNodeImplementation<node, input>,
+export const defineNodeKind = <
+    node extends Node<any, any>,
+    parsableFrom = never
+>(
+    def: BaseNodeImplementation<node, parsableFrom>,
     addProps: NodeExtension<node>
-): NodeConstructor<node, input> => {
+): NodeConstructor<node, parsableFrom> => {
     const nodeCache: {
         [condition: string]: node | undefined
     } = {}
@@ -79,7 +85,7 @@ export const defineNodeKind = <node extends Node, input = never>(
             return nodeCache[condition]!
         }
         const intersectionCache: IntersectionCache<Node> = {}
-        const base: NodeBase<NodeDefinition> & ThisType<node> = {
+        const base: NodeBase<node["rule"], never> & ThisType<node> = {
             [arkKind]: "node",
             kind: def.kind,
             hasKind: (kind) => kind === def.kind,
@@ -95,14 +101,14 @@ export const defineNodeKind = <node extends Node, input = never>(
                 if (intersectionCache[other.condition]) {
                     return intersectionCache[other.condition]!
                 }
-                const result = def.intersect(this as never, other as never)
+                const result: Node | Disjoint = def.intersect(this, other)
                 intersectionCache[other.condition] = result
                 other.intersectionCache[condition] =
                     result instanceof Disjoint ? result.invert() : result
                 return result
             }
         }
-        const instance = Object.assign(base, addProps(base), {
+        const instance = Object.assign(base, addProps(base as node), {
             toString(this: node) {
                 return this.description
             }

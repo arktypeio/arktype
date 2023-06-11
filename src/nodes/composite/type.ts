@@ -1,32 +1,27 @@
-import type { inferred } from "../parse/definition.js"
-import { cached } from "../utils/functions.js"
-import type { conform, exact, Literalable } from "../utils/generics.js"
-import { isArray } from "../utils/objectKinds.js"
-import type { BasisInput } from "./basis/basis.js"
-import { arrayClassNode } from "./basis/class.js"
-import type { ValueNode } from "./basis/value.js"
-import { valueNode } from "./basis/value.js"
-import { arrayIndexInput, arrayIndexTypeNode } from "./deep/indexed.js"
-import { propsNode } from "./deep/props.js"
-import type { Discriminant } from "./discriminate.js"
-import { discriminate } from "./discriminate.js"
-import { Disjoint } from "./disjoint.js"
-import type { Node } from "./node.js"
-import { defineNodeKind, isNode } from "./node.js"
+import type { Discriminant } from "../../compile/discriminate.js"
+import { discriminate } from "../../compile/discriminate.js"
+import type { inferred } from "../../parse/definition.js"
+import { cached } from "../../utils/functions.js"
+import type { conform, exact, Literalable } from "../../utils/generics.js"
+import { isArray } from "../../utils/objectKinds.js"
+import { Disjoint } from "../disjoint.js"
+import type { Node } from "../node.js"
+import { defineNodeKind, isNode } from "../node.js"
+import type { BasisInput } from "../primitive/basis/basis.js"
+import { arrayClassNode } from "../primitive/basis/class.js"
+import { valueNode } from "../primitive/basis/value.js"
+import type { ValueNode } from "../primitive/basis/value.js"
+import { arrayIndexInput, arrayIndexTypeNode } from "./indexed.js"
+import { predicateNode } from "./predicate.js"
 import type {
     ConstraintKind,
     inferPredicateDefinition,
     PredicateInput,
     PredicateNode
 } from "./predicate.js"
-import { predicateNode } from "./predicate.js"
+import { propsNode } from "./props.js"
 
-export interface TypeNode<t = unknown>
-    extends Node<{
-        kind: "type"
-        rule: PredicateNode[]
-        intersected: TypeNode
-    }> {
+export interface TypeNode<t = unknown> extends Node<PredicateNode[]> {
     [inferred]: t
     discriminant: Discriminant | undefined
     valueNode: ValueNode | undefined
