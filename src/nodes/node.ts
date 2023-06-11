@@ -38,7 +38,7 @@ type extendedPropsOf<node extends BaseNode> = Omit<
 > &
     ThisType<node>
 
-interface BuiltinBase<rule, intersectsWith> {
+interface PreconstructedBase<rule, intersectsWith> {
     [arkKind]: "node"
     kind: NodeKind
     rule: rule
@@ -53,17 +53,16 @@ interface BuiltinBase<rule, intersectsWith> {
     hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
 }
 
-type BuiltinBaseKey = evaluate<keyof BuiltinBase<any, any>>
+type BuiltinBaseKey = evaluate<keyof PreconstructedBase<any, any>>
 
 export type BaseNodeExtensionProps = {
     description: string
 }
 
-export type BaseNode<rule = unknown, intersectsWith = never> = BuiltinBase<
-    rule,
-    intersectsWith
-> &
-    BaseNodeExtensionProps
+export type BaseNode<
+    rule = unknown,
+    intersectsWith = never
+> = PreconstructedBase<rule, intersectsWith> & BaseNodeExtensionProps
 
 type IntersectionCache<node> = Record<string, node | Disjoint | undefined>
 
@@ -101,7 +100,7 @@ export const defineNodeKind = <
             return nodeCache[condition]!
         }
         const intersectionCache: IntersectionCache<BaseNode> = {}
-        const base: BuiltinBase<node["rule"], never> & ThisType<node> = {
+        const base: PreconstructedBase<node["rule"], never> & ThisType<node> = {
             [arkKind]: "node",
             kind: def.kind,
             hasKind: (kind) => kind === def.kind,
