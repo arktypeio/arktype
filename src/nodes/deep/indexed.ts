@@ -87,8 +87,6 @@ export const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
     )
 }
 
-export const arrayBasisNode = classNode(Array)
-
 export const arrayIndexInput = <index extends number = 0>(
     firstVariadicIndex: index = 0 as index
 ) =>

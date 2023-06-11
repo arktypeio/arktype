@@ -1,4 +1,5 @@
-import { arrayBasisNode, arrayIndexTypeNode } from "../../nodes/deep/indexed.js"
+import { arrayClassNode } from "../../nodes/basis/class.js"
+import { arrayIndexTypeNode } from "../../nodes/deep/indexed.js"
 import type { PropRule } from "../../nodes/deep/props.js"
 import { propsNode } from "../../nodes/deep/props.js"
 import { predicateNode } from "../../nodes/predicate.js"
@@ -97,7 +98,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
             value: typeNode({ basis: ["===", def.length] })
         })
     }
-    const predicate = predicateNode([arrayBasisNode, propsNode(props)])
+    const predicate = predicateNode([arrayClassNode(), propsNode(props)])
     return typeNode([predicate])
 }
 

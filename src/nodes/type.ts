@@ -3,13 +3,10 @@ import { cached } from "../utils/functions.js"
 import type { conform, exact, Literalable } from "../utils/generics.js"
 import { isArray } from "../utils/objectKinds.js"
 import type { BasisInput } from "./basis/basis.js"
+import { arrayClassNode } from "./basis/class.js"
 import type { ValueNode } from "./basis/value.js"
 import { valueNode } from "./basis/value.js"
-import {
-    arrayBasisNode,
-    arrayIndexInput,
-    arrayIndexTypeNode
-} from "./deep/indexed.js"
+import { arrayIndexInput, arrayIndexTypeNode } from "./deep/indexed.js"
 import { propsNode } from "./deep/props.js"
 import type { Discriminant } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
@@ -87,7 +84,7 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
             const props = propsNode([
                 { key: arrayIndexTypeNode(), value: this }
             ])
-            const predicate = predicateNode([arrayBasisNode, props])
+            const predicate = predicateNode([arrayClassNode(), props])
             return typeNode([predicate])
         },
         isNever() {

@@ -245,8 +245,6 @@ const isNamed = (rule: PropRule): rule is NamedPropRule => !isNode(rule.key)
 const kindPrecedence = (key: KeyRule) =>
     isNode(key) ? 2 : key.prerequisite ? -1 : key.optional ? 1 : 0
 
-export const emptyPropsNode = propsNode([])
-
 export type PropsInputTuple<
     named extends NamedPropsInput = NamedPropsInput,
     indexed extends IndexedPropInput[] = IndexedPropInput[]

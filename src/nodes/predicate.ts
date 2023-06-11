@@ -280,8 +280,6 @@ const constraintsByPrecedence = [
 
 export type ListableInputKind = "regex" | "narrow" | "morph"
 
-export const unknownPredicateNode = predicateNode([])
-
 export type PredicateRules = [BasisNode, ...ConstraintNode[]] | ConstraintNode[]
 
 export type ConstraintNode = ConstraintKinds[ConstraintKind]

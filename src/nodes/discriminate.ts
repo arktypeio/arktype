@@ -10,9 +10,8 @@ import type { ValueNode } from "./basis/value.js"
 import type { SerializedPath } from "./disjoint.js"
 import { Disjoint } from "./disjoint.js"
 import type { PredicateNode } from "./predicate.js"
-import { unknownPredicateNode } from "./predicate.js"
 import type { TypeNode } from "./type.js"
-import { typeNode } from "./type.js"
+import { builtins, typeNode } from "./type.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
     DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
@@ -129,7 +128,7 @@ export const discriminate = (
             // TODO: fix
             const pruned = branch //.pruneDiscriminant(path, kind)
             if (pruned === null) {
-                caseBranches = [unknownPredicateNode]
+                caseBranches = builtins.unknown().rule
                 break
             }
             caseBranches.push(pruned)

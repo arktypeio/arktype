@@ -1,5 +1,6 @@
 import { In } from "../../compile/compile.js"
 import { registry } from "../../compile/registry.js"
+import { cached } from "../../utils/functions.js"
 import type { AbstractableConstructor } from "../../utils/objectKinds.js"
 import {
     constructorExtends,
@@ -41,6 +42,8 @@ export const classNode = defineNodeKind<ClassNode>(
         description: base.rule.name
     })
 )
+
+export const arrayClassNode = cached(() => classNode(Array))
 
 // compileTraverse(s: CompilationState) {
 //     return s.ifNotThen(this.condition, s.problem("class", this.child))
