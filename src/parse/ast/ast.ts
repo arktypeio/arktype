@@ -1,13 +1,13 @@
 import type { Comparator } from "../../nodes/primitive/range.js"
 import type { resolve, UnparsedScope } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
-import type { error } from "../../../dev/utils/errors.js"
-import type { List } from "../../../dev/utils/lists.js"
+import type { error } from "../../utils/errors.js"
+import type { List } from "../../utils/lists.js"
 import type {
     BigintLiteral,
     NumberLiteral,
     writeMalformedNumericLiteralMessage
-} from "../../../dev/utils/numericLiterals.js"
+} from "../../utils/numericLiterals.js"
 import type { inferDefinition, Inferred } from "../definition.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { parseString } from "../string/string.js"
@@ -36,10 +36,10 @@ type bindGenericArgAstsToScope<
     // resolved using the same scope as that of the input args. Otherwise, use
     // the scope that was explicitly associated with it.
     g["$"] extends UnparsedScope
-    ? $
-    : // if "this" is in the arg scope (i.e. the generic is being instantiated as a standalone type)
-    // include the same "this" value in the generic definition's scope
-    g["$"] & { [k in "this" & keyof $]: $[k] },
+        ? $
+        : // if "this" is in the arg scope (i.e. the generic is being instantiated as a standalone type)
+          // include the same "this" value in the generic definition's scope
+          g["$"] & { [k in "this" & keyof $]: $[k] },
     g["parameters"][number]
 >
 
@@ -53,9 +53,9 @@ export type inferExpression<
     $
 > = ast extends GenericInstantiationAst
     ? inferDefinition<
-        ast[0]["definition"],
-        bindGenericArgAstsToScope<ast[0], ast[2], $>
-    >
+          ast[0]["definition"],
+          bindGenericArgAstsToScope<ast[0], ast[2], $>
+      >
     : ast[1] extends "[]"
     ? inferAst<ast[0], $>[]
     : ast[1] extends "|"
@@ -64,8 +64,8 @@ export type inferExpression<
     ? inferIntersection<inferAst<ast[0], $>, inferAst<ast[2], $>>
     : ast[1] extends Comparator
     ? ast[0] extends NumberLiteral
-    ? inferAst<ast[2], $>
-    : inferAst<ast[0], $>
+        ? inferAst<ast[2], $>
+        : inferAst<ast[0], $>
     : ast[1] extends "%"
     ? inferAst<ast[0], $>
     : ast[0] extends "keyof"
@@ -76,20 +76,20 @@ export type validateAst<ast, $> = ast extends string
     ? validateStringAst<ast>
     : ast extends PostfixExpression<infer operator, infer operand>
     ? operator extends "[]"
-    ? validateAst<operand, $>
-    : never
+        ? validateAst<operand, $>
+        : never
     : ast extends InfixExpression<infer operator, infer l, infer r>
     ? operator extends "&" | "|"
-    ? validateInfix<ast, $>
-    : operator extends Comparator
-    ? validateBound<l, r, $>
-    : operator extends "%"
-    ? validateDivisor<l, $>
-    : undefined
+        ? validateInfix<ast, $>
+        : operator extends Comparator
+        ? validateBound<l, r, $>
+        : operator extends "%"
+        ? validateDivisor<l, $>
+        : undefined
     : ast extends readonly ["keyof", infer operand]
     ? [keyof inferAst<operand, $>] extends [never]
-    ? error<writeUnsatisfiableExpressionError<astToString<ast>>>
-    : validateAst<operand, $>
+        ? error<writeUnsatisfiableExpressionError<astToString<ast>>>
+        : validateAst<operand, $>
     : ast extends GenericInstantiationAst
     ? validateGenericArgs<ast["2"], $>
     : never
@@ -99,8 +99,8 @@ type validateGenericArgs<argAsts extends unknown[], $> = argAsts extends [
     ...infer tail
 ]
     ? validateAst<head, $> extends error<infer message>
-    ? error<message>
-    : validateGenericArgs<tail, $>
+        ? error<message>
+        : validateGenericArgs<tail, $>
     : undefined
 
 export const writeUnsatisfiableExpressionError = <expression extends string>(
@@ -115,12 +115,12 @@ type validateStringAst<def extends string> = def extends NumberLiteral<
     infer value
 >
     ? number extends value
-    ? error<writeMalformedNumericLiteralMessage<def, "number">>
-    : undefined
+        ? error<writeMalformedNumericLiteralMessage<def, "number">>
+        : undefined
     : def extends BigintLiteral<infer value>
     ? bigint extends value
-    ? error<writeMalformedNumericLiteralMessage<def, "bigint">>
-    : undefined
+        ? error<writeMalformedNumericLiteralMessage<def, "bigint">>
+        : undefined
     : undefined
 
 export type validateString<def extends string, $> = parseString<
@@ -128,10 +128,10 @@ export type validateString<def extends string, $> = parseString<
     $
 > extends infer ast
     ? ast extends error<infer message>
-    ? message
-    : validateAst<ast, $> extends error<infer message>
-    ? message
-    : def
+        ? message
+        : validateAst<ast, $> extends error<infer message>
+        ? message
+        : def
     : never
 
 export type PrefixOperator = "keyof" | "instanceof" | "===" | "node"

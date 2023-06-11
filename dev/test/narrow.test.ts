@@ -2,8 +2,8 @@ import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import type { Ark } from "../../src/scopes/ark.js"
 import type { Type } from "../../src/type.js"
-import type { equals } from "../utils/generics.js"
-import { Path } from "../utils/lists.js"
+import type { equals } from "../../src/utils/generics.js"
+import { Path } from "../../src/utils/lists.js"
 import { attest } from "../attest/main.js"
 
 suite("narrow", () => {

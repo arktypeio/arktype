@@ -1,5 +1,5 @@
 import type { TraversalState } from "../../compile/traverse.js"
-import { throwParseError } from "../../../dev/utils/errors.js"
+import { throwParseError } from "../../utils/errors.js"
 import { parseDefinition } from "../definition.js"
 import type { PostfixParser } from "./tuple.js"
 

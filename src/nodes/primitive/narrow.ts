@@ -1,11 +1,11 @@
 import { registry } from "../../compile/registry.js"
 import type { Narrow } from "../../parse/ast/narrow.js"
-import type { listable } from "../../../dev/utils/lists.js"
-import { intersectUniqueLists, listFrom } from "../../../dev/utils/lists.js"
+import type { listable } from "../../utils/lists.js"
+import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export interface NarrowNode extends BaseNode<readonly Narrow[]> { }
+export interface NarrowNode extends BaseNode<readonly Narrow[]> {}
 
 export const narrowNode = defineNodeKind<NarrowNode, listable<Narrow>>(
     {

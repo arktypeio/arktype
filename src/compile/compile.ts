@@ -1,9 +1,9 @@
 import type { NodeKind } from "../nodes/kinds.js"
 import type { TypeConfig } from "../type.js"
-import { type Domain, hasDomain } from "../../dev/utils/domains.js"
-import { Path } from "../../dev/utils/lists.js"
-import type { SerializablePrimitive } from "../../dev/utils/serialize.js"
-import { serializePrimitive } from "../../dev/utils/serialize.js"
+import { type Domain, hasDomain } from "../utils/domains.js"
+import { Path } from "../utils/lists.js"
+import type { SerializablePrimitive } from "../utils/serialize.js"
+import { serializePrimitive } from "../utils/serialize.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 
@@ -45,18 +45,18 @@ export const KeyIn = "$arkKey"
 export const joinIntersectionConditions = (subconditions: string[]) =>
     subconditions.length === 0
         ? // 0 constraints is unknown (predicate, props)
-        "true"
+          "true"
         : subconditions.join(" && ")
 
 export const joinUnionConditions = (subconditions: string[]) =>
     subconditions.length === 0
         ? // an empty set of conditions is never for a union
-        "false"
+          "false"
         : subconditions.length === 1
-            ? // we don't want to prune a single "true" branch here (unknown)
-            // TODO: how to parenthesize only when needed?
-            subconditions[0]
-            : `(${subconditions.join(" || ")})`
+        ? // we don't want to prune a single "true" branch here (unknown)
+          // TODO: how to parenthesize only when needed?
+          subconditions[0]
+        : `(${subconditions.join(" || ")})`
 
 export const prependIndex = (path: string) =>
     `${In}[${IndexIn}]${path.slice(In.length)}`
@@ -95,19 +95,21 @@ export class CompilationState {
     unionDepth = 0
     traversalConfig = initializeCompilationConfig()
 
-    constructor() { }
+    constructor() {}
 
     get data() {
         return compilePathAccess(this.path)
     }
 
     problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {
-        return `${this.unionDepth ? "return " : ""
-            }state.addProblem("${code}", ${typeof rule === "function"
+        return `${
+            this.unionDepth ? "return " : ""
+        }state.addProblem("${code}", ${
+            typeof rule === "function"
                 ? rule.name
                 : // TODO: Fix
-                compileSerializedValue(rule)
-            }, ${this.data}, ${this.path.json})` as const
+                  compileSerializedValue(rule)
+        }, ${this.data}, ${this.path.json})` as const
     }
 
     ifThen<condition extends string, onTrue extends string>(

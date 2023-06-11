@@ -1,4 +1,4 @@
-import type { snapshot } from "../../../utils/serialize.js"
+import type { snapshot } from "../../../../src/utils/serialize.js"
 
 export type rootAssertions<
     t,
@@ -36,8 +36,8 @@ export type functionAssertions<AllowTypeAssertions extends boolean> = {
     >
 } & (AllowTypeAssertions extends true
     ? {
-        throwsAndHasTypeError: (message: string | RegExp) => undefined
-    }
+          throwsAndHasTypeError: (message: string | RegExp) => undefined
+      }
     : {})
 
 export type valueFromTypeAssertion<
