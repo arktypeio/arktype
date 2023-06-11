@@ -31,13 +31,13 @@ export type conform<t, base> = t extends base ? t : base
 /** Check for type equality without breaking TS for this repo. Fails on some types like Dict/{} */
 export type equals<t, u> = identity<t> extends identity<u> ? true : false
 
+export type identity<t> = (_: t) => t
+
 export declare const id: unique symbol
 
 export type nominal<t, id extends string> = t & {
     readonly [id]: id
 }
-
-export type identity<in out t> = (_: t) => t
 
 export type extend<t, u extends t> = u
 

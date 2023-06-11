@@ -28,7 +28,7 @@ export const tsKeyword = Scope.root({
     string: node({ basis: "string" }),
     symbol: node({ basis: "symbol" }),
     true: node({ basis: ["===", true as const] }),
-    unknown: node({ basis: undefined }),
+    unknown: node({}),
     void: "undefined" as Inferred<void>,
     undefined: node({ basis: ["===", undefined] })
 })

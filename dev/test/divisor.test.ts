@@ -49,6 +49,7 @@ suite("divisibility", () => {
             )
         })
         test("unknown", () => {
+            type("unknown")
             // @ts-expect-error
             attest(() => type("unknown%2")).throwsAndHasTypeError(
                 writeIndivisibleMessage("unknown")

@@ -42,6 +42,22 @@ export const IndexIn = "$arkIndex"
 
 export const KeyIn = "$arkKey"
 
+export const joinIntersectionConditions = (subconditions: string[]) =>
+    subconditions.length === 0
+        ? // 0 constraints is unknown (predicate, props)
+          "true"
+        : subconditions.join(" && ")
+
+export const joinUnionConditions = (subconditions: string[]) =>
+    subconditions.length === 0
+        ? // an empty set of conditions is never for a union
+          "false"
+        : subconditions.length === 1
+        ? // we don't want to prune a single "true" branch here (unknown)
+          // TODO: how to parenthesize only when needed?
+          subconditions[0]
+        : `(${subconditions.join(" || ")})`
+
 export const prependIndex = (path: string) =>
     `${In}[${IndexIn}]${path.slice(In.length)}`
 

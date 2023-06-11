@@ -1,4 +1,9 @@
-import { In, IndexIn, KeyIn } from "../../compile/compile.js"
+import {
+    In,
+    IndexIn,
+    joinIntersectionConditions,
+    KeyIn
+} from "../../compile/compile.js"
 import { throwInternalError } from "../../utils/errors.js"
 import { tryParseWellFormedInteger } from "../../utils/numericLiterals.js"
 import type { NamedPropRule } from "./named.js"
@@ -108,7 +113,9 @@ export const compileArray = (
     namedProps: NamedPropRule[]
 ) => {
     const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
-    const namedCheck = namedProps.map(compileNamedProp)
+    const namedCheck = joinIntersectionConditions(
+        namedProps.map(compileNamedProp)
+    )
     const elementCondition = elementNode.condition
         .replaceAll(IndexIn, `${IndexIn}Inner`)
         .replaceAll(In, `${In}[${IndexIn}]`)
