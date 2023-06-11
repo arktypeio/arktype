@@ -22,10 +22,14 @@ export const compile = (root: CompilationNode): string =>
     isTerminal(root)
         ? root.condition
         : root.children.length === 0
-        ? root.operator === "&"
+        ? root.operator === "&&"
             ? "true"
             : "false"
-        : root.children.map(compile).sort().join(` ${root.operator} `)
+        : root.children
+              .map(compile)
+              .filter((condition) => condition !== "true")
+              .sort()
+              .join(` ${root.operator} `)
 
 //   const children: CompilationNode[] = []
 //   let lastPrecedence = -1
@@ -49,7 +53,7 @@ const isTerminal = (node: CompilationNode): node is TerminalCompilationNode =>
 
 type NonTerminalCompilationNode = {
     key?: KeyRule
-    operator: "&" | "|"
+    operator: "&&" | "||"
     children: CompilationNode[]
 }
 

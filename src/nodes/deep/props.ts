@@ -57,7 +57,7 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
             })
         },
         compile: (rule: PropRule[]) => ({
-            operator: "&",
+            operator: "&&",
             children: rule.map((prop) => ({
                 key: prop.key,
                 ...prop.value.compilation

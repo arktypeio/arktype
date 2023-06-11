@@ -58,7 +58,7 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
                 : [predicateNode(input)],
         compile: (rule) => {
             return {
-                operator: "|",
+                operator: "||",
                 children: rule.map((branch) => branch.compilation)
             }
         },

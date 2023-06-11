@@ -64,7 +64,7 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
         },
         compile: (rule) => {
             return {
-                operator: "&",
+                operator: "&&",
                 children: rule.map((child) => child.compilation)
             }
         },
