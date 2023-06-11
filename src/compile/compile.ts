@@ -9,6 +9,7 @@ import {
 } from "../nodes/deep/indexed.js"
 import type { NamedPropRule } from "../nodes/deep/named.js"
 import type { KeyRule } from "../nodes/deep/props.js"
+import { isNode } from "../nodes/node.js"
 import { builtins } from "../nodes/type.js"
 import type { TypeConfig } from "../type.js"
 import { type Domain, hasDomain } from "../utils/domains.js"
@@ -18,15 +19,37 @@ import { serializePrimitive } from "../utils/serialize.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 
-export const compile = (root: CompilationNode): string =>
+export type CompilationContext = {
+    path: KeyRule[]
+    value: string
+}
+
+export const compile = (
+    root: CompilationNode,
+    ctx: CompilationContext = { path: [], value: In }
+): string =>
     isTerminal(root)
-        ? root.condition
+        ? root.condition.replaceAll(In, ctx.value)
         : root.children.length === 0
         ? root.operator === "&&"
             ? "true"
             : "false"
         : root.children
-              .map(compile)
+              .map((child) => {
+                  if (!child.key) {
+                      return compile(child, ctx)
+                  }
+                  if (isNode(child.key)) {
+                      return "false"
+                  }
+                  const valueCondition = compile(child, {
+                      path: [...ctx.path, child.key],
+                      value: `${ctx.value}${compilePropAccess(child.key.name)}`
+                  })
+                  return child.key.optional
+                      ? `!('${child.key.name}' in ${ctx.value}) || ${valueCondition}`
+                      : valueCondition
+              })
               .filter((condition) => condition !== "true")
               .sort()
               .join(` ${root.operator} `)
@@ -70,19 +93,6 @@ type TerminalCompilationNode = {
     condition: string
 }
 
-const compileNamedProps = (props: NamedPropRule[]) =>
-    props.map(compileNamedProp).join(" && ")
-
-const compileNamedProp = (prop: NamedPropRule) => {
-    const valueCheck = prop.value.condition.replaceAll(
-        In,
-        `${In}${compilePropAccess(prop.key.name)}`
-    )
-    return prop.key.optional
-        ? `!('${prop.key.name}' in ${In}) || ${valueCheck}`
-        : valueCheck
-}
-
 const compileNamedAndIndexedProps = (
     named: NamedPropRule[],
     indexed: IndexedPropRule[]
@@ -103,13 +113,14 @@ const compileArray = (
     namedProps: NamedPropRule[]
 ) => {
     const firstVariadicIndex = extractFirstVariadicIndex(indexMatcher)
-    const namedCheck = compileNamedProps(namedProps)
+    // const namedCheck = compileNamedProps(namedProps)
     const elementCondition = elementNode.condition
         .replaceAll(IndexIn, `${IndexIn}Inner`)
         .replaceAll(In, `${In}[${IndexIn}]`)
     // TODO: don't recheck named
+    // let valid = ${namedCheck};
     const result = `(() => {
-    let valid = ${namedCheck};
+
     for(let ${IndexIn} = ${firstVariadicIndex}; ${IndexIn} < ${In}.length; ${IndexIn}++) {
         valid = ${elementCondition} && valid;
     }
@@ -122,11 +133,11 @@ const compileNonArray = (
     namedProps: NamedPropRule[],
     indexedProps: IndexedPropRule[]
 ) => {
-    const namedCheck = compileNamedProps(namedProps)
-    const indexedChecks = indexedProps.map(compileIndexedProp).join("\n")
     // TODO: don't recheck named
+    // const namedCheck = compileNamedProps(namedProps)
+    const indexedChecks = indexedProps.map(compileIndexedProp).join("\n")
+
     return `(() => {
-    let valid = ${namedCheck};
     for(const ${KeyIn} in ${In}) {
         ${indexedChecks}
     }
