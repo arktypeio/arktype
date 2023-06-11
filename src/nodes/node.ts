@@ -5,7 +5,7 @@ import { CompiledFunction } from "../utils/functions.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
 
-export type BaseNodeImplementation<node extends Node, parsableFrom> = {
+type BaseNodeImplementation<node extends Node, parsableFrom> = {
     kind: node["kind"]
     parse: (rule: node["rule"] | parsableFrom) => node["rule"]
     compile: (rule: node["rule"]) => any //CompilationNode
@@ -19,18 +19,16 @@ type NodeExtension<node extends Node> = (
     base: basePropsOf<node>
 ) => extendedPropsOf<node>
 
-export type basePropsOf<node extends Node> = Pick<
-    node,
-    keyof NodeBase<any, any>
->
+type basePropsOf<node extends Node> = Pick<node, NodeBaseKey>
 
-export type extendedPropsOf<node extends Node> = Omit<
+type extendedPropsOf<node extends Node> = Omit<
     node,
-    keyof NodeBase<any, any> | typeof inferred
+    // we don't actually need the inferred symbol at runtime
+    NodeBaseKey | typeof inferred
 > &
     ThisType<node>
 
-export interface NodeBase<rule, intersectsWith> {
+interface NodeBase<rule, intersectsWith> {
     [arkKind]: "node"
     kind: NodeKind
     rule: rule
@@ -44,6 +42,8 @@ export interface NodeBase<rule, intersectsWith> {
     allows(data: unknown): boolean
     hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
 }
+
+type NodeBaseKey = keyof NodeBase<any, any>
 
 export type BaseNodeExtensionProps = {
     description: string

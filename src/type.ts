@@ -172,7 +172,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     }
 
     extends<other>(other: Type<other>): this is Type<other> {
-        return this.root.intersect(other.root) === this.root
+        return this.root.extends(other.root)
     }
 
     private binary(def: unknown, operator: "|" | "&") {

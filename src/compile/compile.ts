@@ -36,19 +36,19 @@ export const compile = (
         // or unknown for an intersection (predicate, props)
         return root.kind === "type" ? "false" : "true"
     }
-    const children: CompilationNode[][] = []
-    let lastPrecedence = -1
-    let current: CompilationNode[] = []
-    // TODO: unify with constraints by precedence
-    for (const child of root.children) {
-        const currentPrecedence = precedenceByKind[child.kind]
-        if (currentPrecedence > lastPrecedence) {
-            children.push(child.compilation)
-            lastPrecedence = currentPrecedence
-        } else {
-            children.at(-1)!.push(child.compilation)
-        }
-    }
+    // const children: CompilationNode[][] = []
+    // let lastPrecedence = -1
+    // let current: CompilationNode[] = []
+    // // TODO: unify with constraints by precedence
+    // for (const child of root.children) {
+    //     const currentPrecedence = precedenceByKind[child.kind]
+    //     // if (currentPrecedence > lastPrecedence) {
+    //     //     children.push(child.compilation)
+    //     //     lastPrecedence = currentPrecedence
+    //     // } else {
+    //     //     children.at(-1)!.push(child.compilation)
+    //     //}
+    // }
     return ""
 }
 
