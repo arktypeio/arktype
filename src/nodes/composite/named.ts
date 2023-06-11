@@ -1,5 +1,5 @@
 import { compilePropAccess, In } from "../../compile/compile.js"
-import { throwInternalError } from "../../utils/errors.js"
+import { throwInternalError } from "../../../dev/utils/errors.js"
 import { Disjoint } from "../disjoint.js"
 import type { TypeInput, TypeNode } from "./type.js"
 import { builtins } from "./type.js"

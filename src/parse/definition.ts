@@ -3,14 +3,14 @@ import { node } from "../nodes/composite/type.js"
 import { isNode } from "../nodes/node.js"
 import type { Scope } from "../scope.js"
 import { Type } from "../type.js"
-import type { Primitive } from "../utils/domains.js"
-import { domainOf } from "../utils/domains.js"
-import { throwParseError } from "../utils/errors.js"
-import type { isAny, isUnknown } from "../utils/generics.js"
-import type { List, Path } from "../utils/lists.js"
-import { objectKindOf } from "../utils/objectKinds.js"
-import type { Dict } from "../utils/records.js"
-import { stringify } from "../utils/serialize.js"
+import type { Primitive } from "../../dev/utils/domains.js"
+import { domainOf } from "../../dev/utils/domains.js"
+import { throwParseError } from "../../dev/utils/errors.js"
+import type { isAny, isUnknown } from "../../dev/utils/generics.js"
+import type { List, Path } from "../../dev/utils/lists.js"
+import { objectKindOf } from "../../dev/utils/objectKinds.js"
+import type { Dict } from "../../dev/utils/records.js"
+import { stringify } from "../../dev/utils/serialize.js"
 import type { validateString } from "./ast/ast.js"
 import type { inferTuple, validateTuple } from "./ast/tuple.js"
 import { parseTuple } from "./ast/tuple.js"
@@ -89,14 +89,14 @@ export type validateDefinition<def, $> = def extends Terminal
     ? validateTuple<def, $>
     : def extends BadDefinitionType
     ? writeBadDefinitionTypeMessage<
-          objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
-      >
+        objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
+    >
     : isUnknown<def> extends true
     ? // this allows the initial list of autocompletions to be populated when a user writes "type()", before having specified a definition
-      (keyof $ & string) | AutocompletePrefix | {}
+    (keyof $ & string) | AutocompletePrefix | {}
     : {
-          [k in keyof def]: validateDefinition<def[k], $>
-      }
+        [k in keyof def]: validateDefinition<def[k], $>
+    }
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes

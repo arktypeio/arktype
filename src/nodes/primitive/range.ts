@@ -1,5 +1,5 @@
 import { In } from "../../compile/compile.js"
-import { isKeyOf } from "../../utils/records.js"
+import { isKeyOf } from "../../../dev/utils/records.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
@@ -136,8 +136,7 @@ export const rangeNode = defineNodeKind<RangeNode>(
 )
 
 const compileBound = (bound: Bound) =>
-    `(${In}.length ?? Number(${In})) ${
-        bound.comparator === "==" ? "===" : bound.comparator
+    `(${In}.length ?? Number(${In})) ${bound.comparator === "==" ? "===" : bound.comparator
     } ${bound.limit}`
 
 const isEqualityRangeNode = (
@@ -166,20 +165,20 @@ export const compareStrictness = (
             ? "="
             : "r"
         : !r
-        ? "l"
-        : l.limit === r.limit
-        ? // comparators of length 1 (<,>) are exclusive so have precedence
-          l.comparator.length === 1
-            ? r.comparator.length === 1
-                ? "="
-                : "l"
-            : r.comparator.length === 1
-            ? "r"
-            : "="
-        : kind === "min"
-        ? l.limit > r.limit
             ? "l"
-            : "r"
-        : l.limit < r.limit
-        ? "l"
-        : "r"
+            : l.limit === r.limit
+                ? // comparators of length 1 (<,>) are exclusive so have precedence
+                l.comparator.length === 1
+                    ? r.comparator.length === 1
+                        ? "="
+                        : "l"
+                    : r.comparator.length === 1
+                        ? "r"
+                        : "="
+                : kind === "min"
+                    ? l.limit > r.limit
+                        ? "l"
+                        : "r"
+                    : l.limit < r.limit
+                        ? "l"
+                        : "r"

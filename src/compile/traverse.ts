@@ -1,5 +1,5 @@
 import type { TypeConfig } from "../type.js"
-import { Path } from "../utils/lists.js"
+import { Path } from "../../dev/utils/lists.js"
 import type { Problem, ProblemCode, ProblemParameters } from "./problems.js"
 import { Problems, problemsByCode } from "./problems.js"
 import type { PossiblyInternalObject } from "./registry.js"
@@ -25,7 +25,7 @@ export class TraversalState {
     // Qualified
     private seen: { [name in string]?: object[] } = {}
 
-    constructor() {}
+    constructor() { }
 
     get problems() {
         return this.problemsStack.at(-1)!

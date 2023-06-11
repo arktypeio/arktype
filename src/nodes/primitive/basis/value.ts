@@ -1,12 +1,12 @@
 import { compileSerializedValue, In } from "../../../compile/compile.js"
-import { domainOf } from "../../../utils/domains.js"
-import { prototypeKeysOf } from "../../../utils/objectKinds.js"
-import { stringify } from "../../../utils/serialize.js"
+import { domainOf } from "../../../../dev/utils/domains.js"
+import { prototypeKeysOf } from "../../../../dev/utils/objectKinds.js"
+import { stringify } from "../../../../dev/utils/serialize.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export interface ValueNode extends BasisNode<unknown> {}
+export interface ValueNode extends BasisNode<unknown> { }
 
 export const valueNode = defineNodeKind<ValueNode>(
     {

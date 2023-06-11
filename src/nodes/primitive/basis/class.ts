@@ -1,12 +1,12 @@
 import { In } from "../../../compile/compile.js"
 import { registry } from "../../../compile/registry.js"
-import { cached } from "../../../utils/functions.js"
-import type { AbstractableConstructor } from "../../../utils/objectKinds.js"
+import { cached } from "../../../../dev/utils/functions.js"
+import type { AbstractableConstructor } from "../../../../dev/utils/objectKinds.js"
 import {
     constructorExtends,
     getExactBuiltinConstructorName,
     prototypeKeysOf
-} from "../../../utils/objectKinds.js"
+} from "../../../../dev/utils/objectKinds.js"
 import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
@@ -20,9 +20,8 @@ export const classNode = defineNodeKind<ClassNode>(
         kind: "class",
         parse: (input) => input,
         compile: (rule) => [
-            `${In} instanceof ${
-                getExactBuiltinConstructorName(rule) ??
-                registry().register(rule.name, rule)
+            `${In} instanceof ${getExactBuiltinConstructorName(rule) ??
+            registry().register(rule.name, rule)
             }`
         ],
         intersect: intersectBases

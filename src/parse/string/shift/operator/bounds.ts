@@ -4,10 +4,10 @@ import type {
     MaxComparator
 } from "../../../../nodes/primitive/range.js"
 import { maxComparators, rangeNode } from "../../../../nodes/primitive/range.js"
-import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
-import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
-import type { keySet } from "../../../../utils/records.js"
-import { isKeyOf } from "../../../../utils/records.js"
+import type { NumberLiteral } from "../../../../../dev/utils/numericLiterals.js"
+import { tryParseWellFormedNumber } from "../../../../../dev/utils/numericLiterals.js"
+import type { keySet } from "../../../../../dev/utils/records.js"
+import { isKeyOf } from "../../../../../dev/utils/records.js"
 import type {
     DynamicState,
     DynamicStateWithRoot
@@ -35,13 +35,13 @@ export type parseBound<
     unscanned extends string
 > = shiftComparator<start, unscanned> extends infer shiftResultOrError
     ? shiftResultOrError extends Scanner.shiftResult<
-          infer comparator extends Comparator,
-          infer nextUnscanned
-      >
-        ? s["root"] extends NumberLiteral
-            ? state.reduceLeftBound<s, s["root"], comparator, nextUnscanned>
-            : parseRightBound<s, comparator, nextUnscanned>
-        : shiftResultOrError
+        infer comparator extends Comparator,
+        infer nextUnscanned
+    >
+    ? s["root"] extends NumberLiteral
+    ? state.reduceLeftBound<s, s["root"], comparator, nextUnscanned>
+    : parseRightBound<s, comparator, nextUnscanned>
+    : shiftResultOrError
     : never
 
 const oneCharComparators = {
@@ -68,8 +68,8 @@ const shiftComparator = (
     s.scanner.lookaheadIs("=")
         ? `${start}${s.scanner.shift()}`
         : isKeyOf(start, oneCharComparators)
-        ? start
-        : s.error(singleEqualsMessage)
+            ? start
+            : s.error(singleEqualsMessage)
 
 type shiftComparator<
     start extends ComparatorStartChar,
@@ -117,19 +117,19 @@ export type parseRightBound<
     Scanner.skipWhitespace<unscanned>
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
     ? scanned extends NumberLiteral
-        ? s["branches"]["range"] extends {}
-            ? comparator extends MaxComparator
-                ? state.reduceRange<
-                      s,
-                      s["branches"]["range"]["limit"],
-                      s["branches"]["range"]["comparator"],
-                      comparator,
-                      scanned,
-                      nextUnscanned
-                  >
-                : state.error<writeUnpairableComparatorMessage<comparator>>
-            : state.reduceSingleBound<s, comparator, scanned, nextUnscanned>
-        : never
+    ? s["branches"]["range"] extends {}
+    ? comparator extends MaxComparator
+    ? state.reduceRange<
+        s,
+        s["branches"]["range"]["limit"],
+        s["branches"]["range"]["comparator"],
+        comparator,
+        scanned,
+        nextUnscanned
+    >
+    : state.error<writeUnpairableComparatorMessage<comparator>>
+    : state.reduceSingleBound<s, comparator, scanned, nextUnscanned>
+    : never
     : never
 
 export const writeInvalidLimitMessage = <

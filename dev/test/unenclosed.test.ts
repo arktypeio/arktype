@@ -1,7 +1,7 @@
 import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
-import { writeMalformedNumericLiteralMessage } from "../../src/utils/numericLiterals.js"
+import { writeMalformedNumericLiteralMessage } from "../utils/numericLiterals.js"
 import { attest } from "../attest/main.js"
 
 suite("parse unenclosed", () => {

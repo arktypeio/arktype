@@ -1,6 +1,6 @@
-import { spliterate } from "../../utils/lists.js"
-import { isArray } from "../../utils/objectKinds.js"
-import { fromEntries, hasKeys } from "../../utils/records.js"
+import { spliterate } from "../../../dev/utils/lists.js"
+import { isArray } from "../../../dev/utils/objectKinds.js"
+import { fromEntries, hasKeys } from "../../../dev/utils/records.js"
 import type { DisjointsSources } from "../disjoint.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
@@ -50,10 +50,10 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
                 return lPrecedence > rPrecedence
                     ? 1
                     : lPrecedence < rPrecedence
-                    ? -1
-                    : keyNameToString(l.key) > keyNameToString(r.key)
-                    ? 1
-                    : -1
+                        ? -1
+                        : keyNameToString(l.key) > keyNameToString(r.key)
+                            ? 1
+                            : -1
             })
         },
         compile: (rule) => {

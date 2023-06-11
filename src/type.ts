@@ -18,10 +18,10 @@ import type {
     parseGenericParams
 } from "./parse/generic.js"
 import type { bindThis, Scope } from "./scope.js"
-import type { error } from "./utils/errors.js"
-import { CompiledFunction } from "./utils/functions.js"
-import type { conform, id, Literalable } from "./utils/generics.js"
-import { Path } from "./utils/lists.js"
+import type { error } from "../dev/utils/errors.js"
+import { CompiledFunction } from "../dev/utils/functions.js"
+import type { conform, id, Literalable } from "../dev/utils/generics.js"
+import { Path } from "../dev/utils/lists.js"
 
 export type TypeParser<$> = TypeOverloads<$> & TypeProps<$>
 
@@ -182,21 +182,21 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 
 type validateChainedExpression<def, $, inferred> =
     def extends validateDefinition<def, $>
-        ? // As of TS 5.1, trying to infer the message here directly breaks everything
-          inferred extends error
-            ? inferred
-            : def
-        : validateDefinition<def, $>
+    ? // As of TS 5.1, trying to infer the message here directly breaks everything
+    inferred extends error
+    ? inferred
+    : def
+    : validateDefinition<def, $>
 
 type validateParameterString<params extends string> =
     parseGenericParams<params> extends GenericParamsParseError<infer message>
-        ? message
-        : params
+    ? message
+    : params
 
 type bindGenericInstantiationToScope<params extends string[], argDefs, $> = {
     [i in keyof params as params[i & number]]: i extends keyof argDefs
-        ? inferDefinition<argDefs[i], bindThis<$, argDefs[i]>>
-        : never
+    ? inferDefinition<argDefs[i], bindThis<$, argDefs[i]>>
+    : never
 } & Omit<$, params[number]>
 
 // Comparing to Generic directly doesn't work well, so we use this similarly to
@@ -247,12 +247,12 @@ type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
     infer o
 >
     ? io extends "in"
-        ? i
-        : o
+    ? i
+    : o
     : t extends object
     ? t extends
-          | ((...args: never[]) => unknown)
-          | (abstract new (...args: never[]) => unknown)
-        ? t
-        : { [k in keyof t]: extractMorphs<t[k], io> }
+    | ((...args: never[]) => unknown)
+    | (abstract new (...args: never[]) => unknown)
+    ? t
+    : { [k in keyof t]: extractMorphs<t[k], io> }
     : t

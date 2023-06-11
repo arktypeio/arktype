@@ -4,9 +4,9 @@ import type {
     MaxComparator,
     MinComparator
 } from "../../../nodes/primitive/range.js"
-import type { error } from "../../../utils/errors.js"
-import type { defined } from "../../../utils/generics.js"
-import type { NumberLiteral } from "../../../utils/numericLiterals.js"
+import type { error } from "../../../../dev/utils/errors.js"
+import type { defined } from "../../../../dev/utils/generics.js"
+import type { NumberLiteral } from "../../../../dev/utils/numericLiterals.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
     Prefix,
@@ -109,18 +109,18 @@ export namespace state {
     > = s["branches"]["range"] extends {}
         ? openRangeError<s["branches"]["range"]>
         : from<{
-              root: undefined
-              branches: {
-                  prefixes: []
-                  range: undefined
-                  "&": token extends "&" ? mergeToIntersection<s> : undefined
-                  "|": token extends "|" ? mergeToUnion<s> : s["branches"]["|"]
-              }
-              groups: s["groups"]
-              finalizer: s["finalizer"]
-              scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
-              unscanned: unscanned
-          }>
+            root: undefined
+            branches: {
+                prefixes: []
+                range: undefined
+                "&": token extends "&" ? mergeToIntersection<s> : undefined
+                "|": token extends "|" ? mergeToUnion<s> : s["branches"]["|"]
+            }
+            groups: s["groups"]
+            finalizer: s["finalizer"]
+            scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
+            unscanned: unscanned
+        }>
 
     export type reduceLeftBound<
         s extends StaticState,
@@ -129,34 +129,34 @@ export namespace state {
         unscanned extends string
     > = comparator extends "<" | "<="
         ? s["branches"]["range"] extends {}
-            ? state.error<
-                  writeMultipleLeftBoundsMessage<
-                      s["branches"]["range"]["limit"],
-                      s["branches"]["range"]["comparator"],
-                      limit,
-                      InvertedComparators[comparator]
-                  >
-              >
-            : from<{
-                  root: undefined
-                  branches: {
-                      prefixes: s["branches"]["prefixes"]
-                      range: {
-                          limit: limit
-                          comparator: InvertedComparators[comparator]
-                      }
-                      "&": s["branches"]["&"]
-                      "|": s["branches"]["|"]
-                  }
-                  groups: s["groups"]
-                  finalizer: s["finalizer"]
-                  scanned: updateScanned<
-                      s["scanned"],
-                      s["unscanned"],
-                      unscanned
-                  >
-                  unscanned: unscanned
-              }>
+        ? state.error<
+            writeMultipleLeftBoundsMessage<
+                s["branches"]["range"]["limit"],
+                s["branches"]["range"]["comparator"],
+                limit,
+                InvertedComparators[comparator]
+            >
+        >
+        : from<{
+            root: undefined
+            branches: {
+                prefixes: s["branches"]["prefixes"]
+                range: {
+                    limit: limit
+                    comparator: InvertedComparators[comparator]
+                }
+                "&": s["branches"]["&"]
+                "|": s["branches"]["|"]
+            }
+            groups: s["groups"]
+            finalizer: s["finalizer"]
+            scanned: updateScanned<
+                s["scanned"],
+                s["unscanned"],
+                unscanned
+            >
+            unscanned: unscanned
+        }>
         : state.error<writeUnpairableComparatorMessage<comparator>>
 
     export type reduceRange<
@@ -201,13 +201,13 @@ export namespace state {
 
     type mergeToUnion<s extends StaticState> =
         s["branches"]["|"] extends undefined
-            ? mergeToIntersection<s>
-            : [s["branches"]["|"], "|", mergeToIntersection<s>]
+        ? mergeToIntersection<s>
+        : [s["branches"]["|"], "|", mergeToIntersection<s>]
 
     type mergeToIntersection<s extends StaticState> =
         s["branches"]["&"] extends undefined
-            ? mergePrefixes<s>
-            : [s["branches"]["&"], "&", mergePrefixes<s>]
+        ? mergePrefixes<s>
+        : [s["branches"]["&"], "&", mergePrefixes<s>]
 
     type mergePrefixes<
         s extends StaticState,
@@ -228,13 +228,13 @@ export namespace state {
         ? openRangeError<s["branches"]["range"]>
         : s["groups"] extends popGroup<infer stack, infer top>
         ? from<{
-              groups: stack
-              branches: top
-              root: mergeToUnion<s>
-              finalizer: s["finalizer"]
-              scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
-              unscanned: unscanned
-          }>
+            groups: stack
+            branches: top
+            root: mergeToUnion<s>
+            finalizer: s["finalizer"]
+            scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
+            unscanned: unscanned
+        }>
         : state.error<writeUnmatchedGroupCloseMessage<unscanned>>
 
     export type reduceGroupOpen<
@@ -254,15 +254,15 @@ export namespace state {
         finalizer extends Scanner.FinalizingLookahead
     > = s["groups"] extends []
         ? s["branches"]["range"] extends {}
-            ? openRangeError<s["branches"]["range"]>
-            : from<{
-                  root: mergeToUnion<s>
-                  groups: s["groups"]
-                  branches: initialBranches
-                  finalizer: finalizer
-                  scanned: s["scanned"]
-                  unscanned: s["unscanned"]
-              }>
+        ? openRangeError<s["branches"]["range"]>
+        : from<{
+            root: mergeToUnion<s>
+            groups: s["groups"]
+            branches: initialBranches
+            finalizer: finalizer
+            scanned: s["scanned"]
+            unscanned: s["unscanned"]
+        }>
         : state.error<writeUnclosedGroupMessage<")">>
 
     type openRangeError<range extends defined<BranchState["range"]>> =
@@ -270,17 +270,17 @@ export namespace state {
 
     export type previousOperator<s extends StaticState> =
         s["branches"]["range"] extends {}
-            ? s["branches"]["range"]["comparator"]
-            : s["branches"]["prefixes"] extends [
-                  ...unknown[],
-                  infer tail extends string
-              ]
-            ? tail
-            : s["branches"]["&"] extends {}
-            ? "&"
-            : s["branches"]["|"] extends {}
-            ? "|"
-            : undefined
+        ? s["branches"]["range"]["comparator"]
+        : s["branches"]["prefixes"] extends [
+            ...unknown[],
+            infer tail extends string
+        ]
+        ? tail
+        : s["branches"]["&"] extends {}
+        ? "&"
+        : s["branches"]["|"] extends {}
+        ? "|"
+        : undefined
 
     export type scanTo<s extends StaticState, unscanned extends string> = from<{
         root: s["root"]
