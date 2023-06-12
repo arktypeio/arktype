@@ -1,7 +1,7 @@
 import { AssertionError } from "node:assert"
 import { suite, test } from "mocha"
 import { ArkTypeError } from "../../src/compile/problems.js"
-import { define, scope, type } from "../../src/main.js"
+import { define, scope, type, Type } from "../../src/main.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
@@ -47,6 +47,24 @@ suite("type utilities", () => {
             // @ts-expect-error
             attest(type.literal(Symbol())).types.errors(
                 "Argument of type 'Symbol' is not assignable to parameter of type 'Literalable'."
+            )
+        })
+    })
+    suite("instance", () => {
+        test("single", () => {
+            const t = type.instance(Type)
+            attest(t.infer).typed as Type<unknown, unknown>
+            attest(t.condition).snap()
+        })
+        test("instance branches", () => {
+            const t = type.instance(Date, Map)
+            attest(t.infer).typed as Date | Map<unknown, unknown>
+            attest(t.condition).equals(type("Date|Map").condition)
+        })
+        test("type error on non-constructor", () => {
+            // @ts-expect-error
+            attest(type.instance({})).types.errors(
+                "Argument of type '{}' is not assignable to parameter of type 'AbstractableConstructor'."
             )
         })
     })

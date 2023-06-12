@@ -2,8 +2,9 @@ import { In } from "./compile/compile.js"
 import { registry } from "./compile/registry.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
+import type { PredicateInput } from "./nodes/composite/predicate.js"
 import type { TypeNode } from "./nodes/composite/type.js"
-import { typeNodeFromValues } from "./nodes/composite/type.js"
+import { node, typeNodeFromValues } from "./nodes/composite/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
 import type { inferMorphOut, Morph, MorphAst, Out } from "./parse/ast/morph.js"
 import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
@@ -22,6 +23,7 @@ import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
 import type { conform, id, Literalable } from "./utils/generics.js"
 import { Path } from "./utils/lists.js"
+import type { AbstractableConstructor } from "./utils/objectKinds.js"
 
 export type TypeParser<$> = TypeOverloads<$> & TypeProps<$>
 
@@ -46,9 +48,11 @@ type TypeOverloads<$> = {
 
 type TypeProps<$> = {
     literal: <branches extends readonly Literalable[]>(
-        ...branches: branches
+        ...possibleValues: branches
     ) => Type<branches[number], $>
-    // TODO: add instance here
+    instance: <branches extends readonly AbstractableConstructor[]>(
+        ...possibleConstructors: branches
+    ) => Type<InstanceType<branches[number]>, $>
 }
 
 export type DeclarationParser<$> = <preinferred>() => {
@@ -62,8 +66,17 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
         return new Type(args[0], scope) as never
     }
     const props: TypeProps<$> = {
-        literal: (...branches: readonly unknown[]) =>
-            new Type(typeNodeFromValues(branches), scope)
+        literal: (...possibleValues) =>
+            new Type(typeNodeFromValues(possibleValues), scope),
+        instance: (...possibleConstructors) =>
+            new Type(
+                node(
+                    ...possibleConstructors.map(
+                        (ctor): PredicateInput => ({ basis: ctor })
+                    )
+                ),
+                scope
+            )
     }
     return Object.assign(parser, props)
 }
