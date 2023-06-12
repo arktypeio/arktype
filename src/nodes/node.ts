@@ -10,6 +10,8 @@ import type { NodeEntry } from "./composite/props.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
 
+export type ConditionTree = string | ConditionTree[]
+
 type BaseNodeImplementation<node extends BaseNode, parsableFrom> = {
     kind: node["kind"]
     /** Should convert any supported input formats to rule,

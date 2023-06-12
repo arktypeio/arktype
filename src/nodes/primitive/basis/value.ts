@@ -28,9 +28,3 @@ export const valueNode = defineNodeKind<ValueNode>(
 // compileTraverse(s: CompilationState) {
 //     return s.ifNotThen(this.condition, s.problem("value", this.child))
 // }
-
-// getConstructor(): Constructor | undefined {
-//     return this.domain === "object"
-//         ? Object(this.child).constructor
-//         : undefined
-// }

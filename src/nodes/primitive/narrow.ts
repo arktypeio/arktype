@@ -1,3 +1,4 @@
+import { In } from "../../compile/compile.js"
 import { registry } from "../../compile/registry.js"
 import type { Narrow } from "../../parse/ast/narrow.js"
 import type { listable } from "../../utils/lists.js"
@@ -15,7 +16,9 @@ export const narrowNode = defineNodeKind<NarrowNode, listable<Narrow>>(
         // TODO:  Figure out how this needs to work with intersections
         parse: listFrom,
         compile: (rule) =>
-            rule.map((narrow) => registry().register(narrow.name, narrow)),
+            rule.map(
+                (narrow) => `${registry().register(narrow.name, narrow)}(${In})`
+            ),
         intersect: (l, r): NarrowNode =>
             narrowNode(intersectUniqueLists(l.rule, r.rule))
     },
