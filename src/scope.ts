@@ -1,8 +1,7 @@
 import type { ProblemCode } from "./compile/problems.js"
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import { inferred } from "./parse/definition.js"
 import type {
     inferDefinition,
-    inferred,
     Inferred,
     validateDefinition
 } from "./parse/definition.js"
