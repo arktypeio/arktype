@@ -28,10 +28,11 @@ export type isUnknown<t> = unknown extends t
 
 export type conform<t, base> = t extends base ? t : base
 
-/** Check for type equality without breaking TS for this repo. Fails on some types like Dict/{} */
-export type equals<t, u> = identity<t> extends identity<u> ? true : false
-
-export type identity<t> = (_: t) => t
+export type equals<t, u> = (<_>() => _ extends t ? 1 : 2) extends <
+    _
+>() => _ extends u ? 1 : 2
+    ? true
+    : false
 
 export declare const id: unique symbol
 

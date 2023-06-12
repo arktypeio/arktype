@@ -76,3 +76,9 @@ export const isKeyOf = <k extends string | number | symbol, obj extends object>(
     k: k,
     obj: obj
 ): k is Extract<keyof obj, k> => k in obj
+
+export type requiredKeyOf<o> = {
+    [k in keyof o]-?: o extends { [_ in k]-?: o[k] } ? k : never
+}[keyof o]
+
+export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>

@@ -7,12 +7,12 @@ import { typeNodeFromValues } from "./nodes/composite/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
 import type { inferMorphOut, Morph, MorphAst, Out } from "./parse/ast/morph.js"
 import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
-import {
-    type inferDefinition,
-    type inferred,
-    parseDefinition,
-    type validateDefinition
+import type {
+    inferDefinition,
+    validateDeclared,
+    validateDefinition
 } from "./parse/definition.js"
+import { inferred, parseDefinition } from "./parse/definition.js"
 import type {
     GenericParamsParseError,
     parseGenericParams
@@ -49,6 +49,12 @@ type TypeProps<$> = {
         ...branches: branches
     ) => Type<branches[number], $>
     // TODO: add instance here
+}
+
+export type DeclarationParser<$> = <preinferred>() => {
+    type: <def>(
+        def: validateDeclared<preinferred, def, bindThis<$, def>>
+    ) => Type<inferDefinition<def, bindThis<$, def>>, $>
 }
 
 export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {

@@ -65,6 +65,8 @@ type KeyParseResult<name extends string, isOptional extends boolean> = [
     isOptional
 ]
 
+export type extractRecordKeyName<k> = parseKey<k>[0]
+
 type parseKey<k> = k extends optionalKeyWithName<infer name>
     ? name extends `${infer baseName}${Scanner.EscapeToken}`
         ? [`${baseName}?`, false]

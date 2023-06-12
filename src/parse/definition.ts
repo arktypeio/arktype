@@ -6,13 +6,19 @@ import { Type } from "../type.js"
 import type { Primitive } from "../utils/domains.js"
 import { domainOf } from "../utils/domains.js"
 import { throwParseError } from "../utils/errors.js"
-import type { isAny, isUnknown } from "../utils/generics.js"
+import type {
+    defined,
+    equals,
+    evaluate,
+    isAny,
+    isUnknown
+} from "../utils/generics.js"
 import type { List, Path } from "../utils/lists.js"
 import { objectKindOf } from "../utils/objectKinds.js"
-import type { Dict } from "../utils/records.js"
+import type { Dict, optionalKeyOf, requiredKeyOf } from "../utils/records.js"
 import { stringify } from "../utils/serialize.js"
 import type { validateString } from "./ast/ast.js"
-import type { inferTuple, validateTuple } from "./ast/tuple.js"
+import type { inferTuple, TupleExpression, validateTuple } from "./ast/tuple.js"
 import { parseTuple } from "./ast/tuple.js"
 import type { inferRecord } from "./record.js"
 import { parseRecord } from "./record.js"
@@ -97,6 +103,54 @@ export type validateDefinition<def, $> = def extends Terminal
     : {
           [k in keyof def]: validateDefinition<def[k], $>
       }
+
+export type validateDeclared<declared, def, $> = def extends validateDefinition<
+    def,
+    $
+>
+    ? validateInference<def, declared, $>
+    : validateDefinition<def, $>
+
+type validateInference<def, declared, $> = def extends
+    | RegExp
+    | Inferred<unknown>
+    | InferredThunk
+    | TupleExpression
+    ? validateShallowInference<def, declared, $>
+    : def extends readonly unknown[]
+    ? declared extends readonly unknown[]
+        ? {
+              [i in keyof declared]: i extends keyof def
+                  ? validateInference<def[i], declared[i], $>
+                  : unknown
+          }
+        : evaluate<declarationMismatch<def, declared, $>>
+    : def extends object
+    ? evaluate<
+          {
+              [k in requiredKeyOf<declared>]: k extends keyof def
+                  ? validateInference<def[k], declared[k], $>
+                  : unknown
+          } & {
+              [k in optionalKeyOf<declared> &
+                  string as `${k}?`]: `${k}?` extends keyof def
+                  ? validateInference<def[`${k}?`], defined<declared[k]>, $>
+                  : unknown
+          }
+      >
+    : validateShallowInference<def, declared, $>
+
+type validateShallowInference<def, declared, $> = equals<
+    inferDefinition<def, $>,
+    declared
+> extends true
+    ? def
+    : evaluate<declarationMismatch<def, declared, $>>
+
+type declarationMismatch<def, declared, $> = {
+    declared: declared
+    inferred: inferDefinition<def, $>
+}
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes

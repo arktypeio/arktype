@@ -1,4 +1,4 @@
-export { scope, type, arktypes, ark, define } from "./scopes/ark.js"
+export { scope, type, arktypes, ark, define, declare } from "./scopes/ark.js"
 export type { Inferred } from "./parse/definition.js"
 export type { Scope, TypeSet } from "./scope.js"
 export { Type } from "./type.js"

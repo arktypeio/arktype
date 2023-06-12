@@ -12,6 +12,7 @@ import type {
     parseGenericParams
 } from "./parse/generic.js"
 import type {
+    DeclarationParser,
     DefinitionParser,
     extractIn,
     extractOut,
@@ -193,6 +194,8 @@ export class Scope<r extends Resolutions = any> {
     }
 
     type: TypeParser<$<r>> = createTypeParser(this as never)
+
+    declare: DeclarationParser<$<r>> = () => ({ type: this.type })
 
     scope: ScopeParser<r["exports"], r["ambient"]> = ((
         aliases: Dict,

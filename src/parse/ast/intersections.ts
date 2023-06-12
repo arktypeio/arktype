@@ -141,7 +141,3 @@ export type writeImplicitNeverMessage<
     : `At ${pathToString<path>}: `}${operator} ${description extends ""
     ? ""
     : `${description} `}results in an unsatisfiable type`
-
-export type requiredKeyOf<o> = {
-    [k in keyof o]-?: o extends { [_ in k]-?: o[k] } ? k : never
-}[keyof o]
