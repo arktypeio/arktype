@@ -50,7 +50,7 @@ type TypeProps<$> = {
     literal: <branches extends readonly Literalable[]>(
         ...possibleValues: branches
     ) => Type<branches[number], $>
-    instance: <branches extends readonly AbstractableConstructor[]>(
+    instanceof: <branches extends readonly AbstractableConstructor[]>(
         ...possibleConstructors: branches
     ) => Type<InstanceType<branches[number]>, $>
 }
@@ -68,7 +68,7 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
     const props: TypeProps<$> = {
         literal: (...possibleValues) =>
             new Type(typeNodeFromValues(possibleValues), scope),
-        instance: (...possibleConstructors) =>
+        instanceof: (...possibleConstructors) =>
             new Type(
                 node(
                     ...possibleConstructors.map(

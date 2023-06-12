@@ -1,10 +1,10 @@
 import type { ProblemCode } from "./compile/problems.js"
-import { inferred } from "./parse/definition.js"
 import type {
     inferDefinition,
     Inferred,
     validateDefinition
 } from "./parse/definition.js"
+import { inferred } from "./parse/definition.js"
 import type {
     GenericDeclaration,
     GenericParamsParseError,
@@ -28,13 +28,13 @@ import type { Dict } from "./utils/records.js"
 export type ScopeParser<parent, ambient> = {
     <aliases>(aliases: validateAliases<aliases, parent & ambient>): Scope<{
         exports: inferBootstrapped<{
-            exports: evaluate<bootstrapExports<aliases>>
-            locals: evaluate<bootstrapLocals<aliases> & parent>
+            exports: bootstrapExports<aliases>
+            locals: bootstrapLocals<aliases> & parent
             ambient: ambient
         }>
         locals: inferBootstrapped<{
-            exports: evaluate<bootstrapLocals<aliases>>
-            locals: evaluate<bootstrapExports<aliases> & parent>
+            exports: bootstrapLocals<aliases>
+            locals: bootstrapExports<aliases> & parent
             ambient: ambient
         }>
         ambient: ambient

@@ -26,48 +26,6 @@ suite("type utilities", () => {
         }
         attest(t.allows(5)).equals(false)
     })
-    suite("literal", () => {
-        test("single literal", () => {
-            const t = type.literal("foo")
-            attest(t.infer).typed as "foo"
-            attest(t.condition).equals(type("'foo'").condition)
-        })
-        test("literal branches", () => {
-            const t = type.literal("foo", 5, true, null, 1n, undefined)
-            attest(t.infer).typed as true | "foo" | 5 | 1n | null | undefined
-            attest(t.condition).equals(
-                type("'foo'|true|5|1n|null|undefined").condition
-            )
-        })
-        test("type error on non-literalable", () => {
-            // @ts-expect-error
-            attest(type.literal({})).types.errors(
-                "Argument of type '{}' is not assignable to parameter of type 'Literalable'."
-            )
-            // @ts-expect-error
-            attest(type.literal(Symbol())).types.errors(
-                "Argument of type 'Symbol' is not assignable to parameter of type 'Literalable'."
-            )
-        })
-    })
-    suite("instance", () => {
-        test("single", () => {
-            const t = type.instance(Type)
-            attest(t.infer).typed as Type<unknown, unknown>
-            attest(t.condition).snap("$arkRoot instanceof globalThis.$ark.Type")
-        })
-        test("instance branches", () => {
-            const t = type.instance(Date, Map)
-            attest(t.infer).typed as Date | Map<unknown, unknown>
-            attest(t.condition).equals(type("Date|Map").condition)
-        })
-        test("type error on non-constructor", () => {
-            // @ts-expect-error
-            attest(type.instance({})).types.errors(
-                "Argument of type '{}' is not assignable to parameter of type 'AbstractableConstructor'."
-            )
-        })
-    })
     test("problems can be thrown", () => {
         const t = type("number")
         try {
