@@ -54,7 +54,7 @@ suite("type utilities", () => {
         test("single", () => {
             const t = type.instance(Type)
             attest(t.infer).typed as Type<unknown, unknown>
-            attest(t.condition).snap()
+            attest(t.condition).snap("$arkRoot instanceof globalThis.$ark.Type")
         })
         test("instance branches", () => {
             const t = type.instance(Date, Map)
