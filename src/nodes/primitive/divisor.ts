@@ -8,7 +8,7 @@ export const divisorNode = defineNodeKind<DivisorNode>(
     {
         kind: "divisor",
         parse: (input) => input,
-        compile: (rule) => [`${In} % ${rule} === 0`],
+        compile: (rule) => `${In} % ${rule} === 0`,
         intersect: (l, r): DivisorNode =>
             divisorNode(
                 Math.abs(

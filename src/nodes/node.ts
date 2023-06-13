@@ -1,16 +1,42 @@
-import {
-    In,
-    joinIntersectionConditions,
-    joinUnionConditions
-} from "../compile/compile.js"
+import { compilePathAccess, In } from "../compile/compile.js"
 import type { inferred } from "../parse/definition.js"
 import { CompiledFunction } from "../utils/functions.js"
 import type { evaluate } from "../utils/generics.js"
+import { isArray } from "../utils/objectKinds.js"
 import type { NodeEntry } from "./composite/props.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
 
-export type ConditionTree = string | ConditionTree[]
+export type CompilationTree =
+    | CompilationNode
+    | (CompilationNode | CompilationTree)[]
+
+export type CompilationNode = string | CompositeCompilationNode
+
+export type CompositeCompilationNode = {
+    children: CompilationTree
+    prefix?: string
+    key?: string
+    suffix?: string
+}
+
+type CompilationContext = {
+    path: string[]
+}
+
+export const compileCondition = (
+    tree: CompilationTree,
+    ctx: CompilationContext
+): string =>
+    isArray(tree)
+        ? tree.flatMap((child) => compileCondition(child, ctx)).join("")
+        : typeof tree === "string"
+        ? `if(${tree.replaceAll(In, compilePathAccess(ctx.path))}) {
+    return false
+};`
+        : `${tree.prefix ?? ""}${compileCondition(tree.children, {
+              path: tree.key ? [...ctx.path, tree.key] : ctx.path
+          })}${tree.suffix ?? ""}`
 
 type BaseNodeImplementation<node extends BaseNode, parsableFrom> = {
     kind: node["kind"]
@@ -18,7 +44,7 @@ type BaseNodeImplementation<node extends BaseNode, parsableFrom> = {
      *  then ensure rule is normalized such that equivalent
      *  inputs will compile to the same string. */
     parse: (rule: node["rule"] | parsableFrom) => node["rule"]
-    compile: (rule: node["rule"]) => string[]
+    compile: (rule: node["rule"]) => CompilationTree
     intersect: (
         l: Parameters<node["intersect"]>[0],
         r: Parameters<node["intersect"]>[0]
@@ -44,7 +70,7 @@ interface PreconstructedBase<rule, intersectsWith> {
     [arkKind]: "node"
     kind: NodeKind
     rule: rule
-    subconditions: string[]
+    compilation: CompilationTree
     condition: string
     intersect(other: intersectsWith | this): intersectsWith | this | Disjoint
     intersectionCache: Record<
@@ -93,11 +119,8 @@ export const defineNodeKind = <
     } = {}
     return (input) => {
         const rule = def.parse(input)
-        const subconditions = def.compile(rule)
-        const condition =
-            def.kind === "type"
-                ? joinUnionConditions(subconditions)
-                : joinIntersectionConditions(subconditions)
+        const compilation = def.compile(rule)
+        const condition = compileCondition(compilation, { path: [] })
         if (nodeCache[condition]) {
             return nodeCache[condition]!
         }
@@ -106,10 +129,10 @@ export const defineNodeKind = <
             [arkKind]: "node",
             kind: def.kind,
             hasKind: (kind) => kind === def.kind,
-            subconditions,
+            compilation,
             condition,
             rule,
-            allows: new CompiledFunction(`${In}`, `return ${condition}`),
+            allows: new CompiledFunction(In, `return true`),
             intersectionCache,
             intersect(other) {
                 if (this === other) {

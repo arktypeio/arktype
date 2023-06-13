@@ -75,7 +75,9 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
                     : -1
             )
         },
-        compile: (children) => children.map((child) => child.condition),
+        compile: (children) => ({
+            children: children.map((child) => child.compilation)
+        }),
         intersect: (l, r): PredicateNode | Disjoint => {
             // if (
             //     // s.lastOperator === "&" &&

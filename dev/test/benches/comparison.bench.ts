@@ -27,91 +27,130 @@ const arkType = type({
     maxNumber: "number",
     string: "string",
     longString: "string",
-    boolean: "boolean",
+    // boolean: "boolean",
     deeplyNested: {
         foo: "string",
-        num: "number",
-        bool: "boolean"
+        num: "number"
+        // bool: "boolean"
     }
 })
 
-const anonymous = ($arkRoot: any): boolean => {
+console.log(arkType.condition)
+
+const f = ($arkRoot: any) => {
     if (
-        !(
-            (typeof $arkRoot === "object" && $arkRoot !== null) ||
-            typeof $arkRoot === "function"
-        )
-    ) {
-        return false
-    }
-    if (!($arkRoot.boolean === false || $arkRoot.boolean === true)) {
-        return false
-    }
-    if (
-        !(
-            (typeof $arkRoot.deeplyNested === "object" &&
-                $arkRoot.deeplyNested !== null) ||
-            typeof $arkRoot.deeplyNested === "function"
-        )
+        (typeof $arkRoot === "object" && $arkRoot !== null) ||
+        typeof $arkRoot === "function"
     ) {
         return false
     }
     if (
-        !(
-            $arkRoot.deeplyNested.bool === false ||
-            $arkRoot.deeplyNested.bool === true
-        )
+        (typeof $arkRoot.deeplyNested === "object" &&
+            $arkRoot.deeplyNested !== null) ||
+        typeof $arkRoot.deeplyNested === "function"
     ) {
         return false
     }
-    if (!(typeof $arkRoot.deeplyNested.foo === "string")) {
+    if (typeof $arkRoot.deeplyNested.foo === "string") {
         return false
     }
-    if (!(typeof $arkRoot.deeplyNested.num === "number")) {
+    if (typeof $arkRoot.deeplyNested.num === "number") {
         return false
     }
-    if (!(typeof $arkRoot.longString === "string")) {
+    if (typeof $arkRoot.longString === "string") {
         return false
     }
-    if (!(typeof $arkRoot.maxNumber === "number")) {
+    if (typeof $arkRoot.maxNumber === "number") {
         return false
     }
-    if (!(typeof $arkRoot.negNumber === "number")) {
+    if (typeof $arkRoot.negNumber === "number") {
         return false
     }
-    if (!(typeof $arkRoot.number === "number")) {
+    if (typeof $arkRoot.number === "number") {
         return false
     }
-    if (!(typeof $arkRoot.string === "string")) {
+    if (typeof $arkRoot.string === "string") {
         return false
     }
-    return true
 }
 
-const chained = ($arkRoot: any): boolean =>
-    ((typeof $arkRoot === "object" && $arkRoot !== null) ||
-        typeof $arkRoot === "function") &&
-    ($arkRoot.boolean === false || $arkRoot.boolean === true) &&
-    ((typeof $arkRoot.deeplyNested === "object" &&
-        $arkRoot.deeplyNested !== null) ||
-        typeof $arkRoot.deeplyNested === "function") &&
-    ($arkRoot.deeplyNested.bool === false ||
-        $arkRoot.deeplyNested.bool === true) &&
-    typeof $arkRoot.deeplyNested.foo === "string" &&
-    typeof $arkRoot.deeplyNested.num === "number" &&
-    typeof $arkRoot.longString === "string" &&
-    typeof $arkRoot.maxNumber === "number" &&
-    typeof $arkRoot.negNumber === "number" &&
-    typeof $arkRoot.number === "number" &&
-    typeof $arkRoot.string === "string"
+// const anonymous = ($arkRoot: any): boolean => {
+//     if (
+//         !(
+//             (typeof $arkRoot === "object" && $arkRoot !== null) ||
+//             typeof $arkRoot === "function"
+//         )
+//     ) {
+//         return false
+//     }
+//     if (!($arkRoot.boolean === false || $arkRoot.boolean === true)) {
+//         return false
+//     }
+//     if (
+//         !(
+//             (typeof $arkRoot.deeplyNested === "object" &&
+//                 $arkRoot.deeplyNested !== null) ||
+//             typeof $arkRoot.deeplyNested === "function"
+//         )
+//     ) {
+//         return false
+//     }
+//     if (
+//         !(
+//             $arkRoot.deeplyNested.bool === false ||
+//             $arkRoot.deeplyNested.bool === true
+//         )
+//     ) {
+//         return false
+//     }
+//     if (!(typeof $arkRoot.deeplyNested.foo === "string")) {
+//         return false
+//     }
+//     if (!(typeof $arkRoot.deeplyNested.num === "number")) {
+//         return false
+//     }
+//     if (!(typeof $arkRoot.longString === "string")) {
+//         return false
+//     }
+//     if (!(typeof $arkRoot.maxNumber === "number")) {
+//         return false
+//     }
+//     if (!(typeof $arkRoot.negNumber === "number")) {
+//         return false
+//     }
+//     if (!(typeof $arkRoot.number === "number")) {
+//         return false
+//     }
+//     if (!(typeof $arkRoot.string === "string")) {
+//         return false
+//     }
+//     return true
+// }
 
-// bench("anonymous", () => {
-//     anonymous(validInput)
-// }).median([2.1, "ns"])
+// const chained = ($arkRoot: any): boolean =>
+//     ((typeof $arkRoot === "object" && $arkRoot !== null) ||
+//         typeof $arkRoot === "function") &&
+//     ($arkRoot.boolean === false || $arkRoot.boolean === true) &&
+//     ((typeof $arkRoot.deeplyNested === "object" &&
+//         $arkRoot.deeplyNested !== null) ||
+//         typeof $arkRoot.deeplyNested === "function") &&
+//     ($arkRoot.deeplyNested.bool === false ||
+//         $arkRoot.deeplyNested.bool === true) &&
+//     typeof $arkRoot.deeplyNested.foo === "string" &&
+//     typeof $arkRoot.deeplyNested.num === "number" &&
+//     typeof $arkRoot.longString === "string" &&
+//     typeof $arkRoot.maxNumber === "number" &&
+//     typeof $arkRoot.negNumber === "number" &&
+//     typeof $arkRoot.number === "number" &&
+//     typeof $arkRoot.string === "string"
 
-bench("chained", () => {
-    chained(validInput)
-}).median([1.98, "ns"])
+// // bench("anonymous", () => {
+// //     anonymous(validInput)
+// // }).median([2.1, "ns"])
+
+// bench("chained", () => {
+//     chained(validInput)
+// }).median([1.98, "ns"])
 
 // bench("arktype", () => {
 //     arkType.allows(validInput)

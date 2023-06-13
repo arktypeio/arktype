@@ -1,5 +1,4 @@
-import type { TypeNode } from "../main.js"
-import type { Node, NodeKind } from "../nodes/kinds.js"
+import type { NodeKind } from "../nodes/kinds.js"
 import type { TypeConfig } from "../type.js"
 import { type Domain, hasDomain } from "../utils/domains.js"
 import { Path } from "../utils/lists.js"
@@ -89,10 +88,6 @@ export const compileSerializedValue = (value: unknown) => {
         ? registry().register(typeof value, value)
         : serializePrimitive(value as SerializablePrimitive)
 }
-
-export const compileTraversal = (root: TypeNode) => {}
-
-const compileNode = (node: Node) => {}
 
 export class CompilationState {
     path = new Path()

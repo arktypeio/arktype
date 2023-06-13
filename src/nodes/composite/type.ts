@@ -57,7 +57,17 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
             }
             return alphabetizeByCondition(reduceBranches(input))
         },
-        compile: (children) => children.map((branch) => branch.condition),
+        compile: (children) => {
+            return children.length === 1
+                ? children.map((branch) => branch.compilation)
+                : {
+                      prefix: `(() => {`,
+                      children: children.map((branch) => branch.compilation),
+                      suffix: `
+                return false
+            })`
+                  }
+        },
         intersect: (l, r): TypeNode | Disjoint => {
             if (l.rule.length === 1 && r.rule.length === 1) {
                 const result = l.rule[0].intersect(r.rule[0])
