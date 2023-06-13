@@ -1,5 +1,6 @@
 import type { ProblemCode } from "./compile/problems.js"
 import type { TypeNode } from "./main.js"
+import { builtins } from "./nodes/composite/type.js"
 import type {
     inferDefinition,
     Inferred,
@@ -243,23 +244,15 @@ export class Scope<r extends Resolutions = any> {
         if (cached) {
             return cached
         }
-        const domain = domainOf(def)
         const result =
             typeof def === "string"
                 ? parseString(def, ctx)
                 : (typeof def === "object" && def !== null) ||
                   typeof def === "function"
                 ? parseObject(def, ctx)
-                : throwParseError(writeBadDefinitionTypeMessage(domain))
+                : throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
         this.parseCache.set(def, result)
         return result
-    }
-
-    parseRoot(def: unknown) {
-        return this.parse(def, {
-            path: new Path(),
-            scope: this
-        })
     }
 
     /** @internal */
@@ -271,9 +264,24 @@ export class Scope<r extends Resolutions = any> {
         if (!aliasDef) {
             return
         }
-        const resolution = this.parseRoot(aliasDef)
+        this.resolutions[name] = builtins.this()
+        const resolution = this.parse(aliasDef, {
+            path: new Path(),
+            scope: this
+        })
         this.resolutions[name] = resolution
         return resolution
+    }
+
+    /** @internal */
+    parseTypeRoot(def: unknown) {
+        this.resolutions["this"] = builtins.this()
+        const result = this.parse(def, {
+            path: new Path(),
+            scope: this
+        })
+        delete this.resolutions["this"]
+        return result
     }
 
     private exported = false

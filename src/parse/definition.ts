@@ -1,3 +1,4 @@
+import type { TypeNode } from "../nodes/composite/type.js"
 import { node } from "../nodes/composite/type.js"
 import { isNode } from "../nodes/node.js"
 import type { ParseContext } from "../scope.js"
@@ -24,7 +25,7 @@ import { parseRecord } from "./record.js"
 import type { AutocompletePrefix } from "./string/reduce/static.js"
 import type { inferString } from "./string/string.js"
 
-export const parseObject = (def: object, ctx: ParseContext) => {
+export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
     const objectKind = objectKindOf(def)
     switch (objectKind) {
         case "Object":
@@ -84,7 +85,8 @@ export type validateDefinition<def, $> = def extends Terminal
           objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
       >
     : isUnknown<def> extends true
-    ? // this allows the initial list of autocompletions to be populated when a user writes "type()", before having specified a definition
+    ? // this allows the initial list of autocompletions to be populated when a user writes "type()",
+      // before having specified a definition
       (keyof $ & string) | AutocompletePrefix | {}
     : {
           [k in keyof def]: validateDefinition<def[k], $>

@@ -14,10 +14,17 @@ suite("this reference", () => {
             label: string
             box?: ExpectedDisappointingGift
         }
-
         attest(disappointingGift.infer).typed as ExpectedDisappointingGift
-        attest(disappointingGift.toString()).snap()
+        attest(disappointingGift.allows.toString())
+            .snap(`function anonymous($arkRoot
+) {
+const self = ($arkRoot) => {
+                return ((typeof $arkRoot === "object" && $arkRoot !== null) || typeof $arkRoot === "function") && typeof $arkRoot.label === "string" && !('box' in $arkRoot) || ((typeof $arkRoot.box === "object" && $arkRoot.box !== null) || typeof $arkRoot.box === "function") && self($arkRoot.box)
+            }
+            return self($arkRoot)
+}`)
     })
+
     test("unresolvable in scope", () => {
         attest(() =>
             scope({

@@ -100,8 +100,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     allows: this["root"]["allows"]
 
     constructor(public definition: unknown, public scope: Scope) {
-        // TODO: try adding props in two steps?
-        const root = scope.parseRoot(definition)
+        const root = scope.parseTypeRoot(definition) as TypeNode<t>
         super(
             In,
             `const state = new ${registry().reference("state")}();
@@ -137,7 +136,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
         >
     ): Type<inferIntersection<t, inferDefinition<def, bindThis<$, def>>>> {
         return new Type(
-            this.root.and(this.scope.parseRoot(def)),
+            this.root.and(this.scope.parseTypeRoot(def)),
             this.scope
         ) as never
     }
@@ -146,7 +145,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
         def: validateDefinition<def, bindThis<$, def>>
     ): Type<t | inferDefinition<def, bindThis<$, def>>, $> {
         return new Type(
-            this.root.or(this.scope.parseRoot(def)),
+            this.root.or(this.scope.parseTypeRoot(def)),
             this.scope
         ) as never
     }

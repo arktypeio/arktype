@@ -11,6 +11,7 @@ import type { BasisInput } from "../primitive/basis/basis.js"
 import { arrayClassNode } from "../primitive/basis/class.js"
 import { valueNode } from "../primitive/basis/value.js"
 import type { ValueNode } from "../primitive/basis/value.js"
+import { thisNarrow } from "../primitive/narrow.js"
 import { arrayIndexInput, arrayIndexTypeNode } from "./indexed.js"
 import { predicateNode } from "./predicate.js"
 import type {
@@ -40,7 +41,7 @@ export interface TypeNode<t = unknown> extends BaseNode<PredicateNode[]> {
     getPath(...path: (string | TypeNode<string>)[]): TypeNode
 }
 
-export const isParsedTypeRule = (
+const isParsedTypeRule = (
     input: TypeInput | PredicateNode[]
 ): input is PredicateNode[] =>
     isArray(input) && (input.length === 0 || isNode(input[0]))
@@ -330,7 +331,8 @@ export const builtins = {
     unknown: cached(() => node({})),
     nonVariadicArrayIndex: cached(() => node(arrayIndexInput())),
     string: cached(() => node({ basis: "string" })),
-    array: cached(() => node({ basis: Array }))
+    array: cached(() => node({ basis: Array })),
+    this: cached(() => node({ basis: "object", narrow: thisNarrow }))
 } satisfies Record<string, () => TypeNode>
 
 export type inferBranches<branches extends readonly PredicateInput[]> = {

@@ -6,6 +6,8 @@ import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
+export const thisNarrow = () => true
+
 export interface NarrowNode extends BaseNode<readonly Narrow[]> {}
 
 export const narrowNode = defineNodeKind<NarrowNode, listable<Narrow>>(
@@ -16,9 +18,14 @@ export const narrowNode = defineNodeKind<NarrowNode, listable<Narrow>>(
         // TODO:  Figure out how this needs to work with intersections
         parse: listFrom,
         compile: (rule) =>
-            rule.map(
-                (narrow) => `${registry().register(narrow.name, narrow)}(${In})`
-            ),
+            rule.map((narrow) => {
+                const name =
+                    narrow === thisNarrow
+                        ? // the name assigned to a CompiledFunction, allowing it to recurse
+                          "self"
+                        : registry().register(narrow.name, narrow)
+                return `${name}(${In})`
+            }),
         intersect: (l, r): NarrowNode =>
             narrowNode(intersectUniqueLists(l.rule, r.rule))
     },
