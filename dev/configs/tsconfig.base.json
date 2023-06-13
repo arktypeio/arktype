@@ -9,7 +9,6 @@
         "isolatedModules": true,
         "esModuleInterop": true,
         "resolveJsonModule": true,
-        "allowImportingTsExtensions": true,
         "composite": true,
         "exactOptionalPropertyTypes": true,
         "noErrorTruncation": false,
