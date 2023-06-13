@@ -115,7 +115,9 @@ suite("tuple", () => {
                 { b: "boolean" }
             ])
             // Check to make sure the intersection is evaluated
-            attest(tupleAndArray).types.toString.snap()
+            attest(tupleAndArray).types.toString.snap(
+                'import("/Users/andrewjarrett/dev/OSS/arktype/src/type").Type<[{ a: string; b: boolean; }], any>'
+            )
             const arrayAndTuple = type([
                 [{ b: "boolean" }, "[]"],
                 "&",

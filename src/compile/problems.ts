@@ -1,21 +1,21 @@
 import type { Bound, SizedData } from "../nodes/primitive/range.js"
 import { comparatorDescriptions } from "../nodes/primitive/range.js"
-import type { Domain } from "../../dev/utils/domains.ts"
-import { domainDescriptions, domainOf } from "../../dev/utils/domains.ts"
-import type { conform } from "../../dev/utils/generics.ts"
-import type { arraySubclassToReadonly } from "../../dev/utils/lists.ts"
-import { Path } from "../../dev/utils/lists.ts"
+import type { Domain } from "../../dev/utils/domains.js"
+import { domainDescriptions, domainOf } from "../../dev/utils/domains.js"
+import type { conform } from "../../dev/utils/generics.js"
+import type { arraySubclassToReadonly } from "../../dev/utils/lists.js"
+import { Path } from "../../dev/utils/lists.js"
 import type {
     AbstractableConstructor,
     Constructor,
     DefaultObjectKind,
     instanceOf
-} from "../../dev/utils/objectKinds.ts"
+} from "../../dev/utils/objectKinds.js"
 import {
     getExactBuiltinConstructorName,
     objectKindDescriptions
-} from "../../dev/utils/objectKinds.ts"
-import { stringify } from "../../dev/utils/serialize.ts"
+} from "../../dev/utils/objectKinds.js"
+import { stringify } from "../../dev/utils/serialize.js"
 import type { InternalId } from "./registry.js"
 
 export class ArkTypeError extends TypeError {
@@ -222,8 +222,8 @@ export class RangeProblem extends Problem<Bound, SizedData> {
 
     get mustBe() {
         return `${comparatorDescriptions[this.rule.comparator]} ${this.data.value instanceof Date
-                ? new Date(this.rule.limit).toDateString()
-                : this.rule.limit
+            ? new Date(this.rule.limit).toDateString()
+            : this.rule.limit
             }${this.data.units ? ` ${this.data.units}` : ""}`
     }
 

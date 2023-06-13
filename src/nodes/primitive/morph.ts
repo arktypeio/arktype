@@ -1,7 +1,7 @@
 import { registry } from "../../compile/registry.js"
 import type { Morph } from "../../parse/ast/morph.js"
-import type { listable } from "../../../dev/utils/lists.ts"
-import { intersectUniqueLists, listFrom } from "../../../dev/utils/lists.ts"
+import type { listable } from "../../../dev/utils/lists.js"
+import { intersectUniqueLists, listFrom } from "../../../dev/utils/lists.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 

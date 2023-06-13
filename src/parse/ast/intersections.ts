@@ -1,6 +1,6 @@
-import type { error } from "../../../dev/utils/errors.ts"
-import type { evaluate, isAny } from "../../../dev/utils/generics.ts"
-import type { List, pathToString } from "../../../dev/utils/lists.ts"
+import type { error } from "../../../dev/utils/errors.js"
+import type { evaluate, isAny } from "../../../dev/utils/generics.js"
+import type { List, pathToString } from "../../../dev/utils/lists.js"
 import type { MorphAst, Out } from "./morph.js"
 
 export type inferIntersection<l, r> = inferIntersectionRecurse<l, r, []>

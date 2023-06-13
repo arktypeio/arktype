@@ -1,6 +1,6 @@
-import { hasDomain } from "./domains.ts"
-import type { defined, evaluate } from "./generics.ts"
-import type { List } from "./lists.ts"
+import { hasDomain } from "./domains.js"
+import type { defined, evaluate } from "./generics.js"
+import type { List } from "./lists.js"
 
 export type Dict<k extends string = string, v = unknown> = {
     readonly [_ in k]: v

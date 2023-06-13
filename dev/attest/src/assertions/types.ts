@@ -1,4 +1,4 @@
-import type { snapshot } from "../../../utils/serialize.ts"
+import type { snapshot } from "../../../utils/serialize.js"
 
 export type rootAssertions<
     t,

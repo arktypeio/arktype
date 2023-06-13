@@ -1,4 +1,4 @@
-import type { error } from "../../../dev/utils/errors.ts"
+import type { error } from "../../../dev/utils/errors.js"
 import type { inferAst, validateAst } from "./ast.js"
 import type { astToString } from "./utils.js"
 

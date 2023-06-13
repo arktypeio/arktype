@@ -1,9 +1,9 @@
 import type { NodeKind } from "../nodes/kinds.js"
 import type { TypeConfig } from "../type.js"
-import { type Domain, hasDomain } from "../../dev/utils/domains.ts"
-import { Path } from "../../dev/utils/lists.ts"
-import type { SerializablePrimitive } from "../../dev/utils/serialize.ts"
-import { serializePrimitive } from "../../dev/utils/serialize.ts"
+import { type Domain, hasDomain } from "../../dev/utils/domains.js"
+import { Path } from "../../dev/utils/lists.js"
+import type { SerializablePrimitive } from "../../dev/utils/serialize.js"
+import { serializePrimitive } from "../../dev/utils/serialize.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
 

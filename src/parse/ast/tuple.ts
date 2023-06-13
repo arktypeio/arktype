@@ -6,11 +6,11 @@ import type { TypeNode } from "../../nodes/composite/type.js"
 import { builtins, typeNode } from "../../nodes/composite/type.js"
 import { arrayClassNode } from "../../nodes/primitive/basis/class.js"
 import type { extractIn, extractOut, TypeConfig } from "../../type.js"
-import { throwParseError } from "../../../dev/utils/errors.ts"
-import type { evaluate, isAny } from "../../../dev/utils/generics.ts"
-import type { List } from "../../../dev/utils/lists.ts"
-import { type Constructor, isArray } from "../../../dev/utils/objectKinds.ts"
-import { stringify } from "../../../dev/utils/serialize.ts"
+import { throwParseError } from "../../../dev/utils/errors.js"
+import type { evaluate, isAny } from "../../../dev/utils/generics.js"
+import type { List } from "../../../dev/utils/lists.js"
+import { type Constructor, isArray } from "../../../dev/utils/objectKinds.js"
+import { stringify } from "../../../dev/utils/serialize.js"
 import type {
     inferDefinition,
     ParseContext,

@@ -1,6 +1,6 @@
 import type { Comparator } from "../../../nodes/primitive/range.js"
-import type { Dict } from "../../../../dev/utils/records.ts"
-import { isKeyOf } from "../../../../dev/utils/records.ts"
+import type { Dict } from "../../../../dev/utils/records.js"
+import { isKeyOf } from "../../../../dev/utils/records.js"
 
 export class Scanner<Lookahead extends string = string> {
     private chars: string[]

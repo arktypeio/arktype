@@ -18,10 +18,10 @@ import type {
     parseGenericParams
 } from "./parse/generic.js"
 import type { bindThis, Scope } from "./scope.js"
-import type { error } from "../dev/utils/errors.ts"
-import { CompiledFunction } from "../dev/utils/functions.ts"
-import type { conform, id, Literalable } from "../dev/utils/generics.ts"
-import { Path } from "../dev/utils/lists.ts"
+import type { error } from "../dev/utils/errors.js"
+import { CompiledFunction } from "../dev/utils/functions.js"
+import type { conform, id, Literalable } from "../dev/utils/generics.js"
+import { Path } from "../dev/utils/lists.js"
 
 export type TypeParser<$> = TypeOverloads<$> & TypeProps<$>
 

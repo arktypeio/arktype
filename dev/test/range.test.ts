@@ -10,7 +10,7 @@ import {
     writeUnpairableComparatorMessage
 } from "../../src/parse/string/reduce/shared.js"
 import { singleEqualsMessage } from "../../src/parse/string/shift/operator/bounds.js"
-import { writeMalformedNumericLiteralMessage } from "../utils/numericLiterals.ts"
+import { writeMalformedNumericLiteralMessage } from "../utils/numericLiterals.js"
 import { attest } from "../attest/main.js"
 
 suite("range", () => {

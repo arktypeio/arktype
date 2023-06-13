@@ -4,8 +4,8 @@ import {
     joinIntersectionConditions,
     KeyIn
 } from "../../compile/compile.js"
-import { throwInternalError } from "../../../dev/utils/errors.ts"
-import { tryParseWellFormedInteger } from "../../../dev/utils/numericLiterals.ts"
+import { throwInternalError } from "../../../dev/utils/errors.js"
+import { tryParseWellFormedInteger } from "../../../dev/utils/numericLiterals.js"
 import type { NamedPropRule } from "./named.js"
 import { compileNamedProp } from "./named.js"
 import type { PredicateInput } from "./predicate.js"

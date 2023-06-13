@@ -1,4 +1,4 @@
-import { isKeyOf } from "../../../../../dev/utils/records.ts"
+import { isKeyOf } from "../../../../../dev/utils/records.js"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import { Scanner } from "../scanner.js"

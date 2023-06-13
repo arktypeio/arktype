@@ -2,16 +2,16 @@ import type { TypeNode } from "../../../../nodes/composite/type.js"
 import { typeNode } from "../../../../nodes/composite/type.js"
 import type { Scope } from "../../../../scope.js"
 import type { GenericProps } from "../../../../type.js"
-import type { error } from "../../../../../dev/utils/errors.ts"
-import type { join } from "../../../../../dev/utils/lists.ts"
+import type { error } from "../../../../../dev/utils/errors.js"
+import type { join } from "../../../../../dev/utils/lists.js"
 import type {
     BigintLiteral,
     NumberLiteral
-} from "../../../../../dev/utils/numericLiterals.ts"
+} from "../../../../../dev/utils/numericLiterals.js"
 import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
-} from "../../../../../dev/utils/numericLiterals.ts"
+} from "../../../../../dev/utils/numericLiterals.js"
 import type { GenericInstantiationAst } from "../../../ast/ast.js"
 import type { Inferred } from "../../../definition.js"
 import type {

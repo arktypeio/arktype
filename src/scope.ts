@@ -22,8 +22,8 @@ import type {
     TypeParser
 } from "./type.js"
 import { createTypeParser, Type } from "./type.js"
-import type { evaluate, nominal } from "../dev/utils/generics.ts"
-import type { Dict } from "../dev/utils/records.ts"
+import type { evaluate, nominal } from "../dev/utils/generics.js"
+import type { Dict } from "../dev/utils/records.js"
 
 export type ScopeParser<parent, ambient> = {
     <aliases>(aliases: validateAliases<aliases, parent & ambient>): Scope<{

@@ -4,9 +4,9 @@ import type {
     MaxComparator,
     MinComparator
 } from "../../../nodes/primitive/range.js"
-import type { error } from "../../../../dev/utils/errors.ts"
-import type { defined } from "../../../../dev/utils/generics.ts"
-import type { NumberLiteral } from "../../../../dev/utils/numericLiterals.ts"
+import type { error } from "../../../../dev/utils/errors.js"
+import type { defined } from "../../../../dev/utils/generics.js"
+import type { NumberLiteral } from "../../../../dev/utils/numericLiterals.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
     Prefix,

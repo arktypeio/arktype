@@ -1,4 +1,4 @@
-import { throwParseError } from "./errors.ts"
+import { throwParseError } from "./errors.js"
 
 export type BigintLiteral<value extends bigint = bigint> = `${value}n`
 
