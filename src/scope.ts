@@ -232,7 +232,7 @@ export class Scope<r extends Resolutions = any> {
     extract<name extends keyof r["exports"] & string>(
         name: name
     ): Type<r["exports"][name], $<r>> {
-        this.resolutions[name] = this.maybeResolve(name)!
+        this.resolutions[name] = this.parseRoot(this.aliases[name])
         // pass the definition directly so that it can be attached to the Type
         // it will hit the cached node and immediately resolve
         this.exports[name] = new Type(this.aliases[name], this)
@@ -256,30 +256,43 @@ export class Scope<r extends Resolutions = any> {
     }
 
     /** @internal */
-    maybeResolve(name: string): TypeNode | undefined {
-        if (this.resolutions[name]) {
-            return this.resolutions[name]
+    maybeResolve(name: string, ctx: ParseContext): TypeNode | undefined {
+        const cached = this.resolutions[name]
+        if (cached) {
+            if (cached === builtins.this()) {
+                if (ctx.path.length === 0) {
+                    // TODO: Seen?
+                    return throwParseError(
+                        writeShallowCycleErrorMessage(name, [])
+                    )
+                }
+                // TODO: doesn't seem right for cyclic? only recursive?
+                return cached
+            }
+            // TODO: when is this cache safe? could contain this reference?
+            return cached
         }
         const aliasDef = this.aliases[name]
         if (!aliasDef) {
             return
         }
         this.resolutions[name] = builtins.this()
-        const resolution = this.parse(aliasDef, {
+        const resolution = this.parseRoot(aliasDef)
+        this.resolutions[name] = resolution
+        return resolution
+    }
+
+    parseRoot(def: unknown) {
+        return this.parse(def, {
             path: new Path(),
             scope: this
         })
-        this.resolutions[name] = resolution
-        return resolution
     }
 
     /** @internal */
     parseTypeRoot(def: unknown) {
         this.resolutions["this"] = builtins.this()
-        const result = this.parse(def, {
-            path: new Path(),
-            scope: this
-        })
+        const result = this.parseRoot(def)
         delete this.resolutions["this"]
         return result
     }

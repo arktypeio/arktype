@@ -89,7 +89,7 @@ export type parseGenericInstantiation<
       >
 
 const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
-    s.ctx.scope.maybeResolve(token) ??
+    s.ctx.scope.maybeResolve(token, s.ctx) ??
     maybeParseUnenclosedLiteral(token) ??
     s.error(
         token === ""
