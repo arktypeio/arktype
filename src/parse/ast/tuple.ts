@@ -5,18 +5,14 @@ import { propsNode } from "../../nodes/composite/props.js"
 import type { TypeNode } from "../../nodes/composite/type.js"
 import { builtins, typeNode } from "../../nodes/composite/type.js"
 import { arrayClassNode } from "../../nodes/primitive/basis/class.js"
+import type { ParseContext } from "../../scope.js"
 import type { extractIn, extractOut, TypeConfig } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"
 import { type Constructor, isArray } from "../../utils/objectKinds.js"
 import { stringify } from "../../utils/serialize.js"
-import type {
-    inferDefinition,
-    ParseContext,
-    validateDefinition
-} from "../definition.js"
-import { parseDefinition } from "../definition.js"
+import type { inferDefinition, validateDefinition } from "../definition.js"
 import type { Prefix } from "../string/reduce/shared.js"
 import { writeMissingRightOperandMessage } from "../string/shift/operand/unenclosed.js"
 import {
@@ -66,7 +62,7 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
             elementDef = elementDef[1]
             isVariadic = true
         }
-        const value = parseDefinition(elementDef, ctx)
+        const value = ctx.scope.parse(elementDef, ctx)
         if (isVariadic) {
             if (!value.extends(builtins.array())) {
                 return throwParseError(writeNonArrayRestMessage(elementDef))
@@ -286,7 +282,7 @@ export type UnparsedTupleExpressionInput = {
 export type UnparsedTupleOperator = evaluate<keyof UnparsedTupleExpressionInput>
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) =>
-    parseDefinition(def[1], ctx).keyof()
+    ctx.scope.parse(def[1], ctx).keyof()
 
 export type inferKeyOfExpression<operandDef, $> = evaluate<
     keyof inferDefinition<operandDef, $>
@@ -298,19 +294,19 @@ export type ConfigTuple<
 > = readonly [def, ":", config]
 
 export const parseConfigTuple: PostfixParser<":"> = (def, ctx) =>
-    parseDefinition(def[0], ctx)
+    ctx.scope.parse(def[0], ctx)
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
     if (def[2] === undefined) {
         return throwParseError(writeMissingRightOperandMessage(def[1], ""))
     }
-    const l = parseDefinition(def[0], ctx)
-    const r = parseDefinition(def[2], ctx)
+    const l = ctx.scope.parse(def[0], ctx)
+    const r = ctx.scope.parse(def[2], ctx)
     return def[1] === "&" ? l.and(r) : l.or(r)
 }
 
-const parseArrayTuple: PostfixParser<"[]"> = (def, scope) =>
-    parseDefinition(def[0], scope).array()
+const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
+    ctx.scope.parse(def[0], ctx).array()
 
 export type PostfixParser<token extends IndexOneOperator> = (
     def: IndexOneExpression<token>,

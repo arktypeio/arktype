@@ -1,15 +1,20 @@
 import type { ProblemCode } from "./compile/problems.js"
+import type { TypeNode } from "./main.js"
 import type {
     inferDefinition,
     Inferred,
     validateDefinition
 } from "./parse/definition.js"
-import { inferred } from "./parse/definition.js"
+import {
+    parseObject,
+    writeBadDefinitionTypeMessage
+} from "./parse/definition.js"
 import type {
     GenericDeclaration,
     GenericParamsParseError,
     parseGenericParams
 } from "./parse/generic.js"
+import { parseString } from "./parse/string/string.js"
 import type {
     DeclarationParser,
     DefinitionParser,
@@ -22,7 +27,10 @@ import type {
     TypeParser
 } from "./type.js"
 import { createTypeParser, Type } from "./type.js"
+import { domainOf } from "./utils/domains.js"
+import { throwParseError } from "./utils/errors.js"
 import type { evaluate, nominal } from "./utils/generics.js"
+import type { Path } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
 
 export type ScopeParser<parent, ambient> = {
@@ -170,14 +178,19 @@ export type Resolutions = {
     ambient: unknown
 }
 
+export type ParseContext = {
+    path: Path
+    scope: Scope
+}
+
 export class Scope<r extends Resolutions = any> {
     declare infer: extractOut<r["exports"]>
-    declare inferIn: extractIn<r["exports"]>;
-    declare [inferred]: typeof inferred
+    declare inferIn: extractIn<r["exports"]>
 
     config: TypeConfig
 
-    private resolutions: TypeSet = {}
+    private parseCache: Map<unknown, TypeNode> = new Map()
+    private resolutions: Record<string, Type | undefined> = {}
     private exports: TypeSet = {}
 
     constructor(public aliases: Dict, opts: ScopeOptions = {}) {
@@ -225,10 +238,28 @@ export class Scope<r extends Resolutions = any> {
         return this.maybeResolve(name as never) as never
     }
 
+    parse(def: unknown, ctx: ParseContext) {
+        const cached = this.parseCache.get(def)
+        if (cached) {
+            return cached
+        }
+        const domain = domainOf(def)
+        const result =
+            typeof def === "string"
+                ? parseString(def, ctx)
+                : (typeof def === "object" && def !== null) ||
+                  typeof def === "function"
+                ? parseObject(def, ctx)
+                : throwParseError(writeBadDefinitionTypeMessage(domain))
+        this.parseCache.set(def, result)
+        return result
+    }
+
+    /** @internal */
     maybeResolve(name: string): Type | undefined {
         if (this.resolutions[name]) {
             // TODO: Scope resolution
-            return this.resolutions[name] as Type
+            return this.resolutions[name]
         }
         const aliasDef = this.aliases[name]
         if (!aliasDef) {

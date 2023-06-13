@@ -12,6 +12,9 @@ export const cached = <T>(thunk: () => T) => {
     }
 }
 
+export const isThunk = (def: unknown): def is () => unknown =>
+    typeof def === "function" && def.length === 0
+
 export const CompiledFunction = class extends Function {
     constructor(...args: string[]) {
         try {

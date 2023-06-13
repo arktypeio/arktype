@@ -3,14 +3,13 @@ import type { Problem } from "../../main.js"
 import type { extractIn } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { inferDefinition } from "../definition.js"
-import { parseDefinition } from "../definition.js"
 import type { PostfixParser } from "./tuple.js"
 
 export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {
         return throwParseError(writeMalformedMorphExpressionMessage(def[2]))
     }
-    return parseDefinition(def[0], ctx).constrain("morph", def[2] as Morph)
+    return ctx.scope.parse(def[0], ctx).constrain("morph", def[2] as Morph)
 }
 
 export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o

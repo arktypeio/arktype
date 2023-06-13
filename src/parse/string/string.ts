@@ -1,7 +1,7 @@
 import type { TypeNode } from "../../nodes/composite/type.js"
+import type { ParseContext } from "../../scope.js"
 import { type error, throwParseError } from "../../utils/errors.js"
 import { type inferAst, writeUnsatisfiableExpressionError } from "../ast/ast.js"
-import type { ParseContext } from "../definition.js"
 import type { DynamicStateWithRoot } from "./reduce/dynamic.js"
 import { DynamicState } from "./reduce/dynamic.js"
 import type { state, StaticState } from "./reduce/static.js"
@@ -9,7 +9,6 @@ import { parseOperand } from "./shift/operand/operand.js"
 import type { writeUnexpectedCharacterMessage } from "./shift/operator/operator.js"
 import { parseOperator } from "./shift/operator/operator.js"
 
-// TODO: cache
 export const parseString = (def: string, ctx: ParseContext) =>
     maybeNaiveParse(def, ctx) ?? fullStringParse(def, ctx)
 
@@ -24,7 +23,6 @@ export type inferString<def extends string, $> = inferAst<
  * Try to parse the definition from right to left using the most common syntax.
  * This can be much more efficient for simple definitions.
  */
-// TODO: investigate with generics
 type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
     ? child extends keyof $
         ? [child, "[]"]

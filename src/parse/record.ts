@@ -3,10 +3,10 @@ import { predicateNode } from "../nodes/composite/predicate.js"
 import { propsNode } from "../nodes/composite/props.js"
 import { typeNode } from "../nodes/composite/type.js"
 import { domainNode } from "../nodes/primitive/basis/domain.js"
+import type { ParseContext } from "../scope.js"
 import type { evaluate } from "../utils/generics.js"
 import type { Dict } from "../utils/records.js"
-import type { inferDefinition, ParseContext } from "./definition.js"
-import { parseDefinition } from "./definition.js"
+import type { inferDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseRecord = (def: Dict, ctx: ParseContext) => {
@@ -31,7 +31,7 @@ export const parseRecord = (def: Dict, ctx: ParseContext) => {
                 prerequisite: false,
                 optional
             },
-            value: parseDefinition(def[definitionKey], ctx)
+            value: ctx.scope.parse(def[definitionKey], ctx)
         })
         ctx.path.pop()
     }

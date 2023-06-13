@@ -13,7 +13,7 @@ import type {
     validateDeclared,
     validateDefinition
 } from "./parse/definition.js"
-import { inferred, parseDefinition } from "./parse/definition.js"
+import { inferred } from "./parse/definition.js"
 import type {
     GenericParamsParseError,
     parseGenericParams
@@ -100,7 +100,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     allows: this["root"]["allows"]
 
     constructor(public definition: unknown, public scope: Scope) {
-        const root = parseDefinition(definition, {
+        const root = scope.parse(definition, {
             path: new Path(),
             scope
         }) as TypeNode<t>

@@ -5,10 +5,10 @@ import {
     minComparators,
     rangeNode
 } from "../../../nodes/primitive/range.js"
+import type { ParseContext } from "../../../scope.js"
 import { throwInternalError, throwParseError } from "../../../utils/errors.js"
 import type { requireKeys } from "../../../utils/records.js"
 import { isKeyOf } from "../../../utils/records.js"
-import type { ParseContext } from "../../definition.js"
 import { Scanner } from "../shift/scanner.js"
 import type { Prefix } from "./shared.js"
 import {

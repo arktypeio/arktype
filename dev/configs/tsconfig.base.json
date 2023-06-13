@@ -12,6 +12,7 @@
         "composite": true,
         "exactOptionalPropertyTypes": true,
         "noErrorTruncation": false,
+        "stripInternal": true,
         "lib": ["ESNext"]
     },
     "ts-node": {

@@ -1,13 +1,12 @@
 import type { TraversalState } from "../../compile/traverse.js"
 import { throwParseError } from "../../utils/errors.js"
-import { parseDefinition } from "../definition.js"
 import type { PostfixParser } from "./tuple.js"
 
 export const parseNarrowTuple: PostfixParser<"=>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {
         return throwParseError(writeMalformedNarrowExpressionMessage(def[2]))
     }
-    return parseDefinition(def[0], ctx).constrain("narrow", def[2] as Narrow)
+    return ctx.scope.parse(def[0], ctx).constrain("narrow", def[2] as Narrow)
 }
 
 export const writeMalformedNarrowExpressionMessage = (value: unknown) =>
