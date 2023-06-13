@@ -11,10 +11,7 @@ import { throwParseError } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"
 import { isArray } from "../../utils/objectKinds.js"
-import type {
-    AbstractableConstructor,
-    type Constructor
-} from "../../utils/objectKinds.js"
+import type { AbstractableConstructor } from "../../utils/objectKinds.js"
 import { stringify } from "../../utils/serialize.js"
 import type { inferDefinition, validateDefinition } from "../definition.js"
 import type { Prefix } from "../string/reduce/shared.js"
@@ -223,7 +220,7 @@ export type inferTupleExpression<
     : def[0] extends "==="
     ? def[1]
     : def[0] extends "instanceof"
-    ? def[1] extends Constructor<infer t>
+    ? def[1] extends AbstractableConstructor<infer t>
         ? t
         : never
     : def[0] extends "keyof"
@@ -279,7 +276,7 @@ export type validateInfixExpression<
       ]
 
 export type UnparsedTupleExpressionInput = {
-    instanceof: Constructor
+    instanceof: AbstractableConstructor
     "===": unknown
 }
 
@@ -375,7 +372,7 @@ const prefixParsers: {
             )
         }
         return typeNode({
-            basis: def[1] as Constructor
+            basis: def[1] as AbstractableConstructor
         })
     },
     "===": (def) => typeNode({ basis: ["===", def[1]] })
