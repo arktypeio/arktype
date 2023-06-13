@@ -10,9 +10,10 @@ const packageJson = readJson(join(packageRoot, "package.json"))
 
 const buildFormat = (module: "commonjs" | "esnext") => {
     const outDir = join(outRoot, module === "commonjs" ? "cjs" : "mjs")
+
     writeJson(tempTsConfig, {
         ...tsConfigData,
-        include: ["src"],
+        include: ["src", "dev/utils"],
         compilerOptions: {
             ...tsConfigData.compilerOptions,
             noEmit: false,
