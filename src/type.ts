@@ -9,6 +9,11 @@ import type { inferIntersection } from "./parse/ast/intersections.js"
 import type { inferMorphOut, Morph, MorphAst, Out } from "./parse/ast/morph.js"
 import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
 import type {
+    IndexOneOperator,
+    IndexZeroOperator,
+    TupleInfixOperator
+} from "./parse/ast/tuple.js"
+import type {
     inferDefinition,
     validateDeclared,
     validateDefinition
@@ -22,7 +27,6 @@ import type { bindThis, Scope } from "./scope.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
 import type { conform, id, Literalable } from "./utils/generics.js"
-import { Path } from "./utils/lists.js"
 import type { AbstractableConstructor } from "./utils/objectKinds.js"
 
 export type TypeParser<$> = TypeOverloads<$> & TypeProps<$>
@@ -32,6 +36,32 @@ type TypeOverloads<$> = {
     // valid definition or a string representing an error message.
     <def>(def: validateDefinition<def, bindThis<$, def>>): Type<
         inferDefinition<def, bindThis<$, def>>,
+        $
+    >
+
+    // Spread version of a tuple expression
+    <zero, one, two>(
+        expression0: zero extends IndexZeroOperator
+            ? zero
+            : validateDefinition<zero, bindThis<$, zero>>,
+        expression1: zero extends IndexZeroOperator
+            ? validateDefinition<one, bindThis<$, one>>
+            : conform<one, IndexOneOperator>,
+        ...expression2: one extends TupleInfixOperator
+            ? [
+                  one extends "=>"
+                      ? Narrow<extractIn<inferDefinition<zero, $>>>
+                      : one extends "|>"
+                      ? // TODO: centralize
+                        Morph<extractOut<inferDefinition<zero, $>>, unknown>
+                      : validateDefinition<two, bindThis<$, two>>
+              ]
+            : []
+    ): Type<
+        inferDefinition<
+            tupleExpression<zero, one, two>,
+            bindThis<$, tupleExpression<zero, one, two>>
+        >,
         $
     >
 
@@ -45,6 +75,10 @@ type TypeOverloads<$> = {
         >
     ): Generic<parseGenericParams<params>, def, bindThis<$, def>>
 }
+
+type tupleExpression<zero, one, two> = one extends TupleInfixOperator
+    ? [zero, one, two]
+    : [zero, one]
 
 type TypeProps<$> = {
     literal: <branches extends readonly Literalable[]>(

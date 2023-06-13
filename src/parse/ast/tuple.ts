@@ -10,7 +10,11 @@ import type { extractIn, extractOut, TypeConfig } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { evaluate, isAny } from "../../utils/generics.js"
 import type { List } from "../../utils/lists.js"
-import { type Constructor, isArray } from "../../utils/objectKinds.js"
+import { isArray } from "../../utils/objectKinds.js"
+import type {
+    AbstractableConstructor,
+    type Constructor
+} from "../../utils/objectKinds.js"
 import { stringify } from "../../utils/serialize.js"
 import type { inferDefinition, validateDefinition } from "../definition.js"
 import type { Prefix } from "../string/reduce/shared.js"
@@ -226,7 +230,7 @@ export type inferTupleExpression<
     ? inferKeyOfExpression<def[1], $>
     : never
 
-type validatePrefixExpression<
+export type validatePrefixExpression<
     def extends IndexZeroExpression,
     $
 > = def["length"] extends 1
@@ -240,18 +244,18 @@ type validatePrefixExpression<
           def[0] extends "==="
               ? def[1]
               : def[0] extends "instanceof"
-              ? Constructor
+              ? AbstractableConstructor
               : def[0] extends "keyof"
               ? validateDefinition<def[1], $>
               : never
       ]
 
-type validatePostfixExpression<def extends PostfixExpression, $> = [
+export type validatePostfixExpression<def extends PostfixExpression, $> = [
     validateDefinition<def[0], $>,
     "[]"
 ]
 
-type validateInfixExpression<
+export type validateInfixExpression<
     def extends InfixExpression,
     $
 > = def["length"] extends 2
