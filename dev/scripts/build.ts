@@ -10,19 +10,20 @@ const packageJson = readJson(join(packageRoot, "package.json"))
 
 const buildFormat = (module: "commonjs" | "esnext") => {
     const outDir = join(outRoot, module === "commonjs" ? "cjs" : "mjs")
-
-    writeJson(tempTsConfig, {
-        ...tsConfigData,
+    const tempTsConfig = {
+        ...baseTsConfig,
         include: ["src", "dev/utils"],
         compilerOptions: {
-            ...tsConfigData.compilerOptions,
+            ...baseTsConfig.compilerOptions,
             noEmit: false,
             module,
             outDir
         }
-    })
+    }
+
+    writeJson(tempTsConfigPath, tempTsConfig)
     try {
-        shell(`pnpm tsc --project ${tempTsConfig}`)
+        shell(`pnpm tsc --project ${tempTsConfigPath}`)
         const outSrc = join(outDir, "src")
         // not sure which setting to change to get it to compile here in the first place
         cpSync(outSrc, outDir, {
@@ -36,14 +37,14 @@ const buildFormat = (module: "commonjs" | "esnext") => {
         }
         rmSync(outSrc, { recursive: true, force: true })
     } finally {
-        rmSync(tempTsConfig, { force: true })
+        rmSync(tempTsConfigPath, { force: true })
     }
 }
 
 console.log(`🔨 Building ${packageJson.name}...`)
 rmSync(outRoot, { recursive: true, force: true })
-const tsConfigData = readJson(join(repoDirs.configs, "tsconfig.base.json"))
-const tempTsConfig = join(packageRoot, "tsconfig.temp.json")
+const baseTsConfig = readJson(join(repoDirs.configs, "tsconfig.base.json"))
+const tempTsConfigPath = join(packageRoot, "tsconfig.temp.json")
 buildFormat("esnext")
 buildFormat("commonjs")
 console.log(`📦 Successfully built ${packageJson.name}!`)
