@@ -100,10 +100,8 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     allows: this["root"]["allows"]
 
     constructor(public definition: unknown, public scope: Scope) {
-        const root = scope.parse(definition, {
-            path: new Path(),
-            scope
-        })
+        // TODO: try adding props in two steps?
+        const root = scope.parseRoot(definition)
         super(
             In,
             `const state = new ${registry().reference("state")}();

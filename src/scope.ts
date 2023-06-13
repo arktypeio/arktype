@@ -228,10 +228,14 @@ export class Scope<r extends Resolutions = any> {
         return this as never
     }
 
-    extract<name extends keyof r["exports"]>(
+    extract<name extends keyof r["exports"] & string>(
         name: name
     ): Type<r["exports"][name], $<r>> {
-        return this.maybeResolve(name as never) as never
+        this.resolutions[name] = this.maybeResolve(name)!
+        // pass the definition directly so that it can be attached to the Type
+        // it will hit the cached node and immediately resolve
+        this.exports[name] = new Type(this.aliases[name], this)
+        return this.exports[name] as never
     }
 
     parse(def: unknown, ctx: ParseContext) {
@@ -273,21 +277,27 @@ export class Scope<r extends Resolutions = any> {
     }
 
     private exported = false
-    export<names extends (keyof r["exports"])[]>(...names: names) {
+    export<names extends (keyof r["exports"])[]>(
+        ...names: names
+    ): TypeSet<
+        names extends [] ? r : destructuredExportContext<r, names[number]>
+    > {
         if (!this.exported) {
             for (const name in this.aliases) {
                 if (!this.exports[name]) {
-                    this.resolutions[name] = this.maybeResolve(name)!
-                    // pass the definition directly so that it can be attached to the Type
-                    // it will hit the cached node and immediately resolve
-                    this.exports[name] = new Type(this.aliases[name], this)
+                    this.extract(name as never)
                 }
             }
             this.exported = true
         }
-        return this.exports as TypeSet<
-            names extends [] ? r : destructuredExportContext<r, names[number]>
-        >
+        if (!names.length) {
+            return this.exports
+        }
+        const destructured: TypeSet = {}
+        for (const name of names) {
+            destructured[name] = this.exports[name]
+        }
+        return destructured
     }
 }
 
