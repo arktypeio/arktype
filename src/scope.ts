@@ -30,7 +30,7 @@ import { createTypeParser, Type } from "./type.js"
 import { domainOf } from "./utils/domains.js"
 import { throwParseError } from "./utils/errors.js"
 import type { evaluate, nominal } from "./utils/generics.js"
-import type { Path } from "./utils/lists.js"
+import { Path } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
 
 export type ScopeParser<parent, ambient> = {
@@ -190,14 +190,10 @@ export class Scope<r extends Resolutions = any> {
     config: TypeConfig
 
     private parseCache: Map<unknown, TypeNode> = new Map()
-    private resolutions: Record<string, Type | undefined> = {}
+    private resolutions: Record<string, TypeNode | undefined> = {}
     private exports: TypeSet = {}
 
     constructor(public aliases: Dict, opts: ScopeOptions = {}) {
-        // this.cacheSpaces(opts.root ?? registry().ark, "imports")
-        // if (opts.imports) {
-        //     this.cacheSpaces(opts.imports, "imports")
-        // }
         this.config = {}
     }
 
@@ -256,26 +252,46 @@ export class Scope<r extends Resolutions = any> {
     }
 
     /** @internal */
-    maybeResolve(name: string): Type | undefined {
+    maybeResolve(name: string): TypeNode | undefined {
         if (this.resolutions[name]) {
-            // TODO: Scope resolution
             return this.resolutions[name]
         }
         const aliasDef = this.aliases[name]
         if (!aliasDef) {
             return
         }
-        const resolution = new Type(aliasDef, this)
+        const resolution = this.parse(aliasDef, {
+            path: new Path(),
+            scope: this
+        })
         this.resolutions[name] = resolution
-        this.exports[name] = resolution
         return resolution
+    }
+
+    /** @internal */
+    parseTypeDefinition(definition: unknown) {
+        const thisNode = {}
+        this.resolutions["this"] = thisNode as TypeNode
+        const root = Object.assign(
+            thisNode,
+            this.parse(definition, {
+                path: new Path(),
+                scope: this
+            })
+        )
+        return root
     }
 
     private exported = false
     export<names extends (keyof r["exports"])[]>(...names: names) {
         if (!this.exported) {
             for (const name in this.aliases) {
-                this.exports[name] ??= this.maybeResolve(name) as Type
+                if (!this.exports[name]) {
+                    this.resolutions[name] = this.maybeResolve(name)!
+                    // pass the definition directly so that it can be attached to the Type
+                    // it will hit the cached node and immediately resolve
+                    this.exports[name] = new Type(this.aliases[name], this)
+                }
             }
             this.exported = true
         }

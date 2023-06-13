@@ -11,11 +11,11 @@ type inferIntersectionRecurse<
     path extends string[]
 > = path["length"] extends 10
     ? l & r
-    : l extends never
+    : [l] extends [never]
     ? never
-    : r extends never
+    : [r] extends [never]
     ? never
-    : l & r extends never
+    : [l & r] extends [never]
     ? error<writeImplicitNeverMessage<path, "Intersection">>
     : isAny<l | r> extends true
     ? any

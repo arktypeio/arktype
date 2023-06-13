@@ -51,7 +51,7 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
         parse: (input) => {
             if (!isParsedTypeRule(input)) {
                 input = isArray(input)
-                    ? input.map(predicateNode)
+                    ? input.map((branch) => predicateNode(branch))
                     : [predicateNode(input)]
             }
             return alphabetizeByCondition(reduceBranches(input))

@@ -22,7 +22,6 @@ import type { bindThis, Scope } from "./scope.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
 import type { conform, id, Literalable } from "./utils/generics.js"
-import { Path } from "./utils/lists.js"
 import type { AbstractableConstructor } from "./utils/objectKinds.js"
 
 export type TypeParser<$> = TypeOverloads<$> & TypeProps<$>
@@ -100,10 +99,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     allows: this["root"]["allows"]
 
     constructor(public definition: unknown, public scope: Scope) {
-        const root = scope.parse(definition, {
-            path: new Path(),
-            scope
-        }) as TypeNode<t>
+        const root = scope.parseTypeDefinition(definition)
         super(
             In,
             `const state = new ${registry().reference("state")}();
@@ -138,13 +134,19 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
             inferIntersection<t, inferDefinition<def, bindThis<$, def>>>
         >
     ): Type<inferIntersection<t, inferDefinition<def, bindThis<$, def>>>> {
-        return this.binary(def, "&") as never
+        return new Type(
+            this.root.and(this.scope.parseTypeDefinition(def)),
+            this.scope
+        )
     }
 
     or<def>(
         def: validateDefinition<def, bindThis<$, def>>
     ): Type<t | inferDefinition<def, bindThis<$, def>>, $> {
-        return this.binary(def, "|") as never
+        return new Type(
+            this.root.or(this.scope.parseTypeDefinition(def)),
+            this.scope
+        )
     }
 
     morph<morph extends Morph<extractOut<t>>>(
@@ -161,24 +163,27 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
         >
     >
     morph(morph: Morph, outValidator?: unknown) {
-        // TODO: tuple expression
+        // TODO: tuple expression for out validator
         outValidator
-        return new Type([this.definition, "|>", morph], this.scope) as never
+        return new Type(
+            this.root.constrain("morph", morph),
+            this.scope
+        ) as never
     }
 
     // TODO: based on below, should maybe narrow morph output if used after
     narrow<def extends Narrow<extractOut<t>>>(
         def: def
     ): Type<inferNarrow<extractOut<t>, def>, $> {
-        return new Type([this.definition, "=>", def], this.scope) as never
+        return new Type(this.root.constrain("narrow", def), this.scope)
     }
 
     array(): Type<t[], $> {
-        return new Type([this.definition, "[]"], this.scope) as never
+        return new Type(this.root.array(), this.scope)
     }
 
     keyof(): Type<keyof this["inferIn"], $> {
-        return new Type(["keyof", this.definition], this.scope) as never
+        return new Type(this.root.keyof(), this.scope)
     }
 
     assert(data: unknown): extractOut<t> {
@@ -192,10 +197,6 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 
     extends<other>(other: Type<other>): this is Type<other> {
         return this.root.extends(other.root)
-    }
-
-    private binary(def: unknown, operator: "|" | "&") {
-        return new Type([this.definition, operator, def], this.scope)
     }
 }
 

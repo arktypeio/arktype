@@ -74,8 +74,7 @@ export const isNode = (value: unknown): value is BaseNode =>
 export const arkKind = Symbol("ArkTypeInternalKind")
 
 export type NodeConstructor<node extends BaseNode, input> = (
-    rule: node["rule"] | input,
-    thisType?: Record<PropertyKey, never>
+    rule: node["rule"] | input
 ) => node
 
 export const alphabetizeByCondition = <nodes extends BaseNode[]>(
