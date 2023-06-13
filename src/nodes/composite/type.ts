@@ -318,7 +318,10 @@ export type TypeNodeParser = {
 export const node: TypeNodeParser = Object.assign(
     (...branches: PredicateInput[]) => typeNode(branches),
     {
-        literal: (...branches: Literalable[]) => typeNodeFromValues(branches)
+        literal: (...branches: Literalable[]) =>
+            typeNode(
+                branches.map((literal) => predicateNode([valueNode(literal)]))
+            )
     }
 ) as never
 
@@ -329,18 +332,6 @@ export const builtins = {
     string: cached(() => node({ basis: "string" })),
     array: cached(() => node({ basis: Array }))
 } satisfies Record<string, () => TypeNode>
-
-export const typeNodeFromValues = (branches: readonly unknown[]) => {
-    const seen: unknown[] = []
-    const nodes: PredicateNode[] = []
-    for (const v of branches) {
-        if (!seen.includes(v)) {
-            nodes.push(predicateNode([valueNode(v)]))
-            seen.push(v)
-        }
-    }
-    return typeNode(nodes)
-}
 
 export type inferBranches<branches extends readonly PredicateInput[]> = {
     [i in keyof branches]: inferPredicateDefinition<branches[i]>

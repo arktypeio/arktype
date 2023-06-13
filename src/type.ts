@@ -4,7 +4,7 @@ import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
 import type { PredicateInput } from "./nodes/composite/predicate.js"
 import type { TypeNode } from "./nodes/composite/type.js"
-import { node, typeNodeFromValues } from "./nodes/composite/type.js"
+import { node } from "./nodes/composite/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
 import type { inferMorphOut, Morph, MorphAst, Out } from "./parse/ast/morph.js"
 import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
@@ -22,6 +22,7 @@ import type { bindThis, Scope } from "./scope.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
 import type { conform, id, Literalable } from "./utils/generics.js"
+import { Path } from "./utils/lists.js"
 import type { AbstractableConstructor } from "./utils/objectKinds.js"
 
 export type TypeParser<$> = TypeOverloads<$> & TypeProps<$>
@@ -66,7 +67,7 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
     }
     const props: TypeProps<$> = {
         literal: (...possibleValues) =>
-            new Type(typeNodeFromValues(possibleValues), scope),
+            new Type(node.literal(...possibleValues), scope),
         instanceof: (...possibleConstructors) =>
             new Type(
                 node(
@@ -99,7 +100,10 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     allows: this["root"]["allows"]
 
     constructor(public definition: unknown, public scope: Scope) {
-        const root = scope.parseTypeDefinition(definition)
+        const root = scope.parse(definition, {
+            path: new Path(),
+            scope
+        })
         super(
             In,
             `const state = new ${registry().reference("state")}();
@@ -135,18 +139,18 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
         >
     ): Type<inferIntersection<t, inferDefinition<def, bindThis<$, def>>>> {
         return new Type(
-            this.root.and(this.scope.parseTypeDefinition(def)),
+            this.root.and(this.scope.parseRoot(def)),
             this.scope
-        )
+        ) as never
     }
 
     or<def>(
         def: validateDefinition<def, bindThis<$, def>>
     ): Type<t | inferDefinition<def, bindThis<$, def>>, $> {
         return new Type(
-            this.root.or(this.scope.parseTypeDefinition(def)),
+            this.root.or(this.scope.parseRoot(def)),
             this.scope
-        )
+        ) as never
     }
 
     morph<morph extends Morph<extractOut<t>>>(
@@ -175,15 +179,15 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
     narrow<def extends Narrow<extractOut<t>>>(
         def: def
     ): Type<inferNarrow<extractOut<t>, def>, $> {
-        return new Type(this.root.constrain("narrow", def), this.scope)
+        return new Type(this.root.constrain("narrow", def), this.scope) as never
     }
 
     array(): Type<t[], $> {
-        return new Type(this.root.array(), this.scope)
+        return new Type(this.root.array(), this.scope) as never
     }
 
     keyof(): Type<keyof this["inferIn"], $> {
-        return new Type(this.root.keyof(), this.scope)
+        return new Type(this.root.keyof(), this.scope) as never
     }
 
     assert(data: unknown): extractOut<t> {

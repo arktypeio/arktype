@@ -31,7 +31,7 @@ return (() => {
             sky: { climate: "'dry'", color: "'blue'", isSky: "true" },
             ocean: { climate: "'wet'", color: "'blue'", isOcean: "true" }
         })
-    test("nestedd", () => {
+    test("nested", () => {
         const t = getPlaces().type("ocean|sky|rainForest|desert")
         attest(t.root.condition).snap(`(() => {
         switch($arkRoot.color) {

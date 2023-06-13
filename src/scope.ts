@@ -251,6 +251,13 @@ export class Scope<r extends Resolutions = any> {
         return result
     }
 
+    parseRoot(def: unknown) {
+        return this.parse(def, {
+            path: new Path(),
+            scope: this
+        })
+    }
+
     /** @internal */
     maybeResolve(name: string): TypeNode | undefined {
         if (this.resolutions[name]) {
@@ -260,26 +267,9 @@ export class Scope<r extends Resolutions = any> {
         if (!aliasDef) {
             return
         }
-        const resolution = this.parse(aliasDef, {
-            path: new Path(),
-            scope: this
-        })
+        const resolution = this.parseRoot(aliasDef)
         this.resolutions[name] = resolution
         return resolution
-    }
-
-    /** @internal */
-    parseTypeDefinition(definition: unknown) {
-        const thisNode = {}
-        this.resolutions["this"] = thisNode as TypeNode
-        const root = Object.assign(
-            thisNode,
-            this.parse(definition, {
-                path: new Path(),
-                scope: this
-            })
-        )
-        return root
     }
 
     private exported = false

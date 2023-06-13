@@ -23,7 +23,7 @@ suite("union", () => {
             0 as const,
             "" as const
         )
-        attest(nary.root).is(expected)
+        attest(nary.condition).is(expected.condition)
     })
     test("subtype pruning", () => {
         type([{ a: "string" }, "|", { a: "'foo'" }])

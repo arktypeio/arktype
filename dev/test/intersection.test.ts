@@ -1,6 +1,5 @@
 import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
-import { node } from "../../src/nodes/composite/type.js"
 import { writeUnsatisfiableExpressionError } from "../../src/parse/ast/ast.js"
 import {
     writeMissingRightOperandMessage,
@@ -12,7 +11,7 @@ suite("intersection", () => {
     test("two types", () => {
         const t = type("boolean&true")
         attest(t.infer).typed as true
-        attest(t.root).is(node.literal(true as const))
+        attest(t.condition).is(type("true").condition)
     })
     test("intersection parsed before union", () => {
         // Should be parsed as:
