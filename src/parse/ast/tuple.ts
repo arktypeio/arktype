@@ -211,12 +211,10 @@ export type inferTupleExpression<
     ? inferIntersection<inferDefinition<def[0], $>, inferDefinition<def[2], $>>
     : def[1] extends "|"
     ? inferDefinition<def[0], $> | inferDefinition<def[2], $>
-    : def[1] extends "=>"
-    ? inferNarrow<inferDefinition<def[0], $>, def[2]>
-    : def[1] extends "|>"
-    ? parseMorph<def[0], def[2], $>
     : def[1] extends ":"
-    ? inferDefinition<def[0], $>
+    ? inferNarrow<inferDefinition<def[0], $>, def[2]>
+    : def[1] extends "=>"
+    ? parseMorph<def[0], def[2], $>
     : def[0] extends "==="
     ? def[1]
     : def[0] extends "instanceof"
@@ -268,9 +266,9 @@ export type validateInfixExpression<
               ? validateDefinition<def[2], $>
               : def[1] extends "&"
               ? validateDefinition<def[2], $>
-              : def[1] extends "=>"
+              : def[1] extends ":"
               ? Narrow<extractIn<inferDefinition<def[0], $>>>
-              : def[1] extends "|>"
+              : def[1] extends "=>"
               ? Morph<extractOut<inferDefinition<def[0], $>>, unknown>
               : validateDefinition<def[2], $>
       ]
@@ -288,14 +286,6 @@ export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) =>
 export type inferKeyOfExpression<operandDef, $> = evaluate<
     keyof inferDefinition<operandDef, $>
 >
-
-export type ConfigTuple<
-    def = unknown,
-    config extends TypeConfig = TypeConfig
-> = readonly [def, ":", config]
-
-export const parseConfigTuple: PostfixParser<":"> = (def, ctx) =>
-    ctx.scope.parse(def[0], ctx)
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
     if (def[2] === undefined) {
@@ -333,7 +323,7 @@ export type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
 
 export type TuplePostfixOperator = "[]"
 
-export type TupleInfixOperator = "&" | "|" | "=>" | "|>" | ":"
+export type TupleInfixOperator = "&" | "|" | "=>" | ":"
 
 export type IndexOneExpression<
     token extends IndexOneOperator = IndexOneOperator
@@ -348,12 +338,11 @@ const indexOneParsers: {
     "|": parseBranchTuple,
     "&": parseBranchTuple,
     "[]": parseArrayTuple,
-    "=>": parseNarrowTuple,
-    "|>": parseMorphTuple,
-    ":": parseConfigTuple
+    ":": parseNarrowTuple,
+    "=>": parseMorphTuple
 }
 
-export type FunctionalTupleOperator = "=>" | "|>"
+export type FunctionalTupleOperator = ":" | "=>"
 
 export type IndexZeroOperator = "keyof" | "instanceof" | "==="
 

@@ -342,7 +342,7 @@ type destructuredImportContext<
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
-        "=>"
+        ":"
     )}`
 
 export const writeDuplicateAliasesMessage = <name extends string>(

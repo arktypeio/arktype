@@ -68,7 +68,7 @@ suite("args tuple expression", () => {
         )
     })
     test("morph", () => {
-        const t = type({ a: "string" }, "|>", (In) => ({ b: In.a }))
+        const t = type({ a: "string" }, "=>", (In) => ({ b: In.a }))
         attest(t.infer).typed as (In: { a: string }) => Out<{
             b: string
         }>
@@ -76,7 +76,7 @@ suite("args tuple expression", () => {
     test("narrow", () => {
         const t = type(
             { a: "string" },
-            "=>",
+            ":",
             (In): In is { a: "foo" } => In.a === "foo"
         )
         attest(t.infer).typed as { a: "foo" }

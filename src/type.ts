@@ -53,9 +53,9 @@ type TypeOverloads<$> = {
             : conform<one, IndexOneOperator>,
         ...expression2: one extends TupleInfixOperator
             ? [
-                  one extends "=>"
+                  one extends ":"
                       ? Narrow<extractIn<inferDefinition<zero, $>>>
-                      : one extends "|>"
+                      : one extends "=>"
                       ? // TODO: centralize
                         Morph<extractOut<inferDefinition<zero, $>>, unknown>
                       : validateDefinition<two, bindThis<$, two>>

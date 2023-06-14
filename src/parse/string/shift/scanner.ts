@@ -95,7 +95,7 @@ export namespace Scanner {
 
     export type FinalizingLookahead = keyof typeof finalizingLookaheads
 
-    export type InfixToken = Comparator | "|" | "&" | "%" | ":" | "=>" | "|>"
+    export type InfixToken = Comparator | "|" | "&" | "%" | ":" | "=>"
 
     export type PostfixToken = "[]"
 

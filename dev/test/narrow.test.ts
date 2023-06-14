@@ -9,7 +9,7 @@ import { attest } from "../attest/main.js"
 suite("narrow", () => {
     test("implicit problem", () => {
         const isOdd = (n: number) => n % 2 === 1
-        const odd = type(["number", "=>", isOdd])
+        const odd = type(["number", ":", isOdd])
         attest(odd.infer).typed as number
         // attest(odd.node).equals({ number: { narrow: isOdd as any } })
         attest(odd(1).data).equals(1)
@@ -18,13 +18,13 @@ suite("narrow", () => {
         )
     })
     test("implicit problem anonymous", () => {
-        const even = type(["number", "=>", (n) => n % 2 === 0])
+        const even = type(["number", ":", (n) => n % 2 === 0])
         attest(even(1).problems?.summary).snap("Must be valid (was 1)")
     })
     test("explicit problem", () => {
         const even = type([
             "number",
-            "=>",
+            ":",
             (n, problems) =>
                 n % 3 === 0 || !problems.mustBe("divisible by 3", n, new Path())
         ])
@@ -37,7 +37,7 @@ suite("narrow", () => {
                 a: "number",
                 b: "number"
             },
-            "=>",
+            ":",
             ({ a, b }, problems) => {
                 if (a === b) {
                     return true
@@ -53,7 +53,7 @@ suite("narrow", () => {
         )
     })
     test("functional predicate", () => {
-        const one = type(["number", "=>", (n): n is 1 => n === 1])
+        const one = type(["number", ":", (n): n is 1 => n === 1])
         attest(one).typed as Type<1>
     })
     test("functional parameter inference", () => {
@@ -64,14 +64,14 @@ suite("narrow", () => {
         attest(
             type([
                 "number|boolean[]",
-                "=>",
+                ":",
                 (data) => validateNumberOrBooleanList(data)
             ]).infer
         ).typed as number | boolean[]
         attest(() => {
             type([
                 "number|boolean[]",
-                "=>",
+                ":",
                 // @ts-expect-error
                 (data: number | string[]) => !!data
             ])
@@ -80,7 +80,7 @@ suite("narrow", () => {
     test("narrow problem", () => {
         const palindrome = type([
             "string",
-            "=>",
+            ":",
             (s, problems) =>
                 s === [...s].reverse().join("")
                     ? true

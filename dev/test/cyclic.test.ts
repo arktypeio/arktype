@@ -90,7 +90,7 @@ suite("cyclic data", () => {
         const data = getCyclicData()
         const nonSelfDependent = getCyclicScope().type([
             "package",
-            "=>",
+            ":",
             (p) => !p.dependencies?.some((d) => d.name === p.name)
         ])
         attest(nonSelfDependent(data).problems?.summary).snap(

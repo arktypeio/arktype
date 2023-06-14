@@ -21,7 +21,7 @@ export const morphNode = defineNodeKind<MorphNode, listable<Morph>>(
     (base) => ({
         description: `morphed by ${base.rule
             .map((morph) => morph.name)
-            .join("|>")}`
+            .join("=>")}`
     })
 )
 

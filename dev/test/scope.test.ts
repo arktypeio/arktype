@@ -45,7 +45,7 @@ suite("scope", () => {
     })
     test("infers input and output", () => {
         const $ = scope({
-            a: ["string", "|>", (s) => s.length]
+            a: ["string", "=>", (s) => s.length]
         })
         attest($.infer).typed as { a: number }
         attest($.inferIn).typed as { a: string }

@@ -5,7 +5,7 @@ import { throwParseError } from "../../utils/errors.js"
 import type { inferDefinition } from "../definition.js"
 import type { PostfixParser } from "./tuple.js"
 
-export const parseMorphTuple: PostfixParser<"|>"> = (def, ctx) => {
+export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {
         return throwParseError(writeMalformedMorphExpressionMessage(def[2]))
     }
@@ -22,11 +22,11 @@ export type parseMorph<inDef, morph, $> = morph extends Morph
 
 export type MorphAst<i = any, o = unknown> = (In: i) => Out<o>
 
-export type Out<o = unknown> = ["|>", o]
+export type Out<o = unknown> = ["=>", o]
 
 export type inferMorphOut<out> = [out] extends [CheckResult<infer t>]
     ? t
     : Exclude<out, Problem>
 
 export const writeMalformedMorphExpressionMessage = (value: unknown) =>
-    `Morph expression requires a function following '|>' (was ${typeof value})`
+    `Morph expression requires a function following '=>' (was ${typeof value})`
