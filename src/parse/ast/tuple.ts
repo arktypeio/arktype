@@ -116,7 +116,7 @@ export type validateTuple<def extends List, $> = def extends IndexZeroExpression
       ]
     : validateTupleLiteral<def, $>
 
-type validateTupleLiteral<
+export type validateTupleLiteral<
     def extends List,
     $,
     result extends unknown[] = []
