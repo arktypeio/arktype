@@ -1,7 +1,6 @@
-import { compilePropAccess, In } from "../../compile/compile.js"
+import type { CompilationState } from "../../compile/compile.js"
 import { throwInternalError } from "../../utils/errors.js"
 import { Disjoint } from "../disjoint.js"
-import type { CompilationNode } from "../node.js"
 import type { TypeInput, TypeNode } from "./type.js"
 import { builtins } from "./type.js"
 
@@ -35,23 +34,16 @@ export const intersectNamedProp = (
     }
 }
 
-// const valueCheck = prop.value.condition.replaceAll(
-//     In,
-//     `${In}${compilePropAccess(prop.key.name)}`
-// )
-
-export const compileNamedProp = (prop: NamedPropRule): CompilationNode => {
-    return prop.key.optional
-        ? {
-              prefix: `if('${prop.key.name}' in ${In}) {`,
-              key: prop.key.name,
-              children: [prop.value.compilation],
-              suffix: `}`
-          }
-        : {
-              key: prop.key.name,
-              children: [prop.value.compilation]
-          }
+export const compileNamedProp = (prop: NamedPropRule, s: CompilationState) => {
+    s.path.push(prop.key.name)
+    const compiledValue = prop.value.compile(s)
+    s.path.pop()
+    const result = prop.key.optional
+        ? `if('${prop.key.name}' in ${s.data}) {
+            ${compiledValue}
+        }`
+        : compiledValue
+    return result
 }
 
 export type NamedPropInput = {

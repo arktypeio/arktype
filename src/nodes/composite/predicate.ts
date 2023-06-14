@@ -1,4 +1,3 @@
-import { precedenceByKind } from "../../compile/compile.js"
 import { writeUnboundableMessage } from "../../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
 import type { inferMorphOut, Morph, Out } from "../../parse/ast/morph.js"
@@ -16,7 +15,7 @@ import type {
 import { isArray } from "../../utils/objectKinds.js"
 import { Disjoint } from "../disjoint.js"
 import type { NodeKinds } from "../kinds.js"
-import { createNodeOfKind } from "../kinds.js"
+import { createNodeOfKind, precedenceByKind } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 import type {
@@ -75,9 +74,9 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
                     : -1
             )
         },
-        compile: (children) => ({
-            children: children.map((child) => child.compilation)
-        }),
+        compile: (children, state) => {
+            return children.map((child) => child.compile(state)).join("\n")
+        },
         intersect: (l, r): PredicateNode | Disjoint => {
             // if (
             //     // s.lastOperator === "&" &&

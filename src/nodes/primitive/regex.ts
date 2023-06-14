@@ -1,4 +1,3 @@
-import { In } from "../../compile/compile.js"
 import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
@@ -9,7 +8,12 @@ export const regexNode = defineNodeKind<RegexNode, string | string[]>(
     {
         kind: "regex",
         parse: (input) => listFrom(input).sort(),
-        compile: (rule) => rule.map((source) => `${In}.match(/${source}/)`),
+        compile: (rule, s) =>
+            rule
+                .map((source) =>
+                    s.check("regex", source, `${s.data}.match(/${source}/)`)
+                )
+                .join("\n"),
         intersect: (l, r): RegexNode =>
             regexNode(intersectUniqueLists(l.rule, r.rule))
     },

@@ -41,6 +41,26 @@ export type NodeKind = keyof NodeKinds
 
 export type Node = NodeKinds[NodeKind]
 
+export const precedenceByKind = {
+    // roots
+    type: 0,
+    predicate: 0,
+    // basis checks
+    domain: 1,
+    class: 1,
+    value: 1,
+    // shallow checks
+    range: 2,
+    divisor: 2,
+    regex: 2,
+    // deep checks
+    props: 3,
+    // narrows
+    narrow: 4,
+    // morphs
+    morph: 5
+} as const satisfies Record<NodeKind, number>
+
 const nodeKinds = cached(
     () =>
         ({

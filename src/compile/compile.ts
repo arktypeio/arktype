@@ -1,4 +1,3 @@
-import type { NodeKind } from "../nodes/kinds.js"
 import type { TypeConfig } from "../type.js"
 import { type Domain, hasDomain } from "../utils/domains.js"
 import { Path } from "../utils/lists.js"
@@ -6,26 +5,6 @@ import type { SerializablePrimitive } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
 import type { ProblemCode, ProblemRules } from "./problems.js"
 import { registry } from "./registry.js"
-
-export const precedenceByKind = {
-    // roots
-    type: 0,
-    predicate: 0,
-    // basis checks
-    domain: 1,
-    class: 1,
-    value: 1,
-    // shallow checks
-    range: 2,
-    divisor: 2,
-    regex: 2,
-    // deep checks
-    props: 3,
-    // narrows
-    narrow: 4,
-    // morphs
-    morph: 5
-} as const satisfies Record<NodeKind, number>
 
 export type TraversalConfig = {
     [k in keyof TypeConfig]-?: TypeConfig[k][]
@@ -38,25 +17,9 @@ const initializeCompilationConfig = (): TraversalConfig => ({
 
 export const In = "$arkRoot"
 
-export const IndexIn = "$arkIndex"
+const IndexIn = "$arkIndex"
 
-export const KeyIn = "$arkKey"
-
-export const joinIntersectionConditions = (subconditions: string[]) =>
-    subconditions.length === 0
-        ? // 0 constraints is unknown (predicate, props)
-          "true"
-        : subconditions.join(" && ")
-
-export const joinUnionConditions = (subconditions: string[]) =>
-    subconditions.length === 0
-        ? // an empty set of conditions is never for a union
-          "false"
-        : subconditions.length === 1
-        ? // we don't want to prune a single "true" branch here (unknown)
-          // TODO: how to parenthesize only when needed?
-          subconditions[0]
-        : `(${subconditions.join(" || ")})`
+const KeyIn = "$arkKey"
 
 export const prependIndex = (path: string) =>
     `${In}[${IndexIn}]${path.slice(In.length)}`
@@ -95,7 +58,7 @@ export class CompilationState {
     unionDepth = 0
     traversalConfig = initializeCompilationConfig()
 
-    constructor() {}
+    constructor(private kind: "allows" | "traverse") {}
 
     get data() {
         return compilePathAccess(this.path)
@@ -112,21 +75,17 @@ export class CompilationState {
         }, ${this.data}, ${this.path.json})` as const
     }
 
-    ifThen<condition extends string, onTrue extends string>(
-        condition: condition,
-        onTrue: onTrue
-    ) {
-        return `if (${condition}) {
-            ${onTrue}
-        }`
-    }
-
-    ifNotThen<condition extends string, onFalse extends string>(
-        condition: condition,
-        onFalse: onFalse
+    check<code extends ProblemCode>(
+        code: code,
+        rule: ProblemRules[code],
+        condition: string
     ) {
         return `if (!(${condition})) {
-            ${onFalse}
+            ${
+                this.kind === "allows"
+                    ? "return false"
+                    : this.problem(code, rule)
+            }
         }`
     }
 }

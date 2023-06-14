@@ -37,7 +37,7 @@ const arkType = type({
 
 console.log(arkType.condition)
 
-console.log(arkType(validInput))
+console.log(arkType.allows(validInput))
 
 const f = ($arkRoot: any) => {
     if (
@@ -129,9 +129,9 @@ const f = ($arkRoot: any) => {
 //     return true
 // }
 
-bench("allows", () => {
-    arkType(validInput)
-}).median([1.84, "ns"])
+// bench("allows", () => {
+//     arkType(validInput)
+// }).median([1.84, "ns"])
 
 // bench("anonymous", () => {
 //     anonymous(validInput)

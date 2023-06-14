@@ -1,4 +1,3 @@
-import { In } from "../../compile/compile.js"
 import { isKeyOf } from "../../utils/records.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
@@ -69,7 +68,7 @@ export const rangeNode = defineNodeKind<RangeNode>(
     {
         kind: "range",
         parse: (input) => input,
-        compile: (rule) => {
+        compile: (rule, s) => {
             if (
                 rule[0].limit === rule[1]?.limit &&
                 rule[0].comparator === ">=" &&
@@ -79,7 +78,17 @@ export const rangeNode = defineNodeKind<RangeNode>(
                 rule = [{ comparator: "==", limit: rule[0].limit }]
             }
             // sorted as lower, upper by definition
-            return rule.map(compileBound)
+            return rule
+                .map((bound) =>
+                    s.check(
+                        "range",
+                        bound,
+                        `(${s.data}.length ?? Number(${s.data})) ${
+                            bound.comparator === "==" ? "===" : bound.comparator
+                        } ${bound.limit}`
+                    )
+                )
+                .join("\n")
         },
         intersect: (l, r): RangeNode | Disjoint => {
             if (isEqualityRangeNode(l)) {
@@ -135,26 +144,10 @@ export const rangeNode = defineNodeKind<RangeNode>(
     }
 )
 
-const compileBound = (bound: Bound) =>
-    `(${In}.length ?? Number(${In})) ${
-        bound.comparator === "==" ? "===" : bound.comparator
-    } ${bound.limit}`
-
 const isEqualityRangeNode = (
     node: RangeNode
 ): node is RangeNode & { rule: [Bound<"==">] } =>
     node.rule[0].comparator === "=="
-
-// compileTraverse(s: CompilationState) {
-//     return this.range
-//         .map((constraint) =>
-//             s.ifNotThen(
-//                 RangeNode.compileAssertion(constraint),
-//                 s.problem("range", constraint)
-//             )
-//         )
-//         .join("\n")
-// }
 
 export const compareStrictness = (
     kind: "min" | "max",

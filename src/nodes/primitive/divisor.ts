@@ -1,4 +1,3 @@
-import { In } from "../../compile/compile.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
@@ -8,7 +7,8 @@ export const divisorNode = defineNodeKind<DivisorNode>(
     {
         kind: "divisor",
         parse: (input) => input,
-        compile: (rule) => `${In} % ${rule} === 0`,
+        compile: (rule, s) =>
+            s.check("divisor", rule, `${s.data} % ${rule} === 0`),
         intersect: (l, r): DivisorNode =>
             divisorNode(
                 Math.abs(

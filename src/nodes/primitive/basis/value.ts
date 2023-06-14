@@ -1,4 +1,4 @@
-import { compileSerializedValue, In } from "../../../compile/compile.js"
+import { compileSerializedValue } from "../../../compile/compile.js"
 import { domainOf } from "../../../utils/domains.js"
 import { prototypeKeysOf } from "../../../utils/objectKinds.js"
 import { stringify } from "../../../utils/serialize.js"
@@ -13,7 +13,12 @@ export const valueNode = defineNodeKind<ValueNode>(
         kind: "value",
         parse: (input) => input,
         intersect: intersectBases,
-        compile: (rule) => `${In} === ${compileSerializedValue(rule)}`
+        compile: (rule, s) =>
+            s.check(
+                "value",
+                rule,
+                `${s.data} === ${compileSerializedValue(rule)}`
+            )
     },
     (base) => ({
         domain: domainOf(base.rule),
@@ -24,7 +29,3 @@ export const valueNode = defineNodeKind<ValueNode>(
         description: `the value ${stringify(base.rule)}`
     })
 )
-
-// compileTraverse(s: CompilationState) {
-//     return s.ifNotThen(this.condition, s.problem("value", this.child))
-// }

@@ -1,4 +1,3 @@
-import { In } from "../../../compile/compile.js"
 import { registry } from "../../../compile/registry.js"
 import { cached } from "../../../utils/functions.js"
 import type { AbstractableConstructor } from "../../../utils/objectKinds.js"
@@ -19,11 +18,15 @@ export const classNode = defineNodeKind<ClassNode>(
     {
         kind: "class",
         parse: (input) => input,
-        compile: (rule) =>
-            `${In} instanceof ${
-                getExactBuiltinConstructorName(rule) ??
-                registry().register(rule.name, rule)
-            }`,
+        compile: (rule, s) =>
+            s.check(
+                "class",
+                rule,
+                `${s.data} instanceof ${
+                    getExactBuiltinConstructorName(rule) ??
+                    registry().register(rule.name, rule)
+                }`
+            ),
         intersect: intersectBases
     },
     (base) => ({

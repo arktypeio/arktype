@@ -1,4 +1,4 @@
-import { In } from "./compile/compile.js"
+import { CompilationState, In } from "./compile/compile.js"
 import { registry } from "./compile/registry.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
@@ -11,8 +11,7 @@ import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
 import type {
     IndexOneOperator,
     IndexZeroOperator,
-    TupleInfixOperator,
-    validateTupleLiteral
+    TupleInfixOperator
 } from "./parse/ast/tuple.js"
 import type {
     inferDefinition,
@@ -25,11 +24,9 @@ import type {
     parseGenericParams
 } from "./parse/generic.js"
 import type { bindThis, Scope } from "./scope.js"
-import type { Ark } from "./scopes/ark.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
-import type { asConst, conform, id, Literalable } from "./utils/generics.js"
-import { List } from "./utils/lists.js"
+import type { conform, id, Literalable } from "./utils/generics.js"
 import type { AbstractableConstructor } from "./utils/objectKinds.js"
 
 export type TypeParser<$> = TypeOverloads<$> & TypeProps<$>
@@ -141,7 +138,7 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
         const root = scope.parseTypeRoot(definition) as TypeNode<t>
         super(
             In,
-            `${root.condition}
+            `${root.compile(new CompilationState("traverse"))}
         return true`
         )
         this.root = root

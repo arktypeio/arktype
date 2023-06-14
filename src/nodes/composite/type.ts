@@ -57,16 +57,19 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
             }
             return alphabetizeByCondition(reduceBranches(input))
         },
-        compile: (children) => {
-            return children.length === 1
-                ? children.map((branch) => branch.compilation)
-                : {
-                      prefix: `(() => {`,
-                      children: children.map((branch) => branch.compilation),
-                      suffix: `
-                return false
-            })`
-                  }
+        compile: (branches, s) => {
+            if (branches.length === 1) {
+                return branches[0].compile(s)
+            }
+            const compiledBranches = branches
+                .map(
+                    (branch) => `(() => {
+          ${branch.compile(s)}
+          return true
+      })`
+                )
+                .join(" || ")
+            return `${compiledBranches}`
         },
         intersect: (l, r): TypeNode | Disjoint => {
             if (l.rule.length === 1 && r.rule.length === 1) {
