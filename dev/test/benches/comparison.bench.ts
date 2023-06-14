@@ -37,6 +37,8 @@ const arkType = type({
 
 console.log(arkType.condition)
 
+console.log(arkType(validInput))
+
 const f = ($arkRoot: any) => {
     if (
         (typeof $arkRoot === "object" && $arkRoot !== null) ||
@@ -127,26 +129,13 @@ const f = ($arkRoot: any) => {
 //     return true
 // }
 
-// const chained = ($arkRoot: any): boolean =>
-//     ((typeof $arkRoot === "object" && $arkRoot !== null) ||
-//         typeof $arkRoot === "function") &&
-//     ($arkRoot.boolean === false || $arkRoot.boolean === true) &&
-//     ((typeof $arkRoot.deeplyNested === "object" &&
-//         $arkRoot.deeplyNested !== null) ||
-//         typeof $arkRoot.deeplyNested === "function") &&
-//     ($arkRoot.deeplyNested.bool === false ||
-//         $arkRoot.deeplyNested.bool === true) &&
-//     typeof $arkRoot.deeplyNested.foo === "string" &&
-//     typeof $arkRoot.deeplyNested.num === "number" &&
-//     typeof $arkRoot.longString === "string" &&
-//     typeof $arkRoot.maxNumber === "number" &&
-//     typeof $arkRoot.negNumber === "number" &&
-//     typeof $arkRoot.number === "number" &&
-//     typeof $arkRoot.string === "string"
+bench("allows", () => {
+    arkType(validInput)
+}).median([1.84, "ns"])
 
-// // bench("anonymous", () => {
-// //     anonymous(validInput)
-// // }).median([2.1, "ns"])
+// bench("anonymous", () => {
+//     anonymous(validInput)
+// }).median([2.1, "ns"])
 
 // bench("chained", () => {
 //     chained(validInput)

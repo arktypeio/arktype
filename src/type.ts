@@ -136,7 +136,11 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
 
     constructor(public definition: unknown, public scope: Scope) {
         const root = scope.parseTypeRoot(definition) as TypeNode<t>
-        super(In, `return true`)
+        super(
+            In,
+            `${root.condition}
+        return true`
+        )
         this.root = root
         this.condition = root.condition
         this.allows = root.allows

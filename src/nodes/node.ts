@@ -29,11 +29,11 @@ export const compileCondition = (
     ctx: CompilationContext
 ): string =>
     isArray(tree)
-        ? tree.flatMap((child) => compileCondition(child, ctx)).join("")
+        ? tree.flatMap((child) => compileCondition(child, ctx)).join("\n")
         : typeof tree === "string"
-        ? `if(${tree.replaceAll(In, compilePathAccess(ctx.path))}) {
+        ? `if(!(${tree.replaceAll(In, compilePathAccess(ctx.path))})) {
     return false
-};`
+}`
         : `${tree.prefix ?? ""}${compileCondition(tree.children, {
               path: tree.key ? [...ctx.path, tree.key] : ctx.path
           })}${tree.suffix ?? ""}`
@@ -132,7 +132,11 @@ export const defineNodeKind = <
             compilation,
             condition,
             rule,
-            allows: new CompiledFunction(In, `return true`),
+            allows: new CompiledFunction(
+                In,
+                `${condition}
+            return true`
+            ),
             intersectionCache,
             intersect(other) {
                 if (this === other) {
