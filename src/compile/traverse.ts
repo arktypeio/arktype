@@ -9,7 +9,7 @@ export class CheckResult<out = unknown, valid extends boolean = boolean> {
     declare problems: valid extends true ? never : Problems
 
     constructor(result: unknown) {
-        if ((result as PossiblyInternalObject)?.kind === "problems") {
+        if ((result as PossiblyInternalObject)?.$arkId === "problems") {
             this.problems = result as never
         } else {
             this.data = result as never
@@ -20,6 +20,7 @@ export class CheckResult<out = unknown, valid extends boolean = boolean> {
 export class TraversalState {
     basePath = new Path()
     problemsStack: Problems[] = [new Problems()]
+    // TODO: add morphs here
     entriesToPrune: [data: Record<string, unknown>, key: string][] = []
 
     // Qualified

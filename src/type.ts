@@ -138,8 +138,9 @@ export class Type<t = unknown, $ = any> extends CompiledFunction<
         const root = scope.parseTypeRoot(definition) as TypeNode<t>
         super(
             In,
-            `${root.compile(new CompilationState("traverse"))}
-        return true`
+            `const state = new ${registry().reference("state")}();
+        ${root.compile(new CompilationState("traverse"))}
+        return state.finalize(${In});`
         )
         this.root = root
         this.condition = root.condition

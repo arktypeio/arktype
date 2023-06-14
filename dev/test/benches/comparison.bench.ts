@@ -35,9 +35,9 @@ const arkType = type({
     }
 })
 
-console.log(arkType.condition)
+console.log(arkType.toString())
 
-console.log(arkType.allows(validInput))
+console.log(arkType(validInput))
 
 const f = ($arkRoot: any) => {
     if (

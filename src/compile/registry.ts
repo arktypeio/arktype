@@ -7,7 +7,7 @@ type PrepopulatedKey = "ark" | "state"
 
 export type InternalId = "problems" | "result"
 
-export type PossiblyInternalObject = { kind?: InternalId } | undefined | null
+export type PossiblyInternalObject = { $arkId?: InternalId } | undefined | null
 
 class Registry {
     [k: string]: unknown
