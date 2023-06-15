@@ -39,14 +39,19 @@ type TypeOverloads<$> = {
         $
     >
 
-    // TODO: this type within expression?
     // Spread version of a tuple expression
     <zero, one, two>(
         expression0: zero extends IndexZeroOperator
             ? zero
-            : validateDefinition<zero, bindThis<$, zero>>,
+            : validateDefinition<
+                  zero,
+                  bindThis<$, tupleExpression<zero, one, two>>
+              >,
         expression1: zero extends IndexZeroOperator
-            ? validateDefinition<one, bindThis<$, one>>
+            ? validateDefinition<
+                  one,
+                  bindThis<$, tupleExpression<zero, one, two>>
+              >
             : conform<one, IndexOneOperator>,
         ...expression2: one extends TupleInfixOperator
             ? [
@@ -55,7 +60,10 @@ type TypeOverloads<$> = {
                       : one extends "=>"
                       ? // TODO: centralize
                         Morph<extractOut<inferDefinition<zero, $>>, unknown>
-                      : validateDefinition<two, bindThis<$, two>>
+                      : validateDefinition<
+                            two,
+                            bindThis<$, tupleExpression<zero, one, two>>
+                        >
               ]
             : []
     ): Type<
