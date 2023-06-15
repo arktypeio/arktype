@@ -75,7 +75,14 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             )
         },
         compile: (children, state) => {
-            return children.map((child) => child.compile(state)).join("\n")
+            let result = ""
+            for (const child of children) {
+                const childResult = child.compile(state)
+                if (childResult) {
+                    result = `${result && "\n"}${childResult}`
+                }
+            }
+            return result
         },
         intersect: (l, r): PredicateNode | Disjoint => {
             // if (
