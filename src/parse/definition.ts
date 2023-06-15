@@ -74,7 +74,9 @@ export type inferDefinition<def, $> = isAny<def> extends true
     ? inferRecord<def, $>
     : never
 
-export type validateDefinition<def, $> = def extends Terminal
+export type validateDefinition<def, $> = null extends undefined
+    ? `'strict' or 'strictNullChecks' must be set to true in your tsconfig's 'compilerOptions'`
+    : def extends Terminal
     ? def
     : def extends string
     ? validateString<def, $>
