@@ -6,8 +6,8 @@ import type { PredicateInput } from "./nodes/composite/predicate.js"
 import type { TypeNode } from "./nodes/composite/type.js"
 import { node } from "./nodes/composite/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
-import type { inferMorphOut, Morph, MorphAst, Out } from "./parse/ast/morph.js"
-import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
+import type { Morph, MorphAst, Out, inferMorphOut } from "./parse/ast/morph.js"
+import type { Narrow, inferNarrow } from "./parse/ast/narrow.js"
 import type {
     IndexOneOperator,
     IndexZeroOperator,
@@ -23,11 +23,15 @@ import type {
     GenericParamsParseError,
     parseGenericParams
 } from "./parse/generic.js"
-import type { bindThis, Scope } from "./scope.js"
+import type { Scope, bindThis } from "./scope.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
-import type { conform, id, Literalable } from "./utils/generics.js"
-import type { AbstractableConstructor } from "./utils/objectKinds.js"
+import type { Literalable, conform, id } from "./utils/generics.js"
+import type {
+    AbstractableConstructor,
+    BuiltinObjectKind,
+    BuiltinObjects
+} from "./utils/objectKinds.js"
 
 export type TypeParser<$> = TypeOverloads<$> & TypeProps<$>
 
@@ -314,9 +318,13 @@ type extractMorphs<t, io extends "in" | "out"> = t extends MorphAst<
         ? i
         : o
     : t extends object
-    ? t extends
-          | ((...args: never[]) => unknown)
-          | (abstract new (...args: never[]) => unknown)
+    ? t extends TerminallyInferredObjectKind
         ? t
         : { [k in keyof t]: extractMorphs<t[k], io> }
     : t
+
+/** Objects we don't want to expand during inference like Date or Promise */
+type TerminallyInferredObjectKind = BuiltinObjects[Exclude<
+    BuiltinObjectKind,
+    "Object" | "Array"
+>]

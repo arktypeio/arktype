@@ -83,6 +83,7 @@ export const discriminate = (
                 if (kind === "domain") {
                     lSerialized = (disjoint.l as BasisNode).domain
                     rSerialized = (disjoint.r as BasisNode).domain
+                    // TODO: fix
                 } else if (kind === "value") {
                     lSerialized = compileSerializedValue(
                         (disjoint.l as ValueNode).rule

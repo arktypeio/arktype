@@ -9,8 +9,7 @@ import type { evaluate, isUnknown } from "../../utils/generics.js"
 import type { List, listable } from "../../utils/lists.js"
 import type {
     AbstractableConstructor,
-    Constructor,
-    instanceOf
+    Constructor
 } from "../../utils/objectKinds.js"
 import { isArray } from "../../utils/objectKinds.js"
 import { Disjoint } from "../disjoint.js"
@@ -343,7 +342,7 @@ type inferNonFunctionalConstraints<input extends PredicateInput> =
 type constraintsOf<basis extends BasisInput> = basis extends Domain
     ? functionalConstraints<inferDomain<basis>> & domainConstraints<basis>
     : basis extends Constructor
-    ? functionalConstraints<instanceOf<Constructor>> & classConstraints<basis>
+    ? functionalConstraints<InstanceType<Constructor>> & classConstraints<basis>
     : basis extends readonly ["===", infer value]
     ? // Exact values cannot be filtered, but can be morphed
       Pick<functionalConstraints<value>, "morph">

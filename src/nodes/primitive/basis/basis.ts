@@ -10,7 +10,7 @@ import type { DisjointKindEntries } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
 import type { BaseNode } from "../../node.js"
 import type { ClassNode } from "./class.js"
-import type { DomainNode } from "./domain.js"
+import type { DomainNode, NonEnumerableDomain } from "./domain.js"
 import type { ValueNode } from "./value.js"
 
 type BasisNodesByKind = {
@@ -20,7 +20,7 @@ type BasisNodesByKind = {
 }
 
 type BasisInputs = {
-    domain: Domain
+    domain: NonEnumerableDomain
     value: readonly ["===", unknown]
     class: AbstractableConstructor
 }

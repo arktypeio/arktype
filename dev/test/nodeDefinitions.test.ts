@@ -83,12 +83,12 @@ suite("node definitions", () => {
                 {
                     key: arrayIndexInput(2),
                     value: {
-                        basis: "boolean"
+                        basis: "symbol"
                     }
                 }
             ]
         })
-        attest(t).typed as TypeNode<[string, number, ...boolean[]]>
+        attest(t).typed as TypeNode<[string, number, ...symbol[]]>
     })
     test("non-variadic tuple", () => {
         const t = node({
@@ -99,7 +99,7 @@ suite("node definitions", () => {
                         basis: "object",
                         props: {
                             a: { value: { basis: "string" } },
-                            b: { value: { basis: "boolean" } }
+                            b: { value: { basis: "number" } }
                         }
                     }
                 },
@@ -118,7 +118,7 @@ suite("node definitions", () => {
             [
                 {
                     a: string
-                    b: boolean
+                    b: number
                 },
                 "arktype"
             ]

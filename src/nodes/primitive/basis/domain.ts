@@ -4,7 +4,12 @@ import { defineNodeKind } from "../../node.js"
 import type { BasisNode } from "./basis.js"
 import { intersectBases } from "./basis.js"
 
-export interface DomainNode extends BasisNode<Domain> {}
+export type NonEnumerableDomain = Exclude<
+    Domain,
+    "null" | "undefined" | "boolean"
+>
+
+export interface DomainNode extends BasisNode<NonEnumerableDomain> {}
 
 export const domainNode = defineNodeKind<DomainNode>(
     {

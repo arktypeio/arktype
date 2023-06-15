@@ -65,7 +65,7 @@ export class TraversalState {
     ) {
         // TODO: fix
         const problem = new problemsByCode[code](
-            ...(args as [any, any, any])
+            ...(args as never[])
         ) as any as Problem
         return this.problems.add(problem)
     }

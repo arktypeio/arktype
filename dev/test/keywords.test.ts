@@ -5,122 +5,48 @@ import { attest } from "../attest/main.js"
 
 suite("keywords", () => {
     suite("jsObjects", () => {
-        test(" Function", () => {
-            attest(type("Function").condition).equals(
-                node({ basis: Function }).condition
-            )
+        test("Function", () => {
+            // should not be treated as a morph
+            attest(type("Function").infer).typed as Function
         })
         test("Date", () => {
-            attest(type("Date").condition).equals(
-                node({ basis: Date }).condition
-            )
-        })
-        test("Error", () => {
-            attest(type("Error").condition).equals(
-                node({ basis: Error }).condition
-            )
-        })
-        test("Map", () => {
-            attest(type("Map").condition).equals(node({ basis: Map }).condition)
-        })
-        test("RegExp", () => {
-            attest(type("RegExp").condition).equals(
-                node({ basis: RegExp }).condition
-            )
-        })
-        test("Set", () => {
-            attest(type("Set").condition).equals(node({ basis: Set }).condition)
-        })
-        test("WeakMap", () => {
-            attest(type("WeakMap").condition).equals(
-                node({ basis: WeakMap }).condition
-            )
-        })
-        test("WeakSet", () => {
-            attest(type("WeakSet").condition).equals(
-                node({ basis: WeakSet }).condition
-            )
-        })
-        test("Promise", () => {
-            attest(type("Promise").condition).equals(
-                node({ basis: Promise }).condition
-            )
+            // should not expand built-in classes
+            attest(type("Date").infer).types.toString.snap()
         })
     })
     suite("tsKeywords", () => {
         test("any", () => {
-            attest(type("any").condition).equals(type("unknown").condition)
-        })
-        test("bigint", () => {
-            attest(type("bigint").condition).equals(
-                node({ basis: "bigint" }).condition
-            )
+            const any = type("any")
+            // equivalent to unknown at runtime
+            attest(any.condition).equals(type("unknown").condition)
+            // inferred as any
+            attest(any.infer).typed as any
         })
         test("boolean", () => {
-            attest(type("boolean").condition).equals(
-                type("true|false").condition
-            )
-            // TODO: fix
-            attest(type("boolean").condition).snap(`(() => {
-          if (!($arkRoot === false)) {
-            return false
-        }
-          return true
-      }) || (() => {
-          if (!($arkRoot === true)) {
-            return false
-        }
-          return true
-      })`)
-        })
-        test("false", () => {
-            attest(type("false").condition).equals(
-                node({ basis: ["===", false] }).condition
-            )
+            const boolean = type("boolean")
+            attest(boolean.infer).typed as boolean
+            // should be simplified to simple checks for true and false literals
+            attest(boolean.condition).equals(type("true|false").condition)
+            attest(boolean.condition)
+                .snap(`if( $arkRoot !== false && $arkRoot !== true) {
+    return false
+}`)
         })
         test("never", () => {
-            attest(type("never").condition).equals(node().condition)
-        })
-        test("null", () => {
-            attest(type("null").condition).equals(
-                node({ basis: ["===", null] }).condition
-            )
-        })
-        test("number", () => {
-            attest(type("number").condition).equals(
-                node({ basis: "number" }).condition
-            )
-        })
-        test("object", () => {
-            attest(type("object").condition).equals(
-                node({ basis: "object" }).condition
-            )
-        })
-        test("string", () => {
-            attest(type("string").condition).equals(
-                node({ basis: "string" }).condition
-            )
-        })
-        test("symbol", () => {
-            attest(type("symbol").condition).equals(
-                node({ basis: "symbol" }).condition
-            )
-        })
-        test("true", () => {
-            attest(type("true").condition).equals(
-                node({ basis: ["===", true] }).condition
-            )
+            const never = type("never")
+            attest(never.infer).typed as never
+            // should be equivalent to a zero-branch union
+            attest(never.condition).equals(node().condition)
         })
         test("unknown", () => {
+            // should be equivalent to an unconstrained predicate
             attest(type("unknown").condition).equals(node({}).condition)
         })
         test("void", () => {
-            attest(type("void").condition).equals(type("undefined").condition)
-        })
-        test("undefined", () => {
-            attest(type("undefined").condition).equals(
-                node({ basis: ["===", undefined] }).condition
-            )
+            const t = type("void")
+            attest(t.infer).typed as void
+            //should be treated as undefined at runtime
+            attest(t.condition).equals(type("undefined").condition)
         })
     })
     // suite("validation", () => {

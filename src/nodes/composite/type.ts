@@ -1,9 +1,10 @@
 import type { CompilationState } from "../../compile/compile.js"
-import { compilePathAccess } from "../../compile/compile.js"
+import { compilePathAccess, In } from "../../compile/compile.js"
 import type { inferred } from "../../parse/definition.js"
 import { cached } from "../../utils/functions.js"
 import type { conform, exact, Literalable } from "../../utils/generics.js"
 import { isArray } from "../../utils/objectKinds.js"
+import { keysOf } from "../../utils/records.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
 import { alphabetizeByCondition, defineNodeKind, isNode } from "../node.js"
@@ -13,7 +14,11 @@ import { valueNode } from "../primitive/basis/value.js"
 import type { ValueNode } from "../primitive/basis/value.js"
 import { thisNarrow } from "../primitive/narrow.js"
 import { discriminate } from "./discriminate.js"
-import type { CaseKey, Discriminant } from "./discriminate.js"
+import type {
+    CaseKey,
+    Discriminant,
+    DiscriminatedCases
+} from "./discriminate.js"
 import { arrayIndexInput, arrayIndexTypeNode } from "./indexed.js"
 import { predicateNode } from "./predicate.js"
 import type {
@@ -152,14 +157,20 @@ const compileDiscriminant = (
     discriminant: Discriminant,
     s: CompilationState
 ) => {
+    const isRootLiteral =
+        discriminant.path.length === 0 &&
+        discriminant.kind === "value" &&
+        !discriminant.cases.default
+    if (isRootLiteral) {
+        return compileDiscriminatedLiteral(discriminant.cases, s)
+    }
     const compiledPath = compilePathAccess(discriminant.path, {
         optional: true
     })
     const condition =
         discriminant.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
     let compiledCases = ""
-    let k: CaseKey
-    for (k in discriminant.cases) {
+    for (const k in discriminant.cases) {
         const caseCondition = k === "default" ? "default" : `case ${k}`
         const caseBranches = discriminant.cases[k]
         s.discriminants.push(discriminant)
@@ -168,8 +179,7 @@ const compileDiscriminant = (
             : compileDiscriminant(caseBranches, s)
         s.discriminants.pop()
         compiledCases += `${caseCondition}: {
-    ${caseChecks}
-    break
+    ${caseChecks ? `${caseChecks}\n     break` : "break"}
 }`
     }
     if (!discriminant.cases.default) {
@@ -180,6 +190,28 @@ const compileDiscriminant = (
     }
     return `switch(${condition}) {
     ${compiledCases}
+}`
+}
+
+const compileDiscriminatedLiteral = (
+    cases: DiscriminatedCases,
+    s: CompilationState
+) => {
+    // TODO: error messages for traversal
+    const caseKeys = Object.keys(cases)
+    if (caseKeys.length === 2) {
+        return `if( ${s.data} !== ${caseKeys[0]} && ${s.data} !== ${caseKeys[1]}) {
+    return false
+}`
+    }
+    // for >2 literals, we fall through all cases, breaking on the last
+    const compiledCases =
+        caseKeys.map((k) => `    case ${k}:`).join("\n") + "        break"
+    // if none of the cases are met, the check fails (this is optimal for perf)
+    return `switch(${s.data}) {
+    ${compiledCases}
+    default:
+        return false
 }`
 }
 
