@@ -10,7 +10,14 @@ export class Path extends Array<string> {
     get json() {
         return JSON.stringify(this)
     }
+
+    static from(path: PathLike) {
+        return path instanceof Path ? path
+        // : typeof path === 'string' ? Path.fromString(path)
+        : new Path(...path);
+    }
 }
+export type PathLike = Path | string[]  // | string;
 
 export type ReadonlyPath = arraySubclassToReadonly<Path>
 
