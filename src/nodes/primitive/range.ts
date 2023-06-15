@@ -78,18 +78,23 @@ export const rangeNode = defineNodeKind<RangeNode>(
                 // reduce a range like `1<=number<=1` to `number==1`
                 rule = [{ comparator: "==", limit: rule[0].limit }]
             }
-            if (!s.lastBasis) {
-                return throwInternalError(
-                    `Unexpected attempt to compile a range with no basis`
-                )
-            }
-            const size =
-                s.lastBasis.domain === "number"
+            const size = s.lastBasis
+                ? s.lastBasis.domain === "number"
                     ? s.data
-                    : s.lastBasis.hasKind("class") &&
-                      s.lastBasis.extendsOneOf(Date)
-                    ? `Number(${s.data})`
-                    : `${s.data}.length`
+                    : s.lastBasis.domain === "string"
+                    ? `${s.data}.length`
+                    : s.lastBasis.hasKind("class")
+                    ? s.lastBasis.extendsOneOf(Date)
+                        ? `Number(${s.data})`
+                        : s.lastBasis.extendsOneOf(Array)
+                        ? `${s.data}.length`
+                        : throwInternalError(
+                              `Unexpected basis for range constraint ${s.lastBasis}`
+                          )
+                    : throwInternalError(
+                          `Unexpected basis for range constraint ${s.lastBasis}`
+                      )
+                : `${s.data}.length ?? Number(${s.data})`
             // sorted as lower, upper by definition
             return rule
                 .map((bound) =>
