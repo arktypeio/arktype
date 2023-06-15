@@ -8,7 +8,7 @@ import type {
     NumberLiteral,
     writeMalformedNumericLiteralMessage
 } from "../../utils/numericLiterals.js"
-import type { inferDefinition, Inferred } from "../definition.js"
+import type { inferDefinition, InferAs } from "../definition.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { parseString } from "../string/string.js"
 import type { validateBound } from "./bound.js"
@@ -169,7 +169,7 @@ export type RegexLiteral<expression extends string = string> = `/${expression}/`
 
 export type inferTerminal<token, $> = token extends keyof $
     ? resolve<token, $>
-    : token extends Inferred<infer t>
+    : token extends InferAs<infer t>
     ? t
     : token extends StringLiteral<infer Text>
     ? Text

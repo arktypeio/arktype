@@ -1,7 +1,7 @@
 import { node } from "../nodes/composite/type.js"
 import { Scope } from "../scope.js"
 
-export const jsObject = Scope.root({
+export const jsObjects = Scope.root({
     Function: node({ basis: Function }),
     Date: node({ basis: Date }),
     Error: node({ basis: Error }),
@@ -13,4 +13,4 @@ export const jsObject = Scope.root({
     Promise: node({ basis: Promise })
 })
 
-export const jsObjectTypes = jsObject.export()
+export const jsObjectTypes = jsObjects.export()

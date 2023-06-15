@@ -2,8 +2,8 @@ import type { ProblemCode } from "./compile/problems.js"
 import type { TypeNode } from "./main.js"
 import { builtins } from "./nodes/composite/type.js"
 import type {
+    InferAs,
     inferDefinition,
-    Inferred,
     validateDefinition
 } from "./parse/definition.js"
 import {
@@ -30,7 +30,7 @@ import type {
 import { createTypeParser, Type } from "./type.js"
 import { domainOf } from "./utils/domains.js"
 import { throwParseError } from "./utils/errors.js"
-import type { evaluate, nominal } from "./utils/generics.js"
+import type { evaluate, isAny, nominal } from "./utils/generics.js"
 import { Path } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
 
@@ -150,25 +150,25 @@ export type ScopeOptions = {
     keys?: KeyCheckKind
 }
 
-export type resolve<reference extends keyof $, $> = $[reference] extends Def<
-    infer def
->
-    ? $[reference] extends null
-        ? // avoid inferring any, never
-          $[reference]
-        : inferDefinition<def, $>
+export type resolve<reference extends keyof $, $> = [$[reference]] extends [
+    never
+]
+    ? never
+    : isAny<$[reference]> extends true
+    ? any
+    : $[reference] extends Def<infer def>
+    ? inferDefinition<def, $>
     : $[reference]
 
 type $<r extends Resolutions> = r["exports"] & r["locals"] & r["ambient"]
 
 export type TypeSet<r extends Resolutions = any> = {
-    [k in keyof r["exports"]]: [r["exports"][k]] extends [
-        Scope<infer subresolutions>
-    ]
-        ? // avoid treating any, never as subscopes
-          r["exports"][k] extends null
-            ? Type<r["exports"][k], $<r>>
-            : TypeSet<subresolutions>
+    [k in keyof r["exports"]]: [r["exports"][k]] extends [never]
+        ? Type<never, $<r>>
+        : isAny<r["exports"][k]> extends true
+        ? Type<any, $<r>>
+        : r["exports"][k] extends Scope<infer subresolutions>
+        ? TypeSet<subresolutions>
         : r["exports"][k] extends GenericProps
         ? r["exports"][k]
         : Type<r["exports"][k], $<r>>
@@ -367,7 +367,7 @@ type destructuredImportContext<
     r extends Resolutions,
     name extends keyof r["exports"]
 > = {
-    [k in name as `#${k & string}`]: Inferred<r["exports"][k]>
+    [k in name as `#${k & string}`]: InferAs<r["exports"][k]>
 }
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>

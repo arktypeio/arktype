@@ -1,5 +1,5 @@
 import { node } from "../nodes/composite/type.js"
-import type { Inferred } from "../parse/definition.js"
+import type { InferAs } from "../parse/definition.js"
 import { Scope } from "../scope.js"
 
 // "bigint": "a bigint",
@@ -16,8 +16,8 @@ import { Scope } from "../scope.js"
 // "void": "void",
 // "undefined": "undefined"
 
-export const tsKeyword = Scope.root({
-    any: "unknown" as Inferred<any>,
+export const tsKeywords = Scope.root({
+    any: "unknown" as InferAs<any>,
     bigint: node({ basis: "bigint" }),
     boolean: "true|false",
     false: node({ basis: ["===", false as const] }),
@@ -29,8 +29,8 @@ export const tsKeyword = Scope.root({
     symbol: node({ basis: "symbol" }),
     true: node({ basis: ["===", true as const] }),
     unknown: node({}),
-    void: "undefined" as Inferred<void>,
+    void: "undefined" as InferAs<void>,
     undefined: node({ basis: ["===", undefined] })
 })
 
-export const tsKeywordTypes = tsKeyword.export()
+export const tsKeywordTypes = tsKeywords.export()

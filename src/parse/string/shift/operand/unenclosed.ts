@@ -13,7 +13,7 @@ import {
     tryParseWellFormedNumber
 } from "../../../../utils/numericLiterals.js"
 import type { GenericInstantiationAst } from "../../../ast/ast.js"
-import type { Inferred } from "../../../definition.js"
+import type { InferAs } from "../../../definition.js"
 import type {
     ParsedArgs,
     parseGenericArgs,
@@ -118,7 +118,7 @@ type tryResolve<
           string}.${infer reference}`
     ? $[subscope] extends Scope
         ? reference extends keyof $[subscope]["infer"]
-            ? Inferred<$[subscope]["infer"][reference]>
+            ? InferAs<$[subscope]["infer"][reference]>
             : unresolvableError<s, reference, $[subscope]["infer"], [subscope]>
         : error<writeInvalidSubscopeReferenceMessage<subscope>>
     : token extends NumberLiteral
