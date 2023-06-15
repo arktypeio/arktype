@@ -175,6 +175,8 @@ export type inferTerminal<token, $> = token extends keyof $
     ? Text
     : token extends RegexLiteral
     ? string
+    : token extends DateLiteral
+    ? Date
     : token extends NumberLiteral<infer value>
     ? value
     : token extends BigintLiteral<infer value>

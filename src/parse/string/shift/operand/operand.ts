@@ -5,8 +5,13 @@ import type {
     StaticState
 } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
+import { parseDate } from "./date.js"
 import type { EnclosingChar } from "./enclosed.js"
-import { enclosingChar, parseEnclosed } from "./enclosed.js"
+import {
+    enclosingChar,
+    parseEnclosed,
+    writeUnterminatedEnclosedMessage
+} from "./enclosed.js"
 import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.js"
 
 export const parseOperand = (s: DynamicState): void =>
@@ -18,6 +23,11 @@ export const parseOperand = (s: DynamicState): void =>
         ? parseEnclosed(s, s.scanner.shift())
         : s.scanner.lookahead === " " || s.scanner.lookahead === "\n"
         ? parseOperand(s.shiftedByOne())
+        : s.scanner.lookahead === "d"
+        ? s.shiftedByOne().scanner.lookaheadIsIn(enclosingChar)
+            ? //todoshawn seems bad to have to do this
+              parseDate(s, s.scanner.shift() as EnclosingChar)
+            : parseUnenclosed(s)
         : parseUnenclosed(s)
 
 export type parseOperand<
@@ -30,5 +40,12 @@ export type parseOperand<
         ? parseEnclosed<s, lookahead, unscanned>
         : lookahead extends Scanner.WhiteSpaceToken
         ? parseOperand<state.scanTo<s, unscanned>, $>
+        : lookahead extends "d"
+        ? unscanned extends Scanner.shift<
+              infer enclosing extends EnclosingChar,
+              infer nextUnscanned
+          >
+            ? parseDate<s, enclosing, nextUnscanned>
+            : parseUnenclosed<s, $>
         : parseUnenclosed<s, $>
     : state.error<`${s["scanned"]}${(keyof $ & string) | AutocompletePrefix}`>

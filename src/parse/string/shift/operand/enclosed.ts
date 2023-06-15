@@ -53,7 +53,10 @@ export const enclosingChar = {
 
 export type EnclosingChar = keyof typeof enclosingChar
 
-const untilLookaheadIsClosing: Record<EnclosingChar, Scanner.UntilCondition> = {
+export const untilLookaheadIsClosing: Record<
+    EnclosingChar,
+    Scanner.UntilCondition
+> = {
     "'": (scanner) => scanner.lookahead === `'`,
     '"': (scanner) => scanner.lookahead === `"`,
     "/": (scanner) => scanner.lookahead === `/`
@@ -76,7 +79,7 @@ export const writeUnterminatedEnclosedMessage = <
 ): writeUnterminatedEnclosedMessage<fragment, enclosing> =>
     `${enclosing}${fragment} requires a closing ${enclosingCharDescriptions[enclosing]}`
 
-type writeUnterminatedEnclosedMessage<
+export type writeUnterminatedEnclosedMessage<
     fragment extends string,
     enclosing extends EnclosingChar
 > = `${enclosing}${fragment} requires a closing ${enclosingCharDescriptions[enclosing]}`

@@ -8,12 +8,14 @@ import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
 import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
 import type { keySet } from "../../../../utils/records.js"
 import { isKeyOf } from "../../../../utils/records.js"
+import { writeUnboundableMessage } from "../../../ast/bound.js"
 import type {
     DynamicState,
     DynamicStateWithRoot
 } from "../../reduce/dynamic.js"
 import { writeUnpairableComparatorMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
+import { DateLiteral } from "../operand/date.js"
 import type { Scanner } from "../scanner.js"
 
 export const parseBound = (
@@ -129,7 +131,20 @@ export type parseRightBound<
                   >
                 : state.error<writeUnpairableComparatorMessage<comparator>>
             : state.reduceSingleBound<s, comparator, scanned, nextUnscanned>
-        : never
+        : scanned extends DateLiteral
+        ? s["branches"]["range"] extends {}
+            ? comparator extends MaxComparator
+                ? state.reduceRange<
+                      s,
+                      s["branches"]["range"]["limit"],
+                      s["branches"]["range"]["comparator"],
+                      comparator,
+                      scanned,
+                      nextUnscanned
+                  >
+                : state.error<writeUnpairableComparatorMessage<comparator>>
+            : state.reduceSingleBound<s, comparator, scanned, nextUnscanned>
+        : state.error<writeUnboundableMessage<scanned>>
     : never
 
 export const writeInvalidLimitMessage = <

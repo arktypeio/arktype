@@ -7,6 +7,7 @@ import type {
 import type { error } from "../../../utils/errors.js"
 import type { defined } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
+import { DateLiteral } from "../shift/operand/date.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
     Prefix,
@@ -161,10 +162,10 @@ export namespace state {
 
     export type reduceRange<
         s extends StaticState,
-        minLimit extends NumberLiteral,
+        minLimit extends NumberLiteral | DateLiteral,
         minComparator extends MinComparator,
         maxComparator extends MaxComparator,
-        maxLimit extends NumberLiteral,
+        maxLimit extends NumberLiteral | DateLiteral,
         unscanned extends string
     > = state.from<{
         root: [minLimit, minComparator, [s["root"], maxComparator, maxLimit]]
@@ -183,7 +184,7 @@ export namespace state {
     export type reduceSingleBound<
         s extends StaticState,
         comparator extends Comparator,
-        limit extends NumberLiteral,
+        limit extends NumberLiteral | DateLiteral,
         unscanned extends string
     > = state.from<{
         root: [s["root"], comparator, limit]
