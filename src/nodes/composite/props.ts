@@ -199,29 +199,6 @@ const describeProps = (named: NamedPropRule[], indexed: IndexedPropRule[]) => {
     return JSON.stringify(fromEntries(entries))
 }
 
-// pruneDiscriminant(path: string[], kind: DiscriminantKind): PropsNode {
-//     const [key, ...nextPath] = path
-//     const indexToPrune = this.named.findIndex((prop) => prop.key.name === key)
-//     if (indexToPrune === -1) {
-//         return throwInternalError(`Unexpectedly failed to prune key ${key}`)
-//     }
-//     const prunedValue = this.named[indexToPrune].value.pruneDiscriminant(
-//         nextPath,
-//         kind
-//     )
-//     const prunedProps: PropRule[] = [...this.named]
-//     if (prunedValue === unknownTypeNode) {
-//         prunedProps.splice(indexToPrune, 1)
-//     } else {
-//         prunedProps[indexToPrune] = {
-//             ...prunedProps[indexToPrune],
-//             value: prunedValue
-//         }
-//     }
-//     prunedProps.push(...this.indexed)
-//     return new PropsNode(prunedProps)
-// }
-
 // keyof() {
 //     return this.namedKeyOf().or(this.indexedKeyOf())
 // }

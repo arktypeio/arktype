@@ -273,30 +273,6 @@ const intersectBranches = (
     return finalBranches
 }
 
-// const compileTraverse = (s: CompilationState): string => {
-//     switch (this.rule.length) {
-//         case 0:
-//             return "throw new Error();"
-//         case 1:
-//             return this.rule[0].compileTraverse(s)
-//         default:
-//             s.unionDepth++
-//             const result = `state.pushUnion();
-//                     ${this.rule
-//                         .map(
-//                             (rules) => `(() => {
-//                         ${rules.compileTraverse(s)}
-//                         })()`
-//                         )
-//                         .join(" && ")};
-//                     state.popUnion(${this.rule.length}, ${s.data}, ${
-//                 s.path.json
-//             });`
-//             s.unionDepth--
-//             return result
-//     }
-// }
-
 const reduceBranches = (branchNodes: PredicateNode[]) => {
     if (branchNodes.length < 2) {
         return branchNodes
@@ -329,15 +305,6 @@ const reduceBranches = (branchNodes: PredicateNode[]) => {
     }
     return branchNodes.filter((_, i) => uniquenessByIndex[i])
 }
-
-// function pruneDiscriminant(path: string[], kind: DiscriminantKind) {
-//     const prunedBranches: PredicateNode[] = []
-//     for (const branch of this.rule) {
-//         const pruned = branch.pruneDiscriminant(path, kind)
-//         prunedBranches.push(pruned)
-//     }
-//     return new TypeNode(prunedBranches)
-// }
 
 export type TypeNodeParser = {
     <const branches extends readonly PredicateInput[]>(

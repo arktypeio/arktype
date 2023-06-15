@@ -177,46 +177,6 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
     }
 )
 
-// compileTraverse(s: CompilationState) {
-//     // let result constraint of this.rule) {
-//     //     result= this.basis?.compileTraverse(s) ?? ""
-//     // for (const  += "\n" + constraint.compileTraverse(s)
-//     // }
-//     s
-//     return "true" //result
-// }
-
-// pruneDiscriminant(path: string[], kind: DiscriminantKind): PredicateNode {
-//     if (path.length === 0) {
-//         if (kind === "domain" && this.basis.hasKind("value")) {
-//             // if the basis specifies an exact value but was used to
-//             // discriminate based on a domain, we can't prune it
-//             return this
-//         }
-//         // create a new PredicateNode with the basis removed
-//         return new PredicateNode(this.constraints)
-//     }
-//     const prunedProps = this.getConstraint("props")!.pruneDiscriminant(
-//         path,
-//         kind
-//     )
-//     const rules: PredicateRules = []
-//     for (const rule of this.rule) {
-//         if (rule.kind === "basis") {
-//             if (rule.level !== "domain" || rule.domain !== "object") {
-//                 rules.push(this.basis as never)
-//             }
-//         } else if (rule.kind === "props") {
-//             if (prunedProps !== emptyPropsNode) {
-//                 rules.push(prunedProps)
-//             }
-//         } else {
-//             rules.push(rule)
-//         }
-//     }
-//     return new PredicateNode(rules)
-// }
-
 // keyof() {
 //     if (!this.basis) {
 //         return neverTypeNode
