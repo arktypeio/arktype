@@ -145,6 +145,7 @@ type extractPrivateKey<k> = k extends PrivateDeclaration<infer key>
 type PrivateDeclaration<key extends string = string> = `#${key}`
 
 export type ScopeOptions = {
+    ambient?: TypeSet
     codes?: Record<ProblemCode, { mustBe?: string }>
     keys?: KeyCheckKind
 }
@@ -191,11 +192,27 @@ export class Scope<r extends Resolutions = any> {
     config: TypeConfig
 
     private parseCache: Map<unknown, TypeNode> = new Map()
-    private resolutions: Record<string, TypeNode | undefined> = {}
-    private exports: TypeSet = {}
+    private resolutions: Record<string, Type>
+    private thisType: Type
 
-    constructor(public aliases: Dict, opts: ScopeOptions = {}) {
-        this.config = {}
+    aliases: Record<string, unknown> = {}
+    private exportedNames: (keyof r["exports"])[] = []
+    private ambient: TypeSet
+
+    constructor(input: Dict, opts: ScopeOptions) {
+        for (const k in input) {
+            if (k.startsWith("#")) {
+                this.aliases[k.slice(1)] = input[k]
+            } else {
+                this.aliases[k] = input[k]
+                this.exportedNames.push(k as never)
+            }
+        }
+        this.ambient = opts.ambient ?? {}
+        // TODO: fix
+        this.resolutions = { ...this.ambient } as never
+        this.config = opts
+        this.thisType = new Type(builtins.this(), this)
     }
 
     static root: ScopeParser<{}, {}> = (aliases) => {
@@ -210,38 +227,36 @@ export class Scope<r extends Resolutions = any> {
         aliases: Dict,
         config: TypeConfig = {}
     ) => {
-        return new Scope(aliases, config)
+        return new Scope(aliases, {
+            ...this.config,
+            ...config,
+            ambient: this.ambient
+        })
     }) as never
 
     define: DefinitionParser<$<r>> = (def) => def as never
 
-    import<names extends (keyof r["exports"])[]>(
-        ...names: names
-    ): destructuredImportContext<r, names[number]> {
-        return this as never
-    }
-
-    ambient(): Scope<{
+    toAmbient(): Scope<{
         exports: r["exports"]
-        locals: {}
+        locals: r["locals"]
         ambient: r["exports"]
     }> {
-        return this as never
+        return new Scope(this.aliases, {
+            ...this.config,
+            ambient: this.export()
+        })
     }
 
     extract<name extends keyof r["exports"] & string>(
         name: name
     ): Type<r["exports"][name], $<r>> {
-        this.resolutions[name] = this.parseRoot(this.aliases[name])
-        // pass the definition directly so that it can be attached to the Type
-        // it will hit the cached node and immediately resolve
-        this.exports[name] = new Type(this.aliases[name], this)
-        return this.exports[name] as never
+        return this.export()[name] as never
     }
 
     parse(def: unknown, ctx: ParseContext) {
         const cached = this.parseCache.get(def)
         if (cached) {
+            // TODO: seems unsafe with `this`
             return cached
         }
         const result =
@@ -259,7 +274,7 @@ export class Scope<r extends Resolutions = any> {
     maybeResolve(name: string, ctx: ParseContext): TypeNode | undefined {
         const cached = this.resolutions[name]
         if (cached) {
-            if (cached === builtins.this()) {
+            if (cached === this.thisType) {
                 if (ctx.path.length === 0) {
                     // TODO: Seen?
                     return throwParseError(
@@ -267,18 +282,18 @@ export class Scope<r extends Resolutions = any> {
                     )
                 }
                 // TODO: doesn't seem right for cyclic? only recursive?
-                return cached
+                return cached.root
             }
             // TODO: when is this cache safe? could contain this reference?
-            return cached
+            return cached.root
         }
         const aliasDef = this.aliases[name]
         if (!aliasDef) {
             return
         }
-        this.resolutions[name] = builtins.this()
+        this.resolutions[name] = this.thisType
         const resolution = this.parseRoot(aliasDef)
-        this.resolutions[name] = resolution
+        this.resolutions[name] = new Type(resolution, this)
         return resolution
     }
 
@@ -291,10 +306,24 @@ export class Scope<r extends Resolutions = any> {
 
     /** @internal */
     parseTypeRoot(def: unknown) {
-        this.resolutions["this"] = builtins.this()
+        this.resolutions["this"] = this.thisType
         const result = this.parseRoot(def)
         delete this.resolutions["this"]
         return result
+    }
+
+    import<names extends (keyof r["exports"])[]>(
+        ...names: names
+    ): destructuredImportContext<
+        r,
+        names extends [] ? keyof r["exports"] : names[number]
+    > {
+        return Object.fromEntries(
+            Object.entries(this.export(...names)).map(([name, resolution]) => [
+                `#${name}`,
+                resolution
+            ])
+        ) as never
     }
 
     private exported = false
@@ -304,21 +333,22 @@ export class Scope<r extends Resolutions = any> {
         names extends [] ? r : destructuredExportContext<r, names[number]>
     > {
         if (!this.exported) {
-            for (const name in this.aliases) {
-                if (!this.exports[name]) {
-                    this.extract(name as never)
-                }
+            const ctx: ParseContext = {
+                path: new Path(),
+                scope: this
+            }
+            for (const name of this.exportedNames) {
+                this.maybeResolve(name as never, ctx)
             }
             this.exported = true
         }
-        if (!names.length) {
-            return this.exports
-        }
-        const destructured: TypeSet = {}
-        for (const name of names) {
-            destructured[name] = this.exports[name]
-        }
-        return destructured
+        const namesToExport = names.length ? names : this.exportedNames
+        return Object.fromEntries(
+            namesToExport.map((name) => [
+                name,
+                this.resolutions[name as string]
+            ])
+        ) as never
     }
 }
 

@@ -120,7 +120,7 @@ export type DefinitionParser<$> = <def>(
     def: validateDefinition<def, bindThis<$, def>>
 ) => def
 
-registry().register("state", TraversalState)
+registry().registerInternal("state", TraversalState)
 
 export class Type<t = unknown, $ = any> extends CompiledFunction<
     (data: unknown) => CheckResult<extractOut<t>>

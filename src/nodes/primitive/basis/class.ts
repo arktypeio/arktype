@@ -24,7 +24,7 @@ export const classNode = defineNodeKind<ClassNode>(
                 rule,
                 `${s.data} instanceof ${
                     getExactBuiltinConstructorName(rule) ??
-                    registry().register(rule.name, rule)
+                    registry().register("constructor", rule.name, rule)
                 }`
             ),
         intersect: intersectBases

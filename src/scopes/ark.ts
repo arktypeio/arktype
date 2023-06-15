@@ -1,4 +1,3 @@
-import { registry } from "../compile/registry.js"
 import type { Out } from "../parse/ast/morph.js"
 import type { ScopeParser, TypeSet } from "../scope.js"
 import { Scope } from "../scope.js"
@@ -17,9 +16,7 @@ export const ark: Scope<ArkResolutions> = Scope.root({
     ...tsKeywordTypes,
     ...jsObjectTypes,
     ...validationTypes
-}).ambient()
-
-registry().register("ark", ark)
+}).toAmbient()
 
 export const arktypes: TypeSet<ArkResolutions> = ark.export()
 

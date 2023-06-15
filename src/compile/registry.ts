@@ -1,9 +1,16 @@
-// TODO: move this and other non-nodes out of nodes dir
-import type { ark } from "../scopes/ark.js"
 import type { autocomplete } from "../utils/generics.js"
-import type { CheckResult, TraversalState } from "./traverse.js"
+import type { AbstractableConstructor } from "../utils/objectKinds.js"
+import { compilePropAccess } from "./compile.js"
+import type { TraversalState } from "./traverse.js"
 
-type PrepopulatedKey = "ark" | "state"
+type RegisteredInternalkey = "state"
+
+export type RegisteredKinds = {
+    morph: (...args: never[]) => unknown
+    narrow: (...args: never[]) => unknown
+    value: object | symbol
+    constructor: AbstractableConstructor
+}
 
 export type InternalId = "problems" | "result"
 
@@ -11,9 +18,7 @@ export type PossiblyInternalObject = { $arkId?: InternalId } | undefined | null
 
 class Registry {
     [k: string]: unknown
-    declare ark: typeof ark
     declare state: typeof TraversalState
-    declare result: typeof CheckResult
 
     constructor() {
         const global = globalThis as any
@@ -23,23 +28,29 @@ class Registry {
         global.$ark = this
     }
 
-    register<key extends autocomplete<PrepopulatedKey>>(
-        baseKey: key,
+    registerInternal<key extends RegisteredInternalkey>(
+        key: key,
         value: Registry[key]
     ) {
-        let k: string = baseKey
+        this[key] = value as never
+    }
+
+    register<kind extends keyof RegisteredKinds>(
+        kind: kind,
+        baseName: string,
+        value: RegisteredKinds[kind]
+    ) {
+        let k = `${kind}${baseName}`
         let suffix = 2
         while (k in this && this[k] !== value) {
-            k = `${baseKey}${suffix++}`
+            k = `${baseName}${suffix++}`
         }
         this[k] = value
         return this.reference(k)
     }
 
-    reference = <key extends autocomplete<PrepopulatedKey>>(
-        key: key
-        // TODO: .access
-    ) => `globalThis.$ark.${key}` as const
+    reference = <key extends autocomplete<RegisteredInternalkey>>(key: key) =>
+        `globalThis.$ark${compilePropAccess(key)}` as const
 }
 
 export const registry = () => new Registry()

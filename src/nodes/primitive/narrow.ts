@@ -23,7 +23,7 @@ export const narrowNode = defineNodeKind<NarrowNode, listable<Narrow>>(
                         narrow === thisNarrow
                             ? // the name assigned to a CompiledFunction, allowing it to recurse
                               "self"
-                            : registry().register(narrow.name, narrow)
+                            : registry().register("narrow", narrow.name, narrow)
                     return s.check("custom", "?", `${name}(${s.data})`)
                 })
                 .join("\n"),

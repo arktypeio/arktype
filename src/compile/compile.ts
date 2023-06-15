@@ -48,7 +48,7 @@ export const compilePropAccess = (key: string, optional = false) => {
 
 export const compileSerializedValue = (value: unknown) => {
     return hasDomain(value, "object") || typeof value === "symbol"
-        ? registry().register(typeof value, value)
+        ? registry().register("value", typeof value, value)
         : serializePrimitive(value as SerializablePrimitive)
 }
 
