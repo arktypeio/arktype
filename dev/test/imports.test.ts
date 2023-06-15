@@ -1,5 +1,5 @@
 import { suite, test } from "mocha"
-import { scope } from "../../src/main.js"
+import { scope, type } from "../../src/main.js"
 import type { TypeSet } from "../../src/scope.js"
 import { writeDuplicateAliasesMessage } from "../../src/scope.js"
 import type { Ark } from "../../src/scopes/ark.js"
@@ -74,6 +74,12 @@ suite("scope imports", () => {
             "#private": "uuid"
         }).export()
 
+        attest(Object.keys(outOfScope)).equals(["hasCrept", "public"])
+
+        attest(outOfScope.public.condition).equals(
+            type("3|'no'|uuid|true").condition
+        )
+
         attest(outOfScope).typed as TypeSet<{
             exports: {
                 hasCrept: true
@@ -95,6 +101,8 @@ suite("private aliases", () => {
             foo: "bar[]",
             "#bar": "boolean"
         }).export()
+        attest(Object.keys(types)).equals(["foo"])
+        attest(types.foo.condition).equals(type("boolean[]").condition)
         attest(types).typed as TypeSet<{
             exports: { foo: boolean[] }
             locals: { bar: boolean }

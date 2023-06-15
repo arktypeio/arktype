@@ -209,7 +209,7 @@ export class Scope<r extends Resolutions = any> {
             }
         }
         this.ambient = opts.ambient ?? {}
-        // TODO: fix
+        // TODO: fix, should work with subscope
         this.resolutions = { ...this.ambient } as never
         this.config = opts
         this.thisType = new Type(builtins.this(), this)
