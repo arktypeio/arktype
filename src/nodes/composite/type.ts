@@ -1,5 +1,5 @@
-import type { Discriminant } from "../../compile/discriminate.js"
-import { discriminate } from "../../compile/discriminate.js"
+import type { CompilationState } from "../../compile/compile.js"
+import { compilePathAccess } from "../../compile/compile.js"
 import type { inferred } from "../../parse/definition.js"
 import { cached } from "../../utils/functions.js"
 import type { conform, exact, Literalable } from "../../utils/generics.js"
@@ -12,6 +12,8 @@ import { arrayClassNode } from "../primitive/basis/class.js"
 import { valueNode } from "../primitive/basis/value.js"
 import type { ValueNode } from "../primitive/basis/value.js"
 import { thisNarrow } from "../primitive/narrow.js"
+import { discriminate } from "./discriminate.js"
+import type { CaseKey, Discriminant } from "./discriminate.js"
 import { arrayIndexInput, arrayIndexTypeNode } from "./indexed.js"
 import { predicateNode } from "./predicate.js"
 import type {
@@ -24,7 +26,7 @@ import { propsNode } from "./props.js"
 
 export interface TypeNode<t = unknown> extends BaseNode<PredicateNode[]> {
     [inferred]: t
-    discriminant: Discriminant | undefined
+    discriminant: Discriminant | null
     valueNode: ValueNode | undefined
     array(): TypeNode<t[]>
     isNever(): this is TypeNode<never>
@@ -58,18 +60,10 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
             return alphabetizeByCondition(reduceBranches(input))
         },
         compile: (branches, s) => {
-            if (branches.length === 1) {
-                return branches[0].compile(s)
-            }
-            const compiledBranches = branches
-                .map(
-                    (branch) => `(() => {
-          ${branch.compile(s)}
-          return true
-      })`
-                )
-                .join(" || ")
-            return `${compiledBranches}`
+            const discriminant = discriminate(branches)
+            return discriminant
+                ? compileDiscriminant(discriminant, s)
+                : compileIndiscriminable(branches, s)
         },
         intersect: (l, r): TypeNode | Disjoint => {
             if (l.rule.length === 1 && r.rule.length === 1) {
@@ -87,6 +81,7 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
             base.rule.length === 0
                 ? "never"
                 : base.rule.map((branch) => branch.toString()).join(" or "),
+        // discriminate is cached so we don't have to worry about this running multiple times
         discriminant: discriminate(base.rule),
         valueNode: base.rule.length === 1 ? base.rule[0].valueNode : undefined,
         array(): any {
@@ -152,6 +147,58 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
         }
     })
 )
+
+const compileDiscriminant = (
+    discriminant: Discriminant,
+    s: CompilationState
+) => {
+    const compiledPath = compilePathAccess(discriminant.path, {
+        optional: true
+    })
+    const condition =
+        discriminant.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
+    let compiledCases = ""
+    let k: CaseKey
+    for (k in discriminant.cases) {
+        const caseCondition = k === "default" ? "default" : `case ${k}`
+        const caseBranches = discriminant.cases[k]
+        s.discriminants.push(discriminant)
+        const caseChecks = isArray(caseBranches)
+            ? compileIndiscriminable(caseBranches, s)
+            : compileDiscriminant(caseBranches, s)
+        s.discriminants.pop()
+        compiledCases += `${caseCondition}: {
+    ${caseChecks}
+    break
+}`
+    }
+    if (!discriminant.cases.default) {
+        // TODO: error message for traversal
+        compiledCases += `default: {
+    return false
+}`
+    }
+    return `switch(${condition}) {
+    ${compiledCases}
+}`
+}
+
+const compileIndiscriminable = (
+    branches: PredicateNode[],
+    s: CompilationState
+) => {
+    if (branches.length === 1) {
+        return branches[0].compile(s)
+    }
+    return branches
+        .map(
+            (branch) => `(() => {
+${branch.compile(s)}
+return true
+})()`
+        )
+        .join(" || ")
+}
 
 const intersectBranches = (
     l: PredicateNode[],
@@ -225,28 +272,6 @@ const intersectBranches = (
     }
     return finalBranches
 }
-
-// const compileSwitch = (discriminant: Discriminant): string => {
-//     const compiledPath = compilePathAccess(discriminant.path, {
-//         optional: true
-//     })
-//     const condition =
-//         discriminant.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
-//     let compiledCases = ""
-//     let k: CaseKey
-//     for (k in discriminant.cases) {
-//         const caseCondition = k === "default" ? "default" : `case ${k}`
-//         const caseNode = discriminant.cases[k]
-//         compiledCases += `${caseCondition}: {
-//             return ${caseNode.rule};
-//         }`
-//     }
-//     return `(() => {
-//     switch(${condition}) {
-//         ${compiledCases}
-//     }
-// })()`
-// }
 
 // const compileTraverse = (s: CompilationState): string => {
 //     switch (this.rule.length) {
