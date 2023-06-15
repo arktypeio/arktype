@@ -1,5 +1,6 @@
+import type { BasisNode } from "../nodes/primitive/basis/basis.js"
 import type { TypeConfig } from "../type.js"
-import { type Domain, hasDomain } from "../utils/domains.js"
+import { hasDomain } from "../utils/domains.js"
 import { Path } from "../utils/lists.js"
 import type { SerializablePrimitive } from "../utils/serialize.js"
 import { serializePrimitive } from "../utils/serialize.js"
@@ -54,7 +55,7 @@ export const compileSerializedValue = (value: unknown) => {
 
 export class CompilationState {
     path = new Path()
-    lastkind: Domain = "undefined"
+    bases: BasisNode[] = []
     unionDepth = 0
     traversalConfig = initializeCompilationConfig()
 
@@ -62,6 +63,10 @@ export class CompilationState {
 
     get data() {
         return compilePathAccess(this.path)
+    }
+
+    get lastBasis() {
+        return this.bases.at(-1)
     }
 
     problem<code extends ProblemCode>(code: code, rule: ProblemRules[code]) {

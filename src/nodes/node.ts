@@ -5,6 +5,7 @@ import type { evaluate } from "../utils/generics.js"
 import type { NodeEntry } from "./composite/props.js"
 import { Disjoint } from "./disjoint.js"
 import type { NodeKind, NodeKinds } from "./kinds.js"
+import type { BasisKind } from "./primitive/basis/basis.js"
 
 type BaseNodeImplementation<node extends BaseNode, parsableFrom> = {
     kind: node["kind"]
@@ -47,6 +48,7 @@ interface PreconstructedBase<rule, intersectsWith> {
     >
     allows(data: unknown): boolean
     hasKind<kind extends NodeKind>(kind: kind): this is NodeKinds[kind]
+    isBasis(): this is NodeKinds[BasisKind]
 }
 
 type BuiltinBaseKey = evaluate<keyof PreconstructedBase<any, any>>
@@ -96,6 +98,10 @@ export const defineNodeKind = <
             [arkKind]: "node",
             kind: def.kind,
             hasKind: (kind) => kind === def.kind,
+            isBasis: () =>
+                def.kind === "domain" ||
+                def.kind === "class" ||
+                def.kind === "value",
             condition,
             rule,
             compile: (state: CompilationState) => def.compile(rule, state),

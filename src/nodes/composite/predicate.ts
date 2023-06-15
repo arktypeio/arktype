@@ -76,11 +76,19 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
         },
         compile: (children, state) => {
             let result = ""
+            const initialChild = children.at(0)
+            const basis = initialChild?.isBasis() ? initialChild : undefined
+            if (basis) {
+                state.bases.push(basis)
+            }
             for (const child of children) {
                 const childResult = child.compile(state)
                 if (childResult) {
                     result = `${result && "\n"}${childResult}`
                 }
+            }
+            if (basis) {
+                state.bases.pop()
             }
             return result
         },
@@ -137,12 +145,7 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
     },
     (base) => {
         const initialRule = base.rule.at(0)
-        const basis =
-            initialRule?.hasKind("domain") ||
-            initialRule?.hasKind("value") ||
-            initialRule?.hasKind("class")
-                ? initialRule
-                : undefined
+        const basis = initialRule?.isBasis() ? initialRule : undefined
         const constraints = (
             basis ? base.rule.slice(1) : base.rule
         ) as ConstraintNode[]
