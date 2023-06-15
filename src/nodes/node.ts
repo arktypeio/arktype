@@ -94,14 +94,15 @@ export const defineNodeKind = <
             return nodeCache[condition]!
         }
         const intersectionCache: IntersectionCache<BaseNode> = {}
+        const isBasis =
+            def.kind === "domain" ||
+            def.kind === "class" ||
+            def.kind === "value"
         const base: PreconstructedBase<node["rule"], never> & ThisType<node> = {
             [arkKind]: "node",
             kind: def.kind,
             hasKind: (kind) => kind === def.kind,
-            isBasis: () =>
-                def.kind === "domain" ||
-                def.kind === "class" ||
-                def.kind === "value",
+            isBasis: () => isBasis,
             condition,
             rule,
             compile: (state: CompilationState) => def.compile(rule, state),

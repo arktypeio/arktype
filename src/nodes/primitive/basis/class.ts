@@ -41,7 +41,3 @@ export const classNode = defineNodeKind<ClassNode>(
 )
 
 export const arrayClassNode = cached(() => classNode(Array))
-
-// compileTraverse(s: CompilationState) {
-//     return s.ifNotThen(this.condition, s.problem("class", this.child))
-// }

@@ -26,12 +26,3 @@ export const regexNode = defineNodeKind<RegexNode, string | string[]>(
         return { description }
     }
 )
-
-// return this.children
-// .map((source) =>
-//     s.ifNotThen(
-//         RegexNode.compileExpression(source),
-//         s.problem("regex", source)
-//     )
-// )
-// .join("\n")

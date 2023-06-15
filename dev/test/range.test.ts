@@ -229,6 +229,12 @@ suite("range", () => {
             test("array", () => {
                 attest(type("87<=boolean[]<89").infer).typed as boolean[]
             })
+            test("multiple boundable categories", () => {
+                const t = type("(string|boolean[]|number)>0")
+                attest(t.infer).typed as string | boolean[] | number
+                const expected = type("string>0|boolean[]>0|number>0")
+                attest(t.condition).equals(expected.condition)
+            })
 
             suite("errors", () => {
                 test("unknown", () => {

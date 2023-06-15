@@ -34,7 +34,3 @@ export const narrowNode = defineNodeKind<NarrowNode, listable<Narrow>>(
         description: `narrowed by ${base.rule.map((narrow) => narrow.name)}`
     })
 )
-
-//     compileTraverse(s: CompilationState) {
-//         return s.ifNotThen("false", s.problem("custom", "filters"))
-//     }

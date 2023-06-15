@@ -84,7 +84,7 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             for (const child of children) {
                 const childResult = child.compile(state)
                 if (childResult) {
-                    result = `${result && "\n"}${childResult}`
+                    result = result ? `${result}\n${childResult}` : childResult
                 }
             }
             if (basis) {
