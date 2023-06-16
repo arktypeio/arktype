@@ -13,10 +13,15 @@ const nuke = (target: string) =>
 const clone = (from: string, to: string): void =>
     cpSync(from, to, { recursive: true, force: true })
 
-const writeManifest = (overrides: Record<string, unknown>) => (sourceDir: string, targetDir: string,) => {
-    const manifest = readJson(join(sourceDir, "package.json"))
-    writeJson(join(targetDir, "package.json"), { ...manifest, ...overrides })
-}
+const writeManifest =
+    (overrides: Record<string, unknown>) =>
+    (sourceDir: string, targetDir: string) => {
+        const manifest = readJson(join(sourceDir, "package.json"))
+        writeJson(join(targetDir, "package.json"), {
+            ...manifest,
+            ...overrides
+        })
+    }
 
 const Sources = {
     utils: ["dev", "utils"],
@@ -28,8 +33,18 @@ const buildFormat = (module: ModuleKind) => {
     const outDir = join(outRoot, moduleKindDir)
     const outUtils = join(outDir, ...Sources.utils, "src")
     const outAttest = join(outDir, ...Sources.attest, "src")
-    const outUtilsTarget = join(packageRoot, ...Sources.utils, "dist", moduleKindDir)
-    const outAttestTarget = join(packageRoot, ...Sources.attest, "dist", moduleKindDir)
+    const outUtilsTarget = join(
+        packageRoot,
+        ...Sources.utils,
+        "dist",
+        moduleKindDir
+    )
+    const outAttestTarget = join(
+        packageRoot,
+        ...Sources.attest,
+        "dist",
+        moduleKindDir
+    )
     const tempTsConfig = {
         ...baseTsConfig,
         include: ["src", Sources.utils.join("/"), Sources.attest.join("/")],
@@ -41,7 +56,9 @@ const buildFormat = (module: ModuleKind) => {
         }
     }
 
-    const writePackageManifest = writeManifest({ type: ModuleKindToPackageType[module] })
+    const writePackageManifest = writeManifest({
+        type: ModuleKindToPackageType[module]
+    })
 
     writeJson(tempTsConfigPath, tempTsConfig)
 
@@ -79,7 +96,7 @@ const ModuleKindToDir = {
 
 const ModuleKindToPackageType = {
     [ModuleKind.CommonJS]: "commonjs",
-    [ModuleKind.ESNext]: "module",
+    [ModuleKind.ESNext]: "module"
 } as const
 
 console.log(`🔨 Building ${packageJson.name}...`)

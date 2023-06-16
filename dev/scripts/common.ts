@@ -20,5 +20,5 @@ export const repoDirs = {
     docsDir,
     srcRoot,
     outRoot,
-    utils,
+    utils
 }
