@@ -1,8 +1,10 @@
+import { hasArkKind } from "../../../../compile/registry.js"
 import type { TypeNode } from "../../../../nodes/composite/type.js"
 import { typeNode } from "../../../../nodes/composite/type.js"
 import type { Scope } from "../../../../scope.js"
-import type { GenericProps } from "../../../../type.js"
+import type { Generic, GenericProps } from "../../../../type.js"
 import type { error } from "../../../../utils/errors.js"
+import { throwParseError } from "../../../../utils/errors.js"
 import type { join } from "../../../../utils/lists.js"
 import type {
     BigintLiteral,
@@ -12,6 +14,7 @@ import {
     tryParseWellFormedBigint,
     tryParseWellFormedNumber
 } from "../../../../utils/numericLiterals.js"
+import { stringify } from "../../../../utils/serialize.js"
 import type { GenericInstantiationAst } from "../../../ast/ast.js"
 import type { CastTo } from "../../../definition.js"
 import type { ParsedArgs } from "../../../generic.js"
@@ -62,7 +65,7 @@ export type parseUnenclosed<
 
 export const parseGenericInstantiation = (
     name: string,
-    g: GenericProps,
+    g: Generic,
     s: DynamicState
 ) => {
     s.scanner.shiftUntilNonWhitespace()
@@ -78,6 +81,8 @@ export const parseGenericInstantiation = (
         s.scanner.unscanned,
         s.ctx
     )
+    s.scanner.jumpToIndex(-parsedArgs.unscanned.length)
+    return g(...parsedArgs.result).root
 }
 
 export type parseGenericInstantiation<
@@ -102,13 +107,26 @@ export type parseGenericInstantiation<
       >
 
 const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
-    s.ctx.scope.maybeResolve(token, s.ctx) ??
+    maybeParseKeyword(s, token) ??
     maybeParseUnenclosedLiteral(token) ??
     s.error(
         token === ""
             ? writeMissingOperandMessage(s)
             : writeUnresolvableMessage(token)
     )
+
+const maybeParseKeyword = (
+    s: DynamicState,
+    token: string
+): TypeNode | undefined => {
+    const resolution = s.ctx.scope.maybeResolve(token, s.ctx)
+    if (hasArkKind(resolution, "node")) {
+        return resolution
+    } else if (hasArkKind(resolution, "generic")) {
+        return parseGenericInstantiation(token, resolution, s)
+    }
+    return throwParseError(`Unexpected resolution ${stringify(resolution)}`)
+}
 
 const maybeParseUnenclosedLiteral = (token: string): TypeNode | undefined => {
     const maybeNumber = tryParseWellFormedNumber(token)

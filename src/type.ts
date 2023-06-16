@@ -1,11 +1,10 @@
 import { CompilationState, In } from "./compile/compile.js"
-import { registry } from "./compile/registry.js"
+import { arkKind, registry } from "./compile/registry.js"
 import type { CheckResult } from "./compile/traverse.js"
 import { TraversalState } from "./compile/traverse.js"
 import type { PredicateInput } from "./nodes/composite/predicate.js"
 import type { TypeNode } from "./nodes/composite/type.js"
 import { node } from "./nodes/composite/type.js"
-import { arkKind } from "./nodes/node.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
 import type { inferMorphOut, Morph, MorphAst, Out } from "./parse/ast/morph.js"
 import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
@@ -268,17 +267,29 @@ type bindGenericInstantiationToScope<params extends string[], argDefs, $> = {
         : never
 } & Omit<$, params[number]>
 
-export const createGeneric = (
+export const generic = (
     parameters: string[],
     definition: unknown,
     scope: Scope
-): GenericProps => ({
-    [arkKind]: "generic",
-    $: undefined,
-    parameters,
-    definition,
-    scope
-})
+) =>
+    Object.assign(
+        (...args: unknown[]) =>
+            new Type(
+                definition,
+                scope.extend(
+                    Object.fromEntries(
+                        parameters.map((param, i) => [param, args[i]])
+                    ) as never
+                )
+            ),
+        {
+            [arkKind]: "generic",
+            $: undefined,
+            parameters,
+            definition,
+            scope
+        } satisfies GenericProps
+    )
 
 // Comparing to Generic directly doesn't work well, so we use this similarly to
 // the [inferred] symbol for Type

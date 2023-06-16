@@ -45,6 +45,10 @@ export class Scanner<Lookahead extends string = string> {
         return this.shiftUntil(Scanner.lookaheadIsNotWhitespace)
     }
 
+    jumpToIndex(i: number) {
+        this.i = i < 0 ? this.chars.length - i : i
+    }
+
     get unscanned() {
         return this.chars.slice(this.i, this.chars.length).join("")
     }

@@ -1,6 +1,6 @@
+import { hasArkKind } from "../compile/registry.js"
 import type { TypeNode } from "../nodes/composite/type.js"
 import { node } from "../nodes/composite/type.js"
-import { isNode } from "../nodes/node.js"
 import type { ParseContext } from "../scope.js"
 import { Type } from "../type.js"
 import type { domainOf, Primitive } from "../utils/domains.js"
@@ -29,7 +29,7 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
     const objectKind = objectKindOf(def)
     switch (objectKind) {
         case "Object":
-            if (isNode(def) && def.hasKind("type")) {
+            if (hasArkKind(def, "node") && def.hasKind("type")) {
                 return def
             }
             return parseRecord(def as Dict, ctx)

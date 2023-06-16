@@ -1,32 +1,28 @@
 import type { CompilationState } from "../../compile/compile.js"
-import { compilePathAccess, In } from "../../compile/compile.js"
+import { compilePathAccess } from "../../compile/compile.js"
+import { hasArkKind } from "../../compile/registry.js"
 import type { inferred } from "../../parse/definition.js"
 import { cached } from "../../utils/functions.js"
 import type { conform, exact, Literalable } from "../../utils/generics.js"
 import { isArray } from "../../utils/objectKinds.js"
-import { keysOf } from "../../utils/records.js"
 import { Disjoint } from "../disjoint.js"
 import type { BaseNode } from "../node.js"
-import { alphabetizeByCondition, defineNodeKind, isNode } from "../node.js"
+import { alphabetizeByCondition, defineNodeKind } from "../node.js"
 import type { BasisInput } from "../primitive/basis/basis.js"
 import { arrayClassNode } from "../primitive/basis/class.js"
-import { valueNode } from "../primitive/basis/value.js"
 import type { ValueNode } from "../primitive/basis/value.js"
+import { valueNode } from "../primitive/basis/value.js"
 import { thisNarrow } from "../primitive/narrow.js"
+import type { Discriminant, DiscriminatedCases } from "./discriminate.js"
 import { discriminate } from "./discriminate.js"
-import type {
-    CaseKey,
-    Discriminant,
-    DiscriminatedCases
-} from "./discriminate.js"
 import { arrayIndexInput, arrayIndexTypeNode } from "./indexed.js"
-import { predicateNode } from "./predicate.js"
 import type {
     ConstraintKind,
     inferPredicateDefinition,
     PredicateInput,
     PredicateNode
 } from "./predicate.js"
+import { predicateNode } from "./predicate.js"
 import { propsNode } from "./props.js"
 
 export interface TypeNode<t = unknown> extends BaseNode<PredicateNode[]> {
@@ -51,7 +47,7 @@ export interface TypeNode<t = unknown> extends BaseNode<PredicateNode[]> {
 const isParsedTypeRule = (
     input: TypeInput | PredicateNode[]
 ): input is PredicateNode[] =>
-    isArray(input) && (input.length === 0 || isNode(input[0]))
+    isArray(input) && (input.length === 0 || hasArkKind(input[0], "node"))
 
 export const typeNode = defineNodeKind<TypeNode, TypeInput>(
     {

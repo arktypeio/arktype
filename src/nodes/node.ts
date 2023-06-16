@@ -1,4 +1,5 @@
 import { CompilationState, In } from "../compile/compile.js"
+import { arkKind } from "../compile/registry.js"
 import type { inferred } from "../parse/definition.js"
 import { CompiledFunction } from "../utils/functions.js"
 import type { evaluate } from "../utils/generics.js"
@@ -63,11 +64,6 @@ export type BaseNode<
 > = PreconstructedBase<rule, intersectsWith> & BaseNodeExtensionProps
 
 type IntersectionCache<node> = Record<string, node | Disjoint | undefined>
-
-export const isNode = (value: unknown): value is BaseNode =>
-    (value as any)?.[arkKind] === "node"
-
-export const arkKind = Symbol("ArkTypeInternalKind")
 
 export type NodeConstructor<node extends BaseNode, input> = (
     rule: node["rule"] | input

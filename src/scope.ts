@@ -27,7 +27,7 @@ import type {
     TypeConfig,
     TypeParser
 } from "./type.js"
-import { createGeneric, createTypeParser, Type } from "./type.js"
+import { createTypeParser, generic, Type } from "./type.js"
 import { domainOf } from "./utils/domains.js"
 import { throwParseError } from "./utils/errors.js"
 import type { evaluate, isAny, nominal } from "./utils/generics.js"
@@ -195,7 +195,7 @@ export class Scope<r extends Resolutions = any> {
         for (const k in input) {
             const parsedKey = parseScopeKey(k)
             this.aliases[parsedKey.name] = parsedKey.params.length
-                ? createGeneric(parsedKey.params, input[k], this)
+                ? generic(parsedKey.params, input[k], this)
                 : input[k]
             if (!parsedKey.isLocal) {
                 this.exportedNames.push(parsedKey.name as never)
@@ -217,6 +217,18 @@ export class Scope<r extends Resolutions = any> {
     declare: DeclarationParser<$<r>> = () => ({ type: this.type })
 
     scope: ScopeParser<r["exports"], r["ambient"]> = ((
+        aliases: Dict,
+        config: TypeConfig = {}
+    ) => {
+        return new Scope(aliases, {
+            ...this.config,
+            ...config,
+            ambient: this.ambient
+        })
+    }) as never
+
+    // TODO allow imports
+    extend: ScopeParser<r["exports"], r["ambient"]> = ((
         aliases: Dict,
         config: TypeConfig = {}
     ) => {
@@ -264,7 +276,10 @@ export class Scope<r extends Resolutions = any> {
     }
 
     /** @internal */
-    maybeResolve(name: string, ctx: ParseContext): TypeNode | undefined {
+    maybeResolve(
+        name: string,
+        ctx: ParseContext
+    ): TypeNode | Generic | Scope | undefined {
         const cached = this.resolutions[name]
         if (cached) {
             if (cached === this.thisType) {
