@@ -113,5 +113,8 @@
                 "typescript"
             ]
         }
+    },
+    "dependencies": {
+        "@arktype/utils": "workspace:^0.0.0"
     }
 }
