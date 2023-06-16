@@ -8,43 +8,69 @@ const packageRoot = process.cwd()
 const outRoot = join(packageRoot, "dist")
 const packageJson = readJson(join(packageRoot, "package.json"))
 
-const buildFormat = (module: "commonjs" | "esnext") => {
-    const outDir = join(outRoot, module === "commonjs" ? "cjs" : "mjs")
+const nuke = (target: string) =>
+    rmSync(target, { recursive: true, force: true })
+const clone = (from: string, to: string): void =>
+    cpSync(from, to, { recursive: true, force: true })
+
+const Sources = {
+    utils: ["dev", "utils"],
+    attest: ["dev", "attest"],
+} as const
+
+const buildFormat = (module: ModuleKind) => {
+    const outDir = join(outRoot, ModuleKindToDir[module])
+    const outUtils = join(outDir, ...Sources.utils /*, "src" */)
+    const outAttest = join(outDir, ...Sources.attest, "src")
+    const outUtilsTarget = join(packageRoot, ...Sources.utils, "dist")
+    const outAttestTarget = join(packageRoot, ...Sources.attest, "dist")
     const tempTsConfig = {
         ...baseTsConfig,
-        include: ["src", "dev/utils"],
+        include: ["src", Sources.utils.join("/"), Sources.attest.join("/")],
         compilerOptions: {
-            ...baseTsConfig.compilerOptions,
+            ...compilerOptions,
             noEmit: false,
             module,
             outDir
         }
     }
-
     writeJson(tempTsConfigPath, tempTsConfig)
     try {
         shell(`pnpm tsc --project ${tempTsConfigPath}`)
         const outSrc = join(outDir, "src")
         // not sure which setting to change to get it to compile here in the first place
-        cpSync(outSrc, outDir, {
-            recursive: true,
-            force: true
-        })
-        if (module === "commonjs") {
+        clone(outSrc, outDir)
+        clone(outUtils, outUtilsTarget)
+        clone(outAttest, outAttestTarget)
+
+        if (module === ModuleKind.CommonJS) {
             writeJson(join(outDir, "package.json"), {
-                type: "commonjs"
+                type: ModuleKind.CommonJS
             })
         }
-        rmSync(outSrc, { recursive: true, force: true })
+        nuke(outSrc)
+        nuke(outUtils)
+        nuke(outAttest)
     } finally {
         rmSync(tempTsConfigPath, { force: true })
     }
 }
 
+type ModuleKind = typeof ModuleKind[keyof typeof ModuleKind]
+const ModuleKind = {
+    CommonJS: "CommonJS",
+    ESNext: "ESNext",
+}
+const ModuleKindToDir = {
+    [ModuleKind.CommonJS]: "cjs",
+    [ModuleKind.ESNext]: "mjs"
+} as const
+
 console.log(`🔨 Building ${packageJson.name}...`)
 rmSync(outRoot, { recursive: true, force: true })
 const baseTsConfig = readJson(join(repoDirs.configs, "tsconfig.base.json"))
+const { compilerOptions } = baseTsConfig
 const tempTsConfigPath = join(packageRoot, "tsconfig.temp.json")
-buildFormat("esnext")
-buildFormat("commonjs")
+buildFormat(ModuleKind.ESNext)
+buildFormat(ModuleKind.CommonJS)
 console.log(`📦 Successfully built ${packageJson.name}!`)
