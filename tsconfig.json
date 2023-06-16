@@ -3,9 +3,5 @@
     "compilerOptions": {
         "noErrorTruncation": false
     },
-    "exclude": ["dev/arktype.io", "node_modules", "dist"],
-    "references": [
-        { "path": "dev/utils" }, 
-        { "path": "dev/attest" }, 
-      ]
+    "exclude": ["dev/arktype.io", "node_modules", "dist"]
 }
