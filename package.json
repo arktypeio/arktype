@@ -32,8 +32,10 @@
     "scripts": {
         "prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
         "build": "ts-node ./dev/scripts/build.ts",
-        "clean": "rm -f tsconfig.temp.json && rm -f tsconfig.temp.tsbuildinfo && rm -rf dist && rm -rf dev/utils/dist && rm -rf dev/attest/dist",
-        "reboot": "pnpm clean && pnpm build",
+        "clean": "pnpm run \"/^clean:.*/\" && pnpm --recursive --parallel --stream run clean",
+        "clean:build": "rm -f tsconfig.temp.json && rm -f tsconfig.temp.tsbuildinfo && rm -rf dist",
+        "clean:deps": "rm -rf node_modules",
+        "reboot": "pnpm clean && pnpm install && pnpm build",
         "buildRepo": "pnpm build && cd ./dev/attest && pnpm build && cd ../arktype.io && pnpm build",
         "docgen": "ts-node ./dev/scripts/docgen.ts",
         "test": "mocha",

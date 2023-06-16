@@ -30,6 +30,9 @@
     },
     "scripts": {
         "build": "ts-node ../scripts/build.ts",
+        "clean": "pnpm run \"/^clean:.*/\"",
+        "clean:deps": "rm -rf mode_modules",
+        "clean:build": "rm -rf dist",
         "test": "pnpm mocha"
     }
 }
