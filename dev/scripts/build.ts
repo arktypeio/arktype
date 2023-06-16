@@ -13,6 +13,11 @@ const nuke = (target: string) =>
 const clone = (from: string, to: string): void =>
     cpSync(from, to, { recursive: true, force: true })
 
+const writeManifest = (overrides: Record<string, unknown>) => (sourceDir: string, targetDir: string,) => {
+    const manifest = readJson(join(sourceDir, "package.json"))
+    writeJson(join(targetDir, "package.json"), { ...manifest, ...overrides })
+}
+
 const Sources = {
     utils: ["dev", "utils"],
     attest: ["dev", "attest"]
@@ -35,18 +40,26 @@ const buildFormat = (module: ModuleKind) => {
             outDir
         }
     }
+
+    const writePackageManifest = writeManifest({ type: ModuleKindToPackageType[module] })
+
     writeJson(tempTsConfigPath, tempTsConfig)
+
     try {
         shell(`pnpm tsc --project ${tempTsConfigPath}`)
         const outSrc = join(outDir, "src")
+        const outDev = join(outDir, "dev")
         // not sure which setting to change to get it to compile here in the first place
         clone(outSrc, outDir)
         clone(outUtils, outUtilsTarget)
         clone(outAttest, outAttestTarget)
 
-        writeJson(join(outDir, "package.json"), { type: ModuleKindToPackageType[module] })
+        writePackageManifest(repoDirs.root, outDir)
+        writePackageManifest(repoDirs.utils, outUtilsTarget)
+        writePackageManifest(repoDirs.attest, outAttestTarget)
 
         nuke(outSrc)
+        nuke(outDev)
         nuke(outUtils)
         nuke(outAttest)
     } finally {
