@@ -1,3 +1,4 @@
+import { isValidDateInput } from "../parse/string/shift/operand/date.js"
 import { throwParseError } from "./errors.js"
 
 export type BigintLiteral<value extends bigint = bigint> = `${value}n`
@@ -65,10 +66,18 @@ export const writeMalformedNumericLiteralMessage = <
 ): writeMalformedNumericLiteralMessage<def, kind> =>
     `'${def}' was parsed as ${numericLiteralDescriptions[kind]} but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation`
 
-type ValidationKind = "number" | "integer"
+type ValidationKind = "number" | "integer" | "Date"
 
-const isWellFormed = (def: string, kind: ValidationKind) =>
-    kind === "number" ? isWellFormedNumber(def) : isWellFormedInteger(def)
+const isWellFormed = (def: string, kind: ValidationKind) => {
+    switch (kind) {
+        case "number":
+            return isWellFormedNumber(def)
+        case "integer":
+            return isWellFormedInteger(def)
+        case "Date":
+            return isWellFormedDate(def)
+    }
+}
 
 const parseKind = (def: string, kind: ValidationKind) =>
     kind === "number" ? Number(def) : Number.parseInt(def)
@@ -80,6 +89,12 @@ export const tryParseWellFormedNumber = <ErrorOnFail extends boolean | string>(
     token: string,
     errorOnFail?: ErrorOnFail
 ) => parseWellFormed(token, "number", errorOnFail)
+
+//todoshawn
+export const tryParseWellFormedDate = <ErrorOnFail extends boolean | string>(
+    token: string,
+    errorOnFail?: ErrorOnFail
+) => parseWellFormed(token, "Date", errorOnFail)
 
 export type tryParseWellFormedNumber<
     token extends string,
@@ -115,17 +130,13 @@ const parseWellFormed = <ErrorOnFail extends boolean | string>(
     errorOnFail?: ErrorOnFail
 ): ErrorOnFail extends true | string ? number : number | undefined => {
     const value = parseKind(token, kind)
-    if (!Number.isNaN(value)) {
-        if (isWellFormed(token, kind)) {
-            return value
-        }
-        if (isKindLike(token, kind)) {
-            // If the definition looks like the correct numeric kind but is
-            // not well-formed, always throw.
-            return throwParseError(
-                writeMalformedNumericLiteralMessage(token, kind)
-            )
-        }
+    if (isWellFormed(token, kind)) {
+        return value
+    }
+    if (isKindLike(token, kind)) {
+        // If the definition looks like the correct numeric kind but is
+        // not well-formed, always throw.
+        return throwParseError(writeMalformedNumericLiteralMessage(token, kind))
     }
     return (
         errorOnFail
@@ -167,3 +178,5 @@ export const d = (dateInput: DateInput) =>
     dateInput instanceof Date
         ? dateInput.valueOf()
         : new Date(dateInput).valueOf()
+
+export const isWellFormedDate = (s: string) => isValidDateInput(s.slice(2, -1))

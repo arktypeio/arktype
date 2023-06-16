@@ -9,6 +9,7 @@ import type {
     writeMalformedNumericLiteralMessage
 } from "../../utils/numericLiterals.js"
 import type { inferDefinition, Inferred } from "../definition.js"
+import type { DateLiteral } from "../string/shift/operand/date.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { parseString } from "../string/string.js"
 import type { validateBound } from "./bound.js"

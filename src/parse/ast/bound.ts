@@ -35,5 +35,5 @@ export const writeUnboundableMessage = <root extends string>(
 ): writeUnboundableMessage<root> =>
     `Bounded expression ${root} must be a number, string, Array, or Date`
 
-type writeUnboundableMessage<root extends string> =
+export type writeUnboundableMessage<root extends string> =
     `Bounded expression ${root} must be a number, string, Array, or Date`

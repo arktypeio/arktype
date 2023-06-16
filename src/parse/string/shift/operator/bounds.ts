@@ -5,17 +5,20 @@ import type {
 } from "../../../../nodes/primitive/range.js"
 import { maxComparators, rangeNode } from "../../../../nodes/primitive/range.js"
 import type { NumberLiteral } from "../../../../utils/numericLiterals.js"
-import { tryParseWellFormedNumber } from "../../../../utils/numericLiterals.js"
+import {
+    tryParseWellFormedDate,
+    tryParseWellFormedNumber
+} from "../../../../utils/numericLiterals.js"
 import type { keySet } from "../../../../utils/records.js"
 import { isKeyOf } from "../../../../utils/records.js"
-import { writeUnboundableMessage } from "../../../ast/bound.js"
+import type { writeUnboundableMessage } from "../../../ast/bound.js"
 import type {
     DynamicState,
     DynamicStateWithRoot
 } from "../../reduce/dynamic.js"
 import { writeUnpairableComparatorMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
-import { DateLiteral } from "../operand/date.js"
+import type { DateLiteral } from "../operand/date.js"
 import type { Scanner } from "../scanner.js"
 
 export const parseBound = (
@@ -90,10 +93,17 @@ export const parseRightBound = (
     comparator: Comparator
 ) => {
     const limitToken = s.scanner.shiftUntilNextTerminator()
-    const limit = tryParseWellFormedNumber(
-        limitToken,
-        writeInvalidLimitMessage(comparator, limitToken + s.scanner.unscanned)
-    )
+    const looksLikeDate = /d(['"]).*(\1)/.test(limitToken)
+    //todoshawn
+    const limit = looksLikeDate
+        ? tryParseWellFormedDate(limitToken, `idk ${limitToken} looks bad`)
+        : tryParseWellFormedNumber(
+              limitToken,
+              writeInvalidLimitMessage(
+                  comparator,
+                  limitToken + s.scanner.unscanned
+              )
+          )
     if (!s.branches.range) {
         s.root = s.root.constrain("range", [{ comparator, limit }])
         return

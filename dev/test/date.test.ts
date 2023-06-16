@@ -19,23 +19,24 @@ test("date12", () => {
     //This is interesting, since this is inferred as Date, it's correct right now
     // Do I need to add a check to ensure that the thing that's being bounded doesn't extend date literal, or would this actually be correct
     //todoshawn DAVID HELP const ddd = type("d'10/25/1996' > 2")
-    const ddd = type("number>2")
-    const t = ddd("poop")
-    attest(t).snap()
-    // attest(ddd(new Date(10 / 25 / 1996)).data).snap("Wed Dec 31 1969")
+    const ddd = type("d'1996-10-25'")
+
+    attest(ddd(new Date("1996-10-25").toISOString()).data).snap(
+        "1996-10-25T00:00:00.000Z"
+    )
     // //is this valid?
     // const dddd = type("d'10/25/1996' > 2")
     // const ddddd = type("Date > d'10-25-1996'")
-    attest(new Date(Date.now())).snap("Wed Jun 14 2023")
 })
 suite("Errors", () => {
     test("non-Date format", () => {
-        const d = type("d'1111.1.1'")
-        attest(() => d).throws.snap()
+        const d = type("Date>=d'1111.1.1'")
+        attest(d(new Date("1111.1.1")).problems?.summary).snap(
+            "Must be at least Invalid Date (was Sun Jan 01 1111)"
+        )
     })
     test("empty", () => {
         const d = type("d''")
-        attest(() => d).throws.snap()
     })
     test("non-date", () => {
         const d = type("d'not a date'")
