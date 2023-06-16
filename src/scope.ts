@@ -227,16 +227,18 @@ export class Scope<r extends Resolutions = any> {
         })
     }) as never
 
-    // TODO allow imports
-    extend: ScopeParser<r["exports"], r["ambient"]> = ((
+    merge: ScopeParser<r["exports"], r["ambient"]> = ((
         aliases: Dict,
         config: TypeConfig = {}
     ) => {
-        return new Scope(aliases, {
-            ...this.config,
-            ...config,
-            ambient: this.ambient
-        })
+        return new Scope(
+            { ...this.aliases, ...aliases },
+            {
+                ...this.config,
+                ...config,
+                ambient: this.ambient
+            }
+        )
     }) as never
 
     define: DefinitionParser<$<r>> = (def) => def as never

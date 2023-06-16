@@ -276,7 +276,7 @@ export const generic = (
         (...args: unknown[]) =>
             new Type(
                 definition,
-                scope.extend(
+                scope.merge(
                     Object.fromEntries(
                         parameters.map((param, i) => [param, args[i]])
                     ) as never
