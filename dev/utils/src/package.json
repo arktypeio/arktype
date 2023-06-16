@@ -1,0 +1,35 @@
+{
+    "name": "@arktype/utils",
+    "version": "0.0.0",
+    "private": true,
+    "author": {
+        "name": "David Blass",
+        "email": "david@arktype.io",
+        "url": "https://arktype.io"
+    },
+    "type": "module",
+    "main": "./dist/cjs/main.js",
+    "types": "./dist/cjs/main.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/mjs/main.js",
+            "require": "./dist/cjs/main.js"
+        }
+    },
+    "files": [
+        "dist",
+        "!*.tsbuildinfo"
+    ],
+    "dependencies": {
+        "ts-morph": "18.0.0"
+    },
+    "devDependencies": {
+        "ts-node": "10.9.1",
+        "mocha": "10.2.0",
+        "typescript": "5.0.4"
+    },
+    "scripts": {
+        "build": "ts-node ../scripts/build.ts",
+        "test": "pnpm mocha"
+    }
+}
