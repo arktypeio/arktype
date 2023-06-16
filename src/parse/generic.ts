@@ -1,10 +1,11 @@
 import type { error } from "../utils/errors.js"
+import { throwParseError } from "../utils/errors.js"
 import type { nominal } from "../utils/generics.js"
 import type { join } from "../utils/lists.js"
-import type { writeUnclosedGroupMessage } from "./string/reduce/shared.js"
+import { writeUnclosedGroupMessage } from "./string/reduce/shared.js"
 import type { state, StaticState } from "./string/reduce/static.js"
-import type { writeUnexpectedCharacterMessage } from "./string/shift/operator/operator.js"
-import type { Scanner } from "./string/shift/scanner.js"
+import { writeUnexpectedCharacterMessage } from "./string/shift/operator/operator.js"
+import { Scanner } from "./string/shift/scanner.js"
 import type { parseUntilFinalizer } from "./string/string.js"
 
 export type GenericDeclaration<
@@ -12,10 +13,41 @@ export type GenericDeclaration<
     params extends string = string
 > = `${name}<${params}>`
 
+export const parseScopeKey = (k: string): ParsedScopeKey => {
+    const isLocal = k[0] === "#"
+    const name = isLocal ? k.slice(1) : k
+    const firstParamIndex = k.indexOf("<")
+    if (firstParamIndex === -1) {
+        return {
+            isLocal,
+            name,
+            params: []
+        }
+    }
+    const lastParamIndex = k.indexOf(">")
+    if (lastParamIndex === -1) {
+        throwParseError(writeUnclosedGroupMessage(">"))
+    }
+    return {
+        isLocal,
+        name: name.slice(firstParamIndex),
+        params: parseGenericParams(k.slice(firstParamIndex + 1, lastParamIndex))
+    }
+}
+
+export type ParsedScopeKey = {
+    isLocal: boolean
+    name: string
+    params: string[]
+}
+
 // we put the error in a tuple so that parseGenericParams always returns a string[]
 export type GenericParamsParseError<message extends string = string> = [
     nominal<message, "InvalidGenericParameters">
 ]
+
+const parseGenericParams = (def: string) =>
+    parseGenericParamsRecurse(new Scanner(def))
 
 export type parseGenericParams<def extends string> = parseParamsRecurse<
     def,
@@ -26,6 +58,19 @@ export type parseGenericParams<def extends string> = parseParamsRecurse<
         ? GenericParamsParseError<`An empty string is not a valid generic parameter name`>
         : result
     : never
+
+const parseGenericParamsRecurse = (scanner: Scanner): string[] => {
+    const param = scanner.shiftUntilNextTerminator()
+    scanner.shiftUntilNonWhitespace()
+    const nextNonWhitespace = scanner.shift()
+    return nextNonWhitespace === ""
+        ? [param]
+        : nextNonWhitespace === ","
+        ? [param, ...parseGenericParamsRecurse(scanner)]
+        : throwParseError(
+              writeUnexpectedCharacterMessage(nextNonWhitespace, ",")
+          )
+}
 
 type parseParamsRecurse<
     unscanned extends string,

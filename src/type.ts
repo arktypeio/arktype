@@ -6,8 +6,8 @@ import type { PredicateInput } from "./nodes/composite/predicate.js"
 import type { TypeNode } from "./nodes/composite/type.js"
 import { node } from "./nodes/composite/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
-import type { Morph, MorphAst, Out, inferMorphOut } from "./parse/ast/morph.js"
-import type { Narrow, inferNarrow } from "./parse/ast/narrow.js"
+import type { inferMorphOut, Morph, MorphAst, Out } from "./parse/ast/morph.js"
+import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
 import type {
     IndexOneOperator,
     IndexZeroOperator,
@@ -23,10 +23,11 @@ import type {
     GenericParamsParseError,
     parseGenericParams
 } from "./parse/generic.js"
-import type { Scope, bindThis } from "./scope.js"
+import type { bindThis, Resolutions, Scope } from "./scope.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
-import type { Literalable, conform, id } from "./utils/generics.js"
+import type { conform, Literalable } from "./utils/generics.js"
+import { id } from "./utils/generics.js"
 import type {
     AbstractableConstructor,
     BuiltinObjectKind,
@@ -266,6 +267,18 @@ type bindGenericInstantiationToScope<params extends string[], argDefs, $> = {
         ? inferDefinition<argDefs[i], bindThis<$, argDefs[i]>>
         : never
 } & Omit<$, params[number]>
+
+export const createGeneric = (
+    parameters: string[],
+    definition: unknown,
+    scope: Scope
+): GenericProps => ({
+    [id]: "generic",
+    $: undefined,
+    parameters,
+    definition,
+    scope
+})
 
 // Comparing to Generic directly doesn't work well, so we use this similarly to
 // the [inferred] symbol for Type

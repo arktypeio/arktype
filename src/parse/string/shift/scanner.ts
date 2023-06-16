@@ -37,8 +37,12 @@ export class Scanner<Lookahead extends string = string> {
     }
 
     shiftUntilNextTerminator() {
-        this.shiftUntil(Scanner.lookaheadIsNotWhitespace)
+        this.shiftUntilNonWhitespace()
         return this.shiftUntil(Scanner.lookaheadIsTerminator)
+    }
+
+    shiftUntilNonWhitespace() {
+        return this.shiftUntil(Scanner.lookaheadIsNotWhitespace)
     }
 
     get unscanned() {

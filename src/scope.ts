@@ -15,6 +15,7 @@ import type {
     GenericParamsParseError,
     parseGenericParams
 } from "./parse/generic.js"
+import { parseScopeKey } from "./parse/generic.js"
 import { parseString } from "./parse/string/string.js"
 import type {
     DeclarationParser,
@@ -27,7 +28,7 @@ import type {
     TypeConfig,
     TypeParser
 } from "./type.js"
-import { createTypeParser, Type } from "./type.js"
+import { createGeneric, createTypeParser, Type } from "./type.js"
 import { domainOf } from "./utils/domains.js"
 import { throwParseError } from "./utils/errors.js"
 import type { evaluate, isAny, nominal } from "./utils/generics.js"
@@ -192,7 +193,7 @@ export class Scope<r extends Resolutions = any> {
     config: TypeConfig
 
     private parseCache: Map<unknown, TypeNode> = new Map()
-    private resolutions: Record<string, Type>
+    private resolutions: Record<string, Type | TypeSet>
     private thisType: Type
 
     aliases: Record<string, unknown> = {}
@@ -201,11 +202,12 @@ export class Scope<r extends Resolutions = any> {
 
     constructor(input: Dict, opts: ScopeOptions) {
         for (const k in input) {
-            if (k.startsWith("#")) {
-                this.aliases[k.slice(1)] = input[k]
-            } else {
-                this.aliases[k] = input[k]
-                this.exportedNames.push(k as never)
+            const parsedKey = parseScopeKey(k)
+            this.aliases[parsedKey.name] = parsedKey.params.length
+                ? createGeneric(parsedKey.params, input[k], this)
+                : input[k]
+            if (!parsedKey.isLocal) {
+                this.exportedNames.push(parsedKey.name as never)
             }
         }
         this.ambient = opts.ambient ?? {}
@@ -285,7 +287,7 @@ export class Scope<r extends Resolutions = any> {
                 return cached.root
             }
             // TODO: when is this cache safe? could contain this reference?
-            return cached.root
+            return cached.root as never
         }
         const aliasDef = this.aliases[name]
         if (!aliasDef) {
