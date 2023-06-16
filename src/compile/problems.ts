@@ -47,8 +47,8 @@ export abstract class Problem<requirement = unknown, data = unknown> {
         return this.path.length === 0
             ? capitalize(this.reason)
             : this.path.length === 1 && typeof this.path[0] === "number"
-                ? `Item at index ${this.path[0]} ${this.reason}`
-                : `${this.path} ${this.reason}`
+            ? `Item at index ${this.path[0]} ${this.reason}`
+            : `${this.path} ${this.reason}`
     }
 
     get reason() {
@@ -177,11 +177,12 @@ export class ProblemUnion extends Problem<Problems> {
         return describeBranches(
             this.rule.map(
                 (problem) =>
-                    `${problem.path} must be ${problem.hasCode("intersection")
-                        ? describeBranches(
-                            problem.rule.map((part) => part.mustBe)
-                        )
-                        : problem.mustBe
+                    `${problem.path} must be ${
+                        problem.hasCode("intersection")
+                            ? describeBranches(
+                                  problem.rule.map((part) => part.mustBe)
+                              )
+                            : problem.mustBe
                     }`
             )
         )
@@ -221,10 +222,11 @@ export class RangeProblem extends Problem<Bound, SizedData> {
     readonly code = "range"
 
     get mustBe() {
-        return `${comparatorDescriptions[this.rule.comparator]} ${this.data.value instanceof Date
-            ? new Date(this.rule.limit).toDateString()
-            : this.rule.limit
-            }${this.data.units ? ` ${this.data.units}` : ""}`
+        return `${comparatorDescriptions[this.rule.comparator]} ${
+            this.data.value instanceof Date
+                ? new Date(this.rule.limit).toDateString()
+                : this.rule.limit
+        }${this.data.units ? ` ${this.data.units}` : ""}`
     }
 
     get was() {
@@ -314,20 +316,20 @@ export const sizeOf = (data: unknown) =>
     typeof data === "string" || Array.isArray(data)
         ? data.length
         : typeof data === "number"
-            ? data
-            : data instanceof Date
-                ? data.valueOf()
-                : 0
+        ? data
+        : data instanceof Date
+        ? data.valueOf()
+        : 0
 
 export const unitsOf = (data: unknown) =>
     typeof data === "string"
         ? "characters"
         : Array.isArray(data)
-            ? "items long"
-            : ""
+        ? "items long"
+        : ""
 
 export class DataWrapper<value = unknown> {
-    constructor(public value: value) { }
+    constructor(public value: value) {}
 
     toString() {
         return stringify(this.value)

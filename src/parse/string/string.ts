@@ -27,8 +27,8 @@ export type inferString<def extends string, $> = inferAst<
 // TODO: investigate with generics
 type maybeNaiveParse<def extends string, $> = def extends `${infer child}[]`
     ? child extends keyof $
-    ? [child, "[]"]
-    : fullStringParse<def, $>
+        ? [child, "[]"]
+        : fullStringParse<def, $>
     : def extends keyof $
     ? def
     : fullStringParse<def, $>
@@ -73,7 +73,7 @@ type next<s extends StaticState, $> = s["root"] extends undefined
 
 export type extractFinalizedResult<s extends StaticState> =
     s["finalizer"] extends error
-    ? s["finalizer"]
-    : s["finalizer"] extends ""
-    ? s["root"]
-    : error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>
+        ? s["finalizer"]
+        : s["finalizer"] extends ""
+        ? s["root"]
+        : error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>

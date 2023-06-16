@@ -86,8 +86,8 @@ export type tryParseWellFormedNumber<
     messageOnFail extends string
 > = token extends NumberLiteral<infer value>
     ? number extends value
-    ? writeMalformedNumericLiteralMessage<token, "number">
-    : value
+        ? writeMalformedNumericLiteralMessage<token, "number">
+        : value
     : messageOnFail
 
 export const tryParseWellFormedInteger = <errorOnFail extends boolean | string>(
@@ -103,10 +103,10 @@ export type tryParseWellFormedInteger<
     messageOnFail extends string
 > = token extends IntegerLiteral<infer value>
     ? bigint extends value
-    ? writeMalformedNumericLiteralMessage<token, "integer">
-    : `${value}` extends NumberLiteral<infer valueAsNumber>
-    ? valueAsNumber
-    : never
+        ? writeMalformedNumericLiteralMessage<token, "integer">
+        : `${value}` extends NumberLiteral<infer valueAsNumber>
+        ? valueAsNumber
+        : never
     : messageOnFail
 
 const parseWellFormed = <ErrorOnFail extends boolean | string>(
@@ -130,10 +130,10 @@ const parseWellFormed = <ErrorOnFail extends boolean | string>(
     return (
         errorOnFail
             ? throwParseError(
-                errorOnFail === true
-                    ? `Failed to parse ${numericLiteralDescriptions[kind]} from '${token}'`
-                    : errorOnFail
-            )
+                  errorOnFail === true
+                      ? `Failed to parse ${numericLiteralDescriptions[kind]} from '${token}'`
+                      : errorOnFail
+              )
             : undefined
     ) as any
 }

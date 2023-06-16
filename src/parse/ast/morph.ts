@@ -17,8 +17,8 @@ export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
 
 export type parseMorph<inDef, morph, $> = morph extends Morph
     ? (
-        In: extractIn<inferDefinition<inDef, $>>
-    ) => Out<inferMorphOut<ReturnType<morph>>>
+          In: extractIn<inferDefinition<inDef, $>>
+      ) => Out<inferMorphOut<ReturnType<morph>>>
     : never
 
 export type MorphAst<i = any, o = unknown> = (In: i) => Out<o>

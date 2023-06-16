@@ -43,21 +43,21 @@ export type parseUnenclosed<
     s["unscanned"]
 > extends Scanner.shiftResult<infer token, infer unscanned>
     ? token extends "keyof"
-    ? state.addPrefix<s, "keyof", unscanned>
-    : tryResolve<s, token, $> extends infer result
-    ? result extends error<infer message>
-    ? state.error<message>
-    : result extends keyof $
-    ? $[result] extends GenericProps
-    ? parseGenericInstantiation<
-        token,
-        $[result],
-        state.scanTo<s, unscanned>,
-        $
-    >
-    : state.setRoot<s, result, unscanned>
-    : state.setRoot<s, result, unscanned>
-    : never
+        ? state.addPrefix<s, "keyof", unscanned>
+        : tryResolve<s, token, $> extends infer result
+        ? result extends error<infer message>
+            ? state.error<message>
+            : result extends keyof $
+            ? $[result] extends GenericProps
+                ? parseGenericInstantiation<
+                      token,
+                      $[result],
+                      state.scanTo<s, unscanned>,
+                      $
+                  >
+                : state.setRoot<s, result, unscanned>
+            : state.setRoot<s, result, unscanned>
+        : never
     : never
 
 export type parseGenericInstantiation<
@@ -65,28 +65,28 @@ export type parseGenericInstantiation<
     g extends GenericProps,
     s extends StaticState,
     $
-// have to skip whitespace here since TS allows instantiations like `Partial    <T>`
+    // have to skip whitespace here since TS allows instantiations like `Partial    <T>`
 > = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}`
     ? parseGenericArgs<
-        name,
-        g["parameters"],
-        unscanned,
-        $,
-        [],
-        []
-    > extends infer result
-    ? result extends ParsedArgs<infer argAsts, infer nextUnscanned>
-    ? state.setRoot<
-        s,
-        GenericInstantiationAst<g, argAsts>,
-        nextUnscanned
-    >
-    : // propagate error
-    result
-    : never
+          name,
+          g["parameters"],
+          unscanned,
+          $,
+          [],
+          []
+      > extends infer result
+        ? result extends ParsedArgs<infer argAsts, infer nextUnscanned>
+            ? state.setRoot<
+                  s,
+                  GenericInstantiationAst<g, argAsts>,
+                  nextUnscanned
+              >
+            : // propagate error
+              result
+        : never
     : state.error<
-        writeInvalidGenericParametersMessage<name, g["parameters"], []>
-    >
+          writeInvalidGenericParametersMessage<name, g["parameters"], []>
+      >
 
 const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
     s.ctx.scope.maybeResolve(token)?.root ??
@@ -115,12 +115,12 @@ type tryResolve<
 > = token extends keyof $
     ? token
     : token extends `${infer subscope extends keyof $ &
-    string}.${infer reference}`
+          string}.${infer reference}`
     ? $[subscope] extends Scope
-    ? reference extends keyof $[subscope]["infer"]
-    ? Inferred<$[subscope]["infer"][reference]>
-    : unresolvableError<s, reference, $[subscope]["infer"], [subscope]>
-    : error<writeInvalidSubscopeReferenceMessage<subscope>>
+        ? reference extends keyof $[subscope]["infer"]
+            ? Inferred<$[subscope]["infer"][reference]>
+            : unresolvableError<s, reference, $[subscope]["infer"], [subscope]>
+        : error<writeInvalidSubscopeReferenceMessage<subscope>>
     : token extends NumberLiteral
     ? token
     : token extends BigintLiteral
@@ -138,12 +138,12 @@ export type unresolvableError<
 > = Extract<validReference<$, subscopePath>, `${token}${string}`> extends never
     ? error<writeUnresolvableMessage<token>>
     : error<`${s["scanned"]}${join<
-        [
-            ...subscopePath,
-            Extract<validReference<$, subscopePath>, `${token}${string}`>
-        ],
-        "."
-    >}`>
+          [
+              ...subscopePath,
+              Extract<validReference<$, subscopePath>, `${token}${string}`>
+          ],
+          "."
+      >}`>
 
 // AutocompletePrefixes like "keyof" are not accessible from a subscope
 type validReference<$, subscopePath extends string[]> = subscopePath extends []
@@ -175,8 +175,8 @@ export type writeMissingRightOperandMessage<
     token extends string,
     unscanned extends string = ""
 > = `Token '${token}' requires a right operand${unscanned extends ""
-? ""
-: ` before '${unscanned}'`}`
+    ? ""
+    : ` before '${unscanned}'`}`
 
 export const writeMissingRightOperandMessage = <
     token extends string,
@@ -185,7 +185,8 @@ export const writeMissingRightOperandMessage = <
     token: token,
     unscanned = "" as unscanned
 ): writeMissingRightOperandMessage<token, unscanned> =>
-    `Token '${token}' requires a right operand${unscanned ? (` before '${unscanned}'` as any) : ""
+    `Token '${token}' requires a right operand${
+        unscanned ? (` before '${unscanned}'` as any) : ""
     }`
 
 export const writeExpressionExpectedMessage = <unscanned extends string>(
@@ -194,5 +195,5 @@ export const writeExpressionExpectedMessage = <unscanned extends string>(
 
 export type writeExpressionExpectedMessage<unscanned extends string> =
     `Expected an expression${unscanned extends ""
-    ? ""
-    : ` before '${unscanned}'`}`
+        ? ""
+        : ` before '${unscanned}'`}`

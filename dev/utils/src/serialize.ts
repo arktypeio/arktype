@@ -28,8 +28,8 @@ export type snapshot<t, depth extends 1[] = []> = unknown extends t
     : t extends List<infer item>
     ? List<snapshot<item, [...depth, 1]>>
     : {
-        [k in keyof t]: snapshot<t[k], [...depth, 1]>
-    }
+          [k in keyof t]: snapshot<t[k], [...depth, 1]>
+      }
 
 type snapshotPrimitive<t> = t extends undefined
     ? "(undefined)"
@@ -123,12 +123,12 @@ export const serializePrimitive = <value extends SerializablePrimitive>(
     (typeof value === "string"
         ? JSON.stringify(value)
         : typeof value === "bigint"
-            ? `${value}n`
-            : `${value}`) as serializePrimitive<value>
+        ? `${value}n`
+        : `${value}`) as serializePrimitive<value>
 
 export type serializePrimitive<value extends SerializablePrimitive> =
     value extends string
-    ? `"${value}"`
-    : value extends bigint
-    ? `${value}n`
-    : `${value}`
+        ? `"${value}"`
+        : value extends bigint
+        ? `${value}n`
+        : `${value}`

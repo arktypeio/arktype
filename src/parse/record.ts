@@ -67,23 +67,23 @@ type KeyParseResult<name extends string, isOptional extends boolean> = [
 
 type parseKey<k> = k extends optionalKeyWithName<infer name>
     ? name extends `${infer baseName}${Scanner.EscapeToken}`
-    ? [`${baseName}?`, false]
-    : [name, true]
+        ? [`${baseName}?`, false]
+        : [name, true]
     : [k, false]
 
 type optionalKeyWithName<name extends string = string> = `${name}?`
 
 type optionalKeyOf<def> = {
     [k in keyof def]: parseKey<k> extends KeyParseResult<infer name, true>
-    ? name
-    : never
+        ? name
+        : never
 }[keyof def] &
     // ensure keyof is fully evaluated for inferred types
     unknown
 
 type requiredKeyOf<def> = {
     [k in keyof def]: parseKey<k> extends KeyParseResult<infer name, false>
-    ? name
-    : never
+        ? name
+        : never
 }[keyof def] &
     unknown

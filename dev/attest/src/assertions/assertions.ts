@@ -26,7 +26,7 @@ export type ChainableAssertionOptions = {
 type AssertionRecord = Record<keyof rootAssertions<any, true>, unknown>
 
 export class Assertions implements AssertionRecord {
-    constructor(private ctx: AssertionContext) { }
+    constructor(private ctx: AssertionContext) {}
 
     private serialize(value: unknown) {
         return snapshot(value)
@@ -69,7 +69,7 @@ export class Assertions implements AssertionRecord {
             if (!typeData.type.expected) {
                 throw new Error(
                     `Unable to infer type at position ${this.ctx.position.char} on` +
-                    ` line ${this.ctx.position.line} of ${this.ctx.position.file}.`
+                        ` line ${this.ctx.position.line} of ${this.ctx.position.file}.`
                 )
             }
             assertEquals(typeData.type.expected, typeData.type.actual, this.ctx)
@@ -208,7 +208,7 @@ export class Assertions implements AssertionRecord {
         if (!assertionData.type.expected) {
             throw new Error(
                 `Expected an 'as' expression after 'typed' prop access at position ${this.ctx.position.char} on ` +
-                `line ${this.ctx.position.line} of ${this.ctx.position.file}.`
+                    `line ${this.ctx.position.line} of ${this.ctx.position.file}.`
             )
         }
         if (

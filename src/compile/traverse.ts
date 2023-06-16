@@ -25,7 +25,7 @@ export class TraversalState {
     // Qualified
     private seen: { [name in string]?: object[] } = {}
 
-    constructor() { }
+    constructor() {}
 
     get problems() {
         return this.problemsStack.at(-1)!

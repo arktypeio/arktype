@@ -128,8 +128,8 @@ export const typeNode = defineNodeKind<TypeNode, TypeInput>(
                             typeof key === "string"
                                 ? propsAtKey.byName?.[key]?.value.rule
                                 : propsAtKey.indexed.find(
-                                    (entry) => entry.key === key
-                                )?.value.rule
+                                      (entry) => entry.key === key
+                                  )?.value.rule
                         if (branchesAtKey) {
                             next.push(...branchesAtKey)
                         }
@@ -360,25 +360,25 @@ export type validatedTypeNodeInput<
     branches extends readonly PredicateInput[],
     bases extends BasisInput[]
 > = {
-        [i in keyof branches]: exact<
-            branches[i],
-            PredicateInput<bases[i & keyof bases]>
-        >
-    }
+    [i in keyof branches]: exact<
+        branches[i],
+        PredicateInput<bases[i & keyof bases]>
+    >
+}
 
 export type extractBases<
     branches,
     result extends BasisInput[] = []
 > = branches extends [infer head, ...infer tail]
     ? extractBases<
-        tail,
-        [
-            ...result,
-            head extends {
-                basis: infer basis extends BasisInput
-            }
-            ? basis
-            : BasisInput
-        ]
-    >
+          tail,
+          [
+              ...result,
+              head extends {
+                  basis: infer basis extends BasisInput
+              }
+                  ? basis
+                  : BasisInput
+          ]
+      >
     : result

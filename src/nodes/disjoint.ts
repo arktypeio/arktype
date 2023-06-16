@@ -1,4 +1,7 @@
-import { throwInternalError, throwParseError } from "../../dev/utils/src/errors.js"
+import {
+    throwInternalError,
+    throwParseError
+} from "../../dev/utils/src/errors.js"
 import {
     entriesOf,
     type entryOf,
@@ -31,14 +34,14 @@ type DisjointKinds = {
         r: ClassNode
     }
     assignability?:
-    | {
-        l: ValueNode
-        r: PredicateNode
-    }
-    | {
-        l: PredicateNode
-        r: ValueNode
-    }
+        | {
+              l: ValueNode
+              r: PredicateNode
+          }
+        | {
+              l: PredicateNode
+              r: ValueNode
+          }
     union?: {
         l: TypeNode
         r: TypeNode
@@ -62,7 +65,7 @@ export type DisjointSourceEntry = entryOf<DisjointsSources>
 export type DisjointKind = keyof DisjointKinds
 
 export class Disjoint {
-    constructor(public sources: DisjointsSources) { }
+    constructor(public sources: DisjointsSources) {}
 
     static from<kind extends DisjointKind>(
         kind: kind,
@@ -103,8 +106,9 @@ export class Disjoint {
         if (reasons.length === 1) {
             const { path, disjoint } = reasons[0]
             const pathString = JSON.parse(path).join(".")
-            return `Intersection${pathString && ` at ${pathString}`} of ${disjoint.l
-                } and ${disjoint.r} results in an unsatisfiable type`
+            return `Intersection${pathString && ` at ${pathString}`} of ${
+                disjoint.l
+            } and ${disjoint.r} results in an unsatisfiable type`
         }
         return `The following intersections result in unsatisfiable types:\n• ${reasons
             .map(

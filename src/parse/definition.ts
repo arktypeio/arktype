@@ -89,14 +89,14 @@ export type validateDefinition<def, $> = def extends Terminal
     ? validateTuple<def, $>
     : def extends BadDefinitionType
     ? writeBadDefinitionTypeMessage<
-        objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
-    >
+          objectKindOf<def> extends string ? objectKindOf<def> : domainOf<def>
+      >
     : isUnknown<def> extends true
     ? // this allows the initial list of autocompletions to be populated when a user writes "type()", before having specified a definition
-    (keyof $ & string) | AutocompletePrefix | {}
+      (keyof $ & string) | AutocompletePrefix | {}
     : {
-        [k in keyof def]: validateDefinition<def[k], $>
-    }
+          [k in keyof def]: validateDefinition<def[k], $>
+      }
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes

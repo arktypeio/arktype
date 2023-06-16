@@ -11,10 +11,10 @@ import type { inferTypeInput } from "./type.js"
 
 export type inferPropsInput<input extends PropsInput> =
     input extends PropsInputTuple<infer named, infer indexed>
-    ? inferIndexed<indexed, inferNamedProps<named, indexed>>
-    : input extends NamedPropsInput
-    ? inferNamedProps<input, []>
-    : never
+        ? inferIndexed<indexed, inferNamedProps<named, indexed>>
+        : input extends NamedPropsInput
+        ? inferNamedProps<input, []>
+        : never
 
 type inferIndexed<
     indexed extends IndexedPropInput[],
@@ -24,20 +24,20 @@ type inferIndexed<
     ...infer tail extends IndexedPropInput[]
 ]
     ? inferIndexed<
-        tail,
-        entry["key"] extends { readonly regex: VariadicIndexMatcherSource }
-        ? result extends List
-        ? [...result, ...inferTypeInput<entry["value"]>[]]
-        : never
-        : entry["key"] extends {
-            readonly regex: NonVariadicIndexMatcherSource
-        }
-        ? inferTypeInput<entry["value"]>[]
-        : Record<
-            Extract<inferTypeInput<entry["key"]>, PropertyKey>,
-            inferTypeInput<entry["value"]>
-        >
-    >
+          tail,
+          entry["key"] extends { readonly regex: VariadicIndexMatcherSource }
+              ? result extends List
+                  ? [...result, ...inferTypeInput<entry["value"]>[]]
+                  : never
+              : entry["key"] extends {
+                    readonly regex: NonVariadicIndexMatcherSource
+                }
+              ? inferTypeInput<entry["value"]>[]
+              : Record<
+                    Extract<inferTypeInput<entry["key"]>, PropertyKey>,
+                    inferTypeInput<entry["value"]>
+                >
+      >
     : result
 
 type inferNamedProps<
@@ -47,20 +47,20 @@ type inferNamedProps<
     | [TupleLengthProps, unknown]
     | [unknown, { readonly regex: VariadicIndexMatcherSource }]
     ? inferNonVariadicTupleProps<named> &
-    inferObjectLiteralProps<
-        Omit<named, "length" | NumberLiteral | number>
-    >
+          inferObjectLiteralProps<
+              Omit<named, "length" | NumberLiteral | number>
+          >
     : inferObjectLiteralProps<named>
 
 type inferObjectLiteralProps<named extends NamedPropsInput> = {} extends named
     ? unknown
     : evaluate<
-        {
-            [k in requiredKeyOf<named>]: inferTypeInput<named[k]["value"]>
-        } & {
-            [k in optionalKeyOf<named>]?: inferTypeInput<named[k]["value"]>
-        }
-    >
+          {
+              [k in requiredKeyOf<named>]: inferTypeInput<named[k]["value"]>
+          } & {
+              [k in optionalKeyOf<named>]?: inferTypeInput<named[k]["value"]>
+          }
+      >
 
 type stringifiedNumericKeyOf<t> = `${Extract<keyof t, number | NumberLiteral>}`
 
@@ -69,9 +69,9 @@ type inferNonVariadicTupleProps<
     result extends unknown[] = []
 > = `${result["length"]}` extends stringifiedNumericKeyOf<named>
     ? inferNonVariadicTupleProps<
-        named,
-        [...result, inferTypeInput<named[`${result["length"]}`]["value"]>]
-    >
+          named,
+          [...result, inferTypeInput<named[`${result["length"]}`]["value"]>]
+      >
     : result
 
 type TupleLengthProps<length extends number = number> = {

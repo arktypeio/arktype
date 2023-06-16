@@ -57,10 +57,10 @@ export const createArrayIndexMatcher = <index extends number>(
 ) =>
     (firstVariadic === 0
         ? // If the variadic pattern starts at index 0, return the base array index matcher
-        nonVariadicIndexMatcherSource
+          nonVariadicIndexMatcherSource
         : excludedIndicesSource(firstVariadic)) as index extends 0
-    ? NonVariadicIndexMatcherSource
-    : VariadicIndexMatcherSource
+        ? NonVariadicIndexMatcherSource
+        : VariadicIndexMatcherSource
 
 export const extractArrayIndexRegex = (keyNode: TypeNode) => {
     if (keyNode.rule.length !== 1) {
@@ -97,10 +97,10 @@ export const extractFirstVariadicIndex = (source: ArrayIndexMatcherSource) => {
 export const arrayIndexInput = <index extends number = 0>(
     firstVariadicIndex: index = 0 as index
 ) =>
-({
-    basis: "string",
-    regex: createArrayIndexMatcher(firstVariadicIndex)
-} as const satisfies PredicateInput<"string">)
+    ({
+        basis: "string",
+        regex: createArrayIndexMatcher(firstVariadicIndex)
+    } as const satisfies PredicateInput<"string">)
 
 export const arrayIndexTypeNode = (firstVariadicIndex = 0): TypeNode<string> =>
     firstVariadicIndex === 0

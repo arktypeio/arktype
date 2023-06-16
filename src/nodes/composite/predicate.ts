@@ -72,10 +72,10 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
                 precedenceByKind[l.kind] > precedenceByKind[r.kind]
                     ? 1
                     : precedenceByKind[l.kind] < precedenceByKind[r.kind]
-                        ? -1
-                        : l.kind > r.kind
-                            ? 1
-                            : -1
+                    ? -1
+                    : l.kind > r.kind
+                    ? 1
+                    : -1
             )
         },
         compile: (children) => children.map((child) => child.condition),
@@ -134,8 +134,8 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
         const initialRule = base.rule.at(0)
         const basis =
             initialRule?.hasKind("domain") ||
-                initialRule?.hasKind("value") ||
-                initialRule?.hasKind("class")
+            initialRule?.hasKind("value") ||
+            initialRule?.hasKind("class")
                 ? initialRule
                 : undefined
         const constraints = (
@@ -145,8 +145,8 @@ export const predicateNode = defineNodeKind<PredicateNode, PredicateInput>(
             base.rule.length === 0
                 ? "unknown"
                 : constraints.length
-                    ? constraints.map((rule) => rule.toString()).join(" and ")
-                    : `${basis}`
+                ? constraints.map((rule) => rule.toString()).join(" and ")
+                : `${basis}`
         return {
             description,
             basis,
@@ -310,17 +310,17 @@ export type PredicateInput<
 > =
     | Record<string, never>
     | evaluate<
-        {
-            basis: basis
-        } & ConstraintsInput<basis>
-    >
+          {
+              basis: basis
+          } & ConstraintsInput<basis>
+      >
 
 export type ConstraintsInput<
     basis extends BasisInput | undefined = BasisInput | undefined
 > = BasisInput extends basis
     ? {
-        [k in ConstraintKind]?: unknownConstraintInput<k>
-    }
+          [k in ConstraintKind]?: unknownConstraintInput<k>
+      }
     : basis extends BasisInput
     ? constraintsOf<basis>
     : functionalConstraints<unknown>
@@ -328,49 +328,49 @@ export type ConstraintsInput<
 type unknownConstraintInput<kind extends ConstraintKind> = kind extends "props"
     ? PropsInput
     :
-    | ConstraintKinds[kind]["rule"]
-    // Add the unlisted version as a valid input for these kinds
-    | (kind extends ListableInputKind
-        ? ConstraintKinds[kind]["rule"][number]
-        : never)
+          | ConstraintKinds[kind]["rule"]
+          // Add the unlisted version as a valid input for these kinds
+          | (kind extends ListableInputKind
+                ? ConstraintKinds[kind]["rule"][number]
+                : never)
 
 export type inferPredicateDefinition<input extends PredicateInput> =
     input["morph"] extends Morph<any, infer out>
-    ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
-    : input["morph"] extends readonly [...any[], Morph<any, infer out>]
-    ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
-    : inferPredicateInput<input>
+        ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
+        : input["morph"] extends readonly [...any[], Morph<any, infer out>]
+        ? (In: inferPredicateInput<input>) => Out<inferMorphOut<out>>
+        : inferPredicateInput<input>
 
 type inferPredicateInput<input extends PredicateInput> =
     input["narrow"] extends GuardedNarrow<any, infer narrowed>
-    ? narrowed
-    : input["narrow"] extends List<Narrow>
-    ? inferNarrowArray<input["narrow"]> extends infer result
-    ? isUnknown<result> extends true
-    ? inferNonFunctionalConstraints<input>
-    : result
-    : never
-    : inferNonFunctionalConstraints<input>
+        ? narrowed
+        : input["narrow"] extends List<Narrow>
+        ? inferNarrowArray<input["narrow"]> extends infer result
+            ? isUnknown<result> extends true
+                ? inferNonFunctionalConstraints<input>
+                : result
+            : never
+        : inferNonFunctionalConstraints<input>
 
 type inferNarrowArray<
     filters extends List,
     result = unknown
 > = filters extends readonly [infer head, ...infer tail]
     ? inferNarrowArray<
-        tail,
-        result &
-        (head extends GuardedNarrow<any, infer narrowed>
-            ? narrowed
-            : unknown)
-    >
+          tail,
+          result &
+              (head extends GuardedNarrow<any, infer narrowed>
+                  ? narrowed
+                  : unknown)
+      >
     : evaluate<result>
 
 type inferNonFunctionalConstraints<input extends PredicateInput> =
     input["basis"] extends BasisInput
-    ? input["props"] extends PropsInput
-    ? inferPropsInput<input["props"]>
-    : inferBasis<input["basis"]>
-    : unknown
+        ? input["props"] extends PropsInput
+            ? inferPropsInput<input["props"]>
+            : inferBasis<input["basis"]>
+        : unknown
 
 type constraintsOf<basis extends BasisInput> = basis extends Domain
     ? functionalConstraints<inferDomain<basis>> & domainConstraints<basis>
@@ -378,23 +378,23 @@ type constraintsOf<basis extends BasisInput> = basis extends Domain
     ? functionalConstraints<instanceOf<Constructor>> & classConstraints<basis>
     : basis extends readonly ["===", infer value]
     ? // Exact values cannot be filtered, but can be morphed
-    Pick<functionalConstraints<value>, "morph">
+      Pick<functionalConstraints<value>, "morph">
     : never
 
 type domainConstraints<basis extends Domain> = basis extends "object"
     ? {
-        props?: PropsInput
-    }
+          props?: PropsInput
+      }
     : basis extends "string"
     ? {
-        regex?: listable<string>
-        range?: Range
-    }
+          regex?: listable<string>
+          range?: Range
+      }
     : basis extends "number"
     ? {
-        divisor?: number
-        range?: Range
-    }
+          divisor?: number
+          range?: Range
+      }
     : {}
 
 type functionalConstraints<input> = {
@@ -404,12 +404,12 @@ type functionalConstraints<input> = {
 
 type classConstraints<base extends Constructor> = base extends typeof Array
     ? {
-        props?: PropsInput
-        range?: Range
-    }
+          props?: PropsInput
+          range?: Range
+      }
     : {
-        props?: PropsInput
-    }
+          props?: PropsInput
+      }
 
 export type basisNodeFrom<input extends BasisInput> = input extends Domain
     ? DomainNode

@@ -63,8 +63,8 @@ export const intersectBases = (
         return constructorExtends(l.rule, r.rule)
             ? l
             : constructorExtends(r.rule, l.rule)
-                ? r
-                : Disjoint.from("class", l, r)
+            ? r
+            : Disjoint.from("class", l, r)
     }
     const disjointEntries: DisjointKindEntries = []
     if (l.domain !== r.domain) {
@@ -78,10 +78,10 @@ export const intersectBases = (
     return disjointEntries.length
         ? Disjoint.fromEntries(disjointEntries)
         : basisPrecedenceByKind[l.kind] < basisPrecedenceByKind[r.kind]
-            ? l
-            : basisPrecedenceByKind[r.kind] < basisPrecedenceByKind[l.kind]
-                ? r
-                : throwInternalError(
-                    `Unexpected non-disjoint intersection from basis nodes with equal precedence ${l} and ${r}`
-                )
+        ? l
+        : basisPrecedenceByKind[r.kind] < basisPrecedenceByKind[l.kind]
+        ? r
+        : throwInternalError(
+              `Unexpected non-disjoint intersection from basis nodes with equal precedence ${l} and ${r}`
+          )
 }

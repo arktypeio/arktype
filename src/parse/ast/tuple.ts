@@ -1,7 +1,10 @@
 import { throwParseError } from "../../../dev/utils/src/errors.js"
 import type { evaluate, isAny } from "../../../dev/utils/src/generics.js"
 import type { List } from "../../../dev/utils/src/lists.js"
-import { type Constructor, isArray } from "../../../dev/utils/src/objectKinds.js"
+import {
+    type Constructor,
+    isArray
+} from "../../../dev/utils/src/objectKinds.js"
 import { stringify } from "../../../dev/utils/src/serialize.js"
 import { arrayIndexTypeNode } from "../../nodes/composite/indexed.js"
 import { predicateNode } from "../../nodes/composite/predicate.js"
@@ -35,19 +38,19 @@ export const parseTuple = (def: List, ctx: ParseContext): TypeNode => {
     const tupleExpressionResult = isIndexOneExpression(def)
         ? indexOneParsers[def[1]](def as never, ctx)
         : isIndexZeroExpression(def)
-            ? prefixParsers[def[0]](def as never, ctx)
-            : undefined
+        ? prefixParsers[def[0]](def as never, ctx)
+        : undefined
     if (tupleExpressionResult) {
         return tupleExpressionResult.isNever()
             ? throwParseError(
-                writeUnsatisfiableExpressionError(
-                    def
-                        .map((def) =>
-                            typeof def === "string" ? def : stringify(def)
-                        )
-                        .join(" ")
-                )
-            )
+                  writeUnsatisfiableExpressionError(
+                      def
+                          .map((def) =>
+                              typeof def === "string" ? def : stringify(def)
+                          )
+                          .join(" ")
+                  )
+              )
             : tupleExpressionResult
     }
     const props: NodeEntry[] = []
@@ -111,12 +114,12 @@ export type validateTuple<def extends List, $> = def extends IndexZeroExpression
     : def extends InfixExpression
     ? validateInfixExpression<def, $>
     : def extends
-    | readonly ["", ...unknown[]]
-    | readonly [unknown, "", ...unknown[]]
+          | readonly ["", ...unknown[]]
+          | readonly [unknown, "", ...unknown[]]
     ? [
-        def[0] extends "" ? keyof $ | IndexZeroOperator | Prefix : def[0],
-        def[1] extends "" ? keyof $ | IndexOneOperator | Prefix : def[1]
-    ]
+          def[0] extends "" ? keyof $ | IndexZeroOperator | Prefix : def[0],
+          def[1] extends "" ? keyof $ | IndexOneOperator | Prefix : def[1]
+      ]
     : validateTupleLiteral<def, $>
 
 type validateTupleLiteral<
@@ -125,28 +128,28 @@ type validateTupleLiteral<
     result extends unknown[] = []
 > = def extends [infer head, ...infer tail]
     ? validateTupleLiteral<
-        tail,
-        $,
-        [
-            ...result,
-            head extends variadicExpression<infer operand>
-            ? validateDefinition<operand, $> extends infer syntacticResult
-            ? syntacticResult extends operand
-            ? semanticallyValidateRestElement<
-                operand,
-                $
-            > extends infer semanticResult
-            ? semanticResult extends operand
-            ? tail extends []
-            ? head
-            : prematureRestMessage
-            : semanticResult
-            : never
-            : syntacticResult
-            : never
-            : validateDefinition<head, $>
-        ]
-    >
+          tail,
+          $,
+          [
+              ...result,
+              head extends variadicExpression<infer operand>
+                  ? validateDefinition<operand, $> extends infer syntacticResult
+                      ? syntacticResult extends operand
+                          ? semanticallyValidateRestElement<
+                                operand,
+                                $
+                            > extends infer semanticResult
+                              ? semanticResult extends operand
+                                  ? tail extends []
+                                      ? head
+                                      : prematureRestMessage
+                                  : semanticResult
+                              : never
+                          : syntacticResult
+                      : never
+                  : validateDefinition<head, $>
+          ]
+      >
     : result
 
 type semanticallyValidateRestElement<operand, $> = inferDefinition<
@@ -154,16 +157,17 @@ type semanticallyValidateRestElement<operand, $> = inferDefinition<
     $
 > extends infer result
     ? result extends never
-    ? writeNonArrayRestMessage<operand>
-    : isAny<result> extends true
-    ? writeNonArrayRestMessage<operand>
-    : result extends readonly unknown[]
-    ? operand
-    : writeNonArrayRestMessage<operand>
+        ? writeNonArrayRestMessage<operand>
+        : isAny<result> extends true
+        ? writeNonArrayRestMessage<operand>
+        : result extends readonly unknown[]
+        ? operand
+        : writeNonArrayRestMessage<operand>
     : never
 
 export const writeNonArrayRestMessage = <operand>(operand: operand) =>
-    `Rest element ${typeof operand === "string" ? `'${operand}'` : ""
+    `Rest element ${
+        typeof operand === "string" ? `'${operand}'` : ""
     } must be an array` as writeNonArrayRestMessage<operand>
 
 type writeNonArrayRestMessage<operand> = `Rest element ${operand extends string
@@ -180,15 +184,15 @@ type inferTupleLiteral<
     result extends unknown[] = []
 > = def extends [infer head, ...infer tail]
     ? inferDefinition<
-        head extends variadicExpression<infer operand> ? operand : head,
-        $
-    > extends infer element
-    ? head extends variadicExpression
-    ? element extends readonly unknown[]
-    ? inferTupleLiteral<tail, $, [...result, ...element]>
-    : never
-    : inferTupleLiteral<tail, $, [...result, element]>
-    : never
+          head extends variadicExpression<infer operand> ? operand : head,
+          $
+      > extends infer element
+        ? head extends variadicExpression
+            ? element extends readonly unknown[]
+                ? inferTupleLiteral<tail, $, [...result, ...element]>
+                : never
+            : inferTupleLiteral<tail, $, [...result, element]>
+        : never
     : result
 
 type variadicExpression<operandDef = unknown> =
@@ -223,8 +227,8 @@ export type inferTupleExpression<
     ? def[1]
     : def[0] extends "instanceof"
     ? def[1] extends Constructor<infer t>
-    ? t
-    : never
+        ? t
+        : never
     : def[0] extends "keyof"
     ? inferKeyOfExpression<def[1], $>
     : never
@@ -235,19 +239,19 @@ type validatePrefixExpression<
 > = def["length"] extends 1
     ? [writeMissingRightOperandMessage<def[0]>]
     : [
-        def[0] extends "keyof"
-        ? inferDefinition<def, $> extends never
-        ? writeUnsatisfiableExpressionError<astToString<def>>
-        : def[0]
-        : def[0],
-        def[0] extends "==="
-        ? def[1]
-        : def[0] extends "instanceof"
-        ? Constructor
-        : def[0] extends "keyof"
-        ? validateDefinition<def[1], $>
-        : never
-    ]
+          def[0] extends "keyof"
+              ? inferDefinition<def, $> extends never
+                  ? writeUnsatisfiableExpressionError<astToString<def>>
+                  : def[0]
+              : def[0],
+          def[0] extends "==="
+              ? def[1]
+              : def[0] extends "instanceof"
+              ? Constructor
+              : def[0] extends "keyof"
+              ? validateDefinition<def[1], $>
+              : never
+      ]
 
 type validatePostfixExpression<def extends PostfixExpression, $> = [
     validateDefinition<def[0], $>,
@@ -260,22 +264,22 @@ type validateInfixExpression<
 > = def["length"] extends 2
     ? [def[0], writeMissingRightOperandMessage<def[1]>]
     : [
-        validateDefinition<def[0], $>,
-        def[1] extends "&"
-        ? inferDefinition<def, $> extends never
-        ? writeUnsatisfiableExpressionError<"intersection">
-        : def["1"]
-        : def[1],
-        def[1] extends "|"
-        ? validateDefinition<def[2], $>
-        : def[1] extends "&"
-        ? validateDefinition<def[2], $>
-        : def[1] extends "=>"
-        ? Narrow<extractIn<inferDefinition<def[0], $>>>
-        : def[1] extends "|>"
-        ? Morph<extractOut<inferDefinition<def[0], $>>, unknown>
-        : validateDefinition<def[2], $>
-    ]
+          validateDefinition<def[0], $>,
+          def[1] extends "&"
+              ? inferDefinition<def, $> extends never
+                  ? writeUnsatisfiableExpressionError<"intersection">
+                  : def["1"]
+              : def[1],
+          def[1] extends "|"
+              ? validateDefinition<def[2], $>
+              : def[1] extends "&"
+              ? validateDefinition<def[2], $>
+              : def[1] extends "=>"
+              ? Narrow<extractIn<inferDefinition<def[0], $>>>
+              : def[1] extends "|>"
+              ? Morph<extractOut<inferDefinition<def[0], $>>, unknown>
+              : validateDefinition<def[2], $>
+      ]
 
 export type UnparsedTupleExpressionInput = {
     instanceof: Constructor

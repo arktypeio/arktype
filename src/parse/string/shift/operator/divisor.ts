@@ -23,10 +23,10 @@ export type parseDivisor<
     Scanner.skipWhitespace<unscanned>
 > extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
     ? scanned extends NumberLiteral<infer divisor>
-    ? divisor extends 0
-    ? state.error<writeInvalidDivisorMessage<0>>
-    : state.setRoot<s, [s["root"], "%", scanned], nextUnscanned>
-    : state.error<writeInvalidDivisorMessage<scanned>>
+        ? divisor extends 0
+            ? state.error<writeInvalidDivisorMessage<0>>
+            : state.setRoot<s, [s["root"], "%", scanned], nextUnscanned>
+        : state.error<writeInvalidDivisorMessage<scanned>>
     : never
 
 export const writeInvalidDivisorMessage = <divisor extends string | number>(
