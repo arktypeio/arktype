@@ -1,5 +1,5 @@
 {
-    "name": "@arktype/attest",
+    "name": "@arktype/utils",
     "version": "0.0.0",
     "private": true,
     "author": {
@@ -21,8 +21,7 @@
         "!*.tsbuildinfo"
     ],
     "dependencies": {
-        "ts-morph": "18.0.0",
-        "@arktype/utils": "workspace:^0.0.0"
+        "ts-morph": "18.0.0"
     },
     "devDependencies": {
         "ts-node": "10.9.1",
