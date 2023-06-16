@@ -1,3 +1,9 @@
+import type { Domain } from "../../dev/utils/src/domains.js"
+import { throwInternalError } from "../../dev/utils/src/errors.js"
+import type { evaluate } from "../../dev/utils/src/generics.js"
+import { entriesOf, isKeyOf } from "../../dev/utils/src/records.js"
+import type { keySet } from "../../dev/utils/src/records.js"
+import type { SerializedPrimitive } from "../../dev/utils/src/serialize.js"
 import type { PredicateNode } from "../nodes/composite/predicate.js"
 import type { TypeNode } from "../nodes/composite/type.js"
 import { builtins, typeNode } from "../nodes/composite/type.js"
@@ -5,12 +11,6 @@ import type { SerializedPath } from "../nodes/disjoint.js"
 import { Disjoint } from "../nodes/disjoint.js"
 import type { BasisNode } from "../nodes/primitive/basis/basis.js"
 import type { ValueNode } from "../nodes/primitive/basis/value.js"
-import type { Domain } from "../../dev/utils/domains.js"
-import { throwInternalError } from "../../dev/utils/errors.js"
-import type { evaluate } from "../../dev/utils/generics.js"
-import { entriesOf, isKeyOf } from "../../dev/utils/records.js"
-import type { keySet } from "../../dev/utils/records.js"
-import type { SerializedPrimitive } from "../../dev/utils/serialize.js"
 import { compileSerializedValue } from "./compile.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
@@ -25,8 +25,8 @@ export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
 export type DiscriminatedCases<
     kind extends DiscriminantKind = DiscriminantKind
 > = {
-    [caseKey in CaseKey<kind>]: TypeNode
-}
+        [caseKey in CaseKey<kind>]: TypeNode
+    }
 
 type DiscriminantKey = `${SerializedPath}${DiscriminantKind}`
 
@@ -145,6 +145,5 @@ export const discriminate = (
 export const writeUndiscriminatableMorphUnionMessage = <path extends string>(
     path: path
 ) =>
-    `${
-        path === "/" ? "A" : `At ${path}, a`
+    `${path === "/" ? "A" : `At ${path}, a`
     } union including one or more morphs must be discriminatable`

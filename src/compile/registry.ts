@@ -1,6 +1,6 @@
 // TODO: move this and other non-nodes out of nodes dir
 import type { ark } from "../scopes/ark.js"
-import type { autocomplete } from "../../dev/utils/generics.js"
+import type { autocomplete } from "../../dev/utils/src/generics.js"
 import type { CheckResult, TraversalState } from "./traverse.js"
 
 type PrepopulatedKey = "ark" | "state"

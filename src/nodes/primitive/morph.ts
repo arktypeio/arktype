@@ -1,11 +1,11 @@
+import type { listable } from "../../../dev/utils/src/lists.js"
+import { intersectUniqueLists, listFrom } from "../../../dev/utils/src/lists.js"
 import { registry } from "../../compile/registry.js"
 import type { Morph } from "../../parse/ast/morph.js"
-import type { listable } from "../../../dev/utils/lists.js"
-import { intersectUniqueLists, listFrom } from "../../../dev/utils/lists.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export interface MorphNode extends BaseNode<readonly Morph[]> {}
+export interface MorphNode extends BaseNode<readonly Morph[]> { }
 
 export const morphNode = defineNodeKind<MorphNode, listable<Morph>>(
     {

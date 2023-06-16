@@ -1,4 +1,4 @@
-import { cached } from "../../dev/utils/functions.js"
+import { cached } from "../../dev/utils/src/functions.js"
 import type { PredicateNode } from "./composite/predicate.js"
 import { predicateNode } from "./composite/predicate.js"
 import { propsNode } from "./composite/props.js"
@@ -43,19 +43,19 @@ export type Node = NodeKinds[NodeKind]
 
 const nodeKinds = cached(
     () =>
-        ({
-            type: typeNode,
-            predicate: predicateNode,
-            domain: domainNode,
-            class: classNode,
-            value: valueNode,
-            range: rangeNode,
-            divisor: divisorNode,
-            regex: regexNode,
-            props: propsNode,
-            narrow: narrowNode,
-            morph: morphNode
-        } satisfies { [k in NodeKind]: NodeConstructor<NodeKinds[k], never> })
+    ({
+        type: typeNode,
+        predicate: predicateNode,
+        domain: domainNode,
+        class: classNode,
+        value: valueNode,
+        range: rangeNode,
+        divisor: divisorNode,
+        regex: regexNode,
+        props: propsNode,
+        narrow: narrowNode,
+        morph: morphNode
+    } satisfies { [k in NodeKind]: NodeConstructor<NodeKinds[k], never> })
 )
 
 type NodeConstructors = { [k in NodeKind]: ReturnType<typeof nodeKinds>[k] }

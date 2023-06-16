@@ -8,9 +8,9 @@ import {
 import {
     throwInternalError,
     throwParseError
-} from "../../../../dev/utils/errors.js"
-import type { requireKeys } from "../../../../dev/utils/records.js"
-import { isKeyOf } from "../../../../dev/utils/records.js"
+} from "../../../../dev/utils/src/errors.js"
+import type { requireKeys } from "../../../../dev/utils/src/records.js"
+import { isKeyOf } from "../../../../dev/utils/src/records.js"
 import type { ParseContext } from "../../definition.js"
 import { Scanner } from "../shift/scanner.js"
 import type { Prefix } from "./shared.js"
@@ -168,10 +168,10 @@ export class DynamicState {
         return this.branches.range?.min
             ? this.branches.range.min.comparator
             : this.branches.prefixes.at(-1) ?? this.branches.intersection
-            ? "&"
-            : this.branches.union
-            ? "|"
-            : undefined
+                ? "&"
+                : this.branches.union
+                    ? "|"
+                    : undefined
     }
 
     shiftedByOne() {

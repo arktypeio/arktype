@@ -1,3 +1,5 @@
+import type { Dict } from "../dev/utils/src/records.js"
+import type { evaluate, nominal } from "../dev/utils/src/generics.js"
 import type { ProblemCode } from "./compile/problems.js"
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import type {
@@ -22,8 +24,6 @@ import type {
     TypeParser
 } from "./type.js"
 import { createTypeParser, Type } from "./type.js"
-import type { evaluate, nominal } from "../dev/utils/generics.js"
-import type { Dict } from "../dev/utils/records.js"
 
 export type ScopeParser<parent, ambient> = {
     <aliases>(aliases: validateAliases<aliases, parent & ambient>): Scope<{
@@ -46,27 +46,27 @@ type validateAliases<aliases, $> = {
         infer name,
         infer paramsDef
     >
-        ? name extends keyof $
-            ? writeDuplicateAliasesMessage<name>
-            : parseGenericParams<paramsDef> extends infer result extends string[]
-            ? result extends GenericParamsParseError
-                ? // use the full nominal type here to avoid an overlap between the
-                  // error message and a possible value for the property
-                  result[0]
-                : validateDefinition<
-                      aliases[k],
-                      $ &
-                          bootstrap<aliases> & {
-                              [param in result[number]]: unknown
-                          }
-                  >
-            : never
-        : k extends keyof $
-        ? // TODO: more duplicate alias scenarios
-          writeDuplicateAliasesMessage<k & string>
-        : aliases[k] extends Scope | Type | GenericProps
-        ? aliases[k]
-        : validateDefinition<aliases[k], $ & bootstrap<aliases>>
+    ? name extends keyof $
+    ? writeDuplicateAliasesMessage<name>
+    : parseGenericParams<paramsDef> extends infer result extends string[]
+    ? result extends GenericParamsParseError
+    ? // use the full nominal type here to avoid an overlap between the
+    // error message and a possible value for the property
+    result[0]
+    : validateDefinition<
+        aliases[k],
+        $ &
+        bootstrap<aliases> & {
+            [param in result[number]]: unknown
+        }
+    >
+    : never
+    : k extends keyof $
+    ? // TODO: more duplicate alias scenarios
+    writeDuplicateAliasesMessage<k & string>
+    : aliases[k] extends Scope | Type | GenericProps
+    ? aliases[k]
+    : validateDefinition<aliases[k], $ & bootstrap<aliases>>
 }
 
 export type bindThis<$, def> = $ & { this: Def<def> }
@@ -83,7 +83,7 @@ type bootstrapLocals<aliases> = bootstrapAliases<{
     // intersection seems redundant but it is more efficient for TS to avoid
     // mapping all the keys
     [k in keyof aliases &
-        PrivateDeclaration as extractPrivateKey<k>]: aliases[k]
+    PrivateDeclaration as extractPrivateKey<k>]: aliases[k]
 }>
 
 type bootstrapExports<aliases> = bootstrapAliases<{
@@ -97,25 +97,25 @@ type bootstrapAliases<aliases> = {
         keyof aliases,
         GenericDeclaration
     >]: aliases[k] extends Preparsed
-        ? aliases[k]
-        : aliases[k] extends (() => infer thunkReturn extends Preparsed)
-        ? thunkReturn
-        : Def<aliases[k]>
+    ? aliases[k]
+    : aliases[k] extends (() => infer thunkReturn extends Preparsed)
+    ? thunkReturn
+    : Def<aliases[k]>
 } & {
-    [k in keyof aliases & GenericDeclaration as extractGenericName<k>]: Generic<
-        parseGenericParams<extractGenericParameters<k>>,
-        aliases[k],
-        UnparsedScope
-    >
-}
+        [k in keyof aliases & GenericDeclaration as extractGenericName<k>]: Generic<
+            parseGenericParams<extractGenericParameters<k>>,
+            aliases[k],
+            UnparsedScope
+        >
+    }
 
 type inferBootstrapped<r extends Resolutions> = evaluate<{
     [k in keyof r["exports"]]: r["exports"][k] extends Def<infer def>
-        ? inferDefinition<def, $<r>>
-        : r["exports"][k] extends GenericProps<infer params, infer def>
-        ? Generic<params, def, $<r>>
-        : // otherwise should be a subscope
-          r["exports"][k]
+    ? inferDefinition<def, $<r>>
+    : r["exports"][k] extends GenericProps<infer params, infer def>
+    ? Generic<params, def, $<r>>
+    : // otherwise should be a subscope
+    r["exports"][k]
 }>
 
 type extractGenericName<k> = k extends GenericDeclaration<infer name>
@@ -144,9 +144,9 @@ export type resolve<reference extends keyof $, $> = $[reference] extends Def<
     infer def
 >
     ? $[reference] extends null
-        ? // avoid inferring any, never
-          $[reference]
-        : inferDefinition<def, $>
+    ? // avoid inferring any, never
+    $[reference]
+    : inferDefinition<def, $>
     : $[reference]
 
 type $<r extends Resolutions> = r["exports"] & r["locals"] & r["ambient"]
@@ -155,13 +155,13 @@ export type TypeSet<r extends Resolutions = any> = {
     [k in keyof r["exports"]]: [r["exports"][k]] extends [
         Scope<infer subresolutions>
     ]
-        ? // avoid treating any, never as subscopes
-          r["exports"][k] extends null
-            ? Type<r["exports"][k], $<r>>
-            : TypeSet<subresolutions>
-        : r["exports"][k] extends GenericProps
-        ? r["exports"][k]
-        : Type<r["exports"][k], $<r>>
+    ? // avoid treating any, never as subscopes
+    r["exports"][k] extends null
+    ? Type<r["exports"][k], $<r>>
+    : TypeSet<subresolutions>
+    : r["exports"][k] extends GenericProps
+    ? r["exports"][k]
+    : Type<r["exports"][k], $<r>>
 }
 
 export type Resolutions = {
@@ -267,8 +267,8 @@ type destructuredImportContext<
     r extends Resolutions,
     name extends keyof r["exports"]
 > = {
-    [k in name as `#${k & string}`]: Inferred<r["exports"][k]>
-}
+        [k in name as `#${k & string}`]: Inferred<r["exports"][k]>
+    }
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
     `Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(

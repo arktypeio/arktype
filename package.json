@@ -45,7 +45,6 @@
         "lint": "eslint --max-warnings=0 .",
         "format": "prettier --write --ignore-path ./dev/configs/.prettierignore .",
         "checkFormat": "prettier --check --ignore-path ./dev/configs/.prettierignore .",
-        "prepare": "cd dev/attest && pnpm install && cd ../..",
         "changes": "cd ./dev/configs && node ../../node_modules/@changesets/cli/bin.js",
         "knip": "knip",
         "ci:publish": "pnpm changes publish",

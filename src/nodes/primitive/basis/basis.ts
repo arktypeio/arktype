@@ -1,11 +1,11 @@
-import type { Domain, inferDomain } from "../../../../dev/utils/domains.js"
-import { throwInternalError } from "../../../../dev/utils/errors.js"
-import type { evaluate } from "../../../../dev/utils/generics.js"
+import type { Domain, inferDomain } from "../../../../dev/utils/src/domains.js"
+import { throwInternalError } from "../../../../dev/utils/src/errors.js"
+import type { evaluate } from "../../../../dev/utils/src/generics.js"
 import type {
     AbstractableConstructor,
     Constructor
-} from "../../../../dev/utils/objectKinds.js"
-import { constructorExtends } from "../../../../dev/utils/objectKinds.js"
+} from "../../../../dev/utils/src/objectKinds.js"
+import { constructorExtends } from "../../../../dev/utils/src/objectKinds.js"
 import type { DisjointKindEntries } from "../../disjoint.js"
 import { Disjoint } from "../../disjoint.js"
 import type { BaseNode } from "../../node.js"
@@ -63,8 +63,8 @@ export const intersectBases = (
         return constructorExtends(l.rule, r.rule)
             ? l
             : constructorExtends(r.rule, l.rule)
-            ? r
-            : Disjoint.from("class", l, r)
+                ? r
+                : Disjoint.from("class", l, r)
     }
     const disjointEntries: DisjointKindEntries = []
     if (l.domain !== r.domain) {
@@ -78,10 +78,10 @@ export const intersectBases = (
     return disjointEntries.length
         ? Disjoint.fromEntries(disjointEntries)
         : basisPrecedenceByKind[l.kind] < basisPrecedenceByKind[r.kind]
-        ? l
-        : basisPrecedenceByKind[r.kind] < basisPrecedenceByKind[l.kind]
-        ? r
-        : throwInternalError(
-              `Unexpected non-disjoint intersection from basis nodes with equal precedence ${l} and ${r}`
-          )
+            ? l
+            : basisPrecedenceByKind[r.kind] < basisPrecedenceByKind[l.kind]
+                ? r
+                : throwInternalError(
+                    `Unexpected non-disjoint intersection from basis nodes with equal precedence ${l} and ${r}`
+                )
 }
