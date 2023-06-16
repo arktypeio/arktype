@@ -1,12 +1,15 @@
+import type { TypeNode } from "../main.js"
+import type { ParseContext } from "../scope.js"
 import type { error } from "../utils/errors.js"
 import { throwParseError } from "../utils/errors.js"
 import type { nominal } from "../utils/generics.js"
 import type { join } from "../utils/lists.js"
-import type { writeUnclosedGroupMessage } from "./string/reduce/shared.js"
+import { DynamicState } from "./string/reduce/dynamic.js"
+import { writeUnclosedGroupMessage } from "./string/reduce/shared.js"
 import type { state, StaticState } from "./string/reduce/static.js"
 import { writeUnexpectedCharacterMessage } from "./string/shift/operator/operator.js"
 import { Scanner } from "./string/shift/scanner.js"
-import type { parseUntilFinalizer } from "./string/string.js"
+import { parseUntilFinalizer } from "./string/string.js"
 
 export type GenericDeclaration<
     name extends string = string,
@@ -79,12 +82,65 @@ type parseParamsRecurse<
     ? result
     : [...result, param]
 
-export type ParsedArgs<asts extends unknown[], unscanned extends string> = [
-    asts,
-    unscanned
-]
+export type ParsedArgs<
+    result extends unknown[] = unknown[],
+    unscanned extends string = string
+> = {
+    result: result
+    unscanned: unscanned
+}
+
+export const parseGenericArgs = (
+    name: string,
+    params: string[],
+    unscanned: string,
+    ctx: ParseContext
+) => parseGenericArgsRecurse(name, params, unscanned, ctx, [], [])
 
 export type parseGenericArgs<
+    name extends string,
+    params extends string[],
+    unscanned extends string,
+    $
+> = parseGenericArgsRecurse<name, params, unscanned, $, [], []>
+
+const parseGenericArgsRecurse = (
+    name: string,
+    params: string[],
+    unscanned: string,
+    ctx: ParseContext,
+    argDefs: string[],
+    argNodes: TypeNode[]
+): ParsedArgs<TypeNode[]> => {
+    const s = parseUntilFinalizer(new DynamicState(unscanned, ctx))
+    argDefs.push(s.scanner.scanned)
+    argNodes.push(s.root)
+    const nextUnscanned = s.scanner.unscanned
+    if (nextUnscanned[0] === ">") {
+        if (argNodes.length === params.length) {
+            return {
+                result: argNodes,
+                unscanned: nextUnscanned
+            }
+        } else {
+            return s.error(
+                writeInvalidGenericParametersMessage(name, params, argDefs)
+            )
+        }
+    } else if (nextUnscanned[0] === ",") {
+        return parseGenericArgsRecurse(
+            name,
+            params,
+            nextUnscanned,
+            ctx,
+            argDefs,
+            argNodes
+        )
+    }
+    return s.error(writeUnclosedGroupMessage(">"))
+}
+
+type parseGenericArgsRecurse<
     name extends string,
     params extends string[],
     unscanned extends string,
@@ -115,7 +171,7 @@ export type parseGenericArgs<
                       >
                   >
             : finalArgState["finalizer"] extends ","
-            ? parseGenericArgs<
+            ? parseGenericArgsRecurse<
                   name,
                   params,
                   nextUnscanned,
@@ -129,16 +185,27 @@ export type parseGenericArgs<
         : never
     : never
 
+export const writeInvalidGenericParametersMessage = <
+    name extends string,
+    params extends string[],
+    argDefs extends string[]
+>(
+    name: name,
+    params: params,
+    argDefs: argDefs
+) =>
+    `${name}${params.join(", ")} requires exactly ${
+        params.length
+    } parameters (got ${argDefs.length}: ${argDefs.join(", ")})`
+
 export type writeInvalidGenericParametersMessage<
     name extends string,
     params extends string[],
     argDefs extends string[]
-> = `${name}<${params["length"] extends 1
-    ? params[0]
-    : join<
-          params,
-          ", "
-      >}> requires exactly ${params["length"]} parameters (got ${argDefs["length"]}: ${join<
+> = `${name}<${join<
+    params,
+    ", "
+>}> requires exactly ${params["length"]} parameters (got ${argDefs["length"]}: ${join<
     argDefs,
     ","
 >})`

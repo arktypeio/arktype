@@ -14,8 +14,8 @@ import {
 } from "../../../../utils/numericLiterals.js"
 import type { GenericInstantiationAst } from "../../../ast/ast.js"
 import type { CastTo } from "../../../definition.js"
-import type {
-    ParsedArgs,
+import type { ParsedArgs } from "../../../generic.js"
+import {
     parseGenericArgs,
     writeInvalidGenericParametersMessage
 } from "../../../generic.js"
@@ -60,6 +60,26 @@ export type parseUnenclosed<
         : never
     : never
 
+export const parseGenericInstantiation = (
+    name: string,
+    g: GenericProps,
+    s: DynamicState
+) => {
+    s.scanner.shiftUntilNonWhitespace()
+    const lookahead = s.scanner.shift()
+    if (lookahead !== "<") {
+        return s.error(
+            writeInvalidGenericParametersMessage(name, g.parameters, [])
+        )
+    }
+    const parsedArgs = parseGenericArgs(
+        name,
+        g.parameters,
+        s.scanner.unscanned,
+        s.ctx
+    )
+}
+
 export type parseGenericInstantiation<
     name extends string,
     g extends GenericProps,
@@ -67,14 +87,7 @@ export type parseGenericInstantiation<
     $
     // have to skip whitespace here since TS allows instantiations like `Partial    <T>`
 > = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}`
-    ? parseGenericArgs<
-          name,
-          g["parameters"],
-          unscanned,
-          $,
-          [],
-          []
-      > extends infer result
+    ? parseGenericArgs<name, g["parameters"], unscanned, $> extends infer result
         ? result extends ParsedArgs<infer argAsts, infer nextUnscanned>
             ? state.setRoot<
                   s,

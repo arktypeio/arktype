@@ -15,7 +15,6 @@ import type {
     GenericParamsParseError
 } from "./parse/generic.js"
 import { parseGenericParams } from "./parse/generic.js"
-import { writeUnclosedGroupMessage } from "./parse/string/reduce/shared.js"
 import { parseString } from "./parse/string/string.js"
 import type {
     DeclarationParser,
@@ -31,7 +30,7 @@ import type {
 import { createGeneric, createTypeParser, Type } from "./type.js"
 import { domainOf } from "./utils/domains.js"
 import { throwParseError } from "./utils/errors.js"
-import type { evaluate, extend, isAny, nominal } from "./utils/generics.js"
+import type { evaluate, isAny, nominal } from "./utils/generics.js"
 import { Path } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
 
@@ -386,12 +385,17 @@ export const parseScopeKey = (k: string): ParsedScopeKey => {
     const isLocal = k[0] === "#"
     const name = isLocal ? k.slice(1) : k
     const firstParamIndex = k.indexOf("<")
-    if (firstParamIndex === -1 || name.at(-1) !== ">") {
+    if (firstParamIndex === -1) {
         return {
             isLocal,
             name,
             params: []
         }
+    }
+    if (k.at(-1) !== ">") {
+        throwParseError(
+            `'>' must be the last character of a generic declaration in a scope.`
+        )
     }
     return {
         isLocal,
