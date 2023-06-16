@@ -44,11 +44,8 @@ const buildFormat = (module: ModuleKind) => {
         clone(outUtils, outUtilsTarget)
         clone(outAttest, outAttestTarget)
 
-        if (module === ModuleKind.CommonJS) {
-            writeJson(join(outDir, "package.json"), {
-                type: ModuleKind.CommonJS
-            })
-        }
+        writeJson(join(outDir, "package.json"), { type: ModuleKindToPackageType[module] })
+
         nuke(outSrc)
         nuke(outUtils)
         nuke(outAttest)
@@ -65,6 +62,11 @@ const ModuleKind = {
 const ModuleKindToDir = {
     [ModuleKind.CommonJS]: "cjs",
     [ModuleKind.ESNext]: "mjs"
+} as const
+
+const ModuleKindToPackageType = {
+    [ModuleKind.CommonJS]: "commonjs",
+    [ModuleKind.ESNext]: "module",
 } as const
 
 console.log(`🔨 Building ${packageJson.name}...`)
