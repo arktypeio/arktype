@@ -119,27 +119,27 @@ export namespace Scanner {
         lookahead === ">"
             ? unscanned[0] === "="
                 ? // >== would only occur in an expression like Array<number>==5
-                // otherwise, >= would only occur as part of a bound like number>=5
-                unscanned[1] === "="
+                  // otherwise, >= would only occur as part of a bound like number>=5
+                  unscanned[1] === "="
                 : // if > is the end of a generic instantiation, the next token will be an operator or the end of the string
-                unscanned.trimStart() === "" ||
-                isKeyOf(unscanned.trimStart()[0], Scanner.terminatingChars)
+                  unscanned.trimStart() === "" ||
+                  isKeyOf(unscanned.trimStart()[0], Scanner.terminatingChars)
             : // if the lookahead is a finalizing token but not >, it's unambiguously a finalizer (currently just ",")
-            lookahead === ","
+              lookahead === ","
 
     export type lookaheadIsFinalizing<
         lookahead extends string,
         unscanned extends string
     > = lookahead extends ">"
         ? unscanned extends `=${infer nextUnscanned}`
-        ? nextUnscanned extends `=${string}`
-        ? true
-        : false
-        : Scanner.skipWhitespace<unscanned> extends
-        | ""
-        | `${TerminatingChar}${string}`
-        ? true
-        : false
+            ? nextUnscanned extends `=${string}`
+                ? true
+                : false
+            : Scanner.skipWhitespace<unscanned> extends
+                  | ""
+                  | `${TerminatingChar}${string}`
+            ? true
+            : false
         : lookahead extends ","
         ? true
         : false
@@ -155,10 +155,10 @@ export namespace Scanner {
         scanned extends string = ""
     > = unscanned extends shift<infer lookahead, infer nextUnscanned>
         ? lookahead extends terminator
-        ? scanned extends `${infer base}${EscapeToken}`
-        ? shiftUntil<nextUnscanned, terminator, `${base}${lookahead}`>
-        : [scanned, unscanned]
-        : shiftUntil<nextUnscanned, terminator, `${scanned}${lookahead}`>
+            ? scanned extends `${infer base}${EscapeToken}`
+                ? shiftUntil<nextUnscanned, terminator, `${base}${lookahead}`>
+                : [scanned, unscanned]
+            : shiftUntil<nextUnscanned, terminator, `${scanned}${lookahead}`>
         : [scanned, ""]
 
     export type shiftUntilNot<
@@ -167,12 +167,12 @@ export namespace Scanner {
         scanned extends string = ""
     > = unscanned extends shift<infer lookahead, infer nextUnscanned>
         ? lookahead extends nonTerminator
-        ? shiftUntilNot<
-            nextUnscanned,
-            nonTerminator,
-            `${scanned}${lookahead}`
-        >
-        : [scanned, unscanned]
+            ? shiftUntilNot<
+                  nextUnscanned,
+                  nonTerminator,
+                  `${scanned}${lookahead}`
+              >
+            : [scanned, unscanned]
         : [scanned, ""]
 
     export type shiftUntilNextTerminator<unscanned extends string> = shiftUntil<

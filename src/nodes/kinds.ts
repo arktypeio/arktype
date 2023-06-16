@@ -43,19 +43,19 @@ export type Node = NodeKinds[NodeKind]
 
 const nodeKinds = cached(
     () =>
-    ({
-        type: typeNode,
-        predicate: predicateNode,
-        domain: domainNode,
-        class: classNode,
-        value: valueNode,
-        range: rangeNode,
-        divisor: divisorNode,
-        regex: regexNode,
-        props: propsNode,
-        narrow: narrowNode,
-        morph: morphNode
-    } satisfies { [k in NodeKind]: NodeConstructor<NodeKinds[k], never> })
+        ({
+            type: typeNode,
+            predicate: predicateNode,
+            domain: domainNode,
+            class: classNode,
+            value: valueNode,
+            range: rangeNode,
+            divisor: divisorNode,
+            regex: regexNode,
+            props: propsNode,
+            narrow: narrowNode,
+            morph: morphNode
+        } satisfies { [k in NodeKind]: NodeConstructor<NodeKinds[k], never> })
 )
 
 type NodeConstructors = { [k in NodeKind]: ReturnType<typeof nodeKinds>[k] }

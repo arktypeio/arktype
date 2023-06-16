@@ -186,11 +186,11 @@ suite("morph", () => {
         }).export()
         attest(types.c).typed as Type<
             | {
-                a: (In: number) => string
-            }
+                  a: (In: number) => string
+              }
             | {
-                a: (...args: any[]) => unknown
-            }
+                  a: (...args: any[]) => unknown
+              }
         >
         // attest(types.c.node).snap({
         //     object: [
@@ -309,11 +309,11 @@ suite("morph", () => {
         const t = $.type("a|b")
         attest(t).typed as Type<
             | {
-                a: (In: string) => string
-            }
+                  a: (In: string) => string
+              }
             | {
-                a: boolean
-            }
+                  a: boolean
+              }
         >
         attest(() => {
             scope({

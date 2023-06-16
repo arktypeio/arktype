@@ -15,7 +15,7 @@ const clone = (from: string, to: string): void =>
 
 const Sources = {
     utils: ["dev", "utils"],
-    attest: ["dev", "attest"],
+    attest: ["dev", "attest"]
 } as const
 
 const buildFormat = (module: ModuleKind) => {
@@ -56,10 +56,10 @@ const buildFormat = (module: ModuleKind) => {
     }
 }
 
-type ModuleKind = typeof ModuleKind[keyof typeof ModuleKind]
+type ModuleKind = (typeof ModuleKind)[keyof typeof ModuleKind]
 const ModuleKind = {
     CommonJS: "CommonJS",
-    ESNext: "ESNext",
+    ESNext: "ESNext"
 }
 const ModuleKindToDir = {
     [ModuleKind.CommonJS]: "cjs",

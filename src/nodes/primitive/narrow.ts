@@ -5,7 +5,7 @@ import { intersectUniqueLists, listFrom } from "../../../dev/utils/lists.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export interface NarrowNode extends BaseNode<readonly Narrow[]> { }
+export interface NarrowNode extends BaseNode<readonly Narrow[]> {}
 
 export const narrowNode = defineNodeKind<NarrowNode, listable<Narrow>>(
     {

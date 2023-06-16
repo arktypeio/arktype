@@ -36,8 +36,8 @@ export type functionAssertions<AllowTypeAssertions extends boolean> = {
     >
 } & (AllowTypeAssertions extends true
     ? {
-        throwsAndHasTypeError: (message: string | RegExp) => undefined
-    }
+          throwsAndHasTypeError: (message: string | RegExp) => undefined
+      }
     : {})
 
 export type valueFromTypeAssertion<

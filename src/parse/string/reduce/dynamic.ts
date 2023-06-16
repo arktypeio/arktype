@@ -5,7 +5,10 @@ import {
     minComparators,
     rangeNode
 } from "../../../nodes/primitive/range.js"
-import { throwInternalError, throwParseError } from "../../../../dev/utils/errors.js"
+import {
+    throwInternalError,
+    throwParseError
+} from "../../../../dev/utils/errors.js"
 import type { requireKeys } from "../../../../dev/utils/records.js"
 import { isKeyOf } from "../../../../dev/utils/records.js"
 import type { ParseContext } from "../../definition.js"
@@ -165,10 +168,10 @@ export class DynamicState {
         return this.branches.range?.min
             ? this.branches.range.min.comparator
             : this.branches.prefixes.at(-1) ?? this.branches.intersection
-                ? "&"
-                : this.branches.union
-                    ? "|"
-                    : undefined
+            ? "&"
+            : this.branches.union
+            ? "|"
+            : undefined
     }
 
     shiftedByOne() {

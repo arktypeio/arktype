@@ -50,10 +50,10 @@ export const propsNode = defineNodeKind<PropsNode, PropsInput>(
                 return lPrecedence > rPrecedence
                     ? 1
                     : lPrecedence < rPrecedence
-                        ? -1
-                        : keyNameToString(l.key) > keyNameToString(r.key)
-                            ? 1
-                            : -1
+                    ? -1
+                    : keyNameToString(l.key) > keyNameToString(r.key)
+                    ? 1
+                    : -1
             })
         },
         compile: (rule) => {

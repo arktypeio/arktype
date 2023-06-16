@@ -59,14 +59,14 @@ export type objectKindOf<
     ? undefined | keyof kinds
     : data extends object
     ? object extends data
-    ? keyof kinds
-    : {
-        [kind in keyof kinds]: kinds[kind] extends Constructor<data>
-        ? kind
-        : data extends (...args: any[]) => unknown
-        ? "Function"
-        : "Object"
-    }[keyof kinds]
+        ? keyof kinds
+        : {
+              [kind in keyof kinds]: kinds[kind] extends Constructor<data>
+                  ? kind
+                  : data extends (...args: any[]) => unknown
+                  ? "Function"
+                  : "Object"
+          }[keyof kinds]
     : undefined
 
 export const objectKindOf = <

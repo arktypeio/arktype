@@ -5,9 +5,9 @@ export type astToString<
     result extends string = ""
 > = ast extends readonly [infer head, ...infer tail]
     ? astToString<
-        tail,
-        `${result extends "" ? "" : `${result} `}${astToString<head, "">}`
-    >
+          tail,
+          `${result extends "" ? "" : `${result} `}${astToString<head, "">}`
+      >
     : ast extends Literalable
     ? `${result}${ast extends bigint ? `${ast}n` : ast}`
     : result

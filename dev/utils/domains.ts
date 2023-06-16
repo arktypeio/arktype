@@ -58,8 +58,8 @@ export const domainOf = <data>(data: data) => {
                 ? "null"
                 : "object"
             : builtinType === "function"
-                ? "object"
-                : builtinType
+            ? "object"
+            : builtinType
     ) as domainOf<data>
 }
 

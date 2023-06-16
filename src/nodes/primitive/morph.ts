@@ -5,7 +5,7 @@ import { intersectUniqueLists, listFrom } from "../../../dev/utils/lists.js"
 import type { BaseNode } from "../node.js"
 import { defineNodeKind } from "../node.js"
 
-export interface MorphNode extends BaseNode<readonly Morph[]> { }
+export interface MorphNode extends BaseNode<readonly Morph[]> {}
 
 export const morphNode = defineNodeKind<MorphNode, listable<Morph>>(
     {
