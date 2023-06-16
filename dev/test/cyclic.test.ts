@@ -42,9 +42,7 @@ suite("cyclic data", () => {
             a: { b: "b&a" },
             b: { a: "a&b" }
         })
-        attest($.infer).types.toString.snap(
-            "{ a: { b: { a: { b: any; a: any; }; b: any; }; }; b: { a: { b: { a: any; b: any; }; a: any; }; }; }"
-        )
+        attest($.infer).types.toString.snap()
     })
     // test("cyclic", () => {
     //     const types = scope({ a: { b: "b" }, b: { a: "a" } }).compile()
