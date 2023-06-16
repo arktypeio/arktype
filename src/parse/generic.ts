@@ -2,7 +2,7 @@ import type { error } from "../utils/errors.js"
 import { throwParseError } from "../utils/errors.js"
 import type { nominal } from "../utils/generics.js"
 import type { join } from "../utils/lists.js"
-import { writeUnclosedGroupMessage } from "./string/reduce/shared.js"
+import type { writeUnclosedGroupMessage } from "./string/reduce/shared.js"
 import type { state, StaticState } from "./string/reduce/static.js"
 import { writeUnexpectedCharacterMessage } from "./string/shift/operator/operator.js"
 import { Scanner } from "./string/shift/scanner.js"
@@ -13,40 +13,12 @@ export type GenericDeclaration<
     params extends string = string
 > = `${name}<${params}>`
 
-export const parseScopeKey = (k: string): ParsedScopeKey => {
-    const isLocal = k[0] === "#"
-    const name = isLocal ? k.slice(1) : k
-    const firstParamIndex = k.indexOf("<")
-    if (firstParamIndex === -1) {
-        return {
-            isLocal,
-            name,
-            params: []
-        }
-    }
-    const lastParamIndex = k.indexOf(">")
-    if (lastParamIndex === -1) {
-        throwParseError(writeUnclosedGroupMessage(">"))
-    }
-    return {
-        isLocal,
-        name: name.slice(firstParamIndex),
-        params: parseGenericParams(k.slice(firstParamIndex + 1, lastParamIndex))
-    }
-}
-
-export type ParsedScopeKey = {
-    isLocal: boolean
-    name: string
-    params: string[]
-}
-
 // we put the error in a tuple so that parseGenericParams always returns a string[]
 export type GenericParamsParseError<message extends string = string> = [
     nominal<message, "InvalidGenericParameters">
 ]
 
-const parseGenericParams = (def: string) =>
+export const parseGenericParams = (def: string) =>
     parseGenericParamsRecurse(new Scanner(def))
 
 export type parseGenericParams<def extends string> = parseParamsRecurse<
@@ -55,12 +27,19 @@ export type parseGenericParams<def extends string> = parseParamsRecurse<
     []
 > extends infer result extends string[]
     ? "" extends result[number]
-        ? GenericParamsParseError<`An empty string is not a valid generic parameter name`>
+        ? GenericParamsParseError<emptyGenericParameterMessage>
         : result
     : never
 
+export const emptyGenericParameterMessage = `An empty string is not a valid generic parameter name`
+
+export type emptyGenericParameterMessage = typeof emptyGenericParameterMessage
+
 const parseGenericParamsRecurse = (scanner: Scanner): string[] => {
     const param = scanner.shiftUntilNextTerminator()
+    if (param === "") {
+        throwParseError(emptyGenericParameterMessage)
+    }
     scanner.shiftUntilNonWhitespace()
     const nextNonWhitespace = scanner.shift()
     return nextNonWhitespace === ""

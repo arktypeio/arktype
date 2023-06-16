@@ -5,6 +5,7 @@ import { TraversalState } from "./compile/traverse.js"
 import type { PredicateInput } from "./nodes/composite/predicate.js"
 import type { TypeNode } from "./nodes/composite/type.js"
 import { node } from "./nodes/composite/type.js"
+import { arkKind } from "./nodes/node.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
 import type { inferMorphOut, Morph, MorphAst, Out } from "./parse/ast/morph.js"
 import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
@@ -23,11 +24,10 @@ import type {
     GenericParamsParseError,
     parseGenericParams
 } from "./parse/generic.js"
-import type { bindThis, Resolutions, Scope } from "./scope.js"
+import type { bindThis, Scope } from "./scope.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"
 import type { conform, Literalable } from "./utils/generics.js"
-import { id } from "./utils/generics.js"
 import type {
     AbstractableConstructor,
     BuiltinObjectKind,
@@ -273,7 +273,7 @@ export const createGeneric = (
     definition: unknown,
     scope: Scope
 ): GenericProps => ({
-    [id]: "generic",
+    [arkKind]: "generic",
     $: undefined,
     parameters,
     definition,
@@ -287,7 +287,7 @@ export type GenericProps<
     def = unknown,
     $ = any
 > = {
-    [id]: "generic"
+    [arkKind]: "generic"
     $: $
     parameters: params
     definition: def

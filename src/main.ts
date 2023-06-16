@@ -1,5 +1,5 @@
 export { scope, type, arktypes, ark, define, declare } from "./scopes/ark.js"
-export type { InferAs as Inferred } from "./parse/definition.js"
+export type { CastTo as Inferred } from "./parse/definition.js"
 export type { Scope, TypeSet } from "./scope.js"
 export { Type } from "./type.js"
 export { jsObjects as jsObject } from "./scopes/jsObjects.js"

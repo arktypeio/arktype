@@ -2,7 +2,7 @@ import type { ProblemCode } from "./compile/problems.js"
 import type { TypeNode } from "./main.js"
 import { builtins } from "./nodes/composite/type.js"
 import type {
-    InferAs,
+    CastTo,
     inferDefinition,
     validateDefinition
 } from "./parse/definition.js"
@@ -12,10 +12,10 @@ import {
 } from "./parse/definition.js"
 import type {
     GenericDeclaration,
-    GenericParamsParseError,
-    parseGenericParams
+    GenericParamsParseError
 } from "./parse/generic.js"
-import { parseScopeKey } from "./parse/generic.js"
+import { parseGenericParams } from "./parse/generic.js"
+import { writeUnclosedGroupMessage } from "./parse/string/reduce/shared.js"
 import { parseString } from "./parse/string/string.js"
 import type {
     DeclarationParser,
@@ -31,7 +31,7 @@ import type {
 import { createGeneric, createTypeParser, Type } from "./type.js"
 import { domainOf } from "./utils/domains.js"
 import { throwParseError } from "./utils/errors.js"
-import type { evaluate, isAny, nominal } from "./utils/generics.js"
+import type { evaluate, extend, isAny, nominal } from "./utils/generics.js"
 import { Path } from "./utils/lists.js"
 import type { Dict } from "./utils/records.js"
 
@@ -52,31 +52,23 @@ export type ScopeParser<parent, ambient> = {
 }
 
 type validateAliases<aliases, $> = {
-    [k in keyof aliases]: k extends GenericDeclaration<
-        infer name,
-        infer paramsDef
-    >
-        ? name extends keyof $
-            ? writeDuplicateAliasesMessage<name>
-            : parseGenericParams<paramsDef> extends infer result extends string[]
-            ? result extends GenericParamsParseError
-                ? // use the full nominal type here to avoid an overlap between the
-                  // error message and a possible value for the property
-                  result[0]
-                : validateDefinition<
-                      aliases[k],
-                      $ &
-                          bootstrap<aliases> & {
-                              [param in result[number]]: unknown
-                          }
-                  >
-            : never
-        : k extends keyof $
-        ? // TODO: more duplicate alias scenarios
-          writeDuplicateAliasesMessage<k & string>
-        : aliases[k] extends Scope | Type | GenericProps
-        ? aliases[k]
-        : validateDefinition<aliases[k], $ & bootstrap<aliases>>
+    [k in keyof aliases]: parseScopeKey<k> extends infer result extends ParsedScopeKey
+        ? result["params"] extends []
+            ? aliases[k] extends Scope | Type | GenericProps
+                ? aliases[k]
+                : validateDefinition<aliases[k], $ & bootstrap<aliases>>
+            : result["params"] extends GenericParamsParseError
+            ? // use the full nominal type here to avoid an overlap between the
+              // error message and a possible value for the property
+              result["params"][0]
+            : validateDefinition<
+                  aliases[k],
+                  $ &
+                      bootstrap<aliases> & {
+                          [param in result["params"][number]]: unknown
+                      }
+              >
+        : never
 }
 
 export type bindThis<$, def> = $ & { this: Def<def> }
@@ -369,7 +361,7 @@ type destructuredImportContext<
     r extends Resolutions,
     name extends keyof r["exports"]
 > = {
-    [k in name as `#${k & string}`]: InferAs<r["exports"][k]>
+    [k in name as `#${k & string}`]: CastTo<r["exports"][k]>
 }
 
 export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
@@ -383,3 +375,46 @@ export const writeDuplicateAliasesMessage = <name extends string>(
 
 type writeDuplicateAliasesMessage<name extends string> =
     `Alias '${name}' is already defined`
+
+export type ParsedScopeKey = {
+    isLocal: boolean
+    name: string
+    params: string[]
+}
+
+export const parseScopeKey = (k: string): ParsedScopeKey => {
+    const isLocal = k[0] === "#"
+    const name = isLocal ? k.slice(1) : k
+    const firstParamIndex = k.indexOf("<")
+    if (firstParamIndex === -1 || name.at(-1) !== ">") {
+        return {
+            isLocal,
+            name,
+            params: []
+        }
+    }
+    return {
+        isLocal,
+        name: name.slice(firstParamIndex),
+        params: parseGenericParams(k.slice(firstParamIndex + 1, -1))
+    }
+}
+
+type parseScopeKey<k> = k extends PrivateDeclaration<infer inner>
+    ? parsePossibleGenericDeclaration<inner, true>
+    : parsePossibleGenericDeclaration<k, false>
+
+type parsePossibleGenericDeclaration<
+    k,
+    isLocal extends boolean
+> = k extends GenericDeclaration<infer name, infer paramString>
+    ? {
+          isLocal: isLocal
+          name: name
+          params: parseGenericParams<paramString>
+      }
+    : {
+          isLocal: isLocal
+          name: k
+          params: []
+      }

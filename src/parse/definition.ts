@@ -62,7 +62,7 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 
 export type inferDefinition<def, $> = isAny<def> extends true
     ? never
-    : def extends InferAs<infer t> | InferAsThunk<infer t>
+    : def extends CastTo<infer t> | ThunkCast<infer t>
     ? t
     : def extends string
     ? inferString<def, $>
@@ -103,8 +103,8 @@ export type validateDeclared<declared, def, $> = def extends validateDefinition<
 
 type validateInference<def, declared, $> = def extends
     | RegExp
-    | InferAs<unknown>
-    | InferAsThunk
+    | CastTo<unknown>
+    | ThunkCast
     | TupleExpression
     ? validateShallowInference<def, declared, $>
     : def extends readonly unknown[]
@@ -144,18 +144,18 @@ type declarationMismatch<def, declared, $> = {
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes
-type Terminal = RegExp | InferAs<unknown> | ((...args: never[]) => unknown)
+type Terminal = RegExp | CastTo<unknown> | ((...args: never[]) => unknown)
 
 // ideally this could be just declared since it is not used at runtime,
 // but it doesn't play well with typescript-eslint: https://github.com/typescript-eslint/typescript-eslint/issues/4608
 // easiest solution seems to be just having it declared as a value so it doesn't break when we import at runtime
 export const inferred = Symbol("inferred")
 
-export type InferAs<t> = {
+export type CastTo<t> = {
     [inferred]?: t
 }
 
-export type InferAsThunk<t = unknown> = () => InferAs<t>
+export type ThunkCast<t = unknown> = () => CastTo<t>
 
 type BadDefinitionType = Exclude<Primitive, string>
 
