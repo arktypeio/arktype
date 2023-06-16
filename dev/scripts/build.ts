@@ -19,11 +19,12 @@ const Sources = {
 } as const
 
 const buildFormat = (module: ModuleKind) => {
-    const outDir = join(outRoot, ModuleKindToDir[module])
-    const outUtils = join(outDir, ...Sources.utils /*, "src" */)
+    const moduleKindDir = ModuleKindToDir[module]
+    const outDir = join(outRoot, moduleKindDir)
+    const outUtils = join(outDir, ...Sources.utils, "src")
     const outAttest = join(outDir, ...Sources.attest, "src")
-    const outUtilsTarget = join(packageRoot, ...Sources.utils, "dist")
-    const outAttestTarget = join(packageRoot, ...Sources.attest, "dist")
+    const outUtilsTarget = join(packageRoot, ...Sources.utils, "dist", moduleKindDir)
+    const outAttestTarget = join(packageRoot, ...Sources.attest, "dist", moduleKindDir)
     const tempTsConfig = {
         ...baseTsConfig,
         include: ["src", Sources.utils.join("/"), Sources.attest.join("/")],
