@@ -4,6 +4,7 @@ import { node } from "../nodes/composite/type.js"
 import type { ParseContext } from "../scope.js"
 import { Type } from "../type.js"
 import type { domainOf, Primitive } from "../utils/domains.js"
+import type { error } from "../utils/errors.js"
 import { throwParseError } from "../utils/errors.js"
 import { isThunk } from "../utils/functions.js"
 import type {
@@ -18,12 +19,15 @@ import { objectKindOf } from "../utils/objectKinds.js"
 import type { Dict, optionalKeyOf, requiredKeyOf } from "../utils/records.js"
 import { stringify } from "../utils/serialize.js"
 import type { validateString } from "./ast/ast.js"
-import type { inferTuple, TupleExpression, validateTuple } from "./ast/tuple.js"
-import { parseTuple } from "./ast/tuple.js"
-import type { inferRecord } from "./record.js"
-import { parseRecord } from "./record.js"
+import type {
+    inferObjectLiteral,
+    validateObjectLiteral
+} from "./objectLiteral.js"
+import { parseObjectLiteral } from "./objectLiteral.js"
 import type { AutocompletePrefix } from "./string/reduce/static.js"
 import type { inferString } from "./string/string.js"
+import { parseTuple } from "./tuple.js"
+import type { inferTuple, TupleExpression, validateTuple } from "./tuple.js"
 
 export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
     const objectKind = objectKindOf(def)
@@ -32,7 +36,7 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
             if (hasArkKind(def, "node") && def.hasKind("type")) {
                 return def
             }
-            return parseRecord(def as Dict, ctx)
+            return parseObjectLiteral(def as Dict, ctx)
         case "Array":
             return parseTuple(def as List, ctx)
         case "RegExp":
@@ -71,7 +75,7 @@ export type inferDefinition<def, $> = isAny<def> extends true
     : def extends RegExp
     ? string
     : def extends Dict
-    ? inferRecord<def, $>
+    ? inferObjectLiteral<def, $>
     : never
 
 export type validateDefinition<def, $> = null extends undefined
@@ -79,7 +83,9 @@ export type validateDefinition<def, $> = null extends undefined
     : def extends Terminal
     ? def
     : def extends string
-    ? validateString<def, $>
+    ? validateString<def, $> extends error<infer message>
+        ? message
+        : def
     : def extends List
     ? validateTuple<def, $>
     : def extends BadDefinitionType
@@ -90,9 +96,7 @@ export type validateDefinition<def, $> = null extends undefined
     ? // this allows the initial list of autocompletions to be populated when a user writes "type()",
       // before having specified a definition
       (keyof $ & string) | AutocompletePrefix | {}
-    : {
-          [k in keyof def]: validateDefinition<def[k], $>
-      }
+    : validateObjectLiteral<def, $>
 
 export type validateDeclared<declared, def, $> = def extends validateDefinition<
     def,

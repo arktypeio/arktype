@@ -1,6 +1,6 @@
 import type { TraversalState } from "../../compile/traverse.js"
 import { throwParseError } from "../../utils/errors.js"
-import type { PostfixParser } from "./tuple.js"
+import type { PostfixParser } from "../tuple.js"
 
 export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
     if (typeof def[2] !== "function") {

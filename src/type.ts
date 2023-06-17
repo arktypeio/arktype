@@ -9,11 +9,6 @@ import type { inferIntersection } from "./parse/ast/intersections.js"
 import type { inferMorphOut, Morph, MorphAst, Out } from "./parse/ast/morph.js"
 import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
 import type {
-    IndexOneOperator,
-    IndexZeroOperator,
-    TupleInfixOperator
-} from "./parse/ast/tuple.js"
-import type {
     inferDefinition,
     validateDeclared,
     validateDefinition
@@ -23,6 +18,11 @@ import type {
     GenericParamsParseError,
     parseGenericParams
 } from "./parse/generic.js"
+import type {
+    IndexOneOperator,
+    IndexZeroOperator,
+    TupleInfixOperator
+} from "./parse/tuple.js"
 import type { bindThis, Scope } from "./scope.js"
 import type { error } from "./utils/errors.js"
 import { CompiledFunction } from "./utils/functions.js"

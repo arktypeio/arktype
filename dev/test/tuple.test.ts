@@ -3,7 +3,7 @@ import { scope, type } from "../../src/main.js"
 import {
     prematureRestMessage,
     writeNonArrayRestMessage
-} from "../../src/parse/ast/tuple.js"
+} from "../../src/parse/tuple.js"
 import { attest } from "../attest/main.js"
 
 suite("tuple", () => {

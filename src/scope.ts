@@ -65,6 +65,8 @@ type validateAliases<aliases, $> = {
                   aliases[k],
                   $ &
                       bootstrap<aliases> & {
+                          // once we support constraints on generic parameters, we'd use
+                          // the base type here: https://github.com/arktypeio/arktype/issues/796
                           [param in result["params"][number]]: unknown
                       }
               >

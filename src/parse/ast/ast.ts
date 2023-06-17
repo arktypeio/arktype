@@ -135,9 +135,9 @@ export type validateString<def extends string, $> = parseString<
     $
 > extends infer ast
     ? ast extends error<infer message>
-        ? message
+        ? error<message>
         : validateAst<ast, $> extends error<infer message>
-        ? message
+        ? error<message>
         : def
     : never
 

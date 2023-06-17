@@ -3,7 +3,7 @@ import type { Problem } from "../../main.js"
 import type { extractIn } from "../../type.js"
 import { throwParseError } from "../../utils/errors.js"
 import type { inferDefinition } from "../definition.js"
-import type { PostfixParser } from "./tuple.js"
+import type { PostfixParser } from "../tuple.js"
 
 export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
     if (typeof def[2] !== "function") {

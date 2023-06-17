@@ -2,6 +2,7 @@
 import { suite, test } from "mocha"
 import { scope, type } from "../../src/main.js"
 import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
+import { writeInvalidPropertyKeyMessage } from "../../src/parse/objectLiteral.js"
 import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
@@ -93,9 +94,7 @@ suite("object literal", () => {
                 // @ts-expect-error
                 "[object]": "string"
             })
-        ).throwsAndHasTypeError(
-            "Index signature 'object' must be a string, number or symbol"
-        )
+        ).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("object"))
     })
 
     test("nested", () => {
