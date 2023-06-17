@@ -1,4 +1,8 @@
-import { isValidDateInput } from "../parse/string/shift/operand/date.js"
+import {
+    extractDate,
+    getDateFromInputOrThrow,
+    isValidDateInput
+} from "../parse/string/shift/operand/date.js"
 import { throwParseError } from "./errors.js"
 
 export type BigintLiteral<value extends bigint = bigint> = `${value}n`
@@ -42,12 +46,13 @@ export const isWellFormedInteger = (s: string) =>
 const integerLikeMatcher = /^-?\d+$/
 const isIntegerLike = (s: string) => integerLikeMatcher.test(s)
 
-type NumericLiteralKind = "number" | "bigint" | "integer"
+type NumericLiteralKind = "number" | "bigint" | "integer" | "Date"
 
 const numericLiteralDescriptions = {
     number: "a number",
     bigint: "a bigint",
-    integer: "an integer"
+    integer: "an integer",
+    Date: "a date"
 } as const
 
 type numericLiteralDescriptions = typeof numericLiteralDescriptions
@@ -75,12 +80,20 @@ const isWellFormed = (def: string, kind: ValidationKind) => {
         case "integer":
             return isWellFormedInteger(def)
         case "Date":
-            return isWellFormedDate(def)
+            return getDateFromInputOrThrow(def)
     }
 }
 
-const parseKind = (def: string, kind: ValidationKind) =>
-    kind === "number" ? Number(def) : Number.parseInt(def)
+const parseKind = (def: string, kind: ValidationKind) => {
+    switch (kind) {
+        case "number":
+            return Number(def)
+        case "integer":
+            return Number.parseInt(def)
+        case "Date":
+            return getDateFromInputOrThrow(def)?.valueOf()
+    }
+}
 
 const isKindLike = (def: string, kind: ValidationKind) =>
     kind === "number" ? isNumberLike(def) : isIntegerLike(def)
@@ -90,7 +103,6 @@ export const tryParseWellFormedNumber = <ErrorOnFail extends boolean | string>(
     errorOnFail?: ErrorOnFail
 ) => parseWellFormed(token, "number", errorOnFail)
 
-//todoshawn
 export const tryParseWellFormedDate = <ErrorOnFail extends boolean | string>(
     token: string,
     errorOnFail?: ErrorOnFail
@@ -179,4 +191,9 @@ export const d = (dateInput: DateInput) =>
         ? dateInput.valueOf()
         : new Date(dateInput).valueOf()
 
-export const isWellFormedDate = (s: string) => isValidDateInput(s.slice(2, -1))
+export const isWellFormedDate = (s: string) => {
+    const extractedDate = extractDate(s)
+    const date = extractedDate === "" ? new Date() : new Date(extractedDate)
+
+    return isValidDateInput(date)
+}

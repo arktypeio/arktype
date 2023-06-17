@@ -45,6 +45,8 @@ export type parseBound<
       >
         ? s["root"] extends NumberLiteral
             ? state.reduceLeftBound<s, s["root"], comparator, nextUnscanned>
+            : s["root"] extends DateLiteral
+            ? state.reduceLeftBound<s, s["root"], comparator, nextUnscanned>
             : parseRightBound<s, comparator, nextUnscanned>
         : shiftResultOrError
     : never
@@ -94,7 +96,6 @@ export const parseRightBound = (
 ) => {
     const limitToken = s.scanner.shiftUntilNextTerminator()
     const looksLikeDate = /d(['"]).*(\1)/.test(limitToken)
-    //todoshawn
     const limit = looksLikeDate
         ? tryParseWellFormedDate(limitToken, `idk ${limitToken} looks bad`)
         : tryParseWellFormedNumber(
@@ -154,7 +155,7 @@ export type parseRightBound<
                   >
                 : state.error<writeUnpairableComparatorMessage<comparator>>
             : state.reduceSingleBound<s, comparator, scanned, nextUnscanned>
-        : state.error<writeUnboundableMessage<scanned>>
+        : state.error<"231">
     : never
 
 export const writeInvalidLimitMessage = <

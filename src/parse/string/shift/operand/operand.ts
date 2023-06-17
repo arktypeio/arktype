@@ -7,11 +7,7 @@ import type {
 import type { Scanner } from "../scanner.js"
 import { parseDate } from "./date.js"
 import type { EnclosingChar } from "./enclosed.js"
-import {
-    enclosingChar,
-    parseEnclosed,
-    writeUnterminatedEnclosedMessage
-} from "./enclosed.js"
+import { enclosingChar, parseEnclosed } from "./enclosed.js"
 import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.js"
 
 export const parseOperand = (s: DynamicState): void =>
@@ -25,8 +21,7 @@ export const parseOperand = (s: DynamicState): void =>
         ? parseOperand(s.shiftedByOne())
         : s.scanner.lookahead === "d"
         ? s.shiftedByOne().scanner.lookaheadIsIn(enclosingChar)
-            ? //todoshawn seems bad to have to do this
-              parseDate(s, s.scanner.shift() as EnclosingChar)
+            ? parseDate(s, s.scanner.shift() as EnclosingChar)
             : parseUnenclosed(s)
         : parseUnenclosed(s)
 

@@ -7,7 +7,7 @@ import type {
 import type { error } from "../../../utils/errors.js"
 import type { defined } from "../../../utils/generics.js"
 import type { NumberLiteral } from "../../../utils/numericLiterals.js"
-import { DateLiteral } from "../shift/operand/date.js"
+import type { DateLiteral } from "../shift/operand/date.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
     Prefix,
@@ -122,7 +122,42 @@ export namespace state {
               scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
               unscanned: unscanned
           }>
-
+    export type reduceLeftDateBound<
+        s extends StaticState,
+        limit extends DateLiteral,
+        comparator extends Comparator,
+        unscanned extends string
+    > = comparator extends "<" | "<="
+        ? s["branches"]["range"] extends {}
+            ? state.error<
+                  writeMultipleLeftBoundsMessage<
+                      s["branches"]["range"]["limit"],
+                      s["branches"]["range"]["comparator"],
+                      limit,
+                      InvertedComparators[comparator]
+                  >
+              >
+            : from<{
+                  root: undefined
+                  branches: {
+                      prefixes: s["branches"]["prefixes"]
+                      range: {
+                          limit: limit
+                          comparator: InvertedComparators[comparator]
+                      }
+                      "&": s["branches"]["&"]
+                      "|": s["branches"]["|"]
+                  }
+                  groups: s["groups"]
+                  finalizer: s["finalizer"]
+                  scanned: updateScanned<
+                      s["scanned"],
+                      s["unscanned"],
+                      unscanned
+                  >
+                  unscanned: unscanned
+              }>
+        : state.error<writeUnpairableComparatorMessage<comparator>>
     export type reduceLeftBound<
         s extends StaticState,
         limit extends NumberLiteral,
