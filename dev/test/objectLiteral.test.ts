@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
 import { attest } from "../attest/main.js"
@@ -27,20 +28,20 @@ suite("object literal", () => {
         }
     })
     test("non-enumerable indexed union", () => {
-        const o = type({ "[string | number]": "string" })
+        const o = type({ "[string | symbol]": "string" })
         attest(o).typed as {
             [x: string]: string
-            [x: number]: string
+            [x: symbol]: string
         }
     })
     test("multiple indexed", () => {
         const o = type({
-            "[string]": "string | number",
-            "[number]": "number"
+            "[string]": "string",
+            "[symbol]": "number"
         })
         attest(o).typed as {
-            [x: string]: string | number
-            [x: number]: number
+            [x: string]: string
+            [x: symbol]: number
         }
     })
     test("all key kinds", () => {

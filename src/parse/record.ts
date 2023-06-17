@@ -8,7 +8,6 @@ import type { evaluate } from "../utils/generics.js"
 import type { Dict } from "../utils/records.js"
 import type { inferDefinition } from "./definition.js"
 import { Scanner } from "./string/shift/scanner.js"
-import type { inferString } from "./string/string.js"
 
 export const parseRecord = (def: Dict, ctx: ParseContext) => {
     const named: NamedPropRule[] = []

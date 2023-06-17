@@ -8,7 +8,8 @@ import type {
     NumberLiteral,
     writeMalformedNumericLiteralMessage
 } from "../../utils/numericLiterals.js"
-import type { inferDefinition, CastTo } from "../definition.js"
+import type { CastTo, inferDefinition } from "../definition.js"
+import type { writeInvalidGenericArgsMessage } from "../generic.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 import type { parseString } from "../string/string.js"
 import type { validateBound } from "./bound.js"
@@ -73,7 +74,7 @@ export type inferExpression<
     : never
 
 export type validateAst<ast, $> = ast extends string
-    ? validateStringAst<ast>
+    ? validateStringAst<ast, $>
     : ast extends PostfixExpression<infer operator, infer operand>
     ? operator extends "[]"
         ? validateAst<operand, $>
@@ -111,7 +112,7 @@ export const writeUnsatisfiableExpressionError = <expression extends string>(
 export type writeUnsatisfiableExpressionError<expression extends string> =
     `${expression} results in an unsatisfiable type`
 
-type validateStringAst<def extends string> = def extends NumberLiteral<
+type validateStringAst<def extends string, $> = def extends NumberLiteral<
     infer value
 >
     ? number extends value
@@ -120,6 +121,12 @@ type validateStringAst<def extends string> = def extends NumberLiteral<
     : def extends BigintLiteral<infer value>
     ? bigint extends value
         ? error<writeMalformedNumericLiteralMessage<def, "bigint">>
+        : undefined
+    : def extends keyof $
+    ? // these problems would've been caught during a fullStringParse, but it's most
+      // efficient to check for them here in case the string was naively parsed
+      $[def] extends GenericProps
+        ? error<writeInvalidGenericArgsMessage<def, $[def]["parameters"], []>>
         : undefined
     : undefined
 
