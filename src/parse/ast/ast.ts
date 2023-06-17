@@ -26,21 +26,22 @@ type bindGenericArgAstsToScope<
     argAsts extends unknown[],
     $
 > = {
-    // using keyof g["parameters"] & number here results in the element types
+    // Using keyof g["parameters"] & number here results in the element types
     // being mixed- another reason TS should not have separate `${number}` and number keys!
     [i in keyof g["parameters"] & `${number}` as g["parameters"][i]]: inferAst<
         argAsts[i & keyof argAsts],
         $
     >
 } & Omit<
-    // If the generic was defined in the current scope, its definition can be
-    // resolved using the same scope as that of the input args. Otherwise, use
-    // the scope that was explicitly associated with it.
     g["$"] extends UnparsedScope
-        ? $
-        : // if "this" is in the arg scope (i.e. the generic is being instantiated as a standalone type)
+        ? // If the generic was defined in the current scope, its definition can be
+          // resolved using the same scope as that of the input args.
+          $
+        : // Otherwise, use the scope that was explicitly associated with it.
+          // If "this" is in the arg scope (i.e. the generic is being instantiated as a standalone type)
           // include the same "this" value in the generic definition's scope
-          g["$"] & { [k in "this" & keyof $]: $[k] },
+          g["$"] & { [_ in "this" & keyof $]: $[_] },
+    // Ensure any aliases matching parameter names are not intersected.
     g["parameters"][number]
 >
 

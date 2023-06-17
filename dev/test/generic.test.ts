@@ -154,6 +154,9 @@ suite("generics", () => {
             }).export()
             attest(types.reference.infer.swap.swap.order).typed as [0, 1]
             attest(types.reference.infer.swap.swap.swap.order).typed as [1, 0]
+            const fromCall = types.alternate("true", "false")
+            attest(fromCall.infer.swap.swap.order).typed as [true, false]
+            attest(fromCall.infer.swap.swap.swap.order).typed as [false, true]
         })
 
         test("self-reference no params", () => {

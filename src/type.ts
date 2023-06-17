@@ -266,9 +266,10 @@ type validateParameterString<params extends string> =
         : params
 
 type bindGenericInstantiationToScope<params extends string[], argDefs, $> = {
-    [i in keyof params as params[i & number]]: i extends keyof argDefs
-        ? inferDefinition<argDefs[i], bindThis<$, argDefs[i]>>
-        : never
+    [i in keyof params as params[i & `${number}`]]: inferDefinition<
+        argDefs[i & keyof argDefs],
+        bindThis<$, argDefs[i & keyof argDefs]>
+    >
 } & Omit<$, params[number]>
 
 export const generic = (

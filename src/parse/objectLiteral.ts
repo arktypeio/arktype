@@ -4,6 +4,7 @@ import { propsNode } from "../nodes/composite/props.js"
 import { typeNode } from "../nodes/composite/type.js"
 import { domainNode } from "../nodes/primitive/basis/domain.js"
 import type { ParseContext } from "../scope.js"
+import type { Ark } from "../scopes/ark.js"
 import type { error } from "../utils/errors.js"
 import type { evaluate } from "../utils/generics.js"
 import type { Dict } from "../utils/records.js"
@@ -46,22 +47,30 @@ const objectBasisNode = domainNode("object")
 
 export type inferObjectLiteral<def extends Dict, $> = evaluate<
     {
-        [k in keyof def as parseKey<k> extends {
-            kind: infer kind extends "required" | "indexed"
-            value: infer value
-        }
-            ? (kind extends "required" ? value : inferDefinition<value, $>) &
-                  PropertyKey
-            : never]: inferDefinition<def[k], $>
+        [k in keyof def as nonOptionalKeyFrom<k, $>]: inferDefinition<def[k], $>
     } & {
-        [k in keyof def as parseKey<k> extends {
-            kind: "optional"
-            value: infer value extends string
-        }
-            ? value
-            : never]?: inferDefinition<def[k], $>
+        [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<def[k], $>
     }
 >
+
+type nonOptionalKeyFrom<k, $> = parseKey<k> extends {
+    kind: infer kind extends "required" | "indexed"
+    value: infer value
+}
+    ? (kind extends "required" ? value : inferDefinition<value, $>) &
+          PropertyKey
+    : never
+
+type optionalKeyFrom<k> = parseKey<k> extends {
+    kind: "optional"
+    value: infer value extends string
+}
+    ? value
+    : never
+
+// export type inferObjectLiteral<def extends Dict, $> = evaluate<{
+//     [k in keyof def]: inferDefinition<def[k], $>
+// }>
 
 export type validateObjectLiteral<def, $> = {
     [k in keyof def]: k extends IndexedKey<infer indexDef>
