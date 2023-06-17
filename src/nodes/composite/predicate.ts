@@ -1,7 +1,12 @@
 import { writeUnboundableMessage } from "../../parse/ast/bound.js"
 import { writeIndivisibleMessage } from "../../parse/ast/divisor.js"
-import type { inferMorphOut, Morph, Out } from "../../parse/ast/morph.js"
-import type { GuardedNarrow, Narrow } from "../../parse/ast/narrow.js"
+import type {
+    inferMorphOut,
+    Morph,
+    Narrow,
+    NarrowCast,
+    Out
+} from "../../parse/tuple.js"
 import type { Domain, inferDomain } from "../../utils/domains.js"
 import { domainOf } from "../../utils/domains.js"
 import { throwInternalError, throwParseError } from "../../utils/errors.js"
@@ -309,7 +314,7 @@ export type inferPredicateDefinition<input extends PredicateInput> =
         : inferPredicateInput<input>
 
 type inferPredicateInput<input extends PredicateInput> =
-    input["narrow"] extends GuardedNarrow<any, infer narrowed>
+    input["narrow"] extends NarrowCast<any, infer narrowed>
         ? narrowed
         : input["narrow"] extends List<Narrow>
         ? inferNarrowArray<input["narrow"]> extends infer result
@@ -326,7 +331,7 @@ type inferNarrowArray<
     ? inferNarrowArray<
           tail,
           result &
-              (head extends GuardedNarrow<any, infer narrowed>
+              (head extends NarrowCast<any, infer narrowed>
                   ? narrowed
                   : unknown)
       >

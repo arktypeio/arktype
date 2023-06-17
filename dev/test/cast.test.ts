@@ -1,7 +1,6 @@
 import { suite, test } from "mocha"
 import { type } from "../../src/main.js"
-import type { CastTo } from "../../src/parse/definition.js"
-import type { Type } from "../../src/type.js"
+import type { CastTo, Type } from "../../src/main.js"
 import type { Constructor } from "../../src/utils/objectKinds.js"
 import { attest } from "../attest/main.js"
 

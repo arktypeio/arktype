@@ -1,7 +1,6 @@
 import { suite, test } from "mocha"
-import { scope, type } from "../../src/main.js"
-import { node } from "../../src/nodes/composite/type.js"
-import type { Out } from "../../src/parse/ast/morph.js"
+import type { Out } from "../../src/main.js"
+import { node, scope, type } from "../../src/main.js"
 import {
     writeMissingRightOperandMessage,
     writeUnresolvableMessage

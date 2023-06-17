@@ -1,5 +1,5 @@
 import { registry } from "../../compile/registry.js"
-import type { Narrow } from "../../parse/ast/narrow.js"
+import type { Narrow } from "../../parse/tuple.js"
 import type { listable } from "../../utils/lists.js"
 import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
 import type { BaseNode } from "../node.js"

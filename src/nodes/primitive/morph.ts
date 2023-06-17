@@ -1,4 +1,4 @@
-import type { Morph } from "../../parse/ast/morph.js"
+import type { Morph } from "../../parse/tuple.js"
 import type { listable } from "../../utils/lists.js"
 import { intersectUniqueLists, listFrom } from "../../utils/lists.js"
 import type { BaseNode } from "../node.js"

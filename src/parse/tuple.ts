@@ -1,3 +1,5 @@
+import type { CheckResult, TraversalState } from "../compile/traverse.js"
+import type { Problem } from "../main.js"
 import { arrayIndexTypeNode } from "../nodes/composite/indexed.js"
 import { predicateNode } from "../nodes/composite/predicate.js"
 import type { NodeEntry } from "../nodes/composite/props.js"
@@ -6,12 +8,12 @@ import type { TypeNode } from "../nodes/composite/type.js"
 import { builtins, typeNode } from "../nodes/composite/type.js"
 import { arrayClassNode } from "../nodes/primitive/basis/class.js"
 import type { ParseContext } from "../scope.js"
-import type { extractIn, extractOut, TypeConfig } from "../type.js"
+import type { extractIn, extractOut } from "../type.js"
 import { throwParseError } from "../utils/errors.js"
 import type { evaluate, isAny } from "../utils/generics.js"
 import type { List } from "../utils/lists.js"
-import { isArray } from "../utils/objectKinds.js"
 import type { AbstractableConstructor } from "../utils/objectKinds.js"
+import { isArray } from "../utils/objectKinds.js"
 import { stringify } from "../utils/serialize.js"
 import {
     type InfixOperator,
@@ -19,10 +21,6 @@ import {
     writeUnsatisfiableExpressionError
 } from "./ast/ast.js"
 import type { inferIntersection } from "./ast/intersections.js"
-import type { Morph, parseMorph } from "./ast/morph.js"
-import { parseMorphTuple } from "./ast/morph.js"
-import type { inferNarrow, Narrow } from "./ast/narrow.js"
-import { parseNarrowTuple } from "./ast/narrow.js"
 import type { astToString } from "./ast/utils.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { Prefix } from "./string/reduce/shared.js"
@@ -311,12 +309,6 @@ export type PrefixParser<token extends IndexZeroOperator> = (
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 
-export const writeMalformedFunctionalExpressionMessage = (
-    operator: FunctionalTupleOperator,
-    rightDef: unknown
-) =>
-    `Expression requires a function following '${operator}' (was ${typeof rightDef})`
-
 export type TupleExpressionOperator = IndexZeroOperator | IndexOneOperator
 
 export type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
@@ -331,6 +323,62 @@ export type IndexOneExpression<
 
 const isIndexOneExpression = (def: List): def is IndexOneExpression =>
     indexOneParsers[def[1] as IndexOneOperator] !== undefined
+
+export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
+    if (typeof def[2] !== "function") {
+        return throwParseError(
+            writeMalformedFunctionalExpressionMessage("=>", def[2])
+        )
+    }
+    return ctx.scope.parse(def[0], ctx).constrain("morph", def[2] as Morph)
+}
+
+export type Morph<i = any, o = unknown> = (In: i, state: TraversalState) => o
+
+export type parseMorph<inDef, morph, $> = morph extends Morph
+    ? (
+          In: extractIn<inferDefinition<inDef, $>>
+      ) => Out<inferMorphOut<ReturnType<morph>>>
+    : never
+
+export type MorphAst<i = any, o = unknown> = (In: i) => Out<o>
+
+export type Out<o = unknown> = ["=>", o]
+
+export type inferMorphOut<out> = [out] extends [CheckResult<infer t>]
+    ? t
+    : Exclude<out, Problem>
+
+export const writeMalformedFunctionalExpressionMessage = (
+    operator: FunctionalTupleOperator,
+    value: unknown
+) =>
+    `${
+        operator === ":" ? "Narrow" : "Morph"
+    } expression requires a function following '${operator}' (was ${typeof value})`
+
+export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
+    if (typeof def[2] !== "function") {
+        return throwParseError(
+            writeMalformedFunctionalExpressionMessage(":", def[2])
+        )
+    }
+    return ctx.scope.parse(def[0], ctx).constrain("narrow", def[2] as Narrow)
+}
+
+export type Narrow<data = any> = (data: data, state: TraversalState) => boolean
+
+export type NarrowCast<data = any, narrowed extends data = data> = (
+    data: data,
+    state: TraversalState
+) => data is narrowed
+
+export type inferNarrow<In, predicate> = predicate extends (
+    data: any,
+    ...args: any[]
+) => data is infer narrowed
+    ? narrowed
+    : In
 
 const indexOneParsers: {
     [token in IndexOneOperator]: PostfixParser<token>

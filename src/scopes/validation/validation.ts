@@ -1,5 +1,5 @@
 import { node } from "../../nodes/composite/type.js"
-import type { Out } from "../../parse/ast/morph.js"
+import type { Out } from "../../parse/tuple.js"
 import { Scope } from "../../scope.js"
 import {
     wellFormedIntegerMatcher,

@@ -6,8 +6,6 @@ import type { PredicateInput } from "./nodes/composite/predicate.js"
 import type { TypeNode } from "./nodes/composite/type.js"
 import { node } from "./nodes/composite/type.js"
 import type { inferIntersection } from "./parse/ast/intersections.js"
-import type { inferMorphOut, Morph, MorphAst, Out } from "./parse/ast/morph.js"
-import type { inferNarrow, Narrow } from "./parse/ast/narrow.js"
 import type {
     inferDefinition,
     validateDeclared,
@@ -21,6 +19,12 @@ import type {
 import type {
     IndexOneOperator,
     IndexZeroOperator,
+    inferMorphOut,
+    inferNarrow,
+    Morph,
+    MorphAst,
+    Narrow,
+    Out,
     TupleInfixOperator
 } from "./parse/tuple.js"
 import type { bindThis, Scope } from "./scope.js"
