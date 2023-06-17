@@ -288,6 +288,7 @@ export const generic = (
             ),
         {
             [arkKind]: "generic",
+            // TODO: remove at runtime
             $: undefined,
             parameters,
             definition,
