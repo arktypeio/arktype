@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { suite, test } from "mocha"
-import { type } from "../../src/main.js"
+import { scope, type } from "../../src/main.js"
+import { writeUnboundableMessage } from "../../src/parse/ast/bound.js"
+import { writeUnresolvableMessage } from "../../src/parse/string/shift/operand/unenclosed.js"
 import { attest } from "../attest/main.js"
 
 suite("object literal", () => {
@@ -55,6 +57,45 @@ suite("object literal", () => {
             required: "foo"
             optional?: "bar"
         }
+    })
+    test("index key from scope", () => {
+        const types = scope({
+            key: "symbol|'foo'|'bar'|'baz'",
+            obj: {
+                "[key]": "string"
+            }
+        }).export()
+        type Key = symbol | "foo" | "bar" | "baz"
+        attest(types.key.infer).typed as Key
+        attest(types.obj.infer).typed as Record<Key, string>
+    })
+    test("syntax error in index definition", () => {
+        attest(() =>
+            type({
+                // @ts-expect-error
+                "[unresolvable]": "string"
+            })
+        ).throwsAndHasTypeError(writeUnresolvableMessage("unresolvable"))
+    })
+
+    test("semantic error in index definition", () => {
+        attest(() =>
+            type({
+                // @ts-expect-error
+                "[symbol<5]": "string"
+            })
+        ).throwsAndHasTypeError(writeUnboundableMessage("symbol"))
+    })
+
+    test("invalid key type for index definition", () => {
+        attest(() =>
+            type({
+                // @ts-expect-error
+                "[object]": "string"
+            })
+        ).throwsAndHasTypeError(
+            "Index signature 'object' must be a string, number or symbol"
+        )
     })
 
     test("nested", () => {
